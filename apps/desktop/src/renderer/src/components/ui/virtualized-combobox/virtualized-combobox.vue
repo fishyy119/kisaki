@@ -281,12 +281,15 @@ function handleMouseMove() {
   >
     <PopoverTrigger as-child>
       <Button
-        variant="outline"
+        variant="input"
         role="combobox"
         :aria-expanded="open"
         :disabled="props.disabled"
         :class="
-          cn('justify-between px-2 py-1 hover:bg-transparent active:bg-transparent', props.class)
+          cn(
+            'justify-between px-2 py-1 hover:bg-input hover:text-input-foreground active:bg-transparent',
+            props.class
+          )
         "
       >
         <span :class="cn('truncate', !displayText && 'text-muted-foreground')">

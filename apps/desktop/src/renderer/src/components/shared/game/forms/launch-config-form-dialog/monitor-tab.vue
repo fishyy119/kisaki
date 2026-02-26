@@ -107,7 +107,7 @@ async function handleSelectMonitorPath() {
           <Button
             v-if="monitorMode !== 'process'"
             type="button"
-            variant="outline"
+            variant="input"
             size="icon"
             @click="handleSelectMonitorPath"
           >

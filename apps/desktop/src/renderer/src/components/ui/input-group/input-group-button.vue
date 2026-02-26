@@ -23,7 +23,7 @@ type ButtonSizeVariants = VariantProps<typeof inputGroupButtonVariants>
 
 interface Props {
   size?: ButtonSizeVariants['size']
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'input'
   type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
   class?: HTMLAttributes['class']

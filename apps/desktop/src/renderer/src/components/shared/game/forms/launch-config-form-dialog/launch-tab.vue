@@ -64,7 +64,7 @@ async function handleSelectLauncherPath() {
           />
           <Button
             type="button"
-            variant="outline"
+            variant="input"
             size="icon"
             @click="handleSelectGameDirPath"
           >
@@ -116,7 +116,7 @@ async function handleSelectLauncherPath() {
           <Button
             v-if="launcherMode === 'file'"
             type="button"
-            variant="outline"
+            variant="input"
             size="icon"
             @click="handleSelectLauncherPath"
           >
@@ -128,6 +128,5 @@ async function handleSelectLauncherPath() {
         </div>
       </FieldContent>
     </Field>
-
   </FieldGroup>
 </template>

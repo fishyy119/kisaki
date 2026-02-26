@@ -11,8 +11,8 @@ export function createShadcnTheme(isDark: boolean): Extension {
   return createTheme({
     theme: isDark ? 'dark' : 'light',
     settings: {
-      background: 'var(--card)',
-      foreground: 'var(--card-foreground)',
+      background: 'var(--input)',
+      foreground: 'var(--input-foreground)',
       caret: 'var(--primary)',
       selection: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
       selectionMatch: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)',

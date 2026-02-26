@@ -11,12 +11,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useRenderState } from '@renderer/composables'
-import {
-  scanners,
-  settings,
-  type Scanner,
-  type NameExtractionRule
-} from '@shared/db'
+import { scanners, settings, type Scanner, type NameExtractionRule } from '@shared/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import {
@@ -318,7 +313,7 @@ async function handleAddToIgnoreList(ignoreName: string) {
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="input"
                       size="icon"
                       @click="handleSelectPath"
                     >
@@ -448,7 +443,7 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 <FieldContent>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="input"
                     class="w-full justify-start"
                     @click="isRulesDialogOpen = true"
                   >

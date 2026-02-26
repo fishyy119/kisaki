@@ -58,7 +58,7 @@ async function handleSelectSavePath() {
           />
           <Button
             type="button"
-            variant="outline"
+            variant="input"
             size="icon"
             @click="handleSelectSavePath"
           >
