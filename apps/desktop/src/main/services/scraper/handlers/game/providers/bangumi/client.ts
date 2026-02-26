@@ -30,7 +30,7 @@ const RATE_LIMIT_CONFIG = { maxRequests: 4, windowMs: 1000 }
 
 export class BangumiClient {
   private readonly baseUrl = 'https://api.bgm.tv'
-  private readonly userAgent = 'ximu3/Kisaki/1.0.0 (https://github.com/ximu3/kisaki)'
+  private readonly userAgent = 'ximu3/Kisaki/0.0.1 (https://github.com/ximu3/kisaki)'
   private rateLimitRegistered = false
 
   constructor(
