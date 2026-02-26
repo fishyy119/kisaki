@@ -140,7 +140,7 @@ function getThumbnailUrl(item: Game | Character | Person | Company, type: Entity
 }
 
 function handleResultClick(type: EntityType, id: string) {
-  open.value = false
+  closeDialog()
   switch (type) {
     case 'game':
       router.push({ name: 'game-detail', params: { gameId: id } })
@@ -155,6 +155,10 @@ function handleResultClick(type: EntityType, id: string) {
       router.push({ name: 'company-detail', params: { companyId: id } })
       break
   }
+}
+
+function closeDialog() {
+  open.value = false
 }
 
 function handleKeyDown(e: KeyboardEvent) {
@@ -321,7 +325,8 @@ watch(
           class="size-4 shrink-0"
         />
         <kbd
-          class="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground"
+          class="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground cursor-pointer"
+          @click="closeDialog"
         >
           ESC
         </kbd>
