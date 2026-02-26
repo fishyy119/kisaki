@@ -36,7 +36,7 @@ const themeStore = useThemeStore()
     :toast-options="{
       classes: {
         toast:
-          '!font-sans !bg-popover !text-popover-foreground !shadow-xs !rounded-lg !pointer-events-auto',
+          '!font-sans !bg-popover !text-popover-foreground !shadow-xs !rounded-lg !pointer-events-auto !border !border-border',
         closeButton:
           '!border-0 !right-2 !top-2 !bg-transparent !text-muted-foreground !hover:text-accent-foreground'
       }
