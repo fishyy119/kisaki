@@ -313,7 +313,7 @@ watch(
           ref="inputRef"
           v-model="query"
           placeholder="搜索游戏、角色、人物、公司..."
-          class="border-0 shadow-none focus-visible:ring-0 h-8 px-0"
+          class="border-0 shadow-none bg-transparent focus-visible:ring-0 h-8 px-0"
           autofocus
         />
         <Spinner
