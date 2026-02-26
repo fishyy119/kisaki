@@ -191,6 +191,17 @@ const tooltipConfig = {
 
 const tooltipTemplate = componentToString(tooltipConfig, ChartTooltipContent, { labelKey: 'name' })
 
+function barTooltipTrigger(data: unknown): string | HTMLElement | undefined {
+  if (!tooltipTemplate) return
+
+  const datum =
+    data && typeof data === 'object' && 'datum' in data
+      ? (data as { datum: RankingChartDatum }).datum
+      : (data as RankingChartDatum)
+
+  return tooltipTemplate(datum, datum?.index ?? 0)
+}
+
 // Tooltip container - appended to body to avoid clipping
 const tooltipContainer = shallowRef<HTMLElement | null>(null)
 
@@ -272,7 +283,7 @@ const color = (d: RankingChartDatum) => d.fill
             :container="tooltipContainer!"
             class-name="chart-tooltip-portal"
             :triggers="{
-              [StackedBar.selectors.bar]: tooltipTemplate!
+              [StackedBar.selectors.bar]: barTooltipTrigger
             }"
           />
         </VisXYContainer>
@@ -331,7 +342,7 @@ const color = (d: RankingChartDatum) => d.fill
                   :container="tooltipContainer!"
                   class-name="chart-tooltip-portal"
                   :triggers="{
-                    [StackedBar.selectors.bar]: tooltipTemplate!
+                    [StackedBar.selectors.bar]: barTooltipTrigger
                   }"
                 />
               </VisXYContainer>
