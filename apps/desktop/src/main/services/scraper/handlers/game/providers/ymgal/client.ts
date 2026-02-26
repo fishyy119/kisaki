@@ -27,7 +27,7 @@ import type {
 
 const RATE_LIMIT_KEY = 'ymgal'
 // Docs explicitly ask developers to avoid concurrent bursts.
-const RATE_LIMIT_CONFIG = { maxRequests: 2, windowMs: 1000 }
+const RATE_LIMIT_CONFIG = { maxRequests: 3, windowMs: 1000 }
 
 const PUBLIC_CLIENT_ID = 'ymgal'
 const PUBLIC_CLIENT_SECRET = 'luna0327'
