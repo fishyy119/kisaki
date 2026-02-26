@@ -48,7 +48,8 @@ const buttonCardVariants = cva('', {
       secondary: '',
       ghost: '',
       link: 'h-auto p-0 shrink truncate',
-      text: ''
+      text: '',
+      input: ''
     },
     buttonSize: {
       default: '',
