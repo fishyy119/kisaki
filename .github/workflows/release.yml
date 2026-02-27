@@ -64,7 +64,7 @@ jobs:
           fi
 
   # =============================================================================
-  # Release Desktop: Build and publish Electron application
+  # Release Desktop: Build Electron application artifacts
   # =============================================================================
   release-desktop:
     name: Release Desktop
@@ -95,6 +95,7 @@ jobs:
           name: release-windows
           path: |
             apps/desktop/dist/*.exe
+            apps/desktop/dist/*.blockmap
             apps/desktop/dist/latest.yml
           if-no-files-found: ignore
 
