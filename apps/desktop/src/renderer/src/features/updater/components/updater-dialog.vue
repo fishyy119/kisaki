@@ -195,7 +195,7 @@ async function handleRetryChangelog() {
       </DialogHeader>
 
       <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
-        <div class="rounded-md border border-border bg-muted/20 px-3 py-2">
+        <div class="rounded-md border border-border bg-muted/20 text-muted-foreground px-3 py-2">
           <p class="text-sm font-medium leading-5">{{ statusText }}</p>
           <div
             v-if="releaseMetaItems.length"
@@ -204,7 +204,7 @@ async function handleRetryChangelog() {
             <span
               v-for="(item, index) in releaseMetaItems"
               :key="`${index}-${item}`"
-              class="inline-flex items-center rounded-sm border border-border/60 bg-muted px-1.5 py-0.5 text-xs leading-4 text-muted-foreground"
+              class="inline-flex items-center rounded-sm border border-border/60 bg-muted px-1.5 py-0.5 text-xs leading-4"
             >
               {{ item }}
             </span>
