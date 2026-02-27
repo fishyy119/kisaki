@@ -37,6 +37,7 @@ import SidebarNavItem from './sidebar-nav-item.vue'
 import { AdderTrigger } from '@renderer/features/adder'
 import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
 import { SettingsFormDialog } from '@renderer/features/settings'
+import { AboutDialog } from '@renderer/features/about'
 
 interface NavItem {
   id: string
@@ -56,6 +57,7 @@ const navItems: NavItem[] = [
 const pluginItems = uiExtensions.sidebar.nav.items
 const isSettingsOpen = ref(false)
 const isProfileManagerOpen = ref(false)
+const isAboutOpen = ref(false)
 
 // Preferences
 const preferencesStore = usePreferencesStore()
@@ -215,6 +217,16 @@ const showNsfwModel = computed({
               />
               <span>软件设置</span>
             </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem @select="isAboutOpen = true">
+              <Icon
+                icon="icon-[mdi--information-outline]"
+                class="size-4"
+              />
+              <span>关于</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </Tooltip>
@@ -230,6 +242,11 @@ const showNsfwModel = computed({
   <SettingsFormDialog
     v-if="isSettingsOpen"
     v-model:open="isSettingsOpen"
+  />
+
+  <AboutDialog
+    v-if="isAboutOpen"
+    v-model:open="isAboutOpen"
   />
 
   <AlertDialog v-model:open="isNsfwConfirmOpen">

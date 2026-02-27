@@ -158,6 +158,7 @@ export interface IpcMainListeners {
  */
 export interface IpcMainHandlers {
   // App bootstrap
+  'app:get-version': () => IpcResult<string>
   'app:get-bootstrap-args': () => IpcResult<BootstrapArgs>
   'app:quit': () => IpcVoidResult
   'updater:get-state': () => IpcResult<AppUpdaterState>

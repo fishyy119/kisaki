@@ -137,6 +137,10 @@ async function onAppReady(): Promise<void> {
   setupBootstrapArgsIpc(ipcService)
   setupPortableIpc(ipcService, eventService)
 
+  ipcService.handle('app:get-version', () => {
+    return { success: true, data: app.getVersion() }
+  })
+
   ipcService.handle('app:quit', () => {
     setImmediate(() => app.quit())
     return { success: true }
