@@ -13,7 +13,12 @@ import {
   fetchInitialPlugins
 } from './core/plugin'
 import { setupDeeplinkHandlers } from './core/deeplink'
-import { useGameMonitorStore, useScannerStore, useDefaultFromStore } from './stores'
+import {
+  useGameMonitorStore,
+  useScannerStore,
+  useDefaultFromStore,
+  useUpdaterStore
+} from './stores'
 
 async function initMainWindowRenderer() {
   // ===========================================================================
@@ -61,6 +66,7 @@ async function initMainWindowRenderer() {
     await useGameMonitorStore().init()
     await useScannerStore().init()
     await useDefaultFromStore().init()
+    await useUpdaterStore().init()
   })
 }
 

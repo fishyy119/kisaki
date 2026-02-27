@@ -39,6 +39,7 @@ import type { NetworkService } from '@main/services/network/service'
 import type { NotifyService } from '@main/services/notify/service'
 import type { DeeplinkService } from '@main/services/deeplink/service'
 import type { MetadataUpdaterService } from '@main/services/metadata-updater/service'
+import type { UpdaterService } from '@main/services/updater/service'
 
 /**
  * Service Registry - Centralized type mapping for all core services.
@@ -62,6 +63,7 @@ export interface ServiceRegistry {
   notify: NotifyService
   deeplink: DeeplinkService
   'metadata-updater': MetadataUpdaterService
+  updater: UpdaterService
 }
 
 /**

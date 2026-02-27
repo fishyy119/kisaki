@@ -549,6 +549,10 @@ export const settings = sqliteTable(
     scannerUsePhash: integer('scanner_use_phash', { mode: 'boolean' }).notNull().default(false),
     scannerStartAtOpen: integer('scanner_start_at_open', { mode: 'boolean' })
       .notNull()
+      .default(false),
+    updaterAutoCheck: integer('updater_auto_check', { mode: 'boolean' }).notNull().default(true),
+    updaterAllowPrerelease: integer('updater_allow_prerelease', { mode: 'boolean' })
+      .notNull()
       .default(false)
   },
   (t) => [check('single_row_check', sql`${t.id} = 0`)]

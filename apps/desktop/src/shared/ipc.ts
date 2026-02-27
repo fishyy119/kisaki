@@ -74,6 +74,7 @@ import type {
 } from './plugin'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
+import type { AppUpdaterState } from './updater'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import type {
   DeeplinkResult,
@@ -159,6 +160,11 @@ export interface IpcMainHandlers {
   // App bootstrap
   'app:get-bootstrap-args': () => IpcResult<BootstrapArgs>
   'app:quit': () => IpcVoidResult
+  'updater:get-state': () => IpcResult<AppUpdaterState>
+  'updater:check-for-updates': () => IpcVoidResult
+  'updater:download-update': () => IpcVoidResult
+  'updater:reload-settings': () => IpcVoidResult
+  'updater:quit-and-install': () => IpcVoidResult
 
   // Debug mode
   'debug:get-mode': () => IpcResult<boolean>
@@ -426,6 +432,7 @@ export interface IpcRendererEvents {
   'monitor:game-foreground': [string]
   'monitor:game-background': [string]
   'scanner:scan-progress': [ScanProgressData]
+  'updater:state-changed': [state: AppUpdaterState]
 
   'notify:show': [NotifyOptions & { toastId?: string }]
   'notify:loading': [{ toastId: string; title: string; message?: string }]

@@ -3,13 +3,25 @@
   Desktop-style titlebar with window controls.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
 import { useIpc } from '@renderer/composables/use-ipc'
+import { UpdaterDialog } from '@renderer/features/updater'
+import { useUpdaterStore } from '@renderer/stores'
 import kisakiIcon from '@assets/icon-32.png'
 
 const isMaximized = ref(false)
+const isUpdaterDialogOpen = ref(false)
+
+const updaterStore = useUpdaterStore()
+const { hasDownloadedUpdate, release } = storeToRefs(updaterStore)
+
+const updateButtonTitle = computed(() => {
+  if (!release.value) return '更新已下载'
+  return `发现新版本 v${release.value.version}`
+})
 
 useIpc('native:main-window-maximized', () => {
   isMaximized.value = true
@@ -29,6 +41,10 @@ function handleToggleMaximizeMainWindow() {
 
 async function handleCloseMainWindow() {
   await ipcManager.invoke('window:close-main-window')
+}
+
+function handleOpenUpdaterDialog() {
+  isUpdaterDialogOpen.value = true
 }
 </script>
 
@@ -58,6 +74,18 @@ async function handleCloseMainWindow() {
       style="-webkit-app-region: no-drag"
     >
       <button
+        v-if="hasDownloadedUpdate"
+        class="relative pointer-events-auto inline-flex items-center justify-center gap-1.5 h-5.5 px-2 mr-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+        :title="updateButtonTitle"
+        @click="handleOpenUpdaterDialog"
+      >
+        <Icon
+          icon="icon-[mdi--update]"
+          class="size-4"
+        />
+        <span>有可用的更新</span>
+      </button>
+      <button
         class="relative pointer-events-auto flex items-center justify-center w-12 h-full hover:bg-accent transition-colors"
         @click="handleMinimizeMainWindow"
       >
@@ -86,4 +114,9 @@ async function handleCloseMainWindow() {
       </button>
     </div>
   </header>
+
+  <UpdaterDialog
+    v-if="isUpdaterDialogOpen"
+    v-model:open="isUpdaterDialogOpen"
+  />
 </template>

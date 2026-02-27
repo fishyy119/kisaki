@@ -37,12 +37,16 @@ type SettingsFormData = {
   autoLaunch: boolean
   activeThemeId: string
   mainWindowCloseAction: MainWindowCloseAction
+  updaterAutoCheck: boolean
+  updaterAllowPrerelease: boolean
 }
 
 const formData = ref<SettingsFormData>({
   autoLaunch: false,
   activeThemeId: activeThemeId.value,
-  mainWindowCloseAction: 'exit'
+  mainWindowCloseAction: 'exit',
+  updaterAutoCheck: true,
+  updaterAllowPrerelease: false
 })
 
 const openModel = computed({
@@ -69,7 +73,9 @@ const { data, isLoading, error, refetch } = useAsyncData(
 
     return {
       autoLaunch: autoLaunchResult.data,
-      mainWindowCloseAction: currentSettings.mainWindowCloseAction
+      mainWindowCloseAction: currentSettings.mainWindowCloseAction,
+      updaterAutoCheck: currentSettings.updaterAutoCheck,
+      updaterAllowPrerelease: currentSettings.updaterAllowPrerelease
     }
   },
   { enabled: open }
@@ -85,6 +91,8 @@ watch(data, (d) => {
   if (!d) return
   formData.value.autoLaunch = d.autoLaunch
   formData.value.mainWindowCloseAction = d.mainWindowCloseAction
+  formData.value.updaterAutoCheck = d.updaterAutoCheck
+  formData.value.updaterAllowPrerelease = d.updaterAllowPrerelease
 })
 
 watch(
@@ -105,9 +113,18 @@ async function handleSubmit() {
 
     await db
       .update(settings)
-      .set({ mainWindowCloseAction: formData.value.mainWindowCloseAction })
+      .set({
+        mainWindowCloseAction: formData.value.mainWindowCloseAction,
+        updaterAutoCheck: formData.value.updaterAutoCheck,
+        updaterAllowPrerelease: formData.value.updaterAllowPrerelease
+      })
       .where(eq(settings.id, 0))
       .run()
+
+    const updaterResult = await ipcManager.invoke('updater:reload-settings')
+    if (!updaterResult.success) {
+      throw new Error(updaterResult.error)
+    }
 
     ipcManager.send('window:set-main-window-close-action', formData.value.mainWindowCloseAction)
 
@@ -194,9 +211,7 @@ async function handleSubmit() {
                     <SelectTrigger class="w-56">
                       <span class="truncate">
                         {{
-                          formData.mainWindowCloseAction === 'exit'
-                            ? '退出应用'
-                            : '最小化到托盘'
+                          formData.mainWindowCloseAction === 'exit' ? '退出应用' : '最小化到托盘'
                         }}
                       </span>
                     </SelectTrigger>
@@ -205,6 +220,20 @@ async function handleSubmit() {
                       <SelectItem value="tray">最小化到托盘</SelectItem>
                     </SelectContent>
                   </Select>
+                </FieldContent>
+              </Field>
+
+              <Field orientation="horizontal">
+                <FieldLabel>自动检查更新</FieldLabel>
+                <FieldContent>
+                  <Switch v-model="formData.updaterAutoCheck" />
+                </FieldContent>
+              </Field>
+
+              <Field orientation="horizontal">
+                <FieldLabel>接受预览版更新</FieldLabel>
+                <FieldContent>
+                  <Switch v-model="formData.updaterAllowPrerelease" />
                 </FieldContent>
               </Field>
             </FieldGroup>
