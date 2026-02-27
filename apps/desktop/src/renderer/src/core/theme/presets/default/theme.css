@@ -4,7 +4,7 @@
 
   /* Light theme - Clean with blue accents */
   --background: var(--color-slate-50);
-  --foreground: var(--color-slate-950);
+  --foreground: var(--color-slate-900);
 
   /* Surface - For elevated content areas (sidebar, titlebar, cards) */
   --surface: var(--color-slate-100);
