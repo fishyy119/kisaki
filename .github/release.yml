@@ -3,34 +3,34 @@ changelog:
     labels:
       - skip-release-notes
   categories:
-    - title: '✨ Features'
+    - title: 'Features'
       labels:
         - feat
         - feature
         - enhancement
-    - title: '🔧 Fixes'
+    - title: 'Fixes'
       labels:
         - fix
         - bug
         - bugfix
-    - title: '♻️ Refactors'
+    - title: 'Refactors'
       labels:
         - refactor
         - cleanup
-    - title: '📝 Docs'
+    - title: 'Docs'
       labels:
         - docs
         - documentation
-    - title: '⚙️ Chores'
+    - title: 'Chores'
       labels:
         - chore
         - ci
         - build
-    - title: '📦 Dependencies'
+    - title: 'Dependencies'
       labels:
         - dependencies
         - dependency
         - deps
-    - title: '📚 Other Changes'
+    - title: 'Other Changes'
       labels:
         - '*'
