@@ -7,7 +7,7 @@ import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
 import { useIpc } from '@renderer/composables/use-ipc'
-import kisakiIcon from '@assets/icon.png'
+import kisakiIcon from '@assets/icon-32.png'
 
 const isMaximized = ref(false)
 
