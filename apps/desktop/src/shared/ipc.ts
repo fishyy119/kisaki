@@ -74,7 +74,7 @@ import type {
 } from './plugin'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
-import type { AppUpdaterState } from './updater'
+import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import type {
   DeeplinkResult,
@@ -162,6 +162,7 @@ export interface IpcMainHandlers {
   'app:get-bootstrap-args': () => IpcResult<BootstrapArgs>
   'app:quit': () => IpcVoidResult
   'updater:get-state': () => IpcResult<AppUpdaterState>
+  'updater:get-changelog': (version: string) => IpcResult<AppUpdaterChangelogBundle>
   'updater:check-for-updates': () => IpcVoidResult
   'updater:download-update': () => IpcVoidResult
   'updater:reload-settings': () => IpcVoidResult

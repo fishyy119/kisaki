@@ -24,7 +24,6 @@ jobs:
       should_release: ${{ steps.parse.outputs.should_release }}
       target: ${{ steps.parse.outputs.target }}
       version: ${{ steps.parse.outputs.version }}
-      changelog: ${{ steps.parse.outputs.changelog }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,19 +42,31 @@ jobs:
             TARGET="${BASH_REMATCH[1]}"
             VERSION="${BASH_REMATCH[2]}"
 
-            # Extract changelog (everything after first line, trimmed)
-            CHANGELOG=$(echo "$COMMIT_MSG" | tail -n +2 | sed '/^$/d')
-
             echo "should_release=true" >> $GITHUB_OUTPUT
             echo "target=$TARGET" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-            # Handle multiline changelog
-            {
-              echo "changelog<<EOF"
-              echo "$CHANGELOG"
-              echo "EOF"
-            } >> $GITHUB_OUTPUT
+            # Validate desktop changelog files strictly
+            if [[ "$TARGET" == "desktop" ]]; then
+              CHANGELOG_DIR="changelog/desktop/v$VERSION"
+              REQUIRED_LOCALES=("zh-Hans" "en" "ja")
+              MISSING_FILES=()
+
+              for locale in "${REQUIRED_LOCALES[@]}"; do
+                file="$CHANGELOG_DIR/$locale.md"
+                if [[ ! -f "$file" ]]; then
+                  MISSING_FILES+=("$file")
+                fi
+              done
+
+              if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
+                echo "❌ Missing required changelog files for desktop release v$VERSION:"
+                printf '  - %s\n' "${MISSING_FILES[@]}"
+                exit 1
+              fi
+
+              echo "✅ Verified desktop changelog files for v$VERSION"
+            fi
 
             echo "🚀 Detected release: $TARGET v$VERSION"
           else
@@ -125,12 +136,26 @@ jobs:
           git tag "desktop-v${{ needs.detect.outputs.version }}"
           git push origin "desktop-v${{ needs.detect.outputs.version }}"
 
+      - name: Build release body
+        run: |
+          VERSION="${{ needs.detect.outputs.version }}"
+          TAG="desktop-v$VERSION"
+          CHANGELOG_BASE="https://github.com/${{ github.repository }}/blob/$TAG/changelog/desktop/v$VERSION"
+          cat > release-body.md <<EOF
+          ## Changelog / 更新日志
+
+          - [简体中文]($CHANGELOG_BASE/zh-Hans.md)
+          - [English]($CHANGELOG_BASE/en.md)
+          - [日本語]($CHANGELOG_BASE/ja.md)
+          EOF
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: desktop-v${{ needs.detect.outputs.version }}
           name: Kisaki v${{ needs.detect.outputs.version }}
-          body: ${{ needs.detect.outputs.changelog }}
+          body_path: release-body.md
+          generate_release_notes: true
           files: artifacts/*
           draft: false
           prerelease: false

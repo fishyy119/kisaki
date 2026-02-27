@@ -3,13 +3,16 @@
   Unified update workflow dialog for checking, downloading, and installing app updates.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { notify } from '@renderer/core/notify'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Progress } from '@renderer/components/ui/progress'
 import { Button } from '@renderer/components/ui/button'
+import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
+import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
+import { getLocale } from '@renderer/core/i18n'
 import {
   Dialog,
   DialogBody,
@@ -19,6 +22,10 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { useUpdaterStore } from '@renderer/stores'
+import {
+  DEFAULT_APP_UPDATER_CHANGELOG_LOCALE,
+  type AppUpdaterChangelogLocale
+} from '@shared/updater'
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -33,12 +40,26 @@ const {
   canStartDownload,
   isStartingDownload,
   hasDownloadedUpdate,
-  isInstalling
+  isInstalling,
+  activeChangelog,
+  activeChangelogError,
+  isActiveChangelogLoading
 } = storeToRefs(updaterStore)
 
-const releaseNotes = computed(() => {
-  const notes = release.value?.releaseNotes?.trim()
-  return notes && notes.length > 0 ? notes : '暂无更新日志'
+function resolveDefaultChangelogLocale(): AppUpdaterChangelogLocale {
+  const currentLocale = getLocale().toLowerCase()
+  if (currentLocale.startsWith('ja')) return 'ja'
+  if (currentLocale.startsWith('en')) return 'en'
+  if (currentLocale.startsWith('zh')) return 'zh-Hans'
+  return DEFAULT_APP_UPDATER_CHANGELOG_LOCALE
+}
+
+const selectedChangelogLocale = ref<AppUpdaterChangelogLocale>(resolveDefaultChangelogLocale())
+
+const hasRelease = computed(() => !!release.value?.version)
+const changelogMarkdown = computed(() => {
+  if (!activeChangelog.value) return null
+  return activeChangelog.value.markdownByLocale[selectedChangelogLocale.value]
 })
 
 const releaseDateText = computed(() => {
@@ -99,6 +120,15 @@ const downloadButtonDisabled = computed(
 
 const installButtonDisabled = computed(() => !hasDownloadedUpdate.value || isInstalling.value)
 
+watch(
+  () => release.value?.version ?? null,
+  (version) => {
+    if (!version) return
+    void loadChangelog({ force: false, notifyOnError: false })
+  },
+  { immediate: true }
+)
+
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -138,6 +168,22 @@ async function handleInstallAndRestart() {
   } catch (error) {
     notify.error('安装更新失败', error instanceof Error ? error.message : String(error))
   }
+}
+
+async function loadChangelog(options: { force: boolean; notifyOnError: boolean }) {
+  if (!release.value?.version) return
+
+  try {
+    await updaterStore.ensureActiveReleaseChangelog({ force: options.force })
+  } catch (error) {
+    if (options.notifyOnError) {
+      notify.error('获取更新日志失败', error instanceof Error ? error.message : String(error))
+    }
+  }
+}
+
+async function handleRetryChangelog() {
+  await loadChangelog({ force: true, notifyOnError: true })
 }
 </script>
 
@@ -181,12 +227,71 @@ async function handleInstallAndRestart() {
           </p>
         </div>
 
-        <div class="rounded-md border border-border bg-card">
-          <MarkdownContent
-            :content="releaseNotes"
-            class="px-4 py-3 text-sm"
-          />
-        </div>
+        <Field>
+          <div class="flex items-center justify-between gap-2">
+            <FieldLabel>更新日志</FieldLabel>
+            <SegmentedControl v-model="selectedChangelogLocale">
+              <SegmentedControlItem value="zh-Hans">简体中文</SegmentedControlItem>
+              <SegmentedControlItem value="en">English</SegmentedControlItem>
+              <SegmentedControlItem value="ja">日本語</SegmentedControlItem>
+            </SegmentedControl>
+          </div>
+
+          <FieldContent>
+            <div class="rounded-md border border-border bg-card px-3 py-2 min-h-24">
+              <div
+                v-if="isActiveChangelogLoading"
+                class="flex items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Spinner class="size-4" />
+                <span>正在加载更新日志...</span>
+              </div>
+
+              <div
+                v-else-if="activeChangelogError"
+                class="space-y-2"
+              >
+                <p class="text-sm text-destructive">更新日志加载失败：{{ activeChangelogError }}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  @click="handleRetryChangelog"
+                >
+                  重试
+                </Button>
+              </div>
+
+              <MarkdownContent
+                v-else-if="changelogMarkdown"
+                :content="changelogMarkdown"
+                class="text-sm px-0 py-0"
+              />
+
+              <div
+                v-else-if="hasRelease"
+                class="space-y-2"
+              >
+                <p class="text-sm text-muted-foreground">当前语言暂无更新日志</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  @click="handleRetryChangelog"
+                >
+                  重试
+                </Button>
+              </div>
+
+              <p
+                v-else
+                class="text-sm text-muted-foreground"
+              >
+                检查到更新后会在此显示更新日志
+              </p>
+            </div>
+          </FieldContent>
+        </Field>
       </DialogBody>
 
       <DialogFooter class="flex items-center justify-between gap-2">

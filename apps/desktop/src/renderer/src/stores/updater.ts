@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ipcManager } from '@renderer/core/ipc'
-import type { AppUpdaterState } from '@shared/updater'
+import type { AppUpdaterChangelogBundle, AppUpdaterState } from '@shared/updater'
 
 const defaultState: AppUpdaterState = {
   status: 'idle',
@@ -22,6 +22,10 @@ export const useUpdaterStore = defineStore('updater', () => {
   const isInstalling = ref(false)
   const isManuallyChecking = ref(false)
   const isStartingDownload = ref(false)
+  const changelogByVersion = ref<Record<string, AppUpdaterChangelogBundle>>({})
+  const changelogLoadingByVersion = ref<Record<string, boolean>>({})
+  const changelogErrorByVersion = ref<Record<string, string | null>>({})
+  const changelogInFlight = new Map<string, Promise<AppUpdaterChangelogBundle>>()
 
   const hasDownloadedUpdate = computed(
     () => state.value.status === 'downloaded' && state.value.update !== null
@@ -35,9 +39,117 @@ export const useUpdaterStore = defineStore('updater', () => {
   const downloadProgress = computed(() => state.value.downloadProgress)
 
   const release = computed(() => state.value.update)
+  const activeReleaseVersion = computed(() => {
+    const version = release.value?.version?.trim()
+    return version ? normalizeVersion(version) : null
+  })
+  const activeChangelog = computed(() => {
+    const version = activeReleaseVersion.value
+    if (!version) return null
+    return changelogByVersion.value[version] ?? null
+  })
+  const isActiveChangelogLoading = computed(() => {
+    const version = activeReleaseVersion.value
+    if (!version) return false
+    return changelogLoadingByVersion.value[version] ?? false
+  })
+  const activeChangelogError = computed(() => {
+    const version = activeReleaseVersion.value
+    if (!version) return null
+    return changelogErrorByVersion.value[version] ?? null
+  })
 
   function setState(next: AppUpdaterState) {
     state.value = next
+  }
+
+  function normalizeVersion(version: string): string {
+    return version.trim().replace(/^v/i, '')
+  }
+
+  function setChangelogLoading(version: string, loading: boolean): void {
+    const next = { ...changelogLoadingByVersion.value }
+    if (loading) {
+      next[version] = true
+    } else {
+      delete next[version]
+    }
+    changelogLoadingByVersion.value = next
+  }
+
+  function setChangelogError(version: string, error: string | null): void {
+    const next = { ...changelogErrorByVersion.value }
+    if (error) {
+      next[version] = error
+    } else {
+      delete next[version]
+    }
+    changelogErrorByVersion.value = next
+  }
+
+  function setChangelog(bundle: AppUpdaterChangelogBundle): void {
+    changelogByVersion.value = {
+      ...changelogByVersion.value,
+      [bundle.version]: bundle
+    }
+  }
+
+  async function fetchChangelog(
+    version: string,
+    options: { force?: boolean } = {}
+  ): Promise<AppUpdaterChangelogBundle> {
+    const normalizedVersion = normalizeVersion(version)
+    if (!normalizedVersion) {
+      throw new Error('Invalid update version.')
+    }
+
+    const inFlight = changelogInFlight.get(normalizedVersion)
+    if (inFlight) return inFlight
+
+    if (!options.force) {
+      const cached = changelogByVersion.value[normalizedVersion]
+      if (cached) return cached
+    }
+
+    const request = (async () => {
+      setChangelogLoading(normalizedVersion, true)
+      setChangelogError(normalizedVersion, null)
+
+      try {
+        const result = await ipcManager.invoke('updater:get-changelog', normalizedVersion)
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+
+        setChangelog(result.data)
+        return result.data
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        setChangelogError(normalizedVersion, message)
+        throw error
+      } finally {
+        setChangelogLoading(normalizedVersion, false)
+      }
+    })()
+
+    changelogInFlight.set(normalizedVersion, request)
+    return request.finally(() => {
+      changelogInFlight.delete(normalizedVersion)
+    })
+  }
+
+  async function ensureActiveReleaseChangelog(
+    options: { force?: boolean } = {}
+  ): Promise<AppUpdaterChangelogBundle | null> {
+    const version = activeReleaseVersion.value
+    if (!version) return null
+
+    if (!options.force) {
+      const cached = changelogByVersion.value[version]
+      if (cached) return cached
+    }
+
+    return fetchChangelog(version, options)
   }
 
   async function init() {
@@ -114,9 +226,18 @@ export const useUpdaterStore = defineStore('updater', () => {
     canStartDownload,
     downloadProgress,
     release,
+    activeReleaseVersion,
+    activeChangelog,
+    isActiveChangelogLoading,
+    activeChangelogError,
+    changelogByVersion,
+    changelogLoadingByVersion,
+    changelogErrorByVersion,
     init,
     quitAndInstall,
     checkForUpdates,
-    downloadUpdate
+    downloadUpdate,
+    fetchChangelog,
+    ensureActiveReleaseChangelog
   }
 })

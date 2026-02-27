@@ -15,7 +15,6 @@ export interface AppUpdaterRelease {
   version: string
   releaseName: string | null
   releaseDate: string | null
-  releaseNotes: string
 }
 
 export interface AppUpdaterDownloadProgress {
@@ -30,4 +29,15 @@ export interface AppUpdaterState {
   update: AppUpdaterRelease | null
   error: string | null
   downloadProgress: AppUpdaterDownloadProgress | null
+}
+
+export type AppUpdaterChangelogLocale = 'zh-Hans' | 'en' | 'ja'
+
+export const APP_UPDATER_CHANGELOG_LOCALES: AppUpdaterChangelogLocale[] = ['zh-Hans', 'en', 'ja']
+
+export const DEFAULT_APP_UPDATER_CHANGELOG_LOCALE: AppUpdaterChangelogLocale = 'zh-Hans'
+
+export interface AppUpdaterChangelogBundle {
+  version: string
+  markdownByLocale: Record<AppUpdaterChangelogLocale, string | null>
 }

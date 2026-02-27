@@ -8,15 +8,20 @@ import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import log from 'electron-log/main'
 import { autoUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
+import { valid as isValidSemver } from 'semver'
 import { settings } from '@shared/db'
 import type {
+  AppUpdaterChangelogBundle,
+  AppUpdaterChangelogLocale,
   AppUpdaterDownloadProgress,
   AppUpdaterRelease,
   AppUpdaterState
 } from '@shared/updater'
+import { APP_UPDATER_CHANGELOG_LOCALES } from '@shared/updater'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
+import type { NetworkService } from '@main/services/network'
 
 interface UpdaterSettings {
   autoCheck: boolean
@@ -25,10 +30,11 @@ interface UpdaterSettings {
 
 export class UpdaterService implements IService {
   readonly id = 'updater'
-  readonly deps = ['db', 'ipc'] as const satisfies readonly ServiceName[]
+  readonly deps = ['db', 'ipc', 'network'] as const satisfies readonly ServiceName[]
 
   private dbService!: DbService
   private ipcService!: IpcService
+  private networkService!: NetworkService
   private updaterSettings: UpdaterSettings = {
     autoCheck: true,
     allowPrerelease: false
@@ -41,6 +47,8 @@ export class UpdaterService implements IService {
   }
   private isDownloading = false
   private autoDownloadOnNextAvailable = false
+  private readonly changelogCache = new Map<string, AppUpdaterChangelogBundle>()
+  private readonly changelogInFlight = new Map<string, Promise<AppUpdaterChangelogBundle>>()
 
   private readonly handleCheckingForUpdate = () => {
     this.updateState({
@@ -119,6 +127,7 @@ export class UpdaterService implements IService {
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.dbService = container.get('db')
     this.ipcService = container.get('ipc')
+    this.networkService = container.get('network')
 
     this.setupIpcHandlers()
     this.configureAutoUpdater()
@@ -144,6 +153,24 @@ export class UpdaterService implements IService {
   private setupIpcHandlers(): void {
     this.ipcService.handle('updater:get-state', async () => {
       return { success: true, data: this.state }
+    })
+
+    this.ipcService.handle('updater:get-changelog', async (_, version) => {
+      const normalizedVersion = this.normalizeVersion(version)
+      if (!normalizedVersion) {
+        return { success: false, error: 'Invalid update version.' }
+      }
+
+      try {
+        const bundle = await this.getChangelogBundle(normalizedVersion)
+        return { success: true, data: bundle }
+      } catch (error) {
+        log.error('[UpdaterService] Failed to fetch changelog:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }
     })
 
     this.ipcService.handle('updater:check-for-updates', async () => {
@@ -373,12 +400,108 @@ export class UpdaterService implements IService {
     this.ipcService.send('updater:state-changed', this.state)
   }
 
+  private normalizeVersion(version: string): string | null {
+    const input = version.trim()
+    if (!input) return null
+
+    const withoutPrefix = input.replace(/^v/i, '')
+    return isValidSemver(withoutPrefix)
+  }
+
+  private async getChangelogBundle(version: string): Promise<AppUpdaterChangelogBundle> {
+    const cached = this.changelogCache.get(version)
+    if (cached) return cached
+
+    const inFlight = this.changelogInFlight.get(version)
+    if (inFlight) return inFlight
+
+    const request = this.fetchChangelogBundle(version)
+      .then((bundle) => {
+        this.changelogCache.set(version, bundle)
+        return bundle
+      })
+      .finally(() => {
+        this.changelogInFlight.delete(version)
+      })
+
+    this.changelogInFlight.set(version, request)
+    return request
+  }
+
+  private async fetchChangelogBundle(version: string): Promise<AppUpdaterChangelogBundle> {
+    const entries = await Promise.all(
+      APP_UPDATER_CHANGELOG_LOCALES.map(async (locale) => {
+        return this.fetchChangelogByLocale(version, locale)
+      })
+    )
+
+    const markdownByLocale: Record<AppUpdaterChangelogLocale, string | null> = {
+      'zh-Hans': null,
+      en: null,
+      ja: null
+    }
+
+    let availableCount = 0
+    for (const entry of entries) {
+      markdownByLocale[entry.locale] = entry.markdown
+      if (entry.markdown) {
+        availableCount += 1
+      }
+    }
+
+    if (availableCount === 0) {
+      throw new Error(`No changelog files are available for v${version}.`)
+    }
+
+    return {
+      version,
+      markdownByLocale
+    }
+  }
+
+  private async fetchChangelogByLocale(
+    version: string,
+    locale: AppUpdaterChangelogLocale
+  ): Promise<{ locale: AppUpdaterChangelogLocale; markdown: string | null }> {
+    const url = this.buildChangelogUrl(version, locale)
+
+    try {
+      const response = await this.networkService.fetch(url, {
+        retries: 1,
+        timeout: 10000
+      })
+      if (!response.ok) {
+        log.warn(
+          `[UpdaterService] Missing changelog for v${version} locale ${locale}: ${response.status} ${response.statusText}`
+        )
+        return { locale, markdown: null }
+      }
+
+      const markdown = (await response.text()).trim()
+      if (!markdown) {
+        log.warn(`[UpdaterService] Empty changelog for v${version} locale ${locale}.`)
+        return { locale, markdown: null }
+      }
+
+      return { locale, markdown }
+    } catch (error) {
+      log.warn(
+        `[UpdaterService] Failed to fetch changelog for v${version} locale ${locale}:`,
+        error
+      )
+      return { locale, markdown: null }
+    }
+  }
+
+  private buildChangelogUrl(version: string, locale: AppUpdaterChangelogLocale): string {
+    return `https://raw.githubusercontent.com/ximu3/kisaki/desktop-v${version}/changelog/desktop/v${version}/${locale}.md`
+  }
+
   private toRelease(info: UpdateInfo): AppUpdaterRelease {
     return {
       version: info.version,
       releaseName: info.releaseName ?? null,
-      releaseDate: info.releaseDate ?? null,
-      releaseNotes: this.normalizeReleaseNotes(info.releaseNotes)
+      releaseDate: info.releaseDate ?? null
     }
   }
 
@@ -389,26 +512,5 @@ export class UpdaterService implements IService {
       transferred: progress.transferred ?? 0,
       total: progress.total ?? 0
     }
-  }
-
-  private normalizeReleaseNotes(notes: unknown): string {
-    if (!notes) return ''
-    if (typeof notes === 'string') return notes.trim()
-    if (!Array.isArray(notes)) return ''
-
-    return notes
-      .map((item) => {
-        if (!item || typeof item !== 'object') return ''
-
-        const noteInfo = item as { version?: unknown; note?: unknown }
-        const version = typeof noteInfo.version === 'string' ? noteInfo.version.trim() : ''
-        const note = typeof noteInfo.note === 'string' ? noteInfo.note.trim() : ''
-        if (version && note) return `## ${version}\n${note}`
-        if (version) return `## ${version}`
-        return note
-      })
-      .filter((entry) => entry.length > 0)
-      .join('\n\n')
-      .trim()
   }
 }
