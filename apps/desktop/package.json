@@ -1,6 +1,6 @@
 {
   "name": "kisaki",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A multifunctional media management project",
   "main": "./out/main/index.js",
   "author": "ximu",
