@@ -1,9 +1,5 @@
 # Kisaki v0.0.1 Changelog
 
-## ✨ New Features
+## New Features
 
 - Initial release
-
-## 🔧 Bug Fixes
-
-- None
