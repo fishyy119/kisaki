@@ -6,7 +6,8 @@ import type {
   GameMetadataUpdateField,
   PersonMetadataUpdateField
 } from '@shared/metadata-updater'
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 import type { ResolvedUpdateOptions } from './types'
 
 function unique<T>(items: T[]): T[] {
@@ -23,10 +24,6 @@ function deduplicateBy<T>(items: T[], keyFn: (item: T) => string): T[] {
     out.push(item)
   }
   return out
-}
-
-function normalizeText(value: string): string {
-  return value.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 export function isMissingValue(value: unknown): boolean {
@@ -70,7 +67,7 @@ export function resolveUpdateOptions<Field extends string>(
 }
 
 export function toTagKey(tag: Tag): string {
-  return normalizeText(tag.name)
+  return normalizeKeyText(tag.name)
 }
 
 export function mergeTags(
@@ -109,26 +106,20 @@ export function mergeTags(
   return [...byKey.values()]
 }
 
-export function toExternalIdKey(externalId: ExternalId): string {
-  return `${normalizeText(externalId.source)}:${normalizeText(externalId.id)}`
-}
-
 export function mergeExternalIds(
   existing: ExternalId[] | undefined,
   incoming: ExternalId[] | undefined,
   strategy: 'replace' | 'merge'
 ): ExternalId[] {
-  const incomingSafe = incoming ?? []
   if (strategy === 'replace') {
-    return deduplicateBy(incomingSafe, toExternalIdKey)
+    return normalizeExternalIds(incoming)
   }
 
-  const existingSafe = existing ?? []
-  return deduplicateBy([...existingSafe, ...incomingSafe], toExternalIdKey)
+  return normalizeExternalIds([...(existing ?? []), ...(incoming ?? [])])
 }
 
 function toRelatedSiteKey(site: RelatedSite): string {
-  return normalizeText(site.url)
+  return normalizeKeyText(site.url)
 }
 
 export function mergeRelatedSites(

@@ -7,14 +7,14 @@ import type {
   UpdateCompanyMetadataResult
 } from '@shared/metadata-updater'
 import { companies, companyExternalIds, companyTagLinks, tags, type Company } from '@shared/db'
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import {
   mergeExternalIds,
   mergeRelatedSites,
   mergeTags,
   resolveUpdateOptions,
   shouldApplyUpdate,
-  toExternalIdKey,
   toImageMode
 } from '../utils'
 
@@ -191,12 +191,7 @@ export class CompanyMetadataUpdaterHandler {
   ): void {
     tx.delete(companyExternalIds).where(eq(companyExternalIds.companyId, companyId)).run()
 
-    const uniqueExternalIds = new Map<string, ExternalId>()
-    for (const externalId of externalIds) {
-      uniqueExternalIds.set(toExternalIdKey(externalId), externalId)
-    }
-
-    const values = [...uniqueExternalIds.values()].map((externalId, index) => ({
+    const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
       companyId,
       source: externalId.source,
       externalId: externalId.id,

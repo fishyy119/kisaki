@@ -4,7 +4,7 @@
  * Defines the contract for person metadata providers (builtin and plugins).
  *
  * Notes:
- * - Slot/capability names match PersonMetadata fields where applicable
+ * - Slot/capability names match CorePersonMetadata fields where applicable
  * - For person entities, providers should return photo candidates via `getPhotos`
  */
 
@@ -42,7 +42,7 @@ export interface PersonScraperProvider {
 
   /**
    * Get photo image URLs.
-   * Used as the primary image candidate list for PersonMetadata.photos.
+   * Used as the primary image candidate list for CorePersonMetadata.photos.
    */
   getPhotos?(id: string, locale?: Locale): Promise<string[]>
 }

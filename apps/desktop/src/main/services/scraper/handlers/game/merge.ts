@@ -1,11 +1,16 @@
 import { GAME_SCRAPER_SLOTS, type MergeStrategy, type ScraperProfile } from '@shared/db'
-import type { GameCharacter, GameCompany, GameMetadata, GamePerson } from '@shared/metadata'
+import { buildEntityAliasKeys, normalizeExternalIds, toExternalIdKey } from '@shared/identity'
+import type {
+  ScrapedGameCharacterFact,
+  ScrapedGameCompanyFact,
+  ScrapedGameMetadata,
+  ScrapedGamePersonFact,
+  ScrapedGameBundle
+} from '@shared/scraper'
 import {
   applyEntityStrategy,
   applyImageStrategy,
   applyStrategy,
-  buildEntityMergeKeys,
-  buildEntityMergeKeysWithType,
   filterBySlot,
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
@@ -22,43 +27,64 @@ import type {
   GameScraperTagsResult
 } from './types'
 
-function mergeGamePerson(existing: GamePerson, incoming: GamePerson): GamePerson {
+/**
+ * Merge all provider results into a scraper fact bundle.
+ */
+export function mergeGameScraperBundle(
+  results: GameScraperResult[],
+  profile: ScraperProfile
+): ScrapedGameBundle | null {
+  const metadata = mergeGameScraperMetadata(results, profile)
+  if (!metadata) return null
+  return toScrapedGameBundle(metadata)
+}
+
+function mergeGamePerson(
+  existing: ScrapedGamePersonFact,
+  incoming: ScrapedGamePersonFact
+): ScrapedGamePersonFact {
   return {
     ...mergePersonMetadataFields(existing, incoming),
     type: existing.type,
+    isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
 }
 
 function mergeGameCharacter(
-  existing: GameCharacter,
-  incoming: GameCharacter,
+  existing: ScrapedGameCharacterFact,
+  incoming: ScrapedGameCharacterFact,
   personStrategy: MergeStrategy
-): GameCharacter {
+): ScrapedGameCharacterFact {
   return {
     ...mergeCharacterMetadataFields(existing, incoming, personStrategy),
     type: existing.type,
+    isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
 }
 
-function mergeGameCompany(existing: GameCompany, incoming: GameCompany): GameCompany {
+function mergeGameCompany(
+  existing: ScrapedGameCompanyFact,
+  incoming: ScrapedGameCompanyFact
+): ScrapedGameCompanyFact {
   return {
     ...mergeCompanyMetadataFields(existing, incoming),
     type: existing.type,
+    isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
   }
 }
 
 /**
- * Merge all provider results into final GameMetadata.
+ * Merge all provider results into final ScrapedGameMetadata.
  * Returns null if no valid name could be determined from any provider.
  */
 export function mergeGameScraperMetadata(
   results: GameScraperResult[],
   profile: ScraperProfile
-): GameMetadata | null {
-  const metadata: Partial<GameMetadata> = {}
+): ScrapedGameMetadata | null {
+  const metadata: Partial<ScrapedGameMetadata> = {}
 
   for (const slot of GAME_SCRAPER_SLOTS) {
     const config = profile.slotConfigs[slot]
@@ -124,7 +150,7 @@ function filterByImageSlot(
 }
 
 function mergeInfo(
-  metadata: Partial<GameMetadata>,
+  metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperInfoResult[],
   strategy: MergeStrategy
 ): void {
@@ -150,11 +176,8 @@ function mergeInfo(
     }
 
     if (info.externalIds?.length) {
-      metadata.externalIds = applyStrategy(
-        metadata.externalIds,
-        info.externalIds,
-        strategy,
-        (externalId) => `${externalId.source}:${externalId.id}`
+      metadata.externalIds = normalizeExternalIds(
+        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
       )
     }
 
@@ -162,12 +185,12 @@ function mergeInfo(
   }
 }
 
-function isInfoComplete(metadata: Partial<GameMetadata>): boolean {
+function isInfoComplete(metadata: Partial<ScrapedGameMetadata>): boolean {
   return !!(metadata.name && metadata.releaseDate && metadata.description)
 }
 
 function mergeTags(
-  metadata: Partial<GameMetadata>,
+  metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperTagsResult[],
   strategy: MergeStrategy
 ): void {
@@ -183,7 +206,7 @@ function mergeTags(
 }
 
 function mergeCharacters(
-  metadata: Partial<GameMetadata>,
+  metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperCharactersResult[],
   strategy: MergeStrategy,
   personStrategy: MergeStrategy
@@ -197,7 +220,7 @@ function mergeCharacters(
       metadata.characters,
       result.data,
       strategy,
-      buildEntityMergeKeys,
+      (character) => buildEntityAliasKeys(character, { includeCompactFallbackKeys: true }),
       (existing, incoming) => mergeGameCharacter(existing, incoming, personStrategy)
     )
 
@@ -206,7 +229,7 @@ function mergeCharacters(
 }
 
 function mergePersons(
-  metadata: Partial<GameMetadata>,
+  metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperPersonsResult[],
   strategy: MergeStrategy
 ): void {
@@ -219,7 +242,11 @@ function mergePersons(
       metadata.persons,
       result.data,
       strategy,
-      buildEntityMergeKeysWithType,
+      (person) =>
+        buildEntityAliasKeys(person, {
+          includeCompactFallbackKeys: true,
+          type: person.type
+        }),
       mergeGamePerson
     )
 
@@ -228,7 +255,7 @@ function mergePersons(
 }
 
 function mergeCompanies(
-  metadata: Partial<GameMetadata>,
+  metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperCompaniesResult[],
   strategy: MergeStrategy
 ): void {
@@ -241,7 +268,11 @@ function mergeCompanies(
       metadata.companies,
       result.data,
       strategy,
-      buildEntityMergeKeysWithType,
+      (company) =>
+        buildEntityAliasKeys(company, {
+          includeCompactFallbackKeys: true,
+          type: company.type
+        }),
       mergeGameCompany
     )
 
@@ -252,7 +283,7 @@ function mergeCompanies(
 type ImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
 
 function mergeImages(
-  metadata: Partial<GameMetadata>,
+  metadata: Partial<ScrapedGameMetadata>,
   slot: ImageSlot,
   results: GameScraperImageResult[],
   strategy: MergeStrategy
@@ -268,7 +299,7 @@ function mergeImages(
   }
 }
 
-function finalize(partial: Partial<GameMetadata>): GameMetadata | null {
+function finalize(partial: Partial<ScrapedGameMetadata>): ScrapedGameMetadata | null {
   if (!partial.name) return null
 
   return {
@@ -286,5 +317,62 @@ function finalize(partial: Partial<GameMetadata>): GameMetadata | null {
     backdrops: partial.backdrops,
     logos: partial.logos,
     icons: partial.icons
+  }
+}
+
+/**
+ * Convert merged scraper metadata into a scraper fact bundle.
+ */
+export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameBundle {
+  const relationFacts: ScrapedGameBundle['relationFacts'] = {}
+  if (metadata.persons?.length) relationFacts.gamePerson = metadata.persons
+  if (metadata.companies?.length) relationFacts.gameCompany = metadata.companies
+  if (metadata.characters?.length) relationFacts.gameCharacter = metadata.characters
+
+  const characterPersonFacts = metadata.characters?.flatMap((character) =>
+    (character.persons ?? []).map((personFact) => ({
+      ...personFact,
+      character: {
+        name: character.name,
+        originalName: character.originalName,
+        birthDate: character.birthDate,
+        gender: character.gender,
+        age: character.age,
+        bloodType: character.bloodType,
+        height: character.height,
+        weight: character.weight,
+        bust: character.bust,
+        waist: character.waist,
+        hips: character.hips,
+        cup: character.cup,
+        description: character.description,
+        relatedSites: character.relatedSites,
+        externalIds: character.externalIds,
+        tags: character.tags
+      }
+    }))
+  )
+  if (characterPersonFacts?.length) {
+    relationFacts.characterPerson = characterPersonFacts
+  }
+
+  const mediaCandidates: ScrapedGameBundle['mediaCandidates'] = {}
+  if (metadata.covers?.length) mediaCandidates.coverUrls = metadata.covers
+  if (metadata.backdrops?.length) mediaCandidates.backdropUrls = metadata.backdrops
+  if (metadata.logos?.length) mediaCandidates.logoUrls = metadata.logos
+  if (metadata.icons?.length) mediaCandidates.iconUrls = metadata.icons
+
+  return {
+    core: {
+      name: metadata.name,
+      originalName: metadata.originalName,
+      releaseDate: metadata.releaseDate,
+      description: metadata.description,
+      relatedSites: metadata.relatedSites,
+      externalIds: metadata.externalIds,
+      tags: metadata.tags
+    },
+    relationFacts: Object.keys(relationFacts).length > 0 ? relationFacts : undefined,
+    mediaCandidates: Object.keys(mediaCandidates).length > 0 ? mediaCandidates : undefined
   }
 }

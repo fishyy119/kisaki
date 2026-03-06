@@ -36,14 +36,15 @@ import type {
   GameScraperProviderInfo,
   GameScraperOptions,
   ProfileCleanupAction,
-  GameImageSlot
+  GameImageSlot,
+  ScrapedGameBundle
 } from '@shared/scraper'
 import type { ScraperCapability } from '@shared/scraper'
-import type { ExternalId, GameMetadata } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import type { GameScraperProvider } from './provider'
-import { mergeGameScraperMetadata } from './merge'
+import { mergeGameScraperBundle } from './merge'
 import type { GameScraperResult } from './types'
 
 // =============================================================================
@@ -219,11 +220,11 @@ export class GameScraperHandler {
    * 2. Resolve other providers using originalName for better matching
    * 3. Fetch all slots in parallel using resolved IDs
    */
-  async getMetadata(
+  async scrape(
     profileId: string,
     lookup: ScraperLookup,
     options: GameScraperOptions = {}
-  ): Promise<GameMetadata | null> {
+  ): Promise<ScrapedGameBundle | null> {
     let profile = this.loadProfile(profileId)
 
     const action = options.skipValidation ? 'unchanged' : await this.ensureProfileValid(profileId)
@@ -283,7 +284,7 @@ export class GameScraperHandler {
     // ========== Phase 3: Fetch all slots in parallel ==========
     const results = await this.fetchAllSlots(normalizedProfile, resolvedIds, locale)
 
-    return mergeGameScraperMetadata(results, normalizedProfile)
+    return mergeGameScraperBundle(results, normalizedProfile)
   }
 
   /**

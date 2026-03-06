@@ -2,7 +2,17 @@
  * Metadata updater service types.
  */
 
-import type { CharacterMetadata, CompanyMetadata, GameMetadata, PersonMetadata } from './metadata'
+import type {
+  ScrapedCharacterMetadata,
+  ScrapedCompanyMetadata,
+  ScrapedGameMetadata,
+  ScrapedPersonMetadata
+} from './scraper'
+
+/**
+ * TEMP: Metadata updater currently reuses Scraped*Metadata as update payload shapes.
+ * Remove when the metadata-updater rewrite lands with dedicated updater contracts.
+ */
 
 export type MetadataUpdateApply = 'always' | 'ifMissing'
 
@@ -79,14 +89,18 @@ export const CHARACTER_METADATA_UPDATE_FIELDS = [
 
 export type CharacterMetadataUpdateField = (typeof CHARACTER_METADATA_UPDATE_FIELDS)[number]
 
-export type GameMetadataUpdateInput = Partial<Pick<GameMetadata, GameMetadataUpdateField>>
+export type GameMetadataUpdateInput = Partial<Pick<ScrapedGameMetadata, GameMetadataUpdateField>>
 
-export type PersonMetadataUpdateInput = Partial<Pick<PersonMetadata, PersonMetadataUpdateField>>
+export type PersonMetadataUpdateInput = Partial<
+  Pick<ScrapedPersonMetadata, PersonMetadataUpdateField>
+>
 
-export type CompanyMetadataUpdateInput = Partial<Pick<CompanyMetadata, CompanyMetadataUpdateField>>
+export type CompanyMetadataUpdateInput = Partial<
+  Pick<ScrapedCompanyMetadata, CompanyMetadataUpdateField>
+>
 
 export type CharacterMetadataUpdateInput = Partial<
-  Pick<CharacterMetadata, CharacterMetadataUpdateField>
+  Pick<ScrapedCharacterMetadata, CharacterMetadataUpdateField>
 >
 
 export interface UpdateGameMetadataOptions extends BaseMetadataUpdateOptions {

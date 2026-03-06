@@ -7,14 +7,14 @@ import type {
   UpdatePersonMetadataResult
 } from '@shared/metadata-updater'
 import { personExternalIds, persons, personTagLinks, tags, type Person } from '@shared/db'
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import {
   mergeExternalIds,
   mergeRelatedSites,
   mergeTags,
   resolveUpdateOptions,
   shouldApplyUpdate,
-  toExternalIdKey,
   toImageMode
 } from '../utils'
 
@@ -196,12 +196,7 @@ export class PersonMetadataUpdaterHandler {
   ): void {
     tx.delete(personExternalIds).where(eq(personExternalIds.personId, personId)).run()
 
-    const uniqueExternalIds = new Map<string, ExternalId>()
-    for (const externalId of externalIds) {
-      uniqueExternalIds.set(toExternalIdKey(externalId), externalId)
-    }
-
-    const values = [...uniqueExternalIds.values()].map((externalId, index) => ({
+    const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
       personId,
       source: externalId.source,
       externalId: externalId.id,

@@ -1,5 +1,6 @@
 import { CHARACTER_SCRAPER_SLOTS, type MergeStrategy, type ScraperProfile } from '@shared/db'
-import type { CharacterMetadata } from '@shared/metadata'
+import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
+import type { ScrapedCharacterMetadata, ScrapedCharacterBundle } from '@shared/scraper'
 import {
   applyImageStrategy,
   applyStrategy,
@@ -16,14 +17,26 @@ import type {
 } from './types'
 
 /**
- * Merge all provider results into final CharacterMetadata.
+ * Merge all provider results into a scraper fact bundle.
+ */
+export function mergeCharacterScraperBundle(
+  results: CharacterScraperResult[],
+  profile: ScraperProfile
+): ScrapedCharacterBundle | null {
+  const metadata = mergeCharacterScraperMetadata(results, profile)
+  if (!metadata) return null
+  return toScrapedCharacterBundle(metadata)
+}
+
+/**
+ * Merge all provider results into final ScrapedCharacterMetadata.
  * Returns null if no valid name could be determined from any provider.
  */
 export function mergeCharacterScraperMetadata(
   results: CharacterScraperResult[],
   profile: ScraperProfile
-): CharacterMetadata | null {
-  const metadata: Partial<CharacterMetadata> = {}
+): ScrapedCharacterMetadata | null {
+  const metadata: Partial<ScrapedCharacterMetadata> = {}
 
   for (const slot of CHARACTER_SCRAPER_SLOTS) {
     const config = profile.slotConfigs[slot]
@@ -49,7 +62,7 @@ export function mergeCharacterScraperMetadata(
 }
 
 function mergeInfo(
-  metadata: Partial<CharacterMetadata>,
+  metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperInfoResult[],
   strategy: MergeStrategy
 ): void {
@@ -82,11 +95,8 @@ function mergeInfo(
     }
 
     if (info.externalIds?.length) {
-      metadata.externalIds = applyStrategy(
-        metadata.externalIds,
-        info.externalIds,
-        strategy,
-        (e) => `${e.source}:${e.id}`
+      metadata.externalIds = normalizeExternalIds(
+        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
       )
     }
 
@@ -95,7 +105,7 @@ function mergeInfo(
 }
 
 function mergeTags(
-  metadata: Partial<CharacterMetadata>,
+  metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperTagsResult[],
   strategy: MergeStrategy
 ): void {
@@ -109,7 +119,7 @@ function mergeTags(
 }
 
 function mergePersons(
-  metadata: Partial<CharacterMetadata>,
+  metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperPersonsResult[],
   strategy: MergeStrategy
 ): void {
@@ -123,7 +133,7 @@ function mergePersons(
 }
 
 function mergePhotos(
-  metadata: Partial<CharacterMetadata>,
+  metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperPhotosResult[],
   strategy: MergeStrategy
 ): void {
@@ -136,7 +146,7 @@ function mergePhotos(
   }
 }
 
-function finalize(partial: Partial<CharacterMetadata>): CharacterMetadata | null {
+function finalize(partial: Partial<ScrapedCharacterMetadata>): ScrapedCharacterMetadata | null {
   if (!partial.name) return null
 
   return {
@@ -158,5 +168,43 @@ function finalize(partial: Partial<CharacterMetadata>): CharacterMetadata | null
     tags: partial.tags,
     persons: partial.persons,
     photos: partial.photos
+  }
+}
+
+/**
+ * Convert merged scraper metadata into a scraper fact bundle.
+ */
+export function toScrapedCharacterBundle(
+  metadata: ScrapedCharacterMetadata
+): ScrapedCharacterBundle {
+  return {
+    core: {
+      name: metadata.name,
+      originalName: metadata.originalName,
+      birthDate: metadata.birthDate,
+      gender: metadata.gender,
+      age: metadata.age,
+      bloodType: metadata.bloodType,
+      height: metadata.height,
+      weight: metadata.weight,
+      bust: metadata.bust,
+      waist: metadata.waist,
+      hips: metadata.hips,
+      cup: metadata.cup,
+      description: metadata.description,
+      relatedSites: metadata.relatedSites,
+      externalIds: metadata.externalIds,
+      tags: metadata.tags
+    },
+    relationFacts: metadata.persons?.length
+      ? {
+          characterPerson: metadata.persons
+        }
+      : undefined,
+    mediaCandidates: metadata.photos?.length
+      ? {
+          photoUrls: metadata.photos
+        }
+      : undefined
   }
 }

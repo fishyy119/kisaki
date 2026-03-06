@@ -1,15 +1,7 @@
-import type { ExternalId } from '@shared/metadata'
-
-function toExternalIdKey(externalId: ExternalId): string {
-  return `${externalId.source}:${externalId.id}`
-}
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 
 export function dedupeExternalIds(externalIds: ExternalId[]): ExternalId[] {
-  const map = new Map<string, ExternalId>()
-  for (const ext of externalIds) {
-    map.set(toExternalIdKey(ext), ext)
-  }
-  return [...map.values()]
+  return normalizeExternalIds(externalIds)
 }
 
 export function mergeExternalIds(a: ExternalId[], b: ExternalId[]): ExternalId[] {

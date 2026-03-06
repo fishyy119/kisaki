@@ -1,4 +1,5 @@
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type {
   BloodType,
   GameCharacterType,

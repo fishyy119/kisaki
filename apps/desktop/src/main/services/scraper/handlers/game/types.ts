@@ -4,14 +4,19 @@
  * Discriminated union types for provider results, organized by slot.
  */
 
-import type { GameCharacter, GameCompany, GameInfo, GamePerson, Tag } from '@shared/metadata'
+import type { GameInfo, Tag } from '@shared/metadata'
+import type {
+  ScrapedGameCharacterFact,
+  ScrapedGameCompanyFact,
+  ScrapedGamePersonFact
+} from '@shared/scraper'
 import type { SlotResult } from '../../types'
 
 export type GameScraperInfoResult = SlotResult<'info', GameInfo>
 export type GameScraperTagsResult = SlotResult<'tags', Tag[]>
-export type GameScraperCharactersResult = SlotResult<'characters', GameCharacter[]>
-export type GameScraperPersonsResult = SlotResult<'persons', GamePerson[]>
-export type GameScraperCompaniesResult = SlotResult<'companies', GameCompany[]>
+export type GameScraperCharactersResult = SlotResult<'characters', ScrapedGameCharacterFact[]>
+export type GameScraperPersonsResult = SlotResult<'persons', ScrapedGamePersonFact[]>
+export type GameScraperCompaniesResult = SlotResult<'companies', ScrapedGameCompanyFact[]>
 export type GameScraperCoversResult = SlotResult<'covers', string[]>
 export type GameScraperBackdropsResult = SlotResult<'backdrops', string[]>
 export type GameScraperLogosResult = SlotResult<'logos', string[]>

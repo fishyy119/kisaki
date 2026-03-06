@@ -14,7 +14,7 @@ import { I18nService } from './services/i18n'
 import { ScraperService } from './services/scraper'
 import { MonitorService } from './services/monitor'
 import { LauncherService } from './services/launcher'
-import { AdderService } from './services/adder'
+import { IngestService } from './services/ingest'
 import { ScannerService } from './services/scanner'
 import { AttachmentService } from './services/attachment'
 import { PluginService } from './services/plugin'
@@ -119,7 +119,7 @@ async function onAppReady(): Promise<void> {
   await container.register(new NativeService())
   await container.register(new I18nService())
   await container.register(new ScraperService())
-  await container.register(new AdderService())
+  await container.register(new IngestService())
   await container.register(new MetadataUpdaterService())
   await container.register(new ScannerService())
   await container.register(new AttachmentService())

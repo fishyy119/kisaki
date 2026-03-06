@@ -1,13 +1,12 @@
 /**
  * Character Metadata Types
  *
- * Base type definitions for character metadata.
+ * Core metadata type definitions for character entities.
  */
 
 import type { PartialDate, RelatedSite } from '@shared/db'
-import type { Gender, BloodType, CharacterPersonType, CupSize } from '@shared/db'
+import type { Gender, BloodType, CupSize } from '@shared/db'
 import type { ExternalId, Tag } from './common'
-import type { PersonMetadata } from './person'
 
 // =============================================================================
 // Core Info
@@ -37,25 +36,10 @@ export interface CharacterInfo {
 }
 
 /**
- * Person linked to a character with type.
- *
- * Used for voice actors, illustrators, character designers, etc.
- * Follows link table convention: character_person_links → CharacterMetadata.persons
- */
-export interface CharacterPerson extends PersonMetadata {
-  type: CharacterPersonType
-  isSpoiler?: boolean
-  note?: string
-}
-
-/**
  * Character metadata.
  *
- * Base metadata for a character entity.
- * All fields optional except name for flexibility in different contexts.
+ * Core character metadata used across identity and normalization layers.
  */
-export interface CharacterMetadata extends CharacterInfo {
+export interface CoreCharacterMetadata extends CharacterInfo {
   tags?: Tag[]
-  persons?: CharacterPerson[]
-  photos?: string[]
 }

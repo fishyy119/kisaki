@@ -1,6 +1,6 @@
 <!--
-  AddTrigger
-  Global add trigger for sidebar with dropdown menu.
+  IngestTrigger
+  Global ingest trigger for sidebar with dropdown menu.
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
@@ -15,10 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
-import GameAdderDialog from './game-adder-dialog.vue'
-import PersonAdderDialog from './person-adder-dialog.vue'
-import CompanyAdderDialog from './company-adder-dialog.vue'
-import CharacterAdderDialog from './character-adder-dialog.vue'
+import GameIngestDialog from './game-ingest-dialog.vue'
+import PersonIngestDialog from './person-ingest-dialog.vue'
+import CompanyIngestDialog from './company-ingest-dialog.vue'
+import CharacterIngestDialog from './character-ingest-dialog.vue'
 
 const router = useRouter()
 const gameDialogOpen = ref(false)
@@ -141,19 +141,19 @@ function handleAddScanner() {
     </DropdownMenu>
   </Tooltip>
 
-  <GameAdderDialog
+  <GameIngestDialog
     v-if="gameDialogOpen"
     v-model:open="gameDialogOpen"
   />
-  <CharacterAdderDialog
+  <CharacterIngestDialog
     v-if="characterDialogOpen"
     v-model:open="characterDialogOpen"
   />
-  <PersonAdderDialog
+  <PersonIngestDialog
     v-if="personDialogOpen"
     v-model:open="personDialogOpen"
   />
-  <CompanyAdderDialog
+  <CompanyIngestDialog
     v-if="companyDialogOpen"
     v-model:open="companyDialogOpen"
   />

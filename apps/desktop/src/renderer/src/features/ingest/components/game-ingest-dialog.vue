@@ -1,7 +1,7 @@
 <!--
-  PersonAdderDialog
-  Dialog for adding persons to the library.
-  Uses PersonSearcher component for search and identification.
+  GameIngestDialog
+  Dialog for adding games to the library.
+  Uses GameSearcher component for search and identification.
 -->
 <script setup lang="ts">
 import { computed, ref, toRaw } from 'vue'
@@ -18,41 +18,35 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
-import { PersonSearcher, type PersonSearcherSelection } from '@renderer/components/shared/person'
+import { GameSearcher, type GameSearcherSelection } from '@renderer/components/shared/game'
+import { getIngestWarningMessage } from './utils'
 
 interface Props {
-  /** Target collection ID to add the person to */
+  /** Target collection ID to add the game to */
   targetCollectionId?: string
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  /** Called after person is successfully added */
-  success: [personId: string]
+  /** Called after game is successfully added */
+  success: [gameId: string]
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
 
 const isSubmitting = ref(false)
-const selection = ref<PersonSearcherSelection>({
+const selection = ref<GameSearcherSelection>({
   profileId: '',
-  personId: '',
-  personName: '',
+  gameId: '',
+  gameName: '',
   originalName: '',
   knownIds: [],
   canSubmit: false
 })
 
-function handleSelectionChange(newSelection: PersonSearcherSelection) {
+function handleSelectionChange(newSelection: GameSearcherSelection) {
   selection.value = newSelection
-}
-
-function getExistingReasonText(reason: string | undefined): string {
-  if (reason === 'name') return '名称'
-  if (reason === 'externalId') return '外部 ID'
-  if (reason === 'path') return '路径'
-  return '未知原因'
 }
 
 async function handleSubmit() {
@@ -61,58 +55,51 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   const profileId = selection.value.profileId
-  const name = selection.value.originalName ?? selection.value.personName
+  const name = selection.value.originalName ?? selection.value.gameName
   const knownIds = toRaw(selection.value.knownIds)
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading('添加人物中…', '正在识别并添加')
+  const toastId = notify.loading('添加游戏中…')
 
   try {
-    const metadataResult = await ipcManager.invoke(
-      'scraper:get-person-metadata',
+    const result = await ipcManager.invoke(
+      'ingest:add-game-from-scraper',
       profileId,
-      {
-        name,
-        knownIds
-      }
+      { name, knownIds },
+      { targetCollectionId }
     )
 
-    if (!metadataResult.success) {
-      throw new Error('error' in metadataResult ? metadataResult.error : 'Failed to get metadata')
-    }
-
-    if (!metadataResult.data) {
-      throw new Error('无法获取人物元数据，请检查网络或更换搜索源')
-    }
-
-    const result = await ipcManager.invoke('adder:add-person', metadataResult.data, {
-      targetCollectionId
-    })
-
     if (!result.success) {
-      notify.update(toastId, { title: '添加人物失败', message: result.error, type: 'error' })
+      notify.update(toastId, { title: '添加游戏失败', message: result.error, type: 'error' })
       return
     }
 
     if (result.data.isNew) {
-      notify.update(toastId, { title: '人物添加成功', type: 'success' })
-    } else {
+      const warningMessage = getIngestWarningMessage(result.data.warnings)
       notify.update(toastId, {
-        title: '人物已存在',
-        message: `${getExistingReasonText(result.data.existingReason)}匹配`,
-        type: 'info'
+        title: warningMessage ? '游戏添加完成' : '游戏添加成功',
+        message: warningMessage,
+        type: warningMessage ? 'warning' : 'success'
       })
+    } else {
+      const reasonText = result.data.existingReason === 'path' ? '路径' : '外部 ID'
+      notify.update(toastId, { title: '游戏已存在', message: `${reasonText}匹配`, type: 'info' })
     }
 
-    emit('success', result.data.personId)
+    emit('success', result.data.gameId)
   } catch (error) {
-    notify.update(toastId, { title: '添加人物失败', message: (error as Error).message, type: 'error' })
+    notify.update(toastId, {
+      title: '添加游戏失败',
+      message: (error as Error).message,
+      type: 'error'
+    })
   } finally {
     isSubmitting.value = false
   }
 }
 
+// v-model wrapper for Dialog
 const openModel = computed({
   get: () => open.value,
   set: (newOpen: boolean) => {
@@ -127,14 +114,14 @@ const openModel = computed({
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Icon
-            :icon="getEntityIcon('person')"
+            :icon="getEntityIcon('game')"
             class="size-4"
           />
-          添加人物
+          添加游戏
         </DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <PersonSearcher
+        <GameSearcher
           :is-submitting="isSubmitting"
           @selection-change="handleSelectionChange"
         />

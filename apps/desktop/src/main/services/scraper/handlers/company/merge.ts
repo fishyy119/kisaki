@@ -1,5 +1,6 @@
 import { COMPANY_SCRAPER_SLOTS, type MergeStrategy, type ScraperProfile } from '@shared/db'
-import type { CompanyMetadata } from '@shared/metadata'
+import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
+import type { ScrapedCompanyMetadata, ScrapedCompanyBundle } from '@shared/scraper'
 import { applyImageStrategy, applyStrategy, filterBySlot, sortByPriority } from '../../utils'
 import type {
   CompanyScraperInfoResult,
@@ -9,14 +10,26 @@ import type {
 } from './types'
 
 /**
- * Merge all provider results into final CompanyMetadata.
+ * Merge all provider results into a scraper fact bundle.
+ */
+export function mergeCompanyScraperBundle(
+  results: CompanyScraperResult[],
+  profile: ScraperProfile
+): ScrapedCompanyBundle | null {
+  const metadata = mergeCompanyScraperMetadata(results, profile)
+  if (!metadata) return null
+  return toScrapedCompanyBundle(metadata)
+}
+
+/**
+ * Merge all provider results into final ScrapedCompanyMetadata.
  * Returns null if no valid name could be determined from any provider.
  */
 export function mergeCompanyScraperMetadata(
   results: CompanyScraperResult[],
   profile: ScraperProfile
-): CompanyMetadata | null {
-  const metadata: Partial<CompanyMetadata> = {}
+): ScrapedCompanyMetadata | null {
+  const metadata: Partial<ScrapedCompanyMetadata> = {}
 
   for (const slot of COMPANY_SCRAPER_SLOTS) {
     const config = profile.slotConfigs[slot]
@@ -39,7 +52,7 @@ export function mergeCompanyScraperMetadata(
 }
 
 function mergeInfo(
-  metadata: Partial<CompanyMetadata>,
+  metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperInfoResult[],
   strategy: MergeStrategy
 ): void {
@@ -63,11 +76,8 @@ function mergeInfo(
     }
 
     if (info.externalIds?.length) {
-      metadata.externalIds = applyStrategy(
-        metadata.externalIds,
-        info.externalIds,
-        strategy,
-        (e) => `${e.source}:${e.id}`
+      metadata.externalIds = normalizeExternalIds(
+        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
       )
     }
 
@@ -76,7 +86,7 @@ function mergeInfo(
 }
 
 function mergeTags(
-  metadata: Partial<CompanyMetadata>,
+  metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperTagsResult[],
   strategy: MergeStrategy
 ): void {
@@ -90,7 +100,7 @@ function mergeTags(
 }
 
 function mergeLogos(
-  metadata: Partial<CompanyMetadata>,
+  metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperLogosResult[],
   strategy: MergeStrategy
 ): void {
@@ -103,7 +113,7 @@ function mergeLogos(
   }
 }
 
-function finalize(partial: Partial<CompanyMetadata>): CompanyMetadata | null {
+function finalize(partial: Partial<ScrapedCompanyMetadata>): ScrapedCompanyMetadata | null {
   if (!partial.name) return null
 
   return {
@@ -115,5 +125,27 @@ function finalize(partial: Partial<CompanyMetadata>): CompanyMetadata | null {
     externalIds: partial.externalIds ?? [],
     tags: partial.tags,
     logos: partial.logos
+  }
+}
+
+/**
+ * Convert merged scraper metadata into a scraper fact bundle.
+ */
+export function toScrapedCompanyBundle(metadata: ScrapedCompanyMetadata): ScrapedCompanyBundle {
+  return {
+    core: {
+      name: metadata.name,
+      originalName: metadata.originalName,
+      foundedDate: metadata.foundedDate,
+      description: metadata.description,
+      relatedSites: metadata.relatedSites,
+      externalIds: metadata.externalIds,
+      tags: metadata.tags
+    },
+    mediaCandidates: metadata.logos?.length
+      ? {
+          logoUrls: metadata.logos
+        }
+      : undefined
   }
 }

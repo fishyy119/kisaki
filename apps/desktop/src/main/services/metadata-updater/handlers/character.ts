@@ -13,14 +13,14 @@ import {
   tags,
   type Character
 } from '@shared/db'
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import {
   mergeExternalIds,
   mergeRelatedSites,
   mergeTags,
   resolveUpdateOptions,
   shouldApplyUpdate,
-  toExternalIdKey,
   toImageMode
 } from '../utils'
 
@@ -220,12 +220,7 @@ export class CharacterMetadataUpdaterHandler {
   ): void {
     tx.delete(characterExternalIds).where(eq(characterExternalIds.characterId, characterId)).run()
 
-    const uniqueExternalIds = new Map<string, ExternalId>()
-    for (const externalId of externalIds) {
-      uniqueExternalIds.set(toExternalIdKey(externalId), externalId)
-    }
-
-    const values = [...uniqueExternalIds.values()].map((externalId, index) => ({
+    const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
       characterId,
       source: externalId.source,
       externalId: externalId.id,

@@ -13,14 +13,13 @@ import type { NetworkService } from '@main/services/network'
 import type { GameScraperProvider } from '../../provider'
 import type { GameSearchResult } from '@shared/scraper'
 import type { Locale } from '@shared/locale'
+import type { GameInfo, Tag } from '@shared/metadata'
 import type {
-  CharacterPerson,
-  GameCharacter,
-  GameCompany,
-  GameInfo,
-  GamePerson,
-  Tag
-} from '@shared/metadata'
+  ScrapedCharacterPersonFact,
+  ScrapedGameCharacterFact,
+  ScrapedGameCompanyFact,
+  ScrapedGamePersonFact
+} from '@shared/scraper'
 import { normalizeScrapedDescription, parsePartialDate } from '../../../../utils'
 import { BangumiClient } from './client'
 import type {
@@ -197,7 +196,7 @@ export class BangumiProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, locale?: Locale): Promise<GameCharacter[]> {
+  public async getCharacters(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
     const subjectId = parseBangumiId(id)
     const relatedCharacters = await this.client.getSubjectCharacters(subjectId)
     if (!relatedCharacters.length) return []
@@ -266,7 +265,7 @@ export class BangumiProvider implements GameScraperProvider {
     detail: BangumiCharacterDetail | undefined,
     characterPersons: BangumiCharacterPerson[] | undefined,
     locale?: Locale
-  ): GameCharacter {
+  ): ScrapedGameCharacterFact {
     const { name, originalName } = resolveLocalizedEntityName(
       detail?.name || relatedCharacter.name,
       detail?.infobox,
@@ -308,8 +307,8 @@ export class BangumiProvider implements GameScraperProvider {
     subjectId: number,
     relatedCharacter: BangumiRelatedCharacter,
     characterPersons: BangumiCharacterPerson[] | undefined
-  ): CharacterPerson[] {
-    const persons: CharacterPerson[] = []
+  ): ScrapedCharacterPersonFact[] {
+    const persons: ScrapedCharacterPersonFact[] = []
 
     for (const actor of relatedCharacter.actors ?? []) {
       persons.push({
@@ -363,7 +362,7 @@ export class BangumiProvider implements GameScraperProvider {
   // Persons
   // ===========================================================================
 
-  public async getPersons(id: string, locale?: Locale): Promise<GamePerson[]> {
+  public async getPersons(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]> {
     const subjectId = parseBangumiId(id)
     const relatedPersons = (await this.client.getSubjectPersons(subjectId)).filter(
       (person) => person.type === 1
@@ -373,7 +372,7 @@ export class BangumiProvider implements GameScraperProvider {
     const uniqueIds = [...new Set(relatedPersons.map((person) => person.id))]
     const detailMap = await this.fetchPersonDetails(uniqueIds)
 
-    const persons: GamePerson[] = []
+    const persons: ScrapedGamePersonFact[] = []
 
     for (const relatedPerson of relatedPersons) {
       const detail = detailMap.get(relatedPerson.id)
@@ -408,7 +407,7 @@ export class BangumiProvider implements GameScraperProvider {
     relatedPerson: BangumiRelatedPerson,
     detail: BangumiPersonDetail | undefined,
     locale?: Locale
-  ): GamePerson {
+  ): ScrapedGamePersonFact {
     const { name, originalName } = resolveLocalizedEntityName(
       detail?.name || relatedPerson.name,
       detail?.infobox,
@@ -450,7 +449,7 @@ export class BangumiProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, locale?: Locale): Promise<GameCompany[]> {
+  public async getCompanies(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
     const subjectId = parseBangumiId(id)
     const relatedCompanies = (await this.client.getSubjectPersons(subjectId)).filter(
       (person) => person.type === 2 || person.type === 3
@@ -460,7 +459,7 @@ export class BangumiProvider implements GameScraperProvider {
     const uniqueIds = [...new Set(relatedCompanies.map((person) => person.id))]
     const detailMap = await this.fetchPersonDetails(uniqueIds)
 
-    const companies: GameCompany[] = []
+    const companies: ScrapedGameCompanyFact[] = []
 
     for (const relatedCompany of relatedCompanies) {
       const detail = detailMap.get(relatedCompany.id)
@@ -474,7 +473,7 @@ export class BangumiProvider implements GameScraperProvider {
     relatedCompany: BangumiRelatedPerson,
     detail: BangumiPersonDetail | undefined,
     locale?: Locale
-  ): GameCompany {
+  ): ScrapedGameCompanyFact {
     const { name, originalName } = resolveLocalizedEntityName(
       detail?.name || relatedCompany.name,
       detail?.infobox,

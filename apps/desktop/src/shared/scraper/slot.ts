@@ -6,7 +6,7 @@
  */
 
 import type { MergeStrategy, ScraperSlot, SlotConfig, ScraperSlotConfigs } from '@shared/db'
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
 import type { ContentEntityType } from '@shared/common'
 import {
@@ -112,7 +112,7 @@ export function isImageSlot(slot: ScraperSlot): slot is ScraperImageSlot {
 
 /** Get default merge strategy for a slot */
 export function getDefaultMergeStrategy(_slot: ScraperSlot): MergeStrategy {
-  return 'merge'
+  return 'first'
 }
 
 // =============================================================================
@@ -124,7 +124,7 @@ export function getDefaultMergeStrategy(_slot: ScraperSlot): MergeStrategy {
  */
 export function createSlotConfig(
   providerIds: string[],
-  mergeStrategy: MergeStrategy = 'merge',
+  mergeStrategy: MergeStrategy = 'first',
   locale?: Locale
 ): SlotConfig {
   return {

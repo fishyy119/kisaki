@@ -1,7 +1,7 @@
 <!--
-  CharacterAdderDialog
-  Dialog for adding characters to the library.
-  Uses CharacterSearcher component for search and identification.
+  CompanyIngestDialog
+  Dialog for adding companies to the library.
+  Uses CompanySearcher component for search and identification.
 -->
 <script setup lang="ts">
 import { computed, ref, toRaw } from 'vue'
@@ -18,44 +18,35 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
-import {
-  CharacterSearcher,
-  type CharacterSearcherSelection
-} from '@renderer/components/shared/character'
+import { CompanySearcher, type CompanySearcherSelection } from '@renderer/components/shared/company'
+import { getExistingReasonText, getIngestWarningMessage } from './utils'
 
 interface Props {
-  /** Target collection ID to add the character to */
+  /** Target collection ID to add the company to */
   targetCollectionId?: string
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  /** Called after character is successfully added */
-  success: [characterId: string]
+  /** Called after company is successfully added */
+  success: [companyId: string]
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
 
 const isSubmitting = ref(false)
-const selection = ref<CharacterSearcherSelection>({
+const selection = ref<CompanySearcherSelection>({
   profileId: '',
-  characterId: '',
-  characterName: '',
+  companyId: '',
+  companyName: '',
   originalName: '',
   knownIds: [],
   canSubmit: false
 })
 
-function handleSelectionChange(newSelection: CharacterSearcherSelection) {
+function handleSelectionChange(newSelection: CompanySearcherSelection) {
   selection.value = newSelection
-}
-
-function getExistingReasonText(reason: string | undefined): string {
-  if (reason === 'name') return '名称'
-  if (reason === 'externalId') return '外部 ID'
-  if (reason === 'path') return '路径'
-  return '未知原因'
 }
 
 async function handleSubmit() {
@@ -64,53 +55,49 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   const profileId = selection.value.profileId
-  const name = selection.value.originalName ?? selection.value.characterName
+  const name = selection.value.originalName ?? selection.value.companyName
   const knownIds = toRaw(selection.value.knownIds)
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading('添加角色中…', '正在识别并添加')
+  const toastId = notify.loading('添加公司中…', '正在识别并添加')
 
   try {
-    const metadataResult = await ipcManager.invoke(
-      'scraper:get-character-metadata',
+    const result = await ipcManager.invoke(
+      'ingest:add-company-from-scraper',
       profileId,
       {
         name,
         knownIds
+      },
+      {
+        targetCollectionId
       }
     )
 
-    if (!metadataResult.success) {
-      throw new Error('error' in metadataResult ? metadataResult.error : 'Failed to get metadata')
-    }
-
-    if (!metadataResult.data) {
-      throw new Error('无法获取角色元数据，请检查网络或更换搜索源')
-    }
-
-    const result = await ipcManager.invoke('adder:add-character', metadataResult.data, {
-      targetCollectionId
-    })
-
     if (!result.success) {
-      notify.update(toastId, { title: '添加角色失败', message: result.error, type: 'error' })
+      notify.update(toastId, { title: '添加公司失败', message: result.error, type: 'error' })
       return
     }
 
     if (result.data.isNew) {
-      notify.update(toastId, { title: '角色添加成功', type: 'success' })
+      const warningMessage = getIngestWarningMessage(result.data.warnings)
+      notify.update(toastId, {
+        title: warningMessage ? '公司添加完成' : '公司添加成功',
+        message: warningMessage,
+        type: warningMessage ? 'warning' : 'success'
+      })
     } else {
       notify.update(toastId, {
-        title: '角色已存在',
+        title: '公司已存在',
         message: `${getExistingReasonText(result.data.existingReason)}匹配`,
         type: 'info'
       })
     }
 
-    emit('success', result.data.characterId)
+    emit('success', result.data.companyId)
   } catch (error) {
-    notify.update(toastId, { title: '添加角色失败', message: (error as Error).message, type: 'error' })
+    notify.update(toastId, { title: '添加公司失败', message: (error as Error).message, type: 'error' })
   } finally {
     isSubmitting.value = false
   }
@@ -130,14 +117,14 @@ const openModel = computed({
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Icon
-            :icon="getEntityIcon('character')"
+            :icon="getEntityIcon('company')"
             class="size-4"
           />
-          添加角色
+          添加公司
         </DialogTitle>
       </DialogHeader>
       <DialogBody>
-        <CharacterSearcher
+        <CompanySearcher
           :is-submitting="isSubmitting"
           @selection-change="handleSelectionChange"
         />

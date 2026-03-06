@@ -29,7 +29,7 @@ import type { EventService } from '@main/services/event/service'
 import type { NativeService } from '@main/services/native/service'
 import type { I18nService } from '@main/services/i18n/service'
 import type { ScraperService } from '@main/services/scraper/service'
-import type { AdderService } from '@main/services/adder/service'
+import type { IngestService } from '@main/services/ingest/service'
 import type { ScannerService } from '@main/services/scanner/service'
 import type { MonitorService } from '@main/services/monitor/service'
 import type { LauncherService } from '@main/services/launcher/service'
@@ -54,7 +54,7 @@ export interface ServiceRegistry {
   native: NativeService
   i18n: I18nService
   scraper: ScraperService
-  adder: AdderService
+  ingest: IngestService
   scanner: ScannerService
   monitor: MonitorService
   launcher: LauncherService

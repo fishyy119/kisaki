@@ -1,7 +1,7 @@
 /**
  * Kisaki Plugin Theme Specification
  * Auto-generated from src/renderer/src/styles/globals.css
- * Generated at: 2026-02-17T12:51:52.450Z
+ * Generated at: 2026-03-06T06:19:41.087Z
  *
  * This file contains only Tailwind v4 semantic token mappings.
  * Actual color values are provided by the host app at runtime.
@@ -19,6 +19,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-dialog: var(--dialog);
+  --color-dialog-foreground: var(--dialog-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -27,6 +29,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
+  --color-input-foreground: var(--input-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-info: var(--info);
@@ -36,7 +40,6 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
-  --color-input: var(--input);
   --color-ring: var(--ring);
 
   /* Border radius sizes */

@@ -19,6 +19,6 @@ export type CompanyScraperResult =
 
 /**
  * Company image slot (DB: companies.logoFile).
- * Only `logos` maps to CompanyMetadata.logos / companies.logoFile.
+ * Only `logos` maps to CoreCompanyMetadata.logos / companies.logoFile.
  */
 export type CompanyScraperImageSlot = Extract<ScraperSlot, 'logos'>

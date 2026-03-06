@@ -1,5 +1,6 @@
 import { PERSON_SCRAPER_SLOTS, type MergeStrategy, type ScraperProfile } from '@shared/db'
-import type { PersonMetadata } from '@shared/metadata'
+import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
+import type { ScrapedPersonMetadata, ScrapedPersonBundle } from '@shared/scraper'
 import { applyImageStrategy, applyStrategy, filterBySlot, sortByPriority } from '../../utils'
 import type {
   PersonScraperPhotosResult,
@@ -9,14 +10,26 @@ import type {
 } from './types'
 
 /**
- * Merge all provider results into final PersonMetadata.
+ * Merge all provider results into a scraper fact bundle.
+ */
+export function mergePersonScraperBundle(
+  results: PersonScraperResult[],
+  profile: ScraperProfile
+): ScrapedPersonBundle | null {
+  const metadata = mergePersonScraperMetadata(results, profile)
+  if (!metadata) return null
+  return toScrapedPersonBundle(metadata)
+}
+
+/**
+ * Merge all provider results into final ScrapedPersonMetadata.
  * Returns null if no valid name could be determined from any provider.
  */
 export function mergePersonScraperMetadata(
   results: PersonScraperResult[],
   profile: ScraperProfile
-): PersonMetadata | null {
-  const metadata: Partial<PersonMetadata> = {}
+): ScrapedPersonMetadata | null {
+  const metadata: Partial<ScrapedPersonMetadata> = {}
 
   for (const slot of PERSON_SCRAPER_SLOTS) {
     const config = profile.slotConfigs[slot]
@@ -39,7 +52,7 @@ export function mergePersonScraperMetadata(
 }
 
 function mergeInfo(
-  metadata: Partial<PersonMetadata>,
+  metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperInfoResult[],
   strategy: MergeStrategy
 ): void {
@@ -65,11 +78,8 @@ function mergeInfo(
     }
 
     if (info.externalIds?.length) {
-      metadata.externalIds = applyStrategy(
-        metadata.externalIds,
-        info.externalIds,
-        strategy,
-        (e) => `${e.source}:${e.id}`
+      metadata.externalIds = normalizeExternalIds(
+        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
       )
     }
 
@@ -78,7 +88,7 @@ function mergeInfo(
 }
 
 function mergeTags(
-  metadata: Partial<PersonMetadata>,
+  metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperTagsResult[],
   strategy: MergeStrategy
 ): void {
@@ -92,7 +102,7 @@ function mergeTags(
 }
 
 function mergePhotos(
-  metadata: Partial<PersonMetadata>,
+  metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperPhotosResult[],
   strategy: MergeStrategy
 ): void {
@@ -105,7 +115,7 @@ function mergePhotos(
   }
 }
 
-function finalize(partial: Partial<PersonMetadata>): PersonMetadata | null {
+function finalize(partial: Partial<ScrapedPersonMetadata>): ScrapedPersonMetadata | null {
   if (!partial.name) return null
 
   return {
@@ -119,5 +129,29 @@ function finalize(partial: Partial<PersonMetadata>): PersonMetadata | null {
     externalIds: partial.externalIds ?? [],
     tags: partial.tags,
     photos: partial.photos
+  }
+}
+
+/**
+ * Convert merged scraper metadata into a scraper fact bundle.
+ */
+export function toScrapedPersonBundle(metadata: ScrapedPersonMetadata): ScrapedPersonBundle {
+  return {
+    core: {
+      name: metadata.name,
+      originalName: metadata.originalName,
+      birthDate: metadata.birthDate,
+      deathDate: metadata.deathDate,
+      gender: metadata.gender,
+      description: metadata.description,
+      relatedSites: metadata.relatedSites,
+      externalIds: metadata.externalIds,
+      tags: metadata.tags
+    },
+    mediaCandidates: metadata.photos?.length
+      ? {
+          photoUrls: metadata.photos
+        }
+      : undefined
   }
 }

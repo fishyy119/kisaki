@@ -9,7 +9,8 @@
 
 import type { Locale } from '@shared/locale'
 import type { CharacterSearchResult } from '@shared/scraper'
-import type { CharacterInfo, Tag, CharacterPerson } from '@shared/metadata'
+import type { CharacterInfo, Tag } from '@shared/metadata'
+import type { ScrapedCharacterPersonFact } from '@shared/scraper'
 
 export interface CharacterScraperProvider {
   /** Unique provider identifier */
@@ -28,7 +29,7 @@ export interface CharacterScraperProvider {
   getTags?(id: string, locale?: Locale): Promise<Tag[]>
 
   /** Get persons related to character (voice actors, illustrators, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<CharacterPerson[]>
+  getPersons?(id: string, locale?: Locale): Promise<ScrapedCharacterPersonFact[]>
 
   /** Get icon/photo image URLs */
   getPhotos?(id: string, locale?: Locale): Promise<string[]>

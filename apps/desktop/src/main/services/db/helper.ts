@@ -1,12 +1,12 @@
 /**
  * Helper Store
  *
- * Common query helpers for finding existing entities by name/externalId.
+ * Common query helpers for finding existing entities by persistent identity.
  * All methods are synchronous for better-sqlite3 compatibility.
  * All methods accept an optional DbContext parameter to work within transactions.
  */
 
-import { eq, or, and } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db'
 import {
@@ -25,7 +25,7 @@ import {
   type Game,
   type Tag
 } from '@shared/db'
-import type { ExternalId } from '@shared/metadata'
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { DbContext } from './types'
 
 export class HelperStore {
@@ -38,152 +38,104 @@ export class HelperStore {
     return ctx ?? this.db
   }
 
-  findExistingPerson(
-    params: { name?: string; externalIds?: ExternalId[] },
-    ctx?: DbContext
-  ): Person | undefined {
+  findExistingPerson(params: { externalIds?: ExternalId[] }, ctx?: DbContext): Person | undefined {
     const db = this.getDb(ctx)
 
-    // First check by externalIds (more specific match)
-    if (params.externalIds && params.externalIds.length > 0) {
-      for (const extId of params.externalIds) {
-        const [row] = db
-          .select()
-          .from(personExternalIds)
-          .where(
-            and(
-              eq(personExternalIds.source, extId.source),
-              eq(personExternalIds.externalId, extId.id)
-            )
-          )
-          .limit(1)
-          .all()
-
-        if (row) {
-          const [person] = db
-            .select()
-            .from(persons)
-            .where(eq(persons.id, row.personId))
-            .limit(1)
-            .all()
-          if (person) return person
-        }
-      }
-    }
-
-    // Then check by name
-    if (params.name) {
-      const [result] = db
+    for (const extId of normalizeExternalIds(params.externalIds)) {
+      const [row] = db
         .select()
-        .from(persons)
-        .where(or(eq(persons.name, params.name), eq(persons.originalName, params.name)))
+        .from(personExternalIds)
+        .where(
+          and(
+            eq(personExternalIds.source, extId.source),
+            eq(personExternalIds.externalId, extId.id)
+          )
+        )
         .limit(1)
         .all()
 
-      return result
+      if (row) {
+        const [person] = db
+          .select()
+          .from(persons)
+          .where(eq(persons.id, row.personId))
+          .limit(1)
+          .all()
+        if (person) return person
+      }
     }
 
     return undefined
   }
 
   findExistingCompany(
-    params: { name?: string; externalIds?: ExternalId[] },
+    params: { externalIds?: ExternalId[] },
     ctx?: DbContext
   ): Company | undefined {
     const db = this.getDb(ctx)
 
-    // First check by externalIds (more specific match)
-    if (params.externalIds && params.externalIds.length > 0) {
-      for (const extId of params.externalIds) {
-        const [row] = db
-          .select()
-          .from(companyExternalIds)
-          .where(
-            and(
-              eq(companyExternalIds.source, extId.source),
-              eq(companyExternalIds.externalId, extId.id)
-            )
-          )
-          .limit(1)
-          .all()
-
-        if (row) {
-          const [company] = db
-            .select()
-            .from(companies)
-            .where(eq(companies.id, row.companyId))
-            .limit(1)
-            .all()
-          if (company) return company
-        }
-      }
-    }
-
-    // Then check by name
-    if (params.name) {
-      const [result] = db
+    for (const extId of normalizeExternalIds(params.externalIds)) {
+      const [row] = db
         .select()
-        .from(companies)
-        .where(or(eq(companies.name, params.name), eq(companies.originalName, params.name)))
+        .from(companyExternalIds)
+        .where(
+          and(
+            eq(companyExternalIds.source, extId.source),
+            eq(companyExternalIds.externalId, extId.id)
+          )
+        )
         .limit(1)
         .all()
 
-      return result
+      if (row) {
+        const [company] = db
+          .select()
+          .from(companies)
+          .where(eq(companies.id, row.companyId))
+          .limit(1)
+          .all()
+        if (company) return company
+      }
     }
 
     return undefined
   }
 
   findExistingCharacter(
-    params: { name?: string; externalIds?: ExternalId[] },
+    params: { externalIds?: ExternalId[] },
     ctx?: DbContext
   ): Character | undefined {
     const db = this.getDb(ctx)
 
-    // First check by externalIds (more specific match)
-    if (params.externalIds && params.externalIds.length > 0) {
-      for (const extId of params.externalIds) {
-        const [row] = db
-          .select()
-          .from(characterExternalIds)
-          .where(
-            and(
-              eq(characterExternalIds.source, extId.source),
-              eq(characterExternalIds.externalId, extId.id)
-            )
-          )
-          .limit(1)
-          .all()
-
-        if (row) {
-          const [character] = db
-            .select()
-            .from(characters)
-            .where(eq(characters.id, row.characterId))
-            .limit(1)
-            .all()
-          if (character) return character
-        }
-      }
-    }
-
-    // Then check by name
-    if (params.name) {
-      const [result] = db
+    for (const extId of normalizeExternalIds(params.externalIds)) {
+      const [row] = db
         .select()
-        .from(characters)
-        .where(or(eq(characters.name, params.name), eq(characters.originalName, params.name)))
+        .from(characterExternalIds)
+        .where(
+          and(
+            eq(characterExternalIds.source, extId.source),
+            eq(characterExternalIds.externalId, extId.id)
+          )
+        )
         .limit(1)
         .all()
 
-      return result
+      if (row) {
+        const [character] = db
+          .select()
+          .from(characters)
+          .where(eq(characters.id, row.characterId))
+          .limit(1)
+          .all()
+        if (character) return character
+      }
     }
 
     return undefined
   }
 
   findExistingGame(
-    params: { name?: string; externalIds?: ExternalId[]; path?: string },
+    params: { externalIds?: ExternalId[]; path?: string },
     ctx?: DbContext
   ): Game | undefined {
     const db = this.getDb(ctx)
@@ -200,35 +152,20 @@ export class HelperStore {
       if (result) return result
     }
 
-    // Then check by externalIds
-    if (params.externalIds && params.externalIds.length > 0) {
-      for (const extId of params.externalIds) {
-        const [row] = db
-          .select()
-          .from(gameExternalIds)
-          .where(
-            and(eq(gameExternalIds.source, extId.source), eq(gameExternalIds.externalId, extId.id))
-          )
-          .limit(1)
-          .all()
-
-        if (row) {
-          const [game] = db.select().from(games).where(eq(games.id, row.gameId)).limit(1).all()
-          if (game) return game
-        }
-      }
-    }
-
-    // Finally check by name
-    if (params.name) {
-      const [result] = db
+    for (const extId of normalizeExternalIds(params.externalIds)) {
+      const [row] = db
         .select()
-        .from(games)
-        .where(or(eq(games.name, params.name), eq(games.originalName, params.name)))
+        .from(gameExternalIds)
+        .where(
+          and(eq(gameExternalIds.source, extId.source), eq(gameExternalIds.externalId, extId.id))
+        )
         .limit(1)
         .all()
 
-      return result
+      if (row) {
+        const [game] = db.select().from(games).where(eq(games.id, row.gameId)).limit(1).all()
+        if (game) return game
+      }
     }
 
     return undefined

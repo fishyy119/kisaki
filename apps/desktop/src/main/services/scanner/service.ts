@@ -23,7 +23,7 @@ import { extractEntityName, scanForEntities } from './utils'
 
 export class ScannerService implements IMediaService {
   readonly id = 'scanner'
-  readonly deps = ['db', 'ipc', 'scraper', 'adder'] as const satisfies readonly ServiceName[]
+  readonly deps = ['db', 'ipc', 'ingest'] as const satisfies readonly ServiceName[]
 
   game!: GameScannerHandler
   phash!: ScannerPhash
@@ -32,8 +32,7 @@ export class ScannerService implements IMediaService {
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.dbService = container.get('db')
     const ipcService = container.get('ipc')
-    const scraperService = container.get('scraper')
-    const adderService = container.get('adder')
+    const ingestService = container.get('ingest')
 
     this.phash = new ScannerPhash()
 
@@ -43,8 +42,7 @@ export class ScannerService implements IMediaService {
       this.phash,
       this.dbService,
       ipcService,
-      scraperService,
-      adderService
+      ingestService
     )
     this.setupIpcHandlers(ipcService)
     log.info('[ScannerService] Initialized')

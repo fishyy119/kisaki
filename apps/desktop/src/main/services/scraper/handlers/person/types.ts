@@ -19,6 +19,6 @@ export type PersonScraperResult =
 
 /**
  * Person image slot (DB: persons.photoFile).
- * Only `photos` maps to PersonMetadata.photos / persons.photoFile.
+ * Only `photos` maps to CorePersonMetadata.photos / persons.photoFile.
  */
 export type PersonScraperImageSlot = Extract<ScraperSlot, 'photos'>

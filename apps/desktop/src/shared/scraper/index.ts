@@ -24,7 +24,21 @@ export {
   type ProfileCleanupAction
 } from './slot'
 
-export type { ExternalId } from '@shared/metadata'
+export type { ExternalId } from '@shared/identity'
+export {
+  type ScrapedGameBundle,
+  type ScrapedPersonBundle,
+  type ScrapedCompanyBundle,
+  type ScrapedCharacterBundle,
+  type ScrapedGamePersonFact,
+  type ScrapedGameCharacterFact,
+  type ScrapedGameCompanyFact,
+  type ScrapedCharacterPersonFact,
+  type ScrapedGameMetadata,
+  type ScrapedPersonMetadata,
+  type ScrapedCompanyMetadata,
+  type ScrapedCharacterMetadata
+} from './bundle'
 
 // Game-specific types
 export {

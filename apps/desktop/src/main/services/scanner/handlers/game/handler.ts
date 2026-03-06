@@ -29,8 +29,8 @@
  *       - Uses the folder name as game name
  *
  * 5. **Game Addition**
- *    - Uses ScraperService to fetch complete metadata
- *    - Calls `addGame()` with the identified metadata
+ *    - Delegates to IngestService for persisted add flows
+ *    - Uses scraper ingest first, with direct-ingest fallback when scraper fails
  *    - Sets gameDirPath to the folder path
  *    - Associates with scanner's target collection if configured
  *
@@ -51,29 +51,39 @@ import log from 'electron-log/main'
 import { promises as fs } from 'fs'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
-import type { ScraperService } from '@main/services/scraper'
+import type { IngestService } from '@main/services/ingest'
 import { scanners, scraperProfiles, type ScraperProfile } from '@shared/db'
 import type { Scanner } from '@shared/db'
 import type { EntityEntry, ScanProgressData, ScanCompletedData } from '@shared/scanner'
 import type { IpcService } from '@main/services/ipc'
-import type { AdderService } from '@main/services/adder'
-import type { AddGameResult } from '@shared/adder'
-import type { ExternalId } from '@shared/metadata'
+import type { IngestAddGameResult } from '@shared/ingest'
 import type { ScannerPhash } from '../../phash'
 import type { ScanOptions } from '../../utils'
 import { matchGameEntity } from './match'
 import type { GameEntity, ScanQueueItem } from './types'
 
-function mergeExternalIds(
-  primary: readonly ExternalId[],
-  additional: readonly ExternalId[]
-): ExternalId[] {
-  if (additional.length === 0) return [...primary]
+type ScannerGameIngestMode = 'prefer-scraper' | 'require-scraper' | 'direct-only'
 
-  const unique = new Map<string, ExternalId>()
-  for (const ext of primary) unique.set(`${ext.source}:${ext.id}`, ext)
-  for (const ext of additional) unique.set(`${ext.source}:${ext.id}`, ext)
-  return [...unique.values()]
+const SCANNER_GAME_INGEST_MODE: ScannerGameIngestMode = 'prefer-scraper'
+
+function isRecoverableScraperFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+
+  const message = error.message.toLowerCase()
+  const recoverableMarkers = [
+    'profile not found',
+    'search provider',
+    'provider',
+    'scrape',
+    'network',
+    'timeout',
+    'timed out',
+    'econn',
+    'enotfound',
+    'eai_again'
+  ]
+
+  return recoverableMarkers.some((marker) => message.includes(marker))
 }
 
 // =============================================================================
@@ -96,8 +106,7 @@ export class GameScannerHandler {
     private phash: ScannerPhash,
     private dbService: DbService,
     private ipcService: IpcService,
-    private scraperService: ScraperService,
-    private adderService: AdderService
+    private ingestService: IngestService
   ) {}
 
   /**
@@ -190,12 +199,18 @@ export class GameScannerHandler {
         profile = null
       }
 
-      if (!profile) {
+      if (!profile && SCANNER_GAME_INGEST_MODE === 'require-scraper') {
         throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
       }
 
+      if (!profile) {
+        log.warn(
+          `[Scanner] Scanner ${scanner.name} has no scraper profile, using direct ingest fallback mode`
+        )
+      }
+
       log.info(
-        `[Scanner] Starting game scan for: ${scanner.name} at ${scanner.path} (depth: ${scanner.entityDepth}, profile: ${profile.name})`
+        `[Scanner] Starting game scan for: ${scanner.name} at ${scanner.path} (depth: ${scanner.entityDepth}, mode: ${SCANNER_GAME_INGEST_MODE}, profile: ${profile?.name ?? 'none'})`
       )
 
       const result: ScanCompletedData = {
@@ -265,11 +280,9 @@ export class GameScannerHandler {
             continue
           }
 
-          // Check if game already exists at this path
           const existingByPath = this.dbService.helper.findExistingGame({
             path: entity.path
           })
-
           if (existingByPath) {
             log.info(`[Scanner] Game already exists at path ${entity.path}: ${existingByPath.name}`)
 
@@ -358,62 +371,67 @@ export class GameScannerHandler {
   /**
    * Process a matched game entity and add it to the library
    *
-   * Flow:
-   * 1. Early externalId dedup check (before network request, if we have externalIds)
-   * 2. Use ScraperService to fetch complete metadata
-   * 3. Call adder to persist to database
-   *
-   * Note: Path deduplication is already done in the main scan loop before this method is called.
+   * Prefers scraper ingest and falls back to direct ingest when configured.
    */
   private async processGameEntity(
     gameEntity: GameEntity,
-    profile: ScraperProfile,
+    profile: ScraperProfile | null,
     scanner: Scanner
-  ): Promise<AddGameResult> {
+  ): Promise<IngestAddGameResult> {
     const { gameName, externalIds } = gameEntity.matchedGame
 
-    // Early dedup check - by externalIds (if we have any from phash match)
-    // This avoids unnecessary network requests for games we've already added via different paths
-    if (externalIds.length > 0) {
-      const existingByExternalId = this.dbService.helper.findExistingGame({
-        externalIds
-      })
-      if (existingByExternalId) {
-        const ids = externalIds.map((ext) => `${ext.source}:${ext.id}`).join(', ')
-        log.info(
-          `[Scanner] Game already exists with externalIds [${ids}]: ${existingByExternalId.name} (ID: ${existingByExternalId.id})`
+    const seed = {
+      name: gameName,
+      knownIds: externalIds.length > 0 ? externalIds : undefined
+    }
+    const options = {
+      gameDirPath: gameEntity.path,
+      targetCollectionId: scanner.targetCollectionId || undefined
+    }
+
+    const addDirect = async (): Promise<IngestAddGameResult> => {
+      return this.ingestService.game.addDirect(seed, options)
+    }
+
+    let result: IngestAddGameResult
+
+    if (SCANNER_GAME_INGEST_MODE === 'direct-only') {
+      result = await addDirect()
+    } else if (SCANNER_GAME_INGEST_MODE === 'require-scraper') {
+      if (!profile) {
+        throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
+      }
+      result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
+    } else if (!profile) {
+      result = await addDirect()
+    } else {
+      try {
+        result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
+      } catch (error) {
+        if (!isRecoverableScraperFailure(error)) {
+          throw error
+        }
+
+        const message = error instanceof Error ? error.message : String(error)
+        log.warn(
+          `[Scanner] Scraper ingest failed for ${gameEntity.path}, fallback to direct ingest: ${message}`
         )
-        return { gameId: existingByExternalId.id, isNew: false, existingReason: 'externalId' }
+        result = await addDirect()
       }
     }
 
-    // Step 1: Get complete metadata using ScraperService
-    const metadata = await this.scraperService.game.getMetadata(profile.id, {
-      name: gameName,
-      knownIds: externalIds
-    })
-    const metadataWithKnownIds = metadata
-      ? {
-          ...metadata,
-          externalIds: mergeExternalIds(metadata.externalIds ?? [], externalIds)
-        }
-      : null
-
-    // Step 2: Persist to database via adder
-    // If scraper returned null, fallback to minimal metadata with name only.
-    const fallbackMetadata = {
-      name: gameName,
-      externalIds
-    }
-    const result = await this.adderService.game.addGame(metadataWithKnownIds ?? fallbackMetadata, {
-      gameDirPath: gameEntity.path,
-      targetCollectionId: scanner.targetCollectionId || undefined
-    })
-
     if (result.isNew) {
       log.info(
-        `[Scanner] Successfully added game ${metadata?.name ?? gameName} (ID: ${result.gameId}) from ${gameEntity.path}`
+        `[Scanner] Successfully added game ${gameName} (ID: ${result.gameId}) from ${gameEntity.path}`
       )
+
+      if (result.warnings?.length) {
+        log.warn(
+          `[Scanner] Game ${result.gameId} completed with post-commit warnings: ${result.warnings
+            .map((warning) => warning.message)
+            .join(' | ')}`
+        )
+      }
     }
 
     return result

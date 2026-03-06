@@ -10,7 +10,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
 import { companyExternalIds, companies } from '@shared/db'
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import {
   COMPANY_METADATA_UPDATE_FIELDS,
   type CompanyMetadataUpdateField,
@@ -201,18 +201,22 @@ async function handleSubmit() {
       const knownIds = mergeExternalIds(baseKnownIds, first.externalIds ?? [])
       const lookupName = first.originalName || first.name || queryName
 
-      const metadataResult = await ipcManager.invoke(
-        'scraper:get-company-metadata',
+      const bundleResult = await ipcManager.invoke(
+        'scraper:scrape-company',
         currentProfileId,
         { name: lookupName, knownIds }
       )
-      if (!metadataResult.success) throw new Error(metadataResult.error)
-      if (!metadataResult.data) throw new Error('无法获取元数据')
+      if (!bundleResult.success) throw new Error(bundleResult.error)
+      if (!bundleResult.data) throw new Error('无法获取元数据')
 
-      const updateMetadata = pickFields(
-        metadataResult.data as unknown as Record<string, unknown>,
-        fields
-      )
+      const bundle = bundleResult.data
+      const logoUrl = bundle.mediaCandidates?.logoUrls?.[0]
+      const scrapedMetadata: Record<string, unknown> = {
+        ...(bundle.core ?? {}),
+        ...(logoUrl ? { logos: [logoUrl] } : {})
+      }
+
+      const updateMetadata = pickFields(scrapedMetadata, fields)
       const updateResult = await ipcManager.invoke(
         'metadata-updater:update-company',
         entity.id,

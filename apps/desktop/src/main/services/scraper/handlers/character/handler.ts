@@ -21,13 +21,14 @@ import type {
   ScraperCapability,
   CharacterScraperProviderInfo,
   CharacterScraperOptions,
-  ProfileCleanupAction
+  ProfileCleanupAction,
+  ScrapedCharacterBundle
 } from '@shared/scraper'
-import type { ExternalId, CharacterMetadata } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import type { CharacterScraperProvider } from './provider'
-import { mergeCharacterScraperMetadata } from './merge'
+import { mergeCharacterScraperBundle } from './merge'
 import type { CharacterScraperImageSlot, CharacterScraperResult } from './types'
 
 interface ResolveResult {
@@ -132,11 +133,11 @@ export class CharacterScraperHandler {
     return provider.search(query, this.getLocale(profile))
   }
 
-  async getMetadata(
+  async scrape(
     profileId: string,
     lookup: ScraperLookup,
     options: CharacterScraperOptions = {}
-  ): Promise<CharacterMetadata | null> {
+  ): Promise<ScrapedCharacterBundle | null> {
     let profile = this.loadProfile(profileId)
 
     const action = options.skipValidation ? 'unchanged' : await this.ensureProfileValid(profileId)
@@ -192,7 +193,7 @@ export class CharacterScraperHandler {
     }
 
     const results = await this.fetchAllSlots(normalizedProfile, resolvedIds, locale)
-    return mergeCharacterScraperMetadata(results, normalizedProfile)
+    return mergeCharacterScraperBundle(results, normalizedProfile)
   }
 
   async getProviderImages(

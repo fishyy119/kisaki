@@ -10,7 +10,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
 import { gameExternalIds, games } from '@shared/db'
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import {
   GAME_METADATA_UPDATE_FIELDS,
   type GameMetadataUpdateField,
@@ -189,21 +189,31 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    const metadataResult = await ipcManager.invoke('scraper:get-game-metadata', profileId, {
+    const bundleResult = await ipcManager.invoke('scraper:scrape-game', profileId, {
       name,
       knownIds
     })
-    if (!metadataResult.success) {
-      throw new Error(metadataResult.error)
+    if (!bundleResult.success) {
+      throw new Error(bundleResult.error)
     }
-    if (!metadataResult.data) {
+    if (!bundleResult.data) {
       throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
     }
 
-    const updateMetadata = pickFields(
-      metadataResult.data as unknown as Record<string, unknown>,
-      fields
-    )
+    const bundle = bundleResult.data
+    const coverUrl = bundle.mediaCandidates?.coverUrls?.[0]
+    const backdropUrl = bundle.mediaCandidates?.backdropUrls?.[0]
+    const logoUrl = bundle.mediaCandidates?.logoUrls?.[0]
+    const iconUrl = bundle.mediaCandidates?.iconUrls?.[0]
+    const scrapedMetadata: Record<string, unknown> = {
+      ...(bundle.core ?? {}),
+      ...(coverUrl ? { covers: [coverUrl] } : {}),
+      ...(backdropUrl ? { backdrops: [backdropUrl] } : {}),
+      ...(logoUrl ? { logos: [logoUrl] } : {}),
+      ...(iconUrl ? { icons: [iconUrl] } : {})
+    }
+
+    const updateMetadata = pickFields(scrapedMetadata, fields)
     const updateResult = await ipcManager.invoke(
       'metadata-updater:update-game',
       gameId,

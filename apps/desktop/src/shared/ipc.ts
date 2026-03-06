@@ -21,7 +21,6 @@ import type { CropRegion } from './attachment'
 import type { AttachmentInput } from './db/attachment'
 import type { TableName } from './db/table-names'
 import type { NameExtractionRule, SaveBackup } from './db/json-types'
-import type { CharacterMetadata, CompanyMetadata, GameMetadata, PersonMetadata } from './metadata'
 import type { MainWindowCloseAction } from './db/enums'
 import type {
   ScraperLookup,
@@ -37,19 +36,26 @@ import type {
   CharacterSearchResult,
   CharacterScraperProviderInfo,
   CharacterScraperOptions,
-  GameImageSlot
+  GameImageSlot,
+  ScrapedGameBundle,
+  ScrapedPersonBundle,
+  ScrapedCompanyBundle,
+  ScrapedCharacterBundle
 } from './scraper'
 import type { ScanProgressData, ExtractionTestResult } from './scanner'
 import type {
-  AddCharacterOptions,
-  AddCharacterResult,
-  AddCompanyOptions,
-  AddCompanyResult,
-  AddGameOptions,
-  AddGameResult,
-  AddPersonOptions,
-  AddPersonResult
-} from './adder'
+  IngestAddGameDirectOptions,
+  IngestAddGameDirectResult,
+  IngestAddGameDirectSeed,
+  IngestAddCharacterFromScraperOptions,
+  IngestAddCharacterFromScraperResult,
+  IngestAddCompanyFromScraperOptions,
+  IngestAddCompanyFromScraperResult,
+  IngestAddGameFromScraperOptions,
+  IngestAddGameFromScraperResult,
+  IngestAddPersonFromScraperOptions,
+  IngestAddPersonFromScraperResult
+} from './ingest'
 import type {
   CharacterMetadataUpdateInput,
   CompanyMetadataUpdateInput,
@@ -223,20 +229,31 @@ export interface IpcMainHandlers {
   'db:attachment-cleanup-row': (table: TableName, rowId: string) => IpcVoidResult
   'db:attachment-get-path': (table: TableName, rowId: string, fileName: string) => IpcResult<string>
 
-  // Adder
-  'adder:add-game': (metadata: GameMetadata, options?: AddGameOptions) => IpcResult<AddGameResult>
-  'adder:add-person': (
-    metadata: PersonMetadata,
-    options?: AddPersonOptions
-  ) => IpcResult<AddPersonResult>
-  'adder:add-company': (
-    metadata: CompanyMetadata,
-    options?: AddCompanyOptions
-  ) => IpcResult<AddCompanyResult>
-  'adder:add-character': (
-    metadata: CharacterMetadata,
-    options?: AddCharacterOptions
-  ) => IpcResult<AddCharacterResult>
+  // Ingest
+  'ingest:add-game-direct': (
+    seed: IngestAddGameDirectSeed,
+    options?: IngestAddGameDirectOptions
+  ) => IpcResult<IngestAddGameDirectResult>
+  'ingest:add-game-from-scraper': (
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddGameFromScraperOptions
+  ) => IpcResult<IngestAddGameFromScraperResult>
+  'ingest:add-person-from-scraper': (
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddPersonFromScraperOptions
+  ) => IpcResult<IngestAddPersonFromScraperResult>
+  'ingest:add-company-from-scraper': (
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddCompanyFromScraperOptions
+  ) => IpcResult<IngestAddCompanyFromScraperResult>
+  'ingest:add-character-from-scraper': (
+    profileId: string,
+    lookup: ScraperLookup,
+    options?: IngestAddCharacterFromScraperOptions
+  ) => IpcResult<IngestAddCharacterFromScraperResult>
 
   // Metadata updater
   'metadata-updater:update-game': (
@@ -264,11 +281,11 @@ export interface IpcMainHandlers {
   'scraper:list-game-providers': () => IpcResult<GameScraperProviderInfo[]>
   'scraper:get-game-provider': (providerId: string) => IpcResult<GameScraperProviderInfo>
   'scraper:search-game': (profileId: string, query: string) => IpcResult<GameSearchResult[]>
-  'scraper:get-game-metadata': (
+  'scraper:scrape-game': (
     profileId: string,
     lookup: ScraperLookup,
     options?: GameScraperOptions
-  ) => IpcResult<GameMetadata | null>
+  ) => IpcResult<ScrapedGameBundle | null>
   'scraper:get-game-provider-images': (
     providerId: string,
     lookup: ScraperLookup,
@@ -278,11 +295,11 @@ export interface IpcMainHandlers {
   'scraper:list-person-providers': () => IpcResult<PersonScraperProviderInfo[]>
   'scraper:get-person-provider': (providerId: string) => IpcResult<PersonScraperProviderInfo>
   'scraper:search-person': (profileId: string, query: string) => IpcResult<PersonSearchResult[]>
-  'scraper:get-person-metadata': (
+  'scraper:scrape-person': (
     profileId: string,
     lookup: ScraperLookup,
     options?: PersonScraperOptions
-  ) => IpcResult<PersonMetadata | null>
+  ) => IpcResult<ScrapedPersonBundle | null>
   'scraper:get-person-provider-images': (
     providerId: string,
     lookup: ScraperLookup,
@@ -292,11 +309,11 @@ export interface IpcMainHandlers {
   'scraper:list-company-providers': () => IpcResult<CompanyScraperProviderInfo[]>
   'scraper:get-company-provider': (providerId: string) => IpcResult<CompanyScraperProviderInfo>
   'scraper:search-company': (profileId: string, query: string) => IpcResult<CompanySearchResult[]>
-  'scraper:get-company-metadata': (
+  'scraper:scrape-company': (
     profileId: string,
     lookup: ScraperLookup,
     options?: CompanyScraperOptions
-  ) => IpcResult<CompanyMetadata | null>
+  ) => IpcResult<ScrapedCompanyBundle | null>
   'scraper:get-company-provider-images': (
     providerId: string,
     lookup: ScraperLookup,
@@ -309,11 +326,11 @@ export interface IpcMainHandlers {
     profileId: string,
     query: string
   ) => IpcResult<CharacterSearchResult[]>
-  'scraper:get-character-metadata': (
+  'scraper:scrape-character': (
     profileId: string,
     lookup: ScraperLookup,
     options?: CharacterScraperOptions
-  ) => IpcResult<CharacterMetadata | null>
+  ) => IpcResult<ScrapedCharacterBundle | null>
   'scraper:get-character-provider-images': (
     providerId: string,
     lookup: ScraperLookup,

@@ -3,14 +3,7 @@
  *
  * Shared type definitions used across entity metadata.
  */
-
-/**
- * External ID reference for cross-provider entity matching.
- */
-export interface ExternalId {
-  source: string
-  id: string
-}
+export type { ExternalId } from '@shared/identity'
 
 /**
  * Tag data for any entity.

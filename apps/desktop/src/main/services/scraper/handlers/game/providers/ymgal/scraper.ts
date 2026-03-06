@@ -11,14 +11,13 @@ import type { NetworkService } from '@main/services/network'
 import type { GameScraperProvider } from '../../provider'
 import type { GameSearchResult } from '@shared/scraper'
 import type { Locale } from '@shared/locale'
+import type { GameInfo, Tag } from '@shared/metadata'
 import type {
-  CharacterPerson,
-  GameCharacter,
-  GameCompany,
-  GameInfo,
-  GamePerson,
-  Tag
-} from '@shared/metadata'
+  ScrapedCharacterPersonFact,
+  ScrapedGameCharacterFact,
+  ScrapedGameCompanyFact,
+  ScrapedGamePersonFact
+} from '@shared/scraper'
 import { normalizeScrapedDescription, parsePartialDate } from '../../../../utils'
 import { YmgalClient } from './client'
 import type {
@@ -138,7 +137,7 @@ export class YmgalProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, locale?: Locale): Promise<GameCharacter[]> {
+  public async getCharacters(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
     const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
     const relations = archive.game.characters ?? []
     if (relations.length === 0) return []
@@ -149,7 +148,7 @@ export class YmgalProvider implements GameScraperProvider {
     const characterDetails = await this.fetchCharacterDetails(characterIds)
     const actorDetails = await this.fetchPersonDetails(actorIds)
 
-    const output: GameCharacter[] = []
+    const output: ScrapedGameCharacterFact[] = []
 
     for (const relation of relations) {
       const characterId = toYmgalId(relation.cid)
@@ -195,7 +194,7 @@ export class YmgalProvider implements GameScraperProvider {
   // Persons
   // ===========================================================================
 
-  public async getPersons(id: string, locale?: Locale): Promise<GamePerson[]> {
+  public async getPersons(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]> {
     const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
     const game = archive.game
 
@@ -209,7 +208,7 @@ export class YmgalProvider implements GameScraperProvider {
     if (personIds.length === 0) return []
 
     const personDetails = await this.fetchPersonDetails(personIds)
-    const persons: GamePerson[] = []
+    const persons: ScrapedGamePersonFact[] = []
 
     for (const staff of staffEntries) {
       const personId = toYmgalId(staff.pid)
@@ -226,7 +225,7 @@ export class YmgalProvider implements GameScraperProvider {
 
       const detail = personDetails.get(personId)
       const snapshot = this.findPersonMapping(archive.pidMapping, personId)
-      const incoming: GamePerson = {
+      const incoming: ScrapedGamePersonFact = {
         ...this.buildGamePersonBase(personId, detail, snapshot, locale),
         type: 'actor'
       }
@@ -241,7 +240,7 @@ export class YmgalProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, locale?: Locale): Promise<GameCompany[]> {
+  public async getCompanies(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
     const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
     const developerId = toYmgalId(archive.game.developerId)
     if (!developerId) return []
@@ -363,7 +362,7 @@ export class YmgalProvider implements GameScraperProvider {
     archive: YmgalGameArchiveData,
     actorDetails: Map<string, YmgalPerson>,
     locale?: Locale
-  ): CharacterPerson[] {
+  ): ScrapedCharacterPersonFact[] {
     const actorId = toYmgalId(relation.cvId)
     if (!actorId) return []
 
@@ -406,7 +405,7 @@ export class YmgalProvider implements GameScraperProvider {
     detail: YmgalPerson | undefined,
     snapshot: YmgalPersonMapping | undefined,
     locale?: Locale
-  ): GamePerson {
+  ): ScrapedGamePersonFact {
     const base = this.buildGamePersonBase(personId, detail, snapshot, locale)
     const role = this.resolveStaffRoleName(staff)
     const note = staff.empDesc?.trim() || staff.desc?.trim() || undefined
@@ -423,7 +422,7 @@ export class YmgalProvider implements GameScraperProvider {
     detail: YmgalPerson | undefined,
     snapshot: YmgalPersonMapping | undefined,
     locale?: Locale
-  ): Omit<GamePerson, 'type' | 'note'> {
+  ): Omit<ScrapedGamePersonFact, 'type' | 'note'> {
     const { name, originalName } = resolveLocalizedName(
       detail?.name || snapshot?.name || personId,
       detail?.chineseName || snapshot?.chineseName,

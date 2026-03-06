@@ -1,7 +1,7 @@
 /**
  * Company Metadata Types
  *
- * Base type definitions for company metadata.
+ * Core metadata type definitions for company entities.
  */
 
 import type { PartialDate, RelatedSite } from '@shared/db'
@@ -28,10 +28,8 @@ export interface CompanyInfo {
 /**
  * Company metadata.
  *
- * Base metadata for a company entity (developers, publishers, etc.).
- * All fields optional except name for flexibility in different contexts.
+ * Core company metadata used across identity and normalization layers.
  */
-export interface CompanyMetadata extends CompanyInfo {
+export interface CoreCompanyMetadata extends CompanyInfo {
   tags?: Tag[]
-  logos?: string[]
 }

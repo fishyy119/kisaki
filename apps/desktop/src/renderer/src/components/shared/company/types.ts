@@ -1,4 +1,4 @@
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 
 /** Current selection state for parent component */
 export interface CompanySearcherSelection {

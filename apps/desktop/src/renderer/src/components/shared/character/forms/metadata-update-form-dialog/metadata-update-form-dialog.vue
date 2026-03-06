@@ -10,7 +10,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
 import { characterExternalIds, characters } from '@shared/db'
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import {
   CHARACTER_METADATA_UPDATE_FIELDS,
   type CharacterMetadataUpdateField,
@@ -197,18 +197,22 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    const metadataResult = await ipcManager.invoke(
-      'scraper:get-character-metadata',
+    const bundleResult = await ipcManager.invoke(
+      'scraper:scrape-character',
       currentProfileId,
       { name, knownIds }
     )
-    if (!metadataResult.success) throw new Error(metadataResult.error)
-    if (!metadataResult.data) throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
+    if (!bundleResult.success) throw new Error(bundleResult.error)
+    if (!bundleResult.data) throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
 
-    const updateMetadata = pickFields(
-      metadataResult.data as unknown as Record<string, unknown>,
-      fields
-    )
+    const bundle = bundleResult.data
+    const photoUrl = bundle.mediaCandidates?.photoUrls?.[0]
+    const scrapedMetadata: Record<string, unknown> = {
+      ...(bundle.core ?? {}),
+      ...(photoUrl ? { photos: [photoUrl] } : {})
+    }
+
+    const updateMetadata = pickFields(scrapedMetadata, fields)
     const updateResult = await ipcManager.invoke(
       'metadata-updater:update-character',
       characterId,

@@ -21,13 +21,14 @@ import type {
   ScraperCapability,
   CompanyScraperProviderInfo,
   CompanyScraperOptions,
-  ProfileCleanupAction
+  ProfileCleanupAction,
+  ScrapedCompanyBundle
 } from '@shared/scraper'
-import type { ExternalId, CompanyMetadata } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import type { CompanyScraperProvider } from './provider'
-import { mergeCompanyScraperMetadata } from './merge'
+import { mergeCompanyScraperBundle } from './merge'
 import type { CompanyScraperImageSlot, CompanyScraperResult } from './types'
 
 interface ResolveResult {
@@ -132,11 +133,11 @@ export class CompanyScraperHandler {
     return provider.search(query, this.getLocale(profile))
   }
 
-  async getMetadata(
+  async scrape(
     profileId: string,
     lookup: ScraperLookup,
     options: CompanyScraperOptions = {}
-  ): Promise<CompanyMetadata | null> {
+  ): Promise<ScrapedCompanyBundle | null> {
     let profile = this.loadProfile(profileId)
 
     const action = options.skipValidation ? 'unchanged' : await this.ensureProfileValid(profileId)
@@ -190,7 +191,7 @@ export class CompanyScraperHandler {
     }
 
     const results = await this.fetchAllSlots(normalizedProfile, resolvedIds, locale)
-    return mergeCompanyScraperMetadata(results, normalizedProfile)
+    return mergeCompanyScraperBundle(results, normalizedProfile)
   }
 
   async getProviderImages(

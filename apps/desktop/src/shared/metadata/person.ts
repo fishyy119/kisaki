@@ -1,7 +1,7 @@
 /**
  * Person Metadata Types
  *
- * Base type definitions for person metadata.
+ * Core metadata type definitions for person entities.
  */
 
 import type { PartialDate, RelatedSite } from '@shared/db'
@@ -31,10 +31,8 @@ export interface PersonInfo {
 /**
  * Person metadata.
  *
- * Base metadata for a person entity (voice actors, staff, etc.).
- * All fields optional except name for flexibility in different contexts.
+ * Core person metadata used across identity and normalization layers.
  */
-export interface PersonMetadata extends PersonInfo {
+export interface CorePersonMetadata extends PersonInfo {
   tags?: Tag[]
-  photos?: string[]
 }

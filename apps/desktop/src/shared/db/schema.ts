@@ -222,7 +222,7 @@ export type Character = InferSelectModel<typeof characters>
 export type NewCharacter = InferInsertModel<typeof characters>
 
 // =============================================================================
-// External IDs (for entity deduplication)
+// External IDs (persistent entity identity)
 // =============================================================================
 
 export const gameExternalIds = sqliteTable(

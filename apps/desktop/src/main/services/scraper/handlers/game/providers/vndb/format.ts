@@ -7,7 +7,8 @@ import type {
   Gender
 } from '@shared/db'
 import type { Locale } from '@shared/locale'
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { VndbExtlink, VndbSchemaEnumEntry, VndbTitle } from './types'
 
 const VNDB_BASE_URL = 'https://vndb.org'

@@ -12,7 +12,8 @@ import type { NetworkService } from '@main/services/network'
 import type { GameScraperProvider } from '../../provider'
 import type { GameSearchResult } from '@shared/scraper'
 import type { Locale } from '@shared/locale'
-import type { GameInfo, Tag, GameCharacter, GameCompany } from '@shared/metadata'
+import type { GameInfo, Tag } from '@shared/metadata'
+import type { ScrapedGameCharacterFact, ScrapedGameCompanyFact } from '@shared/scraper'
 import type { GameCompanyType } from '@shared/db'
 import { normalizeScrapedDescription } from '../../../../utils'
 import { IgdbClient } from './client'
@@ -411,7 +412,7 @@ export class IGDBProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, _locale?: Locale): Promise<GameCharacter[]> {
+  public async getCharacters(id: string, _locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
     this.ensureConfigured()
     const gameId = this.parseId(id)
 
@@ -485,7 +486,7 @@ export class IGDBProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, _locale?: Locale): Promise<GameCompany[]> {
+  public async getCompanies(id: string, _locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
     this.ensureConfigured()
     const gameId = this.parseId(id)
 
@@ -534,7 +535,7 @@ export class IGDBProvider implements GameScraperProvider {
       if (item.type?.trim()) websiteTypeMap.set(item.id, item.type.trim())
     }
 
-    const companies: GameCompany[] = []
+    const companies: ScrapedGameCompanyFact[] = []
 
     for (const involved of involvedCompanies) {
       const companyId = involved.company ?? 0
@@ -559,7 +560,7 @@ export class IGDBProvider implements GameScraperProvider {
         })
       }
 
-      const base: Omit<GameCompany, 'type' | 'note'> = {
+      const base: Omit<ScrapedGameCompanyFact, 'type' | 'note'> = {
         name: company.name.trim(),
         description: normalizeScrapedDescription(company.description),
         relatedSites: this.dedupeRelatedSites(relatedSites),

@@ -7,14 +7,14 @@ import type {
   UpdateGameMetadataResult
 } from '@shared/metadata-updater'
 import { gameExternalIds, gameTagLinks, games, tags, type Game } from '@shared/db'
-import type { ExternalId, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
+import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import {
   mergeExternalIds,
   mergeRelatedSites,
   mergeTags,
   resolveUpdateOptions,
   shouldApplyUpdate,
-  toExternalIdKey,
   toImageMode
 } from '../utils'
 
@@ -265,12 +265,7 @@ export class GameMetadataUpdaterHandler {
   private replaceGameExternalIds(tx: DbContext, gameId: string, externalIds: ExternalId[]): void {
     tx.delete(gameExternalIds).where(eq(gameExternalIds.gameId, gameId)).run()
 
-    const uniqueExternalIds = new Map<string, ExternalId>()
-    for (const externalId of externalIds) {
-      uniqueExternalIds.set(toExternalIdKey(externalId), externalId)
-    }
-
-    const values = [...uniqueExternalIds.values()].map((externalId, index) => ({
+    const values = normalizeExternalIds(externalIds).map((externalId, index) => ({
       gameId,
       source: externalId.source,
       externalId: externalId.id,

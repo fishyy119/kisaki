@@ -1,5 +1,5 @@
 import type { EntityEntry, ScanCompletedData } from '@shared/scanner'
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 
 export interface ScanQueueItem {
   scannerId: string

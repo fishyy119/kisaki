@@ -1,14 +1,12 @@
 import type { MergeStrategy, RelatedSite } from '@shared/db'
 import type {
-  CharacterMetadata,
-  CharacterPerson,
-  CompanyMetadata,
-  ExternalId,
-  PersonMetadata,
-  Tag
-} from '@shared/metadata'
-
-export type MergeKeySource = 'externalId' | 'originalName' | 'name'
+  ScrapedCharacterMetadata,
+  ScrapedCharacterPersonFact,
+  ScrapedCompanyMetadata,
+  ScrapedPersonMetadata
+} from '@shared/scraper'
+import type { Tag } from '@shared/metadata'
+import { buildEntityAliasKeys, normalizeExternalIds, type ExternalId } from '@shared/identity'
 
 interface MergeIdentityEntityBase {
   name: string
@@ -106,47 +104,6 @@ function createGroup<T>(
   groups.push(group)
   registerGroupKeys(group, keyToGroupId)
   return group
-}
-
-export function normalizeMergeText(value: string): string {
-  return value.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ')
-}
-
-function compactNormalizedMergeText(value: string): string {
-  return value.replace(/\s+/g, '')
-}
-
-export function buildEntityMergeKeys(entity: MergeIdentityEntityBase): string[] {
-  const keys: string[] = []
-
-  for (const extId of entity.externalIds ?? []) {
-    const source = normalizeMergeText(extId.source)
-    const id = normalizeMergeText(extId.id)
-    if (source && id) {
-      keys.push(`ext:${source}:${id}`)
-    }
-  }
-
-  const normalizedOriginalName = entity.originalName
-    ? normalizeMergeText(entity.originalName)
-    : undefined
-  if (normalizedOriginalName) {
-    keys.push(`on:${normalizedOriginalName}`)
-    keys.push(`onc:${compactNormalizedMergeText(normalizedOriginalName)}`)
-  }
-
-  const normalizedName = normalizeMergeText(entity.name)
-  if (normalizedName) {
-    keys.push(`nm:${normalizedName}`)
-    keys.push(`nmc:${compactNormalizedMergeText(normalizedName)}`)
-  }
-
-  return [...new Set(keys)]
-}
-
-export function buildEntityMergeKeysWithType(entity: MergeIdentityEntity): string[] {
-  const normalizedType = normalizeMergeText(entity.type)
-  return buildEntityMergeKeys(entity).map((key) => `${key}|tp:${normalizedType}`)
 }
 
 /**
@@ -284,7 +241,7 @@ export function mergeExternalIds(
   incoming: ExternalId[] | undefined
 ): ExternalId[] {
   if (!existing?.length && !incoming?.length) return []
-  return mergeArrays(existing ?? [], incoming ?? [], (e) => `${e.source}:${e.id}`)
+  return normalizeExternalIds([...(existing ?? []), ...(incoming ?? [])])
 }
 
 /**
@@ -391,12 +348,12 @@ export function applyEntityStrategy<T>(
 // =============================================================================
 
 /**
- * Merge PersonMetadata fields (fill-in-the-blanks + array merge).
+ * Merge CorePersonMetadata fields (fill-in-the-blanks + array merge).
  */
 export function mergePersonMetadataFields(
-  existing: PersonMetadata,
-  incoming: PersonMetadata
-): PersonMetadata {
+  existing: ScrapedPersonMetadata,
+  incoming: ScrapedPersonMetadata
+): ScrapedPersonMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'externalIds',
     'relatedSites',
@@ -414,12 +371,12 @@ export function mergePersonMetadataFields(
 }
 
 /**
- * Merge CompanyMetadata fields (fill-in-the-blanks + array merge).
+ * Merge CoreCompanyMetadata fields (fill-in-the-blanks + array merge).
  */
 export function mergeCompanyMetadataFields(
-  existing: CompanyMetadata,
-  incoming: CompanyMetadata
-): CompanyMetadata {
+  existing: ScrapedCompanyMetadata,
+  incoming: ScrapedCompanyMetadata
+): ScrapedCompanyMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'externalIds',
     'relatedSites',
@@ -437,36 +394,41 @@ export function mergeCompanyMetadataFields(
 }
 
 /**
- * Merge CharacterPerson arrays using the specified strategy.
+ * Merge ScrapedCharacterPersonFact arrays using the specified strategy.
  */
 export function mergeCharacterPersons(
-  existing: CharacterPerson[] | undefined,
-  incoming: CharacterPerson[] | undefined,
+  existing: ScrapedCharacterPersonFact[] | undefined,
+  incoming: ScrapedCharacterPersonFact[] | undefined,
   strategy: MergeStrategy
-): CharacterPerson[] | undefined {
+): ScrapedCharacterPersonFact[] | undefined {
   if (!existing?.length && !incoming?.length) return undefined
 
   return applyEntityStrategy(
     existing,
     incoming ?? [],
     strategy,
-    buildEntityMergeKeysWithType,
+    (person) =>
+      buildEntityAliasKeys(person, {
+        includeCompactFallbackKeys: true,
+        type: person.type
+      }),
     (existingPerson, incomingPerson) => ({
       ...mergePersonMetadataFields(existingPerson, incomingPerson),
       type: existingPerson.type,
+      isSpoiler: !!existingPerson.isSpoiler || !!incomingPerson.isSpoiler,
       note: existingPerson.note || incomingPerson.note
     })
   )
 }
 
 /**
- * Merge CharacterMetadata fields (fill-in-the-blanks + array merge + nested persons).
+ * Merge CoreCharacterMetadata fields (fill-in-the-blanks + array merge + nested persons).
  */
 export function mergeCharacterMetadataFields(
-  existing: CharacterMetadata,
-  incoming: CharacterMetadata,
+  existing: ScrapedCharacterMetadata,
+  incoming: ScrapedCharacterMetadata,
   personStrategy: MergeStrategy
-): CharacterMetadata {
+): ScrapedCharacterMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'externalIds',
     'relatedSites',

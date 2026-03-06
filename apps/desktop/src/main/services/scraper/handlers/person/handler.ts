@@ -21,13 +21,14 @@ import type {
   ScraperCapability,
   PersonScraperProviderInfo,
   PersonScraperOptions,
-  ProfileCleanupAction
+  ProfileCleanupAction,
+  ScrapedPersonBundle
 } from '@shared/scraper'
-import type { ExternalId, PersonMetadata } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import type { PersonScraperProvider } from './provider'
-import { mergePersonScraperMetadata } from './merge'
+import { mergePersonScraperBundle } from './merge'
 import type { PersonScraperImageSlot, PersonScraperResult } from './types'
 
 interface ResolveResult {
@@ -149,11 +150,11 @@ export class PersonScraperHandler {
   // Public API: Metadata Scraping
   // ---------------------------------------------------------------------------
 
-  async getMetadata(
+  async scrape(
     profileId: string,
     lookup: ScraperLookup,
     options: PersonScraperOptions = {}
-  ): Promise<PersonMetadata | null> {
+  ): Promise<ScrapedPersonBundle | null> {
     let profile = this.loadProfile(profileId)
 
     const action = options.skipValidation ? 'unchanged' : await this.ensureProfileValid(profileId)
@@ -207,7 +208,7 @@ export class PersonScraperHandler {
     }
 
     const results = await this.fetchAllSlots(normalizedProfile, resolvedIds, locale)
-    return mergePersonScraperMetadata(results, normalizedProfile)
+    return mergePersonScraperBundle(results, normalizedProfile)
   }
 
   async getProviderImages(

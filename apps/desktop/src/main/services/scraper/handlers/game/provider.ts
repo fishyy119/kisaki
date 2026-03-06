@@ -14,7 +14,12 @@
 
 import type { Locale } from '@shared/locale'
 import type { GameSearchResult } from '@shared/scraper'
-import type { GameInfo, Tag, GamePerson, GameCompany, GameCharacter } from '@shared/metadata'
+import type { GameInfo, Tag } from '@shared/metadata'
+import type {
+  ScrapedGamePersonFact,
+  ScrapedGameCompanyFact,
+  ScrapedGameCharacterFact
+} from '@shared/scraper'
 import type { ScraperCapability } from '@shared/scraper'
 
 // -----------------------------------------------------------------------------
@@ -100,13 +105,13 @@ export interface GameScraperProvider {
    * Get characters with related persons (voice actors, etc.).
    * Characters may include persons[] following link table convention.
    */
-  getCharacters?(id: string, locale?: Locale): Promise<GameCharacter[]>
+  getCharacters?(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]>
 
   /** Get persons (staff, voice actors, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<GamePerson[]>
+  getPersons?(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]>
 
   /** Get companies (developers, publishers) */
-  getCompanies?(id: string, locale?: Locale): Promise<GameCompany[]>
+  getCompanies?(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]>
 
   // ---------------------------------------------------------------------------
   // Media Assets

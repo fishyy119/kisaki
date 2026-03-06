@@ -6,7 +6,7 @@
  */
 
 import type { PartialDate } from '@shared/db'
-import type { ExternalId } from '@shared/metadata'
+import type { ExternalId } from '@shared/identity'
 import type { ScraperCapability } from './slot'
 
 // =============================================================================

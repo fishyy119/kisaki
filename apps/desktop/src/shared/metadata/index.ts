@@ -2,7 +2,7 @@
  * Metadata types module
  *
  * Base metadata type definitions for all entities.
- * These types are used across scraper, adder, and other services.
+ * These types are used across scraper, ingest, and other services.
  */
 
 export * from './common'
