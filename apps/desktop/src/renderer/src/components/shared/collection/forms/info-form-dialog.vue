@@ -52,8 +52,9 @@ export interface Props {
   /** Collection ID for edit mode */
   collectionId?: string
   /**
-   * Entity to add to collection after creation (static mode only).
-   * Used by entity context/dropdown menus for quick "新建合集..." flows.
+   * Entity to add to collection after creation.
+   * When present, create mode is locked to static collections because
+   * entity menu quick-create flows must allow manual membership edits.
    */
   entityToAdd?: { type: ContentEntityType; id: string }
 }
@@ -62,6 +63,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const isEditMode = !!props.collectionId
+const isStaticCreateLocked = computed(() => !isEditMode && !!props.entityToAdd)
 
 // Form state
 interface FormData {
@@ -107,6 +109,16 @@ watch(existingCollection, (data) => {
     }
   }
 })
+
+watch(
+  isStaticCreateLocked,
+  (locked) => {
+    if (locked) {
+      formData.value.isDynamic = false
+    }
+  },
+  { immediate: true }
+)
 
 const currentCoverUrl = computed(() => {
   if (!isEditMode) return null
@@ -200,12 +212,13 @@ async function handleSubmit() {
       notify.success('合集已更新')
     } else {
       const newCollectionId = nanoid()
+      const isDynamic = isStaticCreateLocked.value ? false : formData.value.isDynamic
       await db.insert(collections).values({
         id: newCollectionId,
         name: formData.value.name,
         description: formData.value.description.trim() || null,
         isNsfw: formData.value.isNsfw,
-        isDynamic: formData.value.isDynamic,
+        isDynamic,
         dynamicConfig: null
       })
 
@@ -217,7 +230,7 @@ async function handleSubmit() {
       }
 
       // Add entity to collection if provided (static mode only)
-      if (props.entityToAdd && !formData.value.isDynamic) {
+      if (props.entityToAdd) {
         const entityType = props.entityToAdd.type
         const entityId = props.entityToAdd.id
 
@@ -371,8 +384,8 @@ const canSubmit = computed(() => formData.value.name.trim())
                 </FieldContent>
               </Field>
 
-              <!-- Type selection - only shown when creating new collection -->
-              <Field v-if="!isEditMode">
+              <!-- Type selection is hidden for entity menu quick-create flows. -->
+              <Field v-if="!isEditMode && !isStaticCreateLocked">
                 <FieldLabel>类型</FieldLabel>
                 <FieldDescription>
                   静态合集手动添加内容，动态合集根据筛选条件自动更新
