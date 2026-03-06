@@ -1,4 +1,4 @@
-import { GAME_SCRAPER_SLOTS, type MergeStrategy, type ScraperProfile } from '@shared/db'
+import { GAME_SCRAPER_SLOTS, type ScraperProfile, type ScraperSlotResultStrategy } from '@shared/db'
 import { buildEntityAliasKeys, normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type {
   ScrapedGameCharacterFact,
@@ -8,7 +8,7 @@ import type {
   ScrapedGameBundle
 } from '@shared/scraper'
 import {
-  applyEntityStrategy,
+  applyEntityCollectionStrategy,
   applyImageStrategy,
   applyStrategy,
   filterBySlot,
@@ -54,7 +54,7 @@ function mergeGamePerson(
 function mergeGameCharacter(
   existing: ScrapedGameCharacterFact,
   incoming: ScrapedGameCharacterFact,
-  personStrategy: MergeStrategy
+  personStrategy: ScraperSlotResultStrategy
 ): ScrapedGameCharacterFact {
   return {
     ...mergeCharacterMetadataFields(existing, incoming, personStrategy),
@@ -88,7 +88,7 @@ export function mergeGameScraperMetadata(
 
   for (const slot of GAME_SCRAPER_SLOTS) {
     const config = profile.slotConfigs[slot]
-    const strategy = config.mergeStrategy
+    const strategy = config.resultStrategy
 
     switch (slot) {
       case 'info':
@@ -98,7 +98,7 @@ export function mergeGameScraperMetadata(
         mergeTags(metadata, filterBySlot(results, 'tags'), strategy)
         break
       case 'characters': {
-        const personStrategy = profile.slotConfigs['persons'].mergeStrategy
+        const personStrategy = profile.slotConfigs['persons'].resultStrategy
         mergeCharacters(metadata, filterBySlot(results, 'characters'), strategy, personStrategy)
         break
       }
@@ -125,7 +125,7 @@ export function mergeGameScraperMetadata(
  */
 export function mergeGameScraperImages(
   results: GameScraperImageResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): string[] {
   const sorted = sortByPriority(results)
   const allImages: string[] = []
@@ -152,7 +152,7 @@ function filterByImageSlot(
 function mergeInfo(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperInfoResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -192,7 +192,7 @@ function isInfoComplete(metadata: Partial<ScrapedGameMetadata>): boolean {
 function mergeTags(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperTagsResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -208,15 +208,15 @@ function mergeTags(
 function mergeCharacters(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperCharactersResult[],
-  strategy: MergeStrategy,
-  personStrategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy,
+  personStrategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
 
-    metadata.characters = applyEntityStrategy(
+    metadata.characters = applyEntityCollectionStrategy(
       metadata.characters,
       result.data,
       strategy,
@@ -231,14 +231,14 @@ function mergeCharacters(
 function mergePersons(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperPersonsResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
 
-    metadata.persons = applyEntityStrategy(
+    metadata.persons = applyEntityCollectionStrategy(
       metadata.persons,
       result.data,
       strategy,
@@ -257,14 +257,14 @@ function mergePersons(
 function mergeCompanies(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperCompaniesResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
 
-    metadata.companies = applyEntityStrategy(
+    metadata.companies = applyEntityCollectionStrategy(
       metadata.companies,
       result.data,
       strategy,
@@ -286,7 +286,7 @@ function mergeImages(
   metadata: Partial<ScrapedGameMetadata>,
   slot: ImageSlot,
   results: GameScraperImageResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 

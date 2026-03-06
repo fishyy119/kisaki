@@ -831,7 +831,7 @@ export const scraperSlotConfigs = customType<{
       for (const [slot, slotConfig] of Object.entries(parsed as Record<string, unknown>)) {
         if (!slotConfig || typeof slotConfig !== 'object') continue
         const candidate = slotConfig as Partial<SlotConfig>
-        if (!Array.isArray(candidate.providers) || typeof candidate.mergeStrategy !== 'string') {
+        if (!Array.isArray(candidate.providers) || typeof candidate.resultStrategy !== 'string') {
           continue
         }
         configs[slot] = candidate as SlotConfig

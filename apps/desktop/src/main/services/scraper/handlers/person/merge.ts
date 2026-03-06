@@ -1,4 +1,8 @@
-import { PERSON_SCRAPER_SLOTS, type MergeStrategy, type ScraperProfile } from '@shared/db'
+import {
+  PERSON_SCRAPER_SLOTS,
+  type ScraperProfile,
+  type ScraperSlotResultStrategy
+} from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedPersonMetadata, ScrapedPersonBundle } from '@shared/scraper'
 import { applyImageStrategy, applyStrategy, filterBySlot, sortByPriority } from '../../utils'
@@ -33,7 +37,7 @@ export function mergePersonScraperMetadata(
 
   for (const slot of PERSON_SCRAPER_SLOTS) {
     const config = profile.slotConfigs[slot]
-    const strategy = config.mergeStrategy
+    const strategy = config.resultStrategy
 
     switch (slot) {
       case 'info':
@@ -54,7 +58,7 @@ export function mergePersonScraperMetadata(
 function mergeInfo(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperInfoResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -90,7 +94,7 @@ function mergeInfo(
 function mergeTags(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperTagsResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -104,7 +108,7 @@ function mergeTags(
 function mergePhotos(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperPhotosResult[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): void {
   const sorted = sortByPriority(results)
 

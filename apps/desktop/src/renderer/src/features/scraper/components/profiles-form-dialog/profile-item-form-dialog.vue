@@ -76,10 +76,10 @@ const SLOT_LABELS: Record<ScraperSlot, string> = {
   photos: '照片'
 }
 
-const MERGE_STRATEGY_LABELS: Record<string, string> = {
+const RESULT_STRATEGY_LABELS: Record<string, string> = {
   first: '首个',
-  merge: '合并',
-  append: '追加'
+  enrich: '补全',
+  expand: '扩展'
 }
 
 // Form state
@@ -266,7 +266,7 @@ const mediaTypeModel = computed({
             <!-- Slot Configs - inline list -->
             <Field>
               <FieldLabel>槽位配置</FieldLabel>
-              <FieldDescription>点击槽位配置数据来源和合并策略</FieldDescription>
+              <FieldDescription>点击槽位配置数据来源和结果策略</FieldDescription>
               <FieldContent>
                 <div class="space-y-1">
                   <button
@@ -280,7 +280,8 @@ const mediaTypeModel = computed({
                     <div class="flex items-center gap-2 text-muted-foreground">
                       <span class="text-xs font-mono">
                         {{
-                          MERGE_STRATEGY_LABELS[formData.slotConfigs[slot]?.mergeStrategy] || '首个'
+                          RESULT_STRATEGY_LABELS[formData.slotConfigs[slot]?.resultStrategy] ||
+                          '首个'
                         }}
                         ·
                         {{

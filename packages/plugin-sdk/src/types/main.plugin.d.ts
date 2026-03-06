@@ -11,7 +11,7 @@ import Database from 'better-sqlite3'
 import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as drizzle_orm_sqlite_core319 from 'drizzle-orm/sqlite-core'
 import { SQLiteTable, SQLiteTransaction } from 'drizzle-orm/sqlite-core'
-import * as drizzle_orm89 from 'drizzle-orm'
+import * as drizzle_orm0 from 'drizzle-orm'
 import { ExtractTablesWithRelations, InferInsertModel, InferSelectModel, Table } from 'drizzle-orm'
 import * as electron from 'electron'
 import {
@@ -279,8 +279,8 @@ declare const CHARACTER_SCRAPER_SLOTS: CharacterScraperSlot[]
  * - Slot config editing UI
  */
 type ScraperSlot = GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
-/** Merge strategy for multi-provider results */
-type MergeStrategy = 'first' | 'merge' | 'append'
+/** Result strategy for a multi-provider scraper slot. */
+type ScraperSlotResultStrategy = 'first' | 'enrich' | 'expand'
 /** Configuration for a provider within a slot */
 interface ScraperProviderEntry {
   providerId: string
@@ -291,7 +291,7 @@ interface ScraperProviderEntry {
 /** Configuration for a single slot */
 interface SlotConfig {
   providers: ScraperProviderEntry[]
-  mergeStrategy: MergeStrategy
+  resultStrategy: ScraperSlotResultStrategy
 }
 /**
  * Scraper slot configurations stored in DB.
@@ -306,10 +306,10 @@ type CharacterScraperSlotConfigs = Record<CharacterScraperSlot, SlotConfig>
 //#endregion
 //#region src/shared/db/custom-types.d.ts
 declare const baseColumns: {
-  id: drizzle_orm89.HasRuntimeDefault<
-    drizzle_orm89.HasDefault<
-      drizzle_orm89.IsPrimaryKey<
-        drizzle_orm89.NotNull<
+  id: drizzle_orm0.HasRuntimeDefault<
+    drizzle_orm0.HasDefault<
+      drizzle_orm0.IsPrimaryKey<
+        drizzle_orm0.NotNull<
           drizzle_orm_sqlite_core319.SQLiteTextBuilderInitial<
             'id',
             [string, ...string[]],
@@ -319,17 +319,15 @@ declare const baseColumns: {
       >
     >
   >
-  createdAt: drizzle_orm89.HasRuntimeDefault<
-    drizzle_orm89.HasDefault<
-      drizzle_orm89.NotNull<drizzle_orm_sqlite_core319.SQLiteTimestampBuilderInitial<'created_at'>>
+  createdAt: drizzle_orm0.HasRuntimeDefault<
+    drizzle_orm0.HasDefault<
+      drizzle_orm0.NotNull<drizzle_orm_sqlite_core319.SQLiteTimestampBuilderInitial<'created_at'>>
     >
   >
-  updatedAt: drizzle_orm89.HasDefault<
-    drizzle_orm89.HasRuntimeDefault<
-      drizzle_orm89.HasDefault<
-        drizzle_orm89.NotNull<
-          drizzle_orm_sqlite_core319.SQLiteTimestampBuilderInitial<'updated_at'>
-        >
+  updatedAt: drizzle_orm0.HasDefault<
+    drizzle_orm0.HasRuntimeDefault<
+      drizzle_orm0.HasDefault<
+        drizzle_orm0.NotNull<drizzle_orm_sqlite_core319.SQLiteTimestampBuilderInitial<'updated_at'>>
       >
     >
   >
@@ -8076,198 +8074,198 @@ type NewCharacterPersonLink = InferInsertModel<typeof characterPersonLinks>
  * Drizzle ORM relations for all tables.
  * Separated from table definitions to avoid circular imports.
  */
-declare const gamesRelations: drizzle_orm89.Relations<
+declare const gamesRelations: drizzle_orm0.Relations<
   'games',
   {
-    sessions: drizzle_orm89.Many<'game_sessions'>
-    notes: drizzle_orm89.Many<'game_notes'>
-    gamePersonLinks: drizzle_orm89.Many<'game_person_links'>
-    gameCompanyLinks: drizzle_orm89.Many<'game_company_links'>
-    gameCharacterLinks: drizzle_orm89.Many<'game_character_links'>
-    collectionGameLinks: drizzle_orm89.Many<'collection_game_links'>
-    gameTagLinks: drizzle_orm89.Many<'game_tag_links'>
-    externalIds: drizzle_orm89.Many<'game_external_ids'>
+    sessions: drizzle_orm0.Many<'game_sessions'>
+    notes: drizzle_orm0.Many<'game_notes'>
+    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
+    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
+    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
+    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
+    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
+    externalIds: drizzle_orm0.Many<'game_external_ids'>
   }
 >
-declare const gameNotesRelations: drizzle_orm89.Relations<
+declare const gameNotesRelations: drizzle_orm0.Relations<
   'game_notes',
   {
-    game: drizzle_orm89.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const gameSessionsRelations: drizzle_orm89.Relations<
+declare const gameSessionsRelations: drizzle_orm0.Relations<
   'game_sessions',
   {
-    game: drizzle_orm89.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const gamePersonLinksRelations: drizzle_orm89.Relations<
+declare const gamePersonLinksRelations: drizzle_orm0.Relations<
   'game_person_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    person: drizzle_orm89.One<'persons', true>
+    game: drizzle_orm0.One<'games', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const gameCompanyLinksRelations: drizzle_orm89.Relations<
+declare const gameCompanyLinksRelations: drizzle_orm0.Relations<
   'game_company_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    company: drizzle_orm89.One<'companies', true>
+    game: drizzle_orm0.One<'games', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const gameCharacterLinksRelations: drizzle_orm89.Relations<
+declare const gameCharacterLinksRelations: drizzle_orm0.Relations<
   'game_character_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    character: drizzle_orm89.One<'characters', true>
+    game: drizzle_orm0.One<'games', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
-declare const personsRelations: drizzle_orm89.Relations<
+declare const personsRelations: drizzle_orm0.Relations<
   'persons',
   {
-    gamePersonLinks: drizzle_orm89.Many<'game_person_links'>
-    characterPersonLinks: drizzle_orm89.Many<'character_person_links'>
-    collectionPersonLinks: drizzle_orm89.Many<'collection_person_links'>
-    personTagLinks: drizzle_orm89.Many<'person_tag_links'>
-    externalIds: drizzle_orm89.Many<'person_external_ids'>
+    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
+    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
+    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
+    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
+    externalIds: drizzle_orm0.Many<'person_external_ids'>
   }
 >
-declare const companiesRelations: drizzle_orm89.Relations<
+declare const companiesRelations: drizzle_orm0.Relations<
   'companies',
   {
-    gameCompanyLinks: drizzle_orm89.Many<'game_company_links'>
-    collectionCompanyLinks: drizzle_orm89.Many<'collection_company_links'>
-    companyTagLinks: drizzle_orm89.Many<'company_tag_links'>
-    externalIds: drizzle_orm89.Many<'company_external_ids'>
+    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
+    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
+    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
+    externalIds: drizzle_orm0.Many<'company_external_ids'>
   }
 >
-declare const charactersRelations: drizzle_orm89.Relations<
+declare const charactersRelations: drizzle_orm0.Relations<
   'characters',
   {
-    gameCharacterLinks: drizzle_orm89.Many<'game_character_links'>
-    characterPersonLinks: drizzle_orm89.Many<'character_person_links'>
-    collectionCharacterLinks: drizzle_orm89.Many<'collection_character_links'>
-    characterTagLinks: drizzle_orm89.Many<'character_tag_links'>
-    externalIds: drizzle_orm89.Many<'character_external_ids'>
+    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
+    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
+    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
+    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
+    externalIds: drizzle_orm0.Many<'character_external_ids'>
   }
 >
-declare const characterPersonLinksRelations: drizzle_orm89.Relations<
+declare const characterPersonLinksRelations: drizzle_orm0.Relations<
   'character_person_links',
   {
-    character: drizzle_orm89.One<'characters', true>
-    person: drizzle_orm89.One<'persons', true>
+    character: drizzle_orm0.One<'characters', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const collectionsRelations: drizzle_orm89.Relations<
+declare const collectionsRelations: drizzle_orm0.Relations<
   'collections',
   {
-    collectionGameLinks: drizzle_orm89.Many<'collection_game_links'>
-    collectionCharacterLinks: drizzle_orm89.Many<'collection_character_links'>
-    collectionPersonLinks: drizzle_orm89.Many<'collection_person_links'>
-    collectionCompanyLinks: drizzle_orm89.Many<'collection_company_links'>
-    scanners: drizzle_orm89.Many<'scanners'>
+    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
+    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
+    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
+    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
+    scanners: drizzle_orm0.Many<'scanners'>
   }
 >
-declare const collectionGameLinksRelations: drizzle_orm89.Relations<
+declare const collectionGameLinksRelations: drizzle_orm0.Relations<
   'collection_game_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    game: drizzle_orm89.One<'games', true>
+    collection: drizzle_orm0.One<'collections', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const collectionCharacterLinksRelations: drizzle_orm89.Relations<
+declare const collectionCharacterLinksRelations: drizzle_orm0.Relations<
   'collection_character_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    character: drizzle_orm89.One<'characters', true>
+    collection: drizzle_orm0.One<'collections', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
-declare const collectionPersonLinksRelations: drizzle_orm89.Relations<
+declare const collectionPersonLinksRelations: drizzle_orm0.Relations<
   'collection_person_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    person: drizzle_orm89.One<'persons', true>
+    collection: drizzle_orm0.One<'collections', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const collectionCompanyLinksRelations: drizzle_orm89.Relations<
+declare const collectionCompanyLinksRelations: drizzle_orm0.Relations<
   'collection_company_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    company: drizzle_orm89.One<'companies', true>
+    collection: drizzle_orm0.One<'collections', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const scraperProfilesRelations: drizzle_orm89.Relations<
+declare const scraperProfilesRelations: drizzle_orm0.Relations<
   'scraper_profiles',
   {
-    scanners: drizzle_orm89.Many<'scanners'>
+    scanners: drizzle_orm0.Many<'scanners'>
   }
 >
-declare const scannersRelations: drizzle_orm89.Relations<
+declare const scannersRelations: drizzle_orm0.Relations<
   'scanners',
   {
-    scraperProfile: drizzle_orm89.One<'scraper_profiles', true>
-    targetCollection: drizzle_orm89.One<'collections', false>
+    scraperProfile: drizzle_orm0.One<'scraper_profiles', true>
+    targetCollection: drizzle_orm0.One<'collections', false>
   }
 >
-declare const tagsRelations: drizzle_orm89.Relations<
+declare const tagsRelations: drizzle_orm0.Relations<
   'tags',
   {
-    gameTagLinks: drizzle_orm89.Many<'game_tag_links'>
-    characterTagLinks: drizzle_orm89.Many<'character_tag_links'>
-    personTagLinks: drizzle_orm89.Many<'person_tag_links'>
-    companyTagLinks: drizzle_orm89.Many<'company_tag_links'>
+    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
+    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
+    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
+    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
   }
 >
-declare const gameTagLinksRelations: drizzle_orm89.Relations<
+declare const gameTagLinksRelations: drizzle_orm0.Relations<
   'game_tag_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    tag: drizzle_orm89.One<'tags', true>
+    game: drizzle_orm0.One<'games', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const characterTagLinksRelations: drizzle_orm89.Relations<
+declare const characterTagLinksRelations: drizzle_orm0.Relations<
   'character_tag_links',
   {
-    character: drizzle_orm89.One<'characters', true>
-    tag: drizzle_orm89.One<'tags', true>
+    character: drizzle_orm0.One<'characters', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const personTagLinksRelations: drizzle_orm89.Relations<
+declare const personTagLinksRelations: drizzle_orm0.Relations<
   'person_tag_links',
   {
-    person: drizzle_orm89.One<'persons', true>
-    tag: drizzle_orm89.One<'tags', true>
+    person: drizzle_orm0.One<'persons', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const companyTagLinksRelations: drizzle_orm89.Relations<
+declare const companyTagLinksRelations: drizzle_orm0.Relations<
   'company_tag_links',
   {
-    company: drizzle_orm89.One<'companies', true>
-    tag: drizzle_orm89.One<'tags', true>
+    company: drizzle_orm0.One<'companies', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const gameExternalIdsRelations: drizzle_orm89.Relations<
+declare const gameExternalIdsRelations: drizzle_orm0.Relations<
   'game_external_ids',
   {
-    game: drizzle_orm89.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const personExternalIdsRelations: drizzle_orm89.Relations<
+declare const personExternalIdsRelations: drizzle_orm0.Relations<
   'person_external_ids',
   {
-    person: drizzle_orm89.One<'persons', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const companyExternalIdsRelations: drizzle_orm89.Relations<
+declare const companyExternalIdsRelations: drizzle_orm0.Relations<
   'company_external_ids',
   {
-    company: drizzle_orm89.One<'companies', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const characterExternalIdsRelations: drizzle_orm89.Relations<
+declare const characterExternalIdsRelations: drizzle_orm0.Relations<
   'character_external_ids',
   {
-    character: drizzle_orm89.One<'characters', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
 //#endregion
@@ -8342,7 +8340,6 @@ declare namespace index_d_exports {
     GameTagLink,
     Gender,
     MainWindowCloseAction,
-    MergeStrategy,
     NameExtractionRule,
     NewCharacter,
     NewCharacterExternalId,
@@ -8391,6 +8388,7 @@ declare namespace index_d_exports {
     ScraperProviderEntry,
     ScraperSlot,
     ScraperSlotConfigs,
+    ScraperSlotResultStrategy,
     SectionItemSize,
     SectionLayout,
     SectionOpenMode,
@@ -8731,6 +8729,11 @@ declare class AttachmentStore {
 //#region src/shared/identity.d.ts
 /**
  * Shared identity primitives for cross-layer entity matching.
+ *
+ * Identity is intentionally split into three concerns:
+ * - external ID normalization: persistent entity identity primitive
+ * - alias keys: local matching keys used by scraper / ingest graph merges
+ * - canonical identity key: single stable key for normalized graph nodes
  */
 interface ExternalId {
   source: string
@@ -8747,28 +8750,24 @@ declare class HelperStore {
   private getDb
   findExistingPerson(
     params: {
-      name?: string
       externalIds?: ExternalId[]
     },
     ctx?: DbContext
   ): Person | undefined
   findExistingCompany(
     params: {
-      name?: string
       externalIds?: ExternalId[]
     },
     ctx?: DbContext
   ): Company | undefined
   findExistingCharacter(
     params: {
-      name?: string
       externalIds?: ExternalId[]
     },
     ctx?: DbContext
   ): Character | undefined
   findExistingGame(
     params: {
-      name?: string
       externalIds?: ExternalId[]
       path?: string
     },
@@ -9635,6 +9634,7 @@ interface IngestAddCharacterResult extends IngestAddResult {
  * Normalized entity node in an ingest graph.
  */
 interface IngestEntityNode<TCore> {
+  /** Canonical identity key scoped to the normalized ingest graph. */
   identityKey: string
   core: TCore
 }
@@ -12429,7 +12429,7 @@ interface KisakiMainAPI {
    */
   readonly __deps: {
     electron: typeof electron
-    drizzle: typeof drizzle_orm89
+    drizzle: typeof drizzle_orm0
   }
 }
 //#endregion

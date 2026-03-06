@@ -26,12 +26,12 @@ import {
 import { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import * as vue_router0 from 'vue-router'
 import { Router, Router as Router$1 } from 'vue-router'
-import * as pinia0 from 'pinia'
+import * as pinia2 from 'pinia'
 import { Pinia, Pinia as Pinia$1 } from 'pinia'
 import log from 'electron-log/renderer'
 import * as drizzle_orm_sqlite_proxy0 from 'drizzle-orm/sqlite-proxy'
 import { i18n } from 'i18next'
-import * as reka_ui0 from 'reka-ui'
+import * as reka_ui37 from 'reka-ui'
 import {
   AlertDialogCancelProps,
   AlertDialogContentProps,
@@ -310,8 +310,8 @@ declare const CHARACTER_SCRAPER_SLOTS: CharacterScraperSlot[]
  * - Slot config editing UI
  */
 type ScraperSlot = GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
-/** Merge strategy for multi-provider results */
-type MergeStrategy = 'first' | 'merge' | 'append'
+/** Result strategy for a multi-provider scraper slot. */
+type ScraperSlotResultStrategy = 'first' | 'enrich' | 'expand'
 /** Configuration for a provider within a slot */
 interface ScraperProviderEntry {
   providerId: string
@@ -322,7 +322,7 @@ interface ScraperProviderEntry {
 /** Configuration for a single slot */
 interface SlotConfig {
   providers: ScraperProviderEntry[]
-  mergeStrategy: MergeStrategy
+  resultStrategy: ScraperSlotResultStrategy
 }
 /**
  * Scraper slot configurations stored in DB.
@@ -8436,7 +8436,6 @@ declare namespace index_d_exports$2 {
     GameTagLink,
     Gender,
     MainWindowCloseAction,
-    MergeStrategy,
     NameExtractionRule,
     NewCharacter,
     NewCharacterExternalId,
@@ -8485,6 +8484,7 @@ declare namespace index_d_exports$2 {
     ScraperProviderEntry,
     ScraperSlot,
     ScraperSlotConfigs,
+    ScraperSlotResultStrategy,
     SectionItemSize,
     SectionLayout,
     SectionOpenMode,
@@ -8600,6 +8600,11 @@ interface ReactiveRegistry<
 //#region src/shared/identity.d.ts
 /**
  * Shared identity primitives for cross-layer entity matching.
+ *
+ * Identity is intentionally split into three concerns:
+ * - external ID normalization: persistent entity identity primitive
+ * - alias keys: local matching keys used by scraper / ingest graph merges
+ * - canonical identity key: single stable key for normalized graph nodes
  */
 interface ExternalId {
   source: string
@@ -10756,7 +10761,7 @@ declare namespace index_d_exports$1 {
  * - Resolves system mode to light/dark and applies via themeManager
  */
 type ThemeMode = 'light' | 'dark' | 'system'
-declare const useThemeStore: pinia0.StoreDefinition<
+declare const useThemeStore: pinia2.StoreDefinition<
   'theme',
   Pick<
     {
@@ -10806,7 +10811,7 @@ interface GameMonitorStatus {
   pid?: number
   startTime?: number
 }
-declare const useGameMonitorStore: pinia0.StoreDefinition<
+declare const useGameMonitorStore: pinia2.StoreDefinition<
   'gameMonitor',
   Pick<
     {
@@ -10844,7 +10849,7 @@ declare const useGameMonitorStore: pinia0.StoreDefinition<
       getGameStatus: (gameId: string) => GameMonitorStatus | undefined
       init: () => Promise<void>
     },
-    'statuses' | 'initialized'
+    'initialized' | 'statuses'
   >,
   Pick<
     {
@@ -10920,18 +10925,18 @@ declare const useGameMonitorStore: pinia0.StoreDefinition<
       getGameStatus: (gameId: string) => GameMonitorStatus | undefined
       init: () => Promise<void>
     },
+    | 'init'
     | 'setGameStatus'
     | 'removeGameStatus'
     | 'clearAllStatuses'
     | 'isGameRunning'
     | 'isGameForeground'
     | 'getGameStatus'
-    | 'init'
   >
 >
 //#endregion
 //#region src/renderer/src/stores/scanner.d.ts
-declare const useScannerStore: pinia0.StoreDefinition<
+declare const useScannerStore: pinia2.StoreDefinition<
   'scanner',
   Pick<
     {
@@ -10995,7 +11000,7 @@ declare const useScannerStore: pinia0.StoreDefinition<
       getScannerState: (id: string) => ScanProgressData | undefined
       init: () => Promise<void>
     },
-    'initialized' | 'scannerStates'
+    'scannerStates' | 'initialized'
   >,
   Pick<
     {
@@ -11123,16 +11128,16 @@ declare const useScannerStore: pinia0.StoreDefinition<
       getScannerState: (id: string) => ScanProgressData | undefined
       init: () => Promise<void>
     },
-    | 'init'
     | 'updateScannerState'
     | 'resetScannerState'
     | 'resetAllScannerStates'
     | 'getScannerState'
+    | 'init'
   >
 >
 //#endregion
 //#region src/renderer/src/stores/default-from.d.ts
-declare const useDefaultFromStore: pinia0.StoreDefinition<
+declare const useDefaultFromStore: pinia2.StoreDefinition<
   'defaultFrom',
   Pick<
     {
@@ -11184,7 +11189,7 @@ declare const useDefaultFromStore: pinia0.StoreDefinition<
  * Pinia store for user preferences with automatic persistence.
  * Uses pinia-plugin-persistedstate for localStorage sync.
  */
-declare const usePreferencesStore: pinia0.StoreDefinition<
+declare const usePreferencesStore: pinia2.StoreDefinition<
   'preferences',
   Pick<
     {
@@ -11213,7 +11218,7 @@ declare const usePreferencesStore: pinia0.StoreDefinition<
 >
 //#endregion
 //#region src/renderer/src/stores/updater.d.ts
-declare const useUpdaterStore: pinia0.StoreDefinition<
+declare const useUpdaterStore: pinia2.StoreDefinition<
   'updater',
   Pick<
     {
@@ -11595,9 +11600,9 @@ declare const __VLS_base$133: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
   },
@@ -11606,10 +11611,10 @@ declare const __VLS_base$133: vue0.DefineComponent<
   Readonly<__VLS_Props$81> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -11951,7 +11956,7 @@ declare const __VLS_base$125: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<Props$46> & Readonly<{}>,
   {
-    as: reka_ui0.AsTag | vue0.Component
+    as: reka_ui37.AsTag | vue0.Component
   },
   {},
   {},
@@ -12652,38 +12657,38 @@ declare const __VLS_base$109: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    entryFocus: (event: CustomEvent<any>) => any
-    'update:modelValue': (value: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (value: reka_ui37.AcceptableValue) => any
     highlight: (
       payload:
         | {
             ref: HTMLElement
-            value: reka_ui0.AcceptableValue
+            value: reka_ui37.AcceptableValue
           }
         | undefined
     ) => any
+    entryFocus: (event: CustomEvent<any>) => any
     leave: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$73> &
     Readonly<{
-      onEntryFocus?: ((event: CustomEvent<any>) => any) | undefined
-      'onUpdate:modelValue'?: ((value: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((value: reka_ui37.AcceptableValue) => any) | undefined
       onHighlight?:
         | ((
             payload:
               | {
                   ref: HTMLElement
-                  value: reka_ui0.AcceptableValue
+                  value: reka_ui37.AcceptableValue
                 }
               | undefined
           ) => any)
         | undefined
+      onEntryFocus?: ((event: CustomEvent<any>) => any) | undefined
       onLeave?: ((event: Event) => any) | undefined
     }>,
   {
-    modelValue: reka_ui0.AcceptableValue | reka_ui0.AcceptableValue[]
+    modelValue: reka_ui37.AcceptableValue | reka_ui37.AcceptableValue[]
   },
   {},
   {},
@@ -12874,14 +12879,14 @@ declare const __VLS_base$105: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    select: (event: reka_ui0.ListboxItemSelectEvent<reka_ui0.AcceptableValue>) => any
+    select: (event: reka_ui37.ListboxItemSelectEvent<reka_ui37.AcceptableValue>) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$68> &
     Readonly<{
       onSelect?:
-        | ((event: reka_ui0.ListboxItemSelectEvent<reka_ui0.AcceptableValue>) => any)
+        | ((event: reka_ui37.ListboxItemSelectEvent<reka_ui37.AcceptableValue>) => any)
         | undefined
     }>,
   {},
@@ -13209,9 +13214,9 @@ declare const __VLS_base$99: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -13219,10 +13224,10 @@ declare const __VLS_base$99: vue0.DefineComponent<
   Readonly<__VLS_Props$64> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
@@ -13491,27 +13496,27 @@ declare const __VLS_base$93: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
+    entryFocus: (event: Event) => any
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
-    entryFocus: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$59> &
     Readonly<{
+      onEntryFocus?: ((event: Event) => any) | undefined
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
-      onEntryFocus?: ((event: Event) => any) | undefined
     }>,
   {},
   {},
@@ -13592,13 +13597,13 @@ declare const __VLS_base$91: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (payload: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (payload: reka_ui37.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<ContextMenuRadioGroupProps> &
     Readonly<{
-      'onUpdate:modelValue'?: ((payload: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((payload: reka_ui37.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -13798,9 +13803,9 @@ declare const __VLS_base$86: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
   },
@@ -13809,10 +13814,10 @@ declare const __VLS_base$86: vue0.DefineComponent<
   Readonly<__VLS_Props$56> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -14162,9 +14167,9 @@ declare const __VLS_base$77: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -14172,10 +14177,10 @@ declare const __VLS_base$77: vue0.DefineComponent<
   Readonly<__VLS_Props$49> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
@@ -14303,13 +14308,13 @@ declare const __VLS_base$74: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (payload: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (payload: reka_ui37.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<DropdownMenuRadioGroupProps> &
     Readonly<{
-      'onUpdate:modelValue'?: ((payload: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((payload: reka_ui37.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -14610,27 +14615,27 @@ declare const __VLS_base$67: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
+    entryFocus: (event: Event) => any
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
-    entryFocus: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$41> &
     Readonly<{
+      onEntryFocus?: ((event: Event) => any) | undefined
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
-      onEntryFocus?: ((event: Event) => any) | undefined
     }>,
   {},
   {},
@@ -15765,9 +15770,9 @@ declare const __VLS_base$41: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui37.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
     afterLeave: () => any
@@ -15777,10 +15782,10 @@ declare const __VLS_base$41: vue0.DefineComponent<
   Readonly<__VLS_Props$37> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui37.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui37.PointerDownOutsideEvent | reka_ui37.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -15848,7 +15853,7 @@ type __VLS_Props$36 = RadioGroupRootProps & {
   class?: HTMLAttributes['class']
 }
 declare var __VLS_8$18: {
-  modelValue: reka_ui0.AcceptableValue | undefined
+  modelValue: reka_ui37.AcceptableValue | undefined
 }
 type __VLS_Slots$39 = {} & {
   default?: (props: typeof __VLS_8$18) => any
@@ -16174,15 +16179,15 @@ declare const __VLS_base$33: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
+    'update:modelValue': (value: reka_ui37.AcceptableValue) => any
     'update:open': (value: boolean) => any
-    'update:modelValue': (value: reka_ui0.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$33> &
     Readonly<{
+      'onUpdate:modelValue'?: ((value: reka_ui37.AcceptableValue) => any) | undefined
       'onUpdate:open'?: ((value: boolean) => any) | undefined
-      'onUpdate:modelValue'?: ((value: reka_ui0.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -16296,7 +16301,7 @@ declare const __VLS_base$30: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui37.PointerDownOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -16304,7 +16309,7 @@ declare const __VLS_base$30: vue0.DefineComponent<
   Readonly<__VLS_Props$31> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui37.PointerDownOutsideEvent) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
   {
@@ -17220,10 +17225,10 @@ declare const badgeVariants: (
         variant?:
           | 'default'
           | 'destructive'
-          | 'outline'
           | 'secondary'
           | 'success'
           | 'warning'
+          | 'outline'
           | null
           | undefined
       } & class_variance_authority_types0.ClassProp)
@@ -17286,9 +17291,9 @@ declare const buttonVariants: (
           | 'link'
           | 'input'
           | 'destructive'
-          | 'ghost'
-          | 'outline'
           | 'secondary'
+          | 'outline'
+          | 'ghost'
           | null
           | undefined
         size?:
@@ -17332,7 +17337,7 @@ declare const __VLS_base$7: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<ButtonProps> & Readonly<{}>,
   {
-    as: reka_ui0.AsTag | vue0.Component
+    as: reka_ui37.AsTag | vue0.Component
   },
   {},
   {},
@@ -17356,8 +17361,8 @@ type __VLS_Props$10 = CheckboxRootProps & {
   class?: HTMLAttributes['class']
 }
 declare var __VLS_14$1: {
-  modelValue: reka_ui0.CheckboxCheckedState
-  state: reka_ui0.CheckboxCheckedState
+  modelValue: reka_ui37.CheckboxCheckedState
+  state: reka_ui37.CheckboxCheckedState
 }
 type __VLS_Slots$6 = {} & {
   default?: (props: typeof __VLS_14$1) => any
@@ -18522,7 +18527,7 @@ interface KisakiRendererAPI {
   readonly __deps: {
     vue: typeof vue0
     'vue-router': typeof vue_router0
-    pinia: typeof pinia0
+    pinia: typeof pinia2
     drizzle: typeof drizzle_orm90
   }
 }

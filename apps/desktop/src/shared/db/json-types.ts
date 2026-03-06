@@ -186,8 +186,8 @@ export type ScraperSlot =
   | CompanyScraperSlot
   | CharacterScraperSlot
 
-/** Merge strategy for multi-provider results */
-export type MergeStrategy = 'first' | 'merge' | 'append'
+/** Result strategy for a multi-provider scraper slot. */
+export type ScraperSlotResultStrategy = 'first' | 'enrich' | 'expand'
 
 /** Configuration for a provider within a slot */
 export interface ScraperProviderEntry {
@@ -200,7 +200,7 @@ export interface ScraperProviderEntry {
 /** Configuration for a single slot */
 export interface SlotConfig {
   providers: ScraperProviderEntry[]
-  mergeStrategy: MergeStrategy
+  resultStrategy: ScraperSlotResultStrategy
 }
 
 /**

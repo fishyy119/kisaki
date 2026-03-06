@@ -1,14 +1,24 @@
 <!--
   ScraperSlotConfigFormDialog
-  Dialog for editing a single slot's configuration (merge strategy + providers).
+  Dialog for editing a single slot's configuration (result strategy + providers).
   Providers are managed inline without nested dialogs.
 -->
 <script setup lang="ts">
-import type { SlotConfig, MergeStrategy, ScraperProviderEntry, ScraperSlot } from '@shared/db'
+import type {
+  SlotConfig,
+  ScraperProviderEntry,
+  ScraperSlotResultStrategy,
+  ScraperSlot
+} from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import {
+  getSupportedResultStrategies,
+  normalizeResultStrategyForSlot,
+  supportsExpandResultStrategy
+} from '@shared/scraper'
 import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
 import {
   Dialog,
@@ -50,22 +60,59 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const MERGE_STRATEGY_OPTIONS: { value: MergeStrategy; label: string; description: string }[] = [
-  { value: 'first', label: '首个', description: '使用第一个有效结果' },
-  { value: 'merge', label: '合并', description: '合并多个结果，以第一个有效结果为基础' },
-  { value: 'append', label: '追加', description: '将所有结果追加到列表中' }
-]
+interface ResultStrategyOption {
+  value: ScraperSlotResultStrategy
+  label: string
+  description: string
+}
+
+const RESULT_STRATEGY_LABELS: Record<ScraperSlotResultStrategy, string> = {
+  first: '首个',
+  enrich: '补全',
+  expand: '扩展'
+}
 
 // Form state
-const mergeStrategy = ref<MergeStrategy>('first')
+const resultStrategy = ref<ScraperSlotResultStrategy>('first')
 const providerEntries = ref<ScraperProviderEntry[]>([])
+
+function getResultStrategyDescription(
+  slot: ScraperSlot,
+  strategy: ScraperSlotResultStrategy
+): string {
+  switch (strategy) {
+    case 'first':
+      return '使用第一个有效结果，忽略后续来源'
+    case 'enrich':
+      if (slot === 'info') {
+        return '以首个结果为基准，补全缺失字段'
+      }
+      if (supportsExpandResultStrategy(slot)) {
+        return '以首个结果为基准，仅补全已匹配项'
+      }
+      return '以首个结果为基准，合并后续来源中的去重结果'
+    case 'expand':
+      return '以首个结果为基准，补全已匹配项并追加未匹配项'
+  }
+}
+
+const resultStrategyOptions = computed<ResultStrategyOption[]>(() =>
+  getSupportedResultStrategies(props.slotType).map((value) => ({
+    value,
+    label: RESULT_STRATEGY_LABELS[value],
+    description: getResultStrategyDescription(props.slotType, value)
+  }))
+)
 
 // Initialize form state when dialog opens
 watch(
   () => open.value,
   (isOpen) => {
     if (isOpen && props.slotConfig) {
-      mergeStrategy.value = props.slotConfig.mergeStrategy
+      resultStrategy.value = normalizeResultStrategyForSlot(
+        props.slotType,
+        props.slotConfig.resultStrategy
+      )
       providerEntries.value = [...props.slotConfig.providers]
     }
   },
@@ -108,7 +155,7 @@ function handleMoveDown(index: number) {
 
 function handleSubmit() {
   props.onSave({
-    mergeStrategy: mergeStrategy.value,
+    resultStrategy: resultStrategy.value,
     providers: providerEntries.value
   })
   open.value = false
@@ -129,20 +176,18 @@ const sortedProviders = computed(() =>
       <Form @submit="handleSubmit">
         <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
           <FieldGroup>
-            <!-- Merge Strategy -->
+            <!-- Result strategy -->
             <Field>
-              <FieldLabel>合并策略</FieldLabel>
+              <FieldLabel>结果策略</FieldLabel>
               <FieldDescription>多个提供者返回数据时的处理方式</FieldDescription>
               <FieldContent>
-                <Select v-model="mergeStrategy">
-                  <SelectTrigger
-                    class="w-full"
-                  >
-                    <SelectValue placeholder="选择合并策略" />
+                <Select v-model="resultStrategy">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="选择结果策略" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in MERGE_STRATEGY_OPTIONS"
+                      v-for="opt in resultStrategyOptions"
                       :key="opt.value"
                       :value="opt.value"
                       :description="opt.description"

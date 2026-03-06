@@ -1,4 +1,4 @@
-import type { MergeStrategy, RelatedSite } from '@shared/db'
+import type { ScraperSlotResultStrategy, RelatedSite } from '@shared/db'
 import type {
   ScrapedCharacterMetadata,
   ScrapedCharacterPersonFact,
@@ -18,12 +18,9 @@ export interface MergeIdentityEntity extends MergeIdentityEntityBase {
   type: string
 }
 
-interface EntityGroup<T> {
-  id: number
-  order: number
+interface AnchoredEntity<T> {
   item: T
   keys: Set<string>
-  active: boolean
 }
 
 type KeyBuilder<T> = (item: T) => string[]
@@ -61,150 +58,143 @@ function mergeArrays<T>(existing: T[], incoming: T[], keyFn: (item: T) => string
   return deduplicate([...existing, ...incoming], keyFn)
 }
 
-function registerGroupKeys<T>(group: EntityGroup<T>, keyToGroupId: Map<string, number>): void {
-  for (const key of group.keys) {
-    keyToGroupId.set(key, group.id)
+function registerAnchorKeys(
+  keyToAnchorIndexes: Map<string, Set<number>>,
+  anchorIndex: number,
+  keys: Iterable<string>
+): void {
+  for (const key of keys) {
+    let indexes = keyToAnchorIndexes.get(key)
+    if (!indexes) {
+      indexes = new Set<number>()
+      keyToAnchorIndexes.set(key, indexes)
+    }
+    indexes.add(anchorIndex)
   }
 }
 
-function getMatchedGroupIds<T>(
+function buildAnchoredEntities<T>(
+  items: T[],
+  keyBuilder: KeyBuilder<T>
+): {
+  anchors: AnchoredEntity<T>[]
+  keyToAnchorIndexes: Map<string, Set<number>>
+} {
+  const anchors = items.map((item) => ({
+    item,
+    keys: new Set(keyBuilder(item))
+  }))
+  const keyToAnchorIndexes = new Map<string, Set<number>>()
+
+  anchors.forEach((anchor, index) => {
+    registerAnchorKeys(keyToAnchorIndexes, index, anchor.keys)
+  })
+
+  return { anchors, keyToAnchorIndexes }
+}
+
+function getAliasKeyStrength(key: string): number {
+  const typeSeparatorIndex = key.indexOf('|')
+  const baseKey = typeSeparatorIndex >= 0 ? key.slice(0, typeSeparatorIndex) : key
+
+  if (baseKey.startsWith('ext:')) return 3
+  if (baseKey.startsWith('on:') || baseKey.startsWith('nm:')) return 2
+  if (baseKey.startsWith('onc:') || baseKey.startsWith('nmc:')) return 1
+  return 0
+}
+
+function findBestAnchorMatch(
   keys: string[],
-  keyToGroupId: Map<string, number>,
-  groups: EntityGroup<T>[]
-): number[] {
-  const ids = new Set<number>()
+  keyToAnchorIndexes: Map<string, Set<number>>
+): number | null {
+  const scores = new Map<number, number>()
 
   for (const key of keys) {
-    const groupId = keyToGroupId.get(key)
-    if (groupId === undefined) continue
+    const strength = getAliasKeyStrength(key)
+    if (!strength) continue
 
-    const group = groups[groupId]
-    if (group?.active) {
-      ids.add(groupId)
+    const anchorIndexes = keyToAnchorIndexes.get(key)
+    if (!anchorIndexes) continue
+
+    for (const anchorIndex of anchorIndexes) {
+      const current = scores.get(anchorIndex) ?? 0
+      if (strength > current) {
+        scores.set(anchorIndex, strength)
+      }
     }
   }
 
-  return [...ids].sort((a, b) => groups[a].order - groups[b].order)
-}
-
-function createGroup<T>(
-  groups: EntityGroup<T>[],
-  keyToGroupId: Map<string, number>,
-  item: T,
-  keys: string[]
-): EntityGroup<T> {
-  const group: EntityGroup<T> = {
-    id: groups.length,
-    order: groups.length,
-    item,
-    keys: new Set(keys),
-    active: true
+  if (scores.size === 0) {
+    return null
   }
 
-  groups.push(group)
-  registerGroupKeys(group, keyToGroupId)
-  return group
+  const rankedMatches = [...scores.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])
+  const [bestAnchorIndex, bestScore] = rankedMatches[0]
+
+  if (
+    rankedMatches.some(
+      ([anchorIndex, score]) => anchorIndex !== bestAnchorIndex && score === bestScore
+    )
+  ) {
+    return null
+  }
+
+  return bestAnchorIndex
 }
 
 /**
- * Merge entities by multiple keys.
+ * Reconcile provider entities against the current anchor set.
  *
- * When one entity matches multiple groups, all matched groups are folded in first-appearance order,
- * then the current entity is merged into the folded group.
+ * Existing items define the current entity boundary. Incoming items can enrich matched anchors,
+ * and optionally expand the anchor set with unmatched entities.
  */
-export function mergeEntitiesByKeys<T>(
+export function reconcileEntitiesByKeys<T>(
   existing: T[],
   incoming: T[],
   keyBuilder: KeyBuilder<T>,
-  mergeFn: EntityMerger<T>
+  mergeFn: EntityMerger<T>,
+  allowExpansion: boolean
 ): T[] {
-  const groups: EntityGroup<T>[] = []
-  const keyToGroupId = new Map<string, number>()
+  if (!existing.length) {
+    return incoming
+  }
 
-  for (const item of [...existing, ...incoming]) {
+  const { anchors, keyToAnchorIndexes } = buildAnchoredEntities(existing, keyBuilder)
+
+  for (const item of incoming) {
     const keys = keyBuilder(item)
-    const matchedGroupIds = getMatchedGroupIds(keys, keyToGroupId, groups)
+    const matchedAnchorIndex = findBestAnchorMatch(keys, keyToAnchorIndexes)
 
-    if (matchedGroupIds.length === 0) {
-      createGroup(groups, keyToGroupId, item, keys)
+    if (matchedAnchorIndex == null) {
+      if (!allowExpansion) continue
+
+      const anchorIndex = anchors.length
+      const anchor: AnchoredEntity<T> = {
+        item,
+        keys: new Set(keys)
+      }
+
+      anchors.push(anchor)
+      registerAnchorKeys(keyToAnchorIndexes, anchorIndex, anchor.keys)
       continue
     }
 
-    const baseGroup = groups[matchedGroupIds[0]]
+    const anchor = anchors[matchedAnchorIndex]
+    anchor.item = mergeFn(anchor.item, item)
 
-    for (const groupId of matchedGroupIds.slice(1)) {
-      const otherGroup = groups[groupId]
-      if (!otherGroup.active) continue
-
-      baseGroup.item = mergeFn(baseGroup.item, otherGroup.item)
-      for (const key of otherGroup.keys) {
-        baseGroup.keys.add(key)
-      }
-      otherGroup.active = false
-    }
-
-    baseGroup.item = mergeFn(baseGroup.item, item)
-
+    registerAnchorKeys(keyToAnchorIndexes, matchedAnchorIndex, keys)
     for (const key of keys) {
-      baseGroup.keys.add(key)
+      anchor.keys.add(key)
     }
 
-    for (const key of keyBuilder(baseGroup.item)) {
-      baseGroup.keys.add(key)
+    const mergedKeys = keyBuilder(anchor.item)
+    registerAnchorKeys(keyToAnchorIndexes, matchedAnchorIndex, mergedKeys)
+    for (const key of mergedKeys) {
+      anchor.keys.add(key)
     }
-
-    registerGroupKeys(baseGroup, keyToGroupId)
   }
 
-  return groups.filter((group) => group.active).map((group) => group.item)
-}
-
-/**
- * Append entities and deduplicate by keys.
- *
- * Duplicates keep the first entity in appearance order and do not perform field-level merge.
- */
-export function appendAndDeduplicateEntitiesByKeys<T>(
-  existing: T[],
-  incoming: T[],
-  keyBuilder: KeyBuilder<T>
-): T[] {
-  const groups: EntityGroup<T>[] = []
-  const keyToGroupId = new Map<string, number>()
-
-  for (const item of [...existing, ...incoming]) {
-    const keys = keyBuilder(item)
-    const matchedGroupIds = getMatchedGroupIds(keys, keyToGroupId, groups)
-
-    if (matchedGroupIds.length === 0) {
-      createGroup(groups, keyToGroupId, item, keys)
-      continue
-    }
-
-    const baseGroup = groups[matchedGroupIds[0]]
-
-    for (const groupId of matchedGroupIds.slice(1)) {
-      const otherGroup = groups[groupId]
-      if (!otherGroup.active) continue
-
-      for (const key of otherGroup.keys) {
-        baseGroup.keys.add(key)
-      }
-      otherGroup.active = false
-    }
-
-    for (const key of keys) {
-      baseGroup.keys.add(key)
-    }
-
-    for (const key of keyBuilder(baseGroup.item)) {
-      baseGroup.keys.add(key)
-    }
-
-    registerGroupKeys(baseGroup, keyToGroupId)
-  }
-
-  return groups.filter((group) => group.active).map((group) => group.item)
+  return anchors.map((anchor) => anchor.item)
 }
 
 /**
@@ -283,7 +273,7 @@ export function mergeImageUrls(
 export function applyStrategy<T>(
   existing: T[] | undefined,
   incoming: T[],
-  strategy: MergeStrategy,
+  strategy: ScraperSlotResultStrategy,
   keyFn: (item: T) => string
 ): T[] {
   const existingArr = existing ?? []
@@ -291,9 +281,9 @@ export function applyStrategy<T>(
   switch (strategy) {
     case 'first':
       return existingArr.length ? existingArr : incoming
-    case 'append':
+    case 'enrich':
       return deduplicate([...existingArr, ...incoming], keyFn)
-    case 'merge':
+    case 'expand':
       return deduplicate([...existingArr, ...incoming], keyFn)
   }
 }
@@ -304,28 +294,30 @@ export function applyStrategy<T>(
 export function applyImageStrategy(
   existing: string[] | undefined,
   incoming: string[],
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): string[] {
   const existingArr = existing ?? []
 
   switch (strategy) {
     case 'first':
       return existingArr.length ? existingArr : incoming
-    case 'append':
+    case 'enrich':
       return [...new Set([...existingArr, ...incoming])]
-    case 'merge':
+    case 'expand':
       return [...new Set([...existingArr, ...incoming])]
   }
 }
 
 /**
  * Apply strategy for entity arrays (characters, persons, companies).
- * Uses field-level merge for 'merge' strategy.
+ *
+ * `enrich` keeps the first successful entity set as the anchor set and only fills matched entities.
+ * `expand` applies the same enrichment, then appends unmatched entities into the result set.
  */
-export function applyEntityStrategy<T>(
+export function applyEntityCollectionStrategy<T>(
   existing: T[] | undefined,
   incoming: T[],
-  strategy: MergeStrategy,
+  strategy: ScraperSlotResultStrategy,
   keyBuilder: (item: T) => string[],
   mergeFn: (existing: T, incoming: T) => T
 ): T[] {
@@ -335,11 +327,11 @@ export function applyEntityStrategy<T>(
     case 'first':
       return existingArr.length ? existingArr : incoming
 
-    case 'append':
-      return appendAndDeduplicateEntitiesByKeys(existingArr, incoming, keyBuilder)
+    case 'enrich':
+      return reconcileEntitiesByKeys(existingArr, incoming, keyBuilder, mergeFn, false)
 
-    case 'merge':
-      return mergeEntitiesByKeys(existingArr, incoming, keyBuilder, mergeFn)
+    case 'expand':
+      return reconcileEntitiesByKeys(existingArr, incoming, keyBuilder, mergeFn, true)
   }
 }
 
@@ -399,11 +391,11 @@ export function mergeCompanyMetadataFields(
 export function mergeCharacterPersons(
   existing: ScrapedCharacterPersonFact[] | undefined,
   incoming: ScrapedCharacterPersonFact[] | undefined,
-  strategy: MergeStrategy
+  strategy: ScraperSlotResultStrategy
 ): ScrapedCharacterPersonFact[] | undefined {
   if (!existing?.length && !incoming?.length) return undefined
 
-  return applyEntityStrategy(
+  return applyEntityCollectionStrategy(
     existing,
     incoming ?? [],
     strategy,
@@ -427,7 +419,7 @@ export function mergeCharacterPersons(
 export function mergeCharacterMetadataFields(
   existing: ScrapedCharacterMetadata,
   incoming: ScrapedCharacterMetadata,
-  personStrategy: MergeStrategy
+  personStrategy: ScraperSlotResultStrategy
 ): ScrapedCharacterMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'externalIds',

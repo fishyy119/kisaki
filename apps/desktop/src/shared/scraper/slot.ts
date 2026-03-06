@@ -5,7 +5,12 @@
  * These are media-type agnostic and apply to all scraper operations.
  */
 
-import type { MergeStrategy, ScraperSlot, SlotConfig, ScraperSlotConfigs } from '@shared/db'
+import type {
+  ScraperSlotResultStrategy,
+  ScraperSlot,
+  SlotConfig,
+  ScraperSlotConfigs
+} from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
 import type { ContentEntityType } from '@shared/common'
@@ -34,13 +39,14 @@ export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readon
 function isSlotConfig(value: unknown): value is SlotConfig {
   if (!value || typeof value !== 'object') return false
   const candidate = value as Partial<SlotConfig>
-  return Array.isArray(candidate.providers) && typeof candidate.mergeStrategy === 'string'
+  return Array.isArray(candidate.providers) && typeof candidate.resultStrategy === 'string'
 }
 
 /**
  * Normalize a profile's slotConfigs:
  * - Keep only the slots relevant to the mediaType
  * - Ensure every required slot exists (fallback to empty config)
+ * - Coerce each slot to a supported result strategy
  */
 export function normalizeSlotConfigs(
   mediaType: ScraperMediaType,
@@ -51,7 +57,12 @@ export function normalizeSlotConfigs(
 
   for (const slot of slots) {
     const config = slotConfigs?.[slot]
-    normalized[slot] = isSlotConfig(config) ? config : createEmptySlotConfig()
+    normalized[slot] = isSlotConfig(config)
+      ? {
+          ...config,
+          resultStrategy: normalizeResultStrategyForSlot(slot, config.resultStrategy)
+        }
+      : createEmptySlotConfig()
   }
 
   return normalized
@@ -100,6 +111,24 @@ export const GAME_IMAGE_SLOTS: GameImageSlot[] = ['covers', 'backdrops', 'logos'
 /** Image slot types */
 export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [...GAME_IMAGE_SLOTS, 'photos']
 
+/** Slots whose result strategy can expand the entity boundary. */
+export type ExpandableScraperSlot = 'characters' | 'persons' | 'companies'
+
+const BASIC_RESULT_STRATEGIES = [
+  'first',
+  'enrich'
+] as const satisfies readonly ScraperSlotResultStrategy[]
+const EXPANDABLE_RESULT_STRATEGIES = [
+  'first',
+  'enrich',
+  'expand'
+] as const satisfies readonly ScraperSlotResultStrategy[]
+const EXPANDABLE_SCRAPER_SLOTS: readonly ExpandableScraperSlot[] = [
+  'characters',
+  'persons',
+  'companies'
+]
+
 /** Check if slot returns arrays (all slots except 'info' return arrays) */
 export function isArraySlot(slot: ScraperSlot): boolean {
   return slot !== 'info'
@@ -110,9 +139,41 @@ export function isImageSlot(slot: ScraperSlot): slot is ScraperImageSlot {
   return (SCRAPER_IMAGE_SLOTS as readonly string[]).includes(slot)
 }
 
-/** Get default merge strategy for a slot */
-export function getDefaultMergeStrategy(_slot: ScraperSlot): MergeStrategy {
+/** Check if a slot supports the `expand` result strategy. */
+export function supportsExpandResultStrategy(slot: ScraperSlot): slot is ExpandableScraperSlot {
+  return (EXPANDABLE_SCRAPER_SLOTS as readonly string[]).includes(slot)
+}
+
+/** Get the result strategies supported by a slot. */
+export function getSupportedResultStrategies(
+  slot: ScraperSlot
+): readonly ScraperSlotResultStrategy[] {
+  return supportsExpandResultStrategy(slot) ? EXPANDABLE_RESULT_STRATEGIES : BASIC_RESULT_STRATEGIES
+}
+
+/** Get the default result strategy for a slot. */
+export function getDefaultResultStrategy(_slot: ScraperSlot): ScraperSlotResultStrategy {
   return 'first'
+}
+
+/**
+ * Normalize a result strategy to one supported by the target slot.
+ *
+ * Non-expandable slots treat `expand` the same as `enrich`, so keep that behavior explicit.
+ */
+export function normalizeResultStrategyForSlot(
+  slot: ScraperSlot,
+  strategy: ScraperSlotResultStrategy
+): ScraperSlotResultStrategy {
+  if (getSupportedResultStrategies(slot).includes(strategy)) {
+    return strategy
+  }
+
+  if (strategy === 'expand') {
+    return 'enrich'
+  }
+
+  return getDefaultResultStrategy(slot)
 }
 
 // =============================================================================
@@ -120,11 +181,11 @@ export function getDefaultMergeStrategy(_slot: ScraperSlot): MergeStrategy {
 // =============================================================================
 
 /**
- * Create a slot config from provider IDs and merge strategy
+ * Create a slot config from provider IDs and result strategy.
  */
 export function createSlotConfig(
   providerIds: string[],
-  mergeStrategy: MergeStrategy = 'first',
+  resultStrategy: ScraperSlotResultStrategy = 'first',
   locale?: Locale
 ): SlotConfig {
   return {
@@ -134,7 +195,7 @@ export function createSlotConfig(
       priority: index,
       locale
     })),
-    mergeStrategy
+    resultStrategy
   }
 }
 
@@ -144,7 +205,7 @@ export function createSlotConfig(
 export function createEmptySlotConfig(): SlotConfig {
   return {
     providers: [],
-    mergeStrategy: 'first'
+    resultStrategy: 'first'
   }
 }
 
