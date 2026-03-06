@@ -63,7 +63,7 @@ async function handleSubmit() {
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading('添加角色中…', '正在识别并添加')
+  const toastId = notify.loading(`正在添加角色「${selection.value.characterName}」中...`)
 
   try {
     const result = await ipcManager.invoke(

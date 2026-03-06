@@ -60,7 +60,7 @@ async function handleSubmit() {
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading('添加游戏中…')
+  const toastId = notify.loading(`正在添加游戏「${selection.value.gameName}」中...`)
 
   try {
     const result = await ipcManager.invoke(
