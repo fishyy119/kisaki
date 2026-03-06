@@ -3,14 +3,14 @@
  * Scanner Settings Form Dialog
  *
  * Dialog for configuring scanner settings.
- * Allows editing ignored names list, pHash assist option and auto-scan on startup option.
+ * Allows editing auto-scan, ingest mode, pHash assist and ignored names.
  */
 
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
-import { settings } from '@shared/db'
+import { settings, type ScannerIngestMode } from '@shared/db'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import {
@@ -25,6 +25,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
 import {
   Field,
   FieldLabel,
@@ -46,32 +47,86 @@ const open = defineModel<boolean>('open', { required: true })
 // =============================================================================
 
 const isSaving = ref(false)
+
 interface FormData {
   ignoredNames: string[]
+  ingestMode: ScannerIngestMode
   usePhash: boolean
   startAtOpen: boolean
   newIgnoredName: string
 }
 
-const formData = ref<FormData>({
-  ignoredNames: [],
-  usePhash: true,
-  startAtOpen: true,
-  newIgnoredName: ''
+const scannerIngestModeOptions = [
+  {
+    value: 'prefer-scraper',
+    label: '优先刮削',
+    description: '优先使用刮削导入，失败时回退到直接入库'
+  },
+  {
+    value: 'require-scraper',
+    label: '必须刮削',
+    description: '必须通过刮削导入，刮削失败时直接记为失败'
+  },
+  {
+    value: 'direct-only',
+    label: '仅直接入库',
+    description: '跳过刮削，直接按识别结果创建游戏'
+  }
+] as const satisfies readonly {
+  value: ScannerIngestMode
+  label: string
+  description: string
+}[]
+
+function createDefaultFormData(): FormData {
+  return {
+    ignoredNames: [],
+    ingestMode: 'prefer-scraper',
+    usePhash: false,
+    startAtOpen: false,
+    newIgnoredName: ''
+  }
+}
+
+function createFormDataFromSettings(data: {
+  ignoredNames: string[]
+  ingestMode: ScannerIngestMode
+  usePhash: boolean
+  startAtOpen: boolean
+}): FormData {
+  return {
+    ignoredNames: [...data.ignoredNames],
+    ingestMode: data.ingestMode,
+    usePhash: data.usePhash,
+    startAtOpen: data.startAtOpen,
+    newIgnoredName: ''
+  }
+}
+
+const formData = ref<FormData>(createDefaultFormData())
+
+const openModel = computed({
+  get: () => open.value,
+  set: (value) => {
+    if (!isSaving.value) {
+      open.value = value
+    }
+  }
 })
 
 // =============================================================================
 // Load Data on Open
 // =============================================================================
 
-const { data, isLoading, error } = useAsyncData(
+const { data, isLoading, error, refetch } = useAsyncData(
   async () => {
     const result = await db.query.settings.findFirst()
     if (!result) {
       throw new Error('Settings not found')
     }
     return {
-      ignoredNames: result.scannerIgnoredNames,
+      ignoredNames: [...result.scannerIgnoredNames],
+      ingestMode: result.scannerIngestMode,
       usePhash: result.scannerUsePhash,
       startAtOpen: result.scannerStartAtOpen
     }
@@ -82,11 +137,8 @@ const state = useRenderState(isLoading, error, data)
 
 // Initialize form when data loads
 watch(data, (d) => {
-  if (d) {
-    formData.value.ignoredNames = d.ignoredNames
-    formData.value.usePhash = d.usePhash
-    formData.value.startAtOpen = d.startAtOpen
-  }
+  if (!d) return
+  formData.value = createFormDataFromSettings(d)
 })
 
 // =============================================================================
@@ -119,14 +171,16 @@ async function handleSubmit() {
       .update(settings)
       .set({
         scannerIgnoredNames: formData.value.ignoredNames,
+        scannerIngestMode: formData.value.ingestMode,
         scannerUsePhash: formData.value.usePhash,
         scannerStartAtOpen: formData.value.startAtOpen
       })
       .where(eq(settings.id, 0))
+      .run()
     notify.success('设置已保存')
     open.value = false
-  } catch {
-    notify.error('保存失败，请重试')
+  } catch (error) {
+    notify.error('保存失败', error instanceof Error ? error.message : String(error))
   } finally {
     isSaving.value = false
   }
@@ -134,7 +188,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
+  <Dialog v-model:open="openModel">
     <DialogContent class="max-w-lg">
       <DialogHeader>
         <DialogTitle>扫描器设置</DialogTitle>
@@ -146,11 +200,27 @@ async function handleSubmit() {
         </DialogBody>
       </template>
 
+      <template v-else-if="state === 'error'">
+        <DialogBody class="space-y-3">
+          <p class="text-sm text-destructive">
+            {{ error }}
+          </p>
+          <div class="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              @click="refetch"
+            >
+              重试
+            </Button>
+          </div>
+        </DialogBody>
+      </template>
+
       <template v-else>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
             <FieldGroup>
-              <!-- Auto scan on startup -->
               <Field orientation="horizontal">
                 <FieldLabel>启动时自动扫描</FieldLabel>
                 <FieldDescription>打开应用时自动运行所有扫描器</FieldDescription>
@@ -159,7 +229,34 @@ async function handleSubmit() {
                 </FieldContent>
               </Field>
 
-              <!-- pHash assist -->
+              <Field orientation="horizontal">
+                <FieldLabel>入库模式</FieldLabel>
+                <FieldDescription>控制扫描器识别到新游戏后的导入策略</FieldDescription>
+                <FieldContent>
+                  <Select v-model="formData.ingestMode">
+                    <SelectTrigger class="w-32">
+                      <span class="truncate">
+                        {{
+                          scannerIngestModeOptions.find(
+                            (option) => option.value === formData.ingestMode
+                          )?.label ?? formData.ingestMode
+                        }}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="option in scannerIngestModeOptions"
+                        :key="option.value"
+                        :value="option.value"
+                        :description="option.description"
+                      >
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+
               <Field orientation="horizontal">
                 <FieldLabel>pHash 辅助刮削</FieldLabel>
                 <FieldDescription>实验性功能</FieldDescription>
@@ -168,12 +265,10 @@ async function handleSubmit() {
                 </FieldContent>
               </Field>
 
-              <!-- Ignored names -->
               <Field>
                 <FieldLabel>忽略名称列表</FieldLabel>
                 <FieldDescription>扫描器会跳过这些名称的文件夹</FieldDescription>
                 <FieldContent>
-                  <!-- Input for adding new name -->
                   <div class="flex gap-2">
                     <Input
                       v-model="formData.newIgnoredName"
@@ -195,7 +290,6 @@ async function handleSubmit() {
                     </Button>
                   </div>
 
-                  <!-- Ignored names tags -->
                   <div
                     v-if="formData.ignoredNames.length > 0"
                     class="flex flex-wrap gap-1.5 mt-1.5 max-h-32 overflow-auto scrollbar-thin pr-1"
@@ -237,6 +331,7 @@ async function handleSubmit() {
             <Button
               type="button"
               variant="outline"
+              :disabled="isSaving"
               @click="open = false"
             >
               取消

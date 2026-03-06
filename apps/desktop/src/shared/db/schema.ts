@@ -35,6 +35,7 @@ import {
   locale,
   appLocale,
   mainWindowCloseAction,
+  scannerIngestMode,
   allEntityType,
   sectionLayout,
   sectionItemSize,
@@ -550,6 +551,7 @@ export const settings = sqliteTable(
     scannerStartAtOpen: integer('scanner_start_at_open', { mode: 'boolean' })
       .notNull()
       .default(false),
+    scannerIngestMode: scannerIngestMode('scanner_ingest_mode').notNull().default('prefer-scraper'),
     updaterAutoCheck: integer('updater_auto_check', { mode: 'boolean' }).notNull().default(true),
     updaterAllowPrerelease: integer('updater_allow_prerelease', { mode: 'boolean' })
       .notNull()

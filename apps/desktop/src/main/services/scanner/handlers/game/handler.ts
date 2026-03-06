@@ -30,7 +30,7 @@
  *
  * 5. **Game Addition**
  *    - Delegates to IngestService for persisted add flows
- *    - Uses scraper ingest first, with direct-ingest fallback when scraper fails
+ *    - Uses settings-controlled ingest mode for scraper/direct ingest behavior
  *    - Sets gameDirPath to the folder path
  *    - Associates with scanner's target collection if configured
  *
@@ -53,7 +53,7 @@ import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
 import type { IngestService } from '@main/services/ingest'
 import { scanners, scraperProfiles, type ScraperProfile } from '@shared/db'
-import type { Scanner } from '@shared/db'
+import type { Scanner, ScannerIngestMode } from '@shared/db'
 import type { EntityEntry, ScanProgressData, ScanCompletedData } from '@shared/scanner'
 import type { IpcService } from '@main/services/ipc'
 import type { IngestAddGameResult } from '@shared/ingest'
@@ -61,10 +61,6 @@ import type { ScannerPhash } from '../../phash'
 import type { ScanOptions } from '../../utils'
 import { matchGameEntity } from './match'
 import type { GameEntity, ScanQueueItem } from './types'
-
-type ScannerGameIngestMode = 'prefer-scraper' | 'require-scraper' | 'direct-only'
-
-const SCANNER_GAME_INGEST_MODE: ScannerGameIngestMode = 'prefer-scraper'
 
 function isRecoverableScraperFailure(error: unknown): boolean {
   if (!(error instanceof Error)) return false
@@ -84,6 +80,10 @@ function isRecoverableScraperFailure(error: unknown): boolean {
   ]
 
   return recoverableMarkers.some((marker) => message.includes(marker))
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unsupported scanner ingest mode: ${String(value)}`)
 }
 
 // =============================================================================
@@ -184,6 +184,13 @@ export class GameScannerHandler {
         throw new Error(`Scanner ${scanner.name} is not a game scanner`)
       }
 
+      const settingsData = this.dbService.helper.getAppSettings()
+      const {
+        scannerIgnoredNames: ignoredNames,
+        scannerUsePhash,
+        scannerIngestMode: ingestMode
+      } = settingsData
+
       // Get the profile for this scanner
       let profile: ScraperProfile | null = null
       try {
@@ -199,18 +206,22 @@ export class GameScannerHandler {
         profile = null
       }
 
-      if (!profile && SCANNER_GAME_INGEST_MODE === 'require-scraper') {
+      if (!profile && ingestMode === 'require-scraper') {
         throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
       }
 
       if (!profile) {
         log.warn(
-          `[Scanner] Scanner ${scanner.name} has no scraper profile, using direct ingest fallback mode`
+          `[Scanner] Scanner ${scanner.name} has no scraper profile, ${
+            ingestMode === 'direct-only'
+              ? 'using direct ingest mode'
+              : 'using direct ingest fallback mode'
+          }`
         )
       }
 
       log.info(
-        `[Scanner] Starting game scan for: ${scanner.name} at ${scanner.path} (depth: ${scanner.entityDepth}, mode: ${SCANNER_GAME_INGEST_MODE}, profile: ${profile?.name ?? 'none'})`
+        `[Scanner] Starting game scan for: ${scanner.name} at ${scanner.path} (depth: ${scanner.entityDepth}, mode: ${ingestMode}, profile: ${profile?.name ?? 'none'})`
       )
 
       const result: ScanCompletedData = {
@@ -226,11 +237,6 @@ export class GameScannerHandler {
         skippedScans: [],
         failedScans: []
       }
-
-      // Get ignored names from settings
-      const settingsData = this.dbService.helper.getAppSettings()
-      const ignoredNames = settingsData.scannerIgnoredNames
-      const scannerUsePhash = settingsData.scannerUsePhash
 
       // Scan for entities using layer-based detection
       const entities = await this.scanForEntities(scanner.path, {
@@ -308,7 +314,12 @@ export class GameScannerHandler {
             enablePhash: scannerUsePhash
           })
           const matchedEntity: GameEntity = { ...entity, matchedGame }
-          const addResult = await this.processGameEntity(matchedEntity, profile, scanner)
+          const addResult = await this.processGameEntity(
+            matchedEntity,
+            profile,
+            scanner,
+            ingestMode
+          )
 
           result.processedCount++
           progressState.processedCount++
@@ -371,12 +382,13 @@ export class GameScannerHandler {
   /**
    * Process a matched game entity and add it to the library
    *
-   * Prefers scraper ingest and falls back to direct ingest when configured.
+   * Uses the configured ingest mode to decide between scraper and direct ingest.
    */
   private async processGameEntity(
     gameEntity: GameEntity,
     profile: ScraperProfile | null,
-    scanner: Scanner
+    scanner: Scanner,
+    ingestMode: ScannerIngestMode
   ): Promise<IngestAddGameResult> {
     const { gameName, externalIds } = gameEntity.matchedGame
 
@@ -395,29 +407,38 @@ export class GameScannerHandler {
 
     let result: IngestAddGameResult
 
-    if (SCANNER_GAME_INGEST_MODE === 'direct-only') {
-      result = await addDirect()
-    } else if (SCANNER_GAME_INGEST_MODE === 'require-scraper') {
-      if (!profile) {
-        throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
-      }
-      result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
-    } else if (!profile) {
-      result = await addDirect()
-    } else {
-      try {
+    switch (ingestMode) {
+      case 'direct-only':
+        result = await addDirect()
+        break
+      case 'require-scraper':
+        if (!profile) {
+          throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
+        }
         result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
-      } catch (error) {
-        if (!isRecoverableScraperFailure(error)) {
-          throw error
+        break
+      case 'prefer-scraper':
+        if (!profile) {
+          result = await addDirect()
+          break
         }
 
-        const message = error instanceof Error ? error.message : String(error)
-        log.warn(
-          `[Scanner] Scraper ingest failed for ${gameEntity.path}, fallback to direct ingest: ${message}`
-        )
-        result = await addDirect()
-      }
+        try {
+          result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
+        } catch (error) {
+          if (!isRecoverableScraperFailure(error)) {
+            throw error
+          }
+
+          const message = error instanceof Error ? error.message : String(error)
+          log.warn(
+            `[Scanner] Scraper ingest failed for ${gameEntity.path}, fallback to direct ingest: ${message}`
+          )
+          result = await addDirect()
+        }
+        break
+      default:
+        return assertNever(ingestMode)
     }
 
     if (result.isNew) {

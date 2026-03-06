@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `scanner_ingest_mode` text DEFAULT 'prefer-scraper' NOT NULL;

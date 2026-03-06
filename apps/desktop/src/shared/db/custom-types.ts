@@ -29,8 +29,10 @@ import type {
   CharacterPersonType,
   BloodType,
   CupSize,
-  MainWindowCloseAction
+  MainWindowCloseAction,
+  ScannerIngestMode
 } from './enums'
+import { SCANNER_INGEST_MODE_VALUES } from './enums'
 
 import type {
   RelatedSite,
@@ -294,6 +296,12 @@ export const mainWindowCloseAction = createEnumType<MainWindowCloseAction>(
   MAIN_WINDOW_CLOSE_ACTION_VALUES,
   'exit',
   'mainWindowCloseAction'
+)
+
+export const scannerIngestMode = createEnumType<ScannerIngestMode>(
+  SCANNER_INGEST_MODE_VALUES,
+  'prefer-scraper',
+  'scannerIngestMode'
 )
 export const contentEntityType = createEnumType<ContentEntityType>(
   CONTENT_ENTITY_TYPES,

@@ -15,6 +15,13 @@
       "when": 1772100696457,
       "tag": "0001_tan_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772803062292,
+      "tag": "0002_ambitious_prowler",
+      "breakpoints": true
     }
   ]
 }

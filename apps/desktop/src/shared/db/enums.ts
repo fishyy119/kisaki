@@ -1,9 +1,8 @@
 /**
  * Database enum types
  *
- * Pure type definitions for database enum columns.
- * These are the type definitions only - the Drizzle customType implementations
- * are in ./custom-types.ts
+ * Database enum type definitions and shared value lists.
+ * Drizzle customType implementations are in ./custom-types.ts.
  */
 
 /** Game/media completion status */
@@ -45,3 +44,12 @@ export type CupSize = 'aaa' | 'aa' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | '
 
 /** Main window close button behavior */
 export type MainWindowCloseAction = 'exit' | 'tray'
+
+/** Scanner ingest mode */
+export const SCANNER_INGEST_MODE_VALUES = [
+  'prefer-scraper',
+  'require-scraper',
+  'direct-only'
+] as const
+
+export type ScannerIngestMode = (typeof SCANNER_INGEST_MODE_VALUES)[number]
