@@ -5,12 +5,11 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { eq } from 'drizzle-orm'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
-import { companies } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
+import { useEntityDelete } from '@renderer/composables'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
 
 interface Props {
   companyId: string
@@ -24,24 +23,25 @@ const emit = defineEmits<{
   deleted: [companyId: string]
 }>()
 
-// Fetch company data when dialog opens
-const { data, isLoading } = useAsyncData(
-  async () => {
-    const company = await db.query.companies.findFirst({ where: eq(companies.id, props.companyId) })
-    return { companyName: company?.name ?? '' }
-  },
-  {
-    watch: [() => props.companyId],
-    enabled: () => open.value
-  }
-)
+const entityIds = computed(() => (props.companyId ? [props.companyId] : []))
 
-const companyName = computed(() => data.value?.companyName ?? '')
+const {
+  data,
+  isLoading,
+  firstName,
+  relatedOptions,
+  selectedRelatedTypes,
+  deleteSelectedEntities
+} = useEntityDelete({
+  entityType: 'company',
+  entityIds,
+  open
+})
 
 async function handleConfirm() {
   try {
-    await db.delete(companies).where(eq(companies.id, props.companyId))
-    notify.success('公司已删除')
+    const result = await deleteSelectedEntities()
+    notify.success(formatEntityDeleteSuccessMessage(result))
 
     emit('deleted', props.companyId)
   } catch (error) {
@@ -54,8 +54,13 @@ async function handleConfirm() {
   <DeleteConfirmDialog
     v-model:open="open"
     entity-label="公司"
-    :entity-name="companyName"
+    :entity-name="firstName"
     :loading="isLoading || !data"
     @confirm="handleConfirm"
-  />
+  >
+    <DeleteRelatedOptions
+      v-model:selected-types="selectedRelatedTypes"
+      :options="relatedOptions"
+    />
+  </DeleteConfirmDialog>
 </template>

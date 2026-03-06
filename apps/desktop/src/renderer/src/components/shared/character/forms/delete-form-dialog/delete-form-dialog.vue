@@ -5,12 +5,11 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { eq } from 'drizzle-orm'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
-import { characters } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
+import { useEntityDelete } from '@renderer/composables'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
 
 interface Props {
   characterId: string
@@ -24,26 +23,25 @@ const emit = defineEmits<{
   deleted: [characterId: string]
 }>()
 
-// Fetch character data when dialog opens
-const { data, isLoading } = useAsyncData(
-  async () => {
-    const character = await db.query.characters.findFirst({
-      where: eq(characters.id, props.characterId)
-    })
-    return { characterName: character?.name ?? '' }
-  },
-  {
-    watch: [() => props.characterId],
-    enabled: () => open.value
-  }
-)
+const entityIds = computed(() => (props.characterId ? [props.characterId] : []))
 
-const characterName = computed(() => data.value?.characterName ?? '')
+const {
+  data,
+  isLoading,
+  firstName,
+  relatedOptions,
+  selectedRelatedTypes,
+  deleteSelectedEntities
+} = useEntityDelete({
+  entityType: 'character',
+  entityIds,
+  open
+})
 
 async function handleConfirm() {
   try {
-    await db.delete(characters).where(eq(characters.id, props.characterId))
-    notify.success('角色已删除')
+    const result = await deleteSelectedEntities()
+    notify.success(formatEntityDeleteSuccessMessage(result))
 
     emit('deleted', props.characterId)
   } catch (error) {
@@ -56,8 +54,13 @@ async function handleConfirm() {
   <DeleteConfirmDialog
     v-model:open="open"
     entity-label="角色"
-    :entity-name="characterName"
+    :entity-name="firstName"
     :loading="isLoading || !data"
     @confirm="handleConfirm"
-  />
+  >
+    <DeleteRelatedOptions
+      v-model:selected-types="selectedRelatedTypes"
+      :options="relatedOptions"
+    />
+  </DeleteConfirmDialog>
 </template>

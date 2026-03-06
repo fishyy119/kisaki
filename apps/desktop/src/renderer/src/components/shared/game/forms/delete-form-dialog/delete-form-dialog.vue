@@ -8,10 +8,12 @@ import { eq } from 'drizzle-orm'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { games, settings } from '@shared/db'
-import { useAsyncData } from '@renderer/composables'
+import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
+import { useAsyncData, useEntityDelete } from '@renderer/composables'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
 
 interface Props {
   gameId: string
@@ -26,12 +28,25 @@ const emit = defineEmits<{
 }>()
 
 interface InitialData {
-  gameName: string
   folderName: string
 }
 
 // Form state
 const addToIgnored = ref(false)
+const entityIds = computed(() => (props.gameId ? [props.gameId] : []))
+
+const {
+  data: deletePreview,
+  isLoading: isDeletePreviewLoading,
+  firstName,
+  relatedOptions,
+  selectedRelatedTypes,
+  deleteSelectedEntities
+} = useEntityDelete({
+  entityType: 'game',
+  entityIds,
+  open
+})
 
 // Fetch game data when dialog opens
 const { data, isLoading } = useAsyncData<InitialData>(
@@ -43,7 +58,6 @@ const { data, isLoading } = useAsyncData<InitialData>(
       folderName = parts[parts.length - 1] || ''
     }
     return {
-      gameName: game?.name ?? '',
       folderName
     }
   },
@@ -58,7 +72,7 @@ watch(data, () => {
   addToIgnored.value = false
 })
 
-const gameName = computed(() => data.value?.gameName ?? '')
+const gameName = computed(() => firstName.value)
 const folderName = computed(() => data.value?.folderName ?? '')
 
 async function handleConfirm() {
@@ -77,8 +91,8 @@ async function handleConfirm() {
       }
     }
 
-    await db.delete(games).where(eq(games.id, props.gameId))
-    notify.success('游戏已删除')
+    const result = await deleteSelectedEntities()
+    notify.success(formatEntityDeleteSuccessMessage(result))
 
     emit('deleted', props.gameId)
   } catch (error) {
@@ -91,14 +105,14 @@ async function handleConfirm() {
   <DeleteConfirmDialog
     v-model:open="open"
     entity-label="游戏"
-    :entity-name="gameName"
-    :loading="isLoading || !data"
+    :entity-name="firstName"
+    :loading="isLoading || isDeletePreviewLoading || !data || !deletePreview"
     @confirm="handleConfirm"
   >
     <!-- Additional slot content for ignored checkbox -->
     <div
       v-if="gameName"
-      class="flex items-center gap-2 pt-2"
+      class="flex items-center gap-2"
     >
       <Checkbox
         id="add-to-ignored"
@@ -111,5 +125,10 @@ async function handleConfirm() {
         将{{ folderName ? `文件夹「${folderName}」` : `「${gameName}」` }}加入扫描器忽略列表
       </Label>
     </div>
+
+    <DeleteRelatedOptions
+      v-model:selected-types="selectedRelatedTypes"
+      :options="relatedOptions"
+    />
   </DeleteConfirmDialog>
 </template>

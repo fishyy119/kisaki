@@ -23,6 +23,12 @@ import type { TableName } from './db/table-names'
 import type { NameExtractionRule, SaveBackup } from './db/json-types'
 import type { MainWindowCloseAction } from './db/enums'
 import type {
+  EntityDeletePreview,
+  EntityDeletePreviewRequest,
+  EntityDeleteRequest,
+  EntityDeleteResult
+} from './entity-delete'
+import type {
   ScraperLookup,
   GameSearchResult,
   GameScraperProviderInfo,
@@ -191,6 +197,8 @@ export interface IpcMainHandlers {
     method: 'run' | 'all' | 'values' | 'get'
   ) => IpcResult<unknown[]>
   'db:rebuild-fts': (entityType?: 'game' | 'character' | 'person' | 'company') => IpcVoidResult
+  'db:preview-entity-delete': (params: EntityDeletePreviewRequest) => IpcResult<EntityDeletePreview>
+  'db:delete-entities': (params: EntityDeleteRequest) => IpcResult<EntityDeleteResult>
 
   // DB attachment (DbService.attachment)
   /**

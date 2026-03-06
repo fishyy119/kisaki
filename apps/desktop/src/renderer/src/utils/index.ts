@@ -17,6 +17,13 @@ export {
   type StatusVariant
 } from './format'
 
+// Entity delete UI helpers
+export {
+  getEntityDeleteLabel,
+  formatEntityDeleteSuccessMessage,
+  ENTITY_DELETE_LABELS
+} from './entity-delete'
+
 // Date/time utilities (system local timezone)
 export {
   toLocalDateKey,

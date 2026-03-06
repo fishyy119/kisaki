@@ -5,12 +5,11 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
-import { tags } from '@shared/db'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData } from '@renderer/composables'
+import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
+import { useEntityDelete } from '@renderer/composables'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
 
 interface Props {
   tagId: string
@@ -20,23 +19,25 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const { data, isLoading } = useAsyncData(
-  async () => {
-    const tag = await db.query.tags.findFirst({ where: eq(tags.id, props.tagId) })
-    return { tagName: tag?.name ?? '' }
-  },
-  {
-    watch: [() => props.tagId],
-    enabled: () => open.value
-  }
-)
+const entityIds = computed(() => (props.tagId ? [props.tagId] : []))
 
-const tagName = computed(() => data.value?.tagName ?? '')
+const {
+  data,
+  isLoading,
+  firstName,
+  relatedOptions,
+  selectedRelatedTypes,
+  deleteSelectedEntities
+} = useEntityDelete({
+  entityType: 'tag',
+  entityIds,
+  open
+})
 
 async function handleConfirm() {
   try {
-    await db.delete(tags).where(eq(tags.id, props.tagId))
-    notify.success('标签已删除')
+    const result = await deleteSelectedEntities()
+    notify.success(formatEntityDeleteSuccessMessage(result))
   } catch (error) {
     notify.error(`删除失败: ${(error as Error).message}`)
   }
@@ -47,8 +48,13 @@ async function handleConfirm() {
   <DeleteConfirmDialog
     v-model:open="open"
     entity-label="标签"
-    :entity-name="tagName"
-    :loading="isLoading"
+    :entity-name="firstName"
+    :loading="isLoading || !data"
     @confirm="handleConfirm"
-  />
+  >
+    <DeleteRelatedOptions
+      v-model:selected-types="selectedRelatedTypes"
+      :options="relatedOptions"
+    />
+  </DeleteConfirmDialog>
 </template>

@@ -26,6 +26,7 @@ import type { TableName } from '@shared/db/table-names'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import { AttachmentStore } from './attachment'
+import { EntityDeleteStore } from './entity-delete'
 import { ThumbnailStore } from './thumbnail'
 import { HelperStore } from './helper'
 import { FtsStore } from './fts'
@@ -69,6 +70,7 @@ export class DbService implements IService {
   attachment!: AttachmentStore
   thumbnail!: ThumbnailStore
   helper!: HelperStore
+  entityDelete!: EntityDeleteStore
   fts!: FtsStore
   trigger!: TriggerStore
 
@@ -104,6 +106,7 @@ export class DbService implements IService {
     this.thumbnail = new ThumbnailStore()
     this.attachment = new AttachmentStore(this.db, this.storageDir, this.thumbnail, network)
     this.helper = new HelperStore(this.db)
+    this.entityDelete = new EntityDeleteStore(this.db)
     this.fts = new FtsStore(this.sqlite)
 
     // Initialize FTS5 tables and triggers
@@ -148,6 +151,26 @@ export class DbService implements IService {
       } catch (error) {
         log.error('[DbService] Error rebuilding FTS:', error)
         return { success: false, error: String(error) }
+      }
+    })
+
+    ipc.handle('db:preview-entity-delete', async (_, params) => {
+      try {
+        const data = this.entityDelete.preview(params)
+        return { success: true, data }
+      } catch (error) {
+        log.error('[DbService] Error building delete preview:', error, params)
+        return { success: false, error: 'Could not load delete preview' }
+      }
+    })
+
+    ipc.handle('db:delete-entities', async (_, params) => {
+      try {
+        const data = this.entityDelete.delete(params)
+        return { success: true, data }
+      } catch (error) {
+        log.error('[DbService] Error deleting entities:', error, params)
+        return { success: false, error: 'Could not delete entities' }
       }
     })
 

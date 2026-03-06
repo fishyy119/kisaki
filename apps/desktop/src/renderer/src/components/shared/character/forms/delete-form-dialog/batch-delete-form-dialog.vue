@@ -4,12 +4,11 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { inArray } from 'drizzle-orm'
-import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
-import { characters } from '@shared/db'
+import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
+import { useEntityDelete } from '@renderer/composables'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
 
 interface Props {
   characterIds: string[]
@@ -23,37 +22,28 @@ const emit = defineEmits<{
   deleted: [characterIds: string[]]
 }>()
 
-const { data, isLoading } = useAsyncData(
-  async () => {
-    if (props.characterIds.length === 0) return []
-    return await db
-      .select({ id: characters.id, name: characters.name })
-      .from(characters)
-      .where(inArray(characters.id, props.characterIds))
-  },
-  {
-    watch: [() => props.characterIds],
-    enabled: () => open.value
-  }
-)
+const entityIds = computed(() => props.characterIds)
 
-const count = computed(() => props.characterIds.length)
-const names = computed(() => data.value ?? [])
-const firstName = computed(() => names.value[0]?.name ?? '')
-const entityName = computed(() => {
-  if (count.value <= 1) return firstName.value
-  return firstName.value ? `${firstName.value} 等 ${count.value} 项` : `${count.value} 项`
+const {
+  data,
+  isLoading,
+  count,
+  entityName,
+  previewNames,
+  relatedOptions,
+  selectedRelatedTypes,
+  deleteSelectedEntities
+} = useEntityDelete({
+  entityType: 'character',
+  entityIds,
+  open
 })
-
-const previewNames = computed(() => names.value.slice(0, 6).map((n) => n.name).filter(Boolean))
 
 async function handleConfirm() {
   try {
-    if (props.characterIds.length === 0) return
-    await db.delete(characters).where(inArray(characters.id, props.characterIds))
-    notify.success('已删除')
+    const result = await deleteSelectedEntities()
+    notify.success(formatEntityDeleteSuccessMessage(result))
     emit('deleted', props.characterIds)
-
   } catch (error) {
     notify.error(`删除失败: ${(error as Error).message}`)
   }
@@ -86,5 +76,10 @@ async function handleConfirm() {
         …等 {{ count }} 项
       </div>
     </div>
+
+    <DeleteRelatedOptions
+      v-model:selected-types="selectedRelatedTypes"
+      :options="relatedOptions"
+    />
   </DeleteConfirmDialog>
 </template>
