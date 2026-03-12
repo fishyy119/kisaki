@@ -14,7 +14,6 @@ import type { ExternalId } from '@shared/identity'
 import {
   CHARACTER_METADATA_UPDATE_FIELDS,
   type CharacterMetadataUpdateField,
-  type CharacterMetadataUpdateInput,
   type MetadataUpdateApply,
   type MetadataUpdateStrategy
 } from '@shared/metadata-updater'
@@ -22,7 +21,7 @@ import {
   CharacterSearcher,
   type CharacterSearcherSelection
 } from '@renderer/components/shared/character'
-import { dedupeExternalIds, fieldsToOption, pickFields } from '@renderer/utils'
+import { dedupeExternalIds, fieldsToOption, toCharacterMetadataUpdateInput } from '@renderer/utils'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -206,17 +205,11 @@ async function handleSubmit() {
     if (!bundleResult.data) throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
 
     const bundle = bundleResult.data
-    const photoUrl = bundle.mediaCandidates?.photoUrls?.[0]
-    const scrapedMetadata: Record<string, unknown> = {
-      ...(bundle.core ?? {}),
-      ...(photoUrl ? { photos: [photoUrl] } : {})
-    }
-
-    const updateMetadata = pickFields(scrapedMetadata, fields)
+    const updateMetadata = toCharacterMetadataUpdateInput(bundle, fields)
     const updateResult = await ipcManager.invoke(
       'metadata-updater:update-character',
       characterId,
-      updateMetadata as unknown as CharacterMetadataUpdateInput,
+      updateMetadata,
       options
     )
     if (!updateResult.success) {

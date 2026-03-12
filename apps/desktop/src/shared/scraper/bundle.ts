@@ -42,7 +42,6 @@ export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
 /**
  * Scraped character metadata with relation/media facts.
  */
-// TEMP: Transitional compatibility type for metadata-updater. Remove once metadata-updater no longer consumes shared Scraped*Metadata payloads.
 export interface ScrapedCharacterMetadata extends CoreCharacterMetadata {
   persons?: ScrapedCharacterPersonFact[]
   photos?: string[]
@@ -78,7 +77,6 @@ export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
 /**
  * Scraped game metadata with relation/media facts.
  */
-// TEMP: Transitional compatibility type for metadata-updater. Remove once metadata-updater no longer consumes shared Scraped*Metadata payloads.
 export interface ScrapedGameMetadata extends CoreGameMetadata {
   persons?: ScrapedGamePersonFact[]
   characters?: ScrapedGameCharacterFact[]

@@ -14,11 +14,10 @@ import type { ExternalId } from '@shared/identity'
 import {
   PERSON_METADATA_UPDATE_FIELDS,
   type PersonMetadataUpdateField,
-  type PersonMetadataUpdateInput,
   type MetadataUpdateApply,
   type MetadataUpdateStrategy
 } from '@shared/metadata-updater'
-import { fieldsToOption, mergeExternalIds, pickFields } from '@renderer/utils'
+import { fieldsToOption, mergeExternalIds, toPersonMetadataUpdateInput } from '@renderer/utils'
 import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -215,17 +214,11 @@ async function handleSubmit() {
       if (!bundleResult.data) throw new Error('无法获取元数据')
 
       const bundle = bundleResult.data
-      const photoUrl = bundle.mediaCandidates?.photoUrls?.[0]
-      const scrapedMetadata: Record<string, unknown> = {
-        ...(bundle.core ?? {}),
-        ...(photoUrl ? { photos: [photoUrl] } : {})
-      }
-
-      const updateMetadata = pickFields(scrapedMetadata, fields)
+      const updateMetadata = toPersonMetadataUpdateInput(bundle, fields)
       const updateResult = await ipcManager.invoke(
         'metadata-updater:update-person',
         entity.id,
-        updateMetadata as unknown as PersonMetadataUpdateInput,
+        updateMetadata,
         options
       )
       if (!updateResult.success) throw new Error(updateResult.error)

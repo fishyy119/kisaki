@@ -55,7 +55,15 @@ export { createReactiveRegistry } from './registry'
 export type { ReactiveRegistry } from './registry'
 
 // Metadata updater UI helpers
-export { dedupeExternalIds, mergeExternalIds, fieldsToOption, pickFields } from './metadata-updater'
+export {
+  dedupeExternalIds,
+  mergeExternalIds,
+  fieldsToOption,
+  toGameMetadataUpdateInput,
+  toPersonMetadataUpdateInput,
+  toCompanyMetadataUpdateInput,
+  toCharacterMetadataUpdateInput
+} from './metadata-updater'
 
 // Statistics helper utilities
 export {

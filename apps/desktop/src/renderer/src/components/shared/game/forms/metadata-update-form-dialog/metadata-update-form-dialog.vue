@@ -14,12 +14,11 @@ import type { ExternalId } from '@shared/identity'
 import {
   GAME_METADATA_UPDATE_FIELDS,
   type GameMetadataUpdateField,
-  type GameMetadataUpdateInput,
   type MetadataUpdateApply,
   type MetadataUpdateStrategy
 } from '@shared/metadata-updater'
 import { GameSearcher, type GameSearcherSelection } from '@renderer/components/shared/game'
-import { dedupeExternalIds, fieldsToOption, pickFields } from '@renderer/utils'
+import { dedupeExternalIds, fieldsToOption, toGameMetadataUpdateInput } from '@renderer/utils'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -201,23 +200,11 @@ async function handleSubmit() {
     }
 
     const bundle = bundleResult.data
-    const coverUrl = bundle.mediaCandidates?.coverUrls?.[0]
-    const backdropUrl = bundle.mediaCandidates?.backdropUrls?.[0]
-    const logoUrl = bundle.mediaCandidates?.logoUrls?.[0]
-    const iconUrl = bundle.mediaCandidates?.iconUrls?.[0]
-    const scrapedMetadata: Record<string, unknown> = {
-      ...(bundle.core ?? {}),
-      ...(coverUrl ? { covers: [coverUrl] } : {}),
-      ...(backdropUrl ? { backdrops: [backdropUrl] } : {}),
-      ...(logoUrl ? { logos: [logoUrl] } : {}),
-      ...(iconUrl ? { icons: [iconUrl] } : {})
-    }
-
-    const updateMetadata = pickFields(scrapedMetadata, fields)
+    const updateMetadata = toGameMetadataUpdateInput(bundle, fields)
     const updateResult = await ipcManager.invoke(
       'metadata-updater:update-game',
       gameId,
-      updateMetadata as unknown as GameMetadataUpdateInput,
+      updateMetadata,
       options
     )
     if (!updateResult.success) {

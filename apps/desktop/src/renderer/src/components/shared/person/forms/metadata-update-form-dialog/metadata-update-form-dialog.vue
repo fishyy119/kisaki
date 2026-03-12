@@ -14,12 +14,11 @@ import type { ExternalId } from '@shared/identity'
 import {
   PERSON_METADATA_UPDATE_FIELDS,
   type PersonMetadataUpdateField,
-  type PersonMetadataUpdateInput,
   type MetadataUpdateApply,
   type MetadataUpdateStrategy
 } from '@shared/metadata-updater'
 import { PersonSearcher, type PersonSearcherSelection } from '@renderer/components/shared/person'
-import { dedupeExternalIds, fieldsToOption, pickFields } from '@renderer/utils'
+import { dedupeExternalIds, fieldsToOption, toPersonMetadataUpdateInput } from '@renderer/utils'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -200,17 +199,11 @@ async function handleSubmit() {
     if (!bundleResult.data) throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
 
     const bundle = bundleResult.data
-    const photoUrl = bundle.mediaCandidates?.photoUrls?.[0]
-    const scrapedMetadata: Record<string, unknown> = {
-      ...(bundle.core ?? {}),
-      ...(photoUrl ? { photos: [photoUrl] } : {})
-    }
-
-    const updateMetadata = pickFields(scrapedMetadata, fields)
+    const updateMetadata = toPersonMetadataUpdateInput(bundle, fields)
     const updateResult = await ipcManager.invoke(
       'metadata-updater:update-person',
       personId,
-      updateMetadata as unknown as PersonMetadataUpdateInput,
+      updateMetadata,
       options
     )
     if (!updateResult.success) {

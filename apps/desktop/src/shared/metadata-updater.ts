@@ -1,18 +1,13 @@
 /**
- * Metadata updater service types.
+ * Metadata updater service contracts.
  */
 
 import type {
-  ScrapedCharacterMetadata,
-  ScrapedCompanyMetadata,
-  ScrapedGameMetadata,
-  ScrapedPersonMetadata
-} from './scraper'
-
-/**
- * TEMP: Metadata updater currently reuses Scraped*Metadata as update payload shapes.
- * Remove when the metadata-updater rewrite lands with dedicated updater contracts.
- */
+  CoreCharacterMetadata,
+  CoreCompanyMetadata,
+  CoreGameMetadata,
+  CorePersonMetadata
+} from './metadata'
 
 export type MetadataUpdateApply = 'always' | 'ifMissing'
 
@@ -89,18 +84,57 @@ export const CHARACTER_METADATA_UPDATE_FIELDS = [
 
 export type CharacterMetadataUpdateField = (typeof CHARACTER_METADATA_UPDATE_FIELDS)[number]
 
-export type GameMetadataUpdateInput = Partial<Pick<ScrapedGameMetadata, GameMetadataUpdateField>>
+/**
+ * Game metadata payload accepted by the updater boundary.
+ */
+export interface GameMetadataUpdatePayload extends CoreGameMetadata {
+  covers?: string[]
+  backdrops?: string[]
+  logos?: string[]
+  icons?: string[]
+}
 
-export type PersonMetadataUpdateInput = Partial<
-  Pick<ScrapedPersonMetadata, PersonMetadataUpdateField>
+/**
+ * Person metadata payload accepted by the updater boundary.
+ */
+export interface PersonMetadataUpdatePayload extends CorePersonMetadata {
+  photos?: string[]
+}
+
+/**
+ * Company metadata payload accepted by the updater boundary.
+ */
+export interface CompanyMetadataUpdatePayload extends CoreCompanyMetadata {
+  logos?: string[]
+}
+
+/**
+ * Character metadata payload accepted by the updater boundary.
+ */
+export interface CharacterMetadataUpdatePayload extends CoreCharacterMetadata {
+  photos?: string[]
+}
+
+type MetadataUpdateInput<Payload, Field extends keyof Payload> = Partial<Pick<Payload, Field>>
+
+export type GameMetadataUpdateInput = MetadataUpdateInput<
+  GameMetadataUpdatePayload,
+  GameMetadataUpdateField
 >
 
-export type CompanyMetadataUpdateInput = Partial<
-  Pick<ScrapedCompanyMetadata, CompanyMetadataUpdateField>
+export type PersonMetadataUpdateInput = MetadataUpdateInput<
+  PersonMetadataUpdatePayload,
+  PersonMetadataUpdateField
 >
 
-export type CharacterMetadataUpdateInput = Partial<
-  Pick<ScrapedCharacterMetadata, CharacterMetadataUpdateField>
+export type CompanyMetadataUpdateInput = MetadataUpdateInput<
+  CompanyMetadataUpdatePayload,
+  CompanyMetadataUpdateField
+>
+
+export type CharacterMetadataUpdateInput = MetadataUpdateInput<
+  CharacterMetadataUpdatePayload,
+  CharacterMetadataUpdateField
 >
 
 export interface UpdateGameMetadataOptions extends BaseMetadataUpdateOptions {

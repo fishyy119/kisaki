@@ -14,12 +14,11 @@ import type { ExternalId } from '@shared/identity'
 import {
   COMPANY_METADATA_UPDATE_FIELDS,
   type CompanyMetadataUpdateField,
-  type CompanyMetadataUpdateInput,
   type MetadataUpdateApply,
   type MetadataUpdateStrategy
 } from '@shared/metadata-updater'
 import { CompanySearcher, type CompanySearcherSelection } from '@renderer/components/shared/company'
-import { dedupeExternalIds, fieldsToOption, pickFields } from '@renderer/utils'
+import { dedupeExternalIds, fieldsToOption, toCompanyMetadataUpdateInput } from '@renderer/utils'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -194,17 +193,11 @@ async function handleSubmit() {
     if (!bundleResult.data) throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
 
     const bundle = bundleResult.data
-    const logoUrl = bundle.mediaCandidates?.logoUrls?.[0]
-    const scrapedMetadata: Record<string, unknown> = {
-      ...(bundle.core ?? {}),
-      ...(logoUrl ? { logos: [logoUrl] } : {})
-    }
-
-    const updateMetadata = pickFields(scrapedMetadata, fields)
+    const updateMetadata = toCompanyMetadataUpdateInput(bundle, fields)
     const updateResult = await ipcManager.invoke(
       'metadata-updater:update-company',
       companyId,
-      updateMetadata as unknown as CompanyMetadataUpdateInput,
+      updateMetadata,
       options
     )
     if (!updateResult.success) {
