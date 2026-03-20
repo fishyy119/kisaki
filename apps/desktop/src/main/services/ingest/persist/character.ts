@@ -1,12 +1,9 @@
 import type { DbContext, DbService } from '@main/services/db'
 import type {
   IngestAddCharacterFromScraperOptions,
-  IngestAddCharacterFromScraperResult,
-  IngestCharacterGraph,
-  IngestCharacterNode,
-  IngestCharacterPersonLink,
-  IngestWarning
-} from '@shared/ingest'
+  IngestAddCharacterFromScraperResult
+} from '@shared/ingest/add'
+import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import { nanoid } from 'nanoid'
 import {
@@ -20,12 +17,9 @@ import {
   type NewCharacterPersonLink,
   type NewCollectionCharacterLink
 } from '@shared/db'
-import {
-  flushPendingAssets,
-  pickFirstAssetUrl,
-  type PendingAssetTask,
-  type PersistCharacterGraphResult
-} from './types'
+import type { IngestCharacterGraph, IngestCharacterNode, IngestCharacterPersonLink } from '../graph'
+import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { pickFirstAssetUrl, type PersistCharacterGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 
 function assertOrderValue(value: number, field: string): void {

@@ -2,8 +2,87 @@
  * Ingest type contracts.
  */
 
-export * from './common'
-export * from './game'
-export * from './person'
-export * from './company'
-export * from './character'
+export type { ExistingReason, IngestAddResult, IngestWarning, IngestWarningCode } from './common'
+export type {
+  IngestAddCharacterFromScraperOptions,
+  IngestAddCharacterFromScraperParams,
+  IngestAddCharacterFromScraperResult,
+  IngestAddCharacterResult,
+  IngestAddCompanyFromScraperOptions,
+  IngestAddCompanyFromScraperParams,
+  IngestAddCompanyFromScraperResult,
+  IngestAddCompanyResult,
+  IngestAddGameDirectOptions,
+  IngestAddGameDirectParams,
+  IngestAddGameDirectResult,
+  IngestAddGameDirectSeed,
+  IngestAddGameFromScraperOptions,
+  IngestAddGameFromScraperParams,
+  IngestAddGameFromScraperResult,
+  IngestAddGameResult,
+  IngestAddPersonFromScraperOptions,
+  IngestAddPersonFromScraperParams,
+  IngestAddPersonFromScraperResult,
+  IngestAddPersonResult
+} from './add'
+export {
+  CHARACTER_UPDATE_CORE_SURFACES,
+  CHARACTER_UPDATE_MEDIA_SURFACES,
+  CHARACTER_UPDATE_RELATION_SURFACES,
+  CHARACTER_UPDATE_SURFACES,
+  CHARACTER_UPDATE_SURFACE_KEYS,
+  COMPANY_UPDATE_CORE_SURFACES,
+  COMPANY_UPDATE_MEDIA_SURFACES,
+  COMPANY_UPDATE_RELATION_SURFACES,
+  COMPANY_UPDATE_SURFACES,
+  COMPANY_UPDATE_SURFACE_KEYS,
+  GAME_UPDATE_CORE_SURFACES,
+  GAME_UPDATE_MEDIA_SURFACES,
+  GAME_UPDATE_RELATION_SURFACES,
+  GAME_UPDATE_SURFACES,
+  GAME_UPDATE_SURFACE_KEYS,
+  PERSON_UPDATE_CORE_SURFACES,
+  PERSON_UPDATE_MEDIA_SURFACES,
+  PERSON_UPDATE_RELATION_SURFACES,
+  PERSON_UPDATE_SURFACES,
+  PERSON_UPDATE_SURFACE_KEYS,
+  listIngestUpdateSurfaceKeys,
+  listIngestUpdateSurfaceKeysByCardinality,
+  listIngestUpdateSurfaceKeysByGroup
+} from './update'
+export type {
+  CharacterUpdateCoreSurface,
+  CharacterUpdateMediaSurface,
+  CharacterUpdateRelationSurface,
+  CharacterUpdateRequest,
+  CharacterUpdateSelection,
+  CharacterUpdateSurface,
+  CompanyUpdateCoreSurface,
+  CompanyUpdateMediaSurface,
+  CompanyUpdateRelationSurface,
+  CompanyUpdateRequest,
+  CompanyUpdateSelection,
+  CompanyUpdateSurface,
+  GameUpdateCoreSurface,
+  GameUpdateMediaSurface,
+  GameUpdateRelationSurface,
+  GameUpdateRequest,
+  GameUpdateSelection,
+  GameUpdateSurface,
+  IngestUpdateLookup,
+  IngestUpdatePolicy,
+  IngestUpdateRequest,
+  IngestUpdateSelection,
+  IngestUpdateSurfaceCardinality,
+  IngestUpdateSurfaceDefinition,
+  IngestUpdateSurfaceGroup,
+  IngestUpdateSurfaceKey,
+  IngestUpdateSurfaceKeysByCardinality,
+  IngestUpdateSurfaceKeysByGroup,
+  PersonUpdateCoreSurface,
+  PersonUpdateMediaSurface,
+  PersonUpdateRelationSurface,
+  PersonUpdateRequest,
+  PersonUpdateSelection,
+  PersonUpdateSurface
+} from './update'

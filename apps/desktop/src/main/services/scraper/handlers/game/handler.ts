@@ -46,6 +46,7 @@ import type { I18nService } from '@main/services/i18n'
 import type { GameScraperProvider } from './provider'
 import { mergeGameScraperBundle } from './merge'
 import type { GameScraperResult } from './types'
+import { ensureProviderExternalId } from '../../utils'
 
 // =============================================================================
 // Types
@@ -205,7 +206,8 @@ export class GameScraperHandler {
     if (!provider || !provider.capabilities.includes('search')) {
       throw new Error(`Search provider '${profile.searchProviderId}' not available`)
     }
-    return provider.search!(query, this.getLocale(profile))
+    const results = await provider.search!(query, this.getLocale(profile))
+    return results.map((result) => ensureProviderExternalId(result, provider.id, result.id))
   }
 
   // ---------------------------------------------------------------------------
@@ -465,7 +467,9 @@ export class GameScraperHandler {
       switch (slot) {
         case 'info': {
           const data = await provider.getInfo!(id, locale)
-          return data ? { slot, priority, data } : null
+          return data
+            ? { slot, priority, data: ensureProviderExternalId(data, providerId, id) }
+            : null
         }
         case 'tags': {
           const data = await provider.getTags!(id, locale)

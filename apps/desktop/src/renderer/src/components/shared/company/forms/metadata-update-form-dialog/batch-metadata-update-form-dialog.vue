@@ -1,23 +1,23 @@
 <!--
   CompanyBatchMetadataUpdateFormDialog
-  Batch update company metadata from scraper results.
+  Batch update company metadata through renderer-local lookup plus the main-process ingest service.
 -->
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue'
-import { inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
-import { companyExternalIds, companies } from '@shared/db'
+import { companies, companyExternalIds, scraperProfiles } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import {
-  COMPANY_METADATA_UPDATE_FIELDS,
-  type CompanyMetadataUpdateField,
-  type MetadataUpdateApply,
-  type MetadataUpdateStrategy
-} from '@shared/metadata-updater'
-import { fieldsToOption, mergeExternalIds, toCompanyMetadataUpdateInput } from '@renderer/utils'
+  COMPANY_UPDATE_SURFACE_KEYS,
+  type CompanyUpdateRequest,
+  type CompanyUpdateSurface,
+  type IngestUpdatePolicy
+} from '@shared/ingest/update'
+import { buildIngestUpdateLookup } from '@renderer/utils'
 import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -52,19 +52,34 @@ interface Props {
   companyIds: string[]
 }
 
+interface BatchRow {
+  id: string
+  name: string
+  originalName: string | null
+  externalIds: ExternalId[]
+}
+
 const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
+const openModel = computed({
+  get: () => open.value,
+  set: (value) => {
+    if (!isSubmitting.value) {
+      open.value = value
+    }
+  }
+})
+
 const isSubmitting = ref(false)
 const profileId = ref('')
-
-const applyMode = ref<MetadataUpdateApply>('ifMissing')
-const strategy = ref<MetadataUpdateStrategy>('merge')
-const selectedFields = ref<CompanyMetadataUpdateField[]>([...COMPANY_METADATA_UPDATE_FIELDS])
+const singularUpdate = ref<IngestUpdatePolicy['singularUpdate']>('overwrite')
+const collectionUpdate = ref<IngestUpdatePolicy['collectionUpdate']>('replace')
+const selectedSurfaces = ref<CompanyUpdateSurface[]>([...COMPANY_UPDATE_SURFACE_KEYS])
 const useCurrentExternalIdsAsKnownIds = ref(true)
 
-const FIELD_LABELS: Record<CompanyMetadataUpdateField, string> = {
+const SURFACE_LABELS: Record<CompanyUpdateSurface, string> = {
   name: '名称',
   originalName: '原名',
   foundedDate: '成立日期',
@@ -103,12 +118,22 @@ const { data, isLoading } = useAsyncData(
       byId.set(ext.companyId, list)
     }
 
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      originalName: row.originalName ?? null,
-      externalIds: byId.get(row.id) ?? []
-    }))
+    const rowById = new Map(rows.map((row) => [row.id, row] as const))
+    const out: BatchRow[] = []
+
+    for (const id of ids) {
+      const row = rowById.get(id)
+      if (!row) continue
+
+      out.push({
+        id: row.id,
+        name: row.name,
+        originalName: row.originalName ?? null,
+        externalIds: byId.get(row.id) ?? []
+      })
+    }
+
+    return out
   },
   { watch: [() => props.companyIds], enabled: () => open.value }
 )
@@ -116,27 +141,27 @@ const { data, isLoading } = useAsyncData(
 const canSubmit = computed(() => {
   return (
     !!profileId.value &&
-    selectedFields.value.length > 0 &&
+    selectedSurfaces.value.length > 0 &&
     selectedCount.value > 0 &&
     !isSubmitting.value
   )
 })
 
-function toggleField(field: CompanyMetadataUpdateField, nextValue: boolean) {
-  const current = selectedFields.value
+function toggleSurface(surface: CompanyUpdateSurface, nextValue: boolean) {
+  const current = selectedSurfaces.value
   if (nextValue) {
-    if (!current.includes(field)) selectedFields.value = [...current, field]
+    if (!current.includes(surface)) selectedSurfaces.value = [...current, surface]
     return
   }
-  selectedFields.value = current.filter((f) => f !== field)
+  selectedSurfaces.value = current.filter((item) => item !== surface)
 }
 
-function handleSelectAll() {
-  selectedFields.value = [...COMPANY_METADATA_UPDATE_FIELDS]
+function handleSelectAllSurfaces() {
+  selectedSurfaces.value = [...COMPANY_UPDATE_SURFACE_KEYS]
 }
 
-function handleSelectNone() {
-  selectedFields.value = []
+function handleSelectNoSurfaces() {
+  selectedSurfaces.value = []
 }
 
 watch(
@@ -145,112 +170,121 @@ watch(
     if (!isOpen) return
     isSubmitting.value = false
     profileId.value = ''
-    applyMode.value = 'ifMissing'
-    strategy.value = 'merge'
-    selectedFields.value = [...COMPANY_METADATA_UPDATE_FIELDS]
+    singularUpdate.value = 'overwrite'
+    collectionUpdate.value = 'replace'
+    selectedSurfaces.value = [...COMPANY_UPDATE_SURFACE_KEYS]
     useCurrentExternalIdsAsKnownIds.value = true
   }
 )
 
 async function handleSubmit() {
   if (!profileId.value) return
-  if (selectedFields.value.length === 0) return
   if (!data.value || data.value.length === 0) return
+  if (selectedSurfaces.value.length === 0) return
 
   const currentProfileId = profileId.value
-  const fields = [...selectedFields.value]
-  const options = {
-    fields: fieldsToOption(fields, COMPANY_METADATA_UPDATE_FIELDS),
-    apply: applyMode.value,
-    strategy: strategy.value
-  } as const
-
   const entities = toRaw(data.value)
+  const currentProfile = await db.query.scraperProfiles.findFirst({
+    where: eq(scraperProfiles.id, currentProfileId)
+  })
 
-  open.value = false
+  if (!currentProfile) {
+    notify.error('批量更新失败', '刮削配置不存在')
+    return
+  }
+
+  const surfaces = [...selectedSurfaces.value]
+  const policy = {
+    singularUpdate: singularUpdate.value,
+    collectionUpdate: collectionUpdate.value
+  } satisfies IngestUpdatePolicy
+
+  isSubmitting.value = true
+
   const toastTitle = '批量更新元数据中...'
   const toastId = notify.loading(toastTitle, `${entities.length} 个公司`)
-  isSubmitting.value = true
 
   let okCount = 0
   const failed: Array<{ id: string; name: string; error: string }> = []
-
   const total = entities.length
 
-  for (const [index, entity] of entities.entries()) {
-    const queryName = entity.originalName || entity.name
-    const baseKnownIds = useCurrentExternalIdsAsKnownIds.value ? entity.externalIds : []
+  try {
+    for (const [index, entity] of entities.entries()) {
+      const queryName = entity.originalName || entity.name
+      const baseKnownIds = useCurrentExternalIdsAsKnownIds.value ? entity.externalIds : []
 
-    notify.update(toastId, {
-      title: toastTitle,
-      message: `${index + 1} / ${total}`,
-      type: 'loading'
-    })
+      notify.update(toastId, {
+        title: toastTitle,
+        message: `${index + 1} / ${total} · ${queryName}`,
+        type: 'loading'
+      })
 
-    try {
-      const searchResult = await ipcManager.invoke(
-        'scraper:search-company',
-        currentProfileId,
-        queryName
-      )
-      if (!searchResult.success) throw new Error(searchResult.error)
-      const first = searchResult.data?.[0]
-      if (!first) throw new Error('无搜索结果')
+      try {
+        const searchResult = await ipcManager.invoke(
+          'scraper:search-company',
+          currentProfileId,
+          queryName
+        )
+        if (!searchResult.success) throw new Error(searchResult.error)
 
-      const knownIds = mergeExternalIds(baseKnownIds, first.externalIds ?? [])
-      const lookupName = first.originalName || first.name || queryName
+        const first = searchResult.data?.[0]
+        if (!first) throw new Error('无搜索结果')
 
-      const bundleResult = await ipcManager.invoke(
-        'scraper:scrape-company',
-        currentProfileId,
-        { name: lookupName, knownIds }
-      )
-      if (!bundleResult.success) throw new Error(bundleResult.error)
-      if (!bundleResult.data) throw new Error('无法获取元数据')
+        const request: CompanyUpdateRequest = {
+          rootId: entity.id,
+          profileId: currentProfileId,
+          lookup: buildIngestUpdateLookup({
+            name: first.originalName || first.name || queryName,
+            baseKnownIds,
+            selectionKnownIds: first.externalIds
+          }),
+          selection: {
+            surfaces: [...surfaces]
+          },
+          policy
+        }
 
-      const bundle = bundleResult.data
-      const updateMetadata = toCompanyMetadataUpdateInput(bundle, fields)
-      const updateResult = await ipcManager.invoke(
-        'metadata-updater:update-company',
-        entity.id,
-        updateMetadata,
-        options
-      )
-      if (!updateResult.success) throw new Error(updateResult.error)
+        const result = await ipcManager.invoke('ingest:update-company-from-scraper', request)
+        if (!result.success) throw new Error(result.error)
 
-      okCount++
-    } catch (error) {
-      failed.push({
-        id: entity.id,
-        name: queryName,
-        error: error instanceof Error ? error.message : '未知错误'
+        okCount++
+      } catch (error) {
+        failed.push({
+          id: entity.id,
+          name: queryName,
+          error: error instanceof Error ? error.message : '未知错误'
+        })
+      }
+    }
+
+    const failCount = failed.length
+    if (failCount === 0) {
+      notify.update(toastId, {
+        title: '批量更新完成',
+        message: `${okCount} / ${entities.length}`,
+        type: 'success'
+      })
+    } else if (okCount === 0) {
+      notify.update(toastId, {
+        title: '批量更新失败',
+        message: failed[0]?.error,
+        type: 'error'
+      })
+    } else {
+      notify.update(toastId, {
+        title: '批量更新完成（部分失败）',
+        message: `成功 ${okCount}，失败 ${failCount}`,
+        type: 'warning'
       })
     }
+  } finally {
+    isSubmitting.value = false
   }
-
-  const failCount = failed.length
-  if (failCount === 0) {
-    notify.update(toastId, {
-      title: '批量更新完成',
-      message: `${okCount} / ${entities.length}`,
-      type: 'success'
-    })
-  } else if (okCount === 0) {
-    notify.update(toastId, { title: '批量更新失败', message: failed[0]?.error, type: 'error' })
-  } else {
-    notify.update(toastId, {
-      title: '批量更新完成（部分失败）',
-      message: `成功 ${okCount}，失败 ${failCount}`,
-      type: 'warning'
-    })
-  }
-
-  isSubmitting.value = false
 }
 </script>
 
 <template>
-  <Dialog v-model:open="open">
+  <Dialog v-model:open="openModel">
     <DialogContent class="max-w-3xl">
       <template v-if="isLoading || !data">
         <DialogBody class="flex items-center justify-center py-10">
@@ -286,10 +320,7 @@ async function handleSubmit() {
 
             <FieldGroup>
               <Field>
-                <FieldLabel>
-                  <span>更新字段</span>
-                  <FieldDescription></FieldDescription>
-                </FieldLabel>
+                <FieldLabel>更新项</FieldLabel>
                 <FieldContent>
                   <div class="flex items-center gap-2 pb-2">
                     <Button
@@ -297,7 +328,7 @@ async function handleSubmit() {
                       variant="outline"
                       size="sm"
                       :disabled="isSubmitting"
-                      @click="handleSelectAll"
+                      @click="handleSelectAllSurfaces"
                     >
                       全选
                     </Button>
@@ -306,28 +337,29 @@ async function handleSubmit() {
                       variant="outline"
                       size="sm"
                       :disabled="isSubmitting"
-                      @click="handleSelectNone"
+                      @click="handleSelectNoSurfaces"
                     >
                       全不选
                     </Button>
                   </div>
+
                   <div class="grid grid-cols-2 gap-x-6 gap-y-2">
                     <div
-                      v-for="field in COMPANY_METADATA_UPDATE_FIELDS"
-                      :key="field"
+                      v-for="surface in COMPANY_UPDATE_SURFACE_KEYS"
+                      :key="surface"
                       class="flex items-center gap-2"
                     >
                       <Checkbox
-                        :id="`field-${field}`"
-                        :model-value="selectedFields.includes(field)"
+                        :id="`core-surface-${surface}`"
+                        :model-value="selectedSurfaces.includes(surface)"
                         :disabled="isSubmitting"
-                        @update:model-value="(v) => toggleField(field, !!v)"
+                        @update:model-value="(value) => toggleSurface(surface, !!value)"
                       />
                       <Label
-                        :for="`field-${field}`"
+                        :for="`core-surface-${surface}`"
                         class="text-sm font-normal cursor-pointer"
                       >
-                        {{ FIELD_LABELS[field] }}
+                        {{ SURFACE_LABELS[surface] }}
                       </Label>
                     </div>
                   </div>
@@ -335,53 +367,57 @@ async function handleSubmit() {
               </Field>
 
               <Field>
-                <FieldLabel>应用时机</FieldLabel>
+                <FieldLabel>单值策略</FieldLabel>
                 <FieldContent>
                   <Select
-                    v-model="applyMode"
+                    v-model="singularUpdate"
                     :disabled="isSubmitting"
                   >
                     <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择 Apply..." />
+                      <SelectValue placeholder="选择单值策略..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ifMissing">仅缺失时</SelectItem>
-                      <SelectItem value="always">总是</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FieldContent>
-                <FieldDescription>
-                  {{ applyMode === 'ifMissing' ? '仅当当前字段为空时写入' : '总是覆盖写入' }}
-                </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel>更新策略</FieldLabel>
-                <FieldContent>
-                  <Select
-                    v-model="strategy"
-                    :disabled="isSubmitting"
-                  >
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择 Strategy..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="merge">合并</SelectItem>
-                      <SelectItem value="replace">替换</SelectItem>
+                      <SelectItem value="ifMissing">仅缺失时写入</SelectItem>
+                      <SelectItem value="overwrite">覆盖现有值</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
                 <FieldDescription>
                   {{
-                    strategy === 'merge'
-                      ? '列表/ID 等去重合并；图片仅补全缺失'
-                      : '用刮削结果替换现有值'
+                    singularUpdate === 'ifMissing'
+                      ? '仅在当前值缺失时写入新值'
+                      : '如存在可用新值，则覆盖当前值'
+                  }}
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>集合策略</FieldLabel>
+                <FieldContent>
+                  <Select
+                    v-model="collectionUpdate"
+                    :disabled="isSubmitting"
+                  >
+                    <SelectTrigger class="w-full">
+                      <SelectValue placeholder="选择集合策略..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="merge">合并追加</SelectItem>
+                      <SelectItem value="replace">整体替换</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+                <FieldDescription>
+                  {{
+                    collectionUpdate === 'merge'
+                      ? '保留现有内容，并追加新增内容'
+                      : '以新内容整体替换当前内容'
                   }}
                 </FieldDescription>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>使用当前外部 ID 辅助刮削定位</FieldLabel>
+                <FieldLabel>使用当前外部 ID 辅助定位</FieldLabel>
                 <FieldContent>
                   <Checkbox
                     id="use-current-external-ids"
@@ -389,7 +425,7 @@ async function handleSubmit() {
                     :disabled="isSubmitting"
                   />
                 </FieldContent>
-                <FieldDescription>请勿在当前公司为错误目标的情况下使用</FieldDescription>
+                <FieldDescription>若当前条目可能对应错误目标，请勿启用此项。</FieldDescription>
               </Field>
             </FieldGroup>
           </DialogBody>
@@ -400,7 +436,7 @@ async function handleSubmit() {
                 icon="icon-[mdi--lightbulb-outline]"
                 class="size-3.5"
               />
-              <span>将使用「原名」静默搜索并取第一个结果</span>
+              <span>将基于“原名”执行静默检索，并默认采用首个结果，再复用单体 update 流程。</span>
             </div>
             <Button
               type="button"
@@ -408,7 +444,7 @@ async function handleSubmit() {
               :disabled="isSubmitting"
               @click="open = false"
             >
-              取消
+              关闭
             </Button>
             <Button
               type="submit"

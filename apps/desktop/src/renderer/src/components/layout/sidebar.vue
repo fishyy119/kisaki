@@ -34,7 +34,7 @@ import {
 import { uiExtensions } from '@renderer/core/ui-extensions'
 import { usePreferencesStore, useThemeStore } from '@renderer/stores'
 import SidebarNavItem from './sidebar-nav-item.vue'
-import { IngestTrigger } from '@renderer/features/ingest'
+import { AdderTrigger } from '@renderer/features/adder'
 import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
 import { SettingsFormDialog } from '@renderer/features/settings'
 import { AboutDialog } from '@renderer/features/about'
@@ -117,7 +117,7 @@ const showNsfwModel = computed({
 
     <!-- Bottom navigation -->
     <nav class="flex flex-col items-center py-2 gap-1">
-      <IngestTrigger />
+      <AdderTrigger />
 
       <!-- Settings Dropdown -->
       <Tooltip>

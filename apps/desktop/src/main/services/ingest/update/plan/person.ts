@@ -1,0 +1,84 @@
+import type { PersonPlanContext, PersonUpdatePlan } from '../types'
+import {
+  areExternalIdsEqual,
+  areRelatedSitesEqual,
+  areScalarValuesEqual,
+  areTagsEqual,
+  mergeExternalIds,
+  mergeRelatedSites,
+  mergeTags,
+  pickFirstUrl,
+  shouldApplyMediaUpdate,
+  shouldApplyScalarUpdate
+} from '../utils'
+
+export function buildPersonPlan(context: PersonPlanContext): PersonUpdatePlan {
+  const { current, incoming, selection, policy } = context
+  const plan: PersonUpdatePlan = { patch: {} }
+
+  for (const surface of selection.coreSurfaces) {
+    if (!incoming.availability.surfaces.has(surface)) continue
+
+    switch (surface) {
+      case 'name':
+      case 'originalName':
+      case 'birthDate':
+      case 'deathDate':
+      case 'gender':
+      case 'description': {
+        const incomingValue = incoming.incoming.core[surface]
+        const currentValue = current.person[surface]
+
+        if (!shouldApplyScalarUpdate(currentValue, incomingValue, policy.singularUpdate)) break
+        if (areScalarValuesEqual(currentValue, incomingValue)) break
+        ;(plan.patch as Record<string, unknown>)[surface] = incomingValue
+        break
+      }
+
+      case 'relatedSites': {
+        const next = mergeRelatedSites(
+          current.person.relatedSites ?? [],
+          incoming.incoming.core.relatedSites ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areRelatedSitesEqual(current.person.relatedSites ?? [], next)) break
+        plan.patch.relatedSites = next
+        break
+      }
+
+      case 'externalIds': {
+        const next = mergeExternalIds(
+          current.externalIds,
+          incoming.incoming.core.externalIds ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areExternalIdsEqual(current.externalIds, next)) break
+        plan.externalIds = next
+        break
+      }
+
+      case 'tags': {
+        const next = mergeTags(
+          current.tags,
+          incoming.incoming.core.tags ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areTagsEqual(current.tags, next)) break
+        plan.tags = next
+        break
+      }
+    }
+  }
+
+  if (selection.mediaSurfaces.includes('photos') && incoming.availability.surfaces.has('photos')) {
+    const photoUrl = pickFirstUrl(incoming.incoming.mediaCandidates.photoUrls)
+    if (shouldApplyMediaUpdate(current.person.photoFile, photoUrl, policy.singularUpdate)) {
+      plan.photoUrl = photoUrl
+    }
+  }
+
+  return plan
+}

@@ -30,6 +30,7 @@ import type { I18nService } from '@main/services/i18n'
 import type { PersonScraperProvider } from './provider'
 import { mergePersonScraperBundle } from './merge'
 import type { PersonScraperImageSlot, PersonScraperResult } from './types'
+import { ensureProviderExternalId } from '../../utils'
 
 interface ResolveResult {
   id: string
@@ -143,7 +144,8 @@ export class PersonScraperHandler {
     if (!provider?.search) {
       throw new Error(`Search provider '${profile.searchProviderId}' not available`)
     }
-    return provider.search(query, this.getLocale(profile))
+    const results = await provider.search(query, this.getLocale(profile))
+    return results.map((result) => ensureProviderExternalId(result, provider.id, result.id))
   }
 
   // ---------------------------------------------------------------------------
@@ -349,7 +351,9 @@ export class PersonScraperHandler {
       switch (slot) {
         case 'info': {
           const data = await provider.getInfo?.(id, locale)
-          return data ? { slot, priority, data } : null
+          return data
+            ? { slot, priority, data: ensureProviderExternalId(data, providerId, id) }
+            : null
         }
         case 'tags': {
           const data = await provider.getTags?.(id, locale)

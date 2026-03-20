@@ -54,16 +54,8 @@ export { getAttachmentUrl, type ThumbnailOptions } from './attachment'
 export { createReactiveRegistry } from './registry'
 export type { ReactiveRegistry } from './registry'
 
-// Metadata updater UI helpers
-export {
-  dedupeExternalIds,
-  mergeExternalIds,
-  fieldsToOption,
-  toGameMetadataUpdateInput,
-  toPersonMetadataUpdateInput,
-  toCompanyMetadataUpdateInput,
-  toCharacterMetadataUpdateInput
-} from './metadata-updater'
+// Ingest update UI helpers
+export { buildIngestUpdateLookup, type BatchProgressState } from './ingest-update'
 
 // Statistics helper utilities
 export {

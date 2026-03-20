@@ -56,7 +56,7 @@ import { scanners, scraperProfiles, type ScraperProfile } from '@shared/db'
 import type { Scanner, ScannerIngestMode } from '@shared/db'
 import type { EntityEntry, ScanProgressData, ScanCompletedData } from '@shared/scanner'
 import type { IpcService } from '@main/services/ipc'
-import type { IngestAddGameResult } from '@shared/ingest'
+import type { IngestAddGameResult } from '@shared/ingest/add'
 import type { ScannerPhash } from '../../phash'
 import type { ScanOptions } from '../../utils'
 import { matchGameEntity } from './match'
@@ -402,7 +402,7 @@ export class GameScannerHandler {
     }
 
     const addDirect = async (): Promise<IngestAddGameResult> => {
-      return this.ingestService.game.addDirect(seed, options)
+      return this.ingestService.add.game.direct(seed, options)
     }
 
     let result: IngestAddGameResult
@@ -415,7 +415,7 @@ export class GameScannerHandler {
         if (!profile) {
           throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
         }
-        result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
+        result = await this.ingestService.add.game.fromScraper(profile.id, seed, options)
         break
       case 'prefer-scraper':
         if (!profile) {
@@ -424,7 +424,7 @@ export class GameScannerHandler {
         }
 
         try {
-          result = await this.ingestService.game.addFromScraper(profile.id, seed, options)
+          result = await this.ingestService.add.game.fromScraper(profile.id, seed, options)
         } catch (error) {
           if (!isRecoverableScraperFailure(error)) {
             throw error

@@ -1,11 +1,9 @@
 import type { DbContext, DbService } from '@main/services/db'
 import type {
   IngestAddCompanyFromScraperOptions,
-  IngestAddCompanyFromScraperResult,
-  IngestWarning,
-  IngestCompanyGraph,
-  IngestCompanyNode
-} from '@shared/ingest'
+  IngestAddCompanyFromScraperResult
+} from '@shared/ingest/add'
+import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import { nanoid } from 'nanoid'
 import {
@@ -17,12 +15,9 @@ import {
   type NewCollectionCompanyLink,
   type NewCompany
 } from '@shared/db'
-import {
-  flushPendingAssets,
-  pickFirstAssetUrl,
-  type PersistCompanyGraphResult,
-  type PendingAssetTask
-} from './types'
+import type { IngestCompanyGraph, IngestCompanyNode } from '../graph'
+import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { pickFirstAssetUrl, type PersistCompanyGraphResult } from './types'
 
 export class CompanyIngestPersistHandler {
   constructor(private readonly dbService: DbService) {}

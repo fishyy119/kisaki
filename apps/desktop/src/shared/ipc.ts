@@ -61,21 +61,13 @@ import type {
   IngestAddGameFromScraperResult,
   IngestAddPersonFromScraperOptions,
   IngestAddPersonFromScraperResult
-} from './ingest'
+} from './ingest/add'
 import type {
-  CharacterMetadataUpdateInput,
-  CompanyMetadataUpdateInput,
-  GameMetadataUpdateInput,
-  PersonMetadataUpdateInput,
-  UpdateCharacterMetadataOptions,
-  UpdateCharacterMetadataResult,
-  UpdateCompanyMetadataOptions,
-  UpdateCompanyMetadataResult,
-  UpdateGameMetadataOptions,
-  UpdateGameMetadataResult,
-  UpdatePersonMetadataOptions,
-  UpdatePersonMetadataResult
-} from './metadata-updater'
+  CharacterUpdateRequest,
+  CompanyUpdateRequest,
+  GameUpdateRequest,
+  PersonUpdateRequest
+} from './ingest/update'
 import type { GameRunningStatus } from './monitor'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
@@ -263,27 +255,11 @@ export interface IpcMainHandlers {
     options?: IngestAddCharacterFromScraperOptions
   ) => IpcResult<IngestAddCharacterFromScraperResult>
 
-  // Metadata updater
-  'metadata-updater:update-game': (
-    gameId: string,
-    metadata: GameMetadataUpdateInput,
-    options?: UpdateGameMetadataOptions
-  ) => IpcResult<UpdateGameMetadataResult>
-  'metadata-updater:update-person': (
-    personId: string,
-    metadata: PersonMetadataUpdateInput,
-    options?: UpdatePersonMetadataOptions
-  ) => IpcResult<UpdatePersonMetadataResult>
-  'metadata-updater:update-company': (
-    companyId: string,
-    metadata: CompanyMetadataUpdateInput,
-    options?: UpdateCompanyMetadataOptions
-  ) => IpcResult<UpdateCompanyMetadataResult>
-  'metadata-updater:update-character': (
-    characterId: string,
-    metadata: CharacterMetadataUpdateInput,
-    options?: UpdateCharacterMetadataOptions
-  ) => IpcResult<UpdateCharacterMetadataResult>
+  // Ingest update
+  'ingest:update-game-from-scraper': (request: GameUpdateRequest) => IpcVoidResult
+  'ingest:update-person-from-scraper': (request: PersonUpdateRequest) => IpcVoidResult
+  'ingest:update-company-from-scraper': (request: CompanyUpdateRequest) => IpcVoidResult
+  'ingest:update-character-from-scraper': (request: CharacterUpdateRequest) => IpcVoidResult
 
   // Scraper
   'scraper:list-game-providers': () => IpcResult<GameScraperProviderInfo[]>

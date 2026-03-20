@@ -1,15 +1,9 @@
 import type { DbContext, DbService } from '@main/services/db'
 import type {
   IngestAddGameFromScraperOptions,
-  IngestAddGameFromScraperResult,
-  IngestGameCharacterLink,
-  IngestGameCharacterPersonLink,
-  IngestGameCompanyLink,
-  IngestGameGraph,
-  IngestGameNode,
-  IngestGamePersonLink,
-  IngestWarning
-} from '@shared/ingest'
+  IngestAddGameFromScraperResult
+} from '@shared/ingest/add'
+import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import { nanoid } from 'nanoid'
 import {
@@ -29,7 +23,16 @@ import {
   type NewGameCompanyLink,
   type NewGamePersonLink
 } from '@shared/db'
-import { flushPendingAssets, type PendingAssetTask, type PersistGameGraphResult } from './types'
+import type {
+  IngestGameCharacterLink,
+  IngestGameCharacterPersonLink,
+  IngestGameCompanyLink,
+  IngestGameGraph,
+  IngestGameNode,
+  IngestGamePersonLink
+} from '../graph'
+import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import type { PersistGameGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 import type { CompanyIngestPersistHandler } from './company'
 import type { CharacterIngestPersistHandler } from './character'

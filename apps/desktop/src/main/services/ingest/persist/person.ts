@@ -1,11 +1,9 @@
 import type { DbContext, DbService } from '@main/services/db'
 import type {
   IngestAddPersonFromScraperOptions,
-  IngestAddPersonFromScraperResult,
-  IngestWarning,
-  IngestPersonGraph,
-  IngestPersonNode
-} from '@shared/ingest'
+  IngestAddPersonFromScraperResult
+} from '@shared/ingest/add'
+import type { IngestWarning } from '@shared/ingest'
 import { normalizeExternalIds } from '@shared/identity'
 import { nanoid } from 'nanoid'
 import {
@@ -17,12 +15,9 @@ import {
   type NewCollectionPersonLink,
   type NewPerson
 } from '@shared/db'
-import {
-  flushPendingAssets,
-  pickFirstAssetUrl,
-  type PersistPersonGraphResult,
-  type PendingAssetTask
-} from './types'
+import type { IngestPersonGraph, IngestPersonNode } from '../graph'
+import { flushPendingAssets, type PendingAssetTask } from '../assets'
+import { pickFirstAssetUrl, type PersistPersonGraphResult } from './types'
 
 export class PersonIngestPersistHandler {
   constructor(private readonly dbService: DbService) {}

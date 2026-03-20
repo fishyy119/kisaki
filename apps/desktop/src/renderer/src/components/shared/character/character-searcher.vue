@@ -63,6 +63,13 @@ const emit = defineEmits<{
 const selectedProfileId = ref('')
 const selectedProfile = ref<ScraperProfile | null>(null)
 
+function resetSelectionState() {
+  searchResults.value = []
+  hasSearched.value = false
+  selectedResultId.value = null
+  characterId.value = ''
+}
+
 watch(
   () => props.defaultProfileId,
   (defaultId) => {
@@ -75,15 +82,26 @@ watch(
 
 watch(
   selectedProfileId,
-  async (id) => {
-    if (id) {
-      const profile = await db.query.scraperProfiles.findFirst({
-        where: eq(scraperProfiles.id, id)
-      })
-      selectedProfile.value = profile ?? null
-    } else {
-      selectedProfile.value = null
+  async (id, previousId) => {
+    if (previousId && previousId !== id) {
+      resetSelectionState()
     }
+
+    if (!id) {
+      selectedProfile.value = null
+      return
+    }
+
+    selectedProfile.value = null
+    const profile = await db.query.scraperProfiles.findFirst({
+      where: eq(scraperProfiles.id, id)
+    })
+
+    if (selectedProfileId.value !== id) {
+      return
+    }
+
+    selectedProfile.value = profile ?? null
   },
   { immediate: true }
 )
@@ -119,10 +137,12 @@ const canSubmit = computed(
 )
 
 watch(
-  [selectedProfileId, selectedProfile, characterId],
+  [selectedProfileId, selectedProfile, characterId, searchResults, selectedResultId],
   () => {
     const trimmedId = characterId.value.trim()
-    const selectedResult = searchResults.value.find((r) => r.id === trimmedId)
+    const selectedResult = selectedResultId.value
+      ? searchResults.value.find((r) => r.id === selectedResultId.value)
+      : null
     const fallbackKnownIds =
       selectedProfile.value?.searchProviderId && trimmedId
         ? [{ source: selectedProfile.value.searchProviderId, id: trimmedId }]

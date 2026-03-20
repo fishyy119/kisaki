@@ -38,7 +38,6 @@ import type { PluginService } from '@main/services/plugin/service'
 import type { NetworkService } from '@main/services/network/service'
 import type { NotifyService } from '@main/services/notify/service'
 import type { DeeplinkService } from '@main/services/deeplink/service'
-import type { MetadataUpdaterService } from '@main/services/metadata-updater/service'
 import type { UpdaterService } from '@main/services/updater/service'
 
 /**
@@ -62,7 +61,6 @@ export interface ServiceRegistry {
   plugin: PluginService
   notify: NotifyService
   deeplink: DeeplinkService
-  'metadata-updater': MetadataUpdaterService
   updater: UpdaterService
 }
 

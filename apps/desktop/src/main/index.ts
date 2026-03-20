@@ -21,7 +21,6 @@ import { PluginService } from './services/plugin'
 import { NetworkService } from './services/network'
 import { NotifyService } from './services/notify'
 import { DeeplinkService } from './services/deeplink'
-import { MetadataUpdaterService } from './services/metadata-updater'
 import { UpdaterService } from './services/updater'
 
 // Bootstrap (pre-ready modules)
@@ -120,7 +119,6 @@ async function onAppReady(): Promise<void> {
   await container.register(new I18nService())
   await container.register(new ScraperService())
   await container.register(new IngestService())
-  await container.register(new MetadataUpdaterService())
   await container.register(new ScannerService())
   await container.register(new AttachmentService())
   await container.register(new MonitorService())

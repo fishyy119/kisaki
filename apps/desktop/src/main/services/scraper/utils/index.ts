@@ -8,4 +8,5 @@
 
 export * from './date'
 export * from './description'
+export * from './identity'
 export * from './merge'

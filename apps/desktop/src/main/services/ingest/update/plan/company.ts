@@ -1,0 +1,82 @@
+import type { CompanyPlanContext, CompanyUpdatePlan } from '../types'
+import {
+  areExternalIdsEqual,
+  areRelatedSitesEqual,
+  areScalarValuesEqual,
+  areTagsEqual,
+  mergeExternalIds,
+  mergeRelatedSites,
+  mergeTags,
+  pickFirstUrl,
+  shouldApplyMediaUpdate,
+  shouldApplyScalarUpdate
+} from '../utils'
+
+export function buildCompanyPlan(context: CompanyPlanContext): CompanyUpdatePlan {
+  const { current, incoming, selection, policy } = context
+  const plan: CompanyUpdatePlan = { patch: {} }
+
+  for (const surface of selection.coreSurfaces) {
+    if (!incoming.availability.surfaces.has(surface)) continue
+
+    switch (surface) {
+      case 'name':
+      case 'originalName':
+      case 'foundedDate':
+      case 'description': {
+        const incomingValue = incoming.incoming.core[surface]
+        const currentValue = current.company[surface]
+
+        if (!shouldApplyScalarUpdate(currentValue, incomingValue, policy.singularUpdate)) break
+        if (areScalarValuesEqual(currentValue, incomingValue)) break
+        ;(plan.patch as Record<string, unknown>)[surface] = incomingValue
+        break
+      }
+
+      case 'relatedSites': {
+        const next = mergeRelatedSites(
+          current.company.relatedSites ?? [],
+          incoming.incoming.core.relatedSites ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areRelatedSitesEqual(current.company.relatedSites ?? [], next)) break
+        plan.patch.relatedSites = next
+        break
+      }
+
+      case 'externalIds': {
+        const next = mergeExternalIds(
+          current.externalIds,
+          incoming.incoming.core.externalIds ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areExternalIdsEqual(current.externalIds, next)) break
+        plan.externalIds = next
+        break
+      }
+
+      case 'tags': {
+        const next = mergeTags(
+          current.tags,
+          incoming.incoming.core.tags ?? [],
+          policy.collectionUpdate
+        )
+        if (!next) break
+        if (areTagsEqual(current.tags, next)) break
+        plan.tags = next
+        break
+      }
+    }
+  }
+
+  if (selection.mediaSurfaces.includes('logos') && incoming.availability.surfaces.has('logos')) {
+    const logoUrl = pickFirstUrl(incoming.incoming.mediaCandidates.logoUrls)
+    if (shouldApplyMediaUpdate(current.company.logoFile, logoUrl, policy.singularUpdate)) {
+      plan.logoUrl = logoUrl
+    }
+  }
+
+  return plan
+}

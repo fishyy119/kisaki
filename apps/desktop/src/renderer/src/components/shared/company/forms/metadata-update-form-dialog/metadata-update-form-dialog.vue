@@ -1,6 +1,6 @@
 <!--
   CompanyMetadataUpdateFormDialog
-  Update company metadata from scraper results via MetadataUpdaterService.
+  Update company metadata from scraper results through the main-process ingest service.
 -->
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue'
@@ -9,16 +9,16 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
-import { companyExternalIds, companies } from '@shared/db'
+import { buildIngestUpdateLookup } from '@renderer/utils'
+import { companies, companyExternalIds } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import {
-  COMPANY_METADATA_UPDATE_FIELDS,
-  type CompanyMetadataUpdateField,
-  type MetadataUpdateApply,
-  type MetadataUpdateStrategy
-} from '@shared/metadata-updater'
+  COMPANY_UPDATE_SURFACE_KEYS,
+  type CompanyUpdateRequest,
+  type CompanyUpdateSurface,
+  type IngestUpdatePolicy
+} from '@shared/ingest/update'
 import { CompanySearcher, type CompanySearcherSelection } from '@renderer/components/shared/company'
-import { dedupeExternalIds, fieldsToOption, toCompanyMetadataUpdateInput } from '@renderer/utils'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -67,12 +67,12 @@ const selection = ref<CompanySearcherSelection>({
   canSubmit: false
 })
 
-const applyMode = ref<MetadataUpdateApply>('ifMissing')
-const strategy = ref<MetadataUpdateStrategy>('merge')
-const selectedFields = ref<CompanyMetadataUpdateField[]>([...COMPANY_METADATA_UPDATE_FIELDS])
+const singularUpdate = ref<IngestUpdatePolicy['singularUpdate']>('overwrite')
+const collectionUpdate = ref<IngestUpdatePolicy['collectionUpdate']>('replace')
+const selectedSurfaces = ref<CompanyUpdateSurface[]>([...COMPANY_UPDATE_SURFACE_KEYS])
 const useCurrentExternalIdsAsKnownIds = ref(true)
 
-const FIELD_LABELS: Record<CompanyMetadataUpdateField, string> = {
+const SURFACE_LABELS: Record<CompanyUpdateSurface, string> = {
   name: '名称',
   originalName: '原名',
   foundedDate: '成立日期',
@@ -99,7 +99,10 @@ const { data, isLoading } = useAsyncData(
 
     return { company, externalIds }
   },
-  { watch: [() => props.companyId], enabled: () => open.value }
+  {
+    watch: [() => props.companyId],
+    enabled: () => open.value
+  }
 )
 
 const defaultSearchQuery = computed(() => {
@@ -109,29 +112,28 @@ const defaultSearchQuery = computed(() => {
 })
 
 const canSubmit = computed(() => {
-  const currentProfileId = selection.value.profileId
-  return !!currentProfileId && selectedFields.value.length > 0 && !isSubmitting.value
+  return !!selection.value.profileId && selectedSurfaces.value.length > 0 && !isSubmitting.value
 })
 
 function handleSelectionChange(next: CompanySearcherSelection) {
   selection.value = next
 }
 
-function toggleField(field: CompanyMetadataUpdateField, nextValue: boolean) {
-  const current = selectedFields.value
+function toggleSurface(surface: CompanyUpdateSurface, nextValue: boolean) {
+  const current = selectedSurfaces.value
   if (nextValue) {
-    if (!current.includes(field)) selectedFields.value = [...current, field]
+    if (!current.includes(surface)) selectedSurfaces.value = [...current, surface]
     return
   }
-  selectedFields.value = current.filter((f) => f !== field)
+  selectedSurfaces.value = current.filter((item) => item !== surface)
 }
 
-function handleSelectAll() {
-  selectedFields.value = [...COMPANY_METADATA_UPDATE_FIELDS]
+function handleSelectAllSurfaces() {
+  selectedSurfaces.value = [...COMPANY_UPDATE_SURFACE_KEYS]
 }
 
-function handleSelectNone() {
-  selectedFields.value = []
+function handleSelectNoSurfaces() {
+  selectedSurfaces.value = []
 }
 
 watch(
@@ -147,9 +149,9 @@ watch(
       knownIds: [],
       canSubmit: false
     }
-    applyMode.value = 'ifMissing'
-    strategy.value = 'merge'
-    selectedFields.value = [...COMPANY_METADATA_UPDATE_FIELDS]
+    singularUpdate.value = 'overwrite'
+    collectionUpdate.value = 'replace'
+    selectedSurfaces.value = [...COMPANY_UPDATE_SURFACE_KEYS]
     useCurrentExternalIdsAsKnownIds.value = true
   }
 )
@@ -157,59 +159,48 @@ watch(
 async function handleSubmit() {
   if (!data.value?.company) return
   if (!selection.value.profileId) return
-  if (selectedFields.value.length === 0) return
+  if (selectedSurfaces.value.length === 0) return
 
-  const currentProfileId = selection.value.profileId
-  const companyId = props.companyId
-
-  const name =
+  const baseKnownIds = useCurrentExternalIdsAsKnownIds.value ? toRaw(data.value.externalIds) : []
+  const selectionKnownIds = toRaw(selection.value.knownIds)
+  const lookupName =
     selection.value.originalName ||
     selection.value.companyName ||
     data.value.company.originalName ||
     data.value.company.name
 
-  const baseKnownIds = useCurrentExternalIdsAsKnownIds.value ? toRaw(data.value.externalIds) : []
-  const selectionKnownIds = toRaw(selection.value.knownIds)
-  const knownIds = dedupeExternalIds([...baseKnownIds, ...selectionKnownIds])
-
-  const fields = [...selectedFields.value]
-  const options = {
-    fields: fieldsToOption(fields, COMPANY_METADATA_UPDATE_FIELDS),
-    apply: applyMode.value,
-    strategy: strategy.value
-  } as const
+  const request: CompanyUpdateRequest = {
+    rootId: props.companyId,
+    profileId: selection.value.profileId,
+    lookup: buildIngestUpdateLookup({
+      name: lookupName,
+      baseKnownIds,
+      selectionKnownIds
+    }),
+    selection: {
+      surfaces: [...selectedSurfaces.value]
+    },
+    policy: {
+      singularUpdate: singularUpdate.value,
+      collectionUpdate: collectionUpdate.value
+    }
+  }
 
   open.value = false
-  const toastId = notify.loading('更新元数据中...')
   isSubmitting.value = true
+  const toastId = notify.loading('更新元数据中...')
 
   try {
-    const bundleResult = await ipcManager.invoke(
-      'scraper:scrape-company',
-      currentProfileId,
-      { name, knownIds }
-    )
-    if (!bundleResult.success) throw new Error(bundleResult.error)
-    if (!bundleResult.data) throw new Error('无法获取元数据，请检查网络或更换刮削器配置')
-
-    const bundle = bundleResult.data
-    const updateMetadata = toCompanyMetadataUpdateInput(bundle, fields)
-    const updateResult = await ipcManager.invoke(
-      'metadata-updater:update-company',
-      companyId,
-      updateMetadata,
-      options
-    )
-    if (!updateResult.success) {
-      notify.update(toastId, { title: '更新失败', message: updateResult.error, type: 'error' })
+    const result = await ipcManager.invoke('ingest:update-company-from-scraper', request)
+    if (!result.success) {
+      notify.update(toastId, { title: '更新失败', message: result.error, type: 'error' })
       return
     }
 
-    const updatedCount = updateResult.data.updatedFields.length
     notify.update(toastId, {
       title: '更新完成',
-      message: updatedCount ? `已更新 ${updatedCount} 个字段` : '没有字段被更新',
-      type: updatedCount ? 'success' : 'info'
+      message: '公司元数据已完成更新',
+      type: 'success'
     })
   } catch (error) {
     notify.update(toastId, {
@@ -253,7 +244,7 @@ async function handleSubmit() {
 
             <FieldGroup>
               <Field>
-                <FieldLabel>更新字段</FieldLabel>
+                <FieldLabel>更新项</FieldLabel>
                 <FieldContent>
                   <div class="flex items-center gap-2 pb-2">
                     <Button
@@ -261,7 +252,7 @@ async function handleSubmit() {
                       variant="outline"
                       size="sm"
                       :disabled="isSubmitting"
-                      @click="handleSelectAll"
+                      @click="handleSelectAllSurfaces"
                     >
                       全选
                     </Button>
@@ -270,28 +261,29 @@ async function handleSubmit() {
                       variant="outline"
                       size="sm"
                       :disabled="isSubmitting"
-                      @click="handleSelectNone"
+                      @click="handleSelectNoSurfaces"
                     >
                       全不选
                     </Button>
                   </div>
+
                   <div class="grid grid-cols-2 gap-x-6 gap-y-2">
                     <div
-                      v-for="field in COMPANY_METADATA_UPDATE_FIELDS"
-                      :key="field"
+                      v-for="surface in COMPANY_UPDATE_SURFACE_KEYS"
+                      :key="surface"
                       class="flex items-center gap-2"
                     >
                       <Checkbox
-                        :id="`field-${field}`"
-                        :model-value="selectedFields.includes(field)"
+                        :id="`core-surface-${surface}`"
+                        :model-value="selectedSurfaces.includes(surface)"
                         :disabled="isSubmitting"
-                        @update:model-value="(v) => toggleField(field, !!v)"
+                        @update:model-value="(value) => toggleSurface(surface, !!value)"
                       />
                       <Label
-                        :for="`field-${field}`"
+                        :for="`core-surface-${surface}`"
                         class="text-sm font-normal cursor-pointer"
                       >
-                        {{ FIELD_LABELS[field] }}
+                        {{ SURFACE_LABELS[surface] }}
                       </Label>
                     </div>
                   </div>
@@ -299,53 +291,57 @@ async function handleSubmit() {
               </Field>
 
               <Field>
-                <FieldLabel>应用时机</FieldLabel>
+                <FieldLabel>单值策略</FieldLabel>
                 <FieldContent>
                   <Select
-                    v-model="applyMode"
+                    v-model="singularUpdate"
                     :disabled="isSubmitting"
                   >
                     <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择 Apply..." />
+                      <SelectValue placeholder="选择单值策略..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ifMissing">仅缺失时</SelectItem>
-                      <SelectItem value="always">总是</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FieldContent>
-                <FieldDescription>
-                  {{ applyMode === 'ifMissing' ? '仅当当前字段为空时写入' : '总是写入' }}
-                </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel>更新策略</FieldLabel>
-                <FieldContent>
-                  <Select
-                    v-model="strategy"
-                    :disabled="isSubmitting"
-                  >
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择 Strategy..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="merge">合并</SelectItem>
-                      <SelectItem value="replace">替换</SelectItem>
+                      <SelectItem value="ifMissing">仅缺失时写入</SelectItem>
+                      <SelectItem value="overwrite">覆盖现有值</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
                 <FieldDescription>
                   {{
-                    strategy === 'merge'
-                      ? '列表/ID 等去重合并；图片仅补全缺失'
-                      : '用刮削结果替换现有值'
+                    singularUpdate === 'ifMissing'
+                      ? '仅在当前值缺失时写入新值'
+                      : '如存在可用新值，则覆盖当前值'
+                  }}
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>集合策略</FieldLabel>
+                <FieldContent>
+                  <Select
+                    v-model="collectionUpdate"
+                    :disabled="isSubmitting"
+                  >
+                    <SelectTrigger class="w-full">
+                      <SelectValue placeholder="选择集合策略..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="merge">合并追加</SelectItem>
+                      <SelectItem value="replace">整体替换</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+                <FieldDescription>
+                  {{
+                    collectionUpdate === 'merge'
+                      ? '保留现有内容，并追加新增内容'
+                      : '以新内容整体替换当前内容'
                   }}
                 </FieldDescription>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>使用当前外部 ID 辅助刮削定位</FieldLabel>
+                <FieldLabel>使用当前外部 ID 辅助定位</FieldLabel>
                 <FieldContent>
                   <Checkbox
                     id="use-current-external-ids"
@@ -353,7 +349,7 @@ async function handleSubmit() {
                     :disabled="isSubmitting"
                   />
                 </FieldContent>
-                <FieldDescription>请勿在当前公司为错误目标的情况下使用</FieldDescription>
+                <FieldDescription>若当前条目可能对应错误目标，请勿启用此项。</FieldDescription>
               </Field>
             </FieldGroup>
           </DialogBody>
@@ -364,7 +360,7 @@ async function handleSubmit() {
                 icon="icon-[mdi--lightbulb-outline]"
                 class="size-3.5"
               />
-              <span>不指定 ID 时将使用「原名」静默搜索并取第一个结果</span>
+              <span>检索流程仍在 renderer 侧执行，提交时仅发送一次 update 请求。</span>
             </div>
             <Button
               type="button"
