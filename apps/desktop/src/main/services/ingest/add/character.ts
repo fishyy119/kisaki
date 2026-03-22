@@ -47,9 +47,7 @@ export class CharacterAddHandler {
     }
 
     const bundle = requireScrapedBundle(
-      await this.scraperService.character.scrape(normalized.profileId, normalized.lookup, {
-        skipValidation: options?.skipScraperValidation
-      }),
+      await this.scraperService.character.scrape(normalized.profileId, normalized.lookup),
       'character'
     )
     const graph = buildCharacterGraph(bundle, normalized.lookup)

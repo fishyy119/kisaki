@@ -11,6 +11,7 @@
 import type { Locale } from '@shared/locale'
 import type { PersonSearchResult } from '@shared/scraper'
 import type { PersonInfo, Tag } from '@shared/metadata'
+import type { ScraperCapability } from '@shared/scraper'
 
 export interface PersonScraperProvider {
   /** Unique provider identifier */
@@ -19,12 +20,15 @@ export interface PersonScraperProvider {
   /** Display name */
   readonly name: string
 
+  /** Explicit capability declaration. */
+  readonly capabilities: readonly ScraperCapability[]
+
   // ---------------------------------------------------------------------------
   // Search
   // ---------------------------------------------------------------------------
 
-  /** Search persons by query string */
-  search?(query: string, locale?: Locale): Promise<PersonSearchResult[]>
+  /** Search persons by query string. */
+  search(query: string, locale?: Locale): Promise<PersonSearchResult[]>
 
   // ---------------------------------------------------------------------------
   // Core Metadata

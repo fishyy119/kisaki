@@ -37,9 +37,7 @@ export class GameAddHandler {
     }
 
     const bundle = requireScrapedBundle(
-      await this.scraperService.game.scrape(normalized.profileId, normalized.lookup, {
-        skipValidation: options?.skipScraperValidation
-      }),
+      await this.scraperService.game.scrape(normalized.profileId, normalized.lookup),
       'game'
     )
     const graph = buildGameGraph(bundle, normalized.lookup)

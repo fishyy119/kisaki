@@ -7,7 +7,6 @@ export interface IngestAddPersonResult extends IngestAddResult {
 
 export interface IngestAddPersonFromScraperOptions {
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 
 export interface IngestAddPersonFromScraperParams {

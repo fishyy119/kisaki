@@ -1,4 +1,9 @@
-import { GAME_SCRAPER_SLOTS, type ScraperProfile, type ScraperSlotResultStrategy } from '@shared/db'
+import {
+  GAME_SCRAPER_SLOTS,
+  type GameScraperSlotConfigs,
+  type ScraperProfile,
+  type SlotStrategy
+} from '@shared/db'
 import { buildEntityAliasKeys, normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type {
   ScrapedGameCharacterFact,
@@ -15,7 +20,8 @@ import {
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
   mergePersonMetadataFields,
-  sortByPriority
+  sortByPriority,
+  type RelationCollectionMergeOptions
 } from '../../utils'
 import type {
   GameScraperCharactersResult,
@@ -54,10 +60,10 @@ function mergeGamePerson(
 function mergeGameCharacter(
   existing: ScrapedGameCharacterFact,
   incoming: ScrapedGameCharacterFact,
-  personStrategy: ScraperSlotResultStrategy
+  options: RelationCollectionMergeOptions
 ): ScrapedGameCharacterFact {
   return {
-    ...mergeCharacterMetadataFields(existing, incoming, personStrategy),
+    ...mergeCharacterMetadataFields(existing, incoming, options),
     type: existing.type,
     isSpoiler: !!existing.isSpoiler || !!incoming.isSpoiler,
     note: existing.note || incoming.note
@@ -85,34 +91,50 @@ export function mergeGameScraperMetadata(
   profile: ScraperProfile
 ): ScrapedGameMetadata | null {
   const metadata: Partial<ScrapedGameMetadata> = {}
+  const slotConfigs = profile.slotConfigs as GameScraperSlotConfigs
 
   for (const slot of GAME_SCRAPER_SLOTS) {
-    const config = profile.slotConfigs[slot]
-    const strategy = config.resultStrategy
-
     switch (slot) {
       case 'info':
-        mergeInfo(metadata, filterBySlot(results, 'info'), strategy)
+        mergeInfo(metadata, filterBySlot(results, 'info'), slotConfigs.info.strategy)
         break
       case 'tags':
-        mergeTags(metadata, filterBySlot(results, 'tags'), strategy)
+        mergeTags(metadata, filterBySlot(results, 'tags'), slotConfigs.tags.strategy)
         break
-      case 'characters': {
-        const personStrategy = profile.slotConfigs['persons'].resultStrategy
-        mergeCharacters(metadata, filterBySlot(results, 'characters'), strategy, personStrategy)
+      case 'characters':
+        mergeCharacters(metadata, filterBySlot(results, 'characters'), {
+          strategy: slotConfigs.characters.strategy,
+          unmatchedEntityPolicy: slotConfigs.characters.unmatchedEntityPolicy
+        })
         break
-      }
       case 'persons':
-        mergePersons(metadata, filterBySlot(results, 'persons'), strategy)
+        mergePersons(metadata, filterBySlot(results, 'persons'), {
+          strategy: slotConfigs.persons.strategy,
+          unmatchedEntityPolicy: slotConfigs.persons.unmatchedEntityPolicy
+        })
         break
       case 'companies':
-        mergeCompanies(metadata, filterBySlot(results, 'companies'), strategy)
+        mergeCompanies(metadata, filterBySlot(results, 'companies'), {
+          strategy: slotConfigs.companies.strategy,
+          unmatchedEntityPolicy: slotConfigs.companies.unmatchedEntityPolicy
+        })
         break
       case 'covers':
+        mergeImages(metadata, slot, filterByImageSlot(results, slot), slotConfigs.covers.strategy)
+        break
       case 'backdrops':
+        mergeImages(
+          metadata,
+          slot,
+          filterByImageSlot(results, slot),
+          slotConfigs.backdrops.strategy
+        )
+        break
       case 'logos':
+        mergeImages(metadata, slot, filterByImageSlot(results, slot), slotConfigs.logos.strategy)
+        break
       case 'icons':
-        mergeImages(metadata, slot, filterByImageSlot(results, slot), strategy)
+        mergeImages(metadata, slot, filterByImageSlot(results, slot), slotConfigs.icons.strategy)
         break
     }
   }
@@ -125,7 +147,7 @@ export function mergeGameScraperMetadata(
  */
 export function mergeGameScraperImages(
   results: GameScraperImageResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): string[] {
   const sorted = sortByPriority(results)
   const allImages: string[] = []
@@ -152,7 +174,7 @@ function filterByImageSlot(
 function mergeInfo(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperInfoResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -181,18 +203,14 @@ function mergeInfo(
       )
     }
 
-    if (strategy === 'first' && isInfoComplete(metadata)) break
+    if (strategy === 'first') break
   }
-}
-
-function isInfoComplete(metadata: Partial<ScrapedGameMetadata>): boolean {
-  return !!(metadata.name && metadata.releaseDate && metadata.description)
 }
 
 function mergeTags(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperTagsResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -208,8 +226,7 @@ function mergeTags(
 function mergeCharacters(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperCharactersResult[],
-  strategy: ScraperSlotResultStrategy,
-  personStrategy: ScraperSlotResultStrategy
+  options: RelationCollectionMergeOptions
 ): void {
   const sorted = sortByPriority(results)
 
@@ -219,19 +236,19 @@ function mergeCharacters(
     metadata.characters = applyEntityCollectionStrategy(
       metadata.characters,
       result.data,
-      strategy,
+      options,
       (character) => buildEntityAliasKeys(character, { includeCompactFallbackKeys: true }),
-      (existing, incoming) => mergeGameCharacter(existing, incoming, personStrategy)
+      (existing, incoming) => mergeGameCharacter(existing, incoming, options)
     )
 
-    if (strategy === 'first' && metadata.characters?.length) break
+    if (options.strategy === 'first' && metadata.characters?.length) break
   }
 }
 
 function mergePersons(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperPersonsResult[],
-  strategy: ScraperSlotResultStrategy
+  options: RelationCollectionMergeOptions
 ): void {
   const sorted = sortByPriority(results)
 
@@ -241,7 +258,7 @@ function mergePersons(
     metadata.persons = applyEntityCollectionStrategy(
       metadata.persons,
       result.data,
-      strategy,
+      options,
       (person) =>
         buildEntityAliasKeys(person, {
           includeCompactFallbackKeys: true,
@@ -250,14 +267,14 @@ function mergePersons(
       mergeGamePerson
     )
 
-    if (strategy === 'first' && metadata.persons?.length) break
+    if (options.strategy === 'first' && metadata.persons?.length) break
   }
 }
 
 function mergeCompanies(
   metadata: Partial<ScrapedGameMetadata>,
   results: GameScraperCompaniesResult[],
-  strategy: ScraperSlotResultStrategy
+  options: RelationCollectionMergeOptions
 ): void {
   const sorted = sortByPriority(results)
 
@@ -267,7 +284,7 @@ function mergeCompanies(
     metadata.companies = applyEntityCollectionStrategy(
       metadata.companies,
       result.data,
-      strategy,
+      options,
       (company) =>
         buildEntityAliasKeys(company, {
           includeCompactFallbackKeys: true,
@@ -276,7 +293,7 @@ function mergeCompanies(
       mergeGameCompany
     )
 
-    if (strategy === 'first' && metadata.companies?.length) break
+    if (options.strategy === 'first' && metadata.companies?.length) break
   }
 }
 
@@ -286,7 +303,7 @@ function mergeImages(
   metadata: Partial<ScrapedGameMetadata>,
   slot: ImageSlot,
   results: GameScraperImageResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 

@@ -10,7 +10,6 @@ export interface IngestAddGameFromScraperOptions {
   gameDirPath?: string
   gameFilePath?: string
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 
 export interface IngestAddGameFromScraperParams {
@@ -26,10 +25,7 @@ export interface IngestAddGameDirectSeed {
   knownIds?: ExternalId[]
 }
 
-export type IngestAddGameDirectOptions = Omit<
-  IngestAddGameFromScraperOptions,
-  'skipScraperValidation'
->
+export type IngestAddGameDirectOptions = IngestAddGameFromScraperOptions
 
 export interface IngestAddGameDirectParams {
   seed: IngestAddGameDirectSeed

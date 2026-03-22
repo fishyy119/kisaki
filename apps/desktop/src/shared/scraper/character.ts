@@ -32,12 +32,3 @@ export interface CharacterSearchResult {
   birthDate?: PartialDate
   externalIds: ExternalId[]
 }
-
-// =============================================================================
-// Fetch Options
-// =============================================================================
-
-/** Options for fetching character metadata */
-export interface CharacterScraperOptions {
-  skipValidation?: boolean
-}

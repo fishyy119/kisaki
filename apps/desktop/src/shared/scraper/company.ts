@@ -32,12 +32,3 @@ export interface CompanySearchResult {
   foundedDate?: PartialDate
   externalIds: ExternalId[]
 }
-
-// =============================================================================
-// Fetch Options
-// =============================================================================
-
-/** Options for fetching company metadata */
-export interface CompanyScraperOptions {
-  skipValidation?: boolean
-}

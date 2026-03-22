@@ -7,7 +7,6 @@ export interface IngestAddCompanyResult extends IngestAddResult {
 
 export interface IngestAddCompanyFromScraperOptions {
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 
 export interface IngestAddCompanyFromScraperParams {

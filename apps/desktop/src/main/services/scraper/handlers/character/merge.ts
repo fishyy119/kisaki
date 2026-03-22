@@ -1,7 +1,8 @@
 import {
   CHARACTER_SCRAPER_SLOTS,
+  type CharacterScraperSlotConfigs,
   type ScraperProfile,
-  type ScraperSlotResultStrategy
+  type SlotStrategy
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedCharacterMetadata, ScrapedCharacterBundle } from '@shared/scraper'
@@ -10,7 +11,8 @@ import {
   applyStrategy,
   filterBySlot,
   mergeCharacterPersons,
-  sortByPriority
+  sortByPriority,
+  type RelationCollectionMergeOptions
 } from '../../utils'
 import type {
   CharacterScraperPhotosResult,
@@ -41,23 +43,24 @@ export function mergeCharacterScraperMetadata(
   profile: ScraperProfile
 ): ScrapedCharacterMetadata | null {
   const metadata: Partial<ScrapedCharacterMetadata> = {}
+  const slotConfigs = profile.slotConfigs as CharacterScraperSlotConfigs
 
   for (const slot of CHARACTER_SCRAPER_SLOTS) {
-    const config = profile.slotConfigs[slot]
-    const strategy = config.resultStrategy
-
     switch (slot) {
       case 'info':
-        mergeInfo(metadata, filterBySlot(results, 'info'), strategy)
+        mergeInfo(metadata, filterBySlot(results, 'info'), slotConfigs.info.strategy)
         break
       case 'tags':
-        mergeTags(metadata, filterBySlot(results, 'tags'), strategy)
+        mergeTags(metadata, filterBySlot(results, 'tags'), slotConfigs.tags.strategy)
         break
       case 'persons':
-        mergePersons(metadata, filterBySlot(results, 'persons'), strategy)
+        mergePersons(metadata, filterBySlot(results, 'persons'), {
+          strategy: slotConfigs.persons.strategy,
+          unmatchedEntityPolicy: slotConfigs.persons.unmatchedEntityPolicy
+        })
         break
       case 'photos':
-        mergePhotos(metadata, filterBySlot(results, 'photos'), strategy)
+        mergePhotos(metadata, filterBySlot(results, 'photos'), slotConfigs.photos.strategy)
         break
     }
   }
@@ -68,7 +71,7 @@ export function mergeCharacterScraperMetadata(
 function mergeInfo(
   metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperInfoResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -104,14 +107,14 @@ function mergeInfo(
       )
     }
 
-    if (strategy === 'first' && metadata.name) break
+    if (strategy === 'first') break
   }
 }
 
 function mergeTags(
   metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperTagsResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -125,21 +128,21 @@ function mergeTags(
 function mergePersons(
   metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperPersonsResult[],
-  strategy: ScraperSlotResultStrategy
+  options: RelationCollectionMergeOptions
 ): void {
   const sorted = sortByPriority(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
-    metadata.persons = mergeCharacterPersons(metadata.persons, result.data, strategy)
-    if (strategy === 'first' && metadata.persons?.length) break
+    metadata.persons = mergeCharacterPersons(metadata.persons, result.data, options)
+    if (options.strategy === 'first' && metadata.persons?.length) break
   }
 }
 
 function mergePhotos(
   metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperPhotosResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 

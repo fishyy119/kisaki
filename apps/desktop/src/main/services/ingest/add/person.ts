@@ -39,9 +39,7 @@ export class PersonAddHandler {
     }
 
     const bundle = requireScrapedBundle(
-      await this.scraperService.person.scrape(normalized.profileId, normalized.lookup, {
-        skipValidation: options?.skipScraperValidation
-      }),
+      await this.scraperService.person.scrape(normalized.profileId, normalized.lookup),
       'person'
     )
     const graph = buildPersonGraph(bundle, normalized.lookup)

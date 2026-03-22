@@ -44,7 +44,6 @@ import type {
   FilterState,
   DynamicCollectionConfig,
   ScraperSlotConfigs,
-  SlotConfig,
   SectionLayout,
   SectionItemSize,
   SectionOpenMode,
@@ -830,22 +829,11 @@ export const scraperSlotConfigs = customType<{
     if (!value || value === '{}') return {}
     try {
       const parsed = JSON.parse(value)
-      if (typeof parsed !== 'object' || parsed === null) {
+      if (!isPlainObject(parsed)) {
         console.warn('scraperSlotConfigs value is not an object:', value)
         return {}
       }
-
-      const configs: ScraperSlotConfigs = {}
-      for (const [slot, slotConfig] of Object.entries(parsed as Record<string, unknown>)) {
-        if (!slotConfig || typeof slotConfig !== 'object') continue
-        const candidate = slotConfig as Partial<SlotConfig>
-        if (!Array.isArray(candidate.providers) || typeof candidate.resultStrategy !== 'string') {
-          continue
-        }
-        configs[slot] = candidate as SlotConfig
-      }
-
-      return configs
+      return parsed as ScraperSlotConfigs
     } catch (error) {
       console.error('Failed to parse scraperSlotConfigs:', error)
       return {}

@@ -32,16 +32,12 @@ import type {
   ScraperLookup,
   GameSearchResult,
   GameScraperProviderInfo,
-  GameScraperOptions,
   PersonSearchResult,
   PersonScraperProviderInfo,
-  PersonScraperOptions,
   CompanySearchResult,
   CompanyScraperProviderInfo,
-  CompanyScraperOptions,
   CharacterSearchResult,
   CharacterScraperProviderInfo,
-  CharacterScraperOptions,
   GameImageSlot,
   ScrapedGameBundle,
   ScrapedPersonBundle,
@@ -267,8 +263,7 @@ export interface IpcMainHandlers {
   'scraper:search-game': (profileId: string, query: string) => IpcResult<GameSearchResult[]>
   'scraper:scrape-game': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: GameScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedGameBundle | null>
   'scraper:get-game-provider-images': (
     providerId: string,
@@ -281,8 +276,7 @@ export interface IpcMainHandlers {
   'scraper:search-person': (profileId: string, query: string) => IpcResult<PersonSearchResult[]>
   'scraper:scrape-person': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: PersonScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedPersonBundle | null>
   'scraper:get-person-provider-images': (
     providerId: string,
@@ -295,8 +289,7 @@ export interface IpcMainHandlers {
   'scraper:search-company': (profileId: string, query: string) => IpcResult<CompanySearchResult[]>
   'scraper:scrape-company': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: CompanyScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedCompanyBundle | null>
   'scraper:get-company-provider-images': (
     providerId: string,
@@ -312,8 +305,7 @@ export interface IpcMainHandlers {
   ) => IpcResult<CharacterSearchResult[]>
   'scraper:scrape-character': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: CharacterScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedCharacterBundle | null>
   'scraper:get-character-provider-images': (
     providerId: string,

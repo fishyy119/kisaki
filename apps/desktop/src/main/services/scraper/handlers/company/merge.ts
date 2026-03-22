@@ -1,7 +1,8 @@
 import {
   COMPANY_SCRAPER_SLOTS,
+  type CompanyScraperSlotConfigs,
   type ScraperProfile,
-  type ScraperSlotResultStrategy
+  type SlotStrategy
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedCompanyMetadata, ScrapedCompanyBundle } from '@shared/scraper'
@@ -34,10 +35,11 @@ export function mergeCompanyScraperMetadata(
   profile: ScraperProfile
 ): ScrapedCompanyMetadata | null {
   const metadata: Partial<ScrapedCompanyMetadata> = {}
+  const slotConfigs = profile.slotConfigs as CompanyScraperSlotConfigs
 
   for (const slot of COMPANY_SCRAPER_SLOTS) {
-    const config = profile.slotConfigs[slot]
-    const strategy = config.resultStrategy
+    const config = slotConfigs[slot]
+    const strategy = config.strategy
 
     switch (slot) {
       case 'info':
@@ -58,7 +60,7 @@ export function mergeCompanyScraperMetadata(
 function mergeInfo(
   metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperInfoResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -85,14 +87,14 @@ function mergeInfo(
       )
     }
 
-    if (strategy === 'first' && metadata.name) break
+    if (strategy === 'first') break
   }
 }
 
 function mergeTags(
   metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperTagsResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -106,7 +108,7 @@ function mergeTags(
 function mergeLogos(
   metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperLogosResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 

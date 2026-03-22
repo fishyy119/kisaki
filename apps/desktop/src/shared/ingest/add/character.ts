@@ -7,7 +7,6 @@ export interface IngestAddCharacterResult extends IngestAddResult {
 
 export interface IngestAddCharacterFromScraperOptions {
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 
 export interface IngestAddCharacterFromScraperParams {

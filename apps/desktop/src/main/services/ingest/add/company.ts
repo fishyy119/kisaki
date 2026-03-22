@@ -39,9 +39,7 @@ export class CompanyAddHandler {
     }
 
     const bundle = requireScrapedBundle(
-      await this.scraperService.company.scrape(normalized.profileId, normalized.lookup, {
-        skipValidation: options?.skipScraperValidation
-      }),
+      await this.scraperService.company.scrape(normalized.profileId, normalized.lookup),
       'company'
     )
     const graph = buildCompanyGraph(bundle, normalized.lookup)

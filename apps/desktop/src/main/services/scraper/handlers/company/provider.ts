@@ -7,6 +7,7 @@
 import type { Locale } from '@shared/locale'
 import type { CompanySearchResult } from '@shared/scraper'
 import type { CompanyInfo, Tag } from '@shared/metadata'
+import type { ScraperCapability } from '@shared/scraper'
 
 export interface CompanyScraperProvider {
   /** Unique provider identifier */
@@ -15,8 +16,11 @@ export interface CompanyScraperProvider {
   /** Display name */
   readonly name: string
 
-  /** Search companies by query string */
-  search?(query: string, locale?: Locale): Promise<CompanySearchResult[]>
+  /** Explicit capability declaration. */
+  readonly capabilities: readonly ScraperCapability[]
+
+  /** Search companies by query string. */
+  search(query: string, locale?: Locale): Promise<CompanySearchResult[]>
 
   /** Get core info (name, description, dates, links) */
   getInfo?(id: string, locale?: Locale): Promise<CompanyInfo>

@@ -11,14 +11,21 @@ export {
   type ScraperLookup,
   type ScraperImageSlot,
   type GameImageSlot,
+  type SlotConfigForSlot,
+  type SlotConfigsForMediaType,
+  type RelationCollectionScraperSlot,
   GAME_IMAGE_SLOTS,
   SCRAPER_IMAGE_SLOTS,
+  SLOT_STRATEGIES,
+  UNMATCHED_ENTITY_POLICIES,
   isArraySlot,
   isImageSlot,
-  supportsExpandResultStrategy,
-  getSupportedResultStrategies,
-  getDefaultResultStrategy,
-  normalizeResultStrategyForSlot,
+  isRelationCollectionSlot,
+  isSimpleCollectionSlot,
+  getSupportedSlotStrategies,
+  getDefaultSlotStrategy,
+  getDefaultUnmatchedEntityPolicy,
+  normalizeSlotStrategy,
   createSlotConfig,
   createEmptySlotConfig,
   createSlotConfigs,
@@ -44,25 +51,9 @@ export {
 } from './bundle'
 
 // Game-specific types
-export {
-  type GameScraperProviderInfo,
-  type GameSearchResult,
-  type GameScraperOptions
-} from './game'
+export { type GameScraperProviderInfo, type GameSearchResult } from './game'
 
 // Metadata entity scraper types
-export {
-  type PersonScraperProviderInfo,
-  type PersonSearchResult,
-  type PersonScraperOptions
-} from './person'
-export {
-  type CharacterScraperProviderInfo,
-  type CharacterSearchResult,
-  type CharacterScraperOptions
-} from './character'
-export {
-  type CompanyScraperProviderInfo,
-  type CompanySearchResult,
-  type CompanyScraperOptions
-} from './company'
+export { type PersonScraperProviderInfo, type PersonSearchResult } from './person'
+export { type CharacterScraperProviderInfo, type CharacterSearchResult } from './character'
+export { type CompanyScraperProviderInfo, type CompanySearchResult } from './company'

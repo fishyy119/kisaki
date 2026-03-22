@@ -5,7 +5,13 @@
   Slot list is displayed inline - clicking a slot opens ScraperSlotConfigFormDialog.
 -->
 <script setup lang="ts">
-import type { ScraperProfile, ScraperSlotConfigs, SlotConfig, ScraperSlot } from '@shared/db'
+import type {
+  ScraperProfile,
+  ScraperSlotConfigs,
+  SlotConfig,
+  ScraperSlot,
+  SlotStrategy
+} from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import type { Locale } from '@shared/locale'
 
@@ -76,10 +82,9 @@ const SLOT_LABELS: Record<ScraperSlot, string> = {
   photos: '照片'
 }
 
-const RESULT_STRATEGY_LABELS: Record<string, string> = {
+const STRATEGY_LABELS: Record<SlotStrategy, string> = {
   first: '首个',
-  enrich: '补全',
-  expand: '扩展'
+  enrich: '增强'
 }
 
 // Form state
@@ -133,7 +138,7 @@ const slotsForMediaType = computed(() => getScraperSlotsForMediaType(formData.va
 // Computed for slot editing
 const editingSlotConfig = computed(() => {
   if (!editingSlot.value) return null
-  return formData.value.slotConfigs[editingSlot.value] ?? createEmptySlotConfig()
+  return formData.value.slotConfigs[editingSlot.value] ?? createEmptySlotConfig(editingSlot.value)
 })
 
 function handleSlotClick(slot: ScraperSlot) {
@@ -186,6 +191,10 @@ const mediaTypeModel = computed({
     }
   }
 })
+
+function getSlotStrategyLabel(slot: ScraperSlot): string {
+  return STRATEGY_LABELS[formData.value.slotConfigs[slot]?.strategy ?? 'first']
+}
 </script>
 
 <template>
@@ -251,7 +260,7 @@ const mediaTypeModel = computed({
                     />
                   </TooltipTrigger>
                   <TooltipContent class="max-w-xs">
-                    语言偏好设置，会传递给各提供者。实际是否生效取决于提供者的实现。若未指定，将使用系统语言。
+                    用于实体解析和未单独指定的抓取语言。单个槽位提供者可覆盖抓取语言，但不会影响实体解析。若未指定，将使用系统语言。
                   </TooltipContent>
                 </Tooltip>
               </FieldLabel>
@@ -279,10 +288,7 @@ const mediaTypeModel = computed({
                     <span class="text-sm font-medium">{{ SLOT_LABELS[slot] }}</span>
                     <div class="flex items-center gap-2 text-muted-foreground">
                       <span class="text-xs font-mono">
-                        {{
-                          RESULT_STRATEGY_LABELS[formData.slotConfigs[slot]?.resultStrategy] ||
-                          '首个'
-                        }}
+                        {{ getSlotStrategyLabel(slot) }}
                         ·
                         {{
                           formData.slotConfigs[slot]?.providers.filter((p) => p.enabled).length || 0

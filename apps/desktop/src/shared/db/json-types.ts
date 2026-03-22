@@ -186,8 +186,11 @@ export type ScraperSlot =
   | CompanyScraperSlot
   | CharacterScraperSlot
 
-/** Result strategy for a multi-provider scraper slot. */
-export type ScraperSlotResultStrategy = 'first' | 'enrich' | 'expand'
+/** Shared strategy for combining multiple provider results. */
+export type SlotStrategy = 'first' | 'enrich'
+
+/** Policy for unmatched entities in relation-collection slots. */
+export type UnmatchedEntityPolicy = 'ignore' | 'append'
 
 /** Configuration for a provider within a slot */
 export interface ScraperProviderEntry {
@@ -197,11 +200,19 @@ export interface ScraperProviderEntry {
   locale?: Locale | null
 }
 
-/** Configuration for a single slot */
-export interface SlotConfig {
+/** Base configuration shared by all slots. */
+export interface BasicSlotConfig {
   providers: ScraperProviderEntry[]
-  resultStrategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 }
+
+/** Additional configuration required by relation-collection slots. */
+export interface RelationCollectionSlotConfig extends BasicSlotConfig {
+  unmatchedEntityPolicy: UnmatchedEntityPolicy
+}
+
+/** Configuration for a single slot. */
+export type SlotConfig = BasicSlotConfig | RelationCollectionSlotConfig
 
 /**
  * Scraper slot configurations stored in DB.
@@ -210,7 +221,33 @@ export interface SlotConfig {
  */
 export type ScraperSlotConfigs = Record<string, SlotConfig>
 
-export type GameScraperSlotConfigs = Record<GameScraperSlot, SlotConfig>
-export type PersonScraperSlotConfigs = Record<PersonScraperSlot, SlotConfig>
-export type CompanyScraperSlotConfigs = Record<CompanyScraperSlot, SlotConfig>
-export type CharacterScraperSlotConfigs = Record<CharacterScraperSlot, SlotConfig>
+export type GameScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
+  icons: BasicSlotConfig
+}
+
+export type PersonScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  photos: BasicSlotConfig
+}
+
+export type CompanyScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  logos: BasicSlotConfig
+}
+
+export type CharacterScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  persons: RelationCollectionSlotConfig
+  photos: BasicSlotConfig
+}

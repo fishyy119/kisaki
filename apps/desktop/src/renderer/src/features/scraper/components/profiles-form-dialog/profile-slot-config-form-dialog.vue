@@ -1,32 +1,33 @@
 <!--
-  ScraperSlotConfigFormDialog
-  Dialog for editing a single slot's configuration (result strategy + providers).
-  Providers are managed inline without nested dialogs.
+  ScraperSlotConfigFormDialog edits one slot's strategy, provider order, and fetch locales.
+  Relation collections additionally expose the unmatched-entity policy.
 -->
 <script setup lang="ts">
 import type {
-  SlotConfig,
   ScraperProviderEntry,
-  ScraperSlotResultStrategy,
-  ScraperSlot
+  ScraperSlot,
+  SlotConfig,
+  SlotStrategy,
+  UnmatchedEntityPolicy
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 
-import { ref, watch, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import {
-  getSupportedResultStrategies,
-  normalizeResultStrategyForSlot,
-  supportsExpandResultStrategy
+  getDefaultUnmatchedEntityPolicy,
+  getSupportedSlotStrategies,
+  isRelationCollectionSlot,
+  normalizeSlotStrategy
 } from '@shared/scraper'
 import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogBody,
-  DialogFooter
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@renderer/components/ui/dialog'
 import {
   Select,
@@ -40,10 +41,10 @@ import { Switch } from '@renderer/components/ui/switch'
 import { LocaleSelect } from '@renderer/components/ui/locale-select'
 import {
   Field,
-  FieldLabel,
   FieldContent,
+  FieldDescription,
   FieldGroup,
-  FieldDescription
+  FieldLabel
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { cn } from '@renderer/utils'
@@ -56,115 +57,169 @@ interface Props {
   onSave: (config: SlotConfig) => void
 }
 
-const props = defineProps<Props>()
-
-const open = defineModel<boolean>('open', { required: true })
-
-interface ResultStrategyOption {
-  value: ScraperSlotResultStrategy
+interface StrategyOption {
+  value: SlotStrategy
   label: string
   description: string
 }
 
-const RESULT_STRATEGY_LABELS: Record<ScraperSlotResultStrategy, string> = {
-  first: '首个',
-  enrich: '补全',
-  expand: '扩展'
+interface UnmatchedPolicyOption {
+  value: UnmatchedEntityPolicy
+  label: string
+  description: string
 }
 
-// Form state
-const resultStrategy = ref<ScraperSlotResultStrategy>('first')
-const providerEntries = ref<ScraperProviderEntry[]>([])
+const props = defineProps<Props>()
 
-function getResultStrategyDescription(
-  slot: ScraperSlot,
-  strategy: ScraperSlotResultStrategy
-): string {
-  switch (strategy) {
-    case 'first':
-      return '使用第一个有效结果，忽略后续来源'
-    case 'enrich':
-      if (slot === 'info') {
-        return '以首个结果为基准，补全缺失字段'
-      }
-      if (supportsExpandResultStrategy(slot)) {
-        return '以首个结果为基准，仅补全已匹配项'
-      }
-      return '以首个结果为基准，合并后续来源中的去重结果'
-    case 'expand':
-      return '以首个结果为基准，补全已匹配项并追加未匹配项'
+const open = defineModel<boolean>('open', { required: true })
+
+const STRATEGY_LABELS: Record<SlotStrategy, string> = {
+  first: '首个',
+  enrich: '增强'
+}
+
+const UNMATCHED_POLICY_LABELS: Record<UnmatchedEntityPolicy, string> = {
+  ignore: '忽略未匹配项',
+  append: '追加未匹配项'
+}
+
+interface SlotConfigFormData {
+  strategy: SlotStrategy
+  unmatchedEntityPolicy: UnmatchedEntityPolicy
+  providers: ScraperProviderEntry[]
+}
+
+function cloneProviderEntry(entry: ScraperProviderEntry): ScraperProviderEntry {
+  return {
+    providerId: entry.providerId,
+    enabled: entry.enabled,
+    priority: entry.priority,
+    locale: entry.locale ?? undefined
   }
 }
 
-const resultStrategyOptions = computed<ResultStrategyOption[]>(() =>
-  getSupportedResultStrategies(props.slotType).map((value) => ({
+function createFormData(slot: ScraperSlot, config: SlotConfig): SlotConfigFormData {
+  return {
+    strategy: normalizeSlotStrategy(config.strategy),
+    unmatchedEntityPolicy: getSlotUnmatchedEntityPolicy(slot, config),
+    providers: config.providers.map(cloneProviderEntry)
+  }
+}
+
+const formData = ref<SlotConfigFormData>({
+  strategy: 'first',
+  unmatchedEntityPolicy: getDefaultUnmatchedEntityPolicy(),
+  providers: []
+})
+
+function getStrategyDescription(value: SlotStrategy): string {
+  if (value === 'first') {
+    return '使用第一个有效结果，忽略后续来源'
+  }
+
+  return '以首个结果为基准，补全缺失字段'
+}
+
+const strategyOptions = computed<StrategyOption[]>(() =>
+  getSupportedSlotStrategies().map((value) => ({
     value,
-    label: RESULT_STRATEGY_LABELS[value],
-    description: getResultStrategyDescription(props.slotType, value)
+    label: STRATEGY_LABELS[value],
+    description: getStrategyDescription(value)
   }))
 )
 
-// Initialize form state when dialog opens
+const unmatchedPolicyOptions: UnmatchedPolicyOption[] = [
+  {
+    value: 'ignore',
+    label: UNMATCHED_POLICY_LABELS.ignore,
+    description: '只补全已匹配实体，新的未匹配实体会被丢弃'
+  },
+  {
+    value: 'append',
+    label: UNMATCHED_POLICY_LABELS.append,
+    description: '未匹配实体会被追加，并可继续被后续来源补全'
+  }
+]
+
+function getSlotUnmatchedEntityPolicy(
+  slot: ScraperSlot,
+  config: SlotConfig
+): UnmatchedEntityPolicy {
+  if (!isRelationCollectionSlot(slot) || !('unmatchedEntityPolicy' in config)) {
+    return getDefaultUnmatchedEntityPolicy()
+  }
+
+  return config.unmatchedEntityPolicy
+}
+
+function resetForm() {
+  formData.value = createFormData(props.slotType, props.slotConfig)
+}
+
 watch(
   () => open.value,
   (isOpen) => {
-    if (isOpen && props.slotConfig) {
-      resultStrategy.value = normalizeResultStrategyForSlot(
-        props.slotType,
-        props.slotConfig.resultStrategy
-      )
-      providerEntries.value = [...props.slotConfig.providers]
-    }
+    if (!isOpen || !props.slotConfig) return
+
+    resetForm()
   },
   { immediate: true }
 )
 
-// Computed for existing provider IDs (for exclude list)
-const existingProviderIds = computed(() => providerEntries.value.map((e) => e.providerId))
+const existingProviderIds = computed(() => formData.value.providers.map((entry) => entry.providerId))
 
-// Handlers for provider management
+function reindexProviders() {
+  formData.value.providers.forEach((entry, priority) => {
+    entry.priority = priority
+  })
+}
+
 function handleAddProvider(providerId: string) {
   if (!providerId) return
-  providerEntries.value.push({
+
+  formData.value.providers.push({
     providerId,
     enabled: true,
-    priority: providerEntries.value.length,
+    priority: formData.value.providers.length,
     locale: undefined
   })
 }
 
 function handleRemoveProvider(index: number) {
-  providerEntries.value.splice(index, 1)
-  // Reindex priorities
-  providerEntries.value.forEach((e, i) => (e.priority = i))
+  formData.value.providers.splice(index, 1)
+  reindexProviders()
 }
 
 function handleMoveUp(index: number) {
   if (index <= 0) return
-  const entries = providerEntries.value
+  const entries = formData.value.providers
   ;[entries[index - 1], entries[index]] = [entries[index], entries[index - 1]]
-  entries.forEach((e, i) => (e.priority = i))
+  reindexProviders()
 }
 
 function handleMoveDown(index: number) {
-  if (index >= providerEntries.value.length - 1) return
-  const entries = providerEntries.value
+  if (index >= formData.value.providers.length - 1) return
+  const entries = formData.value.providers
   ;[entries[index], entries[index + 1]] = [entries[index + 1], entries[index]]
-  entries.forEach((e, i) => (e.priority = i))
+  reindexProviders()
 }
 
 function handleSubmit() {
-  props.onSave({
-    resultStrategy: resultStrategy.value,
-    providers: providerEntries.value
-  })
+  props.onSave(
+    isRelationCollectionSlot(props.slotType)
+      ? {
+          strategy: formData.value.strategy,
+          unmatchedEntityPolicy: formData.value.unmatchedEntityPolicy,
+          providers: formData.value.providers.map(cloneProviderEntry)
+        }
+      : {
+          strategy: formData.value.strategy,
+          providers: formData.value.providers.map(cloneProviderEntry)
+        }
+  )
+
   open.value = false
 }
-
-// Sorted providers for display (need shallow copy for sort stability)
-const sortedProviders = computed(() =>
-  [...providerEntries.value].sort((a, b) => a.priority - b.priority)
-)
 </script>
 
 <template>
@@ -176,47 +231,67 @@ const sortedProviders = computed(() =>
       <Form @submit="handleSubmit">
         <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
           <FieldGroup>
-            <!-- Result strategy -->
             <Field>
-              <FieldLabel>结果策略</FieldLabel>
+              <FieldLabel>策略</FieldLabel>
               <FieldDescription>多个提供者返回数据时的处理方式</FieldDescription>
               <FieldContent>
-                <Select v-model="resultStrategy">
+                <Select v-model="formData.strategy">
                   <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择结果策略" />
+                    <SelectValue placeholder="选择策略" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="opt in resultStrategyOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                      :description="opt.description"
+                      v-for="option in strategyOptions"
+                      :key="option.value"
+                      :value="option.value"
+                      :description="option.description"
                     >
-                      {{ opt.label }}
+                      {{ option.label }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </FieldContent>
             </Field>
 
-            <!-- Providers - inline management -->
+            <Field v-if="isRelationCollectionSlot(props.slotType)">
+              <FieldLabel>未匹配实体</FieldLabel>
+              <FieldDescription>是否追加后续数据源的未匹配实体</FieldDescription>
+              <FieldContent>
+                <Select v-model="formData.unmatchedEntityPolicy">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="选择未匹配实体策略" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="option in unmatchedPolicyOptions"
+                      :key="option.value"
+                      :value="option.value"
+                      :description="option.description"
+                    >
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+
             <Field>
               <FieldLabel>数据提供者</FieldLabel>
               <FieldDescription>选择为此槽位提供数据的来源，可调整优先级</FieldDescription>
               <FieldContent>
                 <div class="space-y-1.5">
                   <p
-                    v-if="providerEntries.length === 0"
-                    class="text-sm text-muted-foreground text-center py-4 border rounded-lg bg-muted/30"
+                    v-if="formData.providers.length === 0"
+                    class="rounded-lg border bg-muted/30 py-4 text-center text-sm text-muted-foreground"
                   >
                     暂无提供者
                   </p>
                   <div
-                    v-for="(entry, index) in sortedProviders"
+                    v-for="(entry, index) in formData.providers"
                     :key="entry.providerId"
                     :class="
                       cn(
-                        'flex items-center gap-2 p-2 rounded-lg border bg-card',
+                        'flex items-center gap-2 rounded-lg border bg-card p-2',
                         !entry.enabled && 'opacity-50'
                       )
                     "
@@ -225,11 +300,10 @@ const sortedProviders = computed(() =>
                       v-model="entry.enabled"
                       class="shrink-0"
                     />
-                    <div class="flex-1 min-w-0">
-                      <div class="text-sm font-medium truncate">{{ entry.providerId }}</div>
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-sm font-medium">{{ entry.providerId }}</div>
                     </div>
-                    <!-- Inline locale select with label -->
-                    <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex shrink-0 items-center gap-1.5">
                       <span class="text-xs text-muted-foreground">语言:</span>
                       <LocaleSelect
                         v-model="entry.locale"
@@ -238,8 +312,7 @@ const sortedProviders = computed(() =>
                         placeholder="默认"
                       />
                     </div>
-                    <!-- Actions - always visible -->
-                    <div class="flex items-center gap-0.5 shrink-0">
+                    <div class="flex shrink-0 items-center gap-0.5">
                       <Button
                         type="button"
                         variant="ghost"
@@ -257,7 +330,7 @@ const sortedProviders = computed(() =>
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        :disabled="index === providerEntries.length - 1"
+                        :disabled="index === formData.providers.length - 1"
                         class="size-6"
                         @click="handleMoveDown(index)"
                       >
@@ -280,7 +353,6 @@ const sortedProviders = computed(() =>
                       </Button>
                     </div>
                   </div>
-                  <!-- Direct add provider select -->
                   <ScraperProviderSelect
                     model-value=""
                     :entity-type="props.entityType"

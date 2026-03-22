@@ -32,12 +32,3 @@ export interface GameSearchResult {
   releaseDate?: PartialDate
   externalIds: ExternalId[]
 }
-
-// =============================================================================
-// Fetch Options
-// =============================================================================
-
-/** Options for fetching game metadata */
-export interface GameScraperOptions {
-  skipValidation?: boolean
-}

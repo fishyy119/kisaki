@@ -1,9 +1,11 @@
 /**
  * Scraper Utilities
  *
- * IMPORTANT:
- * This module is intentionally leaf + pure (no main-process runtime imports),
- * because it is included by `apps/desktop/tsconfig.web.json` for shared typing.
+ * Main-process utility helpers shared inside the scraper service.
+ *
+ * Keep this directory focused on generic utility functions. Handler orchestration,
+ * provider contract validation, and other runtime policy helpers belong under
+ * `handlers/`.
  */
 
 export * from './date'

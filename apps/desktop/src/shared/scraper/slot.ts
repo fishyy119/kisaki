@@ -1,28 +1,150 @@
 /**
- * Slot Utilities
- *
- * Universal slot-related type definitions and utility functions.
- * These are media-type agnostic and apply to all scraper operations.
+ * Slot utilities shared by scraper handlers, renderer forms, and plugin-facing types.
  */
 
 import type {
-  ScraperSlotResultStrategy,
+  BasicSlotConfig,
+  CharacterScraperSlot,
+  CharacterScraperSlotConfigs,
+  CompanyScraperSlot,
+  CompanyScraperSlotConfigs,
+  GameScraperSlot,
+  GameScraperSlotConfigs,
+  PersonScraperSlot,
+  PersonScraperSlotConfigs,
+  RelationCollectionSlotConfig,
+  ScraperProviderEntry,
   ScraperSlot,
+  ScraperSlotConfigs,
   SlotConfig,
-  ScraperSlotConfigs
+  SlotStrategy,
+  UnmatchedEntityPolicy
 } from '@shared/db'
+import type { ContentEntityType } from '@shared/common'
 import type { ExternalId } from '@shared/identity'
 import type { Locale } from '@shared/locale'
-import type { ContentEntityType } from '@shared/common'
 import {
-  GAME_SCRAPER_SLOTS,
-  PERSON_SCRAPER_SLOTS,
+  CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
-  CHARACTER_SCRAPER_SLOTS
+  GAME_SCRAPER_SLOTS,
+  PERSON_SCRAPER_SLOTS
 } from '@shared/db'
 
 export type ScraperMediaType = ContentEntityType
 
+export type RelationCollectionScraperSlot = 'characters' | 'persons' | 'companies'
+
+export type SlotConfigForSlot<S extends ScraperSlot> = S extends RelationCollectionScraperSlot
+  ? RelationCollectionSlotConfig
+  : BasicSlotConfig
+
+export interface ScraperSlotConfigsByMediaType {
+  game: GameScraperSlotConfigs
+  person: PersonScraperSlotConfigs
+  company: CompanyScraperSlotConfigs
+  character: CharacterScraperSlotConfigs
+}
+
+export type SlotConfigsForMediaType<T extends ScraperMediaType> = ScraperSlotConfigsByMediaType[T]
+
+export const SLOT_STRATEGIES = ['first', 'enrich'] as const satisfies readonly SlotStrategy[]
+export const UNMATCHED_ENTITY_POLICIES = [
+  'ignore',
+  'append'
+] as const satisfies readonly UnmatchedEntityPolicy[]
+
+/** Image slot type - union of all image-related slots across all media types. */
+export type ScraperImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons' | 'photos'
+
+/** Game image slot types. */
+export type GameImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
+
+/** Game image slot list. */
+export const GAME_IMAGE_SLOTS: GameImageSlot[] = ['covers', 'backdrops', 'logos', 'icons']
+
+/** Image slot types. */
+export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [...GAME_IMAGE_SLOTS, 'photos']
+
+const RELATION_COLLECTION_SCRAPER_SLOTS: readonly RelationCollectionScraperSlot[] = [
+  'characters',
+  'persons',
+  'companies'
+]
+
+const SIMPLE_COLLECTION_SLOTS: readonly ScraperSlot[] = [
+  'tags',
+  'covers',
+  'backdrops',
+  'logos',
+  'icons',
+  'photos'
+]
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isSlotStrategy(value: unknown): value is SlotStrategy {
+  return typeof value === 'string' && SLOT_STRATEGIES.includes(value as SlotStrategy)
+}
+
+function isUnmatchedEntityPolicy(value: unknown): value is UnmatchedEntityPolicy {
+  return (
+    typeof value === 'string' && UNMATCHED_ENTITY_POLICIES.includes(value as UnmatchedEntityPolicy)
+  )
+}
+
+function isScraperProviderEntry(value: unknown): value is ScraperProviderEntry {
+  if (!isPlainObject(value)) return false
+  return (
+    typeof value.providerId === 'string' &&
+    typeof value.enabled === 'boolean' &&
+    Number.isInteger(value.priority) &&
+    (value.locale === undefined || value.locale === null || typeof value.locale === 'string')
+  )
+}
+
+function normalizeProviderEntries(value: unknown): ScraperProviderEntry[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter(isScraperProviderEntry)
+    .map((entry) => ({
+      providerId: entry.providerId.trim(),
+      enabled: entry.enabled,
+      priority: entry.priority,
+      locale: entry.locale ?? undefined
+    }))
+    .filter((entry) => entry.providerId.length > 0)
+    .sort((a, b) => a.priority - b.priority)
+    .map((entry, priority) => ({
+      ...entry,
+      priority
+    }))
+}
+
+function normalizeBasicSlotConfig(value: unknown): BasicSlotConfig | null {
+  if (!isPlainObject(value)) {
+    return null
+  }
+
+  if (!('providers' in value) || !('strategy' in value)) {
+    return null
+  }
+
+  return {
+    strategy: isSlotStrategy(value.strategy) ? value.strategy : getDefaultSlotStrategy(),
+    providers: normalizeProviderEntries(value.providers)
+  }
+}
+
+export function getScraperSlotsForMediaType(mediaType: 'game'): readonly GameScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: 'person'): readonly PersonScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: 'company'): readonly CompanyScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: 'character'): readonly CharacterScraperSlot[]
+export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readonly ScraperSlot[]
 export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readonly ScraperSlot[] {
   switch (mediaType) {
     case 'game':
@@ -36,36 +158,43 @@ export function getScraperSlotsForMediaType(mediaType: ScraperMediaType): readon
   }
 }
 
-function isSlotConfig(value: unknown): value is SlotConfig {
-  if (!value || typeof value !== 'object') return false
-  const candidate = value as Partial<SlotConfig>
-  return Array.isArray(candidate.providers) && typeof candidate.resultStrategy === 'string'
-}
-
 /**
- * Normalize a profile's slotConfigs:
- * - Keep only the slots relevant to the mediaType
- * - Ensure every required slot exists (fallback to empty config)
- * - Coerce each slot to a supported result strategy
+ * Normalize a profile's slot configs for the selected media type.
+ *
+ * Slots outside the active media type are dropped, missing slots are filled with defaults,
+ * and provider priorities are reindexed into a stable 0-based sequence.
  */
 export function normalizeSlotConfigs(
-  mediaType: ScraperMediaType,
+  mediaType: 'game',
   slotConfigs: ScraperSlotConfigs | null | undefined
-): ScraperSlotConfigs {
-  const normalized: ScraperSlotConfigs = {}
-  const slots = getScraperSlotsForMediaType(mediaType)
+): GameScraperSlotConfigs
+export function normalizeSlotConfigs(
+  mediaType: 'person',
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): PersonScraperSlotConfigs
+export function normalizeSlotConfigs(
+  mediaType: 'company',
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): CompanyScraperSlotConfigs
+export function normalizeSlotConfigs(
+  mediaType: 'character',
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): CharacterScraperSlotConfigs
+export function normalizeSlotConfigs<T extends ScraperMediaType>(
+  mediaType: T,
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): SlotConfigsForMediaType<T>
+export function normalizeSlotConfigs<T extends ScraperMediaType>(
+  mediaType: T,
+  slotConfigs: ScraperSlotConfigs | null | undefined
+): SlotConfigsForMediaType<T> {
+  const normalized = {} as Record<string, SlotConfig>
 
-  for (const slot of slots) {
-    const config = slotConfigs?.[slot]
-    normalized[slot] = isSlotConfig(config)
-      ? {
-          ...config,
-          resultStrategy: normalizeResultStrategyForSlot(slot, config.resultStrategy)
-        }
-      : createEmptySlotConfig()
+  for (const slot of getScraperSlotsForMediaType(mediaType)) {
+    normalized[slot] = normalizeSlotConfig(slot, slotConfigs?.[slot])
   }
 
-  return normalized
+  return normalized as SlotConfigsForMediaType<T>
 }
 
 // =============================================================================
@@ -80,166 +209,177 @@ export function normalizeSlotConfigs(
  * Otherwise, the handler will search by name to resolve the provider's internal ID.
  */
 export interface ScraperLookup {
-  /** Entity name - universal identifier across providers */
+  /** Entity name - universal identifier across providers. */
   name: string
-  /** Preferred locale for results */
+  /** Preferred locale for resolve operations or single-provider helper paths. */
   locale?: Locale
-  /** Known external IDs (e.g., from search selection or database) */
+  /** Known external IDs (e.g. from search selection or database). */
   knownIds?: ExternalId[]
 }
 
-// =============================================================================
-// Capability Types
-// =============================================================================
-
-/** Universal scraper provider capability */
+/** Universal scraper provider capability. */
 export type ScraperCapability = 'search' | ScraperSlot
 
-// =============================================================================
-// Slot Classification
-// =============================================================================
-
-/** Image slot type - union of all image-related slots across all media types */
-export type ScraperImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons' | 'photos'
-
-/** Game image slot types */
-export type GameImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
-
-/** Game image slot list */
-export const GAME_IMAGE_SLOTS: GameImageSlot[] = ['covers', 'backdrops', 'logos', 'icons']
-
-/** Image slot types */
-export const SCRAPER_IMAGE_SLOTS: ScraperImageSlot[] = [...GAME_IMAGE_SLOTS, 'photos']
-
-/** Slots whose result strategy can expand the entity boundary. */
-export type ExpandableScraperSlot = 'characters' | 'persons' | 'companies'
-
-const BASIC_RESULT_STRATEGIES = [
-  'first',
-  'enrich'
-] as const satisfies readonly ScraperSlotResultStrategy[]
-const EXPANDABLE_RESULT_STRATEGIES = [
-  'first',
-  'enrich',
-  'expand'
-] as const satisfies readonly ScraperSlotResultStrategy[]
-const EXPANDABLE_SCRAPER_SLOTS: readonly ExpandableScraperSlot[] = [
-  'characters',
-  'persons',
-  'companies'
-]
-
-/** Check if slot returns arrays (all slots except 'info' return arrays) */
+/** Check if slot returns arrays (all slots except 'info' return arrays). */
 export function isArraySlot(slot: ScraperSlot): boolean {
   return slot !== 'info'
 }
 
-/** Check if slot is an image type */
+/** Check if a slot is image based. */
 export function isImageSlot(slot: ScraperSlot): slot is ScraperImageSlot {
   return (SCRAPER_IMAGE_SLOTS as readonly string[]).includes(slot)
 }
 
-/** Check if a slot supports the `expand` result strategy. */
-export function supportsExpandResultStrategy(slot: ScraperSlot): slot is ExpandableScraperSlot {
-  return (EXPANDABLE_SCRAPER_SLOTS as readonly string[]).includes(slot)
+/** Check if a slot is a relation collection. */
+export function isRelationCollectionSlot(slot: ScraperSlot): slot is RelationCollectionScraperSlot {
+  return (RELATION_COLLECTION_SCRAPER_SLOTS as readonly string[]).includes(slot)
 }
 
-/** Get the result strategies supported by a slot. */
-export function getSupportedResultStrategies(
-  slot: ScraperSlot
-): readonly ScraperSlotResultStrategy[] {
-  return supportsExpandResultStrategy(slot) ? EXPANDABLE_RESULT_STRATEGIES : BASIC_RESULT_STRATEGIES
+/** Check if a slot is a non-relational collection. */
+export function isSimpleCollectionSlot(slot: ScraperSlot): boolean {
+  return (SIMPLE_COLLECTION_SLOTS as readonly string[]).includes(slot)
 }
 
-/** Get the default result strategy for a slot. */
-export function getDefaultResultStrategy(_slot: ScraperSlot): ScraperSlotResultStrategy {
+/** Get the slot strategies supported by all slots. */
+export function getSupportedSlotStrategies(): readonly SlotStrategy[] {
+  return SLOT_STRATEGIES
+}
+
+/** Get the default slot strategy. */
+export function getDefaultSlotStrategy(): SlotStrategy {
   return 'first'
 }
 
-/**
- * Normalize a result strategy to one supported by the target slot.
- *
- * Non-expandable slots treat `expand` the same as `enrich`, so keep that behavior explicit.
- */
-export function normalizeResultStrategyForSlot(
-  slot: ScraperSlot,
-  strategy: ScraperSlotResultStrategy
-): ScraperSlotResultStrategy {
-  if (getSupportedResultStrategies(slot).includes(strategy)) {
-    return strategy
-  }
-
-  if (strategy === 'expand') {
-    return 'enrich'
-  }
-
-  return getDefaultResultStrategy(slot)
+/** Get the default unmatched-entity policy for relation collections. */
+export function getDefaultUnmatchedEntityPolicy(): UnmatchedEntityPolicy {
+  return 'ignore'
 }
 
-// =============================================================================
-// Slot Config Factory Functions
-// =============================================================================
+/** Normalize a strategy into the supported shared slot strategy set. */
+export function normalizeSlotStrategy(strategy: unknown): SlotStrategy {
+  return isSlotStrategy(strategy) ? strategy : getDefaultSlotStrategy()
+}
+
+function normalizeSlotConfig<S extends ScraperSlot>(slot: S, value: unknown): SlotConfigForSlot<S> {
+  const base = normalizeBasicSlotConfig(value)
+  if (!base) {
+    return createEmptySlotConfig(slot)
+  }
+
+  if (!isRelationCollectionSlot(slot)) {
+    return base as SlotConfigForSlot<S>
+  }
+
+  const unmatchedEntityPolicy = isPlainObject(value) ? value.unmatchedEntityPolicy : undefined
+
+  return {
+    ...base,
+    unmatchedEntityPolicy: isUnmatchedEntityPolicy(unmatchedEntityPolicy)
+      ? unmatchedEntityPolicy
+      : getDefaultUnmatchedEntityPolicy()
+  } as SlotConfigForSlot<S>
+}
+
+interface CreateSlotConfigOptions {
+  strategy?: SlotStrategy
+  locale?: Locale | null
+  unmatchedEntityPolicy?: UnmatchedEntityPolicy
+}
 
 /**
- * Create a slot config from provider IDs and result strategy.
+ * Create a slot config with providers in priority order.
  */
-export function createSlotConfig(
+export function createSlotConfig<S extends ScraperSlot>(
+  slot: S,
   providerIds: string[],
-  resultStrategy: ScraperSlotResultStrategy = 'first',
-  locale?: Locale
-): SlotConfig {
-  return {
-    providers: providerIds.map((providerId, index) => ({
-      providerId,
-      enabled: true,
-      priority: index,
-      locale
-    })),
-    resultStrategy
+  options: CreateSlotConfigOptions = {}
+): SlotConfigForSlot<S> {
+  const base: BasicSlotConfig = {
+    strategy: options.strategy ?? getDefaultSlotStrategy(),
+    providers: providerIds
+      .map((providerId) => providerId.trim())
+      .filter(Boolean)
+      .map((providerId, priority) => ({
+        providerId,
+        enabled: true,
+        priority,
+        locale: options.locale ?? undefined
+      }))
   }
+
+  if (!isRelationCollectionSlot(slot)) {
+    return base as SlotConfigForSlot<S>
+  }
+
+  return {
+    ...base,
+    unmatchedEntityPolicy: options.unmatchedEntityPolicy ?? getDefaultUnmatchedEntityPolicy()
+  } as SlotConfigForSlot<S>
 }
 
 /**
- * Create an empty slot config (no providers)
+ * Create an empty slot config with the correct defaults for the slot.
  */
-export function createEmptySlotConfig(): SlotConfig {
-  return {
-    providers: [],
-    resultStrategy: 'first'
-  }
+export function createEmptySlotConfig<S extends ScraperSlot>(slot: S): SlotConfigForSlot<S> {
+  return createSlotConfig(slot, [])
 }
 
 /**
  * Create all slot configs for a provider based on its capabilities.
  *
  * Only adds the provider to slots it actually supports.
- * Slots not supported by the provider will have empty providers array.
- *
- * @param providerId - The provider ID
- * @param capabilities - Array of capabilities the provider supports
- * @param locale - Optional locale preference
  */
 export function createSlotConfigs(
-  mediaType: ScraperMediaType,
+  mediaType: 'game',
   providerId: string,
   capabilities: ScraperCapability[],
   locale?: Locale
-): ScraperSlotConfigs {
-  const configs = {} as ScraperSlotConfigs
-  const slots = getScraperSlotsForMediaType(mediaType)
-  for (const slot of slots) {
-    // Check if provider supports this slot
+): GameScraperSlotConfigs
+export function createSlotConfigs(
+  mediaType: 'person',
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: Locale
+): PersonScraperSlotConfigs
+export function createSlotConfigs(
+  mediaType: 'company',
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: Locale
+): CompanyScraperSlotConfigs
+export function createSlotConfigs(
+  mediaType: 'character',
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: Locale
+): CharacterScraperSlotConfigs
+export function createSlotConfigs<T extends ScraperMediaType>(
+  mediaType: T,
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: Locale
+): SlotConfigsForMediaType<T>
+export function createSlotConfigs<T extends ScraperMediaType>(
+  mediaType: T,
+  providerId: string,
+  capabilities: ScraperCapability[],
+  locale?: Locale
+): SlotConfigsForMediaType<T> {
+  const configs = {} as Record<string, SlotConfig>
+
+  for (const slot of getScraperSlotsForMediaType(mediaType)) {
     const supportsSlot = capabilities.includes(slot)
     configs[slot] = supportsSlot
-      ? createSlotConfig([providerId], 'first', locale)
-      : createEmptySlotConfig()
+      ? createSlotConfig(slot, [providerId], { locale })
+      : createEmptySlotConfig(slot)
   }
-  return configs
+
+  return configs as SlotConfigsForMediaType<T>
 }
 
 // =============================================================================
 // Profile Cleanup Types
 // =============================================================================
 
-/** Action taken when ensuring profile validity */
+/** Action taken when ensuring profile validity. */
 export type ProfileCleanupAction = 'deleted' | 'updated' | 'unchanged'

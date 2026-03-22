@@ -1,4 +1,4 @@
-import type { ScraperSlotResultStrategy, RelatedSite } from '@shared/db'
+import type { RelatedSite, SlotStrategy, UnmatchedEntityPolicy } from '@shared/db'
 import type {
   ScrapedCharacterMetadata,
   ScrapedCharacterPersonFact,
@@ -26,6 +26,11 @@ interface AnchoredEntity<T> {
 type KeyBuilder<T> = (item: T) => string[]
 
 type EntityMerger<T> = (existing: T, incoming: T) => T
+
+export interface RelationCollectionMergeOptions {
+  strategy: SlotStrategy
+  unmatchedEntityPolicy: UnmatchedEntityPolicy
+}
 
 function deduplicate<T>(items: T[], keyFn: (item: T) => string): T[] {
   const seen = new Set<string>()
@@ -146,7 +151,7 @@ function findBestAnchorMatch(
  * Reconcile provider entities against the current anchor set.
  *
  * Existing items define the current entity boundary. Incoming items can enrich matched anchors,
- * and optionally expand the anchor set with unmatched entities.
+ * and may append unmatched entities when the slot policy allows it.
  */
 export function reconcileEntitiesByKeys<T>(
   existing: T[],
@@ -273,7 +278,7 @@ export function mergeImageUrls(
 export function applyStrategy<T>(
   existing: T[] | undefined,
   incoming: T[],
-  strategy: ScraperSlotResultStrategy,
+  strategy: SlotStrategy,
   keyFn: (item: T) => string
 ): T[] {
   const existingArr = existing ?? []
@@ -282,8 +287,6 @@ export function applyStrategy<T>(
     case 'first':
       return existingArr.length ? existingArr : incoming
     case 'enrich':
-      return deduplicate([...existingArr, ...incoming], keyFn)
-    case 'expand':
       return deduplicate([...existingArr, ...incoming], keyFn)
   }
 }
@@ -294,7 +297,7 @@ export function applyStrategy<T>(
 export function applyImageStrategy(
   existing: string[] | undefined,
   incoming: string[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): string[] {
   const existingArr = existing ?? []
 
@@ -303,35 +306,33 @@ export function applyImageStrategy(
       return existingArr.length ? existingArr : incoming
     case 'enrich':
       return [...new Set([...existingArr, ...incoming])]
-    case 'expand':
-      return [...new Set([...existingArr, ...incoming])]
   }
 }
 
 /**
- * Apply strategy for entity arrays (characters, persons, companies).
- *
- * `enrich` keeps the first successful entity set as the anchor set and only fills matched entities.
- * `expand` applies the same enrichment, then appends unmatched entities into the result set.
+ * Apply strategy for relation collections (characters, persons, companies).
  */
 export function applyEntityCollectionStrategy<T>(
   existing: T[] | undefined,
   incoming: T[],
-  strategy: ScraperSlotResultStrategy,
+  options: RelationCollectionMergeOptions,
   keyBuilder: (item: T) => string[],
   mergeFn: (existing: T, incoming: T) => T
 ): T[] {
   const existingArr = existing ?? []
 
-  switch (strategy) {
+  switch (options.strategy) {
     case 'first':
       return existingArr.length ? existingArr : incoming
 
     case 'enrich':
-      return reconcileEntitiesByKeys(existingArr, incoming, keyBuilder, mergeFn, false)
-
-    case 'expand':
-      return reconcileEntitiesByKeys(existingArr, incoming, keyBuilder, mergeFn, true)
+      return reconcileEntitiesByKeys(
+        existingArr,
+        incoming,
+        keyBuilder,
+        mergeFn,
+        options.unmatchedEntityPolicy === 'append'
+      )
   }
 }
 
@@ -391,14 +392,14 @@ export function mergeCompanyMetadataFields(
 export function mergeCharacterPersons(
   existing: ScrapedCharacterPersonFact[] | undefined,
   incoming: ScrapedCharacterPersonFact[] | undefined,
-  strategy: ScraperSlotResultStrategy
+  options: RelationCollectionMergeOptions
 ): ScrapedCharacterPersonFact[] | undefined {
   if (!existing?.length && !incoming?.length) return undefined
 
   return applyEntityCollectionStrategy(
     existing,
     incoming ?? [],
-    strategy,
+    options,
     (person) =>
       buildEntityAliasKeys(person, {
         includeCompactFallbackKeys: true,
@@ -419,7 +420,7 @@ export function mergeCharacterPersons(
 export function mergeCharacterMetadataFields(
   existing: ScrapedCharacterMetadata,
   incoming: ScrapedCharacterMetadata,
-  personStrategy: ScraperSlotResultStrategy
+  relationCollectionOptions: RelationCollectionMergeOptions
 ): ScrapedCharacterMetadata {
   const merged = mergeScalarFields(existing, incoming, [
     'externalIds',
@@ -434,7 +435,7 @@ export function mergeCharacterMetadataFields(
     externalIds: mergeExternalIds(existing.externalIds, incoming.externalIds),
     relatedSites: mergeRelatedSites(existing.relatedSites, incoming.relatedSites),
     tags: mergeTagsArray(existing.tags, incoming.tags),
-    persons: mergeCharacterPersons(existing.persons, incoming.persons, personStrategy),
+    persons: mergeCharacterPersons(existing.persons, incoming.persons, relationCollectionOptions),
     photos: mergeImageUrls(existing.photos, incoming.photos)
   }
 }

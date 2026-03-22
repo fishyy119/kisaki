@@ -11,7 +11,7 @@ import Database from 'better-sqlite3'
 import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as drizzle_orm_sqlite_core320 from 'drizzle-orm/sqlite-core'
 import { SQLiteTable, SQLiteTransaction } from 'drizzle-orm/sqlite-core'
-import * as drizzle_orm0 from 'drizzle-orm'
+import * as drizzle_orm89 from 'drizzle-orm'
 import { ExtractTablesWithRelations, InferInsertModel, InferSelectModel, Table } from 'drizzle-orm'
 import * as electron from 'electron'
 import {
@@ -285,8 +285,10 @@ declare const CHARACTER_SCRAPER_SLOTS: CharacterScraperSlot[]
  * - Slot config editing UI
  */
 type ScraperSlot = GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
-/** Result strategy for a multi-provider scraper slot. */
-type ScraperSlotResultStrategy = 'first' | 'enrich' | 'expand'
+/** Shared strategy for combining multiple provider results. */
+type SlotStrategy = 'first' | 'enrich'
+/** Policy for unmatched entities in relation-collection slots. */
+type UnmatchedEntityPolicy = 'ignore' | 'append'
 /** Configuration for a provider within a slot */
 interface ScraperProviderEntry {
   providerId: string
@@ -294,28 +296,57 @@ interface ScraperProviderEntry {
   priority: number
   locale?: Locale | null
 }
-/** Configuration for a single slot */
-interface SlotConfig {
+/** Base configuration shared by all slots. */
+interface BasicSlotConfig {
   providers: ScraperProviderEntry[]
-  resultStrategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 }
+/** Additional configuration required by relation-collection slots. */
+interface RelationCollectionSlotConfig extends BasicSlotConfig {
+  unmatchedEntityPolicy: UnmatchedEntityPolicy
+}
+/** Configuration for a single slot. */
+type SlotConfig = BasicSlotConfig | RelationCollectionSlotConfig
 /**
  * Scraper slot configurations stored in DB.
  *
  * Each profile stores only the slots relevant to its mediaType.
  */
 type ScraperSlotConfigs = Record<string, SlotConfig>
-type GameScraperSlotConfigs = Record<GameScraperSlot, SlotConfig>
-type PersonScraperSlotConfigs = Record<PersonScraperSlot, SlotConfig>
-type CompanyScraperSlotConfigs = Record<CompanyScraperSlot, SlotConfig>
-type CharacterScraperSlotConfigs = Record<CharacterScraperSlot, SlotConfig>
+type GameScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  characters: RelationCollectionSlotConfig
+  persons: RelationCollectionSlotConfig
+  companies: RelationCollectionSlotConfig
+  covers: BasicSlotConfig
+  backdrops: BasicSlotConfig
+  logos: BasicSlotConfig
+  icons: BasicSlotConfig
+}
+type PersonScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  photos: BasicSlotConfig
+}
+type CompanyScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  logos: BasicSlotConfig
+}
+type CharacterScraperSlotConfigs = {
+  info: BasicSlotConfig
+  tags: BasicSlotConfig
+  persons: RelationCollectionSlotConfig
+  photos: BasicSlotConfig
+}
 //#endregion
 //#region src/shared/db/custom-types.d.ts
 declare const baseColumns: {
-  id: drizzle_orm0.HasRuntimeDefault<
-    drizzle_orm0.HasDefault<
-      drizzle_orm0.IsPrimaryKey<
-        drizzle_orm0.NotNull<
+  id: drizzle_orm89.HasRuntimeDefault<
+    drizzle_orm89.HasDefault<
+      drizzle_orm89.IsPrimaryKey<
+        drizzle_orm89.NotNull<
           drizzle_orm_sqlite_core320.SQLiteTextBuilderInitial<
             'id',
             [string, ...string[]],
@@ -325,15 +356,17 @@ declare const baseColumns: {
       >
     >
   >
-  createdAt: drizzle_orm0.HasRuntimeDefault<
-    drizzle_orm0.HasDefault<
-      drizzle_orm0.NotNull<drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'created_at'>>
+  createdAt: drizzle_orm89.HasRuntimeDefault<
+    drizzle_orm89.HasDefault<
+      drizzle_orm89.NotNull<drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'created_at'>>
     >
   >
-  updatedAt: drizzle_orm0.HasDefault<
-    drizzle_orm0.HasRuntimeDefault<
-      drizzle_orm0.HasDefault<
-        drizzle_orm0.NotNull<drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'updated_at'>>
+  updatedAt: drizzle_orm89.HasDefault<
+    drizzle_orm89.HasRuntimeDefault<
+      drizzle_orm89.HasDefault<
+        drizzle_orm89.NotNull<
+          drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'updated_at'>
+        >
       >
     >
   >
@@ -8134,198 +8167,198 @@ type NewCharacterPersonLink = InferInsertModel<typeof characterPersonLinks>
  * Drizzle ORM relations for all tables.
  * Separated from table definitions to avoid circular imports.
  */
-declare const gamesRelations: drizzle_orm0.Relations<
+declare const gamesRelations: drizzle_orm89.Relations<
   'games',
   {
-    sessions: drizzle_orm0.Many<'game_sessions'>
-    notes: drizzle_orm0.Many<'game_notes'>
-    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
-    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
-    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
-    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
-    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
-    externalIds: drizzle_orm0.Many<'game_external_ids'>
+    sessions: drizzle_orm89.Many<'game_sessions'>
+    notes: drizzle_orm89.Many<'game_notes'>
+    gamePersonLinks: drizzle_orm89.Many<'game_person_links'>
+    gameCompanyLinks: drizzle_orm89.Many<'game_company_links'>
+    gameCharacterLinks: drizzle_orm89.Many<'game_character_links'>
+    collectionGameLinks: drizzle_orm89.Many<'collection_game_links'>
+    gameTagLinks: drizzle_orm89.Many<'game_tag_links'>
+    externalIds: drizzle_orm89.Many<'game_external_ids'>
   }
 >
-declare const gameNotesRelations: drizzle_orm0.Relations<
+declare const gameNotesRelations: drizzle_orm89.Relations<
   'game_notes',
   {
-    game: drizzle_orm0.One<'games', true>
+    game: drizzle_orm89.One<'games', true>
   }
 >
-declare const gameSessionsRelations: drizzle_orm0.Relations<
+declare const gameSessionsRelations: drizzle_orm89.Relations<
   'game_sessions',
   {
-    game: drizzle_orm0.One<'games', true>
+    game: drizzle_orm89.One<'games', true>
   }
 >
-declare const gamePersonLinksRelations: drizzle_orm0.Relations<
+declare const gamePersonLinksRelations: drizzle_orm89.Relations<
   'game_person_links',
   {
-    game: drizzle_orm0.One<'games', true>
-    person: drizzle_orm0.One<'persons', true>
+    game: drizzle_orm89.One<'games', true>
+    person: drizzle_orm89.One<'persons', true>
   }
 >
-declare const gameCompanyLinksRelations: drizzle_orm0.Relations<
+declare const gameCompanyLinksRelations: drizzle_orm89.Relations<
   'game_company_links',
   {
-    game: drizzle_orm0.One<'games', true>
-    company: drizzle_orm0.One<'companies', true>
+    game: drizzle_orm89.One<'games', true>
+    company: drizzle_orm89.One<'companies', true>
   }
 >
-declare const gameCharacterLinksRelations: drizzle_orm0.Relations<
+declare const gameCharacterLinksRelations: drizzle_orm89.Relations<
   'game_character_links',
   {
-    game: drizzle_orm0.One<'games', true>
-    character: drizzle_orm0.One<'characters', true>
+    game: drizzle_orm89.One<'games', true>
+    character: drizzle_orm89.One<'characters', true>
   }
 >
-declare const personsRelations: drizzle_orm0.Relations<
+declare const personsRelations: drizzle_orm89.Relations<
   'persons',
   {
-    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
-    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
-    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
-    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
-    externalIds: drizzle_orm0.Many<'person_external_ids'>
+    gamePersonLinks: drizzle_orm89.Many<'game_person_links'>
+    characterPersonLinks: drizzle_orm89.Many<'character_person_links'>
+    collectionPersonLinks: drizzle_orm89.Many<'collection_person_links'>
+    personTagLinks: drizzle_orm89.Many<'person_tag_links'>
+    externalIds: drizzle_orm89.Many<'person_external_ids'>
   }
 >
-declare const companiesRelations: drizzle_orm0.Relations<
+declare const companiesRelations: drizzle_orm89.Relations<
   'companies',
   {
-    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
-    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
-    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
-    externalIds: drizzle_orm0.Many<'company_external_ids'>
+    gameCompanyLinks: drizzle_orm89.Many<'game_company_links'>
+    collectionCompanyLinks: drizzle_orm89.Many<'collection_company_links'>
+    companyTagLinks: drizzle_orm89.Many<'company_tag_links'>
+    externalIds: drizzle_orm89.Many<'company_external_ids'>
   }
 >
-declare const charactersRelations: drizzle_orm0.Relations<
+declare const charactersRelations: drizzle_orm89.Relations<
   'characters',
   {
-    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
-    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
-    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
-    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
-    externalIds: drizzle_orm0.Many<'character_external_ids'>
+    gameCharacterLinks: drizzle_orm89.Many<'game_character_links'>
+    characterPersonLinks: drizzle_orm89.Many<'character_person_links'>
+    collectionCharacterLinks: drizzle_orm89.Many<'collection_character_links'>
+    characterTagLinks: drizzle_orm89.Many<'character_tag_links'>
+    externalIds: drizzle_orm89.Many<'character_external_ids'>
   }
 >
-declare const characterPersonLinksRelations: drizzle_orm0.Relations<
+declare const characterPersonLinksRelations: drizzle_orm89.Relations<
   'character_person_links',
   {
-    character: drizzle_orm0.One<'characters', true>
-    person: drizzle_orm0.One<'persons', true>
+    character: drizzle_orm89.One<'characters', true>
+    person: drizzle_orm89.One<'persons', true>
   }
 >
-declare const collectionsRelations: drizzle_orm0.Relations<
+declare const collectionsRelations: drizzle_orm89.Relations<
   'collections',
   {
-    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
-    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
-    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
-    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
-    scanners: drizzle_orm0.Many<'scanners'>
+    collectionGameLinks: drizzle_orm89.Many<'collection_game_links'>
+    collectionCharacterLinks: drizzle_orm89.Many<'collection_character_links'>
+    collectionPersonLinks: drizzle_orm89.Many<'collection_person_links'>
+    collectionCompanyLinks: drizzle_orm89.Many<'collection_company_links'>
+    scanners: drizzle_orm89.Many<'scanners'>
   }
 >
-declare const collectionGameLinksRelations: drizzle_orm0.Relations<
+declare const collectionGameLinksRelations: drizzle_orm89.Relations<
   'collection_game_links',
   {
-    collection: drizzle_orm0.One<'collections', true>
-    game: drizzle_orm0.One<'games', true>
+    collection: drizzle_orm89.One<'collections', true>
+    game: drizzle_orm89.One<'games', true>
   }
 >
-declare const collectionCharacterLinksRelations: drizzle_orm0.Relations<
+declare const collectionCharacterLinksRelations: drizzle_orm89.Relations<
   'collection_character_links',
   {
-    collection: drizzle_orm0.One<'collections', true>
-    character: drizzle_orm0.One<'characters', true>
+    collection: drizzle_orm89.One<'collections', true>
+    character: drizzle_orm89.One<'characters', true>
   }
 >
-declare const collectionPersonLinksRelations: drizzle_orm0.Relations<
+declare const collectionPersonLinksRelations: drizzle_orm89.Relations<
   'collection_person_links',
   {
-    collection: drizzle_orm0.One<'collections', true>
-    person: drizzle_orm0.One<'persons', true>
+    collection: drizzle_orm89.One<'collections', true>
+    person: drizzle_orm89.One<'persons', true>
   }
 >
-declare const collectionCompanyLinksRelations: drizzle_orm0.Relations<
+declare const collectionCompanyLinksRelations: drizzle_orm89.Relations<
   'collection_company_links',
   {
-    collection: drizzle_orm0.One<'collections', true>
-    company: drizzle_orm0.One<'companies', true>
+    collection: drizzle_orm89.One<'collections', true>
+    company: drizzle_orm89.One<'companies', true>
   }
 >
-declare const scraperProfilesRelations: drizzle_orm0.Relations<
+declare const scraperProfilesRelations: drizzle_orm89.Relations<
   'scraper_profiles',
   {
-    scanners: drizzle_orm0.Many<'scanners'>
+    scanners: drizzle_orm89.Many<'scanners'>
   }
 >
-declare const scannersRelations: drizzle_orm0.Relations<
+declare const scannersRelations: drizzle_orm89.Relations<
   'scanners',
   {
-    scraperProfile: drizzle_orm0.One<'scraper_profiles', true>
-    targetCollection: drizzle_orm0.One<'collections', false>
+    scraperProfile: drizzle_orm89.One<'scraper_profiles', true>
+    targetCollection: drizzle_orm89.One<'collections', false>
   }
 >
-declare const tagsRelations: drizzle_orm0.Relations<
+declare const tagsRelations: drizzle_orm89.Relations<
   'tags',
   {
-    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
-    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
-    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
-    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
+    gameTagLinks: drizzle_orm89.Many<'game_tag_links'>
+    characterTagLinks: drizzle_orm89.Many<'character_tag_links'>
+    personTagLinks: drizzle_orm89.Many<'person_tag_links'>
+    companyTagLinks: drizzle_orm89.Many<'company_tag_links'>
   }
 >
-declare const gameTagLinksRelations: drizzle_orm0.Relations<
+declare const gameTagLinksRelations: drizzle_orm89.Relations<
   'game_tag_links',
   {
-    game: drizzle_orm0.One<'games', true>
-    tag: drizzle_orm0.One<'tags', true>
+    game: drizzle_orm89.One<'games', true>
+    tag: drizzle_orm89.One<'tags', true>
   }
 >
-declare const characterTagLinksRelations: drizzle_orm0.Relations<
+declare const characterTagLinksRelations: drizzle_orm89.Relations<
   'character_tag_links',
   {
-    character: drizzle_orm0.One<'characters', true>
-    tag: drizzle_orm0.One<'tags', true>
+    character: drizzle_orm89.One<'characters', true>
+    tag: drizzle_orm89.One<'tags', true>
   }
 >
-declare const personTagLinksRelations: drizzle_orm0.Relations<
+declare const personTagLinksRelations: drizzle_orm89.Relations<
   'person_tag_links',
   {
-    person: drizzle_orm0.One<'persons', true>
-    tag: drizzle_orm0.One<'tags', true>
+    person: drizzle_orm89.One<'persons', true>
+    tag: drizzle_orm89.One<'tags', true>
   }
 >
-declare const companyTagLinksRelations: drizzle_orm0.Relations<
+declare const companyTagLinksRelations: drizzle_orm89.Relations<
   'company_tag_links',
   {
-    company: drizzle_orm0.One<'companies', true>
-    tag: drizzle_orm0.One<'tags', true>
+    company: drizzle_orm89.One<'companies', true>
+    tag: drizzle_orm89.One<'tags', true>
   }
 >
-declare const gameExternalIdsRelations: drizzle_orm0.Relations<
+declare const gameExternalIdsRelations: drizzle_orm89.Relations<
   'game_external_ids',
   {
-    game: drizzle_orm0.One<'games', true>
+    game: drizzle_orm89.One<'games', true>
   }
 >
-declare const personExternalIdsRelations: drizzle_orm0.Relations<
+declare const personExternalIdsRelations: drizzle_orm89.Relations<
   'person_external_ids',
   {
-    person: drizzle_orm0.One<'persons', true>
+    person: drizzle_orm89.One<'persons', true>
   }
 >
-declare const companyExternalIdsRelations: drizzle_orm0.Relations<
+declare const companyExternalIdsRelations: drizzle_orm89.Relations<
   'company_external_ids',
   {
-    company: drizzle_orm0.One<'companies', true>
+    company: drizzle_orm89.One<'companies', true>
   }
 >
-declare const characterExternalIdsRelations: drizzle_orm0.Relations<
+declare const characterExternalIdsRelations: drizzle_orm89.Relations<
   'character_external_ids',
   {
-    character: drizzle_orm0.One<'characters', true>
+    character: drizzle_orm89.One<'characters', true>
   }
 >
 //#endregion
@@ -8352,6 +8385,7 @@ type FilesColumns<T> = Extract<ExtractColumns<T>, `${string}Files`>
 declare namespace index_d_exports {
   export {
     AttachmentInput,
+    BasicSlotConfig,
     BloodType,
     CHARACTER_SCRAPER_SLOTS,
     COMPANY_SCRAPER_SLOTS,
@@ -8440,6 +8474,7 @@ declare namespace index_d_exports {
     PersonTagLink,
     PluginData,
     RelatedSite,
+    RelationCollectionSlotConfig,
     RelationValue,
     SCANNER_INGEST_MODE_VALUES,
     SaveBackup,
@@ -8450,7 +8485,6 @@ declare namespace index_d_exports {
     ScraperProviderEntry,
     ScraperSlot,
     ScraperSlotConfigs,
-    ScraperSlotResultStrategy,
     SectionItemSize,
     SectionLayout,
     SectionOpenMode,
@@ -8458,9 +8492,11 @@ declare namespace index_d_exports {
     ShowcaseSection,
     ShowcaseSectionFormItem,
     SlotConfig,
+    SlotStrategy,
     SortDirection,
     Status,
     Tag$1 as Tag,
+    UnmatchedEntityPolicy,
     allEntityType,
     appLocale,
     baseColumns,
@@ -9348,6 +9384,8 @@ interface CropRegion {
 }
 //#endregion
 //#region src/shared/scraper/slot.d.ts
+/** Game image slot types. */
+type GameImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
 /**
  * Universal lookup identifier for scraper operations.
  *
@@ -9356,18 +9394,16 @@ interface CropRegion {
  * Otherwise, the handler will search by name to resolve the provider's internal ID.
  */
 interface ScraperLookup {
-  /** Entity name - universal identifier across providers */
+  /** Entity name - universal identifier across providers. */
   name: string
-  /** Preferred locale for results */
+  /** Preferred locale for resolve operations or single-provider helper paths. */
   locale?: Locale
-  /** Known external IDs (e.g., from search selection or database) */
+  /** Known external IDs (e.g. from search selection or database). */
   knownIds?: ExternalId[]
 }
-/** Universal scraper provider capability */
+/** Universal scraper provider capability. */
 type ScraperCapability = 'search' | ScraperSlot
-/** Game image slot types */
-type GameImageSlot = 'covers' | 'backdrops' | 'logos' | 'icons'
-/** Action taken when ensuring profile validity */
+/** Action taken when ensuring profile validity. */
 type ProfileCleanupAction = 'deleted' | 'updated' | 'unchanged'
 //#endregion
 //#region src/shared/metadata/common.d.ts
@@ -9591,10 +9627,6 @@ interface GameSearchResult {
   releaseDate?: PartialDate
   externalIds: ExternalId[]
 }
-/** Options for fetching game metadata */
-interface GameScraperOptions {
-  skipValidation?: boolean
-}
 //#endregion
 //#region src/shared/scraper/person.d.ts
 /** Information about a registered person scraper provider */
@@ -9612,10 +9644,6 @@ interface PersonSearchResult {
   deathDate?: PartialDate
   externalIds: ExternalId[]
 }
-/** Options for fetching person metadata */
-interface PersonScraperOptions {
-  skipValidation?: boolean
-}
 //#endregion
 //#region src/shared/scraper/character.d.ts
 /** Information about a registered character scraper provider */
@@ -9632,10 +9660,6 @@ interface CharacterSearchResult {
   birthDate?: PartialDate
   externalIds: ExternalId[]
 }
-/** Options for fetching character metadata */
-interface CharacterScraperOptions {
-  skipValidation?: boolean
-}
 //#endregion
 //#region src/shared/scraper/company.d.ts
 /** Information about a registered company scraper provider */
@@ -9651,10 +9675,6 @@ interface CompanySearchResult {
   originalName?: string
   foundedDate?: PartialDate
   externalIds: ExternalId[]
-}
-/** Options for fetching company metadata */
-interface CompanyScraperOptions {
-  skipValidation?: boolean
 }
 //#endregion
 //#region src/shared/scanner.d.ts
@@ -9752,14 +9772,13 @@ interface IngestAddGameFromScraperOptions {
   gameDirPath?: string
   gameFilePath?: string
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 type IngestAddGameFromScraperResult = IngestAddGameResult
 interface IngestAddGameDirectSeed {
   name: string
   knownIds?: ExternalId[]
 }
-type IngestAddGameDirectOptions = Omit<IngestAddGameFromScraperOptions, 'skipScraperValidation'>
+type IngestAddGameDirectOptions = IngestAddGameFromScraperOptions
 type IngestAddGameDirectResult = IngestAddGameResult
 //#endregion
 //#region src/shared/ingest/add/person.d.ts
@@ -9768,7 +9787,6 @@ interface IngestAddPersonResult extends IngestAddResult {
 }
 interface IngestAddPersonFromScraperOptions {
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 type IngestAddPersonFromScraperResult = IngestAddPersonResult
 //#endregion
@@ -9778,7 +9796,6 @@ interface IngestAddCompanyResult extends IngestAddResult {
 }
 interface IngestAddCompanyFromScraperOptions {
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 type IngestAddCompanyFromScraperResult = IngestAddCompanyResult
 //#endregion
@@ -9788,7 +9805,6 @@ interface IngestAddCharacterResult extends IngestAddResult {
 }
 interface IngestAddCharacterFromScraperOptions {
   targetCollectionId?: string
-  skipScraperValidation?: boolean
 }
 type IngestAddCharacterFromScraperResult = IngestAddCharacterResult
 //#endregion
@@ -9813,8 +9829,6 @@ interface IngestUpdateSelection<TSurface extends string> {
 interface IngestUpdateLookup {
   name: string
   knownIds: ExternalId[]
-  searchProviderId?: string
-  searchProviderItemId?: string
 }
 interface IngestUpdateRequest<TSurface extends string> {
   rootId: string
@@ -10463,8 +10477,7 @@ interface IpcMainHandlers {
   'scraper:search-game': (profileId: string, query: string) => IpcResult<GameSearchResult[]>
   'scraper:scrape-game': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: GameScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedGameBundle | null>
   'scraper:get-game-provider-images': (
     providerId: string,
@@ -10476,8 +10489,7 @@ interface IpcMainHandlers {
   'scraper:search-person': (profileId: string, query: string) => IpcResult<PersonSearchResult[]>
   'scraper:scrape-person': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: PersonScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedPersonBundle | null>
   'scraper:get-person-provider-images': (
     providerId: string,
@@ -10489,8 +10501,7 @@ interface IpcMainHandlers {
   'scraper:search-company': (profileId: string, query: string) => IpcResult<CompanySearchResult[]>
   'scraper:scrape-company': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: CompanyScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedCompanyBundle | null>
   'scraper:get-company-provider-images': (
     providerId: string,
@@ -10505,8 +10516,7 @@ interface IpcMainHandlers {
   ) => IpcResult<CharacterSearchResult[]>
   'scraper:scrape-character': (
     profileId: string,
-    lookup: ScraperLookup,
-    options?: CharacterScraperOptions
+    lookup: ScraperLookup
   ) => IpcResult<ScrapedCharacterBundle | null>
   'scraper:get-character-provider-images': (
     providerId: string,
@@ -10848,8 +10858,8 @@ interface GameScraperProvider {
    * - Only game slots + 'search' are allowed (validated at registration)
    */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search games by query string */
-  search?(query: string, locale?: Locale): Promise<GameSearchResult[]>
+  /** Search games by query string. */
+  search(query: string, locale?: Locale): Promise<GameSearchResult[]>
   /** Get core info (name, description, dates, links) */
   getInfo?(id: string, locale?: Locale): Promise<GameInfo>
   /** Get tags/genres */
@@ -10880,69 +10890,24 @@ declare class GameScraperHandler {
   private providers
   constructor(db: BetterSQLite3Database<typeof index_d_exports>, i18n: I18nService)
   registerProvider(provider: GameScraperProvider): void
-  /**
-   * Unregister a provider and clean up all profiles using it.
-   *
-   * @returns Map of profile ID to action taken
-   */
   unregisterProvider(providerId: string): Promise<Map<string, ProfileCleanupAction>>
   getProviders(): GameScraperProviderInfo[]
   getProviderInfo(providerId: string): GameScraperProviderInfo
-  /**
-   * Ensure a profile is valid by checking and fixing invalid references.
-   *
-   * - If searchProviderId is invalid -> deletes entire profile
-   * - If slotConfigs reference invalid providers -> removes those references
-   *
-   * @returns Action taken: 'deleted', 'updated', or 'unchanged'
-   */
   ensureProfileValid(profileId: string): Promise<ProfileCleanupAction>
   search(profileId: string, query: string): Promise<GameSearchResult[]>
-  /**
-   * Get complete game metadata using profile configuration.
-   *
-   * Three-phase immutable resolution:
-   * 1. Resolve searchProvider, extract originalName from search result
-   * 2. Resolve other providers using originalName for better matching
-   * 3. Fetch all slots in parallel using resolved IDs
-   */
-  scrape(
-    profileId: string,
-    lookup: ScraperLookup,
-    options?: GameScraperOptions
-  ): Promise<ScrapedGameBundle | null>
-  /**
-   * Get images from a specific provider.
-   *
-   * @param providerId - The provider to query
-   * @param lookup - Lookup info (name, locale, knownIds)
-   * @param imageType - Type of images to fetch
-   */
+  scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedGameBundle | null>
   getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
     imageType: GameImageSlot
   ): Promise<string[]>
-  /**
-   * Load profile by ID (sync for better-sqlite3)
-   */
+  private executeSlot
+  private fetchSlot
   private loadProfile
   private getProvider
-  private getLocale
-  /**
-   * Resolve ID for a specific provider.
-   *
-   * Resolution priority:
-   * 1. Check knownIds for this provider's ID
-   * 2. Search by name to get this provider's ID
-   *
-   * Returns both ID and originalName (if available from search result).
-   * Does NOT modify any input parameters.
-   */
-  private resolveId
-  private fetchAllSlots
-  private fetchSlot
-  private assertProviderCapabilities
+  private getProfileLocale
+  private getResolveLocale
+  private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/person/provider.d.ts
@@ -10951,8 +10916,10 @@ interface PersonScraperProvider {
   readonly id: string
   /** Display name */
   readonly name: string
-  /** Search persons by query string */
-  search?(query: string, locale?: Locale): Promise<PersonSearchResult[]>
+  /** Explicit capability declaration. */
+  readonly capabilities: readonly ScraperCapability[]
+  /** Search persons by query string. */
+  search(query: string, locale?: Locale): Promise<PersonSearchResult[]>
   /** Get core info (name, description, dates, links) */
   getInfo?(id: string, locale?: Locale): Promise<PersonInfo>
   /** Get tags */
@@ -10983,23 +10950,19 @@ declare class PersonScraperHandler {
   getProviderInfo(providerId: string): PersonScraperProviderInfo
   ensureProfileValid(profileId: string): Promise<ProfileCleanupAction>
   search(profileId: string, query: string): Promise<PersonSearchResult[]>
-  scrape(
-    profileId: string,
-    lookup: ScraperLookup,
-    options?: PersonScraperOptions
-  ): Promise<ScrapedPersonBundle | null>
+  scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedPersonBundle | null>
   getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
     imageType: PersonScraperImageSlot
   ): Promise<string[]>
+  private executeSlot
+  private fetchSlot
   private loadProfile
   private getProvider
-  private getLocale
-  private resolveId
-  private fetchAllSlots
-  private fetchSlot
-  private buildCapabilities
+  private getProfileLocale
+  private getResolveLocale
+  private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/company/provider.d.ts
@@ -11008,8 +10971,10 @@ interface CompanyScraperProvider {
   readonly id: string
   /** Display name */
   readonly name: string
-  /** Search companies by query string */
-  search?(query: string, locale?: Locale): Promise<CompanySearchResult[]>
+  /** Explicit capability declaration. */
+  readonly capabilities: readonly ScraperCapability[]
+  /** Search companies by query string. */
+  search(query: string, locale?: Locale): Promise<CompanySearchResult[]>
   /** Get core info (name, description, dates, links) */
   getInfo?(id: string, locale?: Locale): Promise<CompanyInfo>
   /** Get tags */
@@ -11037,23 +11002,19 @@ declare class CompanyScraperHandler {
   getProviderInfo(providerId: string): CompanyScraperProviderInfo
   ensureProfileValid(profileId: string): Promise<ProfileCleanupAction>
   search(profileId: string, query: string): Promise<CompanySearchResult[]>
-  scrape(
-    profileId: string,
-    lookup: ScraperLookup,
-    options?: CompanyScraperOptions
-  ): Promise<ScrapedCompanyBundle | null>
+  scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedCompanyBundle | null>
   getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
     imageType: CompanyScraperImageSlot
   ): Promise<string[]>
+  private executeSlot
+  private fetchSlot
   private loadProfile
   private getProvider
-  private getLocale
-  private resolveId
-  private fetchAllSlots
-  private fetchSlot
-  private buildCapabilities
+  private getProfileLocale
+  private getResolveLocale
+  private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/character/provider.d.ts
@@ -11062,8 +11023,10 @@ interface CharacterScraperProvider {
   readonly id: string
   /** Display name */
   readonly name: string
-  /** Search characters by query string */
-  search?(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
+  /** Explicit capability declaration. */
+  readonly capabilities: readonly ScraperCapability[]
+  /** Search characters by query string. */
+  search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
   /** Get core info (name, description, attributes, links) */
   getInfo?(id: string, locale?: Locale): Promise<CharacterInfo>
   /** Get tags */
@@ -11093,23 +11056,19 @@ declare class CharacterScraperHandler {
   getProviderInfo(providerId: string): CharacterScraperProviderInfo
   ensureProfileValid(profileId: string): Promise<ProfileCleanupAction>
   search(profileId: string, query: string): Promise<CharacterSearchResult[]>
-  scrape(
-    profileId: string,
-    lookup: ScraperLookup,
-    options?: CharacterScraperOptions
-  ): Promise<ScrapedCharacterBundle | null>
+  scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedCharacterBundle | null>
   getProviderImages(
     providerId: string,
     lookup: ScraperLookup,
     imageType: CharacterScraperImageSlot
   ): Promise<string[]>
+  private executeSlot
+  private fetchSlot
   private loadProfile
   private getProvider
-  private getLocale
-  private resolveId
-  private fetchAllSlots
-  private fetchSlot
-  private buildCapabilities
+  private getProfileLocale
+  private getResolveLocale
+  private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/service.d.ts
@@ -12638,7 +12597,7 @@ interface KisakiMainAPI {
    */
   readonly __deps: {
     electron: typeof electron
-    drizzle: typeof drizzle_orm0
+    drizzle: typeof drizzle_orm89
   }
 }
 //#endregion

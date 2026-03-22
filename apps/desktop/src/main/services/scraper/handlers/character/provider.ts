@@ -11,6 +11,7 @@ import type { Locale } from '@shared/locale'
 import type { CharacterSearchResult } from '@shared/scraper'
 import type { CharacterInfo, Tag } from '@shared/metadata'
 import type { ScrapedCharacterPersonFact } from '@shared/scraper'
+import type { ScraperCapability } from '@shared/scraper'
 
 export interface CharacterScraperProvider {
   /** Unique provider identifier */
@@ -19,8 +20,11 @@ export interface CharacterScraperProvider {
   /** Display name */
   readonly name: string
 
-  /** Search characters by query string */
-  search?(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
+  /** Explicit capability declaration. */
+  readonly capabilities: readonly ScraperCapability[]
+
+  /** Search characters by query string. */
+  search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
 
   /** Get core info (name, description, attributes, links) */
   getInfo?(id: string, locale?: Locale): Promise<CharacterInfo>

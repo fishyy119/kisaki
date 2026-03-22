@@ -6,7 +6,8 @@
  * Design principles:
  * - Each method returns a single type (no complex composite returns)
  * - Characters include persons array for voice actors (follows link table convention)
- * - All methods are optional - providers implement what they support
+ * - Search is mandatory because runtime resolution always goes through search first
+ * - Other methods are optional - providers implement what they support
  * - Methods receive provider-internal IDs (resolved by handler)
  * - Entity identity matching uses externalIds + originalName + name during merge
  * - Typed link arrays (persons/characters/companies + nested character.persons) are de-duplicated by (identity + type)
@@ -84,8 +85,8 @@ export interface GameScraperProvider {
   // Search
   // ---------------------------------------------------------------------------
 
-  /** Search games by query string */
-  search?(query: string, locale?: Locale): Promise<GameSearchResult[]>
+  /** Search games by query string. */
+  search(query: string, locale?: Locale): Promise<GameSearchResult[]>
 
   // ---------------------------------------------------------------------------
   // Core Metadata

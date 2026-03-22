@@ -1,7 +1,8 @@
 import {
   PERSON_SCRAPER_SLOTS,
+  type PersonScraperSlotConfigs,
   type ScraperProfile,
-  type ScraperSlotResultStrategy
+  type SlotStrategy
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedPersonMetadata, ScrapedPersonBundle } from '@shared/scraper'
@@ -34,10 +35,11 @@ export function mergePersonScraperMetadata(
   profile: ScraperProfile
 ): ScrapedPersonMetadata | null {
   const metadata: Partial<ScrapedPersonMetadata> = {}
+  const slotConfigs = profile.slotConfigs as PersonScraperSlotConfigs
 
   for (const slot of PERSON_SCRAPER_SLOTS) {
-    const config = profile.slotConfigs[slot]
-    const strategy = config.resultStrategy
+    const config = slotConfigs[slot]
+    const strategy = config.strategy
 
     switch (slot) {
       case 'info':
@@ -58,7 +60,7 @@ export function mergePersonScraperMetadata(
 function mergeInfo(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperInfoResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -87,14 +89,14 @@ function mergeInfo(
       )
     }
 
-    if (strategy === 'first' && metadata.name) break
+    if (strategy === 'first') break
   }
 }
 
 function mergeTags(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperTagsResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 
@@ -108,7 +110,7 @@ function mergeTags(
 function mergePhotos(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperPhotosResult[],
-  strategy: ScraperSlotResultStrategy
+  strategy: SlotStrategy
 ): void {
   const sorted = sortByPriority(results)
 

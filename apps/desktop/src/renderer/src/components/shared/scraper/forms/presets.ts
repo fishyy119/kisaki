@@ -49,15 +49,17 @@ const VISUAL_NOVEL_CN: ScraperPreset = {
   defaultLocale: 'zh-Hans',
   searchProviderId: 'vndb',
   slotConfigs: {
-    info: createSlotConfig(['ymgal', 'vndb'], 'enrich'),
-    tags: createSlotConfig(['vndb'], 'enrich'),
-    characters: createSlotConfig(['ymgal', 'vndb', 'bangumi'], 'enrich'),
-    persons: createSlotConfig(['ymgal', 'vndb', 'bangumi'], 'first'),
-    companies: createSlotConfig(['ymgal', 'vndb', 'bangumi'], 'first'),
-    covers: createSlotConfig(['vndb', 'ymgal', 'bangumi'], 'first'),
-    backdrops: createSlotConfig(['vndb'], 'first'),
-    logos: createEmptySlotConfig(),
-    icons: createEmptySlotConfig()
+    info: createSlotConfig('info', ['ymgal', 'vndb'], { strategy: 'enrich' }),
+    tags: createSlotConfig('tags', ['vndb'], { strategy: 'enrich' }),
+    characters: createSlotConfig('characters', ['ymgal', 'vndb', 'bangumi'], {
+      strategy: 'enrich'
+    }),
+    persons: createSlotConfig('persons', ['ymgal', 'vndb', 'bangumi']),
+    companies: createSlotConfig('companies', ['ymgal', 'vndb', 'bangumi']),
+    covers: createSlotConfig('covers', ['vndb', 'ymgal', 'bangumi']),
+    backdrops: createSlotConfig('backdrops', ['vndb']),
+    logos: createEmptySlotConfig('logos'),
+    icons: createEmptySlotConfig('icons')
   }
 }
 
@@ -69,15 +71,15 @@ const VIDEO_GAME: ScraperPreset = {
   defaultLocale: 'en',
   searchProviderId: 'igdb',
   slotConfigs: {
-    info: createSlotConfig(['igdb'], 'enrich'),
-    tags: createSlotConfig(['igdb'], 'enrich'),
-    characters: createSlotConfig(['igdb'], 'enrich'),
-    persons: createSlotConfig(['igdb'], 'first'),
-    companies: createSlotConfig(['igdb'], 'first'),
-    covers: createSlotConfig(['igdb'], 'first'),
-    backdrops: createSlotConfig(['igdb'], 'first'),
-    logos: createEmptySlotConfig(),
-    icons: createEmptySlotConfig()
+    info: createSlotConfig('info', ['igdb'], { strategy: 'enrich' }),
+    tags: createSlotConfig('tags', ['igdb'], { strategy: 'enrich' }),
+    characters: createSlotConfig('characters', ['igdb'], { strategy: 'enrich' }),
+    persons: createSlotConfig('persons', ['igdb']),
+    companies: createSlotConfig('companies', ['igdb']),
+    covers: createSlotConfig('covers', ['igdb']),
+    backdrops: createSlotConfig('backdrops', ['igdb']),
+    logos: createEmptySlotConfig('logos'),
+    icons: createEmptySlotConfig('icons')
   }
 }
 

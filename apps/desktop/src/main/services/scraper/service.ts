@@ -144,11 +144,11 @@ export class ScraperService implements IContentService {
       }
     })
 
-    ipc.handle('scraper:scrape-game', async (_, profileId, lookup, options) => {
+    ipc.handle('scraper:scrape-game', async (_, profileId, lookup) => {
       try {
         return {
           success: true as const,
-          data: await this.game.scrape(profileId, lookup, options)
+          data: await this.game.scrape(profileId, lookup)
         }
       } catch (error) {
         return { success: false as const, error: (error as Error).message }
@@ -178,11 +178,11 @@ export class ScraperService implements IContentService {
       }
     })
 
-    ipc.handle('scraper:scrape-person', async (_, profileId, lookup, options) => {
+    ipc.handle('scraper:scrape-person', async (_, profileId, lookup) => {
       try {
         return {
           success: true as const,
-          data: await this.person.scrape(profileId, lookup, options)
+          data: await this.person.scrape(profileId, lookup)
         }
       } catch (error) {
         return { success: false as const, error: (error as Error).message }
@@ -208,11 +208,11 @@ export class ScraperService implements IContentService {
       }
     })
 
-    ipc.handle('scraper:scrape-company', async (_, profileId, lookup, options) => {
+    ipc.handle('scraper:scrape-company', async (_, profileId, lookup) => {
       try {
         return {
           success: true as const,
-          data: await this.company.scrape(profileId, lookup, options)
+          data: await this.company.scrape(profileId, lookup)
         }
       } catch (error) {
         return { success: false as const, error: (error as Error).message }
@@ -238,11 +238,11 @@ export class ScraperService implements IContentService {
       }
     })
 
-    ipc.handle('scraper:scrape-character', async (_, profileId, lookup, options) => {
+    ipc.handle('scraper:scrape-character', async (_, profileId, lookup) => {
       try {
         return {
           success: true as const,
-          data: await this.character.scrape(profileId, lookup, options)
+          data: await this.character.scrape(profileId, lookup)
         }
       } catch (error) {
         return { success: false as const, error: (error as Error).message }

@@ -33,12 +33,3 @@ export interface PersonSearchResult {
   deathDate?: PartialDate
   externalIds: ExternalId[]
 }
-
-// =============================================================================
-// Fetch Options
-// =============================================================================
-
-/** Options for fetching person metadata */
-export interface PersonScraperOptions {
-  skipValidation?: boolean
-}
