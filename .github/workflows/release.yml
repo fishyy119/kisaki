@@ -121,6 +121,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -129,6 +131,45 @@ jobs:
           pattern: release-*
           merge-multiple: true
 
+      - name: Find previous desktop tag
+        id: previous_tag
+        shell: bash
+        run: |
+          PREVIOUS_TAG=$(git tag --list 'desktop-v*' --sort=-v:refname | head -n 1)
+          echo "tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "Found previous desktop tag: $PREVIOUS_TAG"
+          else
+            echo "No previous desktop tag found"
+          fi
+
+      - name: Build release body
+        shell: bash
+        env:
+          PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.detect.outputs.version }}
+        run: |
+          VERSION="$RELEASE_VERSION"
+          TAG="desktop-v$VERSION"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          CHANGELOG_BASE="$REPO_URL/blob/$TAG/changelog/desktop/v$VERSION"
+
+          {
+            echo "## Changelog"
+            echo
+            echo "- [简体中文]($CHANGELOG_BASE/zh-Hans.md)"
+            echo "- [English]($CHANGELOG_BASE/en.md)"
+            echo "- [日本語]($CHANGELOG_BASE/ja.md)"
+            echo
+
+            if [ -n "$PREVIOUS_TAG" ]; then
+              echo "**Full Changelog**: `[$PREVIOUS_TAG...$TAG]($REPO_URL/compare/$PREVIOUS_TAG...$TAG)`"
+            else
+              echo "**Full Changelog**: `[View commits for $TAG]($REPO_URL/commits/$TAG)`"
+            fi
+          } > release-body.md
+
       - name: Create Git tag
         run: |
           git config user.name "github-actions[bot]"
@@ -136,26 +177,12 @@ jobs:
           git tag "desktop-v${{ needs.detect.outputs.version }}"
           git push origin "desktop-v${{ needs.detect.outputs.version }}"
 
-      - name: Build release body
-        run: |
-          VERSION="${{ needs.detect.outputs.version }}"
-          TAG="desktop-v$VERSION"
-          CHANGELOG_BASE="https://github.com/${{ github.repository }}/blob/$TAG/changelog/desktop/v$VERSION"
-          cat > release-body.md <<EOF
-          ## Changelog / 更新日志
-
-          - [简体中文]($CHANGELOG_BASE/zh-Hans.md)
-          - [English]($CHANGELOG_BASE/en.md)
-          - [日本語]($CHANGELOG_BASE/ja.md)
-          EOF
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: desktop-v${{ needs.detect.outputs.version }}
           name: Kisaki v${{ needs.detect.outputs.version }}
           body_path: release-body.md
-          generate_release_notes: true
           files: artifacts/*
           draft: false
           prerelease: false
