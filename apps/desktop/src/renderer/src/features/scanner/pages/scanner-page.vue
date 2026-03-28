@@ -10,6 +10,7 @@ import { useScannerProvider } from '../composables'
 import { useRenderState } from '@renderer/composables'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
+import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
 
 // =============================================================================
 // Context Provider
@@ -44,15 +45,16 @@ const state = useRenderState(isLoading, null, scanners)
       >
         <!-- Table header -->
         <div
-          class="sticky top-0 z-10 flex items-center h-8 px-4 text-xs font-medium text-muted-foreground border-b border-border bg-background"
+          class="sticky top-0 z-10 grid items-center h-8 px-4 text-xs font-medium text-muted-foreground border-b border-border bg-background"
+          :style="{ gridTemplateColumns: SCANNER_LIST_GRID_TEMPLATE }"
         >
-          <div class="flex-1 min-w-0">名称</div>
-          <div class="w-24 text-center">类型</div>
-          <div class="w-32 text-center">刮削配置</div>
-          <div class="w-28 text-center">目标合集</div>
-          <div class="w-36 text-center">处理 / 新增</div>
-          <div class="w-20 text-center">状态</div>
-          <div class="w-36 text-right">操作</div>
+          <div class="min-w-0">名称</div>
+          <div class="text-center">类型</div>
+          <div class="text-center">刮削配置</div>
+          <div class="text-center">目标合集</div>
+          <div class="text-center">处理 / 新增</div>
+          <div class="text-center">状态</div>
+          <div class="text-right">操作</div>
         </div>
 
         <!-- Scanner rows -->

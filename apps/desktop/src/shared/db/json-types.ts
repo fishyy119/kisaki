@@ -148,29 +148,11 @@ export type GameScraperSlot =
   | 'logos'
   | 'icons'
 
-export const GAME_SCRAPER_SLOTS: GameScraperSlot[] = [
-  'info',
-  'tags',
-  'characters',
-  'persons',
-  'companies',
-  'covers',
-  'backdrops',
-  'logos',
-  'icons'
-]
-
 export type PersonScraperSlot = 'info' | 'tags' | 'photos'
-
-export const PERSON_SCRAPER_SLOTS: PersonScraperSlot[] = ['info', 'tags', 'photos']
 
 export type CompanyScraperSlot = 'info' | 'tags' | 'logos'
 
-export const COMPANY_SCRAPER_SLOTS: CompanyScraperSlot[] = ['info', 'tags', 'logos']
-
 export type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
-
-export const CHARACTER_SCRAPER_SLOTS: CharacterScraperSlot[] = ['info', 'tags', 'persons', 'photos']
 
 /**
  * Union of all slot names used across all scraper media types.

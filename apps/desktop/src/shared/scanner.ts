@@ -32,6 +32,15 @@ export interface SkippedScan {
   existingGameId: string
 }
 
+export type ScanProgressStatus =
+  | 'queued'
+  | 'scanning'
+  | 'pausing'
+  | 'paused'
+  | 'aborting'
+  | 'completed'
+  | 'aborted'
+
 /**
  * Scanner progress data sent from main process to renderer.
  *
@@ -46,7 +55,7 @@ export interface ScanProgressData {
   failedCount: number
   skippedScans: SkippedScan[]
   failedScans: FailedScan[]
-  status: 'scanning' | 'completed'
+  status: ScanProgressStatus
 }
 
 /**
@@ -57,6 +66,7 @@ export interface ScanCompletedData {
   scannerName: string
   mediaType: MediaType
   path: string
+  status: 'completed' | 'aborted'
   total: number
   processedCount: number
   newCount: number

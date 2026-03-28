@@ -4,6 +4,9 @@
  * Exports all database schema, types, and Drizzle custom types.
  */
 
+// Shared DB constants
+export * from './constants'
+
 // Enum types (pure type definitions)
 export * from './enums'
 

@@ -10,6 +10,14 @@ import { ref, computed } from 'vue'
 import type { ScanProgressData } from '@shared/scanner'
 import { ipcManager } from '@renderer/core/ipc'
 
+const activeStatuses = new Set<ScanProgressData['status']>([
+  'queued',
+  'scanning',
+  'pausing',
+  'paused',
+  'aborting'
+])
+
 export const useScannerStore = defineStore('scanner', () => {
   // ==========================================================================
   // State
@@ -25,7 +33,7 @@ export const useScannerStore = defineStore('scanner', () => {
   const activeScanners = computed(() => {
     const active: ScanProgressData[] = []
     for (const state of scannerStates.value.values()) {
-      if (state.status === 'scanning') active.push(state)
+      if (activeStatuses.has(state.status)) active.push(state)
     }
     return active
   })

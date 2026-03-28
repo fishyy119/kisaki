@@ -1,11 +1,5 @@
-import type { EntityEntry, ScanCompletedData } from '@shared/scanner'
+import type { EntityEntry } from '@shared/scanner'
 import type { ExternalId } from '@shared/identity'
-
-export interface ScanQueueItem {
-  scannerId: string
-  resolve: (value: ScanCompletedData) => void
-  reject: (reason: unknown) => void
-}
 
 export type GameMatchSource = 'phash' | 'folder-name'
 

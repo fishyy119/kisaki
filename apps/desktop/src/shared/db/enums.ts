@@ -5,6 +5,8 @@
  * Drizzle customType implementations are in ./custom-types.ts.
  */
 
+import { SCANNER_INGEST_MODE_VALUES } from './constants'
+
 /** Game/media completion status */
 export type Status = 'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
 
@@ -46,10 +48,4 @@ export type CupSize = 'aaa' | 'aa' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | '
 export type MainWindowCloseAction = 'exit' | 'tray'
 
 /** Scanner ingest mode */
-export const SCANNER_INGEST_MODE_VALUES = [
-  'prefer-scraper',
-  'require-scraper',
-  'direct-only'
-] as const
-
 export type ScannerIngestMode = (typeof SCANNER_INGEST_MODE_VALUES)[number]

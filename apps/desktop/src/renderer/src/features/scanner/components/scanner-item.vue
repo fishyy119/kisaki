@@ -12,8 +12,9 @@ import { eq, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { scanners as scannersTable, collections, scraperProfiles, type Scanner } from '@shared/db'
+import type { ScanProgressData } from '@shared/scanner'
 import { ipcManager } from '@renderer/core/ipc'
-import { useScannerStore } from '@renderer/stores'
+import { usePreferencesStore, useScannerStore } from '@renderer/stores'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { cn } from '@renderer/utils/cn'
 import { Badge } from '@renderer/components/ui/badge'
@@ -32,8 +33,8 @@ import {
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
 import ScannerFailedScansDialog from './scanner-failed-scans-dialog.vue'
 import { ScannerSkippedScansDialog } from './scanner-skipped-scans-dialog'
-import { usePreferencesStore } from '@renderer/stores'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
 
 // =============================================================================
 // Props
@@ -61,6 +62,14 @@ const isSkippedScansDialogOpen = ref(false)
 const scannerStore = useScannerStore()
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
+
+const activeStatuses = new Set<ScanProgressData['status']>([
+  'queued',
+  'scanning',
+  'pausing',
+  'paused',
+  'aborting'
+])
 
 // =============================================================================
 // Data Fetching
@@ -98,7 +107,27 @@ const { data: profileName } = useAsyncData(
 // =============================================================================
 
 const scannerState = computed(() => scannerStore.getScannerState(props.scanner.id))
-const isScanning = computed(() => scannerState.value?.status === 'scanning')
+const isBusy = computed(() =>
+  scannerState.value ? activeStatuses.has(scannerState.value.status) : false
+)
+const showProgressOverlay = computed(() => {
+  const status = scannerState.value?.status
+  return status === 'scanning' || status === 'pausing' || status === 'paused'
+})
+const canStartScan = computed(() => {
+  const status = scannerState.value?.status
+  return !status || status === 'completed' || status === 'aborted'
+})
+const canPauseScan = computed(() => scannerState.value?.status === 'scanning')
+const canResumeScan = computed(() => {
+  const status = scannerState.value?.status
+  return status === 'paused' || status === 'pausing'
+})
+const canAbortScan = computed(() => {
+  const status = scannerState.value?.status
+  return !!status && activeStatuses.has(status) && status !== 'aborting'
+})
+const isAborting = computed(() => scannerState.value?.status === 'aborting')
 
 const progress = computed(() => {
   const state = scannerState.value
@@ -109,12 +138,58 @@ const progress = computed(() => {
 const statusInfo = computed(() => {
   const state = scannerState.value
   if (!state) {
-    return { variant: 'secondary' as const, label: '空闲' }
+    return { variant: 'secondary' as const, label: '空闲', spinning: false }
   }
-  if (state.status === 'scanning') {
-    return { variant: 'default' as const, label: `${progress.value}%` }
+
+  switch (state.status) {
+    case 'queued':
+      return { variant: 'secondary' as const, label: '排队中', spinning: true }
+    case 'scanning':
+      return {
+        variant: 'default' as const,
+        label: state.total > 0 ? `${progress.value}%` : '扫描中',
+        spinning: true
+      }
+    case 'pausing':
+      return { variant: 'warning' as const, label: '暂停中', spinning: true }
+    case 'paused':
+      return { variant: 'warning' as const, label: '已暂停', spinning: false }
+    case 'aborting':
+      return { variant: 'destructive' as const, label: '中止中', spinning: true }
+    case 'completed':
+      return { variant: 'success' as const, label: '完成', spinning: false }
+    case 'aborted':
+      return { variant: 'destructive' as const, label: '已中止', spinning: false }
+    default:
+      return { variant: 'secondary' as const, label: '空闲', spinning: false }
   }
-  return { variant: 'success' as const, label: '完成' }
+})
+
+const primaryAction = computed(() => {
+  if (canPauseScan.value) {
+    return {
+      icon: 'icon-[mdi--pause]',
+      tooltip: '暂停',
+      disabled: false,
+      handler: handlePause
+    }
+  }
+
+  if (canResumeScan.value) {
+    return {
+      icon: 'icon-[mdi--play]',
+      tooltip: '继续',
+      disabled: false,
+      handler: handleResume
+    }
+  }
+
+  return {
+    icon: 'icon-[mdi--play]',
+    tooltip: '扫描',
+    disabled: !canStartScan.value,
+    handler: handleScan
+  }
 })
 
 // =============================================================================
@@ -137,11 +212,34 @@ async function handleDelete() {
 }
 
 function handleScan() {
+  if (!canStartScan.value) return
+
   try {
     scannerStore.resetScannerState(props.scanner.id)
     ipcManager.send('scanner:scan-game', props.scanner.id)
   } catch (error) {
     console.error('Failed to start scan:', error)
+  }
+}
+
+async function handlePause() {
+  const result = await ipcManager.invoke('scanner:pause-game', props.scanner.id)
+  if (!result.success) {
+    console.error('Failed to pause scan:', result.error)
+  }
+}
+
+async function handleResume() {
+  const result = await ipcManager.invoke('scanner:resume-game', props.scanner.id)
+  if (!result.success) {
+    console.error('Failed to resume scan:', result.error)
+  }
+}
+
+async function handleAbort() {
+  const result = await ipcManager.invoke('scanner:abort-game', props.scanner.id)
+  if (!result.success) {
+    console.error('Failed to abort scan:', result.error)
   }
 }
 
@@ -158,20 +256,21 @@ async function handleOpenPath() {
   <div
     :class="
       cn(
-        'relative flex items-center h-11 px-4 transition-colors hover:bg-accent/30',
-        isScanning && 'bg-primary/5'
+        'relative grid items-center h-11 px-4 transition-colors hover:bg-accent/30',
+        isBusy && 'bg-primary/5'
       )
     "
+    :style="{ gridTemplateColumns: SCANNER_LIST_GRID_TEMPLATE }"
   >
     <!-- Progress bar overlay when scanning -->
     <div
-      v-if="isScanning"
+      v-if="showProgressOverlay"
       class="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-300"
       :style="{ width: `${progress}%` }"
     />
 
     <!-- Name column -->
-    <div class="relative flex-1 min-w-0 flex items-center gap-2">
+    <div class="relative min-w-0 flex items-center gap-2">
       <Button
         variant="ghost"
         size="icon-sm"
@@ -190,24 +289,26 @@ async function handleOpenPath() {
     </div>
 
     <!-- Type column -->
-    <div class="relative w-24 text-center">
+    <div class="relative text-center">
       <span class="text-sm">{{ getTypeText(props.scanner.type) }}</span>
     </div>
 
     <!-- Profile column -->
-    <div class="relative w-32 text-center">
-      <span class="text-sm text-muted-foreground">
+    <div class="relative min-w-0 text-center">
+      <span class="block truncate text-sm text-muted-foreground">
         {{ profileName || props.scanner.scraperProfileId }}
       </span>
     </div>
 
     <!-- Collection column -->
-    <div class="relative w-28 text-center">
-      <span class="text-sm text-muted-foreground truncate">{{ collection?.name || '-' }}</span>
+    <div class="relative min-w-0 text-center">
+      <span class="block truncate text-sm text-muted-foreground">
+        {{ collection?.name || '-' }}
+      </span>
     </div>
 
     <!-- Stats columns -->
-    <div class="relative w-36 flex items-center justify-center gap-1">
+    <div class="relative flex items-center justify-center gap-1">
       <template v-if="scannerState">
         <div class="flex items-center gap-2 text-xs">
           <Tooltip>
@@ -231,13 +332,13 @@ async function handleOpenPath() {
     </div>
 
     <!-- Status column -->
-    <div class="relative w-20 flex items-center justify-center gap-1">
+    <div class="relative flex items-center justify-center gap-1">
       <Badge
         :variant="statusInfo.variant"
         class="gap-1"
       >
         <Spinner
-          v-if="isScanning"
+          v-if="statusInfo.spinning"
           class="size-3"
         />
         {{ statusInfo.label }}
@@ -245,7 +346,7 @@ async function handleOpenPath() {
     </div>
 
     <!-- Actions column -->
-    <div class="relative w-36 flex items-center justify-end gap-0.5">
+    <div class="relative flex items-center justify-end gap-0.5">
       <Tooltip v-if="scannerState && scannerState.skippedScans.length > 0">
         <TooltipTrigger as-child>
           <Button
@@ -285,16 +386,34 @@ async function handleOpenPath() {
           <Button
             variant="ghost"
             size="icon-sm"
-            :disabled="isScanning"
-            @click="handleScan"
+            :disabled="primaryAction.disabled"
+            @click="primaryAction.handler"
           >
             <Icon
-              icon="icon-[mdi--play]"
+              :icon="primaryAction.icon"
               class="size-4"
             />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>扫描</TooltipContent>
+        <TooltipContent>{{ primaryAction.tooltip }}</TooltipContent>
+      </Tooltip>
+
+      <Tooltip v-if="scannerState && isBusy">
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            :disabled="!canAbortScan"
+            class="hover:text-destructive"
+            @click="handleAbort"
+          >
+            <Icon
+              icon="icon-[mdi--stop]"
+              class="size-4"
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{ isAborting ? '中止中' : '中止' }}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -302,7 +421,7 @@ async function handleOpenPath() {
           <Button
             variant="ghost"
             size="icon-sm"
-            :disabled="isScanning"
+            :disabled="isBusy"
             @click="isEditDialogOpen = true"
           >
             <Icon
@@ -319,7 +438,7 @@ async function handleOpenPath() {
           <Button
             variant="ghost"
             size="icon-sm"
-            :disabled="isScanning"
+            :disabled="isBusy"
             class="hover:text-destructive"
             @click="isDeleteDialogOpen = true"
           >

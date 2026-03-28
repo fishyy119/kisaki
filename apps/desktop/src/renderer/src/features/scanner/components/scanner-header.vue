@@ -58,6 +58,7 @@ const scannerStore = useScannerStore()
 
 const activeScanners = computed(() => scannerStore.activeScanners.length)
 const isScanning = computed(() => scannerStore.hasActiveScans)
+const activeScannerIds = computed(() => scannerStore.activeScanners.map((state) => state.scannerId))
 
 // =============================================================================
 // Handlers
@@ -69,6 +70,18 @@ function handleScanAll() {
     ipcManager.send('scanner:scan-all-game')
   } catch (error) {
     console.error('Failed to scan all:', error)
+  }
+}
+
+async function handleAbortAll() {
+  const results = await Promise.all(
+    activeScannerIds.value.map((scannerId) => ipcManager.invoke('scanner:abort-game', scannerId))
+  )
+
+  for (const result of results) {
+    if (!result.success) {
+      console.error('Failed to abort scan:', result.error)
+    }
   }
 }
 </script>
@@ -116,14 +129,14 @@ function handleScanAll() {
       <Button
         variant="secondary"
         size="sm"
-        :disabled="isScanning || totalScanners === 0"
-        @click="handleScanAll"
+        :disabled="totalScanners === 0"
+        @click="isScanning ? handleAbortAll() : handleScanAll()"
       >
         <Icon
-          icon="icon-[mdi--refresh]"
+          :icon="isScanning ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--refresh]'"
           class="size-4"
         />
-        扫描全部
+        {{ isScanning ? '中止全部' : '扫描全部' }}
       </Button>
       <Button
         variant="secondary"

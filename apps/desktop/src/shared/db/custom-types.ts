@@ -32,7 +32,12 @@ import type {
   MainWindowCloseAction,
   ScannerIngestMode
 } from './enums'
-import { SCANNER_INGEST_MODE_VALUES } from './enums'
+import {
+  SCANNER_INGEST_MODE_VALUES,
+  SCANNER_PARALLEL_COUNT_DEFAULT,
+  SCANNER_PARALLEL_COUNT_MAX,
+  SCANNER_PARALLEL_COUNT_MIN
+} from './constants'
 
 import type {
   RelatedSite,
@@ -199,6 +204,42 @@ function createNullableEnumType<T extends string>(validValues: readonly T[], typ
   })
 }
 
+/**
+ * Creates a Drizzle custom type for required bounded integers.
+ *
+ * Values read from the database fall back to defaultValue when invalid or out of range.
+ * Values written through Drizzle must already be valid.
+ */
+export function createBoundedIntegerType(
+  min: number,
+  max: number,
+  defaultValue: number,
+  typeName: string
+) {
+  return customType<{ data: number; driverData: number }>({
+    dataType() {
+      return 'integer'
+    },
+
+    fromDriver(value: number): number {
+      if (Number.isInteger(value) && value >= min && value <= max) {
+        return value
+      }
+
+      console.warn(`Invalid ${typeName} value from database:`, value)
+      return defaultValue
+    },
+
+    toDriver(value: number): number {
+      if (Number.isInteger(value) && value >= min && value <= max) {
+        return value
+      }
+
+      throw new Error(`Invalid ${typeName} value: ${value}`)
+    }
+  })
+}
+
 // =============================================================================
 // Enum Custom Types (using factories)
 // =============================================================================
@@ -301,6 +342,12 @@ export const scannerIngestMode = createEnumType<ScannerIngestMode>(
   SCANNER_INGEST_MODE_VALUES,
   'prefer-scraper',
   'scannerIngestMode'
+)
+export const scannerParallelCount = createBoundedIntegerType(
+  SCANNER_PARALLEL_COUNT_MIN,
+  SCANNER_PARALLEL_COUNT_MAX,
+  SCANNER_PARALLEL_COUNT_DEFAULT,
+  'scannerParallelCount'
 )
 export const contentEntityType = createEnumType<ContentEntityType>(
   CONTENT_ENTITY_TYPES,

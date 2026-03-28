@@ -7,7 +7,7 @@
  * @packageDocumentation
  */
 
-import * as drizzle_orm_sqlite_core0 from 'drizzle-orm/sqlite-core'
+import * as drizzle_orm_sqlite_core321 from 'drizzle-orm/sqlite-core'
 import { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import * as drizzle_orm0 from 'drizzle-orm'
 import { InferInsertModel, InferSelectModel, Table } from 'drizzle-orm'
@@ -31,7 +31,7 @@ import { Pinia, Pinia as Pinia$1 } from 'pinia'
 import log from 'electron-log/renderer'
 import * as drizzle_orm_sqlite_proxy0 from 'drizzle-orm/sqlite-proxy'
 import { i18n } from 'i18next'
-import * as reka_ui11 from 'reka-ui'
+import * as reka_ui0 from 'reka-ui'
 import {
   AlertDialogCancelProps,
   AlertDialogContentProps,
@@ -119,50 +119,6 @@ import { VariantProps } from 'class-variance-authority'
 import * as _tanstack_vue_virtual0 from '@tanstack/vue-virtual'
 
 //#region \0rolldown/runtime.js
-//#endregion
-//#region src/shared/db/enums.d.ts
-/**
- * Database enum types
- *
- * Database enum type definitions and shared value lists.
- * Drizzle customType implementations are in ./custom-types.ts.
- */
-/** Game/media completion status */
-type Status = 'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
-/** Game launcher mode */
-type GameLauncherMode = 'file' | 'url' | 'exec'
-/** Game process monitor mode */
-type GameMonitorMode = 'file' | 'folder' | 'process'
-/** Person gender */
-type Gender = 'male' | 'female' | 'other'
-/** Game-Person relationship type */
-type GamePersonType =
-  | 'director'
-  | 'scenario'
-  | 'illustration'
-  | 'music'
-  | 'programmer'
-  | 'actor'
-  | 'other'
-/** Game-Character relationship type */
-type GameCharacterType = 'main' | 'supporting' | 'cameo' | 'other'
-/** Game-Company relationship type */
-type GameCompanyType = 'developer' | 'publisher' | 'distributor' | 'other'
-/** Character-Person relationship type */
-type CharacterPersonType = 'actor' | 'illustration' | 'designer' | 'other'
-/** Blood type */
-type BloodType = 'a' | 'b' | 'ab' | 'o'
-/** Cup size (for female characters) */
-type CupSize = 'aaa' | 'aa' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k'
-/** Main window close button behavior */
-type MainWindowCloseAction = 'exit' | 'tray'
-/** Scanner ingest mode */
-declare const SCANNER_INGEST_MODE_VALUES: readonly [
-  'prefer-scraper',
-  'require-scraper',
-  'direct-only'
-]
-type ScannerIngestMode = (typeof SCANNER_INGEST_MODE_VALUES)[number]
 //#endregion
 //#region src/shared/locale.d.ts
 /**
@@ -300,13 +256,9 @@ type GameScraperSlot =
   | 'backdrops'
   | 'logos'
   | 'icons'
-declare const GAME_SCRAPER_SLOTS: GameScraperSlot[]
 type PersonScraperSlot = 'info' | 'tags' | 'photos'
-declare const PERSON_SCRAPER_SLOTS: PersonScraperSlot[]
 type CompanyScraperSlot = 'info' | 'tags' | 'logos'
-declare const COMPANY_SCRAPER_SLOTS: CompanyScraperSlot[]
 type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
-declare const CHARACTER_SCRAPER_SLOTS: CharacterScraperSlot[]
 /**
  * Union of all slot names used across all scraper media types.
  *
@@ -371,6 +323,53 @@ type CharacterScraperSlotConfigs = {
   persons: RelationCollectionSlotConfig
   photos: BasicSlotConfig
 }
+//#endregion
+//#region src/shared/db/constants.d.ts
+declare const SCANNER_INGEST_MODE_VALUES: readonly [
+  'prefer-scraper',
+  'require-scraper',
+  'direct-only'
+]
+declare const GAME_SCRAPER_SLOTS: GameScraperSlot[]
+declare const PERSON_SCRAPER_SLOTS: PersonScraperSlot[]
+declare const COMPANY_SCRAPER_SLOTS: CompanyScraperSlot[]
+declare const CHARACTER_SCRAPER_SLOTS: CharacterScraperSlot[]
+declare const SCANNER_PARALLEL_COUNT_MIN = 1
+declare const SCANNER_PARALLEL_COUNT_MAX = 16
+declare const SCANNER_PARALLEL_COUNT_DEFAULT = 1
+//#endregion
+//#region src/shared/db/enums.d.ts
+/** Game/media completion status */
+type Status = 'notStarted' | 'inProgress' | 'partial' | 'completed' | 'multiple' | 'shelved'
+/** Game launcher mode */
+type GameLauncherMode = 'file' | 'url' | 'exec'
+/** Game process monitor mode */
+type GameMonitorMode = 'file' | 'folder' | 'process'
+/** Person gender */
+type Gender = 'male' | 'female' | 'other'
+/** Game-Person relationship type */
+type GamePersonType =
+  | 'director'
+  | 'scenario'
+  | 'illustration'
+  | 'music'
+  | 'programmer'
+  | 'actor'
+  | 'other'
+/** Game-Character relationship type */
+type GameCharacterType = 'main' | 'supporting' | 'cameo' | 'other'
+/** Game-Company relationship type */
+type GameCompanyType = 'developer' | 'publisher' | 'distributor' | 'other'
+/** Character-Person relationship type */
+type CharacterPersonType = 'actor' | 'illustration' | 'designer' | 'other'
+/** Blood type */
+type BloodType = 'a' | 'b' | 'ab' | 'o'
+/** Cup size (for female characters) */
+type CupSize = 'aaa' | 'aa' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k'
+/** Main window close button behavior */
+type MainWindowCloseAction = 'exit' | 'tray'
+/** Scanner ingest mode */
+type ScannerIngestMode = (typeof SCANNER_INGEST_MODE_VALUES)[number]
 //#endregion
 //#region src/shared/common.d.ts
 /**
@@ -441,7 +440,7 @@ declare const baseColumns: {
     drizzle_orm0.HasDefault<
       drizzle_orm0.IsPrimaryKey<
         drizzle_orm0.NotNull<
-          drizzle_orm_sqlite_core0.SQLiteTextBuilderInitial<
+          drizzle_orm_sqlite_core321.SQLiteTextBuilderInitial<
             'id',
             [string, ...string[]],
             number | undefined
@@ -452,19 +451,61 @@ declare const baseColumns: {
   >
   createdAt: drizzle_orm0.HasRuntimeDefault<
     drizzle_orm0.HasDefault<
-      drizzle_orm0.NotNull<drizzle_orm_sqlite_core0.SQLiteTimestampBuilderInitial<'created_at'>>
+      drizzle_orm0.NotNull<drizzle_orm_sqlite_core321.SQLiteTimestampBuilderInitial<'created_at'>>
     >
   >
   updatedAt: drizzle_orm0.HasDefault<
     drizzle_orm0.HasRuntimeDefault<
       drizzle_orm0.HasDefault<
-        drizzle_orm0.NotNull<drizzle_orm_sqlite_core0.SQLiteTimestampBuilderInitial<'updated_at'>>
+        drizzle_orm0.NotNull<drizzle_orm_sqlite_core321.SQLiteTimestampBuilderInitial<'updated_at'>>
       >
     >
   >
 }
+/**
+ * Creates a Drizzle custom type for required bounded integers.
+ *
+ * Values read from the database fall back to defaultValue when invalid or out of range.
+ * Values written through Drizzle must already be valid.
+ */
+declare function createBoundedIntegerType(
+  min: number,
+  max: number,
+  defaultValue: number,
+  typeName: string
+): {
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
+    name: ''
+    dataType: 'custom'
+    columnType: 'SQLiteCustomColumn'
+    data: number
+    driverParam: number
+    enumValues: undefined
+  }>
+  <TConfig extends Record<string, any>>(
+    fieldConfig?: TConfig | undefined
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
+    name: ''
+    dataType: 'custom'
+    columnType: 'SQLiteCustomColumn'
+    data: number
+    driverParam: number
+    enumValues: undefined
+  }>
+  <TName extends string>(
+    dbName: TName,
+    fieldConfig?: unknown
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
+    name: TName
+    dataType: 'custom'
+    columnType: 'SQLiteCustomColumn'
+    data: number
+    driverParam: number
+    enumValues: undefined
+  }>
+}
 declare const status: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -474,7 +515,7 @@ declare const status: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -485,7 +526,7 @@ declare const status: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -495,7 +536,7 @@ declare const status: {
   }>
 }
 declare const gameLauncherMode: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -505,7 +546,7 @@ declare const gameLauncherMode: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -516,7 +557,7 @@ declare const gameLauncherMode: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -526,7 +567,7 @@ declare const gameLauncherMode: {
   }>
 }
 declare const gameMonitorMode: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -536,7 +577,7 @@ declare const gameMonitorMode: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -547,7 +588,7 @@ declare const gameMonitorMode: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -557,7 +598,7 @@ declare const gameMonitorMode: {
   }>
 }
 declare const gender: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -567,7 +608,7 @@ declare const gender: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -578,7 +619,7 @@ declare const gender: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -588,7 +629,7 @@ declare const gender: {
   }>
 }
 declare const gamePersonType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -598,7 +639,7 @@ declare const gamePersonType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -609,7 +650,7 @@ declare const gamePersonType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -619,7 +660,7 @@ declare const gamePersonType: {
   }>
 }
 declare const gameCharacterType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -629,7 +670,7 @@ declare const gameCharacterType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -640,7 +681,7 @@ declare const gameCharacterType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -650,7 +691,7 @@ declare const gameCharacterType: {
   }>
 }
 declare const gameCompanyType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -660,7 +701,7 @@ declare const gameCompanyType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -671,7 +712,7 @@ declare const gameCompanyType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -681,7 +722,7 @@ declare const gameCompanyType: {
   }>
 }
 declare const characterPersonType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -691,7 +732,7 @@ declare const characterPersonType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -702,7 +743,7 @@ declare const characterPersonType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -712,7 +753,7 @@ declare const characterPersonType: {
   }>
 }
 declare const bloodType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -722,7 +763,7 @@ declare const bloodType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -733,7 +774,7 @@ declare const bloodType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -743,7 +784,7 @@ declare const bloodType: {
   }>
 }
 declare const cupSize: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -753,7 +794,7 @@ declare const cupSize: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -764,7 +805,7 @@ declare const cupSize: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -774,7 +815,7 @@ declare const cupSize: {
   }>
 }
 declare const mediaType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -784,7 +825,7 @@ declare const mediaType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -795,7 +836,7 @@ declare const mediaType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -805,7 +846,7 @@ declare const mediaType: {
   }>
 }
 declare const locale: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -815,7 +856,7 @@ declare const locale: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -826,7 +867,7 @@ declare const locale: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -836,7 +877,7 @@ declare const locale: {
   }>
 }
 declare const appLocale: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -846,7 +887,7 @@ declare const appLocale: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -857,7 +898,7 @@ declare const appLocale: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -867,7 +908,7 @@ declare const appLocale: {
   }>
 }
 declare const mainWindowCloseAction: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -877,7 +918,7 @@ declare const mainWindowCloseAction: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -888,7 +929,7 @@ declare const mainWindowCloseAction: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -898,7 +939,7 @@ declare const mainWindowCloseAction: {
   }>
 }
 declare const scannerIngestMode: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -908,7 +949,7 @@ declare const scannerIngestMode: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -919,7 +960,7 @@ declare const scannerIngestMode: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -928,8 +969,39 @@ declare const scannerIngestMode: {
     enumValues: undefined
   }>
 }
+declare const scannerParallelCount: {
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
+    name: ''
+    dataType: 'custom'
+    columnType: 'SQLiteCustomColumn'
+    data: number
+    driverParam: number
+    enumValues: undefined
+  }>
+  <TConfig extends Record<string, any>>(
+    fieldConfig?: TConfig | undefined
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
+    name: ''
+    dataType: 'custom'
+    columnType: 'SQLiteCustomColumn'
+    data: number
+    driverParam: number
+    enumValues: undefined
+  }>
+  <TName extends string>(
+    dbName: TName,
+    fieldConfig?: unknown
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
+    name: TName
+    dataType: 'custom'
+    columnType: 'SQLiteCustomColumn'
+    data: number
+    driverParam: number
+    enumValues: undefined
+  }>
+}
 declare const contentEntityType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -939,7 +1011,7 @@ declare const contentEntityType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -950,7 +1022,7 @@ declare const contentEntityType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -960,7 +1032,7 @@ declare const contentEntityType: {
   }>
 }
 declare const allEntityType: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -970,7 +1042,7 @@ declare const allEntityType: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -981,7 +1053,7 @@ declare const allEntityType: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -991,7 +1063,7 @@ declare const allEntityType: {
   }>
 }
 declare const sectionLayout: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1001,7 +1073,7 @@ declare const sectionLayout: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1012,7 +1084,7 @@ declare const sectionLayout: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1022,7 +1094,7 @@ declare const sectionLayout: {
   }>
 }
 declare const sectionItemSize: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1032,7 +1104,7 @@ declare const sectionItemSize: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1043,7 +1115,7 @@ declare const sectionItemSize: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1053,7 +1125,7 @@ declare const sectionItemSize: {
   }>
 }
 declare const sectionOpenMode: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1063,7 +1135,7 @@ declare const sectionOpenMode: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1074,7 +1146,7 @@ declare const sectionOpenMode: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1084,7 +1156,7 @@ declare const sectionOpenMode: {
   }>
 }
 declare const sortDirection: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1094,7 +1166,7 @@ declare const sortDirection: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1105,7 +1177,7 @@ declare const sortDirection: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1116,7 +1188,7 @@ declare const sortDirection: {
 }
 /** Custom type for storing partial date JSON object. */
 declare const partialDate: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1126,7 +1198,7 @@ declare const partialDate: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1137,7 +1209,7 @@ declare const partialDate: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1148,7 +1220,7 @@ declare const partialDate: {
 }
 /** Custom type for storing string array as JSON in SQLite */
 declare const stringArrayJson: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1158,7 +1230,7 @@ declare const stringArrayJson: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1169,7 +1241,7 @@ declare const stringArrayJson: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1180,7 +1252,7 @@ declare const stringArrayJson: {
 }
 /** Custom type for storing RelatedSite array as JSON in SQLite */
 declare const relatedSites: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1190,7 +1262,7 @@ declare const relatedSites: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1201,7 +1273,7 @@ declare const relatedSites: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1212,7 +1284,7 @@ declare const relatedSites: {
 }
 /** Custom type for storing SaveBackup array as JSON in SQLite */
 declare const saveBackups: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1222,7 +1294,7 @@ declare const saveBackups: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1233,7 +1305,7 @@ declare const saveBackups: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1244,7 +1316,7 @@ declare const saveBackups: {
 }
 /** Custom type for storing FailedScan array as JSON in SQLite */
 declare const failedScans: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1254,7 +1326,7 @@ declare const failedScans: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1265,7 +1337,7 @@ declare const failedScans: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1276,7 +1348,7 @@ declare const failedScans: {
 }
 /** Custom type for storing scanner ignored names as JSON in SQLite */
 declare const scannerIgnoredNames: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1286,7 +1358,7 @@ declare const scannerIgnoredNames: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1297,7 +1369,7 @@ declare const scannerIgnoredNames: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1308,7 +1380,7 @@ declare const scannerIgnoredNames: {
 }
 /** Custom type for storing name extraction rules as JSON in SQLite */
 declare const nameExtractionRules: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1318,7 +1390,7 @@ declare const nameExtractionRules: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1329,7 +1401,7 @@ declare const nameExtractionRules: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1340,7 +1412,7 @@ declare const nameExtractionRules: {
 }
 /** Custom type for storing filter state as JSON in SQLite */
 declare const filterState: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1350,7 +1422,7 @@ declare const filterState: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1361,7 +1433,7 @@ declare const filterState: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1372,7 +1444,7 @@ declare const filterState: {
 }
 /** Custom type for storing dynamic collection config as JSON in SQLite */
 declare const dynamicCollectionConfig: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1382,7 +1454,7 @@ declare const dynamicCollectionConfig: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1393,7 +1465,7 @@ declare const dynamicCollectionConfig: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1404,7 +1476,7 @@ declare const dynamicCollectionConfig: {
 }
 /** Custom type for storing scraper slot configs as JSON in SQLite */
 declare const scraperSlotConfigs: {
-  (): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  (): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1414,7 +1486,7 @@ declare const scraperSlotConfigs: {
   }>
   <TConfig extends Record<string, any>>(
     fieldConfig?: TConfig | undefined
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: ''
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1425,7 +1497,7 @@ declare const scraperSlotConfigs: {
   <TName extends string>(
     dbName: TName,
     fieldConfig?: unknown
-  ): drizzle_orm_sqlite_core0.SQLiteCustomColumnBuilder<{
+  ): drizzle_orm_sqlite_core321.SQLiteCustomColumnBuilder<{
     name: TName
     dataType: 'custom'
     columnType: 'SQLiteCustomColumn'
@@ -1526,11 +1598,11 @@ declare namespace schema_d_exports {
     tags
   }
 }
-declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const games: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'games'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'games'
@@ -1553,7 +1625,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    originalName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    originalName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'original_name'
         tableName: 'games'
@@ -1576,7 +1648,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    sortName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sortName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'sort_name'
         tableName: 'games'
@@ -1599,7 +1671,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    coverFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    coverFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'cover_file'
         tableName: 'games'
@@ -1622,7 +1694,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    backdropFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    backdropFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'backdrop_file'
         tableName: 'games'
@@ -1645,7 +1717,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    logoFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    logoFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'logo_file'
         tableName: 'games'
@@ -1668,7 +1740,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    iconFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    iconFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'icon_file'
         tableName: 'games'
@@ -1691,7 +1763,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    score: drizzle_orm_sqlite_core0.SQLiteColumn<
+    score: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'score'
         tableName: 'games'
@@ -1712,7 +1784,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isFavorite: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isFavorite: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_favorite'
         tableName: 'games'
@@ -1733,7 +1805,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    releaseDate: drizzle_orm_sqlite_core0.SQLiteColumn<
+    releaseDate: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'release_date'
         tableName: 'games'
@@ -1756,7 +1828,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'games'
@@ -1779,7 +1851,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    relatedSites: drizzle_orm_sqlite_core0.SQLiteColumn<
+    relatedSites: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'related_sites'
         tableName: 'games'
@@ -1802,7 +1874,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    status: drizzle_orm_sqlite_core0.SQLiteColumn<
+    status: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'status'
         tableName: 'games'
@@ -1825,7 +1897,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    lastActiveAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    lastActiveAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'last_active_at'
         tableName: 'games'
@@ -1846,7 +1918,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    totalDuration: drizzle_orm_sqlite_core0.SQLiteColumn<
+    totalDuration: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'total_duration'
         tableName: 'games'
@@ -1867,7 +1939,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    savePath: drizzle_orm_sqlite_core0.SQLiteColumn<
+    savePath: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'save_path'
         tableName: 'games'
@@ -1890,7 +1962,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    saveBackups: drizzle_orm_sqlite_core0.SQLiteColumn<
+    saveBackups: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'save_backups'
         tableName: 'games'
@@ -1913,7 +1985,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    maxSaveBackups: drizzle_orm_sqlite_core0.SQLiteColumn<
+    maxSaveBackups: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'max_save_backups'
         tableName: 'games'
@@ -1934,7 +2006,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    launcherMode: drizzle_orm_sqlite_core0.SQLiteColumn<
+    launcherMode: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'launcher_mode'
         tableName: 'games'
@@ -1957,7 +2029,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    launcherPath: drizzle_orm_sqlite_core0.SQLiteColumn<
+    launcherPath: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'launcher_path'
         tableName: 'games'
@@ -1980,7 +2052,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    monitorMode: drizzle_orm_sqlite_core0.SQLiteColumn<
+    monitorMode: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'monitor_mode'
         tableName: 'games'
@@ -2003,7 +2075,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    monitorPath: drizzle_orm_sqlite_core0.SQLiteColumn<
+    monitorPath: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'monitor_path'
         tableName: 'games'
@@ -2026,7 +2098,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    gameDirPath: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameDirPath: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_dir_path'
         tableName: 'games'
@@ -2049,7 +2121,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isNsfw: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isNsfw: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_nsfw'
         tableName: 'games'
@@ -2070,7 +2142,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    descriptionInlineFiles: drizzle_orm_sqlite_core0.SQLiteColumn<
+    descriptionInlineFiles: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description_inline_files'
         tableName: 'games'
@@ -2093,7 +2165,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'games'
@@ -2116,7 +2188,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'games'
@@ -2137,7 +2209,7 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'games'
@@ -2163,11 +2235,11 @@ declare const games: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Game = InferSelectModel<typeof games>
 type NewGame = InferInsertModel<typeof games>
-declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gameNotes: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_notes'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_notes'
@@ -2190,7 +2262,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'game_notes'
@@ -2213,7 +2285,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    content: drizzle_orm_sqlite_core0.SQLiteColumn<
+    content: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'content'
         tableName: 'game_notes'
@@ -2236,7 +2308,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    contentInlineFiles: drizzle_orm_sqlite_core0.SQLiteColumn<
+    contentInlineFiles: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'content_inline_files'
         tableName: 'game_notes'
@@ -2259,7 +2331,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    coverFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    coverFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'cover_file'
         tableName: 'game_notes'
@@ -2282,7 +2354,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    orderInGame: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInGame: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_game'
         tableName: 'game_notes'
@@ -2303,7 +2375,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_notes'
@@ -2326,7 +2398,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_notes'
@@ -2347,7 +2419,7 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_notes'
@@ -2373,11 +2445,11 @@ declare const gameNotes: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type GameNote = InferSelectModel<typeof gameNotes>
 type NewGameNote = InferInsertModel<typeof gameNotes>
-declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const persons: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'persons'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'persons'
@@ -2400,7 +2472,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    originalName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    originalName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'original_name'
         tableName: 'persons'
@@ -2423,7 +2495,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    sortName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sortName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'sort_name'
         tableName: 'persons'
@@ -2446,7 +2518,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    photoFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    photoFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'photo_file'
         tableName: 'persons'
@@ -2469,7 +2541,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    score: drizzle_orm_sqlite_core0.SQLiteColumn<
+    score: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'score'
         tableName: 'persons'
@@ -2490,7 +2562,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isFavorite: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isFavorite: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_favorite'
         tableName: 'persons'
@@ -2511,7 +2583,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isNsfw: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isNsfw: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_nsfw'
         tableName: 'persons'
@@ -2532,7 +2604,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    birthDate: drizzle_orm_sqlite_core0.SQLiteColumn<
+    birthDate: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'birth_date'
         tableName: 'persons'
@@ -2555,7 +2627,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    deathDate: drizzle_orm_sqlite_core0.SQLiteColumn<
+    deathDate: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'death_date'
         tableName: 'persons'
@@ -2578,7 +2650,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    gender: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gender: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'gender'
         tableName: 'persons'
@@ -2601,7 +2673,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'persons'
@@ -2624,7 +2696,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    relatedSites: drizzle_orm_sqlite_core0.SQLiteColumn<
+    relatedSites: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'related_sites'
         tableName: 'persons'
@@ -2647,7 +2719,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'persons'
@@ -2670,7 +2742,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'persons'
@@ -2691,7 +2763,7 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'persons'
@@ -2717,11 +2789,11 @@ declare const persons: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Person = InferSelectModel<typeof persons>
 type NewPerson = InferInsertModel<typeof persons>
-declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const companies: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'companies'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'companies'
@@ -2744,7 +2816,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    originalName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    originalName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'original_name'
         tableName: 'companies'
@@ -2767,7 +2839,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    sortName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sortName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'sort_name'
         tableName: 'companies'
@@ -2790,7 +2862,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    foundedDate: drizzle_orm_sqlite_core0.SQLiteColumn<
+    foundedDate: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'founded_date'
         tableName: 'companies'
@@ -2813,7 +2885,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    logoFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    logoFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'logo_file'
         tableName: 'companies'
@@ -2836,7 +2908,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    score: drizzle_orm_sqlite_core0.SQLiteColumn<
+    score: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'score'
         tableName: 'companies'
@@ -2857,7 +2929,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isFavorite: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isFavorite: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_favorite'
         tableName: 'companies'
@@ -2878,7 +2950,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isNsfw: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isNsfw: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_nsfw'
         tableName: 'companies'
@@ -2899,7 +2971,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    relatedSites: drizzle_orm_sqlite_core0.SQLiteColumn<
+    relatedSites: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'related_sites'
         tableName: 'companies'
@@ -2922,7 +2994,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'companies'
@@ -2945,7 +3017,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'companies'
@@ -2968,7 +3040,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'companies'
@@ -2989,7 +3061,7 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'companies'
@@ -3015,11 +3087,11 @@ declare const companies: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Company = InferSelectModel<typeof companies>
 type NewCompany = InferInsertModel<typeof companies>
-declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const characters: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'characters'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'characters'
@@ -3042,7 +3114,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    originalName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    originalName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'original_name'
         tableName: 'characters'
@@ -3065,7 +3137,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    sortName: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sortName: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'sort_name'
         tableName: 'characters'
@@ -3088,7 +3160,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    photoFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    photoFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'photo_file'
         tableName: 'characters'
@@ -3111,7 +3183,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    birthDate: drizzle_orm_sqlite_core0.SQLiteColumn<
+    birthDate: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'birth_date'
         tableName: 'characters'
@@ -3134,7 +3206,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    gender: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gender: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'gender'
         tableName: 'characters'
@@ -3157,7 +3229,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    bloodType: drizzle_orm_sqlite_core0.SQLiteColumn<
+    bloodType: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'blood_type'
         tableName: 'characters'
@@ -3180,7 +3252,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    height: drizzle_orm_sqlite_core0.SQLiteColumn<
+    height: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'height'
         tableName: 'characters'
@@ -3201,7 +3273,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    weight: drizzle_orm_sqlite_core0.SQLiteColumn<
+    weight: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'weight'
         tableName: 'characters'
@@ -3222,7 +3294,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    bust: drizzle_orm_sqlite_core0.SQLiteColumn<
+    bust: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'bust'
         tableName: 'characters'
@@ -3243,7 +3315,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    waist: drizzle_orm_sqlite_core0.SQLiteColumn<
+    waist: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'waist'
         tableName: 'characters'
@@ -3264,7 +3336,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    hips: drizzle_orm_sqlite_core0.SQLiteColumn<
+    hips: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'hips'
         tableName: 'characters'
@@ -3285,7 +3357,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    cup: drizzle_orm_sqlite_core0.SQLiteColumn<
+    cup: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'cup'
         tableName: 'characters'
@@ -3308,7 +3380,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    age: drizzle_orm_sqlite_core0.SQLiteColumn<
+    age: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'age'
         tableName: 'characters'
@@ -3329,7 +3401,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    score: drizzle_orm_sqlite_core0.SQLiteColumn<
+    score: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'score'
         tableName: 'characters'
@@ -3350,7 +3422,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isFavorite: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isFavorite: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_favorite'
         tableName: 'characters'
@@ -3371,7 +3443,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isNsfw: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isNsfw: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_nsfw'
         tableName: 'characters'
@@ -3392,7 +3464,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'characters'
@@ -3415,7 +3487,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    relatedSites: drizzle_orm_sqlite_core0.SQLiteColumn<
+    relatedSites: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'related_sites'
         tableName: 'characters'
@@ -3438,7 +3510,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'characters'
@@ -3461,7 +3533,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'characters'
@@ -3482,7 +3554,7 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'characters'
@@ -3508,11 +3580,11 @@ declare const characters: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Character = InferSelectModel<typeof characters>
 type NewCharacter = InferInsertModel<typeof characters>
-declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gameExternalIds: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_external_ids'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_external_ids'
@@ -3535,7 +3607,7 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    source: drizzle_orm_sqlite_core0.SQLiteColumn<
+    source: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'source'
         tableName: 'game_external_ids'
@@ -3558,7 +3630,7 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    externalId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    externalId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'external_id'
         tableName: 'game_external_ids'
@@ -3581,7 +3653,7 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    orderInGame: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInGame: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_game'
         tableName: 'game_external_ids'
@@ -3602,7 +3674,7 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_external_ids'
@@ -3625,7 +3697,7 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_external_ids'
@@ -3646,7 +3718,7 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_external_ids'
@@ -3670,11 +3742,11 @@ declare const gameExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
   }
   dialect: 'sqlite'
 }>
-declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const personExternalIds: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'person_external_ids'
   schema: undefined
   columns: {
-    personId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    personId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'person_id'
         tableName: 'person_external_ids'
@@ -3697,7 +3769,7 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    source: drizzle_orm_sqlite_core0.SQLiteColumn<
+    source: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'source'
         tableName: 'person_external_ids'
@@ -3720,7 +3792,7 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    externalId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    externalId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'external_id'
         tableName: 'person_external_ids'
@@ -3743,7 +3815,7 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    orderInPerson: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInPerson: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_person'
         tableName: 'person_external_ids'
@@ -3764,7 +3836,7 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'person_external_ids'
@@ -3787,7 +3859,7 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'person_external_ids'
@@ -3808,7 +3880,7 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'person_external_ids'
@@ -3832,11 +3904,11 @@ declare const personExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
   }
   dialect: 'sqlite'
 }>
-declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const companyExternalIds: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'company_external_ids'
   schema: undefined
   columns: {
-    companyId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    companyId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'company_id'
         tableName: 'company_external_ids'
@@ -3859,7 +3931,7 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    source: drizzle_orm_sqlite_core0.SQLiteColumn<
+    source: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'source'
         tableName: 'company_external_ids'
@@ -3882,7 +3954,7 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    externalId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    externalId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'external_id'
         tableName: 'company_external_ids'
@@ -3905,7 +3977,7 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    orderInCompany: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCompany: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_company'
         tableName: 'company_external_ids'
@@ -3926,7 +3998,7 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'company_external_ids'
@@ -3949,7 +4021,7 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'company_external_ids'
@@ -3970,7 +4042,7 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'company_external_ids'
@@ -3994,11 +4066,11 @@ declare const companyExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
   }
   dialect: 'sqlite'
 }>
-declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const characterExternalIds: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'character_external_ids'
   schema: undefined
   columns: {
-    characterId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    characterId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'character_id'
         tableName: 'character_external_ids'
@@ -4021,7 +4093,7 @@ declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    source: drizzle_orm_sqlite_core0.SQLiteColumn<
+    source: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'source'
         tableName: 'character_external_ids'
@@ -4044,7 +4116,7 @@ declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    externalId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    externalId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'external_id'
         tableName: 'character_external_ids'
@@ -4067,7 +4139,7 @@ declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    orderInCharacter: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCharacter: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_character'
         tableName: 'character_external_ids'
@@ -4088,7 +4160,7 @@ declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColu
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'character_external_ids'
@@ -4111,7 +4183,7 @@ declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'character_external_ids'
@@ -4132,7 +4204,7 @@ declare const characterExternalIds: drizzle_orm_sqlite_core0.SQLiteTableWithColu
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'character_external_ids'
@@ -4164,11 +4236,11 @@ type CompanyExternalId = InferSelectModel<typeof companyExternalIds>
 type NewCompanyExternalId = InferInsertModel<typeof companyExternalIds>
 type CharacterExternalId = InferSelectModel<typeof characterExternalIds>
 type NewCharacterExternalId = InferInsertModel<typeof characterExternalIds>
-declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const tags: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'tags'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'tags'
@@ -4191,7 +4263,7 @@ declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'tags'
@@ -4214,7 +4286,7 @@ declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isNsfw: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isNsfw: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_nsfw'
         tableName: 'tags'
@@ -4235,7 +4307,7 @@ declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'tags'
@@ -4258,7 +4330,7 @@ declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'tags'
@@ -4279,7 +4351,7 @@ declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'tags'
@@ -4303,11 +4375,11 @@ declare const tags: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
   }
   dialect: 'sqlite'
 }>
-declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gameTagLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_tag_links'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_tag_links'
@@ -4330,7 +4402,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    tagId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    tagId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'tag_id'
         tableName: 'game_tag_links'
@@ -4353,7 +4425,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'game_tag_links'
@@ -4374,7 +4446,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'game_tag_links'
@@ -4397,7 +4469,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    orderInGame: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInGame: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_game'
         tableName: 'game_tag_links'
@@ -4418,7 +4490,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    orderInTag: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInTag: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_tag'
         tableName: 'game_tag_links'
@@ -4439,7 +4511,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_tag_links'
@@ -4462,7 +4534,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_tag_links'
@@ -4483,7 +4555,7 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_tag_links'
@@ -4507,11 +4579,11 @@ declare const gameTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
   }
   dialect: 'sqlite'
 }>
-declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const characterTagLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'character_tag_links'
   schema: undefined
   columns: {
-    characterId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    characterId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'character_id'
         tableName: 'character_tag_links'
@@ -4534,7 +4606,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    tagId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    tagId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'tag_id'
         tableName: 'character_tag_links'
@@ -4557,7 +4629,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'character_tag_links'
@@ -4578,7 +4650,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
       {},
       {}
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'character_tag_links'
@@ -4601,7 +4673,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    orderInCharacter: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCharacter: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_character'
         tableName: 'character_tag_links'
@@ -4622,7 +4694,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
       {},
       {}
     >
-    orderInTag: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInTag: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_tag'
         tableName: 'character_tag_links'
@@ -4643,7 +4715,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'character_tag_links'
@@ -4666,7 +4738,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'character_tag_links'
@@ -4687,7 +4759,7 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'character_tag_links'
@@ -4711,11 +4783,11 @@ declare const characterTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns
   }
   dialect: 'sqlite'
 }>
-declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const personTagLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'person_tag_links'
   schema: undefined
   columns: {
-    personId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    personId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'person_id'
         tableName: 'person_tag_links'
@@ -4738,7 +4810,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    tagId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    tagId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'tag_id'
         tableName: 'person_tag_links'
@@ -4761,7 +4833,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'person_tag_links'
@@ -4782,7 +4854,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'person_tag_links'
@@ -4805,7 +4877,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    orderInPerson: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInPerson: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_person'
         tableName: 'person_tag_links'
@@ -4826,7 +4898,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    orderInTag: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInTag: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_tag'
         tableName: 'person_tag_links'
@@ -4847,7 +4919,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'person_tag_links'
@@ -4870,7 +4942,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'person_tag_links'
@@ -4891,7 +4963,7 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'person_tag_links'
@@ -4915,11 +4987,11 @@ declare const personTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
   }
   dialect: 'sqlite'
 }>
-declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const companyTagLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'company_tag_links'
   schema: undefined
   columns: {
-    companyId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    companyId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'company_id'
         tableName: 'company_tag_links'
@@ -4942,7 +5014,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    tagId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    tagId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'tag_id'
         tableName: 'company_tag_links'
@@ -4965,7 +5037,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'company_tag_links'
@@ -4986,7 +5058,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'company_tag_links'
@@ -5009,7 +5081,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    orderInCompany: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCompany: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_company'
         tableName: 'company_tag_links'
@@ -5030,7 +5102,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    orderInTag: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInTag: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_tag'
         tableName: 'company_tag_links'
@@ -5051,7 +5123,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'company_tag_links'
@@ -5074,7 +5146,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'company_tag_links'
@@ -5095,7 +5167,7 @@ declare const companyTagLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'company_tag_links'
@@ -5129,11 +5201,11 @@ type PersonTagLink = InferSelectModel<typeof personTagLinks>
 type NewPersonTagLink = InferInsertModel<typeof personTagLinks>
 type CompanyTagLink = InferSelectModel<typeof companyTagLinks>
 type NewCompanyTagLink = InferInsertModel<typeof companyTagLinks>
-declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const collections: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'collections'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'collections'
@@ -5156,7 +5228,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'collections'
@@ -5179,7 +5251,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    coverFile: drizzle_orm_sqlite_core0.SQLiteColumn<
+    coverFile: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'cover_file'
         tableName: 'collections'
@@ -5202,7 +5274,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isNsfw: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isNsfw: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_nsfw'
         tableName: 'collections'
@@ -5223,7 +5295,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    order: drizzle_orm_sqlite_core0.SQLiteColumn<
+    order: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order'
         tableName: 'collections'
@@ -5244,7 +5316,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    isDynamic: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isDynamic: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_dynamic'
         tableName: 'collections'
@@ -5265,7 +5337,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    dynamicConfig: drizzle_orm_sqlite_core0.SQLiteColumn<
+    dynamicConfig: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'dynamic_config'
         tableName: 'collections'
@@ -5288,7 +5360,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'collections'
@@ -5311,7 +5383,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'collections'
@@ -5332,7 +5404,7 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'collections'
@@ -5358,11 +5430,11 @@ declare const collections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Collection = InferSelectModel<typeof collections>
 type NewCollection = InferInsertModel<typeof collections>
-declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gameSessions: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_sessions'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_sessions'
@@ -5385,7 +5457,7 @@ declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    startedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    startedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'started_at'
         tableName: 'game_sessions'
@@ -5406,7 +5478,7 @@ declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    endedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    endedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'ended_at'
         tableName: 'game_sessions'
@@ -5427,7 +5499,7 @@ declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_sessions'
@@ -5450,7 +5522,7 @@ declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_sessions'
@@ -5471,7 +5543,7 @@ declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_sessions'
@@ -5497,11 +5569,11 @@ declare const gameSessions: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type GameSession = InferSelectModel<typeof gameSessions>
 type NewGameSession = InferInsertModel<typeof gameSessions>
-declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const scraperProfiles: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'scraper_profiles'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'scraper_profiles'
@@ -5524,7 +5596,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    description: drizzle_orm_sqlite_core0.SQLiteColumn<
+    description: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'description'
         tableName: 'scraper_profiles'
@@ -5547,7 +5619,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    mediaType: drizzle_orm_sqlite_core0.SQLiteColumn<
+    mediaType: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'media_type'
         tableName: 'scraper_profiles'
@@ -5570,7 +5642,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    sourcePresetId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sourcePresetId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'source_preset_id'
         tableName: 'scraper_profiles'
@@ -5593,7 +5665,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    defaultLocale: drizzle_orm_sqlite_core0.SQLiteColumn<
+    defaultLocale: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'default_locale'
         tableName: 'scraper_profiles'
@@ -5616,7 +5688,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    searchProviderId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    searchProviderId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'search_provider_id'
         tableName: 'scraper_profiles'
@@ -5639,7 +5711,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    slotConfigs: drizzle_orm_sqlite_core0.SQLiteColumn<
+    slotConfigs: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'slot_configs'
         tableName: 'scraper_profiles'
@@ -5662,7 +5734,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    order: drizzle_orm_sqlite_core0.SQLiteColumn<
+    order: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order'
         tableName: 'scraper_profiles'
@@ -5683,7 +5755,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'scraper_profiles'
@@ -5706,7 +5778,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'scraper_profiles'
@@ -5727,7 +5799,7 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'scraper_profiles'
@@ -5753,11 +5825,11 @@ declare const scraperProfiles: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type ScraperProfile = InferSelectModel<typeof scraperProfiles>
 type NewScraperProfile = InferInsertModel<typeof scraperProfiles>
-declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const scanners: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'scanners'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'scanners'
@@ -5780,7 +5852,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    path: drizzle_orm_sqlite_core0.SQLiteColumn<
+    path: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'path'
         tableName: 'scanners'
@@ -5803,7 +5875,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    type: drizzle_orm_sqlite_core0.SQLiteColumn<
+    type: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'type'
         tableName: 'scanners'
@@ -5826,7 +5898,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    scraperProfileId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    scraperProfileId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'scraper_profile_id'
         tableName: 'scanners'
@@ -5849,7 +5921,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    targetCollectionId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    targetCollectionId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'target_collection_id'
         tableName: 'scanners'
@@ -5872,7 +5944,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    scanIntervalMinutes: drizzle_orm_sqlite_core0.SQLiteColumn<
+    scanIntervalMinutes: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'scan_interval_minutes'
         tableName: 'scanners'
@@ -5893,7 +5965,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    entityDepth: drizzle_orm_sqlite_core0.SQLiteColumn<
+    entityDepth: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'entity_depth'
         tableName: 'scanners'
@@ -5914,7 +5986,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    nameExtractionRules: drizzle_orm_sqlite_core0.SQLiteColumn<
+    nameExtractionRules: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name_extraction_rules'
         tableName: 'scanners'
@@ -5937,7 +6009,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'scanners'
@@ -5960,7 +6032,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'scanners'
@@ -5981,7 +6053,7 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'scanners'
@@ -6007,11 +6079,11 @@ declare const scanners: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Scanner = InferSelectModel<typeof scanners>
 type NewScanner = InferInsertModel<typeof scanners>
-declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const settings: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'settings'
   schema: undefined
   columns: {
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'settings'
@@ -6032,7 +6104,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    locale: drizzle_orm_sqlite_core0.SQLiteColumn<
+    locale: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'locale'
         tableName: 'settings'
@@ -6055,7 +6127,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    mainWindowCloseAction: drizzle_orm_sqlite_core0.SQLiteColumn<
+    mainWindowCloseAction: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'main_window_close_action'
         tableName: 'settings'
@@ -6078,7 +6150,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    scannerIgnoredNames: drizzle_orm_sqlite_core0.SQLiteColumn<
+    scannerIgnoredNames: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'scanner_ignored_names'
         tableName: 'settings'
@@ -6101,7 +6173,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    scannerUsePhash: drizzle_orm_sqlite_core0.SQLiteColumn<
+    scannerUsePhash: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'scanner_use_phash'
         tableName: 'settings'
@@ -6122,7 +6194,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    scannerStartAtOpen: drizzle_orm_sqlite_core0.SQLiteColumn<
+    scannerStartAtOpen: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'scanner_start_at_open'
         tableName: 'settings'
@@ -6143,7 +6215,30 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    scannerIngestMode: drizzle_orm_sqlite_core0.SQLiteColumn<
+    scannerParallelCount: drizzle_orm_sqlite_core321.SQLiteColumn<
+      {
+        name: 'scanner_parallel_count'
+        tableName: 'settings'
+        dataType: 'custom'
+        columnType: 'SQLiteCustomColumn'
+        data: number
+        driverParam: number
+        notNull: true
+        hasDefault: true
+        isPrimaryKey: false
+        isAutoincrement: false
+        hasRuntimeDefault: false
+        enumValues: undefined
+        baseColumn: never
+        identity: undefined
+        generated: undefined
+      },
+      {},
+      {
+        sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
+      }
+    >
+    scannerIngestMode: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'scanner_ingest_mode'
         tableName: 'settings'
@@ -6166,7 +6261,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    updaterAutoCheck: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updaterAutoCheck: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updater_auto_check'
         tableName: 'settings'
@@ -6187,7 +6282,7 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updaterAllowPrerelease: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updaterAllowPrerelease: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updater_allow_prerelease'
         tableName: 'settings'
@@ -6213,11 +6308,11 @@ declare const settings: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type Settings = InferSelectModel<typeof settings>
 type NewSettings = InferInsertModel<typeof settings>
-declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const pluginData: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'plugin_data'
   schema: undefined
   columns: {
-    pluginId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    pluginId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'plugin_id'
         tableName: 'plugin_data'
@@ -6240,7 +6335,7 @@ declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    key: drizzle_orm_sqlite_core0.SQLiteColumn<
+    key: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'key'
         tableName: 'plugin_data'
@@ -6263,7 +6358,7 @@ declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    value: drizzle_orm_sqlite_core0.SQLiteColumn<
+    value: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'value'
         tableName: 'plugin_data'
@@ -6284,7 +6379,7 @@ declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'plugin_data'
@@ -6307,7 +6402,7 @@ declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'plugin_data'
@@ -6328,7 +6423,7 @@ declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'plugin_data'
@@ -6354,11 +6449,11 @@ declare const pluginData: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
 }>
 type PluginData = InferSelectModel<typeof pluginData>
 type NewPluginData = InferInsertModel<typeof pluginData>
-declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const showcaseSections: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'showcase_sections'
   schema: undefined
   columns: {
-    name: drizzle_orm_sqlite_core0.SQLiteColumn<
+    name: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'name'
         tableName: 'showcase_sections'
@@ -6381,7 +6476,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    entityType: drizzle_orm_sqlite_core0.SQLiteColumn<
+    entityType: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'entity_type'
         tableName: 'showcase_sections'
@@ -6404,7 +6499,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    order: drizzle_orm_sqlite_core0.SQLiteColumn<
+    order: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order'
         tableName: 'showcase_sections'
@@ -6425,7 +6520,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    isVisible: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isVisible: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_visible'
         tableName: 'showcase_sections'
@@ -6446,7 +6541,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    layout: drizzle_orm_sqlite_core0.SQLiteColumn<
+    layout: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'layout'
         tableName: 'showcase_sections'
@@ -6469,7 +6564,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    itemSize: drizzle_orm_sqlite_core0.SQLiteColumn<
+    itemSize: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'item_size'
         tableName: 'showcase_sections'
@@ -6492,7 +6587,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    openMode: drizzle_orm_sqlite_core0.SQLiteColumn<
+    openMode: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'open_mode'
         tableName: 'showcase_sections'
@@ -6515,7 +6610,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    limit: drizzle_orm_sqlite_core0.SQLiteColumn<
+    limit: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'limit'
         tableName: 'showcase_sections'
@@ -6536,7 +6631,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    filter: drizzle_orm_sqlite_core0.SQLiteColumn<
+    filter: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'filter'
         tableName: 'showcase_sections'
@@ -6559,7 +6654,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    sortField: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sortField: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'sort_field'
         tableName: 'showcase_sections'
@@ -6582,7 +6677,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    sortDirection: drizzle_orm_sqlite_core0.SQLiteColumn<
+    sortDirection: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'sort_direction'
         tableName: 'showcase_sections'
@@ -6605,7 +6700,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'showcase_sections'
@@ -6628,7 +6723,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'showcase_sections'
@@ -6649,7 +6744,7 @@ declare const showcaseSections: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'showcase_sections'
@@ -6679,11 +6774,11 @@ type NewShowcaseSection = InferInsertModel<typeof showcaseSections>
 type ShowcaseSectionFormItem = Omit<ShowcaseSection, 'createdAt' | 'updatedAt'> & {
   isNew?: boolean
 }
-declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gamePersonLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_person_links'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_person_links'
@@ -6706,7 +6801,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    personId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    personId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'person_id'
         tableName: 'game_person_links'
@@ -6729,7 +6824,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'game_person_links'
@@ -6750,7 +6845,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    type: drizzle_orm_sqlite_core0.SQLiteColumn<
+    type: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'type'
         tableName: 'game_person_links'
@@ -6773,7 +6868,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'game_person_links'
@@ -6796,7 +6891,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    orderInGame: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInGame: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_game'
         tableName: 'game_person_links'
@@ -6817,7 +6912,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    orderInPerson: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInPerson: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_person'
         tableName: 'game_person_links'
@@ -6838,7 +6933,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_person_links'
@@ -6861,7 +6956,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_person_links'
@@ -6882,7 +6977,7 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_person_links'
@@ -6906,11 +7001,11 @@ declare const gamePersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
   }
   dialect: 'sqlite'
 }>
-declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gameCompanyLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_company_links'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_company_links'
@@ -6933,7 +7028,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    companyId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    companyId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'company_id'
         tableName: 'game_company_links'
@@ -6956,7 +7051,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'game_company_links'
@@ -6977,7 +7072,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    type: drizzle_orm_sqlite_core0.SQLiteColumn<
+    type: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'type'
         tableName: 'game_company_links'
@@ -7000,7 +7095,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'game_company_links'
@@ -7023,7 +7118,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    orderInGame: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInGame: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_game'
         tableName: 'game_company_links'
@@ -7044,7 +7139,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    orderInCompany: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCompany: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_company'
         tableName: 'game_company_links'
@@ -7065,7 +7160,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_company_links'
@@ -7088,7 +7183,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_company_links'
@@ -7109,7 +7204,7 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_company_links'
@@ -7133,11 +7228,11 @@ declare const gameCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<
   }
   dialect: 'sqlite'
 }>
-declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const gameCharacterLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'game_character_links'
   schema: undefined
   columns: {
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'game_character_links'
@@ -7160,7 +7255,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    characterId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    characterId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'character_id'
         tableName: 'game_character_links'
@@ -7183,7 +7278,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'game_character_links'
@@ -7204,7 +7299,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
       {},
       {}
     >
-    type: drizzle_orm_sqlite_core0.SQLiteColumn<
+    type: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'type'
         tableName: 'game_character_links'
@@ -7227,7 +7322,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'game_character_links'
@@ -7250,7 +7345,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    orderInGame: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInGame: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_game'
         tableName: 'game_character_links'
@@ -7271,7 +7366,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
       {},
       {}
     >
-    orderInCharacter: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCharacter: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_character'
         tableName: 'game_character_links'
@@ -7292,7 +7387,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'game_character_links'
@@ -7315,7 +7410,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'game_character_links'
@@ -7336,7 +7431,7 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'game_character_links'
@@ -7360,11 +7455,11 @@ declare const gameCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumn
   }
   dialect: 'sqlite'
 }>
-declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const collectionGameLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'collection_game_links'
   schema: undefined
   columns: {
-    collectionId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    collectionId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'collection_id'
         tableName: 'collection_game_links'
@@ -7387,7 +7482,7 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
         length: number | undefined
       }
     >
-    gameId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    gameId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'game_id'
         tableName: 'collection_game_links'
@@ -7410,7 +7505,7 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
         length: number | undefined
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'collection_game_links'
@@ -7433,7 +7528,7 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
         length: number | undefined
       }
     >
-    orderInCollection: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCollection: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_collection'
         tableName: 'collection_game_links'
@@ -7454,7 +7549,7 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'collection_game_links'
@@ -7477,7 +7572,7 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'collection_game_links'
@@ -7498,7 +7593,7 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'collection_game_links'
@@ -7522,11 +7617,11 @@ declare const collectionGameLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColum
   }
   dialect: 'sqlite'
 }>
-declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const collectionCharacterLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'collection_character_links'
   schema: undefined
   columns: {
-    collectionId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    collectionId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'collection_id'
         tableName: 'collection_character_links'
@@ -7549,7 +7644,7 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
         length: number | undefined
       }
     >
-    characterId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    characterId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'character_id'
         tableName: 'collection_character_links'
@@ -7572,7 +7667,7 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
         length: number | undefined
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'collection_character_links'
@@ -7595,7 +7690,7 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
         length: number | undefined
       }
     >
-    orderInCollection: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCollection: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_collection'
         tableName: 'collection_character_links'
@@ -7616,7 +7711,7 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'collection_character_links'
@@ -7639,7 +7734,7 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'collection_character_links'
@@ -7660,7 +7755,7 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'collection_character_links'
@@ -7684,11 +7779,11 @@ declare const collectionCharacterLinks: drizzle_orm_sqlite_core0.SQLiteTableWith
   }
   dialect: 'sqlite'
 }>
-declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const collectionPersonLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'collection_person_links'
   schema: undefined
   columns: {
-    collectionId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    collectionId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'collection_id'
         tableName: 'collection_person_links'
@@ -7711,7 +7806,7 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
         length: number | undefined
       }
     >
-    personId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    personId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'person_id'
         tableName: 'collection_person_links'
@@ -7734,7 +7829,7 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
         length: number | undefined
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'collection_person_links'
@@ -7757,7 +7852,7 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
         length: number | undefined
       }
     >
-    orderInCollection: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCollection: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_collection'
         tableName: 'collection_person_links'
@@ -7778,7 +7873,7 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'collection_person_links'
@@ -7801,7 +7896,7 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'collection_person_links'
@@ -7822,7 +7917,7 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'collection_person_links'
@@ -7846,11 +7941,11 @@ declare const collectionPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCol
   }
   dialect: 'sqlite'
 }>
-declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const collectionCompanyLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'collection_company_links'
   schema: undefined
   columns: {
-    collectionId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    collectionId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'collection_id'
         tableName: 'collection_company_links'
@@ -7873,7 +7968,7 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
         length: number | undefined
       }
     >
-    companyId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    companyId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'company_id'
         tableName: 'collection_company_links'
@@ -7896,7 +7991,7 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
         length: number | undefined
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'collection_company_links'
@@ -7919,7 +8014,7 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
         length: number | undefined
       }
     >
-    orderInCollection: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCollection: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_collection'
         tableName: 'collection_company_links'
@@ -7940,7 +8035,7 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'collection_company_links'
@@ -7963,7 +8058,7 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'collection_company_links'
@@ -7984,7 +8079,7 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'collection_company_links'
@@ -8008,11 +8103,11 @@ declare const collectionCompanyLinks: drizzle_orm_sqlite_core0.SQLiteTableWithCo
   }
   dialect: 'sqlite'
 }>
-declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColumns<{
+declare const characterPersonLinks: drizzle_orm_sqlite_core321.SQLiteTableWithColumns<{
   name: 'character_person_links'
   schema: undefined
   columns: {
-    characterId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    characterId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'character_id'
         tableName: 'character_person_links'
@@ -8035,7 +8130,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    personId: drizzle_orm_sqlite_core0.SQLiteColumn<
+    personId: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'person_id'
         tableName: 'character_person_links'
@@ -8058,7 +8153,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    isSpoiler: drizzle_orm_sqlite_core0.SQLiteColumn<
+    isSpoiler: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'is_spoiler'
         tableName: 'character_person_links'
@@ -8079,7 +8174,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
       {},
       {}
     >
-    type: drizzle_orm_sqlite_core0.SQLiteColumn<
+    type: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'type'
         tableName: 'character_person_links'
@@ -8102,7 +8197,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         sqliteColumnBuilderBrand: 'SQLiteCustomColumnBuilderBrand'
       }
     >
-    note: drizzle_orm_sqlite_core0.SQLiteColumn<
+    note: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'note'
         tableName: 'character_person_links'
@@ -8125,7 +8220,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    orderInCharacter: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInCharacter: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_character'
         tableName: 'character_person_links'
@@ -8146,7 +8241,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
       {},
       {}
     >
-    orderInPerson: drizzle_orm_sqlite_core0.SQLiteColumn<
+    orderInPerson: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'order_in_person'
         tableName: 'character_person_links'
@@ -8167,7 +8262,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
       {},
       {}
     >
-    id: drizzle_orm_sqlite_core0.SQLiteColumn<
+    id: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'id'
         tableName: 'character_person_links'
@@ -8190,7 +8285,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
         length: number | undefined
       }
     >
-    createdAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    createdAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'created_at'
         tableName: 'character_person_links'
@@ -8211,7 +8306,7 @@ declare const characterPersonLinks: drizzle_orm_sqlite_core0.SQLiteTableWithColu
       {},
       {}
     >
-    updatedAt: drizzle_orm_sqlite_core0.SQLiteColumn<
+    updatedAt: drizzle_orm_sqlite_core321.SQLiteColumn<
       {
         name: 'updated_at'
         tableName: 'character_person_links'
@@ -8569,6 +8664,9 @@ declare namespace index_d_exports$2 {
     RelationCollectionSlotConfig,
     RelationValue,
     SCANNER_INGEST_MODE_VALUES,
+    SCANNER_PARALLEL_COUNT_DEFAULT,
+    SCANNER_PARALLEL_COUNT_MAX,
+    SCANNER_PARALLEL_COUNT_MIN,
     SaveBackup,
     Scanner,
     ScannerIgnoredNames,
@@ -8619,6 +8717,7 @@ declare namespace index_d_exports$2 {
     companyTagLinks,
     companyTagLinksRelations,
     contentEntityType,
+    createBoundedIntegerType,
     cupSize,
     dynamicCollectionConfig,
     failedScans,
@@ -8661,6 +8760,7 @@ declare namespace index_d_exports$2 {
     saveBackups,
     scannerIgnoredNames,
     scannerIngestMode,
+    scannerParallelCount,
     scanners,
     scannersRelations,
     scraperProfiles,
@@ -11054,7 +11154,7 @@ declare const useThemeStore: pinia1.StoreDefinition<
       setActiveTheme: (themeId: string) => void
       setMode: (newMode: ThemeMode) => void
     },
-    'activeThemeId' | 'mode' | 'themes' | 'resolvedTheme'
+    'mode' | 'activeThemeId' | 'themes' | 'resolvedTheme'
   >,
   Pick<
     {
@@ -11131,7 +11231,7 @@ declare const useGameMonitorStore: pinia1.StoreDefinition<
       getGameStatus: (gameId: string) => GameMonitorStatus | undefined
       init: () => Promise<void>
     },
-    'initialized' | 'statuses'
+    'statuses' | 'initialized'
   >,
   Pick<
     {
@@ -11207,13 +11307,13 @@ declare const useGameMonitorStore: pinia1.StoreDefinition<
       getGameStatus: (gameId: string) => GameMonitorStatus | undefined
       init: () => Promise<void>
     },
-    | 'init'
     | 'setGameStatus'
     | 'removeGameStatus'
     | 'clearAllStatuses'
     | 'isGameRunning'
     | 'isGameForeground'
     | 'getGameStatus'
+    | 'init'
   >
 >
 //#endregion
@@ -11282,7 +11382,7 @@ declare const useScannerStore: pinia1.StoreDefinition<
       getScannerState: (id: string) => ScanProgressData | undefined
       init: () => Promise<void>
     },
-    'scannerStates' | 'initialized'
+    'initialized' | 'scannerStates'
   >,
   Pick<
     {
@@ -11410,11 +11510,11 @@ declare const useScannerStore: pinia1.StoreDefinition<
       getScannerState: (id: string) => ScanProgressData | undefined
       init: () => Promise<void>
     },
+    | 'init'
     | 'updateScannerState'
     | 'resetScannerState'
     | 'resetAllScannerStates'
     | 'getScannerState'
-    | 'init'
   >
 >
 //#endregion
@@ -11882,9 +11982,9 @@ declare const __VLS_base$133: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
   },
@@ -11893,10 +11993,10 @@ declare const __VLS_base$133: vue0.DefineComponent<
   Readonly<__VLS_Props$81> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -12238,7 +12338,7 @@ declare const __VLS_base$125: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<Props$46> & Readonly<{}>,
   {
-    as: reka_ui11.AsTag | vue0.Component
+    as: reka_ui0.AsTag | vue0.Component
   },
   {},
   {},
@@ -12939,38 +13039,38 @@ declare const __VLS_base$109: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (value: reka_ui11.AcceptableValue) => any
+    'update:modelValue': (value: reka_ui0.AcceptableValue) => any
+    entryFocus: (event: CustomEvent<any>) => any
     highlight: (
       payload:
         | {
             ref: HTMLElement
-            value: reka_ui11.AcceptableValue
+            value: reka_ui0.AcceptableValue
           }
         | undefined
     ) => any
-    entryFocus: (event: CustomEvent<any>) => any
     leave: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$73> &
     Readonly<{
-      'onUpdate:modelValue'?: ((value: reka_ui11.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((value: reka_ui0.AcceptableValue) => any) | undefined
+      onEntryFocus?: ((event: CustomEvent<any>) => any) | undefined
       onHighlight?:
         | ((
             payload:
               | {
                   ref: HTMLElement
-                  value: reka_ui11.AcceptableValue
+                  value: reka_ui0.AcceptableValue
                 }
               | undefined
           ) => any)
         | undefined
-      onEntryFocus?: ((event: CustomEvent<any>) => any) | undefined
       onLeave?: ((event: Event) => any) | undefined
     }>,
   {
-    modelValue: reka_ui11.AcceptableValue | reka_ui11.AcceptableValue[]
+    modelValue: reka_ui0.AcceptableValue | reka_ui0.AcceptableValue[]
   },
   {},
   {},
@@ -13161,14 +13261,14 @@ declare const __VLS_base$105: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    select: (event: reka_ui11.ListboxItemSelectEvent<reka_ui11.AcceptableValue>) => any
+    select: (event: reka_ui0.ListboxItemSelectEvent<reka_ui0.AcceptableValue>) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$68> &
     Readonly<{
       onSelect?:
-        | ((event: reka_ui11.ListboxItemSelectEvent<reka_ui11.AcceptableValue>) => any)
+        | ((event: reka_ui0.ListboxItemSelectEvent<reka_ui0.AcceptableValue>) => any)
         | undefined
     }>,
   {},
@@ -13496,9 +13596,9 @@ declare const __VLS_base$99: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -13506,10 +13606,10 @@ declare const __VLS_base$99: vue0.DefineComponent<
   Readonly<__VLS_Props$64> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
@@ -13778,27 +13878,27 @@ declare const __VLS_base$93: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    entryFocus: (event: Event) => any
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
+    entryFocus: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$59> &
     Readonly<{
-      onEntryFocus?: ((event: Event) => any) | undefined
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
+      onEntryFocus?: ((event: Event) => any) | undefined
     }>,
   {},
   {},
@@ -13879,13 +13979,13 @@ declare const __VLS_base$91: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (payload: reka_ui11.AcceptableValue) => any
+    'update:modelValue': (payload: reka_ui0.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<ContextMenuRadioGroupProps> &
     Readonly<{
-      'onUpdate:modelValue'?: ((payload: reka_ui11.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((payload: reka_ui0.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -14085,9 +14185,9 @@ declare const __VLS_base$86: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
   },
@@ -14096,10 +14196,10 @@ declare const __VLS_base$86: vue0.DefineComponent<
   Readonly<__VLS_Props$56> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -14449,9 +14549,9 @@ declare const __VLS_base$77: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -14459,10 +14559,10 @@ declare const __VLS_base$77: vue0.DefineComponent<
   Readonly<__VLS_Props$49> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
@@ -14590,13 +14690,13 @@ declare const __VLS_base$74: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (payload: reka_ui11.AcceptableValue) => any
+    'update:modelValue': (payload: reka_ui0.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<DropdownMenuRadioGroupProps> &
     Readonly<{
-      'onUpdate:modelValue'?: ((payload: reka_ui11.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((payload: reka_ui0.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -14897,27 +14997,27 @@ declare const __VLS_base$67: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    entryFocus: (event: Event) => any
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
+    entryFocus: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$41> &
     Readonly<{
-      onEntryFocus?: ((event: Event) => any) | undefined
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
+      onEntryFocus?: ((event: Event) => any) | undefined
     }>,
   {},
   {},
@@ -16052,9 +16152,9 @@ declare const __VLS_base$41: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
     afterLeave: () => any
@@ -16064,10 +16164,10 @@ declare const __VLS_base$41: vue0.DefineComponent<
   Readonly<__VLS_Props$37> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
+        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -16135,7 +16235,7 @@ type __VLS_Props$36 = RadioGroupRootProps & {
   class?: HTMLAttributes['class']
 }
 declare var __VLS_8$18: {
-  modelValue: reka_ui11.AcceptableValue | undefined
+  modelValue: reka_ui0.AcceptableValue | undefined
 }
 type __VLS_Slots$39 = {} & {
   default?: (props: typeof __VLS_8$18) => any
@@ -16462,14 +16562,14 @@ declare const __VLS_base$33: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     'update:open': (value: boolean) => any
-    'update:modelValue': (value: reka_ui11.AcceptableValue) => any
+    'update:modelValue': (value: reka_ui0.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$33> &
     Readonly<{
       'onUpdate:open'?: ((value: boolean) => any) | undefined
-      'onUpdate:modelValue'?: ((value: reka_ui11.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((value: reka_ui0.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -16583,7 +16683,7 @@ declare const __VLS_base$30: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -16591,7 +16691,7 @@ declare const __VLS_base$30: vue0.DefineComponent<
   Readonly<__VLS_Props$31> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
   {
@@ -17506,11 +17606,11 @@ declare const badgeVariants: (
     | ({
         variant?:
           | 'default'
-          | 'secondary'
           | 'destructive'
+          | 'outline'
+          | 'secondary'
           | 'success'
           | 'warning'
-          | 'outline'
           | null
           | undefined
       } & class_variance_authority_types0.ClassProp)
@@ -17572,10 +17672,10 @@ declare const buttonVariants: (
           | 'text'
           | 'link'
           | 'input'
-          | 'secondary'
           | 'destructive'
-          | 'outline'
           | 'ghost'
+          | 'outline'
+          | 'secondary'
           | null
           | undefined
         size?:
@@ -17619,7 +17719,7 @@ declare const __VLS_base$7: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<ButtonProps> & Readonly<{}>,
   {
-    as: reka_ui11.AsTag | vue0.Component
+    as: reka_ui0.AsTag | vue0.Component
   },
   {},
   {},
@@ -17643,8 +17743,8 @@ type __VLS_Props$10 = CheckboxRootProps & {
   class?: HTMLAttributes['class']
 }
 declare var __VLS_14$1: {
-  modelValue: reka_ui11.CheckboxCheckedState
-  state: reka_ui11.CheckboxCheckedState
+  modelValue: reka_ui0.CheckboxCheckedState
+  state: reka_ui0.CheckboxCheckedState
 }
 type __VLS_Slots$6 = {} & {
   default?: (props: typeof __VLS_14$1) => any

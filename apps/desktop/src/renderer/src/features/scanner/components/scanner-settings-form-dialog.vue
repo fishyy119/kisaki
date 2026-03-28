@@ -10,7 +10,13 @@ import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
-import { settings, type ScannerIngestMode } from '@shared/db'
+import {
+  SCANNER_PARALLEL_COUNT_DEFAULT,
+  SCANNER_PARALLEL_COUNT_MAX,
+  SCANNER_PARALLEL_COUNT_MIN,
+  settings,
+  type ScannerIngestMode
+} from '@shared/db'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import {
@@ -53,6 +59,7 @@ interface FormData {
   ingestMode: ScannerIngestMode
   usePhash: boolean
   startAtOpen: boolean
+  parallelCount: number
   newIgnoredName: string
 }
 
@@ -84,6 +91,7 @@ function createDefaultFormData(): FormData {
     ingestMode: 'prefer-scraper',
     usePhash: false,
     startAtOpen: false,
+    parallelCount: SCANNER_PARALLEL_COUNT_DEFAULT,
     newIgnoredName: ''
   }
 }
@@ -93,12 +101,14 @@ function createFormDataFromSettings(data: {
   ingestMode: ScannerIngestMode
   usePhash: boolean
   startAtOpen: boolean
+  parallelCount: number
 }): FormData {
   return {
     ignoredNames: [...data.ignoredNames],
     ingestMode: data.ingestMode,
     usePhash: data.usePhash,
     startAtOpen: data.startAtOpen,
+    parallelCount: data.parallelCount,
     newIgnoredName: ''
   }
 }
@@ -128,7 +138,8 @@ const { data, isLoading, error, refetch } = useAsyncData(
       ignoredNames: [...result.scannerIgnoredNames],
       ingestMode: result.scannerIngestMode,
       usePhash: result.scannerUsePhash,
-      startAtOpen: result.scannerStartAtOpen
+      startAtOpen: result.scannerStartAtOpen,
+      parallelCount: result.scannerParallelCount
     }
   },
   { enabled: open }
@@ -164,6 +175,16 @@ function handleKeyDown(e: KeyboardEvent) {
   }
 }
 
+const parallelCountModel = computed({
+  get: () => formData.value.parallelCount,
+  set: (value: string | number | undefined) => {
+    const num = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10)
+    formData.value.parallelCount = Number.isNaN(num)
+      ? SCANNER_PARALLEL_COUNT_DEFAULT
+      : Math.max(SCANNER_PARALLEL_COUNT_MIN, Math.min(SCANNER_PARALLEL_COUNT_MAX, num))
+  }
+})
+
 async function handleSubmit() {
   isSaving.value = true
   try {
@@ -173,7 +194,8 @@ async function handleSubmit() {
         scannerIgnoredNames: formData.value.ignoredNames,
         scannerIngestMode: formData.value.ingestMode,
         scannerUsePhash: formData.value.usePhash,
-        scannerStartAtOpen: formData.value.startAtOpen
+        scannerStartAtOpen: formData.value.startAtOpen,
+        scannerParallelCount: formData.value.parallelCount
       })
       .where(eq(settings.id, 0))
       .run()
@@ -262,6 +284,24 @@ async function handleSubmit() {
                 <FieldDescription>实验性功能</FieldDescription>
                 <FieldContent>
                   <Switch v-model="formData.usePhash" />
+                </FieldContent>
+              </Field>
+
+              <Field orientation="horizontal">
+                <FieldLabel>并行处理数</FieldLabel>
+                <FieldDescription>
+                  控制单个扫描器同时处理的条目数，1 表示串行处理
+                </FieldDescription>
+                <FieldContent>
+                  <Input
+                    v-model="parallelCountModel"
+                    type="number"
+                    inputmode="numeric"
+                    :min="SCANNER_PARALLEL_COUNT_MIN"
+                    :max="SCANNER_PARALLEL_COUNT_MAX"
+                    step="1"
+                    class="w-24"
+                  />
                 </FieldContent>
               </Field>
 

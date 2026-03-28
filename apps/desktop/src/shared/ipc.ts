@@ -400,6 +400,9 @@ export interface IpcMainHandlers {
 
   // Scanner
   'scanner:get-active-scans': () => IpcResult<ScanProgressData[]>
+  'scanner:pause-game': (scannerId: string) => IpcVoidResult
+  'scanner:resume-game': (scannerId: string) => IpcVoidResult
+  'scanner:abort-game': (scannerId: string) => IpcVoidResult
   'scanner:test-extraction-rules': (
     scannerPath: string,
     entityDepth: number,

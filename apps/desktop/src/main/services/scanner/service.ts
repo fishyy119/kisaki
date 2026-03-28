@@ -57,6 +57,33 @@ export class ScannerService implements IMediaService {
       await this.game.scanAllScanners()
     })
 
+    ipc.handle('scanner:pause-game', (_, scannerId) => {
+      try {
+        this.game.pauseScanner(scannerId)
+        return { success: true }
+      } catch (error) {
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipc.handle('scanner:resume-game', (_, scannerId) => {
+      try {
+        this.game.resumeScanner(scannerId)
+        return { success: true }
+      } catch (error) {
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
+    ipc.handle('scanner:abort-game', (_, scannerId) => {
+      try {
+        this.game.abortScanner(scannerId)
+        return { success: true }
+      } catch (error) {
+        return { success: false, error: (error as Error).message }
+      }
+    })
+
     ipc.handle('scanner:test-extraction-rules', async (_, scannerPath, entityDepth, rules) => {
       try {
         const settingsData = this.dbService.helper.getAppSettings()
