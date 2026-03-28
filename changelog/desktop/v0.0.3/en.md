@@ -3,7 +3,7 @@
 ## New Features
 
 - Refactored the adder for improved stability
-- Refactored the scraper for significantly improved speed and accuracy, with added support for batch scraping and abort/pause capabilities
+- Refactored the scraper for significantly improved speed and accuracy, with added support for parallel scraping and abort/pause capabilities
 - Refactored the updater to support updating associated entities
 - Added support for deleting associated entities of media
 
