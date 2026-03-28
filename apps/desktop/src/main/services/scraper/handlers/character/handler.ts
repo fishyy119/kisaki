@@ -1,5 +1,5 @@
 /**
- * Character scraper handler with slot-level strategy execution.
+ * Character scraper handler with invocation-scoped resolve/session execution.
  */
 
 import { eq } from 'drizzle-orm'
@@ -12,10 +12,9 @@ import {
   type CharacterScraperSlot,
   type CharacterScraperSlotConfigs,
   type ScraperProfile,
-  type ScraperProviderEntry,
   type SlotStrategy
 } from '@shared/db'
-import { type ProfileCleanupAction, type ScraperCapability } from '@shared/scraper'
+import { type ProfileCleanupAction } from '@shared/scraper'
 import type {
   CharacterScraperProviderInfo,
   CharacterSearchResult,
@@ -25,36 +24,57 @@ import type {
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId } from '../../utils'
+import { executeScraperPlan } from '../common/executor'
 import {
-  assertProviderContract,
-  createResolveCache,
-  getOrderedEnabledProviderEntries,
-  hasValidSlotData,
-  hasRegisteredProvider,
+  buildExecutionPlan,
+  buildSingleProviderExecutionPlan,
   sanitizeSlotConfigs,
-  type ResolveResult
-} from '../common'
-import { mergeCharacterScraperBundle } from './merge'
-import type { CharacterScraperProvider } from './provider'
-import type { CharacterScraperImageSlot, CharacterScraperResult } from './types'
+  type PlannedSlotEntry
+} from '../common/planner'
+import { createProviderRegistry, hasRegisteredProvider } from '../common/registry'
+import { resolveProviderTarget, resolveSearchProviderTarget } from '../common/resolve'
+import { createScraperInvocationState } from '../common/state'
+import { mergeCharacterScraperBundle, mergeCharacterScraperImages } from './merge'
+import type {
+  CharacterResolvedTarget,
+  CharacterScraperProvider,
+  CharacterScraperSession,
+  CharacterSessionResultMap
+} from './provider'
+import type {
+  CharacterScraperImageResult,
+  CharacterScraperImageSlot,
+  CharacterScraperResult
+} from './types'
+import type { SlotResult } from '../../types'
 
 type ValidatedCharacterProfile = ScraperProfile & { slotConfigs: CharacterScraperSlotConfigs }
 
-const CHARACTER_CAPABILITY_METHODS = [
-  ['search', 'search'],
-  ['info', 'getInfo'],
-  ['tags', 'getTags'],
-  ['persons', 'getPersons'],
-  ['photos', 'getPhotos']
-] as const satisfies ReadonlyArray<readonly [ScraperCapability, keyof CharacterScraperProvider]>
+const CHARACTER_ALLOWED_CAPABILITIES = new Set(['search', ...CHARACTER_SCRAPER_SLOTS] as const)
 
-const CHARACTER_ALLOWED_CAPABILITIES = new Set<ScraperCapability>([
-  'search',
-  ...CHARACTER_SCRAPER_SLOTS
-])
+function hasValidCharacterInfoData(
+  data: CharacterSessionResultMap['info'],
+  strategy: SlotStrategy
+): boolean {
+  return strategy !== 'first' || (typeof data.name === 'string' && data.name.trim().length > 0)
+}
+
+function hasValidCharacterSlotData<S extends CharacterScraperSlot>(
+  slot: S,
+  data: CharacterSessionResultMap[S],
+  strategy: SlotStrategy
+): boolean {
+  if (slot === 'info') {
+    return hasValidCharacterInfoData(data as CharacterSessionResultMap['info'], strategy)
+  }
+
+  return Array.isArray(data) && data.length > 0
+}
 
 export class CharacterScraperHandler {
-  private providers = new Map<string, CharacterScraperProvider>()
+  private providers = createProviderRegistry<CharacterScraperProvider>(
+    CHARACTER_ALLOWED_CAPABILITIES
+  )
 
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
@@ -62,8 +82,7 @@ export class CharacterScraperHandler {
   ) {}
 
   registerProvider(provider: CharacterScraperProvider): void {
-    assertProviderContract(provider, CHARACTER_ALLOWED_CAPABILITIES, CHARACTER_CAPABILITY_METHODS)
-    this.providers.set(provider.id, provider)
+    this.providers.register(provider)
     log.info(`[Scraper] Registered character provider: ${provider.id}`)
   }
 
@@ -89,7 +108,7 @@ export class CharacterScraperHandler {
   }
 
   getProviders(): CharacterScraperProviderInfo[] {
-    return Array.from(this.providers.values()).map((provider) => ({
+    return this.providers.list().map((provider) => ({
       id: provider.id,
       name: provider.name,
       capabilities: [...provider.capabilities]
@@ -97,7 +116,7 @@ export class CharacterScraperHandler {
   }
 
   getProviderInfo(providerId: string): CharacterScraperProviderInfo {
-    const provider = this.getProvider(providerId)
+    const provider = this.getSearchProvider(providerId)
     return {
       id: provider.id,
       name: provider.name,
@@ -108,7 +127,7 @@ export class CharacterScraperHandler {
   async ensureProfileValid(profileId: string): Promise<ProfileCleanupAction> {
     const profile = this.loadProfile(profileId)
 
-    if (!hasRegisteredProvider(this.providers, profile.searchProviderId)) {
+    if (!hasRegisteredProvider(this.providers.asMap(), profile.searchProviderId)) {
       this.db.delete(scraperProfiles).where(eq(scraperProfiles.id, profileId)).run()
       log.info(`[Scraper] Deleted character profile '${profile.name}' (invalid searchProviderId)`)
       return 'deleted'
@@ -117,7 +136,7 @@ export class CharacterScraperHandler {
     const { slotConfigs, changed } = sanitizeSlotConfigs(
       'character',
       profile.slotConfigs,
-      this.providers
+      this.providers.asMap()
     )
     if (changed) {
       this.db
@@ -134,7 +153,7 @@ export class CharacterScraperHandler {
 
   async search(profileId: string, query: string): Promise<CharacterSearchResult[]> {
     const profile = this.loadProfile(profileId)
-    const provider = this.getProvider(profile.searchProviderId)
+    const provider = this.getSearchProvider(profile.searchProviderId)
     const results = await provider.search(query, this.getProfileLocale(profile))
     return results.map((result) => ensureProviderExternalId(result, provider.id, result.id))
   }
@@ -156,46 +175,68 @@ export class CharacterScraperHandler {
     }
 
     const resolveLocale = this.getResolveLocale(profile, lookup)
-    const resolveViaCache = createResolveCache<CharacterSearchResult>(this.providers)
+    const searchProvider = this.getSearchProvider(profile.searchProviderId)
+    const plan = buildExecutionPlan<CharacterScraperSlot>({
+      slotConfigs: validatedProfile.slotConfigs,
+      resolveLocale: (entry) => this.getFetchLocale(validatedProfile, entry)
+    })
+    const state = createScraperInvocationState<
+      CharacterResolvedTarget,
+      CharacterScraperSession,
+      CharacterScraperSlot,
+      CharacterSessionResultMap,
+      CharacterScraperResult
+    >()
 
-    const searchResult = await resolveViaCache(
-      profile.searchProviderId,
-      lookup.name,
-      lookup.knownIds,
-      resolveLocale
-    )
+    try {
+      const { target: searchTarget, canonicalLookup } = await resolveSearchProviderTarget({
+        state,
+        providerId: searchProvider.id,
+        provider: searchProvider,
+        lookup,
+        locale: resolveLocale,
+        warn: (message, error) => log.warn(message, error)
+      })
 
-    let resolveName = lookup.name
-    if (searchResult?.originalName) {
-      resolveName = searchResult.originalName
-      log.info(
-        `[Scraper] Using originalName '${resolveName}' for cross-provider search (character)`
-      )
-    }
+      const resolveProviderId = async (
+        providerId: string,
+        locale: Locale
+      ): Promise<CharacterResolvedTarget | null> => {
+        void locale
 
-    const resolvedProviders = new Map<string, Promise<ResolveResult | null>>()
-    if (searchResult) {
-      resolvedProviders.set(profile.searchProviderId, Promise.resolve(searchResult))
-    }
+        const provider = this.providers.get(providerId)
+        if (!provider) {
+          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          return null
+        }
 
-    const resolveProviderId = (providerId: string): Promise<ResolveResult | null> => {
-      const existing = resolvedProviders.get(providerId)
-      if (existing) {
-        return existing
+        if (providerId === searchProvider.id && searchTarget) {
+          return searchTarget
+        }
+
+        return resolveProviderTarget({
+          state,
+          providerId,
+          provider,
+          lookup: canonicalLookup,
+          locale: resolveLocale
+        })
       }
 
-      const task = resolveViaCache(providerId, resolveName, lookup.knownIds, resolveLocale)
-      resolvedProviders.set(providerId, task)
-      return task
+      const results = (await executeScraperPlan({
+        state,
+        plan,
+        getProvider: (providerId) => this.providers.get(providerId),
+        resolveProviderTarget: resolveProviderId,
+        buildResult: ({ providerId, target, entry, data }) =>
+          this.createCharacterResult(providerId, target, entry, data),
+        warn: (message, error) => log.warn(message, error)
+      })) as readonly CharacterScraperResult[]
+
+      return mergeCharacterScraperBundle([...results], validatedProfile)
+    } finally {
+      await state.dispose()
     }
-
-    const slotResults = await Promise.all(
-      CHARACTER_SCRAPER_SLOTS.map((slot) =>
-        this.executeSlot(validatedProfile, slot, resolveProviderId)
-      )
-    )
-
-    return mergeCharacterScraperBundle(slotResults.flat(), validatedProfile)
   }
 
   async getProviderImages(
@@ -215,113 +256,83 @@ export class CharacterScraperHandler {
     }
 
     const locale = lookup.locale ?? (this.i18n.getLocale() as Locale)
-    const resolveId = createResolveCache<CharacterSearchResult>(this.providers)
-    const result = await resolveId(providerId, lookup.name, lookup.knownIds, locale)
-
-    if (!result) {
-      log.warn(`[Scraper] Could not resolve ID for '${lookup.name}' via ${providerId}`)
-      return []
-    }
+    const plan = buildSingleProviderExecutionPlan<CharacterScraperImageSlot>({
+      providerId,
+      slot: imageType,
+      locale
+    })
+    const state = createScraperInvocationState<
+      CharacterResolvedTarget,
+      CharacterScraperSession,
+      CharacterScraperSlot,
+      CharacterSessionResultMap,
+      CharacterScraperImageResult
+    >()
 
     try {
-      const data = await provider.getPhotos!(result.id, locale)
-      return Array.isArray(data) ? data : []
+      const results = (await executeScraperPlan({
+        state,
+        plan,
+        getProvider: (candidateProviderId) => this.providers.get(candidateProviderId),
+        resolveProviderTarget: async (candidateProviderId) => {
+          if (candidateProviderId !== providerId) {
+            return null
+          }
+
+          return resolveProviderTarget({
+            state,
+            providerId,
+            provider,
+            lookup,
+            locale
+          })
+        },
+        buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
+          this.createCharacterResult(resolvedProviderId, target, entry, data),
+        warn: (message, error) => log.warn(message, error)
+      })) as readonly CharacterScraperImageResult[]
+
+      return mergeCharacterScraperImages([...results], 'enrich')
     } catch (error) {
       log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
       return []
+    } finally {
+      await state.dispose()
     }
   }
 
-  private async executeSlot(
-    profile: ValidatedCharacterProfile,
-    slot: CharacterScraperSlot,
-    resolveProviderId: (providerId: string) => Promise<ResolveResult | null>
-  ): Promise<CharacterScraperResult[]> {
-    const config = profile.slotConfigs[slot]
-    const entries = getOrderedEnabledProviderEntries(config.providers)
-
-    if (config.strategy === 'first') {
-      for (const entry of entries) {
-        const resolved = await resolveProviderId(entry.providerId)
-        if (!resolved) continue
-
-        const result = await this.fetchSlot(
-          entry.providerId,
-          resolved.id,
-          this.getFetchLocale(profile, entry),
-          slot,
-          entry.priority,
-          config.strategy
-        )
-
-        if (result) {
-          return [result]
-        }
-      }
-
-      return []
-    }
-
-    const results = await Promise.all(
-      entries.map(async (entry) => {
-        const resolved = await resolveProviderId(entry.providerId)
-        if (!resolved) return null
-
-        return this.fetchSlot(
-          entry.providerId,
-          resolved.id,
-          this.getFetchLocale(profile, entry),
-          slot,
-          entry.priority,
-          config.strategy
-        )
-      })
-    )
-
-    return results.filter((result): result is CharacterScraperResult => result !== null)
-  }
-
-  private async fetchSlot(
+  private createCharacterResult<S extends CharacterScraperSlot>(
     providerId: string,
-    id: string,
-    locale: Locale,
-    slot: CharacterScraperSlot,
-    priority: number,
-    strategy: SlotStrategy
-  ): Promise<CharacterScraperResult | null> {
-    const provider = this.providers.get(providerId)
-    if (!provider) {
-      log.warn(`[Scraper] Provider '${providerId}' not available`)
+    target: CharacterResolvedTarget,
+    entry: PlannedSlotEntry<S>,
+    data: CharacterSessionResultMap[S]
+  ): SlotResult<S, CharacterSessionResultMap[S]> | null {
+    if (entry.slot === 'info') {
+      const normalized = ensureProviderExternalId(
+        data as CharacterSessionResultMap['info'],
+        providerId,
+        target.id
+      )
+
+      return hasValidCharacterInfoData(normalized, entry.strategy)
+        ? ({
+            slot: entry.slot,
+            providerId,
+            rank: entry.rank,
+            data: normalized
+          } as SlotResult<S, CharacterSessionResultMap[S]>)
+        : null
+    }
+
+    if (!hasValidCharacterSlotData(entry.slot, data, entry.strategy)) {
       return null
     }
 
-    if (!provider.capabilities.includes(slot)) {
-      log.warn(`[Scraper] Provider '${providerId}' does not support slot '${slot}'`)
-      return null
-    }
-
-    try {
-      switch (slot) {
-        case 'info': {
-          const data = ensureProviderExternalId(await provider.getInfo!(id, locale), providerId, id)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'tags': {
-          const data = await provider.getTags!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'persons': {
-          const data = await provider.getPersons!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'photos': {
-          const data = await provider.getPhotos!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-      }
-    } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${slot} failed:`, error)
-      return null
+    return {
+      slot: entry.slot,
+      providerId,
+      rank: entry.rank,
+      data
     }
   }
 
@@ -341,7 +352,7 @@ export class CharacterScraperHandler {
     return profile
   }
 
-  private getProvider(providerId: string): CharacterScraperProvider {
+  private getSearchProvider(providerId: string): CharacterScraperProvider {
     const provider = this.providers.get(providerId)
     if (!provider || !provider.capabilities.includes('search')) {
       throw new Error(`Provider not found: ${providerId}`)
@@ -357,7 +368,7 @@ export class CharacterScraperHandler {
     return (lookup.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
   }
 
-  private getFetchLocale(profile: ScraperProfile, entry: ScraperProviderEntry): Locale {
+  private getFetchLocale(profile: ScraperProfile, entry: { locale?: Locale | null }): Locale {
     return (entry.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
   }
 }

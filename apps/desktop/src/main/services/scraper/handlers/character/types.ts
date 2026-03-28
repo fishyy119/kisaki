@@ -1,18 +1,20 @@
 /**
- * Character Scraper Result Types
- *
- * Discriminated union types for provider results, organized by slot.
+ * Character scraper execution result types passed from the runtime pipeline to merge.
  */
 
-import type { ScraperSlot } from '@shared/db'
-import type { CharacterInfo, Tag } from '@shared/metadata'
-import type { ScrapedCharacterPersonFact } from '@shared/scraper'
+import type { CharacterScraperSlot } from '@shared/db'
 import type { SlotResult } from '../../types'
+import type { CharacterSessionResultMap } from './provider'
 
-export type CharacterScraperInfoResult = SlotResult<'info', CharacterInfo>
-export type CharacterScraperTagsResult = SlotResult<'tags', Tag[]>
-export type CharacterScraperPersonsResult = SlotResult<'persons', ScrapedCharacterPersonFact[]>
-export type CharacterScraperPhotosResult = SlotResult<'photos', string[]>
+type CharacterSlotResult<S extends CharacterScraperSlot> = SlotResult<
+  S,
+  CharacterSessionResultMap[S]
+>
+
+export type CharacterScraperInfoResult = CharacterSlotResult<'info'>
+export type CharacterScraperTagsResult = CharacterSlotResult<'tags'>
+export type CharacterScraperPersonsResult = CharacterSlotResult<'persons'>
+export type CharacterScraperPhotosResult = CharacterSlotResult<'photos'>
 
 export type CharacterScraperResult =
   | CharacterScraperInfoResult
@@ -20,8 +22,6 @@ export type CharacterScraperResult =
   | CharacterScraperPersonsResult
   | CharacterScraperPhotosResult
 
-/**
- * Character image slot (DB: characters.photoFile).
- * Only `photos` maps to CoreCharacterMetadata.photos / characters.photoFile.
- */
-export type CharacterScraperImageSlot = Extract<ScraperSlot, 'photos'>
+export type CharacterScraperImageSlot = 'photos'
+
+export type CharacterScraperImageResult = CharacterScraperPhotosResult

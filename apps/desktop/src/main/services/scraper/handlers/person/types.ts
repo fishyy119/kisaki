@@ -1,24 +1,22 @@
 /**
- * Person Scraper Result Types
- *
- * Discriminated union types for provider results, organized by slot.
+ * Person scraper execution result types passed from the runtime pipeline to merge.
  */
 
-import type { ScraperSlot } from '@shared/db'
-import type { PersonInfo, Tag } from '@shared/metadata'
+import type { PersonScraperSlot } from '@shared/db'
 import type { SlotResult } from '../../types'
+import type { PersonSessionResultMap } from './provider'
 
-export type PersonScraperInfoResult = SlotResult<'info', PersonInfo>
-export type PersonScraperTagsResult = SlotResult<'tags', Tag[]>
-export type PersonScraperPhotosResult = SlotResult<'photos', string[]>
+type PersonSlotResult<S extends PersonScraperSlot> = SlotResult<S, PersonSessionResultMap[S]>
+
+export type PersonScraperInfoResult = PersonSlotResult<'info'>
+export type PersonScraperTagsResult = PersonSlotResult<'tags'>
+export type PersonScraperPhotosResult = PersonSlotResult<'photos'>
 
 export type PersonScraperResult =
   | PersonScraperInfoResult
   | PersonScraperTagsResult
   | PersonScraperPhotosResult
 
-/**
- * Person image slot (DB: persons.photoFile).
- * Only `photos` maps to CorePersonMetadata.photos / persons.photoFile.
- */
-export type PersonScraperImageSlot = Extract<ScraperSlot, 'photos'>
+export type PersonScraperImageSlot = 'photos'
+
+export type PersonScraperImageResult = PersonScraperPhotosResult

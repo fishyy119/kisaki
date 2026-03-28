@@ -7,31 +7,25 @@
  * - https://www.ymgal.games/developer
  */
 
-import type { NetworkService } from '@main/services/network'
-import type { GameScraperProvider } from '../../provider'
-import type { GameSearchResult } from '@shared/scraper'
+import type { GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
 import type { GameInfo, Tag } from '@shared/metadata'
 import type {
+  GameSearchResult,
   ScrapedCharacterPersonFact,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
-  ScrapedGamePersonFact
+  ScrapedGamePersonFact,
+  ScraperLookup
 } from '@shared/scraper'
-import { normalizeScrapedDescription, parsePartialDate } from '../../../../utils'
-import { YmgalClient } from './client'
+import type { ScraperProviderDeps } from '../../../../types'
 import type {
-  YmgalCharacter,
-  YmgalCharacterMapping,
-  YmgalCharacterRelation,
-  YmgalGame,
-  YmgalGameArchiveData,
-  YmgalGameSearchListItem,
-  YmgalOrganization,
-  YmgalPerson,
-  YmgalPersonMapping,
-  YmgalStaff
-} from './types'
+  GameResolvedTarget,
+  GameScraperProvider,
+  GameScraperSession,
+  GameSessionResultMap
+} from '../../provider'
+import { YmgalClient } from './client'
 import {
   buildYmgalCharacterUrl,
   buildYmgalGameUrl,
@@ -50,6 +44,25 @@ import {
   resolveLocalizedName,
   toYmgalId
 } from './format'
+import type {
+  YmgalCharacter,
+  YmgalCharacterMapping,
+  YmgalCharacterRelation,
+  YmgalGame,
+  YmgalGameArchiveData,
+  YmgalGameSearchListItem,
+  YmgalOrgGameItem,
+  YmgalOrganization,
+  YmgalPerson,
+  YmgalPersonMapping,
+  YmgalStaff
+} from './types'
+
+interface YmgalOrganizationResources {
+  developerId?: string
+  organization?: YmgalOrganization
+  relatedGames: YmgalOrgGameItem[]
+}
 
 export class YmgalProvider implements GameScraperProvider {
   public readonly id = 'ymgal'
@@ -70,11 +83,13 @@ export class YmgalProvider implements GameScraperProvider {
   }
 
   private readonly client: YmgalClient
+  private readonly helper: ScraperProviderDeps['helper']
 
-  constructor(networkService: NetworkService) {
+  constructor(deps: ScraperProviderDeps) {
+    this.helper = deps.helper
     const clientId = import.meta.env.VITE_YMGAL_API_CLIENT_ID?.trim()
     const clientSecret = import.meta.env.VITE_YMGAL_API_CLIENT_SECRET?.trim()
-    this.client = new YmgalClient(networkService, clientId || undefined, clientSecret || undefined)
+    this.client = new YmgalClient(deps.network, clientId || undefined, clientSecret || undefined)
   }
 
   // ===========================================================================
@@ -107,14 +122,118 @@ export class YmgalProvider implements GameScraperProvider {
     return ordered.slice(0, 25)
   }
 
+  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+    const knownTarget = this.resolveKnownTarget(lookup)
+    if (knownTarget) {
+      return knownTarget
+    }
+
+    const first = (await this.search(lookup.name, locale))[0]
+    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+  }
+
+  public async openSession(
+    target: GameResolvedTarget,
+    locale: Locale
+  ): Promise<GameScraperSession> {
+    const gameId = normalizeYmgalId(target.id, 'YMGal game id')
+    const getArchive = this.memoizeTask(() => this.client.getGameArchive(gameId))
+    const getCharacterDetails = this.memoizeTask(async () => {
+      const archive = await getArchive()
+      const characterIds = this.collectIds(
+        (archive.game.characters ?? []).map((relation) => relation.cid)
+      )
+      return this.fetchCharacterDetails(characterIds)
+    })
+    const getPersonDetails = this.memoizeTask(async () => {
+      const archive = await getArchive()
+      const staffEntries = archive.game.staff ?? []
+      const characterEntries = archive.game.characters ?? []
+      const personIds = this.collectIds([
+        ...staffEntries.map((staff) => staff.pid),
+        ...characterEntries.map((relation) => relation.cvId)
+      ])
+      return this.fetchPersonDetails(personIds)
+    })
+    const getOrganizationResources = this.memoizeTask(
+      async (): Promise<YmgalOrganizationResources> => {
+        const archive = await getArchive()
+        const developerId = toYmgalId(archive.game.developerId)
+        if (!developerId) {
+          return { relatedGames: [] }
+        }
+
+        let organization: YmgalOrganization | undefined
+        try {
+          organization = await this.client.getOrganizationArchive(developerId)
+        } catch {
+          organization = undefined
+        }
+
+        const relatedGames = await this.client.getOrganizationGames(developerId).catch(() => [])
+
+        return {
+          developerId,
+          organization,
+          relatedGames
+        }
+      }
+    )
+    const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
+
+    const loadSlot = (slot: GameScraperSlot): Promise<unknown> => {
+      switch (slot) {
+        case 'info':
+          return this.buildInfo(getArchive, locale)
+        case 'characters':
+          return this.buildCharacters(getArchive, getCharacterDetails, getPersonDetails, locale)
+        case 'persons':
+          return this.buildPersons(getArchive, getPersonDetails, locale)
+        case 'companies':
+          return this.buildCompanies(getOrganizationResources, locale)
+        case 'covers':
+          return this.buildCovers(getArchive)
+        case 'tags':
+        case 'backdrops':
+        case 'logos':
+        case 'icons':
+          return Promise.resolve(undefined)
+      }
+    }
+
+    return {
+      get: async (slots) => {
+        const output: Partial<GameSessionResultMap> = {}
+
+        await Promise.all(
+          slots.map(async (slot) => {
+            if (!slotTasks.has(slot)) {
+              slotTasks.set(slot, loadSlot(slot))
+            }
+
+            const payload = await slotTasks.get(slot)!
+            if (payload !== undefined) {
+              ;(output as Record<GameScraperSlot, unknown>)[slot] = payload
+            }
+          })
+        )
+
+        return output
+      }
+    }
+  }
+
   // ===========================================================================
   // Core Info
   // ===========================================================================
 
-  public async getInfo(id: string, locale?: Locale): Promise<GameInfo> {
-    const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
+  private async buildInfo(
+    getArchive: () => Promise<YmgalGameArchiveData>,
+    locale?: Locale
+  ): Promise<GameInfo> {
+    const archive = await getArchive()
     const game = archive.game
-    const gameId = normalizeYmgalId(toYmgalId(game.gid) || id, 'YMGal game id')
+    const gameId = normalizeYmgalId(toYmgalId(game.gid) || game.gid || '', 'YMGal game id')
 
     const { name, originalName } = resolveLocalizedName(game.name, game.chineseName, locale)
     const relatedSites = this.buildGameRelatedSites(game)
@@ -126,8 +245,8 @@ export class YmgalProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      releaseDate: parsePartialDate(game.releaseDate),
-      description: normalizeScrapedDescription(game.introduction),
+      releaseDate: this.parsePartialDate(game.releaseDate),
+      description: this.normalizeDescription(game.introduction),
       relatedSites,
       externalIds
     }
@@ -137,16 +256,20 @@ export class YmgalProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
-    const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
+  private async buildCharacters(
+    getArchive: () => Promise<YmgalGameArchiveData>,
+    getCharacterDetails: () => Promise<Map<string, YmgalCharacter>>,
+    getPersonDetails: () => Promise<Map<string, YmgalPerson>>,
+    locale?: Locale
+  ): Promise<ScrapedGameCharacterFact[]> {
+    const archive = await getArchive()
     const relations = archive.game.characters ?? []
     if (relations.length === 0) return []
 
-    const characterIds = this.collectIds(relations.map((relation) => relation.cid))
-    const actorIds = this.collectIds(relations.map((relation) => relation.cvId))
-
-    const characterDetails = await this.fetchCharacterDetails(characterIds)
-    const actorDetails = await this.fetchPersonDetails(actorIds)
+    const [characterDetails, personDetails] = await Promise.all([
+      getCharacterDetails(),
+      getPersonDetails()
+    ])
 
     const output: ScrapedGameCharacterFact[] = []
 
@@ -171,17 +294,17 @@ export class YmgalProvider implements GameScraperProvider {
       ])
 
       const photos = dedupeUrls([detail?.mainImg, mapping?.mainImg])
-      const persons = this.buildCharacterPersons(relation, archive, actorDetails, locale)
+      const persons = this.buildCharacterPersons(relation, archive, personDetails, locale)
 
       output.push({
         name,
         originalName,
-        description: normalizeScrapedDescription(detail?.introduction),
+        description: this.normalizeDescription(detail?.introduction),
         relatedSites,
         externalIds,
         photos: photos.length > 0 ? photos : undefined,
         gender: mapYmgalGender(detail?.gender),
-        birthDate: parsePartialDate(detail?.birthday),
+        birthDate: this.parsePartialDate(detail?.birthday),
         type: mapYmgalCharacterType(relation.characterPosition ?? undefined),
         persons: persons.length > 0 ? persons : undefined
       })
@@ -194,23 +317,18 @@ export class YmgalProvider implements GameScraperProvider {
   // Persons
   // ===========================================================================
 
-  public async getPersons(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]> {
-    const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
+  private async buildPersons(
+    getArchive: () => Promise<YmgalGameArchiveData>,
+    getPersonDetails: () => Promise<Map<string, YmgalPerson>>,
+    locale?: Locale
+  ): Promise<ScrapedGamePersonFact[]> {
+    const archive = await getArchive()
     const game = archive.game
+    const personDetails = await getPersonDetails()
 
-    const staffEntries = game.staff ?? []
-    const characterEntries = game.characters ?? []
-
-    const personIds = this.collectIds([
-      ...staffEntries.map((staff) => staff.pid),
-      ...characterEntries.map((character) => character.cvId)
-    ])
-    if (personIds.length === 0) return []
-
-    const personDetails = await this.fetchPersonDetails(personIds)
     const persons: ScrapedGamePersonFact[] = []
 
-    for (const staff of staffEntries) {
+    for (const staff of game.staff ?? []) {
       const personId = toYmgalId(staff.pid)
       if (!personId) continue
 
@@ -219,18 +337,16 @@ export class YmgalProvider implements GameScraperProvider {
       persons.push(this.mapStaffPerson(personId, staff, detail, snapshot, locale))
     }
 
-    for (const relation of characterEntries) {
+    for (const relation of game.characters ?? []) {
       const personId = toYmgalId(relation.cvId)
       if (!personId) continue
 
       const detail = personDetails.get(personId)
       const snapshot = this.findPersonMapping(archive.pidMapping, personId)
-      const incoming: ScrapedGamePersonFact = {
+      persons.push({
         ...this.buildGamePersonBase(personId, detail, snapshot, locale),
         type: 'actor'
-      }
-
-      persons.push(incoming)
+      })
     }
 
     return persons
@@ -240,19 +356,13 @@ export class YmgalProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
-    const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
-    const developerId = toYmgalId(archive.game.developerId)
+  private async buildCompanies(
+    getOrganizationResources: () => Promise<YmgalOrganizationResources>,
+    locale?: Locale
+  ): Promise<ScrapedGameCompanyFact[]> {
+    const { developerId, organization, relatedGames } = await getOrganizationResources()
     if (!developerId) return []
 
-    let organization: YmgalOrganization | undefined
-    try {
-      organization = await this.client.getOrganizationArchive(developerId)
-    } catch {
-      organization = undefined
-    }
-
-    const relatedGames = await this.client.getOrganizationGames(developerId).catch(() => [])
     const { name, originalName } = resolveLocalizedName(
       organization?.name || developerId,
       organization?.chineseName,
@@ -278,7 +388,7 @@ export class YmgalProvider implements GameScraperProvider {
       {
         name,
         originalName,
-        description: normalizeScrapedDescription(organization?.introduction),
+        description: this.normalizeDescription(organization?.introduction),
         relatedSites,
         externalIds,
         logos: logos.length > 0 ? logos : undefined,
@@ -293,8 +403,8 @@ export class YmgalProvider implements GameScraperProvider {
   // Images
   // ===========================================================================
 
-  public async getCovers(id: string, _locale?: Locale): Promise<string[]> {
-    const archive = await this.client.getGameArchive(normalizeYmgalId(id, 'YMGal game id'))
+  private async buildCovers(getArchive: () => Promise<YmgalGameArchiveData>): Promise<string[]> {
+    const archive = await getArchive()
     return dedupeUrls([archive.game.mainImg]).slice(0, 10)
   }
 
@@ -307,6 +417,7 @@ export class YmgalProvider implements GameScraperProvider {
     if (!rawGameId) {
       throw new Error(`Invalid YMGal game id: ${game.gid}`)
     }
+
     const gameId = normalizeYmgalId(rawGameId, 'YMGal game id')
     const { name, originalName } = resolveLocalizedName(game.name, game.chineseName, locale)
 
@@ -314,7 +425,7 @@ export class YmgalProvider implements GameScraperProvider {
       id: gameId,
       name,
       originalName,
-      releaseDate: parsePartialDate(game.releaseDate),
+      releaseDate: this.parsePartialDate(game.releaseDate),
       externalIds: [{ source: this.id, id: gameId }]
     }
   }
@@ -335,11 +446,12 @@ export class YmgalProvider implements GameScraperProvider {
       item.chineseName,
       locale
     )
+
     return {
       id: itemId,
       name: localizedName,
       originalName,
-      releaseDate: parsePartialDate(item.releaseDate),
+      releaseDate: this.parsePartialDate(item.releaseDate),
       externalIds: [{ source: this.id, id: itemId }]
     }
   }
@@ -388,12 +500,12 @@ export class YmgalProvider implements GameScraperProvider {
       {
         name,
         originalName,
-        description: normalizeScrapedDescription(detail?.introduction),
+        description: this.normalizeDescription(detail?.introduction),
         relatedSites,
         externalIds,
         photos: photos.length > 0 ? photos : undefined,
         gender: mapYmgalGender(detail?.gender),
-        birthDate: parsePartialDate(detail?.birthday),
+        birthDate: this.parsePartialDate(detail?.birthday),
         type: 'actor'
       }
     ]
@@ -447,12 +559,12 @@ export class YmgalProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(detail?.introduction),
+      description: this.normalizeDescription(detail?.introduction),
       relatedSites,
       externalIds,
       photos: photos.length > 0 ? photos : undefined,
       gender: mapYmgalGender(detail?.gender),
-      birthDate: parsePartialDate(detail?.birthday),
+      birthDate: this.parsePartialDate(detail?.birthday),
       tags: tags.length > 0 ? dedupeTags(tags) : undefined
     }
   }
@@ -518,5 +630,30 @@ export class YmgalProvider implements GameScraperProvider {
       }
     }
     return map
+  }
+
+  private memoizeTask<T>(loader: () => Promise<T>): () => Promise<T> {
+    let task: Promise<T> | undefined
+
+    return () => {
+      if (!task) {
+        task = loader()
+      }
+
+      return task
+    }
+  }
+
+  private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
+    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
+  }
+
+  private parsePartialDate(input: string | null | undefined) {
+    return this.helper.date.parsePartialDate(input)
+  }
+
+  private normalizeDescription(value: string | null | undefined) {
+    return this.helper.text.normalizeDescription(value)
   }
 }

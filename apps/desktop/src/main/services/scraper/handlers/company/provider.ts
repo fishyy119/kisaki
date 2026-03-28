@@ -1,33 +1,29 @@
 /**
- * Company Scraper Provider Interface
- *
- * Defines the contract for company metadata providers (builtin and plugins).
+ * Company scraper provider runtime contract.
  */
 
-import type { Locale } from '@shared/locale'
-import type { CompanySearchResult } from '@shared/scraper'
+import type { CompanyScraperSlot } from '@shared/db'
 import type { CompanyInfo, Tag } from '@shared/metadata'
-import type { ScraperCapability } from '@shared/scraper'
+import type { Locale } from '@shared/locale'
+import type { CompanySearchResult, ScraperCapability, ScraperLookup } from '@shared/scraper'
+import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
+
+export type CompanyResolvedTarget = IdResolvedTarget
+
+export interface CompanySessionResultMap {
+  info: CompanyInfo
+  tags: Tag[]
+  logos: string[]
+}
+
+export type CompanyScraperSession = BaseScraperSession<CompanyScraperSlot, CompanySessionResultMap>
 
 export interface CompanyScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-
-  /** Display name */
   readonly name: string
-
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
 
-  /** Search companies by query string. */
   search(query: string, locale?: Locale): Promise<CompanySearchResult[]>
-
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<CompanyInfo>
-
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-
-  /** Get logo image URLs */
-  getLogos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<CompanyResolvedTarget | null>
+  openSession(target: CompanyResolvedTarget, locale: Locale): Promise<CompanyScraperSession>
 }

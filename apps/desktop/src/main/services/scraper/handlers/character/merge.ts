@@ -11,10 +11,11 @@ import {
   applyStrategy,
   filterBySlot,
   mergeCharacterPersons,
-  sortByPriority,
+  sortByRank,
   type RelationCollectionMergeOptions
 } from '../../utils'
 import type {
+  CharacterScraperImageResult,
   CharacterScraperPhotosResult,
   CharacterScraperInfoResult,
   CharacterScraperPersonsResult,
@@ -68,12 +69,35 @@ export function mergeCharacterScraperMetadata(
   return finalize(metadata)
 }
 
+/**
+ * Merge image results for picker dialogs.
+ */
+export function mergeCharacterScraperImages(
+  results: CharacterScraperImageResult[],
+  strategy: SlotStrategy
+): string[] {
+  const sorted = sortByRank(results)
+  const allImages: string[] = []
+
+  for (const result of sorted) {
+    if (!result.data.length) continue
+
+    if (strategy === 'first') {
+      return result.data
+    }
+
+    allImages.push(...result.data)
+  }
+
+  return [...new Set(allImages)]
+}
+
 function mergeInfo(
   metadata: Partial<ScrapedCharacterMetadata>,
   results: CharacterScraperInfoResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     const info = result.data
@@ -116,7 +140,7 @@ function mergeTags(
   results: CharacterScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -130,7 +154,7 @@ function mergePersons(
   results: CharacterScraperPersonsResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -144,7 +168,7 @@ function mergePhotos(
   results: CharacterScraperPhotosResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue

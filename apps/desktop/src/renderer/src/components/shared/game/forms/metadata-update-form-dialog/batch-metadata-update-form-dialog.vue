@@ -205,6 +205,7 @@ async function handleSubmit() {
     collectionUpdate: collectionUpdate.value
   } satisfies IngestUpdatePolicy
 
+  open.value = false
   isSubmitting.value = true
 
   const toastTitle = '批量更新元数据中...'

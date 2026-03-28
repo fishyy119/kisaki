@@ -6,8 +6,9 @@ import {
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedPersonMetadata, ScrapedPersonBundle } from '@shared/scraper'
-import { applyImageStrategy, applyStrategy, filterBySlot, sortByPriority } from '../../utils'
+import { applyImageStrategy, applyStrategy, filterBySlot, sortByRank } from '../../utils'
 import type {
+  PersonScraperImageResult,
   PersonScraperPhotosResult,
   PersonScraperInfoResult,
   PersonScraperResult,
@@ -57,12 +58,35 @@ export function mergePersonScraperMetadata(
   return finalize(metadata)
 }
 
+/**
+ * Merge image results for picker dialogs.
+ */
+export function mergePersonScraperImages(
+  results: PersonScraperImageResult[],
+  strategy: SlotStrategy
+): string[] {
+  const sorted = sortByRank(results)
+  const allImages: string[] = []
+
+  for (const result of sorted) {
+    if (!result.data.length) continue
+
+    if (strategy === 'first') {
+      return result.data
+    }
+
+    allImages.push(...result.data)
+  }
+
+  return [...new Set(allImages)]
+}
+
 function mergeInfo(
   metadata: Partial<ScrapedPersonMetadata>,
   results: PersonScraperInfoResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     const info = result.data
@@ -98,7 +122,7 @@ function mergeTags(
   results: PersonScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -112,7 +136,7 @@ function mergePhotos(
   results: PersonScraperPhotosResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue

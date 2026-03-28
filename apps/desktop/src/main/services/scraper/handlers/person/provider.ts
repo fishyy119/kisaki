@@ -1,52 +1,29 @@
 /**
- * Person Scraper Provider Interface
- *
- * Defines the contract for person metadata providers (builtin and plugins).
- *
- * Notes:
- * - Slot/capability names match CorePersonMetadata fields where applicable
- * - For person entities, providers should return photo candidates via `getPhotos`
+ * Person scraper provider runtime contract.
  */
 
-import type { Locale } from '@shared/locale'
-import type { PersonSearchResult } from '@shared/scraper'
+import type { PersonScraperSlot } from '@shared/db'
 import type { PersonInfo, Tag } from '@shared/metadata'
-import type { ScraperCapability } from '@shared/scraper'
+import type { Locale } from '@shared/locale'
+import type { PersonSearchResult, ScraperCapability, ScraperLookup } from '@shared/scraper'
+import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
+
+export type PersonResolvedTarget = IdResolvedTarget
+
+export interface PersonSessionResultMap {
+  info: PersonInfo
+  tags: Tag[]
+  photos: string[]
+}
+
+export type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonSessionResultMap>
 
 export interface PersonScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-
-  /** Display name */
   readonly name: string
-
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
 
-  // ---------------------------------------------------------------------------
-  // Search
-  // ---------------------------------------------------------------------------
-
-  /** Search persons by query string. */
   search(query: string, locale?: Locale): Promise<PersonSearchResult[]>
-
-  // ---------------------------------------------------------------------------
-  // Core Metadata
-  // ---------------------------------------------------------------------------
-
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<PersonInfo>
-
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-
-  // ---------------------------------------------------------------------------
-  // Media Assets
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Get photo image URLs.
-   * Used as the primary image candidate list for CorePersonMetadata.photos.
-   */
-  getPhotos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<PersonResolvedTarget | null>
+  openSession(target: PersonResolvedTarget, locale: Locale): Promise<PersonScraperSession>
 }

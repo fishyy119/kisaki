@@ -1,26 +1,22 @@
 /**
- * Game Scraper Result Types
- *
- * Discriminated union types for provider results, organized by slot.
+ * Game scraper execution result types passed from the runtime pipeline to merge.
  */
 
-import type { GameInfo, Tag } from '@shared/metadata'
-import type {
-  ScrapedGameCharacterFact,
-  ScrapedGameCompanyFact,
-  ScrapedGamePersonFact
-} from '@shared/scraper'
+import type { GameScraperSlot } from '@shared/db'
 import type { SlotResult } from '../../types'
+import type { GameSessionResultMap } from './provider'
 
-export type GameScraperInfoResult = SlotResult<'info', GameInfo>
-export type GameScraperTagsResult = SlotResult<'tags', Tag[]>
-export type GameScraperCharactersResult = SlotResult<'characters', ScrapedGameCharacterFact[]>
-export type GameScraperPersonsResult = SlotResult<'persons', ScrapedGamePersonFact[]>
-export type GameScraperCompaniesResult = SlotResult<'companies', ScrapedGameCompanyFact[]>
-export type GameScraperCoversResult = SlotResult<'covers', string[]>
-export type GameScraperBackdropsResult = SlotResult<'backdrops', string[]>
-export type GameScraperLogosResult = SlotResult<'logos', string[]>
-export type GameScraperIconsResult = SlotResult<'icons', string[]>
+type GameSlotResult<S extends GameScraperSlot> = SlotResult<S, GameSessionResultMap[S]>
+
+export type GameScraperInfoResult = GameSlotResult<'info'>
+export type GameScraperTagsResult = GameSlotResult<'tags'>
+export type GameScraperCharactersResult = GameSlotResult<'characters'>
+export type GameScraperPersonsResult = GameSlotResult<'persons'>
+export type GameScraperCompaniesResult = GameSlotResult<'companies'>
+export type GameScraperCoversResult = GameSlotResult<'covers'>
+export type GameScraperBackdropsResult = GameSlotResult<'backdrops'>
+export type GameScraperLogosResult = GameSlotResult<'logos'>
+export type GameScraperIconsResult = GameSlotResult<'icons'>
 
 export type GameScraperResult =
   | GameScraperInfoResult

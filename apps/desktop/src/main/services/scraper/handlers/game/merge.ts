@@ -20,7 +20,7 @@ import {
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
   mergePersonMetadataFields,
-  sortByPriority,
+  sortByRank,
   type RelationCollectionMergeOptions
 } from '../../utils'
 import type {
@@ -149,7 +149,7 @@ export function mergeGameScraperImages(
   results: GameScraperImageResult[],
   strategy: SlotStrategy
 ): string[] {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
   const allImages: string[] = []
 
   for (const result of sorted) {
@@ -176,7 +176,7 @@ function mergeInfo(
   results: GameScraperInfoResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     const info = result.data
@@ -212,7 +212,7 @@ function mergeTags(
   results: GameScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -228,7 +228,7 @@ function mergeCharacters(
   results: GameScraperCharactersResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -250,7 +250,7 @@ function mergePersons(
   results: GameScraperPersonsResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -276,7 +276,7 @@ function mergeCompanies(
   results: GameScraperCompaniesResult[],
   options: RelationCollectionMergeOptions
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -305,7 +305,7 @@ function mergeImages(
   results: GameScraperImageResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue

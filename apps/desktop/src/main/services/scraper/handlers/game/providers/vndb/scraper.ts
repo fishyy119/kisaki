@@ -9,19 +9,24 @@
  * - https://vndb.org/d9#4
  */
 
-import type { NetworkService } from '@main/services/network'
-import type { GameScraperProvider } from '../../provider'
+import type { GameCompanyType, GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
-import type { GameSearchResult } from '@shared/scraper'
 import type { GameInfo, Tag } from '@shared/metadata'
 import type {
+  GameSearchResult,
   ScrapedCharacterPersonFact,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
-  ScrapedGamePersonFact
+  ScrapedGamePersonFact,
+  ScraperLookup
 } from '@shared/scraper'
-import type { GameCompanyType } from '@shared/db'
-import { normalizeScrapedDescription, parsePartialDate } from '../../../../utils'
+import type { ScraperProviderDeps } from '../../../../types'
+import type {
+  GameResolvedTarget,
+  GameScraperProvider,
+  GameScraperSession,
+  GameSessionResultMap
+} from '../../provider'
 import { VndbClient } from './client'
 import {
   buildEnumLabelMap,
@@ -55,11 +60,25 @@ import {
 import type {
   VndbCharacter,
   VndbProducer,
+  VndbRelease,
   VndbStaff,
   VndbTag,
   VndbTrait,
+  VndbVn,
   VndbVnVaEntry
 } from './types'
+
+const VN_CORE_FIELDS =
+  'id,title,alttitle,titles{lang,title,main,official,latin},released,description,extlinks{id,name,label,url},devstatus,length,length_minutes,languages,platforms,olang,tags{id,rating,spoiler,lie},image{id,url,thumbnail},screenshots{id,url,thumbnail}'
+const VN_RELATION_FIELDS = 'id,va{note,staff{id},character{id}},staff{id,role,note},developers{id}'
+const CHARACTER_FIELDS =
+  'id,name,original,description,sex,gender,birthday,blood_type,height,weight,bust,waist,hips,cup,image{id,url},traits{id,spoiler,lie,sexual},vns{id,role,spoiler}'
+const STAFF_FIELDS =
+  'id,name,original,description,gender,lang,aliases{name,latin,ismain},extlinks{id,name,label,url}'
+const PRODUCER_FIELDS = 'id,name,original,description,type,lang,extlinks{id,name,label,url}'
+const RELEASE_FIELDS = 'id,producers{id,developer,publisher}'
+const TAG_FIELDS = 'id,name,category'
+const TRAIT_FIELDS = 'id,name,group_name,sexual'
 
 export class VNDBProvider implements GameScraperProvider {
   public readonly id = 'vndb'
@@ -82,10 +101,12 @@ export class VNDBProvider implements GameScraperProvider {
   }
 
   private readonly client: VndbClient
+  private readonly helper: ScraperProviderDeps['helper']
 
-  constructor(networkService: NetworkService) {
+  constructor(deps: ScraperProviderDeps) {
+    this.helper = deps.helper
     const apiToken = import.meta.env.VITE_VNDB_API_TOKEN?.trim()
-    this.client = new VndbClient(networkService, apiToken || undefined)
+    this.client = new VndbClient(deps.network, apiToken || undefined)
   }
 
   // ===========================================================================
@@ -101,30 +122,148 @@ export class VNDBProvider implements GameScraperProvider {
       'id,title,alttitle,released,titles{lang,title,main,official,latin}',
       25
     )
+
     return rows.map((vn) => {
       const { name, originalName } = resolveLocalizedVnName(vn, locale)
       return {
         id: vn.id,
         name,
         originalName,
-        releaseDate: parsePartialDate(vn.released),
+        releaseDate: this.parsePartialDate(vn.released),
         externalIds: [{ source: this.id, id: vn.id }]
       }
     })
+  }
+
+  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+    const knownTarget = this.resolveKnownTarget(lookup)
+    if (knownTarget) {
+      return knownTarget
+    }
+
+    const first = (await this.search(lookup.name, locale))[0]
+    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+  }
+
+  public async openSession(
+    target: GameResolvedTarget,
+    locale: Locale
+  ): Promise<GameScraperSession> {
+    const vnId = normalizeVndbId(target.id, 'v')
+    const getVnCore = this.memoizeTask(() => this.client.getVnById(vnId, VN_CORE_FIELDS))
+    const getVnRelations = this.memoizeTask(() => this.client.getVnById(vnId, VN_RELATION_FIELDS))
+    const getSchema = this.memoizeTask(() => this.client.getSchema())
+    const getCharacters = this.memoizeTask(() =>
+      this.client.getCharactersByVn(vnId, CHARACTER_FIELDS)
+    )
+    const getReleases = this.memoizeTask(() => this.client.getReleasesByVn(vnId, RELEASE_FIELDS))
+    const getTagMap = this.memoizeTask(async () => {
+      const vn = await getVnCore()
+      const tagIds = [...new Set((vn?.tags ?? []).map((tag) => tag.id).filter(Boolean))]
+      const tagDetails = await this.client.getTagsByIds(tagIds, TAG_FIELDS)
+      return new Map<string, VndbTag>(tagDetails.map((tag) => [tag.id, tag]))
+    })
+    const getTraitMap = this.memoizeTask(async () => {
+      const characters = await getCharacters()
+      const traitIds = [
+        ...new Set(
+          characters.flatMap((character) => (character.traits ?? []).map((trait) => trait.id))
+        )
+      ]
+      const traits = await this.client.getTraitsByIds(traitIds, TRAIT_FIELDS)
+      return new Map<string, VndbTrait>(traits.map((trait) => [trait.id, trait]))
+    })
+    const getStaffMap = this.memoizeTask(async () => {
+      const relations = await getVnRelations()
+      const staffIds = [
+        ...new Set([
+          ...(relations?.staff ?? []).map((entry) => entry.id),
+          ...(((relations?.va ?? []).map((entry) => entry.staff?.id).filter(Boolean) as string[]) ??
+            [])
+        ])
+      ]
+      const staffRows = await this.client.getStaffByIds(staffIds, STAFF_FIELDS)
+      return new Map<string, VndbStaff>(staffRows.map((staff) => [staff.id, staff]))
+    })
+    const getProducerMap = this.memoizeTask(async () => {
+      const [relations, releases] = await Promise.all([getVnRelations(), getReleases()])
+      const producerIds = [
+        ...new Set(
+          [
+            ...(relations?.developers ?? []).map((developer) => developer.id),
+            ...releases.flatMap((release) =>
+              (release.producers ?? []).map((producer) => producer.id)
+            )
+          ].filter(Boolean)
+        )
+      ]
+      const producers = await this.client.getProducersByIds(producerIds, PRODUCER_FIELDS)
+      return new Map<string, VndbProducer>(producers.map((producer) => [producer.id, producer]))
+    })
+    const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
+
+    const loadSlot = (slot: GameScraperSlot): Promise<unknown> => {
+      switch (slot) {
+        case 'info':
+          return this.buildInfo(getVnCore, locale)
+        case 'tags':
+          return this.buildTags(getVnCore, getSchema, getTagMap)
+        case 'characters':
+          return this.buildCharacters(
+            vnId,
+            getVnRelations,
+            getCharacters,
+            getTraitMap,
+            getStaffMap,
+            locale
+          )
+        case 'persons':
+          return this.buildPersons(getVnRelations, getSchema, getStaffMap, locale)
+        case 'companies':
+          return this.buildCompanies(getVnRelations, getReleases, getSchema, getProducerMap, locale)
+        case 'covers':
+          return this.buildCovers(getVnCore)
+        case 'backdrops':
+          return this.buildBackdrops(getVnCore)
+        case 'logos':
+        case 'icons':
+          return Promise.resolve(undefined)
+      }
+    }
+
+    return {
+      get: async (slots) => {
+        const output: Partial<GameSessionResultMap> = {}
+
+        await Promise.all(
+          slots.map(async (slot) => {
+            if (!slotTasks.has(slot)) {
+              slotTasks.set(slot, loadSlot(slot))
+            }
+
+            const payload = await slotTasks.get(slot)!
+            if (payload !== undefined) {
+              ;(output as Record<GameScraperSlot, unknown>)[slot] = payload
+            }
+          })
+        )
+
+        return output
+      }
+    }
   }
 
   // ===========================================================================
   // Core Info
   // ===========================================================================
 
-  public async getInfo(id: string, locale?: Locale): Promise<GameInfo> {
-    const vnId = normalizeVndbId(id, 'v')
-    const vn = await this.client.getVnById(
-      vnId,
-      'id,title,alttitle,titles{lang,title,main,official,latin},released,description,extlinks{id,name,label,url}'
-    )
+  private async buildInfo(
+    getVnCore: () => Promise<VndbVn | null>,
+    locale?: Locale
+  ): Promise<GameInfo> {
+    const vn = await getVnCore()
     if (!vn) {
-      throw new Error(`VNDB visual novel not found: ${vnId}`)
+      throw new Error('VNDB visual novel not found.')
     }
 
     const { name, originalName } = resolveLocalizedVnName(vn, locale)
@@ -140,8 +279,8 @@ export class VNDBProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      releaseDate: parsePartialDate(vn.released),
-      description: normalizeScrapedDescription(sanitizeVndbText(vn.description)),
+      releaseDate: this.parsePartialDate(vn.released),
+      description: this.normalizeDescription(sanitizeVndbText(vn.description)),
       relatedSites,
       externalIds
     }
@@ -151,26 +290,19 @@ export class VNDBProvider implements GameScraperProvider {
   // Tags
   // ===========================================================================
 
-  public async getTags(id: string, _locale?: Locale): Promise<Tag[]> {
-    const vnId = normalizeVndbId(id, 'v')
-    const vn = await this.client.getVnById(
-      vnId,
-      'id,devstatus,length,length_minutes,languages,platforms,olang,tags{id,rating,spoiler,lie}'
-    )
+  private async buildTags(
+    getVnCore: () => Promise<VndbVn | null>,
+    getSchema: () => Promise<Awaited<ReturnType<VndbClient['getSchema']>>>,
+    getTagMap: () => Promise<Map<string, VndbTag>>
+  ): Promise<Tag[]> {
+    const [vn, schema, tagMap] = await Promise.all([getVnCore(), getSchema(), getTagMap()])
     if (!vn) return []
 
-    const schema = await this.client.getSchema()
     const languageMap = buildEnumLabelMap(schema.enums?.language)
     const platformMap = buildEnumLabelMap(schema.enums?.platform)
-
     const tags: Tag[] = []
 
-    const relationTags = vn.tags ?? []
-    const relationTagIds = relationTags.map((tag) => tag.id).filter(Boolean)
-    const tagDetails = await this.client.getTagsByIds(relationTagIds, 'id,name,category')
-    const tagMap = new Map<string, VndbTag>(tagDetails.map((tag) => [tag.id, tag]))
-
-    for (const relation of relationTags) {
+    for (const relation of vn.tags ?? []) {
       const detail = tagMap.get(relation.id)
       const name = detail?.name?.trim() || relation.id
       if (!name) continue
@@ -196,17 +328,11 @@ export class VNDBProvider implements GameScraperProvider {
     }
 
     for (const platform of vn.platforms ?? []) {
-      tags.push({
-        name: platformMap.get(platform) || platform,
-        note: 'Platform'
-      })
+      tags.push({ name: platformMap.get(platform) || platform, note: 'Platform' })
     }
 
     for (const language of vn.languages ?? []) {
-      tags.push({
-        name: languageMap.get(language) || language,
-        note: 'Language'
-      })
+      tags.push({ name: languageMap.get(language) || language, note: 'Language' })
     }
 
     if (vn.olang) {
@@ -218,10 +344,7 @@ export class VNDBProvider implements GameScraperProvider {
 
     const devStatus = mapVndbDevStatus(vn.devstatus)
     if (devStatus) {
-      tags.push({
-        name: devStatus,
-        note: 'Development Status'
-      })
+      tags.push({ name: devStatus, note: 'Development Status' })
     }
 
     return dedupeTags(tags)
@@ -231,37 +354,23 @@ export class VNDBProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
-    const vnId = normalizeVndbId(id, 'v')
-    const [characters, vn] = await Promise.all([
-      this.client.getCharactersByVn(
-        vnId,
-        'id,name,original,description,sex,gender,birthday,blood_type,height,weight,bust,waist,hips,cup,image{id,url},traits{id,spoiler,lie,sexual},vns{id,role,spoiler}'
-      ),
-      this.client.getVnById(vnId, 'id,va{note,staff{id},character{id}}')
+  private async buildCharacters(
+    vnId: string,
+    getVnRelations: () => Promise<VndbVn | null>,
+    getCharacters: () => Promise<VndbCharacter[]>,
+    getTraitMap: () => Promise<Map<string, VndbTrait>>,
+    getStaffMap: () => Promise<Map<string, VndbStaff>>,
+    locale?: Locale
+  ): Promise<ScrapedGameCharacterFact[]> {
+    const [relations, characters, traitMap, staffMap] = await Promise.all([
+      getVnRelations(),
+      getCharacters(),
+      getTraitMap(),
+      getStaffMap()
     ])
-
     if (!characters.length) return []
 
-    const vaEntries = vn?.va ?? []
-    const traitIds = [
-      ...new Set(characters.flatMap((character) => (character.traits ?? []).map((t) => t.id)))
-    ]
-    const actorStaffIds = [
-      ...new Set(vaEntries.map((entry) => entry.staff?.id).filter(Boolean) as string[])
-    ]
-
-    const [traits, staffRows] = await Promise.all([
-      this.client.getTraitsByIds(traitIds, 'id,name,group_name,sexual'),
-      this.client.getStaffByIds(
-        actorStaffIds,
-        'id,name,original,description,gender,lang,aliases{name,latin,ismain},extlinks{id,name,label,url}'
-      )
-    ])
-
-    const traitMap = new Map<string, VndbTrait>(traits.map((trait) => [trait.id, trait]))
-    const staffMap = new Map<string, VndbStaff>(staffRows.map((staff) => [staff.id, staff]))
-    const actorMap = this.buildCharacterActorMap(vaEntries, staffMap, locale)
+    const actorMap = this.buildCharacterActorMap(relations?.va ?? [], staffMap, locale)
 
     return characters.map((character) =>
       this.mapCharacter(vnId, character, traitMap, actorMap.get(character.id) ?? [], locale)
@@ -272,31 +381,21 @@ export class VNDBProvider implements GameScraperProvider {
   // Persons
   // ===========================================================================
 
-  public async getPersons(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]> {
-    const vnId = normalizeVndbId(id, 'v')
-    const vn = await this.client.getVnById(vnId, 'id,staff{id,role,note},va{note,staff{id}}')
+  private async buildPersons(
+    getVnRelations: () => Promise<VndbVn | null>,
+    getSchema: () => Promise<Awaited<ReturnType<VndbClient['getSchema']>>>,
+    getStaffMap: () => Promise<Map<string, VndbStaff>>,
+    locale?: Locale
+  ): Promise<ScrapedGamePersonFact[]> {
+    const [vn, schema, staffMap] = await Promise.all([getVnRelations(), getSchema(), getStaffMap()])
     if (!vn) return []
 
     const staffLinks = vn.staff ?? []
     const vaLinks = vn.va ?? []
-    const staffIds = [
-      ...new Set([
-        ...staffLinks.map((entry) => entry.id),
-        ...(vaLinks.map((entry) => entry.staff?.id).filter(Boolean) as string[])
-      ])
-    ]
+    if (staffLinks.length === 0 && vaLinks.length === 0) {
+      return []
+    }
 
-    if (staffIds.length === 0) return []
-
-    const [schema, staffRows] = await Promise.all([
-      this.client.getSchema(),
-      this.client.getStaffByIds(
-        staffIds,
-        'id,name,original,description,gender,lang,aliases{name,latin,ismain},extlinks{id,name,label,url}'
-      )
-    ])
-
-    const staffMap = new Map<string, VndbStaff>(staffRows.map((staff) => [staff.id, staff]))
     const roleMap = buildEnumLabelMap(schema.enums?.staff_role)
     const persons: ScrapedGamePersonFact[] = []
 
@@ -305,26 +404,23 @@ export class VNDBProvider implements GameScraperProvider {
       const type = mapVndbStaffRole(link.role)
       const roleLabel = link.role ? roleMap.get(link.role) || link.role : undefined
       const roleNote = sanitizeVndbText(link.note)
-      const note = mergeNotes(roleLabel, roleNote)
 
-      const incoming: ScrapedGamePersonFact = {
+      persons.push({
         ...this.buildStaffPersonBase(staffId, staffMap.get(staffId), locale),
         type,
-        note
-      }
-      persons.push(incoming)
+        note: mergeNotes(roleLabel, roleNote)
+      })
     }
 
     for (const link of vaLinks) {
       const staffId = link.staff?.id
       if (!staffId) continue
 
-      const incoming: ScrapedGamePersonFact = {
+      persons.push({
         ...this.buildStaffPersonBase(staffId, staffMap.get(staffId), locale),
         type: 'actor',
         note: sanitizeVndbText(link.note)
-      }
-      persons.push(incoming)
+      })
     }
 
     return persons
@@ -334,14 +430,19 @@ export class VNDBProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
-    const vnId = normalizeVndbId(id, 'v')
-    const [vn, releases, schema] = await Promise.all([
-      this.client.getVnById(vnId, 'id,developers{id}'),
-      this.client.getReleasesByVn(vnId, 'id,producers{id,developer,publisher}'),
-      this.client.getSchema()
+  private async buildCompanies(
+    getVnRelations: () => Promise<VndbVn | null>,
+    getReleases: () => Promise<VndbRelease[]>,
+    getSchema: () => Promise<Awaited<ReturnType<VndbClient['getSchema']>>>,
+    getProducerMap: () => Promise<Map<string, VndbProducer>>,
+    locale?: Locale
+  ): Promise<ScrapedGameCompanyFact[]> {
+    const [vn, releases, schema, producerMap] = await Promise.all([
+      getVnRelations(),
+      getReleases(),
+      getSchema(),
+      getProducerMap()
     ])
-
     if (!vn) return []
 
     const languageMap = buildEnumLabelMap(schema.enums?.language)
@@ -371,14 +472,6 @@ export class VNDBProvider implements GameScraperProvider {
     const producerIds = Array.from(relationMap.keys())
     if (producerIds.length === 0) return []
 
-    const producers = await this.client.getProducersByIds(
-      producerIds,
-      'id,name,original,description,type,lang,extlinks{id,name,label,url}'
-    )
-    const producerMap = new Map<string, VndbProducer>(
-      producers.map((producer) => [producer.id, producer])
-    )
-
     const companies: ScrapedGameCompanyFact[] = []
 
     for (const producerId of producerIds) {
@@ -400,17 +493,15 @@ export class VNDBProvider implements GameScraperProvider {
   // Images
   // ===========================================================================
 
-  public async getCovers(id: string, _locale?: Locale): Promise<string[]> {
-    const vnId = normalizeVndbId(id, 'v')
-    const vn = await this.client.getVnById(vnId, 'id,image{id,url,thumbnail}')
+  private async buildCovers(getVnCore: () => Promise<VndbVn | null>): Promise<string[]> {
+    const vn = await getVnCore()
     if (!vn?.image) return []
 
     return dedupeUrls([vn.image.url, vn.image.thumbnail]).slice(0, 10)
   }
 
-  public async getBackdrops(id: string, _locale?: Locale): Promise<string[]> {
-    const vnId = normalizeVndbId(id, 'v')
-    const vn = await this.client.getVnById(vnId, 'id,screenshots{id,url,thumbnail}')
+  private async buildBackdrops(getVnCore: () => Promise<VndbVn | null>): Promise<string[]> {
+    const vn = await getVnCore()
     if (!vn?.screenshots?.length) return []
 
     return dedupeUrls(
@@ -453,7 +544,7 @@ export class VNDBProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(sanitizeVndbText(character.description)),
+      description: this.normalizeDescription(sanitizeVndbText(character.description)),
       relatedSites: [{ label: 'VNDB', url: buildVndbCharacterUrl(character.id) }],
       externalIds: [{ source: this.id, id: character.id }],
       photos: photos.length > 0 ? photos : undefined,
@@ -491,6 +582,7 @@ export class VNDBProvider implements GameScraperProvider {
       }
       actorMap.get(characterId)!.push(actor)
     }
+
     return actorMap
   }
 
@@ -517,7 +609,7 @@ export class VNDBProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(sanitizeVndbText(staff?.description)),
+      description: this.normalizeDescription(sanitizeVndbText(staff?.description)),
       relatedSites,
       externalIds,
       gender: mapVndbGender(staff?.gender),
@@ -548,7 +640,7 @@ export class VNDBProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(sanitizeVndbText(staff?.description)),
+      description: this.normalizeDescription(sanitizeVndbText(staff?.description)),
       relatedSites,
       externalIds,
       gender: mapVndbGender(staff?.gender)
@@ -603,10 +695,35 @@ export class VNDBProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(sanitizeVndbText(producer?.description)),
+      description: this.normalizeDescription(sanitizeVndbText(producer?.description)),
       relatedSites,
       externalIds,
       tags: tags.length > 0 ? dedupeTags(tags) : undefined
     }
+  }
+
+  private memoizeTask<T>(loader: () => Promise<T>): () => Promise<T> {
+    let task: Promise<T> | undefined
+
+    return () => {
+      if (!task) {
+        task = loader()
+      }
+
+      return task
+    }
+  }
+
+  private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
+    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
+  }
+
+  private parsePartialDate(input: string | null | undefined) {
+    return this.helper.date.parsePartialDate(input)
+  }
+
+  private normalizeDescription(value: string | null | undefined) {
+    return this.helper.text.normalizeDescription(value)
   }
 }

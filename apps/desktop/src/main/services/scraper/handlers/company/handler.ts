@@ -1,5 +1,5 @@
 /**
- * Company scraper handler with slot-level strategy execution.
+ * Company scraper handler with invocation-scoped resolve/session execution.
  */
 
 import { eq } from 'drizzle-orm'
@@ -12,10 +12,9 @@ import {
   type CompanyScraperSlot,
   type CompanyScraperSlotConfigs,
   type ScraperProfile,
-  type ScraperProviderEntry,
   type SlotStrategy
 } from '@shared/db'
-import { type ProfileCleanupAction, type ScraperCapability } from '@shared/scraper'
+import { type ProfileCleanupAction } from '@shared/scraper'
 import type {
   CompanyScraperProviderInfo,
   CompanySearchResult,
@@ -25,35 +24,55 @@ import type {
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId } from '../../utils'
+import { executeScraperPlan } from '../common/executor'
 import {
-  assertProviderContract,
-  createResolveCache,
-  getOrderedEnabledProviderEntries,
-  hasValidSlotData,
-  hasRegisteredProvider,
+  buildExecutionPlan,
+  buildSingleProviderExecutionPlan,
   sanitizeSlotConfigs,
-  type ResolveResult
-} from '../common'
-import { mergeCompanyScraperBundle } from './merge'
-import type { CompanyScraperProvider } from './provider'
-import type { CompanyScraperImageSlot, CompanyScraperResult } from './types'
+  type PlannedSlotEntry
+} from '../common/planner'
+import { createProviderRegistry, hasRegisteredProvider } from '../common/registry'
+import { resolveProviderTarget, resolveSearchProviderTarget } from '../common/resolve'
+import { createScraperInvocationState } from '../common/state'
+import { mergeCompanyScraperBundle, mergeCompanyScraperImages } from './merge'
+import type {
+  CompanyResolvedTarget,
+  CompanyScraperProvider,
+  CompanyScraperSession,
+  CompanySessionResultMap
+} from './provider'
+import type {
+  CompanyScraperImageResult,
+  CompanyScraperImageSlot,
+  CompanyScraperResult
+} from './types'
+import type { SlotResult } from '../../types'
 
 type ValidatedCompanyProfile = ScraperProfile & { slotConfigs: CompanyScraperSlotConfigs }
 
-const COMPANY_CAPABILITY_METHODS = [
-  ['search', 'search'],
-  ['info', 'getInfo'],
-  ['tags', 'getTags'],
-  ['logos', 'getLogos']
-] as const satisfies ReadonlyArray<readonly [ScraperCapability, keyof CompanyScraperProvider]>
+const COMPANY_ALLOWED_CAPABILITIES = new Set(['search', ...COMPANY_SCRAPER_SLOTS] as const)
 
-const COMPANY_ALLOWED_CAPABILITIES = new Set<ScraperCapability>([
-  'search',
-  ...COMPANY_SCRAPER_SLOTS
-])
+function hasValidCompanyInfoData(
+  data: CompanySessionResultMap['info'],
+  strategy: SlotStrategy
+): boolean {
+  return strategy !== 'first' || (typeof data.name === 'string' && data.name.trim().length > 0)
+}
+
+function hasValidCompanySlotData<S extends CompanyScraperSlot>(
+  slot: S,
+  data: CompanySessionResultMap[S],
+  strategy: SlotStrategy
+): boolean {
+  if (slot === 'info') {
+    return hasValidCompanyInfoData(data as CompanySessionResultMap['info'], strategy)
+  }
+
+  return Array.isArray(data) && data.length > 0
+}
 
 export class CompanyScraperHandler {
-  private providers = new Map<string, CompanyScraperProvider>()
+  private providers = createProviderRegistry<CompanyScraperProvider>(COMPANY_ALLOWED_CAPABILITIES)
 
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
@@ -61,8 +80,7 @@ export class CompanyScraperHandler {
   ) {}
 
   registerProvider(provider: CompanyScraperProvider): void {
-    assertProviderContract(provider, COMPANY_ALLOWED_CAPABILITIES, COMPANY_CAPABILITY_METHODS)
-    this.providers.set(provider.id, provider)
+    this.providers.register(provider)
     log.info(`[Scraper] Registered company provider: ${provider.id}`)
   }
 
@@ -88,7 +106,7 @@ export class CompanyScraperHandler {
   }
 
   getProviders(): CompanyScraperProviderInfo[] {
-    return Array.from(this.providers.values()).map((provider) => ({
+    return this.providers.list().map((provider) => ({
       id: provider.id,
       name: provider.name,
       capabilities: [...provider.capabilities]
@@ -96,7 +114,7 @@ export class CompanyScraperHandler {
   }
 
   getProviderInfo(providerId: string): CompanyScraperProviderInfo {
-    const provider = this.getProvider(providerId)
+    const provider = this.getSearchProvider(providerId)
     return {
       id: provider.id,
       name: provider.name,
@@ -107,7 +125,7 @@ export class CompanyScraperHandler {
   async ensureProfileValid(profileId: string): Promise<ProfileCleanupAction> {
     const profile = this.loadProfile(profileId)
 
-    if (!hasRegisteredProvider(this.providers, profile.searchProviderId)) {
+    if (!hasRegisteredProvider(this.providers.asMap(), profile.searchProviderId)) {
       this.db.delete(scraperProfiles).where(eq(scraperProfiles.id, profileId)).run()
       log.info(`[Scraper] Deleted company profile '${profile.name}' (invalid searchProviderId)`)
       return 'deleted'
@@ -116,7 +134,7 @@ export class CompanyScraperHandler {
     const { slotConfigs, changed } = sanitizeSlotConfigs(
       'company',
       profile.slotConfigs,
-      this.providers
+      this.providers.asMap()
     )
     if (changed) {
       this.db
@@ -133,7 +151,7 @@ export class CompanyScraperHandler {
 
   async search(profileId: string, query: string): Promise<CompanySearchResult[]> {
     const profile = this.loadProfile(profileId)
-    const provider = this.getProvider(profile.searchProviderId)
+    const provider = this.getSearchProvider(profile.searchProviderId)
     const results = await provider.search(query, this.getProfileLocale(profile))
     return results.map((result) => ensureProviderExternalId(result, provider.id, result.id))
   }
@@ -155,44 +173,68 @@ export class CompanyScraperHandler {
     }
 
     const resolveLocale = this.getResolveLocale(profile, lookup)
-    const resolveViaCache = createResolveCache<CompanySearchResult>(this.providers)
+    const searchProvider = this.getSearchProvider(profile.searchProviderId)
+    const plan = buildExecutionPlan<CompanyScraperSlot>({
+      slotConfigs: validatedProfile.slotConfigs,
+      resolveLocale: (entry) => this.getFetchLocale(validatedProfile, entry)
+    })
+    const state = createScraperInvocationState<
+      CompanyResolvedTarget,
+      CompanyScraperSession,
+      CompanyScraperSlot,
+      CompanySessionResultMap,
+      CompanyScraperResult
+    >()
 
-    const searchResult = await resolveViaCache(
-      profile.searchProviderId,
-      lookup.name,
-      lookup.knownIds,
-      resolveLocale
-    )
+    try {
+      const { target: searchTarget, canonicalLookup } = await resolveSearchProviderTarget({
+        state,
+        providerId: searchProvider.id,
+        provider: searchProvider,
+        lookup,
+        locale: resolveLocale,
+        warn: (message, error) => log.warn(message, error)
+      })
 
-    let resolveName = lookup.name
-    if (searchResult?.originalName) {
-      resolveName = searchResult.originalName
-      log.info(`[Scraper] Using originalName '${resolveName}' for cross-provider search (company)`)
-    }
+      const resolveProviderId = async (
+        providerId: string,
+        locale: Locale
+      ): Promise<CompanyResolvedTarget | null> => {
+        void locale
 
-    const resolvedProviders = new Map<string, Promise<ResolveResult | null>>()
-    if (searchResult) {
-      resolvedProviders.set(profile.searchProviderId, Promise.resolve(searchResult))
-    }
+        const provider = this.providers.get(providerId)
+        if (!provider) {
+          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          return null
+        }
 
-    const resolveProviderId = (providerId: string): Promise<ResolveResult | null> => {
-      const existing = resolvedProviders.get(providerId)
-      if (existing) {
-        return existing
+        if (providerId === searchProvider.id && searchTarget) {
+          return searchTarget
+        }
+
+        return resolveProviderTarget({
+          state,
+          providerId,
+          provider,
+          lookup: canonicalLookup,
+          locale: resolveLocale
+        })
       }
 
-      const task = resolveViaCache(providerId, resolveName, lookup.knownIds, resolveLocale)
-      resolvedProviders.set(providerId, task)
-      return task
+      const results = (await executeScraperPlan({
+        state,
+        plan,
+        getProvider: (providerId) => this.providers.get(providerId),
+        resolveProviderTarget: resolveProviderId,
+        buildResult: ({ providerId, target, entry, data }) =>
+          this.createCompanyResult(providerId, target, entry, data),
+        warn: (message, error) => log.warn(message, error)
+      })) as readonly CompanyScraperResult[]
+
+      return mergeCompanyScraperBundle([...results], validatedProfile)
+    } finally {
+      await state.dispose()
     }
-
-    const slotResults = await Promise.all(
-      COMPANY_SCRAPER_SLOTS.map((slot) =>
-        this.executeSlot(validatedProfile, slot, resolveProviderId)
-      )
-    )
-
-    return mergeCompanyScraperBundle(slotResults.flat(), validatedProfile)
   }
 
   async getProviderImages(
@@ -212,109 +254,83 @@ export class CompanyScraperHandler {
     }
 
     const locale = lookup.locale ?? (this.i18n.getLocale() as Locale)
-    const resolveId = createResolveCache<CompanySearchResult>(this.providers)
-    const result = await resolveId(providerId, lookup.name, lookup.knownIds, locale)
-
-    if (!result) {
-      log.warn(`[Scraper] Could not resolve ID for '${lookup.name}' via ${providerId}`)
-      return []
-    }
+    const plan = buildSingleProviderExecutionPlan<CompanyScraperImageSlot>({
+      providerId,
+      slot: imageType,
+      locale
+    })
+    const state = createScraperInvocationState<
+      CompanyResolvedTarget,
+      CompanyScraperSession,
+      CompanyScraperSlot,
+      CompanySessionResultMap,
+      CompanyScraperImageResult
+    >()
 
     try {
-      const data = await provider.getLogos!(result.id, locale)
-      return Array.isArray(data) ? data : []
+      const results = (await executeScraperPlan({
+        state,
+        plan,
+        getProvider: (candidateProviderId) => this.providers.get(candidateProviderId),
+        resolveProviderTarget: async (candidateProviderId) => {
+          if (candidateProviderId !== providerId) {
+            return null
+          }
+
+          return resolveProviderTarget({
+            state,
+            providerId,
+            provider,
+            lookup,
+            locale
+          })
+        },
+        buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
+          this.createCompanyResult(resolvedProviderId, target, entry, data),
+        warn: (message, error) => log.warn(message, error)
+      })) as readonly CompanyScraperImageResult[]
+
+      return mergeCompanyScraperImages([...results], 'enrich')
     } catch (error) {
       log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
       return []
+    } finally {
+      await state.dispose()
     }
   }
 
-  private async executeSlot(
-    profile: ValidatedCompanyProfile,
-    slot: CompanyScraperSlot,
-    resolveProviderId: (providerId: string) => Promise<ResolveResult | null>
-  ): Promise<CompanyScraperResult[]> {
-    const config = profile.slotConfigs[slot]
-    const entries = getOrderedEnabledProviderEntries(config.providers)
-
-    if (config.strategy === 'first') {
-      for (const entry of entries) {
-        const resolved = await resolveProviderId(entry.providerId)
-        if (!resolved) continue
-
-        const result = await this.fetchSlot(
-          entry.providerId,
-          resolved.id,
-          this.getFetchLocale(profile, entry),
-          slot,
-          entry.priority,
-          config.strategy
-        )
-
-        if (result) {
-          return [result]
-        }
-      }
-
-      return []
-    }
-
-    const results = await Promise.all(
-      entries.map(async (entry) => {
-        const resolved = await resolveProviderId(entry.providerId)
-        if (!resolved) return null
-
-        return this.fetchSlot(
-          entry.providerId,
-          resolved.id,
-          this.getFetchLocale(profile, entry),
-          slot,
-          entry.priority,
-          config.strategy
-        )
-      })
-    )
-
-    return results.filter((result): result is CompanyScraperResult => result !== null)
-  }
-
-  private async fetchSlot(
+  private createCompanyResult<S extends CompanyScraperSlot>(
     providerId: string,
-    id: string,
-    locale: Locale,
-    slot: CompanyScraperSlot,
-    priority: number,
-    strategy: SlotStrategy
-  ): Promise<CompanyScraperResult | null> {
-    const provider = this.providers.get(providerId)
-    if (!provider) {
-      log.warn(`[Scraper] Provider '${providerId}' not available`)
+    target: CompanyResolvedTarget,
+    entry: PlannedSlotEntry<S>,
+    data: CompanySessionResultMap[S]
+  ): SlotResult<S, CompanySessionResultMap[S]> | null {
+    if (entry.slot === 'info') {
+      const normalized = ensureProviderExternalId(
+        data as CompanySessionResultMap['info'],
+        providerId,
+        target.id
+      )
+
+      return hasValidCompanyInfoData(normalized, entry.strategy)
+        ? ({
+            slot: entry.slot,
+            providerId,
+            rank: entry.rank,
+            data: normalized
+          } as SlotResult<S, CompanySessionResultMap[S]>)
+        : null
+    }
+
+    if (!hasValidCompanySlotData(entry.slot, data, entry.strategy)) {
       return null
     }
 
-    if (!provider.capabilities.includes(slot)) {
-      log.warn(`[Scraper] Provider '${providerId}' does not support slot '${slot}'`)
-      return null
-    }
-
-    try {
-      switch (slot) {
-        case 'info': {
-          const data = ensureProviderExternalId(await provider.getInfo!(id, locale), providerId, id)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'tags': {
-          const data = await provider.getTags!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'logos': {
-          const data = await provider.getLogos!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-      }
-    } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${slot} failed:`, error)
-      return null
+    return {
+      slot: entry.slot,
+      providerId,
+      rank: entry.rank,
+      data
     }
   }
 
@@ -334,7 +350,7 @@ export class CompanyScraperHandler {
     return profile
   }
 
-  private getProvider(providerId: string): CompanyScraperProvider {
+  private getSearchProvider(providerId: string): CompanyScraperProvider {
     const provider = this.providers.get(providerId)
     if (!provider || !provider.capabilities.includes('search')) {
       throw new Error(`Provider not found: ${providerId}`)
@@ -350,7 +366,7 @@ export class CompanyScraperHandler {
     return (lookup.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
   }
 
-  private getFetchLocale(profile: ScraperProfile, entry: ScraperProviderEntry): Locale {
+  private getFetchLocale(profile: ScraperProfile, entry: { locale?: Locale | null }): Locale {
     return (entry.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
   }
 }

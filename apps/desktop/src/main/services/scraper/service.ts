@@ -12,8 +12,9 @@
 import log from 'electron-log/main'
 import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
-import type { NetworkService } from '@main/services/network'
 import type { ContentEntityType } from '@shared/common'
+import { createScraperProviderDeps } from './deps'
+import type { ScraperProviderDeps } from './types'
 import { GameScraperHandler } from './handlers/game'
 import type { GameScraperProvider } from './handlers/game'
 import { PersonScraperHandler } from './handlers/person'
@@ -42,23 +43,26 @@ export class ScraperService implements IContentService {
     const dbService = container.get('db')
     const i18n = container.get('i18n')
     this.ipcService = container.get('ipc')
-    const networkService = container.get('network')
+    const providerDeps = createScraperProviderDeps({
+      network: container.get('network'),
+      log
+    })
 
     this.game = new GameScraperHandler(dbService.db, i18n)
     this.person = new PersonScraperHandler(dbService.db, i18n)
     this.company = new CompanyScraperHandler(dbService.db, i18n)
     this.character = new CharacterScraperHandler(dbService.db, i18n)
-    this.registerBuiltinProviders(networkService)
+    this.registerBuiltinProviders(providerDeps)
     this.setupIpcHandlers()
 
     log.info('[ScraperService] Initialized')
   }
 
-  private registerBuiltinProviders(networkService: NetworkService): void {
-    this.game.registerProvider(new YmgalProvider(networkService))
-    this.game.registerProvider(new BangumiProvider(networkService))
-    this.game.registerProvider(new IGDBProvider(networkService))
-    this.game.registerProvider(new VNDBProvider(networkService))
+  private registerBuiltinProviders(deps: ScraperProviderDeps): void {
+    this.game.registerProvider(new YmgalProvider(deps))
+    this.game.registerProvider(new BangumiProvider(deps))
+    this.game.registerProvider(new IGDBProvider(deps))
+    this.game.registerProvider(new VNDBProvider(deps))
   }
 
   private setupIpcHandlers(): void {

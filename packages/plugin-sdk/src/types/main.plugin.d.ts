@@ -11,7 +11,7 @@ import Database from 'better-sqlite3'
 import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as drizzle_orm_sqlite_core320 from 'drizzle-orm/sqlite-core'
 import { SQLiteTable, SQLiteTransaction } from 'drizzle-orm/sqlite-core'
-import * as drizzle_orm89 from 'drizzle-orm'
+import * as drizzle_orm0 from 'drizzle-orm'
 import { ExtractTablesWithRelations, InferInsertModel, InferSelectModel, Table } from 'drizzle-orm'
 import * as electron from 'electron'
 import {
@@ -343,10 +343,10 @@ type CharacterScraperSlotConfigs = {
 //#endregion
 //#region src/shared/db/custom-types.d.ts
 declare const baseColumns: {
-  id: drizzle_orm89.HasRuntimeDefault<
-    drizzle_orm89.HasDefault<
-      drizzle_orm89.IsPrimaryKey<
-        drizzle_orm89.NotNull<
+  id: drizzle_orm0.HasRuntimeDefault<
+    drizzle_orm0.HasDefault<
+      drizzle_orm0.IsPrimaryKey<
+        drizzle_orm0.NotNull<
           drizzle_orm_sqlite_core320.SQLiteTextBuilderInitial<
             'id',
             [string, ...string[]],
@@ -356,17 +356,15 @@ declare const baseColumns: {
       >
     >
   >
-  createdAt: drizzle_orm89.HasRuntimeDefault<
-    drizzle_orm89.HasDefault<
-      drizzle_orm89.NotNull<drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'created_at'>>
+  createdAt: drizzle_orm0.HasRuntimeDefault<
+    drizzle_orm0.HasDefault<
+      drizzle_orm0.NotNull<drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'created_at'>>
     >
   >
-  updatedAt: drizzle_orm89.HasDefault<
-    drizzle_orm89.HasRuntimeDefault<
-      drizzle_orm89.HasDefault<
-        drizzle_orm89.NotNull<
-          drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'updated_at'>
-        >
+  updatedAt: drizzle_orm0.HasDefault<
+    drizzle_orm0.HasRuntimeDefault<
+      drizzle_orm0.HasDefault<
+        drizzle_orm0.NotNull<drizzle_orm_sqlite_core320.SQLiteTimestampBuilderInitial<'updated_at'>>
       >
     >
   >
@@ -8167,198 +8165,198 @@ type NewCharacterPersonLink = InferInsertModel<typeof characterPersonLinks>
  * Drizzle ORM relations for all tables.
  * Separated from table definitions to avoid circular imports.
  */
-declare const gamesRelations: drizzle_orm89.Relations<
+declare const gamesRelations: drizzle_orm0.Relations<
   'games',
   {
-    sessions: drizzle_orm89.Many<'game_sessions'>
-    notes: drizzle_orm89.Many<'game_notes'>
-    gamePersonLinks: drizzle_orm89.Many<'game_person_links'>
-    gameCompanyLinks: drizzle_orm89.Many<'game_company_links'>
-    gameCharacterLinks: drizzle_orm89.Many<'game_character_links'>
-    collectionGameLinks: drizzle_orm89.Many<'collection_game_links'>
-    gameTagLinks: drizzle_orm89.Many<'game_tag_links'>
-    externalIds: drizzle_orm89.Many<'game_external_ids'>
+    sessions: drizzle_orm0.Many<'game_sessions'>
+    notes: drizzle_orm0.Many<'game_notes'>
+    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
+    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
+    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
+    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
+    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
+    externalIds: drizzle_orm0.Many<'game_external_ids'>
   }
 >
-declare const gameNotesRelations: drizzle_orm89.Relations<
+declare const gameNotesRelations: drizzle_orm0.Relations<
   'game_notes',
   {
-    game: drizzle_orm89.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const gameSessionsRelations: drizzle_orm89.Relations<
+declare const gameSessionsRelations: drizzle_orm0.Relations<
   'game_sessions',
   {
-    game: drizzle_orm89.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const gamePersonLinksRelations: drizzle_orm89.Relations<
+declare const gamePersonLinksRelations: drizzle_orm0.Relations<
   'game_person_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    person: drizzle_orm89.One<'persons', true>
+    game: drizzle_orm0.One<'games', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const gameCompanyLinksRelations: drizzle_orm89.Relations<
+declare const gameCompanyLinksRelations: drizzle_orm0.Relations<
   'game_company_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    company: drizzle_orm89.One<'companies', true>
+    game: drizzle_orm0.One<'games', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const gameCharacterLinksRelations: drizzle_orm89.Relations<
+declare const gameCharacterLinksRelations: drizzle_orm0.Relations<
   'game_character_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    character: drizzle_orm89.One<'characters', true>
+    game: drizzle_orm0.One<'games', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
-declare const personsRelations: drizzle_orm89.Relations<
+declare const personsRelations: drizzle_orm0.Relations<
   'persons',
   {
-    gamePersonLinks: drizzle_orm89.Many<'game_person_links'>
-    characterPersonLinks: drizzle_orm89.Many<'character_person_links'>
-    collectionPersonLinks: drizzle_orm89.Many<'collection_person_links'>
-    personTagLinks: drizzle_orm89.Many<'person_tag_links'>
-    externalIds: drizzle_orm89.Many<'person_external_ids'>
+    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
+    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
+    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
+    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
+    externalIds: drizzle_orm0.Many<'person_external_ids'>
   }
 >
-declare const companiesRelations: drizzle_orm89.Relations<
+declare const companiesRelations: drizzle_orm0.Relations<
   'companies',
   {
-    gameCompanyLinks: drizzle_orm89.Many<'game_company_links'>
-    collectionCompanyLinks: drizzle_orm89.Many<'collection_company_links'>
-    companyTagLinks: drizzle_orm89.Many<'company_tag_links'>
-    externalIds: drizzle_orm89.Many<'company_external_ids'>
+    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
+    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
+    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
+    externalIds: drizzle_orm0.Many<'company_external_ids'>
   }
 >
-declare const charactersRelations: drizzle_orm89.Relations<
+declare const charactersRelations: drizzle_orm0.Relations<
   'characters',
   {
-    gameCharacterLinks: drizzle_orm89.Many<'game_character_links'>
-    characterPersonLinks: drizzle_orm89.Many<'character_person_links'>
-    collectionCharacterLinks: drizzle_orm89.Many<'collection_character_links'>
-    characterTagLinks: drizzle_orm89.Many<'character_tag_links'>
-    externalIds: drizzle_orm89.Many<'character_external_ids'>
+    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
+    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
+    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
+    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
+    externalIds: drizzle_orm0.Many<'character_external_ids'>
   }
 >
-declare const characterPersonLinksRelations: drizzle_orm89.Relations<
+declare const characterPersonLinksRelations: drizzle_orm0.Relations<
   'character_person_links',
   {
-    character: drizzle_orm89.One<'characters', true>
-    person: drizzle_orm89.One<'persons', true>
+    character: drizzle_orm0.One<'characters', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const collectionsRelations: drizzle_orm89.Relations<
+declare const collectionsRelations: drizzle_orm0.Relations<
   'collections',
   {
-    collectionGameLinks: drizzle_orm89.Many<'collection_game_links'>
-    collectionCharacterLinks: drizzle_orm89.Many<'collection_character_links'>
-    collectionPersonLinks: drizzle_orm89.Many<'collection_person_links'>
-    collectionCompanyLinks: drizzle_orm89.Many<'collection_company_links'>
-    scanners: drizzle_orm89.Many<'scanners'>
+    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
+    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
+    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
+    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
+    scanners: drizzle_orm0.Many<'scanners'>
   }
 >
-declare const collectionGameLinksRelations: drizzle_orm89.Relations<
+declare const collectionGameLinksRelations: drizzle_orm0.Relations<
   'collection_game_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    game: drizzle_orm89.One<'games', true>
+    collection: drizzle_orm0.One<'collections', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const collectionCharacterLinksRelations: drizzle_orm89.Relations<
+declare const collectionCharacterLinksRelations: drizzle_orm0.Relations<
   'collection_character_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    character: drizzle_orm89.One<'characters', true>
+    collection: drizzle_orm0.One<'collections', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
-declare const collectionPersonLinksRelations: drizzle_orm89.Relations<
+declare const collectionPersonLinksRelations: drizzle_orm0.Relations<
   'collection_person_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    person: drizzle_orm89.One<'persons', true>
+    collection: drizzle_orm0.One<'collections', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const collectionCompanyLinksRelations: drizzle_orm89.Relations<
+declare const collectionCompanyLinksRelations: drizzle_orm0.Relations<
   'collection_company_links',
   {
-    collection: drizzle_orm89.One<'collections', true>
-    company: drizzle_orm89.One<'companies', true>
+    collection: drizzle_orm0.One<'collections', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const scraperProfilesRelations: drizzle_orm89.Relations<
+declare const scraperProfilesRelations: drizzle_orm0.Relations<
   'scraper_profiles',
   {
-    scanners: drizzle_orm89.Many<'scanners'>
+    scanners: drizzle_orm0.Many<'scanners'>
   }
 >
-declare const scannersRelations: drizzle_orm89.Relations<
+declare const scannersRelations: drizzle_orm0.Relations<
   'scanners',
   {
-    scraperProfile: drizzle_orm89.One<'scraper_profiles', true>
-    targetCollection: drizzle_orm89.One<'collections', false>
+    scraperProfile: drizzle_orm0.One<'scraper_profiles', true>
+    targetCollection: drizzle_orm0.One<'collections', false>
   }
 >
-declare const tagsRelations: drizzle_orm89.Relations<
+declare const tagsRelations: drizzle_orm0.Relations<
   'tags',
   {
-    gameTagLinks: drizzle_orm89.Many<'game_tag_links'>
-    characterTagLinks: drizzle_orm89.Many<'character_tag_links'>
-    personTagLinks: drizzle_orm89.Many<'person_tag_links'>
-    companyTagLinks: drizzle_orm89.Many<'company_tag_links'>
+    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
+    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
+    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
+    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
   }
 >
-declare const gameTagLinksRelations: drizzle_orm89.Relations<
+declare const gameTagLinksRelations: drizzle_orm0.Relations<
   'game_tag_links',
   {
-    game: drizzle_orm89.One<'games', true>
-    tag: drizzle_orm89.One<'tags', true>
+    game: drizzle_orm0.One<'games', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const characterTagLinksRelations: drizzle_orm89.Relations<
+declare const characterTagLinksRelations: drizzle_orm0.Relations<
   'character_tag_links',
   {
-    character: drizzle_orm89.One<'characters', true>
-    tag: drizzle_orm89.One<'tags', true>
+    character: drizzle_orm0.One<'characters', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const personTagLinksRelations: drizzle_orm89.Relations<
+declare const personTagLinksRelations: drizzle_orm0.Relations<
   'person_tag_links',
   {
-    person: drizzle_orm89.One<'persons', true>
-    tag: drizzle_orm89.One<'tags', true>
+    person: drizzle_orm0.One<'persons', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const companyTagLinksRelations: drizzle_orm89.Relations<
+declare const companyTagLinksRelations: drizzle_orm0.Relations<
   'company_tag_links',
   {
-    company: drizzle_orm89.One<'companies', true>
-    tag: drizzle_orm89.One<'tags', true>
+    company: drizzle_orm0.One<'companies', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const gameExternalIdsRelations: drizzle_orm89.Relations<
+declare const gameExternalIdsRelations: drizzle_orm0.Relations<
   'game_external_ids',
   {
-    game: drizzle_orm89.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const personExternalIdsRelations: drizzle_orm89.Relations<
+declare const personExternalIdsRelations: drizzle_orm0.Relations<
   'person_external_ids',
   {
-    person: drizzle_orm89.One<'persons', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const companyExternalIdsRelations: drizzle_orm89.Relations<
+declare const companyExternalIdsRelations: drizzle_orm0.Relations<
   'company_external_ids',
   {
-    company: drizzle_orm89.One<'companies', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const characterExternalIdsRelations: drizzle_orm89.Relations<
+declare const characterExternalIdsRelations: drizzle_orm0.Relations<
   'character_external_ids',
   {
-    character: drizzle_orm89.One<'characters', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
 //#endregion
@@ -10806,81 +10804,56 @@ declare class I18nService implements IService {
   setLocale(locale: AppLocale | null): Promise<void>
 }
 //#endregion
-//#region src/main/services/scraper/handlers/game/provider.d.ts
+//#region src/main/services/scraper/types.d.ts
 /**
- * Game scraper provider interface.
- *
- * Providers fetch game metadata from external sources (VNDB, IGDB, etc.).
- * Each method corresponds to a scraper category and returns typed data.
- *
- * ID Resolution:
- * - Handler resolves ScraperLookup to provider-specific IDs
- * - Provider methods receive their internal ID (string) directly
- * - Rate limiting should be handled internally by each provider
- *
- * @example
- * ```typescript
- * const provider: GameScraperProvider = {
- *   id: 'my-provider',
- *   name: 'My Database',
- *   capabilities: ['search', 'info', 'characters'],
- *
- *   async search(query) {
- *     const results = await api.search(query)
- *     return results.map(r => ({ id: r.id, name: r.title, releaseDate: { year: 2024 } }))
- *   },
- *
- *   async getCharacters(id, locale) {
- *     const chars = await api.getCharacters(id)
- *     return chars.map(c => ({
- *       name: c.name,
- *       type: 'main',
- *       persons: c.cv ? [{ name: c.cv, type: 'voice actor' }] : undefined
- *     }))
- *   }
- * }
- * ```
+ * Provider-specific target resolved from a cross-provider scraper lookup.
  */
+interface BaseResolvedTarget {
+  /** Stable per-provider cache key within a single invocation. */
+  cacheKey: string
+  /** Optional canonical name discovered during resolve. */
+  resolveName?: string
+}
+/**
+ * Invocation-scoped session opened for a resolved provider target.
+ */
+interface BaseScraperSession<
+  TSlot extends string,
+  TResultMap extends Partial<Record<TSlot, unknown>>
+> {
+  /**
+   * Fetch one or more slots using the provider's preferred resource topology.
+   */
+  get(slots: readonly TSlot[]): Promise<Partial<TResultMap>>
+  /**
+   * Release invocation-scoped resources when the host finishes the session.
+   */
+  dispose?(): Promise<void>
+}
+//#endregion
+//#region src/main/services/scraper/handlers/game/provider.d.ts
+interface GameResolvedTarget extends BaseResolvedTarget {
+  id: string
+}
+interface GameSessionResultMap {
+  info: GameInfo
+  tags: Tag[]
+  characters: ScrapedGameCharacterFact[]
+  persons: ScrapedGamePersonFact[]
+  companies: ScrapedGameCompanyFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+  icons: string[]
+}
+type GameScraperSession = BaseScraperSession<GameScraperSlot, GameSessionResultMap>
 interface GameScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /**
-   * Explicit capability declaration.
-   *
-   * This is the source of truth for:
-   * - UI (slot/provider selection)
-   * - Handler behavior (what methods can be called)
-   *
-   * Contract:
-   * - Declared capabilities MUST match implemented methods (validated at registration)
-   * - Only game slots + 'search' are allowed (validated at registration)
-   */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search games by query string. */
   search(query: string, locale?: Locale): Promise<GameSearchResult[]>
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<GameInfo>
-  /** Get tags/genres */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /**
-   * Get characters with related persons (voice actors, etc.).
-   * Characters may include persons[] following link table convention.
-   */
-  getCharacters?(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]>
-  /** Get persons (staff, voice actors, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]>
-  /** Get companies (developers, publishers) */
-  getCompanies?(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]>
-  /** Get cover image URLs */
-  getCovers?(id: string, locale?: Locale): Promise<string[]>
-  /** Get backdrop/screenshot URLs */
-  getBackdrops?(id: string, locale?: Locale): Promise<string[]>
-  /** Get logo URLs */
-  getLogos?(id: string, locale?: Locale): Promise<string[]>
-  /** Get icon URLs */
-  getIcons?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null>
+  openSession(target: GameResolvedTarget, locale: Locale): Promise<GameScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/game/handler.d.ts
@@ -10901,42 +10874,35 @@ declare class GameScraperHandler {
     lookup: ScraperLookup,
     imageType: GameImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createGameResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/person/provider.d.ts
+interface PersonResolvedTarget extends BaseResolvedTarget {
+  id: string
+}
+interface PersonSessionResultMap {
+  info: PersonInfo
+  tags: Tag[]
+  photos: string[]
+}
+type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonSessionResultMap>
 interface PersonScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search persons by query string. */
   search(query: string, locale?: Locale): Promise<PersonSearchResult[]>
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<PersonInfo>
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /**
-   * Get photo image URLs.
-   * Used as the primary image candidate list for CorePersonMetadata.photos.
-   */
-  getPhotos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<PersonResolvedTarget | null>
+  openSession(target: PersonResolvedTarget, locale: Locale): Promise<PersonScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/person/types.d.ts
-/**
- * Person image slot (DB: persons.photoFile).
- * Only `photos` maps to CorePersonMetadata.photos / persons.photoFile.
- */
-type PersonScraperImageSlot = Extract<ScraperSlot, 'photos'>
+type PersonScraperImageSlot = 'photos'
 //#endregion
 //#region src/main/services/scraper/handlers/person/handler.d.ts
 declare class PersonScraperHandler {
@@ -10956,39 +10922,35 @@ declare class PersonScraperHandler {
     lookup: ScraperLookup,
     imageType: PersonScraperImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createPersonResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/company/provider.d.ts
+interface CompanyResolvedTarget extends BaseResolvedTarget {
+  id: string
+}
+interface CompanySessionResultMap {
+  info: CompanyInfo
+  tags: Tag[]
+  logos: string[]
+}
+type CompanyScraperSession = BaseScraperSession<CompanyScraperSlot, CompanySessionResultMap>
 interface CompanyScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search companies by query string. */
   search(query: string, locale?: Locale): Promise<CompanySearchResult[]>
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<CompanyInfo>
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /** Get logo image URLs */
-  getLogos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<CompanyResolvedTarget | null>
+  openSession(target: CompanyResolvedTarget, locale: Locale): Promise<CompanyScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/company/types.d.ts
-/**
- * Company image slot (DB: companies.logoFile).
- * Only `logos` maps to CoreCompanyMetadata.logos / companies.logoFile.
- */
-type CompanyScraperImageSlot = Extract<ScraperSlot, 'logos'>
+type CompanyScraperImageSlot = 'logos'
 //#endregion
 //#region src/main/services/scraper/handlers/company/handler.d.ts
 declare class CompanyScraperHandler {
@@ -11008,41 +10970,36 @@ declare class CompanyScraperHandler {
     lookup: ScraperLookup,
     imageType: CompanyScraperImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createCompanyResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/character/provider.d.ts
+interface CharacterResolvedTarget extends BaseResolvedTarget {
+  id: string
+}
+interface CharacterSessionResultMap {
+  info: CharacterInfo
+  tags: Tag[]
+  persons: ScrapedCharacterPersonFact[]
+  photos: string[]
+}
+type CharacterScraperSession = BaseScraperSession<CharacterScraperSlot, CharacterSessionResultMap>
 interface CharacterScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search characters by query string. */
   search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
-  /** Get core info (name, description, attributes, links) */
-  getInfo?(id: string, locale?: Locale): Promise<CharacterInfo>
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /** Get persons related to character (voice actors, illustrators, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<ScrapedCharacterPersonFact[]>
-  /** Get icon/photo image URLs */
-  getPhotos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<CharacterResolvedTarget | null>
+  openSession(target: CharacterResolvedTarget, locale: Locale): Promise<CharacterScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/character/types.d.ts
-/**
- * Character image slot (DB: characters.photoFile).
- * Only `photos` maps to CoreCharacterMetadata.photos / characters.photoFile.
- */
-type CharacterScraperImageSlot = Extract<ScraperSlot, 'photos'>
+type CharacterScraperImageSlot = 'photos'
 //#endregion
 //#region src/main/services/scraper/handlers/character/handler.d.ts
 declare class CharacterScraperHandler {
@@ -11062,10 +11019,9 @@ declare class CharacterScraperHandler {
     lookup: ScraperLookup,
     imageType: CharacterScraperImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createCharacterResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
@@ -12597,7 +12553,7 @@ interface KisakiMainAPI {
    */
   readonly __deps: {
     electron: typeof electron
-    drizzle: typeof drizzle_orm89
+    drizzle: typeof drizzle_orm0
   }
 }
 //#endregion

@@ -6,8 +6,9 @@ import {
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedCompanyMetadata, ScrapedCompanyBundle } from '@shared/scraper'
-import { applyImageStrategy, applyStrategy, filterBySlot, sortByPriority } from '../../utils'
+import { applyImageStrategy, applyStrategy, filterBySlot, sortByRank } from '../../utils'
 import type {
+  CompanyScraperImageResult,
   CompanyScraperInfoResult,
   CompanyScraperLogosResult,
   CompanyScraperResult,
@@ -57,12 +58,35 @@ export function mergeCompanyScraperMetadata(
   return finalize(metadata)
 }
 
+/**
+ * Merge image results for picker dialogs.
+ */
+export function mergeCompanyScraperImages(
+  results: CompanyScraperImageResult[],
+  strategy: SlotStrategy
+): string[] {
+  const sorted = sortByRank(results)
+  const allImages: string[] = []
+
+  for (const result of sorted) {
+    if (!result.data.length) continue
+
+    if (strategy === 'first') {
+      return result.data
+    }
+
+    allImages.push(...result.data)
+  }
+
+  return [...new Set(allImages)]
+}
+
 function mergeInfo(
   metadata: Partial<ScrapedCompanyMetadata>,
   results: CompanyScraperInfoResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     const info = result.data
@@ -96,7 +120,7 @@ function mergeTags(
   results: CompanyScraperTagsResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue
@@ -110,7 +134,7 @@ function mergeLogos(
   results: CompanyScraperLogosResult[],
   strategy: SlotStrategy
 ): void {
-  const sorted = sortByPriority(results)
+  const sorted = sortByRank(results)
 
   for (const result of sorted) {
     if (!result.data.length) continue

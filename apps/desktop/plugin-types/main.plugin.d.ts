@@ -10806,81 +10806,60 @@ declare class I18nService implements IService {
   setLocale(locale: AppLocale | null): Promise<void>
 }
 //#endregion
-//#region src/main/services/scraper/handlers/game/provider.d.ts
+//#region src/main/services/scraper/types.d.ts
 /**
- * Game scraper provider interface.
- *
- * Providers fetch game metadata from external sources (VNDB, IGDB, etc.).
- * Each method corresponds to a scraper category and returns typed data.
- *
- * ID Resolution:
- * - Handler resolves ScraperLookup to provider-specific IDs
- * - Provider methods receive their internal ID (string) directly
- * - Rate limiting should be handled internally by each provider
- *
- * @example
- * ```typescript
- * const provider: GameScraperProvider = {
- *   id: 'my-provider',
- *   name: 'My Database',
- *   capabilities: ['search', 'info', 'characters'],
- *
- *   async search(query) {
- *     const results = await api.search(query)
- *     return results.map(r => ({ id: r.id, name: r.title, releaseDate: { year: 2024 } }))
- *   },
- *
- *   async getCharacters(id, locale) {
- *     const chars = await api.getCharacters(id)
- *     return chars.map(c => ({
- *       name: c.name,
- *       type: 'main',
- *       persons: c.cv ? [{ name: c.cv, type: 'voice actor' }] : undefined
- *     }))
- *   }
- * }
- * ```
+ * Provider-specific target resolved from a cross-provider scraper lookup.
  */
+interface BaseResolvedTarget {
+  /** Stable per-provider cache key within a single invocation. */
+  cacheKey: string
+  /** Optional canonical name discovered during resolve. */
+  resolveName?: string
+}
+/**
+ * Default resolved-target shape used by the current scraper media runtimes.
+ */
+interface IdResolvedTarget extends BaseResolvedTarget {
+  id: string
+}
+/**
+ * Invocation-scoped session opened for a resolved provider target.
+ */
+interface BaseScraperSession<
+  TSlot extends string,
+  TResultMap extends Partial<Record<TSlot, unknown>>
+> {
+  /**
+   * Fetch one or more slots using the provider's preferred resource topology.
+   */
+  get(slots: readonly TSlot[]): Promise<Partial<TResultMap>>
+  /**
+   * Release invocation-scoped resources when the host finishes the session.
+   */
+  dispose?(): Promise<void>
+}
+//#endregion
+//#region src/main/services/scraper/handlers/game/provider.d.ts
+type GameResolvedTarget = IdResolvedTarget
+interface GameSessionResultMap {
+  info: GameInfo
+  tags: Tag[]
+  characters: ScrapedGameCharacterFact[]
+  persons: ScrapedGamePersonFact[]
+  companies: ScrapedGameCompanyFact[]
+  covers: string[]
+  backdrops: string[]
+  logos: string[]
+  icons: string[]
+}
+type GameScraperSession = BaseScraperSession<GameScraperSlot, GameSessionResultMap>
 interface GameScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /**
-   * Explicit capability declaration.
-   *
-   * This is the source of truth for:
-   * - UI (slot/provider selection)
-   * - Handler behavior (what methods can be called)
-   *
-   * Contract:
-   * - Declared capabilities MUST match implemented methods (validated at registration)
-   * - Only game slots + 'search' are allowed (validated at registration)
-   */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search games by query string. */
   search(query: string, locale?: Locale): Promise<GameSearchResult[]>
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<GameInfo>
-  /** Get tags/genres */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /**
-   * Get characters with related persons (voice actors, etc.).
-   * Characters may include persons[] following link table convention.
-   */
-  getCharacters?(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]>
-  /** Get persons (staff, voice actors, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]>
-  /** Get companies (developers, publishers) */
-  getCompanies?(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]>
-  /** Get cover image URLs */
-  getCovers?(id: string, locale?: Locale): Promise<string[]>
-  /** Get backdrop/screenshot URLs */
-  getBackdrops?(id: string, locale?: Locale): Promise<string[]>
-  /** Get logo URLs */
-  getLogos?(id: string, locale?: Locale): Promise<string[]>
-  /** Get icon URLs */
-  getIcons?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null>
+  openSession(target: GameResolvedTarget, locale: Locale): Promise<GameScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/game/handler.d.ts
@@ -10901,42 +10880,33 @@ declare class GameScraperHandler {
     lookup: ScraperLookup,
     imageType: GameImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createGameResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/person/provider.d.ts
+type PersonResolvedTarget = IdResolvedTarget
+interface PersonSessionResultMap {
+  info: PersonInfo
+  tags: Tag[]
+  photos: string[]
+}
+type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonSessionResultMap>
 interface PersonScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search persons by query string. */
   search(query: string, locale?: Locale): Promise<PersonSearchResult[]>
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<PersonInfo>
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /**
-   * Get photo image URLs.
-   * Used as the primary image candidate list for CorePersonMetadata.photos.
-   */
-  getPhotos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<PersonResolvedTarget | null>
+  openSession(target: PersonResolvedTarget, locale: Locale): Promise<PersonScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/person/types.d.ts
-/**
- * Person image slot (DB: persons.photoFile).
- * Only `photos` maps to CorePersonMetadata.photos / persons.photoFile.
- */
-type PersonScraperImageSlot = Extract<ScraperSlot, 'photos'>
+type PersonScraperImageSlot = 'photos'
 //#endregion
 //#region src/main/services/scraper/handlers/person/handler.d.ts
 declare class PersonScraperHandler {
@@ -10956,39 +10926,33 @@ declare class PersonScraperHandler {
     lookup: ScraperLookup,
     imageType: PersonScraperImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createPersonResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/company/provider.d.ts
+type CompanyResolvedTarget = IdResolvedTarget
+interface CompanySessionResultMap {
+  info: CompanyInfo
+  tags: Tag[]
+  logos: string[]
+}
+type CompanyScraperSession = BaseScraperSession<CompanyScraperSlot, CompanySessionResultMap>
 interface CompanyScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search companies by query string. */
   search(query: string, locale?: Locale): Promise<CompanySearchResult[]>
-  /** Get core info (name, description, dates, links) */
-  getInfo?(id: string, locale?: Locale): Promise<CompanyInfo>
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /** Get logo image URLs */
-  getLogos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<CompanyResolvedTarget | null>
+  openSession(target: CompanyResolvedTarget, locale: Locale): Promise<CompanyScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/company/types.d.ts
-/**
- * Company image slot (DB: companies.logoFile).
- * Only `logos` maps to CoreCompanyMetadata.logos / companies.logoFile.
- */
-type CompanyScraperImageSlot = Extract<ScraperSlot, 'logos'>
+type CompanyScraperImageSlot = 'logos'
 //#endregion
 //#region src/main/services/scraper/handlers/company/handler.d.ts
 declare class CompanyScraperHandler {
@@ -11008,41 +10972,34 @@ declare class CompanyScraperHandler {
     lookup: ScraperLookup,
     imageType: CompanyScraperImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createCompanyResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale
 }
 //#endregion
 //#region src/main/services/scraper/handlers/character/provider.d.ts
+type CharacterResolvedTarget = IdResolvedTarget
+interface CharacterSessionResultMap {
+  info: CharacterInfo
+  tags: Tag[]
+  persons: ScrapedCharacterPersonFact[]
+  photos: string[]
+}
+type CharacterScraperSession = BaseScraperSession<CharacterScraperSlot, CharacterSessionResultMap>
 interface CharacterScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-  /** Display name */
   readonly name: string
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
-  /** Search characters by query string. */
   search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
-  /** Get core info (name, description, attributes, links) */
-  getInfo?(id: string, locale?: Locale): Promise<CharacterInfo>
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-  /** Get persons related to character (voice actors, illustrators, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<ScrapedCharacterPersonFact[]>
-  /** Get icon/photo image URLs */
-  getPhotos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<CharacterResolvedTarget | null>
+  openSession(target: CharacterResolvedTarget, locale: Locale): Promise<CharacterScraperSession>
 }
 //#endregion
 //#region src/main/services/scraper/handlers/character/types.d.ts
-/**
- * Character image slot (DB: characters.photoFile).
- * Only `photos` maps to CoreCharacterMetadata.photos / characters.photoFile.
- */
-type CharacterScraperImageSlot = Extract<ScraperSlot, 'photos'>
+type CharacterScraperImageSlot = 'photos'
 //#endregion
 //#region src/main/services/scraper/handlers/character/handler.d.ts
 declare class CharacterScraperHandler {
@@ -11062,10 +11019,9 @@ declare class CharacterScraperHandler {
     lookup: ScraperLookup,
     imageType: CharacterScraperImageSlot
   ): Promise<string[]>
-  private executeSlot
-  private fetchSlot
+  private createCharacterResult
   private loadProfile
-  private getProvider
+  private getSearchProvider
   private getProfileLocale
   private getResolveLocale
   private getFetchLocale

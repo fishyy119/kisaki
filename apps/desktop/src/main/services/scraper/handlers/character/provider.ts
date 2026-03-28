@@ -1,40 +1,38 @@
 /**
- * Character Scraper Provider Interface
- *
- * Defines the contract for character metadata providers (builtin and plugins).
- *
- * Notes:
- * - For character entities, providers should return photo candidates via `getPhotos`.
+ * Character scraper provider runtime contract.
  */
 
-import type { Locale } from '@shared/locale'
-import type { CharacterSearchResult } from '@shared/scraper'
+import type { CharacterScraperSlot } from '@shared/db'
 import type { CharacterInfo, Tag } from '@shared/metadata'
-import type { ScrapedCharacterPersonFact } from '@shared/scraper'
-import type { ScraperCapability } from '@shared/scraper'
+import type { Locale } from '@shared/locale'
+import type {
+  CharacterSearchResult,
+  ScrapedCharacterPersonFact,
+  ScraperCapability,
+  ScraperLookup
+} from '@shared/scraper'
+import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
+
+export type CharacterResolvedTarget = IdResolvedTarget
+
+export interface CharacterSessionResultMap {
+  info: CharacterInfo
+  tags: Tag[]
+  persons: ScrapedCharacterPersonFact[]
+  photos: string[]
+}
+
+export type CharacterScraperSession = BaseScraperSession<
+  CharacterScraperSlot,
+  CharacterSessionResultMap
+>
 
 export interface CharacterScraperProvider {
-  /** Unique provider identifier */
   readonly id: string
-
-  /** Display name */
   readonly name: string
-
-  /** Explicit capability declaration. */
   readonly capabilities: readonly ScraperCapability[]
 
-  /** Search characters by query string. */
   search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
-
-  /** Get core info (name, description, attributes, links) */
-  getInfo?(id: string, locale?: Locale): Promise<CharacterInfo>
-
-  /** Get tags */
-  getTags?(id: string, locale?: Locale): Promise<Tag[]>
-
-  /** Get persons related to character (voice actors, illustrators, etc.) */
-  getPersons?(id: string, locale?: Locale): Promise<ScrapedCharacterPersonFact[]>
-
-  /** Get icon/photo image URLs */
-  getPhotos?(id: string, locale?: Locale): Promise<string[]>
+  resolve(lookup: ScraperLookup, locale: Locale): Promise<CharacterResolvedTarget | null>
+  openSession(target: CharacterResolvedTarget, locale: Locale): Promise<CharacterScraperSession>
 }

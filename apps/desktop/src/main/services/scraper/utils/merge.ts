@@ -43,10 +43,10 @@ function deduplicate<T>(items: T[], keyFn: (item: T) => string): T[] {
 }
 
 /**
- * Sort results by provider priority (ascending).
+ * Sort results by runtime execution rank (ascending).
  */
-export function sortByPriority<T extends { priority: number }>(items: readonly T[]): T[] {
-  return [...items].sort((a, b) => a.priority - b.priority)
+export function sortByRank<T extends { rank: number }>(items: readonly T[]): T[] {
+  return [...items].sort((a, b) => a.rank - b.rank)
 }
 
 /**

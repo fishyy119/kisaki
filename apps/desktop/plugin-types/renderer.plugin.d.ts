@@ -9,7 +9,7 @@
 
 import * as drizzle_orm_sqlite_core0 from 'drizzle-orm/sqlite-core'
 import { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import * as drizzle_orm90 from 'drizzle-orm'
+import * as drizzle_orm0 from 'drizzle-orm'
 import { InferInsertModel, InferSelectModel, Table } from 'drizzle-orm'
 import * as vue0 from 'vue'
 import {
@@ -26,12 +26,12 @@ import {
 import { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import * as vue_router0 from 'vue-router'
 import { Router, Router as Router$1 } from 'vue-router'
-import * as pinia2 from 'pinia'
+import * as pinia1 from 'pinia'
 import { Pinia, Pinia as Pinia$1 } from 'pinia'
 import log from 'electron-log/renderer'
 import * as drizzle_orm_sqlite_proxy0 from 'drizzle-orm/sqlite-proxy'
 import { i18n } from 'i18next'
-import * as reka_ui0 from 'reka-ui'
+import * as reka_ui11 from 'reka-ui'
 import {
   AlertDialogCancelProps,
   AlertDialogContentProps,
@@ -437,10 +437,10 @@ type AllEntityType = ContentEntityType | OrganizerType
 //#endregion
 //#region src/shared/db/custom-types.d.ts
 declare const baseColumns: {
-  id: drizzle_orm90.HasRuntimeDefault<
-    drizzle_orm90.HasDefault<
-      drizzle_orm90.IsPrimaryKey<
-        drizzle_orm90.NotNull<
+  id: drizzle_orm0.HasRuntimeDefault<
+    drizzle_orm0.HasDefault<
+      drizzle_orm0.IsPrimaryKey<
+        drizzle_orm0.NotNull<
           drizzle_orm_sqlite_core0.SQLiteTextBuilderInitial<
             'id',
             [string, ...string[]],
@@ -450,15 +450,15 @@ declare const baseColumns: {
       >
     >
   >
-  createdAt: drizzle_orm90.HasRuntimeDefault<
-    drizzle_orm90.HasDefault<
-      drizzle_orm90.NotNull<drizzle_orm_sqlite_core0.SQLiteTimestampBuilderInitial<'created_at'>>
+  createdAt: drizzle_orm0.HasRuntimeDefault<
+    drizzle_orm0.HasDefault<
+      drizzle_orm0.NotNull<drizzle_orm_sqlite_core0.SQLiteTimestampBuilderInitial<'created_at'>>
     >
   >
-  updatedAt: drizzle_orm90.HasDefault<
-    drizzle_orm90.HasRuntimeDefault<
-      drizzle_orm90.HasDefault<
-        drizzle_orm90.NotNull<drizzle_orm_sqlite_core0.SQLiteTimestampBuilderInitial<'updated_at'>>
+  updatedAt: drizzle_orm0.HasDefault<
+    drizzle_orm0.HasRuntimeDefault<
+      drizzle_orm0.HasDefault<
+        drizzle_orm0.NotNull<drizzle_orm_sqlite_core0.SQLiteTimestampBuilderInitial<'updated_at'>>
       >
     >
   >
@@ -8259,198 +8259,198 @@ type NewCharacterPersonLink = InferInsertModel<typeof characterPersonLinks>
  * Drizzle ORM relations for all tables.
  * Separated from table definitions to avoid circular imports.
  */
-declare const gamesRelations: drizzle_orm90.Relations<
+declare const gamesRelations: drizzle_orm0.Relations<
   'games',
   {
-    sessions: drizzle_orm90.Many<'game_sessions'>
-    notes: drizzle_orm90.Many<'game_notes'>
-    gamePersonLinks: drizzle_orm90.Many<'game_person_links'>
-    gameCompanyLinks: drizzle_orm90.Many<'game_company_links'>
-    gameCharacterLinks: drizzle_orm90.Many<'game_character_links'>
-    collectionGameLinks: drizzle_orm90.Many<'collection_game_links'>
-    gameTagLinks: drizzle_orm90.Many<'game_tag_links'>
-    externalIds: drizzle_orm90.Many<'game_external_ids'>
+    sessions: drizzle_orm0.Many<'game_sessions'>
+    notes: drizzle_orm0.Many<'game_notes'>
+    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
+    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
+    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
+    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
+    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
+    externalIds: drizzle_orm0.Many<'game_external_ids'>
   }
 >
-declare const gameNotesRelations: drizzle_orm90.Relations<
+declare const gameNotesRelations: drizzle_orm0.Relations<
   'game_notes',
   {
-    game: drizzle_orm90.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const gameSessionsRelations: drizzle_orm90.Relations<
+declare const gameSessionsRelations: drizzle_orm0.Relations<
   'game_sessions',
   {
-    game: drizzle_orm90.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const gamePersonLinksRelations: drizzle_orm90.Relations<
+declare const gamePersonLinksRelations: drizzle_orm0.Relations<
   'game_person_links',
   {
-    game: drizzle_orm90.One<'games', true>
-    person: drizzle_orm90.One<'persons', true>
+    game: drizzle_orm0.One<'games', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const gameCompanyLinksRelations: drizzle_orm90.Relations<
+declare const gameCompanyLinksRelations: drizzle_orm0.Relations<
   'game_company_links',
   {
-    game: drizzle_orm90.One<'games', true>
-    company: drizzle_orm90.One<'companies', true>
+    game: drizzle_orm0.One<'games', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const gameCharacterLinksRelations: drizzle_orm90.Relations<
+declare const gameCharacterLinksRelations: drizzle_orm0.Relations<
   'game_character_links',
   {
-    game: drizzle_orm90.One<'games', true>
-    character: drizzle_orm90.One<'characters', true>
+    game: drizzle_orm0.One<'games', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
-declare const personsRelations: drizzle_orm90.Relations<
+declare const personsRelations: drizzle_orm0.Relations<
   'persons',
   {
-    gamePersonLinks: drizzle_orm90.Many<'game_person_links'>
-    characterPersonLinks: drizzle_orm90.Many<'character_person_links'>
-    collectionPersonLinks: drizzle_orm90.Many<'collection_person_links'>
-    personTagLinks: drizzle_orm90.Many<'person_tag_links'>
-    externalIds: drizzle_orm90.Many<'person_external_ids'>
+    gamePersonLinks: drizzle_orm0.Many<'game_person_links'>
+    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
+    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
+    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
+    externalIds: drizzle_orm0.Many<'person_external_ids'>
   }
 >
-declare const companiesRelations: drizzle_orm90.Relations<
+declare const companiesRelations: drizzle_orm0.Relations<
   'companies',
   {
-    gameCompanyLinks: drizzle_orm90.Many<'game_company_links'>
-    collectionCompanyLinks: drizzle_orm90.Many<'collection_company_links'>
-    companyTagLinks: drizzle_orm90.Many<'company_tag_links'>
-    externalIds: drizzle_orm90.Many<'company_external_ids'>
+    gameCompanyLinks: drizzle_orm0.Many<'game_company_links'>
+    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
+    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
+    externalIds: drizzle_orm0.Many<'company_external_ids'>
   }
 >
-declare const charactersRelations: drizzle_orm90.Relations<
+declare const charactersRelations: drizzle_orm0.Relations<
   'characters',
   {
-    gameCharacterLinks: drizzle_orm90.Many<'game_character_links'>
-    characterPersonLinks: drizzle_orm90.Many<'character_person_links'>
-    collectionCharacterLinks: drizzle_orm90.Many<'collection_character_links'>
-    characterTagLinks: drizzle_orm90.Many<'character_tag_links'>
-    externalIds: drizzle_orm90.Many<'character_external_ids'>
+    gameCharacterLinks: drizzle_orm0.Many<'game_character_links'>
+    characterPersonLinks: drizzle_orm0.Many<'character_person_links'>
+    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
+    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
+    externalIds: drizzle_orm0.Many<'character_external_ids'>
   }
 >
-declare const characterPersonLinksRelations: drizzle_orm90.Relations<
+declare const characterPersonLinksRelations: drizzle_orm0.Relations<
   'character_person_links',
   {
-    character: drizzle_orm90.One<'characters', true>
-    person: drizzle_orm90.One<'persons', true>
+    character: drizzle_orm0.One<'characters', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const collectionsRelations: drizzle_orm90.Relations<
+declare const collectionsRelations: drizzle_orm0.Relations<
   'collections',
   {
-    collectionGameLinks: drizzle_orm90.Many<'collection_game_links'>
-    collectionCharacterLinks: drizzle_orm90.Many<'collection_character_links'>
-    collectionPersonLinks: drizzle_orm90.Many<'collection_person_links'>
-    collectionCompanyLinks: drizzle_orm90.Many<'collection_company_links'>
-    scanners: drizzle_orm90.Many<'scanners'>
+    collectionGameLinks: drizzle_orm0.Many<'collection_game_links'>
+    collectionCharacterLinks: drizzle_orm0.Many<'collection_character_links'>
+    collectionPersonLinks: drizzle_orm0.Many<'collection_person_links'>
+    collectionCompanyLinks: drizzle_orm0.Many<'collection_company_links'>
+    scanners: drizzle_orm0.Many<'scanners'>
   }
 >
-declare const collectionGameLinksRelations: drizzle_orm90.Relations<
+declare const collectionGameLinksRelations: drizzle_orm0.Relations<
   'collection_game_links',
   {
-    collection: drizzle_orm90.One<'collections', true>
-    game: drizzle_orm90.One<'games', true>
+    collection: drizzle_orm0.One<'collections', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const collectionCharacterLinksRelations: drizzle_orm90.Relations<
+declare const collectionCharacterLinksRelations: drizzle_orm0.Relations<
   'collection_character_links',
   {
-    collection: drizzle_orm90.One<'collections', true>
-    character: drizzle_orm90.One<'characters', true>
+    collection: drizzle_orm0.One<'collections', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
-declare const collectionPersonLinksRelations: drizzle_orm90.Relations<
+declare const collectionPersonLinksRelations: drizzle_orm0.Relations<
   'collection_person_links',
   {
-    collection: drizzle_orm90.One<'collections', true>
-    person: drizzle_orm90.One<'persons', true>
+    collection: drizzle_orm0.One<'collections', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const collectionCompanyLinksRelations: drizzle_orm90.Relations<
+declare const collectionCompanyLinksRelations: drizzle_orm0.Relations<
   'collection_company_links',
   {
-    collection: drizzle_orm90.One<'collections', true>
-    company: drizzle_orm90.One<'companies', true>
+    collection: drizzle_orm0.One<'collections', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const scraperProfilesRelations: drizzle_orm90.Relations<
+declare const scraperProfilesRelations: drizzle_orm0.Relations<
   'scraper_profiles',
   {
-    scanners: drizzle_orm90.Many<'scanners'>
+    scanners: drizzle_orm0.Many<'scanners'>
   }
 >
-declare const scannersRelations: drizzle_orm90.Relations<
+declare const scannersRelations: drizzle_orm0.Relations<
   'scanners',
   {
-    scraperProfile: drizzle_orm90.One<'scraper_profiles', true>
-    targetCollection: drizzle_orm90.One<'collections', false>
+    scraperProfile: drizzle_orm0.One<'scraper_profiles', true>
+    targetCollection: drizzle_orm0.One<'collections', false>
   }
 >
-declare const tagsRelations: drizzle_orm90.Relations<
+declare const tagsRelations: drizzle_orm0.Relations<
   'tags',
   {
-    gameTagLinks: drizzle_orm90.Many<'game_tag_links'>
-    characterTagLinks: drizzle_orm90.Many<'character_tag_links'>
-    personTagLinks: drizzle_orm90.Many<'person_tag_links'>
-    companyTagLinks: drizzle_orm90.Many<'company_tag_links'>
+    gameTagLinks: drizzle_orm0.Many<'game_tag_links'>
+    characterTagLinks: drizzle_orm0.Many<'character_tag_links'>
+    personTagLinks: drizzle_orm0.Many<'person_tag_links'>
+    companyTagLinks: drizzle_orm0.Many<'company_tag_links'>
   }
 >
-declare const gameTagLinksRelations: drizzle_orm90.Relations<
+declare const gameTagLinksRelations: drizzle_orm0.Relations<
   'game_tag_links',
   {
-    game: drizzle_orm90.One<'games', true>
-    tag: drizzle_orm90.One<'tags', true>
+    game: drizzle_orm0.One<'games', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const characterTagLinksRelations: drizzle_orm90.Relations<
+declare const characterTagLinksRelations: drizzle_orm0.Relations<
   'character_tag_links',
   {
-    character: drizzle_orm90.One<'characters', true>
-    tag: drizzle_orm90.One<'tags', true>
+    character: drizzle_orm0.One<'characters', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const personTagLinksRelations: drizzle_orm90.Relations<
+declare const personTagLinksRelations: drizzle_orm0.Relations<
   'person_tag_links',
   {
-    person: drizzle_orm90.One<'persons', true>
-    tag: drizzle_orm90.One<'tags', true>
+    person: drizzle_orm0.One<'persons', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const companyTagLinksRelations: drizzle_orm90.Relations<
+declare const companyTagLinksRelations: drizzle_orm0.Relations<
   'company_tag_links',
   {
-    company: drizzle_orm90.One<'companies', true>
-    tag: drizzle_orm90.One<'tags', true>
+    company: drizzle_orm0.One<'companies', true>
+    tag: drizzle_orm0.One<'tags', true>
   }
 >
-declare const gameExternalIdsRelations: drizzle_orm90.Relations<
+declare const gameExternalIdsRelations: drizzle_orm0.Relations<
   'game_external_ids',
   {
-    game: drizzle_orm90.One<'games', true>
+    game: drizzle_orm0.One<'games', true>
   }
 >
-declare const personExternalIdsRelations: drizzle_orm90.Relations<
+declare const personExternalIdsRelations: drizzle_orm0.Relations<
   'person_external_ids',
   {
-    person: drizzle_orm90.One<'persons', true>
+    person: drizzle_orm0.One<'persons', true>
   }
 >
-declare const companyExternalIdsRelations: drizzle_orm90.Relations<
+declare const companyExternalIdsRelations: drizzle_orm0.Relations<
   'company_external_ids',
   {
-    company: drizzle_orm90.One<'companies', true>
+    company: drizzle_orm0.One<'companies', true>
   }
 >
-declare const characterExternalIdsRelations: drizzle_orm90.Relations<
+declare const characterExternalIdsRelations: drizzle_orm0.Relations<
   'character_external_ids',
   {
-    character: drizzle_orm90.One<'characters', true>
+    character: drizzle_orm0.One<'characters', true>
   }
 >
 //#endregion
@@ -11043,7 +11043,7 @@ declare namespace index_d_exports$1 {
  * - Resolves system mode to light/dark and applies via themeManager
  */
 type ThemeMode = 'light' | 'dark' | 'system'
-declare const useThemeStore: pinia2.StoreDefinition<
+declare const useThemeStore: pinia1.StoreDefinition<
   'theme',
   Pick<
     {
@@ -11054,7 +11054,7 @@ declare const useThemeStore: pinia2.StoreDefinition<
       setActiveTheme: (themeId: string) => void
       setMode: (newMode: ThemeMode) => void
     },
-    'mode' | 'activeThemeId' | 'themes' | 'resolvedTheme'
+    'activeThemeId' | 'mode' | 'themes' | 'resolvedTheme'
   >,
   Pick<
     {
@@ -11093,7 +11093,7 @@ interface GameMonitorStatus {
   pid?: number
   startTime?: number
 }
-declare const useGameMonitorStore: pinia2.StoreDefinition<
+declare const useGameMonitorStore: pinia1.StoreDefinition<
   'gameMonitor',
   Pick<
     {
@@ -11131,7 +11131,7 @@ declare const useGameMonitorStore: pinia2.StoreDefinition<
       getGameStatus: (gameId: string) => GameMonitorStatus | undefined
       init: () => Promise<void>
     },
-    'statuses' | 'initialized'
+    'initialized' | 'statuses'
   >,
   Pick<
     {
@@ -11207,18 +11207,18 @@ declare const useGameMonitorStore: pinia2.StoreDefinition<
       getGameStatus: (gameId: string) => GameMonitorStatus | undefined
       init: () => Promise<void>
     },
+    | 'init'
     | 'setGameStatus'
     | 'removeGameStatus'
     | 'clearAllStatuses'
     | 'isGameRunning'
     | 'isGameForeground'
     | 'getGameStatus'
-    | 'init'
   >
 >
 //#endregion
 //#region src/renderer/src/stores/scanner.d.ts
-declare const useScannerStore: pinia2.StoreDefinition<
+declare const useScannerStore: pinia1.StoreDefinition<
   'scanner',
   Pick<
     {
@@ -11282,7 +11282,7 @@ declare const useScannerStore: pinia2.StoreDefinition<
       getScannerState: (id: string) => ScanProgressData | undefined
       init: () => Promise<void>
     },
-    'initialized' | 'scannerStates'
+    'scannerStates' | 'initialized'
   >,
   Pick<
     {
@@ -11410,16 +11410,16 @@ declare const useScannerStore: pinia2.StoreDefinition<
       getScannerState: (id: string) => ScanProgressData | undefined
       init: () => Promise<void>
     },
-    | 'init'
     | 'updateScannerState'
     | 'resetScannerState'
     | 'resetAllScannerStates'
     | 'getScannerState'
+    | 'init'
   >
 >
 //#endregion
 //#region src/renderer/src/stores/default-from.d.ts
-declare const useDefaultFromStore: pinia2.StoreDefinition<
+declare const useDefaultFromStore: pinia1.StoreDefinition<
   'defaultFrom',
   Pick<
     {
@@ -11471,7 +11471,7 @@ declare const useDefaultFromStore: pinia2.StoreDefinition<
  * Pinia store for user preferences with automatic persistence.
  * Uses pinia-plugin-persistedstate for localStorage sync.
  */
-declare const usePreferencesStore: pinia2.StoreDefinition<
+declare const usePreferencesStore: pinia1.StoreDefinition<
   'preferences',
   Pick<
     {
@@ -11500,7 +11500,7 @@ declare const usePreferencesStore: pinia2.StoreDefinition<
 >
 //#endregion
 //#region src/renderer/src/stores/updater.d.ts
-declare const useUpdaterStore: pinia2.StoreDefinition<
+declare const useUpdaterStore: pinia1.StoreDefinition<
   'updater',
   Pick<
     {
@@ -11882,9 +11882,9 @@ declare const __VLS_base$133: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
   },
@@ -11893,10 +11893,10 @@ declare const __VLS_base$133: vue0.DefineComponent<
   Readonly<__VLS_Props$81> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -12238,7 +12238,7 @@ declare const __VLS_base$125: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<Props$46> & Readonly<{}>,
   {
-    as: reka_ui0.AsTag | vue0.Component
+    as: reka_ui11.AsTag | vue0.Component
   },
   {},
   {},
@@ -12939,12 +12939,12 @@ declare const __VLS_base$109: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (value: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (value: reka_ui11.AcceptableValue) => any
     highlight: (
       payload:
         | {
             ref: HTMLElement
-            value: reka_ui0.AcceptableValue
+            value: reka_ui11.AcceptableValue
           }
         | undefined
     ) => any
@@ -12955,13 +12955,13 @@ declare const __VLS_base$109: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<__VLS_Props$73> &
     Readonly<{
-      'onUpdate:modelValue'?: ((value: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((value: reka_ui11.AcceptableValue) => any) | undefined
       onHighlight?:
         | ((
             payload:
               | {
                   ref: HTMLElement
-                  value: reka_ui0.AcceptableValue
+                  value: reka_ui11.AcceptableValue
                 }
               | undefined
           ) => any)
@@ -12970,7 +12970,7 @@ declare const __VLS_base$109: vue0.DefineComponent<
       onLeave?: ((event: Event) => any) | undefined
     }>,
   {
-    modelValue: reka_ui0.AcceptableValue | reka_ui0.AcceptableValue[]
+    modelValue: reka_ui11.AcceptableValue | reka_ui11.AcceptableValue[]
   },
   {},
   {},
@@ -13161,14 +13161,14 @@ declare const __VLS_base$105: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    select: (event: reka_ui0.ListboxItemSelectEvent<reka_ui0.AcceptableValue>) => any
+    select: (event: reka_ui11.ListboxItemSelectEvent<reka_ui11.AcceptableValue>) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$68> &
     Readonly<{
       onSelect?:
-        | ((event: reka_ui0.ListboxItemSelectEvent<reka_ui0.AcceptableValue>) => any)
+        | ((event: reka_ui11.ListboxItemSelectEvent<reka_ui11.AcceptableValue>) => any)
         | undefined
     }>,
   {},
@@ -13496,9 +13496,9 @@ declare const __VLS_base$99: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -13506,10 +13506,10 @@ declare const __VLS_base$99: vue0.DefineComponent<
   Readonly<__VLS_Props$64> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
@@ -13778,27 +13778,27 @@ declare const __VLS_base$93: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
+    entryFocus: (event: Event) => any
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
-    entryFocus: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$59> &
     Readonly<{
+      onEntryFocus?: ((event: Event) => any) | undefined
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
-      onEntryFocus?: ((event: Event) => any) | undefined
     }>,
   {},
   {},
@@ -13879,13 +13879,13 @@ declare const __VLS_base$91: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (payload: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (payload: reka_ui11.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<ContextMenuRadioGroupProps> &
     Readonly<{
-      'onUpdate:modelValue'?: ((payload: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((payload: reka_ui11.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -14085,9 +14085,9 @@ declare const __VLS_base$86: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
   },
@@ -14096,10 +14096,10 @@ declare const __VLS_base$86: vue0.DefineComponent<
   Readonly<__VLS_Props$56> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
@@ -14449,9 +14449,9 @@ declare const __VLS_base$77: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -14459,10 +14459,10 @@ declare const __VLS_base$77: vue0.DefineComponent<
   Readonly<__VLS_Props$49> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
@@ -14590,13 +14590,13 @@ declare const __VLS_base$74: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
-    'update:modelValue': (payload: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (payload: reka_ui11.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<DropdownMenuRadioGroupProps> &
     Readonly<{
-      'onUpdate:modelValue'?: ((payload: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((payload: reka_ui11.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -14897,27 +14897,27 @@ declare const __VLS_base$67: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   vue0.ComponentOptionsMixin,
   {
+    entryFocus: (event: Event) => any
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
-    entryFocus: (event: Event) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$41> &
     Readonly<{
+      onEntryFocus?: ((event: Event) => any) | undefined
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
-      onEntryFocus?: ((event: Event) => any) | undefined
     }>,
   {},
   {},
@@ -16052,9 +16052,9 @@ declare const __VLS_base$41: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
-    focusOutside: (event: reka_ui0.FocusOutsideEvent) => any
-    interactOutside: (event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
+    focusOutside: (event: reka_ui11.FocusOutsideEvent) => any
+    interactOutside: (event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any
     openAutoFocus: (event: Event) => any
     closeAutoFocus: (event: Event) => any
     afterLeave: () => any
@@ -16064,18 +16064,18 @@ declare const __VLS_base$41: vue0.DefineComponent<
   Readonly<__VLS_Props$37> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
-      onFocusOutside?: ((event: reka_ui0.FocusOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
+      onFocusOutside?: ((event: reka_ui11.FocusOutsideEvent) => any) | undefined
       onInteractOutside?:
-        | ((event: reka_ui0.PointerDownOutsideEvent | reka_ui0.FocusOutsideEvent) => any)
+        | ((event: reka_ui11.PointerDownOutsideEvent | reka_ui11.FocusOutsideEvent) => any)
         | undefined
       onOpenAutoFocus?: ((event: Event) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
       onAfterLeave?: (() => any) | undefined
     }>,
   {
-    align: 'center' | 'start' | 'end'
     sideOffset: number
+    align: 'start' | 'center' | 'end'
     collisionPadding: number | Partial<Record<'top' | 'right' | 'bottom' | 'left', number>>
   },
   {},
@@ -16135,7 +16135,7 @@ type __VLS_Props$36 = RadioGroupRootProps & {
   class?: HTMLAttributes['class']
 }
 declare var __VLS_8$18: {
-  modelValue: reka_ui0.AcceptableValue | undefined
+  modelValue: reka_ui11.AcceptableValue | undefined
 }
 type __VLS_Slots$39 = {} & {
   default?: (props: typeof __VLS_8$18) => any
@@ -16462,14 +16462,14 @@ declare const __VLS_base$33: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     'update:open': (value: boolean) => any
-    'update:modelValue': (value: reka_ui0.AcceptableValue) => any
+    'update:modelValue': (value: reka_ui11.AcceptableValue) => any
   },
   string,
   vue0.PublicProps,
   Readonly<__VLS_Props$33> &
     Readonly<{
       'onUpdate:open'?: ((value: boolean) => any) | undefined
-      'onUpdate:modelValue'?: ((value: reka_ui0.AcceptableValue) => any) | undefined
+      'onUpdate:modelValue'?: ((value: reka_ui11.AcceptableValue) => any) | undefined
     }>,
   {},
   {},
@@ -16583,7 +16583,7 @@ declare const __VLS_base$30: vue0.DefineComponent<
   vue0.ComponentOptionsMixin,
   {
     escapeKeyDown: (event: KeyboardEvent) => any
-    pointerDownOutside: (event: reka_ui0.PointerDownOutsideEvent) => any
+    pointerDownOutside: (event: reka_ui11.PointerDownOutsideEvent) => any
     closeAutoFocus: (event: Event) => any
   },
   string,
@@ -16591,7 +16591,7 @@ declare const __VLS_base$30: vue0.DefineComponent<
   Readonly<__VLS_Props$31> &
     Readonly<{
       onEscapeKeyDown?: ((event: KeyboardEvent) => any) | undefined
-      onPointerDownOutside?: ((event: reka_ui0.PointerDownOutsideEvent) => any) | undefined
+      onPointerDownOutside?: ((event: reka_ui11.PointerDownOutsideEvent) => any) | undefined
       onCloseAutoFocus?: ((event: Event) => any) | undefined
     }>,
   {
@@ -17506,11 +17506,11 @@ declare const badgeVariants: (
     | ({
         variant?:
           | 'default'
-          | 'destructive'
-          | 'outline'
           | 'secondary'
+          | 'destructive'
           | 'success'
           | 'warning'
+          | 'outline'
           | null
           | undefined
       } & class_variance_authority_types0.ClassProp)
@@ -17572,10 +17572,10 @@ declare const buttonVariants: (
           | 'text'
           | 'link'
           | 'input'
-          | 'ghost'
+          | 'secondary'
           | 'destructive'
           | 'outline'
-          | 'secondary'
+          | 'ghost'
           | null
           | undefined
         size?:
@@ -17619,7 +17619,7 @@ declare const __VLS_base$7: vue0.DefineComponent<
   vue0.PublicProps,
   Readonly<ButtonProps> & Readonly<{}>,
   {
-    as: reka_ui0.AsTag | vue0.Component
+    as: reka_ui11.AsTag | vue0.Component
   },
   {},
   {},
@@ -17643,8 +17643,8 @@ type __VLS_Props$10 = CheckboxRootProps & {
   class?: HTMLAttributes['class']
 }
 declare var __VLS_14$1: {
-  modelValue: reka_ui0.CheckboxCheckedState
-  state: reka_ui0.CheckboxCheckedState
+  modelValue: reka_ui11.CheckboxCheckedState
+  state: reka_ui11.CheckboxCheckedState
 }
 type __VLS_Slots$6 = {} & {
   default?: (props: typeof __VLS_14$1) => any
@@ -18809,8 +18809,8 @@ interface KisakiRendererAPI {
   readonly __deps: {
     vue: typeof vue0
     'vue-router': typeof vue_router0
-    pinia: typeof pinia2
-    drizzle: typeof drizzle_orm90
+    pinia: typeof pinia1
+    drizzle: typeof drizzle_orm0
   }
 }
 //#endregion

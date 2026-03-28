@@ -8,14 +8,22 @@
  * - https://igdb-openapi.s-crypt.co/IGDB-OpenAPI.yaml
  */
 
-import type { NetworkService } from '@main/services/network'
-import type { GameScraperProvider } from '../../provider'
-import type { GameSearchResult } from '@shared/scraper'
+import type { GameCompanyType, GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
 import type { GameInfo, Tag } from '@shared/metadata'
-import type { ScrapedGameCharacterFact, ScrapedGameCompanyFact } from '@shared/scraper'
-import type { GameCompanyType } from '@shared/db'
-import { normalizeScrapedDescription } from '../../../../utils'
+import type {
+  GameSearchResult,
+  ScrapedGameCharacterFact,
+  ScrapedGameCompanyFact,
+  ScraperLookup
+} from '@shared/scraper'
+import type { ScraperProviderDeps } from '../../../../types'
+import type {
+  GameResolvedTarget,
+  GameScraperProvider,
+  GameScraperSession,
+  GameSessionResultMap
+} from '../../provider'
 import { IgdbClient } from './client'
 import {
   clampLimit,
@@ -60,6 +68,9 @@ import type {
   IgdbWebsiteType
 } from './types'
 
+const GAME_CORE_FIELDS =
+  'id,name,first_release_date,summary,storyline,url,game_type.type,game_status.status,websites,external_games,videos,release_dates,genres,themes,keywords,game_modes,player_perspectives,platforms,language_supports,cover'
+
 const ALLOWED_EXTERNAL_ID_SOURCES = new Set(['igdb', 'vndb', 'steam', 'bangumi', 'ymgal'])
 
 function resolveAllowedExternalIdSource(sourceName?: string): string | undefined {
@@ -88,11 +99,13 @@ export class IGDBProvider implements GameScraperProvider {
   }
 
   private readonly client: IgdbClient
+  private readonly helper: ScraperProviderDeps['helper']
 
-  constructor(networkService: NetworkService) {
+  constructor(deps: ScraperProviderDeps) {
+    this.helper = deps.helper
     const clientId = import.meta.env.VITE_IGDB_API_CLIENT_ID?.trim()
     const clientSecret = import.meta.env.VITE_IGDB_API_CLIENT_SECRET?.trim()
-    this.client = new IgdbClient(networkService, clientId || undefined, clientSecret || undefined)
+    this.client = new IgdbClient(deps.network, clientId || undefined, clientSecret || undefined)
   }
 
   // ===========================================================================
@@ -145,50 +158,323 @@ export class IGDBProvider implements GameScraperProvider {
       }))
   }
 
-  // ===========================================================================
-  // Core Info
-  // ===========================================================================
-
-  public async getInfo(id: string, _locale?: Locale): Promise<GameInfo> {
-    this.ensureConfigured()
-    const gameId = this.parseId(id)
-
-    const game = await this.fetchGameById(
-      gameId,
-      'id,name,first_release_date,summary,storyline,url,game_type.type,game_status.status,websites,external_games,videos,release_dates'
-    )
-
-    if (!game) {
-      throw new Error(`IGDB game not found: ${id}`)
+  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+    const knownTarget = this.resolveKnownTarget(lookup)
+    if (knownTarget) {
+      return knownTarget
     }
 
-    const [websites, externalGames, videos, releaseDates] = await Promise.all([
-      this.client.queryByIds<IgdbWebsite>('websites', game.websites ?? [], 'id,type,url,trusted'),
-      this.client.queryByIds<IgdbExternalGame>(
-        'external_games',
-        game.external_games ?? [],
-        'id,uid,url,external_game_source,game_release_format'
-      ),
-      this.client.queryByIds<IgdbGameVideo>('game_videos', game.videos ?? [], 'id,name,video_id'),
-      this.client.queryByIds<IgdbReleaseDate>(
-        'release_dates',
-        game.release_dates ?? [],
-        'id,date,y,m,status'
-      )
-    ])
+    const first = (await this.search(lookup.name, locale))[0]
+    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+  }
 
-    const [websiteTypes, externalSources] = await Promise.all([
-      this.client.queryByIds<IgdbWebsiteType>(
+  public async openSession(
+    target: GameResolvedTarget,
+    locale: Locale
+  ): Promise<GameScraperSession> {
+    void locale
+    this.ensureConfigured()
+
+    const gameId = this.parseId(target.id)
+    const getGameCore = this.memoizeTask(() => this.fetchGameById(gameId, GAME_CORE_FIELDS))
+    const getGameWebsites = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbWebsite>(
+        'websites',
+        game?.websites ?? [],
+        'id,type,url,trusted'
+      )
+    })
+    const getGameWebsiteTypes = this.memoizeTask(async () => {
+      const websites = await getGameWebsites()
+      return this.client.queryByIds<IgdbWebsiteType>(
         'website_types',
         websites.map((site) => site.type ?? 0),
         'id,type'
-      ),
-      this.client.queryByIds<IgdbExternalGameSource>(
+      )
+    })
+    const getExternalGames = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbExternalGame>(
+        'external_games',
+        game?.external_games ?? [],
+        'id,uid,url,external_game_source,game_release_format'
+      )
+    })
+    const getExternalSources = this.memoizeTask(async () => {
+      const externalGames = await getExternalGames()
+      return this.client.queryByIds<IgdbExternalGameSource>(
         'external_game_sources',
         externalGames.map((gameRef) => gameRef.external_game_source ?? 0),
         'id,name'
       )
-    ])
+    })
+    const getVideos = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbGameVideo>(
+        'game_videos',
+        game?.videos ?? [],
+        'id,name,video_id'
+      )
+    })
+    const getReleaseDates = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbReleaseDate>(
+        'release_dates',
+        game?.release_dates ?? [],
+        'id,date,y,m,status'
+      )
+    })
+    const getGenres = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbGenre>('genres', game?.genres ?? [], 'id,name')
+    })
+    const getThemes = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbTheme>('themes', game?.themes ?? [], 'id,name')
+    })
+    const getKeywords = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbKeyword>('keywords', game?.keywords ?? [], 'id,name')
+    })
+    const getGameModes = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbGameMode>('game_modes', game?.game_modes ?? [], 'id,name')
+    })
+    const getPerspectives = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbPlayerPerspective>(
+        'player_perspectives',
+        game?.player_perspectives ?? [],
+        'id,name'
+      )
+    })
+    const getPlatforms = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbPlatform>('platforms', game?.platforms ?? [], 'id,name')
+    })
+    const getLanguageSupports = this.memoizeTask(async () => {
+      const game = await getGameCore()
+      return this.client.queryByIds<IgdbLanguageSupport>(
+        'language_supports',
+        game?.language_supports ?? [],
+        'id,language,language_support_type'
+      )
+    })
+    const getLanguages = this.memoizeTask(async () => {
+      const supports = await getLanguageSupports()
+      return this.client.queryByIds<IgdbLanguage>(
+        'languages',
+        supports.map((item) => item.language ?? 0),
+        'id,name,native_name,locale'
+      )
+    })
+    const getLanguageSupportTypes = this.memoizeTask(async () => {
+      const supports = await getLanguageSupports()
+      return this.client.queryByIds<IgdbLanguageSupportType>(
+        'language_support_types',
+        supports.map((item) => item.language_support_type ?? 0),
+        'id,name'
+      )
+    })
+    const getReleaseStatuses = this.memoizeTask(async () => {
+      const releaseDates = await getReleaseDates()
+      return this.client.queryByIds<IgdbReleaseDateStatus>(
+        'release_date_statuses',
+        releaseDates.map((item) => item.status ?? 0),
+        'id,name'
+      )
+    })
+    const getCharacters = this.memoizeTask(() =>
+      this.client.query<IgdbCharacter>(
+        'characters',
+        `fields id,name,akas,description,country_name,character_gender,character_species,mug_shot,url; where games = (${gameId}); limit 200;`
+      )
+    )
+    const getCharacterMugShots = this.memoizeTask(async () => {
+      const characters = await getCharacters()
+      return this.client.queryByIds<IgdbCharacterMugShot>(
+        'character_mug_shots',
+        characters.map((item) => item.mug_shot ?? 0),
+        'id,image_id,url'
+      )
+    })
+    const getCharacterGenders = this.memoizeTask(async () => {
+      const characters = await getCharacters()
+      return this.client.queryByIds<IgdbCharacterGender>(
+        'character_genders',
+        characters.map((item) => item.character_gender ?? 0),
+        'id,name'
+      )
+    })
+    const getCharacterSpecies = this.memoizeTask(async () => {
+      const characters = await getCharacters()
+      return this.client.queryByIds<IgdbCharacterSpecies>(
+        'character_species',
+        characters.map((item) => item.character_species ?? 0),
+        'id,name'
+      )
+    })
+    const getInvolvedCompanies = this.memoizeTask(() =>
+      this.client.query<IgdbInvolvedCompany>(
+        'involved_companies',
+        `fields id,company,developer,publisher,porting,supporting; where game = ${gameId}; limit 500;`
+      )
+    )
+    const getCompanies = this.memoizeTask(async () => {
+      const involvedCompanies = await getInvolvedCompanies()
+      return this.client.queryByIds<IgdbCompany>(
+        'companies',
+        involvedCompanies.map((item) => item.company ?? 0),
+        'id,name,description,url,logo,websites'
+      )
+    })
+    const getCompanyLogos = this.memoizeTask(async () => {
+      const companies = await getCompanies()
+      return this.client.queryByIds<IgdbCompanyLogo>(
+        'company_logos',
+        companies.map((company) => company.logo ?? 0),
+        'id,image_id,url'
+      )
+    })
+    const getCompanyWebsites = this.memoizeTask(async () => {
+      const companies = await getCompanies()
+      return this.client.queryByIds<IgdbCompanyWebsite>(
+        'company_websites',
+        companies.flatMap((company) => company.websites ?? []),
+        'id,type,url,trusted'
+      )
+    })
+    const getCompanyWebsiteTypes = this.memoizeTask(async () => {
+      const websites = await getCompanyWebsites()
+      return this.client.queryByIds<IgdbWebsiteType>(
+        'website_types',
+        websites.map((site) => site.type ?? 0),
+        'id,type'
+      )
+    })
+    const getDirectCovers = this.memoizeTask(() =>
+      this.client.query<IgdbCover>(
+        'covers',
+        `fields id,image_id,url; where game = ${gameId}; limit 20;`
+      )
+    )
+    const getScreenshots = this.memoizeTask(() =>
+      this.client.query<IgdbScreenshot>(
+        'screenshots',
+        `fields id,image_id,url; where game = ${gameId}; limit ${clampLimit(50)};`
+      )
+    )
+    const getArtworks = this.memoizeTask(() =>
+      this.client.query<IgdbArtwork>(
+        'artworks',
+        `fields id,image_id,url; where game = ${gameId}; limit ${clampLimit(50)};`
+      )
+    )
+    const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
+
+    const loadSlot = (slot: GameScraperSlot): Promise<unknown> => {
+      switch (slot) {
+        case 'info':
+          return this.buildInfo(
+            getGameCore,
+            getGameWebsites,
+            getGameWebsiteTypes,
+            getExternalGames,
+            getExternalSources,
+            getVideos,
+            getReleaseDates
+          )
+        case 'tags':
+          return this.buildTags(
+            getGameCore,
+            getGenres,
+            getThemes,
+            getKeywords,
+            getGameModes,
+            getPerspectives,
+            getPlatforms,
+            getLanguageSupports,
+            getLanguages,
+            getLanguageSupportTypes,
+            getReleaseDates,
+            getReleaseStatuses
+          )
+        case 'characters':
+          return this.buildCharacters(
+            getCharacters,
+            getCharacterMugShots,
+            getCharacterGenders,
+            getCharacterSpecies
+          )
+        case 'companies':
+          return this.buildCompanies(
+            getInvolvedCompanies,
+            getCompanies,
+            getCompanyLogos,
+            getCompanyWebsites,
+            getCompanyWebsiteTypes
+          )
+        case 'covers':
+          return this.buildCovers(getDirectCovers, getGameCore)
+        case 'backdrops':
+          return this.buildBackdrops(getScreenshots, getArtworks)
+        case 'persons':
+        case 'logos':
+        case 'icons':
+          return Promise.resolve(undefined)
+      }
+    }
+
+    return {
+      get: async (slots) => {
+        const output: Partial<GameSessionResultMap> = {}
+
+        await Promise.all(
+          slots.map(async (slot) => {
+            if (!slotTasks.has(slot)) {
+              slotTasks.set(slot, loadSlot(slot))
+            }
+
+            const payload = await slotTasks.get(slot)!
+            if (payload !== undefined) {
+              ;(output as Record<GameScraperSlot, unknown>)[slot] = payload
+            }
+          })
+        )
+
+        return output
+      }
+    }
+  }
+
+  // ===========================================================================
+  // Core Info
+  // ===========================================================================
+
+  private async buildInfo(
+    getGameCore: () => Promise<IgdbGame | null>,
+    getGameWebsites: () => Promise<IgdbWebsite[]>,
+    getGameWebsiteTypes: () => Promise<IgdbWebsiteType[]>,
+    getExternalGames: () => Promise<IgdbExternalGame[]>,
+    getExternalSources: () => Promise<IgdbExternalGameSource[]>,
+    getVideos: () => Promise<IgdbGameVideo[]>,
+    getReleaseDates: () => Promise<IgdbReleaseDate[]>
+  ): Promise<GameInfo> {
+    const [game, websites, websiteTypes, externalGames, externalSources, videos, releaseDates] =
+      await Promise.all([
+        getGameCore(),
+        getGameWebsites(),
+        getGameWebsiteTypes(),
+        getExternalGames(),
+        getExternalSources(),
+        getVideos(),
+        getReleaseDates()
+      ])
+
+    if (!game) {
+      throw new Error('IGDB game not found.')
+    }
 
     const websiteTypeMap = new Map<number, string>()
     for (const item of websiteTypes) {
@@ -261,7 +547,7 @@ export class IGDBProvider implements GameScraperProvider {
     const descriptionParts = [game.storyline?.trim(), game.summary?.trim()].filter(
       (part): part is string => !!part
     )
-    const description = normalizeScrapedDescription(descriptionParts.join('\n\n'))
+    const description = this.normalizeDescription(descriptionParts.join('\n\n'))
 
     return {
       name: game.name,
@@ -276,17 +562,22 @@ export class IGDBProvider implements GameScraperProvider {
   // Tags
   // ===========================================================================
 
-  public async getTags(id: string, _locale?: Locale): Promise<Tag[]> {
-    this.ensureConfigured()
-    const gameId = this.parseId(id)
-
-    const game = await this.fetchGameById(
-      gameId,
-      'id,genres,themes,keywords,game_modes,player_perspectives,platforms,language_supports,release_dates,game_type.type,game_status.status'
-    )
-    if (!game) return []
-
+  private async buildTags(
+    getGameCore: () => Promise<IgdbGame | null>,
+    getGenres: () => Promise<IgdbGenre[]>,
+    getThemes: () => Promise<IgdbTheme[]>,
+    getKeywords: () => Promise<IgdbKeyword[]>,
+    getGameModes: () => Promise<IgdbGameMode[]>,
+    getPerspectives: () => Promise<IgdbPlayerPerspective[]>,
+    getPlatforms: () => Promise<IgdbPlatform[]>,
+    getLanguageSupports: () => Promise<IgdbLanguageSupport[]>,
+    getLanguages: () => Promise<IgdbLanguage[]>,
+    getLanguageSupportTypes: () => Promise<IgdbLanguageSupportType[]>,
+    getReleaseDates: () => Promise<IgdbReleaseDate[]>,
+    getReleaseStatuses: () => Promise<IgdbReleaseDateStatus[]>
+  ): Promise<Tag[]> {
     const [
+      game,
       genres,
       themes,
       keywords,
@@ -294,47 +585,26 @@ export class IGDBProvider implements GameScraperProvider {
       perspectives,
       platforms,
       languageSupports,
-      releaseDates
+      languages,
+      languageSupportTypes,
+      releaseDates,
+      releaseStatuses
     ] = await Promise.all([
-      this.client.queryByIds<IgdbGenre>('genres', game.genres ?? [], 'id,name'),
-      this.client.queryByIds<IgdbTheme>('themes', game.themes ?? [], 'id,name'),
-      this.client.queryByIds<IgdbKeyword>('keywords', game.keywords ?? [], 'id,name'),
-      this.client.queryByIds<IgdbGameMode>('game_modes', game.game_modes ?? [], 'id,name'),
-      this.client.queryByIds<IgdbPlayerPerspective>(
-        'player_perspectives',
-        game.player_perspectives ?? [],
-        'id,name'
-      ),
-      this.client.queryByIds<IgdbPlatform>('platforms', game.platforms ?? [], 'id,name'),
-      this.client.queryByIds<IgdbLanguageSupport>(
-        'language_supports',
-        game.language_supports ?? [],
-        'id,language,language_support_type'
-      ),
-      this.client.queryByIds<IgdbReleaseDate>(
-        'release_dates',
-        game.release_dates ?? [],
-        'id,date,y,m,status'
-      )
+      getGameCore(),
+      getGenres(),
+      getThemes(),
+      getKeywords(),
+      getGameModes(),
+      getPerspectives(),
+      getPlatforms(),
+      getLanguageSupports(),
+      getLanguages(),
+      getLanguageSupportTypes(),
+      getReleaseDates(),
+      getReleaseStatuses()
     ])
 
-    const [languages, languageSupportTypes, releaseStatuses] = await Promise.all([
-      this.client.queryByIds<IgdbLanguage>(
-        'languages',
-        languageSupports.map((item) => item.language ?? 0),
-        'id,name,native_name,locale'
-      ),
-      this.client.queryByIds<IgdbLanguageSupportType>(
-        'language_support_types',
-        languageSupports.map((item) => item.language_support_type ?? 0),
-        'id,name'
-      ),
-      this.client.queryByIds<IgdbReleaseDateStatus>(
-        'release_date_statuses',
-        releaseDates.map((item) => item.status ?? 0),
-        'id,name'
-      )
-    ])
+    if (!game) return []
 
     const languageMap = new Map<number, string>()
     for (const lang of languages) {
@@ -412,33 +682,19 @@ export class IGDBProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, _locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
-    this.ensureConfigured()
-    const gameId = this.parseId(id)
-
-    const characters = await this.client.query<IgdbCharacter>(
-      'characters',
-      `fields id,name,akas,description,country_name,character_gender,character_species,mug_shot,url; where games = (${gameId}); limit 200;`
-    )
-    if (!characters.length) return []
-
-    const [mugShots, genders, species] = await Promise.all([
-      this.client.queryByIds<IgdbCharacterMugShot>(
-        'character_mug_shots',
-        characters.map((item) => item.mug_shot ?? 0),
-        'id,image_id,url'
-      ),
-      this.client.queryByIds<IgdbCharacterGender>(
-        'character_genders',
-        characters.map((item) => item.character_gender ?? 0),
-        'id,name'
-      ),
-      this.client.queryByIds<IgdbCharacterSpecies>(
-        'character_species',
-        characters.map((item) => item.character_species ?? 0),
-        'id,name'
-      )
+  private async buildCharacters(
+    getCharacters: () => Promise<IgdbCharacter[]>,
+    getCharacterMugShots: () => Promise<IgdbCharacterMugShot[]>,
+    getCharacterGenders: () => Promise<IgdbCharacterGender[]>,
+    getCharacterSpecies: () => Promise<IgdbCharacterSpecies[]>
+  ): Promise<ScrapedGameCharacterFact[]> {
+    const [characters, mugShots, genders, species] = await Promise.all([
+      getCharacters(),
+      getCharacterMugShots(),
+      getCharacterGenders(),
+      getCharacterSpecies()
     ])
+    if (!characters.length) return []
 
     const mugShotMap = new Map<number, IgdbCharacterMugShot>(
       mugShots.map((item) => [item.id, item])
@@ -466,7 +722,7 @@ export class IGDBProvider implements GameScraperProvider {
       return {
         name: character.name,
         originalName: character.akas?.find((aka) => aka?.trim() && aka.trim() !== character.name),
-        description: normalizeScrapedDescription(character.description),
+        description: this.normalizeDescription(character.description),
         relatedSites: this.dedupeRelatedSites([
           {
             label: 'IGDB',
@@ -486,41 +742,22 @@ export class IGDBProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, _locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
-    this.ensureConfigured()
-    const gameId = this.parseId(id)
-
-    const involvedCompanies = await this.client.query<IgdbInvolvedCompany>(
-      'involved_companies',
-      `fields id,company,developer,publisher,porting,supporting; where game = ${gameId}; limit 500;`
-    )
-    if (!involvedCompanies.length) return []
-
-    const companyRows = await this.client.queryByIds<IgdbCompany>(
-      'companies',
-      involvedCompanies.map((item) => item.company ?? 0),
-      'id,name,description,url,logo,websites'
-    )
-    if (!companyRows.length) return []
-
-    const [logos, companyWebsites] = await Promise.all([
-      this.client.queryByIds<IgdbCompanyLogo>(
-        'company_logos',
-        companyRows.map((company) => company.logo ?? 0),
-        'id,image_id,url'
-      ),
-      this.client.queryByIds<IgdbCompanyWebsite>(
-        'company_websites',
-        companyRows.flatMap((company) => company.websites ?? []),
-        'id,type,url,trusted'
-      )
-    ])
-
-    const websiteTypes = await this.client.queryByIds<IgdbWebsiteType>(
-      'website_types',
-      companyWebsites.map((site) => site.type ?? 0),
-      'id,type'
-    )
+  private async buildCompanies(
+    getInvolvedCompanies: () => Promise<IgdbInvolvedCompany[]>,
+    getCompanies: () => Promise<IgdbCompany[]>,
+    getCompanyLogos: () => Promise<IgdbCompanyLogo[]>,
+    getCompanyWebsites: () => Promise<IgdbCompanyWebsite[]>,
+    getCompanyWebsiteTypes: () => Promise<IgdbWebsiteType[]>
+  ): Promise<ScrapedGameCompanyFact[]> {
+    const [involvedCompanies, companyRows, logos, companyWebsites, websiteTypes] =
+      await Promise.all([
+        getInvolvedCompanies(),
+        getCompanies(),
+        getCompanyLogos(),
+        getCompanyWebsites(),
+        getCompanyWebsiteTypes()
+      ])
+    if (!involvedCompanies.length || !companyRows.length) return []
 
     const companyMap = new Map<number, IgdbCompany>(
       companyRows.map((company) => [company.id, company])
@@ -562,7 +799,7 @@ export class IGDBProvider implements GameScraperProvider {
 
       const base: Omit<ScrapedGameCompanyFact, 'type' | 'note'> = {
         name: company.name.trim(),
-        description: normalizeScrapedDescription(company.description),
+        description: this.normalizeDescription(company.description),
         relatedSites: this.dedupeRelatedSites(relatedSites),
         externalIds: [{ source: this.id, id: String(company.id) }],
         logos: logo ? [logo] : undefined
@@ -584,15 +821,11 @@ export class IGDBProvider implements GameScraperProvider {
   // Images
   // ===========================================================================
 
-  public async getCovers(id: string, _locale?: Locale): Promise<string[]> {
-    this.ensureConfigured()
-    const gameId = this.parseId(id)
-
-    const covers = await this.client.query<IgdbCover>(
-      'covers',
-      `fields id,image_id,url; where game = ${gameId}; limit 20;`
-    )
-
+  private async buildCovers(
+    getDirectCovers: () => Promise<IgdbCover[]>,
+    getGameCore: () => Promise<IgdbGame | null>
+  ): Promise<string[]> {
+    const covers = await getDirectCovers()
     const coverUrls = dedupeStrings(
       covers
         .map((cover) => resolveIgdbImageUrl(cover, 'cover_big'))
@@ -603,8 +836,7 @@ export class IGDBProvider implements GameScraperProvider {
       return coverUrls.slice(0, 10)
     }
 
-    // Fallback to game.cover relation when direct query has no result.
-    const game = await this.fetchGameById(gameId, 'id,cover')
+    const game = await getGameCore()
     if (!game?.cover) return []
 
     const fallbackCovers = await this.client.queryByIds<IgdbCover>(
@@ -620,20 +852,11 @@ export class IGDBProvider implements GameScraperProvider {
     ).slice(0, 10)
   }
 
-  public async getBackdrops(id: string, _locale?: Locale): Promise<string[]> {
-    this.ensureConfigured()
-    const gameId = this.parseId(id)
-
-    const [screenshots, artworks] = await Promise.all([
-      this.client.query<IgdbScreenshot>(
-        'screenshots',
-        `fields id,image_id,url; where game = ${gameId}; limit ${clampLimit(50)};`
-      ),
-      this.client.query<IgdbArtwork>(
-        'artworks',
-        `fields id,image_id,url; where game = ${gameId}; limit ${clampLimit(50)};`
-      )
-    ])
+  private async buildBackdrops(
+    getScreenshots: () => Promise<IgdbScreenshot[]>,
+    getArtworks: () => Promise<IgdbArtwork[]>
+  ): Promise<string[]> {
+    const [screenshots, artworks] = await Promise.all([getScreenshots(), getArtworks()])
 
     return dedupeStrings(
       [...screenshots, ...artworks]
@@ -738,5 +961,26 @@ export class IGDBProvider implements GameScraperProvider {
     }
 
     return relations
+  }
+
+  private memoizeTask<T>(loader: () => Promise<T>): () => Promise<T> {
+    let task: Promise<T> | undefined
+
+    return () => {
+      if (!task) {
+        task = loader()
+      }
+
+      return task
+    }
+  }
+
+  private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
+    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
+  }
+
+  private normalizeDescription(value: string | null | undefined) {
+    return this.helper.text.normalizeDescription(value)
   }
 }

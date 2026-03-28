@@ -1,24 +1,22 @@
 /**
- * Company Scraper Result Types
- *
- * Discriminated union types for provider results, organized by slot.
+ * Company scraper execution result types passed from the runtime pipeline to merge.
  */
 
-import type { ScraperSlot } from '@shared/db'
-import type { CompanyInfo, Tag } from '@shared/metadata'
+import type { CompanyScraperSlot } from '@shared/db'
 import type { SlotResult } from '../../types'
+import type { CompanySessionResultMap } from './provider'
 
-export type CompanyScraperInfoResult = SlotResult<'info', CompanyInfo>
-export type CompanyScraperTagsResult = SlotResult<'tags', Tag[]>
-export type CompanyScraperLogosResult = SlotResult<'logos', string[]>
+type CompanySlotResult<S extends CompanyScraperSlot> = SlotResult<S, CompanySessionResultMap[S]>
+
+export type CompanyScraperInfoResult = CompanySlotResult<'info'>
+export type CompanyScraperTagsResult = CompanySlotResult<'tags'>
+export type CompanyScraperLogosResult = CompanySlotResult<'logos'>
 
 export type CompanyScraperResult =
   | CompanyScraperInfoResult
   | CompanyScraperTagsResult
   | CompanyScraperLogosResult
 
-/**
- * Company image slot (DB: companies.logoFile).
- * Only `logos` maps to CoreCompanyMetadata.logos / companies.logoFile.
- */
-export type CompanyScraperImageSlot = Extract<ScraperSlot, 'logos'>
+export type CompanyScraperImageSlot = 'logos'
+
+export type CompanyScraperImageResult = CompanyScraperLogosResult

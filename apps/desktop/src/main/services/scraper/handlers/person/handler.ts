@@ -1,5 +1,5 @@
 /**
- * Person scraper handler with slot-level strategy execution.
+ * Person scraper handler with invocation-scoped resolve/session execution.
  */
 
 import { eq } from 'drizzle-orm'
@@ -12,10 +12,9 @@ import {
   type PersonScraperSlot,
   type PersonScraperSlotConfigs,
   type ScraperProfile,
-  type ScraperProviderEntry,
   type SlotStrategy
 } from '@shared/db'
-import { type ProfileCleanupAction, type ScraperCapability } from '@shared/scraper'
+import { type ProfileCleanupAction } from '@shared/scraper'
 import type {
   PersonScraperProviderInfo,
   PersonSearchResult,
@@ -25,32 +24,51 @@ import type {
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId } from '../../utils'
+import { executeScraperPlan } from '../common/executor'
 import {
-  assertProviderContract,
-  createResolveCache,
-  getOrderedEnabledProviderEntries,
-  hasValidSlotData,
-  hasRegisteredProvider,
+  buildExecutionPlan,
+  buildSingleProviderExecutionPlan,
   sanitizeSlotConfigs,
-  type ResolveResult
-} from '../common'
-import { mergePersonScraperBundle } from './merge'
-import type { PersonScraperProvider } from './provider'
-import type { PersonScraperImageSlot, PersonScraperResult } from './types'
+  type PlannedSlotEntry
+} from '../common/planner'
+import { createProviderRegistry, hasRegisteredProvider } from '../common/registry'
+import { resolveProviderTarget, resolveSearchProviderTarget } from '../common/resolve'
+import { createScraperInvocationState } from '../common/state'
+import { mergePersonScraperBundle, mergePersonScraperImages } from './merge'
+import type {
+  PersonResolvedTarget,
+  PersonScraperProvider,
+  PersonScraperSession,
+  PersonSessionResultMap
+} from './provider'
+import type { PersonScraperImageResult, PersonScraperImageSlot, PersonScraperResult } from './types'
+import type { SlotResult } from '../../types'
 
 type ValidatedPersonProfile = ScraperProfile & { slotConfigs: PersonScraperSlotConfigs }
 
-const PERSON_CAPABILITY_METHODS = [
-  ['search', 'search'],
-  ['info', 'getInfo'],
-  ['tags', 'getTags'],
-  ['photos', 'getPhotos']
-] as const satisfies ReadonlyArray<readonly [ScraperCapability, keyof PersonScraperProvider]>
+const PERSON_ALLOWED_CAPABILITIES = new Set(['search', ...PERSON_SCRAPER_SLOTS] as const)
 
-const PERSON_ALLOWED_CAPABILITIES = new Set<ScraperCapability>(['search', ...PERSON_SCRAPER_SLOTS])
+function hasValidPersonInfoData(
+  data: PersonSessionResultMap['info'],
+  strategy: SlotStrategy
+): boolean {
+  return strategy !== 'first' || (typeof data.name === 'string' && data.name.trim().length > 0)
+}
+
+function hasValidPersonSlotData<S extends PersonScraperSlot>(
+  slot: S,
+  data: PersonSessionResultMap[S],
+  strategy: SlotStrategy
+): boolean {
+  if (slot === 'info') {
+    return hasValidPersonInfoData(data as PersonSessionResultMap['info'], strategy)
+  }
+
+  return Array.isArray(data) && data.length > 0
+}
 
 export class PersonScraperHandler {
-  private providers = new Map<string, PersonScraperProvider>()
+  private providers = createProviderRegistry<PersonScraperProvider>(PERSON_ALLOWED_CAPABILITIES)
 
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
@@ -58,8 +76,7 @@ export class PersonScraperHandler {
   ) {}
 
   registerProvider(provider: PersonScraperProvider): void {
-    assertProviderContract(provider, PERSON_ALLOWED_CAPABILITIES, PERSON_CAPABILITY_METHODS)
-    this.providers.set(provider.id, provider)
+    this.providers.register(provider)
     log.info(`[Scraper] Registered person provider: ${provider.id}`)
   }
 
@@ -85,7 +102,7 @@ export class PersonScraperHandler {
   }
 
   getProviders(): PersonScraperProviderInfo[] {
-    return Array.from(this.providers.values()).map((provider) => ({
+    return this.providers.list().map((provider) => ({
       id: provider.id,
       name: provider.name,
       capabilities: [...provider.capabilities]
@@ -93,7 +110,7 @@ export class PersonScraperHandler {
   }
 
   getProviderInfo(providerId: string): PersonScraperProviderInfo {
-    const provider = this.getProvider(providerId)
+    const provider = this.getSearchProvider(providerId)
     return {
       id: provider.id,
       name: provider.name,
@@ -104,7 +121,7 @@ export class PersonScraperHandler {
   async ensureProfileValid(profileId: string): Promise<ProfileCleanupAction> {
     const profile = this.loadProfile(profileId)
 
-    if (!hasRegisteredProvider(this.providers, profile.searchProviderId)) {
+    if (!hasRegisteredProvider(this.providers.asMap(), profile.searchProviderId)) {
       this.db.delete(scraperProfiles).where(eq(scraperProfiles.id, profileId)).run()
       log.info(`[Scraper] Deleted person profile '${profile.name}' (invalid searchProviderId)`)
       return 'deleted'
@@ -113,7 +130,7 @@ export class PersonScraperHandler {
     const { slotConfigs, changed } = sanitizeSlotConfigs(
       'person',
       profile.slotConfigs,
-      this.providers
+      this.providers.asMap()
     )
     if (changed) {
       this.db
@@ -130,7 +147,7 @@ export class PersonScraperHandler {
 
   async search(profileId: string, query: string): Promise<PersonSearchResult[]> {
     const profile = this.loadProfile(profileId)
-    const provider = this.getProvider(profile.searchProviderId)
+    const provider = this.getSearchProvider(profile.searchProviderId)
     const results = await provider.search(query, this.getProfileLocale(profile))
     return results.map((result) => ensureProviderExternalId(result, provider.id, result.id))
   }
@@ -152,44 +169,68 @@ export class PersonScraperHandler {
     }
 
     const resolveLocale = this.getResolveLocale(profile, lookup)
-    const resolveViaCache = createResolveCache<PersonSearchResult>(this.providers)
+    const searchProvider = this.getSearchProvider(profile.searchProviderId)
+    const plan = buildExecutionPlan<PersonScraperSlot>({
+      slotConfigs: validatedProfile.slotConfigs,
+      resolveLocale: (entry) => this.getFetchLocale(validatedProfile, entry)
+    })
+    const state = createScraperInvocationState<
+      PersonResolvedTarget,
+      PersonScraperSession,
+      PersonScraperSlot,
+      PersonSessionResultMap,
+      PersonScraperResult
+    >()
 
-    const searchResult = await resolveViaCache(
-      profile.searchProviderId,
-      lookup.name,
-      lookup.knownIds,
-      resolveLocale
-    )
+    try {
+      const { target: searchTarget, canonicalLookup } = await resolveSearchProviderTarget({
+        state,
+        providerId: searchProvider.id,
+        provider: searchProvider,
+        lookup,
+        locale: resolveLocale,
+        warn: (message, error) => log.warn(message, error)
+      })
 
-    let resolveName = lookup.name
-    if (searchResult?.originalName) {
-      resolveName = searchResult.originalName
-      log.info(`[Scraper] Using originalName '${resolveName}' for cross-provider search (person)`)
-    }
+      const resolveProviderId = async (
+        providerId: string,
+        locale: Locale
+      ): Promise<PersonResolvedTarget | null> => {
+        void locale
 
-    const resolvedProviders = new Map<string, Promise<ResolveResult | null>>()
-    if (searchResult) {
-      resolvedProviders.set(profile.searchProviderId, Promise.resolve(searchResult))
-    }
+        const provider = this.providers.get(providerId)
+        if (!provider) {
+          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          return null
+        }
 
-    const resolveProviderId = (providerId: string): Promise<ResolveResult | null> => {
-      const existing = resolvedProviders.get(providerId)
-      if (existing) {
-        return existing
+        if (providerId === searchProvider.id && searchTarget) {
+          return searchTarget
+        }
+
+        return resolveProviderTarget({
+          state,
+          providerId,
+          provider,
+          lookup: canonicalLookup,
+          locale: resolveLocale
+        })
       }
 
-      const task = resolveViaCache(providerId, resolveName, lookup.knownIds, resolveLocale)
-      resolvedProviders.set(providerId, task)
-      return task
+      const results = (await executeScraperPlan({
+        state,
+        plan,
+        getProvider: (providerId) => this.providers.get(providerId),
+        resolveProviderTarget: resolveProviderId,
+        buildResult: ({ providerId, target, entry, data }) =>
+          this.createPersonResult(providerId, target, entry, data),
+        warn: (message, error) => log.warn(message, error)
+      })) as readonly PersonScraperResult[]
+
+      return mergePersonScraperBundle([...results], validatedProfile)
+    } finally {
+      await state.dispose()
     }
-
-    const slotResults = await Promise.all(
-      PERSON_SCRAPER_SLOTS.map((slot) =>
-        this.executeSlot(validatedProfile, slot, resolveProviderId)
-      )
-    )
-
-    return mergePersonScraperBundle(slotResults.flat(), validatedProfile)
   }
 
   async getProviderImages(
@@ -209,109 +250,83 @@ export class PersonScraperHandler {
     }
 
     const locale = lookup.locale ?? (this.i18n.getLocale() as Locale)
-    const resolveId = createResolveCache<PersonSearchResult>(this.providers)
-    const result = await resolveId(providerId, lookup.name, lookup.knownIds, locale)
-
-    if (!result) {
-      log.warn(`[Scraper] Could not resolve ID for '${lookup.name}' via ${providerId}`)
-      return []
-    }
+    const plan = buildSingleProviderExecutionPlan<PersonScraperImageSlot>({
+      providerId,
+      slot: imageType,
+      locale
+    })
+    const state = createScraperInvocationState<
+      PersonResolvedTarget,
+      PersonScraperSession,
+      PersonScraperSlot,
+      PersonSessionResultMap,
+      PersonScraperImageResult
+    >()
 
     try {
-      const data = await provider.getPhotos!(result.id, locale)
-      return Array.isArray(data) ? data : []
+      const results = (await executeScraperPlan({
+        state,
+        plan,
+        getProvider: (candidateProviderId) => this.providers.get(candidateProviderId),
+        resolveProviderTarget: async (candidateProviderId) => {
+          if (candidateProviderId !== providerId) {
+            return null
+          }
+
+          return resolveProviderTarget({
+            state,
+            providerId,
+            provider,
+            lookup,
+            locale
+          })
+        },
+        buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
+          this.createPersonResult(resolvedProviderId, target, entry, data),
+        warn: (message, error) => log.warn(message, error)
+      })) as readonly PersonScraperImageResult[]
+
+      return mergePersonScraperImages([...results], 'enrich')
     } catch (error) {
       log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
       return []
+    } finally {
+      await state.dispose()
     }
   }
 
-  private async executeSlot(
-    profile: ValidatedPersonProfile,
-    slot: PersonScraperSlot,
-    resolveProviderId: (providerId: string) => Promise<ResolveResult | null>
-  ): Promise<PersonScraperResult[]> {
-    const config = profile.slotConfigs[slot]
-    const entries = getOrderedEnabledProviderEntries(config.providers)
-
-    if (config.strategy === 'first') {
-      for (const entry of entries) {
-        const resolved = await resolveProviderId(entry.providerId)
-        if (!resolved) continue
-
-        const result = await this.fetchSlot(
-          entry.providerId,
-          resolved.id,
-          this.getFetchLocale(profile, entry),
-          slot,
-          entry.priority,
-          config.strategy
-        )
-
-        if (result) {
-          return [result]
-        }
-      }
-
-      return []
-    }
-
-    const results = await Promise.all(
-      entries.map(async (entry) => {
-        const resolved = await resolveProviderId(entry.providerId)
-        if (!resolved) return null
-
-        return this.fetchSlot(
-          entry.providerId,
-          resolved.id,
-          this.getFetchLocale(profile, entry),
-          slot,
-          entry.priority,
-          config.strategy
-        )
-      })
-    )
-
-    return results.filter((result): result is PersonScraperResult => result !== null)
-  }
-
-  private async fetchSlot(
+  private createPersonResult<S extends PersonScraperSlot>(
     providerId: string,
-    id: string,
-    locale: Locale,
-    slot: PersonScraperSlot,
-    priority: number,
-    strategy: SlotStrategy
-  ): Promise<PersonScraperResult | null> {
-    const provider = this.providers.get(providerId)
-    if (!provider) {
-      log.warn(`[Scraper] Provider '${providerId}' not available`)
+    target: PersonResolvedTarget,
+    entry: PlannedSlotEntry<S>,
+    data: PersonSessionResultMap[S]
+  ): SlotResult<S, PersonSessionResultMap[S]> | null {
+    if (entry.slot === 'info') {
+      const normalized = ensureProviderExternalId(
+        data as PersonSessionResultMap['info'],
+        providerId,
+        target.id
+      )
+
+      return hasValidPersonInfoData(normalized, entry.strategy)
+        ? ({
+            slot: entry.slot,
+            providerId,
+            rank: entry.rank,
+            data: normalized
+          } as SlotResult<S, PersonSessionResultMap[S]>)
+        : null
+    }
+
+    if (!hasValidPersonSlotData(entry.slot, data, entry.strategy)) {
       return null
     }
 
-    if (!provider.capabilities.includes(slot)) {
-      log.warn(`[Scraper] Provider '${providerId}' does not support slot '${slot}'`)
-      return null
-    }
-
-    try {
-      switch (slot) {
-        case 'info': {
-          const data = ensureProviderExternalId(await provider.getInfo!(id, locale), providerId, id)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'tags': {
-          const data = await provider.getTags!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-        case 'photos': {
-          const data = await provider.getPhotos!(id, locale)
-          return hasValidSlotData(slot, data, strategy) ? { slot, priority, data } : null
-        }
-      }
-    } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${slot} failed:`, error)
-      return null
+    return {
+      slot: entry.slot,
+      providerId,
+      rank: entry.rank,
+      data
     }
   }
 
@@ -331,7 +346,7 @@ export class PersonScraperHandler {
     return profile
   }
 
-  private getProvider(providerId: string): PersonScraperProvider {
+  private getSearchProvider(providerId: string): PersonScraperProvider {
     const provider = this.providers.get(providerId)
     if (!provider || !provider.capabilities.includes('search')) {
       throw new Error(`Provider not found: ${providerId}`)
@@ -347,7 +362,7 @@ export class PersonScraperHandler {
     return (lookup.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
   }
 
-  private getFetchLocale(profile: ScraperProfile, entry: ScraperProviderEntry): Locale {
+  private getFetchLocale(profile: ScraperProfile, entry: { locale?: Locale | null }): Locale {
     return (entry.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
   }
 }

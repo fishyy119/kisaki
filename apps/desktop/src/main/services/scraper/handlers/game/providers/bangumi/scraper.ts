@@ -9,26 +9,25 @@
  * - https://github.com/bangumi/api/
  */
 
-import type { NetworkService } from '@main/services/network'
-import type { GameScraperProvider } from '../../provider'
-import type { GameSearchResult } from '@shared/scraper'
+import type { GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
 import type { GameInfo, Tag } from '@shared/metadata'
 import type {
+  GameSearchResult,
   ScrapedCharacterPersonFact,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
-  ScrapedGamePersonFact
+  ScrapedGamePersonFact,
+  ScraperLookup
 } from '@shared/scraper'
-import { normalizeScrapedDescription, parsePartialDate } from '../../../../utils'
-import { BangumiClient } from './client'
+import type { ScraperProviderDeps } from '../../../../types'
 import type {
-  BangumiCharacterDetail,
-  BangumiCharacterPerson,
-  BangumiPersonDetail,
-  BangumiRelatedCharacter,
-  BangumiRelatedPerson
-} from './types'
+  GameResolvedTarget,
+  GameScraperProvider,
+  GameScraperSession,
+  GameSessionResultMap
+} from '../../provider'
+import { BangumiClient } from './client'
 import {
   BANGUMI_SUBJECT_TYPE_GAME,
   buildBangumiCharacterUrl,
@@ -54,6 +53,22 @@ import {
   resolveLocalizedSubjectName,
   toPartialDateFromParts
 } from './format'
+import type {
+  BangumiCharacterDetail,
+  BangumiCharacterPerson,
+  BangumiPersonDetail,
+  BangumiRelatedCharacter,
+  BangumiRelatedPerson,
+  BangumiSubject,
+  BangumiSubjectRelation
+} from './types'
+
+interface BangumiSubjectImageVariants {
+  large?: string
+  common?: string
+  small?: string
+  grid?: string
+}
 
 export class BangumiProvider implements GameScraperProvider {
   public readonly id = 'bangumi'
@@ -77,10 +92,12 @@ export class BangumiProvider implements GameScraperProvider {
   }
 
   private readonly client: BangumiClient
+  private readonly helper: ScraperProviderDeps['helper']
 
-  constructor(networkService: NetworkService) {
+  constructor(deps: ScraperProviderDeps) {
+    this.helper = deps.helper
     const accessToken = import.meta.env.VITE_BANGUMI_API_ACCESS_TOKEN?.trim()
-    this.client = new BangumiClient(networkService, accessToken || undefined)
+    this.client = new BangumiClient(deps.network, accessToken || undefined)
   }
 
   // ===========================================================================
@@ -111,27 +128,133 @@ export class BangumiProvider implements GameScraperProvider {
           subject.name_cn,
           locale
         )
+
         return {
           id: String(subject.id),
           name,
           originalName,
-          releaseDate: parsePartialDate(subject.date),
+          releaseDate: this.parsePartialDate(subject.date),
           externalIds: [{ source: this.id, id: String(subject.id) }]
         }
       })
+  }
+
+  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+    const knownTarget = this.resolveKnownTarget(lookup)
+    if (knownTarget) {
+      return knownTarget
+    }
+
+    const first = (await this.search(lookup.name, locale))[0]
+    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+  }
+
+  public async openSession(
+    target: GameResolvedTarget,
+    locale: Locale
+  ): Promise<GameScraperSession> {
+    const subjectId = parseBangumiId(target.id)
+    const getSubject = this.memoizeTask(async () => {
+      const subject = await this.client.getSubjectById(subjectId)
+
+      if (subject.type !== BANGUMI_SUBJECT_TYPE_GAME) {
+        throw new Error(`Bangumi subject is not a game: ${subject.id}`)
+      }
+
+      return subject
+    })
+    const getSubjectPersons = this.memoizeTask(() => this.client.getSubjectPersons(subjectId))
+    const getSubjectCharacters = this.memoizeTask(() => this.client.getSubjectCharacters(subjectId))
+    const getSubjectRelations = this.memoizeTask(async () => {
+      return this.client.getSubjectRelations(subjectId).catch(() => [])
+    })
+    const getPersonDetails = this.memoizeTask(async () => {
+      const relatedPersons = await getSubjectPersons()
+      const uniqueIds = [...new Set(relatedPersons.map((person) => person.id))]
+      return this.fetchPersonDetails(uniqueIds)
+    })
+    const getCharacterDetails = this.memoizeTask(async () => {
+      const relatedCharacters = await getSubjectCharacters()
+      return this.fetchCharacterDetails(relatedCharacters.map((character) => character.id))
+    })
+    const getCharacterPersons = this.memoizeTask(async () => {
+      const relatedCharacters = await getSubjectCharacters()
+      return this.fetchCharacterPersons(relatedCharacters.map((character) => character.id))
+    })
+    const getSubjectImageVariants = this.memoizeTask(
+      async (): Promise<BangumiSubjectImageVariants> => {
+        const [large, common, small, grid] = await Promise.all([
+          this.client.getSubjectImageUrl(subjectId, 'large').catch(() => undefined),
+          this.client.getSubjectImageUrl(subjectId, 'common').catch(() => undefined),
+          this.client.getSubjectImageUrl(subjectId, 'small').catch(() => undefined),
+          this.client.getSubjectImageUrl(subjectId, 'grid').catch(() => undefined)
+        ])
+
+        return { large, common, small, grid }
+      }
+    )
+    const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
+
+    const loadSlot = (slot: GameScraperSlot): Promise<unknown> => {
+      switch (slot) {
+        case 'info':
+          return this.buildInfo(getSubject, locale)
+        case 'tags':
+          return this.buildTags(getSubject)
+        case 'characters':
+          return this.buildCharacters(
+            subjectId,
+            getSubjectCharacters,
+            getCharacterDetails,
+            getCharacterPersons,
+            locale
+          )
+        case 'persons':
+          return this.buildPersons(getSubjectPersons, getPersonDetails, locale)
+        case 'companies':
+          return this.buildCompanies(getSubjectPersons, getPersonDetails, locale)
+        case 'covers':
+          return this.buildCovers(getSubject, getSubjectImageVariants)
+        case 'backdrops':
+          return this.buildBackdrops(getSubject, getSubjectRelations)
+        case 'icons':
+          return this.buildIcons(getSubject, getSubjectImageVariants)
+        case 'logos':
+          return Promise.resolve(undefined)
+      }
+    }
+
+    return {
+      get: async (slots) => {
+        const output: Partial<GameSessionResultMap> = {}
+
+        await Promise.all(
+          slots.map(async (slot) => {
+            if (!slotTasks.has(slot)) {
+              slotTasks.set(slot, loadSlot(slot))
+            }
+
+            const payload = await slotTasks.get(slot)!
+            if (payload !== undefined) {
+              ;(output as Record<GameScraperSlot, unknown>)[slot] = payload
+            }
+          })
+        )
+
+        return output
+      }
+    }
   }
 
   // ===========================================================================
   // Core Info
   // ===========================================================================
 
-  public async getInfo(id: string, locale?: Locale): Promise<GameInfo> {
-    const subjectId = parseBangumiId(id)
-    const subject = await this.client.getSubjectById(subjectId)
-
-    if (subject.type !== BANGUMI_SUBJECT_TYPE_GAME) {
-      throw new Error(`Bangumi subject is not a game: ${subject.id}`)
-    }
+  private async buildInfo(
+    getSubject: () => Promise<BangumiSubject>,
+    locale?: Locale
+  ): Promise<GameInfo> {
+    const subject = await getSubject()
 
     const { name, originalName } = resolveLocalizedSubjectName(
       subject.name,
@@ -152,8 +275,8 @@ export class BangumiProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      releaseDate: parsePartialDate(subject.date),
-      description: normalizeScrapedDescription(subject.summary),
+      releaseDate: this.parsePartialDate(subject.date),
+      description: this.normalizeDescription(subject.summary),
       relatedSites,
       externalIds
     }
@@ -163,14 +286,8 @@ export class BangumiProvider implements GameScraperProvider {
   // Tags
   // ===========================================================================
 
-  public async getTags(id: string, _locale?: Locale): Promise<Tag[]> {
-    const subjectId = parseBangumiId(id)
-    const subject = await this.client.getSubjectById(subjectId)
-
-    if (subject.type !== BANGUMI_SUBJECT_TYPE_GAME) {
-      return []
-    }
-
+  private async buildTags(getSubject: () => Promise<BangumiSubject>): Promise<Tag[]> {
+    const subject = await getSubject()
     const tags: Tag[] = []
 
     if (subject.platform?.trim()) {
@@ -196,15 +313,19 @@ export class BangumiProvider implements GameScraperProvider {
   // Characters
   // ===========================================================================
 
-  public async getCharacters(id: string, locale?: Locale): Promise<ScrapedGameCharacterFact[]> {
-    const subjectId = parseBangumiId(id)
-    const relatedCharacters = await this.client.getSubjectCharacters(subjectId)
+  private async buildCharacters(
+    subjectId: number,
+    getSubjectCharacters: () => Promise<BangumiRelatedCharacter[]>,
+    getCharacterDetails: () => Promise<Map<number, BangumiCharacterDetail>>,
+    getCharacterPersons: () => Promise<Map<number, BangumiCharacterPerson[]>>,
+    locale?: Locale
+  ): Promise<ScrapedGameCharacterFact[]> {
+    const relatedCharacters = await getSubjectCharacters()
     if (!relatedCharacters.length) return []
 
-    const detailIds = relatedCharacters.map((item) => item.id)
     const [detailMap, characterPersonMap] = await Promise.all([
-      this.fetchCharacterDetails(detailIds),
-      this.fetchCharacterPersons(detailIds)
+      getCharacterDetails(),
+      getCharacterPersons()
     ])
 
     return relatedCharacters.map((character) =>
@@ -228,6 +349,7 @@ export class BangumiProvider implements GameScraperProvider {
             detail.images = { ...(detail.images ?? {}), large: fallbackImage }
           }
         }
+
         return [characterId, detail] as const
       } catch {
         return null
@@ -285,7 +407,7 @@ export class BangumiProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(detail?.summary || relatedCharacter.summary),
+      description: this.normalizeDescription(detail?.summary || relatedCharacter.summary),
       relatedSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
       externalIds: [{ source: this.id, id: String(relatedCharacter.id) }],
       photos: photos.length > 0 ? photos : undefined,
@@ -314,7 +436,7 @@ export class BangumiProvider implements GameScraperProvider {
       persons.push({
         name: actor.name,
         originalName: actor.name,
-        description: normalizeScrapedDescription(actor.short_summary),
+        description: this.normalizeDescription(actor.short_summary),
         relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
         externalIds: [{ source: this.id, id: String(actor.id) }],
         photos: dedupeUrls(extractImageUrls(actor.images)),
@@ -362,24 +484,19 @@ export class BangumiProvider implements GameScraperProvider {
   // Persons
   // ===========================================================================
 
-  public async getPersons(id: string, locale?: Locale): Promise<ScrapedGamePersonFact[]> {
-    const subjectId = parseBangumiId(id)
-    const relatedPersons = (await this.client.getSubjectPersons(subjectId)).filter(
-      (person) => person.type === 1
-    )
+  private async buildPersons(
+    getSubjectPersons: () => Promise<BangumiRelatedPerson[]>,
+    getPersonDetails: () => Promise<Map<number, BangumiPersonDetail>>,
+    locale?: Locale
+  ): Promise<ScrapedGamePersonFact[]> {
+    const relatedPersons = (await getSubjectPersons()).filter((person) => person.type === 1)
     if (!relatedPersons.length) return []
 
-    const uniqueIds = [...new Set(relatedPersons.map((person) => person.id))]
-    const detailMap = await this.fetchPersonDetails(uniqueIds)
+    const detailMap = await getPersonDetails()
 
-    const persons: ScrapedGamePersonFact[] = []
-
-    for (const relatedPerson of relatedPersons) {
-      const detail = detailMap.get(relatedPerson.id)
-      persons.push(this.mapGamePerson(relatedPerson, detail, locale))
-    }
-
-    return persons
+    return relatedPersons.map((relatedPerson) =>
+      this.mapGamePerson(relatedPerson, detailMap.get(relatedPerson.id), locale)
+    )
   }
 
   private async fetchPersonDetails(ids: number[]): Promise<Map<number, BangumiPersonDetail>> {
@@ -392,6 +509,7 @@ export class BangumiProvider implements GameScraperProvider {
             detail.images = { ...(detail.images ?? {}), large: fallbackImage }
           }
         }
+
         return [personId, detail] as const
       } catch {
         return null
@@ -433,7 +551,7 @@ export class BangumiProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(detail?.summary),
+      description: this.normalizeDescription(detail?.summary),
       relatedSites,
       externalIds,
       photos: photos.length > 0 ? photos : undefined,
@@ -449,24 +567,21 @@ export class BangumiProvider implements GameScraperProvider {
   // Companies
   // ===========================================================================
 
-  public async getCompanies(id: string, locale?: Locale): Promise<ScrapedGameCompanyFact[]> {
-    const subjectId = parseBangumiId(id)
-    const relatedCompanies = (await this.client.getSubjectPersons(subjectId)).filter(
+  private async buildCompanies(
+    getSubjectPersons: () => Promise<BangumiRelatedPerson[]>,
+    getPersonDetails: () => Promise<Map<number, BangumiPersonDetail>>,
+    locale?: Locale
+  ): Promise<ScrapedGameCompanyFact[]> {
+    const relatedCompanies = (await getSubjectPersons()).filter(
       (person) => person.type === 2 || person.type === 3
     )
     if (!relatedCompanies.length) return []
 
-    const uniqueIds = [...new Set(relatedCompanies.map((person) => person.id))]
-    const detailMap = await this.fetchPersonDetails(uniqueIds)
+    const detailMap = await getPersonDetails()
 
-    const companies: ScrapedGameCompanyFact[] = []
-
-    for (const relatedCompany of relatedCompanies) {
-      const detail = detailMap.get(relatedCompany.id)
-      companies.push(this.mapGameCompany(relatedCompany, detail, locale))
-    }
-
-    return companies
+    return relatedCompanies.map((relatedCompany) =>
+      this.mapGameCompany(relatedCompany, detailMap.get(relatedCompany.id), locale)
+    )
   }
 
   private mapGameCompany(
@@ -496,7 +611,7 @@ export class BangumiProvider implements GameScraperProvider {
     return {
       name,
       originalName,
-      description: normalizeScrapedDescription(detail?.summary),
+      description: this.normalizeDescription(detail?.summary),
       relatedSites,
       externalIds,
       logos: logos.length > 0 ? logos : undefined,
@@ -510,23 +625,23 @@ export class BangumiProvider implements GameScraperProvider {
   // Images
   // ===========================================================================
 
-  public async getCovers(id: string, _locale?: Locale): Promise<string[]> {
-    const subjectId = parseBangumiId(id)
-    const [subject, large, common] = await Promise.all([
-      this.client.getSubjectById(subjectId),
-      this.client.getSubjectImageUrl(subjectId, 'large').catch(() => undefined),
-      this.client.getSubjectImageUrl(subjectId, 'common').catch(() => undefined)
-    ])
+  private async buildCovers(
+    getSubject: () => Promise<BangumiSubject>,
+    getSubjectImageVariants: () => Promise<BangumiSubjectImageVariants>
+  ): Promise<string[]> {
+    const [subject, variants] = await Promise.all([getSubject(), getSubjectImageVariants()])
 
-    return dedupeUrls([...extractImageUrls(subject.images), large, common]).slice(0, 10)
+    return dedupeUrls([...extractImageUrls(subject.images), variants.large, variants.common]).slice(
+      0,
+      10
+    )
   }
 
-  public async getBackdrops(id: string, _locale?: Locale): Promise<string[]> {
-    const subjectId = parseBangumiId(id)
-    const [subject, relations] = await Promise.all([
-      this.client.getSubjectById(subjectId),
-      this.client.getSubjectRelations(subjectId).catch(() => [])
-    ])
+  private async buildBackdrops(
+    getSubject: () => Promise<BangumiSubject>,
+    getSubjectRelations: () => Promise<BangumiSubjectRelation[]>
+  ): Promise<string[]> {
+    const [subject, relations] = await Promise.all([getSubject(), getSubjectRelations()])
 
     const relatedImages = dedupeUrls(
       relations.flatMap((relation) => extractImageUrls(relation.images))
@@ -539,15 +654,18 @@ export class BangumiProvider implements GameScraperProvider {
     return dedupeUrls(extractImageUrls(subject.images)).slice(0, 10)
   }
 
-  public async getIcons(id: string, _locale?: Locale): Promise<string[]> {
-    const subjectId = parseBangumiId(id)
-    const [subject, small, grid] = await Promise.all([
-      this.client.getSubjectById(subjectId),
-      this.client.getSubjectImageUrl(subjectId, 'small').catch(() => undefined),
-      this.client.getSubjectImageUrl(subjectId, 'grid').catch(() => undefined)
-    ])
+  private async buildIcons(
+    getSubject: () => Promise<BangumiSubject>,
+    getSubjectImageVariants: () => Promise<BangumiSubjectImageVariants>
+  ): Promise<string[]> {
+    const [subject, variants] = await Promise.all([getSubject(), getSubjectImageVariants()])
 
-    return dedupeUrls([subject.images?.small, subject.images?.grid, small, grid]).slice(0, 10)
+    return dedupeUrls([
+      subject.images?.small,
+      subject.images?.grid,
+      variants.small,
+      variants.grid
+    ]).slice(0, 10)
   }
 
   // ===========================================================================
@@ -560,5 +678,30 @@ export class BangumiProvider implements GameScraperProvider {
   ): Promise<R[]> {
     if (items.length === 0) return []
     return Promise.all(items.map((item) => worker(item)))
+  }
+
+  private memoizeTask<T>(loader: () => Promise<T>): () => Promise<T> {
+    let task: Promise<T> | undefined
+
+    return () => {
+      if (!task) {
+        task = loader()
+      }
+
+      return task
+    }
+  }
+
+  private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
+    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
+  }
+
+  private parsePartialDate(input: string | null | undefined) {
+    return this.helper.date.parsePartialDate(input)
+  }
+
+  private normalizeDescription(value: string | null | undefined) {
+    return this.helper.text.normalizeDescription(value)
   }
 }
