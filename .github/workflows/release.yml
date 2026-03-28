@@ -164,9 +164,11 @@ jobs:
             echo
 
             if [ -n "$PREVIOUS_TAG" ]; then
-              echo "**Full Changelog**: `[$PREVIOUS_TAG...$TAG]($REPO_URL/compare/$PREVIOUS_TAG...$TAG)`"
+              printf '**Full Changelog**: [`%s...%s`](%s/compare/%s...%s)\n' \
+                "$PREVIOUS_TAG" "$TAG" "$REPO_URL" "$PREVIOUS_TAG" "$TAG"
             else
-              echo "**Full Changelog**: `[View commits for $TAG]($REPO_URL/commits/$TAG)`"
+              printf '**Full Changelog**: [`View commits for %s`](%s/commits/%s)\n' \
+                "$TAG" "$REPO_URL" "$TAG"
             fi
           } > release-body.md
 
