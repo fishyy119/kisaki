@@ -519,6 +519,8 @@ interface ThemeContribution {
 - 创建实体
 - 更新实体
 - 删除实体
+- 创建、更新、删除实体关系
+- 创建、更新、删除集合成员关系
 - 处理附件与媒体
 
 推荐形态：
@@ -529,13 +531,20 @@ kisaki.library.games.list(query)
 kisaki.library.games.create(input)
 kisaki.library.games.update(id, patch)
 kisaki.library.games.remove(id)
+
+kisaki.library.relations.list({ entityType: 'game', entityId: id })
+kisaki.library.relations.create(input)
+kisaki.library.relations.update(selector, patch)
+kisaki.library.relations.remove(selector)
 ```
 
 约束：
 
 - 使用稳定 DTO 和 patch 类型
+- 关系通过公开 `kind`、实体引用和 metadata DTO 建模
+- collection membership 也归入 relation 能力，不对扩展暴露 `collection_*_links`
 - 不暴露原始 SQL / Drizzle
-- 不暴露宿主内部表名和 schema object
+- 不暴露宿主内部表名、link table 和 schema object
 
 ## 2. `network`
 

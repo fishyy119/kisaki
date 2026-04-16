@@ -263,11 +263,31 @@ const kisaki = {
 
 其中：
 
-- `library`：实体与附件等宿主库能力
+- `library`：实体、关系、集合成员与附件等宿主库能力
 - `network`：统一网络能力
 - `notify`：通知能力
 - `events`：宿主事件与扩展事件总线
 - `runtime`：环境信息、延迟任务、版本信息等
+
+`library` 不是“只做实体 CRUD”的薄封装，而是宿主库域能力的统一入口，至少覆盖：
+
+- 实体的读取、查询、创建、更新、删除
+- 实体关系与集合成员关系的创建、更新、删除
+- 附件、封面、媒体资源等受控库资源操作
+
+关系能力必须走公开 API，而不是让扩展感知内部 link table。推荐形态例如：
+
+```ts
+await kisaki.library.relations.create({
+  kind: 'character-person',
+  from: { entityType: 'character', id: characterId },
+  to: { entityType: 'person', id: personId },
+  metadata: {
+    type: 'actor',
+    order: 0
+  }
+})
+```
 
 ### 两者差异
 
@@ -451,6 +471,9 @@ type UiCallbackResult =
 - `HostEvents`
 - `LibraryGame`
 - `LibraryGamePatch`
+- `LibraryRelation`
+- `LibraryRelationCreateInput`
+- `LibraryRelationPatch`
 
 禁止对外暴露匿名结构体或宿主内部类型别名。
 
@@ -498,6 +521,7 @@ type EntityMenuItem =
 - `LibraryPerson`
 - `LibraryCompany`
 - `LibraryCollection`
+- `LibraryRelation`
 
 ## Storage 规范
 

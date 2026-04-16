@@ -20,6 +20,7 @@
 4. 扩展代码只运行在共享的扩展宿主进程中，renderer 仅消费主进程下发的贡献快照。
 5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
 6. 扩展面向稳定 DTO 和 capability API，而不是面向数据库 schema、IPC channel 和内部 service。
+7. `library` capability 是宿主库域总入口，不只是实体 CRUD；它还必须覆盖实体关系/集合成员关系的创建与维护，以及附件、媒体等受控库操作。
 
 ## 文档清单
 
@@ -43,7 +44,7 @@
 - `Main App`：Kisaki 主应用的 Electron main process。
 - `Renderer`：Kisaki 的 Vue UI 渲染层，只消费扩展贡献结果，不执行扩展代码。
 - `Contribution`：扩展向宿主注册的声明式能力，如菜单项、设置面板、theme、scraper provider。
-- `Capability`：宿主暴露给扩展的受控基础能力，如 library、network、notify、log、storage。
+- `Capability`：宿主暴露给扩展的受控基础能力，如 `library`（实体、关系、集合成员、附件/媒体）、network、notify、log、storage。
 - `Activation Context`：传给 `activate(context)` 的实例级上下文，负责生命周期和注册归属。
 - `Global Extension API`：扩展中可直接 `import` 的全局公开 API，面向稳定宿主能力。
 

@@ -66,7 +66,7 @@ packages/create-kisaki-extension/**
    - `ExtensionCategory`
    - `ExtensionContext`
    - `HostEvents`
-   - `library` DTO 与 query/patch 类型
+   - `library` DTO、entity query/patch 类型、relation query/command 类型
    - menu/settings/theme/scraper/deeplink contribution 类型
    - `extension-manifest.schema.json`
    - RPC 协议类型
