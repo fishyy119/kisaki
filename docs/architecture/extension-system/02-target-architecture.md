@@ -236,6 +236,7 @@ packages/create-kisaki-extension/
 - `activate(context)` 生命周期接口
 - `kisaki` 全局扩展 API
 - 结构化 contribution 接口
+- 结构化 `UiCallbackResult` 回调结果契约
 - 结构化 event 接口
 - 结构化 DTO 和 query/filter contract
 
@@ -252,7 +253,7 @@ Renderer 打开实体菜单
   -> Renderer 用宿主内置菜单组件渲染
 ```
 
-这里的 `resolveMenu(...)` 只在菜单打开时自动执行一次。同一次打开会话内不会隐式再次 `resolve`；如果菜单项回调显式请求 refresh，则共享宿主才会重新解析当前菜单会话。无论如何，下次再次打开菜单时仍会重新执行 `resolveMenu(...)`。
+这里的 `resolveMenu(...)` 只在菜单打开时自动执行一次。同一次打开会话内不会隐式再次 `resolve`；如果菜单项回调返回的 `UiCallbackResult` 中 `refresh: true`，则共享宿主才会重新解析当前菜单会话。无论如何，下次再次打开菜单时仍会重新执行 `resolveMenu(...)`。
 
 ## 2. 菜单交互
 
@@ -260,7 +261,8 @@ Renderer 打开实体菜单
 Renderer 点击 action / checkbox / select
   -> Main 发送 interaction 到共享宿主中的目标扩展运行槽位
   -> 目标扩展执行目标菜单项的专属回调
-  -> 若回调显式返回 refresh，则共享宿主重新解析当前仍处于活动状态的菜单会话
+  -> 回调返回结构化 `UiCallbackResult`
+  -> 若结果中的 `refresh: true`，则共享宿主重新解析当前仍处于活动状态的菜单会话
   -> 必要时调用 library/network/notify 等 capability
   -> Main 通知 renderer 刷新菜单或提示状态
 ```
@@ -274,11 +276,12 @@ Renderer 打开扩展设置页
   -> Renderer 用宿主内置表单控件渲染，并基于该节点列表初始化本地草稿
   -> 用户点击提交后回传表单值
   -> Main 转发给共享宿主中的目标扩展 onSubmit
-  -> 若 `onSubmit` 或按钮/高级控件回调显式返回 refresh，则 Main 再次调用 resolvePanel(...)
+  -> `onSubmit` 或按钮/高级控件回调返回结构化 `UiCallbackResult`
+  -> 若结果中的 `refresh: true`，则 Main 再次调用 resolvePanel(...)
   -> Renderer 用新的面板节点列表重建当前面板
 ```
 
-设置面板和菜单统一遵循同一条时机规则：`resolve` 仅在 UI 打开时自动执行，后续不做隐式刷新；只有扩展回调显式请求 refresh 时，宿主才会再次执行 `resolve`。
+设置面板和菜单统一遵循同一条时机规则：`resolve` 仅在 UI 打开时自动执行，后续不做隐式刷新；只有扩展回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行 `resolve`。
 
 ## 4. Scraper 调用
 
@@ -296,7 +299,7 @@ Renderer 打开扩展设置页
 - 扩展异常不会泄漏为宿主内部调用栈依赖。
 - 每个扩展都有独立日志前缀、状态和 contribution 归属。
 - RPC 调用有超时和结构化错误。
-- 扩展级异常默认在回调边界被捕获并只影响当前扩展。
+- 扩展级异常默认在回调边界被捕获并只影响当前扩展；UI 回调抛出的异常会被宿主归一化为 `UiCallbackResult` 失败结果。
 - 如果共享宿主发生进程级崩溃，main 会重启宿主并重新激活全部已启用扩展。
 - renderer 永远只处理结构化失败结果，不处理扩展代码异常对象。
 

@@ -146,7 +146,8 @@ packages/create-kisaki-extension/**
 - 多个扩展能在共享宿主进程中成功执行 `activate(context)`
 - 扩展可以注册 contribution
 - 扩展可以调用 capability API
-- 单扩展回调异常不会直接中断主应用
+- UI 回调统一返回结构化 `UiCallbackResult`
+- 单扩展回调异常会被归一化为结构化失败结果，不会直接中断主应用
 - 共享宿主崩溃后可恢复已启用扩展
 
 ## Phase 4：替换 renderer 扩展模型
@@ -265,7 +266,8 @@ packages/create-kisaki-extension/**
 - contribution model 校验
 - theme token 校验
 - menu/settings resolve 归一化逻辑
-- explicit refresh 语义
+- `UiCallbackResult` 校验与归一化
+- success / error / refresh 语义
 - settings panel submit 与草稿重建逻辑
 - storage/log/capability wrapper
 
@@ -277,9 +279,11 @@ packages/create-kisaki-extension/**
 - entity menu action
 - entity menu checkbox
 - entity menu select
+- entity menu callback failure result
 - settings panel submit
 - settings panel action button
 - settings panel explicit refresh
+- settings panel structured error result
 - event subscribe/emit
 - theme contribution
 - scraper provider

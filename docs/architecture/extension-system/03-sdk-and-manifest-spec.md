@@ -284,7 +284,7 @@ const kisaki = {
 ## 推荐入口写法
 
 ```ts
-import { defineExtension, kisaki, menu, settings, ui } from '@kisaki/extension-sdk'
+import { defineExtension, kisaki, menu, settings } from '@kisaki/extension-sdk'
 
 export default defineExtension({
   async activate(context) {
@@ -300,6 +300,7 @@ export default defineExtension({
             label: '同步元数据',
             async onClick() {
               context.logger.info('sync requested', input.entityId)
+              return { success: true, refresh: false }
             }
           }),
           menu.checkbox({
@@ -308,6 +309,7 @@ export default defineExtension({
             checked: !!game.isFavorite,
             async onChange(checked) {
               await kisaki.library.games.update(input.entityId, { isFavorite: checked })
+              return { success: true, refresh: false }
             }
           }),
           menu.select({
@@ -320,6 +322,7 @@ export default defineExtension({
             ],
             async onChange(value) {
               await kisaki.library.games.update(input.entityId, { status: value })
+              return { success: true, refresh: false }
             }
           })
         ]
@@ -348,7 +351,7 @@ export default defineExtension({
                 async onClick(_, panelContext) {
                   panelContext.logger.info('manual relogin requested')
                   await kisaki.notify.info('正在重新登录')
-                  return ui.refresh()
+                  return { success: true, refresh: true }
                 }
               })
             ]
@@ -357,6 +360,7 @@ export default defineExtension({
       },
       async onSubmit(event) {
         await context.storage.set('autoSync', !!event.values.autoSync)
+        return { success: true, refresh: false }
       }
     })
   }
@@ -370,11 +374,31 @@ export default defineExtension({
 - 作者写扩展时，控件定义和控件专属回调可以写在一起，这样最直观。
 - 宿主实际运行时，会把可序列化的 UI model 和不可序列化的 callback registry 拆开。
 
+所有公开 UI 回调都必须返回统一结构化对象：
+
+```ts
+interface UiCallbackError {
+  code?: string
+  message: string
+  details?: Record<string, unknown>
+}
+
+type UiCallbackResult =
+  | { success: true; refresh: boolean }
+  | { success: false; refresh: boolean; error: UiCallbackError }
+```
+
+约束如下：
+
+- 菜单项回调、设置面板控件回调和 `onSubmit` 都不再接受 `void` 作为公开返回值。
+- `refresh` 必须显式给出，宿主不再通过“没返回值”或特殊字面量推断是否刷新。
+- 扩展如果抛出异常，宿主会记录完整日志，并把结果归一化为 `success: false` 的 `UiCallbackResult`。
+
 统一时机规则如下：
 
 - `resolve()` 仅在对应 UI 首次打开时自动执行。
 - UI 打开后的普通交互不会隐式再次 `resolve()`。
-- 只有回调显式返回 `ui.refresh()` 或等价 `{ kind: 'refresh' }` 时，宿主才会再次执行当前 UI 的 `resolve()`。
+- 只有回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行当前 UI 的 `resolve()`。
 
 对于实体菜单，默认规则是：
 
@@ -421,6 +445,8 @@ export default defineExtension({
 - `ExtensionContext`
 - `EntityMenuContribution`
 - `SettingsPanelContribution`
+- `UiCallbackResult`
+- `UiCallbackError`
 - `ThemeContribution`
 - `HostEvents`
 - `LibraryGame`
@@ -452,6 +478,7 @@ type EntityMenuItem =
 - contribution 注册
 - settings panel resolved model
 - settings panel submit payload
+- callback result payload
 - theme token completeness
 
 推荐在 `extension-api` 中提供这些运行时校验定义。

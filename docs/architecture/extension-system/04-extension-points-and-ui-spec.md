@@ -158,8 +158,9 @@ renderer 渲染为宿主现有 submenu + radio item 结构。
 - 菜单的公开主路径是菜单项级 handler。
 - `action` 默认使用 `onClick`。
 - `checkbox` 与 `select` 默认使用 `onChange`。
+- 所有菜单项回调统一返回 `Promise<UiCallbackResult>`。
 - contribution 级的 `onAction` / `onToggle` / `onSelect` 不再作为公开主 API。
-- 同一次菜单打开会话内不会隐式再次 `resolve()`；只有菜单项回调显式返回 `refresh` 时，宿主才会重新解析当前菜单会话。
+- 同一次菜单打开会话内不会隐式再次 `resolve()`；只有菜单项回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会重新解析当前菜单会话。
 
 ## 菜单渲染规则
 
@@ -186,7 +187,7 @@ interface SettingsPanelContribution {
   order?: number
 
   resolve(): Promise<SettingsPanelNode[]>
-  onSubmit?(event: SettingsSubmitEvent): Promise<void | UiEffect>
+  onSubmit?(event: SettingsSubmitEvent): Promise<UiCallbackResult>
 }
 ```
 
@@ -198,7 +199,7 @@ interface SettingsPanelContribution {
 2. `resolve()` 返回当前完整面板节点列表，renderer 基于其中的字段值初始化本地表单草稿。
 3. 普通字段编辑不会立即触发扩展回调，也不会自动再次 `resolve()`。
 4. 用户点击“保存”或“提交”时，宿主把整个表单值交给 `onSubmit()`。
-5. 只有 `onSubmit` 或控件级回调显式返回 `refresh` 时，宿主才会再次执行 `resolve()` 并重建当前面板。
+5. 只有 `onSubmit` 或控件级回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行 `resolve()` 并重建当前面板。
 
 这意味着：
 
@@ -219,7 +220,8 @@ interface SettingsPanelContribution {
 
 - 普通字段优先进入表单草稿，再统一 `onSubmit`
 - 按钮和高级操作允许把控件定义与回调内联写在一起
-- 如果控件回调显式返回 `refresh`，当前面板会丢弃本地草稿并用新的 `resolve()` 结果重建
+- 按钮和高级控件回调统一返回 `Promise<UiCallbackResult>`
+- 如果控件回调返回的 `UiCallbackResult.refresh === true`，当前面板会丢弃本地草稿并用新的 `resolve()` 结果重建
 - 宿主运行时仍会把纯面板模型和 callback registry 分开管理
 
 ## 支持的节点类型
@@ -305,7 +307,7 @@ settings.panel({
             label: '重新登录',
             async onClick(_, ctx) {
               ctx.logger.info('manual relogin requested')
-              return { kind: 'refresh' }
+              return { success: true, refresh: true }
             }
           })
         ]
@@ -315,6 +317,7 @@ settings.panel({
   async onSubmit(event) {
     // 主要保存逻辑集中在这里
     void event
+    return { success: true, refresh: false }
   }
 })
 ```
@@ -326,24 +329,33 @@ settings.panel({
 - 表单保存逻辑不会散落在每个字段回调里
 - 面板节点结构和当前状态都收敛在一次 `resolve()` 的返回值里
 
-## 显式刷新效果
+## 统一回调结果
 
-菜单项回调、设置面板控件回调和 `onSubmit` 都可以显式返回统一 UI effect：
+菜单项回调、设置面板控件回调和 `onSubmit` 都必须返回统一结构化结果：
 
 ```ts
-type UiEffect = { kind: 'none' } | { kind: 'refresh' }
+interface UiCallbackError {
+  code?: string
+  message: string
+  details?: Record<string, unknown>
+}
+
+type UiCallbackResult =
+  | { success: true; refresh: boolean }
+  | { success: false; refresh: boolean; error: UiCallbackError }
 ```
 
 语义如下：
 
-- `none`：不触发额外 UI 刷新
-- `refresh`：宿主重新执行当前 UI surface 的 `resolve()`
+- `success`：声明本次回调是否成功完成。
+- `refresh`：声明宿主是否需要重新执行当前 UI surface 的 `resolve()`。
+- `error`：仅在 `success: false` 时必填，必须是可序列化、适合展示给用户的错误摘要。
 
-这条规则是新系统中受控 UI 的统一原则：
+宿主约束如下：
 
-- UI 打开时自动 `resolve()`
-- 后续不会隐式重复 `resolve()`
-- 只有扩展回调显式请求时才会 refresh
+- UI 打开时自动 `resolve()`，后续不会隐式重复 `resolve()`。
+- 只有回调结果中的 `refresh: true` 才会触发重新 `resolve()`。
+- 扩展回调抛出的异常不是公开协议；宿主必须捕获异常、记录日志，并归一化为 `success: false` 的 `UiCallbackResult`。
 
 ## 事件接口
 

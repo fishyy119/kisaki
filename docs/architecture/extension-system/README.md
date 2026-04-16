@@ -18,7 +18,7 @@
 2. 不再对扩展暴露 `ServiceContainer`、`electron`、`drizzle`、`Vue app/router/pinia`、内部组件库、内部 composables。
 3. 不再在 renderer 进程加载扩展入口，也不再支持 `main + renderer` 双入口扩展。
 4. 扩展代码只运行在共享的扩展宿主进程中，renderer 仅消费主进程下发的贡献快照。
-5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型。
+5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
 6. 扩展面向稳定 DTO 和 capability API，而不是面向数据库 schema、IPC channel 和内部 service。
 
 ## 文档清单
@@ -85,6 +85,16 @@ Manifest、RPC 负载、贡献模型、事件负载、DTO 都由共享类型和�
 ### 6. 优先清晰，不保兼容
 
 本方案默认不保留旧 `plugin` API、不迁就旧模板、不兼容旧包结构、不保留旧 renderer 扩展模型。
+
+### 7. 回调结果结构化
+
+菜单项回调、设置面板按钮回调和 `onSubmit` 必须统一返回结构化 `UiCallbackResult`：
+
+- 必须显式声明本次回调是否成功
+- 必须显式声明当前 UI surface 是否需要 refresh
+- 失败时必须返回可序列化错误信息
+
+宿主不再接受 `void`、裸 `refresh` 标记或其他隐式语义作为公开回调返回协议。
 
 ## 仓库目标结果
 

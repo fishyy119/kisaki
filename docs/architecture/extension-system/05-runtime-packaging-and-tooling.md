@@ -54,7 +54,14 @@ renderer 不认识共享扩展宿主进程，也不直接与之通信。
 
 - 菜单或设置面板打开时，main 才会请求一次对应的 `resolve`
 - 后续不会自动重复 `resolve`
-- 只有扩展回调显式返回 `refresh`，main 才会再次请求对应 UI surface 的 `resolve`
+- 只有扩展回调返回的 `UiCallbackResult` 中 `refresh: true`，main 才会再次请求对应 UI surface 的 `resolve`
+
+UI 回调桥接协议统一为：
+
+- 菜单项回调、设置面板控件回调和 `onSubmit` 都返回结构化 `UiCallbackResult`
+- `success`、`refresh`、`error` 字段都必须可序列化
+- main 不再通过 `void`、特殊字面量或异常分支推断 UI 行为
+- 扩展回调抛出异常时，extension host 必须记录完整日志，并把响应归一化为 `success: false` 的 `UiCallbackResult`
 
 ## 共享扩展宿主进程设计
 
