@@ -112,7 +112,7 @@ packages/create-kisaki-extension/
 进一步约束：
 
 - 宿主侧对公开扩展契约的实现与适配，必须收敛在 `apps/desktop/src/main/services/extension/**` 与 `apps/desktop/src/main/extension-host/**`
-- `ScraperService`、`DeeplinkService`、theme manager、library service 等现有业务模块不直接实现扩展 API 类型
+- `ScraperService`、`DeeplinkService`、theme manager、db service 等现有业务模块不直接实现扩展 API 类型
 - 这些业务模块只通过 `ExtensionService` 下的 contribution/capability 模块被调用和适配
 
 ## 目录设计
