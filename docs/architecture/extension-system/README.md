@@ -18,7 +18,7 @@
 2. 不再对扩展暴露 `ServiceContainer`、`electron`、`drizzle`、`Vue app/router/pinia`、内部组件库、内部 composables。
 3. 不再在 renderer 进程加载扩展入口，也不再支持 `main + renderer` 双入口扩展。
 4. 扩展代码只运行在共享的扩展宿主进程中，renderer 仅消费主进程下发的贡献快照。
-5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；其中 scraper API 除 provider 注册接口外，还会向 provider 暴露稳定 `helper` 模块，首批至少包含 `lookup`、`date`、`text`、`target` 四组子模块，用于复用通用解析逻辑；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
+5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；其中 scraper API 当前聚焦 provider 注册接口与会话契约，不再额外承诺独立 helper 模块；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
 6. 扩展面向稳定 DTO 和 capability API，而不是面向数据库 schema、IPC channel 和内部 service。
 7. `library` capability 是宿主库域总入口，不只是实体 CRUD；它还必须覆盖实体关系/集合成员关系的创建与维护，以及附件、媒体等受控库操作。
 
@@ -45,7 +45,6 @@
 - `Renderer`：Kisaki 的 Vue UI 渲染层，只消费扩展贡献结果，不执行扩展代码。
 - `Contribution`：扩展向宿主注册的声明式能力，如菜单项、设置面板、theme、scraper provider。
 - `Capability`：宿主暴露给扩展的受控基础能力，如 `library`（实体、关系、集合成员、附件/媒体）、network、notify、log、storage。
-- `Scraper Helper Module`：宿主随 scraper provider 依赖一起注入的稳定 helper 合同，首批包括 `lookup`、`date`、`text`、`target` 四组子模块，用于 provider 复用通用查找、日期解析、文本归一化和 resolved target 构造逻辑。
 - `Activation Context`：传给 `activate(context)` 的实例级上下文，负责生命周期和注册归属。
 - `Global Extension API`：扩展中可直接 `import` 的全局公开 API，面向稳定宿主能力。
 
@@ -82,7 +81,7 @@ renderer 不再 import 扩展入口、不再 mount 扩展组件、不再暴露�
 
 ### 5. 强类型和可验证
 
-Manifest、RPC 负载、贡献模型、事件负载、DTO 都由共享类型和运行时校验共同约束，不靠约定俗成。
+Manifest、protocol 消息、贡献模型、事件负载、DTO 都由共享类型和运行时校验共同约束，不靠约定俗成。
 
 ### 6. 优先清晰，不保兼容
 
@@ -127,7 +126,7 @@ extension-api <- extension-sdk <- create-kisaki-extension(生成物依赖)
 
 ### `packages/extension-api/`
 
-职责：公开契约、JSON Schema、DTO、全局 API 契约、贡献类型、RPC 协议类型。
+职责：公开契约、JSON Schema、DTO、全局 API 契约、贡献类型、底层 protocol 类型。
 
 ```text
 packages/extension-api/
@@ -139,24 +138,27 @@ packages/extension-api/
     extension-manifest.schema.json
   src/
     index.ts
+    shared.ts
     manifest.ts
     context.ts
     kisaki.ts
     capabilities/
+      events.ts
       library/
-      events/
     contributions/
-    rpc.ts
+    protocol.ts
 ```
 
 约束：
 
 - 只放稳定公开契约，不放任何宿主实现、进程桥接、状态管理或 app 内部路径引用。
-- `schemas/` 只放对外发布的 JSON Schema；运行时校验定义应跟随 `manifest.ts`、`contributions/**`、`rpc.ts` 等公开契约就近组织，而不是再扩一个顶层 `validation/` 杂项目录。
-- `context.ts`、`kisaki.ts`、`rpc.ts` 先保持单文件；只有当某个公开子域稳定长成多模块时再升级成目录。
+- `schemas/` 只放对外发布的 JSON Schema；运行时校验定义应跟随 `manifest.ts`、`contributions/**`、`protocol.ts` 等公开契约就近组织，而不是再扩一个顶层 `validation/` 杂项目录。
+- `shared.ts` 用于收敛真正跨域复用的基础类型，例如 locale、序列化约束、生命周期接口和值对象；没有跨域复用需求的类型应回收到对应 capability / contribution 文件。
+- `context.ts`、`kisaki.ts`、`protocol.ts` 先保持单文件；只有当某个公开子域稳定长成多模块时再升级成目录。
+- `protocol.ts` 只定义底层可序列化消息信封、握手和错误结构；main 与 extension host 之间的语义桥接命令映射不放在 `extension-api`，而由宿主 runtime 结合 `@kisaki/extension-sdk/bridge` 实现。
 - `capabilities/library/` 单独成域，后续继续拆实体、关系、集合成员、附件/媒体相关 DTO 与 command/query。
-- `events` 契约归入 `src/capabilities/events/`，作为宿主能力而不是 contribution 扩展点建模。
-- `scraper` 公开契约除了 provider 类型外，还必须定义 provider 可用的稳定 `helper` 模块合同；这些 helper 由宿主注入，至少覆盖 `lookup`、`date`、`text`、`target` 四组子模块。
+- `events` 契约归入 `src/capabilities/events.ts`，作为宿主能力而不是 contribution 扩展点建模。
+- `scraper` 公开契约当前聚焦 provider、search/resolve 和 session 合同；只有在后续确实沉淀出稳定复用面时，才再升级为独立公开 helper 子域。
 - 不再出现 `main/`、`renderer/`、`types/` 这种来自宿主内部结构的镜像目录。
 
 ### `packages/extension-sdk/`
@@ -171,21 +173,18 @@ packages/extension-sdk/
   README.md
   src/
     index.ts
-    define.ts
-    kisaki.ts
-    context.ts
+    bridge.ts
     capabilities/
     contributions/
-    internal/
 ```
 
 约束：
 
-- 公开面只暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper，以及收敛在 `context.contributes.*` 域内的 contribution helper。
-- `internal/` 只放运行时桥接实现，例如 RPC client、transport、注册归属与 bootstrap；这些文件不作为稳定公开入口。
+- 作者侧公开入口收敛在根 `index.ts`，集中暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper、`createDisposableStore()`，并转发 `@kisaki/extension-api` 的公开契约。
+- 宿主 bootstrap helper 收敛在 `bridge.ts`，通过显式子路径 `@kisaki/extension-sdk/bridge` 暴露；不再保留 `internal/` 目录。
 - `capabilities/` 对应宿主公开能力包装；`contributions/` 对应作者态注册器与域内 builder。UI 节点构造应收敛在 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 的作用域内，不再依赖额外顶层公开 `entityMenu`、`settingsPanel` builder。
 - 公开类型、模块名与 registrar 命名优先自说明，优先使用 `EntityMenu*`、`SettingsPanel*`、`entityMenus`、`settingsPanels` 这类完整领域名；避免把 `menu`、`settings` 作为 SDK 顶层公开主命名。
-- scraper 作者态 API 需要把 provider 侧 `helper` 模块整理成稳定可消费的公开入口，保证扩展能直接使用 `lookup`、`date`、`text`、`target` 等 helper，而不是复制宿主内部工具实现。
+- scraper 作者态 API 当前聚焦 provider 注册器与 capability 包装；通用解析工具只有在形成稳定复用面后，才考虑上提为公开契约。
 - 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
 
 ### `packages/extension-cli/`

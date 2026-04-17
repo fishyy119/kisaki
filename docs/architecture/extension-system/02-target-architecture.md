@@ -30,7 +30,7 @@
 │  └─ Renderer IPC facade                                     │
 │                                                             │
 └───────────────▲───────────────────────────────▲─────────────┘
-                │ typed RPC bridge              │ app IPC
+                │ protocol channel + sdk bridge │ app IPC
                 │                               │
 ┌───────────────┴──────────────────────┐   ┌────┴────────────────────────────┐
 │ Shared Extension Host Process        │   │ Renderer (Vue)                  │
@@ -131,7 +131,7 @@ apps/desktop/src/main/services/extension/
   runtime/
     manager.ts
     host-controller.ts
-    rpc.ts
+    protocol.ts
     crash-policy.ts
   capabilities/
     library.ts
@@ -152,7 +152,7 @@ apps/desktop/src/main/extension-host/
   index.ts
   bridge.ts
   loader.ts
-  rpc.ts
+  protocol.ts
   sdk-bootstrap.ts
 
 apps/desktop/src/renderer/src/core/extensions/
@@ -180,7 +180,7 @@ packages/create-kisaki-extension/
 2. 校验 manifest 和安装状态
 3. 为每个已启用扩展生成运行描述
 4. 启动共享扩展宿主进程
-5. 建立 RPC 桥接
+5. 建立 protocol 通道并接线 SDK bridge
 6. 将所有已启用扩展的运行描述下发给共享宿主
 7. 逐个加载扩展 `entry` 并调用 `activate(context)`
 
@@ -299,7 +299,7 @@ Renderer 打开扩展设置页
 
 - 扩展异常不会泄漏为宿主内部调用栈依赖。
 - 每个扩展都有独立日志前缀、状态和 contribution 归属。
-- RPC 调用有超时和结构化错误。
+- protocol 调用有超时和结构化错误。
 - 扩展级异常默认在回调边界被捕获并只影响当前扩展；UI 回调抛出的异常会被宿主归一化为 `UiCallbackResult` 失败结果。
 - 如果共享宿主发生进程级崩溃，main 会重启宿主并重新激活全部已启用扩展。
 - renderer 永远只处理结构化失败结果，不处理扩展代码异常对象。

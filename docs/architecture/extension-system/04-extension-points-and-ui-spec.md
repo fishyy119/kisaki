@@ -418,7 +418,7 @@ ext.dev.ximu.sample-extension.auth.completed
 - 内建 provider 与扩展 provider 使用同一 registry 语义。
 - 扩展 provider 在 extension host 中执行。
 - 宿主通过 `contributions/scrapers.ts` 中的接线逻辑调用扩展 provider。
-- 扩展只能使用公开 helper / capability，不直接接触 `DbService` 或内部 handler。
+- 扩展只能使用公开 capability 与自身 provider 内部工具实现，不直接接触 `DbService` 或内部 handler。
 
 ## 注册接口
 
@@ -438,6 +438,8 @@ provider 形态延续当前 session-based runtime 思路：
 - `openSession`
 
 但其公开 provider 契约应原生定义在 `packages/extension-api` 中。主应用只在 `apps/desktop/src/main/services/extension/contributions/scrapers.ts` 内把这套公开契约适配到内部 `ScraperService`，而不是让 `ScraperService` 直接承接扩展 API 类型。
+
+当前公开契约不再单独承诺 scraper helper 模块；如果某些解析逻辑仍未沉淀为稳定公共 API，应先由扩展自行组织实现，待形成清晰复用边界后再考虑上提。
 
 ## Deeplink 扩展点
 

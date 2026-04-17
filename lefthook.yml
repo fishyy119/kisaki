@@ -30,6 +30,32 @@ pre-commit:
       run: pnpm prettier --write {staged_files}
       stage_fixed: true
 
+    # ===== Packages: Extension API =====
+    lint-extension-api:
+      root: 'packages/extension-api/'
+      glob: 'packages/extension-api/**/*.{ts,tsx,mts,js,mjs,cjs}'
+      run: pnpm eslint --fix --cache {staged_files}
+      stage_fixed: true
+
+    format-extension-api:
+      root: 'packages/extension-api/'
+      glob: 'packages/extension-api/**/*.{ts,tsx,mts,js,mjs,cjs,json,css}'
+      run: pnpm prettier --write {staged_files}
+      stage_fixed: true
+
+    # ===== Packages: Extension SDK =====
+    lint-extension-sdk:
+      root: 'packages/extension-sdk/'
+      glob: 'packages/extension-sdk/**/*.{ts,tsx,mts,js,mjs,cjs}'
+      run: pnpm eslint --fix --cache {staged_files}
+      stage_fixed: true
+
+    format-extension-sdk:
+      root: 'packages/extension-sdk/'
+      glob: 'packages/extension-sdk/**/*.{ts,tsx,mts,js,mjs,cjs,json,css}'
+      run: pnpm prettier --write {staged_files}
+      stage_fixed: true
+
     # ===== Packages: Plugin CLI =====
     lint-plugin-cli:
       root: 'packages/plugin-cli/'

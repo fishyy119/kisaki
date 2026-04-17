@@ -70,7 +70,7 @@ packages/create-kisaki-extension/**
    - `library` DTO、entity query/patch 类型、relation query/command 类型
    - `EntityMenuContribution`、`SettingsPanelContribution`、theme/scraper/deeplink contribution 类型
    - `extension-manifest.schema.json`
-   - RPC 协议类型
+   - 底层 protocol 类型
 3. 创建 `packages/extension-sdk/`
 4. 实现：
    - `defineExtension`
@@ -126,7 +126,7 @@ packages/create-kisaki-extension/**
 1. 新建 `apps/desktop/src/main/extension-host/`
 2. 实现：
    - 进程入口
-   - RPC 处理器
+   - protocol 消息处理与 SDK bridge 适配
    - SDK bootstrap
    - 多扩展 entry loader
    - extension runtime registry
@@ -263,7 +263,7 @@ packages/create-kisaki-extension/**
 
 - manifest 校验
 - manifest categories 枚举与唯一性校验
-- RPC message codec
+- protocol message codec
 - contribution model 校验
 - theme token 校验
 - entity menu / settings panel resolve 归一化逻辑

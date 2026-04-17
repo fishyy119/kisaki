@@ -9,6 +9,7 @@
     "build:win": "pnpm --filter kisaki build:win",
     "build:mac": "pnpm --filter kisaki build:mac",
     "build:linux": "pnpm --filter kisaki build:linux",
+    "build:extension-contracts": "pnpm --filter @kisaki/extension-api build && pnpm --filter @kisaki/extension-sdk build",
     "build:plugin-types": "pnpm --filter kisaki build:plugin-types",
     "build:plugin-tooling": "pnpm build:plugin-types && pnpm --filter @kisaki/plugin-sdk build && pnpm --filter @kisaki/plugin-cli build && pnpm --filter create-kisaki-plugin build",
     "typecheck": "pnpm -r --parallel typecheck",

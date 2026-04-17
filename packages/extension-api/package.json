@@ -1,0 +1,40 @@
+{
+  "name": "@kisaki/extension-api",
+  "version": "0.0.1",
+  "description": "Public contracts for the Kisaki extension system",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./schemas/extension-manifest.schema.json": "./schemas/extension-manifest.schema.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --cache .",
+    "lint:fix": "eslint --cache --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "kisaki",
+    "extension",
+    "api",
+    "contracts"
+  ],
+  "license": "MIT"
+}

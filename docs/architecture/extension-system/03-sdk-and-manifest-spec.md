@@ -170,7 +170,7 @@ export async function deactivate(context: ExtensionContext): Promise<void> {}
 - DTO
 - 事件名与 payload
 - contribution schema
-- RPC 协议类型
+- 底层 protocol 类型
 
 特点：
 
@@ -182,13 +182,18 @@ export async function deactivate(context: ExtensionContext): Promise<void> {}
 ```text
 src/
   index.ts
+  shared.ts
   manifest.ts
   context.ts
   kisaki.ts
   capabilities/
+    events.ts
+    library/
   contributions/
-  rpc.ts
+  protocol.ts
 ```
+
+当前实现把 locale、可序列化约束、生命周期接口和值对象等真正跨域复用的基础类型集中在 `src/shared.ts`。`protocol.ts` 只定义底层可序列化消息信封、握手和错误结构；main 与 extension host 之间的语义桥接命令映射不放在 `extension-api`，而由宿主 runtime 结合 `@kisaki/extension-sdk/bridge` 实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
 
 ### `@kisaki/extension-sdk`
 
@@ -210,13 +215,17 @@ src/
 ```text
 src/
   index.ts
-  define.ts
-  kisaki.ts
-  context.ts
+  bridge.ts
   capabilities/
   contributions/
-  internal/
 ```
+
+当前实现保持两个根入口：
+
+- `@kisaki/extension-sdk` -> `src/index.ts`，面向扩展作者，集中暴露 `defineExtension`、`kisaki`、`createDisposableStore()` 与 `@kisaki/extension-api` 的公开契约。
+- `@kisaki/extension-sdk/bridge` -> `src/bridge.ts`，面向宿主 bootstrap，提供 `configureExtensionSdkBridge(...)`、`createExtensionContext(...)` 等桥接函数。
+
+因此不再单独保留 `define.ts`、`kisaki.ts`、`context.ts` 或 `internal/` 目录。
 
 ## 公开命名约束
 
@@ -540,14 +549,14 @@ type EntityMenuItem =
 
 - manifest 解析
 - manifest JSON Schema
-- RPC 入参出参
+- protocol message 与宿主 bridge 入参出参
 - contribution 注册
 - settings panel resolved model
 - settings panel submit payload
 - callback result payload
 - theme token completeness
 
-推荐在 `extension-api` 中随 `manifest`、`contributions`、`rpc` 等公开契约就近提供这些运行时校验定义，而不是再额外扩一个顶层 `validation/` 目录。
+推荐在 `extension-api` 中随 `manifest`、`contributions`、`protocol` 等公开契约就近提供这些运行时校验定义，而不是再额外扩一个顶层 `validation/` 目录。
 
 ## 5. 公开 DTO，不公开内部 schema
 

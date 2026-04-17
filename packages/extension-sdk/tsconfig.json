@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "noEmit": true,
+    "types": ["node"],
+    "skipLibCheck": true,
+    "paths": {
+      "@kisaki/extension-api": ["../extension-api/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

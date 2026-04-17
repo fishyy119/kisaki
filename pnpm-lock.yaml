@@ -371,6 +371,28 @@ importers:
         specifier: ^3.2.2
         version: 3.2.4(typescript@5.9.3)
 
+  packages/extension-api:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.1
+        version: 22.19.11
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/extension-sdk:
+    dependencies:
+      '@kisaki/extension-api':
+        specifier: workspace:*
+        version: link:../extension-api
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.1
+        version: 22.19.11
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/plugin-cli:
     dependencies:
       archiver:

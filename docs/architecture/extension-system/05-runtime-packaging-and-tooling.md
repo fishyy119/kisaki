@@ -15,19 +15,21 @@
 
 - main 通过 `RuntimeManager` 启动共享扩展宿主进程
 - 共享扩展宿主进程按扩展 ID 加载、卸载和重载扩展 `entry`
-- 所有扩展逻辑通过 RPC 桥接与主应用通信
+- 所有扩展逻辑通过底层 protocol 通道与主应用通信
 
 ## 2. 桥接协议必须结构化
 
 推荐使用统一消息信封：
 
 ```ts
-type RpcMessage =
+type ProtocolMessage =
   | { kind: 'request'; id: string; method: string; params: unknown }
   | { kind: 'response'; id: string; ok: true; result: unknown }
   | { kind: 'response'; id: string; ok: false; error: SerializableError }
   | { kind: 'event'; name: string; payload: unknown }
 ```
+
+这层只负责可序列化消息传输；具体宿主能力、贡献回调和生命周期命令的语义映射由 extension host 结合 `@kisaki/extension-sdk/bridge` 完成。
 
 约束：
 
@@ -75,13 +77,15 @@ UI 回调桥接协议统一为：
 4. 动态 import 指定扩展入口
 5. 对目标扩展执行 `activate(context)` / `deactivate(context)`
 6. 管理分扩展的注册回调与订阅
-7. 响应 main 的 RPC 调用
+7. 响应 main 的 protocol 请求
+
+当前 SDK 实现把宿主侧桥接 helper 收敛在 `@kisaki/extension-sdk/bridge`，由该入口暴露 `configureExtensionSdkBridge(...)`、`createExtensionContext(...)` 等 bootstrap 函数。
 
 ## 必备能力
 
 - 分扩展 runtime registry
 - 进程内 callback registry
-- RPC request/response 处理
+- protocol request/response 处理
 - 结构化日志上报
 - 单扩展 load/unload/reload
 - dev reload 支持
