@@ -112,6 +112,118 @@ packages/create-kisaki-extension/          # 扩展脚手架
 docs/architecture/extension-system/         # 本设计文档集
 ```
 
+## Packages 目录设计
+
+这三个新包先按“纯契约层 -> 作者运行时层 -> 脚手架层”的顺序定型，避免后续实现时再次滑回旧 `plugin` 系统的 `main/renderer` 双入口设计。
+
+依赖方向必须固定为：
+
+```text
+extension-api <- extension-sdk <- create-kisaki-extension(生成物依赖)
+        ^             ^
+        └──── apps/desktop / extension-cli 只消费，不反向输出内部实现
+```
+
+### `packages/extension-api/`
+
+职责：公开契约、JSON Schema、DTO、协议类型、运行时校验定义。
+
+```text
+packages/extension-api/
+  package.json
+  tsconfig.json
+  tsdown.config.ts
+  README.md
+  schemas/
+    extension-manifest.schema.json
+  src/
+    index.ts
+    manifest/
+    context/
+    capabilities/
+      library/
+      events/
+    contributions/
+    protocol/
+    validation/
+```
+
+约束：
+
+- 只放稳定公开契约，不放任何宿主实现、进程桥接、状态管理或 app 内部路径引用。
+- `schemas/` 只放对外发布的 JSON Schema；`src/validation/` 放宿主、CLI、测试可复用的运行时校验定义。
+- `capabilities/library/` 单独成域，后续继续拆实体、关系、集合成员、附件/媒体相关 DTO 与 command/query。
+- `events` 契约归入 `src/capabilities/events/`，作为宿主能力而不是 contribution 扩展点建模。
+- 不再出现 `main/`、`renderer/`、`types/` 这种来自宿主内部结构的镜像目录。
+
+### `packages/extension-sdk/`
+
+职责：扩展作者运行时包装层，负责把 `extension-api` 的契约变成可直接书写扩展的开发体验。
+
+```text
+packages/extension-sdk/
+  package.json
+  tsconfig.json
+  tsdown.config.ts
+  README.md
+  src/
+    index.ts
+    define-extension.ts
+    kisaki.ts
+    context.ts
+    capabilities/
+    contributes/
+    builders/
+    disposables/
+    internal/
+```
+
+约束：
+
+- 公开面只暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper，以及 contribution builder/disposable helper。
+- `internal/` 只放运行时桥接实现，例如 RPC client、transport、注册归属与 bootstrap；这些文件不作为稳定公开入口。
+- `capabilities/` 对应宿主公开能力包装；`contributes/` 对应注册器封装；`builders/` 只放声明式 helper，不重复定义协议类型。
+- 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
+
+### `packages/create-kisaki-extension/`
+
+职责：生成最小可运行扩展项目，本身只负责交互、模板渲染和文件落盘。
+
+```text
+packages/create-kisaki-extension/
+  package.json
+  tsconfig.json
+  tsdown.config.ts
+  README.md
+  src/
+    index.ts
+    cli/
+    scaffold/
+  templates/
+    default/
+      package.json
+      manifest.json
+      tsconfig.json
+      tsdown.config.ts
+      README.md
+      src/
+        index.ts
+```
+
+约束：
+
+- `src/cli/` 负责 prompts、参数解析、输出日志；`src/scaffold/` 负责模板变量、文件渲染、冲突处理与写盘。
+- `templates/default/` 必须只生成单入口扩展最小集合，不再出现 `src/main/`、`src/renderer/`、`src/shared/`、`vite.config.ts`。
+- 模板默认依赖 `@kisaki/extension-sdk`，并直接引用 `@kisaki/extension-api` 发布的 manifest schema。
+- 该包不再保留 `scripts/build.ts` 这类自定义 copy 流程，构建统一交给 `tsdown`，模板目录直接随包发布。
+
+### 结构冻结规则
+
+- 这三个包都不允许从 `apps/desktop/**` 反向导入任何内部模块或类型。
+- 公开契约先落在 `extension-api`，再由 `extension-sdk` 提供作者体验，最后才由脚手架消费。
+- 如果后续需要增加新扩展点，优先新增 `extension-api/src/contributions/**` 与 `extension-sdk/src/contributes/**`，而不是在根目录平铺文件。
+- 如果后续需要新增宿主能力，优先新增 `extension-api/src/capabilities/**` 与 `extension-sdk/src/capabilities/**` 的对应子模块。
+
 ## 直接删除范围
 
 以下旧系统在新架构中不再保留：

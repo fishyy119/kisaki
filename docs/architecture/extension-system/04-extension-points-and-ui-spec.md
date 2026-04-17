@@ -1,17 +1,18 @@
 # 04. 扩展点与受控 UI 规范
 
-本文件定义新扩展系统允许的扩展点，以及菜单、设置面板、事件、scraper、deeplink、theme 和宿主能力的具体规范。
+本文件定义新扩展系统允许的正式扩展点，以及菜单、设置面板、scraper、deeplink、theme 和宿主能力的具体规范；其中 `events` 归入宿主能力，而不是 contribution 扩展点。
 
-## 支持的扩展点总表
+## 支持的正式扩展点总表
 
 | 扩展点           | 执行位置       | 结果形态               | renderer 是否执行扩展代码 |
 | ---------------- | -------------- | ---------------------- | ------------------------- |
 | `entityMenus`    | Extension Host | 结构化菜单项           | 否                        |
 | `settingsPanels` | Extension Host | 结构化设置面板节点列表 | 否                        |
-| `events`         | Extension Host | 事件监听/发送          | 否                        |
 | `scrapers`       | Extension Host | provider contribution  | 否                        |
 | `deeplinks`      | Extension Host | route handler          | 否                        |
 | `themes`         | Extension Host | 语义 token theme       | 否                        |
+
+`events` 不参与 contribution registry，也不会生成 renderer 侧贡献快照；扩展通过 `kisaki.events` 使用它。
 
 ## 明确不支持的扩展方式
 
@@ -578,6 +579,8 @@ kisaki.library.relations.remove(selector)
 
 约束：
 
+- 它是宿主 capability，不是 contribution extension point
+- 不参与 contribution registry，也不生成 renderer 侧贡献快照
 - 不暴露内部 IPC channel
 - 事件 payload 结构化、可序列化
 
