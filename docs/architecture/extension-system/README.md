@@ -18,7 +18,7 @@
 2. 不再对扩展暴露 `ServiceContainer`、`electron`、`drizzle`、`Vue app/router/pinia`、内部组件库、内部 composables。
 3. 不再在 renderer 进程加载扩展入口，也不再支持 `main + renderer` 双入口扩展。
 4. 扩展代码只运行在共享的扩展宿主进程中，renderer 仅消费主进程下发的贡献快照。
-5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
+5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；其中 scraper API 除 provider 注册接口外，还会向 provider 暴露稳定 `helper` 模块，首批至少包含 `lookup`、`date`、`text`、`target` 四组子模块，用于复用通用解析逻辑；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
 6. 扩展面向稳定 DTO 和 capability API，而不是面向数据库 schema、IPC channel 和内部 service。
 7. `library` capability 是宿主库域总入口，不只是实体 CRUD；它还必须覆盖实体关系/集合成员关系的创建与维护，以及附件、媒体等受控库操作。
 
@@ -45,6 +45,7 @@
 - `Renderer`：Kisaki 的 Vue UI 渲染层，只消费扩展贡献结果，不执行扩展代码。
 - `Contribution`：扩展向宿主注册的声明式能力，如菜单项、设置面板、theme、scraper provider。
 - `Capability`：宿主暴露给扩展的受控基础能力，如 `library`（实体、关系、集合成员、附件/媒体）、network、notify、log、storage。
+- `Scraper Helper Module`：宿主随 scraper provider 依赖一起注入的稳定 helper 合同，首批包括 `lookup`、`date`、`text`、`target` 四组子模块，用于 provider 复用通用查找、日期解析、文本归一化和 resolved target 构造逻辑。
 - `Activation Context`：传给 `activate(context)` 的实例级上下文，负责生命周期和注册归属。
 - `Global Extension API`：扩展中可直接 `import` 的全局公开 API，面向稳定宿主能力。
 
@@ -154,6 +155,7 @@ packages/extension-api/
 - `schemas/` 只放对外发布的 JSON Schema；`src/validation/` 放宿主、CLI、测试可复用的运行时校验定义。
 - `capabilities/library/` 单独成域，后续继续拆实体、关系、集合成员、附件/媒体相关 DTO 与 command/query。
 - `events` 契约归入 `src/capabilities/events/`，作为宿主能力而不是 contribution 扩展点建模。
+- `scraper` 公开契约除了 provider 类型外，还必须定义 provider 可用的稳定 `helper` 模块合同；这些 helper 由宿主注入，至少覆盖 `lookup`、`date`、`text`、`target` 四组子模块。
 - 不再出现 `main/`、`renderer/`、`types/` 这种来自宿主内部结构的镜像目录。
 
 ### `packages/extension-sdk/`
@@ -183,6 +185,7 @@ packages/extension-sdk/
 - 公开面只暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper，以及 contribution builder/disposable helper。
 - `internal/` 只放运行时桥接实现，例如 RPC client、transport、注册归属与 bootstrap；这些文件不作为稳定公开入口。
 - `capabilities/` 对应宿主公开能力包装；`contributes/` 对应注册器封装；`builders/` 只放声明式 helper，不重复定义协议类型。
+- scraper 作者态 API 需要把 provider 侧 `helper` 模块整理成稳定可消费的公开入口，保证扩展能直接使用 `lookup`、`date`、`text`、`target` 等 helper，而不是复制宿主内部工具实现。
 - 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
 
 ### `packages/create-kisaki-extension/`
