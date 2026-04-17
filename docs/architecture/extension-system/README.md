@@ -115,7 +115,7 @@ docs/architecture/extension-system/         # 本设计文档集
 
 ## Packages 目录设计
 
-这三个新包先按“纯契约层 -> 作者运行时层 -> 脚手架层”的顺序定型，避免后续实现时再次滑回旧 `plugin` 系统的 `main/renderer` 双入口设计。
+这里把四个公开包一起定型：`extension-api`、`extension-sdk`、`create-kisaki-extension` 负责作者侧分层，`extension-cli` 负责工具链消费层。整体仍按“纯契约层 -> 作者运行时层 -> 工具链/脚手架层”的顺序收敛，避免后续实现时再次滑回旧 `plugin` 系统的 `main/renderer` 双入口设计。
 
 依赖方向必须固定为：
 
@@ -127,7 +127,7 @@ extension-api <- extension-sdk <- create-kisaki-extension(生成物依赖)
 
 ### `packages/extension-api/`
 
-职责：公开契约、JSON Schema、DTO、协议类型、运行时校验定义。
+职责：公开契约、JSON Schema、DTO、全局 API 契约、贡献类型、RPC 协议类型。
 
 ```text
 packages/extension-api/
@@ -139,20 +139,21 @@ packages/extension-api/
     extension-manifest.schema.json
   src/
     index.ts
-    manifest/
-    context/
+    manifest.ts
+    context.ts
+    kisaki.ts
     capabilities/
       library/
       events/
     contributions/
-    protocol/
-    validation/
+    rpc.ts
 ```
 
 约束：
 
 - 只放稳定公开契约，不放任何宿主实现、进程桥接、状态管理或 app 内部路径引用。
-- `schemas/` 只放对外发布的 JSON Schema；`src/validation/` 放宿主、CLI、测试可复用的运行时校验定义。
+- `schemas/` 只放对外发布的 JSON Schema；运行时校验定义应跟随 `manifest.ts`、`contributions/**`、`rpc.ts` 等公开契约就近组织，而不是再扩一个顶层 `validation/` 杂项目录。
+- `context.ts`、`kisaki.ts`、`rpc.ts` 先保持单文件；只有当某个公开子域稳定长成多模块时再升级成目录。
 - `capabilities/library/` 单独成域，后续继续拆实体、关系、集合成员、附件/媒体相关 DTO 与 command/query。
 - `events` 契约归入 `src/capabilities/events/`，作为宿主能力而不是 contribution 扩展点建模。
 - `scraper` 公开契约除了 provider 类型外，还必须定义 provider 可用的稳定 `helper` 模块合同；这些 helper 由宿主注入，至少覆盖 `lookup`、`date`、`text`、`target` 四组子模块。
@@ -170,23 +171,58 @@ packages/extension-sdk/
   README.md
   src/
     index.ts
-    define-extension.ts
+    define.ts
     kisaki.ts
     context.ts
     capabilities/
-    contributes/
-    builders/
-    disposables/
+    contributions/
     internal/
 ```
 
 约束：
 
-- 公开面只暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper，以及 contribution builder/disposable helper。
+- 公开面只暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper，以及收敛在 `context.contributes.*` 域内的 contribution helper。
 - `internal/` 只放运行时桥接实现，例如 RPC client、transport、注册归属与 bootstrap；这些文件不作为稳定公开入口。
-- `capabilities/` 对应宿主公开能力包装；`contributes/` 对应注册器封装；`builders/` 只放声明式 helper，不重复定义协议类型。
+- `capabilities/` 对应宿主公开能力包装；`contributions/` 对应作者态注册器与域内 builder。UI 节点构造应收敛在 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 的作用域内，不再依赖额外顶层公开 `entityMenu`、`settingsPanel` builder。
+- 公开类型、模块名与 registrar 命名优先自说明，优先使用 `EntityMenu*`、`SettingsPanel*`、`entityMenus`、`settingsPanels` 这类完整领域名；避免把 `menu`、`settings` 作为 SDK 顶层公开主命名。
 - scraper 作者态 API 需要把 provider 侧 `helper` 模块整理成稳定可消费的公开入口，保证扩展能直接使用 `lookup`、`date`、`text`、`target` 等 helper，而不是复制宿主内部工具实现。
 - 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
+
+### `packages/extension-cli/`
+
+职责：提供 `kisx` 命令，负责扩展项目发现、manifest 校验、构建、打包、dev 启动与调试接线。
+
+```text
+packages/extension-cli/
+  package.json
+  tsconfig.json
+  tsdown.config.ts
+  README.md
+  src/
+    index.ts
+    cli.ts
+    commands/
+      build.ts
+      validate.ts
+      pack.ts
+      dev.ts
+    manifest.ts
+    project.ts
+    archive.ts
+    launch.ts
+    logger.ts
+```
+
+约束：
+
+- `index.ts` 只作为 bin 入口；`cli.ts` 负责参数解析、help 输出和命令分发。
+- `commands/` 必须一条顶层命令一个文件，只编排流程，不重复实现 manifest 校验、打包或 dev 启动细节。
+- `manifest.ts` 负责读取 `manifest.json`、调用官方 schema、执行 `entry` / `engines.kisaki` / 可选资源等复用校验。
+- `project.ts` 负责识别扩展项目根目录、路径布局和产物位置，不把这些路径规则散落到各命令文件里。
+- `archive.ts` 只负责 `.kisx` 打包布局与压缩，不重复构建或 schema 校验逻辑。
+- `launch.ts` 只负责 `kisx dev` 下的 Kisaki 启动与 `--dev-extension` 接线。
+- `logger.ts` 只提供统一 CLI 输出；不新增 `utils/`、`helpers/`、`core/` 这类泛目录。
+- CLI 只消费 `extension-api` 和工作区约定，不反向定义公开契约，也不从 `apps/desktop/**` 反向导入内部实现。
 
 ### `packages/create-kisaki-extension/`
 
@@ -217,14 +253,15 @@ packages/create-kisaki-extension/
 
 - `src/cli/` 负责 prompts、参数解析、输出日志；`src/scaffold/` 负责模板变量、文件渲染、冲突处理与写盘。
 - `templates/default/` 必须只生成单入口扩展最小集合，不再出现 `src/main/`、`src/renderer/`、`src/shared/`、`vite.config.ts`。
-- 模板默认依赖 `@kisaki/extension-sdk`，并直接引用 `@kisaki/extension-api` 发布的 manifest schema。
+- 模板默认依赖 `@kisaki/extension-sdk`，通过 `kisx` 命令接入 CLI 工具链，并直接引用 `@kisaki/extension-api` 发布的 manifest schema。
 - 该包不再保留 `scripts/build.ts` 这类自定义 copy 流程，构建统一交给 `tsdown`，模板目录直接随包发布。
 
 ### 结构冻结规则
 
-- 这三个包都不允许从 `apps/desktop/**` 反向导入任何内部模块或类型。
+- 这四个包都不允许从 `apps/desktop/**` 反向导入任何内部模块或类型。
 - 公开契约先落在 `extension-api`，再由 `extension-sdk` 提供作者体验，最后才由脚手架消费。
-- 如果后续需要增加新扩展点，优先新增 `extension-api/src/contributions/**` 与 `extension-sdk/src/contributes/**`，而不是在根目录平铺文件。
+- `extension-cli` 只消费公开契约和工作区约定；新增命令优先放进 `src/commands/**`，新增跨命令复用逻辑优先增加单一职责文件，而不是引入 `utils/` 杂项目录。
+- 如果后续需要增加新扩展点，优先新增 `extension-api/src/contributions/**` 与 `extension-sdk/src/contributions/**`，而不是在根目录平铺文件。
 - 如果后续需要新增宿主能力，优先新增 `extension-api/src/capabilities/**` 与 `extension-sdk/src/capabilities/**` 的对应子模块。
 
 ## 直接删除范围

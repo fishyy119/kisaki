@@ -65,17 +65,18 @@ packages/create-kisaki-extension/**
    - `ExtensionManifest`
    - `ExtensionCategory`
    - `ExtensionContext`
+   - `KisakiApi`
    - `HostEvents`
    - `library` DTO、entity query/patch 类型、relation query/command 类型
-   - menu/settings/theme/scraper/deeplink contribution 类型
+   - `EntityMenuContribution`、`SettingsPanelContribution`、theme/scraper/deeplink contribution 类型
    - `extension-manifest.schema.json`
    - RPC 协议类型
 3. 创建 `packages/extension-sdk/`
 4. 实现：
    - `defineExtension`
    - `kisaki` 全局 API
-   - builder helpers
-   - disposable helpers
+   - `context.contributes.entityMenus` / `settingsPanels` 域内 UI helpers
+   - context / storage / logger 等作者侧 helper
 5. 所有包使用 `tsdown`
 
 ### 验收标准
@@ -265,7 +266,7 @@ packages/create-kisaki-extension/**
 - RPC message codec
 - contribution model 校验
 - theme token 校验
-- menu/settings resolve 归一化逻辑
+- entity menu / settings panel resolve 归一化逻辑
 - `UiCallbackResult` 校验与归一化
 - success / error / refresh 语义
 - settings panel submit 与草稿重建逻辑

@@ -177,6 +177,19 @@ export async function deactivate(context: ExtensionContext): Promise<void> {}
 - 不依赖宿主实现
 - 可被主应用、SDK、测试、扩展共同引用
 
+推荐 `src/` 结构：
+
+```text
+src/
+  index.ts
+  manifest.ts
+  context.ts
+  kisaki.ts
+  capabilities/
+  contributions/
+  rpc.ts
+```
+
 ### `@kisaki/extension-sdk`
 
 职责：
@@ -184,13 +197,41 @@ export async function deactivate(context: ExtensionContext): Promise<void> {}
 - 运行时桥接封装
 - `defineExtension`
 - `kisaki` 全局扩展 API
-- contribution builder helper
-- disposables / storage / logger 等开发辅助
+- `context.contributes.*` 域内的 contribution helper
+- context / storage / logger 等开发辅助
 
 特点：
 
 - 只面向扩展作者
 - 不暴露宿主内部对象
+
+推荐 `src/` 结构：
+
+```text
+src/
+  index.ts
+  define.ts
+  kisaki.ts
+  context.ts
+  capabilities/
+  contributions/
+  internal/
+```
+
+## 公开命名约束
+
+公开类型、模块名与 registrar 命名优先使用完整领域词，例如 `EntityMenuContribution`、`SettingsPanelContribution`、`entityMenus`、`settingsPanels`。避免把 `menu`、`settings` 这类语义过宽的短名作为 SDK 顶层公开主命名；局部 builder 参数可以在 `contributes.*` 的作用域内按上下文简写为 `menu`、`panel`。
+
+## UI 注册 API 自包含
+
+UI contribution 的 helper 不再作为 `@kisaki/extension-sdk` 的顶层导出，而是跟随 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 一起工作。
+
+推荐形态：
+
+- `register({ ... })` 仍然是公开注册入口
+- `resolve(...)` 直接收到当前 contribution 域注入的 builder
+- 扩展作者不需要再额外 `import { entityMenu, settingsPanel }`
+- builder 只负责构造作者态节点，不承担隐藏状态或命令式累积注册
 
 ## `activate(context)` 与全局 API 的职责划分
 
@@ -304,14 +345,14 @@ await kisaki.library.relations.create({
 ## 推荐入口写法
 
 ```ts
-import { defineExtension, kisaki, menu, settings } from '@kisaki/extension-sdk'
+import { defineExtension, kisaki } from '@kisaki/extension-sdk'
 
 export default defineExtension({
   async activate(context) {
     context.contributes.entityMenus.register({
       id: 'sample.game-tools',
       target: 'game.single',
-      async resolve(input) {
+      async resolve(input, menu) {
         const game = await kisaki.library.games.get(input.entityId)
 
         return [
@@ -352,20 +393,20 @@ export default defineExtension({
     context.contributes.settingsPanels.register({
       id: 'sample.settings',
       title: 'Sample Extension',
-      async resolve() {
+      async resolve(panel) {
         const autoSync = await context.storage.get('autoSync', false)
 
         return [
-          settings.section({
+          panel.section({
             id: 'general',
             title: 'General',
             controls: [
-              settings.switch({
+              panel.switch({
                 id: 'autoSync',
                 label: '启动时自动同步',
                 value: autoSync
               }),
-              settings.button({
+              panel.button({
                 id: 'relogin',
                 label: '重新登录',
                 async onClick(_, panelContext) {
@@ -423,8 +464,8 @@ type UiCallbackResult =
 对于实体菜单，默认规则是：
 
 - 菜单项以项级回调为主路径。
-- `menu.action(...)` 直接内联 `onClick`。
-- `menu.checkbox(...)` 与 `menu.select(...)` 直接内联 `onChange`。
+- `resolve(input, menu)` 中的 `menu.action(...)` 直接内联 `onClick`。
+- `resolve(input, menu)` 中的 `menu.checkbox(...)` 与 `menu.select(...)` 直接内联 `onChange`。
 - 运行时仍然会把菜单定义归一化为纯结构化菜单项，再把回调登记到 callback registry。
 
 对于设置面板，默认规则是：
@@ -437,8 +478,8 @@ type UiCallbackResult =
 
 这意味着对外体验像这样：
 
-- `settings.switch(...)`、`settings.select(...)`、`settings.textInput(...)` 默认只是字段节点定义，不自带即时回调
-- `settings.button(...)` 可以直接内联 `onClick`
+- `resolve(panel)` 中的 `panel.switch(...)`、`panel.select(...)`、`panel.textInput(...)` 默认只是字段节点定义，不自带即时回调
+- `resolve(panel)` 中的 `panel.button(...)` 可以直接内联 `onClick`
 - 少量高级字段如果确实需要即时行为，可以显式声明控件级回调，但不是默认主路径
 
 ## 类型安全原则
@@ -464,7 +505,9 @@ type UiCallbackResult =
 - `ExtensionManifest`
 - `ExtensionContext`
 - `EntityMenuContribution`
+- `EntityMenuBuilder`
 - `SettingsPanelContribution`
+- `SettingsPanelBuilder`
 - `UiCallbackResult`
 - `UiCallbackError`
 - `ThemeContribution`
@@ -504,7 +547,7 @@ type EntityMenuItem =
 - callback result payload
 - theme token completeness
 
-推荐在 `extension-api` 中提供这些运行时校验定义。
+推荐在 `extension-api` 中随 `manifest`、`contributions`、`rpc` 等公开契约就近提供这些运行时校验定义，而不是再额外扩一个顶层 `validation/` 目录。
 
 ## 5. 公开 DTO，不公开内部 schema
 

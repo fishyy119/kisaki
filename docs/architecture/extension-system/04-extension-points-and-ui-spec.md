@@ -63,17 +63,19 @@ interface EntityMenuContribution<TInput> {
   target: EntityMenuTarget
   order?: number
 
-  resolve(input: TInput): Promise<EntityMenuNode[]>
+  resolve(input: TInput, menu: EntityMenuBuilder): Promise<EntityMenuNode[]>
 }
 ```
 
-这里的 `EntityMenuNode` 是扩展作者返回的作者态菜单节点，允许把菜单项声明和项级回调写在一起。共享扩展宿主进程会在运行时把它归一化为纯结构化 `EntityMenuItem`，并额外登记 callback registry。
+这里的 `EntityMenuNode` 是扩展作者返回的作者态菜单节点，允许把菜单项声明和项级回调写在一起。第二参数 `menu` 由 `context.contributes.entityMenus` 域注入，只在当前 contribution 的 `resolve()` 作用域内使用；SDK 不再额外顶层导出 `entityMenu` builder。共享扩展宿主进程会在运行时把它归一化为纯结构化 `EntityMenuItem`，并额外登记 callback registry。
 
 ## 菜单定义类型
 
 ```ts
 type EntityMenuNode = ActionMenuItem | CheckboxMenuItem | SelectMenuItem | SeparatorMenuItem
 ```
+
+其中 `EntityMenuBuilder` 提供 `action`、`checkbox`、`select`、`separator` 四个同名构造方法，用于在 `resolve(input, menu)` 内直接生成作者态菜单节点。
 
 ### `action`
 
@@ -149,7 +151,7 @@ renderer 渲染为宿主现有 submenu + radio item 结构。
 实体菜单本质上是“动作列表”，不是表单，因此默认交互模型如下：
 
 1. 菜单打开时，宿主自动调用一次 `resolve()`。
-2. 扩展在 `resolve()` 中返回作者态菜单节点。
+2. 扩展在 `resolve(input, menu)` 中返回作者态菜单节点。
 3. 共享宿主把菜单节点归一化为纯结构化 `EntityMenuItem[]`，并建立菜单项级 callback registry。
 4. renderer 只渲染 `EntityMenuItem[]`，完全不执行扩展代码。
 5. 用户点击 action / checkbox / select 时，事件再路由回目标菜单项的专属回调。
@@ -166,7 +168,7 @@ renderer 渲染为宿主现有 submenu + radio item 结构。
 ## 菜单渲染规则
 
 1. 宿主按 `target` 聚合所有 contribution。
-2. 每个 contribution 的 `resolve` 返回作者态菜单节点。
+2. 每个 contribution 的 `resolve(input, menu)` 返回作者态菜单节点。
 3. 共享宿主把菜单节点归一化为纯结构化菜单项，并登记菜单项级 callback registry。
 4. renderer 只认识菜单项结构，不认识扩展代码。
 5. 菜单项 ID 在 contribution 内唯一。
@@ -187,17 +189,19 @@ interface SettingsPanelContribution {
   description?: string
   order?: number
 
-  resolve(): Promise<SettingsPanelNode[]>
+  resolve(panel: SettingsPanelBuilder): Promise<SettingsPanelNode[]>
   onSubmit?(event: SettingsSubmitEvent): Promise<UiCallbackResult>
 }
 ```
+
+这里的 `panel` 由 `context.contributes.settingsPanels` 域注入，只在当前 contribution 的 `resolve()` 作用域内使用；SDK 不再额外顶层导出 `settingsPanel` builder。
 
 ## 默认交互模型
 
 设置面板本质上是表单，因此默认交互模型如下：
 
 1. 设置面板打开时，宿主自动调用一次 `resolve()`。
-2. `resolve()` 返回当前完整面板节点列表，renderer 基于其中的字段值初始化本地表单草稿。
+2. `resolve(panel)` 返回当前完整面板节点列表，renderer 基于其中的字段值初始化本地表单草稿。
 3. 普通字段编辑不会立即触发扩展回调，也不会自动再次 `resolve()`。
 4. 用户点击“保存”或“提交”时，宿主把整个表单值交给 `onSubmit()`。
 5. 只有 `onSubmit` 或控件级回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行 `resolve()` 并重建当前面板。
@@ -255,24 +259,31 @@ interface SettingsPanelContribution {
 - `switch`、`checkbox`、`select`、`textInput`、`textarea`、`numberInput` 默认作为普通表单字段参与提交
 - `button` 是最典型的控件级回调节点
 - 只有少量高级字段才应该使用即时回调
+- `SettingsPanelBuilder` 提供与这些节点类型同名的构造方法，用于在 `resolve(panel)` 内直接生成作者态面板节点
 
 ## 面板节点模型
 
-`resolve()` 直接返回完整面板节点列表，例如：
+`resolve(panel)` 直接返回完整面板节点列表。推荐让 builder 跟随 `context.contributes.settingsPanels` 域一起工作，例如：
 
 ```ts
-;[
-  settings.section({
-    id: 'general',
-    title: 'General',
-    controls: []
-  }),
-  settings.notice({
-    id: 'tips',
-    tone: 'info',
-    text: '部分更改需要重新登录后生效'
-  })
-]
+context.contributes.settingsPanels.register({
+  id: 'sample.settings',
+  title: 'Sample Extension',
+  async resolve(panel) {
+    return [
+      panel.section({
+        id: 'general',
+        title: 'General',
+        controls: []
+      }),
+      panel.notice({
+        id: 'tips',
+        tone: 'info',
+        text: '部分更改需要重新登录后生效'
+      })
+    ]
+  }
+})
 ```
 
 这样可以支持：
@@ -289,21 +300,21 @@ interface SettingsPanelContribution {
 推荐让扩展作者写成“控件与行为靠近”的形式，例如：
 
 ```ts
-settings.panel({
+context.contributes.settingsPanels.register({
   id: 'sample.settings',
   title: 'Sample Extension',
-  async resolve() {
+  async resolve(panel) {
     return [
-      settings.section({
+      panel.section({
         id: 'general',
         title: 'General',
         controls: [
-          settings.switch({
+          panel.switch({
             id: 'autoSync',
             label: '启动时自动同步',
             value: true
           }),
-          settings.button({
+          panel.button({
             id: 'relogin',
             label: '重新登录',
             async onClick(_, ctx) {

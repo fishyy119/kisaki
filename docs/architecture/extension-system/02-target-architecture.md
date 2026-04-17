@@ -24,7 +24,8 @@
 │  ├─ RuntimeManager                                          │
 │  ├─ ContributionRegistry                                    │
 │  ├─ CapabilityGateway                                       │
-│  ├─ Contribution modules (menus/settings/themes/scrapers/  │
+│  ├─ Contribution modules (entity-menus/settings-panels/    │
+│  │  themes/scrapers/                                       │
 │  │  deeplinks, with host integration)                      │
 │  └─ Renderer IPC facade                                     │
 │                                                             │
@@ -105,8 +106,8 @@ packages/create-kisaki-extension/
 
 约束如下：
 
-- `extension-api`：只放公开类型、验证定义、协议、DTO、builder contract。
-- `extension-sdk`：扩展作者使用的运行时包装层。
+- `extension-api`：只放公开类型、验证定义、协议、DTO、全局 API 契约与 contribution 类型。
+- `extension-sdk`：扩展作者使用的运行时包装层，以及收敛在 `context.contributes.*` 域内的 contribution helper。
 - `apps/desktop`：只在 `ExtensionService` 体系内实现这些公开契约，不反向输出内部实现。
 
 进一步约束：
