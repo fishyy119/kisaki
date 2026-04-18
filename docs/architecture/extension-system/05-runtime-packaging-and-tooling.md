@@ -72,19 +72,42 @@ UI 回调桥接协议统一为：
 共享扩展宿主进程入口负责：
 
 1. 接收 main 传入的扩展运行描述
-2. 初始化 SDK bridge
-3. 建立扩展运行时注册表
-4. 动态 import 指定扩展入口
+2. 通过 `sdk-bridge.ts` 初始化 SDK bridge
+3. 通过 `extension-registry.ts` 建立扩展运行时注册表
+4. 通过 `extension-loader.ts` 动态 import 指定扩展入口
 5. 对目标扩展执行 `activate(context)` / `deactivate(context)`
-6. 管理分扩展的注册回调与订阅
-7. 响应 main 的 protocol 请求
+6. 通过 `contributions/*.ts` 管理分扩展的注册回调、归一化结果与域内 session/refresh 状态
+7. 通过 `rpc-server.ts` 响应 main 的 protocol 请求
 
 当前 SDK 实现把宿主侧桥接 helper 收敛在 `@kisaki/extension-sdk/bridge`，由该入口暴露 `configureExtensionSdkBridge(...)`、`createExtensionContext(...)` 等 bootstrap 函数。
+
+建议把共享宿主进程实现固定在 `apps/desktop/src/main/services/extension/runtime/host/` 下：
+
+```text
+runtime/
+  manager.ts
+  host-controller.ts
+  rpc-client.ts
+  crash-policy.ts
+  host/
+    entry.ts
+    rpc-server.ts
+    extension-registry.ts
+    extension-loader.ts
+    sdk-bridge.ts
+    contributions/
+      entity-menus.ts
+      settings-panels.ts
+      scrapers.ts
+      deeplinks.ts
+      themes.ts
+```
 
 ## 必备能力
 
 - 分扩展 runtime registry
 - 进程内 callback registry
+- entity menu / settings panel 在各自 `contributions/*.ts` 中内聚管理的 session/refresh 状态
 - protocol request/response 处理
 - 结构化日志上报
 - 单扩展 load/unload/reload

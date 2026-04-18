@@ -56,7 +56,7 @@
 
 宿主实现这些契约时也必须收敛在扩展边界内：
 
-- 公开扩展契约只允许在 `apps/desktop/src/main/services/extension/**` 和 `apps/desktop/src/main/extension-host/**` 中实现或适配
+- 公开扩展契约只允许在 `apps/desktop/src/main/services/extension/**` 中实现或适配；共享宿主进程入口、RPC server、SDK bridge 与 host 侧 contribution 实现也统一收敛在该子系统内的 `runtime/host/**`
 - `ScraperService`、`DeeplinkService`、theme manager 等现有业务模块只作为被接入的内部依赖
 - 业务模块本身不直接暴露或承接扩展 API 形状
 
@@ -101,22 +101,25 @@ Manifest、protocol 消息、贡献模型、事件负载、DTO 都由共享类�
 
 `ExtensionService` 内部优先保持少量根级单文件边界，例如 `manifest.ts`、`state.ts`、`catalog.ts`、`installer.ts`；只有当某个子域天然承载多模块协作时，才升级为目录，例如 `sources/`、`runtime/`、`contributions/`、`capabilities/`。
 
-这条规则的目的不是压缩文件数量，而是避免把单一职责模块过早目录化，降低实现初期的导航成本，并让“来源接入”“共享宿主运行时”这类真正多模块子域保持清晰边界。
+这条规则的目的不是压缩文件数量，而是避免把单一职责模块过早目录化，降低实现初期的导航成本，并让“来源接入”“共享宿主运行时”这类真正多模块子域保持清晰边界；其中共享宿主进程相关实现继续保留独立运行时边界，但目录归属统一收敛在 `services/extension/runtime/host/`。
+
+共享宿主 runtime 子域内部也应优先使用自说明命名，例如 `entry.ts`、`rpc-server.ts`、`extension-registry.ts`、`extension-loader.ts`、`sdk-bridge.ts`；避免 `runtime.ts`、`registry.ts`、`loader.ts` 这类脱离上下文后容易歧义的文件名。UI session 状态默认内聚在各自的 `runtime/host/contributions/*.ts` 域内，只有 callback handle 管理保持为共享宿主级基础设施。
 
 ## 仓库目标结果
 
 重构完成后，仓库应当具有以下稳定结构：
 
 ```text
-apps/desktop/src/main/services/extension/   # 扩展服务与主进程实现
-apps/desktop/src/main/extension-host/       # 共享扩展宿主进程入口与桥接
+apps/desktop/src/main/services/extension/      # 扩展服务、运行时与共享宿主实现
 apps/desktop/src/renderer/src/core/extensions/ # renderer 侧贡献消费层
-packages/extension-api/                     # 公开契约、JSON Schema 与验证定义
-packages/extension-sdk/                     # 扩展作者 SDK
-packages/extension-cli/                     # kisx CLI
-packages/create-kisaki-extension/          # 扩展脚手架
-docs/architecture/extension-system/         # 本设计文档集
+packages/extension-api/                        # 公开契约、JSON Schema 与验证定义
+packages/extension-sdk/                        # 扩展作者 SDK
+packages/extension-cli/                        # kisx CLI
+packages/create-kisaki-extension/             # 扩展脚手架
+docs/architecture/extension-system/            # 本设计文档集
 ```
+
+注意：这里的“收敛到 `services/extension/`”仅表示目录归属统一，不表示把共享 `Extension Host` 进程并回 `ExtensionService` 同进程执行。共享宿主进程仍然保持独立入口、独立构建产物和独立运行时边界。
 
 ## Packages 目录设计
 

@@ -113,7 +113,7 @@ packages/create-kisaki-extension/
 
 进一步约束：
 
-- 宿主侧对公开扩展契约的实现与适配，必须收敛在 `apps/desktop/src/main/services/extension/**` 与 `apps/desktop/src/main/extension-host/**`
+- 宿主侧对公开扩展契约的实现与适配，必须统一收敛在 `apps/desktop/src/main/services/extension/**`；共享宿主进程入口、RPC server、SDK bridge 与 host 侧 contribution 实现属于其中的 `runtime/host/**` 子域
 - `ScraperService`、`DeeplinkService`、theme manager、db service 等现有业务模块不直接实现扩展 API 类型
 - 这些业务模块只通过 `ExtensionService` 下的 contribution/capability 模块被调用和适配
 
@@ -136,8 +136,20 @@ apps/desktop/src/main/services/extension/
   runtime/
     manager.ts
     host-controller.ts
-    rpc.ts
+    rpc-client.ts
     crash-policy.ts
+    host/
+      entry.ts
+      rpc-server.ts
+      extension-registry.ts
+      extension-loader.ts
+      sdk-bridge.ts
+      contributions/
+        entity-menus.ts
+        settings-panels.ts
+        scrapers.ts
+        deeplinks.ts
+        themes.ts
   capabilities/
     library/
     network.ts
@@ -152,13 +164,6 @@ apps/desktop/src/main/services/extension/
     themes.ts
     scrapers.ts
     deeplinks.ts
-
-apps/desktop/src/main/extension-host/
-  index.ts
-  bridge.ts
-  loader.ts
-  rpc.ts
-  sdk-bootstrap.ts
 
 apps/desktop/src/renderer/src/core/extensions/
   index.ts
@@ -180,9 +185,15 @@ packages/create-kisaki-extension/
 - `manifest.ts` 只负责 manifest 读取、校验和归一化，不承担扫描或安装流程。
 - `catalog.ts` 负责扫描已安装扩展并把 `manifest + state` 聚合成可消费目录视图。
 - `installer.ts` 只负责安装、卸载、更新流程编排；来源解析、搜索、下载与版本查询下沉到 `sources/manager.ts` 和各 provider。
-- `runtime/` 保持为目录，因为它天然包含主进程 runtime facade、宿主进程控制、RPC 转发和崩溃恢复等多模块协作职责。
-- `capabilities/library/` 单独成域，因为 `library` 是宿主库能力总入口，后续还会继续拆实体、关系、附件/媒体相关 DTO 与 command/query；其余 capability 先保持单文件。
-- `apps/desktop/src/main/extension-host/` 继续独立于 `services/extension/`，因为它表示共享扩展宿主进程的物理入口，而不是普通 service 子模块。
+- `runtime/` 保持为目录，因为它天然包含主进程 runtime facade、宿主进程控制、RPC 转发和崩溃恢复等多模块协作职责；共享宿主进程入口与其内部实现进一步收敛在 `runtime/host/`。
+- `runtime/rpc-client.ts` 只负责主进程侧 typed request/event、握手、timeout 与 abort 协调，不承载宿主进程生命周期或扩展状态。
+- `runtime/host/entry.ts` 是共享宿主进程唯一入口，只负责对象组装、启动和退出清理，不直接承载扩展域逻辑。
+- `runtime/host/rpc-server.ts` 只负责 host 侧 protocol 分发，不直接维护扩展加载状态。
+- `runtime/host/extension-registry.ts` 只负责已加载扩展实例、上下文与生命周期状态。
+- `runtime/host/extension-loader.ts` 只负责 `load/unload/reload/activate/deactivate` 流程编排。
+- `runtime/host/sdk-bridge.ts` 只负责适配 `@kisaki/extension-sdk/bridge`，不混入 RPC 路由或 loader 逻辑。
+- `runtime/host/contributions/*.ts` 各自管理所属扩展点的作者态归一化、callback 归属以及域内 session/refresh 状态；不预设单独的顶层 `ui-session-registry.ts`。
+- 共享 `Extension Host` 进程继续保持独立入口、独立构建产物和独立运行时边界；这里并入 `services/extension/runtime/host/` 的只是目录归属，而不是进程拓扑。
 
 ## 生命周期
 
@@ -345,7 +356,7 @@ Renderer 打开扩展设置页
 - restartHost
 - shutdownHost
 
-它与 `host-controller.ts`、`rpc.ts`、`crash-policy.ts` 共同形成主进程 runtime 子域：`host-controller.ts` 负责宿主进程生命周期，`rpc.ts` 负责基于 protocol envelope 的请求/响应分发，`crash-policy.ts` 负责崩溃恢复与重建策略。
+它与 `host-controller.ts`、`rpc-client.ts`、`crash-policy.ts` 以及 `runtime/host/**` 共同形成完整的扩展 runtime 子域：`host-controller.ts` 负责宿主进程生命周期，`rpc-client.ts` 负责主进程侧基于 protocol envelope 的请求/响应分发，`crash-policy.ts` 负责崩溃恢复与重建策略，`runtime/host/**` 负责共享宿主进程入口、`rpc-server.ts`、`extension-registry.ts`、`extension-loader.ts`、`sdk-bridge.ts` 与 host 侧 contribution 实现。
 
 ### `ExtensionSourceManager`
 

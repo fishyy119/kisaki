@@ -30,7 +30,6 @@ packages/create-kisaki-plugin/**
 
 ```text
 apps/desktop/src/main/services/extension/**
-apps/desktop/src/main/extension-host/**
 apps/desktop/src/renderer/src/core/extensions/**
 packages/extension-api/**
 packages/extension-sdk/**
@@ -114,28 +113,28 @@ packages/create-kisaki-extension/**
    - `runtime/`
    - `runtime/manager.ts`
    - `runtime/host-controller.ts`
-   - `runtime/rpc.ts`
+   - `runtime/rpc-client.ts`
    - `runtime/crash-policy.ts`
+   - `runtime/host/entry.ts`
+   - `runtime/host/rpc-server.ts`
+   - `runtime/host/extension-registry.ts`
+   - `runtime/host/extension-loader.ts`
+   - `runtime/host/sdk-bridge.ts`
+   - `runtime/host/contributions/*.ts`
    - contribution 模块内聚接线逻辑，不再单独设 `adapters/`
-5. 新建 `apps/desktop/src/main/extension-host/`
-6. 实现 host 侧模块：
-   - `index.ts`
-   - `bridge.ts`
-   - `loader.ts`
-   - `rpc.ts`
-   - `sdk-bootstrap.ts`
-7. host 侧能力要求：
-   - 进程入口
+5. host 侧能力要求：
+   - `entry.ts` 作为共享宿主进程唯一入口，只负责组装、启动与退出清理
    - 基于 protocol message envelope 的 RPC 消息处理与 SDK bridge 适配
    - 多扩展 entry loader
    - extension runtime registry
    - callback registry
+   - contribution 域内聚的 session/refresh 状态
    - deactivate 清理流程
-8. 实现安装状态存储：
+6. 实现安装状态存储：
    - `userData/extensions/state.json`
-9. 实现 `.kisx` 安装、卸载、更新
-10. 实现 `--dev-extension`
-11. `RuntimeManager` 能：
+7. 实现 `.kisx` 安装、卸载、更新
+8. 实现 `--dev-extension`
+9. `RuntimeManager` 能：
 
 - startHost
 - handshake
