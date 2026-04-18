@@ -87,14 +87,26 @@ packages/create-kisaki-extension/**
 
 ## Phase 2：实现 Core Extension Runtime
 
-### 目标
+### 拆分原则
 
-一次性打通 main 侧 `ExtensionService` 与共享 `extension-host`，形成自包含的核心运行时闭环。
+当前 runtime 相关工作同时包含安装链路、共享宿主生命周期、contribution/capability 接线，范围过大。这里拆成三个连续子阶段：
 
-### 任务
+1. 先完成不依赖共享宿主的 main 侧安装与目录闭环
+2. 再完成共享宿主进程与 RPC 生命周期
+3. 最后接入 contribution registry 与 capability API
+
+这样每一段都可以单独验收，也更容易定位风险点。
+
+### Phase 2A：主进程基础设施与安装闭环
+
+#### 目标
+
+先把 `ExtensionService` 的 main 侧静态能力做实，形成“发现扩展 -> 安装/卸载 -> 状态持久化 -> catalog 聚合”的闭环。
+
+#### 任务
 
 1. 新建 `apps/desktop/src/main/services/extension/`
-2. 收敛 main 侧模块边界：
+2. 先收敛不依赖共享宿主的 main 侧模块边界：
    - `service.ts`
    - `types.ts`
    - `manifest.ts`
@@ -102,15 +114,36 @@ packages/create-kisaki-extension/**
    - `catalog.ts`
    - `installer.ts`
    - `sources/`
-   - `runtime/`
-   - `contributions/`
-   - `capabilities/`
 3. 细化来源与安装职责：
    - `sources/manager.ts` 负责 source resolve/search/download/getLatestVersion
    - `sources/github.ts`、`sources/local-file.ts` 负责具体来源 provider
    - `installer.ts` 只负责 `.kisx` 安装、卸载、更新流程编排
-4. 细化 runtime 职责：
-   - `runtime/`
+4. 实现安装状态存储：
+   - `userData/extensions/state.json`
+5. 实现 `.kisx` 安装、卸载、更新
+6. 让 `catalog.ts` 先能稳定聚合：
+   - 已安装扩展
+   - manifest 解析结果
+   - enable/disable 状态
+   - 来源与版本信息
+
+#### 验收标准
+
+- main 可以扫描并安装 `.kisx`
+- main 可以启用/禁用/卸载扩展
+- `userData/extensions/state.json` 成为唯一安装状态来源
+- main 侧 `catalog.ts` 可以稳定聚合已安装扩展与来源元数据
+- 旧 `PluginService` 不再承担安装与目录聚合职责
+
+### Phase 2B：共享宿主进程与 RPC 生命周期
+
+#### 目标
+
+在不引入完整 contribution 接线的前提下，先打通共享 `extension-host` 的启动、握手、加载、卸载、重载与崩溃恢复。
+
+#### 任务
+
+1. 新增 runtime 模块：
    - `runtime/manager.ts`
    - `runtime/host-controller.ts`
    - `runtime/rpc-client.ts`
@@ -120,43 +153,62 @@ packages/create-kisaki-extension/**
    - `runtime/host/extension-registry.ts`
    - `runtime/host/extension-loader.ts`
    - `runtime/host/sdk-bridge.ts`
-   - `runtime/host/contributions/*.ts`
-   - contribution 模块内聚接线逻辑，不再单独设 `adapters/`
-5. host 侧能力要求：
+2. host 侧能力要求：
    - `entry.ts` 作为共享宿主进程唯一入口，只负责组装、启动与退出清理
    - 基于 protocol message envelope 的 RPC 消息处理与 SDK bridge 适配
    - 多扩展 entry loader
    - extension runtime registry
    - callback registry
-   - contribution 域内聚的 session/refresh 状态
    - deactivate 清理流程
-6. 实现安装状态存储：
-   - `userData/extensions/state.json`
-7. 实现 `.kisx` 安装、卸载、更新
-8. 实现 `--dev-extension`
-9. `RuntimeManager` 能：
+3. `RuntimeManager` 能：
+   - `startHost`
+   - `handshake`
+   - `loadExtension`
+   - `unloadExtension`
+   - `reloadExtension`
+   - `restartHost`
+   - `shutdownHost`
+4. 实现 `--dev-extension`
+5. 收集宿主崩溃状态并重建已启用扩展
 
-- startHost
-- handshake
-- loadExtension
-- unloadExtension
-- reloadExtension
-- restartHost
-- shutdownHost
-- 收集宿主崩溃状态并重建已启用扩展
+#### 验收标准
 
-### 验收标准
-
-- main 可以扫描并安装 `.kisx`
-- main 可以启用/禁用/卸载扩展
-- main 侧 `catalog.ts` 可以稳定聚合已安装扩展与宿主状态
-- main 能建立 contribution registry
+- main 可以启动共享 `extension-host` 并完成 handshake
 - 多个扩展能在共享宿主进程中成功执行 `activate(context)`
+- `load/unload/reload/shutdown` 生命周期完整可用
+- `--dev-extension` 可以把本地扩展接入共享宿主调试
+- 共享宿主崩溃后可恢复已启用扩展
+
+### Phase 2C：贡献注册与能力桥接
+
+#### 目标
+
+在共享宿主稳定后，再把 contribution registry、capability API 和 UI callback 语义正式接到 `ExtensionService` 上。
+
+#### 任务
+
+1. 新增并接线：
+   - `contributions/`
+   - `capabilities/`
+   - `runtime/host/contributions/*.ts`
+2. contribution 模块内聚接线逻辑，不再单独设 `adapters/`
+3. host 侧补齐 contribution 域能力：
+   - contribution 域内聚的 session/refresh 状态
+   - callback registry 与 UI callback dispatch
+   - deactivate 时 contribution 清理
+4. 打通 capability API 与 SDK bridge 映射
+5. 统一 UI 回调结果模型：
+   - `UiCallbackResult`
+   - success / error / refresh 语义
+   - 结构化错误归一化
+
+#### 验收标准
+
+- main 能建立 contribution registry
 - 扩展可以注册 contribution
 - 扩展可以调用 capability API
 - UI 回调统一返回结构化 `UiCallbackResult`
 - 单扩展回调异常会被归一化为结构化失败结果，不会直接中断主应用
-- 共享宿主崩溃后可恢复已启用扩展
 - 旧 `PluginService` 不再参与启动流程
 
 ## Phase 3：替换 renderer 扩展模型
@@ -327,12 +379,26 @@ packages/create-kisaki-extension/**
 - `packages/extension-api` 与 `packages/extension-sdk` 定型
 - 不再生成 `plugin-types`
 
-## M2：Core Runtime 跑通
+## M2A：安装与目录闭环完成
+
+判断标准：
+
+- `ExtensionService` 已接管安装、卸载、启停状态与 catalog 聚合
+- `.kisx` 安装链路与 `state.json` 持久化稳定可用
+
+## M2B：共享宿主生命周期跑通
 
 判断标准：
 
 - main 侧 `ExtensionService` 与共享宿主进程可端到端协作
 - 多个示例扩展能在共享宿主进程中激活并输出独立前缀日志
+
+## M2C：贡献注册与能力桥接跑通
+
+判断标准：
+
+- 示例扩展可以注册 contribution 并调用 capability API
+- UI callback 已统一落到结构化 `UiCallbackResult`
 
 ## M3：受控 UI 跑通
 

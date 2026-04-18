@@ -152,6 +152,10 @@ apps/desktop/src/main/services/extension/
         themes.ts
   capabilities/
     library/
+      index.ts
+      entities.ts
+      relations.ts
+      attachments.ts
     network.ts
     notify.ts
     events.ts
@@ -193,6 +197,12 @@ packages/create-kisaki-extension/
 - `runtime/host/extension-loader.ts` 只负责 `load/unload/reload/activate/deactivate` 流程编排。
 - `runtime/host/sdk-bridge.ts` 只负责适配 `@kisaki/extension-sdk/bridge`，不混入 RPC 路由或 loader 逻辑。
 - `runtime/host/contributions/*.ts` 各自管理所属扩展点的作者态归一化、callback 归属以及域内 session/refresh 状态；不预设单独的顶层 `ui-session-registry.ts`。
+- `capabilities/` 下除 `library/` 外，其余 capability 先保持单文件；`library/` 因为同时覆盖实体、关系、集合成员和附件类资源，所以仍保持为目录，但先使用一层扁平文件结构。
+- `capabilities/library/index.ts` 只负责组装公开的 `library` capability facade，不直接混入实体 CRUD、relation command 或附件处理细节。
+- `capabilities/library/entities.ts` 统一收敛各实体类型的 `get/list/create/update/remove` 适配；内部可以再按 entity type 分发，但目录层级不提前展开到 `game.ts`、`person.ts` 级别。
+- `capabilities/library/relations.ts` 统一承载普通实体关系与 collection membership；后者虽然宿主内部可能映射到独立 link 结构，但对扩展仍保持单一 relation 模型。
+- `capabilities/library/attachments.ts` 统一承载 attachment 类库资源操作；当前项目中的封面、logo、photo 等媒体文件也归入 attachment 语义，不再单独拆 `media.ts`。
+- `packages/extension-api` 继续定义 `library` DTO、query、patch、command 等公开契约；`apps/desktop/src/main/services/extension/capabilities/library/**` 只负责宿主实现与内部 service 适配，不反向定义平台类型。
 - 共享 `Extension Host` 进程继续保持独立入口、独立构建产物和独立运行时边界；这里并入 `services/extension/runtime/host/` 的只是目录归属，而不是进程拓扑。
 
 ## 生命周期
@@ -389,6 +399,8 @@ Renderer 打开扩展设置页
 - `events`
 - `storage`
 - `log`
+
+其中 `library` 继续作为单一公开 capability 名称对外暴露，但在宿主内部明确拆成 `entities.ts`、`relations.ts`、`attachments.ts` 三个子域文件，避免库域逻辑重新演化成一个不可维护的大文件。
 
 ## 重构完成后的结果
 
