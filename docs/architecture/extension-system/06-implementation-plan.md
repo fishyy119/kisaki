@@ -131,9 +131,8 @@ packages/create-kisaki-extension/**
 
 - main 可以扫描并安装 `.kisx`
 - main 可以启用/禁用/卸载扩展
-- `userData/extensions/state.json` 成为唯一安装状态来源
+- `userData/extensions/state.json` 成为 extension 安装状态的唯一持久化来源
 - main 侧 `catalog.ts` 可以稳定聚合已安装扩展与来源元数据
-- 旧 `PluginService` 不再承担安装与目录聚合职责
 
 ### Phase 2B：共享宿主进程与 RPC 生命周期
 
@@ -209,7 +208,6 @@ packages/create-kisaki-extension/**
 - 扩展可以调用 capability API
 - UI 回调统一返回结构化 `UiCallbackResult`
 - 单扩展回调异常会被归一化为结构化失败结果，不会直接中断主应用
-- 旧 `PluginService` 不再参与启动流程
 
 ## Phase 3：替换 renderer 扩展模型
 
@@ -236,33 +234,31 @@ packages/create-kisaki-extension/**
 - renderer 内不存在 `window.kisaki`
 - 菜单和设置面板均由结构化数据驱动
 
-## Phase 4：迁移正式扩展点
+## Phase 4：退役 PluginService 与旧 plugin runtime
 
 ### 目标
 
-把当前零散的注册式能力统一纳入 `ExtensionService`。
+在新 `ExtensionService`、共享宿主进程和 renderer 贡献消费层稳定后，把应用内扩展流量彻底切离旧 `PluginService` 与旧 plugin runtime。
 
 ### 任务
 
-1. Scraper：
-   - 在 `contributions/scrapers.ts` 中实现扩展 provider 注册与宿主接线
-   - 让内建 provider 与扩展 provider 共用 registry
-2. Deeplink：
-   - 把 `DeeplinkAction` 改为 route namespace
-   - 在 `contributions/deeplinks.ts` 中实现扩展 handler 注册与宿主路由接线
-3. Theme：
-   - 把 theme 改为 token-based
-   - renderer theme manager 改为消费 token map
-4. Events：
-   - 形成公开 `HostEvents`
-   - 支持扩展命名空间事件
+1. 从 main 启动链路移除 `PluginService` 的注册与初始化
+2. 删除旧 main 侧 plugin runtime：
+   - `apps/desktop/src/main/services/plugin/**`
+   - `--dev-plugin` 启动接线
+3. 删除旧 plugin 管理 IPC 与对应调用：
+   - 安装 / 卸载 / 更新 / 已装列表 / registry 搜索
+   - dev-plugin wait / loaded entries 等旧运行时通道
+4. 确保以下职责只由 `ExtensionService` 承担：
+   - 安装、卸载、更新
+   - 启停状态与 catalog 聚合
+   - 扩展宿主生命周期与正式扩展点接线
 
 ### 验收标准
 
-- 扩展可以注册 scraper provider 并被宿主使用
-- 扩展可以注册 deeplink route 并被主应用路由
-- 扩展可以注册 theme 并在 UI 中切换
-- 扩展可以订阅宿主事件和发送扩展事件
+- 旧 `PluginService` 不再承担安装、目录聚合或启动职责
+- 启动链路不再注册 `PluginService`
+- 应用内扩展管理与运行时流量只通过 `ExtensionService` 与 `extension host`
 
 ## Phase 5：替换工具链与脚手架
 
@@ -312,8 +308,7 @@ packages/create-kisaki-extension/**
 ### 验收标准
 
 - 仓库中不存在旧 `plugin-sdk`、`plugin-cli`、`create-kisaki-plugin`
-- 启动链路不再引用任何旧 `plugin` runtime
-- UI 与文档都统一为 `extension`
+- 仓库级脚本、UI 文案与文档都统一为 `extension`
 
 ## 测试策略
 
@@ -383,7 +378,7 @@ packages/create-kisaki-extension/**
 
 判断标准：
 
-- `ExtensionService` 已接管安装、卸载、启停状态与 catalog 聚合
+- `ExtensionService` 已完成安装、卸载、启停状态与 catalog 聚合闭环
 - `.kisx` 安装链路与 `state.json` 持久化稳定可用
 
 ## M2B：共享宿主生命周期跑通
@@ -407,11 +402,12 @@ packages/create-kisaki-extension/**
 - 示例扩展能提供菜单项与设置面板
 - renderer 无扩展代码执行
 
-## M4：正式扩展点跑通
+## M4：PluginService 退役完成
 
 判断标准：
 
-- scraper/deeplink/theme 至少各有一个扩展示例成功运行
+- 旧 `PluginService` 不再参与 main 启动链路
+- 应用内扩展管理和运行时流量已切到 `ExtensionService`
 
 ## M5：旧系统完全移除
 

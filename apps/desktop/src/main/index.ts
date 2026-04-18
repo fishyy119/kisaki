@@ -17,6 +17,7 @@ import { LauncherService } from './services/launcher'
 import { IngestService } from './services/ingest'
 import { ScannerService } from './services/scanner'
 import { AttachmentService } from './services/attachment'
+import { ExtensionService } from './services/extension'
 import { PluginService } from './services/plugin'
 import { NetworkService } from './services/network'
 import { NotifyService } from './services/notify'
@@ -123,6 +124,7 @@ async function onAppReady(): Promise<void> {
   await container.register(new AttachmentService())
   await container.register(new MonitorService())
   await container.register(new LauncherService())
+  await container.register(new ExtensionService())
   await container.register(new PluginService())
   await container.register(new DeeplinkService())
 

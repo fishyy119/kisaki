@@ -72,6 +72,7 @@ import type {
   InstalledPluginInfo,
   RendererPluginEntry
 } from './plugin'
+import type { ExtensionCatalogInfo, ExtensionRegistryEntry, ExtensionUpdateInfo } from './extension'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
@@ -397,6 +398,29 @@ export interface IpcMainHandlers {
     hasMore: boolean
   }>
   'plugin:get-loaded-entries': () => IpcResult<RendererPluginEntry[]>
+
+  // Extension system
+  'extension:disable': (extensionId: string) => IpcVoidResult
+  'extension:enable': (extensionId: string) => IpcVoidResult
+  'extension:is-enabled': (extensionId: string) => IpcResult<boolean>
+  'extension:install': (source: string) => IpcVoidResult
+  'extension:install-from-file': (filePath: string) => IpcVoidResult
+  'extension:uninstall': (extensionId: string) => IpcVoidResult
+  'extension:check-updates': () => IpcResult<ExtensionUpdateInfo[]>
+  'extension:update': (extensionId: string) => IpcVoidResult
+  'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
+  'extension:get-sources': () => IpcResult<
+    Array<{ name: string; displayName: string; searchable: boolean }>
+  >
+  'extension:search': (
+    sourceName: string,
+    query: string,
+    options?: { page?: number; limit?: number; sortBy?: 'stars' | 'updated' | 'name' }
+  ) => IpcResult<{
+    entries: ExtensionRegistryEntry[]
+    total: number
+    hasMore: boolean
+  }>
 
   // Scanner
   'scanner:get-active-scans': () => IpcResult<ScanProgressData[]>

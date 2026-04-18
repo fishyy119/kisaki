@@ -28,6 +28,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@kisaki/extension-api": "workspace:*",
     "@ximu3/process-list": "^0.0.1",
     "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",

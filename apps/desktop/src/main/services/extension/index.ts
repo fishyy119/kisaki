@@ -1,0 +1,8 @@
+export { ExtensionService } from './service'
+export { ExtensionInstaller } from './installer'
+export { ExtensionCatalog } from './catalog'
+export { ExtensionStateStore } from './state'
+export { ExtensionSourceManager } from './sources/manager'
+export { GitHubExtensionSourceProvider } from './sources/github'
+export { LocalFileExtensionSourceProvider } from './sources/local-file'
+export * from './types'
