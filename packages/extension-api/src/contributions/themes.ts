@@ -1,11 +1,12 @@
-import type { Disposable, ValidationIssue } from '../shared'
+import type { Disposable } from '../shared'
+import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,
   prefixIssues,
   validateOptionalString,
   validateRequiredString,
   validateUnknownKeys
-} from '../validation'
+} from '../shared/validation'
 
 export const THEME_TOKEN_NAMES = [
   'background',

@@ -1,4 +1,5 @@
-import type { SerializableRecord, ValidationIssue } from '../shared'
+import type { SerializableRecord } from './serialization'
+import type { ValidationIssue } from './validation'
 import {
   isPlainObject,
   prefixIssues,
@@ -7,7 +8,11 @@ import {
   validateRequiredString,
   validateSerializableRecord,
   validateUnknownKeys
-} from '../validation'
+} from './validation'
+
+/**
+ * Structured result contract returned by controlled UI contribution callbacks.
+ */
 
 export interface UiCallbackError {
   code?: string

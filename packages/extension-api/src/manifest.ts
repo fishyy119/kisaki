@@ -1,11 +1,11 @@
-import type { ValidationIssue } from './shared'
+import type { ValidationIssue } from './shared/validation'
 import {
   isPlainObject,
   validateOptionalString,
   validateRequiredArray,
   validateRequiredString,
   validateUnknownKeys
-} from './validation'
+} from './shared/validation'
 
 export const EXTENSION_CATEGORIES = ['scraper', 'tool', 'theme', 'integration'] as const
 

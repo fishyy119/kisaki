@@ -15,7 +15,7 @@ It contains:
 - `ExtensionContext` and `KisakiApi` contracts
 - library DTOs and relation command/query contracts
 - controlled contribution models for menus, settings panels, scrapers, deeplinks, and themes
-- generic protocol message envelopes and serializable transport primitives
+- `rpc.ts` with transport envelopes, handshake types, structured-clone-safe values, and direction-aware bridge request/event maps shared by main and the extension host
 
 Manifest schema path:
 

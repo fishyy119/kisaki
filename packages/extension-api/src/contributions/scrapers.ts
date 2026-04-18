@@ -1,11 +1,4 @@
-import type {
-  Disposable,
-  ExternalId,
-  Locale,
-  PartialDate,
-  RelatedSite,
-  ValidationIssue
-} from '../shared'
+import type { Disposable, ExternalId, Locale, PartialDate, RelatedSite } from '../shared'
 import type {
   LibraryBloodType,
   LibraryCharacterPersonRole,
@@ -15,13 +8,14 @@ import type {
   LibraryGamePersonRole,
   LibraryGender
 } from '../capabilities/library'
+import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,
   validateRequiredArray,
   validateRequiredFunction,
   validateRequiredString,
   validateUnknownKeys
-} from '../validation'
+} from '../shared/validation'
 
 export const SCRAPER_MEDIA_TYPES = ['game', 'person', 'company', 'character'] as const
 

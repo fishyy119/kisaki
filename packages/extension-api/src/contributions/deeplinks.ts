@@ -1,4 +1,5 @@
-import type { Disposable, SerializableValue, ValidationIssue } from '../shared'
+import type { Disposable, SerializableValue } from '../shared'
+import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,
   validateOptionalEnumString,
@@ -8,7 +9,7 @@ import {
   validateRequiredString,
   validateSerializableValue,
   validateUnknownKeys
-} from '../validation'
+} from '../shared/validation'
 
 export interface DeeplinkRequest {
   route: string

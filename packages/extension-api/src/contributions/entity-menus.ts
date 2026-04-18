@@ -1,6 +1,7 @@
-import type { Disposable, ValidationIssue } from '../shared'
+import type { Disposable } from '../shared'
 import type { LibraryEntityType } from '../capabilities/library'
-import type { UiCallbackResult } from './shared'
+import type { UiCallbackResult } from '../shared'
+import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,
   validateOptionalBoolean,
@@ -13,7 +14,7 @@ import {
   validateRequiredFunction,
   validateRequiredString,
   validateUnknownKeys
-} from '../validation'
+} from '../shared/validation'
 
 export const ENTITY_MENU_TARGETS = [
   'game.single',

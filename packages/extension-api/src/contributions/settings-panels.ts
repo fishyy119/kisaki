@@ -1,5 +1,6 @@
-import type { Disposable, SerializableValue, ValidationIssue } from '../shared'
-import type { UiCallbackResult } from './shared'
+import type { Disposable, SerializableValue } from '../shared'
+import type { UiCallbackResult } from '../shared'
+import type { ValidationIssue } from '../shared/validation'
 import {
   isAbortSignal,
   isPlainObject,
@@ -15,7 +16,7 @@ import {
   validateRequiredString,
   validateSerializableRecord,
   validateUnknownKeys
-} from '../validation'
+} from '../shared/validation'
 
 export type SettingsNoticeTone = 'info' | 'warning' | 'error' | 'success'
 

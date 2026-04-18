@@ -19,17 +19,17 @@
 
 ## 2. 桥接协议必须结构化
 
-推荐使用统一消息信封：
+推荐使用统一 RPC 消息信封：
 
 ```ts
-type ProtocolMessage =
+type RpcMessage =
   | { kind: 'request'; id: string; method: string; params: unknown }
   | { kind: 'response'; id: string; ok: true; result: unknown }
-  | { kind: 'response'; id: string; ok: false; error: SerializableError }
+  | { kind: 'response'; id: string; ok: false; error: RpcErrorPayload }
   | { kind: 'event'; name: string; payload: unknown }
 ```
 
-这层只负责可序列化消息传输；具体宿主能力、贡献回调和生命周期命令的语义映射由 extension host 结合 `@kisaki/extension-sdk/bridge` 完成。
+`rpc.ts` 这层同时负责 transport envelope、握手、structured-clone 安全消息传输，以及 bridge request/event contracts；extension host 与 `@kisaki/extension-sdk/bridge` 负责实现和适配这些契约。
 
 约束：
 

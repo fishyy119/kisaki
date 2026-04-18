@@ -1,4 +1,7 @@
-import type { ValidationIssue } from './shared'
+export interface ValidationIssue {
+  path: string
+  message: string
+}
 
 interface StringValidationOptions {
   minLength?: number
