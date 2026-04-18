@@ -19,8 +19,9 @@
 │ Main App (Electron main)                                   │
 │                                                             │
 │  ExtensionService                                           │
-│  ├─ ManifestCatalog                                         │
-│  ├─ InstallationManager                                     │
+│  ├─ ExtensionCatalog                                        │
+│  ├─ ExtensionInstaller                                      │
+│  ├─ ExtensionSourceManager                                  │
 │  ├─ RuntimeManager                                          │
 │  ├─ ContributionRegistry                                    │
 │  ├─ CapabilityGateway                                       │
@@ -126,12 +127,16 @@ apps/desktop/src/main/services/extension/
   types.ts
   manifest.ts
   state.ts
-  catalog/
-  installer/
+  catalog.ts
+  installer.ts
+  sources/
+    github.ts
+    local-file.ts
+    manager.ts
   runtime/
     manager.ts
     host-controller.ts
-    protocol.ts
+    rpc.ts
     crash-policy.ts
   capabilities/
     library.ts
@@ -152,7 +157,7 @@ apps/desktop/src/main/extension-host/
   index.ts
   bridge.ts
   loader.ts
-  protocol.ts
+  rpc.ts
   sdk-bootstrap.ts
 
 apps/desktop/src/renderer/src/core/extensions/
@@ -170,6 +175,14 @@ packages/extension-cli/
 packages/create-kisaki-extension/
 ```
 
+目录收敛原则如下：
+
+- `manifest.ts` 只负责 manifest 读取、校验和归一化，不承担扫描或安装流程。
+- `catalog.ts` 负责扫描已安装扩展并把 `manifest + state` 聚合成可消费目录视图。
+- `installer.ts` 只负责安装、卸载、更新流程编排；来源解析、搜索、下载与版本查询下沉到 `sources/manager.ts` 和各 provider。
+- `runtime/` 保持为目录，因为它天然包含主进程 runtime facade、宿主进程控制、RPC 转发和崩溃恢复等多模块协作职责。
+- `apps/desktop/src/main/extension-host/` 继续独立于 `services/extension/`，因为它表示共享扩展宿主进程的物理入口，而不是普通 service 子模块。
+
 ## 生命周期
 
 ## 1. 发现与装载
@@ -180,7 +193,7 @@ packages/create-kisaki-extension/
 2. 校验 manifest 和安装状态
 3. 为每个已启用扩展生成运行描述
 4. 启动共享扩展宿主进程
-5. 建立 protocol 通道并接线 SDK bridge
+5. 建立 host RPC 通道并接线 SDK bridge
 6. 将所有已启用扩展的运行描述下发给共享宿主
 7. 逐个加载扩展 `entry` 并调用 `activate(context)`
 
@@ -299,7 +312,7 @@ Renderer 打开扩展设置页
 
 - 扩展异常不会泄漏为宿主内部调用栈依赖。
 - 每个扩展都有独立日志前缀、状态和 contribution 归属。
-- protocol 调用有超时和结构化错误。
+- host RPC 调用有超时和结构化错误；其底层仍遵循 `extension-api` 定义的 protocol message envelope。
 - 扩展级异常默认在回调边界被捕获并只影响当前扩展；UI 回调抛出的异常会被宿主归一化为 `UiCallbackResult` 失败结果。
 - 如果共享宿主发生进程级崩溃，main 会重启宿主并重新激活全部已启用扩展。
 - renderer 永远只处理结构化失败结果，不处理扩展代码异常对象。
@@ -310,8 +323,10 @@ Renderer 打开扩展设置页
 
 新的总入口 service，替代旧 `PluginService`。职责：
 
-- 扩展扫描
-- 安装/卸载/更新/启停
+- manifest 读取、校验与归一化
+- 扩展扫描与 catalog 聚合
+- 安装/卸载/更新/启停编排
+- 通过 `sources/` 统一接入本地文件与远程注册表来源
 - 扩展宿主管理
 - contribution registry 管理
 - 对 renderer 暴露统一 IPC facade
@@ -319,7 +334,7 @@ Renderer 打开扩展设置页
 
 ### `RuntimeManager`
 
-负责共享扩展宿主进程与扩展加载生命周期：
+负责主进程侧共享扩展宿主 runtime 编排：
 
 - startHost
 - handshake
@@ -328,6 +343,19 @@ Renderer 打开扩展设置页
 - reloadExtension
 - restartHost
 - shutdownHost
+
+它与 `host-controller.ts`、`rpc.ts`、`crash-policy.ts` 共同形成主进程 runtime 子域：`host-controller.ts` 负责宿主进程生命周期，`rpc.ts` 负责基于 protocol envelope 的请求/响应分发，`crash-policy.ts` 负责崩溃恢复与重建策略。
+
+### `ExtensionSourceManager`
+
+负责扩展来源接入与统一抽象：
+
+- resolve source
+- search registry
+- download package
+- query latest version
+
+`github.ts`、`local-file.ts` 等来源 provider 只负责各自来源的接入细节，不直接承担安装流程。
 
 ### `ContributionRegistry`
 

@@ -97,6 +97,12 @@ Manifest、protocol 消息、贡献模型、事件负载、DTO 都由共享类�
 
 宿主不再接受 `void`、裸 `refresh` 标记或其他隐式语义作为公开回调返回协议。
 
+### 8. 主边界先收敛，再按子域拆分
+
+`ExtensionService` 内部优先保持少量根级单文件边界，例如 `manifest.ts`、`state.ts`、`catalog.ts`、`installer.ts`；只有当某个子域天然承载多模块协作时，才升级为目录，例如 `sources/`、`runtime/`、`contributions/`、`capabilities/`。
+
+这条规则的目的不是压缩文件数量，而是避免把单一职责模块过早目录化，降低实现初期的导航成本，并让“来源接入”“共享宿主运行时”这类真正多模块子域保持清晰边界。
+
 ## 仓库目标结果
 
 重构完成后，仓库应当具有以下稳定结构：

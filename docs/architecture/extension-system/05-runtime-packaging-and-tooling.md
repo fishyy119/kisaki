@@ -140,7 +140,13 @@ userData/extensions/
 
 ## 安装与更新
 
-新的安装器职责：
+新的安装体系按“来源接入”和“安装编排”分层：
+
+- `sources/manager.ts` 负责 source resolve/search/download/getLatestVersion
+- `sources/*.ts` 负责 GitHub、本地文件等具体来源 provider
+- `installer.ts` 负责安装、卸载、更新流程编排与 `state.json` 维护
+
+其中安装器职责为：
 
 - 校验 `.kisx`
 - 解析并验证 `manifest.json`

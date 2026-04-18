@@ -86,72 +86,81 @@ packages/create-kisaki-extension/**
 - 宿主不再依赖 `plugin-types`
 - 扩展模板可以只依赖这两个包拿到完整类型
 
-## Phase 2：实现 main 侧 `ExtensionService`
+## Phase 2：实现 Core Extension Runtime
 
 ### 目标
 
-用新的 main service 替换旧 `PluginService`。
+一次性打通 main 侧 `ExtensionService` 与共享 `extension-host`，形成自包含的核心运行时闭环。
 
 ### 任务
 
 1. 新建 `apps/desktop/src/main/services/extension/`
-2. 拆分模块：
+2. 收敛 main 侧模块边界：
    - `service.ts`
-   - `catalog/`
-   - `installer/`
+   - `types.ts`
+   - `manifest.ts`
+   - `state.ts`
+   - `catalog.ts`
+   - `installer.ts`
+   - `sources/`
    - `runtime/`
    - `contributions/`
    - `capabilities/`
+3. 细化来源与安装职责：
+   - `sources/manager.ts` 负责 source resolve/search/download/getLatestVersion
+   - `sources/github.ts`、`sources/local-file.ts` 负责具体来源 provider
+   - `installer.ts` 只负责 `.kisx` 安装、卸载、更新流程编排
+4. 细化 runtime 职责：
+   - `runtime/`
+   - `runtime/manager.ts`
+   - `runtime/host-controller.ts`
+   - `runtime/rpc.ts`
+   - `runtime/crash-policy.ts`
    - contribution 模块内聚接线逻辑，不再单独设 `adapters/`
-3. 实现安装状态存储：
+5. 新建 `apps/desktop/src/main/extension-host/`
+6. 实现 host 侧模块：
+   - `index.ts`
+   - `bridge.ts`
+   - `loader.ts`
+   - `rpc.ts`
+   - `sdk-bootstrap.ts`
+7. host 侧能力要求：
+   - 进程入口
+   - 基于 protocol message envelope 的 RPC 消息处理与 SDK bridge 适配
+   - 多扩展 entry loader
+   - extension runtime registry
+   - callback registry
+   - deactivate 清理流程
+8. 实现安装状态存储：
    - `userData/extensions/state.json`
-4. 实现 `.kisx` 安装、卸载、更新
-5. 实现 `--dev-extension`
+9. 实现 `.kisx` 安装、卸载、更新
+10. 实现 `--dev-extension`
+11. `RuntimeManager` 能：
+
+- startHost
+- handshake
+- loadExtension
+- unloadExtension
+- reloadExtension
+- restartHost
+- shutdownHost
+- 收集宿主崩溃状态并重建已启用扩展
 
 ### 验收标准
 
 - main 可以扫描并安装 `.kisx`
 - main 可以启用/禁用/卸载扩展
+- main 侧 `catalog.ts` 可以稳定聚合已安装扩展与宿主状态
 - main 能建立 contribution registry
-- 旧 `PluginService` 不再参与启动流程
-
-## Phase 3：实现共享扩展宿主进程
-
-### 目标
-
-把扩展执行彻底挪出 main 和 renderer。
-
-### 任务
-
-1. 新建 `apps/desktop/src/main/extension-host/`
-2. 实现：
-   - 进程入口
-   - protocol 消息处理与 SDK bridge 适配
-   - SDK bootstrap
-   - 多扩展 entry loader
-   - extension runtime registry
-   - callback registry
-   - deactivate 清理流程
-3. `RuntimeManager` 能：
-   - startHost
-   - handshake
-   - loadExtension
-   - unloadExtension
-   - reloadExtension
-   - restartHost
-   - shutdownHost
-   - 收集宿主崩溃状态并重建已启用扩展
-
-### 验收标准
-
 - 多个扩展能在共享宿主进程中成功执行 `activate(context)`
 - 扩展可以注册 contribution
 - 扩展可以调用 capability API
 - UI 回调统一返回结构化 `UiCallbackResult`
 - 单扩展回调异常会被归一化为结构化失败结果，不会直接中断主应用
 - 共享宿主崩溃后可恢复已启用扩展
+- 旧 `PluginService` 不再参与启动流程
 
-## Phase 4：替换 renderer 扩展模型
+## Phase 3：替换 renderer 扩展模型
 
 ### 目标
 
@@ -176,7 +185,7 @@ packages/create-kisaki-extension/**
 - renderer 内不存在 `window.kisaki`
 - 菜单和设置面板均由结构化数据驱动
 
-## Phase 5：迁移正式扩展点
+## Phase 4：迁移正式扩展点
 
 ### 目标
 
@@ -204,7 +213,7 @@ packages/create-kisaki-extension/**
 - 扩展可以注册 theme 并在 UI 中切换
 - 扩展可以订阅宿主事件和发送扩展事件
 
-## Phase 6：替换工具链与脚手架
+## Phase 5：替换工具链与脚手架
 
 ### 目标
 
@@ -234,7 +243,7 @@ packages/create-kisaki-extension/**
 - 新扩展可通过 `kisx pack` 产出 `.kisx`
 - 主应用可安装并运行该 `.kisx`
 
-## Phase 7：清理旧系统并统一命名
+## Phase 6：清理旧系统并统一命名
 
 ### 目标
 
@@ -319,10 +328,11 @@ packages/create-kisaki-extension/**
 - `packages/extension-api` 与 `packages/extension-sdk` 定型
 - 不再生成 `plugin-types`
 
-## M2：共享扩展宿主跑通
+## M2：Core Runtime 跑通
 
 判断标准：
 
+- main 侧 `ExtensionService` 与共享宿主进程可端到端协作
 - 多个示例扩展能在共享宿主进程中激活并输出独立前缀日志
 
 ## M3：受控 UI 跑通
