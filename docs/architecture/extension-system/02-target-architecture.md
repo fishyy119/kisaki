@@ -139,7 +139,7 @@ apps/desktop/src/main/services/extension/
     rpc.ts
     crash-policy.ts
   capabilities/
-    library.ts
+    library/
     network.ts
     notify.ts
     events.ts
@@ -181,6 +181,7 @@ packages/create-kisaki-extension/
 - `catalog.ts` 负责扫描已安装扩展并把 `manifest + state` 聚合成可消费目录视图。
 - `installer.ts` 只负责安装、卸载、更新流程编排；来源解析、搜索、下载与版本查询下沉到 `sources/manager.ts` 和各 provider。
 - `runtime/` 保持为目录，因为它天然包含主进程 runtime facade、宿主进程控制、RPC 转发和崩溃恢复等多模块协作职责。
+- `capabilities/library/` 单独成域，因为 `library` 是宿主库能力总入口，后续还会继续拆实体、关系、附件/媒体相关 DTO 与 command/query；其余 capability 先保持单文件。
 - `apps/desktop/src/main/extension-host/` 继续独立于 `services/extension/`，因为它表示共享扩展宿主进程的物理入口，而不是普通 service 子模块。
 
 ## 生命周期
