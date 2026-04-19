@@ -1,9 +1,5 @@
 import type { ExtensionDefinition, KisakiApi } from '@kisaki/extension-api'
-import { getEventsCapability } from './capabilities/events'
-import { getLibraryCapability } from './capabilities/library'
-import { getNetworkCapability } from './capabilities/network'
-import { getNotifyCapability } from './capabilities/notify'
-import { getRuntimeCapability } from './capabilities/runtime'
+import { getExtensionSdkBridge } from './bridge'
 
 export * from '@kisaki/extension-api'
 
@@ -13,19 +9,19 @@ export function defineExtension(definition: ExtensionDefinition): ExtensionDefin
 
 export const kisaki: KisakiApi = {
   get library() {
-    return getLibraryCapability()
+    return getExtensionSdkBridge().api.library
   },
   get network() {
-    return getNetworkCapability()
+    return getExtensionSdkBridge().api.network
   },
   get notify() {
-    return getNotifyCapability()
+    return getExtensionSdkBridge().api.notify
   },
   get events() {
-    return getEventsCapability()
+    return getExtensionSdkBridge().api.events
   },
   get runtime() {
-    return getRuntimeCapability()
+    return getExtensionSdkBridge().api.runtime
   }
 }
 

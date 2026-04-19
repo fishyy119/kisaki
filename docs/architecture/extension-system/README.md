@@ -173,7 +173,7 @@ packages/extension-api/
 
 ### `packages/extension-sdk/`
 
-职责：扩展作者运行时包装层，负责把 `extension-api` 的契约变成可直接书写扩展的开发体验。
+职责：扩展作者运行时包装层，负责把 `extension-api` 的契约变成可直接书写扩展的开发体验，并把真正需要作者态/运行时协作的扩展点处理集中收敛起来。
 
 ```text
 packages/extension-sdk/
@@ -184,7 +184,6 @@ packages/extension-sdk/
   src/
     index.ts
     bridge.ts
-    capabilities/
     contributions/
 ```
 
@@ -192,7 +191,8 @@ packages/extension-sdk/
 
 - 作者侧公开入口收敛在根 `index.ts`，集中暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper、`createDisposableStore()`，并转发 `@kisaki/extension-api` 的公开契约。
 - 宿主 bootstrap helper 收敛在 `bridge.ts`，通过显式子路径 `@kisaki/extension-sdk/bridge` 暴露；不再保留 `internal/` 目录。
-- `capabilities/` 对应宿主公开能力包装；`contributions/` 对应作者态注册器与域内 builder。UI 节点构造应收敛在 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 的作用域内，不再依赖额外顶层公开 `entityMenu`、`settingsPanel` builder。
+- 宿主公开 capability 通过根 `kisaki` 对象直接、懒加载地暴露，不再为了 `network`、`notify`、`events`、`runtime` 这类直通能力再镜像一个 `src/capabilities/` 目录；只有当某个 capability 后续确实沉淀出独立适配逻辑时，才考虑单独拆分。
+- `contributions/` 对应作者态注册器与域内 builder，也是 SDK 与扩展运行时需要额外处理的主要复杂度来源。UI 节点构造应收敛在 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 的作用域内，不再依赖额外顶层公开 `entityMenu`、`settingsPanel` builder。
 - 公开类型、模块名与 registrar 命名优先自说明，优先使用 `EntityMenu*`、`SettingsPanel*`、`entityMenus`、`settingsPanels` 这类完整领域名；避免把 `menu`、`settings` 作为 SDK 顶层公开主命名。
 - scraper 作者态 API 当前聚焦 provider 注册器与 capability 包装；通用解析工具只有在形成稳定复用面后，才考虑上提为公开契约。
 - 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
@@ -271,7 +271,7 @@ packages/create-kisaki-extension/
 - 公开契约先落在 `extension-api`，再由 `extension-sdk` 提供作者体验，最后才由脚手架消费。
 - `extension-cli` 只消费公开契约和工作区约定；新增命令优先放进 `src/commands/**`，新增跨命令复用逻辑优先增加单一职责文件，而不是引入 `utils/` 杂项目录。
 - 如果后续需要增加新扩展点，优先新增 `extension-api/src/contributions/**` 与 `extension-sdk/src/contributions/**`，而不是在根目录平铺文件。
-- 如果后续需要新增宿主能力，优先新增 `extension-api/src/capabilities/**` 与 `extension-sdk/src/capabilities/**` 的对应子模块。
+- 如果后续需要新增宿主能力，优先先在 `extension-api/src/capabilities/**` 定义公开契约；`extension-sdk` 默认只在根 `index.ts` 的 `kisaki` 暴露面接入，只有出现明确作者态适配逻辑时才新增独立子模块。
 
 ## 直接删除范围
 
