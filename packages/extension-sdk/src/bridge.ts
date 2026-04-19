@@ -70,11 +70,18 @@ class DisposableStoreImpl implements DisposableStore {
 
 export interface ExtensionContextFactoryOptions {
   extension: ExtensionRuntimeMetadata
-  abortSignal?: AbortSignal
+  abortSignal: AbortSignal
   subscriptions?: DisposableStore
 }
 
 export function configureExtensionSdkBridge(bridge: ExtensionSdkBridge): void {
+  if (currentBridge && currentBridge !== bridge) {
+    throw new Error(
+      'The Kisaki extension SDK bridge has already been configured for this process. ' +
+        'Reset it explicitly before replacing the bridge instance.'
+    )
+  }
+
   currentBridge = bridge
 }
 
@@ -100,14 +107,13 @@ export function createDisposableStore(): DisposableStore {
 export function createExtensionContext(options: ExtensionContextFactoryOptions): ExtensionContext {
   const bridge = getExtensionSdkBridge()
   const subscriptions = options.subscriptions ?? createDisposableStore()
-  const abortSignal = options.abortSignal ?? new AbortController().signal
 
   return {
     extension: options.extension,
     logger: bridge.createLogger(options.extension),
     storage: bridge.createStorage(options.extension),
     subscriptions,
-    abortSignal,
+    abortSignal: options.abortSignal,
     contributes: {
       entityMenus: createEntityMenuRegistrar(bridge, subscriptions),
       settingsPanels: createSettingsPanelRegistrar(bridge, subscriptions),

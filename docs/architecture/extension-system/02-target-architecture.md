@@ -159,8 +159,6 @@ apps/desktop/src/main/services/extension/
     network.ts
     notify.ts
     events.ts
-    storage.ts
-    log.ts
   contributions/
     registry.ts
     entity-menus.ts
@@ -194,15 +192,17 @@ packages/create-kisaki-extension/
 - `runtime/host/entry.ts` 是共享宿主进程唯一入口，只负责对象组装、启动和退出清理，不直接承载扩展域逻辑。
 - `runtime/host/rpc-server.ts` 只负责 host 侧 protocol 分发，不直接维护扩展加载状态。
 - `runtime/host/extension-registry.ts` 只负责已加载扩展实例、上下文与生命周期状态。
-- `runtime/host/extension-loader.ts` 只负责 `load/unload/reload/activate/deactivate` 流程编排。
+- `runtime/host/extension-loader.ts` 只负责 `load/unload/reload/activate/deactivate` 流程编排，并持有扩展激活级 `AbortController`；`rpc-client.ts` 只转发 cancel/abort，不拥有扩展生命周期。
 - `runtime/host/sdk-bridge.ts` 只负责适配 `@kisaki/extension-sdk/bridge`，不混入 RPC 路由或 loader 逻辑。
-- `runtime/host/contributions/*.ts` 各自管理所属扩展点的作者态归一化、callback 归属以及域内 session/refresh 状态；不预设单独的顶层 `ui-session-registry.ts`。
+- `runtime/host/contributions/*.ts` 各自管理所属扩展点的作者态归一化、callback 归属以及域内 session/refresh 状态，并负责 host 侧的 `resolve/invoke` 执行；不预设单独的顶层 `ui-session-registry.ts`。
+- 根级 `contributions/*.ts` 负责 main process 侧聚合、宿主业务接线、renderer/业务查询入口与结构化快照组织；它们不直接持有扩展回调或 UI session 状态。
 - `capabilities/` 下除 `library/` 外，其余 capability 先保持单文件；`library/` 因为同时覆盖实体、关系、集合成员和附件类资源，所以仍保持为目录，但先使用一层扁平文件结构。
 - `capabilities/library/index.ts` 只负责组装公开的 `library` capability facade，不直接混入实体 CRUD、relation command 或附件处理细节。
 - `capabilities/library/entities.ts` 统一收敛各实体类型的 `get/list/create/update/remove` 适配；内部可以再按 entity type 分发，但目录层级不提前展开到 `game.ts`、`person.ts` 级别。
 - `capabilities/library/relations.ts` 统一承载普通实体关系与 collection membership；后者虽然宿主内部可能映射到独立 link 结构，但对扩展仍保持单一 relation 模型。
 - `capabilities/library/attachments.ts` 统一承载 attachment 类库资源操作；当前项目中的封面、logo、photo 等媒体文件也归入 attachment 语义，不再单独拆 `media.ts`。
 - `packages/extension-api` 继续定义 `library` DTO、query、patch、command 等公开契约；`apps/desktop/src/main/services/extension/capabilities/library/**` 只负责宿主实现与内部 service 适配，不反向定义平台类型。
+- `logger`、`storage` 与 `asAbsolutePath(...)` 保持为 `ExtensionContext` 级 bridge service，而不是挂到全局 `kisaki` capability 下的通用宿主能力。
 - 共享 `Extension Host` 进程继续保持独立入口、独立构建产物和独立运行时边界；这里并入 `services/extension/runtime/host/` 的只是目录归属，而不是进程拓扑。
 
 ## 生命周期
@@ -231,8 +231,8 @@ packages/create-kisaki-extension/
 - 事件订阅
 - 生命周期清理注册
 
-主应用把这些注册汇总到 `ContributionRegistry`。
-各个 contribution 模块自身同时负责把相关贡献接到宿主现有模块里；例如 `scrapers.ts` 负责扩展 scraper 的注册模型和接入 `ScraperService` 的逻辑，`deeplinks.ts` 负责扩展 deeplink 的注册模型和接入 `DeeplinkService` 的逻辑。这些接线都必须停留在 `ExtensionService` 体系内完成，而不是把扩展契约形状扩散到现有业务模块内部。
+共享宿主先在 `runtime/host/contributions/*.ts` 内完成作者态归一化、callback registry 建立与会话级状态登记，再把可暴露给主应用的结构化 contribution 结果上送给 main。
+主应用再把这些结构化结果汇总到 `ContributionRegistry`，并由根级 `contributions/*.ts` 完成对宿主现有模块的接线；例如 `scrapers.ts` 负责扩展 scraper 的注册模型和接入 `ScraperService` 的逻辑，`deeplinks.ts` 负责扩展 deeplink 的注册模型和接入 `DeeplinkService` 的逻辑。这些接线都必须停留在 `ExtensionService` 体系内完成，而不是把扩展契约形状扩散到现有业务模块内部。
 
 ## 3. 运行期
 
@@ -381,7 +381,7 @@ Renderer 打开扩展设置页
 
 ### `ContributionRegistry`
 
-主进程统一维护所有扩展贡献：
+主进程统一维护所有“已经过 host 归一化的结构化贡献视图”，并对 renderer 与宿主业务模块提供稳定查询入口；它不直接持有扩展回调实现，也不拥有 UI session 状态：
 
 - entity menus
 - settings panels
@@ -391,16 +391,14 @@ Renderer 打开扩展设置页
 
 ### `CapabilityGateway`
 
-把宿主内部 service 适配成稳定 capability：
+把宿主内部 service 适配成稳定全局 capability：
 
 - `library`
 - `network`
 - `notify`
 - `events`
-- `storage`
-- `log`
 
-其中 `library` 继续作为单一公开 capability 名称对外暴露，但在宿主内部明确拆成 `entities.ts`、`relations.ts`、`attachments.ts` 三个子域文件，避免库域逻辑重新演化成一个不可维护的大文件。
+其中 `library` 继续作为单一公开 capability 名称对外暴露，但在宿主内部明确拆成 `entities.ts`、`relations.ts`、`attachments.ts` 三个子域文件，避免库域逻辑重新演化成一个不可维护的大文件。`storage`、`logger` 与 `asAbsolutePath(...)` 不属于全局 capability，而是由 `runtime/host/sdk-bridge.ts` 提供给当前激活扩展的 context-scoped bridge service。
 
 ## 重构完成后的结果
 
