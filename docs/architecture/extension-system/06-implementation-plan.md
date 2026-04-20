@@ -89,11 +89,12 @@ packages/create-kisaki-extension/**
 
 ### 拆分原则
 
-当前 runtime 相关工作同时包含安装链路、共享宿主生命周期、contribution/capability 接线，范围过大。这里拆成三个连续子阶段：
+当前 runtime 相关工作同时包含安装链路、共享宿主生命周期、能力桥接、contribution 接线，范围过大。这里拆成四个连续子阶段：
 
 1. 先完成不依赖共享宿主的 main 侧安装与目录闭环
 2. 再完成共享宿主进程与 RPC 生命周期
-3. 最后接入 contribution registry 与 capability API
+3. 先把 capability API 与宿主服务桥接打通
+4. 最后接入 contribution registry 与 UI callback 语义
 
 这样每一段都可以单独验收，也更容易定位风险点。
 
@@ -157,8 +158,7 @@ packages/create-kisaki-extension/**
    - 基于 protocol message envelope 的 RPC 消息处理与 SDK bridge 适配
    - 多扩展 entry loader
    - extension runtime registry
-   - callback registry
-   - deactivate 清理流程
+   - deactivate 基础清理流程
 3. `RuntimeManager` 能：
    - `startHost`
    - `handshake`
@@ -178,24 +178,57 @@ packages/create-kisaki-extension/**
 - `--dev-extension` 可以把本地扩展接入共享宿主调试
 - 共享宿主崩溃后可恢复已启用扩展
 
-### Phase 2C：贡献注册与能力桥接
+### Phase 2C：能力桥接与宿主 API
 
 #### 目标
 
-在共享宿主稳定后，再把 contribution registry、capability API 和 UI callback 语义正式接到 `ExtensionService` 上。
+在共享宿主稳定后，先把不依赖 contribution registry 的 capability API 接到 `ExtensionService` 与共享宿主之间，建立稳定的宿主能力调用边界。
+
+#### 任务
+
+1. 新增并接线：
+   - `capabilities/`
+2. 建立能力桥接的宿主边界：
+   - `ExtensionService` 只通过 `capabilities/` 调用宿主已有业务模块
+   - 共享宿主通过 `sdk-bridge.ts` / RPC 映射访问 capability API
+   - capability handler 不直接依赖 contribution registry
+3. 优先打通不参与 contribution registry 的宿主能力：
+   - `events`
+   - library query / command
+   - 其他 `extension-api` 中定义的宿主能力入口
+4. 统一 capability 调用错误模型：
+   - protocol 级 request/response 失败归一化
+   - timeout / unavailable / validation failure 等结构化错误
+   - 不泄漏宿主内部 service 错误细节
+5. 补齐 load / unload / reload 期间的 capability 清理与失效处理
+
+#### 验收标准
+
+- 扩展可以调用 capability API
+- `events` 等非 contribution 能力可在共享宿主中独立使用
+- 能力桥接不依赖 contribution registry 即可单独验收
+- capability 调用失败会返回结构化宿主错误，而不是直接泄漏内部异常
+
+### Phase 2D：贡献注册与 UI 回调接线
+
+#### 目标
+
+在能力桥接稳定后，再把 contribution registry、受控 UI callback 和 contribution 域状态正式接到 `ExtensionService` 上。
 
 #### 任务
 
 1. 新增并接线：
    - `contributions/`
-   - `capabilities/`
    - `runtime/host/contributions/*.ts`
 2. contribution 模块内聚接线逻辑，不再单独设 `adapters/`
 3. host 侧补齐 contribution 域能力：
    - contribution 域内聚的 session/refresh 状态
    - callback registry 与 UI callback dispatch
    - deactivate 时 contribution 清理
-4. 打通 capability API 与 SDK bridge 映射
+4. 建立 main 侧 contribution registry 与快照聚合：
+   - 已注册 contribution 的归属追踪
+   - enable/disable / reload 后的增量刷新
+   - 为后续 renderer IPC facade 提供稳定读取面
 5. 统一 UI 回调结果模型：
    - `UiCallbackResult`
    - success / error / refresh 语义
@@ -205,9 +238,9 @@ packages/create-kisaki-extension/**
 
 - main 能建立 contribution registry
 - 扩展可以注册 contribution
-- 扩展可以调用 capability API
 - UI 回调统一返回结构化 `UiCallbackResult`
 - 单扩展回调异常会被归一化为结构化失败结果，不会直接中断主应用
+- contribution refresh 与 unload/reload 后的清理行为可预测且可验收
 
 ## Phase 3：替换 renderer 扩展模型
 
@@ -388,11 +421,18 @@ packages/create-kisaki-extension/**
 - main 侧 `ExtensionService` 与共享宿主进程可端到端协作
 - 多个示例扩展能在共享宿主进程中激活并输出独立前缀日志
 
-## M2C：贡献注册与能力桥接跑通
+## M2C：能力桥接与宿主 API 跑通
 
 判断标准：
 
-- 示例扩展可以注册 contribution 并调用 capability API
+- 示例扩展可以调用 capability API，且不依赖 contribution registry
+- 宿主能力调用失败会被归一化为结构化错误
+
+## M2D：贡献注册与 UI 回调跑通
+
+判断标准：
+
+- 示例扩展可以注册 contribution，并被 main 侧 registry 稳定聚合
 - UI callback 已统一落到结构化 `UiCallbackResult`
 
 ## M3：受控 UI 跑通
