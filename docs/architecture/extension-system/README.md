@@ -148,6 +148,7 @@ packages/extension-api/
   src/
     index.ts
     shared/
+    version.ts
     manifest.ts
     context.ts
     kisaki.ts
@@ -164,8 +165,8 @@ packages/extension-api/
 - `schemas/` 只放对外发布的 JSON Schema；运行时校验定义应跟随 `manifest.ts`、`contributions/**`、`rpc.ts` 等公开契约就近组织，而不是再扩一个顶层 `validation/` 杂项目录。
 - `shared/` 用于收敛真正跨域复用的共享契约，例如 locale、序列化约束、生命周期接口、值对象、`UiCallbackResult` 与相关验证 helper；没有跨域复用需求的类型应回收到对应 capability / contribution 文件。
 - `contributions/` 下一级只保留真正的扩展点定义；跨扩展点复用的 UI 协议不再混入该目录。
-- `context.ts`、`kisaki.ts`、`rpc.ts` 先保持单文件；只有当某个公开子域稳定长成多模块时再升级成目录。
-- `rpc.ts` 同时定义底层 transport envelope、握手、structured-clone 安全传输值，以及 main 与 extension host 共享的方向化 request/event contracts。宿主 runtime 与 `@kisaki/extension-sdk/bridge` 只负责实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。
+- `version.ts`、`context.ts`、`kisaki.ts`、`rpc.ts` 先保持单文件；只有当某个公开子域稳定长成多模块时再升级成目录。
+- `version.ts` 定义跨 runtime/package 共享的扩展平台 API 版本常量；`rpc.ts` 只定义底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量，以及 main 与 extension host 共享的方向化 request/event contracts。宿主 runtime 与 `@kisaki/extension-sdk/bridge` 只负责实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。
 - `capabilities/library/` 单独成域，后续继续拆实体、关系、集合成员、附件/媒体相关 DTO 与 command/query。
 - `events` 契约归入 `src/capabilities/events.ts`，作为宿主能力而不是 contribution 扩展点建模。
 - `scraper` 公开契约当前聚焦 provider、search/resolve 和 session 合同；只有在后续确实沉淀出稳定复用面时，才再升级为独立公开 helper 子域。

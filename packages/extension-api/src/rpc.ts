@@ -99,6 +99,12 @@ export type RpcMethod = string
 
 export type RpcEventTopic = string
 
+export const EXTENSION_RPC_PROTOCOL_VERSION = '1'
+
+export const RPC_HANDSHAKE_METHOD = '$/handshake'
+
+export const RPC_ABORT_EVENT = 'rpc.abort'
+
 export interface RpcHandshakeRequest {
   protocolVersion: string
   peerVersion?: string
@@ -195,6 +201,42 @@ export type RpcTypedEventMessage<
 > = RpcEventMessage<TEvent, RpcPayload<TMap, TEvent>>
 
 export type ExtensionUnloadReason = 'shutdown' | 'disable' | 'reload' | 'update'
+
+export type ExtensionRuntimeChangeCause =
+  | 'startup'
+  | 'install'
+  | 'enable'
+  | 'disable'
+  | 'uninstall'
+  | 'package-update'
+  | 'metadata-change'
+  | 'file-change'
+  | 'user'
+  | 'crash-recovery'
+  | 'host-timeout'
+
+export interface ExtensionLoadRequest {
+  extension: ExtensionRuntimeMetadata
+  generation: number
+  cause?: ExtensionRuntimeChangeCause
+}
+
+export interface ExtensionUnloadRequest {
+  extensionId: string
+  reason?: ExtensionUnloadReason
+}
+
+export interface ExtensionUnloadResult {
+  unloaded: boolean
+  deactivateError?: RpcErrorPayload
+  cleanupError?: RpcErrorPayload
+}
+
+export interface ExtensionReloadRequest {
+  extension: ExtensionRuntimeMetadata
+  generation: number
+  cause?: ExtensionRuntimeChangeCause
+}
 
 export interface ExtensionScopedRpcParams {
   extensionId: string
@@ -462,12 +504,9 @@ export interface MainToHostRpcRequestMap
       CharacterScraperSlot,
       CharacterSessionResultMap
     > {
-  'extensions.load': RpcMethodDefinition<{ extension: ExtensionRuntimeMetadata }, RpcNoPayload>
-  'extensions.unload': RpcMethodDefinition<
-    { extensionId: string; reason?: ExtensionUnloadReason },
-    RpcNoPayload
-  >
-  'extensions.reload': RpcMethodDefinition<{ extension: ExtensionRuntimeMetadata }, RpcNoPayload>
+  'extensions.load': RpcMethodDefinition<ExtensionLoadRequest, RpcNoPayload>
+  'extensions.unload': RpcMethodDefinition<ExtensionUnloadRequest, ExtensionUnloadResult>
+  'extensions.reload': RpcMethodDefinition<ExtensionReloadRequest, RpcNoPayload>
   'entityMenus.resolve': RpcMethodDefinition<EntityMenuResolveRequest, EntityMenuResolveResult>
   'entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
   'settingsPanels.resolve': RpcMethodDefinition<
@@ -480,7 +519,7 @@ export interface MainToHostRpcRequestMap
 }
 
 export interface MainToHostRpcEventMap {
-  'rpc.abort': { requestId: string }
+  [RPC_ABORT_EVENT]: { requestId: string }
   'capabilities.events.host': HostEventNotification
 }
 

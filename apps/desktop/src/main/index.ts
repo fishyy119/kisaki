@@ -39,11 +39,13 @@ function printCliHelp(): void {
   console.log('  -h, --help                 Show this help and exit')
   console.log('  -V, --version              Print version and exit')
   console.log('      --dev-plugin=<path>    Load a local plugin (dev mode)')
+  console.log('      --dev-extension=<path> Load a local extension in the shared host')
   console.log('')
   console.log('Examples:')
   console.log('  kisaki --version')
   console.log('  kisaki --help')
   console.log('  kisaki --dev-plugin="C:\\\\path\\\\to\\\\plugin"')
+  console.log('  kisaki --dev-extension="C:\\\\path\\\\to\\\\extension"')
 }
 
 const bootstrapArgs = getBootstrapArgs()

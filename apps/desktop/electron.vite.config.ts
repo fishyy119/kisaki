@@ -5,6 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   main: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/main/index.ts'),
+          'extension-host': resolve('src/main/services/extension/runtime/host/entry.ts')
+        }
+      }
+    },
     resolve: {
       alias: {
         '@main': resolve('src/main'),

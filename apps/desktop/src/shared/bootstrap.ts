@@ -13,4 +13,7 @@ export interface BootstrapArgs {
 
   /** Development plugin path from --dev-plugin CLI argument */
   devPlugin: string | undefined
+
+  /** Development extension path from --dev-extension CLI argument */
+  devExtension: string | undefined
 }

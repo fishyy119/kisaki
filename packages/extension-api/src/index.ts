@@ -1,4 +1,5 @@
 export * from './shared'
+export * from './version'
 export * from './manifest'
 export * from './context'
 export * from './kisaki'

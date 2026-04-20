@@ -1,7 +1,10 @@
 import path from 'node:path'
 import { app } from 'electron'
+import fse from 'fs-extra'
 import log from 'electron-log/main'
+import type { ExtensionRuntimeMetadata } from '@kisaki/extension-api'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import { getBootstrapArgs } from '@main/bootstrap/args'
 import type { IpcService } from '@main/services/ipc'
 import type {
   ExtensionCatalogInfo,
@@ -20,7 +23,10 @@ import type {
 import { createExtensionRuntimeMetadata } from './types'
 import { ExtensionCatalog } from './catalog'
 import { ExtensionInstaller } from './installer'
+import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
+import { ExtensionReloadWatcher } from './reload-watcher'
 import { ExtensionStateStore } from './state'
+import { RuntimeManager, type ExtensionRuntimeChangeCause } from './runtime/manager'
 import { GitHubExtensionSourceProvider } from './sources/github'
 import { LocalFileExtensionSourceProvider } from './sources/local-file'
 import { ExtensionSourceManager } from './sources/manager'
@@ -39,8 +45,11 @@ export class ExtensionService implements IService {
   private installer!: ExtensionInstaller
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
+  private runtime!: RuntimeManager
+  private reloadWatcher!: ExtensionReloadWatcher
   private snapshot: readonly ExtensionCatalogEntry[] = []
   private byId = new Map<string, ExtensionCatalogEntry>()
+  private devExtension: ExtensionRuntimeMetadata | null = null
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const rootDir = path.join(app.getPath('userData'), 'extensions')
@@ -61,9 +70,17 @@ export class ExtensionService implements IService {
 
     this.catalog = new ExtensionCatalog(this.paths, this.stateStore)
     this.installer = new ExtensionInstaller(this.paths, this.stateStore, this.sources)
+    this.runtime = new RuntimeManager({
+      hostModulePath: path.join(app.getAppPath(), 'out', 'main', 'extension-host.js')
+    })
+    this.reloadWatcher = new ExtensionReloadWatcher((extensionId) =>
+      this.reloadExtensionRuntime(extensionId, 'file-change')
+    )
     this.setupIpcHandlers()
 
     await this.refreshCatalog()
+    this.devExtension = await this.resolveDevExtension()
+    await this.applyRuntimeState({ cause: 'startup' })
     log.info('[ExtensionService] Initialized')
   }
 
@@ -95,23 +112,34 @@ export class ExtensionService implements IService {
   async install(source: string): Promise<ExtensionCatalogEntry> {
     const result = await this.installer.install(source)
     await this.refreshCatalog()
+    await this.applyRuntimeState({ cause: 'install' })
     return this.requireCatalogEntry(result.extensionId)
   }
 
   async installFromFile(filePath: string): Promise<ExtensionCatalogEntry> {
     const result = await this.installer.installFromFile(filePath)
     await this.refreshCatalog()
+    await this.applyRuntimeState({ cause: 'install' })
     return this.requireCatalogEntry(result.extensionId)
   }
 
   async uninstall(extensionId: string): Promise<void> {
+    await this.runtime.unloadExtension(extensionId, 'disable')
+    await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
     await this.installer.uninstall(extensionId)
     await this.refreshCatalog()
+    await this.applyRuntimeState({ cause: 'uninstall' })
   }
 
   async update(extensionId: string): Promise<ExtensionCatalogEntry | null> {
+    await this.runtime.unloadExtension(extensionId, 'update')
+    await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
     const result = await this.installer.update(extensionId)
     await this.refreshCatalog()
+    await this.applyRuntimeState({
+      cause: 'package-update',
+      forceReloadIds: result ? [result.extensionId] : [extensionId]
+    })
 
     if (!result) {
       return null
@@ -127,12 +155,14 @@ export class ExtensionService implements IService {
   async enable(extensionId: string): Promise<ExtensionCatalogEntry> {
     await this.stateStore.setEnabled(extensionId, true)
     await this.refreshCatalog()
+    await this.applyRuntimeState({ cause: 'enable' })
     return this.requireCatalogEntry(extensionId)
   }
 
   async disable(extensionId: string): Promise<ExtensionCatalogEntry> {
     await this.stateStore.setEnabled(extensionId, false)
     await this.refreshCatalog()
+    await this.applyRuntimeState({ cause: 'disable' })
     return this.requireCatalogEntry(extensionId)
   }
 
@@ -160,6 +190,16 @@ export class ExtensionService implements IService {
   createRuntimeMetadata(extensionId: string) {
     const entry = this.requireCatalogEntry(extensionId)
     return createExtensionRuntimeMetadata(entry)
+  }
+
+  async reload(extensionId: string): Promise<ExtensionCatalogEntry> {
+    await this.reloadExtensionRuntime(extensionId, 'user')
+    return this.requireCatalogEntry(extensionId)
+  }
+
+  async dispose(): Promise<void> {
+    await this.reloadWatcher.stop()
+    await this.runtime.shutdownHost()
   }
 
   private requireCatalogEntry(extensionId: string): ExtensionCatalogEntry {
@@ -245,6 +285,15 @@ export class ExtensionService implements IService {
       }
     })
 
+    this.ipc.handle('extension:reload', async (_, extensionId: string) => {
+      try {
+        await this.reload(extensionId)
+        return { success: true }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
     this.ipc.handle('extension:get-catalog', async () => {
       try {
         await this.refreshCatalog()
@@ -290,6 +339,102 @@ export class ExtensionService implements IService {
           return { success: false, error: toErrorMessage(error) }
         }
       }
+    )
+  }
+
+  private async resolveDevExtension(): Promise<ExtensionRuntimeMetadata | null> {
+    const devExtensionPath = getBootstrapArgs().devExtension
+    if (!devExtensionPath) {
+      return null
+    }
+
+    const extensionPath = path.resolve(devExtensionPath)
+    const manifestPath = path.join(extensionPath, 'manifest.json')
+
+    try {
+      const parsed = await readExtensionManifestFile(manifestPath)
+      if (!parsed.manifest) {
+        throw new Error(parsed.issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
+      }
+
+      const packageIssues = await validateInstalledExtensionPackage(extensionPath, parsed.manifest)
+      if (packageIssues.length > 0) {
+        throw new Error(packageIssues.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
+      }
+
+      const dataPath = path.join(this.paths.dataDir, parsed.manifest.id)
+      const tempPath = path.join(this.paths.tempDir, parsed.manifest.id)
+      await Promise.all([fse.ensureDir(dataPath), fse.ensureDir(tempPath)])
+
+      log.info(
+        `[ExtensionService] Registered dev extension override: ${parsed.manifest.id} -> ${extensionPath}`
+      )
+
+      return {
+        id: parsed.manifest.id,
+        name: parsed.manifest.name,
+        version: parsed.manifest.version,
+        manifestPath,
+        extensionPath,
+        dataPath,
+        tempPath,
+        mode: 'development'
+      }
+    } catch (error) {
+      log.error('[ExtensionService] Failed to load --dev-extension package:', error)
+      return null
+    }
+  }
+
+  private async reloadExtensionRuntime(
+    extensionId: string,
+    cause: ExtensionRuntimeChangeCause
+  ): Promise<void> {
+    await this.refreshCatalog()
+    this.devExtension = await this.resolveDevExtension()
+    await this.applyRuntimeState({
+      cause,
+      forceReloadIds: [extensionId]
+    })
+  }
+
+  private async applyRuntimeState(options: {
+    cause: ExtensionRuntimeChangeCause
+    forceReloadIds?: Iterable<string>
+  }): Promise<void> {
+    const desired = this.buildDesiredRuntimeMap()
+    await this.runtime.reconcile(desired, options)
+    await this.syncReloadWatcherTargets(desired)
+  }
+
+  private buildDesiredRuntimeMap(): Map<string, ExtensionRuntimeMetadata> {
+    const desired = new Map<string, ExtensionRuntimeMetadata>()
+
+    for (const entry of this.snapshot) {
+      if (!entry.enabled || entry.status !== 'ready' || !entry.manifest) {
+        continue
+      }
+
+      desired.set(entry.id, createExtensionRuntimeMetadata(entry))
+    }
+
+    if (this.devExtension) {
+      desired.set(this.devExtension.id, this.devExtension)
+    }
+
+    return desired
+  }
+
+  private async syncReloadWatcherTargets(
+    desired: ReadonlyMap<string, ExtensionRuntimeMetadata> | readonly ExtensionRuntimeMetadata[]
+  ): Promise<void> {
+    const metadataList = [...desired.values()]
+
+    await this.reloadWatcher.updateTargets(
+      metadataList.map((metadata) => ({
+        extensionId: metadata.id,
+        extensionPath: metadata.extensionPath
+      }))
     )
   }
 }

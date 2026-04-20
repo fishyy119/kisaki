@@ -36,7 +36,24 @@ export interface ExtensionSdkBridge {
   asAbsolutePath(extensionPath: string, relativePath: string): string
 }
 
-let currentBridge: ExtensionSdkBridge | null = null
+const EXTENSION_SDK_BRIDGE_KEY = Symbol.for('kisaki.extensionSdkBridge')
+
+interface ExtensionSdkBridgeStore {
+  bridge: ExtensionSdkBridge | null
+}
+
+function getBridgeStore(): ExtensionSdkBridgeStore {
+  const globalObject = globalThis as typeof globalThis &
+    Record<symbol, ExtensionSdkBridgeStore | undefined>
+  let store = globalObject[EXTENSION_SDK_BRIDGE_KEY]
+
+  if (!store) {
+    store = { bridge: null }
+    globalObject[EXTENSION_SDK_BRIDGE_KEY] = store
+  }
+
+  return store
+}
 
 class DisposableStoreImpl implements DisposableStore {
   private readonly disposables = new Set<Disposable>()
@@ -75,29 +92,33 @@ export interface ExtensionContextFactoryOptions {
 }
 
 export function configureExtensionSdkBridge(bridge: ExtensionSdkBridge): void {
-  if (currentBridge && currentBridge !== bridge) {
+  const store = getBridgeStore()
+
+  if (store.bridge && store.bridge !== bridge) {
     throw new Error(
       'The Kisaki extension SDK bridge has already been configured for this process. ' +
         'Reset it explicitly before replacing the bridge instance.'
     )
   }
 
-  currentBridge = bridge
+  store.bridge = bridge
 }
 
 export function resetExtensionSdkBridge(): void {
-  currentBridge = null
+  getBridgeStore().bridge = null
 }
 
 export function getExtensionSdkBridge(): ExtensionSdkBridge {
-  if (!currentBridge) {
+  const bridge = getBridgeStore().bridge
+
+  if (!bridge) {
     throw new Error(
       'The Kisaki extension SDK bridge has not been configured. ' +
         'The extension host must call configureExtensionSdkBridge(...) before loading extensions.'
     )
   }
 
-  return currentBridge
+  return bridge
 }
 
 export function createDisposableStore(): DisposableStore {

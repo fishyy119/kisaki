@@ -408,6 +408,7 @@ export interface IpcMainHandlers {
   'extension:uninstall': (extensionId: string) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateInfo[]>
   'extension:update': (extensionId: string) => IpcVoidResult
+  'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
   'extension:get-sources': () => IpcResult<
     Array<{ name: string; displayName: string; searchable: boolean }>

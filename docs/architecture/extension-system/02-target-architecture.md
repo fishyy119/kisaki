@@ -188,9 +188,10 @@ packages/create-kisaki-extension/
 - `catalog.ts` 负责扫描已安装扩展并把 `manifest + state` 聚合成可消费目录视图。
 - `installer.ts` 只负责安装、卸载、更新流程编排；来源解析、搜索、下载与版本查询下沉到 `sources/manager.ts` 和各 provider。
 - `runtime/` 保持为目录，因为它天然包含主进程 runtime facade、宿主进程控制、RPC 转发和崩溃恢复等多模块协作职责；共享宿主进程入口与其内部实现进一步收敛在 `runtime/host/`。
-- `runtime/rpc-client.ts` 只负责主进程侧 typed request/event、握手、timeout 与 abort 协调，不承载宿主进程生命周期或扩展状态。
+- `runtime/rpc-core.ts` 只负责 `apps/desktop` 内部复用的 transport helper，例如 message channel、request context/options 与错误归一化；它不是公开契约的一部分。
+- `runtime/rpc-client.ts` 只负责主进程侧 typed request/event、握手、timeout 与 abort 协调，并消费 `packages/extension-api/src/rpc.ts` 中定义的公共协议常量；它不承载宿主进程生命周期或扩展状态。
 - `runtime/host/entry.ts` 是共享宿主进程唯一入口，只负责对象组装、启动和退出清理，不直接承载扩展域逻辑。
-- `runtime/host/rpc-server.ts` 只负责 host 侧 protocol 分发，不直接维护扩展加载状态。
+- `runtime/host/rpc-server.ts` 只负责 host 侧 protocol 分发，并消费同一组公共协议常量与 `runtime/rpc-core.ts`；它不直接维护扩展加载状态。
 - `runtime/host/extension-registry.ts` 只负责已加载扩展实例、上下文与生命周期状态。
 - `runtime/host/extension-loader.ts` 只负责 `load/unload/reload/activate/deactivate` 流程编排，并持有扩展激活级 `AbortController`；`rpc-client.ts` 只转发 cancel/abort，不拥有扩展生命周期。
 - `runtime/host/sdk-bridge.ts` 只负责适配 `@kisaki/extension-sdk/bridge`，不混入 RPC 路由或 loader 逻辑。

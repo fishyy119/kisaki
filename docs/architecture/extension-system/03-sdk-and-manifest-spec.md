@@ -183,6 +183,7 @@ export async function deactivate(context: ExtensionContext): Promise<void> {}
 src/
   index.ts
   shared/
+  version.ts
   manifest.ts
   context.ts
   kisaki.ts
@@ -193,7 +194,7 @@ src/
   rpc.ts
 ```
 
-当前实现把 locale、可序列化约束、生命周期接口、值对象、`UiCallbackResult` 以及相关验证 helper 等真正跨域复用的共享契约集中在 `src/shared/`。`contributions/` 下一级只保留实体菜单、设置面板、scraper、deeplink、theme 这类实际扩展点。`rpc.ts` 同时负责底层 transport envelope、握手、structured-clone 安全传输值，以及 main 与 extension host 共享的方向化 request/event maps。宿主 runtime 与 `@kisaki/extension-sdk/bridge` 只实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
+当前实现把 locale、可序列化约束、生命周期接口、值对象、`UiCallbackResult` 以及相关验证 helper 等真正跨域复用的共享契约集中在 `src/shared/`。`contributions/` 下一级只保留实体菜单、设置面板、scraper、deeplink、theme 这类实际扩展点。`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 同时负责底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量，以及 main 与 extension host 共享的方向化 request/event maps。宿主 runtime 与 `@kisaki/extension-sdk/bridge` 只实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
 
 ### `@kisaki/extension-sdk`
 

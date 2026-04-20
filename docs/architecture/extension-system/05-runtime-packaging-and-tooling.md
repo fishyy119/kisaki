@@ -29,7 +29,7 @@ type RpcMessage =
   | { kind: 'event'; name: string; payload: unknown }
 ```
 
-`rpc.ts` 这层同时负责 transport envelope、握手、structured-clone 安全消息传输，以及 bridge request/event contracts；extension host 与 `@kisaki/extension-sdk/bridge` 负责实现和适配这些契约。
+`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 这层同时负责 transport envelope、握手、structured-clone 安全消息传输、RPC 协议常量，以及 bridge request/event contracts；extension host 与 `@kisaki/extension-sdk/bridge` 负责实现和适配这些契约。
 
 约束：
 
