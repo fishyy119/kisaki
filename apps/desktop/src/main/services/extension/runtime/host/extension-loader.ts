@@ -1,12 +1,12 @@
 import { pathToFileURL } from 'node:url'
-import { createDisposableStore, createExtensionContext } from '@kisaki/extension-sdk/bridge'
 import type {
   ExtensionDefinition,
+  ExtensionRuntimeHandle,
   ExtensionUnloadResult,
   ExtensionRuntimeMetadata
 } from '@kisaki/extension-api'
+import { toRpcErrorPayload } from '@kisaki/extension-api'
 import { readExtensionManifestFile, resolveExtensionFilePath } from '../../manifest'
-import { toRpcErrorPayload } from '../rpc-core'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from './extension-registry'
 import type { ExtensionHostSdkBridge } from './sdk-bridge'
 
@@ -19,7 +19,11 @@ export class ExtensionLoader {
     private readonly sdkBridge: ExtensionHostSdkBridge
   ) {}
 
-  async loadExtension(extension: ExtensionRuntimeMetadata, generation: number): Promise<void> {
+  async loadExtension(
+    extension: ExtensionRuntimeMetadata,
+    runtimeHandle: ExtensionRuntimeHandle,
+    generation: number
+  ): Promise<void> {
     if (this.registry.has(extension.id)) {
       throw new Error(`Extension "${extension.id}" is already loaded`)
     }
@@ -39,15 +43,15 @@ export class ExtensionLoader {
     const definition = resolveExtensionDefinition(extension.id, extensionModule)
 
     const abortController = new AbortController()
-    const subscriptions = createDisposableStore()
-    const context = createExtensionContext({
+    const { context, subscriptions } = this.sdkBridge.createExtensionContext({
       extension,
-      abortSignal: abortController.signal,
-      subscriptions
+      runtimeHandle,
+      abortSignal: abortController.signal
     })
 
     const runtime: LoadedExtensionRuntime = {
       metadata: extension,
+      runtimeHandle,
       generation,
       definition,
       context,
@@ -66,16 +70,23 @@ export class ExtensionLoader {
     this.registry.add(runtime)
 
     try {
-      await this.sdkBridge.runInExtensionContext(extension.id, () => definition.activate(context))
+      await this.sdkBridge.runInExtensionContext(runtime, () => definition.activate(context))
     } catch (error) {
       await this.cleanupFailedActivation(runtime)
       throw error
     }
   }
 
-  async unloadExtension(extensionId: string): Promise<ExtensionUnloadResult> {
+  async unloadExtension(
+    extensionId: string,
+    runtimeHandle?: ExtensionRuntimeHandle
+  ): Promise<ExtensionUnloadResult> {
     const runtime = this.registry.get(extensionId)
     if (!runtime) {
+      return { unloaded: false }
+    }
+
+    if (runtimeHandle && runtime.runtimeHandle !== runtimeHandle) {
       return { unloaded: false }
     }
 
@@ -85,7 +96,7 @@ export class ExtensionLoader {
 
     try {
       if (runtime.definition.deactivate) {
-        await this.sdkBridge.runInExtensionContext(extensionId, () =>
+        await this.sdkBridge.runInExtensionContext(runtime, () =>
           runtime.definition.deactivate!(runtime.context)
         )
       }
@@ -108,9 +119,13 @@ export class ExtensionLoader {
     }
   }
 
-  async reloadExtension(extension: ExtensionRuntimeMetadata, generation: number): Promise<void> {
+  async reloadExtension(
+    extension: ExtensionRuntimeMetadata,
+    runtimeHandle: ExtensionRuntimeHandle,
+    generation: number
+  ): Promise<void> {
     await this.unloadExtension(extension.id)
-    await this.loadExtension(extension, generation)
+    await this.loadExtension(extension, runtimeHandle, generation)
   }
 
   async shutdown(): Promise<void> {
@@ -125,7 +140,7 @@ export class ExtensionLoader {
 
     try {
       if (runtime.definition.deactivate) {
-        await this.sdkBridge.runInExtensionContext(runtime.metadata.id, () =>
+        await this.sdkBridge.runInExtensionContext(runtime, () =>
           runtime.definition.deactivate!(runtime.context)
         )
       }

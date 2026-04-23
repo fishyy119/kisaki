@@ -346,7 +346,7 @@ context.contributes.settingsPanels.register({
 菜单项回调、设置面板控件回调和 `onSubmit` 都必须返回统一结构化结果：
 
 ```ts
-interface UiCallbackError {
+interface ExtensionErrorShape {
   code?: string
   message: string
   details?: Record<string, unknown>
@@ -354,7 +354,7 @@ interface UiCallbackError {
 
 type UiCallbackResult =
   | { success: true; refresh: boolean }
-  | { success: false; refresh: boolean; error: UiCallbackError }
+  | { success: false; refresh: boolean; error: ExtensionErrorShape }
 ```
 
 语义如下：

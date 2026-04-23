@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import { Mutex } from 'async-mutex'
@@ -6,7 +7,11 @@ import log from 'electron-log/main'
 import {
   EXTENSION_API_VERSION,
   EXTENSION_RPC_PROTOCOL_VERSION,
+  RpcTimeoutError,
+  createUnavailableError,
+  normalizeCapabilityError,
   type ExtensionRuntimeChangeCause,
+  type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
   type ExtensionUnloadReason,
   type ExtensionUnloadResult,
@@ -21,7 +26,7 @@ import {
 import { ExtensionHostCrashPolicy } from './crash-policy'
 import { ExtensionHostController, type ExtensionHostExitInfo } from './host-controller'
 import { ExtensionHostRpcClient } from './rpc-client'
-import { RpcTimeoutError } from './rpc-core'
+import type { ExtensionCapabilityGateway } from '../capabilities'
 
 export type { ExtensionRuntimeChangeCause } from '@kisaki/extension-api'
 
@@ -29,6 +34,7 @@ const EMPTY_RPC_RESULT = Object.freeze({})
 
 export interface RuntimeManagerOptions {
   hostModulePath: string
+  capabilities?: ExtensionCapabilityGateway
 }
 
 export interface RuntimeReconcileOptions {
@@ -42,6 +48,7 @@ export interface RuntimeReloadOptions {
 
 interface LoadedExtensionState {
   metadata: ExtensionRuntimeMetadata
+  runtimeHandle: ExtensionRuntimeHandle
   generation: number
 }
 
@@ -57,6 +64,7 @@ export class RuntimeManager {
   private readonly crashPolicy = new ExtensionHostCrashPolicy()
   private readonly desiredExtensions = new Map<string, ExtensionRuntimeMetadata>()
   private readonly loadedExtensions = new Map<string, LoadedExtensionState>()
+  private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
   private controller: ExtensionHostController | null = null
   private rpc: ExtensionHostRpcClient | null = null
   private generationCounter = 0
@@ -70,6 +78,10 @@ export class RuntimeManager {
 
   getDesiredExtensions(): ReadonlyMap<string, ExtensionRuntimeMetadata> {
     return new Map(this.desiredExtensions)
+  }
+
+  resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null {
+    return this.runtimeHandles.get(runtimeHandle) ?? null
   }
 
   async startHost(): Promise<void> {
@@ -180,17 +192,25 @@ export class RuntimeManager {
     cause: ExtensionRuntimeChangeCause
   ): Promise<void> {
     const generation = this.nextGeneration()
+    const runtimeHandle = randomUUID()
+    this.runtimeHandles.set(runtimeHandle, extension)
 
-    await this.requestHostLifecycle(
-      'extensions.load',
-      { extension, generation, cause },
-      extension.id,
-      cause,
-      15_000
-    )
+    try {
+      await this.requestHostLifecycle(
+        'extensions.load',
+        { extension, runtimeHandle, generation, cause },
+        extension.id,
+        cause,
+        15_000
+      )
+    } catch (error) {
+      this.runtimeHandles.delete(runtimeHandle)
+      throw error
+    }
 
     this.loadedExtensions.set(extension.id, {
       metadata: extension,
+      runtimeHandle,
       generation
     })
   }
@@ -199,21 +219,37 @@ export class RuntimeManager {
     extension: ExtensionRuntimeMetadata,
     cause: ExtensionRuntimeChangeCause
   ): Promise<void> {
+    const previous = this.loadedExtensions.get(extension.id)
     const generation = this.nextGeneration()
-    this.loadedExtensions.delete(extension.id)
+    const runtimeHandle = randomUUID()
+    this.runtimeHandles.set(runtimeHandle, extension)
 
-    await this.requestHostLifecycle(
-      'extensions.reload',
-      { extension, generation, cause },
-      extension.id,
-      cause,
-      15_000
-    )
+    try {
+      await this.requestHostLifecycle(
+        'extensions.reload',
+        { extension, runtimeHandle, generation, cause },
+        extension.id,
+        cause,
+        15_000
+      )
+    } catch (error) {
+      this.runtimeHandles.delete(runtimeHandle)
+      if (previous) {
+        this.loadedExtensions.delete(extension.id)
+        this.releaseLoadedState(previous)
+      }
+      throw error
+    }
 
     this.loadedExtensions.set(extension.id, {
       metadata: extension,
+      runtimeHandle,
       generation
     })
+
+    if (previous) {
+      this.releaseLoadedState(previous)
+    }
   }
 
   private async unloadFromHostLocked(
@@ -228,13 +264,14 @@ export class RuntimeManager {
     this.loadedExtensions.delete(extensionId)
 
     if (!this.rpc || !this.controller?.isRunning()) {
+      this.releaseLoadedState(loaded)
       return
     }
 
     try {
       const result = await this.requestHostLifecycle(
         'extensions.unload',
-        { extensionId, reason },
+        { extensionId, runtimeHandle: loaded.runtimeHandle, reason },
         extensionId,
         toChangeCause(reason),
         15_000
@@ -249,6 +286,8 @@ export class RuntimeManager {
       if (!(error instanceof RpcTimeoutError)) {
         await this.restartHostLocked('host-timeout', new Set([extensionId]))
       }
+    } finally {
+      this.releaseLoadedState(loaded)
     }
   }
 
@@ -315,68 +354,159 @@ export class RuntimeManager {
 
   private installHostRequestHandlers(rpc: ExtensionHostRpcClient): void {
     rpc.handleHostRequest('bridge.logger.log', async (params) => {
-      writeExtensionLog(params.extensionId, params.level, params.message, params.args)
-      return EMPTY_RPC_RESULT
+      try {
+        const extension = this.requireActiveRuntimeHandle(params.runtimeHandle)
+        writeExtensionLog(extension.id, params.level, params.message, params.args)
+        return EMPTY_RPC_RESULT
+      } catch (error) {
+        throw normalizeCapabilityError(error, 'Failed to write extension log.')
+      }
     })
 
     rpc.handleHostRequest('bridge.storage.get', async (params) => {
-      const storage = await this.readStorageDocument(params.extensionId)
-      const value =
-        params.key in storage ? storage[params.key] : (params.fallback as SerializableValue)
+      try {
+        const storage = await this.readStorageDocument(params.runtimeHandle)
+        const value =
+          params.key in storage ? storage[params.key] : (params.fallback as SerializableValue)
 
-      return {
-        value
+        return {
+          value
+        }
+      } catch (error) {
+        throw normalizeCapabilityError(error, 'Failed to read extension storage.')
       }
     })
 
     rpc.handleHostRequest('bridge.storage.set', async (params) => {
-      const storage = await this.readStorageDocument(params.extensionId)
-      storage[params.key] = params.value
-      await this.writeStorageDocument(params.extensionId, storage)
-      return EMPTY_RPC_RESULT
+      try {
+        const storage = await this.readStorageDocument(params.runtimeHandle)
+        storage[params.key] = params.value
+        await this.writeStorageDocument(params.runtimeHandle, storage)
+        return EMPTY_RPC_RESULT
+      } catch (error) {
+        throw normalizeCapabilityError(error, 'Failed to write extension storage.')
+      }
     })
 
     rpc.handleHostRequest('bridge.storage.delete', async (params) => {
-      const storage = await this.readStorageDocument(params.extensionId)
-      delete storage[params.key]
-      await this.writeStorageDocument(params.extensionId, storage)
-      return EMPTY_RPC_RESULT
+      try {
+        const storage = await this.readStorageDocument(params.runtimeHandle)
+        delete storage[params.key]
+        await this.writeStorageDocument(params.runtimeHandle, storage)
+        return EMPTY_RPC_RESULT
+      } catch (error) {
+        throw normalizeCapabilityError(error, 'Failed to delete extension storage value.')
+      }
     })
 
     rpc.handleHostRequest('bridge.storage.listKeys', async (params) => {
-      const storage = await this.readStorageDocument(params.extensionId)
-      const keys = Object.keys(storage).filter((key) =>
-        params.prefix ? key.startsWith(params.prefix) : true
-      )
+      try {
+        const storage = await this.readStorageDocument(params.runtimeHandle)
+        const keys = Object.keys(storage).filter((key) =>
+          params.prefix ? key.startsWith(params.prefix) : true
+        )
 
-      return { keys }
+        return { keys }
+      } catch (error) {
+        throw normalizeCapabilityError(error, 'Failed to list extension storage keys.')
+      }
     })
 
-    registerNoopBridgeHandler(rpc, 'bridge.entityMenus.register')
-    registerNoopBridgeHandler(rpc, 'bridge.entityMenus.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.settingsPanels.register')
-    registerNoopBridgeHandler(rpc, 'bridge.settingsPanels.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.games.register')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.games.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.persons.register')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.persons.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.companies.register')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.companies.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.characters.register')
-    registerNoopBridgeHandler(rpc, 'bridge.scrapers.characters.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.deeplinks.register')
-    registerNoopBridgeHandler(rpc, 'bridge.deeplinks.unregister')
-    registerNoopBridgeHandler(rpc, 'bridge.themes.register')
-    registerNoopBridgeHandler(rpc, 'bridge.themes.unregister')
+    // Phase 2C intentionally exposes capability APIs only. Controlled contribution
+    // bridge wiring remains unavailable until Phase 2D lands.
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.entityMenus.register',
+      'Registration of entity menu contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.entityMenus.unregister',
+      'Registration of entity menu contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.settingsPanels.register',
+      'Registration of settings panel contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.settingsPanels.unregister',
+      'Registration of settings panel contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.games.register',
+      'Registration of game scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.games.unregister',
+      'Registration of game scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.persons.register',
+      'Registration of person scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.persons.unregister',
+      'Registration of person scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.companies.register',
+      'Registration of company scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.companies.unregister',
+      'Registration of company scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.characters.register',
+      'Registration of character scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.scrapers.characters.unregister',
+      'Registration of character scraper providers is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.deeplinks.register',
+      'Registration of deeplink contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.deeplinks.unregister',
+      'Registration of deeplink contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.themes.register',
+      'Registration of theme contributions is not enabled in the current extension host runtime.'
+    )
+    registerUnavailableBridgeHandler(
+      rpc,
+      'bridge.themes.unregister',
+      'Registration of theme contributions is not enabled in the current extension host runtime.'
+    )
+    this.options.capabilities?.registerRpcHandlers(rpc)
   }
 
   private async handleHostExit(info: ExtensionHostExitInfo): Promise<void> {
     await this.mutex.runExclusive(async () => {
       this.handshaken = false
+      this.options.capabilities?.detachRpc()
+      this.options.capabilities?.releaseAll()
       this.rpc?.dispose('Extension host exited')
       this.rpc = null
       this.controller = null
       this.loadedExtensions.clear()
+      this.runtimeHandles.clear()
 
       if (info.expected) {
         log.info(`[RuntimeManager] Extension host exited cleanly with code ${info.code}`)
@@ -443,11 +573,11 @@ export class RuntimeManager {
     const rpc = this.rpc
 
     if (unloadBeforeStop && rpc && controller?.isRunning()) {
-      for (const extensionId of [...this.loadedExtensions.keys()].reverse()) {
+      for (const [extensionId, state] of [...this.loadedExtensions.entries()].reverse()) {
         try {
           const result = await rpc.requestHost(
             'extensions.unload',
-            { extensionId, reason: 'shutdown' },
+            { extensionId, runtimeHandle: state.runtimeHandle, reason: 'shutdown' },
             { timeoutMs: 10_000 }
           )
           logUnloadResult(extensionId, result)
@@ -460,10 +590,13 @@ export class RuntimeManager {
       }
     }
 
+    this.options.capabilities?.detachRpc()
+    this.options.capabilities?.releaseAll()
     rpc?.dispose('Extension host stopped')
     this.rpc = null
     this.handshaken = false
     this.loadedExtensions.clear()
+    this.runtimeHandles.clear()
 
     if (controller) {
       await controller.stop()
@@ -513,9 +646,9 @@ export class RuntimeManager {
   }
 
   private async readStorageDocument(
-    extensionId: string
+    runtimeHandle: ExtensionRuntimeHandle
   ): Promise<Record<string, SerializableValue>> {
-    const storagePath = this.getStoragePath(extensionId)
+    const storagePath = this.getStoragePath(this.requireActiveRuntimeHandle(runtimeHandle))
     await fse.ensureDir(path.dirname(storagePath))
 
     if (!(await fse.pathExists(storagePath))) {
@@ -527,7 +660,7 @@ export class RuntimeManager {
       return normalizeSerializableRecord(raw)
     } catch (error) {
       log.warn(
-        `[RuntimeManager] Failed to read storage for extension "${extensionId}", using empty document:`,
+        `[RuntimeManager] Failed to read storage for runtime handle "${runtimeHandle}", using empty document:`,
         error
       )
       return {}
@@ -535,10 +668,10 @@ export class RuntimeManager {
   }
 
   private async writeStorageDocument(
-    extensionId: string,
+    runtimeHandle: ExtensionRuntimeHandle,
     document: Record<string, SerializableValue>
   ): Promise<void> {
-    const storagePath = this.getStoragePath(extensionId)
+    const storagePath = this.getStoragePath(this.requireActiveRuntimeHandle(runtimeHandle))
     await fse.ensureDir(path.dirname(storagePath))
 
     const tempPath = `${storagePath}.tmp`
@@ -546,15 +679,24 @@ export class RuntimeManager {
     await fse.move(tempPath, storagePath, { overwrite: true })
   }
 
-  private getStoragePath(extensionId: string): string {
-    const extension =
-      this.desiredExtensions.get(extensionId) ?? this.loadedExtensions.get(extensionId)?.metadata
+  private getStoragePath(extension: ExtensionRuntimeMetadata): string {
+    return path.join(extension.dataPath, 'storage.json')
+  }
 
+  private requireActiveRuntimeHandle(
+    runtimeHandle: ExtensionRuntimeHandle
+  ): ExtensionRuntimeMetadata {
+    const extension = this.runtimeHandles.get(runtimeHandle)
     if (!extension) {
-      throw new Error(`Extension "${extensionId}" is not active in the runtime manager`)
+      throw createUnavailableError(`Runtime handle "${runtimeHandle}" is not active.`)
     }
 
-    return path.join(extension.dataPath, 'storage.json')
+    return extension
+  }
+
+  private releaseLoadedState(state: LoadedExtensionState): void {
+    this.runtimeHandles.delete(state.runtimeHandle)
+    this.options.capabilities?.releaseRuntime(state.runtimeHandle)
   }
 
   private nextGeneration(): number {
@@ -571,7 +713,7 @@ export class RuntimeManager {
   }
 }
 
-function registerNoopBridgeHandler(
+function registerUnavailableBridgeHandler(
   rpc: ExtensionHostRpcClient,
   method:
     | 'bridge.entityMenus.register'
@@ -589,9 +731,12 @@ function registerNoopBridgeHandler(
     | 'bridge.deeplinks.register'
     | 'bridge.deeplinks.unregister'
     | 'bridge.themes.register'
-    | 'bridge.themes.unregister'
+    | 'bridge.themes.unregister',
+  message: string
 ): void {
-  rpc.handleHostRequest(method, async () => EMPTY_RPC_RESULT)
+  rpc.handleHostRequest(method, async () => {
+    throw createUnavailableError(message)
+  })
 }
 
 function createRuntimeInfo(): RuntimeInfo {

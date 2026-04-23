@@ -4,6 +4,7 @@ import type {
   EntityMenuContribution,
   ExtensionContext,
   ExtensionDefinition,
+  ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   GameScraperProvider,
   PersonScraperProvider,
@@ -15,6 +16,7 @@ import type {
 
 export interface LoadedExtensionRuntime {
   metadata: ExtensionRuntimeMetadata
+  runtimeHandle: ExtensionRuntimeHandle
   generation: number
   definition: ExtensionDefinition
   context: ExtensionContext
@@ -35,13 +37,19 @@ export interface LoadedExtensionRuntime {
  */
 export class ExtensionRegistry {
   private readonly loaded = new Map<string, LoadedExtensionRuntime>()
+  private readonly byRuntimeHandle = new Map<ExtensionRuntimeHandle, LoadedExtensionRuntime>()
 
   add(runtime: LoadedExtensionRuntime): void {
     this.loaded.set(runtime.metadata.id, runtime)
+    this.byRuntimeHandle.set(runtime.runtimeHandle, runtime)
   }
 
   get(extensionId: string): LoadedExtensionRuntime | undefined {
     return this.loaded.get(extensionId)
+  }
+
+  getByRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): LoadedExtensionRuntime | undefined {
+    return this.byRuntimeHandle.get(runtimeHandle)
   }
 
   remove(extensionId: string): LoadedExtensionRuntime | undefined {
@@ -51,11 +59,19 @@ export class ExtensionRegistry {
     }
 
     this.loaded.delete(extensionId)
+    this.byRuntimeHandle.delete(runtime.runtimeHandle)
     return runtime
   }
 
   delete(extensionId: string): boolean {
-    return this.loaded.delete(extensionId)
+    const runtime = this.loaded.get(extensionId)
+    if (!runtime) {
+      return false
+    }
+
+    this.loaded.delete(extensionId)
+    this.byRuntimeHandle.delete(runtime.runtimeHandle)
+    return true
   }
 
   has(extensionId: string): boolean {

@@ -30,13 +30,20 @@ import { RuntimeManager, type ExtensionRuntimeChangeCause } from './runtime/mana
 import { GitHubExtensionSourceProvider } from './sources/github'
 import { LocalFileExtensionSourceProvider } from './sources/local-file'
 import { ExtensionSourceManager } from './sources/manager'
+import { ExtensionCapabilityGateway } from './capabilities'
 
 /**
  * Main-process entry point for the new extension system's phase 2A infrastructure.
  */
 export class ExtensionService implements IService {
   readonly id = 'extension'
-  readonly deps = ['ipc', 'network'] as const satisfies readonly ServiceName[]
+  readonly deps = [
+    'ipc',
+    'network',
+    'db',
+    'event',
+    'notify'
+  ] as const satisfies readonly ServiceName[]
 
   readonly sources = new ExtensionSourceManager()
 
@@ -47,6 +54,7 @@ export class ExtensionService implements IService {
   private ipc!: IpcService
   private runtime!: RuntimeManager
   private reloadWatcher!: ExtensionReloadWatcher
+  private capabilities!: ExtensionCapabilityGateway
   private snapshot: readonly ExtensionCatalogEntry[] = []
   private byId = new Map<string, ExtensionCatalogEntry>()
   private devExtension: ExtensionRuntimeMetadata | null = null
@@ -70,8 +78,16 @@ export class ExtensionService implements IService {
 
     this.catalog = new ExtensionCatalog(this.paths, this.stateStore)
     this.installer = new ExtensionInstaller(this.paths, this.stateStore, this.sources)
+    this.capabilities = new ExtensionCapabilityGateway({
+      db: container.get('db'),
+      event: container.get('event'),
+      network: container.get('network'),
+      notify: container.get('notify'),
+      resolveRuntimeHandle: (runtimeHandle) => this.runtime?.resolveRuntimeHandle(runtimeHandle)
+    })
     this.runtime = new RuntimeManager({
-      hostModulePath: path.join(app.getAppPath(), 'out', 'main', 'extension-host.js')
+      hostModulePath: path.join(app.getAppPath(), 'out', 'main', 'extension-host.js'),
+      capabilities: this.capabilities
     })
     this.reloadWatcher = new ExtensionReloadWatcher((extensionId) =>
       this.reloadExtensionRuntime(extensionId, 'file-change')
@@ -156,6 +172,7 @@ export class ExtensionService implements IService {
     await this.stateStore.setEnabled(extensionId, true)
     await this.refreshCatalog()
     await this.applyRuntimeState({ cause: 'enable' })
+    this.capabilities.emitHostEvent('extension.enabled', { extensionId })
     return this.requireCatalogEntry(extensionId)
   }
 
@@ -163,6 +180,7 @@ export class ExtensionService implements IService {
     await this.stateStore.setEnabled(extensionId, false)
     await this.refreshCatalog()
     await this.applyRuntimeState({ cause: 'disable' })
+    this.capabilities.emitHostEvent('extension.disabled', { extensionId })
     return this.requireCatalogEntry(extensionId)
   }
 

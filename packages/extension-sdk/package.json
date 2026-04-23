@@ -9,12 +9,6 @@
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       }
-    },
-    "./bridge": {
-      "import": {
-        "types": "./dist/bridge.d.mts",
-        "default": "./dist/bridge.mjs"
-      }
     }
   },
   "files": [

@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { RPC_ABORT_EVENT, type RpcErrorPayload, type RpcMessage } from '@kisaki/extension-api'
+import {
+  RPC_ABORT_EVENT,
+  RpcTimeoutError,
+  createExtensionError,
+  createUnavailableError,
+  fromRpcErrorPayload,
+  toRpcErrorPayload,
+  type RpcMessage
+} from '@kisaki/extension-api'
 
 export interface RpcRequestOptions {
   timeoutMs?: number
@@ -20,16 +28,6 @@ interface PendingRpcRequest {
   reject: (error: Error) => void
   resolve: (value: unknown) => void
   timeoutId?: NodeJS.Timeout
-}
-
-export class RpcTimeoutError extends Error {
-  constructor(
-    readonly method: string,
-    readonly timeoutMs: number
-  ) {
-    super(`RPC request "${method}" timed out after ${timeoutMs}ms`)
-    this.name = 'RpcTimeoutError'
-  }
 }
 
 export class RpcMessageChannel {
@@ -81,7 +79,7 @@ export class RpcMessageChannel {
       const id = randomUUID()
 
       if (options.signal?.aborted) {
-        reject(new Error(`RPC request "${method}" was aborted before dispatch`))
+        reject(createRpcAbortError(method, 'before dispatch'))
         return
       }
 
@@ -107,7 +105,7 @@ export class RpcMessageChannel {
           }
           pending.cleanupAbort?.()
           this.trySendAbort(id)
-          reject(new Error(`RPC request "${method}" was aborted`))
+          reject(createRpcAbortError(method, 'while pending'))
         }
 
         options.signal.addEventListener('abort', onAbort, { once: true })
@@ -206,10 +204,11 @@ export class RpcMessageChannel {
         kind: 'response',
         id,
         ok: false,
-        error: {
-          code: 'method_not_found',
-          message: `No RPC handler registered for "${method}".`
-        }
+        error: toRpcErrorPayload(
+          createExtensionError(`No RPC handler registered for "${method}".`, {
+            code: 'method_not_found'
+          })
+        )
       })
       return
     }
@@ -250,40 +249,11 @@ export class RpcMessageChannel {
   }
 }
 
-export function toRpcErrorPayload(error: unknown): RpcErrorPayload {
-  if (error instanceof Error) {
-    const payload: RpcErrorPayload = {
-      message: error.message
-    }
-
-    if ('code' in error && typeof error.code === 'string') {
-      payload.code = error.code
-    }
-
-    if (error.stack) {
-      payload.stack = error.stack
-    }
-
-    return payload
-  }
-
-  return {
-    message: typeof error === 'string' ? error : 'Unknown RPC error'
-  }
-}
-
-function fromRpcErrorPayload(payload: RpcErrorPayload): Error {
-  const error = new Error(payload.message)
-
-  if (payload.code) {
-    ;(error as Error & { code?: string }).code = payload.code
-  }
-
-  if (payload.stack) {
-    error.stack = payload.stack
-  }
-
-  return error
+function createRpcAbortError(method: string, phase: string): Error {
+  return createUnavailableError(`RPC request "${method}" was aborted ${phase}.`, {
+    method,
+    phase
+  })
 }
 
 function isRpcEnvelope(message: unknown): message is RpcMessage {

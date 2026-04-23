@@ -24,5 +24,3 @@ export const kisaki: KisakiApi = {
     return getExtensionSdkBridge().api.runtime
   }
 }
-
-export { createDisposableStore } from './bridge'

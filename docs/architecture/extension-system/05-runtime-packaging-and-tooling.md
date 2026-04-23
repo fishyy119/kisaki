@@ -29,7 +29,7 @@ type RpcMessage =
   | { kind: 'event'; name: string; payload: unknown }
 ```
 
-`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 这层同时负责 transport envelope、握手、structured-clone 安全消息传输、RPC 协议常量，以及 bridge request/event contracts；extension host 与 `@kisaki/extension-sdk/bridge` 负责实现和适配这些契约。
+`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 这层同时负责 transport envelope、握手、structured-clone 安全消息传输、RPC 协议常量、`RpcErrorPayload` 的校验与 payload 转换 helper，以及 bridge request/event contracts；extension host 与 SDK 私有 bridge 实现负责实现和适配这些契约。
 
 约束：
 
@@ -79,7 +79,7 @@ UI 回调桥接协议统一为：
 6. 通过 `contributions/*.ts` 管理分扩展的注册回调、归一化结果与域内 session/refresh 状态
 7. 通过 `rpc-server.ts` 响应 main 的 protocol 请求
 
-当前 SDK 实现把宿主侧桥接 helper 收敛在 `@kisaki/extension-sdk/bridge`，由该入口暴露 `configureExtensionSdkBridge(...)`、`createExtensionContext(...)` 等 bootstrap 函数。
+当前 SDK 只保留根作者入口；宿主侧桥接 helper 收敛在共享宿主的 `runtime/host/sdk-bridge.ts`，它负责安装 SDK 私有 bridge 状态、为每次 `load/reload` 注入新的 `runtimeHandle`，并创建带生命周期 `AbortSignal` 的 `ExtensionContext`。
 
 建议把共享宿主进程实现固定在 `apps/desktop/src/main/services/extension/runtime/host/` 下：
 

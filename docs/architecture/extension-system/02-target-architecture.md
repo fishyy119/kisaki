@@ -194,7 +194,7 @@ packages/create-kisaki-extension/
 - `runtime/host/rpc-server.ts` 只负责 host 侧 protocol 分发，并消费同一组公共协议常量与 `runtime/rpc-core.ts`；它不直接维护扩展加载状态。
 - `runtime/host/extension-registry.ts` 只负责已加载扩展实例、上下文与生命周期状态。
 - `runtime/host/extension-loader.ts` 只负责 `load/unload/reload/activate/deactivate` 流程编排，并持有扩展激活级 `AbortController`；`rpc-client.ts` 只转发 cancel/abort，不拥有扩展生命周期。
-- `runtime/host/sdk-bridge.ts` 只负责适配 `@kisaki/extension-sdk/bridge`，不混入 RPC 路由或 loader 逻辑。
+- `runtime/host/sdk-bridge.ts` 只负责在共享宿主内安装 SDK 私有 bridge 状态、创建带 `runtimeHandle` 的 extension context，并适配宿主能力调用；不混入 RPC 路由或 loader 逻辑。
 - `runtime/host/contributions/*.ts` 各自管理所属扩展点的作者态归一化、callback 归属以及域内 session/refresh 状态，并负责 host 侧的 `resolve/invoke` 执行；不预设单独的顶层 `ui-session-registry.ts`。
 - 根级 `contributions/*.ts` 负责 main process 侧聚合、宿主业务接线、renderer/业务查询入口与结构化快照组织；它们不直接持有扩展回调或 UI session 状态。
 - `capabilities/` 下除 `library/` 外，其余 capability 先保持单文件；`library/` 因为同时覆盖实体、关系、集合成员和附件类资源，所以仍保持为目录，但先使用一层扁平文件结构。

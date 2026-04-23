@@ -153,6 +153,8 @@ async function onAppReady(): Promise<void> {
   windowService.createMainWindow()
   windowService.createTrayMenuWindow()
 
+  eventService.emit('app:ready')
+
   // Load user plugins (after window is created, so renderer receives IPC events)
   const pluginService = container.get('plugin')
   await pluginService.loadAllPlugins()

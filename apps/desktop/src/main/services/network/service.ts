@@ -54,7 +54,8 @@ export class NetworkService implements IService {
       rateLimitKey,
       method = 'GET',
       headers,
-      body
+      body,
+      signal
     } = options
 
     // Apply rate limiting if registered
@@ -73,7 +74,11 @@ export class NetworkService implements IService {
     }
 
     // Execute with retry
-    return this.executeWithRetry(() => this.fetchWithTimeout(url, fetchOptions, timeout), retries)
+    return this.executeWithRetry(
+      () => this.fetchWithTimeout(url, fetchOptions, timeout, signal),
+      retries,
+      signal
+    )
   }
 
   /**
@@ -95,28 +100,35 @@ export class NetworkService implements IService {
     const retries = options.retries ?? this.defaultRetryCount
     const attemptOptions: FetchOptions = { ...options, retries: 0 }
 
-    await this.executeWithRetry(async () => {
-      await fse.ensureDir(path.dirname(destPath))
-      await fse.remove(destPath).catch(() => undefined)
-
-      const response = await this.fetch(url, attemptOptions)
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.status} ${response.statusText}`)
-      }
-      if (!response.body) {
-        throw new Error('Download failed: empty response body')
-      }
-
-      const bodyStream = Readable.fromWeb(response.body as any)
-      const fileStream = createWriteStream(destPath)
-
-      try {
-        await pipeline(bodyStream, fileStream)
-      } catch (error) {
+    await this.executeWithRetry(
+      async () => {
+        assertNotAborted(options.signal)
+        await fse.ensureDir(path.dirname(destPath))
         await fse.remove(destPath).catch(() => undefined)
-        throw error
-      }
-    }, retries)
+
+        const response = await this.fetch(url, attemptOptions)
+        if (!response.ok) {
+          throw new Error(`Download failed: ${response.status} ${response.statusText}`)
+        }
+        if (!response.body) {
+          throw new Error('Download failed: empty response body')
+        }
+
+        const bodyStream = Readable.fromWeb(response.body as any)
+        const fileStream = createWriteStream(destPath)
+
+        try {
+          await pipeline(bodyStream, fileStream, {
+            signal: options.signal
+          })
+        } catch (error) {
+          await fse.remove(destPath).catch(() => undefined)
+          throw error
+        }
+      },
+      retries,
+      options.signal
+    )
   }
 
   /**
@@ -146,12 +158,15 @@ export class NetworkService implements IService {
   private async fetchWithTimeout(
     url: string,
     options: RequestInit,
-    timeoutMs: number
+    timeoutMs: number,
+    signal?: AbortSignal
   ): Promise<Response> {
     const controller = new AbortController()
+    const cleanupAbort = linkAbortSignal(signal, () => controller.abort())
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
+      assertNotAborted(signal)
       const response = await net.fetch(url, {
         ...options,
         signal: controller.signal
@@ -159,30 +174,38 @@ export class NetworkService implements IService {
       return response
     } finally {
       clearTimeout(timeoutId)
+      cleanupAbort()
     }
   }
 
-  private async executeWithRetry<T>(fn: () => Promise<T>, retries: number): Promise<T> {
+  private async executeWithRetry<T>(
+    fn: () => Promise<T>,
+    retries: number,
+    signal?: AbortSignal
+  ): Promise<T> {
     let lastError: Error | null = null
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
+        assertNotAborted(signal)
         return await fn()
       } catch (error) {
-        lastError = error as Error
+        const currentErrorMessage = error instanceof Error ? error.message : String(error)
+        const currentError = error instanceof Error ? error : new Error(String(error))
+        lastError = currentError
 
-        // Don't retry on abort (timeout)
-        if (lastError.name === 'AbortError') {
-          throw new Error(`Request timeout: ${lastError.message}`)
+        // Don't retry aborted requests.
+        if (isAbortError(currentError) || signal?.aborted) {
+          throw currentError
         }
 
         if (attempt < retries) {
           // Exponential backoff: 1s, 2s, 4s, max 10s
           const delay = Math.min(1000 * Math.pow(2, attempt), 10000)
           log.warn(
-            `[NetworkService] Retry ${attempt + 1}/${retries} after ${delay}ms: ${lastError.message}`
+            `[NetworkService] Retry ${attempt + 1}/${retries} after ${delay}ms: ${currentErrorMessage}`
           )
-          await this.sleep(delay)
+          await this.sleep(delay, signal)
         }
       }
     }
@@ -190,9 +213,47 @@ export class NetworkService implements IService {
     throw lastError
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      assertNotAborted(signal)
+
+      const timeoutId = setTimeout(() => {
+        cleanupAbort()
+        resolve()
+      }, ms)
+      const onAbort = () => {
+        clearTimeout(timeoutId)
+        cleanupAbort()
+        reject(createAbortError())
+      }
+      const cleanupAbort = signal ? linkAbortSignal(signal, onAbort) : () => undefined
+    })
   }
+}
+
+function isAbortError(error: unknown): error is Error {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+function assertNotAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw createAbortError()
+  }
+}
+
+function createAbortError(): Error {
+  const error = new Error('Request aborted')
+  error.name = 'AbortError'
+  return error
+}
+
+function linkAbortSignal(signal: AbortSignal | undefined, onAbort: () => void): () => void {
+  if (!signal) {
+    return () => undefined
+  }
+
+  signal.addEventListener('abort', onAbort, { once: true })
+  return () => signal.removeEventListener('abort', onAbort)
 }
 
 /**

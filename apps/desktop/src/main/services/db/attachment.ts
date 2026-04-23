@@ -12,9 +12,10 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { nanoid } from 'nanoid'
 import { fileTypeFromBuffer } from 'file-type'
 import fse from 'fs-extra'
-import type { Stats } from 'node:fs'
+import { createReadStream, createWriteStream, type Stats } from 'node:fs'
 import { open, rm } from 'node:fs/promises'
 import path from 'path'
+import { pipeline } from 'node:stream/promises'
 import log from 'electron-log/main'
 import type { NetworkService } from '@main/services/network'
 import type { ThumbnailStore } from './thumbnail'
@@ -51,7 +52,8 @@ export class AttachmentStore {
     table: TTable,
     rowId: string,
     field: FileColumns<TTable>,
-    input: AttachmentInput
+    input: AttachmentInput,
+    signal?: AbortSignal
   ): Promise<string> {
     const tableName = getTableConfig(table).name
     const lockKey = this.getRowLockKey(tableName, String(rowId))
@@ -59,12 +61,14 @@ export class AttachmentStore {
 
     return await mutex.runExclusive(async () => {
       try {
+        throwIfAborted(signal)
         const record = this.getRow(table, rowId)
         const fileDir = path.join(this.storageDir, tableName, String(rowId))
 
         const oldFileName = record[field as string] as string | null | undefined
-        const { fileName, filePath } = await this.writeNewFile(fileDir, input)
+        const { fileName, filePath } = await this.writeNewFile(fileDir, input, signal)
         try {
+          throwIfAborted(signal)
           this.db
             .update(table)
             .set({ [field]: fileName } as any)
@@ -129,7 +133,8 @@ export class AttachmentStore {
     table: TTable,
     rowId: string,
     field: FilesColumns<TTable>,
-    input: AttachmentInput
+    input: AttachmentInput,
+    signal?: AbortSignal
   ): Promise<string> {
     const tableName = getTableConfig(table).name
     const lockKey = this.getRowLockKey(tableName, String(rowId))
@@ -137,18 +142,25 @@ export class AttachmentStore {
 
     return await mutex.runExclusive(async () => {
       try {
+        throwIfAborted(signal)
         const record = this.getRow(table, rowId)
         const fileDir = path.join(this.storageDir, tableName, String(rowId))
 
-        const { fileName, filePath } = await this.writeNewFile(fileDir, input)
+        const { fileName, filePath } = await this.writeNewFile(fileDir, input, signal)
         const current = this.coerceStringArray(record[field as string])
         const updated = [...current, fileName]
 
-        this.db
-          .update(table)
-          .set({ [field]: updated } as any)
-          .where(eq((table as any).id, rowId))
-          .run()
+        try {
+          throwIfAborted(signal)
+          this.db
+            .update(table)
+            .set({ [field]: updated } as any)
+            .where(eq((table as any).id, rowId))
+            .run()
+        } catch (error) {
+          await this.deleteFile(fileDir, fileName, { bestEffort: true })
+          throw error
+        }
 
         log.debug(`Added file: ${filePath}`)
         return fileName
@@ -344,8 +356,10 @@ export class AttachmentStore {
 
   private async writeNewFile(
     fileDir: string,
-    input: AttachmentInput
+    input: AttachmentInput,
+    signal?: AbortSignal
   ): Promise<{ fileName: string; filePath: string }> {
+    throwIfAborted(signal)
     await fse.ensureDir(fileDir)
 
     switch (input.kind) {
@@ -353,8 +367,16 @@ export class AttachmentStore {
         const fileBuffer = Buffer.from(input.buffer)
         const fileName = await this.createFileName(fileBuffer, this.getExtHint(input))
         const filePath = path.join(fileDir, fileName)
-        await fse.writeFile(filePath, fileBuffer)
-        return { fileName, filePath }
+
+        try {
+          throwIfAborted(signal)
+          await fse.writeFile(filePath, fileBuffer)
+          throwIfAborted(signal)
+          return { fileName, filePath }
+        } catch (error) {
+          await fse.remove(filePath).catch(() => undefined)
+          throw error
+        }
       }
       case 'path': {
         const sourcePath = input.path
@@ -377,26 +399,42 @@ export class AttachmentStore {
         const fileName = await this.createFileName(header, this.getExtHint(input))
         const filePath = path.join(fileDir, fileName)
 
-        await fse.copy(sourcePath, filePath)
-        return { fileName, filePath }
+        try {
+          throwIfAborted(signal)
+          await pipeline(createReadStream(sourcePath), createWriteStream(filePath), { signal })
+          throwIfAborted(signal)
+          return { fileName, filePath }
+        } catch (error) {
+          await fse.remove(filePath).catch(() => undefined)
+          throw error
+        }
       }
       case 'url': {
         const fileId = nanoid()
         const tempPath = path.join(fileDir, `${fileId}.tmp`)
+        let finalPath: string | null = null
 
         try {
-          await this.network.downloadToFile(input.url, tempPath)
+          throwIfAborted(signal)
+          await this.network.downloadToFile(input.url, tempPath, { signal })
+          throwIfAborted(signal)
           const header = await this.readFileHeader(tempPath)
           const fileName = await this.createFileNameWithId(fileId, header, this.getExtHint(input))
           const filePath = path.join(fileDir, fileName)
+          finalPath = filePath
 
+          throwIfAborted(signal)
           await fse.move(tempPath, filePath, { overwrite: true })
+          throwIfAborted(signal)
           return { fileName, filePath }
         } catch (error) {
           try {
             await fse.remove(tempPath)
           } catch {
             // ignore cleanup errors
+          }
+          if (finalPath) {
+            await fse.remove(finalPath).catch(() => undefined)
           }
           throw error
         }
@@ -501,4 +539,14 @@ export class AttachmentStore {
     if (!Array.isArray(value)) return []
     return value.filter((v) => typeof v === 'string') as string[]
   }
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) {
+    return
+  }
+
+  const error = new Error('Attachment operation aborted')
+  error.name = 'AbortError'
+  throw error
 }

@@ -73,12 +73,103 @@ import type {
   SerializableValue,
   UiCallbackResult
 } from './shared'
+import type { ExtensionErrorShape } from './shared/errors'
+import type { ValidationIssue } from './shared/validation'
+import {
+  createExtensionError,
+  readErrorCode,
+  readErrorDetails,
+  validateExtensionErrorShape
+} from './shared/errors'
+import { validateOptionalString } from './shared/validation'
 
-export interface RpcErrorPayload {
-  code?: string
-  message: string
-  details?: SerializableRecord
+const RPC_ERROR_PAYLOAD_KEYS = new Set<string>(['code', 'message', 'details', 'stack'])
+
+export interface RpcErrorPayload extends ExtensionErrorShape {
   stack?: string
+}
+
+export class RpcTimeoutError extends Error {
+  readonly code = 'timeout'
+  readonly details: SerializableRecord
+
+  constructor(
+    readonly method: string,
+    readonly timeoutMs: number
+  ) {
+    super(`RPC request "${method}" timed out after ${timeoutMs}ms`)
+    this.name = 'RpcTimeoutError'
+    this.details = {
+      method,
+      timeoutMs
+    }
+  }
+}
+
+export function validateRpcErrorPayload(value: unknown): ValidationIssue[] {
+  const issues = validateExtensionErrorShape(value, {
+    allowedKeys: RPC_ERROR_PAYLOAD_KEYS
+  })
+
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    issues.push(
+      ...validateOptionalString((value as Record<string, unknown>).stack, '$.stack', {
+        minLength: 1,
+        typeMessage: 'stack must be a string when provided.',
+        valueMessage: 'stack must be a non-empty string when provided.'
+      })
+    )
+  }
+
+  return issues
+}
+
+export function isRpcErrorPayload(value: unknown): value is RpcErrorPayload {
+  return validateRpcErrorPayload(value).length === 0
+}
+
+export function toRpcErrorPayload(error: unknown): RpcErrorPayload {
+  if (error instanceof Error) {
+    const payload: RpcErrorPayload = {
+      message: error.message
+    }
+    const code = readErrorCode(error)
+    const details = readErrorDetails(error)
+    const shouldExposeStack =
+      'exposeStack' in error && (error as Error & { exposeStack?: boolean }).exposeStack === true
+
+    if (code) {
+      payload.code = code
+    }
+
+    if (details) {
+      payload.details = details
+    }
+
+    if (error.stack && shouldExposeStack) {
+      payload.stack = error.stack
+    }
+
+    return payload
+  }
+
+  return {
+    message: typeof error === 'string' ? error : 'Unknown RPC error'
+  }
+}
+
+export function fromRpcErrorPayload(payload: RpcErrorPayload): Error {
+  const error = createExtensionError(payload.message, {
+    code: payload.code,
+    details: payload.details,
+    exposeStack: Boolean(payload.stack)
+  })
+
+  if (payload.stack) {
+    error.stack = payload.stack
+  }
+
+  return error
 }
 
 export type RpcBinary = Uint8Array
@@ -215,14 +306,18 @@ export type ExtensionRuntimeChangeCause =
   | 'crash-recovery'
   | 'host-timeout'
 
+export type ExtensionRuntimeHandle = string
+
 export interface ExtensionLoadRequest {
   extension: ExtensionRuntimeMetadata
+  runtimeHandle: ExtensionRuntimeHandle
   generation: number
   cause?: ExtensionRuntimeChangeCause
 }
 
 export interface ExtensionUnloadRequest {
   extensionId: string
+  runtimeHandle?: ExtensionRuntimeHandle
   reason?: ExtensionUnloadReason
 }
 
@@ -234,12 +329,13 @@ export interface ExtensionUnloadResult {
 
 export interface ExtensionReloadRequest {
   extension: ExtensionRuntimeMetadata
+  runtimeHandle: ExtensionRuntimeHandle
   generation: number
   cause?: ExtensionRuntimeChangeCause
 }
 
 export interface ExtensionScopedRpcParams {
-  extensionId: string
+  runtimeHandle: ExtensionRuntimeHandle
 }
 
 export interface ContributionScopedRpcParams extends ExtensionScopedRpcParams {

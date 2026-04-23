@@ -1,8 +1,8 @@
 import { parentPort } from 'electron/utility'
 import {
-  EXTENSION_API_VERSION,
   EXTENSION_RPC_PROTOCOL_VERSION,
-  type RuntimeInfo
+  createExtensionError,
+  toRpcErrorPayload
 } from '@kisaki/extension-api'
 import { ExtensionLoader } from './extension-loader'
 import { ExtensionRegistry } from './extension-registry'
@@ -18,7 +18,7 @@ const rpc = new ExtensionHostRpcServer((message) => {
   parentPort.postMessage(message)
 })
 
-const sdkBridge = new ExtensionHostSdkBridge(registry, rpc, createDefaultRuntimeInfo())
+const sdkBridge = new ExtensionHostSdkBridge(registry, rpc)
 const loader = new ExtensionLoader(registry, sdkBridge)
 
 sdkBridge.configure()
@@ -28,16 +28,15 @@ rpc.handleHandshake(async (request) => {
     return {
       protocolVersion: EXTENSION_RPC_PROTOCOL_VERSION,
       accepted: false,
-      error: {
-        code: 'protocol_mismatch',
-        message: `Expected protocol ${EXTENSION_RPC_PROTOCOL_VERSION}, received ${request.protocolVersion}.`
-      }
+      error: toRpcErrorPayload(
+        createExtensionError(
+          `Expected protocol ${EXTENSION_RPC_PROTOCOL_VERSION}, received ${request.protocolVersion}.`,
+          {
+            code: 'protocol_mismatch'
+          }
+        )
+      )
     }
-  }
-
-  const runtimeInfo = parseRuntimeInfo(request.metadata)
-  if (runtimeInfo) {
-    sdkBridge.setRuntimeInfo(runtimeInfo)
   }
 
   return {
@@ -50,17 +49,17 @@ rpc.handleHandshake(async (request) => {
   }
 })
 
-rpc.handle('extensions.load', async ({ extension, generation }) => {
-  await loader.loadExtension(extension, generation)
+rpc.handle('extensions.load', async ({ extension, runtimeHandle, generation }) => {
+  await loader.loadExtension(extension, runtimeHandle, generation)
   return {}
 })
 
-rpc.handle('extensions.unload', async ({ extensionId }) => {
-  return loader.unloadExtension(extensionId)
+rpc.handle('extensions.unload', async ({ extensionId, runtimeHandle }) => {
+  return loader.unloadExtension(extensionId, runtimeHandle)
 })
 
-rpc.handle('extensions.reload', async ({ extension, generation }) => {
-  await loader.reloadExtension(extension, generation)
+rpc.handle('extensions.reload', async ({ extension, runtimeHandle, generation }) => {
+  await loader.reloadExtension(extension, runtimeHandle, generation)
   return {}
 })
 
@@ -105,57 +104,4 @@ async function shutdownHost(): Promise<void> {
   })()
 
   await shutdownPromise
-}
-
-function createDefaultRuntimeInfo(): RuntimeInfo {
-  return {
-    appVersion: '0.0.0',
-    apiVersion: EXTENSION_API_VERSION,
-    mode: 'production',
-    platform: toRuntimePlatform(process.platform),
-    arch: process.arch
-  }
-}
-
-function parseRuntimeInfo(metadata: unknown): RuntimeInfo | null {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    return null
-  }
-
-  const value = metadata as Partial<Record<keyof RuntimeInfo, unknown>>
-  if (
-    typeof value.appVersion !== 'string' ||
-    typeof value.apiVersion !== 'string' ||
-    typeof value.mode !== 'string' ||
-    typeof value.platform !== 'string' ||
-    typeof value.arch !== 'string'
-  ) {
-    return null
-  }
-
-  if (
-    (value.mode !== 'development' && value.mode !== 'production') ||
-    (value.platform !== 'windows' && value.platform !== 'macos' && value.platform !== 'linux')
-  ) {
-    return null
-  }
-
-  return {
-    appVersion: value.appVersion,
-    apiVersion: value.apiVersion,
-    mode: value.mode,
-    platform: value.platform,
-    arch: value.arch
-  }
-}
-
-function toRuntimePlatform(platform: NodeJS.Platform): RuntimeInfo['platform'] {
-  switch (platform) {
-    case 'darwin':
-      return 'macos'
-    case 'win32':
-      return 'windows'
-    default:
-      return 'linux'
-  }
 }

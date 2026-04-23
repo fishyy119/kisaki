@@ -1,6 +1,7 @@
 export * from './locales'
 export * from './serialization'
 export * from './disposable'
+export * from './errors'
 export * from './value-objects'
 export * from './ui-callback'
 export type { ValidationIssue } from './validation'

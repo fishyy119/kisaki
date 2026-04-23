@@ -163,10 +163,10 @@ packages/extension-api/
 
 - 只放稳定公开契约，不放任何宿主实现、进程桥接、状态管理或 app 内部路径引用。
 - `schemas/` 只放对外发布的 JSON Schema；运行时校验定义应跟随 `manifest.ts`、`contributions/**`、`rpc.ts` 等公开契约就近组织，而不是再扩一个顶层 `validation/` 杂项目录。
-- `shared/` 用于收敛真正跨域复用的共享契约，例如 locale、序列化约束、生命周期接口、值对象、`UiCallbackResult` 与相关验证 helper；没有跨域复用需求的类型应回收到对应 capability / contribution 文件。
+- `shared/` 用于收敛真正跨域复用的共享契约，例如 locale、序列化约束、生命周期接口、值对象、结构化错误契约、`UiCallbackResult`，以及相关 validation / error helper；没有跨域复用需求的类型应回收到对应 capability / contribution 文件。
 - `contributions/` 下一级只保留真正的扩展点定义；跨扩展点复用的 UI 协议不再混入该目录。
 - `version.ts`、`context.ts`、`kisaki.ts`、`rpc.ts` 先保持单文件；只有当某个公开子域稳定长成多模块时再升级成目录。
-- `version.ts` 定义跨 runtime/package 共享的扩展平台 API 版本常量；`rpc.ts` 只定义底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量，以及 main 与 extension host 共享的方向化 request/event contracts。宿主 runtime 与 `@kisaki/extension-sdk/bridge` 只负责实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。
+- `version.ts` 定义跨 runtime/package 共享的扩展平台 API 版本常量；`rpc.ts` 只定义底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量，以及 main 与 extension host 共享的方向化 request/event contracts。宿主 runtime 与 SDK 私有 bridge 实现只负责实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。
 - `capabilities/library/` 单独成域，后续继续拆实体、关系、集合成员、附件/媒体相关 DTO 与 command/query。
 - `events` 契约归入 `src/capabilities/events.ts`，作为宿主能力而不是 contribution 扩展点建模。
 - `scraper` 公开契约当前聚焦 provider、search/resolve 和 session 合同；只有在后续确实沉淀出稳定复用面时，才再升级为独立公开 helper 子域。
@@ -174,7 +174,7 @@ packages/extension-api/
 
 ### `packages/extension-sdk/`
 
-职责：扩展作者运行时包装层，负责把 `extension-api` 的契约变成可直接书写扩展的开发体验，并把真正需要作者态/运行时协作的扩展点处理集中收敛起来。
+职责：扩展作者 shim 层，负责把 `extension-api` 的契约收敛成单一作者入口，并把宿主注入的运行时 bridge 暴露给 `defineExtension` / `kisaki`。
 
 ```text
 packages/extension-sdk/
@@ -185,15 +185,14 @@ packages/extension-sdk/
   src/
     index.ts
     bridge.ts
-    contributions/
 ```
 
 约束：
 
-- 作者侧公开入口收敛在根 `index.ts`，集中暴露 `defineExtension`、`kisaki`、`ExtensionContext` 相关 helper、`createDisposableStore()`，并转发 `@kisaki/extension-api` 的公开契约。
-- 宿主 bootstrap helper 收敛在 `bridge.ts`，通过显式子路径 `@kisaki/extension-sdk/bridge` 暴露；不再保留 `internal/` 目录。
+- 作者侧公开入口收敛在根 `index.ts`，集中暴露 `defineExtension`、`kisaki`，并转发 `@kisaki/extension-api` 的公开契约。
+- 宿主 bootstrap helper 收敛在 SDK 包内的 `bridge.ts` 语义上，但不通过 `package.json#exports` 对扩展作者暴露；共享宿主的 `runtime/host/sdk-bridge.ts` 负责安装私有 bridge 状态、注入 `runtimeHandle` 并创建 `ExtensionContext`。
 - 宿主公开 capability 通过根 `kisaki` 对象直接、懒加载地暴露，不再为了 `network`、`notify`、`events`、`runtime` 这类直通能力再镜像一个 `src/capabilities/` 目录；只有当某个 capability 后续确实沉淀出独立适配逻辑时，才考虑单独拆分。
-- `contributions/` 对应作者态注册器与域内 builder，也是 SDK 与扩展运行时需要额外处理的主要复杂度来源。UI 节点构造应收敛在 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 的作用域内，不再依赖额外顶层公开 `entityMenu`、`settingsPanel` builder。
+- SDK 不承载 `ExtensionContext`、`DisposableStore`、contribution registrar 等运行时组装逻辑；这些默认实现与清理责任统一归属共享宿主。
 - 公开类型、模块名与 registrar 命名优先自说明，优先使用 `EntityMenu*`、`SettingsPanel*`、`entityMenus`、`settingsPanels` 这类完整领域名；避免把 `menu`、`settings` 作为 SDK 顶层公开主命名。
 - scraper 作者态 API 当前聚焦 provider 注册器与 capability 包装；通用解析工具只有在形成稳定复用面后，才考虑上提为公开契约。
 - 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
@@ -271,7 +270,7 @@ packages/create-kisaki-extension/
 - 这四个包都不允许从 `apps/desktop/**` 反向导入任何内部模块或类型。
 - 公开契约先落在 `extension-api`，再由 `extension-sdk` 提供作者体验，最后才由脚手架消费。
 - `extension-cli` 只消费公开契约和工作区约定；新增命令优先放进 `src/commands/**`，新增跨命令复用逻辑优先增加单一职责文件，而不是引入 `utils/` 杂项目录。
-- 如果后续需要增加新扩展点，优先新增 `extension-api/src/contributions/**` 与 `extension-sdk/src/contributions/**`，而不是在根目录平铺文件。
+- 如果后续需要增加新扩展点，优先先新增 `extension-api/src/contributions/**` 公开契约，再由宿主 `services/extension/runtime/host/**` 落地运行时实现；不要默认回到 `extension-sdk/src/contributions/**` 里堆运行时 helper。
 - 如果后续需要新增宿主能力，优先先在 `extension-api/src/capabilities/**` 定义公开契约；`extension-sdk` 默认只在根 `index.ts` 的 `kisaki` 暴露面接入，只有出现明确作者态适配逻辑时才新增独立子模块。
 
 ## 直接删除范围

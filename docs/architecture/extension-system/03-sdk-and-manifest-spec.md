@@ -194,22 +194,22 @@ src/
   rpc.ts
 ```
 
-当前实现把 locale、可序列化约束、生命周期接口、值对象、`UiCallbackResult` 以及相关验证 helper 等真正跨域复用的共享契约集中在 `src/shared/`。`contributions/` 下一级只保留实体菜单、设置面板、scraper、deeplink、theme 这类实际扩展点。`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 同时负责底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量，以及 main 与 extension host 共享的方向化 request/event maps。宿主 runtime 与 `@kisaki/extension-sdk/bridge` 只实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
+当前实现把 locale、可序列化约束、生命周期接口、值对象、结构化错误契约、`UiCallbackResult` 以及相关 validation / error helper 等真正跨域复用的共享契约集中在 `src/shared/`。`contributions/` 下一级只保留实体菜单、设置面板、scraper、deeplink、theme 这类实际扩展点。`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 同时负责底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量、`RpcErrorPayload` 的校验与 payload 转换 helper，以及 main 与 extension host 共享的方向化 request/event maps。宿主 runtime 与 SDK 私有 bridge 实现只实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
 
 ### `@kisaki/extension-sdk`
 
 职责：
 
-- 运行时桥接封装
+- 作者侧 shim 入口
 - `defineExtension`
 - `kisaki` 全局扩展 API
-- `context.contributes.*` 域内的 contribution helper
-- context / storage / logger 等开发辅助
+- 转发 `@kisaki/extension-api` 的公开契约
 
 特点：
 
 - 只面向扩展作者
 - 不暴露宿主内部对象
+- 不承担运行时组装
 
 推荐 `src/` 结构：
 
@@ -217,14 +217,12 @@ src/
 src/
   index.ts
   bridge.ts
-  capabilities/
-  contributions/
 ```
 
-当前实现保持两个根入口：
+当前实现保持一个公开根入口，宿主 bootstrap 细节只作为包内实现存在：
 
-- `@kisaki/extension-sdk` -> `src/index.ts`，面向扩展作者，集中暴露 `defineExtension`、`kisaki`、`createDisposableStore()` 与 `@kisaki/extension-api` 的公开契约。
-- `@kisaki/extension-sdk/bridge` -> `src/bridge.ts`，面向宿主 bootstrap，提供 `configureExtensionSdkBridge(...)`、`createExtensionContext(...)` 等桥接函数。
+- `@kisaki/extension-sdk` -> `src/index.ts`，面向扩展作者，集中暴露 `defineExtension`、`kisaki` 与 `@kisaki/extension-api` 的公开契约。
+- `src/bridge.ts` 是 SDK 包内实现文件，只保存运行时 bridge store/accessor；真正的 bridge 安装、`runtimeHandle` 注入、`ExtensionContext` 构造、contribution registrar 组装与生命周期清理由共享宿主的 `runtime/host/sdk-bridge.ts` 私有完成。
 
 因此不再单独保留 `define.ts`、`kisaki.ts`、`context.ts` 或 `internal/` 目录。
 
@@ -448,7 +446,7 @@ export default defineExtension({
 所有公开 UI 回调都必须返回统一结构化对象：
 
 ```ts
-interface UiCallbackError {
+interface ExtensionErrorShape {
   code?: string
   message: string
   details?: Record<string, unknown>
@@ -456,7 +454,7 @@ interface UiCallbackError {
 
 type UiCallbackResult =
   | { success: true; refresh: boolean }
-  | { success: false; refresh: boolean; error: UiCallbackError }
+  | { success: false; refresh: boolean; error: ExtensionErrorShape }
 ```
 
 约束如下：
@@ -519,7 +517,7 @@ type UiCallbackResult =
 - `SettingsPanelContribution`
 - `SettingsPanelBuilder`
 - `UiCallbackResult`
-- `UiCallbackError`
+- `ExtensionErrorShape`
 - `ThemeContribution`
 - `HostEvents`
 - `LibraryGame`
@@ -558,6 +556,8 @@ type EntityMenuItem =
 - theme token completeness
 
 推荐在 `extension-api` 中随 `manifest`、`contributions`、`protocol` 等公开契约就近提供这些运行时校验定义，而不是再额外扩一个顶层 `validation/` 目录。
+
+extension error system 也遵循同一原则：`ExtensionError`、`ExtensionErrorShape`、`RpcErrorPayload` 及其 validation / normalization / payload helper 都应定义在 `extension-api`，主应用只消费这些公开实现，不再私有维护一套平行错误系统。
 
 ## 5. 公开 DTO，不公开内部 schema
 

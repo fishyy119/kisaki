@@ -192,6 +192,7 @@ packages/create-kisaki-extension/**
    - `ExtensionService` 只通过 `capabilities/` 调用宿主已有业务模块
    - 共享宿主通过 `sdk-bridge.ts` / RPC 映射访问 capability API
    - capability handler 不直接依赖 contribution registry
+   - main 为每次 `load/reload` 生成不透明 `runtimeHandle`，所有 capability、storage、logger 与 host event 订阅请求都使用该句柄授权，不接受扩展代码自报 `extensionId`
 3. 优先打通不参与 contribution registry 的宿主能力：
    - `events`
    - library query / command
@@ -199,8 +200,11 @@ packages/create-kisaki-extension/**
 4. 统一 capability 调用错误模型：
    - protocol 级 request/response 失败归一化
    - timeout / unavailable / validation failure 等结构化错误
+   - 错误类型、normalizer、`RpcErrorPayload` helper 统一落在 `packages/extension-api`
    - 不泄漏宿主内部 service 错误细节
 5. 补齐 load / unload / reload 期间的 capability 清理与失效处理
+   - unload/reload 时释放 `runtimeHandle`、event 订阅与 capability 侧运行实例状态
+   - 长耗时 capability 调用接收生命周期 `AbortSignal`，运行实例失效后不再继续访问宿主
 
 #### 验收标准
 
@@ -208,6 +212,8 @@ packages/create-kisaki-extension/**
 - `events` 等非 contribution 能力可在共享宿主中独立使用
 - 能力桥接不依赖 contribution registry 即可单独验收
 - capability 调用失败会返回结构化宿主错误，而不是直接泄漏内部异常
+- 过期或伪造的 `runtimeHandle` 无法访问 storage、logger、library、network、notify、runtime 或 host event capability
+- unload/reload 后旧运行实例的订阅和长耗时请求会被取消或失效，不会继续污染新实例状态
 
 ### Phase 2D：贡献注册与 UI 回调接线
 

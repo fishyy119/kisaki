@@ -49,6 +49,10 @@ export class NotifyService implements IService {
     return this._notify
   }
 
+  showWithHandle(options: NotifyOptions, toastId?: string): string | undefined {
+    return this.handleNotify(options, toastId)
+  }
+
   /**
    * Create the notify function with methods
    */
@@ -72,29 +76,28 @@ export class NotifyService implements IService {
   /**
    * Main notify entry point
    */
-  private handleNotify(options: NotifyOptions): void {
+  private handleNotify(options: NotifyOptions, toastId?: string): string | undefined {
     const target = options.target ?? 'toast'
 
     switch (target) {
       case 'native':
         this.showNative(options)
-        break
+        return undefined
       case 'auto':
-        this.handleAuto(options)
-        break
+        return this.handleAuto(options, toastId)
       case 'toast':
       default:
-        this.forwardToRenderer(options)
-        break
+        return this.forwardToRenderer(options, toastId)
     }
   }
 
-  private handleAuto(options: NotifyOptions): void {
+  private handleAuto(options: NotifyOptions, toastId?: string): string | undefined {
     const isFocused = this.windowService.isMainWindowFocused()
     if (isFocused) {
-      this.forwardToRenderer(options)
+      return this.forwardToRenderer(options, toastId)
     } else {
       this.showNative(options)
+      return undefined
     }
   }
 
@@ -106,8 +109,10 @@ export class NotifyService implements IService {
     notification.show()
   }
 
-  private forwardToRenderer(options: NotifyOptions, toastId?: string): void {
-    this.ipcService.send('notify:show', { ...options, toastId })
+  private forwardToRenderer(options: NotifyOptions, toastId?: string): string {
+    const resolvedToastId = toastId ?? nanoid()
+    this.ipcService.send('notify:show', { ...options, toastId: resolvedToastId })
+    return resolvedToastId
   }
 
   private showLoading(title: string, message?: string): string {
