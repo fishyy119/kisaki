@@ -72,7 +72,22 @@ import type {
   InstalledPluginInfo,
   RendererPluginEntry
 } from './plugin'
-import type { ExtensionCatalogInfo, ExtensionRegistryEntry, ExtensionUpdateInfo } from './extension'
+import type {
+  ExtensionCatalogInfo,
+  ExtensionContributionSnapshot,
+  ExtensionEntityMenuInvokeRequest,
+  ExtensionEntityMenuInvokeResult,
+  ExtensionRegistryEntry,
+  ExtensionResolvedEntityMenu,
+  ExtensionResolvedSettingsPanel,
+  ExtensionSettingsPanelCallbackResult,
+  ExtensionSettingsPanelInfo,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelSubmitRequest,
+  ExtensionThemeContributionInfo,
+  ExtensionUpdateInfo
+} from './extension'
+import type { EntityMenuResolveInput } from '@kisaki/extension-api'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
@@ -410,6 +425,25 @@ export interface IpcMainHandlers {
   'extension:update': (extensionId: string) => IpcVoidResult
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
+  'extension:get-contribution-snapshot': () => IpcResult<ExtensionContributionSnapshot>
+  'extension:get-settings-panels': () => IpcResult<readonly ExtensionSettingsPanelInfo[]>
+  'extension:resolve-entity-menu': (
+    input: EntityMenuResolveInput
+  ) => IpcResult<ExtensionResolvedEntityMenu>
+  'extension:invoke-entity-menu': (
+    request: ExtensionEntityMenuInvokeRequest
+  ) => IpcResult<ExtensionEntityMenuInvokeResult>
+  'extension:resolve-settings-panel': (
+    extensionId: string,
+    panelId: string
+  ) => IpcResult<ExtensionResolvedSettingsPanel>
+  'extension:submit-settings-panel': (
+    request: ExtensionSettingsPanelSubmitRequest
+  ) => IpcResult<ExtensionSettingsPanelCallbackResult>
+  'extension:invoke-settings-panel': (
+    request: ExtensionSettingsPanelInvokeRequest
+  ) => IpcResult<ExtensionSettingsPanelCallbackResult>
+  'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeContributionInfo[]>
   'extension:get-sources': () => IpcResult<
     Array<{ name: string; displayName: string; searchable: boolean }>
   >

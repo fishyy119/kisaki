@@ -6,9 +6,13 @@ import type {
   RpcParams,
   RpcResult
 } from '@kisaki/extension-api'
+import type { DeeplinkService } from '@main/services/deeplink'
+import type { ScraperService } from '@main/services/scraper'
 import type { RpcRequestOptions } from '../runtime/rpc-core'
 
 export interface ExtensionContributionHostOptions {
+  deeplink?: DeeplinkService
+  scraper?: ScraperService
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   requestHost<K extends MainToHostRpcMethod>(
     method: K,

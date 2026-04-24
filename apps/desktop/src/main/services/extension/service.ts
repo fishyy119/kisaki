@@ -18,6 +18,7 @@ import type {
   ExtensionSettingsPanelInfo,
   ExtensionSettingsPanelInvokeRequest,
   ExtensionSettingsPanelSubmitRequest,
+  ExtensionThemeContributionInfo,
   ExtensionUpdateInfo as SharedExtensionUpdateInfo
 } from '@shared/extension'
 import type { EntityMenuResolveInput } from '@kisaki/extension-api'
@@ -53,7 +54,9 @@ export class ExtensionService implements IService {
     'network',
     'db',
     'event',
-    'notify'
+    'notify',
+    'scraper',
+    'deeplink'
   ] as const satisfies readonly ServiceName[]
 
   readonly sources = new ExtensionSourceManager()
@@ -98,6 +101,8 @@ export class ExtensionService implements IService {
       resolveRuntimeHandle: (runtimeHandle) => this.runtime?.resolveRuntimeHandle(runtimeHandle)
     })
     this.contributions = new ExtensionContributionRegistry({
+      scraper: container.get('scraper'),
+      deeplink: container.get('deeplink'),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)
@@ -241,6 +246,10 @@ export class ExtensionService implements IService {
     return this.contributions.settingsPanels.getSnapshot()
   }
 
+  getThemeContributions(): readonly ExtensionThemeContributionInfo[] {
+    return this.contributions.themes.getSnapshot()
+  }
+
   resolveEntityMenu(input: EntityMenuResolveInput): Promise<ExtensionResolvedEntityMenu> {
     return this.contributions.entityMenus.resolve(input)
   }
@@ -373,6 +382,94 @@ export class ExtensionService implements IService {
         return {
           success: true,
           data: this.getCatalog().map(toExtensionCatalogInfo)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:get-contribution-snapshot', () => {
+      try {
+        return {
+          success: true,
+          data: this.getContributionSnapshot()
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:get-settings-panels', () => {
+      try {
+        return {
+          success: true,
+          data: this.getSettingsPanels()
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:resolve-entity-menu', async (_, input) => {
+      try {
+        return {
+          success: true,
+          data: await this.resolveEntityMenu(input)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:invoke-entity-menu', async (_, request) => {
+      try {
+        return {
+          success: true,
+          data: await this.invokeEntityMenuCallback(request)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:resolve-settings-panel', async (_, extensionId, panelId) => {
+      try {
+        return {
+          success: true,
+          data: await this.resolveSettingsPanel(extensionId, panelId)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:submit-settings-panel', async (_, request) => {
+      try {
+        return {
+          success: true,
+          data: await this.submitSettingsPanel(request)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:invoke-settings-panel', async (_, request) => {
+      try {
+        return {
+          success: true,
+          data: await this.invokeSettingsPanelCallback(request)
+        }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
+    this.ipc.handle('extension:get-theme-contributions', () => {
+      try {
+        return {
+          success: true,
+          data: this.getThemeContributions()
         }
       } catch (error) {
         return { success: false, error: toErrorMessage(error) }

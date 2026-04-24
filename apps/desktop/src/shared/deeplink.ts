@@ -10,7 +10,7 @@
 // =============================================================================
 
 /** Deeplink action types */
-export type DeeplinkAction = 'launch' | 'auth' | 'navigate' | 'scan'
+export type DeeplinkAction = 'launch' | 'auth' | 'navigate' | 'scan' | 'ext'
 
 /** Parsed deeplink structure */
 export interface ParsedDeeplink {

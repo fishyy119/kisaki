@@ -217,7 +217,7 @@ export class RuntimeManager {
     } catch (error) {
       this.runtimeHandles.delete(runtimeHandle)
       this.options.capabilities?.releaseRuntime(runtimeHandle)
-      this.options.contributions?.releaseRuntime(runtimeHandle)
+      await this.options.contributions?.releaseRuntime(runtimeHandle)
       throw error
     }
 
@@ -248,10 +248,10 @@ export class RuntimeManager {
     } catch (error) {
       this.runtimeHandles.delete(runtimeHandle)
       this.options.capabilities?.releaseRuntime(runtimeHandle)
-      this.options.contributions?.releaseRuntime(runtimeHandle)
+      await this.options.contributions?.releaseRuntime(runtimeHandle)
       if (previous) {
         this.loadedExtensions.delete(extension.id)
-        this.releaseLoadedState(previous)
+        await this.releaseLoadedState(previous)
       }
       throw error
     }
@@ -263,7 +263,7 @@ export class RuntimeManager {
     })
 
     if (previous) {
-      this.releaseLoadedState(previous)
+      await this.releaseLoadedState(previous)
     }
   }
 
@@ -279,7 +279,7 @@ export class RuntimeManager {
     this.loadedExtensions.delete(extensionId)
 
     if (!this.rpc || !this.controller?.isRunning()) {
-      this.releaseLoadedState(loaded)
+      await this.releaseLoadedState(loaded)
       return
     }
 
@@ -302,7 +302,7 @@ export class RuntimeManager {
         await this.restartHostLocked('host-timeout', new Set([extensionId]))
       }
     } finally {
-      this.releaseLoadedState(loaded)
+      await this.releaseLoadedState(loaded)
     }
   }
 
@@ -436,7 +436,7 @@ export class RuntimeManager {
       this.handshaken = false
       this.options.capabilities?.detachRpc()
       this.options.capabilities?.releaseAll()
-      this.options.contributions?.releaseAll()
+      await this.options.contributions?.releaseAll()
       this.rpc?.dispose('Extension host exited')
       this.rpc = null
       this.controller = null
@@ -527,7 +527,7 @@ export class RuntimeManager {
 
     this.options.capabilities?.detachRpc()
     this.options.capabilities?.releaseAll()
-    this.options.contributions?.releaseAll()
+    await this.options.contributions?.releaseAll()
     rpc?.dispose('Extension host stopped')
     this.rpc = null
     this.handshaken = false
@@ -630,10 +630,10 @@ export class RuntimeManager {
     return extension
   }
 
-  private releaseLoadedState(state: LoadedExtensionState): void {
+  private async releaseLoadedState(state: LoadedExtensionState): Promise<void> {
     this.runtimeHandles.delete(state.runtimeHandle)
     this.options.capabilities?.releaseRuntime(state.runtimeHandle)
-    this.options.contributions?.releaseRuntime(state.runtimeHandle)
+    await this.options.contributions?.releaseRuntime(state.runtimeHandle)
   }
 
   private nextGeneration(): number {

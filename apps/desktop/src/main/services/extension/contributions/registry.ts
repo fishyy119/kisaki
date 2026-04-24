@@ -53,55 +53,55 @@ export class ExtensionContributionRegistry {
       }
     )
     rpc.handleHostRequest('bridge.scrapers.games.register', async ({ runtimeHandle, provider }) => {
-      this.scrapers.registerGameProvider(runtimeHandle, provider)
+      await this.scrapers.registerGameProvider(runtimeHandle, provider)
       return {}
     })
     rpc.handleHostRequest(
       'bridge.scrapers.games.unregister',
       async ({ runtimeHandle, providerId }) => {
-        this.scrapers.unregisterGameProvider(runtimeHandle, providerId)
+        await this.scrapers.unregisterGameProvider(runtimeHandle, providerId)
         return {}
       }
     )
     rpc.handleHostRequest(
       'bridge.scrapers.persons.register',
       async ({ runtimeHandle, provider }) => {
-        this.scrapers.registerPersonProvider(runtimeHandle, provider)
+        await this.scrapers.registerPersonProvider(runtimeHandle, provider)
         return {}
       }
     )
     rpc.handleHostRequest(
       'bridge.scrapers.persons.unregister',
       async ({ runtimeHandle, providerId }) => {
-        this.scrapers.unregisterPersonProvider(runtimeHandle, providerId)
+        await this.scrapers.unregisterPersonProvider(runtimeHandle, providerId)
         return {}
       }
     )
     rpc.handleHostRequest(
       'bridge.scrapers.companies.register',
       async ({ runtimeHandle, provider }) => {
-        this.scrapers.registerCompanyProvider(runtimeHandle, provider)
+        await this.scrapers.registerCompanyProvider(runtimeHandle, provider)
         return {}
       }
     )
     rpc.handleHostRequest(
       'bridge.scrapers.companies.unregister',
       async ({ runtimeHandle, providerId }) => {
-        this.scrapers.unregisterCompanyProvider(runtimeHandle, providerId)
+        await this.scrapers.unregisterCompanyProvider(runtimeHandle, providerId)
         return {}
       }
     )
     rpc.handleHostRequest(
       'bridge.scrapers.characters.register',
       async ({ runtimeHandle, provider }) => {
-        this.scrapers.registerCharacterProvider(runtimeHandle, provider)
+        await this.scrapers.registerCharacterProvider(runtimeHandle, provider)
         return {}
       }
     )
     rpc.handleHostRequest(
       'bridge.scrapers.characters.unregister',
       async ({ runtimeHandle, providerId }) => {
-        this.scrapers.unregisterCharacterProvider(runtimeHandle, providerId)
+        await this.scrapers.unregisterCharacterProvider(runtimeHandle, providerId)
         return {}
       }
     )
@@ -126,20 +126,20 @@ export class ExtensionContributionRegistry {
     })
   }
 
-  releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
+  async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     this.entityMenus.releaseRuntime(runtimeHandle)
     this.settingsPanels.releaseRuntime(runtimeHandle)
     this.themes.releaseRuntime(runtimeHandle)
     this.deeplinks.releaseRuntime(runtimeHandle)
-    this.scrapers.releaseRuntime(runtimeHandle)
+    await this.scrapers.releaseRuntime(runtimeHandle)
   }
 
-  releaseAll(): void {
+  async releaseAll(): Promise<void> {
     this.entityMenus.releaseAll()
     this.settingsPanels.releaseAll()
     this.themes.releaseAll()
     this.deeplinks.releaseAll()
-    this.scrapers.releaseAll()
+    await this.scrapers.releaseAll()
   }
 
   getSnapshot(): ExtensionContributionSnapshot {
