@@ -1,0 +1,39 @@
+{
+  "name": "create-kisaki-extension",
+  "version": "0.0.1",
+  "description": "Scaffolding tool to create Kisaki extensions",
+  "type": "module",
+  "bin": {
+    "create-kisaki-extension": "./dist/index.mjs"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --cache .",
+    "lint:fix": "eslint --cache --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "kisaki",
+    "extension",
+    "create",
+    "scaffolding"
+  ],
+  "license": "MIT"
+}

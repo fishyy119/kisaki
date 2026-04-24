@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/@kisaki/extension-api/schemas/extension-manifest.schema.json",
+  "id": "__EXTENSION_ID__",
+  "name": "__EXTENSION_NAME__",
+  "version": "0.0.1",
+  "categories": ["__CATEGORY__"],
+  "entry": "./dist/index.mjs",
+  "description": "__DESCRIPTION__",
+  "author": "__AUTHOR__",
+  "engines": {
+    "kisaki": ">=0.1.0"
+  }
+}

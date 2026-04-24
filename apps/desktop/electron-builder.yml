@@ -6,7 +6,6 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!dev/*'
-  - '!plugin-types/*'
   - '!scripts/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!eslint.config.{js,ts,mjs,cjs}'

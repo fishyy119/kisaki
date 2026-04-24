@@ -1,0 +1,45 @@
+{
+  "name": "@kisaki/extension-cli",
+  "version": "0.0.1",
+  "description": "CLI tools for Kisaki extension development",
+  "type": "module",
+  "bin": {
+    "kisx": "./dist/index.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --cache .",
+    "lint:fix": "eslint --cache --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@kisaki/extension-api": "workspace:*",
+    "archiver": "^7.0.1",
+    "commander": "^13.1.0",
+    "kolorist": "^1.8.0",
+    "semver": "^7.7.3"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.4",
+    "@types/node": "^22.19.1",
+    "@types/semver": "^7.7.1",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "keywords": [
+    "kisaki",
+    "extension",
+    "cli",
+    "kisx"
+  ],
+  "license": "MIT"
+}
