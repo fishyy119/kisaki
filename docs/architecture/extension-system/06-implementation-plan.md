@@ -89,12 +89,13 @@ packages/create-kisaki-extension/**
 
 ### 拆分原则
 
-当前 runtime 相关工作同时包含安装链路、共享宿主生命周期、能力桥接、contribution 接线，范围过大。这里拆成四个连续子阶段：
+当前 runtime 相关工作同时包含安装链路、共享宿主生命周期、能力桥接、contribution 接线，以及主应用现有 service / renderer 消费层接入，范围过大。这里拆成五个连续子阶段：
 
 1. 先完成不依赖共享宿主的 main 侧安装与目录闭环
 2. 再完成共享宿主进程与 RPC 生命周期
 3. 先把 capability API 与宿主服务桥接打通
-4. 最后接入 contribution registry 与 UI callback 语义
+4. 再接入 contribution registry 与 UI callback 语义
+5. 最后把 contribution 接到主应用现有 service 和 renderer 结构化消费层
 
 这样每一段都可以单独验收，也更容易定位风险点。
 
@@ -243,37 +244,53 @@ packages/create-kisaki-extension/**
 #### 验收标准
 
 - main 能建立 contribution registry
-- 扩展可以注册 contribution
+- 扩展可以在 registry 层面注册 contribution
 - UI 回调统一返回结构化 `UiCallbackResult`
 - 单扩展回调异常会被归一化为结构化失败结果，不会直接中断主应用
 - contribution refresh 与 unload/reload 后的清理行为可预测且可验收
 
-## Phase 3：替换 renderer 扩展模型
+### Phase 2E：接入主应用现有 service 与 renderer 结构化消费层
 
 ### 目标
 
-删除 renderer 扩展执行链路，只保留贡献消费层。
+在 contribution registry 与 UI callback 语义稳定后，把扩展贡献真正接入主应用现有业务 service，并建立 renderer 可消费的 IPC facade。完成本阶段后，新扩展系统才算从“runtime 可运行”进入“主应用端到端可用”。
 
 ### 任务
 
-1. 删除：
-   - `src/renderer/src/core/plugin/**`
-   - `src/renderer/src/core/ui-extensions/**`
-2. 新建：
+1. 把非 UI contribution 接入现有宿主业务模块：
+   - `contributions/scrapers.ts` 负责把扩展 scraper provider 适配进 `ScraperService` 的 provider registry
+   - `contributions/deeplinks.ts` 负责把扩展 route handler 接入 `DeeplinkService` / `DeeplinkRouter`
+   - `contributions/themes.ts` 负责把语义 token theme 暴露给 renderer theme manager 的受控消费层
+   - 这些接线都必须停留在 `ExtensionService` 体系内，不把 `extension-api` 类型扩散进 `ScraperService`、`DeeplinkService` 或 renderer theme manager 内部
+2. 为 renderer 建立稳定 IPC facade：
+   - 获取 contribution snapshot
+   - 获取 settings panels
+   - resolve / invoke entity menu contribution
+   - resolve / submit / invoke settings panel contribution
+   - 获取 theme contributions
+3. 新建 renderer 贡献消费层：
    - `src/renderer/src/core/extensions/**`
-3. 把现有 UI 替换为：
+4. 把现有 UI 替换为结构化贡献消费：
    - 通过 IPC 获取 entity menu contributions
    - 通过 IPC 获取 settings panels
    - 通过 IPC 获取 theme contributions
-4. 扩展管理页从“组件存在判断”改成“结构化 panel 存在判断”
+   - 扩展管理页从“组件存在判断”改成“结构化 panel 存在判断”
+5. 保持 renderer 零扩展代码：
+   - renderer 不 import 扩展入口
+   - renderer 不执行扩展 callback
+   - renderer 只渲染 main 下发的结构化菜单、设置面板和 theme 数据
+6. 旧 renderer plugin 执行链路先不在本阶段删除；彻底退役放到 Phase 3 / Phase 5，避免 service 接入和旧系统清理互相混杂
 
 ### 验收标准
 
-- renderer 内不再 import 扩展入口
-- renderer 内不存在 `window.kisaki`
-- 菜单和设置面板均由结构化数据驱动
+- 扩展 scraper provider 能被主应用现有 scraper 流程发现和调用
+- 扩展 deeplink route 能由主应用 deeplink 入口路由到 extension host
+- 扩展 theme 能进入 renderer theme 选择 / 应用流程，且仍只通过语义 token 生效
+- renderer 可通过 IPC 获取并渲染 entity menu 与 settings panel contribution
+- 菜单和设置面板回调能从 renderer 经 main 转发到 extension host，并返回结构化 `UiCallbackResult`
+- renderer 内的新 extension 消费层不执行任何扩展代码
 
-## Phase 4：退役 PluginService 与旧 plugin runtime
+## Phase 3：退役 PluginService 与旧 plugin runtime
 
 ### 目标
 
@@ -299,7 +316,7 @@ packages/create-kisaki-extension/**
 - 启动链路不再注册 `PluginService`
 - 应用内扩展管理与运行时流量只通过 `ExtensionService` 与 `extension host`
 
-## Phase 5：替换工具链与脚手架
+## Phase 4：替换工具链与脚手架
 
 ### 目标
 
@@ -329,7 +346,7 @@ packages/create-kisaki-extension/**
 - 新扩展可通过 `kisx pack` 产出 `.kisx`
 - 主应用可安装并运行该 `.kisx`
 
-## Phase 6：清理旧系统并统一命名
+## Phase 5：清理旧系统并统一命名
 
 ### 目标
 
@@ -441,21 +458,23 @@ packages/create-kisaki-extension/**
 - 示例扩展可以注册 contribution，并被 main 侧 registry 稳定聚合
 - UI callback 已统一落到结构化 `UiCallbackResult`
 
-## M3：受控 UI 跑通
+## M2E：主应用 service 与 renderer 消费层跑通
 
 判断标准：
 
 - 示例扩展能提供菜单项与设置面板
+- 示例扩展能提供 scraper provider、deeplink route 和 theme contribution，并被主应用现有业务入口消费
+- renderer 能通过 IPC 消费结构化 contribution snapshot、菜单、设置面板和 theme 数据
 - renderer 无扩展代码执行
 
-## M4：PluginService 退役完成
+## M3：PluginService 退役完成
 
 判断标准：
 
 - 旧 `PluginService` 不再参与 main 启动链路
 - 应用内扩展管理和运行时流量已切到 `ExtensionService`
 
-## M5：旧系统完全移除
+## M4：旧系统完全移除
 
 判断标准：
 
@@ -470,7 +489,7 @@ packages/create-kisaki-extension/**
 2. 扩展运行时与主应用为独立进程，且全部扩展共享单一 `extension host`。
 3. renderer 不再执行扩展代码。
 4. 扩展 API 全部由 `packages/extension-api` / `packages/extension-sdk` 定义。
-5. 菜单、设置、events、scraper、deeplink、theme 全部纳入统一扩展模型。
+5. 菜单、设置、events、scraper、deeplink、theme 全部纳入统一扩展模型，并已接入主应用现有 service 与 renderer 结构化消费层。
 6. `.kisx` 成为唯一官方分发格式。
 7. `tsdown` 成为唯一官方扩展工具链。
 8. 旧 `plugin` 系统与相关构建链路被完全删除。
