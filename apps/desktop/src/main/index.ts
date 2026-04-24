@@ -18,7 +18,6 @@ import { IngestService } from './services/ingest'
 import { ScannerService } from './services/scanner'
 import { AttachmentService } from './services/attachment'
 import { ExtensionService } from './services/extension'
-import { PluginService } from './services/plugin'
 import { NetworkService } from './services/network'
 import { NotifyService } from './services/notify'
 import { DeeplinkService } from './services/deeplink'
@@ -38,13 +37,11 @@ function printCliHelp(): void {
   console.log('Options:')
   console.log('  -h, --help                 Show this help and exit')
   console.log('  -V, --version              Print version and exit')
-  console.log('      --dev-plugin=<path>    Load a local plugin (dev mode)')
   console.log('      --dev-extension=<path> Load a local extension in the shared host')
   console.log('')
   console.log('Examples:')
   console.log('  kisaki --version')
   console.log('  kisaki --help')
-  console.log('  kisaki --dev-plugin="C:\\\\path\\\\to\\\\plugin"')
   console.log('  kisaki --dev-extension="C:\\\\path\\\\to\\\\extension"')
 }
 
@@ -127,7 +124,6 @@ async function onAppReady(): Promise<void> {
   await container.register(new MonitorService())
   await container.register(new LauncherService())
   await container.register(new ExtensionService())
-  await container.register(new PluginService())
   await container.register(new DeeplinkService())
 
   await container.initAll()
@@ -154,10 +150,6 @@ async function onAppReady(): Promise<void> {
   windowService.createTrayMenuWindow()
 
   eventService.emit('app:ready')
-
-  // Load user plugins (after window is created, so renderer receives IPC events)
-  const pluginService = container.get('plugin')
-  await pluginService.loadAllPlugins()
 
   // Mark deeplink service as ready and process any pending deeplinks
   const deeplinkService = container.get<DeeplinkService>('deeplink')

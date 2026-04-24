@@ -8,10 +8,9 @@ import { router } from './core/router'
 import { initI18n } from './core/i18n'
 import { eventManager } from './core/event'
 import {
-  initializeKisakiGlobal,
-  setupPluginEventListeners,
-  fetchInitialPlugins
-} from './core/plugin'
+  refreshExtensionContributionSnapshot,
+  setupExtensionContributionStore
+} from './core/extensions'
 import { setupDeeplinkHandlers } from './core/deeplink'
 import {
   useGameMonitorStore,
@@ -42,9 +41,6 @@ async function initMainWindowRenderer() {
     console.error('Vue Error:', err, info)
   }
 
-  // Initialize plugin system (registers global kisaki object with router/pinia)
-  initializeKisakiGlobal({ app, router, pinia })
-
   // ===========================================================================
   // Phase 2: Mount (UI becomes visible immediately)
   // ===========================================================================
@@ -58,9 +54,11 @@ async function initMainWindowRenderer() {
     // Deeplink handlers (must be set up early to receive events)
     setupDeeplinkHandlers()
 
-    // Plugin system
-    setupPluginEventListeners()
-    await fetchInitialPlugins()
+    // Extension contribution snapshot sync.
+    setupExtensionContributionStore()
+    void refreshExtensionContributionSnapshot().catch((error) => {
+      console.error('[Extension] Failed to refresh contribution snapshot:', error)
+    })
 
     // Store initialization (registers listeners + fetches initial state)
     await useGameMonitorStore().init()

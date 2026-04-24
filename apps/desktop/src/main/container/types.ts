@@ -35,7 +35,6 @@ import type { MonitorService } from '@main/services/monitor/service'
 import type { LauncherService } from '@main/services/launcher/service'
 import type { AttachmentService } from '@main/services/attachment/service'
 import type { ExtensionService } from '@main/services/extension/service'
-import type { PluginService } from '@main/services/plugin/service'
 import type { NetworkService } from '@main/services/network/service'
 import type { NotifyService } from '@main/services/notify/service'
 import type { DeeplinkService } from '@main/services/deeplink/service'
@@ -60,7 +59,6 @@ export interface ServiceRegistry {
   launcher: LauncherService
   attachment: AttachmentService
   extension: ExtensionService
-  plugin: PluginService
   notify: NotifyService
   deeplink: DeeplinkService
   updater: UpdaterService

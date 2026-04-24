@@ -7,15 +7,11 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { usePerson } from '@renderer/composables/use-person'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
-import { uiExtensions } from '@renderer/core/ui-extensions'
 import { getEntityIcon } from '@renderer/utils'
 import PersonDetailHero from './detail-hero.vue'
 import { PersonDetailOverviewTab, PersonDetailGamesTab, PersonDetailCharactersTab } from './tabs'
 
 const { person } = usePerson()
-
-// Plugin-registered tabs
-const pluginTabs = uiExtensions.detailTabs.person.items
 </script>
 
 <template>
@@ -47,20 +43,6 @@ const pluginTabs = uiExtensions.detailTabs.person.items
           />
           相关游戏
         </TabsTrigger>
-
-        <!-- Plugin tabs -->
-        <TabsTrigger
-          v-for="tab in pluginTabs"
-          :key="tab.id"
-          :value="tab.id"
-        >
-          <Icon
-            v-if="tab.icon"
-            :icon="tab.icon"
-            class="size-3.5"
-          />
-          {{ tab.label }}
-        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -71,15 +53,6 @@ const pluginTabs = uiExtensions.detailTabs.person.items
       </TabsContent>
       <TabsContent value="games">
         <PersonDetailGamesTab />
-      </TabsContent>
-
-      <!-- Plugin tab contents -->
-      <TabsContent
-        v-for="tab in pluginTabs"
-        :key="tab.id"
-        :value="tab.id"
-      >
-        <component :is="tab.component" />
       </TabsContent>
     </Tabs>
   </template>

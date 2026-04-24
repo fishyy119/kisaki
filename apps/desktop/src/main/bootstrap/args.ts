@@ -32,7 +32,6 @@ export function getBootstrapArgs(): BootstrapArgs {
 function parseBootstrapArgs(): BootstrapArgs {
   let help = false
   let version = false
-  let devPlugin: string | undefined
   let devExtension: string | undefined
 
   for (const arg of process.argv) {
@@ -46,12 +45,6 @@ function parseBootstrapArgs(): BootstrapArgs {
       continue
     }
 
-    if (arg.startsWith('--dev-plugin=')) {
-      devPlugin = arg.slice('--dev-plugin='.length)
-      log.info('[Args] Dev plugin:', devPlugin)
-      continue
-    }
-
     if (arg.startsWith('--dev-extension=')) {
       devExtension = arg.slice('--dev-extension='.length)
       log.info('[Args] Dev extension:', devExtension)
@@ -59,5 +52,5 @@ function parseBootstrapArgs(): BootstrapArgs {
     }
   }
 
-  return { help, version, devPlugin, devExtension }
+  return { help, version, devExtension }
 }

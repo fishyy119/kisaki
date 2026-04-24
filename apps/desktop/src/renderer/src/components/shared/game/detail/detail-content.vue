@@ -9,7 +9,6 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
-import { uiExtensions } from '@renderer/core/ui-extensions'
 import { getEntityIcon } from '@renderer/utils'
 import GameDetailHero from './detail-hero.vue'
 import {
@@ -27,9 +26,6 @@ import {
 // =============================================================================
 
 const { game } = useGame()
-
-// Plugin-registered tabs for game entity
-const pluginTabs = uiExtensions.detailTabs.game.items
 </script>
 
 <template>
@@ -89,20 +85,6 @@ const pluginTabs = uiExtensions.detailTabs.game.items
           />
           笔记
         </TabsTrigger>
-
-        <!-- Plugin tabs -->
-        <TabsTrigger
-          v-for="tab in pluginTabs"
-          :key="tab.id"
-          :value="tab.id"
-        >
-          <Icon
-            v-if="tab.icon"
-            :icon="tab.icon"
-            class="size-3.5"
-          />
-          {{ tab.label }}
-        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -125,15 +107,6 @@ const pluginTabs = uiExtensions.detailTabs.game.items
       </TabsContent>
       <TabsContent value="notes">
         <GameDetailNotesTab />
-      </TabsContent>
-
-      <!-- Plugin tab contents -->
-      <TabsContent
-        v-for="tab in pluginTabs"
-        :key="tab.id"
-        :value="tab.id"
-      >
-        <component :is="tab.component" />
       </TabsContent>
     </Tabs>
   </template>

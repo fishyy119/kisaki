@@ -3,21 +3,7 @@
  *
  * Defines all application events that can be emitted in either main or renderer process.
  *
- * Plugin type extension:
- * Plugins can extend AppEvents via module declaration merging:
- * @example
- * // In plugin's shared/events.ts
- * declare module '@kisaki/plugin-sdk/main' {
- *   interface AppEvents {
- *     'my-plugin:data-updated': [data: MyData]
- *   }
- * }
- * // Or for renderer:
- * declare module '@kisaki/plugin-sdk/renderer' {
- *   interface AppEvents {
- *     'my-plugin:data-updated': [data: MyData]
- *   }
- * }
+ * Defines application-owned events shared between main and renderer.
  */
 
 import type { AppLocale } from './locale'
@@ -101,9 +87,6 @@ export interface AppEvents {
   'app:settings-changed': [{ setting: string; value: unknown }]
   'app:portable-mode-change-pending': [{ targetMode: 'portable' | 'normal' }]
   'app:portable-mode-change-cancelled': []
-
-  // Plugin events
-  'plugin:storage-changed': [{ pluginId: string; data: Record<string, unknown> }]
 }
 
 // =============================================================================

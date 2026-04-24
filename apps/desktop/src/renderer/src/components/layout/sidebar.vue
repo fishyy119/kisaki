@@ -31,7 +31,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
-import { uiExtensions } from '@renderer/core/ui-extensions'
 import { usePreferencesStore, useThemeStore } from '@renderer/stores'
 import SidebarNavItem from './sidebar-nav-item.vue'
 import { AdderTrigger } from '@renderer/features/adder'
@@ -53,8 +52,6 @@ const navItems: NavItem[] = [
   { id: 'plugin', label: '插件', icon: 'icon-[mdi--puzzle-outline]', path: '/plugin' }
 ]
 
-// Plugin sidebar items from new extension registry
-const pluginItems = uiExtensions.sidebar.nav.items
 const isSettingsOpen = ref(false)
 const isProfileManagerOpen = ref(false)
 const isAboutOpen = ref(false)
@@ -101,17 +98,6 @@ const showNsfwModel = computed({
         v-for="item in navItems"
         :key="item.id"
         :item="item"
-      />
-      <!-- Plugin sidebar items -->
-      <SidebarNavItem
-        v-for="item in pluginItems"
-        :key="item.id"
-        :item="{
-          id: item.id,
-          label: item.label,
-          icon: item.icon || 'icon-[mdi--puzzle-outline]',
-          path: item.path
-        }"
       />
     </nav>
 

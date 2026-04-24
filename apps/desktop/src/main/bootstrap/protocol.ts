@@ -3,17 +3,15 @@
  *
  * Registers custom schemes for the application:
  * - attachment:// - Serves database attachments (images, backups)
- * - kisaki-plugin:// - Serves plugin resources
  * - kisaki:// - Deeplink protocol for external triggers
  *
- * The schemes must be registered before app.whenReady().
- * Protocol handlers are set up in their respective services.
+ * The attachment scheme must be registered before app.whenReady().
+ * Its handler is set up by the attachment service.
  */
 
 import { protocol } from 'electron'
 
 const ATTACHMENT_SCHEME = 'attachment'
-const PLUGIN_SCHEME = 'kisaki-plugin'
 const DEEPLINK_SCHEME = 'kisaki'
 
 /**
@@ -34,18 +32,8 @@ export function registerAttachmentScheme(): void {
         bypassCSP: true,
         stream: true
       }
-    },
-    {
-      scheme: PLUGIN_SCHEME,
-      privileges: {
-        standard: true,
-        secure: true,
-        supportFetchAPI: true,
-        bypassCSP: true,
-        corsEnabled: true
-      }
     }
   ])
 }
 
-export { PLUGIN_SCHEME, DEEPLINK_SCHEME }
+export { DEEPLINK_SCHEME }

@@ -3,18 +3,7 @@
  *
  * Defines all IPC channels and their type contracts.
  *
- * Plugin type extension:
- * Plugins can extend IPC interfaces via module declaration merging:
- * @example
- * // In plugin's shared/ipc.ts
- * declare module '@kisaki/plugin-sdk/main' {
- *   interface IpcMainHandlers {
- *     'my-plugin:fetch-data': (id: string) => IpcResult<MyData>
- *   }
- *   interface IpcMainListeners {
- *     'my-plugin:notify': [message: string]
- *   }
- * }
+ * Defines application-owned IPC interfaces shared between main, preload, and renderer.
  */
 
 import type { CropRegion } from './attachment'
@@ -66,12 +55,6 @@ import type {
 } from './ingest/update'
 import type { GameRunningStatus } from './monitor'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
-import type {
-  PluginRegistryEntry,
-  PluginUpdateInfo,
-  InstalledPluginInfo,
-  RendererPluginEntry
-} from './plugin'
 import type {
   ExtensionCatalogInfo,
   ExtensionContributionSnapshot,
@@ -389,31 +372,6 @@ export interface IpcMainHandlers {
   'portable:switch-to-normal': () => IpcVoidResult
   'portable:cancel-pending-switch': () => IpcVoidResult
 
-  // Plugin system
-  'plugin:dev-is-continued': () => IpcResult<boolean>
-  'plugin:disable': (pluginId: string) => IpcVoidResult
-  'plugin:enable': (pluginId: string) => IpcVoidResult
-  'plugin:is-disabled': (pluginId: string) => IpcResult<boolean>
-  'plugin:install': (source: string) => IpcVoidResult
-  'plugin:install-from-file': (filePath: string) => IpcVoidResult
-  'plugin:uninstall': (pluginId: string) => IpcVoidResult
-  'plugin:check-updates': () => IpcResult<PluginUpdateInfo[]>
-  'plugin:update': (pluginId: string) => IpcVoidResult
-  'plugin:get-installed': () => IpcResult<InstalledPluginInfo[]>
-  'plugin:get-registries': () => IpcResult<
-    Array<{ name: string; displayName: string; searchable: boolean }>
-  >
-  'plugin:search': (
-    registryName: string,
-    query: string,
-    options?: { page?: number; limit?: number }
-  ) => IpcResult<{
-    entries: PluginRegistryEntry[]
-    total: number
-    hasMore: boolean
-  }>
-  'plugin:get-loaded-entries': () => IpcResult<RendererPluginEntry[]>
-
   // Extension system
   'extension:disable': (extensionId: string) => IpcVoidResult
   'extension:enable': (extensionId: string) => IpcVoidResult
@@ -495,13 +453,6 @@ export interface IpcRendererEvents {
   'notify:loading': [{ toastId: string; title: string; message?: string }]
   'notify:update': [{ toastId: string } & NotifyOptions]
   'notify:dismiss': [{ toastId?: string }]
-
-  // Plugin lifecycle (main → renderer)
-  // loaded/unloaded: runtime lifecycle for renderer plugin loading
-  'plugin:loaded': [pluginId: string, entry: RendererPluginEntry | null]
-  'plugin:unloaded': [pluginId: string]
-  'plugin:reloaded': [pluginId: string, entry: RendererPluginEntry | null]
-  'plugin:dev-continued': []
 
   // Extension contribution refresh (main -> renderer)
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
