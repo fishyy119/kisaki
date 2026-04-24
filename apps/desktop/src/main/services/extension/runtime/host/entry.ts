@@ -22,6 +22,7 @@ const sdkBridge = new ExtensionHostSdkBridge(registry, rpc)
 const loader = new ExtensionLoader(registry, sdkBridge)
 
 sdkBridge.configure()
+sdkBridge.registerContributionRpcHandlers()
 
 rpc.handleHandshake(async (request) => {
   if (request.protocolVersion !== EXTENSION_RPC_PROTOCOL_VERSION) {

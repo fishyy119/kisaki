@@ -26,7 +26,9 @@ import {
 import { ExtensionHostCrashPolicy } from './crash-policy'
 import { ExtensionHostController, type ExtensionHostExitInfo } from './host-controller'
 import { ExtensionHostRpcClient } from './rpc-client'
+import type { RpcRequestOptions } from './rpc-core'
 import type { ExtensionCapabilityGateway } from '../capabilities'
+import type { ExtensionContributionRegistry } from '../contributions/registry'
 
 export type { ExtensionRuntimeChangeCause } from '@kisaki/extension-api'
 
@@ -35,6 +37,7 @@ const EMPTY_RPC_RESULT = Object.freeze({})
 export interface RuntimeManagerOptions {
   hostModulePath: string
   capabilities?: ExtensionCapabilityGateway
+  contributions?: ExtensionContributionRegistry
 }
 
 export interface RuntimeReconcileOptions {
@@ -156,6 +159,14 @@ export class RuntimeManager {
     })
   }
 
+  requestHost<K extends MainToHostRpcMethod>(
+    method: K,
+    params: RpcParams<MainToHostRpcRequestMap, K>,
+    options?: RpcRequestOptions
+  ): Promise<RpcResult<MainToHostRpcRequestMap, K>> {
+    return this.requireRpc().requestHost(method, params, options)
+  }
+
   private async reconcileLocked(options: RuntimeReconcileOptions): Promise<void> {
     const cause = options.cause ?? 'metadata-change'
     const forceReloadIds = new Set(options.forceReloadIds ?? [])
@@ -205,6 +216,8 @@ export class RuntimeManager {
       )
     } catch (error) {
       this.runtimeHandles.delete(runtimeHandle)
+      this.options.capabilities?.releaseRuntime(runtimeHandle)
+      this.options.contributions?.releaseRuntime(runtimeHandle)
       throw error
     }
 
@@ -234,6 +247,8 @@ export class RuntimeManager {
       )
     } catch (error) {
       this.runtimeHandles.delete(runtimeHandle)
+      this.options.capabilities?.releaseRuntime(runtimeHandle)
+      this.options.contributions?.releaseRuntime(runtimeHandle)
       if (previous) {
         this.loadedExtensions.delete(extension.id)
         this.releaseLoadedState(previous)
@@ -412,88 +427,7 @@ export class RuntimeManager {
       }
     })
 
-    // Phase 2C intentionally exposes capability APIs only. Controlled contribution
-    // bridge wiring remains unavailable until Phase 2D lands.
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.entityMenus.register',
-      'Registration of entity menu contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.entityMenus.unregister',
-      'Registration of entity menu contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.settingsPanels.register',
-      'Registration of settings panel contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.settingsPanels.unregister',
-      'Registration of settings panel contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.games.register',
-      'Registration of game scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.games.unregister',
-      'Registration of game scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.persons.register',
-      'Registration of person scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.persons.unregister',
-      'Registration of person scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.companies.register',
-      'Registration of company scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.companies.unregister',
-      'Registration of company scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.characters.register',
-      'Registration of character scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.scrapers.characters.unregister',
-      'Registration of character scraper providers is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.deeplinks.register',
-      'Registration of deeplink contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.deeplinks.unregister',
-      'Registration of deeplink contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.themes.register',
-      'Registration of theme contributions is not enabled in the current extension host runtime.'
-    )
-    registerUnavailableBridgeHandler(
-      rpc,
-      'bridge.themes.unregister',
-      'Registration of theme contributions is not enabled in the current extension host runtime.'
-    )
+    this.options.contributions?.registerRpcHandlers(rpc)
     this.options.capabilities?.registerRpcHandlers(rpc)
   }
 
@@ -502,6 +436,7 @@ export class RuntimeManager {
       this.handshaken = false
       this.options.capabilities?.detachRpc()
       this.options.capabilities?.releaseAll()
+      this.options.contributions?.releaseAll()
       this.rpc?.dispose('Extension host exited')
       this.rpc = null
       this.controller = null
@@ -592,6 +527,7 @@ export class RuntimeManager {
 
     this.options.capabilities?.detachRpc()
     this.options.capabilities?.releaseAll()
+    this.options.contributions?.releaseAll()
     rpc?.dispose('Extension host stopped')
     this.rpc = null
     this.handshaken = false
@@ -697,6 +633,7 @@ export class RuntimeManager {
   private releaseLoadedState(state: LoadedExtensionState): void {
     this.runtimeHandles.delete(state.runtimeHandle)
     this.options.capabilities?.releaseRuntime(state.runtimeHandle)
+    this.options.contributions?.releaseRuntime(state.runtimeHandle)
   }
 
   private nextGeneration(): number {
@@ -711,32 +648,6 @@ export class RuntimeManager {
 
     return this.rpc
   }
-}
-
-function registerUnavailableBridgeHandler(
-  rpc: ExtensionHostRpcClient,
-  method:
-    | 'bridge.entityMenus.register'
-    | 'bridge.entityMenus.unregister'
-    | 'bridge.settingsPanels.register'
-    | 'bridge.settingsPanels.unregister'
-    | 'bridge.scrapers.games.register'
-    | 'bridge.scrapers.games.unregister'
-    | 'bridge.scrapers.persons.register'
-    | 'bridge.scrapers.persons.unregister'
-    | 'bridge.scrapers.companies.register'
-    | 'bridge.scrapers.companies.unregister'
-    | 'bridge.scrapers.characters.register'
-    | 'bridge.scrapers.characters.unregister'
-    | 'bridge.deeplinks.register'
-    | 'bridge.deeplinks.unregister'
-    | 'bridge.themes.register'
-    | 'bridge.themes.unregister',
-  message: string
-): void {
-  rpc.handleHostRequest(method, async () => {
-    throw createUnavailableError(message)
-  })
 }
 
 function createRuntimeInfo(): RuntimeInfo {

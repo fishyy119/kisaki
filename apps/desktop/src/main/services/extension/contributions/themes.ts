@@ -1,0 +1,53 @@
+import type { ExtensionRuntimeHandle, ThemeContribution } from '@kisaki/extension-api'
+import type { ExtensionThemeContributionInfo } from '@shared/extension'
+import {
+  getRuntimeContributionKey,
+  requireContributionOwner,
+  toContributionOwnerInfo,
+  type ExtensionContributionHostOptions,
+  type RuntimeContributionOwner
+} from './types'
+
+interface ThemeRegistration {
+  owner: RuntimeContributionOwner
+  theme: ThemeContribution
+}
+
+export class ExtensionThemeContributionHost {
+  private readonly registrations = new Map<string, ThemeRegistration>()
+
+  constructor(private readonly options: ExtensionContributionHostOptions) {}
+
+  register(runtimeHandle: ExtensionRuntimeHandle, theme: ThemeContribution): void {
+    const owner = requireContributionOwner(this.options, runtimeHandle)
+    this.registrations.set(getRuntimeContributionKey(runtimeHandle, theme.id), {
+      owner,
+      theme
+    })
+  }
+
+  unregister(runtimeHandle: ExtensionRuntimeHandle, themeId: string): void {
+    this.registrations.delete(getRuntimeContributionKey(runtimeHandle, themeId))
+  }
+
+  releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
+    for (const [key, registration] of [...this.registrations]) {
+      if (registration.owner.runtimeHandle === runtimeHandle) {
+        this.registrations.delete(key)
+      }
+    }
+  }
+
+  releaseAll(): void {
+    this.registrations.clear()
+  }
+
+  getSnapshot(): readonly ExtensionThemeContributionInfo[] {
+    return [...this.registrations.values()]
+      .map((registration) => ({
+        ...toContributionOwnerInfo(registration.owner),
+        theme: registration.theme
+      }))
+      .sort((left, right) => left.theme.id.localeCompare(right.theme.id))
+  }
+}

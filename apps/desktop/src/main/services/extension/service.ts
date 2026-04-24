@@ -8,9 +8,19 @@ import { getBootstrapArgs } from '@main/bootstrap/args'
 import type { IpcService } from '@main/services/ipc'
 import type {
   ExtensionCatalogInfo,
+  ExtensionContributionSnapshot,
+  ExtensionEntityMenuInvokeRequest,
+  ExtensionEntityMenuInvokeResult,
   ExtensionRegistryEntry,
+  ExtensionResolvedEntityMenu,
+  ExtensionResolvedSettingsPanel,
+  ExtensionSettingsPanelCallbackResult,
+  ExtensionSettingsPanelInfo,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelSubmitRequest,
   ExtensionUpdateInfo as SharedExtensionUpdateInfo
 } from '@shared/extension'
+import type { EntityMenuResolveInput } from '@kisaki/extension-api'
 import type {
   ExtensionCatalogEntry,
   ExtensionSearchOptions,
@@ -31,6 +41,7 @@ import { GitHubExtensionSourceProvider } from './sources/github'
 import { LocalFileExtensionSourceProvider } from './sources/local-file'
 import { ExtensionSourceManager } from './sources/manager'
 import { ExtensionCapabilityGateway } from './capabilities'
+import { ExtensionContributionRegistry } from './contributions/registry'
 
 /**
  * Main-process entry point for the new extension system's phase 2A infrastructure.
@@ -55,6 +66,7 @@ export class ExtensionService implements IService {
   private runtime!: RuntimeManager
   private reloadWatcher!: ExtensionReloadWatcher
   private capabilities!: ExtensionCapabilityGateway
+  private contributions!: ExtensionContributionRegistry
   private snapshot: readonly ExtensionCatalogEntry[] = []
   private byId = new Map<string, ExtensionCatalogEntry>()
   private devExtension: ExtensionRuntimeMetadata | null = null
@@ -85,9 +97,15 @@ export class ExtensionService implements IService {
       notify: container.get('notify'),
       resolveRuntimeHandle: (runtimeHandle) => this.runtime?.resolveRuntimeHandle(runtimeHandle)
     })
+    this.contributions = new ExtensionContributionRegistry({
+      resolveRuntimeHandle: (runtimeHandle) =>
+        this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
+      requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)
+    })
     this.runtime = new RuntimeManager({
       hostModulePath: path.join(app.getAppPath(), 'out', 'main', 'extension-host.js'),
-      capabilities: this.capabilities
+      capabilities: this.capabilities,
+      contributions: this.contributions
     })
     this.reloadWatcher = new ExtensionReloadWatcher((extensionId) =>
       this.reloadExtensionRuntime(extensionId, 'file-change')
@@ -213,6 +231,43 @@ export class ExtensionService implements IService {
   async reload(extensionId: string): Promise<ExtensionCatalogEntry> {
     await this.reloadExtensionRuntime(extensionId, 'user')
     return this.requireCatalogEntry(extensionId)
+  }
+
+  getContributionSnapshot(): ExtensionContributionSnapshot {
+    return this.contributions.getSnapshot()
+  }
+
+  getSettingsPanels(): readonly ExtensionSettingsPanelInfo[] {
+    return this.contributions.settingsPanels.getSnapshot()
+  }
+
+  resolveEntityMenu(input: EntityMenuResolveInput): Promise<ExtensionResolvedEntityMenu> {
+    return this.contributions.entityMenus.resolve(input)
+  }
+
+  invokeEntityMenuCallback(
+    request: ExtensionEntityMenuInvokeRequest
+  ): Promise<ExtensionEntityMenuInvokeResult> {
+    return this.contributions.entityMenus.invoke(request)
+  }
+
+  resolveSettingsPanel(
+    extensionId: string,
+    panelId: string
+  ): Promise<ExtensionResolvedSettingsPanel> {
+    return this.contributions.settingsPanels.resolve(extensionId, panelId)
+  }
+
+  submitSettingsPanel(
+    request: ExtensionSettingsPanelSubmitRequest
+  ): Promise<ExtensionSettingsPanelCallbackResult> {
+    return this.contributions.settingsPanels.submit(request)
+  }
+
+  invokeSettingsPanelCallback(
+    request: ExtensionSettingsPanelInvokeRequest
+  ): Promise<ExtensionSettingsPanelCallbackResult> {
+    return this.contributions.settingsPanels.invoke(request)
   }
 
   async dispose(): Promise<void> {
