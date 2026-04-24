@@ -13,15 +13,22 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { ExtensionSettingsPanelDialog } from '@renderer/components/shared/extension'
 import { cn } from '@renderer/utils/cn'
-import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { uiExtensions } from '@renderer/core/ui-extensions'
-import type { InstalledPluginInfo, PluginUpdateInfo } from '@shared/plugin'
+import {
+  disableExtension,
+  enableExtension,
+  extensionContributionStore,
+  refreshExtensionContributionSnapshot,
+  uninstallExtension,
+  updateExtension
+} from '@renderer/core/extensions'
+import type { ExtensionCatalogInfo, ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
-  plugin: InstalledPluginInfo
-  updateInfo?: PluginUpdateInfo
+  plugin: ExtensionCatalogInfo
+  updateInfo?: ExtensionUpdateInfo
 }
 
 interface Emits {
@@ -37,13 +44,13 @@ const updating = ref(false)
 const iconError = ref(false)
 const settingsOpen = ref(false)
 
-// Get settings dialog from extension registry
-const settingsDialog = computed(() => uiExtensions.settings.plugins.dialogs.get(props.plugin.id))
-
-// Check if plugin has settings dialog registered
-const hasSettings = computed(() => {
-  return !!settingsDialog.value
-})
+const settingsPanel = computed(
+  () =>
+    extensionContributionStore.settingsPanels.value.find(
+      (panel) => panel.extensionId === props.plugin.id
+    ) ?? null
+)
+const hasSettings = computed(() => settingsPanel.value !== null)
 
 // Fixed icon.png convention - construct file:// URL
 const iconUrl = computed(() => {
@@ -55,14 +62,10 @@ const iconUrl = computed(() => {
 async function handleToggle(enabled: boolean) {
   toggling.value = true
   try {
-    const channel = enabled ? 'plugin:enable' : 'plugin:disable'
-    const res = await ipcManager.invoke(channel, props.plugin.id)
-    if (!res.success) {
-      notify.error('操作失败', res.error)
-      return
-    }
+    await (enabled ? enableExtension(props.plugin.id) : disableExtension(props.plugin.id))
+    await refreshExtensionContributionSnapshot()
 
-    notify.success(enabled ? '插件已启用' : '插件已禁用')
+    notify.success(enabled ? '扩展已启用' : '扩展已禁用')
     emit('refresh')
   } catch (error) {
     console.error('Toggle failed:', error)
@@ -81,13 +84,10 @@ const enabledModel = computed({
 async function handleUninstall() {
   uninstalling.value = true
   try {
-    const res = await ipcManager.invoke('plugin:uninstall', props.plugin.id)
-    if (!res.success) {
-      notify.error('卸载失败', res.error)
-      return
-    }
+    await uninstallExtension(props.plugin.id)
+    await refreshExtensionContributionSnapshot()
 
-    notify.success('插件已卸载')
+    notify.success('扩展已卸载')
     emit('refresh')
   } catch (error) {
     console.error('Uninstall failed:', error)
@@ -100,13 +100,10 @@ async function handleUninstall() {
 async function handleUpdate() {
   updating.value = true
   try {
-    const res = await ipcManager.invoke('plugin:update', props.plugin.id)
-    if (!res.success) {
-      notify.error('更新失败', res.error)
-      return
-    }
+    await updateExtension(props.plugin.id)
+    await refreshExtensionContributionSnapshot()
 
-    notify.success('插件更新成功')
+    notify.success('扩展更新成功')
     emit('refresh')
   } catch (error) {
     console.error('Update failed:', error)
@@ -114,6 +111,14 @@ async function handleUpdate() {
   } finally {
     updating.value = false
   }
+}
+
+function openSettingsPanel() {
+  if (!settingsPanel.value) {
+    return
+  }
+
+  settingsOpen.value = true
 }
 </script>
 
@@ -201,7 +206,7 @@ async function handleUpdate() {
             <Button
               size="icon-sm"
               variant="ghost"
-              @click="settingsOpen = true"
+              @click="openSettingsPanel"
             >
               <Icon
                 icon="icon-[mdi--cog-outline]"
@@ -237,10 +242,10 @@ async function handleUpdate() {
     </div>
 
     <!-- Settings Dialog -->
-    <component
-      :is="settingsDialog?.component"
-      v-if="settingsOpen && settingsDialog"
+    <ExtensionSettingsPanelDialog
+      v-if="settingsOpen && settingsPanel"
       v-model:open="settingsOpen"
+      :panel="settingsPanel"
     />
   </div>
 </template>

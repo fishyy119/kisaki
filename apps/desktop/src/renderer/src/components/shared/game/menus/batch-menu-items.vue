@@ -15,13 +15,18 @@ import {
   ContextMenuSeparator,
   ContextMenuSub,
   ContextMenuSubTrigger,
-  ContextMenuSubContent
+  ContextMenuSubContent,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem
 } from '@renderer/components/ui/context-menu'
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
+import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections, collectionGameLinks, games } from '@shared/db'
+import type { MenuComponents } from '@renderer/types'
 
 interface Props {
   gameIds: string[]
@@ -94,6 +99,25 @@ const linkMap = computed(() => {
 })
 
 const selectedEntityCount = computed(() => props.gameIds.length)
+const contextMenuComponents: MenuComponents = {
+  Item: ContextMenuItem,
+  Sub: ContextMenuSub,
+  SubTrigger: ContextMenuSubTrigger,
+  SubContent: ContextMenuSubContent,
+  Separator: ContextMenuSeparator,
+  CheckboxItem: ContextMenuCheckboxItem,
+  RadioGroup: ContextMenuRadioGroup,
+  RadioItem: ContextMenuRadioItem
+}
+const extensionMenuInput = computed(
+  () =>
+    ({
+      scope: 'batch',
+      target: 'game.batch',
+      entityType: 'game',
+      entityIds: props.gameIds
+    }) as const
+)
 
 const collectionsAddable = computed(() =>
   staticCollections.value.filter(
@@ -137,7 +161,10 @@ async function handleRemoveFromCollection(collectionId: string) {
     await db
       .delete(collectionGameLinks)
       .where(
-        and(eq(collectionGameLinks.collectionId, collectionId), inArray(collectionGameLinks.gameId, ids))
+        and(
+          eq(collectionGameLinks.collectionId, collectionId),
+          inArray(collectionGameLinks.gameId, ids)
+        )
       )
     notify.success('已从合集中移除')
     await refetch()
@@ -180,12 +207,12 @@ async function handleSetFavorite(isFavorite: boolean) {
             :key="collection.id"
             @select="handleAddToCollection(collection.id)"
           >
-              <Icon
-                :icon="getEntityIcon('collection')"
-                class="size-4"
-              />
-              {{ collection.name }}
-            </ContextMenuItem>
+            <Icon
+              :icon="getEntityIcon('collection')"
+              class="size-4"
+            />
+            {{ collection.name }}
+          </ContextMenuItem>
         </div>
       </template>
       <ContextMenuItem
@@ -214,12 +241,12 @@ async function handleSetFavorite(isFavorite: boolean) {
             :key="collection.id"
             @select="handleRemoveFromCollection(collection.id)"
           >
-              <Icon
-                :icon="getEntityIcon('collection')"
-                class="size-4"
-              />
-              {{ collection.name }}
-            </ContextMenuItem>
+            <Icon
+              :icon="getEntityIcon('collection')"
+              class="size-4"
+            />
+            {{ collection.name }}
+          </ContextMenuItem>
         </div>
       </template>
       <ContextMenuItem
@@ -258,6 +285,12 @@ async function handleSetFavorite(isFavorite: boolean) {
     />
     批量更新元数据
   </ContextMenuItem>
+
+  <ExtensionEntityMenuItems
+    :input="extensionMenuInput"
+    :components="contextMenuComponents"
+    :enabled="props.enabled"
+  />
 
   <!-- Delete -->
   <ContextMenuItem

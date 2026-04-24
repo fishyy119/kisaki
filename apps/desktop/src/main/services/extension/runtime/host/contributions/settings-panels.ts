@@ -61,9 +61,10 @@ export class HostSettingsPanelContributions {
     }
 
     const runtime = requireRuntimeByScope(this.options.registry, scope)
-    if (runtime.settingsPanels.has(contribution.id)) {
+    if (runtime.settingsPanels.size > 0) {
+      const existingPanelId = [...runtime.settingsPanels.keys()][0]
       throw new Error(
-        `Settings panel contribution "${contribution.id}" is already registered by "${scope.extensionId}".`
+        `Extension "${scope.extensionId}" already registered settings panel "${existingPanelId}". Each extension can register only one settings panel.`
       )
     }
 

@@ -29,6 +29,7 @@ interface SettingsPanelRegistration {
 export class ExtensionSettingsPanelContributionHost {
   private readonly registrations = new Map<string, SettingsPanelRegistration>()
   private readonly byPublicId = new Map<string, SettingsPanelRegistration>()
+  private readonly byExtensionId = new Map<string, SettingsPanelRegistration>()
 
   constructor(private readonly options: ExtensionContributionHostOptions) {}
 
@@ -37,6 +38,13 @@ export class ExtensionSettingsPanelContributionHost {
     contribution: SettingsPanelContributionRegistration
   ): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)
+    const existing = this.byExtensionId.get(owner.extension.id)
+    if (existing) {
+      throw new Error(
+        `Extension "${owner.extension.id}" already registered settings panel "${existing.contribution.id}". Each extension can register only one settings panel.`
+      )
+    }
+
     const registration: SettingsPanelRegistration = {
       owner,
       contribution
@@ -44,6 +52,7 @@ export class ExtensionSettingsPanelContributionHost {
 
     this.registrations.set(getRuntimeContributionKey(runtimeHandle, contribution.id), registration)
     this.byPublicId.set(getPublicPanelKey(owner.extension.id, contribution.id), registration)
+    this.byExtensionId.set(owner.extension.id, registration)
   }
 
   unregister(runtimeHandle: ExtensionRuntimeHandle, panelId: string): void {
@@ -54,6 +63,7 @@ export class ExtensionSettingsPanelContributionHost {
 
     this.registrations.delete(getRuntimeContributionKey(runtimeHandle, panelId))
     this.byPublicId.delete(getPublicPanelKey(registration.owner.extension.id, panelId))
+    this.byExtensionId.delete(registration.owner.extension.id)
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
@@ -63,6 +73,7 @@ export class ExtensionSettingsPanelContributionHost {
         this.byPublicId.delete(
           getPublicPanelKey(registration.owner.extension.id, registration.contribution.id)
         )
+        this.byExtensionId.delete(registration.owner.extension.id)
       }
     }
   }
@@ -70,6 +81,7 @@ export class ExtensionSettingsPanelContributionHost {
   releaseAll(): void {
     this.registrations.clear()
     this.byPublicId.clear()
+    this.byExtensionId.clear()
   }
 
   getSnapshot(): readonly ExtensionSettingsPanelInfo[] {

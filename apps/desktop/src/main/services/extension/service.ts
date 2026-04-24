@@ -73,6 +73,7 @@ export class ExtensionService implements IService {
   private snapshot: readonly ExtensionCatalogEntry[] = []
   private byId = new Map<string, ExtensionCatalogEntry>()
   private devExtension: ExtensionRuntimeMetadata | null = null
+  private contributionSnapshotEmitQueued = false
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const rootDir = path.join(app.getPath('userData'), 'extensions')
@@ -103,6 +104,7 @@ export class ExtensionService implements IService {
     this.contributions = new ExtensionContributionRegistry({
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
+      onDidChange: () => this.emitContributionSnapshotChanged(),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)
@@ -575,6 +577,19 @@ export class ExtensionService implements IService {
     const desired = this.buildDesiredRuntimeMap()
     await this.runtime.reconcile(desired, options)
     await this.syncReloadWatcherTargets(desired)
+    this.emitContributionSnapshotChanged()
+  }
+
+  private emitContributionSnapshotChanged(): void {
+    if (this.contributionSnapshotEmitQueued) {
+      return
+    }
+
+    this.contributionSnapshotEmitQueued = true
+    queueMicrotask(() => {
+      this.contributionSnapshotEmitQueued = false
+      this.ipc.send('extension:contributions-changed', this.getContributionSnapshot())
+    })
   }
 
   private buildDesiredRuntimeMap(): Map<string, ExtensionRuntimeMetadata> {

@@ -10,40 +10,30 @@ import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
-import { ipcManager } from '@renderer/core/ipc'
+import { searchExtensions } from '@renderer/core/extensions'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import PluginDiscoverPanelCard from './discover-panel-card.vue'
 import PluginDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverPluginStore } from '../../stores'
-import type { PluginRegistryEntry } from '@shared/plugin'
+import type { ExtensionRegistryEntry } from '@shared/extension'
 
 const PAGE_SIZE = 20
-
-interface SearchResult {
-  entries: PluginRegistryEntry[]
-  total: number
-  hasMore: boolean
-}
 
 const store = useDiscoverPluginStore()
 
 async function searchPlugins(
   page: number
-): Promise<{ results: PluginRegistryEntry[]; hasMore: boolean }> {
-  const res = await ipcManager.invoke('plugin:search', store.selectedRegistry, store.searchQuery, {
+): Promise<{ results: ExtensionRegistryEntry[]; hasMore: boolean }> {
+  const data = await searchExtensions(store.selectedRegistry, store.searchQuery, {
     page,
-    limit: PAGE_SIZE
+    limit: PAGE_SIZE,
+    sortBy: store.sortField === 'updatedAt' ? 'updated' : store.sortField
   })
 
-  if (res.success && res.data) {
-    const data = res.data as SearchResult
-    return { results: data.entries, hasMore: data.hasMore }
-  }
-
-  return { results: [], hasMore: false }
+  return { results: data.entries, hasMore: data.hasMore }
 }
 
-const additionalResults = ref<PluginRegistryEntry[]>([])
+const additionalResults = ref<ExtensionRegistryEntry[]>([])
 const additionalHasMore = ref(false)
 const page = ref(1)
 const isLoadingMore = ref(false)
@@ -81,7 +71,7 @@ const displayedResults = computed(() => {
   let result = [...allResults.value]
 
   if (store.selectedCategory) {
-    result = result.filter((p) => p.category === store.selectedCategory)
+    result = result.filter((p) => p.categories?.includes(store.selectedCategory!))
   }
 
   const direction = store.sortDirection === 'asc' ? 1 : -1

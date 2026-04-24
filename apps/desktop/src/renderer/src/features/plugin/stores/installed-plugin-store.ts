@@ -7,7 +7,7 @@
 
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { PluginCategory } from '@shared/plugin'
+import type { ExtensionCategory } from '@kisaki/extension-api'
 import type { SortDirection } from '@shared/common'
 
 export type InstalledPluginSortField = 'name' | 'status' | 'hasUpdate'
@@ -23,7 +23,7 @@ export const useInstalledPluginStore = defineStore(
     const statusFilter = ref<InstalledPluginStatusFilter>('all')
 
     // Category filter (null = all categories)
-    const selectedCategory = ref<PluginCategory | null>(null)
+    const selectedCategory = ref<ExtensionCategory | null>(null)
 
     // Show only plugins with updates
     const showUpdatesOnly = ref(false)
@@ -41,7 +41,7 @@ export const useInstalledPluginStore = defineStore(
       statusFilter.value = status
     }
 
-    function setSelectedCategory(category: PluginCategory | null) {
+    function setSelectedCategory(category: ExtensionCategory | null) {
       selectedCategory.value = category
     }
 

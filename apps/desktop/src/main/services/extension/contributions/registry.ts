@@ -15,7 +15,7 @@ export class ExtensionContributionRegistry {
   readonly deeplinks: ExtensionDeeplinkContributionHost
   readonly scrapers: ExtensionScraperContributionHost
 
-  constructor(options: ExtensionContributionHostOptions) {
+  constructor(private readonly options: ExtensionContributionHostOptions) {
     this.entityMenus = new ExtensionEntityMenuContributionHost(options)
     this.settingsPanels = new ExtensionSettingsPanelContributionHost(options)
     this.themes = new ExtensionThemeContributionHost(options)
@@ -28,6 +28,7 @@ export class ExtensionContributionRegistry {
       'bridge.entityMenus.register',
       async ({ runtimeHandle, contribution }) => {
         this.entityMenus.register(runtimeHandle, contribution)
+        this.notifyChanged()
         return {}
       }
     )
@@ -35,6 +36,7 @@ export class ExtensionContributionRegistry {
       'bridge.entityMenus.unregister',
       async ({ runtimeHandle, contributionId }) => {
         this.entityMenus.unregister(runtimeHandle, contributionId)
+        this.notifyChanged()
         return {}
       }
     )
@@ -42,6 +44,7 @@ export class ExtensionContributionRegistry {
       'bridge.settingsPanels.register',
       async ({ runtimeHandle, contribution }) => {
         this.settingsPanels.register(runtimeHandle, contribution)
+        this.notifyChanged()
         return {}
       }
     )
@@ -49,17 +52,20 @@ export class ExtensionContributionRegistry {
       'bridge.settingsPanels.unregister',
       async ({ runtimeHandle, panelId }) => {
         this.settingsPanels.unregister(runtimeHandle, panelId)
+        this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest('bridge.scrapers.games.register', async ({ runtimeHandle, provider }) => {
       await this.scrapers.registerGameProvider(runtimeHandle, provider)
+      this.notifyChanged()
       return {}
     })
     rpc.handleHostRequest(
       'bridge.scrapers.games.unregister',
       async ({ runtimeHandle, providerId }) => {
         await this.scrapers.unregisterGameProvider(runtimeHandle, providerId)
+        this.notifyChanged()
         return {}
       }
     )
@@ -67,6 +73,7 @@ export class ExtensionContributionRegistry {
       'bridge.scrapers.persons.register',
       async ({ runtimeHandle, provider }) => {
         await this.scrapers.registerPersonProvider(runtimeHandle, provider)
+        this.notifyChanged()
         return {}
       }
     )
@@ -74,6 +81,7 @@ export class ExtensionContributionRegistry {
       'bridge.scrapers.persons.unregister',
       async ({ runtimeHandle, providerId }) => {
         await this.scrapers.unregisterPersonProvider(runtimeHandle, providerId)
+        this.notifyChanged()
         return {}
       }
     )
@@ -81,6 +89,7 @@ export class ExtensionContributionRegistry {
       'bridge.scrapers.companies.register',
       async ({ runtimeHandle, provider }) => {
         await this.scrapers.registerCompanyProvider(runtimeHandle, provider)
+        this.notifyChanged()
         return {}
       }
     )
@@ -88,6 +97,7 @@ export class ExtensionContributionRegistry {
       'bridge.scrapers.companies.unregister',
       async ({ runtimeHandle, providerId }) => {
         await this.scrapers.unregisterCompanyProvider(runtimeHandle, providerId)
+        this.notifyChanged()
         return {}
       }
     )
@@ -95,6 +105,7 @@ export class ExtensionContributionRegistry {
       'bridge.scrapers.characters.register',
       async ({ runtimeHandle, provider }) => {
         await this.scrapers.registerCharacterProvider(runtimeHandle, provider)
+        this.notifyChanged()
         return {}
       }
     )
@@ -102,44 +113,57 @@ export class ExtensionContributionRegistry {
       'bridge.scrapers.characters.unregister',
       async ({ runtimeHandle, providerId }) => {
         await this.scrapers.unregisterCharacterProvider(runtimeHandle, providerId)
+        this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest('bridge.deeplinks.register', async ({ runtimeHandle, contribution }) => {
       this.deeplinks.register(runtimeHandle, contribution)
+      this.notifyChanged()
       return {}
     })
     rpc.handleHostRequest(
       'bridge.deeplinks.unregister',
       async ({ runtimeHandle, contributionId }) => {
         this.deeplinks.unregister(runtimeHandle, contributionId)
+        this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest('bridge.themes.register', async ({ runtimeHandle, theme }) => {
       this.themes.register(runtimeHandle, theme)
+      this.notifyChanged()
       return {}
     })
     rpc.handleHostRequest('bridge.themes.unregister', async ({ runtimeHandle, themeId }) => {
       this.themes.unregister(runtimeHandle, themeId)
+      this.notifyChanged()
       return {}
     })
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
-    this.entityMenus.releaseRuntime(runtimeHandle)
-    this.settingsPanels.releaseRuntime(runtimeHandle)
-    this.themes.releaseRuntime(runtimeHandle)
-    this.deeplinks.releaseRuntime(runtimeHandle)
-    await this.scrapers.releaseRuntime(runtimeHandle)
+    try {
+      this.entityMenus.releaseRuntime(runtimeHandle)
+      this.settingsPanels.releaseRuntime(runtimeHandle)
+      this.themes.releaseRuntime(runtimeHandle)
+      this.deeplinks.releaseRuntime(runtimeHandle)
+      await this.scrapers.releaseRuntime(runtimeHandle)
+    } finally {
+      this.notifyChanged()
+    }
   }
 
   async releaseAll(): Promise<void> {
-    this.entityMenus.releaseAll()
-    this.settingsPanels.releaseAll()
-    this.themes.releaseAll()
-    this.deeplinks.releaseAll()
-    await this.scrapers.releaseAll()
+    try {
+      this.entityMenus.releaseAll()
+      this.settingsPanels.releaseAll()
+      this.themes.releaseAll()
+      this.deeplinks.releaseAll()
+      await this.scrapers.releaseAll()
+    } finally {
+      this.notifyChanged()
+    }
   }
 
   getSnapshot(): ExtensionContributionSnapshot {
@@ -150,5 +174,9 @@ export class ExtensionContributionRegistry {
       deeplinks: this.deeplinks.getSnapshot(),
       scrapers: this.scrapers.getSnapshot()
     }
+  }
+
+  private notifyChanged(): void {
+    this.options.onDidChange?.()
   }
 }

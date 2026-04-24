@@ -234,6 +234,12 @@ export interface SettingsPanelContribution {
   onSubmit?(event: SettingsSubmitEvent): Promise<UiCallbackResult>
 }
 
+/**
+ * Registrar for the extension's single settings panel.
+ *
+ * An extension may register at most one settings panel at a time. Dispose the
+ * previous panel before registering a replacement.
+ */
 export interface SettingsPanelRegistrar {
   register(contribution: SettingsPanelContribution): Disposable
 }

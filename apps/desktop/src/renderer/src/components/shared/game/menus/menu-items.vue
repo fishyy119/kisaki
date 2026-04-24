@@ -15,7 +15,7 @@ import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import { uiExtensions } from '@renderer/core/ui-extensions'
+import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
 import { usePreferencesStore } from '@renderer/stores'
 import { games, collections, collectionGameLinks, type Game } from '@shared/db'
 import { Status } from '@shared/db'
@@ -105,21 +105,15 @@ const canOpenGameDir = computed(() => {
   return !!(current.gameDirPath || (current.launcherMode === 'file' && current.launcherPath))
 })
 
-const pluginActions = computed(() => {
-  const ctx = { gameId: props.gameId }
-  return uiExtensions.menus.game.single.items.value.filter((action) => {
-    if (!action.when) return true
-    try {
-      return action.when(ctx)
-    } catch {
-      return false
-    }
-  })
-})
-
-async function handlePluginAction(action: (typeof pluginActions.value)[number]) {
-  await action.action({ gameId: props.gameId })
-}
+const extensionMenuInput = computed(
+  () =>
+    ({
+      scope: 'single',
+      target: 'game.single',
+      entityType: 'game',
+      entityId: props.gameId
+    }) as const
+)
 
 useEvent('db:updated', ({ table, id }) => {
   if (table === 'games' && id === props.gameId) refetch()
@@ -436,24 +430,11 @@ async function handleOpenGameDir() {
       管理外部ID
     </component>
 
-    <component
-      :is="props.components.Separator"
-      v-if="pluginActions.length > 0"
+    <ExtensionEntityMenuItems
+      :input="extensionMenuInput"
+      :components="props.components"
+      :enabled="props.enabled"
     />
-
-    <component
-      :is="props.components.Item"
-      v-for="action in pluginActions"
-      :key="action.id"
-      @select="handlePluginAction(action)"
-    >
-      <Icon
-        v-if="action.icon"
-        :icon="action.icon"
-        class="size-4"
-      />
-      {{ action.label }}
-    </component>
 
     <component :is="props.components.Separator" />
 

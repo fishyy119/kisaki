@@ -10,6 +10,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { themeManager } from '@renderer/core/theme'
+import { refreshExtensionThemes, setupExtensionThemeSync } from '@renderer/core/extensions'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -23,7 +24,10 @@ export const useThemeStore = defineStore(
     const activeThemeId = ref<string>(DEFAULT_THEME_ID)
     const mode = ref<ThemeMode>('system')
 
+    setupExtensionThemeSync()
+
     const resolvedTheme = ref<'light' | 'dark'>('light')
+    let resolvingExtensionTheme = false
 
     function setActiveTheme(themeId: string): void {
       activeThemeId.value = themeId
@@ -55,6 +59,23 @@ export const useThemeStore = defineStore(
       try {
         themeManager.setActiveTheme(activeThemeId.value)
       } catch {
+        if (activeThemeId.value.startsWith('extension:') && !resolvingExtensionTheme) {
+          resolvingExtensionTheme = true
+          void refreshExtensionThemes()
+            .then(() => {
+              if (themeManager.themes.has(activeThemeId.value)) {
+                themeManager.setActiveTheme(activeThemeId.value)
+              } else {
+                activeThemeId.value = DEFAULT_THEME_ID
+                themeManager.setActiveTheme(DEFAULT_THEME_ID)
+              }
+            })
+            .finally(() => {
+              resolvingExtensionTheme = false
+            })
+          return
+        }
+
         activeThemeId.value = DEFAULT_THEME_ID
         themeManager.setActiveTheme(DEFAULT_THEME_ID)
       }

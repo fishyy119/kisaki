@@ -13,6 +13,7 @@ import type { RpcRequestOptions } from '../runtime/rpc-core'
 export interface ExtensionContributionHostOptions {
   deeplink?: DeeplinkService
   scraper?: ScraperService
+  onDidChange?: () => void
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   requestHost<K extends MainToHostRpcMethod>(
     method: K,

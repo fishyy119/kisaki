@@ -21,17 +21,12 @@ import {
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
-import { ipcManager } from '@renderer/core/ipc'
+import { getExtensionSources } from '@renderer/core/extensions'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { useDiscoverPluginStore, type DiscoverPluginSortField } from '../../stores'
 import { PLUGIN_CATEGORIES } from '../../types'
-import type { PluginCategory } from '@shared/plugin'
-
-interface RegistryInfo {
-  name: string
-  searchable: boolean
-}
+import type { ExtensionCategory } from '@kisaki/extension-api'
 
 // Registry display configuration
 const REGISTRY_CONFIG: Record<string, { label: string; icon: string }> = {
@@ -57,8 +52,7 @@ const store = useDiscoverPluginStore()
 
 const { data: registries } = useAsyncData(
   async () => {
-    const res = await ipcManager.invoke('plugin:get-registries')
-    return res.success && res.data ? (res.data as RegistryInfo[]) : []
+    return getExtensionSources()
   },
   { immediate: true }
 )
@@ -87,7 +81,7 @@ const sortFieldModel = computed({
 const categoryModel = computed({
   get: () => store.selectedCategory ?? 'all',
   set: (value: string) =>
-    store.setSelectedCategory(value === 'all' ? null : (value as PluginCategory))
+    store.setSelectedCategory(value === 'all' ? null : (value as ExtensionCategory))
 })
 
 function handleToggleSortDirection() {

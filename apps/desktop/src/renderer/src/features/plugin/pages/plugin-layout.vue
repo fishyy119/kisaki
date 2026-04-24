@@ -8,17 +8,17 @@
 
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ipcManager } from '@renderer/core/ipc'
+import { checkExtensionUpdates } from '@renderer/core/extensions'
 import { PluginHeader } from '../components'
 import { PluginInstallDialog } from '../components'
-import type { PluginUpdateInfo } from '@shared/plugin'
+import type { ExtensionUpdateInfo } from '@shared/extension'
 
 const router = useRouter()
 const route = useRoute()
 
 const isInstalledRoute = computed(() => route.name === 'plugin-installed')
 
-const updates = ref<PluginUpdateInfo[]>([])
+const updates = ref<ExtensionUpdateInfo[]>([])
 const checkingUpdates = ref(false)
 const refreshKey = ref(0)
 const installDialogOpen = ref(false)
@@ -26,10 +26,7 @@ const installDialogOpen = ref(false)
 async function handleCheckUpdates() {
   checkingUpdates.value = true
   try {
-    const res = await ipcManager.invoke('plugin:check-updates')
-    if (res.success && res.data) {
-      updates.value = res.data
-    }
+    updates.value = await checkExtensionUpdates()
   } catch (error) {
     console.error('Failed to check updates:', error)
   } finally {
@@ -84,4 +81,3 @@ const installedPageProps = computed(() => ({
     />
   </div>
 </template>
-

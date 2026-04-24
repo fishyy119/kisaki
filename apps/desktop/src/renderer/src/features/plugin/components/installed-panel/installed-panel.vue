@@ -9,15 +9,18 @@
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { ipcManager } from '@renderer/core/ipc'
+import {
+  getExtensionCatalog,
+  refreshExtensionContributionSnapshot
+} from '@renderer/core/extensions'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import PluginInstalledPanelCard from './installed-panel-card.vue'
 import PluginInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledPluginStore } from '../../stores'
-import type { PluginUpdateInfo } from '@shared/plugin'
+import type { ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
-  updates: PluginUpdateInfo[]
+  updates: ExtensionUpdateInfo[]
 }
 
 interface Emits {
@@ -36,8 +39,11 @@ const {
   refetch
 } = useAsyncData(
   async () => {
-    const res = await ipcManager.invoke('plugin:get-installed')
-    return res.success && res.data ? res.data : []
+    const [catalog] = await Promise.all([
+      getExtensionCatalog(),
+      refreshExtensionContributionSnapshot()
+    ])
+    return catalog
   },
   { immediate: true }
 )
@@ -46,7 +52,7 @@ const state = useRenderState(isLoading, error, plugins, { preset: 'network' })
 const pluginsList = computed(() => plugins.value ?? [])
 
 function getUpdateInfo(pluginId: string) {
-  return props.updates.find((u) => u.pluginId === pluginId)
+  return props.updates.find((u) => u.extensionId === pluginId)
 }
 
 function handleRefresh() {
@@ -78,12 +84,12 @@ const filteredPlugins = computed(() => {
 
   // Category filter
   if (store.selectedCategory) {
-    result = result.filter((p) => p.category === store.selectedCategory)
+    result = result.filter((p) => p.categories.includes(store.selectedCategory!))
   }
 
   // Updates filter
   if (store.showUpdatesOnly) {
-    result = result.filter((p) => props.updates.some((u) => u.pluginId === p.id))
+    result = result.filter((p) => props.updates.some((u) => u.extensionId === p.id))
   }
 
   // Sort
@@ -97,8 +103,8 @@ const filteredPlugins = computed(() => {
         comparison = (a.enabled ? 1 : 0) - (b.enabled ? 1 : 0)
         break
       case 'hasUpdate': {
-        const aHasUpdate = props.updates.some((u) => u.pluginId === a.id) ? 1 : 0
-        const bHasUpdate = props.updates.some((u) => u.pluginId === b.id) ? 1 : 0
+        const aHasUpdate = props.updates.some((u) => u.extensionId === a.id) ? 1 : 0
+        const bHasUpdate = props.updates.some((u) => u.extensionId === b.id) ? 1 : 0
         comparison = aHasUpdate - bHasUpdate
         break
       }

@@ -27,7 +27,7 @@ import {
   type InstalledPluginStatusFilter
 } from '../../stores'
 import { PLUGIN_CATEGORIES } from '../../types'
-import type { PluginCategory } from '@shared/plugin'
+import type { ExtensionCategory } from '@kisaki/extension-api'
 
 interface Props {
   updateCount?: number
@@ -74,7 +74,7 @@ const sortFieldModel = computed({
 const categoryModel = computed({
   get: () => store.selectedCategory ?? 'all',
   set: (value: string) =>
-    store.setSelectedCategory(value === 'all' ? null : (value as PluginCategory))
+    store.setSelectedCategory(value === 'all' ? null : (value as ExtensionCategory))
 })
 
 function handleClearSearch() {

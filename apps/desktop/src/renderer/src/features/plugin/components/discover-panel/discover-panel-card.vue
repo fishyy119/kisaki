@@ -11,12 +11,12 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { cn } from '@renderer/utils/cn'
-import { ipcManager } from '@renderer/core/ipc'
+import { installExtension } from '@renderer/core/extensions'
 import { notify } from '@renderer/core/notify'
-import type { PluginRegistryEntry } from '@shared/plugin'
+import type { ExtensionRegistryEntry } from '@shared/extension'
 
 interface Props {
-  plugin: PluginRegistryEntry
+  plugin: ExtensionRegistryEntry
 }
 
 const props = defineProps<Props>()
@@ -28,14 +28,9 @@ const iconError = ref(false)
 async function handleInstall() {
   installing.value = true
   try {
-    const source = `github:${props.plugin.id}`
-    const res = await ipcManager.invoke('plugin:install', source)
-    if (!res.success) {
-      notify.error('安装失败', res.error)
-      return
-    }
+    await installExtension(props.plugin.locator)
 
-    notify.success('插件安装成功')
+    notify.success('扩展安装成功')
     installed.value = true
   } catch (error) {
     console.error('Install failed:', error)

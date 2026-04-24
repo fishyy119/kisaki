@@ -7,7 +7,7 @@
 
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { PluginCategory } from '@shared/plugin'
+import type { ExtensionCategory } from '@kisaki/extension-api'
 import type { SortDirection } from '@shared/common'
 
 export type DiscoverPluginSortField = 'stars' | 'name' | 'updatedAt'
@@ -28,7 +28,7 @@ export const useDiscoverPluginStore = defineStore(
     const selectedRegistry = ref('github')
 
     // Category filter (null = all categories)
-    const selectedCategory = ref<PluginCategory | null>(null)
+    const selectedCategory = ref<ExtensionCategory | null>(null)
 
     // Sort options
     const sortField = ref<DiscoverPluginSortField>('stars')
@@ -54,7 +54,7 @@ export const useDiscoverPluginStore = defineStore(
       selectedRegistry.value = registry
     }
 
-    function setSelectedCategory(category: PluginCategory | null) {
+    function setSelectedCategory(category: ExtensionCategory | null) {
       selectedCategory.value = category
     }
 

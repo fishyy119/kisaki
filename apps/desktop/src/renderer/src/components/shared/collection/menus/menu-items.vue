@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { uiExtensions } from '@renderer/core/ui-extensions'
+import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
 import { collections, type Collection } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 
@@ -53,21 +53,15 @@ useEvent('db:updated', ({ table, id }) => {
 
 const isDynamic = computed(() => collection.value?.isDynamic ?? false)
 
-const pluginActions = computed(() => {
-  const ctx = { collectionId: props.collectionId }
-  return uiExtensions.menus.collection.single.items.value.filter((action) => {
-    if (!action.when) return true
-    try {
-      return action.when(ctx)
-    } catch {
-      return false
-    }
-  })
-})
-
-async function handlePluginAction(action: (typeof pluginActions.value)[number]) {
-  await action.action({ collectionId: props.collectionId })
-}
+const extensionMenuInput = computed(
+  () =>
+    ({
+      scope: 'single',
+      target: 'collection.single',
+      entityType: 'collection',
+      entityId: props.collectionId
+    }) as const
+)
 
 async function handleToggleNsfw() {
   if (!collection.value) return
@@ -153,24 +147,11 @@ async function handleToggleNsfw() {
       NSFW
     </component>
 
-    <component
-      :is="props.components.Separator"
-      v-if="pluginActions.length > 0"
+    <ExtensionEntityMenuItems
+      :input="extensionMenuInput"
+      :components="props.components"
+      :enabled="props.enabled"
     />
-
-    <component
-      :is="props.components.Item"
-      v-for="action in pluginActions"
-      :key="action.id"
-      @select="handlePluginAction(action)"
-    >
-      <Icon
-        v-if="action.icon"
-        :icon="action.icon"
-        class="size-4"
-      />
-      {{ action.label }}
-    </component>
 
     <component :is="props.components.Separator" />
 

@@ -503,6 +503,9 @@ export interface IpcRendererEvents {
   'plugin:reloaded': [pluginId: string, entry: RendererPluginEntry | null]
   'plugin:dev-continued': []
 
+  // Extension contribution refresh (main -> renderer)
+  'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
+
   // Deeplink events (main → renderer)
   'deeplink:navigate': [DeeplinkNavigatePayload]
   'deeplink:auth-callback': [DeeplinkAuthCallbackPayload]

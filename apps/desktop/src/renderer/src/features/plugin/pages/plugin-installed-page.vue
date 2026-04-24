@@ -6,10 +6,10 @@
  */
 
 import { PluginInstalledPanel } from '../components'
-import type { PluginUpdateInfo } from '@shared/plugin'
+import type { ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
-  updates: PluginUpdateInfo[]
+  updates: ExtensionUpdateInfo[]
   refreshKey: number
   onRefresh: () => void
 }
@@ -26,4 +26,3 @@ const props = defineProps<Props>()
     />
   </div>
 </template>
-

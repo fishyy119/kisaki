@@ -24,6 +24,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldContent, FieldLabel, FieldDescription } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { ipcManager } from '@renderer/core/ipc'
+import { installExtension, installExtensionFromFile } from '@renderer/core/extensions'
 
 type InstallMethod = 'github' | 'url' | 'local'
 
@@ -69,16 +70,14 @@ async function handleInstallFromGitHub() {
   installing.value = true
   try {
     const source = `github:${githubRepo.value.trim()}`
-    const res = await ipcManager.invoke('plugin:install', source)
-    if (!res.success) {
-      notify.error('安装失败', res.error)
-      return
-    }
+    await installExtension(source)
 
-    notify.success('插件安装成功')
+    notify.success('扩展安装成功')
     githubRepo.value = ''
     open.value = false
     emit('installed')
+  } catch (error) {
+    notify.error('安装失败', error instanceof Error ? error.message : String(error))
   } finally {
     installing.value = false
   }
@@ -100,16 +99,14 @@ async function handleInstallFromUrl() {
 
   installing.value = true
   try {
-    const res = await ipcManager.invoke('plugin:install', pluginUrl.value.trim())
-    if (!res.success) {
-      notify.error('安装失败', res.error)
-      return
-    }
+    await installExtension(pluginUrl.value.trim())
 
-    notify.success('插件安装成功')
+    notify.success('扩展安装成功')
     pluginUrl.value = ''
     open.value = false
     emit('installed')
+  } catch (error) {
+    notify.error('安装失败', error instanceof Error ? error.message : String(error))
   } finally {
     installing.value = false
   }
@@ -119,23 +116,21 @@ async function handleInstallFromFile() {
   installing.value = true
   try {
     const res = await ipcManager.invoke('native:open-dialog', {
-      title: '选择插件文件',
-      filters: [{ name: '插件包', extensions: ['zip'] }],
+      title: '选择扩展文件',
+      filters: [{ name: '扩展包', extensions: ['kisx'] }],
       properties: ['openFile']
     })
 
     if (res.success && res.data && !res.data.canceled && res.data.filePaths.length > 0) {
       const filePath = res.data.filePaths[0]
-      const installRes = await ipcManager.invoke('plugin:install-from-file', filePath)
-      if (!installRes.success) {
-        notify.error('安装失败', installRes.error)
-        return
-      }
+      await installExtensionFromFile(filePath)
 
-      notify.success('插件安装成功')
+      notify.success('扩展安装成功')
       open.value = false
       emit('installed')
     }
+  } catch (error) {
+    notify.error('安装失败', error instanceof Error ? error.message : String(error))
   } finally {
     installing.value = false
   }
@@ -209,11 +204,11 @@ async function handleInstallFromFile() {
           >
             <Field>
               <FieldLabel>下载地址</FieldLabel>
-              <FieldDescription>输入插件包 (.zip) 的直接下载链接</FieldDescription>
+              <FieldDescription>输入扩展包 (.kisx) 的直接下载链接</FieldDescription>
               <FieldContent>
                 <Input
                   v-model="pluginUrl"
-                  placeholder="https://example.com/plugin.zip"
+                  placeholder="https://example.com/extension.kisx"
                   @keydown.enter="handleInstallFromUrl"
                 />
               </FieldContent>
@@ -230,7 +225,7 @@ async function handleInstallFromFile() {
                 icon="icon-[mdi--folder-zip-outline]"
                 class="size-12 text-muted-foreground/50 mx-auto mb-3"
               />
-              <p class="text-sm text-muted-foreground mb-4">选择本地插件包文件 (.zip)</p>
+              <p class="text-sm text-muted-foreground mb-4">选择本地扩展包文件 (.kisx)</p>
             </div>
           </TabsContent>
         </Tabs>
