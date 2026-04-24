@@ -110,8 +110,8 @@ Manifest、protocol 消息、贡献模型、事件负载、DTO 都由共享类�
 重构完成后，仓库应当具有以下稳定结构：
 
 ```text
-apps/desktop/src/main/services/extension/      # 扩展服务、运行时与共享宿主实现
-apps/desktop/src/renderer/src/core/extensions/ # renderer 侧贡献消费层
+apps/desktop/src/main/services/extension/      # main 侧扩展服务、运行时、service 接入与 IPC facade
+apps/desktop/src/renderer/src/core/extensions/ # renderer 侧结构化贡献消费层
 packages/extension-api/                        # 公开契约、JSON Schema 与验证定义
 packages/extension-sdk/                        # 扩展作者 SDK
 packages/extension-cli/                        # kisx CLI
