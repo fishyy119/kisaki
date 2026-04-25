@@ -245,8 +245,8 @@ packages/create-kisaki-extension/
   README.md
   src/
     index.ts
-    cli/
-    scaffold/
+    cli.ts
+    scaffold.ts
   templates/
     default/
       package.json
@@ -260,7 +260,7 @@ packages/create-kisaki-extension/
 
 约束：
 
-- `src/cli/` 负责 prompts、参数解析、输出日志；`src/scaffold/` 负责模板变量、文件渲染、冲突处理与写盘。
+- 当前规模保持 `src/cli.ts` / `src/scaffold.ts` 两个单一职责文件：`cli.ts` 负责 prompts、参数解析、输出日志；`scaffold.ts` 负责模板变量、文件渲染、冲突处理与写盘。等 prompts、模板变量或冲突策略明显增长后，再按同名目录拆分。
 - `templates/default/` 必须只生成单入口扩展最小集合，不再出现 `src/main/`、`src/renderer/`、`src/shared/`、`vite.config.ts`。
 - 模板默认依赖 `@kisaki/extension-sdk`，通过 `kisx` 命令接入 CLI 工具链，并直接引用 `@kisaki/extension-api` 发布的 manifest schema。
 - 该包不再保留 `scripts/build.ts` 这类自定义 copy 流程，构建统一交给 `tsdown`，模板目录直接随包发布。

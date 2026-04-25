@@ -296,11 +296,13 @@ export class HostScraperContributions {
     await this.closeProviderSession(this.characterDomain, request)
   }
 
-  releaseRuntime(runtimeHandle: string): void {
-    this.deleteRuntimeSessions(this.gameSessions, runtimeHandle)
-    this.deleteRuntimeSessions(this.personSessions, runtimeHandle)
-    this.deleteRuntimeSessions(this.companySessions, runtimeHandle)
-    this.deleteRuntimeSessions(this.characterSessions, runtimeHandle)
+  async releaseRuntime(runtimeHandle: string): Promise<void> {
+    await Promise.all([
+      this.closeRuntimeSessions(this.gameSessions, runtimeHandle, 'Game'),
+      this.closeRuntimeSessions(this.personSessions, runtimeHandle, 'Person'),
+      this.closeRuntimeSessions(this.companySessions, runtimeHandle, 'Company'),
+      this.closeRuntimeSessions(this.characterSessions, runtimeHandle, 'Character')
+    ])
   }
 
   releaseAll(): void {
@@ -445,9 +447,13 @@ export class HostScraperContributions {
     request: ScraperSessionGetRequest<TSlot>
   ): Promise<{ results: Awaited<ReturnType<TSession['get']>> }> {
     const record = this.requireSession(domain.sessions, request)
+    const runtime = this.requireRuntime(record.runtimeHandle)
+    const results = await this.options.runInExtensionContext(runtime, () =>
+      record.session.get(request.slots)
+    )
 
     return {
-      results: (await record.session.get(request.slots)) as Awaited<ReturnType<TSession['get']>>
+      results: results as Awaited<ReturnType<TSession['get']>>
     }
   }
 
@@ -514,7 +520,7 @@ export class HostScraperContributions {
     }
 
     sessions.delete(sessionId)
-    await record.session.dispose?.()
+    await this.disposeSession(record)
   }
 
   private async closeProviderSessions<TSession extends { dispose?(): Promise<void> | void }>(
@@ -529,15 +535,33 @@ export class HostScraperContributions {
     }
   }
 
-  private deleteRuntimeSessions<TSession extends { dispose?(): Promise<void> | void }>(
+  private async closeRuntimeSessions<TSession extends { dispose?(): Promise<void> | void }>(
     sessions: Map<string, ScraperSessionRecord<TSession>>,
-    runtimeHandle: string
-  ): void {
+    runtimeHandle: string,
+    label: string
+  ): Promise<void> {
     for (const [sessionId, record] of [...sessions]) {
       if (record.runtimeHandle === runtimeHandle) {
         sessions.delete(sessionId)
+        await this.disposeSession(record).catch((error) => {
+          console.warn(
+            `[ExtensionHost] Failed to dispose ${label.toLowerCase()} scraper session "${sessionId}" during runtime cleanup:`,
+            error
+          )
+        })
       }
     }
+  }
+
+  private async disposeSession<TSession extends { dispose?(): Promise<void> | void }>(
+    record: ScraperSessionRecord<TSession>
+  ): Promise<void> {
+    if (!record.session.dispose) {
+      return
+    }
+
+    const runtime = this.requireRuntime(record.runtimeHandle)
+    await this.options.runInExtensionContext(runtime, () => record.session.dispose?.())
   }
 
   private async notifyProviderUnregistered(

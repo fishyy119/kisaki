@@ -15,7 +15,11 @@ import type {
   GameScraperProvider,
   HostEventListener,
   HostEventTopic,
+  HostToMainRpcMethod,
+  HostToMainRpcRequestMap,
   PersonScraperProvider,
+  RpcParams,
+  RpcResult,
   SettingsPanelContribution,
   ThemeContribution
 } from '@kisaki/extension-api'
@@ -51,6 +55,11 @@ import type {
 import type { ExtensionContextOptions } from './types'
 
 const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({ timeoutMs: 5_000 })
+
+type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
+  RpcParams<HostToMainRpcRequestMap, K>,
+  'runtimeHandle'
+>
 
 /**
  * Shared extension-host bridge that binds the public SDK root entry to the
@@ -195,10 +204,10 @@ export class ExtensionHostSdkBridge {
     }
   }
 
-  releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
+  async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     this.entityMenus.releaseRuntime(runtimeHandle)
     this.settingsPanels.releaseRuntime(runtimeHandle)
-    this.scrapers.releaseRuntime(runtimeHandle)
+    await this.scrapers.releaseRuntime(runtimeHandle)
     this.pendingMainRequests.delete(runtimeHandle)
   }
 
@@ -280,19 +289,19 @@ export class ExtensionHostSdkBridge {
     }
   }
 
-  private requestMain<TResult>(
+  private requestMain<K extends HostToMainRpcMethod>(
     scope: ActiveExtensionScope,
-    method: string,
-    params: Record<string, unknown>
-  ): Promise<TResult> {
+    method: K,
+    params: ScopedHostToMainRpcParams<K>
+  ): Promise<RpcResult<HostToMainRpcRequestMap, K>> {
     return this.rpc.requestMain(
-      method as any,
+      method,
       {
         runtimeHandle: scope.runtimeHandle,
         ...params
-      } as any,
+      } as RpcParams<HostToMainRpcRequestMap, K>,
       this.getRequestOptions(scope)
-    ) as Promise<TResult>
+    )
   }
 
   private registerEntityMenu(contribution: EntityMenuContribution): Disposable {

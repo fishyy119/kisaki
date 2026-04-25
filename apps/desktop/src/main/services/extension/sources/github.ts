@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
@@ -164,7 +165,7 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
 
   async download(entry: ExtensionSourceEntry): Promise<string> {
     const tempDir = path.join(app.getPath('temp'), 'kisaki-extensions')
-    const fileName = `extension-${Date.now()}.kisx`
+    const fileName = `${randomUUID()}.kisx`
     const destination = path.join(tempDir, fileName)
 
     await fse.ensureDir(tempDir)

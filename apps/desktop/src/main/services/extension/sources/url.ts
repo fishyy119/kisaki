@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import type { NetworkService } from '@main/services/network'
@@ -49,7 +50,7 @@ export class UrlExtensionSourceProvider implements ExtensionSourceProvider {
 
   async download(entry: ExtensionSourceEntry): Promise<string> {
     const tempDir = path.join(app.getPath('temp'), 'kisaki-extensions')
-    const destination = path.join(tempDir, `extension-${Date.now()}.kisx`)
+    const destination = path.join(tempDir, `${randomUUID()}.kisx`)
 
     await fse.ensureDir(tempDir)
     await this.networkService.downloadToFile(entry.downloadUrl, destination)

@@ -110,7 +110,7 @@ export class ExtensionLoader {
     } catch (error) {
       cleanupError = toRpcErrorPayload(error)
     } finally {
-      this.sdkBridge.releaseRuntime(runtime.runtimeHandle)
+      await this.sdkBridge.releaseRuntime(runtime.runtimeHandle)
       this.registry.delete(extensionId)
     }
 
@@ -151,7 +151,7 @@ export class ExtensionLoader {
     }
 
     await runtime.subscriptions.clear()
-    this.sdkBridge.releaseRuntime(runtime.runtimeHandle)
+    await this.sdkBridge.releaseRuntime(runtime.runtimeHandle)
     this.registry.delete(runtime.metadata.id)
   }
 }

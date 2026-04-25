@@ -123,7 +123,7 @@ export class ExtensionInstaller {
 
     const archivePath = await this.sourceManager.download(resolved)
     try {
-      return await this.installArchive(archivePath, record.source, true)
+      return await this.installArchive(archivePath, record.source, true, extensionId)
     } finally {
       await fse.remove(archivePath).catch(() => undefined)
     }
@@ -132,11 +132,18 @@ export class ExtensionInstaller {
   private async installArchive(
     archivePath: string,
     source: ExtensionSourceLocator | null,
-    replaceExisting: boolean
+    replaceExisting: boolean,
+    expectedExtensionId?: string
   ): Promise<ExtensionInstallResult> {
     const prepared = await this.prepareArchive(archivePath)
 
     try {
+      if (expectedExtensionId && prepared.manifest.id !== expectedExtensionId) {
+        throw new Error(
+          `Extension update expected manifest id "${expectedExtensionId}", received "${prepared.manifest.id}".`
+        )
+      }
+
       const targetDir = path.join(this.paths.packagesDir, prepared.manifest.id)
       const existingState = await this.stateStore.get(prepared.manifest.id)
 

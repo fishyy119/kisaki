@@ -35,6 +35,7 @@ const resolvedMenu = ref<ExtensionResolvedEntityMenu | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const invokingKey = ref<string | null>(null)
+let resolveRequestId = 0
 
 const inputKey = computed(() => getEntityMenuInputKey(props.input))
 const visibleGroups = computed(() =>
@@ -57,6 +58,8 @@ watch(
   [() => props.enabled, inputKey],
   ([enabled]) => {
     if (!enabled) {
+      resolveRequestId += 1
+      resetMenuState()
       return
     }
 
@@ -66,15 +69,24 @@ watch(
 )
 
 async function resolveMenu(): Promise<void> {
+  const requestId = ++resolveRequestId
   loading.value = true
   error.value = null
+  resolvedMenu.value = null
 
   try {
-    resolvedMenu.value = await resolveExtensionEntityMenu(props.input)
+    const menu = await resolveExtensionEntityMenu(props.input)
+    if (requestId === resolveRequestId && props.enabled) {
+      resolvedMenu.value = menu
+    }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
+    if (requestId === resolveRequestId && props.enabled) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
   } finally {
-    loading.value = false
+    if (requestId === resolveRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -83,6 +95,10 @@ async function invokeMenuItem(
   item: EntityMenuItem,
   value?: boolean | string
 ): Promise<void> {
+  if (!props.enabled) {
+    return
+  }
+
   if (item.kind === 'separator' || !('callbackId' in item) || !item.callbackId) {
     return
   }
@@ -131,10 +147,17 @@ function isDisabled(group: ExtensionResolvedEntityMenuGroup, item: EntityMenuIte
     item.disabled === true || !('callbackId' in item) || !item.callbackId || isInvoking(group, item)
   )
 }
+
+function resetMenuState(): void {
+  resolvedMenu.value = null
+  loading.value = false
+  error.value = null
+  invokingKey.value = null
+}
 </script>
 
 <template>
-  <template v-if="hasContent">
+  <template v-if="props.enabled && hasContent">
     <component
       :is="props.components.Separator"
       v-if="props.leadingSeparator"

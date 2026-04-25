@@ -149,5 +149,7 @@ function assertExtensionRoute(extensionId: string, route: string): void {
     return
   }
 
-  throw new Error(`Extension deeplink route "${route}" must be under "${requiredPrefix}...".`)
+  throw new Error(
+    `Extension deeplink route "${route}" must be "ext/${extensionId}" or under "${requiredPrefix}...".`
+  )
 }

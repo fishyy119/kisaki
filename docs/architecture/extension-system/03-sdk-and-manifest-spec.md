@@ -617,7 +617,7 @@ interface ExtensionLogger {
 - 扩展 ID：全局唯一、稳定、不随展示名称变化
 - contribution ID：扩展内唯一，建议 `<area>.<feature>`
 - event topic：必须命名空间化
-- deeplink route：必须带扩展命名空间
+- deeplink route：必须带扩展命名空间，可为 `ext/<extension-id>` 或其子路径
 
 ## 明确废弃的旧模式
 

@@ -27,10 +27,16 @@ import {
   personTagLinks
 } from '@shared/db'
 import type { DbService } from '@main/services/db'
+import type {
+  AnySQLiteColumn,
+  SQLiteInsertValue,
+  SQLiteTable,
+  SQLiteUpdateSetSource
+} from 'drizzle-orm/sqlite-core'
 
 interface RelationConfig {
   kind: LibraryRelationKind
-  table: any
+  table: SQLiteTable
   fromType: string
   toType: string
   fromIdField: string
@@ -340,10 +346,10 @@ function buildListCondition(
   if (query.entity) {
     const entityConditions: SQL[] = []
     if (query.entity.entityType === config.fromType) {
-      entityConditions.push(eq(config.table[config.fromIdField], query.entity.id))
+      entityConditions.push(eq(getRelationColumn(config, config.fromIdField), query.entity.id))
     }
     if (query.entity.entityType === config.toType) {
-      entityConditions.push(eq(config.table[config.toIdField], query.entity.id))
+      entityConditions.push(eq(getRelationColumn(config, config.toIdField), query.entity.id))
     }
     if (entityConditions.length === 0) {
       return null
@@ -356,10 +362,14 @@ function buildListCondition(
   if (query.relatedEntity) {
     const relatedConditions: SQL[] = []
     if (query.relatedEntity.entityType === config.fromType) {
-      relatedConditions.push(eq(config.table[config.fromIdField], query.relatedEntity.id))
+      relatedConditions.push(
+        eq(getRelationColumn(config, config.fromIdField), query.relatedEntity.id)
+      )
     }
     if (query.relatedEntity.entityType === config.toType) {
-      relatedConditions.push(eq(config.table[config.toIdField], query.relatedEntity.id))
+      relatedConditions.push(
+        eq(getRelationColumn(config, config.toIdField), query.relatedEntity.id)
+      )
     }
     if (relatedConditions.length === 0) {
       return null
@@ -383,8 +393,8 @@ function buildSelectorCondition<K extends LibraryRelationKind>(
   }
 
   const conditions: SQL[] = [
-    eq(config.table[config.fromIdField], selector.from.id),
-    eq(config.table[config.toIdField], selector.to.id)
+    eq(getRelationColumn(config, config.fromIdField), selector.from.id),
+    eq(getRelationColumn(config, config.toIdField), selector.to.id)
   ]
 
   if (config.typeField) {
@@ -392,7 +402,7 @@ function buildSelectorCondition<K extends LibraryRelationKind>(
       throw createValidationError(`Relation selector "${selector.kind}" requires a type value.`)
     }
 
-    conditions.push(eq(config.table[config.typeField], selector.type))
+    conditions.push(eq(getRelationColumn(config, config.typeField), selector.type))
   }
 
   return and(...conditions) as SQL
@@ -401,7 +411,7 @@ function buildSelectorCondition<K extends LibraryRelationKind>(
 function buildInsertValues(
   config: RelationConfig,
   input: LibraryRelationCreateInput<LibraryRelationKind>
-): Record<string, unknown> {
+): SQLiteInsertValue<SQLiteTable> {
   const metadata = input.metadata as Record<string, unknown>
   const values: Record<string, unknown> = {
     [config.fromIdField]: input.from.id,
@@ -424,13 +434,13 @@ function buildInsertValues(
     values[config.secondaryOrderField] = 0
   }
 
-  return values
+  return values as SQLiteInsertValue<SQLiteTable>
 }
 
 function buildUpdateValues(
   config: RelationConfig,
   patch: LibraryRelationPatch<LibraryRelationKind>
-): Record<string, unknown> {
+): SQLiteUpdateSetSource<SQLiteTable> {
   const input = patch as Record<string, unknown>
   const values: Record<string, unknown> = {}
 
@@ -447,7 +457,17 @@ function buildUpdateValues(
     values[config.orderField] = input.order
   }
 
-  return values
+  return values as SQLiteUpdateSetSource<SQLiteTable>
+}
+
+function getRelationColumn(config: RelationConfig, field: string): AnySQLiteColumn {
+  const columns = config.table as unknown as Record<string, AnySQLiteColumn | undefined>
+  const column = columns[field]
+  if (!column) {
+    throw createValidationError(`Relation "${config.kind}" does not define column "${field}".`)
+  }
+
+  return column
 }
 
 function toRelation(config: RelationConfig, row: Record<string, unknown>): LibraryRelation {

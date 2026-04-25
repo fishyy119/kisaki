@@ -452,7 +452,7 @@ provider 形态延续当前 session-based runtime 思路：
 ## 路由规范
 
 - 宿主保留：`app/*`
-- 扩展使用：`ext/<extension-id>/*`
+- 扩展使用：`ext/<extension-id>` 或 `ext/<extension-id>/*`
 
 例如：
 
@@ -472,7 +472,7 @@ interface DeeplinkContribution {
 约束：
 
 - route 必须唯一
-- 扩展 route 必须位于自身命名空间下
+- 扩展 route 必须等于自身命名空间根路径，或位于自身命名空间子路径下
 - renderer 不直接处理扩展 deeplink，统一由 main 路由
 - 主应用只在 `apps/desktop/src/main/services/extension/contributions/deeplinks.ts` 内把公开 deeplink 契约适配到内部 `DeeplinkService`
 

@@ -68,6 +68,7 @@ export class RuntimeManager {
   private readonly desiredExtensions = new Map<string, ExtensionRuntimeMetadata>()
   private readonly loadedExtensions = new Map<string, LoadedExtensionState>()
   private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
+  private readonly storageMutexes = new Map<ExtensionRuntimeHandle, Mutex>()
   private controller: ExtensionHostController | null = null
   private rpc: ExtensionHostRpcClient | null = null
   private generationCounter = 0
@@ -380,9 +381,12 @@ export class RuntimeManager {
 
     rpc.handleHostRequest('bridge.storage.get', async (params) => {
       try {
-        const storage = await this.readStorageDocument(params.runtimeHandle)
-        const value =
-          params.key in storage ? storage[params.key] : (params.fallback as SerializableValue)
+        const value = await this.withStorageLock(params.runtimeHandle, async () => {
+          const storage = await this.readStorageDocument(params.runtimeHandle)
+          return params.key in storage
+            ? storage[params.key]
+            : (params.fallback as SerializableValue)
+        })
 
         return {
           value
@@ -394,9 +398,11 @@ export class RuntimeManager {
 
     rpc.handleHostRequest('bridge.storage.set', async (params) => {
       try {
-        const storage = await this.readStorageDocument(params.runtimeHandle)
-        storage[params.key] = params.value
-        await this.writeStorageDocument(params.runtimeHandle, storage)
+        await this.withStorageLock(params.runtimeHandle, async () => {
+          const storage = await this.readStorageDocument(params.runtimeHandle)
+          storage[params.key] = params.value
+          await this.writeStorageDocument(params.runtimeHandle, storage)
+        })
         return EMPTY_RPC_RESULT
       } catch (error) {
         throw normalizeCapabilityError(error, 'Failed to write extension storage.')
@@ -405,9 +411,11 @@ export class RuntimeManager {
 
     rpc.handleHostRequest('bridge.storage.delete', async (params) => {
       try {
-        const storage = await this.readStorageDocument(params.runtimeHandle)
-        delete storage[params.key]
-        await this.writeStorageDocument(params.runtimeHandle, storage)
+        await this.withStorageLock(params.runtimeHandle, async () => {
+          const storage = await this.readStorageDocument(params.runtimeHandle)
+          delete storage[params.key]
+          await this.writeStorageDocument(params.runtimeHandle, storage)
+        })
         return EMPTY_RPC_RESULT
       } catch (error) {
         throw normalizeCapabilityError(error, 'Failed to delete extension storage value.')
@@ -416,10 +424,12 @@ export class RuntimeManager {
 
     rpc.handleHostRequest('bridge.storage.listKeys', async (params) => {
       try {
-        const storage = await this.readStorageDocument(params.runtimeHandle)
-        const keys = Object.keys(storage).filter((key) =>
-          params.prefix ? key.startsWith(params.prefix) : true
-        )
+        const keys = await this.withStorageLock(params.runtimeHandle, async () => {
+          const storage = await this.readStorageDocument(params.runtimeHandle)
+          return Object.keys(storage).filter((key) =>
+            params.prefix ? key.startsWith(params.prefix) : true
+          )
+        })
 
         return { keys }
       } catch (error) {
@@ -442,6 +452,7 @@ export class RuntimeManager {
       this.controller = null
       this.loadedExtensions.clear()
       this.runtimeHandles.clear()
+      this.storageMutexes.clear()
 
       if (info.expected) {
         log.info(`[RuntimeManager] Extension host exited cleanly with code ${info.code}`)
@@ -533,6 +544,7 @@ export class RuntimeManager {
     this.handshaken = false
     this.loadedExtensions.clear()
     this.runtimeHandles.clear()
+    this.storageMutexes.clear()
 
     if (controller) {
       await controller.stop()
@@ -619,6 +631,23 @@ export class RuntimeManager {
     return path.join(extension.dataPath, 'storage.json')
   }
 
+  private getStorageMutex(runtimeHandle: ExtensionRuntimeHandle): Mutex {
+    let mutex = this.storageMutexes.get(runtimeHandle)
+    if (!mutex) {
+      mutex = new Mutex()
+      this.storageMutexes.set(runtimeHandle, mutex)
+    }
+
+    return mutex
+  }
+
+  private async withStorageLock<T>(
+    runtimeHandle: ExtensionRuntimeHandle,
+    callback: () => Promise<T> | T
+  ): Promise<T> {
+    return this.getStorageMutex(runtimeHandle).runExclusive(callback)
+  }
+
   private requireActiveRuntimeHandle(
     runtimeHandle: ExtensionRuntimeHandle
   ): ExtensionRuntimeMetadata {
@@ -632,6 +661,7 @@ export class RuntimeManager {
 
   private async releaseLoadedState(state: LoadedExtensionState): Promise<void> {
     this.runtimeHandles.delete(state.runtimeHandle)
+    this.storageMutexes.delete(state.runtimeHandle)
     this.options.capabilities?.releaseRuntime(state.runtimeHandle)
     await this.options.contributions?.releaseRuntime(state.runtimeHandle)
   }

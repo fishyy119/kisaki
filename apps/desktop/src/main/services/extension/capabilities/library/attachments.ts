@@ -16,20 +16,38 @@ import {
   normalizeCapabilityError
 } from '@kisaki/extension-api'
 import { eq } from 'drizzle-orm'
+import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { characters, collections, companies, games, persons } from '@shared/db'
-import type { AttachmentInput } from '@shared/db/attachment'
+import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
 import type { DbService } from '@main/services/db'
 
 type AttachmentMode = 'single' | 'multiple'
+type AttachmentTable =
+  | typeof games
+  | typeof characters
+  | typeof persons
+  | typeof companies
+  | typeof collections
+type AttachmentTableWithId = AttachmentTable & { id: AnySQLiteColumn<{ data: string }> }
 
-interface AttachmentSlotConfig {
+interface AttachmentSlotConfigBase {
   entityType: LibraryAttachmentOwnerType
   slot: LibraryAttachmentKind
-  mode: AttachmentMode
-  table: typeof games | typeof characters | typeof persons | typeof companies | typeof collections
+  table: AttachmentTableWithId
   tableName: string
-  field: string
 }
+
+interface SingleAttachmentSlotConfig extends AttachmentSlotConfigBase {
+  mode: Extract<AttachmentMode, 'single'>
+  field: FileColumns<AttachmentTable>
+}
+
+interface MultipleAttachmentSlotConfig extends AttachmentSlotConfigBase {
+  mode: Extract<AttachmentMode, 'multiple'>
+  field: FilesColumns<AttachmentTable>
+}
+
+type AttachmentSlotConfig = SingleAttachmentSlotConfig | MultipleAttachmentSlotConfig
 
 const ATTACHMENT_SLOT_CONFIGS: readonly AttachmentSlotConfig[] = [
   {
@@ -158,7 +176,7 @@ export class ExtensionLibraryAttachmentsHost {
 
     try {
       if (config.mode === 'single') {
-        const fileName = await (this.options.db.attachment as any).setFile(
+        const fileName = await this.options.db.attachment.setFile(
           config.table,
           input.entity.id,
           config.field,
@@ -169,14 +187,10 @@ export class ExtensionLibraryAttachmentsHost {
       }
 
       if (input.replace) {
-        await (this.options.db.attachment as any).clearFiles(
-          config.table,
-          input.entity.id,
-          config.field
-        )
+        await this.options.db.attachment.clearFiles(config.table, input.entity.id, config.field)
       }
 
-      const fileName = await (this.options.db.attachment as any).addFile(
+      const fileName = await this.options.db.attachment.addFile(
         config.table,
         input.entity.id,
         config.field,
@@ -194,16 +208,12 @@ export class ExtensionLibraryAttachmentsHost {
 
     try {
       if (config.mode === 'single') {
-        await (this.options.db.attachment as any).clearFile(
-          config.table,
-          input.entity.id,
-          config.field
-        )
+        await this.options.db.attachment.clearFile(config.table, input.entity.id, config.field)
         return
       }
 
       if (input.fileName) {
-        await (this.options.db.attachment as any).removeFile(
+        await this.options.db.attachment.removeFile(
           config.table,
           input.entity.id,
           config.field,
@@ -212,22 +222,14 @@ export class ExtensionLibraryAttachmentsHost {
         return
       }
 
-      await (this.options.db.attachment as any).clearFiles(
-        config.table,
-        input.entity.id,
-        config.field
-      )
+      await this.options.db.attachment.clearFiles(config.table, input.entity.id, config.field)
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to remove the library attachment.')
     }
   }
 
-  private getRow(table: AttachmentSlotConfig['table'], id: string): Record<string, unknown> {
-    const row = this.options.db.db
-      .select()
-      .from(table)
-      .where(eq((table as any).id, id))
-      .get()
+  private getRow(table: AttachmentTableWithId, id: string): Record<string, unknown> {
+    const row = this.options.db.db.select().from(table).where(eq(table.id, id)).get()
     if (!row) {
       throw createNotFoundError(`Library entity "${id}" was not found.`)
     }
