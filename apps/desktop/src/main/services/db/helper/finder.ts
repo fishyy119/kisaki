@@ -1,5 +1,5 @@
 /**
- * Helper Store
+ * Entity finder.
  *
  * Common query helpers for finding existing entities by persistent identity.
  * All methods are synchronous for better-sqlite3 compatibility.
@@ -26,9 +26,9 @@ import {
   type Tag
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { DbContext } from './types'
+import type { DbContext } from '../types'
 
-export class HelperStore {
+export class EntityFinder {
   constructor(private db: BetterSQLite3Database<typeof schema>) {}
 
   /**

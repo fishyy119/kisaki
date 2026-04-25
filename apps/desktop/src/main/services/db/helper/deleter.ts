@@ -1,5 +1,5 @@
 /**
- * Entity delete store.
+ * Entity deleter.
  *
  * Provides delete previews and executes entity deletion with optional
  * direct-related entity cleanup inside a single DB transaction.
@@ -37,7 +37,7 @@ import {
   personTagLinks,
   tags
 } from '@shared/db'
-import type { DbContext } from './types'
+import type { DbContext } from '../types'
 
 const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[]> = {
   game: ['character', 'person', 'company', 'tag'],
@@ -50,7 +50,7 @@ const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[
 
 type RelatedIdMap = Partial<Record<AllEntityType, Set<string>>>
 
-export class EntityDeleteStore {
+export class EntityDeleter {
   constructor(private db: BetterSQLite3Database<typeof schema>) {}
 
   /**
