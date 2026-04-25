@@ -1,50 +1,34 @@
 import type {
   CharacterScraperProviderRegistration,
-  CharacterScraperSlot as ExtensionCharacterScraperSlot,
   CompanyScraperProviderRegistration,
-  CompanyScraperSlot as ExtensionCompanyScraperSlot,
   ExtensionRuntimeHandle,
-  GameSessionResultMap as ExtensionGameSessionResultMap,
-  GameScraperProviderRegistration,
-  GameScraperSlot as ExtensionGameScraperSlot,
-  PersonScraperProviderRegistration,
-  PersonSessionResultMap as ExtensionPersonSessionResultMap,
-  CompanySessionResultMap as ExtensionCompanySessionResultMap,
   CharacterSessionResultMap as ExtensionCharacterSessionResultMap,
-  PersonScraperSlot as ExtensionPersonScraperSlot
+  CompanySessionResultMap as ExtensionCompanySessionResultMap,
+  GameScraperProviderRegistration,
+  GameSessionResultMap as ExtensionGameSessionResultMap,
+  MainToHostRpcMethod,
+  PersonScraperProviderRegistration,
+  PersonSessionResultMap as ExtensionPersonSessionResultMap
 } from '@kisaki/extension-api'
 import log from 'electron-log/main'
+import type { ScraperService } from '@main/services/scraper'
 import type { ExtensionScraperProviderInfo } from '@shared/extension'
+import type { Locale } from '@shared/locale'
+import type { ScraperCapability, ScraperLookup } from '@shared/scraper'
 import type {
-  CharacterSearchResult,
-  CompanySearchResult,
-  GameSearchResult,
-  PersonSearchResult,
-  ScraperCapability,
-  ScraperLookup
-} from '@shared/scraper'
-import type {
-  CharacterResolvedTarget,
   CharacterScraperProvider,
-  CharacterScraperSession,
   CharacterSessionResultMap
 } from '@main/services/scraper/handlers/character/provider'
 import type {
-  CompanyResolvedTarget,
   CompanyScraperProvider,
-  CompanyScraperSession,
   CompanySessionResultMap
 } from '@main/services/scraper/handlers/company/provider'
 import type {
-  GameResolvedTarget,
   GameScraperProvider,
-  GameScraperSession,
   GameSessionResultMap
 } from '@main/services/scraper/handlers/game/provider'
 import type {
-  PersonResolvedTarget,
   PersonScraperProvider,
-  PersonScraperSession,
   PersonSessionResultMap
 } from '@main/services/scraper/handlers/person/provider'
 import {
@@ -55,7 +39,9 @@ import {
   type RuntimeContributionOwner
 } from './types'
 
+type ScraperKind = 'games' | 'persons' | 'companies' | 'characters'
 type ScraperMediaType = 'game' | 'person' | 'company' | 'character'
+type ScraperRpcAction = 'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close'
 
 type ScraperProviderRegistration =
   | GameScraperProviderRegistration
@@ -70,62 +56,133 @@ interface ScraperRegistration {
   hostProviderId: string
 }
 
+interface ScraperDomain {
+  kind: ScraperKind
+  mediaType: ScraperMediaType
+  registerWithScraper(scraper: ScraperService, provider: unknown): void
+  unregisterFromScraper(scraper: ScraperService, hostProviderId: string): Promise<void>
+  toSessionResults(results: unknown, registration: ScraperRegistration): unknown
+}
+
+interface ExternalIdRecord {
+  source: string
+  id: string
+}
+
+interface ValueWithExternalIds {
+  externalIds: readonly ExternalIdRecord[]
+}
+
 export class ExtensionScraperContributionHost {
   private readonly registrations = new Map<string, ScraperRegistration>()
+  private readonly domainsByMediaType: ReadonlyMap<ScraperMediaType, ScraperDomain>
+  private readonly gameDomain: ScraperDomain = {
+    kind: 'games',
+    mediaType: 'game',
+    registerWithScraper: (scraper, provider) =>
+      scraper.registerGameProvider(provider as GameScraperProvider),
+    unregisterFromScraper: (scraper, hostProviderId) =>
+      scraper.unregisterGameProvider(hostProviderId),
+    toSessionResults: (results, registration) =>
+      toHostGameSessionResults(results as Partial<ExtensionGameSessionResultMap>, registration)
+  }
+  private readonly personDomain: ScraperDomain = {
+    kind: 'persons',
+    mediaType: 'person',
+    registerWithScraper: (scraper, provider) =>
+      scraper.registerPersonProvider(provider as PersonScraperProvider),
+    unregisterFromScraper: (scraper, hostProviderId) =>
+      scraper.unregisterPersonProvider(hostProviderId),
+    toSessionResults: (results, registration) =>
+      toHostPersonSessionResults(results as Partial<ExtensionPersonSessionResultMap>, registration)
+  }
+  private readonly companyDomain: ScraperDomain = {
+    kind: 'companies',
+    mediaType: 'company',
+    registerWithScraper: (scraper, provider) =>
+      scraper.registerCompanyProvider(provider as CompanyScraperProvider),
+    unregisterFromScraper: (scraper, hostProviderId) =>
+      scraper.unregisterCompanyProvider(hostProviderId),
+    toSessionResults: (results, registration) =>
+      toHostCompanySessionResults(
+        results as Partial<ExtensionCompanySessionResultMap>,
+        registration
+      )
+  }
+  private readonly characterDomain: ScraperDomain = {
+    kind: 'characters',
+    mediaType: 'character',
+    registerWithScraper: (scraper, provider) =>
+      scraper.registerCharacterProvider(provider as CharacterScraperProvider),
+    unregisterFromScraper: (scraper, hostProviderId) =>
+      scraper.unregisterCharacterProvider(hostProviderId),
+    toSessionResults: (results, registration) =>
+      toHostCharacterSessionResults(
+        results as Partial<ExtensionCharacterSessionResultMap>,
+        registration
+      )
+  }
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {}
+  constructor(private readonly options: ExtensionContributionHostOptions) {
+    this.domainsByMediaType = new Map<ScraperMediaType, ScraperDomain>([
+      [this.gameDomain.mediaType, this.gameDomain],
+      [this.personDomain.mediaType, this.personDomain],
+      [this.companyDomain.mediaType, this.companyDomain],
+      [this.characterDomain.mediaType, this.characterDomain]
+    ])
+  }
 
   registerGameProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     provider: GameScraperProviderRegistration
   ): Promise<void> {
-    return this.register(runtimeHandle, 'game', provider)
+    return this.register(runtimeHandle, provider, this.gameDomain)
   }
 
   unregisterGameProvider(runtimeHandle: ExtensionRuntimeHandle, providerId: string): Promise<void> {
-    return this.unregister(runtimeHandle, 'game', providerId)
+    return this.unregister(runtimeHandle, providerId, this.gameDomain)
   }
 
   registerPersonProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     provider: PersonScraperProviderRegistration
   ): Promise<void> {
-    return this.register(runtimeHandle, 'person', provider)
+    return this.register(runtimeHandle, provider, this.personDomain)
   }
 
   unregisterPersonProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     providerId: string
   ): Promise<void> {
-    return this.unregister(runtimeHandle, 'person', providerId)
+    return this.unregister(runtimeHandle, providerId, this.personDomain)
   }
 
   registerCompanyProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     provider: CompanyScraperProviderRegistration
   ): Promise<void> {
-    return this.register(runtimeHandle, 'company', provider)
+    return this.register(runtimeHandle, provider, this.companyDomain)
   }
 
   unregisterCompanyProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     providerId: string
   ): Promise<void> {
-    return this.unregister(runtimeHandle, 'company', providerId)
+    return this.unregister(runtimeHandle, providerId, this.companyDomain)
   }
 
   registerCharacterProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     provider: CharacterScraperProviderRegistration
   ): Promise<void> {
-    return this.register(runtimeHandle, 'character', provider)
+    return this.register(runtimeHandle, provider, this.characterDomain)
   }
 
   unregisterCharacterProvider(
     runtimeHandle: ExtensionRuntimeHandle,
     providerId: string
   ): Promise<void> {
-    return this.unregister(runtimeHandle, 'character', providerId)
+    return this.unregister(runtimeHandle, providerId, this.characterDomain)
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
@@ -168,33 +225,33 @@ export class ExtensionScraperContributionHost {
 
   private async register(
     runtimeHandle: ExtensionRuntimeHandle,
-    mediaType: ScraperMediaType,
-    provider: ScraperProviderRegistration
+    provider: ScraperProviderRegistration,
+    domain: ScraperDomain
   ): Promise<void> {
     const owner = requireContributionOwner(this.options, runtimeHandle)
     const registration: ScraperRegistration = {
       owner,
-      mediaType,
+      mediaType: domain.mediaType,
       provider,
       hostProviderId: getHostScraperProviderId(owner.extension.id, provider.id)
     }
-    const key = getScraperKey(runtimeHandle, mediaType, provider.id)
+    const key = getScraperKey(runtimeHandle, domain.mediaType, provider.id)
     const previous = this.registrations.get(key)
     if (previous) {
       this.registrations.delete(key)
       await this.unregisterProviderFromScraperService(previous)
     }
 
-    this.registerProviderWithScraperService(registration)
+    this.registerProviderWithScraperService(registration, domain)
     this.registrations.set(key, registration)
   }
 
   private async unregister(
     runtimeHandle: ExtensionRuntimeHandle,
-    mediaType: ScraperMediaType,
-    providerId: string
+    providerId: string,
+    domain: ScraperDomain
   ): Promise<void> {
-    const key = getScraperKey(runtimeHandle, mediaType, providerId)
+    const key = getScraperKey(runtimeHandle, domain.mediaType, providerId)
     const registration = this.registrations.get(key)
     if (!registration) {
       return
@@ -204,28 +261,16 @@ export class ExtensionScraperContributionHost {
     await this.unregisterProviderFromScraperService(registration)
   }
 
-  private registerProviderWithScraperService(registration: ScraperRegistration): void {
+  private registerProviderWithScraperService(
+    registration: ScraperRegistration,
+    domain: ScraperDomain
+  ): void {
     const scraper = this.options.scraper
     if (!scraper) {
       return
     }
 
-    switch (registration.mediaType) {
-      case 'game':
-        scraper.registerGameProvider(createGameProviderAdapter(this.options, registration))
-        return
-      case 'person':
-        scraper.registerPersonProvider(createPersonProviderAdapter(this.options, registration))
-        return
-      case 'company':
-        scraper.registerCompanyProvider(createCompanyProviderAdapter(this.options, registration))
-        return
-      case 'character':
-        scraper.registerCharacterProvider(
-          createCharacterProviderAdapter(this.options, registration)
-        )
-        return
-    }
+    domain.registerWithScraper(scraper, createProviderAdapter(this.options, registration, domain))
   }
 
   private async unregisterProviderFromScraperService(
@@ -237,26 +282,25 @@ export class ExtensionScraperContributionHost {
     }
 
     try {
-      switch (registration.mediaType) {
-        case 'game':
-          await scraper.unregisterGameProvider(registration.hostProviderId)
-          return
-        case 'person':
-          await scraper.unregisterPersonProvider(registration.hostProviderId)
-          return
-        case 'company':
-          await scraper.unregisterCompanyProvider(registration.hostProviderId)
-          return
-        case 'character':
-          await scraper.unregisterCharacterProvider(registration.hostProviderId)
-          return
-      }
+      await this.requireDomain(registration.mediaType).unregisterFromScraper(
+        scraper,
+        registration.hostProviderId
+      )
     } catch (error) {
       log.warn(
         `[ExtensionScraperContributionHost] Failed to unregister provider "${registration.hostProviderId}":`,
         error
       )
     }
+  }
+
+  private requireDomain(mediaType: ScraperMediaType): ScraperDomain {
+    const domain = this.domainsByMediaType.get(mediaType)
+    if (!domain) {
+      throw new Error(`Unknown scraper media type "${mediaType}".`)
+    }
+
+    return domain
   }
 }
 
@@ -322,376 +366,121 @@ function toHostSearchResult<T extends { externalIds: readonly { source: string; 
   return toHostExternalIds(value, registration)
 }
 
-function createGameProviderAdapter(
+function createProviderAdapter(
   options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration
-): GameScraperProvider {
-  const provider = registration.provider as GameScraperProviderRegistration
-
+  registration: ScraperRegistration,
+  domain: ScraperDomain
+): unknown {
   return {
     id: registration.hostProviderId,
     name: createProviderName(registration),
-    capabilities: createCapabilities(provider),
-    async search(query, locale) {
-      const response = await options.requestHost(
-        'scrapers.games.search',
+    capabilities: createCapabilities(registration.provider),
+    async search(query: string, locale?: Locale) {
+      const response = await requestScraperHost<{ results: readonly ValueWithExternalIds[] }>(
+        options,
+        domain,
+        'search',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
+          providerId: registration.provider.id,
           query,
           locale
         },
-        { timeoutMs: 60_000 }
+        60_000
       )
 
-      return response.results.map((result) =>
-        toHostSearchResult(result, registration)
-      ) as GameSearchResult[]
+      return response.results.map((result) => toHostSearchResult(result, registration))
     },
-    async resolve(lookup, locale) {
-      const response = await options.requestHost(
-        'scrapers.games.resolve',
+    async resolve(lookup: ScraperLookup, locale: Locale) {
+      const response = await requestScraperHost<{ target: unknown }>(
+        options,
+        domain,
+        'resolve',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
+          providerId: registration.provider.id,
           lookup: toExtensionLookup(lookup, registration),
           locale
         },
-        { timeoutMs: 60_000 }
+        60_000
       )
 
-      return response.target as GameResolvedTarget | null
+      return response.target
     },
-    async openSession(target, locale) {
-      const response = await options.requestHost(
-        'scrapers.games.session.open',
+    async openSession(target: unknown, locale: Locale) {
+      const response = await requestScraperHost<{ sessionId: string }>(
+        options,
+        domain,
+        'session.open',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
+          providerId: registration.provider.id,
           target,
           locale
         },
-        { timeoutMs: 60_000 }
+        60_000
       )
 
-      return createGameSessionAdapter(options, registration, response.sessionId)
+      return createSessionAdapter(options, registration, domain, response.sessionId)
     }
   }
 }
 
-function createGameSessionAdapter(
+function createSessionAdapter(
   options: ExtensionContributionHostOptions,
   registration: ScraperRegistration,
+  domain: ScraperDomain,
   sessionId: string
-): GameScraperSession {
-  const provider = registration.provider as GameScraperProviderRegistration
-
+): unknown {
   return {
-    async get(slots) {
-      const response = await options.requestHost(
-        'scrapers.games.session.get',
+    async get(slots: readonly string[]) {
+      const response = await requestScraperHost<{ results: unknown }>(
+        options,
+        domain,
+        'session.get',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
+          providerId: registration.provider.id,
           sessionId,
-          slots: slots as readonly ExtensionGameScraperSlot[]
+          slots
         },
-        { timeoutMs: 60_000 }
+        60_000
       )
 
-      return toHostGameSessionResults(response.results, registration)
+      return domain.toSessionResults(response.results, registration)
     },
     async dispose() {
-      await options.requestHost(
-        'scrapers.games.session.close',
+      await requestScraperHost<Record<string, never>>(
+        options,
+        domain,
+        'session.close',
         {
           runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
+          providerId: registration.provider.id,
           sessionId
         },
-        { timeoutMs: 15_000 }
+        15_000
       )
     }
   }
 }
 
-function createPersonProviderAdapter(
+async function requestScraperHost<TResponse>(
   options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration
-): PersonScraperProvider {
-  const provider = registration.provider as PersonScraperProviderRegistration
+  domain: ScraperDomain,
+  action: ScraperRpcAction,
+  params: Record<string, unknown>,
+  timeoutMs: number
+): Promise<TResponse> {
+  const response = await options.requestHost(getScraperRpcMethod(domain, action), params as never, {
+    timeoutMs
+  })
 
-  return {
-    id: registration.hostProviderId,
-    name: createProviderName(registration),
-    capabilities: createCapabilities(provider),
-    async search(query, locale) {
-      const response = await options.requestHost(
-        'scrapers.persons.search',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          query,
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return response.results.map((result) =>
-        toHostSearchResult(result, registration)
-      ) as PersonSearchResult[]
-    },
-    async resolve(lookup, locale) {
-      const response = await options.requestHost(
-        'scrapers.persons.resolve',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          lookup: toExtensionLookup(lookup, registration),
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return response.target as PersonResolvedTarget | null
-    },
-    async openSession(target, locale) {
-      const response = await options.requestHost(
-        'scrapers.persons.session.open',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          target,
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return createPersonSessionAdapter(options, registration, response.sessionId)
-    }
-  }
+  return response as TResponse
 }
 
-function createPersonSessionAdapter(
-  options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration,
-  sessionId: string
-): PersonScraperSession {
-  const provider = registration.provider as PersonScraperProviderRegistration
-
-  return {
-    async get(slots) {
-      const response = await options.requestHost(
-        'scrapers.persons.session.get',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          sessionId,
-          slots: slots as readonly ExtensionPersonScraperSlot[]
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return toHostPersonSessionResults(response.results, registration)
-    },
-    async dispose() {
-      await options.requestHost(
-        'scrapers.persons.session.close',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          sessionId
-        },
-        { timeoutMs: 15_000 }
-      )
-    }
-  }
-}
-
-function createCompanyProviderAdapter(
-  options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration
-): CompanyScraperProvider {
-  const provider = registration.provider as CompanyScraperProviderRegistration
-
-  return {
-    id: registration.hostProviderId,
-    name: createProviderName(registration),
-    capabilities: createCapabilities(provider),
-    async search(query, locale) {
-      const response = await options.requestHost(
-        'scrapers.companies.search',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          query,
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return response.results.map((result) =>
-        toHostSearchResult(result, registration)
-      ) as CompanySearchResult[]
-    },
-    async resolve(lookup, locale) {
-      const response = await options.requestHost(
-        'scrapers.companies.resolve',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          lookup: toExtensionLookup(lookup, registration),
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return response.target as CompanyResolvedTarget | null
-    },
-    async openSession(target, locale) {
-      const response = await options.requestHost(
-        'scrapers.companies.session.open',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          target,
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return createCompanySessionAdapter(options, registration, response.sessionId)
-    }
-  }
-}
-
-function createCompanySessionAdapter(
-  options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration,
-  sessionId: string
-): CompanyScraperSession {
-  const provider = registration.provider as CompanyScraperProviderRegistration
-
-  return {
-    async get(slots) {
-      const response = await options.requestHost(
-        'scrapers.companies.session.get',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          sessionId,
-          slots: slots as readonly ExtensionCompanyScraperSlot[]
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return toHostCompanySessionResults(response.results, registration)
-    },
-    async dispose() {
-      await options.requestHost(
-        'scrapers.companies.session.close',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          sessionId
-        },
-        { timeoutMs: 15_000 }
-      )
-    }
-  }
-}
-
-function createCharacterProviderAdapter(
-  options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration
-): CharacterScraperProvider {
-  const provider = registration.provider as CharacterScraperProviderRegistration
-
-  return {
-    id: registration.hostProviderId,
-    name: createProviderName(registration),
-    capabilities: createCapabilities(provider),
-    async search(query, locale) {
-      const response = await options.requestHost(
-        'scrapers.characters.search',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          query,
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return response.results.map((result) =>
-        toHostSearchResult(result, registration)
-      ) as CharacterSearchResult[]
-    },
-    async resolve(lookup, locale) {
-      const response = await options.requestHost(
-        'scrapers.characters.resolve',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          lookup: toExtensionLookup(lookup, registration),
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return response.target as CharacterResolvedTarget | null
-    },
-    async openSession(target, locale) {
-      const response = await options.requestHost(
-        'scrapers.characters.session.open',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          target,
-          locale
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return createCharacterSessionAdapter(options, registration, response.sessionId)
-    }
-  }
-}
-
-function createCharacterSessionAdapter(
-  options: ExtensionContributionHostOptions,
-  registration: ScraperRegistration,
-  sessionId: string
-): CharacterScraperSession {
-  const provider = registration.provider as CharacterScraperProviderRegistration
-
-  return {
-    async get(slots) {
-      const response = await options.requestHost(
-        'scrapers.characters.session.get',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          sessionId,
-          slots: slots as readonly ExtensionCharacterScraperSlot[]
-        },
-        { timeoutMs: 60_000 }
-      )
-
-      return toHostCharacterSessionResults(response.results, registration)
-    },
-    async dispose() {
-      await options.requestHost(
-        'scrapers.characters.session.close',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          providerId: provider.id,
-          sessionId
-        },
-        { timeoutMs: 15_000 }
-      )
-    }
-  }
+function getScraperRpcMethod(domain: ScraperDomain, action: ScraperRpcAction): MainToHostRpcMethod {
+  return `scrapers.${domain.kind}.${action}` as MainToHostRpcMethod
 }
 
 function toHostGameSessionResults(
