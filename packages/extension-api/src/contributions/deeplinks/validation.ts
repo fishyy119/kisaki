@@ -1,5 +1,5 @@
-import type { Disposable, SerializableValue } from '../shared'
-import type { ValidationIssue } from '../shared/validation'
+import type { DeeplinkContribution } from './contracts'
+import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
   validateOptionalEnumString,
@@ -9,30 +9,7 @@ import {
   validateRequiredString,
   validateSerializableValue,
   validateUnknownKeys
-} from '../shared/validation'
-
-export interface DeeplinkRequest {
-  route: string
-  params: Record<string, string>
-  rawUrl: string
-}
-
-export interface DeeplinkResponse {
-  success: boolean
-  status?: 'handled' | 'ignored' | 'error'
-  message?: string
-  data?: SerializableValue
-}
-
-export interface DeeplinkContribution {
-  id: string
-  route: string
-  handle(input: DeeplinkRequest): Promise<DeeplinkResponse>
-}
-
-export interface DeeplinkRegistrar {
-  register(contribution: DeeplinkContribution): Disposable
-}
+} from '../../shared/validation'
 
 const DEEPLINK_CONTRIBUTION_KEYS = new Set<string>(['id', 'route', 'handle'])
 
