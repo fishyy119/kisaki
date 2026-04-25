@@ -1,17 +1,25 @@
 import { randomUUID } from 'node:crypto'
 import {
+  CHARACTER_SCRAPER_SLOTS,
   type CharacterScraperProvider,
   type CharacterScraperSession,
   type CharacterScraperSlot,
+  COMPANY_SCRAPER_SLOTS,
   type CompanyScraperProvider,
   type CompanyScraperSession,
   type CompanyScraperSlot,
+  GAME_SCRAPER_SLOTS,
   type GameScraperProvider,
   type GameScraperSession,
   type GameScraperSlot,
+  type HostToMainRpcMethod,
+  type HostToMainRpcRequestMap,
+  type MainToHostRpcMethod,
+  PERSON_SCRAPER_SLOTS,
   type PersonScraperProvider,
   type PersonScraperSession,
   type PersonScraperSlot,
+  type RpcParams,
   type ScraperSessionCloseRequest,
   type ScraperSessionGetRequest,
   type ScraperSessionOpenRequest,
@@ -33,7 +41,113 @@ import {
 } from './types'
 import type { LoadedExtensionRuntime } from '../extension-registry'
 
-type ScraperKind = 'games' | 'persons' | 'companies' | 'characters'
+export type ScraperRpcKind = 'games' | 'persons' | 'companies' | 'characters'
+
+export type MainToHostScraperRpcMethods<TKind extends ScraperRpcKind = ScraperRpcKind> = {
+  search: Extract<MainToHostRpcMethod, `scrapers.${TKind}.search`>
+  resolve: Extract<MainToHostRpcMethod, `scrapers.${TKind}.resolve`>
+  open: Extract<MainToHostRpcMethod, `scrapers.${TKind}.session.open`>
+  get: Extract<MainToHostRpcMethod, `scrapers.${TKind}.session.get`>
+  close: Extract<MainToHostRpcMethod, `scrapers.${TKind}.session.close`>
+}
+
+export interface MainToHostScraperRpcDescriptor<TKind extends ScraperRpcKind = ScraperRpcKind> {
+  kind: TKind
+  methods: MainToHostScraperRpcMethods<TKind>
+}
+
+export type HostToMainScraperRpcMethods<TKind extends ScraperRpcKind = ScraperRpcKind> = {
+  register: Extract<HostToMainRpcMethod, `bridge.scrapers.${TKind}.register`>
+  unregister: Extract<HostToMainRpcMethod, `bridge.scrapers.${TKind}.unregister`>
+}
+
+export interface HostToMainScraperRpcDescriptor<TKind extends ScraperRpcKind = ScraperRpcKind> {
+  kind: TKind
+  slots: readonly string[]
+  methods: HostToMainScraperRpcMethods<TKind>
+}
+
+export const MAIN_TO_HOST_SCRAPER_RPC = {
+  games: {
+    kind: 'games',
+    methods: {
+      search: 'scrapers.games.search',
+      resolve: 'scrapers.games.resolve',
+      open: 'scrapers.games.session.open',
+      get: 'scrapers.games.session.get',
+      close: 'scrapers.games.session.close'
+    }
+  },
+  persons: {
+    kind: 'persons',
+    methods: {
+      search: 'scrapers.persons.search',
+      resolve: 'scrapers.persons.resolve',
+      open: 'scrapers.persons.session.open',
+      get: 'scrapers.persons.session.get',
+      close: 'scrapers.persons.session.close'
+    }
+  },
+  companies: {
+    kind: 'companies',
+    methods: {
+      search: 'scrapers.companies.search',
+      resolve: 'scrapers.companies.resolve',
+      open: 'scrapers.companies.session.open',
+      get: 'scrapers.companies.session.get',
+      close: 'scrapers.companies.session.close'
+    }
+  },
+  characters: {
+    kind: 'characters',
+    methods: {
+      search: 'scrapers.characters.search',
+      resolve: 'scrapers.characters.resolve',
+      open: 'scrapers.characters.session.open',
+      get: 'scrapers.characters.session.get',
+      close: 'scrapers.characters.session.close'
+    }
+  }
+} as const satisfies {
+  [K in ScraperRpcKind]: MainToHostScraperRpcDescriptor<K>
+}
+
+const HOST_TO_MAIN_SCRAPER_RPC = {
+  games: {
+    kind: 'games',
+    slots: GAME_SCRAPER_SLOTS,
+    methods: {
+      register: 'bridge.scrapers.games.register',
+      unregister: 'bridge.scrapers.games.unregister'
+    }
+  },
+  persons: {
+    kind: 'persons',
+    slots: PERSON_SCRAPER_SLOTS,
+    methods: {
+      register: 'bridge.scrapers.persons.register',
+      unregister: 'bridge.scrapers.persons.unregister'
+    }
+  },
+  companies: {
+    kind: 'companies',
+    slots: COMPANY_SCRAPER_SLOTS,
+    methods: {
+      register: 'bridge.scrapers.companies.register',
+      unregister: 'bridge.scrapers.companies.unregister'
+    }
+  },
+  characters: {
+    kind: 'characters',
+    slots: CHARACTER_SCRAPER_SLOTS,
+    methods: {
+      register: 'bridge.scrapers.characters.register',
+      unregister: 'bridge.scrapers.characters.unregister'
+    }
+  }
+} as const satisfies {
+  [K in ScraperRpcKind]: HostToMainScraperRpcDescriptor<K>
+}
 
 interface ScraperSessionLike<TSlot extends string> {
   get(slots: readonly TSlot[]): Promise<unknown>
@@ -58,6 +172,36 @@ interface ScraperProviderLike<TSlot extends string, TSession extends ScraperSess
   ): Promise<TSession>
 }
 
+function toScraperProviderRegistration<TSlot extends string>(
+  provider: {
+    readonly id: string
+    readonly name: string
+    readonly capabilities: readonly unknown[]
+  },
+  allowedSlots: readonly TSlot[]
+): {
+  id: string
+  name: string
+  capabilities: readonly ('search' | TSlot)[]
+} {
+  return {
+    id: provider.id,
+    name: provider.name,
+    capabilities: normalizeScraperCapabilities(provider.capabilities, allowedSlots)
+  }
+}
+
+function normalizeScraperCapabilities<TSlot extends string>(
+  capabilities: readonly unknown[],
+  allowedSlots: readonly TSlot[]
+): readonly ('search' | TSlot)[] {
+  const allowedCapabilities = new Set<string>(['search', ...allowedSlots])
+  return capabilities.filter(
+    (capability): capability is 'search' | TSlot =>
+      typeof capability === 'string' && allowedCapabilities.has(capability)
+  )
+}
+
 interface ScraperSessionRecord<TSession extends { dispose?(): Promise<void> | void }> {
   runtimeHandle: string
   providerId: string
@@ -65,15 +209,34 @@ interface ScraperSessionRecord<TSession extends { dispose?(): Promise<void> | vo
 }
 
 interface ScraperDomain<
+  TKind extends ScraperRpcKind,
   TSlot extends string,
   TSession extends ScraperSessionLike<TSlot>,
-  TProvider extends ScraperProviderLike<TSlot, TSession>
+  TProvider extends ScraperProviderLike<TSlot, TSession>,
+  TRegisterMethod extends HostToMainRpcMethod =
+    HostToMainScraperRpcDescriptor<TKind>['methods']['register'],
+  TUnregisterMethod extends HostToMainRpcMethod =
+    HostToMainScraperRpcDescriptor<TKind>['methods']['unregister']
 > {
-  kind: ScraperKind
+  kind: TKind
   label: string
+  rpc: HostToMainScraperRpcDescriptor<TKind> & {
+    methods: {
+      register: TRegisterMethod
+      unregister: TUnregisterMethod
+    }
+  }
   sessions: Map<string, ScraperSessionRecord<TSession>>
   getProviders(runtime: LoadedExtensionRuntime): Map<string, TProvider>
   validate(provider: TProvider): readonly ValidationIssue[]
+  toRegistration(
+    scope: HostContributionScope,
+    provider: TProvider
+  ): RpcParams<HostToMainRpcRequestMap, TRegisterMethod>
+  toUnregistration(
+    scope: HostContributionScope,
+    providerId: string
+  ): RpcParams<HostToMainRpcRequestMap, TUnregisterMethod>
   register(scope: HostContributionScope, provider: TProvider): void
   unregister(scope: HostContributionScope, providerId: string): void
 }
@@ -88,21 +251,25 @@ export class HostScraperContributions {
     ScraperSessionRecord<CharacterScraperSession>
   >()
   private readonly gameDomain: ScraperDomain<
+    'games',
     GameScraperSlot,
     GameScraperSession,
     GameScraperProvider
   >
   private readonly personDomain: ScraperDomain<
+    'persons',
     PersonScraperSlot,
     PersonScraperSession,
     PersonScraperProvider
   >
   private readonly companyDomain: ScraperDomain<
+    'companies',
     CompanyScraperSlot,
     CompanyScraperSession,
     CompanyScraperProvider
   >
   private readonly characterDomain: ScraperDomain<
+    'characters',
     CharacterScraperSlot,
     CharacterScraperSession,
     CharacterScraperProvider
@@ -113,9 +280,18 @@ export class HostScraperContributions {
     this.gameDomain = {
       kind: 'games',
       label: 'Game',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC.games,
       sessions: this.gameSessions,
       getProviders: (runtime) => runtime.gameScrapers,
       validate: validateGameScraperProviderShape,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.games.slots)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        providerId
+      }),
       register: (scope, provider) =>
         this.options.registry.registerGameScraper(scope.extensionId, provider),
       unregister: (scope, providerId) =>
@@ -124,9 +300,18 @@ export class HostScraperContributions {
     this.personDomain = {
       kind: 'persons',
       label: 'Person',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC.persons,
       sessions: this.personSessions,
       getProviders: (runtime) => runtime.personScrapers,
       validate: validatePersonScraperProviderShape,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.persons.slots)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        providerId
+      }),
       register: (scope, provider) =>
         this.options.registry.registerPersonScraper(scope.extensionId, provider),
       unregister: (scope, providerId) =>
@@ -135,9 +320,18 @@ export class HostScraperContributions {
     this.companyDomain = {
       kind: 'companies',
       label: 'Company',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC.companies,
       sessions: this.companySessions,
       getProviders: (runtime) => runtime.companyScrapers,
       validate: validateCompanyScraperProviderShape,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.companies.slots)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        providerId
+      }),
       register: (scope, provider) =>
         this.options.registry.registerCompanyScraper(scope.extensionId, provider),
       unregister: (scope, providerId) =>
@@ -146,9 +340,18 @@ export class HostScraperContributions {
     this.characterDomain = {
       kind: 'characters',
       label: 'Character',
+      rpc: HOST_TO_MAIN_SCRAPER_RPC.characters,
       sessions: this.characterSessions,
       getProviders: (runtime) => runtime.characterScrapers,
       validate: validateCharacterScraperProviderShape,
+      toRegistration: (scope, provider) => ({
+        runtimeHandle: scope.runtimeHandle,
+        provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.characters.slots)
+      }),
+      toUnregistration: (scope, providerId) => ({
+        runtimeHandle: scope.runtimeHandle,
+        providerId
+      }),
       register: (scope, provider) =>
         this.options.registry.registerCharacterScraper(scope.extensionId, provider),
       unregister: (scope, providerId) =>
@@ -313,13 +516,14 @@ export class HostScraperContributions {
   }
 
   private registerProvider<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
     scope: HostContributionScope,
     provider: TProvider,
-    domain: ScraperDomain<TSlot, TSession, TProvider>
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>
   ): ContributionDisposable {
     const issues = domain.validate(provider)
     if (issues.length > 0) {
@@ -335,15 +539,8 @@ export class HostScraperContributions {
     this.options.trackMainRequest(
       scope,
       this.options.rpc.requestMain(
-        `bridge.scrapers.${domain.kind}.register` as never,
-        {
-          runtimeHandle: scope.runtimeHandle,
-          provider: {
-            id: provider.id,
-            name: provider.name,
-            capabilities: provider.capabilities as readonly ('search' | TSlot)[]
-          }
-        } as never,
+        domain.rpc.methods.register,
+        domain.toRegistration(scope, provider),
         this.options.getRequestOptions(scope)
       )
     )
@@ -354,6 +551,7 @@ export class HostScraperContributions {
   }
 
   private async unregisterProvider<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
@@ -361,19 +559,20 @@ export class HostScraperContributions {
     scope: HostContributionScope,
     providerId: string,
     notifyMain: boolean,
-    domain: ScraperDomain<TSlot, TSession, TProvider>
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>
   ): Promise<void> {
     await this.closeProviderSessions(domain.sessions, scope.runtimeHandle, providerId)
     domain.unregister(scope, providerId)
-    await this.notifyProviderUnregistered(scope, domain.kind, providerId, notifyMain)
+    await this.notifyProviderUnregistered(scope, domain, providerId, notifyMain)
   }
 
   private async searchProvider<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     request: ScraperSearchRequest
   ): Promise<{ results: Awaited<ReturnType<TProvider['search']>> }> {
     const { runtime, provider } = this.requireProvider(
@@ -391,11 +590,12 @@ export class HostScraperContributions {
   }
 
   private async resolveProvider<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     request: ScraperResolveRequest
   ): Promise<{ target: Awaited<ReturnType<TProvider['resolve']>> }> {
     const { runtime, provider } = this.requireProvider(
@@ -413,11 +613,12 @@ export class HostScraperContributions {
   }
 
   private async openProviderSession<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     request: ScraperSessionOpenRequest
   ): Promise<{ sessionId: string }> {
     const { runtime, provider } = this.requireProvider(
@@ -439,11 +640,12 @@ export class HostScraperContributions {
   }
 
   private async getProviderSession<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     request: ScraperSessionGetRequest<TSlot>
   ): Promise<{ results: Awaited<ReturnType<TSession['get']>> }> {
     const record = this.requireSession(domain.sessions, request)
@@ -458,22 +660,24 @@ export class HostScraperContributions {
   }
 
   private async closeProviderSession<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     request: ScraperSessionCloseRequest
   ): Promise<void> {
     await this.closeSession(domain.sessions, request.sessionId)
   }
 
   private requireProvider<
+    TKind extends ScraperRpcKind,
     TSlot extends string,
     TSession extends ScraperSessionLike<TSlot>,
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
-    domain: ScraperDomain<TSlot, TSession, TProvider>,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     runtimeHandle: string,
     providerId: string
   ): { runtime: LoadedExtensionRuntime; provider: TProvider } {
@@ -564,9 +768,14 @@ export class HostScraperContributions {
     await this.options.runInExtensionContext(runtime, () => record.session.dispose?.())
   }
 
-  private async notifyProviderUnregistered(
+  private async notifyProviderUnregistered<
+    TKind extends ScraperRpcKind,
+    TSlot extends string,
+    TSession extends ScraperSessionLike<TSlot>,
+    TProvider extends ScraperProviderLike<TSlot, TSession>
+  >(
     scope: HostContributionScope,
-    kind: ScraperKind,
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
     providerId: string,
     notifyMain: boolean
   ): Promise<void> {
@@ -575,11 +784,8 @@ export class HostScraperContributions {
     }
 
     await this.options.rpc.requestMain(
-      `bridge.scrapers.${kind}.unregister` as never,
-      {
-        runtimeHandle: scope.runtimeHandle,
-        providerId
-      } as never,
+      domain.rpc.methods.unregister,
+      domain.toUnregistration(scope, providerId),
       this.options.getCleanupRequestOptions(scope)
     )
   }

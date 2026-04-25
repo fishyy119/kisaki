@@ -17,7 +17,6 @@ import type {
   HostEventTopic,
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
-  MainToHostRpcMethod,
   PersonScraperProvider,
   RpcParams,
   RpcResult,
@@ -29,7 +28,7 @@ import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-reg
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostDeeplinkContributions } from '../contributions/deeplinks'
 import { HostEntityMenuContributions } from '../contributions/entity-menus'
-import { HostScraperContributions } from '../contributions/scrapers'
+import { HostScraperContributions, MAIN_TO_HOST_SCRAPER_RPC } from '../contributions/scrapers'
 import { HostSettingsPanelContributions } from '../contributions/settings-panels'
 import { HostThemeContributions } from '../contributions/themes'
 import type { HostContributionScope } from '../contributions/types'
@@ -61,9 +60,6 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
   RpcParams<HostToMainRpcRequestMap, K>,
   'runtimeHandle'
 >
-
-type ScraperRpcKind = 'games' | 'persons' | 'companies' | 'characters'
-type ScraperRpcHandler = (params: never) => Promise<unknown> | unknown
 
 /**
  * Shared extension-host bridge that binds the public SDK root entry to the
@@ -159,65 +155,44 @@ export class ExtensionHostSdkBridge {
   }
 
   private registerScraperRpcHandlers(): void {
-    this.registerScraperDomainRpcHandlers('games', {
-      search: (params) => this.scrapers.searchGames(params),
-      resolve: (params) => this.scrapers.resolveGame(params),
-      open: (params) => this.scrapers.openGameSession(params),
-      get: (params) => this.scrapers.getGameSession(params),
-      close: (params) => this.scrapers.closeGameSession(params)
+    const games = MAIN_TO_HOST_SCRAPER_RPC.games.methods
+    this.rpc.handle(games.search, (params) => this.scrapers.searchGames(params))
+    this.rpc.handle(games.resolve, (params) => this.scrapers.resolveGame(params))
+    this.rpc.handle(games.open, (params) => this.scrapers.openGameSession(params))
+    this.rpc.handle(games.get, (params) => this.scrapers.getGameSession(params))
+    this.rpc.handle(games.close, async (params) => {
+      await this.scrapers.closeGameSession(params)
+      return {}
     })
-    this.registerScraperDomainRpcHandlers('persons', {
-      search: (params) => this.scrapers.searchPersons(params),
-      resolve: (params) => this.scrapers.resolvePerson(params),
-      open: (params) => this.scrapers.openPersonSession(params),
-      get: (params) => this.scrapers.getPersonSession(params),
-      close: (params) => this.scrapers.closePersonSession(params)
-    })
-    this.registerScraperDomainRpcHandlers('companies', {
-      search: (params) => this.scrapers.searchCompanies(params),
-      resolve: (params) => this.scrapers.resolveCompany(params),
-      open: (params) => this.scrapers.openCompanySession(params),
-      get: (params) => this.scrapers.getCompanySession(params),
-      close: (params) => this.scrapers.closeCompanySession(params)
-    })
-    this.registerScraperDomainRpcHandlers('characters', {
-      search: (params) => this.scrapers.searchCharacters(params),
-      resolve: (params) => this.scrapers.resolveCharacter(params),
-      open: (params) => this.scrapers.openCharacterSession(params),
-      get: (params) => this.scrapers.getCharacterSession(params),
-      close: (params) => this.scrapers.closeCharacterSession(params)
-    })
-  }
 
-  private registerScraperDomainRpcHandlers(
-    kind: ScraperRpcKind,
-    handlers: {
-      search: ScraperRpcHandler
-      resolve: ScraperRpcHandler
-      open: ScraperRpcHandler
-      get: ScraperRpcHandler
-      close: ScraperRpcHandler
-    }
-  ): void {
-    this.rpc.handle(
-      `scrapers.${kind}.search` as MainToHostRpcMethod,
-      (params) => handlers.search(params as never) as never
-    )
-    this.rpc.handle(
-      `scrapers.${kind}.resolve` as MainToHostRpcMethod,
-      (params) => handlers.resolve(params as never) as never
-    )
-    this.rpc.handle(
-      `scrapers.${kind}.session.open` as MainToHostRpcMethod,
-      (params) => handlers.open(params as never) as never
-    )
-    this.rpc.handle(
-      `scrapers.${kind}.session.get` as MainToHostRpcMethod,
-      (params) => handlers.get(params as never) as never
-    )
-    this.rpc.handle(`scrapers.${kind}.session.close` as MainToHostRpcMethod, async (params) => {
-      await handlers.close(params as never)
-      return {} as never
+    const persons = MAIN_TO_HOST_SCRAPER_RPC.persons.methods
+    this.rpc.handle(persons.search, (params) => this.scrapers.searchPersons(params))
+    this.rpc.handle(persons.resolve, (params) => this.scrapers.resolvePerson(params))
+    this.rpc.handle(persons.open, (params) => this.scrapers.openPersonSession(params))
+    this.rpc.handle(persons.get, (params) => this.scrapers.getPersonSession(params))
+    this.rpc.handle(persons.close, async (params) => {
+      await this.scrapers.closePersonSession(params)
+      return {}
+    })
+
+    const companies = MAIN_TO_HOST_SCRAPER_RPC.companies.methods
+    this.rpc.handle(companies.search, (params) => this.scrapers.searchCompanies(params))
+    this.rpc.handle(companies.resolve, (params) => this.scrapers.resolveCompany(params))
+    this.rpc.handle(companies.open, (params) => this.scrapers.openCompanySession(params))
+    this.rpc.handle(companies.get, (params) => this.scrapers.getCompanySession(params))
+    this.rpc.handle(companies.close, async (params) => {
+      await this.scrapers.closeCompanySession(params)
+      return {}
+    })
+
+    const characters = MAIN_TO_HOST_SCRAPER_RPC.characters.methods
+    this.rpc.handle(characters.search, (params) => this.scrapers.searchCharacters(params))
+    this.rpc.handle(characters.resolve, (params) => this.scrapers.resolveCharacter(params))
+    this.rpc.handle(characters.open, (params) => this.scrapers.openCharacterSession(params))
+    this.rpc.handle(characters.get, (params) => this.scrapers.getCharacterSession(params))
+    this.rpc.handle(characters.close, async (params) => {
+      await this.scrapers.closeCharacterSession(params)
+      return {}
     })
   }
 

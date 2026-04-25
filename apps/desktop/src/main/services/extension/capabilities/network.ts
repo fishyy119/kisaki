@@ -148,16 +148,51 @@ async function readResponseBody(
   response: Response,
   responseType: NetworkRequest['responseType']
 ): Promise<RpcValue> {
-  switch (responseType ?? 'json') {
+  if (response.status === 204 || response.status === 205) {
+    return null
+  }
+
+  switch (responseType) {
     case 'arrayBuffer':
       return new Uint8Array(await response.arrayBuffer())
     case 'text':
       return await response.text()
-    case 'json': {
-      const data = await response.json()
-      return toRpcValue(data)
-    }
+    case 'json':
+      return await readJsonResponseBody(response)
+    default:
+      return await readDefaultResponseBody(response)
   }
+}
+
+async function readDefaultResponseBody(response: Response): Promise<RpcValue> {
+  if (isJsonResponse(response)) {
+    return await readJsonResponseBody(response)
+  }
+
+  const text = await response.text()
+  return text.length > 0 ? text : null
+}
+
+async function readJsonResponseBody(response: Response): Promise<RpcValue> {
+  const text = await response.text()
+  if (text.trim().length === 0) {
+    return null
+  }
+
+  try {
+    return toRpcValue(JSON.parse(text))
+  } catch {
+    throw createValidationError('The network response body is not valid JSON.')
+  }
+}
+
+function isJsonResponse(response: Response): boolean {
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? ''
+  return (
+    contentType.includes('application/json') ||
+    contentType.includes('text/json') ||
+    /\b[a-z0-9.+-]+\+json\b/.test(contentType)
+  )
 }
 
 function toRpcValue(value: unknown): RpcValue {

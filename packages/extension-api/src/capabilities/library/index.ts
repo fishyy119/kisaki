@@ -74,3 +74,4 @@ export interface LibraryCapability {
 export type * from './attachments'
 export type * from './entities'
 export type * from './relations'
+export * from './validation'

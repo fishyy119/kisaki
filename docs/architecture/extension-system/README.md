@@ -1,14 +1,25 @@
-# Kisaki Extension System 重构总览
+# Kisaki Extension System 架构总览
 
-本目录定义 Kisaki 新一代 `extension` 扩展系统，用来彻底替换当前的 `plugin` 插件系统。
+本目录记录 Kisaki 新一代 `extension` 扩展系统的设计、迁移历史和当前状态。旧 `plugin`
+系统已经完成退役；当前运行时以 `ExtensionService`、共享 `extension-host`、`packages/extension-api`
+和 `packages/extension-sdk` 为正式边界。
 
-这次重构的目标不是在旧系统上修补，而是建立一套新的公开扩展平台边界：
+新系统的目标不是在旧系统上修补，而是建立一套公开扩展平台边界：
 
 - 扩展只通过公开契约工作，不再直接触碰宿主内部对象。
 - 扩展运行时与主应用物理解耦，不再在 renderer 中执行扩展代码。
 - 所有扩展接口定义统一原生定义在 `packages`，宿主应用只在 `ExtensionService` 体系内实现和适配。
 - UI 扩展改为受控贡献模型，不再支持自定义页面、Tab、Sidebar、任意 Vue 组件注入。
 - 工具链统一为 `tsdown`，打包格式统一为 `.kisx`。
+
+## 当前实现状态
+
+截至 2026-04-25，当前源码事实如下：
+
+1. 旧 `plugin` runtime、renderer 执行链路、旧 SDK/CLI/脚手架源码已经移除。
+2. `ExtensionService` 负责安装、catalog、启停状态、共享宿主生命周期、capability 和 contribution 接线。
+3. 扩展入口运行在共享 `extension-host` utility process，renderer 只消费 main 下发的结构化 DTO。
+4. 公开契约位于 `packages/extension-api`，作者侧入口位于 `packages/extension-sdk`，工具链使用 `kisx` 与 `.kisx`。
 
 ## 核心结论
 
@@ -25,7 +36,7 @@
 ## 文档清单
 
 - [01-current-state-audit.md](./01-current-state-audit.md)
-  当前项目插件体系的完整审计，明确必须删除、必须保留、可以复用的部分。
+  历史审计归档，记录旧 `plugin` 体系的结构问题、可复用资产和必须替换的原因。
 - [02-target-architecture.md](./02-target-architecture.md)
   新扩展系统的总体架构、进程边界、生命周期、目录设计和运行模型。
 - [03-sdk-and-manifest-spec.md](./03-sdk-and-manifest-spec.md)
@@ -35,7 +46,7 @@
 - [05-runtime-packaging-and-tooling.md](./05-runtime-packaging-and-tooling.md)
   共享扩展宿主进程、桥接协议、`.kisx` 打包格式、tsdown 工具链、开发调试与安装更新。
 - [06-implementation-plan.md](./06-implementation-plan.md)
-  仓库级重构实施方案、目录改造、删除/新增模块、测试策略与验收标准。
+  已完成迁移计划归档，保留仓库级重构路线、目录改造、删除/新增模块、测试策略与验收标准。
 
 ## 术语约定
 

@@ -77,7 +77,7 @@ export class RuntimeManager {
   private readonly loadedExtensions = new Map<string, LoadedExtensionState>()
   private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
   private readonly runtimeStates = new Map<string, ExtensionRuntimeState>()
-  private readonly storageMutexes = new Map<ExtensionRuntimeHandle, Mutex>()
+  private readonly storageMutexes = new Map<string, Mutex>()
   private controller: ExtensionHostController | null = null
   private rpc: ExtensionHostRpcClient | null = null
   private generationCounter = 0
@@ -428,9 +428,9 @@ export class RuntimeManager {
       }
     })
 
-    rpc.handleHostRequest('bridge.storage.get', async (params) => {
+    rpc.handleHostRequest('bridge.storage.get', async (params, context) => {
       try {
-        const value = await this.withStorageLock(params.runtimeHandle, async () => {
+        const value = await this.withStorageLock(params.runtimeHandle, context.signal, async () => {
           const storage = await this.readStorageDocument(params.runtimeHandle)
           return params.key in storage
             ? storage[params.key]
@@ -445,12 +445,17 @@ export class RuntimeManager {
       }
     })
 
-    rpc.handleHostRequest('bridge.storage.set', async (params) => {
+    rpc.handleHostRequest('bridge.storage.set', async (params, context) => {
       try {
-        await this.withStorageLock(params.runtimeHandle, async () => {
+        await this.withStorageLock(params.runtimeHandle, context.signal, async (storagePath) => {
           const storage = await this.readStorageDocument(params.runtimeHandle)
           storage[params.key] = params.value
-          await this.writeStorageDocument(params.runtimeHandle, storage)
+          await this.writeStorageDocument(
+            params.runtimeHandle,
+            storagePath,
+            storage,
+            context.signal
+          )
         })
         return EMPTY_RPC_RESULT
       } catch (error) {
@@ -458,12 +463,17 @@ export class RuntimeManager {
       }
     })
 
-    rpc.handleHostRequest('bridge.storage.delete', async (params) => {
+    rpc.handleHostRequest('bridge.storage.delete', async (params, context) => {
       try {
-        await this.withStorageLock(params.runtimeHandle, async () => {
+        await this.withStorageLock(params.runtimeHandle, context.signal, async (storagePath) => {
           const storage = await this.readStorageDocument(params.runtimeHandle)
           delete storage[params.key]
-          await this.writeStorageDocument(params.runtimeHandle, storage)
+          await this.writeStorageDocument(
+            params.runtimeHandle,
+            storagePath,
+            storage,
+            context.signal
+          )
         })
         return EMPTY_RPC_RESULT
       } catch (error) {
@@ -471,9 +481,9 @@ export class RuntimeManager {
       }
     })
 
-    rpc.handleHostRequest('bridge.storage.listKeys', async (params) => {
+    rpc.handleHostRequest('bridge.storage.listKeys', async (params, context) => {
       try {
-        const keys = await this.withStorageLock(params.runtimeHandle, async () => {
+        const keys = await this.withStorageLock(params.runtimeHandle, context.signal, async () => {
           const storage = await this.readStorageDocument(params.runtimeHandle)
           return Object.keys(storage).filter((key) =>
             params.prefix ? key.startsWith(params.prefix) : true
@@ -669,25 +679,36 @@ export class RuntimeManager {
 
   private async writeStorageDocument(
     runtimeHandle: ExtensionRuntimeHandle,
-    document: Record<string, SerializableValue>
+    storagePath: string,
+    document: Record<string, SerializableValue>,
+    signal?: AbortSignal
   ): Promise<void> {
-    const storagePath = this.getStoragePath(this.requireActiveRuntimeHandle(runtimeHandle))
+    this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
     await fse.ensureDir(path.dirname(storagePath))
 
-    const tempPath = `${storagePath}.tmp`
-    await fse.writeJson(tempPath, document, { spaces: 2 })
-    await fse.move(tempPath, storagePath, { overwrite: true })
+    const tempPath = path.join(
+      path.dirname(storagePath),
+      `${path.basename(storagePath)}.${randomUUID()}.tmp`
+    )
+
+    try {
+      await fse.writeJson(tempPath, document, { spaces: 2 })
+      this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
+      await fse.move(tempPath, storagePath, { overwrite: true })
+    } finally {
+      await fse.remove(tempPath).catch(() => undefined)
+    }
   }
 
   private getStoragePath(extension: ExtensionRuntimeMetadata): string {
     return path.join(extension.dataPath, 'storage.json')
   }
 
-  private getStorageMutex(runtimeHandle: ExtensionRuntimeHandle): Mutex {
-    let mutex = this.storageMutexes.get(runtimeHandle)
+  private getStorageMutex(storagePath: string): Mutex {
+    let mutex = this.storageMutexes.get(storagePath)
     if (!mutex) {
       mutex = new Mutex()
-      this.storageMutexes.set(runtimeHandle, mutex)
+      this.storageMutexes.set(storagePath, mutex)
     }
 
     return mutex
@@ -695,9 +716,17 @@ export class RuntimeManager {
 
   private async withStorageLock<T>(
     runtimeHandle: ExtensionRuntimeHandle,
-    callback: () => Promise<T> | T
+    signal: AbortSignal | undefined,
+    callback: (storagePath: string) => Promise<T> | T
   ): Promise<T> {
-    return this.getStorageMutex(runtimeHandle).runExclusive(callback)
+    const storagePath = this.getStoragePath(this.requireActiveRuntimeHandle(runtimeHandle))
+
+    return this.getStorageMutex(storagePath).runExclusive(async () => {
+      this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
+      const result = await callback(storagePath)
+      this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
+      return result
+    })
   }
 
   private requireActiveRuntimeHandle(
@@ -711,9 +740,27 @@ export class RuntimeManager {
     return extension
   }
 
+  private requireActiveStorageRequest(
+    runtimeHandle: ExtensionRuntimeHandle,
+    storagePath: string,
+    signal?: AbortSignal
+  ): void {
+    if (signal?.aborted) {
+      throw createUnavailableError(
+        `Storage request for runtime handle "${runtimeHandle}" was aborted.`
+      )
+    }
+
+    const extension = this.requireActiveRuntimeHandle(runtimeHandle)
+    if (this.getStoragePath(extension) !== storagePath) {
+      throw createUnavailableError(
+        `Runtime handle "${runtimeHandle}" no longer owns its storage path.`
+      )
+    }
+  }
+
   private async releaseLoadedState(state: LoadedExtensionState): Promise<void> {
     this.runtimeHandles.delete(state.runtimeHandle)
-    this.storageMutexes.delete(state.runtimeHandle)
     this.options.capabilities?.releaseRuntime(state.runtimeHandle)
     await this.options.contributions?.releaseRuntime(state.runtimeHandle)
   }
