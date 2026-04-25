@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
-import path from 'node:path'
 import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
@@ -12,74 +11,45 @@ import type {
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionEventTopic,
-  ExtensionLogger,
   ExtensionRuntimeHandle,
-  ExtensionRuntimeMetadata,
-  ExtensionStorage,
   GameScraperProvider,
   HostEventListener,
   HostEventTopic,
-  KisakiApi,
   PersonScraperProvider,
-  RpcValue,
-  RuntimeInfo,
-  SerializableValue,
   SettingsPanelContribution,
   ThemeContribution
 } from '@kisaki/extension-api'
 import { isExtensionEventTopic } from '@kisaki/extension-api'
-import type { ExtensionRegistry, LoadedExtensionRuntime } from './extension-registry'
-import type { ExtensionHostRpcServer } from './rpc-server'
-import { HostDeeplinkContributions } from './contributions/deeplinks'
-import { HostEntityMenuContributions } from './contributions/entity-menus'
-import { HostScraperContributions } from './contributions/scrapers'
-import { HostSettingsPanelContributions } from './contributions/settings-panels'
-import { HostThemeContributions } from './contributions/themes'
-import type { HostContributionScope } from './contributions/types'
+import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
+import type { ExtensionHostRpcServer } from '../rpc-server'
+import { HostDeeplinkContributions } from '../contributions/deeplinks'
+import { HostEntityMenuContributions } from '../contributions/entity-menus'
+import { HostScraperContributions } from '../contributions/scrapers'
+import { HostSettingsPanelContributions } from '../contributions/settings-panels'
+import { HostThemeContributions } from '../contributions/themes'
+import type { HostContributionScope } from '../contributions/types'
+import { createDisposable, createDisposableStore } from './disposables'
+import { createKisakiApi } from './kisaki-api'
+import { createExtensionLogger } from './logger'
+import { resolveInsideExtension } from './utils/paths'
+import {
+  createDeeplinkRegistrar,
+  createEntityMenuRegistrar,
+  createScraperRegistrar,
+  createSettingsPanelRegistrar,
+  createThemeRegistrar
+} from './registrars'
+import { toSerializableRecord } from './utils/serialization'
+import { createExtensionStorage } from './storage'
+import { configureExtensionSdkBridge, resetExtensionSdkBridge } from './store'
+import type {
+  ActiveExtensionScope,
+  ExtensionEventListenerRecord,
+  ExtensionSdkBridge,
+  HostEventSubscriptionRecord
+} from './types'
+import type { ExtensionContextOptions } from './types'
 
-interface ActiveExtensionScope {
-  extensionId: string
-  runtimeHandle: ExtensionRuntimeHandle
-}
-
-interface HostEventSubscriptionRecord {
-  scope: ActiveExtensionScope
-  once: boolean
-  topic: HostEventTopic
-  listener: HostEventListener<HostEventTopic>
-}
-
-interface ExtensionEventListenerRecord {
-  scope: ActiveExtensionScope
-  listener: ExtensionEventListener<ExtensionEventPayload>
-}
-
-interface ExtensionSdkBridge {
-  readonly api: KisakiApi
-  createLogger(scope: ActiveExtensionScope, extension: ExtensionRuntimeMetadata): ExtensionLogger
-  createStorage(scope: ActiveExtensionScope): ExtensionStorage
-  registerEntityMenu(contribution: EntityMenuContribution): Disposable
-  registerSettingsPanel(contribution: SettingsPanelContribution): Disposable
-  registerGameScraperProvider(provider: GameScraperProvider): Disposable
-  registerPersonScraperProvider(provider: PersonScraperProvider): Disposable
-  registerCompanyScraperProvider(provider: CompanyScraperProvider): Disposable
-  registerCharacterScraperProvider(provider: CharacterScraperProvider): Disposable
-  registerDeeplink(contribution: DeeplinkContribution): Disposable
-  registerTheme(theme: ThemeContribution): Disposable
-  asAbsolutePath(extensionPath: string, relativePath: string): string
-}
-
-interface ExtensionSdkBridgeStore {
-  bridge: { readonly api: KisakiApi } | null
-}
-
-export interface ExtensionContextOptions {
-  extension: ExtensionRuntimeMetadata
-  runtimeHandle: ExtensionRuntimeHandle
-  abortSignal: AbortSignal
-}
-
-const EXTENSION_SDK_BRIDGE_KEY = Symbol.for('kisaki.extensionSdkBridge')
 const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({ timeoutMs: 5_000 })
 
 /**
@@ -275,9 +245,27 @@ export class ExtensionHostSdkBridge {
 
   private createBridge(): ExtensionSdkBridge {
     return {
-      api: this.createApi(),
-      createLogger: (scope, extension) => this.createLogger(scope, extension),
-      createStorage: (scope) => this.createStorage(scope),
+      api: createKisakiApi({
+        requireCurrentScope: () => this.requireCurrentScope(),
+        requestMain: (scope, method, params) => this.requestMain(scope, method, params),
+        subscribeHostEvent: (topic, listener, once) =>
+          this.subscribeHostEvent(topic, listener, once),
+        subscribeExtensionEvent: (topic, listener) => this.subscribeExtensionEvent(topic, listener),
+        emitExtensionEvent: (topic, payload) => this.emitExtensionEvent(topic, payload)
+      }),
+      createLogger: (scope, extension) =>
+        createExtensionLogger({
+          scope,
+          extension,
+          rpc: this.rpc,
+          getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
+        }),
+      createStorage: (scope) =>
+        createExtensionStorage({
+          scope,
+          rpc: this.rpc,
+          getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
+        }),
       registerEntityMenu: (contribution) => this.registerEntityMenu(contribution),
       registerSettingsPanel: (contribution) => this.registerSettingsPanel(contribution),
       registerGameScraperProvider: (provider) => this.registerGameScraperProvider(provider),
@@ -292,253 +280,19 @@ export class ExtensionHostSdkBridge {
     }
   }
 
-  private createApi(): KisakiApi {
-    const requestMain = <TResult>(method: string, params: Record<string, unknown>) => {
-      const scope = this.requireCurrentScope()
-      return this.rpc.requestMain(
-        method as any,
-        {
-          runtimeHandle: scope.runtimeHandle,
-          ...params
-        } as any,
-        this.getRequestOptions(scope)
-      ) as Promise<TResult>
-    }
-
-    const createEntityNamespace = (prefix: string) => ({
-      get: async (id: string) =>
-        (await requestMain<{ entity: unknown }>(`${prefix}.get`, { id })).entity as any,
-      list: async (query?: unknown) =>
-        (await requestMain<{ items: readonly unknown[] }>(`${prefix}.list`, { query }))
-          .items as any,
-      create: async (input: unknown) =>
-        (await requestMain<{ entity: unknown }>(`${prefix}.create`, { input })).entity as any,
-      update: async (id: string, patch: unknown) =>
-        (await requestMain<{ entity: unknown }>(`${prefix}.update`, { id, patch })).entity as any,
-      remove: async (id: string) => {
-        await requestMain(`${prefix}.remove`, { id })
-      }
-    })
-
-    return {
-      library: {
-        games: createEntityNamespace('capabilities.library.games'),
-        characters: createEntityNamespace('capabilities.library.characters'),
-        persons: createEntityNamespace('capabilities.library.persons'),
-        companies: createEntityNamespace('capabilities.library.companies'),
-        collections: createEntityNamespace('capabilities.library.collections'),
-        tags: createEntityNamespace('capabilities.library.tags'),
-        relations: {
-          list: async (query) =>
-            (
-              await requestMain<{ items: readonly unknown[] }>(
-                'capabilities.library.relations.list',
-                {
-                  query
-                }
-              )
-            ).items as any,
-          create: async (input) =>
-            (
-              await requestMain<{ relation: unknown }>('capabilities.library.relations.create', {
-                input
-              })
-            ).relation as any,
-          update: async (selector, patch) =>
-            (
-              await requestMain<{ relation: unknown }>('capabilities.library.relations.update', {
-                selector,
-                patch
-              })
-            ).relation as any,
-          remove: async (selector) => {
-            await requestMain('capabilities.library.relations.remove', { selector })
-          }
-        },
-        attachments: {
-          list: async (entity) =>
-            (
-              await requestMain<{ items: readonly unknown[] }>(
-                'capabilities.library.attachments.list',
-                {
-                  entity
-                }
-              )
-            ).items as any,
-          put: async (input) =>
-            (
-              await requestMain<{ attachment: unknown }>('capabilities.library.attachments.put', {
-                input
-              })
-            ).attachment as any,
-          remove: async (input) => {
-            await requestMain('capabilities.library.attachments.remove', { input })
-          }
-        }
-      },
-      network: {
-        request: async (input) =>
-          (await requestMain<{ response: unknown }>('capabilities.network.request', { input }))
-            .response as any,
-        download: async (input) =>
-          (await requestMain<{ result: unknown }>('capabilities.network.download', { input }))
-            .result as any
-      },
-      notify: {
-        success: async (title, options) =>
-          (
-            await requestMain<{ handle: unknown }>('capabilities.notify.show', {
-              kind: 'success',
-              title,
-              options
-            })
-          ).handle as any,
-        info: async (title, options) =>
-          (
-            await requestMain<{ handle: unknown }>('capabilities.notify.show', {
-              kind: 'info',
-              title,
-              options
-            })
-          ).handle as any,
-        warning: async (title, options) =>
-          (
-            await requestMain<{ handle: unknown }>('capabilities.notify.show', {
-              kind: 'warning',
-              title,
-              options
-            })
-          ).handle as any,
-        error: async (title, options) =>
-          (
-            await requestMain<{ handle: unknown }>('capabilities.notify.show', {
-              kind: 'error',
-              title,
-              options
-            })
-          ).handle as any,
-        loading: async (title, options) =>
-          (
-            await requestMain<{ handle: unknown }>('capabilities.notify.show', {
-              kind: 'loading',
-              title,
-              options
-            })
-          ).handle as any,
-        update: async (id, kind, title, options) => {
-          await requestMain('capabilities.notify.update', {
-            id,
-            kind,
-            title,
-            options
-          })
-        },
-        dismiss: async (id) => {
-          await requestMain('capabilities.notify.dismiss', { id })
-        }
-      },
-      events: {
-        on: async (topic, listener) => this.subscribeHostEvent(topic, listener, false),
-        once: async (topic, listener) => this.subscribeHostEvent(topic, listener, true),
-        onExtension: async (topic, listener) => this.subscribeExtensionEvent(topic, listener),
-        emit: async (topic, payload) => this.emitExtensionEvent(topic, payload)
-      },
-      runtime: {
-        getInfo: async () => {
-          return (await requestMain<{ info: RuntimeInfo }>('capabilities.runtime.getInfo', {})).info
-        },
-        delay: async (ms: number) => {
-          await new Promise((resolve) => setTimeout(resolve, ms))
-        }
-      }
-    }
-  }
-
-  private createLogger(
+  private requestMain<TResult>(
     scope: ActiveExtensionScope,
-    extension: ExtensionRuntimeMetadata
-  ): ExtensionLogger {
-    const logWithLevel = (
-      level: 'debug' | 'info' | 'warn' | 'error',
-      message: string,
-      args: unknown[]
-    ) => {
-      void this.rpc
-        .requestMain(
-          'bridge.logger.log',
-          {
-            runtimeHandle: scope.runtimeHandle,
-            level,
-            message,
-            args: args.map((value) => toRpcValue(value))
-          },
-          this.getRequestOptions(scope)
-        )
-        .catch((error) => {
-          console.warn(`[ExtensionHost][${extension.id}] Failed to forward ${level} log:`, error)
-        })
-    }
-
-    return {
-      debug: (message, ...args) => logWithLevel('debug', message, args),
-      info: (message, ...args) => logWithLevel('info', message, args),
-      warn: (message, ...args) => logWithLevel('warn', message, args),
-      error: (message, ...args) => logWithLevel('error', message, args)
-    }
-  }
-
-  private createStorage(scope: ActiveExtensionScope): ExtensionStorage {
-    const rpc = this.rpc
-    const getRequestOptions = () => this.getRequestOptions(scope)
-
-    return {
-      get: async <T>(key: string, fallback: T): Promise<T> => {
-        const result = await rpc.requestMain(
-          'bridge.storage.get',
-          {
-            runtimeHandle: scope.runtimeHandle,
-            key,
-            fallback: toSerializableValue(fallback, 'storage fallback')
-          },
-          getRequestOptions()
-        )
-
-        return result.value as T
-      },
-      set: async <T>(key: string, value: T): Promise<void> => {
-        await rpc.requestMain(
-          'bridge.storage.set',
-          {
-            runtimeHandle: scope.runtimeHandle,
-            key,
-            value: toSerializableValue(value, 'storage value')
-          },
-          getRequestOptions()
-        )
-      },
-      delete: async (key: string): Promise<void> => {
-        await rpc.requestMain(
-          'bridge.storage.delete',
-          {
-            runtimeHandle: scope.runtimeHandle,
-            key
-          },
-          getRequestOptions()
-        )
-      },
-      listKeys: async (prefix?: string): Promise<readonly string[]> => {
-        const result = await rpc.requestMain(
-          'bridge.storage.listKeys',
-          {
-            runtimeHandle: scope.runtimeHandle,
-            prefix
-          },
-          getRequestOptions()
-        )
-
-        return result.keys
-      }
-    }
+    method: string,
+    params: Record<string, unknown>
+  ): Promise<TResult> {
+    return this.rpc.requestMain(
+      method as any,
+      {
+        runtimeHandle: scope.runtimeHandle,
+        ...params
+      } as any,
+      this.getRequestOptions(scope)
+    ) as Promise<TResult>
   }
 
   private registerEntityMenu(contribution: EntityMenuContribution): Disposable {
@@ -788,143 +542,6 @@ export class ExtensionHostSdkBridge {
   }
 }
 
-function getBridgeStore(): ExtensionSdkBridgeStore {
-  const globalObject = globalThis as typeof globalThis &
-    Record<symbol, ExtensionSdkBridgeStore | undefined>
-  let store = globalObject[EXTENSION_SDK_BRIDGE_KEY]
-
-  if (!store) {
-    store = { bridge: null }
-    globalObject[EXTENSION_SDK_BRIDGE_KEY] = store
-  }
-
-  return store
-}
-
-function configureExtensionSdkBridge(bridge: { readonly api: KisakiApi }): void {
-  const store = getBridgeStore()
-
-  if (store.bridge && store.bridge !== bridge) {
-    throw new Error(
-      'The Kisaki extension SDK bridge has already been configured for this process. Reset it before replacing the bridge instance.'
-    )
-  }
-
-  store.bridge = bridge
-}
-
-function resetExtensionSdkBridge(): void {
-  getBridgeStore().bridge = null
-}
-
-class DisposableStoreImpl implements DisposableStore {
-  private readonly disposables = new Set<Disposable>()
-
-  get size(): number {
-    return this.disposables.size
-  }
-
-  add<T extends Disposable>(disposable: T): T {
-    this.disposables.add(disposable)
-    return disposable
-  }
-
-  delete(disposable: Disposable): boolean {
-    return this.disposables.delete(disposable)
-  }
-
-  async clear(): Promise<void> {
-    const disposables = [...this.disposables]
-    this.disposables.clear()
-    const errors: unknown[] = []
-
-    for (const disposable of disposables.reverse()) {
-      try {
-        await disposable.dispose()
-      } catch (error) {
-        errors.push(error)
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new AggregateError(errors, 'One or more extension disposables failed to clean up.')
-    }
-  }
-
-  async dispose(): Promise<void> {
-    await this.clear()
-  }
-}
-
-function createDisposableStore(): DisposableStore {
-  return new DisposableStoreImpl()
-}
-
-function createEntityMenuRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
-  return {
-    register(contribution: EntityMenuContribution) {
-      const disposable = bridge.registerEntityMenu(contribution)
-      subscriptions.add(disposable)
-      return disposable
-    }
-  }
-}
-
-function createSettingsPanelRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
-  return {
-    register(contribution: SettingsPanelContribution) {
-      const disposable = bridge.registerSettingsPanel(contribution)
-      subscriptions.add(disposable)
-      return disposable
-    }
-  }
-}
-
-function createScraperRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
-  return {
-    registerGameProvider(provider: GameScraperProvider) {
-      const disposable = bridge.registerGameScraperProvider(provider)
-      subscriptions.add(disposable)
-      return disposable
-    },
-    registerPersonProvider(provider: PersonScraperProvider) {
-      const disposable = bridge.registerPersonScraperProvider(provider)
-      subscriptions.add(disposable)
-      return disposable
-    },
-    registerCompanyProvider(provider: CompanyScraperProvider) {
-      const disposable = bridge.registerCompanyScraperProvider(provider)
-      subscriptions.add(disposable)
-      return disposable
-    },
-    registerCharacterProvider(provider: CharacterScraperProvider) {
-      const disposable = bridge.registerCharacterScraperProvider(provider)
-      subscriptions.add(disposable)
-      return disposable
-    }
-  }
-}
-
-function createDeeplinkRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
-  return {
-    register(contribution: DeeplinkContribution) {
-      const disposable = bridge.registerDeeplink(contribution)
-      subscriptions.add(disposable)
-      return disposable
-    }
-  }
-}
-
-function createThemeRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
-  return {
-    register(theme: ThemeContribution) {
-      const disposable = bridge.registerTheme(theme)
-      subscriptions.add(disposable)
-      return disposable
-    }
-  }
-}
-
 function toScope(
   runtimeOrScope: LoadedExtensionRuntime | ActiveExtensionScope
 ): ActiveExtensionScope {
@@ -936,95 +553,4 @@ function toScope(
   }
 
   return runtimeOrScope
-}
-
-function createDisposable(dispose: () => Promise<void> | void): Disposable {
-  return { dispose }
-}
-
-function resolveInsideExtension(extensionPath: string, relativePath: string): string {
-  const absolutePath = path.resolve(extensionPath, relativePath)
-  const relative = path.relative(extensionPath, absolutePath)
-
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error('Extension paths must stay within the extension directory')
-  }
-
-  return absolutePath
-}
-
-function toSerializableValue(
-  value: unknown,
-  label: string,
-  seen = new Set<object>()
-): SerializableValue {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return value
-  }
-
-  if (Array.isArray(value)) {
-    if (seen.has(value)) {
-      throw new Error(`${label} must not contain circular references`)
-    }
-
-    seen.add(value)
-    const items = value.map((entry) => toSerializableValue(entry, label, seen))
-    seen.delete(value)
-    return items
-  }
-
-  if (value && typeof value === 'object') {
-    if (seen.has(value)) {
-      throw new Error(`${label} must not contain circular references`)
-    }
-
-    seen.add(value)
-    const result: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
-      result[key] = toSerializableValue(entry, label, seen)
-    }
-    seen.delete(value)
-    return result
-  }
-
-  throw new Error(`${label} must be JSON-serializable`)
-}
-
-function toSerializableRecord(value: unknown, label: string): Record<string, SerializableValue> {
-  const normalized = toSerializableValue(value, label)
-  if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
-    throw new Error(`${label} must be an object`)
-  }
-
-  return normalized as Record<string, SerializableValue>
-}
-
-function toRpcValue(value: unknown): RpcValue {
-  if (value instanceof Uint8Array) {
-    return value
-  }
-
-  if (value instanceof Error) {
-    const serializedError: Record<string, string> = {
-      name: value.name,
-      message: value.message
-    }
-
-    if (value.stack) {
-      serializedError.stack = value.stack
-    }
-
-    return serializedError
-  }
-
-  try {
-    return toSerializableValue(value, 'log argument')
-  } catch {
-    return String(value)
-  }
 }

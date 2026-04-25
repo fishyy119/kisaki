@@ -273,11 +273,11 @@ export class ExtensionLibraryAttachmentsHost {
           kind: 'path',
           path: this.requireScopedPath(metadata, source.path)
         }
+      default:
+        throw createValidationError(
+          `Unsupported attachment source kind "${String((source as { kind?: unknown }).kind)}".`
+        )
     }
-
-    throw createValidationError(
-      `Unsupported attachment source kind "${String((source as { kind?: unknown }).kind)}".`
-    )
   }
 
   private requireScopedPath(metadata: ExtensionRuntimeMetadata, sourcePath: string): string {
