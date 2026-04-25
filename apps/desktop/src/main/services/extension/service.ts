@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
@@ -40,6 +41,7 @@ import { ExtensionStateStore } from './state'
 import { RuntimeManager, type ExtensionRuntimeChangeCause } from './runtime/manager'
 import { GitHubExtensionSourceProvider } from './sources/github'
 import { LocalFileExtensionSourceProvider } from './sources/local-file'
+import { UrlExtensionSourceProvider } from './sources/url'
 import { ExtensionSourceManager } from './sources/manager'
 import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions/registry'
@@ -90,6 +92,7 @@ export class ExtensionService implements IService {
     this.ipc = container.get('ipc')
 
     this.sources.register(new GitHubExtensionSourceProvider(container.get('network')))
+    this.sources.register(new UrlExtensionSourceProvider(container.get('network')))
     this.sources.register(new LocalFileExtensionSourceProvider())
 
     this.catalog = new ExtensionCatalog(this.paths, this.stateStore)
@@ -632,6 +635,9 @@ function toExtensionCatalogInfo(entry: ExtensionCatalogEntry): ExtensionCatalogI
     description: entry.manifest?.description,
     author: entry.manifest?.author,
     homepage: entry.manifest?.homepage,
+    iconUrl: entry.manifest?.icon
+      ? pathToFileURL(path.join(entry.packagePath, entry.manifest.icon)).toString()
+      : undefined,
     categories: entry.categories,
     enabled: entry.enabled,
     status: entry.status,

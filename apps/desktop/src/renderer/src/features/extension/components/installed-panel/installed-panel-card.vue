@@ -3,7 +3,7 @@ Installed Extension Card manages one installed extension row.
 Boundary: toggles, updates, uninstalls, and opens structured settings.
 -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
@@ -49,11 +49,10 @@ const settingsPanel = computed(
 )
 const hasSettings = computed(() => settingsPanel.value !== null)
 
-// Fixed icon.png convention - construct file:// URL
-const iconUrl = computed(() => {
-  if (!props.extension.directory) return undefined
-  const fullPath = `${props.extension.directory}/icon.png`.replace(/\\/g, '/')
-  return `file://${fullPath}`
+const iconUrl = computed(() => props.extension.iconUrl)
+
+watch(iconUrl, () => {
+  iconError.value = false
 })
 
 async function handleToggle(enabled: boolean) {

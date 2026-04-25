@@ -28,6 +28,7 @@ export interface ExtensionCatalogInfo {
   description?: string
   author?: string
   homepage?: string
+  iconUrl?: string
   categories: readonly ExtensionCategory[]
   enabled: boolean
   status: InstalledExtensionStatus

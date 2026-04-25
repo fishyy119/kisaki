@@ -2,6 +2,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
+import type { ExtensionManifest } from '@kisaki/extension-api'
 import type { NetworkService } from '@main/services/network'
 import type {
   ExtensionSearchOptions,
@@ -9,6 +10,7 @@ import type {
   ExtensionSourceEntry,
   ExtensionSourceProvider
 } from '../types'
+import { parseExtensionManifest } from '../manifest'
 
 interface GitHubReleaseAsset {
   name: string
@@ -83,7 +85,10 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
 
     const entries = await Promise.all(
       data.items.map(async (repo): Promise<ExtensionSourceEntry | null> => {
-        const release = await this.fetchRelease(repo.owner.login, repo.name).catch(() => null)
+        const [release, manifest] = await Promise.all([
+          this.fetchRelease(repo.owner.login, repo.name).catch(() => null),
+          this.fetchRepositoryManifest(repo.owner.login, repo.name).catch(() => null)
+        ])
         const packageAsset = release?.assets.find((asset) => asset.name.endsWith('.kisx'))
 
         if (!release || !packageAsset) {
@@ -100,7 +105,9 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
           downloadUrl: packageAsset.browser_download_url,
           provider: this.name,
           locator: `github:${repo.full_name}`,
-          iconUrl: `https://raw.githubusercontent.com/${repo.full_name}/main/icon.png`,
+          iconUrl: manifest?.icon
+            ? createGitHubRawFileUrl(repo.owner.login, repo.name, manifest.icon)
+            : undefined,
           stars: repo.stargazers_count,
           updatedAt: repo.updated_at
         }
@@ -191,10 +198,37 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
 
     return (await response.json()) as GitHubRelease
   }
+
+  private async fetchRepositoryManifest(
+    owner: string,
+    repo: string
+  ): Promise<ExtensionManifest | null> {
+    const response = await this.networkService.fetch(
+      `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/manifest.json`,
+      {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'Kisaki-Extension-Manager'
+        }
+      }
+    )
+
+    if (!response.ok) {
+      return null
+    }
+
+    const parsed = parseExtensionManifest(await response.json())
+    return parsed.manifest
+  }
 }
 
 function isExtensionSourceEntry(value: ExtensionSourceEntry | null): value is ExtensionSourceEntry {
   return value !== null
+}
+
+function createGitHubRawFileUrl(owner: string, repo: string, filePath: string): string {
+  const encodedPath = filePath.split('/').map(encodeURIComponent).join('/')
+  return `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${encodedPath}`
 }
 
 function parseGitHubSource(source: string): { owner: string; repo: string; tag?: string } | null {
