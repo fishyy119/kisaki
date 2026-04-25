@@ -181,6 +181,34 @@ export class ExtensionSettingsPanelContributionHost {
     }
   }
 
+  async releaseSession(extensionId: string, panelId: string, sessionId: string): Promise<void> {
+    if (!sessionId) {
+      return
+    }
+
+    const registration = this.findRegistration(extensionId, panelId)
+    if (!registration) {
+      return
+    }
+
+    try {
+      await this.options.requestHost(
+        'settingsPanels.session.release',
+        {
+          runtimeHandle: registration.owner.runtimeHandle,
+          panelId: registration.contribution.id,
+          sessionId
+        },
+        { timeoutMs: 5_000 }
+      )
+    } catch (error) {
+      log.warn(
+        `[ExtensionContributionRegistry] Failed to release settings panel session "${extensionId}:${panelId}:${sessionId}":`,
+        error
+      )
+    }
+  }
+
   private async resolveSession(
     sessionId: string,
     extensionId: string,

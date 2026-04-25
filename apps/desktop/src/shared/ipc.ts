@@ -391,6 +391,7 @@ export interface IpcMainHandlers {
   'extension:invoke-entity-menu': (
     request: ExtensionEntityMenuInvokeRequest
   ) => IpcResult<ExtensionEntityMenuInvokeResult>
+  'extension:release-entity-menu-session': (sessionId: string) => IpcVoidResult
   'extension:resolve-settings-panel': (
     extensionId: string,
     panelId: string
@@ -401,6 +402,11 @@ export interface IpcMainHandlers {
   'extension:invoke-settings-panel': (
     request: ExtensionSettingsPanelInvokeRequest
   ) => IpcResult<ExtensionSettingsPanelCallbackResult>
+  'extension:release-settings-panel-session': (
+    extensionId: string,
+    panelId: string,
+    sessionId: string
+  ) => IpcVoidResult
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeContributionInfo[]>
   'extension:get-sources': () => IpcResult<
     Array<{ name: string; displayName: string; searchable: boolean }>
@@ -408,7 +414,12 @@ export interface IpcMainHandlers {
   'extension:search': (
     sourceName: string,
     query: string,
-    options?: { page?: number; limit?: number; sortBy?: 'stars' | 'updated' | 'name' }
+    options?: {
+      page?: number
+      limit?: number
+      sortBy?: 'stars' | 'updated' | 'name'
+      sortDirection?: 'asc' | 'desc'
+    }
   ) => IpcResult<{
     entries: ExtensionRegistryEntry[]
     total: number

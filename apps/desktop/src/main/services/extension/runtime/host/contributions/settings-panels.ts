@@ -12,6 +12,7 @@ import {
   type SettingsPanelResolvedNode,
   type SettingsPanelResolveRequest,
   type SettingsPanelResolveResult,
+  type SettingsPanelSessionReleaseRequest,
   type SettingsPanelSubmitRequest,
   type SettingsSubmitEvent,
   type UiCallbackResult,
@@ -34,11 +35,14 @@ interface SettingsPanelSession {
   panelId: string
   sessionId: string
   callbacks: Map<string, SettingsPanelCallbackRecord>
+  ttlTimer: ReturnType<typeof setTimeout>
 }
 
 interface SettingsPanelCallbackRecord {
   invoke(value: SerializableValue | undefined, signal: AbortSignal): Promise<UiCallbackResult>
 }
+
+const SESSION_TTL_MS = 10 * 60 * 1000
 
 /**
  * Host-side settings panel contribution domain.
@@ -138,7 +142,8 @@ export class HostSettingsPanelContributions {
       runtimeHandle: request.runtimeHandle,
       panelId: request.panelId,
       sessionId: request.sessionId,
-      callbacks: new Map()
+      callbacks: new Map(),
+      ttlTimer: this.createSessionTimer(this.getSessionKey(request))
     }
     const resolvedNodes = normalizeSettingsPanelNodes(runtime.metadata.id, panel.id, nodes, session)
     const resolvedIssues = validateSettingsPanelResolvedNodes(resolvedNodes)
@@ -146,11 +151,11 @@ export class HostSettingsPanelContributions {
       throwValidationIssues('Resolved settings panel model', resolvedIssues)
     }
 
-    this.sessions.set(this.getSessionKey(request), session)
+    this.storeSession(this.getSessionKey(request), session)
     signal.addEventListener(
       'abort',
       () => {
-        this.sessions.delete(this.getSessionKey(request))
+        this.deleteSession(this.getSessionKey(request))
       },
       { once: true }
     )
@@ -163,7 +168,8 @@ export class HostSettingsPanelContributions {
     signal: AbortSignal
   ): Promise<UiCallbackResult> {
     const runtime = this.requireRuntimeForRequest(request.runtimeHandle)
-    if (!this.sessions.has(this.getSessionKey(request))) {
+    const sessionKey = this.getSessionKey(request)
+    if (!this.sessions.has(sessionKey)) {
       return createUiError('Settings panel session is no longer active.', {
         code: 'unavailable'
       })
@@ -187,6 +193,7 @@ export class HostSettingsPanelContributions {
       signal
     }
 
+    this.touchSession(sessionKey)
     return this.options.runInExtensionContext(runtime, () =>
       invokeUiCallback(runtime.metadata.id, `Settings panel submit "${panel.id}"`, () =>
         panel.onSubmit!(event)
@@ -199,7 +206,8 @@ export class HostSettingsPanelContributions {
     signal: AbortSignal
   ): Promise<UiCallbackResult> {
     const runtime = this.requireRuntimeForRequest(request.runtimeHandle)
-    const session = this.sessions.get(this.getSessionKey(request))
+    const sessionKey = this.getSessionKey(request)
+    const session = this.sessions.get(sessionKey)
     if (!session) {
       return createUiError('Settings panel session is no longer active.', {
         code: 'unavailable'
@@ -213,19 +221,26 @@ export class HostSettingsPanelContributions {
       })
     }
 
+    this.touchSession(sessionKey)
     return this.options.runInExtensionContext(runtime, () => callback.invoke(request.value, signal))
   }
 
+  releaseSession(request: SettingsPanelSessionReleaseRequest): void {
+    this.deleteSession(this.getSessionKey(request))
+  }
+
   releaseRuntime(runtimeHandle: string): void {
-    for (const [key, session] of this.sessions) {
+    for (const [key, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle) {
-        this.sessions.delete(key)
+        this.deleteSession(key)
       }
     }
   }
 
   releaseAll(): void {
-    this.sessions.clear()
+    for (const key of [...this.sessions.keys()]) {
+      this.deleteSession(key)
+    }
   }
 
   private requireRuntimeForRequest(runtimeHandle: string) {
@@ -237,11 +252,46 @@ export class HostSettingsPanelContributions {
   }
 
   private clearPanelSessions(runtimeHandle: string, panelId: string): void {
-    for (const [key, session] of this.sessions) {
+    for (const [key, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle && session.panelId === panelId) {
-        this.sessions.delete(key)
+        this.deleteSession(key)
       }
     }
+  }
+
+  private storeSession(key: string, session: SettingsPanelSession): void {
+    this.deleteSession(key)
+    this.sessions.set(key, session)
+  }
+
+  private deleteSession(key: string): void {
+    const session = this.sessions.get(key)
+    if (!session) {
+      return
+    }
+
+    clearTimeout(session.ttlTimer)
+    this.sessions.delete(key)
+  }
+
+  private touchSession(key: string): void {
+    const session = this.sessions.get(key)
+    if (!session) {
+      return
+    }
+
+    clearTimeout(session.ttlTimer)
+    session.ttlTimer = this.createSessionTimer(key)
+  }
+
+  private createSessionTimer(key: string): ReturnType<typeof setTimeout> {
+    const timer = setTimeout(() => {
+      this.sessions.delete(key)
+    }, SESSION_TTL_MS)
+    if (typeof timer === 'object' && 'unref' in timer) {
+      timer.unref()
+    }
+    return timer
   }
 
   private getSessionKey(request: {

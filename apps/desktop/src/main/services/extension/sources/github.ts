@@ -51,7 +51,7 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
   constructor(private readonly networkService: NetworkService) {}
 
   async search(query: string, options?: ExtensionSearchOptions): Promise<ExtensionSearchResult> {
-    const { page = 1, limit = 20, sortBy = 'stars' } = options ?? {}
+    const { page = 1, limit = 20, sortBy = 'stars', sortDirection = 'desc' } = options ?? {}
 
     const sortMap: Record<NonNullable<ExtensionSearchOptions['sortBy']>, string> = {
       stars: 'stars',
@@ -67,7 +67,7 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
     const url = new URL('https://api.github.com/search/repositories')
     url.searchParams.set('q', searchQuery)
     url.searchParams.set('sort', sortMap[sortBy] ?? 'stars')
-    url.searchParams.set('order', 'desc')
+    url.searchParams.set('order', sortDirection)
     url.searchParams.set('per_page', String(limit))
     url.searchParams.set('page', String(page))
 

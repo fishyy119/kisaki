@@ -1,7 +1,7 @@
 import { ipcManager } from '@renderer/core/ipc'
 import { themeManager, type ThemeDefinition } from '@renderer/core/theme'
 import { getExtensionThemeContributions } from './ipc'
-import type { ThemeContribution } from '@kisaki/extension-api'
+import { isSafeThemeColorToken, type ThemeContribution } from '@kisaki/extension-api'
 import type { ExtensionThemeContributionInfo } from './types'
 
 const extensionThemeDisposers = new Map<string, () => void>()
@@ -79,42 +79,59 @@ function compileThemeCss(theme: ThemeContribution): string {
 }
 
 function compileTokenRules(tokens: ThemeContribution['tokens']['light']): string[] {
+  const safeTokens = sanitizeThemeTokens(tokens)
+
   return [
     '  --radius: 6px;',
-    `  --background: ${tokens.background};`,
-    `  --foreground: ${tokens.foreground};`,
-    `  --surface: ${tokens.surface};`,
-    `  --surface-foreground: ${tokens.surfaceForeground};`,
-    `  --card: ${tokens.surface};`,
-    `  --card-foreground: ${tokens.surfaceForeground};`,
-    `  --popover: ${tokens.surface};`,
-    `  --popover-foreground: ${tokens.surfaceForeground};`,
-    `  --dialog: ${tokens.surface};`,
-    `  --dialog-foreground: ${tokens.surfaceForeground};`,
-    `  --primary: ${tokens.primary};`,
-    `  --primary-foreground: ${tokens.primaryForeground};`,
-    `  --secondary: ${tokens.muted};`,
-    `  --secondary-foreground: ${tokens.mutedForeground};`,
-    `  --muted: ${tokens.muted};`,
-    `  --muted-foreground: ${tokens.mutedForeground};`,
-    `  --accent: ${tokens.accent};`,
-    `  --accent-foreground: ${tokens.foreground};`,
-    `  --input: ${tokens.surface};`,
-    `  --input-foreground: ${tokens.foreground};`,
-    `  --destructive: ${tokens.danger};`,
-    `  --destructive-foreground: ${tokens.primaryForeground};`,
-    `  --info: ${tokens.primary};`,
-    `  --info-foreground: ${tokens.primaryForeground};`,
-    `  --success: ${tokens.primary};`,
-    `  --success-foreground: ${tokens.primaryForeground};`,
-    `  --warning: ${tokens.accent};`,
-    `  --warning-foreground: ${tokens.foreground};`,
-    `  --border: ${tokens.border};`,
-    `  --ring: ${tokens.primary};`,
-    `  --chart-1: ${tokens.primary};`,
-    `  --chart-2: ${tokens.accent};`,
-    `  --chart-3: ${tokens.muted};`,
-    `  --chart-4: ${tokens.border};`,
-    `  --chart-5: ${tokens.danger};`
+    `  --background: ${safeTokens.background};`,
+    `  --foreground: ${safeTokens.foreground};`,
+    `  --surface: ${safeTokens.surface};`,
+    `  --surface-foreground: ${safeTokens.surfaceForeground};`,
+    `  --card: ${safeTokens.surface};`,
+    `  --card-foreground: ${safeTokens.surfaceForeground};`,
+    `  --popover: ${safeTokens.surface};`,
+    `  --popover-foreground: ${safeTokens.surfaceForeground};`,
+    `  --dialog: ${safeTokens.surface};`,
+    `  --dialog-foreground: ${safeTokens.surfaceForeground};`,
+    `  --primary: ${safeTokens.primary};`,
+    `  --primary-foreground: ${safeTokens.primaryForeground};`,
+    `  --secondary: ${safeTokens.muted};`,
+    `  --secondary-foreground: ${safeTokens.mutedForeground};`,
+    `  --muted: ${safeTokens.muted};`,
+    `  --muted-foreground: ${safeTokens.mutedForeground};`,
+    `  --accent: ${safeTokens.accent};`,
+    `  --accent-foreground: ${safeTokens.foreground};`,
+    `  --input: ${safeTokens.surface};`,
+    `  --input-foreground: ${safeTokens.foreground};`,
+    `  --destructive: ${safeTokens.danger};`,
+    `  --destructive-foreground: ${safeTokens.primaryForeground};`,
+    `  --info: ${safeTokens.primary};`,
+    `  --info-foreground: ${safeTokens.primaryForeground};`,
+    `  --success: ${safeTokens.primary};`,
+    `  --success-foreground: ${safeTokens.primaryForeground};`,
+    `  --warning: ${safeTokens.accent};`,
+    `  --warning-foreground: ${safeTokens.foreground};`,
+    `  --border: ${safeTokens.border};`,
+    `  --ring: ${safeTokens.primary};`,
+    `  --chart-1: ${safeTokens.primary};`,
+    `  --chart-2: ${safeTokens.accent};`,
+    `  --chart-3: ${safeTokens.muted};`,
+    `  --chart-4: ${safeTokens.border};`,
+    `  --chart-5: ${safeTokens.danger};`
   ]
+}
+
+function sanitizeThemeTokens(
+  tokens: ThemeContribution['tokens']['light']
+): ThemeContribution['tokens']['light'] {
+  const entries = Object.entries(tokens).map(([tokenName, tokenValue]) => {
+    const value = tokenValue.trim()
+    if (!isSafeThemeColorToken(value)) {
+      throw new Error(`Extension theme token "${tokenName}" is not a safe CSS color.`)
+    }
+
+    return [tokenName, value]
+  })
+
+  return Object.fromEntries(entries) as ThemeContribution['tokens']['light']
 }

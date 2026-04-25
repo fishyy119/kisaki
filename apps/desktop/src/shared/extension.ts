@@ -16,6 +16,8 @@ import type { ExtensionCategory } from '@kisaki/extension-api'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package' | 'orphaned'
 
+export type InstalledExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
+
 export interface ExtensionSourceReference {
   provider: string
   locator: string
@@ -32,6 +34,8 @@ export interface ExtensionCatalogInfo {
   categories: readonly ExtensionCategory[]
   enabled: boolean
   status: InstalledExtensionStatus
+  runtimeStatus: InstalledExtensionRuntimeStatus
+  runtimeError: string | null
   source: ExtensionSourceReference | null
   directory: string
   issues: readonly string[]

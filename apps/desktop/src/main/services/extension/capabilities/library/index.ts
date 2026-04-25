@@ -25,231 +25,159 @@ export class ExtensionLibraryCapabilityHost {
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
-    rpc.handleHostRequest('capabilities.library.games.get', async ({ runtimeHandle, id }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      entity: this.entities.getGame(id)
-    }))
-    rpc.handleHostRequest('capabilities.library.games.list', async ({ runtimeHandle, query }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      items: this.entities.listGames(query)
-    }))
-    rpc.handleHostRequest(
-      'capabilities.library.games.create',
-      async ({ runtimeHandle, input }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.createGame(input)
-      })
+    rpc.handleHostRequest('capabilities.library.games.get', async ({ runtimeHandle, id }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.getGame(id) })
+    )
+    rpc.handleHostRequest('capabilities.library.games.list', async ({ runtimeHandle, query }) =>
+      this.withRuntime(runtimeHandle, { items: this.entities.listGames(query) })
+    )
+    rpc.handleHostRequest('capabilities.library.games.create', async ({ runtimeHandle, input }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.createGame(input) })
     )
     rpc.handleHostRequest(
       'capabilities.library.games.update',
-      async ({ runtimeHandle, id, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.updateGame(id, patch)
-      })
+      async ({ runtimeHandle, id, patch }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.updateGame(id, patch) })
     )
     rpc.handleHostRequest('capabilities.library.games.remove', async ({ runtimeHandle, id }) => {
-      this.requireRuntime(runtimeHandle)
-      this.entities.removeGame(id)
-      return {}
+      return this.withRuntimeAction(runtimeHandle, () => this.entities.removeGame(id))
     })
 
-    rpc.handleHostRequest('capabilities.library.characters.get', async ({ runtimeHandle, id }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      entity: this.entities.getCharacter(id)
-    }))
+    rpc.handleHostRequest('capabilities.library.characters.get', async ({ runtimeHandle, id }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.getCharacter(id) })
+    )
     rpc.handleHostRequest(
       'capabilities.library.characters.list',
-      async ({ runtimeHandle, query }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        items: this.entities.listCharacters(query)
-      })
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, { items: this.entities.listCharacters(query) })
     )
     rpc.handleHostRequest(
       'capabilities.library.characters.create',
-      async ({ runtimeHandle, input }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.createCharacter(input)
-      })
+      async ({ runtimeHandle, input }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.createCharacter(input) })
     )
     rpc.handleHostRequest(
       'capabilities.library.characters.update',
-      async ({ runtimeHandle, id, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.updateCharacter(id, patch)
-      })
+      async ({ runtimeHandle, id, patch }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.updateCharacter(id, patch) })
     )
     rpc.handleHostRequest(
       'capabilities.library.characters.remove',
       async ({ runtimeHandle, id }) => {
-        this.requireRuntime(runtimeHandle)
-        this.entities.removeCharacter(id)
-        return {}
+        return this.withRuntimeAction(runtimeHandle, () => this.entities.removeCharacter(id))
       }
     )
 
-    rpc.handleHostRequest('capabilities.library.persons.get', async ({ runtimeHandle, id }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      entity: this.entities.getPerson(id)
-    }))
-    rpc.handleHostRequest(
-      'capabilities.library.persons.list',
-      async ({ runtimeHandle, query }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        items: this.entities.listPersons(query)
-      })
+    rpc.handleHostRequest('capabilities.library.persons.get', async ({ runtimeHandle, id }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.getPerson(id) })
     )
-    rpc.handleHostRequest(
-      'capabilities.library.persons.create',
-      async ({ runtimeHandle, input }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.createPerson(input)
-      })
+    rpc.handleHostRequest('capabilities.library.persons.list', async ({ runtimeHandle, query }) =>
+      this.withRuntime(runtimeHandle, { items: this.entities.listPersons(query) })
+    )
+    rpc.handleHostRequest('capabilities.library.persons.create', async ({ runtimeHandle, input }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.createPerson(input) })
     )
     rpc.handleHostRequest(
       'capabilities.library.persons.update',
-      async ({ runtimeHandle, id, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.updatePerson(id, patch)
-      })
+      async ({ runtimeHandle, id, patch }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.updatePerson(id, patch) })
     )
     rpc.handleHostRequest('capabilities.library.persons.remove', async ({ runtimeHandle, id }) => {
-      this.requireRuntime(runtimeHandle)
-      this.entities.removePerson(id)
-      return {}
+      return this.withRuntimeAction(runtimeHandle, () => this.entities.removePerson(id))
     })
 
-    rpc.handleHostRequest('capabilities.library.companies.get', async ({ runtimeHandle, id }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      entity: this.entities.getCompany(id)
-    }))
-    rpc.handleHostRequest(
-      'capabilities.library.companies.list',
-      async ({ runtimeHandle, query }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        items: this.entities.listCompanies(query)
-      })
+    rpc.handleHostRequest('capabilities.library.companies.get', async ({ runtimeHandle, id }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.getCompany(id) })
+    )
+    rpc.handleHostRequest('capabilities.library.companies.list', async ({ runtimeHandle, query }) =>
+      this.withRuntime(runtimeHandle, { items: this.entities.listCompanies(query) })
     )
     rpc.handleHostRequest(
       'capabilities.library.companies.create',
-      async ({ runtimeHandle, input }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.createCompany(input)
-      })
+      async ({ runtimeHandle, input }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.createCompany(input) })
     )
     rpc.handleHostRequest(
       'capabilities.library.companies.update',
-      async ({ runtimeHandle, id, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.updateCompany(id, patch)
-      })
+      async ({ runtimeHandle, id, patch }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.updateCompany(id, patch) })
     )
     rpc.handleHostRequest(
       'capabilities.library.companies.remove',
       async ({ runtimeHandle, id }) => {
-        this.requireRuntime(runtimeHandle)
-        this.entities.removeCompany(id)
-        return {}
+        return this.withRuntimeAction(runtimeHandle, () => this.entities.removeCompany(id))
       }
     )
 
-    rpc.handleHostRequest(
-      'capabilities.library.collections.get',
-      async ({ runtimeHandle, id }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.getCollection(id)
-      })
+    rpc.handleHostRequest('capabilities.library.collections.get', async ({ runtimeHandle, id }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.getCollection(id) })
     )
     rpc.handleHostRequest(
       'capabilities.library.collections.list',
-      async ({ runtimeHandle, query }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        items: this.entities.listCollections(query)
-      })
+      async ({ runtimeHandle, query }) =>
+        this.withRuntime(runtimeHandle, { items: this.entities.listCollections(query) })
     )
     rpc.handleHostRequest(
       'capabilities.library.collections.create',
-      async ({ runtimeHandle, input }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.createCollection(input)
-      })
+      async ({ runtimeHandle, input }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.createCollection(input) })
     )
     rpc.handleHostRequest(
       'capabilities.library.collections.update',
-      async ({ runtimeHandle, id, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.updateCollection(id, patch)
-      })
+      async ({ runtimeHandle, id, patch }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.updateCollection(id, patch) })
     )
     rpc.handleHostRequest(
       'capabilities.library.collections.remove',
       async ({ runtimeHandle, id }) => {
-        this.requireRuntime(runtimeHandle)
-        this.entities.removeCollection(id)
-        return {}
+        return this.withRuntimeAction(runtimeHandle, () => this.entities.removeCollection(id))
       }
     )
 
-    rpc.handleHostRequest('capabilities.library.tags.get', async ({ runtimeHandle, id }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      entity: this.entities.getTag(id)
-    }))
-    rpc.handleHostRequest('capabilities.library.tags.list', async ({ runtimeHandle, query }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      items: this.entities.listTags(query)
-    }))
-    rpc.handleHostRequest('capabilities.library.tags.create', async ({ runtimeHandle, input }) => ({
-      ...this.requireRuntimeResult(runtimeHandle),
-      entity: this.entities.createTag(input)
-    }))
+    rpc.handleHostRequest('capabilities.library.tags.get', async ({ runtimeHandle, id }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.getTag(id) })
+    )
+    rpc.handleHostRequest('capabilities.library.tags.list', async ({ runtimeHandle, query }) =>
+      this.withRuntime(runtimeHandle, { items: this.entities.listTags(query) })
+    )
+    rpc.handleHostRequest('capabilities.library.tags.create', async ({ runtimeHandle, input }) =>
+      this.withRuntime(runtimeHandle, { entity: this.entities.createTag(input) })
+    )
     rpc.handleHostRequest(
       'capabilities.library.tags.update',
-      async ({ runtimeHandle, id, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        entity: this.entities.updateTag(id, patch)
-      })
+      async ({ runtimeHandle, id, patch }) =>
+        this.withRuntime(runtimeHandle, { entity: this.entities.updateTag(id, patch) })
     )
     rpc.handleHostRequest('capabilities.library.tags.remove', async ({ runtimeHandle, id }) => {
-      this.requireRuntime(runtimeHandle)
-      this.entities.removeTag(id)
-      return {}
+      return this.withRuntimeAction(runtimeHandle, () => this.entities.removeTag(id))
     })
 
-    rpc.handleHostRequest(
-      'capabilities.library.relations.list',
-      async ({ runtimeHandle, query }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        items: this.relations.list(query)
-      })
+    rpc.handleHostRequest('capabilities.library.relations.list', async ({ runtimeHandle, query }) =>
+      this.withRuntime(runtimeHandle, { items: this.relations.list(query) })
     )
     rpc.handleHostRequest(
       'capabilities.library.relations.create',
-      async ({ runtimeHandle, input }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        relation: this.relations.create(input)
-      })
+      async ({ runtimeHandle, input }) =>
+        this.withRuntime(runtimeHandle, { relation: this.relations.create(input) })
     )
     rpc.handleHostRequest(
       'capabilities.library.relations.update',
-      async ({ runtimeHandle, selector, patch }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        relation: this.relations.update(selector, patch)
-      })
+      async ({ runtimeHandle, selector, patch }) =>
+        this.withRuntime(runtimeHandle, {
+          relation: this.relations.update(selector, patch)
+        })
     )
     rpc.handleHostRequest(
       'capabilities.library.relations.remove',
       async ({ runtimeHandle, selector }) => {
-        this.requireRuntime(runtimeHandle)
-        this.relations.remove(selector)
-        return {}
+        return this.withRuntimeAction(runtimeHandle, () => this.relations.remove(selector))
       }
     )
 
     rpc.handleHostRequest(
       'capabilities.library.attachments.list',
-      async ({ runtimeHandle, entity }) => ({
-        ...this.requireRuntimeResult(runtimeHandle),
-        items: await this.attachments.list(entity)
-      })
+      async ({ runtimeHandle, entity }) =>
+        this.withRuntime(runtimeHandle, { items: await this.attachments.list(entity) })
     )
     rpc.handleHostRequest(
       'capabilities.library.attachments.put',
@@ -260,9 +188,7 @@ export class ExtensionLibraryCapabilityHost {
     rpc.handleHostRequest(
       'capabilities.library.attachments.remove',
       async ({ runtimeHandle, input }) => {
-        this.requireRuntime(runtimeHandle)
-        await this.attachments.remove(input)
-        return {}
+        return this.withRuntimeAction(runtimeHandle, () => this.attachments.remove(input))
       }
     )
   }
@@ -276,8 +202,17 @@ export class ExtensionLibraryCapabilityHost {
     return metadata
   }
 
-  private requireRuntimeResult(runtimeHandle: string): Record<string, never> {
+  private withRuntime<T>(runtimeHandle: string, result: T): T {
     this.requireRuntime(runtimeHandle)
+    return result
+  }
+
+  private async withRuntimeAction(
+    runtimeHandle: string,
+    action: () => void | Promise<void>
+  ): Promise<Record<string, never>> {
+    this.requireRuntime(runtimeHandle)
+    await action()
     return {}
   }
 }

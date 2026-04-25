@@ -10,6 +10,7 @@ import {
   type EntityMenuResolveInput,
   type EntityMenuResolveRequest,
   type EntityMenuResolveResult,
+  type EntityMenuSessionReleaseRequest,
   type UiCallbackResult,
   validateEntityMenuContributionShape,
   validateEntityMenuItems,
@@ -31,11 +32,14 @@ interface EntityMenuSession {
   sessionId: string
   input: EntityMenuResolveInput
   callbacks: Map<string, EntityMenuCallbackRecord>
+  ttlTimer: ReturnType<typeof setTimeout>
 }
 
 interface EntityMenuCallbackRecord {
   invoke(value: boolean | string | undefined, signal: AbortSignal): Promise<UiCallbackResult>
 }
+
+const SESSION_TTL_MS = 10 * 60 * 1000
 
 /**
  * Host-side entity menu contribution domain.
@@ -140,7 +144,8 @@ export class HostEntityMenuContributions {
       contributionId: request.contributionId,
       sessionId: request.sessionId,
       input: request.input,
-      callbacks: new Map()
+      callbacks: new Map(),
+      ttlTimer: this.createSessionTimer(this.getSessionKey(request))
     }
     const items = normalizeEntityMenuNodes(runtime.metadata.id, contribution.id, nodes, session)
     const itemIssues = validateEntityMenuItems(items)
@@ -148,11 +153,11 @@ export class HostEntityMenuContributions {
       throwValidationIssues('Resolved entity menu items', itemIssues)
     }
 
-    this.sessions.set(this.getSessionKey(request), session)
+    this.storeSession(this.getSessionKey(request), session)
     signal.addEventListener(
       'abort',
       () => {
-        this.sessions.delete(this.getSessionKey(request))
+        this.deleteSession(this.getSessionKey(request))
       },
       { once: true }
     )
@@ -162,7 +167,8 @@ export class HostEntityMenuContributions {
 
   async invoke(request: EntityMenuInvokeRequest, signal: AbortSignal): Promise<UiCallbackResult> {
     const runtime = this.requireRuntimeForRequest(request.runtimeHandle)
-    const session = this.sessions.get(this.getSessionKey(request))
+    const sessionKey = this.getSessionKey(request)
+    const session = this.sessions.get(sessionKey)
     if (!session) {
       return createUiError('Entity menu session is no longer active.', {
         code: 'unavailable',
@@ -178,19 +184,26 @@ export class HostEntityMenuContributions {
       })
     }
 
+    this.touchSession(sessionKey)
     return this.options.runInExtensionContext(runtime, () => callback.invoke(request.value, signal))
   }
 
+  releaseSession(request: EntityMenuSessionReleaseRequest): void {
+    this.deleteSession(this.getSessionKey(request))
+  }
+
   releaseRuntime(runtimeHandle: string): void {
-    for (const [key, session] of this.sessions) {
+    for (const [key, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle) {
-        this.sessions.delete(key)
+        this.deleteSession(key)
       }
     }
   }
 
   releaseAll(): void {
-    this.sessions.clear()
+    for (const key of [...this.sessions.keys()]) {
+      this.deleteSession(key)
+    }
   }
 
   private requireRuntimeForRequest(runtimeHandle: string) {
@@ -202,11 +215,46 @@ export class HostEntityMenuContributions {
   }
 
   private clearContributionSessions(runtimeHandle: string, contributionId: string): void {
-    for (const [key, session] of this.sessions) {
+    for (const [key, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle && session.contributionId === contributionId) {
-        this.sessions.delete(key)
+        this.deleteSession(key)
       }
     }
+  }
+
+  private storeSession(key: string, session: EntityMenuSession): void {
+    this.deleteSession(key)
+    this.sessions.set(key, session)
+  }
+
+  private deleteSession(key: string): void {
+    const session = this.sessions.get(key)
+    if (!session) {
+      return
+    }
+
+    clearTimeout(session.ttlTimer)
+    this.sessions.delete(key)
+  }
+
+  private touchSession(key: string): void {
+    const session = this.sessions.get(key)
+    if (!session) {
+      return
+    }
+
+    clearTimeout(session.ttlTimer)
+    session.ttlTimer = this.createSessionTimer(key)
+  }
+
+  private createSessionTimer(key: string): ReturnType<typeof setTimeout> {
+    const timer = setTimeout(() => {
+      this.sessions.delete(key)
+    }, SESSION_TTL_MS)
+    if (typeof timer === 'object' && 'unref' in timer) {
+      timer.unref()
+    }
+    return timer
   }
 
   private getSessionKey(request: {

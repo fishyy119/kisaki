@@ -400,6 +400,10 @@ export interface EntityMenuInvokeRequest extends ContributionScopedRpcParams {
   value?: boolean | string
 }
 
+export interface EntityMenuSessionReleaseRequest extends ContributionScopedRpcParams {
+  sessionId: string
+}
+
 export interface SettingsPanelResolveRequest extends ExtensionScopedRpcParams {
   panelId: string
   sessionId: string
@@ -420,6 +424,11 @@ export interface SettingsPanelInvokeRequest extends ExtensionScopedRpcParams {
   sessionId: string
   callbackId: string
   value?: SerializableValue
+}
+
+export interface SettingsPanelSessionReleaseRequest extends ExtensionScopedRpcParams {
+  panelId: string
+  sessionId: string
 }
 
 export interface DeeplinkHandleRequest extends ContributionScopedRpcParams {
@@ -605,12 +614,17 @@ export interface MainToHostRpcRequestMap
   'extensions.reload': RpcMethodDefinition<ExtensionReloadRequest, RpcNoPayload>
   'entityMenus.resolve': RpcMethodDefinition<EntityMenuResolveRequest, EntityMenuResolveResult>
   'entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
+  'entityMenus.session.release': RpcMethodDefinition<EntityMenuSessionReleaseRequest, RpcNoPayload>
   'settingsPanels.resolve': RpcMethodDefinition<
     SettingsPanelResolveRequest,
     SettingsPanelResolveResult
   >
   'settingsPanels.submit': RpcMethodDefinition<SettingsPanelSubmitRequest, UiCallbackResult>
   'settingsPanels.invoke': RpcMethodDefinition<SettingsPanelInvokeRequest, UiCallbackResult>
+  'settingsPanels.session.release': RpcMethodDefinition<
+    SettingsPanelSessionReleaseRequest,
+    RpcNoPayload
+  >
   'deeplinks.handle': RpcMethodDefinition<DeeplinkHandleRequest, DeeplinkResponse>
 }
 

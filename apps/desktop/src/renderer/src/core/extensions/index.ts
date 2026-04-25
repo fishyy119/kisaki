@@ -11,6 +11,8 @@ export {
   installExtensionFromFile,
   invokeExtensionEntityMenu,
   invokeExtensionSettingsPanel,
+  releaseExtensionEntityMenuSession,
+  releaseExtensionSettingsPanelSession,
   resolveExtensionEntityMenu,
   resolveExtensionSettingsPanel,
   searchExtensions,

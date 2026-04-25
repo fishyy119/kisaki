@@ -1,8 +1,8 @@
 import semver from 'semver'
 import type { ExtensionManifest, ValidationIssue } from '@kisaki/extension-api'
-import { validateExtensionManifestShape } from '@kisaki/extension-api'
+import { normalizeManifestPackagePath, parseExtensionManifest } from '@kisaki/extension-api'
 import type { ExtensionProject } from './project'
-import { normalizePackagePath, pathExists, readJsonFile, resolvePackageFile } from './project'
+import { pathExists, readJsonFile, resolvePackageFile } from './project'
 
 export interface ManifestValidationOptions {
   checkEntry?: boolean
@@ -37,28 +37,17 @@ export async function validateManifest(
     return { manifest: null, errors, warnings }
   }
 
-  errors.push(...validateExtensionManifestShape(raw))
+  const parsed = parseExtensionManifest(raw)
+  errors.push(...parsed.issues)
 
-  if (errors.length > 0) {
+  if (!parsed.manifest) {
     return { manifest: null, errors, warnings }
   }
 
-  const manifest = raw as ExtensionManifest
-
-  if (!semver.valid(manifest.version)) {
-    errors.push({
-      path: '$.version',
-      message: 'version must be a valid semver string.'
-    })
-  }
+  const manifest = parsed.manifest
 
   if (manifest.engines?.kisaki) {
-    if (!semver.validRange(manifest.engines.kisaki)) {
-      errors.push({
-        path: '$.engines.kisaki',
-        message: 'engines.kisaki must be a valid semver range.'
-      })
-    } else if (semver.valid(manifest.engines.kisaki)) {
+    if (semver.valid(manifest.engines.kisaki)) {
       warnings.push({
         path: '$.engines.kisaki',
         message: 'Prefer a range such as >=0.1.0 instead of a single version.'
@@ -133,7 +122,7 @@ function validateRelativeFilePath(
   fieldPath: string,
   errors: ValidationIssue[]
 ): string | null {
-  if (!normalizePackagePath(value)) {
+  if (!normalizeManifestPackagePath(value)) {
     errors.push({
       path: fieldPath,
       message: 'Path must be relative and stay inside the extension package root.'
@@ -155,7 +144,7 @@ function validateRelativeFilePath(
 function normalizeManifest(manifest: ExtensionManifest): ExtensionManifest {
   return {
     ...manifest,
-    entry: normalizePackagePath(manifest.entry) ?? manifest.entry,
-    icon: manifest.icon ? (normalizePackagePath(manifest.icon) ?? manifest.icon) : undefined
+    entry: normalizeManifestPackagePath(manifest.entry) ?? manifest.entry,
+    icon: manifest.icon ? (normalizeManifestPackagePath(manifest.icon) ?? manifest.icon) : undefined
   }
 }

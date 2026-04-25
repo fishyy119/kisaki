@@ -22,6 +22,14 @@ export function validateThemeTokenMap(value: unknown): ValidationIssue[] {
         path: `$.${tokenName}`,
         message: 'Theme token value must be a non-empty string.'
       })
+      continue
+    }
+
+    if (!isSafeThemeColorToken(tokenValue)) {
+      issues.push({
+        path: `$.${tokenName}`,
+        message: 'Theme token value must be a safe CSS color.'
+      })
     }
   }
 
@@ -78,4 +86,55 @@ export function validateThemeContributionShape(value: unknown): ValidationIssue[
 
 export function isThemeContribution(value: unknown): value is ThemeContribution {
   return validateThemeContributionShape(value).length === 0
+}
+
+export function isSafeThemeColorToken(value: string): boolean {
+  const token = value.trim()
+  if (token.length === 0 || token.length > 160) {
+    return false
+  }
+
+  if (/[;{}\n\r]/.test(token) || token.includes('/*') || token.includes('*/')) {
+    return false
+  }
+
+  if (/^#[0-9a-fA-F]{3,8}$/.test(token)) {
+    return true
+  }
+
+  if (
+    /^(transparent|currentColor|Canvas|CanvasText|LinkText|VisitedText|ActiveText)$/i.test(token)
+  ) {
+    return true
+  }
+
+  if (/^var\(--[A-Za-z0-9_-]+\)$/.test(token)) {
+    return true
+  }
+
+  const fnMatch = token.match(/^([a-zA-Z-]+)\((.*)\)$/)
+  if (!fnMatch) {
+    return false
+  }
+
+  const fnName = fnMatch[1].toLowerCase()
+  if (
+    ![
+      'rgb',
+      'rgba',
+      'hsl',
+      'hsla',
+      'hwb',
+      'lab',
+      'lch',
+      'oklab',
+      'oklch',
+      'color',
+      'color-mix'
+    ].includes(fnName)
+  ) {
+    return false
+  }
+
+  return /^[#A-Za-z0-9\s.,%+\-/()_]+$/.test(fnMatch[2]) && !/\burl\s*\(/i.test(fnMatch[2])
 }

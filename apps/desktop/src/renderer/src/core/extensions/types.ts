@@ -44,6 +44,7 @@ export interface ExtensionSearchOptions {
   page?: number
   limit?: number
   sortBy?: 'stars' | 'updated' | 'name'
+  sortDirection?: 'asc' | 'desc'
 }
 
 export interface ExtensionSearchResult {

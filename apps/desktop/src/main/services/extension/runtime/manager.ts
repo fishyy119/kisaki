@@ -49,6 +49,14 @@ export interface RuntimeReloadOptions {
   cause?: ExtensionRuntimeChangeCause
 }
 
+export type ExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
+
+export interface ExtensionRuntimeState {
+  status: ExtensionRuntimeStatus
+  error: string | null
+  updatedAt: string
+}
+
 interface LoadedExtensionState {
   metadata: ExtensionRuntimeMetadata
   runtimeHandle: ExtensionRuntimeHandle
@@ -68,6 +76,7 @@ export class RuntimeManager {
   private readonly desiredExtensions = new Map<string, ExtensionRuntimeMetadata>()
   private readonly loadedExtensions = new Map<string, LoadedExtensionState>()
   private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
+  private readonly runtimeStates = new Map<string, ExtensionRuntimeState>()
   private readonly storageMutexes = new Map<ExtensionRuntimeHandle, Mutex>()
   private controller: ExtensionHostController | null = null
   private rpc: ExtensionHostRpcClient | null = null
@@ -82,6 +91,14 @@ export class RuntimeManager {
 
   getDesiredExtensions(): ReadonlyMap<string, ExtensionRuntimeMetadata> {
     return new Map(this.desiredExtensions)
+  }
+
+  getRuntimeState(extensionId: string): ExtensionRuntimeState | null {
+    return this.runtimeStates.get(extensionId) ?? null
+  }
+
+  getRuntimeStates(): ReadonlyMap<string, ExtensionRuntimeState> {
+    return new Map(this.runtimeStates)
   }
 
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null {
@@ -108,6 +125,12 @@ export class RuntimeManager {
       this.desiredExtensions.clear()
       for (const [extensionId, metadata] of desired) {
         this.desiredExtensions.set(extensionId, metadata)
+      }
+
+      for (const extensionId of [...this.runtimeStates.keys()]) {
+        if (!this.desiredExtensions.has(extensionId)) {
+          this.recordRuntimeStopped(extensionId)
+        }
       }
 
       await this.reconcileLocked(options)
@@ -183,18 +206,39 @@ export class RuntimeManager {
       return
     }
 
-    await this.ensureHostReadyLocked()
+    try {
+      await this.ensureHostReadyLocked()
+    } catch (error) {
+      const message = toRuntimeErrorMessage(error)
+      log.error('[RuntimeManager] Failed to start extension host:', error)
+
+      for (const extension of this.desiredExtensions.values()) {
+        if (!this.loadedExtensions.has(extension.id)) {
+          this.recordRuntimeFailure(extension.id, message)
+        }
+      }
+
+      return
+    }
 
     for (const [extensionId, metadata] of this.desiredExtensions) {
       const loaded = this.loadedExtensions.get(extensionId)
 
       if (!loaded) {
-        await this.loadIntoHostLocked(metadata, cause)
+        try {
+          await this.loadIntoHostLocked(metadata, cause)
+        } catch (error) {
+          log.error(`[RuntimeManager] Failed to load extension "${extensionId}":`, error)
+        }
         continue
       }
 
       if (forceReloadIds.has(extensionId) || !isSameRuntimeMetadata(loaded.metadata, metadata)) {
-        await this.reloadInHostLocked(metadata, cause)
+        try {
+          await this.reloadInHostLocked(metadata, cause)
+        } catch (error) {
+          log.error(`[RuntimeManager] Failed to reload extension "${extensionId}":`, error)
+        }
       }
     }
   }
@@ -219,6 +263,7 @@ export class RuntimeManager {
       this.runtimeHandles.delete(runtimeHandle)
       this.options.capabilities?.releaseRuntime(runtimeHandle)
       await this.options.contributions?.releaseRuntime(runtimeHandle)
+      this.recordRuntimeFailure(extension.id, toRuntimeErrorMessage(error))
       throw error
     }
 
@@ -227,6 +272,7 @@ export class RuntimeManager {
       runtimeHandle,
       generation
     })
+    this.recordRuntimeRunning(extension.id)
   }
 
   private async reloadInHostLocked(
@@ -254,6 +300,7 @@ export class RuntimeManager {
         this.loadedExtensions.delete(extension.id)
         await this.releaseLoadedState(previous)
       }
+      this.recordRuntimeFailure(extension.id, toRuntimeErrorMessage(error))
       throw error
     }
 
@@ -266,6 +313,7 @@ export class RuntimeManager {
     if (previous) {
       await this.releaseLoadedState(previous)
     }
+    this.recordRuntimeRunning(extension.id)
   }
 
   private async unloadFromHostLocked(
@@ -278,6 +326,7 @@ export class RuntimeManager {
     }
 
     this.loadedExtensions.delete(extensionId)
+    this.recordRuntimeStopped(extensionId)
 
     if (!this.rpc || !this.controller?.isRunning()) {
       await this.releaseLoadedState(loaded)
@@ -470,6 +519,9 @@ export class RuntimeManager {
         log.error(
           '[RuntimeManager] Extension host crash limit reached; automatic recovery has been disabled'
         )
+        for (const extensionId of this.desiredExtensions.keys()) {
+          this.recordRuntimeFailure(extensionId, 'Extension host crashed repeatedly.')
+        }
         return
       }
 
@@ -678,6 +730,30 @@ export class RuntimeManager {
 
     return this.rpc
   }
+
+  private recordRuntimeRunning(extensionId: string): void {
+    this.runtimeStates.set(extensionId, {
+      status: 'running',
+      error: null,
+      updatedAt: new Date().toISOString()
+    })
+  }
+
+  private recordRuntimeFailure(extensionId: string, error: string): void {
+    this.runtimeStates.set(extensionId, {
+      status: 'failed',
+      error,
+      updatedAt: new Date().toISOString()
+    })
+  }
+
+  private recordRuntimeStopped(extensionId: string): void {
+    this.runtimeStates.set(extensionId, {
+      status: 'stopped',
+      error: null,
+      updatedAt: new Date().toISOString()
+    })
+  }
 }
 
 function createRuntimeInfo(): RuntimeInfo {
@@ -792,6 +868,14 @@ function normalizeSerializableValue(value: unknown): SerializableValue | undefin
   }
 
   return undefined
+}
+
+function toRuntimeErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'Unknown extension runtime error'
 }
 
 function toChangeCause(reason: ExtensionUnloadReason): ExtensionRuntimeChangeCause {

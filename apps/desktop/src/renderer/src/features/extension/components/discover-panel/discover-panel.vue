@@ -24,7 +24,8 @@ async function searchExtensionPage(
   const data = await searchExtensions(store.selectedRegistry, store.searchQuery, {
     page,
     limit: PAGE_SIZE,
-    sortBy: store.sortField === 'updatedAt' ? 'updated' : store.sortField
+    sortBy: store.sortField === 'updatedAt' ? 'updated' : store.sortField,
+    sortDirection: store.sortDirection
   })
 
   return { results: data.entries, hasMore: data.hasMore }
@@ -34,6 +35,15 @@ const additionalResults = ref<ExtensionRegistryEntry[]>([])
 const additionalHasMore = ref(false)
 const page = ref(1)
 const isLoadingMore = ref(false)
+const queryKey = computed(() =>
+  [
+    store.searchTrigger,
+    store.selectedRegistry,
+    store.sortField,
+    store.sortDirection,
+    store.selectedCategory ?? 'all'
+  ].join(':')
+)
 
 // Use useAsyncData for the initial search (page 1)
 const {
@@ -41,12 +51,12 @@ const {
   isFetching,
   isLoading
 } = useAsyncData(() => searchExtensionPage(1), {
-  watch: [() => store.searchTrigger, () => store.selectedRegistry],
+  watch: [queryKey],
   immediate: true
 })
 
 watch(
-  [() => store.searchTrigger, () => store.selectedRegistry],
+  queryKey,
   () => {
     page.value = 1
     additionalResults.value = []

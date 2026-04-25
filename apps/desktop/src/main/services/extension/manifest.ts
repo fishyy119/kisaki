@@ -1,54 +1,17 @@
 import path from 'node:path'
-import semver from 'semver'
 import fse from 'fs-extra'
-import type { ExtensionManifest, ValidationIssue } from '@kisaki/extension-api'
-import { validateExtensionManifestShape } from '@kisaki/extension-api'
-import type { ParsedExtensionManifest } from './types'
+import type {
+  ExtensionManifest,
+  ParsedExtensionManifest,
+  ValidationIssue
+} from '@kisaki/extension-api'
+import { parseExtensionManifest as parseSharedExtensionManifest } from '@kisaki/extension-api'
 
 /**
  * Parse and normalize a manifest payload into the public ExtensionManifest shape.
  */
 export function parseExtensionManifest(value: unknown): ParsedExtensionManifest {
-  const issues = [...validateExtensionManifestShape(value)]
-
-  if (issues.length > 0) {
-    return { manifest: null, issues }
-  }
-
-  const manifest = value as ExtensionManifest
-
-  if (!semver.valid(manifest.version)) {
-    issues.push({
-      path: '$.version',
-      message: 'version must be a valid semver string.'
-    })
-  }
-
-  if (manifest.engines?.kisaki && !semver.validRange(manifest.engines.kisaki)) {
-    issues.push({
-      path: '$.engines.kisaki',
-      message: 'engines.kisaki must be a valid semver range.'
-    })
-  }
-
-  const normalizedEntry = normalizeManifestRelativePath(manifest.entry, '$.entry', issues)
-  const normalizedIcon =
-    manifest.icon === undefined
-      ? undefined
-      : normalizeManifestRelativePath(manifest.icon, '$.icon', issues)
-
-  if (issues.length > 0 || !normalizedEntry) {
-    return { manifest: null, issues }
-  }
-
-  return {
-    manifest: {
-      ...manifest,
-      entry: normalizedEntry,
-      icon: normalizedIcon ?? undefined
-    },
-    issues
-  }
+  return parseSharedExtensionManifest(value)
 }
 
 /**
@@ -115,38 +78,4 @@ export async function validateInstalledExtensionPackage(
   }
 
   return issues
-}
-
-function normalizeManifestRelativePath(
-  value: string,
-  fieldPath: string,
-  issues: ValidationIssue[]
-): string | null {
-  const normalized = path.posix.normalize(value.replace(/\\/g, '/'))
-
-  if (!normalized || normalized === '.' || normalized === '..') {
-    issues.push({
-      path: fieldPath,
-      message: 'Path must point to a file inside the extension package.'
-    })
-    return null
-  }
-
-  if (normalized.startsWith('../') || normalized === '..') {
-    issues.push({
-      path: fieldPath,
-      message: 'Path must not escape the extension package root.'
-    })
-    return null
-  }
-
-  if (path.posix.isAbsolute(normalized) || /^[A-Za-z]:[\\/]/.test(value)) {
-    issues.push({
-      path: fieldPath,
-      message: 'Path must be relative to the extension package root.'
-    })
-    return null
-  }
-
-  return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }

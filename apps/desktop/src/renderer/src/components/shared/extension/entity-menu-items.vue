@@ -3,13 +3,14 @@ ExtensionEntityMenuItems renders controlled entity menu contributions.
 Boundary: it resolves DTOs through main-process IPC and never executes extension code.
 -->
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import {
   getEntityMenuInputKey,
   invokeExtensionEntityMenu,
+  releaseExtensionEntityMenuSession,
   resolveExtensionEntityMenu
 } from '@renderer/core/extensions'
 import type { EntityMenuItem, EntityMenuResolveInput } from '@kisaki/extension-api'
@@ -59,6 +60,7 @@ watch(
   ([enabled]) => {
     if (!enabled) {
       resolveRequestId += 1
+      releaseCurrentSession()
       resetMenuState()
       return
     }
@@ -70,6 +72,7 @@ watch(
 
 async function resolveMenu(): Promise<void> {
   const requestId = ++resolveRequestId
+  releaseCurrentSession()
   loading.value = true
   error.value = null
   resolvedMenu.value = null
@@ -78,6 +81,10 @@ async function resolveMenu(): Promise<void> {
     const menu = await resolveExtensionEntityMenu(props.input)
     if (requestId === resolveRequestId && props.enabled) {
       resolvedMenu.value = menu
+    } else {
+      void releaseExtensionEntityMenuSession(menu.sessionId).catch((e) => {
+        console.warn('[ExtensionEntityMenuItems] Failed to release stale menu session:', e)
+      })
     }
   } catch (e) {
     if (requestId === resolveRequestId && props.enabled) {
@@ -154,6 +161,23 @@ function resetMenuState(): void {
   error.value = null
   invokingKey.value = null
 }
+
+function releaseCurrentSession(): void {
+  const sessionId = resolvedMenu.value?.sessionId
+  if (!sessionId) {
+    return
+  }
+
+  resolvedMenu.value = null
+  void releaseExtensionEntityMenuSession(sessionId).catch((e) => {
+    console.warn('[ExtensionEntityMenuItems] Failed to release extension menu session:', e)
+  })
+}
+
+onBeforeUnmount(() => {
+  resolveRequestId += 1
+  releaseCurrentSession()
+})
 </script>
 
 <template>

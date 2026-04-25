@@ -145,34 +145,103 @@ export class ExtensionInstaller {
       }
 
       const targetDir = path.join(this.paths.packagesDir, prepared.manifest.id)
+      const backupDir = path.join(
+        this.paths.tempDir,
+        '.backup',
+        `${prepared.manifest.id}-${randomUUID()}`
+      )
       const existingState = await this.stateStore.get(prepared.manifest.id)
+      const existingPackage = await fse.pathExists(targetDir)
 
       if (existingState && !replaceExisting) {
         throw new Error(`Extension "${prepared.manifest.id}" is already installed`)
       }
 
+      if (existingPackage && !replaceExisting) {
+        throw new Error(
+          `Extension package directory "${prepared.manifest.id}" already exists without install state`
+        )
+      }
+
       await Promise.all([
         fse.ensureDir(this.paths.packagesDir),
         fse.ensureDir(path.join(this.paths.dataDir, prepared.manifest.id)),
-        fse.ensureDir(path.join(this.paths.tempDir, prepared.manifest.id))
+        fse.ensureDir(path.join(this.paths.tempDir, prepared.manifest.id)),
+        fse.ensureDir(path.dirname(backupDir))
       ])
 
-      await fse.remove(targetDir)
-      await fse.move(prepared.stageDir, targetDir, { overwrite: true })
+      let backupCreated = false
+      let stageMoved = false
 
-      const now = new Date().toISOString()
-      await this.stateStore.set(prepared.manifest.id, {
-        enabled: existingState?.enabled ?? true,
-        version: prepared.manifest.version,
-        source: source ?? existingState?.source ?? null,
-        installedAt: existingState?.installedAt ?? now,
-        updatedAt: now
-      })
+      try {
+        if (existingPackage) {
+          await fse.move(targetDir, backupDir, { overwrite: false })
+          backupCreated = true
+        }
+
+        await fse.move(prepared.stageDir, targetDir, { overwrite: false })
+        stageMoved = true
+
+        const now = new Date().toISOString()
+        await this.stateStore.set(prepared.manifest.id, {
+          enabled: existingState?.enabled ?? true,
+          version: prepared.manifest.version,
+          source: source ?? existingState?.source ?? null,
+          installedAt: existingState?.installedAt ?? now,
+          updatedAt: now
+        })
+      } catch (error) {
+        await rollbackPackageInstall({
+          targetDir,
+          backupDir,
+          backupCreated,
+          stageDir: prepared.stageDir,
+          stageMoved
+        }).catch((rollbackError) => {
+          log.error(
+            '[ExtensionInstaller] Failed to roll back extension package install:',
+            rollbackError
+          )
+        })
+        throw error
+      }
+
+      let finalized = false
+      const commit = async (): Promise<void> => {
+        finalized = true
+        if (backupCreated) {
+          await fse.remove(backupDir).catch((error) => {
+            log.warn(`[ExtensionInstaller] Failed to remove backup "${backupDir}":`, error)
+          })
+        }
+      }
+
+      const rollback = async (): Promise<void> => {
+        if (finalized) {
+          return
+        }
+
+        await rollbackPackageInstall({
+          targetDir,
+          backupDir,
+          backupCreated,
+          stageDir: prepared.stageDir,
+          stageMoved
+        })
+
+        if (existingState) {
+          await this.stateStore.set(prepared.manifest.id, existingState)
+        } else {
+          await this.stateStore.remove(prepared.manifest.id)
+        }
+      }
 
       return {
         extensionId: prepared.manifest.id,
         packagePath: targetDir,
-        manifest: prepared.manifest
+        manifest: prepared.manifest,
+        commit,
+        rollback
       }
     } catch (error) {
       await fse.remove(prepared.stageDir).catch(() => undefined)
@@ -274,4 +343,22 @@ function normalizeArchiveEntry(entryName: string): string | null {
 
 function formatManifestIssues(issues: readonly { path: string; message: string }[]): string {
   return issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n')
+}
+
+async function rollbackPackageInstall(options: {
+  targetDir: string
+  backupDir: string
+  backupCreated: boolean
+  stageDir: string
+  stageMoved: boolean
+}): Promise<void> {
+  if (options.stageMoved) {
+    await fse.remove(options.targetDir)
+  } else {
+    await fse.remove(options.stageDir)
+  }
+
+  if (options.backupCreated) {
+    await fse.move(options.backupDir, options.targetDir, { overwrite: false })
+  }
 }

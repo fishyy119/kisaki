@@ -32,11 +32,6 @@ export interface ExtensionStateDocument {
   extensions: Record<string, ExtensionStateRecord>
 }
 
-export interface ParsedExtensionManifest {
-  manifest: ExtensionManifest | null
-  issues: ValidationIssue[]
-}
-
 export interface ScannedExtensionPackage {
   id: string
   directoryName: string
@@ -86,6 +81,7 @@ export interface ExtensionSearchOptions {
   page?: number
   limit?: number
   sortBy?: 'stars' | 'updated' | 'name'
+  sortDirection?: 'asc' | 'desc'
 }
 
 export interface ExtensionSearchResult {
@@ -114,6 +110,8 @@ export interface ExtensionInstallResult {
   extensionId: string
   packagePath: string
   manifest: ExtensionManifest
+  commit?(): Promise<void>
+  rollback?(): Promise<void>
 }
 
 export interface ExtensionUpdateInfo {

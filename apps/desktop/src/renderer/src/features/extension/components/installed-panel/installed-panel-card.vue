@@ -50,12 +50,54 @@ const settingsPanel = computed(
 const hasSettings = computed(() => settingsPanel.value !== null)
 
 const iconUrl = computed(() => props.extension.iconUrl)
+const versionLabel = computed(() =>
+  props.extension.version ? `v${props.extension.version}` : '未知版本'
+)
+const canToggle = computed(() => props.extension.status === 'ready')
+const statusLabel = computed(() => {
+  switch (props.extension.status) {
+    case 'ready':
+      return null
+    case 'invalid':
+      return '包无效'
+    case 'missing-package':
+      return '包缺失'
+    case 'orphaned':
+      return '未登记'
+  }
+
+  return null
+})
+const runtimeLabel = computed(() => {
+  if (!props.extension.enabled || props.extension.status !== 'ready') {
+    return null
+  }
+
+  switch (props.extension.runtimeStatus) {
+    case 'running':
+      return '运行中'
+    case 'failed':
+      return '加载失败'
+    case 'stopped':
+      return '未运行'
+  }
+
+  return null
+})
+const runtimeBadgeVariant = computed(() =>
+  props.extension.runtimeStatus === 'failed' ? 'destructive' : 'secondary'
+)
 
 watch(iconUrl, () => {
   iconError.value = false
 })
 
 async function handleToggle(enabled: boolean) {
+  if (!canToggle.value) {
+    notify.error('无法启用扩展', props.extension.issues[0] ?? '扩展包当前不可运行')
+    return
+  }
+
   toggling.value = true
   try {
     await (enabled ? enableExtension(props.extension.id) : disableExtension(props.extension.id))
@@ -144,7 +186,7 @@ function openSettingsPanel() {
       />
       <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
       <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
-        v{{ props.extension.version }}
+        {{ versionLabel }}
       </span>
       <Badge
         v-if="props.updateInfo"
@@ -153,6 +195,33 @@ function openSettingsPanel() {
       >
         更新
       </Badge>
+      <Badge
+        v-if="statusLabel"
+        variant="secondary"
+        class="text-[10px] px-1.5 py-0 h-4"
+      >
+        {{ statusLabel }}
+      </Badge>
+      <Badge
+        v-if="runtimeLabel && !props.extension.runtimeError"
+        :variant="runtimeBadgeVariant"
+        class="text-[10px] px-1.5 py-0 h-4"
+      >
+        {{ runtimeLabel }}
+      </Badge>
+      <Tooltip v-else-if="runtimeLabel">
+        <TooltipTrigger as-child>
+          <Badge
+            :variant="runtimeBadgeVariant"
+            class="text-[10px] px-1.5 py-0 h-4"
+          >
+            {{ runtimeLabel }}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          {{ props.extension.runtimeError }}
+        </TooltipContent>
+      </Tooltip>
     </div>
 
     <!-- Meta -->
@@ -169,7 +238,7 @@ function openSettingsPanel() {
       <div class="flex items-center gap-2">
         <Switch
           v-model="enabledModel"
-          :disabled="toggling"
+          :disabled="toggling || !canToggle"
           class="scale-90"
         />
         <span class="text-xs text-muted-foreground">

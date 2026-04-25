@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
+import { Mutex } from 'async-mutex'
 import type { ExtensionRuntimeMetadata } from '@kisaki/extension-api'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { getBootstrapArgs } from '@main/bootstrap/args'
@@ -38,7 +39,11 @@ import { ExtensionInstaller } from './installer'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
 import { ExtensionReloadWatcher } from './reload-watcher'
 import { ExtensionStateStore } from './state'
-import { RuntimeManager, type ExtensionRuntimeChangeCause } from './runtime/manager'
+import {
+  RuntimeManager,
+  type ExtensionRuntimeChangeCause,
+  type ExtensionRuntimeState
+} from './runtime/manager'
 import { GitHubExtensionSourceProvider } from './sources/github'
 import { LocalFileExtensionSourceProvider } from './sources/local-file'
 import { UrlExtensionSourceProvider } from './sources/url'
@@ -76,6 +81,7 @@ export class ExtensionService implements IService {
   private byId = new Map<string, ExtensionCatalogEntry>()
   private devExtension: ExtensionRuntimeMetadata | null = null
   private contributionSnapshotEmitQueued = false
+  private readonly operationMutex = new Mutex()
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const rootDir = path.join(app.getPath('userData'), 'extensions')
@@ -118,7 +124,7 @@ export class ExtensionService implements IService {
       contributions: this.contributions
     })
     this.reloadWatcher = new ExtensionReloadWatcher((extensionId) =>
-      this.reloadExtensionRuntime(extensionId, 'file-change')
+      this.runMutatingOperation(() => this.reloadExtensionRuntime(extensionId, 'file-change'))
     )
     this.setupIpcHandlers()
 
@@ -154,42 +160,80 @@ export class ExtensionService implements IService {
   }
 
   async install(source: string): Promise<ExtensionCatalogEntry> {
-    const result = await this.installer.install(source)
-    await this.refreshCatalog()
-    await this.applyRuntimeState({ cause: 'install' })
-    return this.requireCatalogEntry(result.extensionId)
+    return this.runMutatingOperation(async () => {
+      const result = await this.installer.install(source)
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'install' })
+      await result.commit?.()
+      return this.requireCatalogEntry(result.extensionId)
+    })
   }
 
   async installFromFile(filePath: string): Promise<ExtensionCatalogEntry> {
-    const result = await this.installer.installFromFile(filePath)
-    await this.refreshCatalog()
-    await this.applyRuntimeState({ cause: 'install' })
-    return this.requireCatalogEntry(result.extensionId)
+    return this.runMutatingOperation(async () => {
+      const result = await this.installer.installFromFile(filePath)
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'install' })
+      await result.commit?.()
+      return this.requireCatalogEntry(result.extensionId)
+    })
   }
 
   async uninstall(extensionId: string): Promise<void> {
-    await this.runtime.unloadExtension(extensionId, 'disable')
-    await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
-    await this.installer.uninstall(extensionId)
-    await this.refreshCatalog()
-    await this.applyRuntimeState({ cause: 'uninstall' })
+    await this.runMutatingOperation(async () => {
+      await this.runtime.unloadExtension(extensionId, 'disable')
+      await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
+      await this.installer.uninstall(extensionId)
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'uninstall' })
+    })
   }
 
   async update(extensionId: string): Promise<ExtensionCatalogEntry | null> {
-    await this.runtime.unloadExtension(extensionId, 'update')
-    await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
-    const result = await this.installer.update(extensionId)
-    await this.refreshCatalog()
-    await this.applyRuntimeState({
-      cause: 'package-update',
-      forceReloadIds: result ? [result.extensionId] : [extensionId]
+    return this.runMutatingOperation(async () => {
+      await this.runtime.unloadExtension(extensionId, 'update')
+      await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
+
+      let result: Awaited<ReturnType<ExtensionInstaller['update']>>
+      try {
+        result = await this.installer.update(extensionId)
+      } catch (error) {
+        await this.refreshCatalog()
+        await this.applyRuntimeState({
+          cause: 'package-update',
+          forceReloadIds: [extensionId]
+        })
+        throw error
+      }
+
+      await this.refreshCatalog()
+      await this.applyRuntimeState({
+        cause: 'package-update',
+        forceReloadIds: result ? [result.extensionId] : [extensionId]
+      })
+
+      if (!result) {
+        return null
+      }
+
+      const runtimeState = this.runtime.getRuntimeState(result.extensionId)
+      if (runtimeState?.status === 'failed') {
+        await result.rollback?.()
+        await this.refreshCatalog()
+        await this.applyRuntimeState({
+          cause: 'package-update',
+          forceReloadIds: [extensionId]
+        })
+        throw new Error(
+          `Extension update failed to load and the previous version was restored: ${
+            runtimeState.error ?? 'Unknown runtime error'
+          }`
+        )
+      }
+
+      await result.commit?.()
+      return this.requireCatalogEntry(result.extensionId)
     })
-
-    if (!result) {
-      return null
-    }
-
-    return this.requireCatalogEntry(result.extensionId)
   }
 
   async checkUpdates(): Promise<readonly ExtensionUpdateInfo[]> {
@@ -197,19 +241,23 @@ export class ExtensionService implements IService {
   }
 
   async enable(extensionId: string): Promise<ExtensionCatalogEntry> {
-    await this.stateStore.setEnabled(extensionId, true)
-    await this.refreshCatalog()
-    await this.applyRuntimeState({ cause: 'enable' })
-    this.capabilities.emitHostEvent('extension.enabled', { extensionId })
-    return this.requireCatalogEntry(extensionId)
+    return this.runMutatingOperation(async () => {
+      await this.stateStore.setEnabled(extensionId, true)
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'enable' })
+      this.capabilities.emitHostEvent('extension.enabled', { extensionId })
+      return this.requireCatalogEntry(extensionId)
+    })
   }
 
   async disable(extensionId: string): Promise<ExtensionCatalogEntry> {
-    await this.stateStore.setEnabled(extensionId, false)
-    await this.refreshCatalog()
-    await this.applyRuntimeState({ cause: 'disable' })
-    this.capabilities.emitHostEvent('extension.disabled', { extensionId })
-    return this.requireCatalogEntry(extensionId)
+    return this.runMutatingOperation(async () => {
+      await this.stateStore.setEnabled(extensionId, false)
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'disable' })
+      this.capabilities.emitHostEvent('extension.disabled', { extensionId })
+      return this.requireCatalogEntry(extensionId)
+    })
   }
 
   async isEnabled(extensionId: string): Promise<boolean> {
@@ -239,8 +287,10 @@ export class ExtensionService implements IService {
   }
 
   async reload(extensionId: string): Promise<ExtensionCatalogEntry> {
-    await this.reloadExtensionRuntime(extensionId, 'user')
-    return this.requireCatalogEntry(extensionId)
+    return this.runMutatingOperation(async () => {
+      await this.reloadExtensionRuntime(extensionId, 'user')
+      return this.requireCatalogEntry(extensionId)
+    })
   }
 
   getContributionSnapshot(): ExtensionContributionSnapshot {
@@ -265,6 +315,10 @@ export class ExtensionService implements IService {
     return this.contributions.entityMenus.invoke(request)
   }
 
+  releaseEntityMenuSession(sessionId: string): Promise<void> {
+    return this.contributions.entityMenus.releaseSession(sessionId)
+  }
+
   resolveSettingsPanel(
     extensionId: string,
     panelId: string
@@ -284,6 +338,14 @@ export class ExtensionService implements IService {
     return this.contributions.settingsPanels.invoke(request)
   }
 
+  releaseSettingsPanelSession(
+    extensionId: string,
+    panelId: string,
+    sessionId: string
+  ): Promise<void> {
+    return this.contributions.settingsPanels.releaseSession(extensionId, panelId, sessionId)
+  }
+
   async dispose(): Promise<void> {
     await this.reloadWatcher.stop()
     await this.runtime.shutdownHost()
@@ -296,6 +358,10 @@ export class ExtensionService implements IService {
     }
 
     return entry
+  }
+
+  private runMutatingOperation<T>(operation: () => Promise<T>): Promise<T> {
+    return this.operationMutex.runExclusive(operation)
   }
 
   private setupIpcHandlers(): void {
@@ -386,7 +452,9 @@ export class ExtensionService implements IService {
         await this.refreshCatalog()
         return {
           success: true,
-          data: this.getCatalog().map(toExtensionCatalogInfo)
+          data: this.getCatalog().map((entry) =>
+            toExtensionCatalogInfo(entry, this.runtime.getRuntimeState(entry.id))
+          )
         }
       } catch (error) {
         return { success: false, error: toErrorMessage(error) }
@@ -437,6 +505,15 @@ export class ExtensionService implements IService {
       }
     })
 
+    this.ipc.handle('extension:release-entity-menu-session', async (_, sessionId: string) => {
+      try {
+        await this.releaseEntityMenuSession(sessionId)
+        return { success: true }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      }
+    })
+
     this.ipc.handle('extension:resolve-settings-panel', async (_, extensionId, panelId) => {
       try {
         return {
@@ -470,6 +547,18 @@ export class ExtensionService implements IService {
       }
     })
 
+    this.ipc.handle(
+      'extension:release-settings-panel-session',
+      async (_, extensionId: string, panelId: string, sessionId: string) => {
+        try {
+          await this.releaseSettingsPanelSession(extensionId, panelId, sessionId)
+          return { success: true }
+        } catch (error) {
+          return { success: false, error: toErrorMessage(error) }
+        }
+      }
+    )
+
     this.ipc.handle('extension:get-theme-contributions', () => {
       try {
         return {
@@ -498,7 +587,12 @@ export class ExtensionService implements IService {
         _,
         sourceName: string,
         query: string,
-        options?: { page?: number; limit?: number; sortBy?: 'stars' | 'updated' | 'name' }
+        options?: {
+          page?: number
+          limit?: number
+          sortBy?: 'stars' | 'updated' | 'name'
+          sortDirection?: 'asc' | 'desc'
+        }
       ) => {
         try {
           const result = await this.searchSource(sourceName, query, options)
@@ -627,7 +721,14 @@ export class ExtensionService implements IService {
   }
 }
 
-function toExtensionCatalogInfo(entry: ExtensionCatalogEntry): ExtensionCatalogInfo {
+function toExtensionCatalogInfo(
+  entry: ExtensionCatalogEntry,
+  runtimeState: ExtensionRuntimeState | null
+): ExtensionCatalogInfo {
+  const runtimeStatus =
+    entry.enabled && entry.status === 'ready' ? (runtimeState?.status ?? 'stopped') : 'stopped'
+  const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
+
   return {
     id: entry.id,
     name: entry.manifest?.name ?? entry.id,
@@ -641,6 +742,8 @@ function toExtensionCatalogInfo(entry: ExtensionCatalogEntry): ExtensionCatalogI
     categories: entry.categories,
     enabled: entry.enabled,
     status: entry.status,
+    runtimeStatus,
+    runtimeError,
     source: entry.source,
     directory: entry.packagePath,
     issues: entry.issues

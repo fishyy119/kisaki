@@ -6,6 +6,7 @@ import {
   validateRequiredString,
   validateUnknownKeys
 } from './shared/validation'
+import semver from 'semver'
 
 export const EXTENSION_CATEGORIES = ['scraper', 'tool', 'theme', 'integration'] as const
 
@@ -28,6 +29,11 @@ export interface ExtensionManifest {
   icon?: string
   keywords?: readonly string[]
   engines?: ExtensionManifestEngines
+}
+
+export interface ParsedExtensionManifest {
+  manifest: ExtensionManifest | null
+  issues: ValidationIssue[]
 }
 
 const MANIFEST_KEYS = new Set<string>([
@@ -201,4 +207,96 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
 
 export function isExtensionManifest(value: unknown): value is ExtensionManifest {
   return validateExtensionManifestShape(value).length === 0
+}
+
+export function parseExtensionManifest(value: unknown): ParsedExtensionManifest {
+  const issues = [...validateExtensionManifestShape(value)]
+
+  if (issues.length > 0) {
+    return { manifest: null, issues }
+  }
+
+  const manifest = value as ExtensionManifest
+  issues.push(...validateExtensionManifestSemver(manifest))
+
+  const normalizedEntry = normalizeManifestPackagePath(manifest.entry)
+  if (!normalizedEntry) {
+    issues.push({
+      path: '$.entry',
+      message: 'Path must be relative and stay inside the extension package root.'
+    })
+  }
+
+  const normalizedIcon =
+    manifest.icon === undefined ? undefined : normalizeManifestPackagePath(manifest.icon)
+  if (manifest.icon !== undefined && !normalizedIcon) {
+    issues.push({
+      path: '$.icon',
+      message: 'Path must be relative and stay inside the extension package root.'
+    })
+  }
+
+  if (issues.length > 0 || !normalizedEntry) {
+    return { manifest: null, issues }
+  }
+
+  return {
+    manifest: {
+      ...manifest,
+      entry: normalizedEntry,
+      icon: normalizedIcon ?? undefined
+    },
+    issues
+  }
+}
+
+export function validateExtensionManifestSemver(
+  manifest: Pick<ExtensionManifest, 'version' | 'engines'>
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = []
+
+  if (!semver.valid(manifest.version)) {
+    issues.push({
+      path: '$.version',
+      message: 'version must be a valid semver string.'
+    })
+  }
+
+  if (manifest.engines?.kisaki && !semver.validRange(manifest.engines.kisaki)) {
+    issues.push({
+      path: '$.engines.kisaki',
+      message: 'engines.kisaki must be a valid semver range.'
+    })
+  }
+
+  return issues
+}
+
+export function normalizeManifestPackagePath(value: string): string | null {
+  if (/^[A-Za-z]:[\\/]/.test(value)) {
+    return null
+  }
+
+  const parts: string[] = []
+  for (const part of value.replace(/\\/g, '/').split('/')) {
+    if (!part || part === '.') {
+      continue
+    }
+
+    if (part === '..') {
+      if (parts.length === 0) {
+        return null
+      }
+      parts.pop()
+      continue
+    }
+
+    parts.push(part)
+  }
+
+  if (parts.length === 0 || value.replace(/\\/g, '/').startsWith('/')) {
+    return null
+  }
+
+  return parts.join('/')
 }

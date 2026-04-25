@@ -3,7 +3,7 @@ ExtensionSettingsPanelDialog renders one structured extension settings panel.
 Boundary: panel resolution and callbacks always round-trip through main IPC.
 -->
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
   Dialog,
   DialogBody,
@@ -22,19 +22,14 @@ import {
   createSettingsPanelDraft,
   getSettingsControlCallbackId,
   invokeExtensionSettingsPanel,
+  releaseExtensionSettingsPanelSession,
   resolveExtensionSettingsPanel,
   submitExtensionSettingsPanel,
   type SettingsPanelDraft
 } from '@renderer/core/extensions'
 import SettingsPanelControl from './settings-panel-control.vue'
-import type {
-  SerializableValue,
-  SettingsPanelResolvedControlNode
-} from '@kisaki/extension-api'
-import type {
-  ExtensionResolvedSettingsPanel,
-  ExtensionSettingsPanelInfo
-} from '@shared/extension'
+import type { SerializableValue, SettingsPanelResolvedControlNode } from '@kisaki/extension-api'
+import type { ExtensionResolvedSettingsPanel, ExtensionSettingsPanelInfo } from '@shared/extension'
 
 interface Props {
   panel: ExtensionSettingsPanelInfo
@@ -49,6 +44,7 @@ const resolving = ref(false)
 const submitting = ref(false)
 const error = ref<string | null>(null)
 const invokingCallbacks = ref<Set<string>>(new Set())
+let resolveRequestId = 0
 
 const visibleNodes = computed(() =>
   (resolvedPanel.value?.nodes ?? []).filter((node) => !node.hidden)
@@ -65,26 +61,44 @@ const openModel = computed({
 
 watch(
   [open, () => props.panel.extensionId, () => props.panel.panelId],
-  ([isOpen]) => {
+  ([isOpen], oldValue) => {
+    const wasOpen = oldValue?.[0]
     if (isOpen) {
       void resolvePanel()
+    } else if (wasOpen) {
+      releaseCurrentSession()
     }
   },
   { immediate: true }
 )
 
 async function resolvePanel(): Promise<void> {
+  const requestId = ++resolveRequestId
+  releaseCurrentSession(false)
   resolving.value = true
   error.value = null
 
   try {
-    applyResolvedPanel(
-      await resolveExtensionSettingsPanel(props.panel.extensionId, props.panel.panelId)
-    )
+    const panel = await resolveExtensionSettingsPanel(props.panel.extensionId, props.panel.panelId)
+    if (requestId === resolveRequestId && open.value) {
+      applyResolvedPanel(panel)
+    } else {
+      void releaseExtensionSettingsPanelSession(
+        panel.extensionId,
+        panel.panelId,
+        panel.sessionId
+      ).catch((e) => {
+        console.warn('[ExtensionSettingsPanelDialog] Failed to release stale session:', e)
+      })
+    }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
+    if (requestId === resolveRequestId) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
   } finally {
-    resolving.value = false
+    if (requestId === resolveRequestId) {
+      resolving.value = false
+    }
   }
 }
 
@@ -160,6 +174,10 @@ async function handleControlInvoke(
 }
 
 function applyResolvedPanel(panel: ExtensionResolvedSettingsPanel): void {
+  if (resolvedPanel.value?.sessionId && resolvedPanel.value.sessionId !== panel.sessionId) {
+    releaseCurrentSession()
+  }
+
   resolvedPanel.value = panel
   formData.value = createSettingsPanelDraft(panel.nodes)
 }
@@ -191,6 +209,31 @@ function endCallback(callbackId: string): void {
   next.delete(callbackId)
   invokingCallbacks.value = next
 }
+
+function releaseCurrentSession(cancelPending = true): void {
+  if (cancelPending) {
+    resolveRequestId += 1
+  }
+
+  const session = resolvedPanel.value
+  if (!session) {
+    return
+  }
+
+  resolvedPanel.value = null
+  formData.value = {}
+  void releaseExtensionSettingsPanelSession(
+    session.extensionId,
+    session.panelId,
+    session.sessionId
+  ).catch((e) => {
+    console.warn('[ExtensionSettingsPanelDialog] Failed to release settings panel session:', e)
+  })
+}
+
+onBeforeUnmount(() => {
+  releaseCurrentSession()
+})
 </script>
 
 <template>

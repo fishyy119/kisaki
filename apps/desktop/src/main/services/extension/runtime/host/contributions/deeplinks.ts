@@ -91,4 +91,14 @@ export class HostDeeplinkContributions {
 
     return response
   }
+
+  releaseRuntime(runtimeHandle: string): void {
+    this.options.registry.getByRuntimeHandle(runtimeHandle)?.deeplinks.clear()
+  }
+
+  releaseAll(): void {
+    for (const runtime of this.options.registry.list()) {
+      runtime.deeplinks.clear()
+    }
+  }
 }

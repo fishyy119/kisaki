@@ -138,6 +138,33 @@ export class ExtensionEntityMenuContributionHost {
     }
   }
 
+  async releaseSession(sessionId: string): Promise<void> {
+    if (!sessionId) {
+      return
+    }
+
+    await Promise.all(
+      [...this.registrations.values()].map((registration) =>
+        this.options
+          .requestHost(
+            'entityMenus.session.release',
+            {
+              runtimeHandle: registration.owner.runtimeHandle,
+              contributionId: registration.contribution.id,
+              sessionId
+            },
+            { timeoutMs: 5_000 }
+          )
+          .catch((error) => {
+            log.warn(
+              `[ExtensionContributionRegistry] Failed to release entity menu session "${sessionId}" for "${registration.owner.extension.id}:${registration.contribution.id}":`,
+              error
+            )
+          })
+      )
+    )
+  }
+
   private async resolveSession(
     sessionId: string,
     input: EntityMenuResolveInput

@@ -1,6 +1,8 @@
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
+import { Mutex } from 'async-mutex'
 import type { ExtensionStateDocument, ExtensionStateRecord, ExtensionSourceLocator } from './types'
 
 const EMPTY_STATE: ExtensionStateDocument = {
@@ -12,6 +14,8 @@ const EMPTY_STATE: ExtensionStateDocument = {
  * Persist extension installation state under userData/extensions/state.json.
  */
 export class ExtensionStateStore {
+  private readonly mutex = new Mutex()
+
   constructor(private readonly statePath: string) {}
 
   async init(): Promise<void> {
@@ -23,6 +27,65 @@ export class ExtensionStateStore {
   }
 
   async read(): Promise<ExtensionStateDocument> {
+    return this.mutex.runExclusive(() => this.readUnlocked())
+  }
+
+  async write(document: ExtensionStateDocument): Promise<void> {
+    await this.mutex.runExclusive(() => this.writeUnlocked(document))
+  }
+
+  async get(id: string): Promise<ExtensionStateRecord | null> {
+    return this.mutex.runExclusive(async () => {
+      const document = await this.readUnlocked()
+      return document.extensions[id] ?? null
+    })
+  }
+
+  async list(): Promise<Record<string, ExtensionStateRecord>> {
+    return this.mutex.runExclusive(async () => {
+      const document = await this.readUnlocked()
+      return { ...document.extensions }
+    })
+  }
+
+  async set(id: string, record: ExtensionStateRecord): Promise<void> {
+    await this.mutex.runExclusive(async () => {
+      const document = await this.readUnlocked()
+      document.extensions[id] = normalizeExtensionStateRecord(record) ?? record
+      await this.writeUnlocked(document)
+    })
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.mutex.runExclusive(async () => {
+      const document = await this.readUnlocked()
+      delete document.extensions[id]
+      await this.writeUnlocked(document)
+    })
+  }
+
+  async setEnabled(id: string, enabled: boolean): Promise<ExtensionStateRecord> {
+    return this.mutex.runExclusive(async () => {
+      const document = await this.readUnlocked()
+      const existing = document.extensions[id]
+
+      if (!existing) {
+        throw new Error(`Extension "${id}" is not installed`)
+      }
+
+      const nextRecord: ExtensionStateRecord = {
+        ...existing,
+        enabled,
+        updatedAt: new Date().toISOString()
+      }
+
+      document.extensions[id] = nextRecord
+      await this.writeUnlocked(document)
+      return nextRecord
+    })
+  }
+
+  private async readUnlocked(): Promise<ExtensionStateDocument> {
     try {
       const raw = await fse.readJson(this.statePath)
       return normalizeExtensionStateDocument(raw)
@@ -35,52 +98,11 @@ export class ExtensionStateStore {
     }
   }
 
-  async write(document: ExtensionStateDocument): Promise<void> {
+  private async writeUnlocked(document: ExtensionStateDocument): Promise<void> {
     const normalized = normalizeExtensionStateDocument(document)
-    const tempPath = `${this.statePath}.tmp`
+    const tempPath = `${this.statePath}.${randomUUID()}.tmp`
     await fse.writeJson(tempPath, normalized, { spaces: 2 })
     await fse.move(tempPath, this.statePath, { overwrite: true })
-  }
-
-  async get(id: string): Promise<ExtensionStateRecord | null> {
-    const document = await this.read()
-    return document.extensions[id] ?? null
-  }
-
-  async list(): Promise<Record<string, ExtensionStateRecord>> {
-    const document = await this.read()
-    return { ...document.extensions }
-  }
-
-  async set(id: string, record: ExtensionStateRecord): Promise<void> {
-    const document = await this.read()
-    document.extensions[id] = normalizeExtensionStateRecord(record) ?? record
-    await this.write(document)
-  }
-
-  async remove(id: string): Promise<void> {
-    const document = await this.read()
-    delete document.extensions[id]
-    await this.write(document)
-  }
-
-  async setEnabled(id: string, enabled: boolean): Promise<ExtensionStateRecord> {
-    const document = await this.read()
-    const existing = document.extensions[id]
-
-    if (!existing) {
-      throw new Error(`Extension "${id}" is not installed`)
-    }
-
-    const nextRecord: ExtensionStateRecord = {
-      ...existing,
-      enabled,
-      updatedAt: new Date().toISOString()
-    }
-
-    document.extensions[id] = nextRecord
-    await this.write(document)
-    return nextRecord
   }
 }
 

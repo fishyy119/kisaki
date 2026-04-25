@@ -98,6 +98,10 @@ export async function invokeExtensionEntityMenu(
   return unwrapIpcData(await ipcManager.invoke('extension:invoke-entity-menu', request))
 }
 
+export async function releaseExtensionEntityMenuSession(sessionId: string): Promise<void> {
+  unwrapIpcVoid(await ipcManager.invoke('extension:release-entity-menu-session', sessionId))
+}
+
 export async function resolveExtensionSettingsPanel(
   extensionId: string,
   panelId: string
@@ -117,6 +121,21 @@ export async function invokeExtensionSettingsPanel(
   request: ExtensionSettingsPanelInvokeRequest
 ): Promise<ExtensionSettingsPanelCallbackResult> {
   return unwrapIpcData(await ipcManager.invoke('extension:invoke-settings-panel', request))
+}
+
+export async function releaseExtensionSettingsPanelSession(
+  extensionId: string,
+  panelId: string,
+  sessionId: string
+): Promise<void> {
+  unwrapIpcVoid(
+    await ipcManager.invoke(
+      'extension:release-settings-panel-session',
+      extensionId,
+      panelId,
+      sessionId
+    )
+  )
 }
 
 export async function getExtensionThemeContributions(): Promise<

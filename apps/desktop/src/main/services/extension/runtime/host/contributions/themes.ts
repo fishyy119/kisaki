@@ -47,4 +47,14 @@ export class HostThemeContributions {
       )
     })
   }
+
+  releaseRuntime(runtimeHandle: string): void {
+    this.options.registry.getByRuntimeHandle(runtimeHandle)?.themes.clear()
+  }
+
+  releaseAll(): void {
+    for (const runtime of this.options.registry.list()) {
+      runtime.themes.clear()
+    }
+  }
 }

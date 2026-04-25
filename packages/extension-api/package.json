@@ -26,8 +26,12 @@
     "format:check": "prettier --check .",
     "clean": "rimraf dist"
   },
+  "dependencies": {
+    "semver": "^7.7.3"
+  },
   "devDependencies": {
     "@types/node": "^22.19.1",
+    "@types/semver": "^7.7.1",
     "typescript": "^5.9.3"
   },
   "keywords": [
