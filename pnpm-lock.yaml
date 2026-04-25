@@ -276,6 +276,9 @@ importers:
 
   packages/create-kisaki-extension:
     dependencies:
+      '@kisaki/extension-api':
+        specifier: workspace:*
+        version: link:../extension-api
       kolorist:
         specifier: ^1.8.0
         version: 1.8.0

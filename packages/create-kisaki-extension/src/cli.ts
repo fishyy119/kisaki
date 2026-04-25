@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { EXTENSION_CATEGORIES, type ExtensionCategory } from '@kisaki/extension-api'
 import prompts from 'prompts'
 import { bold, cyan, dim, green, red } from 'kolorist'
 import {
@@ -20,6 +21,8 @@ interface ParsedArgs {
     git: boolean | null
   }
 }
+
+const DEFAULT_EXTENSION_CATEGORY: ExtensionCategory = 'tool'
 
 export async function runCreateExtensionCli(
   argv: readonly string[],
@@ -64,13 +67,8 @@ export async function runCreateExtensionCli(
         type: 'select',
         name: 'category',
         message: 'Category:',
-        initial: 0,
-        choices: [
-          { title: 'tool', value: 'tool' },
-          { title: 'scraper', value: 'scraper' },
-          { title: 'theme', value: 'theme' },
-          { title: 'integration', value: 'integration' }
-        ]
+        initial: EXTENSION_CATEGORIES.indexOf(DEFAULT_EXTENSION_CATEGORY),
+        choices: EXTENSION_CATEGORIES.map((category) => ({ title: category, value: category }))
       },
       {
         type: 'text',
@@ -111,7 +109,7 @@ export async function runCreateExtensionCli(
     extensionName: response.extensionName,
     description: response.description || 'A Kisaki extension.',
     author: response.author || '',
-    category: response.category || 'tool'
+    category: response.category || DEFAULT_EXTENSION_CATEGORY
   }
 
   const result = scaffoldExtension({
@@ -123,8 +121,11 @@ export async function runCreateExtensionCli(
 
   if (result.gitInitialized) {
     console.log(green('[ok]') + ' Initialized git repository.')
+    if (!result.initialCommitCreated) {
+      console.log(dim('  initial commit skipped.'))
+    }
   } else if (result.gitRequested) {
-    console.log(dim('  git init skipped.'))
+    console.log(dim('  git initialization skipped.'))
   }
 
   console.log()

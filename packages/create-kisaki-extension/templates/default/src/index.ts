@@ -1,12 +1,14 @@
 import { defineExtension, kisaki } from '@kisaki/extension-sdk'
 
+const extensionName = `__EXTENSION_NAME__`
+
 export default defineExtension({
   async activate(context) {
-    context.logger.info('__EXTENSION_NAME__ activated.')
+    context.logger.info(`${extensionName} activated.`)
 
     context.contributes.settingsPanels.register({
       id: 'general',
-      title: '__EXTENSION_NAME__',
+      title: extensionName,
       async resolve(panel) {
         const enabled = await context.storage.get('enabled', true)
 
@@ -24,10 +26,7 @@ export default defineExtension({
                 id: 'test-notification',
                 label: 'Test notification',
                 async onClick() {
-                  await kisaki.notify.info(
-                    '__EXTENSION_NAME__',
-                    'Notification sent from the extension.'
-                  )
+                  await kisaki.notify.info(extensionName, 'Notification sent from the extension.')
                   return { success: true, refresh: false }
                 }
               })

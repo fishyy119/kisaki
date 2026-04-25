@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import type { ExtensionCategory } from '@kisaki/extension-api'
 
 export interface ExtensionScaffoldConfig {
   projectName: string
@@ -9,7 +10,7 @@ export interface ExtensionScaffoldConfig {
   extensionName: string
   description: string
   author: string
-  category: string
+  category: ExtensionCategory
 }
 
 export interface ScaffoldExtensionOptions {
@@ -21,6 +22,7 @@ export interface ScaffoldExtensionOptions {
 
 export interface ScaffoldExtensionResult {
   gitInitialized: boolean
+  initialCommitCreated: boolean
   gitRequested: boolean
 }
 
@@ -36,10 +38,11 @@ export function scaffoldExtension(options: ScaffoldExtensionOptions): ScaffoldEx
   mkdirSync(options.targetDir, { recursive: true })
   copyTemplate(options.templateDir, options.targetDir, options.config)
 
-  return {
-    gitInitialized: options.git ? initGit(options.targetDir, options.config.extensionName) : false,
-    gitRequested: options.git
-  }
+  const gitResult = options.git
+    ? initGit(options.targetDir, options.config.extensionName)
+    : { gitInitialized: false, initialCommitCreated: false }
+
+  return { ...gitResult, gitRequested: options.git }
 }
 
 export function isProjectName(value: string): boolean {
@@ -74,34 +77,102 @@ function copyTemplate(src: string, dest: string, config: ExtensionScaffoldConfig
       continue
     }
 
-    const content = applyTemplate(readFileSync(sourcePath, 'utf-8'), config)
+    const content = applyTemplate(readFileSync(sourcePath, 'utf-8'), config, targetPath)
     writeFileSync(targetPath, content)
   }
 }
 
-function applyTemplate(content: string, config: ExtensionScaffoldConfig): string {
-  return content
-    .replaceAll('__PROJECT_NAME__', config.projectName)
-    .replaceAll('__PACKAGE_NAME__', config.packageName)
-    .replaceAll('__EXTENSION_ID__', config.extensionId)
-    .replaceAll('__EXTENSION_NAME__', config.extensionName)
-    .replaceAll('{{EXTENSION_NAME}}', config.extensionName)
-    .replaceAll('__DESCRIPTION__', config.description)
-    .replaceAll('{{DESCRIPTION}}', config.description)
-    .replaceAll('__AUTHOR__', config.author)
-    .replaceAll('__CATEGORY__', config.category)
+const TEMPLATE_TOKEN_PATTERN =
+  /__(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY)__|\{\{(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY)\}\}/g
+
+type TemplateRenderMode = 'raw' | 'jsonStringContent' | 'templateStringContent'
+
+function applyTemplate(
+  content: string,
+  config: ExtensionScaffoldConfig,
+  targetPath: string
+): string {
+  const replacements = createTemplateReplacements(config, getTemplateRenderMode(targetPath))
+
+  return content.replace(TEMPLATE_TOKEN_PATTERN, (token) => replacements.get(token) ?? token)
 }
 
-function initGit(targetDir: string, extensionName: string): boolean {
+function createTemplateReplacements(
+  config: ExtensionScaffoldConfig,
+  mode: TemplateRenderMode
+): Map<string, string> {
+  const values = {
+    PROJECT_NAME: config.projectName,
+    PACKAGE_NAME: config.packageName,
+    EXTENSION_ID: config.extensionId,
+    EXTENSION_NAME: config.extensionName,
+    DESCRIPTION: config.description,
+    AUTHOR: config.author,
+    CATEGORY: config.category
+  }
+  const replacements = new Map<string, string>()
+
+  for (const [key, value] of Object.entries(values)) {
+    const replacement = formatTemplateValue(value, mode)
+    replacements.set(`__${key}__`, replacement)
+    replacements.set(`{{${key}}}`, replacement)
+  }
+
+  return replacements
+}
+
+function getTemplateRenderMode(targetPath: string): TemplateRenderMode {
+  const extension = path.extname(targetPath)
+
+  if (extension === '.json') {
+    return 'jsonStringContent'
+  }
+
+  if (['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx'].includes(extension)) {
+    return 'templateStringContent'
+  }
+
+  return 'raw'
+}
+
+function formatTemplateValue(value: string, mode: TemplateRenderMode): string {
+  if (mode === 'jsonStringContent') {
+    return toJsonStringContent(value)
+  }
+
+  if (mode === 'templateStringContent') {
+    return toTemplateStringContent(value)
+  }
+
+  return value
+}
+
+function toJsonStringContent(value: string): string {
+  return JSON.stringify(value).slice(1, -1)
+}
+
+function toTemplateStringContent(value: string): string {
+  return JSON.stringify(value).slice(1, -1).replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
+}
+
+function initGit(
+  targetDir: string,
+  extensionName: string
+): Pick<ScaffoldExtensionResult, 'gitInitialized' | 'initialCommitCreated'> {
   try {
     execFileSync('git', ['init'], { cwd: targetDir, stdio: 'ignore' })
+  } catch {
+    return { gitInitialized: false, initialCommitCreated: false }
+  }
+
+  try {
     execFileSync('git', ['add', '-A'], { cwd: targetDir, stdio: 'ignore' })
     execFileSync('git', ['commit', '-m', `Initial commit: ${extensionName}`], {
       cwd: targetDir,
       stdio: 'ignore'
     })
-    return true
+    return { gitInitialized: true, initialCommitCreated: true }
   } catch {
-    return false
+    return { gitInitialized: true, initialCommitCreated: false }
   }
 }
