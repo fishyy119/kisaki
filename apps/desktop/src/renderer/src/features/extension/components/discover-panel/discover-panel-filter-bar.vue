@@ -1,12 +1,9 @@
+<!--
+Browse Extension Filter Bar controls discovery search and filters.
+Boundary: owns filter inputs, while results are fetched by the panel.
+-->
 <script setup lang="ts">
-/**
- * Installed Plugin Filter Bar
- *
- * Filter bar for installed plugins panel.
- * Contains search input, status filter, category tabs, and sort options.
- */
-
-import { computed } from 'vue'
+import { watch, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
 import { Button } from '@renderer/components/ui/button'
@@ -21,34 +18,18 @@ import {
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
-import {
-  useInstalledPluginStore,
-  type InstalledPluginSortField,
-  type InstalledPluginStatusFilter
-} from '../../stores'
-import { PLUGIN_CATEGORIES } from '../../types'
+import { getExtensionSources } from '@renderer/core/extensions'
+import { useAsyncData } from '@renderer/composables/use-async-data'
+import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
+import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
+import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki/extension-api'
 
-interface Props {
-  updateCount?: number
+// Registry display configuration
+const REGISTRY_CONFIG: Record<string, { label: string; icon: string }> = {
+  github: { label: 'GitHub', icon: 'icon-[mdi--github]' },
+  local: { label: '本地', icon: 'icon-[mdi--folder-outline]' }
 }
-
-const props = withDefaults(defineProps<Props>(), {
-  updateCount: 0
-})
-
-// Status filter configuration
-const STATUS_OPTIONS: { value: InstalledPluginStatusFilter; label: string; icon: string }[] = [
-  { value: 'all', label: '全部', icon: 'icon-[mdi--filter-outline]' },
-  { value: 'enabled', label: '已启用', icon: 'icon-[mdi--check-circle-outline]' },
-  { value: 'disabled', label: '已禁用', icon: 'icon-[mdi--pause-circle-outline]' }
-]
-
-const SORT_OPTIONS: { value: InstalledPluginSortField; label: string }[] = [
-  { value: 'name', label: '名称' },
-  { value: 'status', label: '状态' },
-  { value: 'hasUpdate', label: '更新' }
-]
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {
@@ -58,17 +39,40 @@ const CATEGORY_ICONS: Record<string, string> = {
   integration: 'icon-[mdi--connection]'
 }
 
-const store = useInstalledPluginStore()
+const SORT_OPTIONS: { value: DiscoverExtensionSortField; label: string }[] = [
+  { value: 'stars', label: '星标' },
+  { value: 'name', label: '名称' },
+  { value: 'updatedAt', label: '更新' }
+]
+
+const store = useDiscoverExtensionStore()
+
+const { data: registries } = useAsyncData(
+  async () => {
+    return getExtensionSources()
+  },
+  { immediate: true }
+)
+
+const registriesList = computed(() => registries.value ?? [])
+
+// Debounced search: auto-trigger search when input changes
+const debouncedSearchInput = useDebouncedRef(() => store.searchInput, 300)
+
+// Trigger search when debounced value changes
+watch(debouncedSearchInput, () => {
+  store.triggerSearch()
+})
 
 // Computed models for v-model binding
-const searchQueryModel = computed({
-  get: () => store.searchQuery,
-  set: (v: string | number | undefined) => store.setSearchQuery(String(v ?? ''))
+const searchInputModel = computed({
+  get: () => store.searchInput,
+  set: (v: string | number | undefined) => store.setSearchInput(String(v ?? ''))
 })
 
 const sortFieldModel = computed({
   get: () => store.sortField,
-  set: (v: InstalledPluginSortField) => store.setSortField(v)
+  set: (v: DiscoverExtensionSortField) => store.setSortField(v)
 })
 
 const categoryModel = computed({
@@ -77,10 +81,6 @@ const categoryModel = computed({
     store.setSelectedCategory(value === 'all' ? null : (value as ExtensionCategory))
 })
 
-function handleClearSearch() {
-  store.setSearchQuery('')
-}
-
 function handleToggleSortDirection() {
   store.setSortDirection(store.sortDirection === 'desc' ? 'asc' : 'desc')
 }
@@ -88,94 +88,65 @@ function handleToggleSortDirection() {
 
 <template>
   <div class="shrink-0 flex flex-col gap-3 px-4 py-3 border-b border-border bg-background/50">
-    <!-- Top row: Search + Status + Updates + Sort -->
+    <!-- Top row: Search + Registry + Sort -->
     <div class="flex items-center gap-3">
-      <!-- Search input -->
-      <InputGroup class="flex-1 max-w-xl">
-        <InputGroupAddon>
-          <Icon
-            icon="icon-[mdi--magnify]"
-            class="size-4"
+      <!-- Search input with button -->
+      <div class="flex items-center gap-2 flex-1 max-w-xl">
+        <InputGroup class="flex-1">
+          <InputGroupAddon>
+            <Icon
+              icon="icon-[mdi--magnify]"
+              class="size-4"
+            />
+          </InputGroupAddon>
+          <InputGroupInput
+            v-model="searchInputModel"
+            class="text-xs"
+            placeholder="搜索扩展名称或描述..."
           />
-        </InputGroupAddon>
-        <InputGroupInput
-          v-model="searchQueryModel"
-          class="text-xs"
-          placeholder="搜索已安装的插件..."
-        />
-        <InputGroupAddon
-          v-if="store.searchQuery"
-          class="cursor-pointer"
-          align="inline-end"
-          @click="handleClearSearch"
-        >
-          <Icon
-            icon="icon-[mdi--close]"
-            class="size-4 text-muted-foreground hover:text-foreground"
-          />
-        </InputGroupAddon>
-      </InputGroup>
+          <InputGroupAddon
+            v-if="store.searchInput"
+            class="cursor-pointer"
+            align="inline-end"
+            @click="store.clearSearch"
+          >
+            <Icon
+              icon="icon-[mdi--close]"
+              class="size-4 text-muted-foreground hover:text-foreground"
+            />
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
 
       <!-- Spacer -->
       <div class="flex-1" />
 
-      <!-- Status filter as button group -->
-      <ButtonGroup>
+      <!-- Registry selector as button group -->
+      <ButtonGroup v-if="registriesList.length > 0">
         <template
-          v-for="opt in STATUS_OPTIONS"
-          :key="opt.value"
+          v-for="reg in registriesList"
+          :key="reg.name"
         >
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
-                :variant="store.statusFilter === opt.value ? 'secondary' : 'outline'"
+                :variant="store.selectedRegistry === reg.name ? 'secondary' : 'outline'"
                 size="icon-sm"
-                :class="cn(store.statusFilter !== opt.value && 'text-muted-foreground')"
-                @click="store.setStatusFilter(opt.value)"
+                :class="cn(store.selectedRegistry !== reg.name && 'text-muted-foreground')"
+                @click="store.setSelectedRegistry(reg.name)"
               >
                 <Icon
-                  :icon="opt.icon"
+                  :icon="REGISTRY_CONFIG[reg.name]?.icon ?? 'icon-[mdi--folder-outline]'"
                   class="size-4"
                 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">{{ opt.label }}</TooltipContent>
+            <TooltipContent side="bottom">
+              {{ REGISTRY_CONFIG[reg.name]?.label ?? reg.name }}
+            </TooltipContent>
           </Tooltip>
         </template>
       </ButtonGroup>
-
-      <!-- Updates filter toggle -->
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            :variant="store.showUpdatesOnly ? 'secondary' : 'outline'"
-            size="sm"
-            :class="cn('gap-1.5', !store.showUpdatesOnly && 'text-muted-foreground')"
-            @click="store.setShowUpdatesOnly(!store.showUpdatesOnly)"
-          >
-            <Icon
-              icon="icon-[mdi--refresh]"
-              class="size-4"
-            />
-            <span
-              v-if="props.updateCount > 0"
-              :class="
-                cn(
-                  'text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center',
-                  store.showUpdatesOnly
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted-foreground/20'
-                )
-              "
-            >
-              {{ props.updateCount }}
-            </span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {{ store.showUpdatesOnly ? '显示全部' : '仅显示有更新' }}
-        </TooltipContent>
-      </Tooltip>
 
       <!-- Sort controls: Select + Direction toggle -->
       <ButtonGroup>
@@ -231,7 +202,7 @@ function handleToggleSortDirection() {
         全部
       </SegmentedControlItem>
       <SegmentedControlItem
-        v-for="cat in PLUGIN_CATEGORIES"
+        v-for="cat in EXTENSION_CATEGORIES"
         :key="cat.id"
         :value="cat.id"
       >

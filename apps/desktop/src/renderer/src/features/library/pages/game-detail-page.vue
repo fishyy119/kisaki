@@ -337,7 +337,7 @@ const canOpenGameDir = computed(() => {
           <TooltipContent>{{ spoilersRevealed ? '隐藏剧透' : '显示剧透' }}</TooltipContent>
         </Tooltip>
 
-        <!-- TODO: Plugin detail actions - requires itemComponent prop -->
+        <!-- TODO: Extension detail actions - requires itemComponent prop -->
       </div>
 
       <!-- Separator -->

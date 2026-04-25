@@ -1,22 +1,19 @@
+<!--
+Extension Layout owns extension manager navigation shell.
+Boundary: coordinates updates and install dialog state for child routes.
+-->
 <script setup lang="ts">
-/**
- * Plugin Layout
- *
- * Parent layout component for plugin marketplace feature.
- * Provides header + RouterView for child pages and hosts the install dialog.
- */
-
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { checkExtensionUpdates } from '@renderer/core/extensions'
-import { PluginHeader } from '../components'
-import { PluginInstallDialog } from '../components'
+import { ExtensionHeader } from '../components'
+import { ExtensionInstallDialog } from '../components'
 import type { ExtensionUpdateInfo } from '@shared/extension'
 
 const router = useRouter()
 const route = useRoute()
 
-const isInstalledRoute = computed(() => route.name === 'plugin-installed')
+const isInstalledRoute = computed(() => route.name === 'extension-installed')
 
 const updates = ref<ExtensionUpdateInfo[]>([])
 const checkingUpdates = ref(false)
@@ -36,14 +33,14 @@ async function handleCheckUpdates() {
 
 function handleRefresh() {
   refreshKey.value++
-  // Clear update for refreshed plugin
+  // Clear update for refreshed extension
   updates.value = []
 }
 
 async function handleInstalled() {
   // Refresh installed list and switch to installed page
   refreshKey.value++
-  await router.push({ name: 'plugin-installed' })
+  await router.push({ name: 'extension-installed' })
 }
 
 const installedPageProps = computed(() => ({
@@ -56,7 +53,7 @@ const installedPageProps = computed(() => ({
 <template>
   <div class="flex flex-col h-full">
     <!-- Page header -->
-    <PluginHeader
+    <ExtensionHeader
       :checking-updates="checkingUpdates"
       :update-count="updates.length"
       @check-updates="handleCheckUpdates"
@@ -74,7 +71,7 @@ const installedPageProps = computed(() => ({
     </div>
 
     <!-- Install dialog -->
-    <PluginInstallDialog
+    <ExtensionInstallDialog
       v-if="installDialogOpen"
       v-model:open="installDialogOpen"
       @installed="handleInstalled"

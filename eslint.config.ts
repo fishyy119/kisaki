@@ -10,15 +10,7 @@ import prettier from 'eslint-config-prettier'
  */
 export const baseConfig = defineConfig([
   {
-    ignores: [
-      '**/node_modules',
-      '**/dist',
-      '**/out',
-      '**/dev',
-      '**/main.plugin.d.ts',
-      '**/renderer.plugin.d.ts',
-      '**/templates/**'
-    ]
+    ignores: ['**/node_modules', '**/dist', '**/out', '**/dev', '**/templates/**']
   },
 
   // JavaScript recommended rules

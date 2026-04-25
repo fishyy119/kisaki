@@ -1,8 +1,8 @@
 /**
- * Installed Plugin Store
+ * Installed Extension Store
  *
- * Pinia store for installed plugins panel UI state.
- * Manages search, filtering, and sorting for installed plugins.
+ * Pinia store for installed extensions panel UI state.
+ * Manages search, filtering, and sorting for installed extensions.
  */
 
 import { ref } from 'vue'
@@ -10,26 +10,26 @@ import { defineStore } from 'pinia'
 import type { ExtensionCategory } from '@kisaki/extension-api'
 import type { SortDirection } from '@shared/common'
 
-export type InstalledPluginSortField = 'name' | 'status' | 'hasUpdate'
-export type InstalledPluginStatusFilter = 'all' | 'enabled' | 'disabled'
+export type InstalledExtensionSortField = 'name' | 'status' | 'hasUpdate'
+export type InstalledExtensionStatusFilter = 'all' | 'enabled' | 'disabled'
 
-export const useInstalledPluginStore = defineStore(
-  'installedPlugin',
+export const useInstalledExtensionStore = defineStore(
+  'installedExtension',
   () => {
     // Search query
     const searchQuery = ref('')
 
     // Status filter (enabled/disabled/all)
-    const statusFilter = ref<InstalledPluginStatusFilter>('all')
+    const statusFilter = ref<InstalledExtensionStatusFilter>('all')
 
     // Category filter (null = all categories)
     const selectedCategory = ref<ExtensionCategory | null>(null)
 
-    // Show only plugins with updates
+    // Show only extensions with updates
     const showUpdatesOnly = ref(false)
 
     // Sort options
-    const sortField = ref<InstalledPluginSortField>('name')
+    const sortField = ref<InstalledExtensionSortField>('name')
     const sortDirection = ref<SortDirection>('asc')
 
     // Actions
@@ -37,7 +37,7 @@ export const useInstalledPluginStore = defineStore(
       searchQuery.value = query
     }
 
-    function setStatusFilter(status: InstalledPluginStatusFilter) {
+    function setStatusFilter(status: InstalledExtensionStatusFilter) {
       statusFilter.value = status
     }
 
@@ -49,7 +49,7 @@ export const useInstalledPluginStore = defineStore(
       showUpdatesOnly.value = show
     }
 
-    function setSortField(field: InstalledPluginSortField) {
+    function setSortField(field: InstalledExtensionSortField) {
       sortField.value = field
     }
 

@@ -1,11 +1,8 @@
+<!--
+Extension Installed Panel renders installed extension management.
+Boundary: fetches catalog and contribution snapshots through core extensions.
+-->
 <script setup lang="ts">
-/**
- * Plugin Installed Panel
- *
- * Grid layout for installed plugin management with filtering and sorting.
- * Uses useAsyncData for data fetching with proper abort handling.
- */
-
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
@@ -14,9 +11,9 @@ import {
   refreshExtensionContributionSnapshot
 } from '@renderer/core/extensions'
 import { useAsyncData, useRenderState } from '@renderer/composables'
-import PluginInstalledPanelCard from './installed-panel-card.vue'
-import PluginInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
-import { useInstalledPluginStore } from '../../stores'
+import ExtensionInstalledPanelCard from './installed-panel-card.vue'
+import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
+import { useInstalledExtensionStore } from '../../stores'
 import type { ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
@@ -30,10 +27,10 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const store = useInstalledPluginStore()
+const store = useInstalledExtensionStore()
 
 const {
-  data: plugins,
+  data: extensions,
   isLoading,
   error,
   refetch
@@ -47,12 +44,12 @@ const {
   },
   { immediate: true }
 )
-const state = useRenderState(isLoading, error, plugins, { preset: 'network' })
+const state = useRenderState(isLoading, error, extensions, { preset: 'network' })
 
-const pluginsList = computed(() => plugins.value ?? [])
+const extensionsList = computed(() => extensions.value ?? [])
 
-function getUpdateInfo(pluginId: string) {
-  return props.updates.find((u) => u.extensionId === pluginId)
+function getUpdateInfo(extensionId: string) {
+  return props.updates.find((u) => u.extensionId === extensionId)
 }
 
 function handleRefresh() {
@@ -60,9 +57,9 @@ function handleRefresh() {
   emit('refresh')
 }
 
-// Filter and sort plugins
-const filteredPlugins = computed(() => {
-  let result = [...pluginsList.value]
+// Filter and sort extensions
+const filteredExtensions = computed(() => {
+  let result = [...extensionsList.value]
 
   // Search filter
   if (store.searchQuery) {
@@ -119,9 +116,9 @@ const filteredPlugins = computed(() => {
 <template>
   <div class="flex flex-col h-full">
     <!-- Filter Bar -->
-    <PluginInstalledPanelFilterBar :update-count="props.updates.length" />
+    <ExtensionInstalledPanelFilterBar :update-count="props.updates.length" />
 
-    <!-- Plugin Grid -->
+    <!-- Extension Grid -->
     <div class="flex-1 overflow-auto scrollbar-thin">
       <template v-if="state === 'loading'">
         <div class="flex items-center justify-center h-48">
@@ -129,35 +126,35 @@ const filteredPlugins = computed(() => {
         </div>
       </template>
 
-      <template v-else-if="pluginsList.length === 0">
+      <template v-else-if="extensionsList.length === 0">
         <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <Icon
             icon="icon-[mdi--puzzle-outline]"
             class="size-16 mb-3 opacity-30"
           />
-          <p class="font-medium">暂无已安装的插件</p>
-          <p class="text-sm mt-1 text-muted-foreground/70">从"发现"页面安装插件</p>
+          <p class="font-medium">暂无已安装的扩展</p>
+          <p class="text-sm mt-1 text-muted-foreground/70">从"发现"页面安装扩展</p>
         </div>
       </template>
 
-      <template v-else-if="filteredPlugins.length === 0">
+      <template v-else-if="filteredExtensions.length === 0">
         <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <Icon
             icon="icon-[mdi--filter-off-outline]"
             class="size-16 mb-3 opacity-30"
           />
-          <p class="font-medium">没有匹配的插件</p>
+          <p class="font-medium">没有匹配的扩展</p>
           <p class="text-sm mt-1 text-muted-foreground/70">尝试调整筛选条件</p>
         </div>
       </template>
 
       <template v-else>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-          <PluginInstalledPanelCard
-            v-for="plugin in filteredPlugins"
-            :key="plugin.id"
-            :plugin="plugin"
-            :update-info="getUpdateInfo(plugin.id)"
+          <ExtensionInstalledPanelCard
+            v-for="extension in filteredExtensions"
+            :key="extension.id"
+            :extension="extension"
+            :update-info="getUpdateInfo(extension.id)"
             @refresh="handleRefresh"
           />
         </div>

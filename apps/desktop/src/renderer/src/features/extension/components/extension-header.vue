@@ -1,11 +1,8 @@
+<!--
+Extension Header renders extension manager navigation and actions.
+Boundary: emits commands and does not fetch extension data.
+-->
 <script setup lang="ts">
-/**
- * Plugin Header
- *
- * Header bar for plugin marketplace layout.
- * Contains title, sub-route navigation, and actions.
- */
-
 import { RouterLink, useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -29,14 +26,19 @@ const emit = defineEmits<Emits>()
 
 const route = useRoute()
 
-const navItems: { routeName: 'plugin-discover' | 'plugin-installed'; label: string; icon: string }[] = [
-  { routeName: 'plugin-discover', label: '发现', icon: 'icon-[mdi--storefront-outline]' },
-  { routeName: 'plugin-installed', label: '已安装', icon: 'icon-[mdi--check-circle-outline]' }
+const navItems: {
+  routeName: 'extension-discover' | 'extension-installed'
+  label: string
+  icon: string
+}[] = [
+  { routeName: 'extension-discover', label: '发现', icon: 'icon-[mdi--storefront-outline]' },
+  { routeName: 'extension-installed', label: '已安装', icon: 'icon-[mdi--check-circle-outline]' }
 ]
 
 function isRouteActive(routeName: string): boolean {
   const currentRouteName = route.name
-  if (!currentRouteName || typeof currentRouteName !== 'string') return routeName === 'plugin-discover'
+  if (!currentRouteName || typeof currentRouteName !== 'string')
+    return routeName === 'extension-discover'
   return currentRouteName === routeName
 }
 </script>
@@ -62,7 +64,7 @@ function isRouteActive(routeName: string): boolean {
           icon="icon-[mdi--puzzle-outline]"
           class="size-5"
         />
-        <h1 class="text-base font-semibold">插件</h1>
+        <h1 class="text-base font-semibold">扩展</h1>
       </div>
 
       <!-- Sub-route navigation -->
@@ -87,7 +89,7 @@ function isRouteActive(routeName: string): boolean {
               />
               <span>{{ item.label }}</span>
               <span
-                v-if="item.routeName === 'plugin-installed' && props.updateCount > 0"
+                v-if="item.routeName === 'extension-installed' && props.updateCount > 0"
                 class="absolute -top-1 -right-3 size-4 flex items-center justify-center text-[10px] font-medium bg-primary text-primary-foreground rounded-full"
               >
                 {{ props.updateCount }}
@@ -105,7 +107,7 @@ function isRouteActive(routeName: string): boolean {
     <div class="flex items-center gap-2 shrink-0">
       <!-- Check updates - only show on installed page -->
       <Button
-        v-if="isRouteActive('plugin-installed')"
+        v-if="isRouteActive('extension-installed')"
         variant="ghost"
         size="sm"
         :disabled="props.checkingUpdates"
@@ -118,7 +120,7 @@ function isRouteActive(routeName: string): boolean {
         检查更新
       </Button>
 
-      <!-- Install plugin button -->
+      <!-- Install extension button -->
       <Button
         variant="default"
         size="sm"
@@ -129,7 +131,7 @@ function isRouteActive(routeName: string): boolean {
           icon="icon-[mdi--plus]"
           class="size-4"
         />
-        安装插件
+        安装扩展
       </Button>
     </div>
   </div>

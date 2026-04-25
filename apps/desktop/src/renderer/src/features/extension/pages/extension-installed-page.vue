@@ -1,11 +1,9 @@
+<!--
+Extension Installed Page hosts installed extension management.
+Boundary: receives refresh props from the extension layout.
+-->
 <script setup lang="ts">
-/**
- * Plugin Installed Page
- *
- * Installed plugin management page.
- */
-
-import { PluginInstalledPanel } from '../components'
+import { ExtensionInstalledPanel } from '../components'
 import type { ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
@@ -19,7 +17,7 @@ const props = defineProps<Props>()
 
 <template>
   <div class="h-full">
-    <PluginInstalledPanel
+    <ExtensionInstalledPanel
       :key="props.refreshKey"
       :updates="props.updates"
       @refresh="props.onRefresh"

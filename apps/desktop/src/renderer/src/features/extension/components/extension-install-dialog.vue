@@ -1,11 +1,8 @@
+<!--
+Extension Install Dialog installs extensions from supported sources.
+Boundary: delegates installation to the extension IPC facade.
+-->
 <script setup lang="ts">
-/**
- * Plugin Install Dialog
- *
- * Dialog for installing plugins from various sources.
- * Supports: GitHub (owner/repo), URL, Local file.
- */
-
 import { ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
@@ -42,14 +39,14 @@ const installing = ref(false)
 const githubRepo = ref('')
 
 // URL method state
-const pluginUrl = ref('')
+const extensionUrl = ref('')
 
 // Reset form when dialog opens
 watch(open, (isOpen) => {
   if (isOpen) {
     method.value = 'github'
     githubRepo.value = ''
-    pluginUrl.value = ''
+    extensionUrl.value = ''
     installing.value = false
   }
 })
@@ -84,14 +81,14 @@ async function handleInstallFromGitHub() {
 }
 
 async function handleInstallFromUrl() {
-  if (!pluginUrl.value.trim()) {
+  if (!extensionUrl.value.trim()) {
     notify.error('请输入下载地址')
     return
   }
 
   // Basic URL validation
   try {
-    new URL(pluginUrl.value.trim())
+    new URL(extensionUrl.value.trim())
   } catch {
     notify.error('格式错误', '请输入有效的 URL')
     return
@@ -99,10 +96,10 @@ async function handleInstallFromUrl() {
 
   installing.value = true
   try {
-    await installExtension(pluginUrl.value.trim())
+    await installExtension(extensionUrl.value.trim())
 
     notify.success('扩展安装成功')
-    pluginUrl.value = ''
+    extensionUrl.value = ''
     open.value = false
     emit('installed')
   } catch (error) {
@@ -141,8 +138,8 @@ async function handleInstallFromFile() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>安装插件</DialogTitle>
-        <DialogDescription>选择安装来源以添加新插件</DialogDescription>
+        <DialogTitle>安装扩展</DialogTitle>
+        <DialogDescription>选择安装来源以添加新扩展</DialogDescription>
       </DialogHeader>
       <DialogBody>
         <Tabs v-model="method">
@@ -207,7 +204,7 @@ async function handleInstallFromFile() {
               <FieldDescription>输入扩展包 (.kisx) 的直接下载链接</FieldDescription>
               <FieldContent>
                 <Input
-                  v-model="pluginUrl"
+                  v-model="extensionUrl"
                   placeholder="https://example.com/extension.kisx"
                   @keydown.enter="handleInstallFromUrl"
                 />
@@ -247,7 +244,7 @@ async function handleInstallFromFile() {
         <Button
           v-if="method === 'url'"
           class="w-full"
-          :disabled="installing || !pluginUrl.trim()"
+          :disabled="installing || !extensionUrl.trim()"
           @click="handleInstallFromUrl"
         >
           <Spinner

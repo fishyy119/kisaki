@@ -1,27 +1,24 @@
+<!--
+Extension Browse Panel renders extension discovery results.
+Boundary: reads store filters and queries the extension IPC facade.
+-->
 <script setup lang="ts">
-/**
- * Plugin Browse Panel
- *
- * Grid layout for plugin discovery.
- * Reads filter state from Pinia store for reactive search.
- */
-
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { searchExtensions } from '@renderer/core/extensions'
 import { useAsyncData } from '@renderer/composables/use-async-data'
-import PluginDiscoverPanelCard from './discover-panel-card.vue'
-import PluginDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
-import { useDiscoverPluginStore } from '../../stores'
+import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
+import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
+import { useDiscoverExtensionStore } from '../../stores'
 import type { ExtensionRegistryEntry } from '@shared/extension'
 
 const PAGE_SIZE = 20
 
-const store = useDiscoverPluginStore()
+const store = useDiscoverExtensionStore()
 
-async function searchPlugins(
+async function searchExtensionPage(
   page: number
 ): Promise<{ results: ExtensionRegistryEntry[]; hasMore: boolean }> {
   const data = await searchExtensions(store.selectedRegistry, store.searchQuery, {
@@ -43,7 +40,7 @@ const {
   data: searchData,
   isFetching,
   isLoading
-} = useAsyncData(() => searchPlugins(1), {
+} = useAsyncData(() => searchExtensionPage(1), {
   watch: [() => store.searchTrigger, () => store.selectedRegistry],
   immediate: true
 })
@@ -101,7 +98,7 @@ async function handleLoadMore() {
   const nextPage = page.value + 1
 
   try {
-    const data = await searchPlugins(nextPage)
+    const data = await searchExtensionPage(nextPage)
 
     page.value = nextPage
     additionalResults.value = [...additionalResults.value, ...data.results]
@@ -116,7 +113,7 @@ const loading = computed(() => isFetching.value || isLoadingMore.value)
 
 <template>
   <div class="flex flex-col h-full">
-    <PluginDiscoverPanelFilterBar />
+    <ExtensionDiscoverPanelFilterBar />
 
     <div class="flex-1 overflow-auto scrollbar-thin">
       <template v-if="loading && displayedResults.length === 0">
@@ -131,9 +128,9 @@ const loading = computed(() => isFetching.value || isLoadingMore.value)
             icon="icon-[mdi--puzzle-outline]"
             class="size-16 mb-3 opacity-30"
           />
-          <p class="font-medium">未找到插件</p>
+          <p class="font-medium">未找到扩展</p>
           <p class="text-sm mt-1 text-muted-foreground/70">
-            {{ store.selectedCategory ? '该分类下暂无插件' : '暂无插件' }}
+            {{ store.selectedCategory ? '该分类下暂无扩展' : '暂无扩展' }}
           </p>
         </div>
 
@@ -159,10 +156,10 @@ const loading = computed(() => isFetching.value || isLoadingMore.value)
       <template v-else>
         <!-- Grid - no container borders -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-          <PluginDiscoverPanelCard
-            v-for="plugin in displayedResults"
-            :key="plugin.id"
-            :plugin="plugin"
+          <ExtensionDiscoverPanelCard
+            v-for="extension in displayedResults"
+            :key="extension.id"
+            :extension="extension"
           />
         </div>
 

@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
   { id: 'library', label: '媒体库', icon: 'icon-[mdi--bookshelf]', path: '/library' },
   { id: 'statistics', label: '统计', icon: 'icon-[mdi--chart-box-outline]', path: '/statistics' },
   { id: 'scanner', label: '扫描器', icon: 'icon-[mdi--folder-search-outline]', path: '/scanner' },
-  { id: 'plugin', label: '插件', icon: 'icon-[mdi--puzzle-outline]', path: '/plugin' }
+  { id: 'extension', label: '扩展', icon: 'icon-[mdi--puzzle-outline]', path: '/extension' }
 ]
 
 const isSettingsOpen = ref(false)

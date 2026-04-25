@@ -1,11 +1,8 @@
+<!--
+Browse Extension Card renders one extension discovery result.
+Boundary: installs by locator, but does not own catalog refresh.
+-->
 <script setup lang="ts">
-/**
- * Browse Plugin Card (Grid cell style)
- *
- * Card for plugin discovery with divider line borders.
- * Uses standard PluginRegistryEntry fields - no registry-specific handling.
- */
-
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -16,7 +13,7 @@ import { notify } from '@renderer/core/notify'
 import type { ExtensionRegistryEntry } from '@shared/extension'
 
 interface Props {
-  plugin: ExtensionRegistryEntry
+  extension: ExtensionRegistryEntry
 }
 
 const props = defineProps<Props>()
@@ -28,7 +25,7 @@ const iconError = ref(false)
 async function handleInstall() {
   installing.value = true
   try {
-    await installExtension(props.plugin.locator)
+    await installExtension(props.extension.locator)
 
     notify.success('扩展安装成功')
     installed.value = true
@@ -46,8 +43,8 @@ async function handleInstall() {
     <!-- Header -->
     <div class="flex items-center gap-2 mb-2">
       <img
-        v-if="props.plugin.iconUrl && !iconError"
-        :src="props.plugin.iconUrl"
+        v-if="props.extension.iconUrl && !iconError"
+        :src="props.extension.iconUrl"
         alt=""
         class="size-5 rounded shrink-0 border shadow-xs"
         @error="iconError = true"
@@ -57,36 +54,36 @@ async function handleInstall() {
         icon="icon-[mdi--puzzle-outline]"
         class="size-5 text-muted-foreground shrink-0"
       />
-      <h3 class="text-sm font-medium truncate flex-1">{{ props.plugin.name }}</h3>
+      <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
       <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
-        v{{ props.plugin.version }}
+        v{{ props.extension.version }}
       </span>
     </div>
 
     <!-- Meta - only author -->
-    <div class="text-xs text-muted-foreground mb-2">{{ props.plugin.author || '未知' }}</div>
+    <div class="text-xs text-muted-foreground mb-2">{{ props.extension.author || '未知' }}</div>
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.plugin.description || '无描述' }}
+      {{ props.extension.description || '无描述' }}
     </p>
 
     <!-- Footer -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3 text-xs text-muted-foreground">
         <span
-          v-if="props.plugin.stars !== undefined"
+          v-if="props.extension.stars !== undefined"
           class="flex items-center gap-1"
         >
           <Icon
             icon="icon-[mdi--starburst-outline]"
             class="size-3.5"
           />
-          {{ props.plugin.stars }}
+          {{ props.extension.stars }}
         </span>
         <a
-          v-if="props.plugin.homepage"
-          :href="props.plugin.homepage"
+          v-if="props.extension.homepage"
+          :href="props.extension.homepage"
           target="_blank"
           rel="noopener noreferrer"
           class="hover:text-foreground transition-colors flex items-center gap-1"

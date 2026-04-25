@@ -375,7 +375,7 @@ export class GameMonitorHandler {
     // Send IPC event
     this.ipcService.send('monitor:game-started', gameId)
 
-    // Emit entity event for plugin system
+    // Emit entity event for extension system.
     this.eventService.emit('game:launched', { gameId, pid: process.pid })
   }
 
@@ -429,7 +429,7 @@ export class GameMonitorHandler {
     // Send IPC event
     this.ipcService.send('monitor:game-stopped', gameId)
 
-    // Emit entity event for plugin system
+    // Emit entity event for extension system.
     this.eventService.emit('game:closed', { gameId, playTime: sessionDuration })
   }
 

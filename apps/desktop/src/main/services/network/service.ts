@@ -4,7 +4,7 @@
  * Unified network layer for the main process with:
  * - Timeout and retry with exponential backoff
  * - Domain-based rate limiting (caller-registered)
- * - Plugin-accessible API
+ * - Extension-accessible API
  */
 
 import { net, session } from 'electron'

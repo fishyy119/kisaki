@@ -1,11 +1,8 @@
+<!--
+Installed Extension Card manages one installed extension row.
+Boundary: toggles, updates, uninstalls, and opens structured settings.
+-->
 <script setup lang="ts">
-/**
- * Installed Plugin Card (Grid cell style)
- *
- * Card for installed plugin management with divider line borders.
- * Uses fixed icon.png convention - checks ${directory}/icon.png
- */
-
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -27,7 +24,7 @@ import {
 import type { ExtensionCatalogInfo, ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
-  plugin: ExtensionCatalogInfo
+  extension: ExtensionCatalogInfo
   updateInfo?: ExtensionUpdateInfo
 }
 
@@ -47,22 +44,22 @@ const settingsOpen = ref(false)
 const settingsPanel = computed(
   () =>
     extensionContributionStore.settingsPanels.value.find(
-      (panel) => panel.extensionId === props.plugin.id
+      (panel) => panel.extensionId === props.extension.id
     ) ?? null
 )
 const hasSettings = computed(() => settingsPanel.value !== null)
 
 // Fixed icon.png convention - construct file:// URL
 const iconUrl = computed(() => {
-  if (!props.plugin.directory) return undefined
-  const fullPath = `${props.plugin.directory}/icon.png`.replace(/\\/g, '/')
+  if (!props.extension.directory) return undefined
+  const fullPath = `${props.extension.directory}/icon.png`.replace(/\\/g, '/')
   return `file://${fullPath}`
 })
 
 async function handleToggle(enabled: boolean) {
   toggling.value = true
   try {
-    await (enabled ? enableExtension(props.plugin.id) : disableExtension(props.plugin.id))
+    await (enabled ? enableExtension(props.extension.id) : disableExtension(props.extension.id))
     await refreshExtensionContributionSnapshot()
 
     notify.success(enabled ? '扩展已启用' : '扩展已禁用')
@@ -75,16 +72,16 @@ async function handleToggle(enabled: boolean) {
   }
 }
 
-// Computed model for plugin enabled state
+// Computed model for extension enabled state
 const enabledModel = computed({
-  get: () => props.plugin.enabled,
+  get: () => props.extension.enabled,
   set: (v: boolean) => handleToggle(v)
 })
 
 async function handleUninstall() {
   uninstalling.value = true
   try {
-    await uninstallExtension(props.plugin.id)
+    await uninstallExtension(props.extension.id)
     await refreshExtensionContributionSnapshot()
 
     notify.success('扩展已卸载')
@@ -100,7 +97,7 @@ async function handleUninstall() {
 async function handleUpdate() {
   updating.value = true
   try {
-    await updateExtension(props.plugin.id)
+    await updateExtension(props.extension.id)
     await refreshExtensionContributionSnapshot()
 
     notify.success('扩展更新成功')
@@ -128,7 +125,7 @@ function openSettingsPanel() {
       cn(
         'flex flex-col p-4 border-r border-b',
         'hover:bg-accent/50 transition-colors',
-        !props.plugin.enabled && 'opacity-50'
+        !props.extension.enabled && 'opacity-50'
       )
     "
   >
@@ -146,9 +143,9 @@ function openSettingsPanel() {
         icon="icon-[mdi--puzzle-outline]"
         class="size-5 text-primary shrink-0"
       />
-      <h3 class="text-sm font-medium truncate flex-1">{{ props.plugin.name }}</h3>
+      <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
       <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
-        v{{ props.plugin.version }}
+        v{{ props.extension.version }}
       </span>
       <Badge
         v-if="props.updateInfo"
@@ -160,11 +157,11 @@ function openSettingsPanel() {
     </div>
 
     <!-- Meta -->
-    <div class="text-xs text-muted-foreground mb-2">{{ props.plugin.author || '未知' }}</div>
+    <div class="text-xs text-muted-foreground mb-2">{{ props.extension.author || '未知' }}</div>
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.plugin.description || '无描述' }}
+      {{ props.extension.description || '无描述' }}
     </p>
 
     <!-- Footer -->
@@ -177,7 +174,7 @@ function openSettingsPanel() {
           class="scale-90"
         />
         <span class="text-xs text-muted-foreground">
-          {{ props.plugin.enabled ? '启用' : '禁用' }}
+          {{ props.extension.enabled ? '启用' : '禁用' }}
         </span>
       </div>
 

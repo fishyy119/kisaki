@@ -44,21 +44,21 @@ export interface BaseScraperSession<
 }
 
 /**
- * Lookup helpers shared across built-in and plugin providers.
+ * Lookup helpers shared across built-in and extension providers.
  */
 export interface ScraperProviderLookupHelpers {
   findKnownId(lookup: ScraperLookup, providerId: string): string | undefined
 }
 
 /**
- * Date helpers shared across built-in and plugin providers.
+ * Date helpers shared across built-in and extension providers.
  */
 export interface ScraperProviderDateHelpers {
   parsePartialDate(input: string | null | undefined): PartialDate | undefined
 }
 
 /**
- * Text normalization helpers shared across built-in and plugin providers.
+ * Text normalization helpers shared across built-in and extension providers.
  */
 export interface ScraperProviderTextHelpers {
   normalizeDescription(value: string | null | undefined): string | undefined

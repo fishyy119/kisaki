@@ -1,5 +1,5 @@
 /**
- * Slot utilities shared by scraper handlers, renderer forms, and plugin-facing types.
+ * Slot utilities shared by scraper handlers, renderer forms, and extension-facing types.
  */
 
 import type {

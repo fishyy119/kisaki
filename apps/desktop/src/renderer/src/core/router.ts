@@ -27,8 +27,12 @@ import {
 // Scanner page
 import { ScannerPage } from '@renderer/features/scanner'
 
-// Plugin page
-import { PluginDiscoverPage, PluginInstalledPage, PluginLayout } from '@renderer/features/plugin'
+// Extension page
+import {
+  ExtensionDiscoverPage,
+  ExtensionInstalledPage,
+  ExtensionLayout
+} from '@renderer/features/extension'
 
 // Statistics pages
 import {
@@ -162,21 +166,21 @@ const routes: RouteRecordRaw[] = [
     name: 'scanner',
     component: ScannerPage
   },
-  // Plugin
+  // Extension
   {
-    path: '/plugin',
-    component: PluginLayout,
-    redirect: '/plugin/discover',
+    path: '/extension',
+    component: ExtensionLayout,
+    redirect: '/extension/discover',
     children: [
       {
         path: 'discover',
-        name: 'plugin-discover',
-        component: PluginDiscoverPage
+        name: 'extension-discover',
+        component: ExtensionDiscoverPage
       },
       {
         path: 'installed',
-        name: 'plugin-installed',
-        component: PluginInstalledPage
+        name: 'extension-installed',
+        component: ExtensionInstalledPage
       }
     ]
   },

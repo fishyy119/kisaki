@@ -1,15 +1,15 @@
 /**
- * Plugin Constants
+ * Extension Constants
  *
- * Runtime constants for plugin system.
+ * Runtime constants for extension system.
  */
 
 import type { ExtensionCategory } from '@kisaki/extension-api'
 
 /**
- * All available plugin categories with display metadata.
+ * All available extension categories with display metadata.
  */
-export const PLUGIN_CATEGORIES = [
+export const EXTENSION_CATEGORIES = [
   { id: 'scraper' as const, label: '元数据', icon: 'DatabaseSearch' },
   { id: 'tool' as const, label: '工具', icon: 'Wrench' },
   { id: 'theme' as const, label: '主题', icon: 'Palette' },

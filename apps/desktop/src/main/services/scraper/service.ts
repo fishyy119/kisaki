@@ -5,7 +5,7 @@
  * Database CRUD is handled directly via Drizzle in both processes.
  *
  * Responsibilities:
- * - Provider registration (builtin + plugins)
+ * - Provider registration (builtin + extensions)
  * - Profile-based scraping operations via IPC
  */
 
@@ -273,7 +273,7 @@ export class ScraperService implements IContentService {
   }
 
   // ===========================================================================
-  // Provider Management (for plugin system)
+  // Provider management for built-in and extension providers.
   // ===========================================================================
 
   registerGameProvider(provider: GameScraperProvider): void {

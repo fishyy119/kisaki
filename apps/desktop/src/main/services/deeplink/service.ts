@@ -2,7 +2,7 @@
  * Deeplink Service
  *
  * Handles kisaki:// protocol deeplinks for the application.
- * Supports launching games, debugging plugins, auth callbacks, navigation, and more.
+ * Supports launching games, extension callbacks, auth callbacks, navigation, and more.
  */
 
 import { app } from 'electron'

@@ -581,27 +581,6 @@ export type Settings = InferSelectModel<typeof settings>
 export type NewSettings = InferInsertModel<typeof settings>
 
 // =============================================================================
-// Plugin Data (key-value storage for plugins)
-// =============================================================================
-
-export const pluginData = sqliteTable(
-  'plugin_data',
-  {
-    ...baseColumns,
-    pluginId: text('plugin_id').notNull(),
-    key: text('key').notNull(),
-    value: text('value', { mode: 'json' })
-  },
-  (t) => [
-    unique('unique_plugin_data').on(t.pluginId, t.key),
-    index('idx_plugin_data_plugin_id').on(t.pluginId)
-  ]
-)
-
-export type PluginData = InferSelectModel<typeof pluginData>
-export type NewPluginData = InferInsertModel<typeof pluginData>
-
-// =============================================================================
 // Showcase Sections
 // =============================================================================
 

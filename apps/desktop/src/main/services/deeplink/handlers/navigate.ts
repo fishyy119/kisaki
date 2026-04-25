@@ -11,7 +11,7 @@
  * - kisaki://navigate/library/company/{companyId}
  * - kisaki://navigate/library/collection/{collectionId}
  * - kisaki://navigate/scanner
- * - kisaki://navigate/plugin
+ * - kisaki://navigate/extension
  */
 
 import log from 'electron-log/main'

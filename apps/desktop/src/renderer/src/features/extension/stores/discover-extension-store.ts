@@ -1,7 +1,7 @@
 /**
- * Discover Plugin Store
+ * Discover Extension Store
  *
- * Pinia store for plugin marketplace UI state.
+ * Pinia store for extension marketplace UI state.
  * Manages search, filtering, sorting, and registry selection.
  */
 
@@ -10,10 +10,10 @@ import { defineStore } from 'pinia'
 import type { ExtensionCategory } from '@kisaki/extension-api'
 import type { SortDirection } from '@shared/common'
 
-export type DiscoverPluginSortField = 'stars' | 'name' | 'updatedAt'
+export type DiscoverExtensionSortField = 'stars' | 'name' | 'updatedAt'
 
-export const useDiscoverPluginStore = defineStore(
-  'discoverPlugin',
+export const useDiscoverExtensionStore = defineStore(
+  'discoverExtension',
   () => {
     // Search input value (for controlled input)
     const searchInput = ref('')
@@ -31,7 +31,7 @@ export const useDiscoverPluginStore = defineStore(
     const selectedCategory = ref<ExtensionCategory | null>(null)
 
     // Sort options
-    const sortField = ref<DiscoverPluginSortField>('stars')
+    const sortField = ref<DiscoverExtensionSortField>('stars')
     const sortDirection = ref<SortDirection>('desc')
 
     // Actions
@@ -58,7 +58,7 @@ export const useDiscoverPluginStore = defineStore(
       selectedCategory.value = category
     }
 
-    function setSortField(field: DiscoverPluginSortField) {
+    function setSortField(field: DiscoverExtensionSortField) {
       sortField.value = field
     }
 
@@ -66,7 +66,7 @@ export const useDiscoverPluginStore = defineStore(
       sortDirection.value = direction
     }
 
-    function setSort(field: DiscoverPluginSortField, direction: SortDirection) {
+    function setSort(field: DiscoverExtensionSortField, direction: SortDirection) {
       sortField.value = field
       sortDirection.value = direction
     }
