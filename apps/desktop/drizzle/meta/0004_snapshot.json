@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3ae4de65-cb0b-4916-84e1-2e6a608934c7",
-  "prevId": "bd8e43a2-fd73-4b38-a693-77b2afe2aadc",
+  "id": "998d8a29-2f80-4255-b670-7f2dbe4e529f",
+  "prevId": "3ae4de65-cb0b-4916-84e1-2e6a608934c7",
   "tables": {
     "character_external_ids": {
       "name": "character_external_ids",

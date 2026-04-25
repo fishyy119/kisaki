@@ -1,6 +1,6 @@
-# **EXTENSION_NAME**
+# {{EXTENSION_NAME}}
 
-**DESCRIPTION**
+{{DESCRIPTION}}
 
 ## Scripts
 

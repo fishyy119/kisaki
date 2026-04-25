@@ -413,17 +413,6 @@ CREATE INDEX `idx_persons_gender` ON `persons` (`gender`);--> statement-breakpoi
 CREATE INDEX `idx_persons_created_at` ON `persons` (`created_at`);--> statement-breakpoint
 CREATE INDEX `idx_persons_name` ON `persons` (`name`);--> statement-breakpoint
 CREATE INDEX `idx_persons_score` ON `persons` (`score`);--> statement-breakpoint
-CREATE TABLE `plugin_data` (
-	`id` text PRIMARY KEY NOT NULL,
-	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL,
-	`plugin_id` text NOT NULL,
-	`key` text NOT NULL,
-	`value` text
-);
---> statement-breakpoint
-CREATE INDEX `idx_plugin_data_plugin_id` ON `plugin_data` (`plugin_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `unique_plugin_data` ON `plugin_data` (`plugin_id`,`key`);--> statement-breakpoint
 CREATE TABLE `scanners` (
 	`id` text PRIMARY KEY NOT NULL,
 	`created_at` integer NOT NULL,

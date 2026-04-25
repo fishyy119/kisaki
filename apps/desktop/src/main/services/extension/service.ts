@@ -45,7 +45,7 @@ import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions/registry'
 
 /**
- * Main-process entry point for the new extension system's phase 2A infrastructure.
+ * Main-process entry point for the extension system.
  */
 export class ExtensionService implements IService {
   readonly id = 'extension'

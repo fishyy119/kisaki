@@ -44,9 +44,6 @@ importers:
       '@kisaki/extension-api':
         specifier: workspace:*
         version: link:../../packages/extension-api
-      '@kisaki/extension-sdk':
-        specifier: workspace:*
-        version: link:../../packages/extension-sdk
       '@ximu3/process-list':
         specifier: ^0.0.1
         version: 0.0.1
