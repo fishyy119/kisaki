@@ -12,6 +12,10 @@ export interface HeatmapProps {
   range: { start: Date; end: Date }
   /** Data points to display */
   data: HeatmapDataPoint[]
+  /** Render compact inline details when cells are large enough */
+  showInlineDetails?: boolean
+  /** Override the minimum cell size required for inline details */
+  inlineDetailsMinCellSizePx?: number
   /** Available granularities (defaults to all). Selector hidden when only one. */
   availableGranularities?: HeatmapGranularity[]
   /** Custom value formatter for tooltips */
