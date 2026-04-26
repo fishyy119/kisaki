@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
@@ -12,6 +11,7 @@ import type {
   ExtensionSourceProvider
 } from '../types'
 import { parseExtensionManifest } from '../manifest'
+import { resolveInsideRoot } from '../shared/path-confinement'
 
 interface GitHubReleaseAsset {
   name: string
@@ -164,9 +164,9 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
   }
 
   async download(entry: ExtensionSourceEntry): Promise<string> {
-    const tempDir = path.join(app.getPath('temp'), 'kisaki-extensions')
+    const tempDir = resolveInsideRoot(app.getPath('temp'), 'kisaki-extensions')
     const fileName = `${randomUUID()}.kisx`
-    const destination = path.join(tempDir, fileName)
+    const destination = resolveInsideRoot(tempDir, fileName)
 
     await fse.ensureDir(tempDir)
     await this.networkService.downloadToFile(entry.downloadUrl, destination)

@@ -94,7 +94,7 @@ async function shutdownHost(): Promise<void> {
     try {
       await loader.shutdown()
     } finally {
-      sdkBridge.dispose()
+      await sdkBridge.dispose()
       rpc.dispose('Extension host shutting down')
     }
   })()

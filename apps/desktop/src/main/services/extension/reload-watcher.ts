@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { watch, type FSWatcher } from 'chokidar'
 import log from 'electron-log/main'
+import { isInsideOrEqualPath } from './shared/path-confinement'
 
 export interface ExtensionReloadWatchTarget {
   extensionId: string
@@ -139,6 +140,8 @@ function findTargetForPath(
 }
 
 function isInsidePath(parentPath: string, childPath: string): boolean {
-  const relative = path.relative(parentPath, childPath)
-  return Boolean(relative) && !relative.startsWith('..') && !path.isAbsolute(relative)
+  return (
+    path.relative(path.resolve(parentPath), path.resolve(childPath)) !== '' &&
+    isInsideOrEqualPath(parentPath, childPath)
+  )
 }

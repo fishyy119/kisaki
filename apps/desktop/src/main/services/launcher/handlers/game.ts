@@ -17,6 +17,7 @@ import type { DbService } from '@main/services/db'
 import type { NativeService } from '@main/services/native'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
+import { openExternalProtocol } from '@main/utils'
 
 const execAsync = promisify(exec)
 
@@ -143,8 +144,7 @@ export class GameLauncherHandler {
       throw new Error(`Invalid URL format: ${url}`)
     }
 
-    // Use shell.openExternal to open URL
-    await shell.openExternal(url)
+    await openExternalProtocol(url, { allowCustomProtocols: true })
   }
 
   /**

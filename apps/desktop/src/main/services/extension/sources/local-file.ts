@@ -10,6 +10,7 @@ import type {
   ExtensionSourceEntry
 } from '../types'
 import { parseExtensionManifest } from '../manifest'
+import { resolveInsideRoot } from '../shared/path-confinement'
 
 /**
  * Resolves local .kisx files for manual installation workflows.
@@ -72,8 +73,8 @@ export class LocalFileExtensionSourceProvider implements ExtensionSourceProvider
   }
 
   async download(entry: ExtensionSourceEntry): Promise<string> {
-    const tempDir = path.join(app.getPath('temp'), 'kisaki-extensions')
-    const destination = path.join(tempDir, `${randomUUID()}.kisx`)
+    const tempDir = resolveInsideRoot(app.getPath('temp'), 'kisaki-extensions')
+    const destination = resolveInsideRoot(tempDir, `${randomUUID()}.kisx`)
 
     await fse.ensureDir(tempDir)
     await fse.copy(entry.downloadUrl, destination, { overwrite: true })

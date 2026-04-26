@@ -35,7 +35,7 @@ interface SettingsPanelSession {
   panelId: string
   sessionId: string
   callbacks: Map<string, SettingsPanelCallbackRecord>
-  ttlTimer: ReturnType<typeof setTimeout>
+  ttlTimer: ReturnType<typeof setTimeout> | null
 }
 
 interface SettingsPanelCallbackRecord {
@@ -143,7 +143,7 @@ export class HostSettingsPanelContributions {
       panelId: request.panelId,
       sessionId: request.sessionId,
       callbacks: new Map(),
-      ttlTimer: this.createSessionTimer(this.getSessionKey(request))
+      ttlTimer: null
     }
     const resolvedNodes = normalizeSettingsPanelNodes(runtime.metadata.id, panel.id, nodes, session)
     const resolvedIssues = validateSettingsPanelResolvedNodes(resolvedNodes)
@@ -261,6 +261,7 @@ export class HostSettingsPanelContributions {
 
   private storeSession(key: string, session: SettingsPanelSession): void {
     this.deleteSession(key)
+    session.ttlTimer = this.createSessionTimer(key)
     this.sessions.set(key, session)
   }
 
@@ -270,7 +271,9 @@ export class HostSettingsPanelContributions {
       return
     }
 
-    clearTimeout(session.ttlTimer)
+    if (session.ttlTimer) {
+      clearTimeout(session.ttlTimer)
+    }
     this.sessions.delete(key)
   }
 
@@ -280,7 +283,9 @@ export class HostSettingsPanelContributions {
       return
     }
 
-    clearTimeout(session.ttlTimer)
+    if (session.ttlTimer) {
+      clearTimeout(session.ttlTimer)
+    }
     session.ttlTimer = this.createSessionTimer(key)
   }
 

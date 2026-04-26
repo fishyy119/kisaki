@@ -10,6 +10,7 @@
 import { net, session } from 'electron'
 import log from 'electron-log/main'
 import { createWriteStream } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import path from 'path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -99,12 +100,16 @@ export class NetworkService implements IService {
   async downloadToFile(url: string, destPath: string, options: FetchOptions = {}): Promise<void> {
     const retries = options.retries ?? this.defaultRetryCount
     const attemptOptions: FetchOptions = { ...options, retries: 0 }
+    const tempPath = path.join(
+      path.dirname(destPath),
+      `.${path.basename(destPath)}.${randomUUID()}.tmp`
+    )
 
     await this.executeWithRetry(
       async () => {
         assertNotAborted(options.signal)
         await fse.ensureDir(path.dirname(destPath))
-        await fse.remove(destPath).catch(() => undefined)
+        await fse.remove(tempPath).catch(() => undefined)
 
         const response = await this.fetch(url, attemptOptions)
         if (!response.ok) {
@@ -115,14 +120,16 @@ export class NetworkService implements IService {
         }
 
         const bodyStream = Readable.fromWeb(response.body as any)
-        const fileStream = createWriteStream(destPath)
+        const fileStream = createWriteStream(tempPath)
 
         try {
           await pipeline(bodyStream, fileStream, {
             signal: options.signal
           })
+          assertNotAborted(options.signal)
+          await fse.move(tempPath, destPath, { overwrite: true })
         } catch (error) {
-          await fse.remove(destPath).catch(() => undefined)
+          await fse.remove(tempPath).catch(() => undefined)
           throw error
         }
       },

@@ -32,7 +32,7 @@ interface EntityMenuSession {
   sessionId: string
   input: EntityMenuResolveInput
   callbacks: Map<string, EntityMenuCallbackRecord>
-  ttlTimer: ReturnType<typeof setTimeout>
+  ttlTimer: ReturnType<typeof setTimeout> | null
 }
 
 interface EntityMenuCallbackRecord {
@@ -145,7 +145,7 @@ export class HostEntityMenuContributions {
       sessionId: request.sessionId,
       input: request.input,
       callbacks: new Map(),
-      ttlTimer: this.createSessionTimer(this.getSessionKey(request))
+      ttlTimer: null
     }
     const items = normalizeEntityMenuNodes(runtime.metadata.id, contribution.id, nodes, session)
     const itemIssues = validateEntityMenuItems(items)
@@ -224,6 +224,7 @@ export class HostEntityMenuContributions {
 
   private storeSession(key: string, session: EntityMenuSession): void {
     this.deleteSession(key)
+    session.ttlTimer = this.createSessionTimer(key)
     this.sessions.set(key, session)
   }
 
@@ -233,7 +234,9 @@ export class HostEntityMenuContributions {
       return
     }
 
-    clearTimeout(session.ttlTimer)
+    if (session.ttlTimer) {
+      clearTimeout(session.ttlTimer)
+    }
     this.sessions.delete(key)
   }
 
@@ -243,7 +246,9 @@ export class HostEntityMenuContributions {
       return
     }
 
-    clearTimeout(session.ttlTimer)
+    if (session.ttlTimer) {
+      clearTimeout(session.ttlTimer)
+    }
     session.ttlTimer = this.createSessionTimer(key)
   }
 

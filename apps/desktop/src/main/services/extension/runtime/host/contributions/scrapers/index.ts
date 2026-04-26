@@ -339,11 +339,13 @@ export class HostScraperContributions {
     ])
   }
 
-  releaseAll(): void {
-    this.gameSessions.clear()
-    this.personSessions.clear()
-    this.companySessions.clear()
-    this.characterSessions.clear()
+  async releaseAll(): Promise<void> {
+    await Promise.all([
+      this.closeAllSessions(this.gameSessions, 'Game'),
+      this.closeAllSessions(this.personSessions, 'Person'),
+      this.closeAllSessions(this.companySessions, 'Company'),
+      this.closeAllSessions(this.characterSessions, 'Character')
+    ])
   }
 
   private registerProvider<
@@ -635,6 +637,21 @@ export class HostScraperContributions {
           )
         })
       }
+    }
+  }
+
+  private async closeAllSessions<TSession extends { dispose?(): Promise<void> | void }>(
+    sessions: Map<string, ScraperSessionRecord<TSession>>,
+    label: string
+  ): Promise<void> {
+    for (const [sessionId, record] of [...sessions]) {
+      sessions.delete(sessionId)
+      await this.disposeSession(record).catch((error) => {
+        console.warn(
+          `[ExtensionHost] Failed to dispose ${label.toLowerCase()} scraper session "${sessionId}" during host cleanup:`,
+          error
+        )
+      })
     }
   }
 

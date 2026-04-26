@@ -20,6 +20,7 @@ import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { characters, collections, companies, games, persons } from '@shared/db'
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
 import type { DbService } from '@main/services/db'
+import { assertInsideAnyRoot } from '../../shared/path-confinement'
 
 type AttachmentMode = 'single' | 'multiple'
 type AttachmentTable =
@@ -289,17 +290,8 @@ export class ExtensionLibraryAttachmentsHost {
 
     const candidate = path.resolve(sourcePath)
     const allowedRoots = [metadata.extensionPath, metadata.dataPath, metadata.tempPath]
-
-    for (const root of allowedRoots) {
-      const relative = path.relative(path.resolve(root), candidate)
-      if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) {
-        return candidate
-      }
-    }
-
-    throw createValidationError(
-      'Attachment path sources must stay within the extension directory, data directory or temp directory.'
-    )
+    assertInsideAnyRoot(candidate, allowedRoots, 'Attachment path sources')
+    return candidate
   }
 
   private async toAttachment(

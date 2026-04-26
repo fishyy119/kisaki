@@ -119,11 +119,11 @@ export class ExtensionHostSdkBridge {
     configureExtensionSdkBridge(this.bridge)
   }
 
-  dispose(): void {
+  async dispose(): Promise<void> {
     this.mainEventCleanup()
     this.entityMenus.releaseAll()
     this.settingsPanels.releaseAll()
-    this.scrapers.releaseAll()
+    await this.scrapers.releaseAll()
     this.deeplinks.releaseAll()
     this.themes.releaseAll()
     this.pendingMainRequests.clear()

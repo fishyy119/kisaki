@@ -1,4 +1,5 @@
 import type { ValidationIssue } from './shared/validation'
+import { validateExtensionIdentifier } from './shared/extension-id'
 import {
   isPlainObject,
   validateOptionalString,
@@ -73,10 +74,7 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
     ...validateOptionalString(value.$schema, '$.$schema', {
       typeMessage: 'Field must be a string when provided.'
     }),
-    ...validateRequiredString(value.id, '$.id', {
-      minLength: 1,
-      valueMessage: 'Field must be a non-empty string.'
-    }),
+    ...validateExtensionIdentifier(value.id, '$.id'),
     ...validateRequiredString(value.name, '$.name', {
       minLength: 1,
       valueMessage: 'Field must be a non-empty string.'

@@ -9,6 +9,7 @@ import type {
   ExtensionSourceEntry,
   ExtensionSourceProvider
 } from '../types'
+import { resolveInsideRoot } from '../shared/path-confinement'
 
 /**
  * Resolves direct HTTP(S) extension package URLs.
@@ -49,8 +50,8 @@ export class UrlExtensionSourceProvider implements ExtensionSourceProvider {
   }
 
   async download(entry: ExtensionSourceEntry): Promise<string> {
-    const tempDir = path.join(app.getPath('temp'), 'kisaki-extensions')
-    const destination = path.join(tempDir, `${randomUUID()}.kisx`)
+    const tempDir = resolveInsideRoot(app.getPath('temp'), 'kisaki-extensions')
+    const destination = resolveInsideRoot(tempDir, `${randomUUID()}.kisx`)
 
     await fse.ensureDir(tempDir)
     await this.networkService.downloadToFile(entry.downloadUrl, destination)

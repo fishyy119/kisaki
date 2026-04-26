@@ -4,7 +4,7 @@
  * Manages application windows lifecycle.
  */
 
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is, platform } from '@electron-toolkit/utils'
 import windowStateKeeper from 'electron-window-state'
@@ -14,6 +14,7 @@ import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import { settings } from '@shared/db'
 import type { MainWindowCloseAction } from '@shared/db/enums'
+import { openExternalLink } from '@main/utils'
 
 export class WindowService implements IService {
   readonly id = 'window'
@@ -189,7 +190,9 @@ export class WindowService implements IService {
     })
 
     this.mainWindow.webContents.setWindowOpenHandler((details) => {
-      shell.openExternal(details.url)
+      void openExternalLink(details.url).catch((error) => {
+        log.warn('[WindowService] Blocked external navigation:', error)
+      })
       return { action: 'deny' }
     })
 

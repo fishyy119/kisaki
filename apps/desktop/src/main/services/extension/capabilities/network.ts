@@ -16,6 +16,7 @@ import {
 } from '@kisaki/extension-api'
 import type { NetworkService } from '@main/services/network'
 import type { FetchOptions } from '@shared/network'
+import { assertInsideAnyRoot, resolveInsideRoot } from '../shared/path-confinement'
 
 export interface ExtensionNetworkCapabilityHostOptions {
   network: NetworkService
@@ -256,44 +257,52 @@ function resolveDownloadDestination(
 ): string {
   const allowedRoots = [metadata.tempPath, metadata.dataPath]
 
-  if (input.destinationPath) {
+  if (input.destinationPath !== undefined) {
+    if (typeof input.destinationPath !== 'string' || input.destinationPath.trim().length === 0) {
+      throw createValidationError('network.download.destinationPath must be a non-empty string.')
+    }
+
     const candidate = path.isAbsolute(input.destinationPath)
       ? path.resolve(input.destinationPath)
       : path.resolve(metadata.tempPath, input.destinationPath)
 
-    assertInsideAllowedRoots(candidate, allowedRoots, 'network.download.destinationPath')
+    assertInsideAnyRoot(candidate, allowedRoots, 'network.download.destinationPath')
     return candidate
   }
 
   const preferredName =
-    typeof input.fileName === 'string' && input.fileName.trim().length > 0
-      ? path.basename(input.fileName)
-      : inferFileName(input.url)
+    input.fileName === undefined
+      ? inferFileName(input.url)
+      : normalizeDownloadFileName(input.fileName, 'network.download.fileName')
+  const candidate = resolveInsideRoot(metadata.tempPath, preferredName)
 
-  return path.join(metadata.tempPath, preferredName)
+  assertInsideAnyRoot(candidate, allowedRoots, 'network.download.fileName')
+  return candidate
 }
 
 function inferFileName(url: string): string {
   try {
     const pathname = new URL(url).pathname
     const baseName = path.posix.basename(pathname)
-    return baseName && baseName !== '/' ? baseName : 'download'
+    return baseName && baseName !== '/'
+      ? normalizeDownloadFileName(baseName, 'network.download.url')
+      : 'download'
   } catch {
     return 'download'
   }
 }
 
-function assertInsideAllowedRoots(
-  candidate: string,
-  roots: readonly string[],
-  label: string
-): void {
-  for (const root of roots) {
-    const relative = path.relative(path.resolve(root), candidate)
-    if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) {
-      return
-    }
+function normalizeDownloadFileName(value: unknown, label: string): string {
+  if (typeof value !== 'string') {
+    throw createValidationError(`${label} must be a string.`)
   }
 
-  throw createValidationError(`${label} must stay within the extension data or temp directory.`)
+  const fileName = value.trim()
+  if (fileName.length === 0 || fileName === '.' || fileName === '..' || /[\\/]/.test(fileName)) {
+    throw createValidationError(
+      `${label} must be a file name without path separators, "." or "..".`
+    )
+  }
+
+  return fileName
 }

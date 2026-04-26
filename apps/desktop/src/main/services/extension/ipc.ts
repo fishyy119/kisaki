@@ -1,9 +1,11 @@
-import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { IpcService } from '@main/services/ipc'
 import type {
   ExtensionCatalogInfo,
+  ExtensionEntityMenuInvokeRequest,
   ExtensionRegistryEntry,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelSubmitRequest,
   ExtensionUpdateInfo as SharedExtensionUpdateInfo
 } from '@shared/extension'
 import type {
@@ -14,11 +16,13 @@ import type {
 } from './types'
 import type { ExtensionRuntimeState } from './runtime/manager'
 import type { ExtensionService } from './service'
+import { resolveExtensionFilePath } from './manifest'
+import { requireSafeExtensionId } from './shared/path-confinement'
 
 export function registerExtensionIpc(service: ExtensionService, ipc: IpcService): void {
   ipc.handle('extension:disable', async (_, extensionId: string) => {
     try {
-      await service.disable(extensionId)
+      await service.disable(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -27,7 +31,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:enable', async (_, extensionId: string) => {
     try {
-      await service.enable(extensionId)
+      await service.enable(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -36,7 +40,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:is-enabled', async (_, extensionId: string) => {
     try {
-      return { success: true, data: await service.isEnabled(extensionId) }
+      return { success: true, data: await service.isEnabled(requireSafeExtensionId(extensionId)) }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
@@ -44,7 +48,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:install', async (_, source: string) => {
     try {
-      await service.install(source)
+      await service.install(requireNonEmptyString(source, 'source'))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -53,7 +57,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:install-from-file', async (_, filePath: string) => {
     try {
-      await service.installFromFile(filePath)
+      await service.installFromFile(requireNonEmptyString(filePath, 'filePath'))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -62,7 +66,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:uninstall', async (_, extensionId: string) => {
     try {
-      await service.uninstall(extensionId)
+      await service.uninstall(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -82,7 +86,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:update', async (_, extensionId: string) => {
     try {
-      await service.update(extensionId)
+      await service.update(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -91,7 +95,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:reload', async (_, extensionId: string) => {
     try {
-      await service.reload(extensionId)
+      await service.reload(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -149,7 +153,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       return {
         success: true,
-        data: await service.invokeEntityMenuCallback(request)
+        data: await service.invokeEntityMenuCallback(requireEntityMenuInvokeRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -158,7 +162,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:release-entity-menu-session', async (_, sessionId: string) => {
     try {
-      await service.releaseEntityMenuSession(sessionId)
+      await service.releaseEntityMenuSession(requireNonEmptyString(sessionId, 'sessionId'))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -169,7 +173,10 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       return {
         success: true,
-        data: await service.resolveSettingsPanel(extensionId, panelId)
+        data: await service.resolveSettingsPanel(
+          requireSafeExtensionId(extensionId),
+          requireNonEmptyString(panelId, 'panelId')
+        )
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -180,7 +187,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       return {
         success: true,
-        data: await service.submitSettingsPanel(request)
+        data: await service.submitSettingsPanel(requireSettingsPanelSubmitRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -191,7 +198,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       return {
         success: true,
-        data: await service.invokeSettingsPanelCallback(request)
+        data: await service.invokeSettingsPanelCallback(requireSettingsPanelInvokeRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -202,7 +209,11 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     'extension:release-settings-panel-session',
     async (_, extensionId: string, panelId: string, sessionId: string) => {
       try {
-        await service.releaseSettingsPanelSession(extensionId, panelId, sessionId)
+        await service.releaseSettingsPanelSession(
+          requireSafeExtensionId(extensionId),
+          requireNonEmptyString(panelId, 'panelId'),
+          requireNonEmptyString(sessionId, 'sessionId')
+        )
         return { success: true }
       } catch (error) {
         return { success: false, error: toErrorMessage(error) }
@@ -236,7 +247,11 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     'extension:search',
     async (_, sourceName: string, query: string, options?: ExtensionSearchOptions) => {
       try {
-        const result = await service.searchSource(sourceName, query, options)
+        const result = await service.searchSource(
+          requireNonEmptyString(sourceName, 'sourceName'),
+          requireString(query, 'query'),
+          options
+        )
         return {
           success: true,
           data: {
@@ -268,7 +283,7 @@ function toExtensionCatalogInfo(
     author: entry.manifest?.author,
     homepage: entry.manifest?.homepage,
     iconUrl: entry.manifest?.icon
-      ? pathToFileURL(path.join(entry.packagePath, entry.manifest.icon)).toString()
+      ? pathToFileURL(resolveExtensionFilePath(entry.packagePath, entry.manifest.icon)).toString()
       : undefined,
     categories: entry.categories,
     enabled: entry.enabled,
@@ -310,4 +325,61 @@ function toExtensionRegistryEntry(entry: ExtensionSourceEntry): ExtensionRegistr
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown extension service error'
+}
+
+function requireString(value: unknown, label: string): string {
+  if (typeof value !== 'string') {
+    throw new Error(`${label} must be a string.`)
+  }
+
+  return value
+}
+
+function requireNonEmptyString(value: unknown, label: string): string {
+  const normalized = requireString(value, label)
+  if (normalized.length === 0) {
+    throw new Error(`${label} must be non-empty.`)
+  }
+
+  return normalized
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`${label} must be an object.`)
+  }
+
+  return value as Record<string, unknown>
+}
+
+function requireEntityMenuInvokeRequest(value: unknown): ExtensionEntityMenuInvokeRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    ...(value as ExtensionEntityMenuInvokeRequest),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    callbackId: requireNonEmptyString(request.callbackId, 'callbackId')
+  }
+}
+
+function requireSettingsPanelSubmitRequest(value: unknown): ExtensionSettingsPanelSubmitRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    ...(value as ExtensionSettingsPanelSubmitRequest),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    panelId: requireNonEmptyString(request.panelId, 'panelId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId')
+  }
+}
+
+function requireSettingsPanelInvokeRequest(value: unknown): ExtensionSettingsPanelInvokeRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    ...(value as ExtensionSettingsPanelInvokeRequest),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    panelId: requireNonEmptyString(request.panelId, 'panelId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    callbackId: requireNonEmptyString(request.callbackId, 'callbackId')
+  }
 }

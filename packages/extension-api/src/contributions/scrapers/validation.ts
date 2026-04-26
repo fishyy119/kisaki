@@ -198,6 +198,13 @@ function validateScraperProviderShape(
       }
       seen.add(capability)
     }
+
+    if (!seen.has('search')) {
+      issues.push({
+        path: '$.capabilities',
+        message: 'Provider capabilities must include search.'
+      })
+    }
   }
 
   return issues

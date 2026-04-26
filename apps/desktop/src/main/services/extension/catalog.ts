@@ -1,4 +1,3 @@
-import path from 'node:path'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
 import type { ValidationIssue } from '@kisaki/extension-api'
@@ -10,6 +9,7 @@ import type {
   ScannedExtensionPackage
 } from './types'
 import type { ExtensionStateStore } from './state'
+import { resolveInsideRoot } from './shared/path-confinement'
 
 /**
  * Aggregates installed extension packages with persisted state.json metadata.
@@ -88,8 +88,8 @@ export class ExtensionCatalog {
       }
 
       const directoryName = entry.name
-      const packagePath = path.join(this.paths.packagesDir, directoryName)
-      const manifestPath = path.join(packagePath, 'manifest.json')
+      const packagePath = resolveInsideRoot(this.paths.packagesDir, directoryName)
+      const manifestPath = resolveInsideRoot(packagePath, 'manifest.json')
 
       if (!(await fse.pathExists(manifestPath))) {
         packages.push({
@@ -162,10 +162,10 @@ function buildCatalogEntry(
   state: ExtensionStateRecord | null,
   pkg: ScannedExtensionPackage | null
 ): ExtensionCatalogEntry {
-  const packagePath = pkg?.packagePath ?? path.join(paths.packagesDir, extensionId)
-  const manifestPath = pkg?.manifestPath ?? path.join(packagePath, 'manifest.json')
-  const dataPath = path.join(paths.dataDir, extensionId)
-  const tempPath = path.join(paths.tempDir, extensionId)
+  const packagePath = pkg?.packagePath ?? resolveInsideRoot(paths.packagesDir, extensionId)
+  const manifestPath = pkg?.manifestPath ?? resolveInsideRoot(packagePath, 'manifest.json')
+  const dataPath = resolveInsideRoot(paths.dataDir, extensionId)
+  const tempPath = resolveInsideRoot(paths.tempDir, extensionId)
 
   if (!pkg) {
     return {

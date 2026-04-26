@@ -3,7 +3,9 @@ import { randomUUID } from 'node:crypto'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
 import { Mutex } from 'async-mutex'
+import { isExtensionIdentifier } from '@kisaki/extension-api'
 import type { ExtensionStateDocument, ExtensionStateRecord, ExtensionSourceLocator } from './types'
+import { requireSafeExtensionId } from './shared/path-confinement'
 
 const EMPTY_STATE: ExtensionStateDocument = {
   version: 1,
@@ -35,9 +37,10 @@ export class ExtensionStateStore {
   }
 
   async get(id: string): Promise<ExtensionStateRecord | null> {
+    const extensionId = requireSafeExtensionId(id)
     return this.mutex.runExclusive(async () => {
       const document = await this.readUnlocked()
-      return document.extensions[id] ?? null
+      return document.extensions[extensionId] ?? null
     })
   }
 
@@ -49,28 +52,31 @@ export class ExtensionStateStore {
   }
 
   async set(id: string, record: ExtensionStateRecord): Promise<void> {
+    const extensionId = requireSafeExtensionId(id)
     await this.mutex.runExclusive(async () => {
       const document = await this.readUnlocked()
-      document.extensions[id] = normalizeExtensionStateRecord(record) ?? record
+      document.extensions[extensionId] = normalizeExtensionStateRecord(record) ?? record
       await this.writeUnlocked(document)
     })
   }
 
   async remove(id: string): Promise<void> {
+    const extensionId = requireSafeExtensionId(id)
     await this.mutex.runExclusive(async () => {
       const document = await this.readUnlocked()
-      delete document.extensions[id]
+      delete document.extensions[extensionId]
       await this.writeUnlocked(document)
     })
   }
 
   async setEnabled(id: string, enabled: boolean): Promise<ExtensionStateRecord> {
+    const extensionId = requireSafeExtensionId(id)
     return this.mutex.runExclusive(async () => {
       const document = await this.readUnlocked()
-      const existing = document.extensions[id]
+      const existing = document.extensions[extensionId]
 
       if (!existing) {
-        throw new Error(`Extension "${id}" is not installed`)
+        throw new Error(`Extension "${extensionId}" is not installed`)
       }
 
       const nextRecord: ExtensionStateRecord = {
@@ -79,7 +85,7 @@ export class ExtensionStateStore {
         updatedAt: new Date().toISOString()
       }
 
-      document.extensions[id] = nextRecord
+      document.extensions[extensionId] = nextRecord
       await this.writeUnlocked(document)
       return nextRecord
     })
@@ -125,6 +131,11 @@ function normalizeExtensionStateDocument(value: unknown): ExtensionStateDocument
 
   if (rawExtensions && typeof rawExtensions === 'object' && !Array.isArray(rawExtensions)) {
     for (const [id, record] of Object.entries(rawExtensions)) {
+      if (!isExtensionIdentifier(id)) {
+        log.warn(`[ExtensionStateStore] Ignoring invalid state id "${id}"`)
+        continue
+      }
+
       const normalized = normalizeExtensionStateRecord(record)
       if (normalized) {
         extensions[id] = normalized

@@ -15,6 +15,11 @@ import type {
 } from './types'
 import type { ExtensionStateStore } from './state'
 import type { ExtensionSourceManager } from './sources/manager'
+import {
+  requireSafeExtensionId,
+  resolveExtensionIdPath,
+  resolveInsideRoot
+} from './shared/path-confinement'
 
 interface PreparedExtensionPackage {
   manifest: ExtensionManifest
@@ -65,13 +70,14 @@ export class ExtensionInstaller {
   }
 
   async uninstall(extensionId: string): Promise<void> {
+    const safeExtensionId = requireSafeExtensionId(extensionId)
     await Promise.all([
-      fse.remove(path.join(this.paths.packagesDir, extensionId)),
-      fse.remove(path.join(this.paths.dataDir, extensionId)),
-      fse.remove(path.join(this.paths.tempDir, extensionId))
+      fse.remove(resolveExtensionIdPath(this.paths.packagesDir, safeExtensionId)),
+      fse.remove(resolveExtensionIdPath(this.paths.dataDir, safeExtensionId)),
+      fse.remove(resolveExtensionIdPath(this.paths.tempDir, safeExtensionId))
     ])
 
-    await this.stateStore.remove(extensionId)
+    await this.stateStore.remove(safeExtensionId)
   }
 
   async checkUpdates(): Promise<readonly ExtensionUpdateInfo[]> {
@@ -102,12 +108,13 @@ export class ExtensionInstaller {
   }
 
   async update(extensionId: string): Promise<ExtensionInstallResult | null> {
-    const record = await this.stateStore.get(extensionId)
+    const safeExtensionId = requireSafeExtensionId(extensionId)
+    const record = await this.stateStore.get(safeExtensionId)
     if (!record?.source) {
-      throw new Error(`Extension "${extensionId}" does not have an update source`)
+      throw new Error(`Extension "${safeExtensionId}" does not have an update source`)
     }
 
-    const latestVersion = await this.sourceManager.getLatestVersion(extensionId, record.source)
+    const latestVersion = await this.sourceManager.getLatestVersion(safeExtensionId, record.source)
     if (!latestVersion || !semver.valid(record.version) || !semver.valid(latestVersion)) {
       return null
     }
@@ -123,7 +130,7 @@ export class ExtensionInstaller {
 
     const archivePath = await this.sourceManager.download(resolved)
     try {
-      return await this.installArchive(archivePath, record.source, true, extensionId)
+      return await this.installArchive(archivePath, record.source, true, safeExtensionId)
     } finally {
       await fse.remove(archivePath).catch(() => undefined)
     }
@@ -144,8 +151,8 @@ export class ExtensionInstaller {
         )
       }
 
-      const targetDir = path.join(this.paths.packagesDir, prepared.manifest.id)
-      const backupDir = path.join(
+      const targetDir = resolveExtensionIdPath(this.paths.packagesDir, prepared.manifest.id)
+      const backupDir = resolveInsideRoot(
         this.paths.tempDir,
         '.backup',
         `${prepared.manifest.id}-${randomUUID()}`
@@ -165,8 +172,8 @@ export class ExtensionInstaller {
 
       await Promise.all([
         fse.ensureDir(this.paths.packagesDir),
-        fse.ensureDir(path.join(this.paths.dataDir, prepared.manifest.id)),
-        fse.ensureDir(path.join(this.paths.tempDir, prepared.manifest.id)),
+        fse.ensureDir(resolveExtensionIdPath(this.paths.dataDir, prepared.manifest.id)),
+        fse.ensureDir(resolveExtensionIdPath(this.paths.tempDir, prepared.manifest.id)),
         fse.ensureDir(path.dirname(backupDir))
       ])
 
@@ -287,7 +294,7 @@ export class ExtensionInstaller {
       throw new Error(`Extension icon "${parsed.manifest.icon}" was not found in the package`)
     }
 
-    const stageDir = path.join(
+    const stageDir = resolveInsideRoot(
       this.paths.tempDir,
       '.install',
       `${parsed.manifest.id}-${randomUUID()}`
@@ -304,11 +311,7 @@ export class ExtensionInstaller {
         throw new Error(`Package entry "${entry.entryName}" is outside the archive root`)
       }
 
-      const targetPath = path.resolve(stageDir, normalizedEntry)
-      const relative = path.relative(stageDir, targetPath)
-      if (relative.startsWith('..') || path.isAbsolute(relative)) {
-        throw new Error(`Package entry "${entry.entryName}" escapes the install directory`)
-      }
+      const targetPath = resolveInsideRoot(stageDir, normalizedEntry)
 
       await fse.ensureDir(path.dirname(targetPath))
       await fse.writeFile(targetPath, entry.getData())
@@ -332,6 +335,7 @@ function normalizeArchiveEntry(entryName: string): string | null {
   if (
     !normalized ||
     normalized === '.' ||
+    normalized === '..' ||
     normalized.startsWith('../') ||
     path.posix.isAbsolute(normalized)
   ) {

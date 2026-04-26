@@ -1,15 +1,8 @@
-import path from 'node:path'
+import { resolveInsideRoot } from '../../../../shared/path-confinement'
 
 /**
  * Resolves an extension-relative path while preventing directory escape.
  */
 export function resolveInsideExtension(extensionPath: string, relativePath: string): string {
-  const absolutePath = path.resolve(extensionPath, relativePath)
-  const relative = path.relative(extensionPath, absolutePath)
-
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error('Extension paths must stay within the extension directory')
-  }
-
-  return absolutePath
+  return resolveInsideRoot(extensionPath, relativePath)
 }

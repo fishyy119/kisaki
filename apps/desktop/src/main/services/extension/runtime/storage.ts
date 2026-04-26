@@ -10,6 +10,7 @@ import {
   type ExtensionRuntimeMetadata,
   type SerializableValue
 } from '@kisaki/extension-api'
+import { resolveInsideRoot } from '../shared/path-confinement'
 
 export class ExtensionRuntimeStorage {
   private readonly mutexes = new Map<string, Mutex>()
@@ -105,7 +106,7 @@ export class ExtensionRuntimeStorage {
     this.requireActiveRequest(runtimeHandle, storagePath, signal)
     await fse.ensureDir(path.dirname(storagePath))
 
-    const tempPath = path.join(
+    const tempPath = resolveInsideRoot(
       path.dirname(storagePath),
       `${path.basename(storagePath)}.${randomUUID()}.tmp`
     )
@@ -120,7 +121,7 @@ export class ExtensionRuntimeStorage {
   }
 
   private getStoragePath(extension: ExtensionRuntimeMetadata): string {
-    return path.join(extension.dataPath, 'storage.json')
+    return resolveInsideRoot(extension.dataPath, 'storage.json')
   }
 
   private getMutex(storagePath: string): Mutex {

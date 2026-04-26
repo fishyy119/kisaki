@@ -1,4 +1,3 @@
-import path from 'node:path'
 import fse from 'fs-extra'
 import type {
   ExtensionManifest,
@@ -6,6 +5,7 @@ import type {
   ValidationIssue
 } from '@kisaki/extension-api'
 import { parseExtensionManifest as parseSharedExtensionManifest } from '@kisaki/extension-api'
+import { resolveInsideRoot } from './shared/path-confinement'
 
 /**
  * Parse and normalize a manifest payload into the public ExtensionManifest shape.
@@ -28,7 +28,7 @@ export async function readExtensionManifestFile(
  * Resolve a manifest-relative file path inside an installed extension directory.
  */
 export function resolveExtensionFilePath(extensionPath: string, relativePath: string): string {
-  return path.resolve(extensionPath, relativePath)
+  return resolveInsideRoot(extensionPath, relativePath)
 }
 
 /**
@@ -39,10 +39,10 @@ export async function validateExtensionFileExists(
   relativePath: string,
   fieldPath: string
 ): Promise<ValidationIssue[]> {
-  const absolutePath = resolveExtensionFilePath(extensionPath, relativePath)
-  const relative = path.relative(extensionPath, absolutePath)
-
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+  let absolutePath: string
+  try {
+    absolutePath = resolveExtensionFilePath(extensionPath, relativePath)
+  } catch {
     return [
       {
         path: fieldPath,

@@ -1,5 +1,9 @@
 import path from 'node:path'
-import { EXTENSION_CATEGORIES, type ExtensionCategory } from '@kisaki/extension-api'
+import {
+  EXTENSION_CATEGORIES,
+  isExtensionIdentifier,
+  type ExtensionCategory
+} from '@kisaki/extension-api'
 import prompts from 'prompts'
 import { bold, cyan, dim, green, red } from 'kolorist'
 import {
@@ -43,7 +47,9 @@ export async function runCreateExtensionCli(
         message: 'Project name:',
         initial: 'my-kisaki-extension',
         validate: (value: string) =>
-          isProjectName(value) ? true : 'Use letters, numbers, dots, underscores, or hyphens.'
+          isProjectName(value)
+            ? true
+            : 'Use letters or numbers at both ends; dots, underscores, and hyphens may appear inside.'
       },
       {
         type: 'text',
@@ -52,9 +58,9 @@ export async function runCreateExtensionCli(
         initial: (previous: string) =>
           toExtensionId(parsed.projectName || previous || 'my-kisaki-extension'),
         validate: (value: string) =>
-          /^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(value)
+          isExtensionIdentifier(value)
             ? true
-            : 'Use lowercase letters, numbers, dots, and hyphens.'
+            : 'Use lowercase alphanumeric segments separated by dots; hyphens may appear inside a segment.'
       },
       {
         type: 'text',
@@ -110,6 +116,11 @@ export async function runCreateExtensionCli(
     description: response.description || 'A Kisaki extension.',
     author: response.author || '',
     category: response.category || DEFAULT_EXTENSION_CATEGORY
+  }
+
+  if (!isExtensionIdentifier(config.extensionId)) {
+    console.log(red('[error]') + ' Invalid extension ID.')
+    process.exit(1)
   }
 
   const result = scaffoldExtension({

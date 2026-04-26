@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import type { ExtensionCategory } from '@kisaki/extension-api'
+import { isExtensionIdentifier, type ExtensionCategory } from '@kisaki/extension-api'
 
 export interface ExtensionScaffoldConfig {
   projectName: string
@@ -46,7 +46,7 @@ export function scaffoldExtension(options: ScaffoldExtensionOptions): ScaffoldEx
 }
 
 export function isProjectName(value: string): boolean {
-  return /^[A-Za-z0-9._-]+$/.test(value.trim())
+  return /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(value.trim())
 }
 
 export function toPackageName(value: string): string {
@@ -58,7 +58,21 @@ export function toPackageName(value: string): string {
 }
 
 export function toExtensionId(value: string): string {
-  return toPackageName(value).replace(/_/g, '-')
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, '-')
+    .replace(/[^a-z0-9.-]+/g, '-')
+    .split('.')
+    .map((segment) => segment.replace(/-+/g, '-').replace(/^-+|-+$/g, ''))
+    .filter(Boolean)
+    .join('.')
+
+  if (isExtensionIdentifier(normalized)) {
+    return normalized
+  }
+
+  return 'my-kisaki-extension'
 }
 
 export function toDisplayName(value: string): string {
