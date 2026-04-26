@@ -236,12 +236,17 @@ function visitSerializableValue(
   issues: ValidationIssue[],
   ancestors: Set<object>
 ): void {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      issues.push({
+        path,
+        message: 'Number values must be finite.'
+      })
+    }
     return
   }
 

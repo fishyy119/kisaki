@@ -1,4 +1,3 @@
-import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
@@ -8,8 +7,6 @@ import {
   EXTENSION_API_VERSION,
   EXTENSION_RPC_PROTOCOL_VERSION,
   RpcTimeoutError,
-  createUnavailableError,
-  normalizeCapabilityError,
   type ExtensionRuntimeChangeCause,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
@@ -19,20 +16,30 @@ import {
   type MainToHostRpcRequestMap,
   type RpcParams,
   type RpcResult,
-  type RpcValue,
-  type RuntimeInfo,
-  type SerializableValue
+  type RuntimeInfo
 } from '@kisaki/extension-api'
 import { ExtensionHostCrashPolicy } from './crash-policy'
+import { delay, toRuntimeErrorMessage } from './errors'
+import { registerHostRequests } from './host-request'
 import { ExtensionHostController, type ExtensionHostExitInfo } from './host-controller'
 import { ExtensionHostRpcClient } from './rpc-client'
 import type { RpcRequestOptions } from './rpc-core'
+import {
+  createRuntimeFailureState,
+  createRuntimeRunningState,
+  createRuntimeStoppedState,
+  isSameRuntimeMetadata,
+  mapLoadedMetadata,
+  toChangeCause,
+  type ExtensionRuntimeState,
+  type LoadedExtensionState
+} from './state'
+import { ExtensionRuntimeStorage } from './storage'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions/registry'
 
 export type { ExtensionRuntimeChangeCause } from '@kisaki/extension-api'
-
-const EMPTY_RPC_RESULT = Object.freeze({})
+export type { ExtensionRuntimeState, ExtensionRuntimeStatus } from './state'
 
 export interface RuntimeManagerOptions {
   hostModulePath: string
@@ -49,20 +56,6 @@ export interface RuntimeReloadOptions {
   cause?: ExtensionRuntimeChangeCause
 }
 
-export type ExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
-
-export interface ExtensionRuntimeState {
-  status: ExtensionRuntimeStatus
-  error: string | null
-  updatedAt: string
-}
-
-interface LoadedExtensionState {
-  metadata: ExtensionRuntimeMetadata
-  runtimeHandle: ExtensionRuntimeHandle
-  generation: number
-}
-
 /**
  * Main-process facade for the shared extension host lifecycle.
  *
@@ -77,7 +70,9 @@ export class RuntimeManager {
   private readonly loadedExtensions = new Map<string, LoadedExtensionState>()
   private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
   private readonly runtimeStates = new Map<string, ExtensionRuntimeState>()
-  private readonly storageMutexes = new Map<string, Mutex>()
+  private readonly storage = new ExtensionRuntimeStorage(
+    (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
+  )
   private controller: ExtensionHostController | null = null
   private rpc: ExtensionHostRpcClient | null = null
   private generationCounter = 0
@@ -206,18 +201,15 @@ export class RuntimeManager {
       return
     }
 
+    if (this.shouldRecycleHostLocked(forceReloadIds)) {
+      await this.recycleHostLocked(cause)
+      return
+    }
+
     try {
       await this.ensureHostReadyLocked()
     } catch (error) {
-      const message = toRuntimeErrorMessage(error)
-      log.error('[RuntimeManager] Failed to start extension host:', error)
-
-      for (const extension of this.desiredExtensions.values()) {
-        if (!this.loadedExtensions.has(extension.id)) {
-          this.recordRuntimeFailure(extension.id, message)
-        }
-      }
-
+      this.recordHostStartupFailure(error)
       return
     }
 
@@ -234,11 +226,8 @@ export class RuntimeManager {
       }
 
       if (forceReloadIds.has(extensionId) || !isSameRuntimeMetadata(loaded.metadata, metadata)) {
-        try {
-          await this.reloadInHostLocked(metadata, cause)
-        } catch (error) {
-          log.error(`[RuntimeManager] Failed to reload extension "${extensionId}":`, error)
-        }
+        await this.recycleHostLocked(cause)
+        return
       }
     }
   }
@@ -272,47 +261,6 @@ export class RuntimeManager {
       runtimeHandle,
       generation
     })
-    this.recordRuntimeRunning(extension.id)
-  }
-
-  private async reloadInHostLocked(
-    extension: ExtensionRuntimeMetadata,
-    cause: ExtensionRuntimeChangeCause
-  ): Promise<void> {
-    const previous = this.loadedExtensions.get(extension.id)
-    const generation = this.nextGeneration()
-    const runtimeHandle = randomUUID()
-    this.runtimeHandles.set(runtimeHandle, extension)
-
-    try {
-      await this.requestHostLifecycle(
-        'extensions.reload',
-        { extension, runtimeHandle, generation, cause },
-        extension.id,
-        cause,
-        15_000
-      )
-    } catch (error) {
-      this.runtimeHandles.delete(runtimeHandle)
-      this.options.capabilities?.releaseRuntime(runtimeHandle)
-      await this.options.contributions?.releaseRuntime(runtimeHandle)
-      if (previous) {
-        this.loadedExtensions.delete(extension.id)
-        await this.releaseLoadedState(previous)
-      }
-      this.recordRuntimeFailure(extension.id, toRuntimeErrorMessage(error))
-      throw error
-    }
-
-    this.loadedExtensions.set(extension.id, {
-      metadata: extension,
-      runtimeHandle,
-      generation
-    })
-
-    if (previous) {
-      await this.releaseLoadedState(previous)
-    }
     this.recordRuntimeRunning(extension.id)
   }
 
@@ -372,7 +320,13 @@ export class RuntimeManager {
 
     const controller = new ExtensionHostController(this.options.hostModulePath)
     const rpc = new ExtensionHostRpcClient((message) => controller.send(message))
-    this.installHostRequestHandlers(rpc)
+    registerHostRequests({
+      rpc,
+      storage: this.storage,
+      capabilities: this.options.capabilities,
+      contributions: this.options.contributions,
+      resolveRuntimeHandle: (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
+    })
 
     await controller.start((message) => rpc.onMessage(message))
     controller.onExit((info) => {
@@ -417,89 +371,6 @@ export class RuntimeManager {
     log.info('[RuntimeManager] Extension host handshake completed')
   }
 
-  private installHostRequestHandlers(rpc: ExtensionHostRpcClient): void {
-    rpc.handleHostRequest('bridge.logger.log', async (params) => {
-      try {
-        const extension = this.requireActiveRuntimeHandle(params.runtimeHandle)
-        writeExtensionLog(extension.id, params.level, params.message, params.args)
-        return EMPTY_RPC_RESULT
-      } catch (error) {
-        throw normalizeCapabilityError(error, 'Failed to write extension log.')
-      }
-    })
-
-    rpc.handleHostRequest('bridge.storage.get', async (params, context) => {
-      try {
-        const value = await this.withStorageLock(params.runtimeHandle, context.signal, async () => {
-          const storage = await this.readStorageDocument(params.runtimeHandle)
-          return params.key in storage
-            ? storage[params.key]
-            : (params.fallback as SerializableValue)
-        })
-
-        return {
-          value
-        }
-      } catch (error) {
-        throw normalizeCapabilityError(error, 'Failed to read extension storage.')
-      }
-    })
-
-    rpc.handleHostRequest('bridge.storage.set', async (params, context) => {
-      try {
-        await this.withStorageLock(params.runtimeHandle, context.signal, async (storagePath) => {
-          const storage = await this.readStorageDocument(params.runtimeHandle)
-          storage[params.key] = params.value
-          await this.writeStorageDocument(
-            params.runtimeHandle,
-            storagePath,
-            storage,
-            context.signal
-          )
-        })
-        return EMPTY_RPC_RESULT
-      } catch (error) {
-        throw normalizeCapabilityError(error, 'Failed to write extension storage.')
-      }
-    })
-
-    rpc.handleHostRequest('bridge.storage.delete', async (params, context) => {
-      try {
-        await this.withStorageLock(params.runtimeHandle, context.signal, async (storagePath) => {
-          const storage = await this.readStorageDocument(params.runtimeHandle)
-          delete storage[params.key]
-          await this.writeStorageDocument(
-            params.runtimeHandle,
-            storagePath,
-            storage,
-            context.signal
-          )
-        })
-        return EMPTY_RPC_RESULT
-      } catch (error) {
-        throw normalizeCapabilityError(error, 'Failed to delete extension storage value.')
-      }
-    })
-
-    rpc.handleHostRequest('bridge.storage.listKeys', async (params, context) => {
-      try {
-        const keys = await this.withStorageLock(params.runtimeHandle, context.signal, async () => {
-          const storage = await this.readStorageDocument(params.runtimeHandle)
-          return Object.keys(storage).filter((key) =>
-            params.prefix ? key.startsWith(params.prefix) : true
-          )
-        })
-
-        return { keys }
-      } catch (error) {
-        throw normalizeCapabilityError(error, 'Failed to list extension storage keys.')
-      }
-    })
-
-    this.options.contributions?.registerRpcHandlers(rpc)
-    this.options.capabilities?.registerRpcHandlers(rpc)
-  }
-
   private async handleHostExit(info: ExtensionHostExitInfo): Promise<void> {
     await this.mutex.runExclusive(async () => {
       this.handshaken = false
@@ -511,7 +382,7 @@ export class RuntimeManager {
       this.controller = null
       this.loadedExtensions.clear()
       this.runtimeHandles.clear()
-      this.storageMutexes.clear()
+      this.storage.clear()
 
       if (info.expected) {
         log.info(`[RuntimeManager] Extension host exited cleanly with code ${info.code}`)
@@ -549,6 +420,20 @@ export class RuntimeManager {
     await this.recoverDesiredExtensionsLocked(cause, skipExtensionIds)
   }
 
+  private async recycleHostLocked(cause: ExtensionRuntimeChangeCause): Promise<void> {
+    log.info(`[RuntimeManager] Recycling extension host for "${cause}"`)
+    await this.stopHostLocked({
+      clearDesired: false,
+      unloadReason: toRecycleUnloadReason(cause)
+    })
+
+    try {
+      await this.recoverDesiredExtensionsLocked(cause)
+    } catch (error) {
+      this.recordHostStartupFailure(error)
+    }
+  }
+
   private async recoverDesiredExtensionsLocked(
     cause: ExtensionRuntimeChangeCause,
     skipExtensionIds = new Set<string>()
@@ -575,8 +460,10 @@ export class RuntimeManager {
   private async stopHostLocked(options: {
     clearDesired: boolean
     unloadBeforeStop?: boolean
+    unloadReason?: ExtensionUnloadReason
   }): Promise<void> {
     const unloadBeforeStop = options.unloadBeforeStop ?? true
+    const unloadReason = options.unloadReason ?? 'shutdown'
     const controller = this.controller
     const rpc = this.rpc
 
@@ -585,7 +472,7 @@ export class RuntimeManager {
         try {
           const result = await rpc.requestHost(
             'extensions.unload',
-            { extensionId, runtimeHandle: state.runtimeHandle, reason: 'shutdown' },
+            { extensionId, runtimeHandle: state.runtimeHandle, reason: unloadReason },
             { timeoutMs: 10_000 }
           )
           logUnloadResult(extensionId, result)
@@ -606,7 +493,7 @@ export class RuntimeManager {
     this.handshaken = false
     this.loadedExtensions.clear()
     this.runtimeHandles.clear()
-    this.storageMutexes.clear()
+    this.storage.clear()
 
     if (controller) {
       await controller.stop()
@@ -655,110 +542,6 @@ export class RuntimeManager {
     )
   }
 
-  private async readStorageDocument(
-    runtimeHandle: ExtensionRuntimeHandle
-  ): Promise<Record<string, SerializableValue>> {
-    const storagePath = this.getStoragePath(this.requireActiveRuntimeHandle(runtimeHandle))
-    await fse.ensureDir(path.dirname(storagePath))
-
-    if (!(await fse.pathExists(storagePath))) {
-      return {}
-    }
-
-    try {
-      const raw = await fse.readJson(storagePath)
-      return normalizeSerializableRecord(raw)
-    } catch (error) {
-      log.warn(
-        `[RuntimeManager] Failed to read storage for runtime handle "${runtimeHandle}", using empty document:`,
-        error
-      )
-      return {}
-    }
-  }
-
-  private async writeStorageDocument(
-    runtimeHandle: ExtensionRuntimeHandle,
-    storagePath: string,
-    document: Record<string, SerializableValue>,
-    signal?: AbortSignal
-  ): Promise<void> {
-    this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
-    await fse.ensureDir(path.dirname(storagePath))
-
-    const tempPath = path.join(
-      path.dirname(storagePath),
-      `${path.basename(storagePath)}.${randomUUID()}.tmp`
-    )
-
-    try {
-      await fse.writeJson(tempPath, document, { spaces: 2 })
-      this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
-      await fse.move(tempPath, storagePath, { overwrite: true })
-    } finally {
-      await fse.remove(tempPath).catch(() => undefined)
-    }
-  }
-
-  private getStoragePath(extension: ExtensionRuntimeMetadata): string {
-    return path.join(extension.dataPath, 'storage.json')
-  }
-
-  private getStorageMutex(storagePath: string): Mutex {
-    let mutex = this.storageMutexes.get(storagePath)
-    if (!mutex) {
-      mutex = new Mutex()
-      this.storageMutexes.set(storagePath, mutex)
-    }
-
-    return mutex
-  }
-
-  private async withStorageLock<T>(
-    runtimeHandle: ExtensionRuntimeHandle,
-    signal: AbortSignal | undefined,
-    callback: (storagePath: string) => Promise<T> | T
-  ): Promise<T> {
-    const storagePath = this.getStoragePath(this.requireActiveRuntimeHandle(runtimeHandle))
-
-    return this.getStorageMutex(storagePath).runExclusive(async () => {
-      this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
-      const result = await callback(storagePath)
-      this.requireActiveStorageRequest(runtimeHandle, storagePath, signal)
-      return result
-    })
-  }
-
-  private requireActiveRuntimeHandle(
-    runtimeHandle: ExtensionRuntimeHandle
-  ): ExtensionRuntimeMetadata {
-    const extension = this.runtimeHandles.get(runtimeHandle)
-    if (!extension) {
-      throw createUnavailableError(`Runtime handle "${runtimeHandle}" is not active.`)
-    }
-
-    return extension
-  }
-
-  private requireActiveStorageRequest(
-    runtimeHandle: ExtensionRuntimeHandle,
-    storagePath: string,
-    signal?: AbortSignal
-  ): void {
-    if (signal?.aborted) {
-      throw createUnavailableError(
-        `Storage request for runtime handle "${runtimeHandle}" was aborted.`
-      )
-    }
-
-    const extension = this.requireActiveRuntimeHandle(runtimeHandle)
-    if (this.getStoragePath(extension) !== storagePath) {
-      throw createUnavailableError(
-        `Runtime handle "${runtimeHandle}" no longer owns its storage path.`
-      )
-    }
-  }
-
   private async releaseLoadedState(state: LoadedExtensionState): Promise<void> {
     this.runtimeHandles.delete(state.runtimeHandle)
     this.options.capabilities?.releaseRuntime(state.runtimeHandle)
@@ -770,6 +553,27 @@ export class RuntimeManager {
     return this.generationCounter
   }
 
+  private shouldRecycleHostLocked(forceReloadIds: ReadonlySet<string>): boolean {
+    if (!this.controller?.isRunning() || this.loadedExtensions.size === 0) {
+      return false
+    }
+
+    for (const extensionId of forceReloadIds) {
+      if (this.desiredExtensions.has(extensionId)) {
+        return true
+      }
+    }
+
+    for (const [extensionId, metadata] of this.desiredExtensions) {
+      const loaded = this.loadedExtensions.get(extensionId)
+      if (loaded && !isSameRuntimeMetadata(loaded.metadata, metadata)) {
+        return true
+      }
+    }
+
+    return false
+  }
+
   private requireRpc(): ExtensionHostRpcClient {
     if (!this.rpc) {
       throw new Error('Extension host RPC client is not connected')
@@ -779,27 +583,26 @@ export class RuntimeManager {
   }
 
   private recordRuntimeRunning(extensionId: string): void {
-    this.runtimeStates.set(extensionId, {
-      status: 'running',
-      error: null,
-      updatedAt: new Date().toISOString()
-    })
+    this.runtimeStates.set(extensionId, createRuntimeRunningState())
   }
 
   private recordRuntimeFailure(extensionId: string, error: string): void {
-    this.runtimeStates.set(extensionId, {
-      status: 'failed',
-      error,
-      updatedAt: new Date().toISOString()
-    })
+    this.runtimeStates.set(extensionId, createRuntimeFailureState(error))
+  }
+
+  private recordHostStartupFailure(error: unknown): void {
+    const message = toRuntimeErrorMessage(error)
+    log.error('[RuntimeManager] Failed to start extension host:', error)
+
+    for (const extension of this.desiredExtensions.values()) {
+      if (!this.loadedExtensions.has(extension.id)) {
+        this.recordRuntimeFailure(extension.id, message)
+      }
+    }
   }
 
   private recordRuntimeStopped(extensionId: string): void {
-    this.runtimeStates.set(extensionId, {
-      status: 'stopped',
-      error: null,
-      updatedAt: new Date().toISOString()
-    })
+    this.runtimeStates.set(extensionId, createRuntimeStoppedState())
   }
 }
 
@@ -810,30 +613,6 @@ function createRuntimeInfo(): RuntimeInfo {
     mode: app.isPackaged ? 'production' : 'development',
     platform: toRuntimePlatform(process.platform),
     arch: process.arch
-  }
-}
-
-function writeExtensionLog(
-  extensionId: string,
-  level: 'debug' | 'info' | 'warn' | 'error',
-  message: string,
-  args: readonly RpcValue[]
-): void {
-  const prefix = `[ExtensionHost][${extensionId}] ${message}`
-
-  switch (level) {
-    case 'debug':
-      log.debug(prefix, ...args)
-      break
-    case 'info':
-      log.info(prefix, ...args)
-      break
-    case 'warn':
-      log.warn(prefix, ...args)
-      break
-    case 'error':
-      log.error(prefix, ...args)
-      break
   }
 }
 
@@ -855,86 +634,16 @@ function logUnloadResult(extensionId: string, result: ExtensionUnloadResult): vo
   }
 }
 
-function mapLoadedMetadata(
-  loadedExtensions: ReadonlyMap<string, LoadedExtensionState>
-): ReadonlyMap<string, ExtensionRuntimeMetadata> {
-  const result = new Map<string, ExtensionRuntimeMetadata>()
-  for (const [extensionId, state] of loadedExtensions) {
-    result.set(extensionId, state.metadata)
-  }
-  return result
-}
-
-function normalizeSerializableRecord(value: unknown): Record<string, SerializableValue> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {}
-  }
-
-  const result: Record<string, SerializableValue> = {}
-  for (const [key, entry] of Object.entries(value)) {
-    const normalized = normalizeSerializableValue(entry)
-    if (normalized !== undefined) {
-      result[key] = normalized
-    }
-  }
-  return result
-}
-
-function normalizeSerializableValue(value: unknown): SerializableValue | undefined {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return value
-  }
-
-  if (Array.isArray(value)) {
-    const items: SerializableValue[] = []
-    for (const entry of value) {
-      const normalized = normalizeSerializableValue(entry)
-      if (normalized === undefined) {
-        return undefined
-      }
-      items.push(normalized)
-    }
-    return items
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      const normalized = normalizeSerializableValue(entry)
-      if (normalized === undefined) {
-        return undefined
-      }
-      record[key] = normalized
-    }
-    return record
-  }
-
-  return undefined
-}
-
-function toRuntimeErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return 'Unknown extension runtime error'
-}
-
-function toChangeCause(reason: ExtensionUnloadReason): ExtensionRuntimeChangeCause {
-  switch (reason) {
-    case 'disable':
-      return 'disable'
-    case 'update':
-      return 'package-update'
-    case 'reload':
-      return 'user'
-    case 'shutdown':
-      return 'user'
+function toRecycleUnloadReason(cause: ExtensionRuntimeChangeCause): ExtensionUnloadReason {
+  switch (cause) {
+    case 'package-update':
+      return 'update'
+    case 'file-change':
+    case 'metadata-change':
+    case 'user':
+      return 'reload'
+    default:
+      return 'shutdown'
   }
 }
 
@@ -947,24 +656,4 @@ function toRuntimePlatform(platform: NodeJS.Platform): RuntimeInfo['platform'] {
     default:
       return 'linux'
   }
-}
-
-function isSameRuntimeMetadata(
-  left: ExtensionRuntimeMetadata,
-  right: ExtensionRuntimeMetadata
-): boolean {
-  return (
-    left.id === right.id &&
-    left.name === right.name &&
-    left.version === right.version &&
-    left.manifestPath === right.manifestPath &&
-    left.extensionPath === right.extensionPath &&
-    left.dataPath === right.dataPath &&
-    left.tempPath === right.tempPath &&
-    left.mode === right.mode
-  )
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }

@@ -101,6 +101,9 @@ function buildRequestUrl(
 
   const url = new URL(rawUrl)
   for (const [key, value] of Object.entries(query ?? {})) {
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      throw createValidationError('network.request.query number values must be finite.')
+    }
     url.searchParams.set(key, String(value))
   }
   return url.toString()
@@ -141,6 +144,7 @@ function normalizeRequestBody(
     headers['content-type'] = 'application/json'
   }
 
+  assertFiniteSerializableValue(body, 'network.request.body')
   return JSON.stringify(body)
 }
 
@@ -200,12 +204,15 @@ function toRpcValue(value: unknown): RpcValue {
     return value
   }
 
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw createValidationError('The network response contains a non-finite number.')
+    }
+
     return value
   }
 
@@ -222,6 +229,25 @@ function toRpcValue(value: unknown): RpcValue {
   }
 
   throw createValidationError('The network response could not be serialized for the extension.')
+}
+
+function assertFiniteSerializableValue(value: SerializableValue, label: string): void {
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    throw createValidationError(`${label} number values must be finite.`)
+  }
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      assertFiniteSerializableValue(entry, label)
+    }
+    return
+  }
+
+  if (value && typeof value === 'object') {
+    for (const entry of Object.values(value)) {
+      assertFiniteSerializableValue(entry, label)
+    }
+  }
 }
 
 function resolveDownloadDestination(

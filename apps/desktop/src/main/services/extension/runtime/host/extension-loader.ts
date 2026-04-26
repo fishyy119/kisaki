@@ -121,15 +121,6 @@ export class ExtensionLoader {
     }
   }
 
-  async reloadExtension(
-    extension: ExtensionRuntimeMetadata,
-    runtimeHandle: ExtensionRuntimeHandle,
-    generation: number
-  ): Promise<void> {
-    await this.unloadExtension(extension.id)
-    await this.loadExtension(extension, runtimeHandle, generation)
-  }
-
   async shutdown(): Promise<void> {
     const runtimes = [...this.registry.list()].reverse()
     for (const runtime of runtimes) {

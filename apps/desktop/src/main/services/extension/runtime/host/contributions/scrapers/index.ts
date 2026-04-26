@@ -1,31 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import {
-  CHARACTER_SCRAPER_SLOTS,
   type CharacterScraperProvider,
   type CharacterScraperSession,
   type CharacterScraperSlot,
-  COMPANY_SCRAPER_SLOTS,
   type CompanyScraperProvider,
   type CompanyScraperSession,
   type CompanyScraperSlot,
-  GAME_SCRAPER_SLOTS,
   type GameScraperProvider,
   type GameScraperSession,
   type GameScraperSlot,
-  type HostToMainRpcMethod,
-  type HostToMainRpcRequestMap,
-  type MainToHostRpcMethod,
-  PERSON_SCRAPER_SLOTS,
   type PersonScraperProvider,
   type PersonScraperSession,
   type PersonScraperSlot,
-  type RpcParams,
   type ScraperSessionCloseRequest,
   type ScraperSessionGetRequest,
   type ScraperSessionOpenRequest,
   type ScraperSearchRequest,
   type ScraperResolveRequest,
-  type ValidationIssue,
   validateCharacterScraperProviderShape,
   validateCompanyScraperProviderShape,
   validateGameScraperProviderShape,
@@ -38,208 +29,18 @@ import {
   type ContributionDisposable,
   type HostContributionDomainOptions,
   type HostContributionScope
-} from './types'
-import type { LoadedExtensionRuntime } from '../extension-registry'
+} from '../types'
+import type { LoadedExtensionRuntime } from '../../extension-registry'
+import { HOST_TO_MAIN_SCRAPER_RPC, type ScraperRpcKind } from './descriptors'
+import type {
+  ScraperDomain,
+  ScraperProviderLike,
+  ScraperSessionLike,
+  ScraperSessionRecord
+} from './domain'
+import { toScraperProviderRegistration } from './registrations'
 
-export type ScraperRpcKind = 'games' | 'persons' | 'companies' | 'characters'
-
-export type MainToHostScraperRpcMethods<TKind extends ScraperRpcKind = ScraperRpcKind> = {
-  search: Extract<MainToHostRpcMethod, `scrapers.${TKind}.search`>
-  resolve: Extract<MainToHostRpcMethod, `scrapers.${TKind}.resolve`>
-  open: Extract<MainToHostRpcMethod, `scrapers.${TKind}.session.open`>
-  get: Extract<MainToHostRpcMethod, `scrapers.${TKind}.session.get`>
-  close: Extract<MainToHostRpcMethod, `scrapers.${TKind}.session.close`>
-}
-
-export interface MainToHostScraperRpcDescriptor<TKind extends ScraperRpcKind = ScraperRpcKind> {
-  kind: TKind
-  methods: MainToHostScraperRpcMethods<TKind>
-}
-
-export type HostToMainScraperRpcMethods<TKind extends ScraperRpcKind = ScraperRpcKind> = {
-  register: Extract<HostToMainRpcMethod, `bridge.scrapers.${TKind}.register`>
-  unregister: Extract<HostToMainRpcMethod, `bridge.scrapers.${TKind}.unregister`>
-}
-
-export interface HostToMainScraperRpcDescriptor<TKind extends ScraperRpcKind = ScraperRpcKind> {
-  kind: TKind
-  slots: readonly string[]
-  methods: HostToMainScraperRpcMethods<TKind>
-}
-
-export const MAIN_TO_HOST_SCRAPER_RPC = {
-  games: {
-    kind: 'games',
-    methods: {
-      search: 'scrapers.games.search',
-      resolve: 'scrapers.games.resolve',
-      open: 'scrapers.games.session.open',
-      get: 'scrapers.games.session.get',
-      close: 'scrapers.games.session.close'
-    }
-  },
-  persons: {
-    kind: 'persons',
-    methods: {
-      search: 'scrapers.persons.search',
-      resolve: 'scrapers.persons.resolve',
-      open: 'scrapers.persons.session.open',
-      get: 'scrapers.persons.session.get',
-      close: 'scrapers.persons.session.close'
-    }
-  },
-  companies: {
-    kind: 'companies',
-    methods: {
-      search: 'scrapers.companies.search',
-      resolve: 'scrapers.companies.resolve',
-      open: 'scrapers.companies.session.open',
-      get: 'scrapers.companies.session.get',
-      close: 'scrapers.companies.session.close'
-    }
-  },
-  characters: {
-    kind: 'characters',
-    methods: {
-      search: 'scrapers.characters.search',
-      resolve: 'scrapers.characters.resolve',
-      open: 'scrapers.characters.session.open',
-      get: 'scrapers.characters.session.get',
-      close: 'scrapers.characters.session.close'
-    }
-  }
-} as const satisfies {
-  [K in ScraperRpcKind]: MainToHostScraperRpcDescriptor<K>
-}
-
-const HOST_TO_MAIN_SCRAPER_RPC = {
-  games: {
-    kind: 'games',
-    slots: GAME_SCRAPER_SLOTS,
-    methods: {
-      register: 'bridge.scrapers.games.register',
-      unregister: 'bridge.scrapers.games.unregister'
-    }
-  },
-  persons: {
-    kind: 'persons',
-    slots: PERSON_SCRAPER_SLOTS,
-    methods: {
-      register: 'bridge.scrapers.persons.register',
-      unregister: 'bridge.scrapers.persons.unregister'
-    }
-  },
-  companies: {
-    kind: 'companies',
-    slots: COMPANY_SCRAPER_SLOTS,
-    methods: {
-      register: 'bridge.scrapers.companies.register',
-      unregister: 'bridge.scrapers.companies.unregister'
-    }
-  },
-  characters: {
-    kind: 'characters',
-    slots: CHARACTER_SCRAPER_SLOTS,
-    methods: {
-      register: 'bridge.scrapers.characters.register',
-      unregister: 'bridge.scrapers.characters.unregister'
-    }
-  }
-} as const satisfies {
-  [K in ScraperRpcKind]: HostToMainScraperRpcDescriptor<K>
-}
-
-interface ScraperSessionLike<TSlot extends string> {
-  get(slots: readonly TSlot[]): Promise<unknown>
-  dispose?(): Promise<void> | void
-}
-
-interface ScraperProviderLike<TSlot extends string, TSession extends ScraperSessionLike<TSlot>> {
-  readonly id: string
-  readonly name: string
-  readonly capabilities: readonly unknown[]
-  search(
-    query: ScraperSearchRequest['query'],
-    locale?: ScraperSearchRequest['locale']
-  ): Promise<readonly unknown[]>
-  resolve(
-    lookup: ScraperResolveRequest['lookup'],
-    locale: ScraperResolveRequest['locale']
-  ): Promise<ScraperSessionOpenRequest['target'] | null>
-  openSession(
-    target: ScraperSessionOpenRequest['target'],
-    locale: ScraperSessionOpenRequest['locale']
-  ): Promise<TSession>
-}
-
-function toScraperProviderRegistration<TSlot extends string>(
-  provider: {
-    readonly id: string
-    readonly name: string
-    readonly capabilities: readonly unknown[]
-  },
-  allowedSlots: readonly TSlot[]
-): {
-  id: string
-  name: string
-  capabilities: readonly ('search' | TSlot)[]
-} {
-  return {
-    id: provider.id,
-    name: provider.name,
-    capabilities: normalizeScraperCapabilities(provider.capabilities, allowedSlots)
-  }
-}
-
-function normalizeScraperCapabilities<TSlot extends string>(
-  capabilities: readonly unknown[],
-  allowedSlots: readonly TSlot[]
-): readonly ('search' | TSlot)[] {
-  const allowedCapabilities = new Set<string>(['search', ...allowedSlots])
-  return capabilities.filter(
-    (capability): capability is 'search' | TSlot =>
-      typeof capability === 'string' && allowedCapabilities.has(capability)
-  )
-}
-
-interface ScraperSessionRecord<TSession extends { dispose?(): Promise<void> | void }> {
-  runtimeHandle: string
-  providerId: string
-  session: TSession
-}
-
-interface ScraperDomain<
-  TKind extends ScraperRpcKind,
-  TSlot extends string,
-  TSession extends ScraperSessionLike<TSlot>,
-  TProvider extends ScraperProviderLike<TSlot, TSession>,
-  TRegisterMethod extends HostToMainRpcMethod =
-    HostToMainScraperRpcDescriptor<TKind>['methods']['register'],
-  TUnregisterMethod extends HostToMainRpcMethod =
-    HostToMainScraperRpcDescriptor<TKind>['methods']['unregister']
-> {
-  kind: TKind
-  label: string
-  rpc: HostToMainScraperRpcDescriptor<TKind> & {
-    methods: {
-      register: TRegisterMethod
-      unregister: TUnregisterMethod
-    }
-  }
-  sessions: Map<string, ScraperSessionRecord<TSession>>
-  getProviders(runtime: LoadedExtensionRuntime): Map<string, TProvider>
-  validate(provider: TProvider): readonly ValidationIssue[]
-  toRegistration(
-    scope: HostContributionScope,
-    provider: TProvider
-  ): RpcParams<HostToMainRpcRequestMap, TRegisterMethod>
-  toUnregistration(
-    scope: HostContributionScope,
-    providerId: string
-  ): RpcParams<HostToMainRpcRequestMap, TUnregisterMethod>
-  register(scope: HostContributionScope, provider: TProvider): void
-  unregister(scope: HostContributionScope, providerId: string): void
-}
+export { MAIN_TO_HOST_SCRAPER_RPC, type ScraperRpcKind } from './descriptors'
 
 export class HostScraperContributions {
   private readonly options: HostContributionDomainOptions

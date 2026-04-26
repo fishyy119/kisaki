@@ -19,7 +19,8 @@
     },
     "version": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^[vV]?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
     },
     "categories": {
       "type": "array",
@@ -32,7 +33,8 @@
     },
     "entry": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
     },
     "description": {
       "type": "string"
@@ -46,7 +48,8 @@
     },
     "icon": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
     },
     "keywords": {
       "type": "array",
@@ -62,7 +65,9 @@
       "properties": {
         "kisaki": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "pattern": "^(?=.*\\S)[0-9A-Za-zvVxX*~^<>=|.\\-+\\s]+$",
+          "description": "Runtime validation uses semver.validRange; this schema restricts the string to semver range syntax characters."
         }
       }
     }

@@ -284,11 +284,7 @@ export function normalizeManifestPackagePath(value: string): string | null {
     }
 
     if (part === '..') {
-      if (parts.length === 0) {
-        return null
-      }
-      parts.pop()
-      continue
+      return null
     }
 
     parts.push(part)

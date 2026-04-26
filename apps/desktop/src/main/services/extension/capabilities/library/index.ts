@@ -1,22 +1,30 @@
 import {
+  assertValidLibraryAttachmentOwnerReference,
   assertValidLibraryAttachmentRemoveInput,
   assertValidLibraryAttachmentWriteInput,
   assertValidLibraryCharacterCreateInput,
   assertValidLibraryCharacterPatch,
+  assertValidLibraryCharacterQuery,
   assertValidLibraryCollectionCreateInput,
   assertValidLibraryCollectionPatch,
+  assertValidLibraryCollectionQuery,
   assertValidLibraryCompanyCreateInput,
   assertValidLibraryCompanyPatch,
+  assertValidLibraryCompanyQuery,
   assertValidLibraryEntityId,
   assertValidLibraryGameCreateInput,
   assertValidLibraryGamePatch,
+  assertValidLibraryGameQuery,
   assertValidLibraryPersonCreateInput,
   assertValidLibraryPersonPatch,
+  assertValidLibraryPersonQuery,
   assertValidLibraryRelationCreateInput,
+  assertValidLibraryRelationQuery,
   assertValidLibraryRelationSelector,
   assertValidLibraryRelationUpdateInput,
   assertValidLibraryTagCreateInput,
   assertValidLibraryTagPatch,
+  assertValidLibraryTagQuery,
   createUnavailableError,
   type ExtensionRuntimeMetadata
 } from '@kisaki/extension-api'
@@ -47,10 +55,16 @@ export class ExtensionLibraryCapabilityHost {
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
     rpc.handleHostRequest('capabilities.library.games.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => ({ entity: this.entities.getGame(id) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, 'library.games.get id')
+        return { entity: this.entities.getGame(id) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.games.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => ({ items: this.entities.listGames(query) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryGameQuery(query)
+        return { items: this.entities.listGames(query) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.games.create', async ({ runtimeHandle, input }) =>
       this.withRuntime(runtimeHandle, () => {
@@ -75,12 +89,18 @@ export class ExtensionLibraryCapabilityHost {
     })
 
     rpc.handleHostRequest('capabilities.library.characters.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => ({ entity: this.entities.getCharacter(id) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, 'library.characters.get id')
+        return { entity: this.entities.getCharacter(id) }
+      })
     )
     rpc.handleHostRequest(
       'capabilities.library.characters.list',
       async ({ runtimeHandle, query }) =>
-        this.withRuntime(runtimeHandle, () => ({ items: this.entities.listCharacters(query) }))
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryCharacterQuery(query)
+          return { items: this.entities.listCharacters(query) }
+        })
     )
     rpc.handleHostRequest(
       'capabilities.library.characters.create',
@@ -114,10 +134,16 @@ export class ExtensionLibraryCapabilityHost {
     )
 
     rpc.handleHostRequest('capabilities.library.persons.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => ({ entity: this.entities.getPerson(id) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, 'library.persons.get id')
+        return { entity: this.entities.getPerson(id) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.persons.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => ({ items: this.entities.listPersons(query) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryPersonQuery(query)
+        return { items: this.entities.listPersons(query) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.persons.create', async ({ runtimeHandle, input }) =>
       this.withRuntime(runtimeHandle, () => {
@@ -142,10 +168,16 @@ export class ExtensionLibraryCapabilityHost {
     })
 
     rpc.handleHostRequest('capabilities.library.companies.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => ({ entity: this.entities.getCompany(id) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, 'library.companies.get id')
+        return { entity: this.entities.getCompany(id) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.companies.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => ({ items: this.entities.listCompanies(query) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryCompanyQuery(query)
+        return { items: this.entities.listCompanies(query) }
+      })
     )
     rpc.handleHostRequest(
       'capabilities.library.companies.create',
@@ -177,12 +209,18 @@ export class ExtensionLibraryCapabilityHost {
     )
 
     rpc.handleHostRequest('capabilities.library.collections.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => ({ entity: this.entities.getCollection(id) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, 'library.collections.get id')
+        return { entity: this.entities.getCollection(id) }
+      })
     )
     rpc.handleHostRequest(
       'capabilities.library.collections.list',
       async ({ runtimeHandle, query }) =>
-        this.withRuntime(runtimeHandle, () => ({ items: this.entities.listCollections(query) }))
+        this.withRuntime(runtimeHandle, () => {
+          assertValidLibraryCollectionQuery(query)
+          return { items: this.entities.listCollections(query) }
+        })
     )
     rpc.handleHostRequest(
       'capabilities.library.collections.create',
@@ -216,10 +254,16 @@ export class ExtensionLibraryCapabilityHost {
     )
 
     rpc.handleHostRequest('capabilities.library.tags.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => ({ entity: this.entities.getTag(id) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, 'library.tags.get id')
+        return { entity: this.entities.getTag(id) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.tags.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => ({ items: this.entities.listTags(query) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryTagQuery(query)
+        return { items: this.entities.listTags(query) }
+      })
     )
     rpc.handleHostRequest('capabilities.library.tags.create', async ({ runtimeHandle, input }) =>
       this.withRuntime(runtimeHandle, () => {
@@ -244,7 +288,10 @@ export class ExtensionLibraryCapabilityHost {
     })
 
     rpc.handleHostRequest('capabilities.library.relations.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => ({ items: this.relations.list(query) }))
+      this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryRelationQuery(query)
+        return { items: this.relations.list(query) }
+      })
     )
     rpc.handleHostRequest(
       'capabilities.library.relations.create',
@@ -277,9 +324,12 @@ export class ExtensionLibraryCapabilityHost {
     rpc.handleHostRequest(
       'capabilities.library.attachments.list',
       async ({ runtimeHandle, entity }) =>
-        this.withRuntime(runtimeHandle, async () => ({
-          items: await this.attachments.list(entity)
-        }))
+        this.withRuntime(runtimeHandle, async () => {
+          assertValidLibraryAttachmentOwnerReference(entity)
+          return {
+            items: await this.attachments.list(entity)
+          }
+        })
     )
     rpc.handleHostRequest(
       'capabilities.library.attachments.put',

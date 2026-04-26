@@ -255,10 +255,13 @@ function toSerializableValue(value: unknown): SerializableValue | undefined {
     value === undefined ||
     value === null ||
     typeof value === 'string' ||
-    typeof value === 'number' ||
     typeof value === 'boolean'
   ) {
     return value
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : String(value)
   }
 
   if (Array.isArray(value)) {

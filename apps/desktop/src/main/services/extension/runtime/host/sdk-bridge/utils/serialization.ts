@@ -8,12 +8,15 @@ export function toSerializableValue(
   label: string,
   seen = new Set<object>()
 ): SerializableValue {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw new Error(`${label} number values must be finite`)
+    }
+
     return value
   }
 

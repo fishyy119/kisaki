@@ -59,11 +59,6 @@ rpc.handle('extensions.unload', async ({ extensionId, runtimeHandle }) => {
   return loader.unloadExtension(extensionId, runtimeHandle)
 })
 
-rpc.handle('extensions.reload', async ({ extension, runtimeHandle, generation }) => {
-  await loader.reloadExtension(extension, runtimeHandle, generation)
-  return {}
-})
-
 parentPort.on('message', (event) => {
   void rpc.onMessage(event.data).catch((error) => {
     console.error('[ExtensionHost] Failed to process RPC message:', error)
