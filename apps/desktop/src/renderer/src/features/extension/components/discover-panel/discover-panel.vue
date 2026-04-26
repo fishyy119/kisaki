@@ -7,12 +7,12 @@ import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
-import { searchExtensions } from '@renderer/core/extensions'
+import { getExtensionCatalog, searchExtensions } from '@renderer/core/extensions'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverExtensionStore } from '../../stores'
-import type { ExtensionRegistryEntry } from '@shared/extension'
+import type { ExtensionCatalogInfo, ExtensionRegistryEntry } from '@shared/extension'
 
 const PAGE_SIZE = 20
 
@@ -36,13 +36,7 @@ const additionalHasMore = ref(false)
 const page = ref(1)
 const isLoadingMore = ref(false)
 const queryKey = computed(() =>
-  [
-    store.searchTrigger,
-    store.selectedRegistry,
-    store.sortField,
-    store.sortDirection,
-    store.selectedCategory ?? 'all'
-  ].join(':')
+  [store.searchTrigger, store.selectedRegistry, store.sortField, store.sortDirection].join(':')
 )
 
 // Use useAsyncData for the initial search (page 1)
@@ -52,6 +46,9 @@ const {
   isLoading
 } = useAsyncData(() => searchExtensionPage(1), {
   watch: [queryKey],
+  immediate: true
+})
+const { data: catalog, refetch: refetchCatalog } = useAsyncData(() => getExtensionCatalog(), {
   immediate: true
 })
 
@@ -102,6 +99,10 @@ const displayedResults = computed(() => {
 })
 
 const searched = computed(() => !isLoading.value)
+const installedIds = computed(() => new Set((catalog.value ?? []).map((entry) => entry.id)))
+const installedSourceKeys = computed(
+  () => new Set((catalog.value ?? []).map((entry) => getCatalogSourceKey(entry)).filter(Boolean))
+)
 
 async function handleLoadMore() {
   isLoadingMore.value = true
@@ -119,6 +120,34 @@ async function handleLoadMore() {
 }
 
 const loading = computed(() => isFetching.value || isLoadingMore.value)
+
+function getCatalogSourceKey(entry: ExtensionCatalogInfo): string | null {
+  if (!entry.source) {
+    return null
+  }
+
+  return getRegistrySourceKey(entry.source.provider, entry.source.locator)
+}
+
+function getRegistrySourceKey(provider: string, locator: string): string {
+  return `${provider}:${normalizeRegistryLocator(provider, locator)}`
+}
+
+function normalizeRegistryLocator(provider: string, locator: string): string {
+  if (provider === 'github' && locator.startsWith('github:')) {
+    const [ownerRepo] = locator.slice('github:'.length).split('@', 2)
+    return `github:${ownerRepo}`
+  }
+
+  return locator
+}
+
+function isInstalled(extension: ExtensionRegistryEntry): boolean {
+  return (
+    installedIds.value.has(extension.id) ||
+    installedSourceKeys.value.has(getRegistrySourceKey(extension.provider, extension.locator))
+  )
+}
 </script>
 
 <template>
@@ -170,6 +199,8 @@ const loading = computed(() => isFetching.value || isLoadingMore.value)
             v-for="extension in displayedResults"
             :key="extension.id"
             :extension="extension"
+            :installed="isInstalled(extension)"
+            :refresh-installed-state="refetchCatalog"
           />
         </div>
 

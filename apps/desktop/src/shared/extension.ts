@@ -44,12 +44,11 @@ export interface ExtensionCatalogInfo {
 export interface ExtensionRegistryEntry {
   id: string
   name: string
-  version: string
+  version: string | null
   description?: string
   author?: string
   homepage?: string
   categories?: readonly ExtensionCategory[]
-  downloadUrl: string
   provider: string
   locator: string
   iconUrl?: string

@@ -14,13 +14,13 @@ export interface HostEvents {
   'extension.enabled': { extensionId: string }
   'extension.disabled': { extensionId: string }
   'library.game.created': { gameId: string; name: string }
-  'library.game.updated': { gameId: string; fields: readonly string[] }
+  'library.game.updated': { gameId: string }
   'library.game.deleted': { gameId: string }
-  'library.person.updated': { personId: string; fields: readonly string[] }
-  'library.character.updated': { characterId: string; fields: readonly string[] }
-  'library.company.updated': { companyId: string; fields: readonly string[] }
-  'library.collection.updated': { collectionId: string; fields: readonly string[] }
-  'library.tag.updated': { tagId: string; fields: readonly string[] }
+  'library.person.updated': { personId: string }
+  'library.character.updated': { characterId: string }
+  'library.company.updated': { companyId: string }
+  'library.collection.updated': { collectionId: string }
+  'library.tag.updated': { tagId: string }
   'scanner.completed': { scannerId: string; stats: Record<string, number> }
   'scanner.failed': { scannerId: string; error: string }
 }

@@ -14,21 +14,21 @@ import type { ExtensionRegistryEntry } from '@shared/extension'
 
 interface Props {
   extension: ExtensionRegistryEntry
+  installed: boolean
+  refreshInstalledState: () => Promise<void>
 }
 
 const props = defineProps<Props>()
 
 const installing = ref(false)
-const installed = ref(false)
 const iconError = ref(false)
 
 async function handleInstall() {
   installing.value = true
   try {
     await installExtension(props.extension.locator)
-
+    await props.refreshInstalledState()
     notify.success('扩展安装成功')
-    installed.value = true
   } catch (error) {
     console.error('Install failed:', error)
     notify.error('安装失败', (error as Error).message)
@@ -56,7 +56,8 @@ async function handleInstall() {
       />
       <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
       <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
-        v{{ props.extension.version }}
+        <template v-if="props.extension.version">v{{ props.extension.version }}</template>
+        <template v-else>仓库</template>
       </span>
     </div>
 
@@ -98,15 +99,15 @@ async function handleInstall() {
 
       <Button
         size="sm"
-        :variant="installed ? 'ghost' : 'default'"
-        :disabled="installing || installed"
+        :variant="props.installed ? 'ghost' : 'default'"
+        :disabled="installing || props.installed"
         @click="handleInstall"
       >
         <Spinner
           v-if="installing"
           class="size-3"
         />
-        <template v-else-if="installed">
+        <template v-else-if="props.installed">
           <Icon
             icon="icon-[mdi--check]"
             class="size-3.5"

@@ -61,20 +61,24 @@ export interface ExtensionCatalogEntry {
   tempPath: string
 }
 
-export interface ExtensionSourceEntry {
+export interface ExtensionDiscoveryEntry {
   id: string
   name: string
-  version: string
+  version: string | null
   description?: string
   author?: string
   homepage?: string
   categories?: readonly ExtensionCategory[]
-  downloadUrl: string
   provider: string
   locator: string
   iconUrl?: string
   stars?: number
   updatedAt?: string
+}
+
+export interface ExtensionSourceEntry extends ExtensionDiscoveryEntry {
+  version: string
+  downloadUrl: string
 }
 
 export interface ExtensionSearchOptions {
@@ -85,7 +89,7 @@ export interface ExtensionSearchOptions {
 }
 
 export interface ExtensionSearchResult {
-  entries: readonly ExtensionSourceEntry[]
+  entries: readonly ExtensionDiscoveryEntry[]
   total: number
   hasMore: boolean
 }

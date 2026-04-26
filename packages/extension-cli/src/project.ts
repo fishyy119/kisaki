@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { access, readFile } from 'node:fs/promises'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import { normalizeExtensionPackagePath, type ExtensionManifest } from '@kisaki/extension-api'
 
 export interface ExtensionProject {
   rootDir: string
@@ -43,7 +43,7 @@ export async function readJsonFile(filePath: string): Promise<unknown> {
  * Resolves an extension package-relative path while keeping it inside the project.
  */
 export function resolvePackageFile(project: ExtensionProject, relativePath: string): string | null {
-  const normalized = normalizePackagePath(relativePath)
+  const normalized = normalizeExtensionPackagePath(relativePath)
   if (!normalized) {
     return null
   }
@@ -78,26 +78,6 @@ export async function pathExists(filePath: string): Promise<boolean> {
   } catch {
     return false
   }
-}
-
-/**
- * Normalizes a manifest package-relative path to zip-safe POSIX form.
- */
-export function normalizePackagePath(value: string): string | null {
-  const normalized = path.posix.normalize(value.replace(/\\/g, '/'))
-
-  if (
-    !normalized ||
-    normalized === '.' ||
-    normalized === '..' ||
-    normalized.startsWith('../') ||
-    path.posix.isAbsolute(normalized) ||
-    /^[A-Za-z]:[\\/]/.test(value)
-  ) {
-    return null
-  }
-
-  return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
 
 async function findProjectRoot(startDir: string): Promise<string> {

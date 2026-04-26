@@ -169,7 +169,6 @@ export class ExtensionEntityMenuContributionHost {
     sessionId: string,
     input: EntityMenuResolveInput
   ): Promise<ExtensionResolvedEntityMenu> {
-    const groups: ExtensionResolvedEntityMenuGroup[] = []
     const errors: ExtensionContributionError[] = []
     const registrations = [...this.registrations.values()]
       .filter((registration) => registration.contribution.target === input.target)
@@ -179,9 +178,10 @@ export class ExtensionEntityMenuContributionHost {
           left.contribution.id.localeCompare(right.contribution.id)
       )
 
-    for (const registration of registrations) {
-      try {
-        const resolved = await this.options.requestHost(
+    const resolvedEntries = await Promise.allSettled(
+      registrations.map(async (registration) => ({
+        registration,
+        resolved: await this.options.requestHost(
           'entityMenus.resolve',
           {
             runtimeHandle: registration.owner.runtimeHandle,
@@ -191,17 +191,26 @@ export class ExtensionEntityMenuContributionHost {
           },
           { timeoutMs: 15_000 }
         )
+      }))
+    )
 
+    const groups: ExtensionResolvedEntityMenuGroup[] = []
+    for (const [index, result] of resolvedEntries.entries()) {
+      if (result.status === 'fulfilled') {
         groups.push({
-          ...toEntityMenuInfo(registration),
-          items: resolved.items
+          ...toEntityMenuInfo(result.value.registration),
+          items: result.value.resolved.items
         })
-      } catch (error) {
+        continue
+      }
+
+      const registration = registrations[index]
+      if (registration) {
         log.warn(
           `[ExtensionContributionRegistry] Failed to resolve entity menu "${registration.owner.extension.id}:${registration.contribution.id}":`,
-          error
+          result.reason
         )
-        errors.push(toContributionError(registration, error))
+        errors.push(toContributionError(registration, result.reason))
       }
     }
 

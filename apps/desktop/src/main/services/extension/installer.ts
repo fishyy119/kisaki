@@ -5,7 +5,7 @@ import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
 import semver from 'semver'
 import log from 'electron-log/main'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import { normalizeExtensionPackagePath, type ExtensionManifest } from '@kisaki/extension-api'
 import { parseExtensionManifest, validateInstalledExtensionPackage } from './manifest'
 import type {
   ExtensionInstallResult,
@@ -282,7 +282,7 @@ export class ExtensionInstaller {
     const normalizedEntryNames = new Set(
       entries
         .filter((entry) => !entry.isDirectory)
-        .map((entry) => normalizeArchiveEntry(entry.entryName))
+        .map((entry) => normalizeExtensionPackagePath(entry.entryName))
         .filter((entryName): entryName is string => entryName !== null)
     )
 
@@ -306,7 +306,7 @@ export class ExtensionInstaller {
         continue
       }
 
-      const normalizedEntry = normalizeArchiveEntry(entry.entryName)
+      const normalizedEntry = normalizeExtensionPackagePath(entry.entryName)
       if (!normalizedEntry) {
         throw new Error(`Package entry "${entry.entryName}" is outside the archive root`)
       }
@@ -328,21 +328,6 @@ export class ExtensionInstaller {
       stageDir
     }
   }
-}
-
-function normalizeArchiveEntry(entryName: string): string | null {
-  const normalized = path.posix.normalize(entryName.replace(/\\/g, '/'))
-  if (
-    !normalized ||
-    normalized === '.' ||
-    normalized === '..' ||
-    normalized.startsWith('../') ||
-    path.posix.isAbsolute(normalized)
-  ) {
-    return null
-  }
-
-  return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
 
 function formatManifestIssues(issues: readonly { path: string; message: string }[]): string {

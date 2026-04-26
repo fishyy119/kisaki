@@ -217,7 +217,7 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
   const manifest = value as ExtensionManifest
   issues.push(...validateExtensionManifestSemver(manifest))
 
-  const normalizedEntry = normalizeManifestPackagePath(manifest.entry)
+  const normalizedEntry = normalizeExtensionPackagePath(manifest.entry)
   if (!normalizedEntry) {
     issues.push({
       path: '$.entry',
@@ -226,7 +226,7 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
   }
 
   const normalizedIcon =
-    manifest.icon === undefined ? undefined : normalizeManifestPackagePath(manifest.icon)
+    manifest.icon === undefined ? undefined : normalizeExtensionPackagePath(manifest.icon)
   if (manifest.icon !== undefined && !normalizedIcon) {
     issues.push({
       path: '$.icon',
@@ -270,7 +270,7 @@ export function validateExtensionManifestSemver(
   return issues
 }
 
-export function normalizeManifestPackagePath(value: string): string | null {
+export function normalizeExtensionPackagePath(value: string): string | null {
   if (/^[A-Za-z]:[\\/]/.test(value)) {
     return null
   }

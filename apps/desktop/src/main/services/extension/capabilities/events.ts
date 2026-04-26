@@ -133,10 +133,7 @@ export class ExtensionEventsCapabilityHost {
             return
           }
 
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            gameId: id,
-            fields: []
-          })
+          this.emitSubscriptionEvent(subscriptionId, topic, { gameId: id })
         })
       case 'library.game.deleted':
         return this.options.event.on('db:deleted', ({ table, id }) => {
@@ -152,10 +149,7 @@ export class ExtensionEventsCapabilityHost {
             return
           }
 
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            personId: id,
-            fields: []
-          })
+          this.emitSubscriptionEvent(subscriptionId, topic, { personId: id })
         })
       case 'library.character.updated':
         return this.options.event.on('db:updated', ({ table, id }) => {
@@ -163,10 +157,7 @@ export class ExtensionEventsCapabilityHost {
             return
           }
 
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            characterId: id,
-            fields: []
-          })
+          this.emitSubscriptionEvent(subscriptionId, topic, { characterId: id })
         })
       case 'library.company.updated':
         return this.options.event.on('db:updated', ({ table, id }) => {
@@ -174,10 +165,7 @@ export class ExtensionEventsCapabilityHost {
             return
           }
 
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            companyId: id,
-            fields: []
-          })
+          this.emitSubscriptionEvent(subscriptionId, topic, { companyId: id })
         })
       case 'library.collection.updated':
         return this.options.event.on('db:updated', ({ table, id }) => {
@@ -185,10 +173,7 @@ export class ExtensionEventsCapabilityHost {
             return
           }
 
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            collectionId: id,
-            fields: []
-          })
+          this.emitSubscriptionEvent(subscriptionId, topic, { collectionId: id })
         })
       case 'library.tag.updated':
         return this.options.event.on('db:updated', ({ table, id }) => {
@@ -196,10 +181,7 @@ export class ExtensionEventsCapabilityHost {
             return
           }
 
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            tagId: id,
-            fields: []
-          })
+          this.emitSubscriptionEvent(subscriptionId, topic, { tagId: id })
         })
       case 'scanner.completed':
         return this.options.event.on('scanner:completed', ({ scannerId, stats }) => {

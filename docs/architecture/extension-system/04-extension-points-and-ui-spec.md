@@ -391,6 +391,8 @@ type UiCallbackResult =
 
 这些事件统一定义在 `packages/extension-api` 中。
 
+当前公开宿主更新事件只承诺实体级变化标识，例如 `gameId`、`personId`；不承诺字段级 diff。
+
 ## 扩展自定义事件
 
 允许扩展发送自定义事件，但必须强制命名空间化：

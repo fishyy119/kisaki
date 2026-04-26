@@ -2,15 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
-import type { ExtensionManifest } from '@kisaki/extension-api'
 import type { NetworkService } from '@main/services/network'
 import type {
+  ExtensionDiscoveryEntry,
   ExtensionSearchOptions,
   ExtensionSearchResult,
   ExtensionSourceEntry,
   ExtensionSourceProvider
 } from '../types'
-import { parseExtensionManifest } from '../manifest'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
 interface GitHubReleaseAsset {
@@ -47,16 +46,21 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
   readonly name = 'github'
   readonly displayName = 'GitHub'
   readonly searchable = true
+  private readonly releaseCache = new Map<
+    string,
+    { expiresAt: number; value: Promise<GitHubRelease | null> }
+  >()
+  private readonly releaseCacheTtlMs = 5 * 60_000
 
   constructor(private readonly networkService: NetworkService) {}
 
   async search(query: string, options?: ExtensionSearchOptions): Promise<ExtensionSearchResult> {
     const { page = 1, limit = 20, sortBy = 'stars', sortDirection = 'desc' } = options ?? {}
 
-    const sortMap: Record<NonNullable<ExtensionSearchOptions['sortBy']>, string> = {
+    const sortMap: Record<NonNullable<ExtensionSearchOptions['sortBy']>, string | null> = {
       stars: 'stars',
       updated: 'updated',
-      name: 'name'
+      name: null
     }
 
     let searchQuery = 'topic:kisaki-extension'
@@ -66,8 +70,11 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
 
     const url = new URL('https://api.github.com/search/repositories')
     url.searchParams.set('q', searchQuery)
-    url.searchParams.set('sort', sortMap[sortBy] ?? 'stars')
-    url.searchParams.set('order', sortDirection)
+    const remoteSort = sortMap[sortBy] ?? 'stars'
+    if (remoteSort) {
+      url.searchParams.set('sort', remoteSort)
+      url.searchParams.set('order', sortDirection)
+    }
     url.searchParams.set('per_page', String(limit))
     url.searchParams.set('page', String(page))
 
@@ -84,41 +91,8 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
 
     const data = (await response.json()) as GitHubSearchResponse
 
-    const entries = await Promise.all(
-      data.items.map(async (repo): Promise<ExtensionSourceEntry | null> => {
-        const [release, manifest] = await Promise.all([
-          this.fetchRelease(repo.owner.login, repo.name).catch(() => null),
-          this.fetchRepositoryManifest(repo.owner.login, repo.name).catch(() => null)
-        ])
-        const packageAsset = release?.assets.find((asset) => asset.name.endsWith('.kisx'))
-
-        if (!release || !packageAsset) {
-          return null
-        }
-
-        return {
-          id: repo.full_name,
-          name: release.name || repo.name,
-          version: release.tag_name.replace(/^v/, ''),
-          description: repo.description ?? undefined,
-          author: repo.owner.login,
-          homepage: repo.html_url,
-          downloadUrl: packageAsset.browser_download_url,
-          provider: this.name,
-          locator: `github:${repo.full_name}`,
-          iconUrl: manifest?.icon
-            ? createGitHubRawFileUrl(repo.owner.login, repo.name, manifest.icon)
-            : undefined,
-          stars: repo.stargazers_count,
-          updatedAt: repo.updated_at
-        }
-      })
-    )
-
-    const resolvedEntries = entries.filter(isExtensionSourceEntry)
-
     return {
-      entries: resolvedEntries,
+      entries: data.items.map((repo) => this.toDiscoveryEntry(repo)),
       total: data.total_count,
       hasMore: page * limit < data.total_count
     }
@@ -130,7 +104,7 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
       return null
     }
 
-    const release = await this.fetchRelease(parsed.owner, parsed.repo, parsed.tag)
+    const release = await this.getRelease(parsed.owner, parsed.repo, parsed.tag)
     if (!release) {
       return null
     }
@@ -159,7 +133,7 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
       return null
     }
 
-    const release = await this.fetchRelease(parsed.owner, parsed.repo)
+    const release = await this.getRelease(parsed.owner, parsed.repo)
     return release?.tag_name.replace(/^v/, '') ?? null
   }
 
@@ -171,6 +145,45 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
     await fse.ensureDir(tempDir)
     await this.networkService.downloadToFile(entry.downloadUrl, destination)
     return destination
+  }
+
+  private toDiscoveryEntry(repo: GitHubRepo): ExtensionDiscoveryEntry {
+    return {
+      id: repo.full_name,
+      name: repo.name,
+      version: null,
+      description: repo.description ?? undefined,
+      author: repo.owner.login,
+      homepage: repo.html_url,
+      provider: this.name,
+      locator: `github:${repo.full_name}`,
+      stars: repo.stargazers_count,
+      updatedAt: repo.updated_at
+    }
+  }
+
+  private getRelease(owner: string, repo: string, tag?: string): Promise<GitHubRelease | null> {
+    const cacheKey = tag ? `${owner}/${repo}@${tag}` : `${owner}/${repo}@latest`
+    const cached = this.releaseCache.get(cacheKey)
+    const now = Date.now()
+    if (cached && cached.expiresAt > now) {
+      return cached.value
+    }
+
+    const value = this.fetchRelease(owner, repo, tag).catch((error) => {
+      const active = this.releaseCache.get(cacheKey)
+      if (active?.value === value) {
+        this.releaseCache.delete(cacheKey)
+      }
+      throw error
+    })
+
+    this.releaseCache.set(cacheKey, {
+      expiresAt: now + this.releaseCacheTtlMs,
+      value
+    })
+
+    return value
   }
 
   private async fetchRelease(
@@ -199,37 +212,6 @@ export class GitHubExtensionSourceProvider implements ExtensionSourceProvider {
 
     return (await response.json()) as GitHubRelease
   }
-
-  private async fetchRepositoryManifest(
-    owner: string,
-    repo: string
-  ): Promise<ExtensionManifest | null> {
-    const response = await this.networkService.fetch(
-      `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/manifest.json`,
-      {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'Kisaki-Extension-Manager'
-        }
-      }
-    )
-
-    if (!response.ok) {
-      return null
-    }
-
-    const parsed = parseExtensionManifest(await response.json())
-    return parsed.manifest
-  }
-}
-
-function isExtensionSourceEntry(value: ExtensionSourceEntry | null): value is ExtensionSourceEntry {
-  return value !== null
-}
-
-function createGitHubRawFileUrl(owner: string, repo: string, filePath: string): string {
-  const encodedPath = filePath.split('/').map(encodeURIComponent).join('/')
-  return `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${encodedPath}`
 }
 
 function parseGitHubSource(source: string): { owner: string; repo: string; tag?: string } | null {

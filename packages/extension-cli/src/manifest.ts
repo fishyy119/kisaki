@@ -1,6 +1,6 @@
 import semver from 'semver'
 import type { ExtensionManifest, ValidationIssue } from '@kisaki/extension-api'
-import { normalizeManifestPackagePath, parseExtensionManifest } from '@kisaki/extension-api'
+import { normalizeExtensionPackagePath, parseExtensionManifest } from '@kisaki/extension-api'
 import type { ExtensionProject } from './project'
 import { pathExists, readJsonFile, resolvePackageFile } from './project'
 
@@ -122,7 +122,7 @@ function validateRelativeFilePath(
   fieldPath: string,
   errors: ValidationIssue[]
 ): string | null {
-  if (!normalizeManifestPackagePath(value)) {
+  if (!normalizeExtensionPackagePath(value)) {
     errors.push({
       path: fieldPath,
       message: 'Path must be relative and stay inside the extension package root.'
@@ -144,7 +144,9 @@ function validateRelativeFilePath(
 function normalizeManifest(manifest: ExtensionManifest): ExtensionManifest {
   return {
     ...manifest,
-    entry: normalizeManifestPackagePath(manifest.entry) ?? manifest.entry,
-    icon: manifest.icon ? (normalizeManifestPackagePath(manifest.icon) ?? manifest.icon) : undefined
+    entry: normalizeExtensionPackagePath(manifest.entry) ?? manifest.entry,
+    icon: manifest.icon
+      ? (normalizeExtensionPackagePath(manifest.icon) ?? manifest.icon)
+      : undefined
   }
 }

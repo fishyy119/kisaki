@@ -10,8 +10,8 @@ import type {
 } from '@shared/extension'
 import type {
   ExtensionCatalogEntry,
+  ExtensionDiscoveryEntry,
   ExtensionSearchOptions,
-  ExtensionSourceEntry,
   ExtensionUpdateInfo
 } from './types'
 import type { ExtensionRuntimeState } from './runtime/manager'
@@ -305,7 +305,7 @@ function toSharedExtensionUpdateInfo(update: ExtensionUpdateInfo): SharedExtensi
   }
 }
 
-function toExtensionRegistryEntry(entry: ExtensionSourceEntry): ExtensionRegistryEntry {
+function toExtensionRegistryEntry(entry: ExtensionDiscoveryEntry): ExtensionRegistryEntry {
   return {
     id: entry.id,
     name: entry.name,
@@ -314,7 +314,6 @@ function toExtensionRegistryEntry(entry: ExtensionSourceEntry): ExtensionRegistr
     author: entry.author,
     homepage: entry.homepage,
     categories: entry.categories,
-    downloadUrl: entry.downloadUrl,
     provider: entry.provider,
     locator: entry.locator,
     iconUrl: entry.iconUrl,
