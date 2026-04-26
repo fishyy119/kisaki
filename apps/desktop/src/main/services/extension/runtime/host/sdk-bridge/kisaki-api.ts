@@ -61,7 +61,7 @@ interface LibraryEntityMethods {
   remove: LibraryEntityRemoveMethod
 }
 
-interface KisakiApiBridgeHooks {
+export interface KisakiApiBridgeHooks {
   requireCurrentScope(): ActiveExtensionScope
   requestMain<K extends HostToMainRpcMethod>(
     scope: ActiveExtensionScope,
@@ -69,29 +69,39 @@ interface KisakiApiBridgeHooks {
     params: ScopedHostToMainRpcParams<K>
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>>
   subscribeHostEvent<K extends HostEventTopic>(
+    scope: ActiveExtensionScope,
     topic: K,
     listener: HostEventListener<K>,
     once: boolean
   ): Promise<Disposable>
   subscribeExtensionEvent<TPayload extends ExtensionEventPayload>(
+    scope: ActiveExtensionScope,
     topic: ExtensionEventTopic,
     listener: ExtensionEventListener<TPayload>
   ): Promise<Disposable>
   emitExtensionEvent<TPayload extends ExtensionEventPayload>(
+    scope: ActiveExtensionScope,
     topic: ExtensionEventTopic,
     payload: TPayload
   ): Promise<void>
 }
 
 /**
- * Creates the public Kisaki SDK API facade for the active extension scope.
+ * Creates a public Kisaki SDK API facade. When boundScope is provided, all
+ * capability calls stay tied to that extension even after the original
+ * activation stack has unwound.
  */
-export function createKisakiApi(hooks: KisakiApiBridgeHooks): KisakiApi {
+export function createKisakiApi(
+  hooks: KisakiApiBridgeHooks,
+  boundScope?: ActiveExtensionScope
+): KisakiApi {
+  const requireScope = () => boundScope ?? hooks.requireCurrentScope()
+
   const requestMain = <K extends HostToMainRpcMethod>(
     method: K,
     params: ScopedHostToMainRpcParams<K>
   ) => {
-    const scope = hooks.requireCurrentScope()
+    const scope = requireScope()
     return hooks.requestMain(scope, method, params)
   }
 
@@ -284,10 +294,13 @@ export function createKisakiApi(hooks: KisakiApiBridgeHooks): KisakiApi {
       }
     },
     events: {
-      on: async (topic, listener) => hooks.subscribeHostEvent(topic, listener, false),
-      once: async (topic, listener) => hooks.subscribeHostEvent(topic, listener, true),
-      onExtension: async (topic, listener) => hooks.subscribeExtensionEvent(topic, listener),
-      emit: async (topic, payload) => hooks.emitExtensionEvent(topic, payload)
+      on: async (topic, listener) =>
+        hooks.subscribeHostEvent(requireScope(), topic, listener, false),
+      once: async (topic, listener) =>
+        hooks.subscribeHostEvent(requireScope(), topic, listener, true),
+      onExtension: async (topic, listener) =>
+        hooks.subscribeExtensionEvent(requireScope(), topic, listener),
+      emit: async (topic, payload) => hooks.emitExtensionEvent(requireScope(), topic, payload)
     },
     runtime: {
       getInfo: async () => {
@@ -296,6 +309,31 @@ export function createKisakiApi(hooks: KisakiApiBridgeHooks): KisakiApi {
       delay: async (ms: number) => {
         await new Promise((resolve) => setTimeout(resolve, ms))
       }
+    }
+  }
+}
+
+export function createScopeCapturingKisakiApi(
+  hooks: KisakiApiBridgeHooks,
+  getScopedApi: (scope: ActiveExtensionScope) => KisakiApi
+): KisakiApi {
+  const getApi = () => getScopedApi(hooks.requireCurrentScope())
+
+  return {
+    get library() {
+      return getApi().library
+    },
+    get network() {
+      return getApi().network
+    },
+    get notify() {
+      return getApi().notify
+    },
+    get events() {
+      return getApi().events
+    },
+    get runtime() {
+      return getApi().runtime
     }
   }
 }

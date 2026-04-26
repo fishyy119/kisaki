@@ -87,6 +87,10 @@ export interface AppEvents {
   'app:settings-changed': [{ setting: string; value: unknown }]
   'app:portable-mode-change-pending': [{ targetMode: 'portable' | 'normal' }]
   'app:portable-mode-change-cancelled': []
+
+  // Extension lifecycle events
+  'extension:enabled': [{ extensionId: string }]
+  'extension:disabled': [{ extensionId: string }]
 }
 
 // =============================================================================

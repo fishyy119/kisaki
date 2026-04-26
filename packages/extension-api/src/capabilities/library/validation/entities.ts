@@ -20,13 +20,11 @@ import type {
   SortDirection
 } from '../entities'
 import {
-  LIBRARY_BLOOD_TYPES,
-  LIBRARY_CUP_SIZES,
   LIBRARY_GAME_LAUNCHER_MODES,
   LIBRARY_GAME_MONITOR_MODES,
-  LIBRARY_GAME_STATUSES,
-  LIBRARY_GENDERS
+  LIBRARY_GAME_STATUSES
 } from '../entities'
+import { LIBRARY_BLOOD_TYPES, LIBRARY_CUP_SIZES, LIBRARY_GENDERS } from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   validateOptionalBoolean,

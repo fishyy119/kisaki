@@ -1,8 +1,4 @@
 import {
-  LIBRARY_CHARACTER_PERSON_ROLES,
-  LIBRARY_GAME_CHARACTER_ROLES,
-  LIBRARY_GAME_COMPANY_ROLES,
-  LIBRARY_GAME_PERSON_ROLES,
   LIBRARY_RELATION_KINDS,
   type LibraryRelationCreateInput,
   type LibraryRelationKind,
@@ -10,6 +6,12 @@ import {
   type LibraryRelationQuery,
   type LibraryRelationSelector
 } from '../relations'
+import {
+  LIBRARY_CHARACTER_PERSON_ROLES,
+  LIBRARY_GAME_CHARACTER_ROLES,
+  LIBRARY_GAME_COMPANY_ROLES,
+  LIBRARY_GAME_PERSON_ROLES
+} from '../../../shared/library'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   validateOptionalBoolean,

@@ -26,13 +26,75 @@ import {
   assertValidLibraryTagPatch,
   assertValidLibraryTagQuery,
   createUnavailableError,
-  type ExtensionRuntimeMetadata
+  type ExtensionRuntimeMetadata,
+  type HostToMainRpcMethod,
+  type LibraryCharacter,
+  type LibraryCharacterCreateInput,
+  type LibraryCharacterPatch,
+  type LibraryCharacterQuery,
+  type LibraryCollection,
+  type LibraryCollectionCreateInput,
+  type LibraryCollectionPatch,
+  type LibraryCollectionQuery,
+  type LibraryCompany,
+  type LibraryCompanyCreateInput,
+  type LibraryCompanyPatch,
+  type LibraryCompanyQuery,
+  type LibraryGame,
+  type LibraryGameCreateInput,
+  type LibraryGamePatch,
+  type LibraryGameQuery,
+  type LibraryPerson,
+  type LibraryPersonCreateInput,
+  type LibraryPersonPatch,
+  type LibraryPersonQuery,
+  type LibraryTag,
+  type LibraryTagCreateInput,
+  type LibraryTagPatch,
+  type LibraryTagQuery
 } from '@kisaki/extension-api'
 import type { DbService } from '@main/services/db'
 import type { ExtensionHostRpcClient } from '../../runtime/rpc-client'
 import { ExtensionLibraryAttachmentsHost } from './attachments'
 import { ExtensionLibraryEntitiesHost } from './entities'
 import { ExtensionLibraryRelationsHost } from './relations'
+
+type LibraryEntityNamespaceName =
+  | 'games'
+  | 'characters'
+  | 'persons'
+  | 'companies'
+  | 'collections'
+  | 'tags'
+type LibraryEntityRpcMethod<
+  TNamespace extends LibraryEntityNamespaceName,
+  TAction extends 'get' | 'list' | 'create' | 'update' | 'remove'
+> = Extract<HostToMainRpcMethod, `capabilities.library.${TNamespace}.${TAction}`>
+
+interface LibraryEntityRpcDescriptor<
+  TNamespace extends LibraryEntityNamespaceName,
+  TEntity,
+  TCreate,
+  TPatch,
+  TQuery
+> {
+  namespace: TNamespace
+  methods: {
+    get: LibraryEntityRpcMethod<TNamespace, 'get'>
+    list: LibraryEntityRpcMethod<TNamespace, 'list'>
+    create: LibraryEntityRpcMethod<TNamespace, 'create'>
+    update: LibraryEntityRpcMethod<TNamespace, 'update'>
+    remove: LibraryEntityRpcMethod<TNamespace, 'remove'>
+  }
+  get(id: string): TEntity | null
+  list(query?: TQuery): readonly TEntity[]
+  create(input: TCreate): TEntity
+  update(id: string, patch: TPatch): TEntity
+  remove(id: string): void
+  assertQuery(value: unknown): asserts value is TQuery | undefined
+  assertCreate(value: unknown): asserts value is TCreate
+  assertPatch(value: unknown): asserts value is TPatch
+}
 
 export interface ExtensionLibraryCapabilityHostOptions {
   db: DbService
@@ -54,238 +116,9 @@ export class ExtensionLibraryCapabilityHost {
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
-    rpc.handleHostRequest('capabilities.library.games.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.games.get id')
-        return { entity: this.entities.getGame(id) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.games.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryGameQuery(query)
-        return { items: this.entities.listGames(query) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.games.create', async ({ runtimeHandle, input }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryGameCreateInput(input)
-        return { entity: this.entities.createGame(input) }
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.games.update',
-      async ({ runtimeHandle, id, patch }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.games.update id')
-          assertValidLibraryGamePatch(patch)
-          return { entity: this.entities.updateGame(id, patch) }
-        })
-    )
-    rpc.handleHostRequest('capabilities.library.games.remove', async ({ runtimeHandle, id }) => {
-      return this.withRuntimeAction(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.games.remove id')
-        this.entities.removeGame(id)
-      })
-    })
-
-    rpc.handleHostRequest('capabilities.library.characters.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.characters.get id')
-        return { entity: this.entities.getCharacter(id) }
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.characters.list',
-      async ({ runtimeHandle, query }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryCharacterQuery(query)
-          return { items: this.entities.listCharacters(query) }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.characters.create',
-      async ({ runtimeHandle, input }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryCharacterCreateInput(input)
-          return {
-            entity: this.entities.createCharacter(input)
-          }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.characters.update',
-      async ({ runtimeHandle, id, patch }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.characters.update id')
-          assertValidLibraryCharacterPatch(patch)
-          return {
-            entity: this.entities.updateCharacter(id, patch)
-          }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.characters.remove',
-      async ({ runtimeHandle, id }) => {
-        return this.withRuntimeAction(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.characters.remove id')
-          this.entities.removeCharacter(id)
-        })
-      }
-    )
-
-    rpc.handleHostRequest('capabilities.library.persons.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.persons.get id')
-        return { entity: this.entities.getPerson(id) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.persons.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryPersonQuery(query)
-        return { items: this.entities.listPersons(query) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.persons.create', async ({ runtimeHandle, input }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryPersonCreateInput(input)
-        return { entity: this.entities.createPerson(input) }
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.persons.update',
-      async ({ runtimeHandle, id, patch }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.persons.update id')
-          assertValidLibraryPersonPatch(patch)
-          return { entity: this.entities.updatePerson(id, patch) }
-        })
-    )
-    rpc.handleHostRequest('capabilities.library.persons.remove', async ({ runtimeHandle, id }) => {
-      return this.withRuntimeAction(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.persons.remove id')
-        this.entities.removePerson(id)
-      })
-    })
-
-    rpc.handleHostRequest('capabilities.library.companies.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.companies.get id')
-        return { entity: this.entities.getCompany(id) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.companies.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryCompanyQuery(query)
-        return { items: this.entities.listCompanies(query) }
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.companies.create',
-      async ({ runtimeHandle, input }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryCompanyCreateInput(input)
-          return { entity: this.entities.createCompany(input) }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.companies.update',
-      async ({ runtimeHandle, id, patch }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.companies.update id')
-          assertValidLibraryCompanyPatch(patch)
-          return {
-            entity: this.entities.updateCompany(id, patch)
-          }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.companies.remove',
-      async ({ runtimeHandle, id }) => {
-        return this.withRuntimeAction(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.companies.remove id')
-          this.entities.removeCompany(id)
-        })
-      }
-    )
-
-    rpc.handleHostRequest('capabilities.library.collections.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.collections.get id')
-        return { entity: this.entities.getCollection(id) }
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.collections.list',
-      async ({ runtimeHandle, query }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryCollectionQuery(query)
-          return { items: this.entities.listCollections(query) }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.collections.create',
-      async ({ runtimeHandle, input }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryCollectionCreateInput(input)
-          return {
-            entity: this.entities.createCollection(input)
-          }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.collections.update',
-      async ({ runtimeHandle, id, patch }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.collections.update id')
-          assertValidLibraryCollectionPatch(patch)
-          return {
-            entity: this.entities.updateCollection(id, patch)
-          }
-        })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.collections.remove',
-      async ({ runtimeHandle, id }) => {
-        return this.withRuntimeAction(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.collections.remove id')
-          this.entities.removeCollection(id)
-        })
-      }
-    )
-
-    rpc.handleHostRequest('capabilities.library.tags.get', async ({ runtimeHandle, id }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.tags.get id')
-        return { entity: this.entities.getTag(id) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.tags.list', async ({ runtimeHandle, query }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryTagQuery(query)
-        return { items: this.entities.listTags(query) }
-      })
-    )
-    rpc.handleHostRequest('capabilities.library.tags.create', async ({ runtimeHandle, input }) =>
-      this.withRuntime(runtimeHandle, () => {
-        assertValidLibraryTagCreateInput(input)
-        return { entity: this.entities.createTag(input) }
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.library.tags.update',
-      async ({ runtimeHandle, id, patch }) =>
-        this.withRuntime(runtimeHandle, () => {
-          assertValidLibraryEntityId(id, 'library.tags.update id')
-          assertValidLibraryTagPatch(patch)
-          return { entity: this.entities.updateTag(id, patch) }
-        })
-    )
-    rpc.handleHostRequest('capabilities.library.tags.remove', async ({ runtimeHandle, id }) => {
-      return this.withRuntimeAction(runtimeHandle, () => {
-        assertValidLibraryEntityId(id, 'library.tags.remove id')
-        this.entities.removeTag(id)
-      })
-    })
+    for (const descriptor of this.createEntityRpcDescriptors()) {
+      this.registerEntityRpcHandlers(rpc, descriptor)
+    }
 
     rpc.handleHostRequest('capabilities.library.relations.list', async ({ runtimeHandle, query }) =>
       this.withRuntime(runtimeHandle, () => {
@@ -352,6 +185,178 @@ export class ExtensionLibraryCapabilityHost {
     )
   }
 
+  private createEntityRpcDescriptors(): readonly [
+    LibraryEntityRpcDescriptor<
+      'games',
+      LibraryGame,
+      LibraryGameCreateInput,
+      LibraryGamePatch,
+      LibraryGameQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'characters',
+      LibraryCharacter,
+      LibraryCharacterCreateInput,
+      LibraryCharacterPatch,
+      LibraryCharacterQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'persons',
+      LibraryPerson,
+      LibraryPersonCreateInput,
+      LibraryPersonPatch,
+      LibraryPersonQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'companies',
+      LibraryCompany,
+      LibraryCompanyCreateInput,
+      LibraryCompanyPatch,
+      LibraryCompanyQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'collections',
+      LibraryCollection,
+      LibraryCollectionCreateInput,
+      LibraryCollectionPatch,
+      LibraryCollectionQuery
+    >,
+    LibraryEntityRpcDescriptor<
+      'tags',
+      LibraryTag,
+      LibraryTagCreateInput,
+      LibraryTagPatch,
+      LibraryTagQuery
+    >
+  ] {
+    return [
+      {
+        namespace: 'games',
+        methods: createLibraryEntityRpcMethods('games'),
+        get: (id) => this.entities.getGame(id),
+        list: (query) => this.entities.listGames(query),
+        create: (input) => this.entities.createGame(input),
+        update: (id, patch) => this.entities.updateGame(id, patch),
+        remove: (id) => this.entities.removeGame(id),
+        assertQuery: assertValidLibraryGameQuery,
+        assertCreate: assertValidLibraryGameCreateInput,
+        assertPatch: assertValidLibraryGamePatch
+      },
+      {
+        namespace: 'characters',
+        methods: createLibraryEntityRpcMethods('characters'),
+        get: (id) => this.entities.getCharacter(id),
+        list: (query) => this.entities.listCharacters(query),
+        create: (input) => this.entities.createCharacter(input),
+        update: (id, patch) => this.entities.updateCharacter(id, patch),
+        remove: (id) => this.entities.removeCharacter(id),
+        assertQuery: assertValidLibraryCharacterQuery,
+        assertCreate: assertValidLibraryCharacterCreateInput,
+        assertPatch: assertValidLibraryCharacterPatch
+      },
+      {
+        namespace: 'persons',
+        methods: createLibraryEntityRpcMethods('persons'),
+        get: (id) => this.entities.getPerson(id),
+        list: (query) => this.entities.listPersons(query),
+        create: (input) => this.entities.createPerson(input),
+        update: (id, patch) => this.entities.updatePerson(id, patch),
+        remove: (id) => this.entities.removePerson(id),
+        assertQuery: assertValidLibraryPersonQuery,
+        assertCreate: assertValidLibraryPersonCreateInput,
+        assertPatch: assertValidLibraryPersonPatch
+      },
+      {
+        namespace: 'companies',
+        methods: createLibraryEntityRpcMethods('companies'),
+        get: (id) => this.entities.getCompany(id),
+        list: (query) => this.entities.listCompanies(query),
+        create: (input) => this.entities.createCompany(input),
+        update: (id, patch) => this.entities.updateCompany(id, patch),
+        remove: (id) => this.entities.removeCompany(id),
+        assertQuery: assertValidLibraryCompanyQuery,
+        assertCreate: assertValidLibraryCompanyCreateInput,
+        assertPatch: assertValidLibraryCompanyPatch
+      },
+      {
+        namespace: 'collections',
+        methods: createLibraryEntityRpcMethods('collections'),
+        get: (id) => this.entities.getCollection(id),
+        list: (query) => this.entities.listCollections(query),
+        create: (input) => this.entities.createCollection(input),
+        update: (id, patch) => this.entities.updateCollection(id, patch),
+        remove: (id) => this.entities.removeCollection(id),
+        assertQuery: assertValidLibraryCollectionQuery,
+        assertCreate: assertValidLibraryCollectionCreateInput,
+        assertPatch: assertValidLibraryCollectionPatch
+      },
+      {
+        namespace: 'tags',
+        methods: createLibraryEntityRpcMethods('tags'),
+        get: (id) => this.entities.getTag(id),
+        list: (query) => this.entities.listTags(query),
+        create: (input) => this.entities.createTag(input),
+        update: (id, patch) => this.entities.updateTag(id, patch),
+        remove: (id) => this.entities.removeTag(id),
+        assertQuery: assertValidLibraryTagQuery,
+        assertCreate: assertValidLibraryTagCreateInput,
+        assertPatch: assertValidLibraryTagPatch
+      }
+    ]
+  }
+
+  private registerEntityRpcHandlers<
+    TNamespace extends LibraryEntityNamespaceName,
+    TEntity,
+    TCreate,
+    TPatch,
+    TQuery
+  >(
+    rpc: ExtensionHostRpcClient,
+    descriptor: LibraryEntityRpcDescriptor<TNamespace, TEntity, TCreate, TPatch, TQuery>
+  ): void {
+    rpc.handleHostRequest(descriptor.methods.get, async (params: unknown) => {
+      const { runtimeHandle, id } = params as { runtimeHandle: string; id: unknown }
+      return this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, `library.${descriptor.namespace}.get id`)
+        return { entity: descriptor.get(id) }
+      }) as never
+    })
+    rpc.handleHostRequest(descriptor.methods.list, async (params: unknown) => {
+      const { runtimeHandle, query } = params as { runtimeHandle: string; query?: unknown }
+      return this.withRuntime(runtimeHandle, () => {
+        descriptor.assertQuery(query)
+        return { items: descriptor.list(query) }
+      }) as never
+    })
+    rpc.handleHostRequest(descriptor.methods.create, async (params: unknown) => {
+      const { runtimeHandle, input } = params as { runtimeHandle: string; input: unknown }
+      return this.withRuntime(runtimeHandle, () => {
+        descriptor.assertCreate(input)
+        return { entity: descriptor.create(input) }
+      }) as never
+    })
+    rpc.handleHostRequest(descriptor.methods.update, async (params: unknown) => {
+      const { runtimeHandle, id, patch } = params as {
+        runtimeHandle: string
+        id: unknown
+        patch: unknown
+      }
+      return this.withRuntime(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, `library.${descriptor.namespace}.update id`)
+        descriptor.assertPatch(patch)
+        return { entity: descriptor.update(id, patch) }
+      }) as never
+    })
+    rpc.handleHostRequest(descriptor.methods.remove, async (params: unknown) => {
+      const { runtimeHandle, id } = params as { runtimeHandle: string; id: unknown }
+      return this.withRuntimeAction(runtimeHandle, () => {
+        assertValidLibraryEntityId(id, `library.${descriptor.namespace}.remove id`)
+        descriptor.remove(id)
+      }) as never
+    })
+  }
+
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {
     const metadata = this.options.resolveRuntimeHandle(runtimeHandle)
     if (!metadata) {
@@ -374,5 +379,26 @@ export class ExtensionLibraryCapabilityHost {
       await action()
       return {}
     })
+  }
+}
+
+function createLibraryEntityRpcMethods<TNamespace extends LibraryEntityNamespaceName>(
+  namespace: TNamespace
+): LibraryEntityRpcDescriptor<TNamespace, unknown, unknown, unknown, unknown>['methods'] {
+  return {
+    get: `capabilities.library.${namespace}.get` as LibraryEntityRpcMethod<TNamespace, 'get'>,
+    list: `capabilities.library.${namespace}.list` as LibraryEntityRpcMethod<TNamespace, 'list'>,
+    create: `capabilities.library.${namespace}.create` as LibraryEntityRpcMethod<
+      TNamespace,
+      'create'
+    >,
+    update: `capabilities.library.${namespace}.update` as LibraryEntityRpcMethod<
+      TNamespace,
+      'update'
+    >,
+    remove: `capabilities.library.${namespace}.remove` as LibraryEntityRpcMethod<
+      TNamespace,
+      'remove'
+    >
   }
 }

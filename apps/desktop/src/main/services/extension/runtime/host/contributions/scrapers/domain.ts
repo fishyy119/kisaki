@@ -10,6 +10,7 @@ import type {
 import type { HostContributionScope } from '../types'
 import type { LoadedExtensionRuntime } from '../../extension-registry'
 import type { HostToMainScraperRpcDescriptor, ScraperRpcKind } from './descriptors'
+import type { ScraperMediaType } from '@shared/scraper'
 
 export interface ScraperSessionLike<TSlot extends string> {
   get(slots: readonly TSlot[]): Promise<unknown>
@@ -54,6 +55,7 @@ export interface ScraperDomain<
     HostToMainScraperRpcDescriptor<TKind>['methods']['unregister']
 > {
   kind: TKind
+  mediaType: ScraperMediaType
   label: string
   rpc: HostToMainScraperRpcDescriptor<TKind> & {
     methods: {
@@ -64,6 +66,10 @@ export interface ScraperDomain<
   sessions: Map<string, ScraperSessionRecord<TSession>>
   getProviders(runtime: LoadedExtensionRuntime): Map<string, TProvider>
   validate(provider: TProvider): readonly ValidationIssue[]
+  validateSearchResults(results: unknown): readonly ValidationIssue[]
+  validateResolvedTarget(target: unknown): readonly ValidationIssue[]
+  validateSession(session: unknown): readonly ValidationIssue[]
+  validateSessionResults(results: unknown): readonly ValidationIssue[]
   toRegistration(
     scope: HostContributionScope,
     provider: TProvider

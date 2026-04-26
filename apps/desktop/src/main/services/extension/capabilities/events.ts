@@ -82,30 +82,6 @@ export class ExtensionEventsCapabilityHost {
     }
   }
 
-  emitHostEvent<K extends HostEventTopic>(topic: K, payload: HostEvents[K]): void {
-    if (!this.rpc) {
-      return
-    }
-
-    for (const scopedSubscriptions of this.subscriptions.values()) {
-      for (const [subscriptionId, record] of scopedSubscriptions) {
-        if (record.topic !== topic) {
-          continue
-        }
-
-        try {
-          this.rpc.sendEventToHost('capabilities.events.host', {
-            subscriptionId,
-            topic,
-            payload
-          })
-        } catch (error) {
-          console.warn(`[ExtensionService] Failed to deliver host event "${topic}":`, error)
-        }
-      }
-    }
-  }
-
   private createHostSubscription(topic: HostEventTopic, subscriptionId: string): EventUnsubscribe {
     switch (topic) {
       case 'app.ready':
@@ -113,8 +89,13 @@ export class ExtensionEventsCapabilityHost {
           this.emitSubscriptionEvent(subscriptionId, topic, {})
         })
       case 'extension.enabled':
+        return this.options.event.on('extension:enabled', ({ extensionId }) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
+        })
       case 'extension.disabled':
-        return () => {}
+        return this.options.event.on('extension:disabled', ({ extensionId }) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
+        })
       case 'app.locale.changed':
         return this.options.event.on('app:locale-changed', ({ locale }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { locale })

@@ -1,8 +1,9 @@
-import { spawn, type ChildProcess } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import { CliError, logger } from '../logger'
 import { readValidManifest } from '../manifest'
 import { launchKisaki } from '../launch'
 import { pathExists, resolveEntryFile, resolveProject } from '../project'
+import { spawnTsdown } from './tsdown'
 
 export interface DevCommandOptions {
   kisaki: string
@@ -23,12 +24,7 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   logger.heading('kisx dev', 'Watching extension and launching Kisaki.')
   logger.detail(`Project: ${project.rootDir}`)
 
-  const tsdownCommand = createNpxCommand(['tsdown', '--watch'])
-  const tsdown = spawn(tsdownCommand.bin, tsdownCommand.args, {
-    cwd: project.rootDir,
-    stdio: ['inherit', 'inherit', 'inherit'],
-    shell: false
-  })
+  const tsdown = await spawnTsdown(project.rootDir, ['--watch'])
 
   let kisaki: ChildProcess | null = null
   let stopped = false
@@ -85,18 +81,4 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   })
 
   await new Promise<void>(() => undefined)
-}
-
-function createNpxCommand(args: readonly string[]): { bin: string; args: string[] } {
-  if (process.platform === 'win32') {
-    return {
-      bin: 'cmd.exe',
-      args: ['/d', '/s', '/c', 'npx', ...args]
-    }
-  }
-
-  return {
-    bin: 'npx',
-    args: [...args]
-  }
 }

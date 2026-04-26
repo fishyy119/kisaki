@@ -5,10 +5,11 @@ import type {
   PersonScraperProviderRegistration
 } from '@kisaki/extension-api'
 import type { ScraperService } from '@main/services/scraper'
+import type { ScraperMediaType } from '@shared/scraper'
 import type { RuntimeContributionOwner } from '../types'
 
 export type ScraperKind = 'games' | 'persons' | 'companies' | 'characters'
-export type ScraperMediaType = 'game' | 'person' | 'company' | 'character'
+export type { ScraperMediaType } from '@shared/scraper'
 export type ScraperRpcAction =
   | 'search'
   | 'resolve'
@@ -32,6 +33,7 @@ export interface ScraperRegistration {
 export interface ScraperDomain {
   kind: ScraperKind
   mediaType: ScraperMediaType
+  label: string
   registerWithScraper(scraper: ScraperService, provider: unknown): void
   unregisterFromScraper(scraper: ScraperService, hostProviderId: string): Promise<void>
   toSessionResults(results: unknown, registration: ScraperRegistration): unknown

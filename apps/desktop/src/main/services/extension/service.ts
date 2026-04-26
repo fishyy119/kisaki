@@ -5,6 +5,7 @@ import { Mutex } from 'async-mutex'
 import type { ExtensionRuntimeMetadata } from '@kisaki/extension-api'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
+import type { EventService } from '@main/services/event'
 import type {
   ExtensionContributionSnapshot,
   ExtensionEntityMenuInvokeRequest,
@@ -71,6 +72,7 @@ export class ExtensionService implements IService {
   private installer!: ExtensionInstaller
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
+  private event!: EventService
   private runtime!: RuntimeManager
   private reloadWatcher!: ExtensionReloadWatcher
   private capabilities!: ExtensionCapabilityGateway
@@ -94,6 +96,7 @@ export class ExtensionService implements IService {
     this.stateStore = new ExtensionStateStore(this.paths.statePath)
     await this.stateStore.init()
     this.ipc = container.get('ipc')
+    this.event = container.get('event')
 
     this.sources.register(new GitHubExtensionSourceProvider(container.get('network')))
     this.sources.register(new UrlExtensionSourceProvider(container.get('network')))
@@ -265,7 +268,7 @@ export class ExtensionService implements IService {
         await this.applyRuntimeState({ cause: 'disable' })
         throw error
       }
-      this.capabilities.emitHostEvent('extension.enabled', { extensionId })
+      this.event.emit('extension:enabled', { extensionId })
       return this.requireCatalogEntry(extensionId)
     })
   }
@@ -275,7 +278,7 @@ export class ExtensionService implements IService {
       await this.stateStore.setEnabled(extensionId, false)
       await this.refreshCatalog()
       await this.applyRuntimeState({ cause: 'disable' })
-      this.capabilities.emitHostEvent('extension.disabled', { extensionId })
+      this.event.emit('extension:disabled', { extensionId })
       return this.requireCatalogEntry(extensionId)
     })
   }

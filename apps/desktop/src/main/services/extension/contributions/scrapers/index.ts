@@ -41,6 +41,7 @@ export class ExtensionScraperContributionHost {
   private readonly gameDomain: ScraperDomain = {
     kind: 'games',
     mediaType: 'game',
+    label: 'Game',
     registerWithScraper: (scraper, provider) =>
       scraper.registerGameProvider(provider as GameScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
@@ -51,6 +52,7 @@ export class ExtensionScraperContributionHost {
   private readonly personDomain: ScraperDomain = {
     kind: 'persons',
     mediaType: 'person',
+    label: 'Person',
     registerWithScraper: (scraper, provider) =>
       scraper.registerPersonProvider(provider as PersonScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
@@ -61,6 +63,7 @@ export class ExtensionScraperContributionHost {
   private readonly companyDomain: ScraperDomain = {
     kind: 'companies',
     mediaType: 'company',
+    label: 'Company',
     registerWithScraper: (scraper, provider) =>
       scraper.registerCompanyProvider(provider as CompanyScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
@@ -74,6 +77,7 @@ export class ExtensionScraperContributionHost {
   private readonly characterDomain: ScraperDomain = {
     kind: 'characters',
     mediaType: 'character',
+    label: 'Character',
     registerWithScraper: (scraper, provider) =>
       scraper.registerCharacterProvider(provider as CharacterScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>

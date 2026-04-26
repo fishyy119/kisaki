@@ -1,4 +1,5 @@
 import type { ExternalId, PartialDate, RelatedSite, SerializableRecord } from '../../shared'
+import type { LibraryBloodType, LibraryCupSize, LibraryGender } from '../../shared/library'
 
 export interface SaveBackup {
   backupAt: number
@@ -59,32 +60,6 @@ export type LibraryGameLauncherMode = (typeof LIBRARY_GAME_LAUNCHER_MODES)[numbe
 export const LIBRARY_GAME_MONITOR_MODES = ['file', 'folder', 'process'] as const
 
 export type LibraryGameMonitorMode = (typeof LIBRARY_GAME_MONITOR_MODES)[number]
-
-export const LIBRARY_GENDERS = ['male', 'female', 'other'] as const
-
-export type LibraryGender = (typeof LIBRARY_GENDERS)[number]
-
-export const LIBRARY_BLOOD_TYPES = ['a', 'b', 'ab', 'o'] as const
-
-export type LibraryBloodType = (typeof LIBRARY_BLOOD_TYPES)[number]
-
-export const LIBRARY_CUP_SIZES = [
-  'aaa',
-  'aa',
-  'a',
-  'b',
-  'c',
-  'd',
-  'e',
-  'f',
-  'g',
-  'h',
-  'i',
-  'j',
-  'k'
-] as const
-
-export type LibraryCupSize = (typeof LIBRARY_CUP_SIZES)[number]
 
 export interface LibraryEntityReference<TEntityType extends LibraryEntityType = LibraryEntityType> {
   entityType: TEntityType

@@ -7,7 +7,7 @@ import type {
   LibraryGameCompanyRole,
   LibraryGamePersonRole,
   LibraryGender
-} from '../../capabilities/library'
+} from '../../shared/library'
 
 export const SCRAPER_MEDIA_TYPES = ['game', 'person', 'company', 'character'] as const
 

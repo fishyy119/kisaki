@@ -37,17 +37,32 @@ export class ExtensionLoader {
       )
     }
 
-    const entryPath = resolveExtensionFilePath(extension.extensionPath, parsed.manifest.entry)
-    const cacheBuster = `?t=${Date.now()}`
-    const extensionModule = await import(`${pathToFileURL(entryPath).href}${cacheBuster}`)
-    const definition = resolveExtensionDefinition(extension.id, extensionModule)
-
     const abortController = new AbortController()
-    const { context, subscriptions } = this.sdkBridge.createExtensionContext({
+    const { context, subscriptions, scope } = this.sdkBridge.createExtensionContext({
       extension,
       runtimeHandle,
       abortSignal: abortController.signal
     })
+    const entryPath = resolveExtensionFilePath(extension.extensionPath, parsed.manifest.entry)
+    const cacheBuster = `?t=${Date.now()}`
+
+    let extensionModule: Record<string, unknown>
+    try {
+      extensionModule = await this.sdkBridge.runInExtensionContext(
+        scope,
+        () =>
+          import(`${pathToFileURL(entryPath).href}${cacheBuster}`) as Promise<
+            Record<string, unknown>
+          >
+      )
+    } catch (error) {
+      abortController.abort()
+      await subscriptions.clear()
+      await this.sdkBridge.releaseRuntime(runtimeHandle)
+      throw error
+    }
+
+    const definition = resolveExtensionDefinition(extension.id, extensionModule)
 
     const runtime: LoadedExtensionRuntime = {
       metadata: extension,

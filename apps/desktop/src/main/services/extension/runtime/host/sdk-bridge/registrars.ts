@@ -9,18 +9,19 @@ import type {
   SettingsPanelContribution,
   ThemeContribution
 } from '@kisaki/extension-api'
-import type { ExtensionSdkBridge } from './types'
+import type { ActiveExtensionScope, ExtensionSdkBridge } from './types'
 
 /**
  * Creates the entity menu contribution registrar bound to runtime subscriptions.
  */
 export function createEntityMenuRegistrar(
   bridge: ExtensionSdkBridge,
-  subscriptions: DisposableStore
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
 ) {
   return {
     register(contribution: EntityMenuContribution) {
-      const disposable = bridge.registerEntityMenu(contribution)
+      const disposable = bridge.registerEntityMenu(scope, contribution)
       subscriptions.add(disposable)
       return disposable
     }
@@ -32,11 +33,12 @@ export function createEntityMenuRegistrar(
  */
 export function createSettingsPanelRegistrar(
   bridge: ExtensionSdkBridge,
-  subscriptions: DisposableStore
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
 ) {
   return {
     register(contribution: SettingsPanelContribution) {
-      const disposable = bridge.registerSettingsPanel(contribution)
+      const disposable = bridge.registerSettingsPanel(scope, contribution)
       subscriptions.add(disposable)
       return disposable
     }
@@ -46,25 +48,29 @@ export function createSettingsPanelRegistrar(
 /**
  * Creates the scraper contribution registrar bound to runtime subscriptions.
  */
-export function createScraperRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
+export function createScraperRegistrar(
+  bridge: ExtensionSdkBridge,
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
+) {
   return {
     registerGameProvider(provider: GameScraperProvider) {
-      const disposable = bridge.registerGameScraperProvider(provider)
+      const disposable = bridge.registerGameScraperProvider(scope, provider)
       subscriptions.add(disposable)
       return disposable
     },
     registerPersonProvider(provider: PersonScraperProvider) {
-      const disposable = bridge.registerPersonScraperProvider(provider)
+      const disposable = bridge.registerPersonScraperProvider(scope, provider)
       subscriptions.add(disposable)
       return disposable
     },
     registerCompanyProvider(provider: CompanyScraperProvider) {
-      const disposable = bridge.registerCompanyScraperProvider(provider)
+      const disposable = bridge.registerCompanyScraperProvider(scope, provider)
       subscriptions.add(disposable)
       return disposable
     },
     registerCharacterProvider(provider: CharacterScraperProvider) {
-      const disposable = bridge.registerCharacterScraperProvider(provider)
+      const disposable = bridge.registerCharacterScraperProvider(scope, provider)
       subscriptions.add(disposable)
       return disposable
     }
@@ -76,11 +82,12 @@ export function createScraperRegistrar(bridge: ExtensionSdkBridge, subscriptions
  */
 export function createDeeplinkRegistrar(
   bridge: ExtensionSdkBridge,
-  subscriptions: DisposableStore
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
 ) {
   return {
     register(contribution: DeeplinkContribution) {
-      const disposable = bridge.registerDeeplink(contribution)
+      const disposable = bridge.registerDeeplink(scope, contribution)
       subscriptions.add(disposable)
       return disposable
     }
@@ -90,10 +97,14 @@ export function createDeeplinkRegistrar(
 /**
  * Creates the theme contribution registrar bound to runtime subscriptions.
  */
-export function createThemeRegistrar(bridge: ExtensionSdkBridge, subscriptions: DisposableStore) {
+export function createThemeRegistrar(
+  bridge: ExtensionSdkBridge,
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
+) {
   return {
     register(theme: ThemeContribution) {
-      const disposable = bridge.registerTheme(theme)
+      const disposable = bridge.registerTheme(scope, theme)
       subscriptions.add(disposable)
       return disposable
     }

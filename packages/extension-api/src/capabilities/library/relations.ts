@@ -1,38 +1,10 @@
 import type { LibraryEntityReference } from './entities'
-
-export const LIBRARY_GAME_PERSON_ROLES = [
-  'director',
-  'scenario',
-  'illustration',
-  'music',
-  'programmer',
-  'actor',
-  'other'
-] as const
-
-export type LibraryGamePersonRole = (typeof LIBRARY_GAME_PERSON_ROLES)[number]
-
-export const LIBRARY_GAME_CHARACTER_ROLES = ['main', 'supporting', 'cameo', 'other'] as const
-
-export type LibraryGameCharacterRole = (typeof LIBRARY_GAME_CHARACTER_ROLES)[number]
-
-export const LIBRARY_GAME_COMPANY_ROLES = [
-  'developer',
-  'publisher',
-  'distributor',
-  'other'
-] as const
-
-export type LibraryGameCompanyRole = (typeof LIBRARY_GAME_COMPANY_ROLES)[number]
-
-export const LIBRARY_CHARACTER_PERSON_ROLES = [
-  'actor',
-  'illustration',
-  'designer',
-  'other'
-] as const
-
-export type LibraryCharacterPersonRole = (typeof LIBRARY_CHARACTER_PERSON_ROLES)[number]
+import type {
+  LibraryCharacterPersonRole,
+  LibraryGameCharacterRole,
+  LibraryGameCompanyRole,
+  LibraryGamePersonRole
+} from '../../shared/library'
 
 export const LIBRARY_RELATION_KINDS = [
   'game-person',

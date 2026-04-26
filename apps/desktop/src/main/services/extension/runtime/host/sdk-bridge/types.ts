@@ -52,14 +52,29 @@ export interface ExtensionSdkBridge {
   readonly api: KisakiApi
   createLogger(scope: ActiveExtensionScope, extension: ExtensionRuntimeMetadata): ExtensionLogger
   createStorage(scope: ActiveExtensionScope): ExtensionStorage
-  registerEntityMenu(contribution: EntityMenuContribution): Disposable
-  registerSettingsPanel(contribution: SettingsPanelContribution): Disposable
-  registerGameScraperProvider(provider: GameScraperProvider): Disposable
-  registerPersonScraperProvider(provider: PersonScraperProvider): Disposable
-  registerCompanyScraperProvider(provider: CompanyScraperProvider): Disposable
-  registerCharacterScraperProvider(provider: CharacterScraperProvider): Disposable
-  registerDeeplink(contribution: DeeplinkContribution): Disposable
-  registerTheme(theme: ThemeContribution): Disposable
+  registerEntityMenu(scope: ActiveExtensionScope, contribution: EntityMenuContribution): Disposable
+  registerSettingsPanel(
+    scope: ActiveExtensionScope,
+    contribution: SettingsPanelContribution
+  ): Disposable
+  registerGameScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: GameScraperProvider
+  ): Disposable
+  registerPersonScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: PersonScraperProvider
+  ): Disposable
+  registerCompanyScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: CompanyScraperProvider
+  ): Disposable
+  registerCharacterScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: CharacterScraperProvider
+  ): Disposable
+  registerDeeplink(scope: ActiveExtensionScope, contribution: DeeplinkContribution): Disposable
+  registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): Disposable
   asAbsolutePath(extensionPath: string, relativePath: string): string
 }
 

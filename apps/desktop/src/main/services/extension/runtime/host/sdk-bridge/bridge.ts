@@ -17,6 +17,7 @@ import type {
   HostEventTopic,
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
+  KisakiApi,
   PersonScraperProvider,
   RpcParams,
   RpcResult,
@@ -33,7 +34,11 @@ import { HostSettingsPanelContributions } from '../contributions/settings-panels
 import { HostThemeContributions } from '../contributions/themes'
 import type { HostContributionScope } from '../contributions/types'
 import { createDisposable, createDisposableStore } from './disposables'
-import { createKisakiApi } from './kisaki-api'
+import {
+  createKisakiApi,
+  createScopeCapturingKisakiApi,
+  type KisakiApiBridgeHooks
+} from './kisaki-api'
 import { createExtensionLogger } from './logger'
 import { resolveInsideExtension } from './utils/paths'
 import {
@@ -78,6 +83,7 @@ export class ExtensionHostSdkBridge {
     ExtensionEventTopic,
     Map<string, ExtensionEventListenerRecord>
   >()
+  private readonly scopedApis = new Map<ExtensionRuntimeHandle, KisakiApi>()
   private readonly pendingMainRequests = new Map<ExtensionRuntimeHandle, Set<Promise<void>>>()
   private readonly mainEventCleanup: () => void
 
@@ -121,6 +127,7 @@ export class ExtensionHostSdkBridge {
     this.deeplinks.releaseAll()
     this.themes.releaseAll()
     this.pendingMainRequests.clear()
+    this.scopedApis.clear()
     this.hostEventSubscriptions.clear()
     this.extensionEventListeners.clear()
     resetExtensionSdkBridge()
@@ -213,12 +220,16 @@ export class ExtensionHostSdkBridge {
     await this.scrapers.releaseRuntime(runtimeHandle)
     this.deeplinks.releaseRuntime(runtimeHandle)
     this.themes.releaseRuntime(runtimeHandle)
+    await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
+    this.disposeExtensionEventListenersForRuntime(runtimeHandle)
+    this.scopedApis.delete(runtimeHandle)
     this.pendingMainRequests.delete(runtimeHandle)
   }
 
   createExtensionContext(options: ExtensionContextOptions): {
     context: ExtensionContext
     subscriptions: DisposableStore
+    scope: ActiveExtensionScope
   } {
     const subscriptions = createDisposableStore()
     const scope: ActiveExtensionScope = {
@@ -234,11 +245,11 @@ export class ExtensionHostSdkBridge {
         subscriptions,
         abortSignal: options.abortSignal,
         contributes: {
-          entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions),
-          settingsPanels: createSettingsPanelRegistrar(this.bridge, subscriptions),
-          scrapers: createScraperRegistrar(this.bridge, subscriptions),
-          deeplinks: createDeeplinkRegistrar(this.bridge, subscriptions),
-          themes: createThemeRegistrar(this.bridge, subscriptions)
+          entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions, scope),
+          settingsPanels: createSettingsPanelRegistrar(this.bridge, subscriptions, scope),
+          scrapers: createScraperRegistrar(this.bridge, subscriptions, scope),
+          deeplinks: createDeeplinkRegistrar(this.bridge, subscriptions, scope),
+          themes: createThemeRegistrar(this.bridge, subscriptions, scope)
         },
         asAbsolutePath: (relativePath: string) =>
           this.bridge.asAbsolutePath(options.extension.extensionPath, relativePath),
@@ -246,7 +257,8 @@ export class ExtensionHostSdkBridge {
           subscriptions.add(disposable)
         }
       },
-      subscriptions
+      subscriptions,
+      scope
     }
   }
 
@@ -258,15 +270,10 @@ export class ExtensionHostSdkBridge {
   }
 
   private createBridge(): ExtensionSdkBridge {
+    const hooks = this.createKisakiApiHooks()
+
     return {
-      api: createKisakiApi({
-        requireCurrentScope: () => this.requireCurrentScope(),
-        requestMain: (scope, method, params) => this.requestMain(scope, method, params),
-        subscribeHostEvent: (topic, listener, once) =>
-          this.subscribeHostEvent(topic, listener, once),
-        subscribeExtensionEvent: (topic, listener) => this.subscribeExtensionEvent(topic, listener),
-        emitExtensionEvent: (topic, payload) => this.emitExtensionEvent(topic, payload)
-      }),
+      api: createScopeCapturingKisakiApi(hooks, (scope) => this.getScopedApi(scope, hooks)),
       createLogger: (scope, extension) =>
         createExtensionLogger({
           scope,
@@ -280,18 +287,45 @@ export class ExtensionHostSdkBridge {
           rpc: this.rpc,
           getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
         }),
-      registerEntityMenu: (contribution) => this.registerEntityMenu(contribution),
-      registerSettingsPanel: (contribution) => this.registerSettingsPanel(contribution),
-      registerGameScraperProvider: (provider) => this.registerGameScraperProvider(provider),
-      registerPersonScraperProvider: (provider) => this.registerPersonScraperProvider(provider),
-      registerCompanyScraperProvider: (provider) => this.registerCompanyScraperProvider(provider),
-      registerCharacterScraperProvider: (provider) =>
-        this.registerCharacterScraperProvider(provider),
-      registerDeeplink: (contribution) => this.registerDeeplink(contribution),
-      registerTheme: (theme) => this.registerTheme(theme),
+      registerEntityMenu: (scope, contribution) => this.registerEntityMenu(scope, contribution),
+      registerSettingsPanel: (scope, contribution) =>
+        this.registerSettingsPanel(scope, contribution),
+      registerGameScraperProvider: (scope, provider) =>
+        this.registerGameScraperProvider(scope, provider),
+      registerPersonScraperProvider: (scope, provider) =>
+        this.registerPersonScraperProvider(scope, provider),
+      registerCompanyScraperProvider: (scope, provider) =>
+        this.registerCompanyScraperProvider(scope, provider),
+      registerCharacterScraperProvider: (scope, provider) =>
+        this.registerCharacterScraperProvider(scope, provider),
+      registerDeeplink: (scope, contribution) => this.registerDeeplink(scope, contribution),
+      registerTheme: (scope, theme) => this.registerTheme(scope, theme),
       asAbsolutePath: (extensionPath, relativePath) =>
         resolveInsideExtension(extensionPath, relativePath)
     }
+  }
+
+  private createKisakiApiHooks(): KisakiApiBridgeHooks {
+    return {
+      requireCurrentScope: () => this.requireCurrentScope(),
+      requestMain: (scope, method, params) => this.requestMain(scope, method, params),
+      subscribeHostEvent: (scope, topic, listener, once) =>
+        this.subscribeHostEvent(scope, topic, listener, once),
+      subscribeExtensionEvent: (scope, topic, listener) =>
+        this.subscribeExtensionEvent(scope, topic, listener),
+      emitExtensionEvent: (scope, topic, payload) => this.emitExtensionEvent(scope, topic, payload)
+    }
+  }
+
+  private getScopedApi(scope: ActiveExtensionScope, hooks: KisakiApiBridgeHooks): KisakiApi {
+    const existing = this.scopedApis.get(scope.runtimeHandle)
+    if (existing) {
+      return existing
+    }
+
+    const api = createKisakiApi(hooks, { ...scope })
+    this.scopedApis.set(scope.runtimeHandle, api)
+    return api
   }
 
   private requestMain<K extends HostToMainRpcMethod>(
@@ -309,44 +343,65 @@ export class ExtensionHostSdkBridge {
     )
   }
 
-  private registerEntityMenu(contribution: EntityMenuContribution): Disposable {
-    return this.entityMenus.register(this.requireCurrentScope(), contribution)
+  private registerEntityMenu(
+    scope: ActiveExtensionScope,
+    contribution: EntityMenuContribution
+  ): Disposable {
+    return this.entityMenus.register(scope, contribution)
   }
 
-  private registerSettingsPanel(contribution: SettingsPanelContribution): Disposable {
-    return this.settingsPanels.register(this.requireCurrentScope(), contribution)
+  private registerSettingsPanel(
+    scope: ActiveExtensionScope,
+    contribution: SettingsPanelContribution
+  ): Disposable {
+    return this.settingsPanels.register(scope, contribution)
   }
 
-  private registerGameScraperProvider(provider: GameScraperProvider): Disposable {
-    return this.scrapers.registerGameProvider(this.requireCurrentScope(), provider)
+  private registerGameScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: GameScraperProvider
+  ): Disposable {
+    return this.scrapers.registerGameProvider(scope, provider)
   }
 
-  private registerPersonScraperProvider(provider: PersonScraperProvider): Disposable {
-    return this.scrapers.registerPersonProvider(this.requireCurrentScope(), provider)
+  private registerPersonScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: PersonScraperProvider
+  ): Disposable {
+    return this.scrapers.registerPersonProvider(scope, provider)
   }
 
-  private registerCompanyScraperProvider(provider: CompanyScraperProvider): Disposable {
-    return this.scrapers.registerCompanyProvider(this.requireCurrentScope(), provider)
+  private registerCompanyScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: CompanyScraperProvider
+  ): Disposable {
+    return this.scrapers.registerCompanyProvider(scope, provider)
   }
 
-  private registerCharacterScraperProvider(provider: CharacterScraperProvider): Disposable {
-    return this.scrapers.registerCharacterProvider(this.requireCurrentScope(), provider)
+  private registerCharacterScraperProvider(
+    scope: ActiveExtensionScope,
+    provider: CharacterScraperProvider
+  ): Disposable {
+    return this.scrapers.registerCharacterProvider(scope, provider)
   }
 
-  private registerDeeplink(contribution: DeeplinkContribution): Disposable {
-    return this.deeplinks.register(this.requireCurrentScope(), contribution)
+  private registerDeeplink(
+    scope: ActiveExtensionScope,
+    contribution: DeeplinkContribution
+  ): Disposable {
+    return this.deeplinks.register(scope, contribution)
   }
 
-  private registerTheme(theme: ThemeContribution): Disposable {
-    return this.themes.register(this.requireCurrentScope(), theme)
+  private registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): Disposable {
+    return this.themes.register(scope, theme)
   }
 
   private async subscribeHostEvent<K extends HostEventTopic>(
+    scope: ActiveExtensionScope,
     topic: K,
     listener: HostEventListener<K>,
     once: boolean
   ): Promise<Disposable> {
-    const scope = this.requireCurrentScope()
     const subscriptionId = randomUUID()
 
     this.hostEventSubscriptions.set(subscriptionId, {
@@ -404,6 +459,25 @@ export class ExtensionHostSdkBridge {
     )
   }
 
+  private async disposeHostEventSubscriptionsForRuntime(
+    runtimeHandle: ExtensionRuntimeHandle
+  ): Promise<void> {
+    const subscriptionIds = [...this.hostEventSubscriptions]
+      .filter(([, record]) => record.scope.runtimeHandle === runtimeHandle)
+      .map(([subscriptionId]) => subscriptionId)
+
+    await Promise.all(
+      subscriptionIds.map((subscriptionId) =>
+        this.disposeHostEventSubscription(subscriptionId, true).catch((error) => {
+          console.warn(
+            `[ExtensionHost] Failed to dispose host event subscription "${subscriptionId}" during runtime cleanup:`,
+            error
+          )
+        })
+      )
+    )
+  }
+
   private async handleHostEventNotification(payload: unknown): Promise<void> {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       return
@@ -447,6 +521,7 @@ export class ExtensionHostSdkBridge {
   }
 
   private async subscribeExtensionEvent<TPayload extends ExtensionEventPayload>(
+    scope: ActiveExtensionScope,
     topic: ExtensionEventTopic,
     listener: ExtensionEventListener<TPayload>
   ): Promise<Disposable> {
@@ -454,7 +529,6 @@ export class ExtensionHostSdkBridge {
       throw new Error(`Invalid extension event topic "${topic}"`)
     }
 
-    const scope = this.requireCurrentScope()
     const subscriptionId = randomUUID()
     let listeners = this.extensionEventListeners.get(topic)
     if (!listeners) {
@@ -478,7 +552,22 @@ export class ExtensionHostSdkBridge {
     return disposable
   }
 
+  private disposeExtensionEventListenersForRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
+    for (const [topic, listeners] of [...this.extensionEventListeners]) {
+      for (const [subscriptionId, record] of [...listeners]) {
+        if (record.scope.runtimeHandle === runtimeHandle) {
+          listeners.delete(subscriptionId)
+        }
+      }
+
+      if (listeners.size === 0) {
+        this.extensionEventListeners.delete(topic)
+      }
+    }
+  }
+
   private async emitExtensionEvent<TPayload extends ExtensionEventPayload>(
+    scope: ActiveExtensionScope,
     topic: ExtensionEventTopic,
     payload: TPayload
   ): Promise<void> {
@@ -486,7 +575,6 @@ export class ExtensionHostSdkBridge {
       throw new Error(`Invalid extension event topic "${topic}"`)
     }
 
-    const scope = this.requireCurrentScope()
     const expectedPrefix = `ext.${scope.extensionId}.`
     if (!topic.startsWith(expectedPrefix)) {
       throw new Error(

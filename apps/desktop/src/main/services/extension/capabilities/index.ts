@@ -1,9 +1,4 @@
-import {
-  createUnavailableError,
-  type ExtensionRuntimeMetadata,
-  type HostEventTopic,
-  type HostEvents
-} from '@kisaki/extension-api'
+import { createUnavailableError, type ExtensionRuntimeMetadata } from '@kisaki/extension-api'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
 import type { NetworkService } from '@main/services/network'
@@ -122,10 +117,6 @@ export class ExtensionCapabilityGateway {
   releaseAll(): void {
     this.events.releaseAll()
     this.notify.releaseAll()
-  }
-
-  emitHostEvent<K extends HostEventTopic>(topic: K, payload: HostEvents[K]): void {
-    this.events.emitHostEvent(topic, payload)
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {

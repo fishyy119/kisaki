@@ -18,9 +18,19 @@ import {
   type ScraperSearchRequest,
   type ScraperResolveRequest,
   validateCharacterScraperProviderShape,
+  validateCharacterScraperSearchResults,
+  validateCharacterScraperSessionResults,
   validateCompanyScraperProviderShape,
+  validateCompanyScraperSearchResults,
+  validateCompanyScraperSessionResults,
   validateGameScraperProviderShape,
-  validatePersonScraperProviderShape
+  validateGameScraperSearchResults,
+  validateGameScraperSessionResults,
+  validatePersonScraperProviderShape,
+  validatePersonScraperSearchResults,
+  validatePersonScraperSessionResults,
+  validateScraperResolvedTarget,
+  validateScraperSessionShape
 } from '@kisaki/extension-api'
 import {
   createContributionDisposable,
@@ -80,11 +90,16 @@ export class HostScraperContributions {
     this.options = options
     this.gameDomain = {
       kind: 'games',
+      mediaType: 'game',
       label: 'Game',
       rpc: HOST_TO_MAIN_SCRAPER_RPC.games,
       sessions: this.gameSessions,
       getProviders: (runtime) => runtime.gameScrapers,
       validate: validateGameScraperProviderShape,
+      validateSearchResults: validateGameScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validateGameScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
         provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.games.slots)
@@ -100,11 +115,16 @@ export class HostScraperContributions {
     }
     this.personDomain = {
       kind: 'persons',
+      mediaType: 'person',
       label: 'Person',
       rpc: HOST_TO_MAIN_SCRAPER_RPC.persons,
       sessions: this.personSessions,
       getProviders: (runtime) => runtime.personScrapers,
       validate: validatePersonScraperProviderShape,
+      validateSearchResults: validatePersonScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validatePersonScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
         provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.persons.slots)
@@ -120,11 +140,16 @@ export class HostScraperContributions {
     }
     this.companyDomain = {
       kind: 'companies',
+      mediaType: 'company',
       label: 'Company',
       rpc: HOST_TO_MAIN_SCRAPER_RPC.companies,
       sessions: this.companySessions,
       getProviders: (runtime) => runtime.companyScrapers,
       validate: validateCompanyScraperProviderShape,
+      validateSearchResults: validateCompanyScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validateCompanyScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
         provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.companies.slots)
@@ -140,11 +165,16 @@ export class HostScraperContributions {
     }
     this.characterDomain = {
       kind: 'characters',
+      mediaType: 'character',
       label: 'Character',
       rpc: HOST_TO_MAIN_SCRAPER_RPC.characters,
       sessions: this.characterSessions,
       getProviders: (runtime) => runtime.characterScrapers,
       validate: validateCharacterScraperProviderShape,
+      validateSearchResults: validateCharacterScraperSearchResults,
+      validateResolvedTarget: validateScraperResolvedTarget,
+      validateSession: validateScraperSessionShape,
+      validateSessionResults: validateCharacterScraperSessionResults,
       toRegistration: (scope, provider) => ({
         runtimeHandle: scope.runtimeHandle,
         provider: toScraperProviderRegistration(provider, HOST_TO_MAIN_SCRAPER_RPC.characters.slots)
@@ -384,6 +414,13 @@ export class HostScraperContributions {
     const results = await this.options.runInExtensionContext(runtime, () =>
       provider.search(request.query, request.locale)
     )
+    this.assertValidProviderOutput(
+      domain,
+      runtime,
+      request.providerId,
+      'search results',
+      domain.validateSearchResults(results)
+    )
 
     return {
       results: results as Awaited<ReturnType<TProvider['search']>>
@@ -406,6 +443,13 @@ export class HostScraperContributions {
     )
     const target = await this.options.runInExtensionContext(runtime, () =>
       provider.resolve(request.lookup, request.locale)
+    )
+    this.assertValidProviderOutput(
+      domain,
+      runtime,
+      request.providerId,
+      'resolve target',
+      domain.validateResolvedTarget(target)
     )
 
     return {
@@ -430,6 +474,13 @@ export class HostScraperContributions {
     const session = await this.options.runInExtensionContext(runtime, () =>
       provider.openSession(request.target, request.locale)
     )
+    this.assertValidProviderOutput(
+      domain,
+      runtime,
+      request.providerId,
+      'session',
+      domain.validateSession(session)
+    )
     const sessionId = randomUUID()
     domain.sessions.set(sessionId, {
       runtimeHandle: request.runtimeHandle,
@@ -453,6 +504,13 @@ export class HostScraperContributions {
     const runtime = this.requireRuntime(record.runtimeHandle)
     const results = await this.options.runInExtensionContext(runtime, () =>
       record.session.get(request.slots)
+    )
+    this.assertValidProviderOutput(
+      domain,
+      runtime,
+      request.providerId,
+      'session results',
+      domain.validateSessionResults(results)
     )
 
     return {
@@ -489,6 +547,28 @@ export class HostScraperContributions {
     }
 
     return { runtime, provider }
+  }
+
+  private assertValidProviderOutput<
+    TKind extends ScraperRpcKind,
+    TSlot extends string,
+    TSession extends ScraperSessionLike<TSlot>,
+    TProvider extends ScraperProviderLike<TSlot, TSession>
+  >(
+    domain: ScraperDomain<TKind, TSlot, TSession, TProvider>,
+    runtime: LoadedExtensionRuntime,
+    providerId: string,
+    operation: string,
+    issues: readonly { path: string; message: string }[]
+  ): void {
+    if (issues.length === 0) {
+      return
+    }
+
+    throwValidationIssues(
+      `Extension "${runtime.metadata.id}" ${domain.label.toLowerCase()} scraper provider "${providerId}" ${operation}`,
+      issues
+    )
   }
 
   private requireRuntime(runtimeHandle: string) {
