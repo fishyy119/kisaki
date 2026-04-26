@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   main: {
     build: {
+      externalizeDeps: {
+        exclude: ['@kisaki/extension-api']
+      },
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts'),
