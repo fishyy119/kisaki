@@ -1,16 +1,16 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import type { ExtensionProject } from './project'
 
 export interface DevLaunchOptions {
   kisakiCommand: string
+  cwd?: string
 }
 
 /**
- * Starts Kisaki with the current project attached as a development extension.
+ * Starts Kisaki with the package output attached as a development extension.
  */
-export function launchKisaki(project: ExtensionProject, options: DevLaunchOptions): ChildProcess {
-  return spawn(options.kisakiCommand, [`--dev-extension=${project.rootDir}`], {
-    cwd: project.rootDir,
+export function launchKisaki(extensionPath: string, options: DevLaunchOptions): ChildProcess {
+  return spawn(options.kisakiCommand, [`--dev-extension=${extensionPath}`], {
+    cwd: options.cwd ?? process.cwd(),
     stdio: 'inherit',
     shell: false
   })

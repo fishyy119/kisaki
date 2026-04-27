@@ -5,12 +5,14 @@
       "name": "Debug Main Process",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceRoot}/apps/desktop",
-      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "pnpm",
       "windows": {
-        "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite.cmd"
+        "runtimeExecutable": "pnpm.cmd"
       },
-      "runtimeArgs": ["--sourcemap"],
+      "runtimeArgs": ["--filter", "kisaki", "run", "dev", "--", "--sourcemap"],
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal",
       "env": {
         "REMOTE_DEBUGGING_PORT": "9222"
       }

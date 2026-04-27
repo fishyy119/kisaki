@@ -22,6 +22,7 @@
   "dependencies": {
     "@kisaki/extension-api": "workspace:*",
     "archiver": "^7.0.1",
+    "chokidar": "^5.0.0",
     "commander": "^13.1.0",
     "kolorist": "^1.8.0",
     "semver": "^7.7.3"

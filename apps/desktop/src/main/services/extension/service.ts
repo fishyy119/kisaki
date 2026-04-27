@@ -91,6 +91,7 @@ export class ExtensionService implements IService {
     this.paths = {
       rootDir,
       packagesDir: resolveInsideRoot(rootDir, 'packages'),
+      builtinPackagesDir: resolveBuiltinExtensionPackagesDir(),
       dataDir: resolveInsideRoot(rootDir, 'data'),
       tempDir: resolveInsideRoot(rootDir, 'temp'),
       statePath: resolveInsideRoot(rootDir, 'state.json')
@@ -167,6 +168,7 @@ export class ExtensionService implements IService {
     return this.runMutatingOperation(async () => {
       const result = await this.installer.install(source)
       try {
+        this.assertNotBuiltinExtensionId(result.extensionId, 'install')
         await this.refreshCatalog()
         await this.applyRuntimeState({ cause: 'install' })
         this.assertRuntimeReady(result.extensionId, 'install')
@@ -183,6 +185,7 @@ export class ExtensionService implements IService {
     return this.runMutatingOperation(async () => {
       const result = await this.installer.installFromFile(filePath)
       try {
+        this.assertNotBuiltinExtensionId(result.extensionId, 'install')
         await this.refreshCatalog()
         await this.applyRuntimeState({ cause: 'install' })
         this.assertRuntimeReady(result.extensionId, 'install')
@@ -198,6 +201,7 @@ export class ExtensionService implements IService {
   async uninstall(extensionId: string): Promise<void> {
     await this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
+      this.assertUserManagedExtension(safeExtensionId, 'uninstall')
       await this.requireInstalledCatalogEntry(safeExtensionId)
       await this.runtime.unloadExtension(safeExtensionId, 'disable')
       await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
@@ -210,6 +214,7 @@ export class ExtensionService implements IService {
   async update(extensionId: string): Promise<ExtensionCatalogEntry | null> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
+      this.assertUserManagedExtension(safeExtensionId, 'update')
       await this.runtime.unloadExtension(safeExtensionId, 'update')
       await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
 
@@ -258,12 +263,14 @@ export class ExtensionService implements IService {
   }
 
   async checkUpdates(): Promise<readonly ExtensionUpdateInfo[]> {
-    return this.installer.checkUpdates()
+    const updates = await this.installer.checkUpdates()
+    return updates.filter((update) => !this.byId.get(update.extensionId)?.builtin)
   }
 
   async enable(extensionId: string): Promise<ExtensionCatalogEntry> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
+      this.assertUserManagedExtension(safeExtensionId, 'enable')
       await this.stateStore.setEnabled(safeExtensionId, true)
       try {
         await this.refreshCatalog()
@@ -283,6 +290,7 @@ export class ExtensionService implements IService {
   async disable(extensionId: string): Promise<ExtensionCatalogEntry> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
+      this.assertUserManagedExtension(safeExtensionId, 'disable')
       await this.stateStore.setEnabled(safeExtensionId, false)
       await this.refreshCatalog()
       await this.applyRuntimeState({ cause: 'disable' })
@@ -293,6 +301,11 @@ export class ExtensionService implements IService {
 
   async isEnabled(extensionId: string): Promise<boolean> {
     const safeExtensionId = requireSafeExtensionId(extensionId)
+    const catalogEntry = this.byId.get(safeExtensionId)
+    if (catalogEntry?.builtin) {
+      return catalogEntry.enabled
+    }
+
     const record = await this.stateStore.get(safeExtensionId)
     if (!record) {
       throw new Error(`Extension "${safeExtensionId}" is not installed`)
@@ -315,7 +328,7 @@ export class ExtensionService implements IService {
 
   createRuntimeMetadata(extensionId: string) {
     const entry = this.requireCatalogEntry(extensionId)
-    return createExtensionRuntimeMetadata(entry)
+    return this.createCatalogRuntimeMetadata(entry)
   }
 
   getRuntimeState(extensionId: string): ExtensionRuntimeState | null {
@@ -427,6 +440,22 @@ export class ExtensionService implements IService {
     return this.operationMutex.runExclusive(operation)
   }
 
+  private assertUserManagedExtension(extensionId: string, operation: string): void {
+    const entry = this.byId.get(requireSafeExtensionId(extensionId))
+    if (entry?.builtin) {
+      throw new Error(
+        `Built-in extension "${extensionId}" is managed by Kisaki and cannot use ${operation}.`
+      )
+    }
+  }
+
+  private assertNotBuiltinExtensionId(extensionId: string, operation: string): void {
+    const entry = this.byId.get(requireSafeExtensionId(extensionId))
+    if (entry?.builtin) {
+      throw new Error(`Cannot ${operation} "${extensionId}" because it is built into Kisaki.`)
+    }
+  }
+
   private async reloadExtensionRuntime(
     extensionId: string,
     cause: ExtensionRuntimeChangeCause
@@ -502,7 +531,7 @@ export class ExtensionService implements IService {
         continue
       }
 
-      desired.set(entry.id, createExtensionRuntimeMetadata(entry))
+      desired.set(entry.id, this.createCatalogRuntimeMetadata(entry))
     }
 
     if (this.devExtension) {
@@ -510,6 +539,12 @@ export class ExtensionService implements IService {
     }
 
     return desired
+  }
+
+  private createCatalogRuntimeMetadata(entry: ExtensionCatalogEntry): ExtensionRuntimeMetadata {
+    return createExtensionRuntimeMetadata(entry, {
+      mode: entry.builtin && !app.isPackaged ? 'development' : 'production'
+    })
   }
 
   private async syncReloadWatcherTargets(
@@ -585,4 +620,15 @@ export class ExtensionService implements IService {
       this.ipc.send('extension:contributions-changed', this.getContributionSnapshot())
     })
   }
+}
+
+function resolveBuiltinExtensionPackagesDir(): string {
+  if (app.isPackaged) {
+    return resolveInsideRoot(
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'resources'),
+      'extensions'
+    )
+  }
+
+  return resolveInsideRoot(app.getAppPath(), 'out', 'extensions')
 }

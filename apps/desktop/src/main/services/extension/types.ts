@@ -9,6 +9,7 @@ import type {
 export interface ExtensionServicePaths {
   rootDir: string
   packagesDir: string
+  builtinPackagesDir: string
   dataDir: string
   tempDir: string
   statePath: string
@@ -33,6 +34,7 @@ export interface ExtensionStateDocument {
 }
 
 export interface ScannedExtensionPackage {
+  builtin: boolean
   id: string
   directoryName: string
   packagePath: string
@@ -44,6 +46,7 @@ export interface ScannedExtensionPackage {
 export type ExtensionCatalogStatus = 'ready' | 'invalid' | 'missing-package' | 'orphaned'
 
 export interface ExtensionCatalogEntry {
+  builtin: boolean
   id: string
   directoryName: string
   status: ExtensionCatalogStatus

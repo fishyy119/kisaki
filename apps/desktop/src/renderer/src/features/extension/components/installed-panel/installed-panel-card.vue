@@ -53,7 +53,8 @@ const iconUrl = computed(() => props.extension.iconUrl)
 const versionLabel = computed(() =>
   props.extension.version ? `v${props.extension.version}` : '未知版本'
 )
-const canToggle = computed(() => props.extension.status === 'ready')
+const isBuiltin = computed(() => props.extension.builtin)
+const canToggle = computed(() => props.extension.status === 'ready' && !isBuiltin.value)
 const statusLabel = computed(() => {
   switch (props.extension.status) {
     case 'ready':
@@ -93,6 +94,11 @@ watch(iconUrl, () => {
 })
 
 async function handleToggle(enabled: boolean) {
+  if (isBuiltin.value) {
+    notify.error('内置扩展由 Kisaki 管理')
+    return
+  }
+
   if (!canToggle.value) {
     notify.error('无法启用扩展', props.extension.issues[0] ?? '扩展包当前不可运行')
     return
@@ -189,6 +195,13 @@ function openSettingsPanel() {
         {{ versionLabel }}
       </span>
       <Badge
+        v-if="isBuiltin"
+        variant="secondary"
+        class="text-[10px] px-1.5 py-0 h-4"
+      >
+        内置
+      </Badge>
+      <Badge
         v-if="props.updateInfo"
         variant="default"
         class="text-[10px] px-1.5 py-0 h-4"
@@ -236,20 +249,29 @@ function openSettingsPanel() {
     <div class="flex items-center justify-between">
       <!-- Enable/Disable -->
       <div class="flex items-center gap-2">
-        <Switch
-          v-model="enabledModel"
-          :disabled="toggling || !canToggle"
-          class="scale-90"
-        />
-        <span class="text-xs text-muted-foreground">
-          {{ props.extension.enabled ? '启用' : '禁用' }}
-        </span>
+        <template v-if="isBuiltin">
+          <Icon
+            icon="icon-[mdi--package-variant-closed-check]"
+            class="size-4 text-muted-foreground"
+          />
+          <span class="text-xs text-muted-foreground">随应用启用</span>
+        </template>
+        <template v-else>
+          <Switch
+            v-model="enabledModel"
+            :disabled="toggling || !canToggle"
+            class="scale-90"
+          />
+          <span class="text-xs text-muted-foreground">
+            {{ props.extension.enabled ? '启用' : '禁用' }}
+          </span>
+        </template>
       </div>
 
       <!-- Actions -->
       <div class="flex items-center gap-1">
         <Button
-          v-if="props.updateInfo"
+          v-if="props.updateInfo && !isBuiltin"
           size="sm"
           variant="default"
           :disabled="updating"
@@ -281,7 +303,7 @@ function openSettingsPanel() {
           </TooltipTrigger>
           <TooltipContent>设置</TooltipContent>
         </Tooltip>
-        <Tooltip>
+        <Tooltip v-if="!isBuiltin">
           <TooltipTrigger as-child>
             <Button
               size="icon-sm"

@@ -276,6 +276,7 @@ function toExtensionCatalogInfo(
   const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
 
   return {
+    builtin: entry.builtin,
     id: entry.id,
     name: entry.manifest?.name ?? entry.id,
     version: entry.version,

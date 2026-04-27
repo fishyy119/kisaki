@@ -31,13 +31,27 @@ export class ExtensionCatalog {
     ])
 
     const installedState = await this.stateStore.list()
-    const scannedPackages = await this.scanPackages()
+    const [builtinPackages, installedPackages] = await Promise.all([
+      this.scanPackages(this.paths.builtinPackagesDir, true),
+      this.scanPackages(this.paths.packagesDir, false)
+    ])
 
     const nextEntries = new Map<string, ExtensionCatalogEntry>()
     const linkedPackageIds = new Set<string>()
+    const builtinIds = new Set<string>()
+
+    for (const packageRecord of builtinPackages) {
+      const builtinEntry = buildCatalogEntry(this.paths, packageRecord.id, null, packageRecord)
+      nextEntries.set(packageRecord.id, builtinEntry)
+      builtinIds.add(packageRecord.id)
+    }
 
     for (const [extensionId, record] of Object.entries(installedState)) {
-      const packageRecord = findPackageRecord(scannedPackages, extensionId)
+      if (builtinIds.has(extensionId)) {
+        continue
+      }
+
+      const packageRecord = findPackageRecord(installedPackages, extensionId)
       if (packageRecord) {
         linkedPackageIds.add(packageRecord.directoryName)
       }
@@ -48,8 +62,12 @@ export class ExtensionCatalog {
       )
     }
 
-    for (const packageRecord of scannedPackages) {
+    for (const packageRecord of installedPackages) {
       if (linkedPackageIds.has(packageRecord.directoryName)) {
+        continue
+      }
+
+      if (builtinIds.has(packageRecord.id) || builtinIds.has(packageRecord.directoryName)) {
         continue
       }
 
@@ -78,8 +96,15 @@ export class ExtensionCatalog {
     return this.byId.get(extensionId)
   }
 
-  private async scanPackages(): Promise<readonly ScannedExtensionPackage[]> {
-    const entries = await fse.readdir(this.paths.packagesDir, { withFileTypes: true })
+  private async scanPackages(
+    rootDir: string,
+    builtin: boolean
+  ): Promise<readonly ScannedExtensionPackage[]> {
+    if (!(await fse.pathExists(rootDir))) {
+      return []
+    }
+
+    const entries = await fse.readdir(rootDir, { withFileTypes: true })
     const packages: ScannedExtensionPackage[] = []
 
     for (const entry of entries) {
@@ -88,11 +113,12 @@ export class ExtensionCatalog {
       }
 
       const directoryName = entry.name
-      const packagePath = resolveInsideRoot(this.paths.packagesDir, directoryName)
+      const packagePath = resolveInsideRoot(rootDir, directoryName)
       const manifestPath = resolveInsideRoot(packagePath, 'manifest.json')
 
       if (!(await fse.pathExists(manifestPath))) {
         packages.push({
+          builtin,
           id: directoryName,
           directoryName,
           packagePath,
@@ -124,6 +150,7 @@ export class ExtensionCatalog {
         }
 
         packages.push({
+          builtin,
           id: parsed.manifest?.id ?? directoryName,
           directoryName,
           packagePath,
@@ -137,6 +164,7 @@ export class ExtensionCatalog {
           error
         )
         packages.push({
+          builtin,
           id: directoryName,
           directoryName,
           packagePath,
@@ -162,6 +190,7 @@ function buildCatalogEntry(
   state: ExtensionStateRecord | null,
   pkg: ScannedExtensionPackage | null
 ): ExtensionCatalogEntry {
+  const builtin = pkg?.builtin ?? false
   const packagePath = pkg?.packagePath ?? resolveInsideRoot(paths.packagesDir, extensionId)
   const manifestPath = pkg?.manifestPath ?? resolveInsideRoot(packagePath, 'manifest.json')
   const dataPath = resolveInsideRoot(paths.dataDir, extensionId)
@@ -169,6 +198,7 @@ function buildCatalogEntry(
 
   if (!pkg) {
     return {
+      builtin,
       id: extensionId,
       directoryName: extensionId,
       status: 'missing-package',
@@ -188,16 +218,17 @@ function buildCatalogEntry(
   }
 
   const hasIssues = pkg.issues.length > 0
-  const status = state ? (hasIssues ? 'invalid' : 'ready') : 'orphaned'
+  const status = getPackageCatalogStatus({ builtin, hasIssues, registered: state !== null })
   const manifest = pkg.manifest
 
   return {
+    builtin,
     id: extensionId,
     directoryName: pkg.directoryName,
     status,
     manifest,
     issues: pkg.issues.map(formatIssue),
-    enabled: state?.enabled ?? false,
+    enabled: builtin ? !hasIssues : (state?.enabled ?? false),
     version: state?.version ?? manifest?.version ?? null,
     categories: manifest?.categories ?? [],
     source: state?.source ?? null,
@@ -208,6 +239,22 @@ function buildCatalogEntry(
     dataPath,
     tempPath
   }
+}
+
+function getPackageCatalogStatus(options: {
+  builtin: boolean
+  hasIssues: boolean
+  registered: boolean
+}): ExtensionCatalogEntry['status'] {
+  if (options.builtin) {
+    return options.hasIssues ? 'invalid' : 'ready'
+  }
+
+  if (!options.registered) {
+    return 'orphaned'
+  }
+
+  return options.hasIssues ? 'invalid' : 'ready'
 }
 
 function compareCatalogEntries(left: ExtensionCatalogEntry, right: ExtensionCatalogEntry): number {

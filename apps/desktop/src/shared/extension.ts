@@ -24,6 +24,7 @@ export interface ExtensionSourceReference {
 }
 
 export interface ExtensionCatalogInfo {
+  builtin: boolean
   id: string
   name: string
   version: string | null
