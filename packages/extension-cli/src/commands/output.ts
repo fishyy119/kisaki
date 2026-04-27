@@ -140,6 +140,10 @@ export async function watchExtensionOutput(
       })
 
       lastSyncError = null
+      if (retryTimer) {
+        clearInterval(retryTimer)
+        retryTimer = null
+      }
       logger.detail(`Synced ${path.relative(project.rootDir, currentPackagePath)}`)
 
       if (!readySettled) {

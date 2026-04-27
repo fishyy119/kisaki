@@ -1,4 +1,3 @@
-import { parentPort } from 'electron/utility'
 import {
   EXTENSION_RPC_PROTOCOL_VERSION,
   createExtensionError,
@@ -9,8 +8,10 @@ import { ExtensionRegistry } from './extension-registry'
 import { ExtensionHostRpcServer } from './rpc-server'
 import { ExtensionHostSdkBridge } from './sdk-bridge'
 
+const parentPort = process.parentPort
+
 if (!parentPort) {
-  throw new Error('Kisaki extension host requires electron/utility parentPort')
+  throw new Error('Kisaki extension host requires utility process parentPort')
 }
 
 const registry = new ExtensionRegistry()
