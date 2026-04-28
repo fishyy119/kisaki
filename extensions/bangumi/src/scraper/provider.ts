@@ -73,6 +73,7 @@ interface BangumiSubjectImageVariants {
 
 export class BangumiProvider implements GameScraperProvider {
   public readonly id = 'bangumi'
+  public readonly externalIdSource = 'bangumi'
   public readonly name = 'Bangumi'
   public readonly capabilities = [
     'search',
@@ -128,7 +129,7 @@ export class BangumiProvider implements GameScraperProvider {
           name,
           originalName,
           releaseDate: this.parsePartialDate(subject.date),
-          externalIds: [{ source: this.id, id: String(subject.id) }]
+          externalIds: [{ source: this.externalIdSource, id: String(subject.id) }]
         }
       })
   }
@@ -143,10 +144,7 @@ export class BangumiProvider implements GameScraperProvider {
     return first ? this.createResolvedTarget(first.id, first.originalName) : null
   }
 
-  public async openSession(
-    target: IdResolvedTarget,
-    locale: Locale
-  ): Promise<GameScraperSession> {
+  public async openSession(target: IdResolvedTarget, locale: Locale): Promise<GameScraperSession> {
     const subjectId = parseBangumiId(target.id)
     const getSubject = this.memoizeTask(async () => {
       const subject = await this.client.getSubjectById(subjectId)
@@ -158,9 +156,7 @@ export class BangumiProvider implements GameScraperProvider {
       return subject
     })
     const getSubjectPersons = this.memoizeTask(() => this.client.getSubjectPersons(subjectId))
-    const getSubjectCharacters = this.memoizeTask(() =>
-      this.client.getSubjectCharacters(subjectId)
-    )
+    const getSubjectCharacters = this.memoizeTask(() => this.client.getSubjectCharacters(subjectId))
     const getSubjectRelations = this.memoizeTask(async () => {
       return this.client.getSubjectRelations(subjectId).catch(() => [])
     })
@@ -264,7 +260,7 @@ export class BangumiProvider implements GameScraperProvider {
     ])
 
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: String(subject.id) },
+      { source: this.externalIdSource, id: String(subject.id) },
       ...extractExternalIdsFromSites(relatedSites)
     ])
 
@@ -405,7 +401,7 @@ export class BangumiProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(detail?.summary || relatedCharacter.summary),
       relatedSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
-      externalIds: [{ source: this.id, id: String(relatedCharacter.id) }],
+      externalIds: [{ source: this.externalIdSource, id: String(relatedCharacter.id) }],
       photos: photos.length > 0 ? photos : undefined,
       gender: mapBangumiGender(detail?.gender),
       birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
@@ -434,7 +430,7 @@ export class BangumiProvider implements GameScraperProvider {
         originalName: actor.name,
         description: this.normalizeDescription(actor.short_summary),
         relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
-        externalIds: [{ source: this.id, id: String(actor.id) }],
+        externalIds: [{ source: this.externalIdSource, id: String(actor.id) }],
         photos: dedupeUrls(extractImageUrls(actor.images)),
         tags: mapBangumiCareersToTags(actor.career),
         type: 'actor'
@@ -453,7 +449,7 @@ export class BangumiProvider implements GameScraperProvider {
         name: personRef.name,
         originalName: personRef.name,
         relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
-        externalIds: [{ source: this.id, id: String(personRef.id) }],
+        externalIds: [{ source: this.externalIdSource, id: String(personRef.id) }],
         photos: dedupeUrls(extractImageUrls(personRef.images)),
         type: 'actor',
         note: personRef.staff?.trim() || undefined
@@ -534,7 +530,7 @@ export class BangumiProvider implements GameScraperProvider {
     ])
 
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: String(relatedPerson.id) },
+      { source: this.externalIdSource, id: String(relatedPerson.id) },
       ...extractExternalIdsFromSites(relatedSites)
     ])
 
@@ -597,7 +593,7 @@ export class BangumiProvider implements GameScraperProvider {
     ])
 
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: String(relatedCompany.id) },
+      { source: this.externalIdSource, id: String(relatedCompany.id) },
       ...extractExternalIdsFromSites(relatedSites)
     ])
 
@@ -704,13 +700,13 @@ export class BangumiProvider implements GameScraperProvider {
   }
 
   private findKnownId(lookup: ScraperLookup): string | undefined {
-    const normalizedProviderId = normalizeKeyText(this.id)
+    const normalizedExternalIdSource = normalizeKeyText(this.externalIdSource)
     return lookup.knownIds
       ?.map((externalId) => ({
         source: normalizeKeyText(externalId.source),
         id: externalId.id?.trim()
       }))
-      .find((externalId) => externalId.source === normalizedProviderId && externalId.id)?.id
+      .find((externalId) => externalId.source === normalizedExternalIdSource && externalId.id)?.id
   }
 
   private parsePartialDate(input: string | null | undefined): PartialDate | undefined {
