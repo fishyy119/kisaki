@@ -12,7 +12,8 @@
       },
       "runtimeArgs": ["--filter", "kisaki", "run", "dev", "--", "--sourcemap"],
       "autoAttachChildProcesses": true,
-      "console": "integratedTerminal",
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
       "env": {
         "REMOTE_DEBUGGING_PORT": "9222"
       }
