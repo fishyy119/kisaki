@@ -88,9 +88,7 @@ export function toHostGameSessionResults(
     info: results.info
       ? (toHostExternalIds(results.info, registration) as GameSessionResultMap['info'])
       : undefined,
-    characters: results.characters?.map(
-      (item) => toHostExternalIds(item, registration) as GameSessionResultMap['characters'][number]
-    ),
+    characters: results.characters?.map((item) => toHostGameCharacterFact(item, registration)),
     persons: results.persons?.map(
       (item) => toHostExternalIds(item, registration) as GameSessionResultMap['persons'][number]
     ),
@@ -142,10 +140,7 @@ export function toHostCharacterSessionResults(
     info: results.info
       ? (toHostExternalIds(results.info, registration) as CharacterSessionResultMap['info'])
       : undefined,
-    persons: results.persons?.map(
-      (item) =>
-        toHostExternalIds(item, registration) as CharacterSessionResultMap['persons'][number]
-    ),
+    persons: results.persons?.map((item) => toHostCharacterPersonFact(item, registration)),
     tags: results.tags ? [...results.tags] : undefined,
     photos: results.photos ? [...results.photos] : undefined
   }
@@ -157,6 +152,43 @@ function createProviderName(registration: ScraperRegistration): string {
 
 function createCapabilities(provider: ScraperProviderRegistration): ScraperCapability[] {
   return [...provider.capabilities] as ScraperCapability[]
+}
+
+type ExtensionGameCharacterFact = ExtensionGameSessionResultMap['characters'][number]
+type ExtensionCharacterPersonFact = ExtensionCharacterSessionResultMap['persons'][number]
+
+function toHostGameCharacterFact(
+  value: ExtensionGameCharacterFact,
+  registration: ScraperRegistration
+): GameSessionResultMap['characters'][number] {
+  const mapped = toHostExternalIds(
+    value,
+    registration
+  ) as GameSessionResultMap['characters'][number]
+
+  if (value.persons) {
+    mapped.persons = value.persons.map((person) => toHostCharacterPersonFact(person, registration))
+  }
+
+  return mapped
+}
+
+function toHostCharacterPersonFact(
+  value: ExtensionCharacterPersonFact,
+  registration: ScraperRegistration
+): CharacterSessionResultMap['persons'][number] {
+  const mapped = toHostExternalIds(
+    value,
+    registration
+  ) as CharacterSessionResultMap['persons'][number]
+
+  if (value.character) {
+    mapped.character = toHostExternalIds(value.character, registration) as NonNullable<
+      CharacterSessionResultMap['persons'][number]['character']
+    >
+  }
+
+  return mapped
 }
 
 function toExtensionLookup(

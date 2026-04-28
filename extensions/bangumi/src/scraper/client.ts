@@ -9,7 +9,7 @@
  * - https://github.com/bangumi/api/
  */
 
-import type { NetworkService } from '@main/services/network'
+import type { NetworkCapability, SerializableValue } from '@kisaki/extension-sdk'
 import type {
   BangumiCharacterDetail,
   BangumiCharacterPerson,
@@ -24,26 +24,19 @@ import type {
   BangumiPersonDetail
 } from './types'
 
-const RATE_LIMIT_KEY = 'bangumi'
 // No official public rate limit in docs. Keep a conservative limit.
 const RATE_LIMIT_CONFIG = { maxRequests: 4, windowMs: 1000 }
 
 export class BangumiClient {
   private readonly baseUrl = 'https://api.bgm.tv'
   private readonly userAgent = 'ximu3/Kisaki/0.0.1 (https://github.com/ximu3/kisaki)'
-  private rateLimitRegistered = false
+  private readonly requestTimestamps: number[] = []
+  private rateLimitQueue = Promise.resolve()
 
   constructor(
-    private readonly network: NetworkService,
-    private readonly accessToken?: string
+    private readonly network: NetworkCapability,
+    private readonly getAccessToken?: () => Promise<string | undefined>
   ) {}
-
-  private ensureRateLimitRegistered(): void {
-    if (!this.rateLimitRegistered) {
-      this.network.registerRateLimit(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
-      this.rateLimitRegistered = true
-    }
-  }
 
   private buildUrl(pathname: string, query?: Record<string, string | number | boolean>): string {
     const url = new URL(pathname, this.baseUrl)
@@ -56,7 +49,7 @@ export class BangumiClient {
     return url.toString()
   }
 
-  private buildHeaders(method: 'GET' | 'POST'): Record<string, string> {
+  private async buildHeaders(method: 'GET' | 'POST'): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'User-Agent': this.userAgent
@@ -66,11 +59,50 @@ export class BangumiClient {
       headers['Content-Type'] = 'application/json'
     }
 
-    if (this.accessToken?.trim()) {
-      headers.Authorization = `Bearer ${this.accessToken.trim()}`
+    const accessToken = (await this.getAccessToken?.())?.trim()
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`
     }
 
     return headers
+  }
+
+  private async acquireRateLimit(): Promise<void> {
+    const previous = this.rateLimitQueue
+    let release!: () => void
+    this.rateLimitQueue = new Promise<void>((resolve) => {
+      release = resolve
+    })
+
+    await previous
+
+    try {
+      const now = Date.now()
+      while (
+        this.requestTimestamps.length > 0 &&
+        now - this.requestTimestamps[0]! >= RATE_LIMIT_CONFIG.windowMs
+      ) {
+        this.requestTimestamps.shift()
+      }
+
+      if (this.requestTimestamps.length >= RATE_LIMIT_CONFIG.maxRequests) {
+        const waitMs = RATE_LIMIT_CONFIG.windowMs - (now - this.requestTimestamps[0]!)
+        if (waitMs > 0) {
+          await delay(waitMs)
+        }
+      }
+
+      const nextNow = Date.now()
+      while (
+        this.requestTimestamps.length > 0 &&
+        nextNow - this.requestTimestamps[0]! >= RATE_LIMIT_CONFIG.windowMs
+      ) {
+        this.requestTimestamps.shift()
+      }
+      this.requestTimestamps.push(nextNow)
+    } finally {
+      release()
+    }
   }
 
   private async request<T>(
@@ -79,35 +111,37 @@ export class BangumiClient {
     query?: Record<string, string | number | boolean>,
     body?: unknown
   ): Promise<T> {
-    this.ensureRateLimitRegistered()
+    await this.acquireRateLimit()
 
-    const response = await this.network.fetch(this.buildUrl(pathname, query), {
+    const response = await this.network.request<T>({
+      url: this.buildUrl(pathname, query),
       method,
-      headers: this.buildHeaders(method),
-      body: body ? JSON.stringify(body) : undefined,
-      rateLimitKey: RATE_LIMIT_KEY
+      headers: await this.buildHeaders(method),
+      body: body as SerializableValue | undefined,
+      responseType: 'json'
     })
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => '')
+      const detail = stringifyResponseData(response.data)
       throw new Error(
-        `Bangumi API request failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`
+        `Bangumi API request failed: ${response.status}${detail ? ` - ${detail}` : ''}`
       )
     }
 
-    return response.json() as Promise<T>
+    return response.data
   }
 
   private async requestRedirectUrl(
     pathname: string,
     query: Record<string, string | number | boolean>
   ): Promise<string | undefined> {
-    this.ensureRateLimitRegistered()
+    await this.acquireRateLimit()
 
-    const response = await this.network.fetch(this.buildUrl(pathname, query), {
+    const response = await this.network.request<Uint8Array>({
+      url: this.buildUrl(pathname, query),
       method: 'GET',
-      headers: this.buildHeaders('GET'),
-      rateLimitKey: RATE_LIMIT_KEY
+      headers: await this.buildHeaders('GET'),
+      responseType: 'arrayBuffer'
     })
 
     if (!response.ok) {
@@ -174,5 +208,25 @@ export class BangumiClient {
     type: BangumiEntityImageType
   ): Promise<string | undefined> {
     return this.requestRedirectUrl(`/v0/persons/${personId}/image`, { type })
+  }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function stringifyResponseData(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
   }
 }

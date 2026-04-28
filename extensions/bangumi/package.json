@@ -1,0 +1,30 @@
+{
+  "name": "@kisaki/builtin-bangumi",
+  "version": "0.0.1",
+  "description": "Built-in Bangumi scraper extension for Kisaki",
+  "type": "module",
+  "scripts": {
+    "build": "kisx build",
+    "dev": "kisx dev",
+    "validate": "kisx validate",
+    "pack": "kisx pack",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kisaki/extension-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@kisaki/extension-api": "workspace:*",
+    "@kisaki/extension-cli": "workspace:*",
+    "@types/node": "^22.19.1",
+    "tsdown": "^0.19.0",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "kisaki",
+    "extension",
+    "bangumi",
+    "scraper"
+  ],
+  "license": "MIT"
+}

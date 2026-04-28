@@ -23,7 +23,6 @@ import { CompanyScraperHandler } from './handlers/company'
 import type { CompanyScraperProvider } from './handlers/company'
 import { CharacterScraperHandler } from './handlers/character'
 import type { CharacterScraperProvider } from './handlers/character'
-import { BangumiProvider } from './handlers/game/providers/bangumi'
 import { IGDBProvider } from './handlers/game/providers/igdb'
 import { VNDBProvider } from './handlers/game/providers/vndb'
 import { YmgalProvider } from './handlers/game/providers/ymgal'
@@ -60,7 +59,6 @@ export class ScraperService implements IContentService {
 
   private registerBuiltinProviders(deps: ScraperProviderDeps): void {
     this.game.registerProvider(new YmgalProvider(deps))
-    this.game.registerProvider(new BangumiProvider(deps))
     this.game.registerProvider(new IGDBProvider(deps))
     this.game.registerProvider(new VNDBProvider(deps))
   }

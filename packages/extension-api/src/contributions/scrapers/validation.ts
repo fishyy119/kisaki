@@ -31,15 +31,6 @@ import {
   validateUnknownKeys
 } from '../../shared/validation'
 
-const SCRAPER_PROVIDER_KEYS = new Set<string>([
-  'id',
-  'name',
-  'capabilities',
-  'search',
-  'resolve',
-  'openSession'
-])
-const SCRAPER_SESSION_KEYS = new Set<string>(['get', 'dispose'])
 const RESOLVED_TARGET_KEYS = new Set<string>(['cacheKey', 'resolveName', 'id'])
 const EXTERNAL_ID_KEYS = new Set<string>(['source', 'id'])
 const RELATED_SITE_KEYS = new Set<string>(['label', 'url'])
@@ -92,6 +83,7 @@ const PERSON_INFO_KEYS = new Set<string>([
   'relatedSites',
   'externalIds'
 ])
+const PERSON_METADATA_KEYS = new Set<string>([...PERSON_INFO_KEYS, 'tags', 'photos'])
 const COMPANY_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
@@ -100,6 +92,7 @@ const COMPANY_INFO_KEYS = new Set<string>([
   'relatedSites',
   'externalIds'
 ])
+const COMPANY_METADATA_KEYS = new Set<string>([...COMPANY_INFO_KEYS, 'tags', 'logos'])
 const CHARACTER_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
@@ -117,16 +110,33 @@ const CHARACTER_INFO_KEYS = new Set<string>([
   'relatedSites',
   'externalIds'
 ])
-const GAME_PERSON_FACT_KEYS = new Set<string>([...PERSON_INFO_KEYS, 'type', 'isSpoiler', 'note'])
-const GAME_COMPANY_FACT_KEYS = new Set<string>([...COMPANY_INFO_KEYS, 'type', 'isSpoiler', 'note'])
-const GAME_CHARACTER_FACT_KEYS = new Set<string>([
+const CHARACTER_METADATA_KEYS = new Set<string>([
   ...CHARACTER_INFO_KEYS,
+  'tags',
+  'persons',
+  'photos'
+])
+const GAME_PERSON_FACT_KEYS = new Set<string>([
+  ...PERSON_METADATA_KEYS,
+  'type',
+  'isSpoiler',
+  'note'
+])
+const GAME_COMPANY_FACT_KEYS = new Set<string>([
+  ...COMPANY_METADATA_KEYS,
+  'type',
+  'isSpoiler',
+  'note'
+])
+const GAME_CHARACTER_FACT_KEYS = new Set<string>([
+  ...CHARACTER_METADATA_KEYS,
   'type',
   'isSpoiler',
   'note'
 ])
 const CHARACTER_PERSON_FACT_KEYS = new Set<string>([
-  ...PERSON_INFO_KEYS,
+  ...PERSON_METADATA_KEYS,
+  'character',
   'type',
   'isSpoiler',
   'note'
@@ -146,7 +156,6 @@ function validateScraperProviderShape(
   }
 
   const issues: ValidationIssue[] = [
-    ...validateUnknownKeys(value, SCRAPER_PROVIDER_KEYS),
     ...validateRequiredString(value.id, '$.id', {
       trim: true,
       valueMessage: 'Provider id must be a non-empty string.'
@@ -232,7 +241,6 @@ export function validateScraperSessionShape(value: unknown): ValidationIssue[] {
   }
 
   return [
-    ...validateUnknownKeys(value, SCRAPER_SESSION_KEYS),
     ...validateRequiredFunction(value.get, '$.get').map((issue) => ({
       ...issue,
       message: 'get must be a function.'
@@ -490,6 +498,45 @@ function validateCharacterInfoFields(
   ]
 }
 
+function validatePersonMetadataFields(
+  info: Record<string, unknown>,
+  path: string
+): ValidationIssue[] {
+  return [
+    ...validatePersonInfoFields(info, path),
+    ...validateOptionalTags(info.tags, `${path}.tags`),
+    ...validateOptionalStringArray(info.photos, `${path}.photos`, 'photos must be an array.')
+  ]
+}
+
+function validateCompanyMetadataFields(
+  info: Record<string, unknown>,
+  path: string
+): ValidationIssue[] {
+  return [
+    ...validateCompanyInfoFields(info, path),
+    ...validateOptionalTags(info.tags, `${path}.tags`),
+    ...validateOptionalStringArray(info.logos, `${path}.logos`, 'logos must be an array.')
+  ]
+}
+
+function validateCharacterMetadataFields(
+  info: Record<string, unknown>,
+  path: string
+): ValidationIssue[] {
+  return [
+    ...validateCharacterInfoFields(info, path),
+    ...validateOptionalTags(info.tags, `${path}.tags`),
+    ...validateOptionalStringArray(info.photos, `${path}.photos`, 'photos must be an array.'),
+    ...validateOptionalArrayOf(
+      info.persons,
+      `${path}.persons`,
+      'persons must be an array.',
+      validateCharacterPersonFact
+    )
+  ]
+}
+
 function validateNamedInfoFields(info: Record<string, unknown>, path: string): ValidationIssue[] {
   return [
     ...validateRequiredString(info.name, `${path}.name`, {
@@ -505,7 +552,7 @@ function validateNamedInfoFields(info: Record<string, unknown>, path: string): V
 
 function validateGamePersonFact(value: unknown, path: string): ValidationIssue[] {
   return [
-    ...validateFactObject(value, path, GAME_PERSON_FACT_KEYS, validatePersonInfoFields),
+    ...validateFactObject(value, path, GAME_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
     ...validateRequiredFactType(value, path, LIBRARY_GAME_PERSON_ROLES, 'game person role')
   ]
@@ -513,7 +560,7 @@ function validateGamePersonFact(value: unknown, path: string): ValidationIssue[]
 
 function validateGameCompanyFact(value: unknown, path: string): ValidationIssue[] {
   return [
-    ...validateFactObject(value, path, GAME_COMPANY_FACT_KEYS, validateCompanyInfoFields),
+    ...validateFactObject(value, path, GAME_COMPANY_FACT_KEYS, validateCompanyMetadataFields),
     ...validateFactFields(value, path),
     ...validateRequiredFactType(value, path, LIBRARY_GAME_COMPANY_ROLES, 'game company role')
   ]
@@ -521,7 +568,7 @@ function validateGameCompanyFact(value: unknown, path: string): ValidationIssue[
 
 function validateGameCharacterFact(value: unknown, path: string): ValidationIssue[] {
   return [
-    ...validateFactObject(value, path, GAME_CHARACTER_FACT_KEYS, validateCharacterInfoFields),
+    ...validateFactObject(value, path, GAME_CHARACTER_FACT_KEYS, validateCharacterMetadataFields),
     ...validateFactFields(value, path),
     ...validateRequiredFactType(value, path, LIBRARY_GAME_CHARACTER_ROLES, 'game character role')
   ]
@@ -529,8 +576,9 @@ function validateGameCharacterFact(value: unknown, path: string): ValidationIssu
 
 function validateCharacterPersonFact(value: unknown, path: string): ValidationIssue[] {
   return [
-    ...validateFactObject(value, path, CHARACTER_PERSON_FACT_KEYS, validatePersonInfoFields),
+    ...validateFactObject(value, path, CHARACTER_PERSON_FACT_KEYS, validatePersonMetadataFields),
     ...validateFactFields(value, path),
+    ...validateOptionalCharacterInfo(value, path),
     ...validateRequiredFactType(
       value,
       path,
@@ -566,6 +614,14 @@ function validateFactFields(value: unknown, path: string): ValidationIssue[] {
     ...validateOptionalBoolean(value.isSpoiler, `${path}.isSpoiler`),
     ...validateOptionalString(value.note, `${path}.note`)
   ]
+}
+
+function validateOptionalCharacterInfo(value: unknown, path: string): ValidationIssue[] {
+  if (!isPlainObject(value) || value.character === undefined) {
+    return []
+  }
+
+  return validateCharacterInfo(value.character, `${path}.character`)
 }
 
 function validateRequiredFactType<TValue extends string>(
@@ -788,6 +844,39 @@ function validateStringArray(value: unknown, path: string, typeMessage: string):
   return validateArrayOf(value, path, typeMessage, (item, itemPath) =>
     typeof item === 'string' ? [] : [{ path: itemPath, message: 'Array item must be a string.' }]
   )
+}
+
+function validateOptionalStringArray(
+  value: unknown,
+  path: string,
+  typeMessage: string
+): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  return validateStringArray(value, path, typeMessage)
+}
+
+function validateOptionalTags(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  return validateArrayOf(value, path, 'tags must be an array.', validateScrapedTag)
+}
+
+function validateOptionalArrayOf(
+  value: unknown,
+  path: string,
+  typeMessage: string,
+  validateItem: (item: unknown, path: string) => ValidationIssue[]
+): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  return validateArrayOf(value, path, typeMessage, validateItem)
 }
 
 function validateArrayOf(

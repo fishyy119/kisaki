@@ -3,7 +3,7 @@ ExtensionSettingsPanelDialog renders one structured extension settings panel.
 Boundary: panel resolution and callbacks always round-trip through main IPC.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 import {
   Dialog,
   DialogBody,
@@ -114,7 +114,7 @@ async function handleSubmit(): Promise<void> {
       sessionId: resolvedPanel.value.sessionId,
       extensionId: props.panel.extensionId,
       panelId: props.panel.panelId,
-      values: formData.value
+      values: { ...toRaw(formData.value) }
     })
 
     if (!response.result.success) {

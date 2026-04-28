@@ -1,13 +1,13 @@
-import type { Tag } from '@shared/metadata'
-import type { ExternalId } from '@shared/identity'
 import type {
-  BloodType,
-  GameCharacterType,
-  GameCompanyType,
-  GamePersonType,
-  PartialDate
-} from '@shared/db'
-import type { Locale } from '@shared/locale'
+  ExternalId,
+  LibraryBloodType,
+  LibraryGameCharacterRole,
+  LibraryGameCompanyRole,
+  LibraryGamePersonRole,
+  Locale,
+  PartialDate,
+  ScrapedTag
+} from '@kisaki/extension-sdk'
 import type {
   BangumiBloodType,
   BangumiInfoboxItem,
@@ -201,7 +201,9 @@ export function extractCharacterMeasurementsFromInfobox(
   return { height, weight, bust, waist, hips }
 }
 
-export function mapBangumiBloodType(bloodType?: BangumiBloodType | null): BloodType | undefined {
+export function mapBangumiBloodType(
+  bloodType?: BangumiBloodType | null
+): LibraryBloodType | undefined {
   switch (bloodType) {
     case 1:
       return 'a'
@@ -216,7 +218,7 @@ export function mapBangumiBloodType(bloodType?: BangumiBloodType | null): BloodT
   }
 }
 
-export function mapBangumiCharacterRelation(relation?: string): GameCharacterType {
+export function mapBangumiCharacterRelation(relation?: string): LibraryGameCharacterRole {
   const normalized = normalizeToken(relation)
   if (!normalized) return 'other'
 
@@ -251,7 +253,7 @@ export function mapBangumiCharacterRelation(relation?: string): GameCharacterTyp
 export function mapBangumiPersonRole(
   relation?: string,
   careers: BangumiPersonCareer[] = []
-): GamePersonType {
+): LibraryGamePersonRole {
   const normalized = normalizeToken(relation)
 
   if (
@@ -370,7 +372,7 @@ export function mapBangumiPersonRole(
   return 'other'
 }
 
-export function mapBangumiCompanyRole(relation?: string): GameCompanyType {
+export function mapBangumiCompanyRole(relation?: string): LibraryGameCompanyRole {
   const normalized = normalizeToken(relation)
   if (!normalized) return 'other'
 
@@ -406,7 +408,7 @@ export function mapBangumiCompanyRole(relation?: string): GameCompanyType {
   return 'other'
 }
 
-export function mapBangumiCareersToTags(careers: BangumiPersonCareer[] = []): Tag[] {
+export function mapBangumiCareersToTags(careers: BangumiPersonCareer[] = []): ScrapedTag[] {
   const labels: Record<string, string> = {
     producer: 'Producer',
     mangaka: 'Mangaka',
@@ -507,9 +509,9 @@ export function dedupeExternalIds(ids: ExternalId[]): ExternalId[] {
   return result
 }
 
-export function dedupeTags(tags: Tag[]): Tag[] {
+export function dedupeTags(tags: ScrapedTag[]): ScrapedTag[] {
   const seen = new Set<string>()
-  const result: Tag[] = []
+  const result: ScrapedTag[] = []
 
   for (const tag of tags) {
     const name = tag.name?.trim()

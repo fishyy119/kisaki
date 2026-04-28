@@ -9,24 +9,25 @@
  * - https://github.com/bangumi/api/
  */
 
-import type { GameScraperSlot } from '@shared/db'
-import type { Locale } from '@shared/locale'
-import type { GameInfo, Tag } from '@shared/metadata'
 import type {
+  ExtensionContext,
+  GameScraperProvider,
+  GameScraperSession,
+  GameScraperSlot,
   GameSearchResult,
+  GameSessionResultMap,
+  IdResolvedTarget,
+  Locale,
+  PartialDate,
+  ScrapedGameInfo,
+  ScrapedTag,
   ScrapedCharacterPersonFact,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
   ScraperLookup
-} from '@shared/scraper'
-import type { ScraperProviderDeps } from '../../../../types'
-import type {
-  GameResolvedTarget,
-  GameScraperProvider,
-  GameScraperSession,
-  GameSessionResultMap
-} from '../../provider'
+} from '@kisaki/extension-sdk'
+import { kisaki } from '@kisaki/extension-sdk'
 import { BangumiClient } from './client'
 import {
   BANGUMI_SUBJECT_TYPE_GAME,
@@ -85,19 +86,12 @@ export class BangumiProvider implements GameScraperProvider {
     'icons'
   ] as const
 
-  // No published global rate limit in docs. Keep conservative.
-  public readonly rateLimit = {
-    requestsPerWindow: 4,
-    windowMs: 1000
-  }
-
+  private readonly context: ExtensionContext
   private readonly client: BangumiClient
-  private readonly helper: ScraperProviderDeps['helper']
 
-  constructor(deps: ScraperProviderDeps) {
-    this.helper = deps.helper
-    const accessToken = import.meta.env.VITE_BANGUMI_API_ACCESS_TOKEN?.trim()
-    this.client = new BangumiClient(deps.network, accessToken || undefined)
+  constructor(context: ExtensionContext) {
+    this.context = context
+    this.client = new BangumiClient(kisaki.network, () => this.getAccessToken())
   }
 
   // ===========================================================================
@@ -139,18 +133,18 @@ export class BangumiProvider implements GameScraperProvider {
       })
   }
 
-  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
     }
 
     const first = (await this.search(lookup.name, locale))[0]
-    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+    return first ? this.createResolvedTarget(first.id, first.originalName) : null
   }
 
   public async openSession(
-    target: GameResolvedTarget,
+    target: IdResolvedTarget,
     locale: Locale
   ): Promise<GameScraperSession> {
     const subjectId = parseBangumiId(target.id)
@@ -164,7 +158,9 @@ export class BangumiProvider implements GameScraperProvider {
       return subject
     })
     const getSubjectPersons = this.memoizeTask(() => this.client.getSubjectPersons(subjectId))
-    const getSubjectCharacters = this.memoizeTask(() => this.client.getSubjectCharacters(subjectId))
+    const getSubjectCharacters = this.memoizeTask(() =>
+      this.client.getSubjectCharacters(subjectId)
+    )
     const getSubjectRelations = this.memoizeTask(async () => {
       return this.client.getSubjectRelations(subjectId).catch(() => [])
     })
@@ -253,7 +249,7 @@ export class BangumiProvider implements GameScraperProvider {
   private async buildInfo(
     getSubject: () => Promise<BangumiSubject>,
     locale?: Locale
-  ): Promise<GameInfo> {
+  ): Promise<ScrapedGameInfo> {
     const subject = await getSubject()
 
     const { name, originalName } = resolveLocalizedSubjectName(
@@ -286,9 +282,9 @@ export class BangumiProvider implements GameScraperProvider {
   // Tags
   // ===========================================================================
 
-  private async buildTags(getSubject: () => Promise<BangumiSubject>): Promise<Tag[]> {
+  private async buildTags(getSubject: () => Promise<BangumiSubject>): Promise<ScrapedTag[]> {
     const subject = await getSubject()
-    const tags: Tag[] = []
+    const tags: ScrapedTag[] = []
 
     if (subject.platform?.trim()) {
       tags.push({ name: subject.platform.trim(), note: 'Platform' })
@@ -395,7 +391,7 @@ export class BangumiProvider implements GameScraperProvider {
     )
 
     const characterTypeTag = this.mapCharacterTypeTag(detail?.type ?? relatedCharacter.type)
-    const tags: Tag[] = []
+    const tags: ScrapedTag[] = []
     if (characterTypeTag) {
       tags.push({ name: characterTypeTag, note: 'Character Type' })
     }
@@ -692,16 +688,170 @@ export class BangumiProvider implements GameScraperProvider {
     }
   }
 
-  private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
-    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
-    return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
+  private resolveKnownTarget(lookup: ScraperLookup): IdResolvedTarget | null {
+    const knownId = this.findKnownId(lookup)
+    return knownId ? this.createResolvedTarget(knownId, lookup.name) : null
   }
 
-  private parsePartialDate(input: string | null | undefined) {
-    return this.helper.date.parsePartialDate(input)
+  private createResolvedTarget(id: string, resolveName?: string): IdResolvedTarget {
+    const normalizedId = id.trim()
+
+    return {
+      id: normalizedId,
+      cacheKey: normalizedId,
+      resolveName: resolveName?.trim() || undefined
+    }
   }
 
-  private normalizeDescription(value: string | null | undefined) {
-    return this.helper.text.normalizeDescription(value)
+  private findKnownId(lookup: ScraperLookup): string | undefined {
+    const normalizedProviderId = normalizeKeyText(this.id)
+    return lookup.knownIds
+      ?.map((externalId) => ({
+        source: normalizeKeyText(externalId.source),
+        id: externalId.id?.trim()
+      }))
+      .find((externalId) => externalId.source === normalizedProviderId && externalId.id)?.id
   }
+
+  private parsePartialDate(input: string | null | undefined): PartialDate | undefined {
+    if (!input) {
+      return undefined
+    }
+
+    const value = input.trim()
+    if (!value) {
+      return undefined
+    }
+
+    const lower = value.toLowerCase()
+    if (lower === 'tba' || lower === 'unknown' || lower === 'n/a') {
+      return undefined
+    }
+
+    const fullMatch = value.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:T.*)?$/)
+    if (fullMatch) {
+      const year = Number(fullMatch[1])
+      const month = Number(fullMatch[2])
+      const day = Number(fullMatch[3])
+      if (year >= 3000) {
+        return normalizePartialDate({ month, day })
+      }
+      return normalizePartialDate({ year, month, day })
+    }
+
+    const yearMonthMatch = value.match(/^(\d{4})[-/.](\d{1,2})$/)
+    if (yearMonthMatch) {
+      const year = Number(yearMonthMatch[1])
+      const month = Number(yearMonthMatch[2])
+      if (year >= 3000) {
+        return undefined
+      }
+      return normalizePartialDate({ year, month })
+    }
+
+    const yearOnlyMatch = value.match(/^(\d{4})$/)
+    if (yearOnlyMatch) {
+      const year = Number(yearOnlyMatch[1])
+      if (year >= 3000) {
+        return undefined
+      }
+      return normalizePartialDate({ year })
+    }
+
+    const monthDayMatch = value.match(/^(\d{1,2})[-/.](\d{1,2})$/)
+    if (monthDayMatch) {
+      const month = Number(monthDayMatch[1])
+      const day = Number(monthDayMatch[2])
+      return normalizePartialDate({ month, day })
+    }
+
+    return undefined
+  }
+
+  private normalizeDescription(value: string | null | undefined): string | undefined {
+    if (!value?.trim()) {
+      return undefined
+    }
+
+    const lines = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
+    const normalizedLines: string[] = []
+    let previousLineBlank = true
+
+    for (const rawLine of lines) {
+      const line = rawLine.replace(/[ \t]+$/g, '')
+
+      if (!line.trim()) {
+        if (!previousLineBlank) {
+          normalizedLines.push('')
+        }
+        previousLineBlank = true
+        continue
+      }
+
+      const normalizedLine = previousLineBlank ? line.replace(/^[ \t]{4,}/, '') : line
+      normalizedLines.push(normalizedLine)
+      previousLineBlank = false
+    }
+
+    const normalized = normalizedLines.join('\n').trim()
+    return normalized || undefined
+  }
+
+  private async getAccessToken(): Promise<string | undefined> {
+    const value = await this.context.storage.get('accessToken', '')
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined
+  }
+}
+
+const PARTIAL_DATE_KEYS = new Set(['year', 'month', 'day'])
+
+function normalizeKeyText(value: string | null | undefined): string {
+  return (value ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+function isInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value)
+}
+
+function normalizePartialDate(value: PartialDate | null | undefined): PartialDate | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+
+  const record = value as Record<string, unknown>
+  const keys = Object.keys(record)
+
+  if (keys.length === 0) {
+    return undefined
+  }
+
+  if (keys.some((key) => !PARTIAL_DATE_KEYS.has(key))) {
+    return undefined
+  }
+
+  const hasYear = 'year' in record
+  const hasMonth = 'month' in record
+  const hasDay = 'day' in record
+
+  if (hasYear && hasDay && !hasMonth) {
+    return undefined
+  }
+
+  if (hasYear && !isInteger(record.year)) {
+    return undefined
+  }
+
+  if (hasMonth && !isInteger(record.month)) {
+    return undefined
+  }
+
+  if (hasDay && !isInteger(record.day)) {
+    return undefined
+  }
+
+  const normalized: PartialDate = {}
+  if (record.year !== undefined) normalized.year = record.year as number
+  if (record.month !== undefined) normalized.month = record.month as number
+  if (record.day !== undefined) normalized.day = record.day as number
+  return normalized
 }

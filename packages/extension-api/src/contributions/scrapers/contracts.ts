@@ -107,25 +107,42 @@ export interface ScrapedCharacterInfo {
   externalIds: readonly ExternalId[]
 }
 
-export interface ScrapedGamePersonFact extends ScrapedPersonInfo {
+export interface ScrapedPersonMetadata extends ScrapedPersonInfo {
+  tags?: readonly ScrapedTag[]
+  photos?: readonly string[]
+}
+
+export interface ScrapedCompanyMetadata extends ScrapedCompanyInfo {
+  tags?: readonly ScrapedTag[]
+  logos?: readonly string[]
+}
+
+export interface ScrapedCharacterMetadata extends ScrapedCharacterInfo {
+  tags?: readonly ScrapedTag[]
+  persons?: readonly ScrapedCharacterPersonFact[]
+  photos?: readonly string[]
+}
+
+export interface ScrapedGamePersonFact extends ScrapedPersonMetadata {
   type: LibraryGamePersonRole
   isSpoiler?: boolean
   note?: string
 }
 
-export interface ScrapedGameCompanyFact extends ScrapedCompanyInfo {
+export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
   type: LibraryGameCompanyRole
   isSpoiler?: boolean
   note?: string
 }
 
-export interface ScrapedCharacterPersonFact extends ScrapedPersonInfo {
+export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
+  character?: ScrapedCharacterInfo
   type: LibraryCharacterPersonRole
   isSpoiler?: boolean
   note?: string
 }
 
-export interface ScrapedGameCharacterFact extends ScrapedCharacterInfo {
+export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
   type: LibraryGameCharacterRole
   isSpoiler?: boolean
   note?: string

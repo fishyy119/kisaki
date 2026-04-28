@@ -10,6 +10,8 @@ import type { Locale } from '@shared/locale'
 import type { ScraperSlotConfigs } from '@shared/db'
 import { createSlotConfig, createEmptySlotConfig } from '@shared/scraper'
 
+const BANGUMI_PROVIDER_ID = 'ext:builtin.bangumi/bangumi'
+
 // =============================================================================
 // Preset Types
 // =============================================================================
@@ -51,12 +53,12 @@ const VISUAL_NOVEL_CN: ScraperPreset = {
   slotConfigs: {
     info: createSlotConfig('info', ['ymgal', 'vndb'], { strategy: 'enrich' }),
     tags: createSlotConfig('tags', ['vndb'], { strategy: 'enrich' }),
-    characters: createSlotConfig('characters', ['ymgal', 'vndb', 'bangumi'], {
+    characters: createSlotConfig('characters', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID], {
       strategy: 'enrich'
     }),
-    persons: createSlotConfig('persons', ['ymgal', 'vndb', 'bangumi']),
-    companies: createSlotConfig('companies', ['ymgal', 'vndb', 'bangumi']),
-    covers: createSlotConfig('covers', ['vndb', 'ymgal', 'bangumi']),
+    persons: createSlotConfig('persons', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID]),
+    companies: createSlotConfig('companies', ['ymgal', 'vndb', BANGUMI_PROVIDER_ID]),
+    covers: createSlotConfig('covers', ['vndb', 'ymgal', BANGUMI_PROVIDER_ID]),
     backdrops: createSlotConfig('backdrops', ['vndb']),
     logos: createEmptySlotConfig('logos'),
     icons: createEmptySlotConfig('icons')
