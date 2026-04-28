@@ -5,15 +5,21 @@
 -->
 <script setup lang="ts">
 import type { ScraperProfile } from '@shared/db'
+import type { ScraperCapability } from '@shared/scraper'
+import type { ContentEntityType } from '@shared/common'
 
+import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { getEntityIcon } from '@renderer/utils'
+
+type ProviderInfo = { id: string; name: string; capabilities: ScraperCapability[] }
 
 interface Props {
   profile: ScraperProfile
   index: number
   totalCount: number
+  providersByType: Record<ContentEntityType, ProviderInfo[]>
 }
 
 const props = defineProps<Props>()
@@ -24,6 +30,14 @@ const emit = defineEmits<{
   moveUp: [index: number]
   moveDown: [index: number]
 }>()
+
+const searchProviderName = computed(() => {
+  const mediaType = props.profile.mediaType || 'game'
+  const provider = props.providersByType[mediaType]?.find(
+    (p) => p.id === props.profile.searchProviderId
+  )
+  return provider?.name ?? props.profile.searchProviderId
+})
 </script>
 
 <template>
@@ -44,7 +58,7 @@ const emit = defineEmits<{
         {{ props.profile.name || '(未命名)' }}
       </div>
       <div class="text-xs text-muted-foreground truncate">
-        搜索: {{ props.profile.searchProviderId }}
+        搜索: {{ searchProviderName }}
       </div>
     </div>
 

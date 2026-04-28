@@ -327,6 +327,7 @@ function getGlobalIndex(profile: ScraperProfile): number {
                   v-for="profile in typeProfiles"
                   :key="profile.id"
                   :profile="profile"
+                  :providers-by-type="providersByType"
                   :index="getGlobalIndex(profile)"
                   :total-count="profiles.length"
                   @edit="handleEdit"
