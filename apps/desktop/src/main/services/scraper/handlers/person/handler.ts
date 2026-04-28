@@ -105,6 +105,7 @@ export class PersonScraperHandler {
     return this.providers.list().map((provider) => ({
       id: provider.id,
       name: provider.name,
+      externalIdSource: provider.externalIdSource,
       capabilities: [...provider.capabilities]
     }))
   }
@@ -114,6 +115,7 @@ export class PersonScraperHandler {
     return {
       id: provider.id,
       name: provider.name,
+      externalIdSource: provider.externalIdSource,
       capabilities: [...provider.capabilities]
     }
   }
@@ -149,7 +151,9 @@ export class PersonScraperHandler {
     const profile = this.loadProfile(profileId)
     const provider = this.getSearchProvider(profile.searchProviderId)
     const results = await provider.search(query, this.getProfileLocale(profile))
-    return results.map((result) => ensureProviderExternalId(result, provider.id, result.id))
+    return results.map((result) =>
+      ensureProviderExternalId(result, provider.externalIdSource, result.id)
+    )
   }
 
   async scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedPersonBundle | null> {
@@ -304,7 +308,7 @@ export class PersonScraperHandler {
     if (entry.slot === 'info') {
       const normalized = ensureProviderExternalId(
         data as PersonSessionResultMap['info'],
-        providerId,
+        this.requireProviderExternalIdSource(providerId),
         target.id
       )
 
@@ -352,6 +356,15 @@ export class PersonScraperHandler {
       throw new Error(`Provider not found: ${providerId}`)
     }
     return provider
+  }
+
+  private requireProviderExternalIdSource(providerId: string): string {
+    const provider = this.providers.get(providerId)
+    if (!provider) {
+      throw new Error(`Provider not found: ${providerId}`)
+    }
+
+    return provider.externalIdSource
   }
 
   private getProfileLocale(profile: ScraperProfile): Locale {

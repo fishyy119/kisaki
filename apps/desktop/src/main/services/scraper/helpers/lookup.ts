@@ -3,11 +3,11 @@ import type { ScraperProviderDeps } from '../types'
 
 export function findKnownId(
   lookup: Parameters<ScraperProviderDeps['helper']['lookup']['findKnownId']>[0],
-  providerId: string
+  externalIdSource: string
 ): string | undefined {
-  const normalizedProviderId = normalizeKeyText(providerId)
+  const normalizedExternalIdSource = normalizeKeyText(externalIdSource)
 
   return normalizeExternalIds(lookup.knownIds).find(
-    (externalId) => externalId.source === normalizedProviderId
+    (externalId) => externalId.source === normalizedExternalIdSource
   )?.id
 }

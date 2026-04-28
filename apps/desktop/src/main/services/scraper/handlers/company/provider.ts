@@ -21,6 +21,7 @@ export type CompanyScraperSession = BaseScraperSession<CompanyScraperSlot, Compa
 export interface CompanyScraperProvider {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
   search(query: string, locale?: Locale): Promise<CompanySearchResult[]>

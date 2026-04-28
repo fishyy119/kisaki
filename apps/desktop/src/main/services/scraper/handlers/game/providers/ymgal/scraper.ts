@@ -66,6 +66,7 @@ interface YmgalOrganizationResources {
 
 export class YmgalProvider implements GameScraperProvider {
   public readonly id = 'ymgal'
+  public readonly externalIdSource = 'ymgal'
   public readonly name = 'YMGal'
   public readonly capabilities = [
     'search',
@@ -238,7 +239,7 @@ export class YmgalProvider implements GameScraperProvider {
     const { name, originalName } = resolveLocalizedName(game.name, game.chineseName, locale)
     const relatedSites = this.buildGameRelatedSites(game)
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: gameId },
+      { source: this.externalIdSource, id: gameId },
       ...extractExternalIdsFromSites(relatedSites)
     ])
 
@@ -289,7 +290,7 @@ export class YmgalProvider implements GameScraperProvider {
         { label: 'YMGal', url: buildYmgalCharacterUrl(characterId) }
       ])
       const externalIds = dedupeExternalIds([
-        { source: this.id, id: characterId },
+        { source: this.externalIdSource, id: characterId },
         ...extractExternalIdsFromSites(relatedSites)
       ])
 
@@ -374,7 +375,7 @@ export class YmgalProvider implements GameScraperProvider {
       ...extractRelatedSitesFromWebsites(organization?.website)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: developerId },
+      { source: this.externalIdSource, id: developerId },
       ...extractExternalIdsFromSites(relatedSites)
     ])
     const logos = dedupeUrls([organization?.mainImg])
@@ -426,7 +427,7 @@ export class YmgalProvider implements GameScraperProvider {
       name,
       originalName,
       releaseDate: this.parsePartialDate(game.releaseDate),
-      externalIds: [{ source: this.id, id: gameId }]
+      externalIds: [{ source: this.externalIdSource, id: gameId }]
     }
   }
 
@@ -452,7 +453,7 @@ export class YmgalProvider implements GameScraperProvider {
       name: localizedName,
       originalName,
       releaseDate: this.parsePartialDate(item.releaseDate),
-      externalIds: [{ source: this.id, id: itemId }]
+      externalIds: [{ source: this.externalIdSource, id: itemId }]
     }
   }
 
@@ -491,7 +492,7 @@ export class YmgalProvider implements GameScraperProvider {
       ...extractRelatedSitesFromWebsites(detail?.website)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: actorId },
+      { source: this.externalIdSource, id: actorId },
       ...extractExternalIdsFromSites(relatedSites)
     ])
     const photos = dedupeUrls([detail?.mainImg, mapping?.mainImg])
@@ -546,7 +547,7 @@ export class YmgalProvider implements GameScraperProvider {
       ...extractRelatedSitesFromWebsites(detail?.website)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: personId },
+      { source: this.externalIdSource, id: personId },
       ...extractExternalIdsFromSites(relatedSites)
     ])
     const photos = dedupeUrls([detail?.mainImg, snapshot?.mainImg])
@@ -645,7 +646,7 @@ export class YmgalProvider implements GameScraperProvider {
   }
 
   private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
-    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    const knownId = this.helper.lookup.findKnownId(lookup, this.externalIdSource)
     return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
   }
 

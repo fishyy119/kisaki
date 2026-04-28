@@ -21,6 +21,7 @@ export type PersonScraperSession = BaseScraperSession<PersonScraperSlot, PersonS
 export interface PersonScraperProvider {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
   search(query: string, locale?: Locale): Promise<PersonSearchResult[]>

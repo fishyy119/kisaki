@@ -47,24 +47,28 @@ export interface DeeplinkContributionRegistration {
 export interface GameScraperProviderRegistration {
   id: string
   name: string
+  externalIdSource: string
   capabilities: readonly ('search' | GameScraperSlot)[]
 }
 
 export interface PersonScraperProviderRegistration {
   id: string
   name: string
+  externalIdSource: string
   capabilities: readonly ('search' | PersonScraperSlot)[]
 }
 
 export interface CompanyScraperProviderRegistration {
   id: string
   name: string
+  externalIdSource: string
   capabilities: readonly ('search' | CompanyScraperSlot)[]
 }
 
 export interface CharacterScraperProviderRegistration {
   id: string
   name: string
+  externalIdSource: string
   capabilities: readonly ('search' | CharacterScraperSlot)[]
 }
 

@@ -2,17 +2,20 @@ export function toScraperProviderRegistration<TSlot extends string>(
   provider: {
     readonly id: string
     readonly name: string
+    readonly externalIdSource: string
     readonly capabilities: readonly unknown[]
   },
   allowedSlots: readonly TSlot[]
 ): {
   id: string
   name: string
+  externalIdSource: string
   capabilities: readonly ('search' | TSlot)[]
 } {
   return {
     id: provider.id,
     name: provider.name,
+    externalIdSource: provider.externalIdSource,
     capabilities: normalizeScraperCapabilities(provider.capabilities, allowedSlots)
   }
 }

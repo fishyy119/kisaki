@@ -47,7 +47,7 @@ export interface BaseScraperSession<
  * Lookup helpers shared across built-in and extension providers.
  */
 export interface ScraperProviderLookupHelpers {
-  findKnownId(lookup: ScraperLookup, providerId: string): string | undefined
+  findKnownId(lookup: ScraperLookup, externalIdSource: string): string | undefined
 }
 
 /**

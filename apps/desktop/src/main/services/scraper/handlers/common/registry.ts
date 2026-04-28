@@ -7,6 +7,7 @@ import type { ScraperCapability } from '@shared/scraper'
 export interface RegisteredScraperProvider {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 }
 
@@ -36,6 +37,10 @@ export function assertProviderContract<TProvider extends RegisteredScraperProvid
 
   if (typeof provider.name !== 'string' || !provider.name.trim()) {
     throw new Error(`[Scraper] Provider name is required (${provider.id})`)
+  }
+
+  if (typeof provider.externalIdSource !== 'string' || !provider.externalIdSource.trim()) {
+    throw new Error(`[Scraper] Provider '${provider.id}' externalIdSource is required`)
   }
 
   if (!Array.isArray(provider.capabilities) || provider.capabilities.length === 0) {

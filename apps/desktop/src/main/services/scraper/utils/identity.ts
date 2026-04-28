@@ -1,25 +1,31 @@
-import type { ExternalId } from '@shared/identity'
+import { normalizeKeyText, type ExternalId } from '@shared/identity'
 
-function hasLeadingProviderExternalId(
+function hasProviderExternalId(
   externalIds: ExternalId[],
-  providerId: string,
+  externalIdSource: string,
   entityId: string
 ): boolean {
-  const first = externalIds[0]
-  return first?.source === providerId && first.id === entityId
+  const normalizedSource = normalizeKeyText(externalIdSource)
+  const normalizedId = normalizeKeyText(entityId)
+
+  return externalIds.some(
+    (externalId) =>
+      normalizeKeyText(externalId.source) === normalizedSource &&
+      normalizeKeyText(externalId.id) === normalizedId
+  )
 }
 
 export function ensureProviderExternalId<T extends { externalIds: ExternalId[] }>(
   entity: T,
-  providerId: string,
+  externalIdSource: string,
   entityId: string
 ): T {
-  if (hasLeadingProviderExternalId(entity.externalIds, providerId, entityId)) {
+  if (hasProviderExternalId(entity.externalIds, externalIdSource, entityId)) {
     return entity
   }
 
   return {
     ...entity,
-    externalIds: [{ source: providerId, id: entityId }, ...entity.externalIds]
+    externalIds: [{ source: externalIdSource, id: entityId }, ...entity.externalIds]
   }
 }

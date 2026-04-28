@@ -33,17 +33,6 @@ export interface ScraperRegistration {
 export interface ScraperDomain {
   kind: ScraperKind
   mediaType: ScraperMediaType
-  label: string
   registerWithScraper(scraper: ScraperService, provider: unknown): void
   unregisterFromScraper(scraper: ScraperService, hostProviderId: string): Promise<void>
-  toSessionResults(results: unknown, registration: ScraperRegistration): unknown
-}
-
-export interface ExternalIdRecord {
-  source: string
-  id: string
-}
-
-export interface ValueWithExternalIds {
-  externalIds: readonly ExternalIdRecord[]
 }

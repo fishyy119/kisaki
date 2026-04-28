@@ -81,6 +81,7 @@ function resolveAllowedExternalIdSource(sourceName?: string): string | undefined
 
 export class IGDBProvider implements GameScraperProvider {
   public readonly id = 'igdb'
+  public readonly externalIdSource = 'igdb'
   public readonly name = 'IGDB'
   public readonly capabilities = [
     'search',
@@ -154,7 +155,7 @@ export class IGDBProvider implements GameScraperProvider {
         id: String(game.id),
         name: game.name,
         releaseDate: toPartialDateFromUnix(game.first_release_date),
-        externalIds: [{ source: this.id, id: String(game.id) }]
+        externalIds: [{ source: this.externalIdSource, id: String(game.id) }]
       }))
   }
 
@@ -503,7 +504,7 @@ export class IGDBProvider implements GameScraperProvider {
       })
     }
 
-    const externalIds = [{ source: this.id, id: String(game.id) }]
+    const externalIds = [{ source: this.externalIdSource, id: String(game.id) }]
     for (const ext of externalGames) {
       const sourceName = externalSourceMap.get(ext.external_game_source ?? -1)
       const resolvedSource = resolveAllowedExternalIdSource(sourceName)
@@ -729,7 +730,7 @@ export class IGDBProvider implements GameScraperProvider {
             url: character.url?.trim() || `https://www.igdb.com/characters/${character.id}`
           }
         ]),
-        externalIds: [{ source: this.id, id: String(character.id) }],
+        externalIds: [{ source: this.externalIdSource, id: String(character.id) }],
         photos: photo ? [photo] : undefined,
         gender: mapIgdbGender(genderMap.get(character.character_gender ?? -1)),
         tags: tags.length > 0 ? this.dedupeTags(tags) : undefined,
@@ -801,7 +802,7 @@ export class IGDBProvider implements GameScraperProvider {
         name: company.name.trim(),
         description: this.normalizeDescription(company.description),
         relatedSites: this.dedupeRelatedSites(relatedSites),
-        externalIds: [{ source: this.id, id: String(company.id) }],
+        externalIds: [{ source: this.externalIdSource, id: String(company.id) }],
         logos: logo ? [logo] : undefined
       }
 
@@ -976,7 +977,7 @@ export class IGDBProvider implements GameScraperProvider {
   }
 
   private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
-    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    const knownId = this.helper.lookup.findKnownId(lookup, this.externalIdSource)
     return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
   }
 

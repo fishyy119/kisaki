@@ -23,6 +23,7 @@ export interface ScraperProviderLike<
 > {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly unknown[]
   search(
     query: ScraperSearchRequest['query'],

@@ -17,6 +17,7 @@ import type { ScraperCapability } from './slot'
 export interface CompanyScraperProviderInfo {
   id: string
   name: string
+  externalIdSource: string
   capabilities: ScraperCapability[]
 }
 

@@ -30,6 +30,7 @@ export type CharacterScraperSession = BaseScraperSession<
 export interface CharacterScraperProvider {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
   search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>

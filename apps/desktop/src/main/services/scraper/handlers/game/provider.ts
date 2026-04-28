@@ -34,6 +34,7 @@ export type GameScraperSession = BaseScraperSession<GameScraperSlot, GameSession
 export interface GameScraperProvider {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
   search(query: string, locale?: Locale): Promise<GameSearchResult[]>

@@ -82,6 +82,7 @@ const TRAIT_FIELDS = 'id,name,group_name,sexual'
 
 export class VNDBProvider implements GameScraperProvider {
   public readonly id = 'vndb'
+  public readonly externalIdSource = 'vndb'
   public readonly name = 'VNDB'
   public readonly capabilities = [
     'search',
@@ -130,7 +131,7 @@ export class VNDBProvider implements GameScraperProvider {
         name,
         originalName,
         releaseDate: this.parsePartialDate(vn.released),
-        externalIds: [{ source: this.id, id: vn.id }]
+        externalIds: [{ source: this.externalIdSource, id: vn.id }]
       }
     })
   }
@@ -272,7 +273,7 @@ export class VNDBProvider implements GameScraperProvider {
       ...extractRelatedSitesFromExtlinks(vn.extlinks)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: vn.id },
+      { source: this.externalIdSource, id: vn.id },
       ...extractExternalIdsFromExtlinks(vn.extlinks)
     ])
 
@@ -546,7 +547,7 @@ export class VNDBProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(character.description)),
       relatedSites: [{ label: 'VNDB', url: buildVndbCharacterUrl(character.id) }],
-      externalIds: [{ source: this.id, id: character.id }],
+      externalIds: [{ source: this.externalIdSource, id: character.id }],
       photos: photos.length > 0 ? photos : undefined,
       gender: mapVndbGender(character.sex ?? character.gender),
       birthDate: toPartialDateFromMonthDay(character.birthday),
@@ -602,7 +603,7 @@ export class VNDBProvider implements GameScraperProvider {
       ...extractRelatedSitesFromExtlinks(staff?.extlinks)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: staffId },
+      { source: this.externalIdSource, id: staffId },
       ...extractExternalIdsFromExtlinks(staff?.extlinks)
     ])
 
@@ -633,7 +634,7 @@ export class VNDBProvider implements GameScraperProvider {
       ...extractRelatedSitesFromExtlinks(staff?.extlinks)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: staffId },
+      { source: this.externalIdSource, id: staffId },
       ...extractExternalIdsFromExtlinks(staff?.extlinks)
     ])
 
@@ -675,7 +676,7 @@ export class VNDBProvider implements GameScraperProvider {
       ...extractRelatedSitesFromExtlinks(producer?.extlinks)
     ])
     const externalIds = dedupeExternalIds([
-      { source: this.id, id: producerId },
+      { source: this.externalIdSource, id: producerId },
       ...extractExternalIdsFromExtlinks(producer?.extlinks)
     ])
 
@@ -715,7 +716,7 @@ export class VNDBProvider implements GameScraperProvider {
   }
 
   private resolveKnownTarget(lookup: ScraperLookup): GameResolvedTarget | null {
-    const knownId = this.helper.lookup.findKnownId(lookup, this.id)
+    const knownId = this.helper.lookup.findKnownId(lookup, this.externalIdSource)
     return knownId ? this.helper.target.createResolvedTarget(knownId, lookup.name) : null
   }
 

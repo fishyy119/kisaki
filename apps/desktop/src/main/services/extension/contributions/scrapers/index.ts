@@ -2,12 +2,8 @@ import type {
   CharacterScraperProviderRegistration,
   CompanyScraperProviderRegistration,
   ExtensionRuntimeHandle,
-  CharacterSessionResultMap as ExtensionCharacterSessionResultMap,
-  CompanySessionResultMap as ExtensionCompanySessionResultMap,
   GameScraperProviderRegistration,
-  GameSessionResultMap as ExtensionGameSessionResultMap,
-  PersonScraperProviderRegistration,
-  PersonSessionResultMap as ExtensionPersonSessionResultMap
+  PersonScraperProviderRegistration
 } from '@kisaki/extension-api'
 import log from 'electron-log/main'
 import type { ExtensionScraperProviderInfo } from '@shared/extension'
@@ -27,13 +23,7 @@ import type {
   ScraperProviderRegistration,
   ScraperRegistration
 } from './domain'
-import {
-  createProviderAdapter,
-  toHostCharacterSessionResults,
-  toHostCompanySessionResults,
-  toHostGameSessionResults,
-  toHostPersonSessionResults
-} from './registrations'
+import { createProviderAdapter } from './registrations'
 
 export class ExtensionScraperContributionHost {
   private readonly registrations = new Map<string, ScraperRegistration>()
@@ -41,52 +31,34 @@ export class ExtensionScraperContributionHost {
   private readonly gameDomain: ScraperDomain = {
     kind: 'games',
     mediaType: 'game',
-    label: 'Game',
     registerWithScraper: (scraper, provider) =>
       scraper.registerGameProvider(provider as GameScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.unregisterGameProvider(hostProviderId),
-    toSessionResults: (results, registration) =>
-      toHostGameSessionResults(results as Partial<ExtensionGameSessionResultMap>, registration)
+      scraper.unregisterGameProvider(hostProviderId)
   }
   private readonly personDomain: ScraperDomain = {
     kind: 'persons',
     mediaType: 'person',
-    label: 'Person',
     registerWithScraper: (scraper, provider) =>
       scraper.registerPersonProvider(provider as PersonScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.unregisterPersonProvider(hostProviderId),
-    toSessionResults: (results, registration) =>
-      toHostPersonSessionResults(results as Partial<ExtensionPersonSessionResultMap>, registration)
+      scraper.unregisterPersonProvider(hostProviderId)
   }
   private readonly companyDomain: ScraperDomain = {
     kind: 'companies',
     mediaType: 'company',
-    label: 'Company',
     registerWithScraper: (scraper, provider) =>
       scraper.registerCompanyProvider(provider as CompanyScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.unregisterCompanyProvider(hostProviderId),
-    toSessionResults: (results, registration) =>
-      toHostCompanySessionResults(
-        results as Partial<ExtensionCompanySessionResultMap>,
-        registration
-      )
+      scraper.unregisterCompanyProvider(hostProviderId)
   }
   private readonly characterDomain: ScraperDomain = {
     kind: 'characters',
     mediaType: 'character',
-    label: 'Character',
     registerWithScraper: (scraper, provider) =>
       scraper.registerCharacterProvider(provider as CharacterScraperProvider),
     unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.unregisterCharacterProvider(hostProviderId),
-    toSessionResults: (results, registration) =>
-      toHostCharacterSessionResults(
-        results as Partial<ExtensionCharacterSessionResultMap>,
-        registration
-      )
+      scraper.unregisterCharacterProvider(hostProviderId)
   }
 
   constructor(private readonly options: ExtensionContributionHostOptions) {
