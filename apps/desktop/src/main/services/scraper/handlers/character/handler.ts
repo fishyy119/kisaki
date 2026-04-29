@@ -14,7 +14,6 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import { type ProfileCleanupAction } from '@shared/scraper'
 import type {
   CharacterScraperProviderInfo,
   CharacterSearchResult,
@@ -28,10 +27,10 @@ import { executeScraperPlan } from '../common/executor'
 import {
   buildExecutionPlan,
   buildSingleProviderExecutionPlan,
-  sanitizeSlotConfigs,
+  prepareRuntimeSlotConfigs,
   type PlannedSlotEntry
 } from '../common/planner'
-import { createProviderRegistry, hasRegisteredProvider } from '../common/registry'
+import { createProviderRegistry } from '../common/registry'
 import { resolveProviderTarget, resolveSearchProviderTarget } from '../common/resolve'
 import { createScraperInvocationState } from '../common/state'
 import { mergeCharacterScraperBundle, mergeCharacterScraperImages } from './merge'
@@ -48,7 +47,7 @@ import type {
 } from './types'
 import type { SlotResult } from '../../types'
 
-type ValidatedCharacterProfile = ScraperProfile & { slotConfigs: CharacterScraperSlotConfigs }
+type RuntimeCharacterProfile = ScraperProfile & { slotConfigs: CharacterScraperSlotConfigs }
 
 const CHARACTER_ALLOWED_CAPABILITIES = new Set(['search', ...CHARACTER_SCRAPER_SLOTS] as const)
 
@@ -86,25 +85,9 @@ export class CharacterScraperHandler {
     log.info(`[Scraper] Registered character provider: ${provider.id}`)
   }
 
-  async unregisterProvider(providerId: string): Promise<Map<string, ProfileCleanupAction>> {
+  unregisterProvider(providerId: string): void {
     this.providers.delete(providerId)
     log.info(`[Scraper] Unregistered character provider: ${providerId}`)
-
-    const allProfiles = this.db
-      .select()
-      .from(scraperProfiles)
-      .where(eq(scraperProfiles.mediaType, 'character'))
-      .all()
-
-    const results = new Map<string, ProfileCleanupAction>()
-    for (const profile of allProfiles) {
-      const action = await this.ensureProfileValid(profile.id)
-      if (action !== 'unchanged') {
-        results.set(profile.id, action)
-      }
-    }
-
-    return results
   }
 
   getProviders(): CharacterScraperProviderInfo[] {
@@ -126,33 +109,6 @@ export class CharacterScraperHandler {
     }
   }
 
-  async ensureProfileValid(profileId: string): Promise<ProfileCleanupAction> {
-    const profile = this.loadProfile(profileId)
-
-    if (!hasRegisteredProvider(this.providers.asMap(), profile.searchProviderId)) {
-      this.db.delete(scraperProfiles).where(eq(scraperProfiles.id, profileId)).run()
-      log.info(`[Scraper] Deleted character profile '${profile.name}' (invalid searchProviderId)`)
-      return 'deleted'
-    }
-
-    const { slotConfigs, changed } = sanitizeSlotConfigs(
-      'character',
-      profile.slotConfigs,
-      this.providers.asMap()
-    )
-    if (changed) {
-      this.db
-        .update(scraperProfiles)
-        .set({ slotConfigs })
-        .where(eq(scraperProfiles.id, profileId))
-        .run()
-      log.info(`[Scraper] Updated character profile '${profile.name}' (cleaned slot providers)`)
-      return 'updated'
-    }
-
-    return 'unchanged'
-  }
-
   async search(profileId: string, query: string): Promise<CharacterSearchResult[]> {
     const profile = this.loadProfile(profileId)
     const provider = this.getSearchProvider(profile.searchProviderId)
@@ -163,26 +119,22 @@ export class CharacterScraperHandler {
   }
 
   async scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedCharacterBundle | null> {
-    let profile = this.loadProfile(profileId)
+    const profile = this.loadProfile(profileId)
 
-    const action = await this.ensureProfileValid(profileId)
-    if (action === 'deleted') {
-      throw new Error(`Profile '${profileId}' was invalid and has been deleted`)
-    }
-    if (action === 'updated') {
-      profile = this.loadProfile(profileId)
-    }
-
-    const validatedProfile: ValidatedCharacterProfile = {
+    const runtimeProfile: RuntimeCharacterProfile = {
       ...profile,
-      slotConfigs: profile.slotConfigs as CharacterScraperSlotConfigs
+      slotConfigs: prepareRuntimeSlotConfigs(
+        'character',
+        profile.slotConfigs,
+        this.providers.asMap()
+      )
     }
 
-    const resolveLocale = this.getResolveLocale(profile, lookup)
-    const searchProvider = this.getSearchProvider(profile.searchProviderId)
+    const resolveLocale = this.getResolveLocale(runtimeProfile, lookup)
+    const searchProvider = this.getSearchProvider(runtimeProfile.searchProviderId)
     const plan = buildExecutionPlan<CharacterScraperSlot>({
-      slotConfigs: validatedProfile.slotConfigs,
-      resolveLocale: (entry) => this.getFetchLocale(validatedProfile, entry)
+      slotConfigs: runtimeProfile.slotConfigs,
+      resolveLocale: (entry) => this.getFetchLocale(runtimeProfile, entry)
     })
     const state = createScraperInvocationState<
       CharacterResolvedTarget,
@@ -237,7 +189,7 @@ export class CharacterScraperHandler {
         warn: (message, error) => log.warn(message, error)
       })) as readonly CharacterScraperResult[]
 
-      return mergeCharacterScraperBundle([...results], validatedProfile)
+      return mergeCharacterScraperBundle([...results], runtimeProfile)
     } finally {
       await state.dispose()
     }

@@ -22,7 +22,10 @@ import {
   getScraperSlotsForMediaType,
   normalizeSlotConfigs
 } from '@shared/scraper'
-import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
+import {
+  ScraperProviderSelect,
+  type ScraperProvidersByType
+} from '@renderer/components/shared/scraper'
 import {
   Dialog,
   DialogContent,
@@ -55,6 +58,7 @@ import ScraperProfileSlotConfigFormDialog from './profile-slot-config-form-dialo
 interface Props {
   profile: ScraperProfile | null
   isNew: boolean
+  providersByType: ScraperProvidersByType
   onSave: (profile: ScraperProfile) => void
 }
 
@@ -329,6 +333,7 @@ function getSlotStrategyLabel(slot: ScraperSlot): string {
     :slot-type="editingSlot"
     :slot-name="SLOT_LABELS[editingSlot]"
     :slot-config="editingSlotConfig"
+    :providers-by-type="props.providersByType"
     :on-save="handleSlotSave"
   />
 </template>

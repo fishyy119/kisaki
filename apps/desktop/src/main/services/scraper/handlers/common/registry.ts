@@ -15,7 +15,6 @@ export interface ScraperProviderRegistry<TProvider extends RegisteredScraperProv
   register(provider: TProvider): void
   delete(providerId: string): boolean
   get(providerId: string): TProvider | undefined
-  has(providerId: string): boolean
   list(): readonly TProvider[]
   asMap(): ReadonlyMap<string, TProvider>
 }
@@ -107,10 +106,6 @@ export function createProviderRegistry<TProvider extends RegisteredScraperProvid
       return providers.get(providerId)
     },
 
-    has(providerId) {
-      return providers.has(providerId)
-    },
-
     list() {
       return Array.from(providers.values())
     },
@@ -119,33 +114,4 @@ export function createProviderRegistry<TProvider extends RegisteredScraperProvid
       return providers
     }
   }
-}
-
-/**
- * Read a provider from a registry-like map.
- */
-export function getProvider<TProvider extends RegisteredScraperProvider>(
-  providers: ReadonlyMap<string, TProvider>,
-  providerId: string
-): TProvider | undefined {
-  return providers.get(providerId)
-}
-
-/**
- * Check whether a provider exists in a registry-like map.
- */
-export function hasRegisteredProvider<TProvider extends RegisteredScraperProvider>(
-  providers: ReadonlyMap<string, TProvider>,
-  providerId: string
-): boolean {
-  return providers.has(providerId)
-}
-
-/**
- * Return provider infos from a registry-like map.
- */
-export function listProviders<TProvider extends RegisteredScraperProvider>(
-  providers: ReadonlyMap<string, TProvider>
-): readonly TProvider[] {
-  return Array.from(providers.values())
 }

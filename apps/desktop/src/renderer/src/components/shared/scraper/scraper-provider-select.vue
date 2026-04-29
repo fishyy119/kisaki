@@ -14,10 +14,15 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
+import {
+  getScraperProviderDisplay,
+  type ScraperProviderInfo
+} from './provider-display'
 
 interface Props {
   /** Which entity type this provider list is for (default: game) */
@@ -35,6 +40,8 @@ interface Props {
   autoFocus?: boolean
   /** Auto-select first filtered provider when value is empty (default: true) */
   autoSelectFirst?: boolean
+  /** Keep the current value visible even if its provider is not currently available */
+  showUnavailableSelected?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,7 +52,8 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   size: 'default',
   autoFocus: false,
-  autoSelectFirst: true
+  autoSelectFirst: true,
+  showUnavailableSelected: true
 })
 
 const model = defineModel<string>()
@@ -54,9 +62,7 @@ const emit = defineEmits<{
   change: [providerId: string]
 }>()
 
-type ProviderInfo = { id: string; name: string; capabilities: ScraperCapability[] }
-
-async function listProviders(entityType: ContentEntityType): Promise<ProviderInfo[]> {
+async function listProviders(entityType: ContentEntityType): Promise<ScraperProviderInfo[]> {
   switch (entityType) {
     case 'game': {
       const result = await ipcManager.invoke('scraper:list-game-providers')
@@ -97,6 +103,22 @@ const filteredProviders = computed(() => {
   }
 
   return result
+})
+
+const selectedFallbackProvider = computed(() => {
+  if (!props.showUnavailableSelected || !model.value) {
+    return null
+  }
+
+  if (filteredProviders.value.some((provider) => provider.id === model.value)) {
+    return null
+  }
+
+  return getScraperProviderDisplay(
+    model.value,
+    providers.value ?? [],
+    props.requiredCapabilities
+  )
 })
 
 const triggerVariants = cva('w-full', {
@@ -157,8 +179,24 @@ watch(model, (providerId) => {
       <SelectValue :placeholder="placeholder" />
     </SelectTrigger>
     <SelectContent>
+      <SelectItem
+        v-if="selectedFallbackProvider"
+        :value="selectedFallbackProvider.id"
+        disabled
+      >
+        <div class="flex min-w-0 items-center gap-1.5">
+          <span class="truncate">{{ selectedFallbackProvider.label }}</span>
+          <Badge
+            v-if="selectedFallbackProvider.statusLabel"
+            variant="warning"
+            class="shrink-0 px-1 py-0 text-[10px]"
+          >
+            {{ selectedFallbackProvider.statusLabel }}
+          </Badge>
+        </div>
+      </SelectItem>
       <div
-        v-if="filteredProviders.length === 0"
+        v-if="filteredProviders.length === 0 && !selectedFallbackProvider"
         class="py-2 px-2 text-xs text-muted-foreground"
       >
         暂无可用提供者

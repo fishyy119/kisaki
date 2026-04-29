@@ -1,5 +1,5 @@
 /**
- * Static slot planning and profile slot-config sanitization helpers.
+ * Static slot planning and runtime slot-config helpers.
  */
 
 import type { ScraperProfile, ScraperProviderEntry, ScraperSlot, SlotStrategy } from '@shared/db'
@@ -121,10 +121,6 @@ function sanitizeProviderEntries(
     }))
 }
 
-function serializeSlotConfigs(value: ScraperProfile['slotConfigs']): string {
-  return JSON.stringify(value ?? null) ?? 'null'
-}
-
 function groupWaveEntriesByProvider<TSlot extends string>(
   entries: readonly PlannedSlotEntry<TSlot>[]
 ): readonly PlannedWaveStep<TSlot>[] {
@@ -181,16 +177,17 @@ export function getEnabledRuntimeProviderEntries(
 }
 
 /**
- * Canonicalize a profile's slot configs and drop providers that cannot serve a slot.
+ * Build runtime slot configs for a scrape invocation.
+ *
+ * Providers that are unavailable or cannot serve a slot are skipped only for the
+ * current invocation. User profile data must remain independent from runtime
+ * provider availability.
  */
-export function sanitizeSlotConfigs<T extends ScraperMediaType>(
+export function prepareRuntimeSlotConfigs<T extends ScraperMediaType>(
   mediaType: T,
   slotConfigs: ScraperProfile['slotConfigs'],
   providers: ReadonlyMap<string, RegisteredScraperProvider>
-): {
-  slotConfigs: SlotConfigsForMediaType<T>
-  changed: boolean
-} {
+): SlotConfigsForMediaType<T> {
   const cleaned = normalizeSlotConfigs(mediaType, slotConfigs)
   const slots = getScraperSlotsForMediaType(
     mediaType
@@ -201,10 +198,7 @@ export function sanitizeSlotConfigs<T extends ScraperMediaType>(
     config.providers = sanitizeProviderEntries(slot, config.providers, providers)
   }
 
-  return {
-    slotConfigs: cleaned,
-    changed: serializeSlotConfigs(cleaned) !== serializeSlotConfigs(slotConfigs)
-  }
+  return cleaned
 }
 
 /**

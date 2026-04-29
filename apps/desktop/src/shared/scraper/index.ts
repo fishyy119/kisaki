@@ -30,8 +30,7 @@ export {
   createEmptySlotConfig,
   createSlotConfigs,
   getScraperSlotsForMediaType,
-  normalizeSlotConfigs,
-  type ProfileCleanupAction
+  normalizeSlotConfigs
 } from './slot'
 
 export type { ExternalId } from '@shared/identity'

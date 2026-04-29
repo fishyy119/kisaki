@@ -376,10 +376,3 @@ export function createSlotConfigs<T extends ScraperMediaType>(
 
   return configs as SlotConfigsForMediaType<T>
 }
-
-// =============================================================================
-// Profile Cleanup Types
-// =============================================================================
-
-/** Action taken when ensuring profile validity. */
-export type ProfileCleanupAction = 'deleted' | 'updated' | 'unchanged'

@@ -5,8 +5,11 @@
   Step 2: Select provider
 -->
 <script setup lang="ts">
-import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
+import type {
+  ScraperProviderInfo,
+  ScraperProvidersByType
+} from '@renderer/components/shared/scraper'
 
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
@@ -21,10 +24,8 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { getEntityIcon } from '@renderer/utils'
 
-type ProviderInfo = { id: string; name: string; capabilities: ScraperCapability[] }
-
 interface Props {
-  providersByType: Record<ContentEntityType, ProviderInfo[]>
+  providersByType: ScraperProvidersByType
 }
 
 const props = defineProps<Props>()
@@ -45,7 +46,7 @@ const mediaTypeOptions: { value: ContentEntityType; label: string }[] = [
   { value: 'company', label: '公司' }
 ]
 
-const currentProviders = computed<ProviderInfo[]>(() => {
+const currentProviders = computed<ScraperProviderInfo[]>(() => {
   if (!selectedMediaType.value) return []
   return props.providersByType[selectedMediaType.value] ?? []
 })

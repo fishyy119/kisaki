@@ -14,7 +14,6 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import { type ProfileCleanupAction } from '@shared/scraper'
 import type {
   CompanyScraperProviderInfo,
   CompanySearchResult,
@@ -28,10 +27,10 @@ import { executeScraperPlan } from '../common/executor'
 import {
   buildExecutionPlan,
   buildSingleProviderExecutionPlan,
-  sanitizeSlotConfigs,
+  prepareRuntimeSlotConfigs,
   type PlannedSlotEntry
 } from '../common/planner'
-import { createProviderRegistry, hasRegisteredProvider } from '../common/registry'
+import { createProviderRegistry } from '../common/registry'
 import { resolveProviderTarget, resolveSearchProviderTarget } from '../common/resolve'
 import { createScraperInvocationState } from '../common/state'
 import { mergeCompanyScraperBundle, mergeCompanyScraperImages } from './merge'
@@ -48,7 +47,7 @@ import type {
 } from './types'
 import type { SlotResult } from '../../types'
 
-type ValidatedCompanyProfile = ScraperProfile & { slotConfigs: CompanyScraperSlotConfigs }
+type RuntimeCompanyProfile = ScraperProfile & { slotConfigs: CompanyScraperSlotConfigs }
 
 const COMPANY_ALLOWED_CAPABILITIES = new Set(['search', ...COMPANY_SCRAPER_SLOTS] as const)
 
@@ -84,25 +83,9 @@ export class CompanyScraperHandler {
     log.info(`[Scraper] Registered company provider: ${provider.id}`)
   }
 
-  async unregisterProvider(providerId: string): Promise<Map<string, ProfileCleanupAction>> {
+  unregisterProvider(providerId: string): void {
     this.providers.delete(providerId)
     log.info(`[Scraper] Unregistered company provider: ${providerId}`)
-
-    const allProfiles = this.db
-      .select()
-      .from(scraperProfiles)
-      .where(eq(scraperProfiles.mediaType, 'company'))
-      .all()
-
-    const results = new Map<string, ProfileCleanupAction>()
-    for (const profile of allProfiles) {
-      const action = await this.ensureProfileValid(profile.id)
-      if (action !== 'unchanged') {
-        results.set(profile.id, action)
-      }
-    }
-
-    return results
   }
 
   getProviders(): CompanyScraperProviderInfo[] {
@@ -124,33 +107,6 @@ export class CompanyScraperHandler {
     }
   }
 
-  async ensureProfileValid(profileId: string): Promise<ProfileCleanupAction> {
-    const profile = this.loadProfile(profileId)
-
-    if (!hasRegisteredProvider(this.providers.asMap(), profile.searchProviderId)) {
-      this.db.delete(scraperProfiles).where(eq(scraperProfiles.id, profileId)).run()
-      log.info(`[Scraper] Deleted company profile '${profile.name}' (invalid searchProviderId)`)
-      return 'deleted'
-    }
-
-    const { slotConfigs, changed } = sanitizeSlotConfigs(
-      'company',
-      profile.slotConfigs,
-      this.providers.asMap()
-    )
-    if (changed) {
-      this.db
-        .update(scraperProfiles)
-        .set({ slotConfigs })
-        .where(eq(scraperProfiles.id, profileId))
-        .run()
-      log.info(`[Scraper] Updated company profile '${profile.name}' (cleaned slot providers)`)
-      return 'updated'
-    }
-
-    return 'unchanged'
-  }
-
   async search(profileId: string, query: string): Promise<CompanySearchResult[]> {
     const profile = this.loadProfile(profileId)
     const provider = this.getSearchProvider(profile.searchProviderId)
@@ -161,26 +117,18 @@ export class CompanyScraperHandler {
   }
 
   async scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedCompanyBundle | null> {
-    let profile = this.loadProfile(profileId)
+    const profile = this.loadProfile(profileId)
 
-    const action = await this.ensureProfileValid(profileId)
-    if (action === 'deleted') {
-      throw new Error(`Profile '${profileId}' was invalid and has been deleted`)
-    }
-    if (action === 'updated') {
-      profile = this.loadProfile(profileId)
-    }
-
-    const validatedProfile: ValidatedCompanyProfile = {
+    const runtimeProfile: RuntimeCompanyProfile = {
       ...profile,
-      slotConfigs: profile.slotConfigs as CompanyScraperSlotConfigs
+      slotConfigs: prepareRuntimeSlotConfigs('company', profile.slotConfigs, this.providers.asMap())
     }
 
-    const resolveLocale = this.getResolveLocale(profile, lookup)
-    const searchProvider = this.getSearchProvider(profile.searchProviderId)
+    const resolveLocale = this.getResolveLocale(runtimeProfile, lookup)
+    const searchProvider = this.getSearchProvider(runtimeProfile.searchProviderId)
     const plan = buildExecutionPlan<CompanyScraperSlot>({
-      slotConfigs: validatedProfile.slotConfigs,
-      resolveLocale: (entry) => this.getFetchLocale(validatedProfile, entry)
+      slotConfigs: runtimeProfile.slotConfigs,
+      resolveLocale: (entry) => this.getFetchLocale(runtimeProfile, entry)
     })
     const state = createScraperInvocationState<
       CompanyResolvedTarget,
@@ -235,7 +183,7 @@ export class CompanyScraperHandler {
         warn: (message, error) => log.warn(message, error)
       })) as readonly CompanyScraperResult[]
 
-      return mergeCompanyScraperBundle([...results], validatedProfile)
+      return mergeCompanyScraperBundle([...results], runtimeProfile)
     } finally {
       await state.dispose()
     }

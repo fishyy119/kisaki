@@ -5,21 +5,22 @@
 -->
 <script setup lang="ts">
 import type { ScraperProfile } from '@shared/db'
-import type { ScraperCapability } from '@shared/scraper'
-import type { ContentEntityType } from '@shared/common'
 
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { Badge } from '@renderer/components/ui/badge'
 import { getEntityIcon } from '@renderer/utils'
-
-type ProviderInfo = { id: string; name: string; capabilities: ScraperCapability[] }
+import {
+  getScraperProviderDisplay,
+  type ScraperProvidersByType
+} from '@renderer/components/shared/scraper'
 
 interface Props {
   profile: ScraperProfile
   index: number
   totalCount: number
-  providersByType: Record<ContentEntityType, ProviderInfo[]>
+  providersByType: ScraperProvidersByType
 }
 
 const props = defineProps<Props>()
@@ -31,12 +32,13 @@ const emit = defineEmits<{
   moveDown: [index: number]
 }>()
 
-const searchProviderName = computed(() => {
+const searchProviderDisplay = computed(() => {
   const mediaType = props.profile.mediaType || 'game'
-  const provider = props.providersByType[mediaType]?.find(
-    (p) => p.id === props.profile.searchProviderId
+  return getScraperProviderDisplay(
+    props.profile.searchProviderId,
+    props.providersByType[mediaType] ?? [],
+    ['search']
   )
-  return provider?.name ?? props.profile.searchProviderId
 })
 </script>
 
@@ -57,8 +59,15 @@ const searchProviderName = computed(() => {
       <div class="text-sm font-medium truncate">
         {{ props.profile.name || '(未命名)' }}
       </div>
-      <div class="text-xs text-muted-foreground truncate">
-        搜索: {{ searchProviderName }}
+      <div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <span class="truncate">搜索: {{ searchProviderDisplay.label }}</span>
+        <Badge
+          v-if="searchProviderDisplay.statusLabel"
+          variant="warning"
+          class="shrink-0 px-1 py-0 text-[10px]"
+        >
+          {{ searchProviderDisplay.statusLabel }}
+        </Badge>
       </div>
     </div>
 

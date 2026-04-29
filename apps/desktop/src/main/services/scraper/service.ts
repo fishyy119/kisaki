@@ -279,8 +279,7 @@ export class ScraperService implements IContentService {
   }
 
   async unregisterGameProvider(providerId: string): Promise<void> {
-    // SQLite triggers will automatically emit db:deleted/db:updated events
-    await this.game.unregisterProvider(providerId)
+    this.game.unregisterProvider(providerId)
   }
 
   registerPersonProvider(provider: PersonScraperProvider): void {
@@ -288,7 +287,7 @@ export class ScraperService implements IContentService {
   }
 
   async unregisterPersonProvider(providerId: string): Promise<void> {
-    await this.person.unregisterProvider(providerId)
+    this.person.unregisterProvider(providerId)
   }
 
   registerCompanyProvider(provider: CompanyScraperProvider): void {
@@ -296,7 +295,7 @@ export class ScraperService implements IContentService {
   }
 
   async unregisterCompanyProvider(providerId: string): Promise<void> {
-    await this.company.unregisterProvider(providerId)
+    this.company.unregisterProvider(providerId)
   }
 
   registerCharacterProvider(provider: CharacterScraperProvider): void {
@@ -304,6 +303,6 @@ export class ScraperService implements IContentService {
   }
 
   async unregisterCharacterProvider(providerId: string): Promise<void> {
-    await this.character.unregisterProvider(providerId)
+    this.character.unregisterProvider(providerId)
   }
 }

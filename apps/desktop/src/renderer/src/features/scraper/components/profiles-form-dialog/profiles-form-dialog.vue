@@ -8,7 +8,6 @@
 -->
 <script setup lang="ts">
 import type { ScraperProfile } from '@shared/db'
-import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
 
 import { ref, watch, computed } from 'vue'
@@ -32,19 +31,20 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
-import { ScraperPresetFormDialog } from '@renderer/components/shared/scraper'
+import {
+  ScraperPresetFormDialog,
+  type ScraperProvidersByType
+} from '@renderer/components/shared/scraper'
 import ScraperProfilesItemFormDialog from './profile-item-form-dialog.vue'
 import ScraperProfilesItem from './profile-item.vue'
 import ScraperNewProfileDialog from './new-profile-dialog.vue'
 
 const open = defineModel<boolean>('open', { required: true })
 
-type ProviderInfo = { id: string; name: string; capabilities: ScraperCapability[] }
-
 // Profile form data type
 interface ProfileFormData {
   profiles: ScraperProfile[]
-  providersByType: Record<ContentEntityType, ProviderInfo[]>
+  providersByType: ScraperProvidersByType
 }
 
 // Fetch data when dialog opens
@@ -95,7 +95,7 @@ const deleteProfileId = ref<string | null>(null)
 const isSaving = ref(false)
 const editDialogOpen = ref(false)
 
-const providersByType = computed<Record<ContentEntityType, ProviderInfo[]>>(() => {
+const providersByType = computed<ScraperProvidersByType>(() => {
   return (
     data.value?.providersByType ?? {
       game: [],
@@ -391,6 +391,7 @@ function getGlobalIndex(profile: ScraperProfile): number {
     v-model:open="editDialogOpen"
     :profile="editingProfile"
     :is-new="isAddMode"
+    :providers-by-type="providersByType"
     :on-save="handleProfileSave"
   />
 

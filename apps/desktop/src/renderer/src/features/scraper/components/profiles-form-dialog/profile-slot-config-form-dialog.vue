@@ -14,13 +14,19 @@ import type { ContentEntityType } from '@shared/common'
 
 import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { Badge } from '@renderer/components/ui/badge'
 import {
   getDefaultUnmatchedEntityPolicy,
   getSupportedSlotStrategies,
   isRelationCollectionSlot,
   normalizeSlotStrategy
 } from '@shared/scraper'
-import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
+import {
+  getScraperProviderDisplay,
+  ScraperProviderSelect,
+  type ScraperProviderDisplay,
+  type ScraperProvidersByType
+} from '@renderer/components/shared/scraper'
 import {
   Dialog,
   DialogBody,
@@ -54,6 +60,7 @@ interface Props {
   slotType: ScraperSlot
   slotName: string
   slotConfig: SlotConfig
+  providersByType: ScraperProvidersByType
   onSave: (config: SlotConfig) => void
 }
 
@@ -87,6 +94,12 @@ interface SlotConfigFormData {
   strategy: SlotStrategy
   unmatchedEntityPolicy: UnmatchedEntityPolicy
   providers: ScraperProviderEntry[]
+}
+
+interface ProviderRow {
+  entry: ScraperProviderEntry
+  index: number
+  display: ScraperProviderDisplay
 }
 
 function cloneProviderEntry(entry: ScraperProviderEntry): ScraperProviderEntry {
@@ -167,6 +180,18 @@ watch(
 )
 
 const existingProviderIds = computed(() => formData.value.providers.map((entry) => entry.providerId))
+
+const availableProviders = computed(() => props.providersByType[props.entityType] ?? [])
+
+const providerRows = computed<ProviderRow[]>(() =>
+  formData.value.providers.map((entry, index) => ({
+    entry,
+    index,
+    display: getScraperProviderDisplay(entry.providerId, availableProviders.value, [
+      props.slotType
+    ])
+  }))
+)
 
 function reindexProviders() {
   formData.value.providers.forEach((entry, priority) => {
@@ -287,26 +312,42 @@ function handleSubmit() {
                     暂无提供者
                   </p>
                   <div
-                    v-for="(entry, index) in formData.providers"
-                    :key="entry.providerId"
+                    v-for="row in providerRows"
+                    :key="row.entry.providerId"
                     :class="
                       cn(
                         'flex items-center gap-2 rounded-lg border bg-card p-2',
-                        !entry.enabled && 'opacity-50'
+                        row.display.status !== 'available' && 'border-warning/30 bg-warning/10',
+                        !row.entry.enabled && 'opacity-50'
                       )
                     "
                   >
                     <Switch
-                      v-model="entry.enabled"
+                      v-model="row.entry.enabled"
                       class="shrink-0"
                     />
                     <div class="min-w-0 flex-1">
-                      <div class="truncate text-sm font-medium">{{ entry.providerId }}</div>
+                      <div class="flex min-w-0 items-center gap-1.5">
+                        <span class="truncate text-sm font-medium">{{ row.display.label }}</span>
+                        <Badge
+                          v-if="row.display.statusLabel"
+                          variant="warning"
+                          class="shrink-0 px-1 py-0 text-[10px]"
+                        >
+                          {{ row.display.statusLabel }}
+                        </Badge>
+                      </div>
+                      <div
+                        v-if="row.display.description && row.display.description !== row.display.label"
+                        class="truncate text-xs text-muted-foreground"
+                      >
+                        {{ row.display.description }}
+                      </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-1.5">
                       <span class="text-xs text-muted-foreground">语言:</span>
                       <LocaleSelect
-                        v-model="entry.locale"
+                        v-model="row.entry.locale"
                         class="w-20"
                         size="sm"
                         placeholder="默认"
@@ -317,9 +358,9 @@ function handleSubmit() {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        :disabled="index === 0"
+                        :disabled="row.index === 0"
                         class="size-6"
-                        @click="handleMoveUp(index)"
+                        @click="handleMoveUp(row.index)"
                       >
                         <Icon
                           icon="icon-[mdi--arrow-up]"
@@ -330,9 +371,9 @@ function handleSubmit() {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        :disabled="index === formData.providers.length - 1"
+                        :disabled="row.index === formData.providers.length - 1"
                         class="size-6"
-                        @click="handleMoveDown(index)"
+                        @click="handleMoveDown(row.index)"
                       >
                         <Icon
                           icon="icon-[mdi--arrow-down]"
@@ -344,7 +385,7 @@ function handleSubmit() {
                         variant="ghost"
                         size="icon-sm"
                         class="size-6 text-destructive hover:text-destructive"
-                        @click="handleRemoveProvider(index)"
+                        @click="handleRemoveProvider(row.index)"
                       >
                         <Icon
                           icon="icon-[mdi--close]"
