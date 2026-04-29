@@ -29,7 +29,7 @@
 2. 不再对扩展暴露 `ServiceContainer`、`electron`、`drizzle`、`Vue app/router/pinia`、内部组件库、内部 composables。
 3. 不再在 renderer 进程加载扩展入口，也不再支持 `main + renderer` 双入口扩展。
 4. 扩展代码只运行在共享的扩展宿主进程中，renderer 仅消费主进程下发的贡献快照。
-5. 扩展只允许受控扩展点：实体菜单、扩展设置面板、事件、scraper、deeplink、theme，以及公开宿主能力；其中 scraper API 当前聚焦 provider 注册接口与会话契约，不再额外承诺独立 helper 模块；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh”的模型，且所有 UI 回调必须返回结构化 `UiCallbackResult`，明确 success、refresh、error。
+5. 扩展只允许受控扩展点：实体菜单、settings dialog flow、事件、scraper、deeplink、theme，以及公开宿主能力；其中 scraper API 当前聚焦 provider 注册接口与会话契约，不再额外承诺独立 helper 模块；受控 UI 统一采用“打开时 resolve，后续仅显式 refresh/command”的模型。菜单回调返回 `UiCallbackResult`，settings 回调返回 `SettingsInteractionResult`。
 6. 扩展面向稳定 DTO 和 capability API，而不是面向数据库 schema、IPC channel 和内部 service。
 7. `library` capability 是宿主库域总入口，不只是实体 CRUD；它还必须覆盖实体关系/集合成员关系的创建与维护，以及附件、媒体等受控库操作。
 
@@ -54,7 +54,7 @@
 - `Extension Host`：共享运行所有已启用扩展入口的宿主进程。
 - `Main App`：Kisaki 主应用的 Electron main process。
 - `Renderer`：Kisaki 的 Vue UI 渲染层，只消费扩展贡献结果，不执行扩展代码。
-- `Contribution`：扩展向宿主注册的声明式能力，如菜单项、设置面板、theme、scraper provider。
+- `Contribution`：扩展向宿主注册的声明式能力，如菜单项、settings flow、theme、scraper provider。
 - `Capability`：宿主暴露给扩展的受控基础能力，如 `library`（实体、关系、集合成员、附件/媒体）、network、notify、log、storage。
 - `Activation Context`：传给 `activate(context)` 的实例级上下文，负责生命周期和注册归属。
 - `Global Extension API`：扩展中可直接 `import` 的全局公开 API，面向稳定宿主能力。
@@ -100,10 +100,10 @@ Manifest、protocol 消息、贡献模型、事件负载、DTO 都由共享类�
 
 ### 7. 回调结果结构化
 
-菜单项回调、设置面板按钮回调和 `onSubmit` 必须统一返回结构化 `UiCallbackResult`：
+菜单项回调必须返回结构化 `UiCallbackResult`；settings 节点回调和 screen `submit` 必须返回结构化 `SettingsInteractionResult`：
 
 - 必须显式声明本次回调是否成功
-- 必须显式声明当前 UI surface 是否需要 refresh
+- 必须显式声明当前 UI surface 是否需要 refresh/open/close
 - 失败时必须返回可序列化错误信息
 
 宿主不再接受 `void`、裸 `refresh` 标记或其他隐式语义作为公开回调返回协议。
@@ -204,7 +204,7 @@ packages/extension-sdk/
 - 宿主 bootstrap helper 收敛在 SDK 包内的 `bridge.ts` 语义上，但不通过 `package.json#exports` 对扩展作者暴露；共享宿主的 `runtime/host/sdk-bridge.ts` 负责安装私有 bridge 状态、注入 `runtimeHandle` 并创建 `ExtensionContext`。
 - 宿主公开 capability 通过根 `kisaki` 对象直接、懒加载地暴露，不再为了 `network`、`notify`、`events`、`runtime` 这类直通能力再镜像一个 `src/capabilities/` 目录；只有当某个 capability 后续确实沉淀出独立适配逻辑时，才考虑单独拆分。
 - SDK 不承载 `ExtensionContext`、`DisposableStore`、contribution registrar 等运行时组装逻辑；这些默认实现与清理责任统一归属共享宿主。
-- 公开类型、模块名与 registrar 命名优先自说明，优先使用 `EntityMenu*`、`SettingsPanel*`、`entityMenus`、`settingsPanels` 这类完整领域名；避免把 `menu`、`settings` 作为 SDK 顶层公开主命名。
+- 公开类型、模块名与 registrar 命名优先自说明，优先使用 `EntityMenu*`、`Settings*`、`entityMenus`、`settings` 这类领域名。
 - scraper 作者态 API 当前聚焦 provider 注册器与 capability 包装；通用解析工具只有在形成稳定复用面后，才考虑上提为公开契约。
 - 不再保留 `src/main/`、`src/renderer/`、`theme.css`、宿主复制出的 `.d.ts` 目录。
 

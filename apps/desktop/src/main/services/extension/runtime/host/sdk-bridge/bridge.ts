@@ -21,7 +21,7 @@ import type {
   PersonScraperProvider,
   RpcParams,
   RpcResult,
-  SettingsPanelContribution,
+  SettingsContribution,
   ThemeContribution
 } from '@kisaki/extension-api'
 import { isExtensionEventTopic } from '@kisaki/extension-api'
@@ -30,7 +30,7 @@ import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostDeeplinkContributions } from '../contributions/deeplinks'
 import { HostEntityMenuContributions } from '../contributions/entity-menus'
 import { HostScraperContributions, MAIN_TO_HOST_SCRAPER_RPC } from '../contributions/scrapers'
-import { HostSettingsPanelContributions } from '../contributions/settings-panels'
+import { HostSettingsContributions } from '../contributions/settings'
 import { HostThemeContributions } from '../contributions/themes'
 import type { HostContributionScope } from '../contributions/types'
 import { createDisposable, createDisposableStore } from './disposables'
@@ -45,7 +45,7 @@ import {
   createDeeplinkRegistrar,
   createEntityMenuRegistrar,
   createScraperRegistrar,
-  createSettingsPanelRegistrar,
+  createSettingsRegistrar,
   createThemeRegistrar
 } from './registrars'
 import { toSerializableRecord } from './utils/serialization'
@@ -74,7 +74,7 @@ export class ExtensionHostSdkBridge {
   private readonly executionScope = new AsyncLocalStorage<ActiveExtensionScope>()
   private readonly bridge: ExtensionSdkBridge
   private readonly entityMenus: HostEntityMenuContributions
-  private readonly settingsPanels: HostSettingsPanelContributions
+  private readonly settings: HostSettingsContributions
   private readonly scrapers: HostScraperContributions
   private readonly deeplinks: HostDeeplinkContributions
   private readonly themes: HostThemeContributions
@@ -106,7 +106,7 @@ export class ExtensionHostSdkBridge {
       }
     }
     this.entityMenus = new HostEntityMenuContributions(contributionOptions)
-    this.settingsPanels = new HostSettingsPanelContributions(contributionOptions)
+    this.settings = new HostSettingsContributions(contributionOptions)
     this.scrapers = new HostScraperContributions(contributionOptions)
     this.deeplinks = new HostDeeplinkContributions(contributionOptions)
     this.themes = new HostThemeContributions(contributionOptions)
@@ -122,7 +122,7 @@ export class ExtensionHostSdkBridge {
   async dispose(): Promise<void> {
     this.mainEventCleanup()
     this.entityMenus.releaseAll()
-    this.settingsPanels.releaseAll()
+    this.settings.releaseAll()
     await this.scrapers.releaseAll()
     this.deeplinks.releaseAll()
     this.themes.releaseAll()
@@ -144,17 +144,27 @@ export class ExtensionHostSdkBridge {
       this.entityMenus.releaseSession(params)
       return {}
     })
-    this.rpc.handle('settingsPanels.resolve', (params, context) =>
-      this.settingsPanels.resolve(params, context.signal)
+    this.rpc.handle('settings.open', (params, context) =>
+      this.settings.open(params, context.signal)
     )
-    this.rpc.handle('settingsPanels.submit', (params, context) =>
-      this.settingsPanels.submit(params, context.signal)
+    this.rpc.handle('settings.frame.open', (params, context) =>
+      this.settings.openFrame(params, context.signal)
     )
-    this.rpc.handle('settingsPanels.invoke', (params, context) =>
-      this.settingsPanels.invoke(params, context.signal)
+    this.rpc.handle('settings.frame.refresh', (params, context) =>
+      this.settings.refreshFrame(params, context.signal)
     )
-    this.rpc.handle('settingsPanels.session.release', (params) => {
-      this.settingsPanels.releaseSession(params)
+    this.rpc.handle('settings.submit', (params, context) =>
+      this.settings.submit(params, context.signal)
+    )
+    this.rpc.handle('settings.invoke', (params, context) =>
+      this.settings.invoke(params, context.signal)
+    )
+    this.rpc.handle('settings.frame.release', (params) => {
+      this.settings.releaseFrame(params)
+      return {}
+    })
+    this.rpc.handle('settings.session.release', (params) => {
+      this.settings.releaseSession(params)
       return {}
     })
     this.rpc.handle('deeplinks.handle', (params) => this.deeplinks.handle(params))
@@ -216,7 +226,7 @@ export class ExtensionHostSdkBridge {
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     this.entityMenus.releaseRuntime(runtimeHandle)
-    this.settingsPanels.releaseRuntime(runtimeHandle)
+    this.settings.releaseRuntime(runtimeHandle)
     await this.scrapers.releaseRuntime(runtimeHandle)
     this.deeplinks.releaseRuntime(runtimeHandle)
     this.themes.releaseRuntime(runtimeHandle)
@@ -246,7 +256,7 @@ export class ExtensionHostSdkBridge {
         abortSignal: options.abortSignal,
         contributes: {
           entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions, scope),
-          settingsPanels: createSettingsPanelRegistrar(this.bridge, subscriptions, scope),
+          settings: createSettingsRegistrar(this.bridge, subscriptions, scope),
           scrapers: createScraperRegistrar(this.bridge, subscriptions, scope),
           deeplinks: createDeeplinkRegistrar(this.bridge, subscriptions, scope),
           themes: createThemeRegistrar(this.bridge, subscriptions, scope)
@@ -288,8 +298,7 @@ export class ExtensionHostSdkBridge {
           getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
         }),
       registerEntityMenu: (scope, contribution) => this.registerEntityMenu(scope, contribution),
-      registerSettingsPanel: (scope, contribution) =>
-        this.registerSettingsPanel(scope, contribution),
+      registerSettings: (scope, contribution) => this.registerSettings(scope, contribution),
       registerGameScraperProvider: (scope, provider) =>
         this.registerGameScraperProvider(scope, provider),
       registerPersonScraperProvider: (scope, provider) =>
@@ -350,11 +359,11 @@ export class ExtensionHostSdkBridge {
     return this.entityMenus.register(scope, contribution)
   }
 
-  private registerSettingsPanel(
+  private registerSettings(
     scope: ActiveExtensionScope,
-    contribution: SettingsPanelContribution
+    contribution: SettingsContribution
   ): Disposable {
-    return this.settingsPanels.register(scope, contribution)
+    return this.settings.register(scope, contribution)
   }
 
   private registerGameScraperProvider(

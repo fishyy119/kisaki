@@ -1,16 +1,16 @@
 # 04. 扩展点与受控 UI 规范
 
-本文件定义新扩展系统允许的正式扩展点，以及菜单、设置面板、scraper、deeplink、theme 和宿主能力的具体规范；其中 `events` 归入宿主能力，而不是 contribution 扩展点。
+本文件定义新扩展系统允许的正式扩展点，以及菜单、settings dialog flow、scraper、deeplink、theme 和宿主能力的具体规范；其中 `events` 归入宿主能力，而不是 contribution 扩展点。
 
 ## 支持的正式扩展点总表
 
-| 扩展点           | 执行位置       | 结果形态               | renderer 是否执行扩展代码 |
-| ---------------- | -------------- | ---------------------- | ------------------------- |
-| `entityMenus`    | Extension Host | 结构化菜单项           | 否                        |
-| `settingsPanels` | Extension Host | 结构化设置面板节点列表 | 否                        |
-| `scrapers`       | Extension Host | provider contribution  | 否                        |
-| `deeplinks`      | Extension Host | route handler          | 否                        |
-| `themes`         | Extension Host | 语义 token theme       | 否                        |
+| 扩展点        | 执行位置       | 结果形态              | renderer 是否执行扩展代码 |
+| ------------- | -------------- | --------------------- | ------------------------- |
+| `entityMenus` | Extension Host | 结构化菜单项          | 否                        |
+| `settings`    | Extension Host | 结构化 settings flow  | 否                        |
+| `scrapers`    | Extension Host | provider contribution | 否                        |
+| `deeplinks`   | Extension Host | route handler         | 否                        |
+| `themes`      | Extension Host | 语义 token theme      | 否                        |
 
 `events` 不参与 contribution registry，也不会生成 renderer 侧贡献快照；扩展通过 `kisaki.events` 使用它。
 
@@ -174,44 +174,49 @@ renderer 渲染为宿主现有 submenu + radio item 结构。
 5. 菜单项 ID 在 contribution 内唯一。
 6. `select` 只能展开为宿主控制的 radio submenu，不允许任意多级自定义子菜单。
 
-## 设置面板扩展
+## Settings Flow 扩展
 
 ## 目标
 
-扩展设置不再通过注入完整对话框组件实现，而是通过“受控 resolve 模型 + 本地表单草稿 + 提交优先回调模型”实现。
+扩展设置不再通过注入完整对话框组件实现，而是通过“受控 settings flow + dialog stack + screen/frame resolve + command 结果”实现。一个 settings contribution 可以包含多个 screen，renderer 以嵌套 dialog frame 的方式打开它们。
 
 ## Contribution 接口
 
 ```ts
-interface SettingsPanelContribution {
+interface SettingsContribution {
   id: string
   title: string
   description?: string
   order?: number
+  rootScreenId: string
+  screens: Record<string, SettingsScreen>
+}
 
-  resolve(panel: SettingsPanelBuilder): Promise<SettingsPanelNode[]>
-  onSubmit?(event: SettingsSubmitEvent): Promise<UiCallbackResult>
+interface SettingsScreen {
+  resolve(context: SettingsFrameContext, settings: SettingsBuilder): Promise<SettingsScreenModel>
+  submit?(event: SettingsSubmitEvent): Promise<SettingsInteractionResult>
 }
 ```
 
-这里的 `panel` 由 `context.contributes.settingsPanels` 域注入，只在当前 contribution 的 `resolve()` 作用域内使用；SDK 不再额外顶层导出 `settingsPanel` builder。
+这里的 `settings` builder 由 `context.contributes.settings` 域注入，只在当前 screen 的 `resolve()` 作用域内使用；SDK 不再额外顶层导出 settings builder。
 
 ## 默认交互模型
 
-设置面板本质上是表单，因此默认交互模型如下：
+settings frame 本质上是表单，因此默认交互模型如下：
 
-1. 设置面板打开时，宿主自动调用一次 `resolve()`。
-2. `resolve(panel)` 返回当前完整面板节点列表，renderer 基于其中的字段值初始化本地表单草稿。
+1. 设置入口打开时，宿主打开 settings session 并解析 `rootScreenId` 对应 screen。
+2. `resolve(context, settings)` 返回当前 frame 的 `SettingsScreenModel`，renderer 基于其中的字段值初始化本地表单草稿。
 3. 普通字段编辑不会立即触发扩展回调，也不会自动再次 `resolve()`。
-4. 用户点击“保存”或“提交”时，宿主把整个表单值交给 `onSubmit()`。
-5. 只有 `onSubmit` 或控件级回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行 `resolve()` 并重建当前面板。
+4. `dialog` 节点打开目标 screen，形成新的嵌套 dialog frame。
+5. 用户点击“保存”或“提交”时，宿主把当前 frame 的表单值交给 screen `submit()`。
+6. 只有 `submit` 或节点回调返回的 `SettingsInteractionResult.commands` 明确包含 `refresh` 时，renderer 才会请求刷新对应 frame。
 
 这意味着：
 
-- `onSubmit` 是设置面板最常用、最推荐的主回调。
-- 扩展作者可以把大多数设置保存逻辑都收敛到 `onSubmit` 中。
-- 公开 API 不再保留顶层 `schema` 属性，完整设置面板节点列表统一由 `resolve()` 生成。
-- renderer 只需要实现统一表单容器和统一提交逻辑，复杂度最低。
+- `submit` 是 settings screen 最常用、最推荐的主回调。
+- 扩展作者可以把大多数设置保存逻辑都收敛到 `submit` 中。
+- 公开 API 不再保留顶层 `schema` 属性，完整 screen 节点列表统一由 `resolve()` 生成。
+- renderer 只需要实现统一 dialog stack、表单容器和统一 command 处理逻辑。
 
 ## 控件级回调原则
 
@@ -223,11 +228,11 @@ interface SettingsPanelContribution {
 
 设计原则：
 
-- 普通字段优先进入表单草稿，再统一 `onSubmit`
+- 普通字段优先进入表单草稿，再统一 `submit`
 - 按钮和高级操作允许把控件定义与回调内联写在一起
-- 按钮和高级控件回调统一返回 `Promise<UiCallbackResult>`
-- 如果控件回调返回的 `UiCallbackResult.refresh === true`，当前面板会丢弃本地草稿并用新的 `resolve()` 结果重建
-- 宿主运行时仍会把纯面板模型和 callback registry 分开管理
+- 按钮和高级控件回调统一返回 `Promise<SettingsInteractionResult>`
+- 如果控件回调返回 `refresh` command，目标 frame 会丢弃本地草稿并用新的 `resolve()` 结果重建
+- 宿主运行时仍会把纯 screen model 和 callback registry 分开管理
 
 ## 支持的节点类型
 
@@ -242,6 +247,7 @@ interface SettingsPanelContribution {
 - `textarea`
 - `numberInput`
 - `button`
+- `dialog`
 - `notice`
 - `status`
 - `divider`
@@ -258,30 +264,49 @@ interface SettingsPanelContribution {
 
 - `switch`、`checkbox`、`select`、`textInput`、`textarea`、`numberInput` 默认作为普通表单字段参与提交
 - `button` 是最典型的控件级回调节点
+- `dialog` 是 settings flow 的导航节点，只描述目标 screen，不内联子树
 - 只有少量高级字段才应该使用即时回调
-- `SettingsPanelBuilder` 提供与这些节点类型同名的构造方法，用于在 `resolve(panel)` 内直接生成作者态面板节点
+- `SettingsBuilder` 提供与这些节点类型同名的构造方法，用于在 `resolve(context, settings)` 内直接生成作者态节点
 
-## 面板节点模型
+## Screen 节点模型
 
-`resolve(panel)` 直接返回完整面板节点列表。推荐让 builder 跟随 `context.contributes.settingsPanels` 域一起工作，例如：
+`resolve(context, settings)` 直接返回完整 screen model。推荐让 builder 跟随 `context.contributes.settings` 域一起工作，例如：
 
 ```ts
-context.contributes.settingsPanels.register({
+context.contributes.settings.register({
   id: 'sample.settings',
   title: 'Sample Extension',
-  async resolve(panel) {
-    return [
-      panel.section({
-        id: 'general',
-        title: 'General',
-        controls: []
-      }),
-      panel.notice({
-        id: 'tips',
-        tone: 'info',
-        text: '部分更改需要重新登录后生效'
-      })
-    ]
+  rootScreenId: 'general',
+  screens: {
+    general: {
+      resolve(_frame, settings) {
+        return settings.screen({
+          nodes: [
+            settings.section({
+              id: 'general',
+              title: 'General',
+              children: [
+                settings.dialog({
+                  id: 'advanced',
+                  label: '高级设置',
+                  target: { screenId: 'advanced' }
+                })
+              ]
+            }),
+            settings.notice({
+              id: 'tips',
+              tone: 'info',
+              text: '部分更改需要重新登录后生效'
+            })
+          ]
+        })
+      }
+    },
+    advanced: {
+      resolve(_frame, settings) {
+        return settings.screen({ title: '高级设置', nodes: [] })
+      }
+    }
   }
 })
 ```
@@ -300,36 +325,42 @@ context.contributes.settingsPanels.register({
 推荐让扩展作者写成“控件与行为靠近”的形式，例如：
 
 ```ts
-context.contributes.settingsPanels.register({
+context.contributes.settings.register({
   id: 'sample.settings',
   title: 'Sample Extension',
-  async resolve(panel) {
-    return [
-      panel.section({
-        id: 'general',
-        title: 'General',
-        controls: [
-          panel.switch({
-            id: 'autoSync',
-            label: '启动时自动同步',
-            value: true
-          }),
-          panel.button({
-            id: 'relogin',
-            label: '重新登录',
-            async onClick(_, ctx) {
-              ctx.logger.info('manual relogin requested')
-              return { success: true, refresh: true }
-            }
-          })
-        ]
-      })
-    ]
-  },
-  async onSubmit(event) {
-    // 主要保存逻辑集中在这里
-    void event
-    return { success: true, refresh: false }
+  rootScreenId: 'general',
+  screens: {
+    general: {
+      resolve(_frame, settings) {
+        return settings.screen({
+          nodes: [
+            settings.section({
+              id: 'general',
+              title: 'General',
+              children: [
+                settings.switch({
+                  id: 'autoSync',
+                  label: '启动时自动同步',
+                  value: true
+                }),
+                settings.button({
+                  id: 'relogin',
+                  label: '重新登录',
+                  async onClick() {
+                    return { success: true, commands: [{ type: 'refresh', scope: 'current' }] }
+                  }
+                })
+              ]
+            })
+          ]
+        })
+      },
+      submit(event) {
+        // 主要保存逻辑集中在这里
+        void event
+        return { success: true, commands: [{ type: 'close', scope: 'all' }] }
+      }
+    }
   }
 })
 ```
@@ -339,11 +370,11 @@ context.contributes.settingsPanels.register({
 - 扩展作者阅读时最清晰
 - 按钮等少量即时操作不用再去另找 handler 映射
 - 表单保存逻辑不会散落在每个字段回调里
-- 面板节点结构和当前状态都收敛在一次 `resolve()` 的返回值里
+- screen 节点结构和当前状态都收敛在一次 `resolve()` 的返回值里
 
 ## 统一回调结果
 
-菜单项回调、设置面板控件回调和 `onSubmit` 都必须返回统一结构化结果：
+菜单项回调继续返回 `UiCallbackResult`；settings 节点回调和 screen `submit` 返回 `SettingsInteractionResult`：
 
 ```ts
 interface ExtensionErrorShape {
@@ -355,19 +386,28 @@ interface ExtensionErrorShape {
 type UiCallbackResult =
   | { success: true; refresh: boolean }
   | { success: false; refresh: boolean; error: ExtensionErrorShape }
+
+type SettingsCommand =
+  | { type: 'refresh'; scope: 'current' | 'parent' | 'stack' }
+  | { type: 'close'; scope: 'current' | 'all' }
+  | { type: 'open'; target: { screenId: string; params?: Record<string, SerializableValue> } }
+
+type SettingsInteractionResult =
+  | { success: true; message?: string; commands?: SettingsCommand[] }
+  | { success: false; error: ExtensionErrorShape; commands?: SettingsCommand[] }
 ```
 
 语义如下：
 
 - `success`：声明本次回调是否成功完成。
-- `refresh`：声明宿主是否需要重新执行当前 UI surface 的 `resolve()`。
+- `refresh` / `commands`：声明宿主是否需要刷新、打开或关闭 UI surface。
 - `error`：仅在 `success: false` 时必填，必须是可序列化、适合展示给用户的错误摘要。
 
 宿主约束如下：
 
 - UI 打开时自动 `resolve()`，后续不会隐式重复 `resolve()`。
-- 只有回调结果中的 `refresh: true` 才会触发重新 `resolve()`。
-- 扩展回调抛出的异常不是公开协议；宿主必须捕获异常、记录日志，并归一化为 `success: false` 的 `UiCallbackResult`。
+- 菜单只有回调结果中的 `refresh: true` 才会触发重新 `resolve()`；settings 只有 `refresh` command 才会触发 frame 重新 `resolve()`。
+- 扩展回调抛出的异常不是公开协议；宿主必须捕获异常、记录日志，并归一化为 `success: false` 的结构化失败结果。
 
 ## 事件接口
 

@@ -72,14 +72,14 @@ packages/create-kisaki-extension/**
    - `KisakiApi`
    - `HostEvents`
    - `library` DTO、entity query/patch 类型、relation query/command 类型
-   - `EntityMenuContribution`、`SettingsPanelContribution`、theme/scraper/deeplink contribution 类型
+   - `EntityMenuContribution`、`SettingsContribution`、theme/scraper/deeplink contribution 类型
    - `extension-manifest.schema.json`
    - 底层 protocol 类型
 3. 创建 `packages/extension-sdk/`
 4. 实现：
    - `defineExtension`
    - `kisaki` 全局 API
-   - `context.contributes.entityMenus` / `settingsPanels` 域内 UI helpers
+   - `context.contributes.entityMenus` / `settings` 域内 UI helpers
    - context / storage / logger 等作者侧 helper
 5. 所有包使用 `tsdown`
 
@@ -286,7 +286,7 @@ packages/create-kisaki-extension/**
 - 扩展 deeplink route 能由主应用 deeplink 入口路由到 extension host
 - 扩展 theme contribution 能进入 main 侧 theme contribution snapshot，并通过 IPC 以语义 token DTO 形式读取
 - renderer-facing IPC facade 可以获取 contribution snapshot、settings panels、entity menu、settings panel 和 theme contribution
-- 菜单和设置面板回调可以经 main 转发到 extension host，并返回结构化 `UiCallbackResult`
+- 菜单和 settings flow 回调可以经 main 转发到 extension host，并返回结构化 `UiCallbackResult` / `SettingsInteractionResult`
 - 主应用现有 service 不需要直接依赖或扩散 `extension-api` 类型
 
 ### Phase 2F：渲染进程结构化消费层与 UI 替换
@@ -311,14 +311,14 @@ packages/create-kisaki-extension/**
 4. 保持 renderer 零扩展代码：
    - renderer 不 import 扩展入口
    - renderer 不执行扩展 callback
-   - renderer 只渲染 main 下发的结构化菜单、设置面板和 theme 数据
+   - renderer 只渲染 main 下发的结构化菜单、settings flow 和 theme 数据
 5. 旧 renderer plugin 执行链路先不在本阶段删除；彻底退役放到 Phase 3 / Phase 5，避免 renderer 消费层替换和旧系统清理互相混杂
 
 #### 验收标准
 
 - 扩展 theme 能进入 renderer theme 选择 / 应用流程，且仍只通过语义 token 生效
 - renderer 可通过 IPC 获取并渲染 entity menu 与 settings panel contribution
-- 菜单和设置面板回调能从 renderer 经 main 转发到 extension host，并返回结构化 `UiCallbackResult`
+- 菜单和 settings flow 回调能从 renderer 经 main 转发到 extension host，并返回结构化 `UiCallbackResult` / `SettingsInteractionResult`
 - renderer 内的新 extension 消费层不执行任何扩展代码
 
 ## Phase 3：退役 PluginService 与旧 plugin runtime
@@ -494,16 +494,16 @@ packages/create-kisaki-extension/**
 判断标准：
 
 - 示例扩展能提供 scraper provider、deeplink route 和 theme contribution，并被主应用现有业务入口消费
-- main 侧可以通过 IPC facade 暴露 contribution snapshot、菜单、设置面板和 theme 数据
-- 菜单和设置面板回调可以经 main 转发到 extension host，并返回结构化 `UiCallbackResult`
+- main 侧可以通过 IPC facade 暴露 contribution snapshot、菜单、settings flow 和 theme 数据
+- 菜单和 settings flow 回调可以经 main 转发到 extension host，并返回结构化 `UiCallbackResult` / `SettingsInteractionResult`
 
 ## M2F：renderer 结构化消费层跑通
 
 判断标准：
 
-- 示例扩展能提供菜单项与设置面板
-- renderer 能通过 IPC 消费结构化 contribution snapshot、菜单、设置面板和 theme 数据
-- 菜单和设置面板回调能从 renderer 经 main 转发到 extension host，并返回结构化 `UiCallbackResult`
+- 示例扩展能提供菜单项与 settings flow
+- renderer 能通过 IPC 消费结构化 contribution snapshot、菜单、settings flow 和 theme 数据
+- 菜单和 settings flow 回调能从 renderer 经 main 转发到 extension host，并返回结构化 `UiCallbackResult` / `SettingsInteractionResult`
 - renderer 无扩展代码执行
 
 ## M3：PluginService 退役完成

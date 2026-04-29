@@ -73,7 +73,7 @@ export class ExtensionLoader {
       subscriptions,
       abortController,
       entityMenus: new Map(),
-      settingsPanels: new Map(),
+      settings: new Map(),
       gameScrapers: new Map(),
       personScrapers: new Map(),
       companyScrapers: new Map(),

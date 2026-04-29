@@ -9,7 +9,7 @@ import type {
   GameScraperProvider,
   PersonScraperProvider,
   CompanyScraperProvider,
-  SettingsPanelContribution,
+  SettingsContribution,
   ThemeContribution,
   DisposableStore
 } from '@kisaki/extension-api'
@@ -23,7 +23,7 @@ export interface LoadedExtensionRuntime {
   subscriptions: DisposableStore
   abortController: AbortController
   entityMenus: Map<string, EntityMenuContribution>
-  settingsPanels: Map<string, SettingsPanelContribution>
+  settings: Map<string, SettingsContribution>
   gameScrapers: Map<string, GameScraperProvider>
   personScrapers: Map<string, PersonScraperProvider>
   companyScrapers: Map<string, CompanyScraperProvider>
@@ -90,12 +90,12 @@ export class ExtensionRegistry {
     this.require(extensionId).entityMenus.delete(contributionId)
   }
 
-  registerSettingsPanel(extensionId: string, contribution: SettingsPanelContribution): void {
-    this.require(extensionId).settingsPanels.set(contribution.id, contribution)
+  registerSettings(extensionId: string, contribution: SettingsContribution): void {
+    this.require(extensionId).settings.set(contribution.id, contribution)
   }
 
-  unregisterSettingsPanel(extensionId: string, panelId: string): void {
-    this.require(extensionId).settingsPanels.delete(panelId)
+  unregisterSettings(extensionId: string, contributionId: string): void {
+    this.require(extensionId).settings.delete(contributionId)
   }
 
   registerGameScraper(extensionId: string, provider: GameScraperProvider): void {

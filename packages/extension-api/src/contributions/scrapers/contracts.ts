@@ -274,6 +274,7 @@ export type CharacterScraperSession = BaseScraperSession<
 export interface BaseScraperProvider {
   readonly id: string
   readonly name: string
+  readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 }
 

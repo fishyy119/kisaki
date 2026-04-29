@@ -3,7 +3,7 @@ import type {
   DeeplinkRegistrar,
   EntityMenuRegistrar,
   ScraperRegistrar,
-  SettingsPanelRegistrar,
+  SettingsRegistrar,
   ThemeRegistrar
 } from './contributions'
 
@@ -42,7 +42,7 @@ export interface ExtensionContext {
   readonly abortSignal: AbortSignal
   readonly contributes: {
     entityMenus: EntityMenuRegistrar
-    settingsPanels: SettingsPanelRegistrar
+    settings: SettingsRegistrar
     scrapers: ScraperRegistrar
     deeplinks: DeeplinkRegistrar
     themes: ThemeRegistrar

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
+import { computed } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { Icon } from '@renderer/components/ui/icon'
 import { DialogClose, DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
@@ -16,17 +17,21 @@ const props = withDefaults(
     DialogContentProps & {
       class?: HTMLAttributes['class']
       showCloseButton?: boolean
+      stackLevel?: number
     }
   >(),
   {
-    showCloseButton: true
+    showCloseButton: true,
+    stackLevel: 0
   }
 )
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class', 'showCloseButton')
+const delegatedProps = reactiveOmit(props, 'class', 'showCloseButton', 'stackLevel')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+const overlayZIndex = computed(() => 50 + props.stackLevel * 10)
+const contentZIndex = computed(() => overlayZIndex.value + 1)
 
 function handleInteractOutside(event: Event) {
   event.preventDefault()
@@ -40,10 +45,11 @@ function handleCloseAutoFocus(event: Event) {
 
 <template>
   <DialogPortal data-slot="dialog-portal">
-    <DialogOverlay />
+    <DialogOverlay :style="{ zIndex: overlayZIndex }" />
     <DialogContent
       data-slot="dialog-content"
       v-bind="{ ...$attrs, ...forwarded }"
+      :style="{ zIndex: contentZIndex }"
       :class="
         cn(
           'fixed top-[50%] left-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%]',

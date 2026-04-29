@@ -6,40 +6,50 @@ export default defineExtension({
     context.logger.info('Built-in Bangumi scraper activated.')
 
     context.contributes.scrapers.registerGameProvider(new BangumiProvider(context))
-    context.contributes.settingsPanels.register({
+    context.contributes.settings.register({
       id: 'settings',
       title: 'Bangumi',
-      async resolve(panel) {
-        const accessToken = await context.storage.get('accessToken', '')
+      rootScreenId: 'general',
+      screens: {
+        general: {
+          async resolve(_frame, settings) {
+            const accessToken = await context.storage.get('accessToken', '')
 
-        return [
-          panel.section({
-            id: 'api',
-            title: 'API',
-            controls: [
-              panel.textInput({
-                id: 'accessToken',
-                label: 'Access token',
-                value: typeof accessToken === 'string' ? accessToken : '',
-                inputMode: 'password'
-              }),
-              panel.notice({
-                id: 'rate-limit',
-                tone: 'info',
-                text: 'Requests are limited to 4 per second.'
-              })
-            ]
-          })
-        ]
-      },
-      async onSubmit(event) {
-        const accessToken = event.values.accessToken
-        await context.storage.set(
-          'accessToken',
-          typeof accessToken === 'string' ? accessToken.trim() : ''
-        )
+            return settings.screen({
+              nodes: [
+                settings.section({
+                  id: 'api',
+                  title: 'API',
+                  children: [
+                    settings.textInput({
+                      id: 'accessToken',
+                      label: 'Access token',
+                      value: typeof accessToken === 'string' ? accessToken : '',
+                      inputMode: 'password'
+                    }),
+                    settings.notice({
+                      id: 'rate-limit',
+                      tone: 'info',
+                      text: 'Requests are limited to 4 per second.'
+                    })
+                  ]
+                })
+              ]
+            })
+          },
+          async submit(event) {
+            const accessToken = event.values.accessToken
+            await context.storage.set(
+              'accessToken',
+              typeof accessToken === 'string' ? accessToken.trim() : ''
+            )
 
-        return { success: true, refresh: false }
+            return {
+              success: true,
+              commands: [{ type: 'close', scope: 'all' }]
+            }
+          }
+        }
       }
     })
   }

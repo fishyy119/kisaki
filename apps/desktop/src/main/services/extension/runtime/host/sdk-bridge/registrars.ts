@@ -6,7 +6,7 @@ import type {
   EntityMenuContribution,
   GameScraperProvider,
   PersonScraperProvider,
-  SettingsPanelContribution,
+  SettingsContribution,
   ThemeContribution
 } from '@kisaki/extension-api'
 import type { ActiveExtensionScope, ExtensionSdkBridge } from './types'
@@ -29,16 +29,16 @@ export function createEntityMenuRegistrar(
 }
 
 /**
- * Creates the settings panel contribution registrar bound to runtime subscriptions.
+ * Creates the settings contribution registrar bound to runtime subscriptions.
  */
-export function createSettingsPanelRegistrar(
+export function createSettingsRegistrar(
   bridge: ExtensionSdkBridge,
   subscriptions: DisposableStore,
   scope: ActiveExtensionScope
 ) {
   return {
-    register(contribution: SettingsPanelContribution) {
-      const disposable = bridge.registerSettingsPanel(scope, contribution)
+    register(contribution: SettingsContribution) {
+      const disposable = bridge.registerSettings(scope, contribution)
       subscriptions.add(disposable)
       return disposable
     }

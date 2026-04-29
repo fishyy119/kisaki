@@ -15,7 +15,7 @@ import type {
   HostEventTopic,
   KisakiApi,
   PersonScraperProvider,
-  SettingsPanelContribution,
+  SettingsContribution,
   ThemeContribution
 } from '@kisaki/extension-api'
 
@@ -53,10 +53,7 @@ export interface ExtensionSdkBridge {
   createLogger(scope: ActiveExtensionScope, extension: ExtensionRuntimeMetadata): ExtensionLogger
   createStorage(scope: ActiveExtensionScope): ExtensionStorage
   registerEntityMenu(scope: ActiveExtensionScope, contribution: EntityMenuContribution): Disposable
-  registerSettingsPanel(
-    scope: ActiveExtensionScope,
-    contribution: SettingsPanelContribution
-  ): Disposable
+  registerSettings(scope: ActiveExtensionScope, contribution: SettingsContribution): Disposable
   registerGameScraperProvider(
     scope: ActiveExtensionScope,
     provider: GameScraperProvider

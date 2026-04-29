@@ -1,54 +1,50 @@
-import type {
-  SerializableValue,
-  SettingsPanelResolvedControlNode,
-  SettingsPanelResolvedNode
-} from '@kisaki/extension-api'
+import type { SerializableValue, SettingsResolvedNode } from '@kisaki/extension-api'
 import {
-  getExtensionSettingsPanels,
-  invokeExtensionSettingsPanel,
-  resolveExtensionSettingsPanel,
-  submitExtensionSettingsPanel
+  getExtensionSettingsContributions,
+  invokeExtensionSettingsNode,
+  openExtensionSettingsFrame,
+  openExtensionSettingsSession,
+  refreshExtensionSettingsFrame,
+  releaseExtensionSettingsFrame,
+  releaseExtensionSettingsSession,
+  submitExtensionSettingsFrame
 } from './ipc'
 
-export type SettingsPanelDraft = Record<string, SerializableValue>
+export type SettingsDraft = Record<string, SerializableValue>
 
 export {
-  getExtensionSettingsPanels,
-  invokeExtensionSettingsPanel,
-  resolveExtensionSettingsPanel,
-  submitExtensionSettingsPanel
+  getExtensionSettingsContributions,
+  invokeExtensionSettingsNode,
+  openExtensionSettingsFrame,
+  openExtensionSettingsSession,
+  refreshExtensionSettingsFrame,
+  releaseExtensionSettingsFrame,
+  releaseExtensionSettingsSession,
+  submitExtensionSettingsFrame
 }
 
-export function createSettingsPanelDraft(
-  nodes: readonly SettingsPanelResolvedNode[]
-): SettingsPanelDraft {
-  const draft: SettingsPanelDraft = {}
+export function createSettingsDraft(nodes: readonly SettingsResolvedNode[]): SettingsDraft {
+  const draft: SettingsDraft = {}
 
   for (const node of nodes) {
-    if (node.kind !== 'section') {
-      collectSettingsControlValue(draft, node)
-      continue
-    }
-
-    for (const control of node.controls) {
-      collectSettingsControlValue(draft, control)
-    }
+    collectSettingsNodeValue(draft, node)
   }
 
   return draft
 }
 
-export function getSettingsControlCallbackId(
-  node: SettingsPanelResolvedControlNode
-): string | undefined {
+export function getSettingsNodeCallbackId(node: SettingsResolvedNode): string | undefined {
   return 'callbackId' in node ? node.callbackId : undefined
 }
 
-function collectSettingsControlValue(
-  draft: SettingsPanelDraft,
-  node: SettingsPanelResolvedControlNode | SettingsPanelResolvedNode
-): void {
+function collectSettingsNodeValue(draft: SettingsDraft, node: SettingsResolvedNode): void {
   switch (node.kind) {
+    case 'section':
+      for (const child of node.children) {
+        collectSettingsNodeValue(draft, child)
+      }
+      break
+
     case 'switch':
     case 'checkbox':
       draft[node.id] = node.value
@@ -65,9 +61,9 @@ function collectSettingsControlValue(
       break
 
     case 'button':
+    case 'dialog':
     case 'divider':
     case 'notice':
-    case 'section':
     case 'status':
     case 'text':
       break

@@ -4,34 +4,33 @@ export {
   enableExtension,
   getExtensionCatalog,
   getExtensionContributionSnapshot,
-  getExtensionSettingsPanels,
+  getExtensionSettingsContributions,
   getExtensionSources,
   getExtensionThemeContributions,
   installExtension,
   installExtensionFromFile,
   invokeExtensionEntityMenu,
-  invokeExtensionSettingsPanel,
+  invokeExtensionSettingsNode,
+  openExtensionSettingsFrame,
+  openExtensionSettingsSession,
   releaseExtensionEntityMenuSession,
-  releaseExtensionSettingsPanelSession,
+  refreshExtensionSettingsFrame,
+  releaseExtensionSettingsFrame,
+  releaseExtensionSettingsSession,
   resolveExtensionEntityMenu,
-  resolveExtensionSettingsPanel,
   searchExtensions,
-  submitExtensionSettingsPanel,
+  submitExtensionSettingsFrame,
   uninstallExtension,
   updateExtension
 } from './ipc'
 export { getEntityMenuInputKey } from './menus'
 export {
   extensionContributionStore,
-  getExtensionSettingsPanelsFor,
+  getExtensionSettingsFor,
   refreshExtensionContributionSnapshot,
   setupExtensionContributionStore
 } from './store'
-export {
-  createSettingsPanelDraft,
-  getSettingsControlCallbackId,
-  type SettingsPanelDraft
-} from './settings'
+export { createSettingsDraft, getSettingsNodeCallbackId, type SettingsDraft } from './settings'
 export { refreshExtensionThemes, setupExtensionThemeSync, syncExtensionThemes } from './themes'
 export type {
   ExtensionCatalogInfo,
@@ -42,13 +41,17 @@ export type {
   ExtensionRegistryEntry,
   ExtensionResolvedEntityMenu,
   ExtensionResolvedEntityMenuGroup,
-  ExtensionResolvedSettingsPanel,
+  ExtensionResolvedSettingsFrame,
   ExtensionSearchOptions,
   ExtensionSearchResult,
-  ExtensionSettingsPanelCallbackResult,
-  ExtensionSettingsPanelInfo,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelSubmitRequest,
+  ExtensionSettingsContributionInfo,
+  ExtensionSettingsFrameOpenRequest,
+  ExtensionSettingsFrameRefreshRequest,
+  ExtensionSettingsFrameReleaseRequest,
+  ExtensionSettingsInteractionResponse,
+  ExtensionSettingsInvokeRequest,
+  ExtensionSettingsSession,
+  ExtensionSettingsSubmitRequest,
   ExtensionSourceInfo,
   ExtensionThemeContributionInfo,
   ExtensionUpdateInfo

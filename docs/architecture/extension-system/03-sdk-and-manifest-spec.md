@@ -194,7 +194,7 @@ src/
   rpc.ts
 ```
 
-当前实现把 locale、可序列化约束、生命周期接口、值对象、结构化错误契约、`UiCallbackResult` 以及相关 validation / error helper 等真正跨域复用的共享契约集中在 `src/shared/`。`contributions/` 下一级只保留实体菜单、设置面板、scraper、deeplink、theme 这类实际扩展点。`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 同时负责底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量、`RpcErrorPayload` 的校验与 payload 转换 helper，以及 main 与 extension host 共享的方向化 request/event maps。宿主 runtime 与 SDK 私有 bridge 实现只实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
+当前实现把 locale、可序列化约束、生命周期接口、值对象、结构化错误契约、`UiCallbackResult` 以及相关 validation / error helper 等真正跨域复用的共享契约集中在 `src/shared/`。`contributions/` 下一级只保留实体菜单、settings flow、scraper、deeplink、theme 这类实际扩展点。`version.ts` 负责跨边界共享的扩展平台 API 版本常量；`rpc.ts` 同时负责底层 transport envelope、握手、structured-clone 安全传输值、RPC 协议常量、`RpcErrorPayload` 的校验与 payload 转换 helper，以及 main 与 extension host 共享的方向化 request/event maps。宿主 runtime 与 SDK 私有 bridge 实现只实现和适配这些契约，不在 `extension-api` 中承载任何宿主实现。`events` 当前保持为 `src/capabilities/events.ts` 单文件；没有明确跨域复用需求的类型，应收回到各自 capability / contribution 文件中。
 
 ### `@kisaki/extension-sdk`
 
@@ -228,11 +228,11 @@ src/
 
 ## 公开命名约束
 
-公开类型、模块名与 registrar 命名优先使用完整领域词，例如 `EntityMenuContribution`、`SettingsPanelContribution`、`entityMenus`、`settingsPanels`。避免把 `menu`、`settings` 这类语义过宽的短名作为 SDK 顶层公开主命名；局部 builder 参数可以在 `contributes.*` 的作用域内按上下文简写为 `menu`、`panel`。
+公开类型、模块名与 registrar 命名优先使用完整领域词，例如 `EntityMenuContribution`、`SettingsContribution`、`entityMenus`、`settings`。设置 UI 使用 settings flow 语义：一个 contribution 包含 root screen 与多个可懒解析 screen，renderer 以 dialog stack 渲染 frame。
 
 ## UI 注册 API 自包含
 
-UI contribution 的 helper 不再作为 `@kisaki/extension-sdk` 的顶层导出，而是跟随 `context.contributes.entityMenus` / `context.contributes.settingsPanels` 一起工作。
+UI contribution 的 helper 不再作为 `@kisaki/extension-sdk` 的顶层导出，而是跟随 `context.contributes.entityMenus` / `context.contributes.settings` 一起工作。
 
 推荐形态：
 
@@ -271,7 +271,7 @@ interface ExtensionContext {
 
   readonly contributes: {
     entityMenus: EntityMenuRegistrar
-    settingsPanels: SettingsPanelRegistrar
+    settings: SettingsRegistrar
     scrapers: ScraperRegistrar
     deeplinks: DeeplinkRegistrar
     themes: ThemeRegistrar
@@ -398,38 +398,57 @@ export default defineExtension({
       }
     })
 
-    context.contributes.settingsPanels.register({
+    context.contributes.settings.register({
       id: 'sample.settings',
       title: 'Sample Extension',
-      async resolve(panel) {
-        const autoSync = await context.storage.get('autoSync', false)
+      rootScreenId: 'general',
+      screens: {
+        general: {
+          async resolve(_frame, settings) {
+            const autoSync = await context.storage.get('autoSync', false)
 
-        return [
-          panel.section({
-            id: 'general',
-            title: 'General',
-            controls: [
-              panel.switch({
-                id: 'autoSync',
-                label: '启动时自动同步',
-                value: autoSync
-              }),
-              panel.button({
-                id: 'relogin',
-                label: '重新登录',
-                async onClick(_, panelContext) {
-                  panelContext.logger.info('manual relogin requested')
-                  await kisaki.notify.info('正在重新登录')
-                  return { success: true, refresh: true }
-                }
-              })
-            ]
-          })
-        ]
-      },
-      async onSubmit(event) {
-        await context.storage.set('autoSync', !!event.values.autoSync)
-        return { success: true, refresh: false }
+            return settings.screen({
+              nodes: [
+                settings.section({
+                  id: 'general',
+                  title: 'General',
+                  children: [
+                    settings.switch({
+                      id: 'autoSync',
+                      label: '启动时自动同步',
+                      value: autoSync
+                    }),
+                    settings.dialog({
+                      id: 'advanced',
+                      label: '高级设置',
+                      target: { screenId: 'advanced' }
+                    }),
+                    settings.button({
+                      id: 'relogin',
+                      label: '重新登录',
+                      async onClick() {
+                        await kisaki.notify.info('正在重新登录')
+                        return { success: true, commands: [{ type: 'refresh', scope: 'current' }] }
+                      }
+                    })
+                  ]
+                })
+              ]
+            })
+          },
+          async submit(event) {
+            await context.storage.set('autoSync', !!event.values.autoSync)
+            return { success: true, commands: [{ type: 'close', scope: 'all' }] }
+          }
+        },
+        advanced: {
+          resolve(_frame, settings) {
+            return settings.screen({
+              title: '高级设置',
+              nodes: [settings.notice({ id: 'note', tone: 'info', text: 'Nested dialog screen' })]
+            })
+          }
+        }
       }
     })
   }
@@ -443,7 +462,7 @@ export default defineExtension({
 - 作者写扩展时，控件定义和控件专属回调可以写在一起，这样最直观。
 - 宿主实际运行时，会把可序列化的 UI model 和不可序列化的 callback registry 拆开。
 
-所有公开 UI 回调都必须返回统一结构化对象：
+所有公开 UI 回调都必须返回结构化对象。实体菜单继续使用 `UiCallbackResult`：
 
 ```ts
 interface ExtensionErrorShape {
@@ -457,17 +476,31 @@ type UiCallbackResult =
   | { success: false; refresh: boolean; error: ExtensionErrorShape }
 ```
 
+Settings flow 使用 command 驱动的 `SettingsInteractionResult`：
+
+```ts
+type SettingsCommand =
+  | { type: 'refresh'; scope: 'current' | 'parent' | 'stack' }
+  | { type: 'close'; scope: 'current' | 'all' }
+  | { type: 'open'; target: { screenId: string; params?: Record<string, SerializableValue> } }
+
+type SettingsInteractionResult =
+  | { success: true; message?: string; commands?: SettingsCommand[] }
+  | { success: false; error: ExtensionErrorShape; commands?: SettingsCommand[] }
+```
+
 约束如下：
 
-- 菜单项回调、设置面板控件回调和 `onSubmit` 都不再接受 `void` 作为公开返回值。
-- `refresh` 必须显式给出，宿主不再通过“没返回值”或特殊字面量推断是否刷新。
-- 扩展如果抛出异常，宿主会记录完整日志，并把结果归一化为 `success: false` 的 `UiCallbackResult`。
+- 菜单项回调、settings 节点回调和 screen `submit` 都不再接受 `void` 作为公开返回值。
+- settings 的 refresh/open/close 必须通过 command 显式给出，宿主不再通过“没返回值”或特殊字面量推断 UI 行为。
+- 扩展如果抛出异常，宿主会记录完整日志，并把结果归一化为 `success: false` 的结构化失败结果。
 
 统一时机规则如下：
 
 - `resolve()` 仅在对应 UI 首次打开时自动执行。
 - UI 打开后的普通交互不会隐式再次 `resolve()`。
-- 只有回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行当前 UI 的 `resolve()`。
+- 实体菜单只有回调返回 `UiCallbackResult.refresh === true` 时才会再次执行当前菜单会话的 `resolve()`。
+- settings 只有回调返回 `SettingsInteractionResult.commands` 中的 `refresh` 命令时，renderer 才会请求刷新对应 frame。
 
 对于实体菜单，默认规则是：
 
@@ -476,18 +509,19 @@ type UiCallbackResult =
 - `resolve(input, menu)` 中的 `menu.checkbox(...)` 与 `menu.select(...)` 直接内联 `onChange`。
 - 运行时仍然会把菜单定义归一化为纯结构化菜单项，再把回调登记到 callback registry。
 
-对于设置面板，默认规则是：
+对于 settings flow，默认规则是：
 
-- `resolve()` 直接返回当前完整面板节点列表，不再额外暴露公开 `schema` 属性。
+- 每个 screen 的 `resolve()` 返回当前 frame 的 screen model，不再额外暴露公开 `schema` 属性。
 - 普通字段以表单草稿方式编辑，不即时触发回调。
-- 面板的主保存路径使用 `onSubmit`。
+- screen 的主保存路径使用 `submit`。
 - 控件级回调只推荐给按钮和少量高级即时操作。
-- 面板后续是否重新 `resolve()`，由 `onSubmit` 或控件回调显式决定。
+- frame 后续是否重新 `resolve()`，由 `submit` 或节点回调返回的 command 显式决定。
 
 这意味着对外体验像这样：
 
-- `resolve(panel)` 中的 `panel.switch(...)`、`panel.select(...)`、`panel.textInput(...)` 默认只是字段节点定义，不自带即时回调
-- `resolve(panel)` 中的 `panel.button(...)` 可以直接内联 `onClick`
+- `resolve(frame, settings)` 中的 `settings.switch(...)`、`settings.select(...)`、`settings.textInput(...)` 默认只是字段节点定义，不自带即时回调
+- `resolve(frame, settings)` 中的 `settings.button(...)` 可以直接内联 `onClick`
+- `resolve(frame, settings)` 中的 `settings.dialog(...)` 打开目标 screen，形成嵌套 dialog frame
 - 少量高级字段如果确实需要即时行为，可以显式声明控件级回调，但不是默认主路径
 
 ## 类型安全原则
@@ -514,8 +548,9 @@ type UiCallbackResult =
 - `ExtensionContext`
 - `EntityMenuContribution`
 - `EntityMenuBuilder`
-- `SettingsPanelContribution`
-- `SettingsPanelBuilder`
+- `SettingsContribution`
+- `SettingsBuilder`
+- `SettingsInteractionResult`
 - `UiCallbackResult`
 - `ExtensionErrorShape`
 - `ThemeContribution`

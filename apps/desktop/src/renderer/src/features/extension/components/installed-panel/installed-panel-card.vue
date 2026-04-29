@@ -10,7 +10,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { ExtensionSettingsPanelDialog } from '@renderer/components/shared/extension'
+import { ExtensionSettingsDialogStack } from '@renderer/components/shared/extension'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import {
@@ -41,13 +41,13 @@ const updating = ref(false)
 const iconError = ref(false)
 const settingsOpen = ref(false)
 
-const settingsPanel = computed(
+const settingsContribution = computed(
   () =>
-    extensionContributionStore.settingsPanels.value.find(
-      (panel) => panel.extensionId === props.extension.id
+    extensionContributionStore.settings.value.find(
+      (contribution) => contribution.extensionId === props.extension.id
     ) ?? null
 )
-const hasSettings = computed(() => settingsPanel.value !== null)
+const hasSettings = computed(() => settingsContribution.value !== null)
 
 const iconUrl = computed(() => props.extension.iconUrl)
 const versionLabel = computed(() =>
@@ -157,8 +157,8 @@ async function handleUpdate() {
   }
 }
 
-function openSettingsPanel() {
-  if (!settingsPanel.value) {
+function openSettings() {
+  if (!settingsContribution.value) {
     return
   }
 
@@ -293,7 +293,7 @@ function openSettingsPanel() {
             <Button
               size="icon-sm"
               variant="ghost"
-              @click="openSettingsPanel"
+              @click="openSettings"
             >
               <Icon
                 icon="icon-[mdi--cog-outline]"
@@ -329,10 +329,10 @@ function openSettingsPanel() {
     </div>
 
     <!-- Settings Dialog -->
-    <ExtensionSettingsPanelDialog
-      v-if="settingsOpen && settingsPanel"
+    <ExtensionSettingsDialogStack
+      v-if="settingsOpen && settingsContribution"
       v-model:open="settingsOpen"
-      :panel="settingsPanel"
+      :contribution="settingsContribution"
     />
   </div>
 </template>

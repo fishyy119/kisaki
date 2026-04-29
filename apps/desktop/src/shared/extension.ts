@@ -8,7 +8,9 @@ import type {
   CompanyScraperProviderRegistration,
   CharacterScraperProviderRegistration,
   SerializableValue,
-  SettingsPanelResolvedNode,
+  SettingsDialogTarget,
+  SettingsInteractionResult,
+  SettingsResolvedScreenModel,
   ThemeContribution,
   UiCallbackResult
 } from '@kisaki/extension-api'
@@ -76,11 +78,12 @@ export interface ExtensionEntityMenuContributionInfo extends ExtensionContributi
   order: number
 }
 
-export interface ExtensionSettingsPanelInfo extends ExtensionContributionOwnerInfo {
-  panelId: string
+export interface ExtensionSettingsContributionInfo extends ExtensionContributionOwnerInfo {
+  contributionId: string
   title: string
   description?: string
   order: number
+  rootScreenId: string
 }
 
 export interface ExtensionThemeContributionInfo extends ExtensionContributionOwnerInfo {
@@ -102,7 +105,7 @@ export interface ExtensionScraperProviderInfo extends ExtensionContributionOwner
 
 export interface ExtensionContributionSnapshot {
   entityMenus: readonly ExtensionEntityMenuContributionInfo[]
-  settingsPanels: readonly ExtensionSettingsPanelInfo[]
+  settings: readonly ExtensionSettingsContributionInfo[]
   themes: readonly ExtensionThemeContributionInfo[]
   deeplinks: readonly ExtensionDeeplinkContributionInfo[]
   scrapers: readonly ExtensionScraperProviderInfo[]
@@ -140,29 +143,62 @@ export interface ExtensionEntityMenuInvokeResult {
   refreshed?: ExtensionResolvedEntityMenu
 }
 
-export interface ExtensionResolvedSettingsPanel {
+export interface ExtensionResolvedSettingsFrame {
   sessionId: string
   extensionId: string
-  panelId: string
-  nodes: readonly SettingsPanelResolvedNode[]
+  contributionId: string
+  frameId: string
+  screenId: string
+  params: Record<string, SerializableValue>
+  screen: SettingsResolvedScreenModel
 }
 
-export interface ExtensionSettingsPanelSubmitRequest {
+export interface ExtensionSettingsSession {
   sessionId: string
   extensionId: string
-  panelId: string
+  contributionId: string
+  frame: ExtensionResolvedSettingsFrame
+}
+
+export interface ExtensionSettingsFrameOpenRequest {
+  sessionId: string
+  extensionId: string
+  contributionId: string
+  target: SettingsDialogTarget
+}
+
+export interface ExtensionSettingsFrameRefreshRequest {
+  sessionId: string
+  extensionId: string
+  contributionId: string
+  frameId: string
+}
+
+export interface ExtensionSettingsSubmitRequest {
+  sessionId: string
+  extensionId: string
+  contributionId: string
+  frameId: string
   values: Record<string, SerializableValue>
 }
 
-export interface ExtensionSettingsPanelInvokeRequest {
+export interface ExtensionSettingsInvokeRequest {
   sessionId: string
   extensionId: string
-  panelId: string
+  contributionId: string
+  frameId: string
   callbackId: string
   value?: SerializableValue
 }
 
-export interface ExtensionSettingsPanelCallbackResult {
-  result: UiCallbackResult
-  refreshed?: ExtensionResolvedSettingsPanel
+export interface ExtensionSettingsFrameReleaseRequest {
+  sessionId: string
+  extensionId: string
+  contributionId: string
+  frameId: string
+}
+
+export interface ExtensionSettingsInteractionResponse {
+  result: SettingsInteractionResult
+  refreshedFrames: readonly ExtensionResolvedSettingsFrame[]
 }

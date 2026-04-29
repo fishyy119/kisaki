@@ -164,6 +164,10 @@ function validateScraperProviderShape(
       trim: true,
       valueMessage: 'Provider name must be a non-empty string.'
     }),
+    ...validateRequiredString(value.externalIdSource, '$.externalIdSource', {
+      trim: true,
+      valueMessage: 'externalIdSource must be a non-empty string.'
+    }),
     ...validateRequiredFunction(value.search, '$.search').map((issue) => ({
       ...issue,
       message: 'search must be a function.'

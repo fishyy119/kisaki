@@ -6,13 +6,17 @@ import type {
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResult,
   ExtensionResolvedEntityMenu,
-  ExtensionResolvedSettingsPanel,
+  ExtensionResolvedSettingsFrame,
   ExtensionSearchOptions,
   ExtensionSearchResult,
-  ExtensionSettingsPanelCallbackResult,
-  ExtensionSettingsPanelInfo,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelSubmitRequest,
+  ExtensionSettingsContributionInfo,
+  ExtensionSettingsFrameOpenRequest,
+  ExtensionSettingsFrameRefreshRequest,
+  ExtensionSettingsFrameReleaseRequest,
+  ExtensionSettingsInteractionResponse,
+  ExtensionSettingsInvokeRequest,
+  ExtensionSettingsSession,
+  ExtensionSettingsSubmitRequest,
   ExtensionSourceInfo,
   ExtensionThemeContributionInfo,
   ExtensionUpdateInfo
@@ -82,8 +86,10 @@ export async function getExtensionContributionSnapshot(): Promise<ExtensionContr
   return unwrapIpcData(await ipcManager.invoke('extension:get-contribution-snapshot'))
 }
 
-export async function getExtensionSettingsPanels(): Promise<readonly ExtensionSettingsPanelInfo[]> {
-  return unwrapIpcData(await ipcManager.invoke('extension:get-settings-panels'))
+export async function getExtensionSettingsContributions(): Promise<
+  readonly ExtensionSettingsContributionInfo[]
+> {
+  return unwrapIpcData(await ipcManager.invoke('extension:get-settings-contributions'))
 }
 
 export async function resolveExtensionEntityMenu(
@@ -102,37 +108,55 @@ export async function releaseExtensionEntityMenuSession(sessionId: string): Prom
   unwrapIpcVoid(await ipcManager.invoke('extension:release-entity-menu-session', sessionId))
 }
 
-export async function resolveExtensionSettingsPanel(
+export async function openExtensionSettingsSession(
   extensionId: string,
-  panelId: string
-): Promise<ExtensionResolvedSettingsPanel> {
+  contributionId: string
+): Promise<ExtensionSettingsSession> {
   return unwrapIpcData(
-    await ipcManager.invoke('extension:resolve-settings-panel', extensionId, panelId)
+    await ipcManager.invoke('extension:open-settings-session', extensionId, contributionId)
   )
 }
 
-export async function submitExtensionSettingsPanel(
-  request: ExtensionSettingsPanelSubmitRequest
-): Promise<ExtensionSettingsPanelCallbackResult> {
-  return unwrapIpcData(await ipcManager.invoke('extension:submit-settings-panel', request))
+export async function openExtensionSettingsFrame(
+  request: ExtensionSettingsFrameOpenRequest
+): Promise<ExtensionResolvedSettingsFrame> {
+  return unwrapIpcData(await ipcManager.invoke('extension:open-settings-frame', request))
 }
 
-export async function invokeExtensionSettingsPanel(
-  request: ExtensionSettingsPanelInvokeRequest
-): Promise<ExtensionSettingsPanelCallbackResult> {
-  return unwrapIpcData(await ipcManager.invoke('extension:invoke-settings-panel', request))
+export async function refreshExtensionSettingsFrame(
+  request: ExtensionSettingsFrameRefreshRequest
+): Promise<ExtensionResolvedSettingsFrame> {
+  return unwrapIpcData(await ipcManager.invoke('extension:refresh-settings-frame', request))
 }
 
-export async function releaseExtensionSettingsPanelSession(
+export async function submitExtensionSettingsFrame(
+  request: ExtensionSettingsSubmitRequest
+): Promise<ExtensionSettingsInteractionResponse> {
+  return unwrapIpcData(await ipcManager.invoke('extension:submit-settings-frame', request))
+}
+
+export async function invokeExtensionSettingsNode(
+  request: ExtensionSettingsInvokeRequest
+): Promise<ExtensionSettingsInteractionResponse> {
+  return unwrapIpcData(await ipcManager.invoke('extension:invoke-settings-node', request))
+}
+
+export async function releaseExtensionSettingsFrame(
+  request: ExtensionSettingsFrameReleaseRequest
+): Promise<void> {
+  unwrapIpcVoid(await ipcManager.invoke('extension:release-settings-frame', request))
+}
+
+export async function releaseExtensionSettingsSession(
   extensionId: string,
-  panelId: string,
+  contributionId: string,
   sessionId: string
 ): Promise<void> {
   unwrapIpcVoid(
     await ipcManager.invoke(
-      'extension:release-settings-panel-session',
+      'extension:release-settings-session',
       extensionId,
-      panelId,
+      contributionId,
       sessionId
     )
   )

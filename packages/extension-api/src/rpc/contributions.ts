@@ -4,7 +4,11 @@ import type {
   EntityMenuResolveInput,
   EntityMenuTarget
 } from '../contributions/entity-menus'
-import type { SettingsPanelResolvedNode } from '../contributions/settings-panels'
+import type {
+  SettingsDialogTarget,
+  SettingsInteractionResult,
+  SettingsResolvedScreenModel
+} from '../contributions/settings'
 import type {
   CharacterScraperSlot,
   CharacterSessionResultMap,
@@ -32,11 +36,12 @@ export interface EntityMenuContributionRegistration {
   order?: number
 }
 
-export interface SettingsPanelContributionRegistration {
+export interface SettingsContributionRegistration {
   id: string
   title: string
   description?: string
   order?: number
+  rootScreenId: string
 }
 
 export interface DeeplinkContributionRegistration {
@@ -92,30 +97,57 @@ export interface EntityMenuSessionReleaseRequest extends ContributionScopedRpcPa
   sessionId: string
 }
 
-export interface SettingsPanelResolveRequest extends ExtensionScopedRpcParams {
-  panelId: string
+export interface SettingsSessionOpenRequest extends ExtensionScopedRpcParams {
+  contributionId: string
   sessionId: string
 }
 
-export interface SettingsPanelResolveResult {
-  nodes: readonly SettingsPanelResolvedNode[]
+export interface SettingsFrameOpenRequest extends ExtensionScopedRpcParams {
+  contributionId: string
+  sessionId: string
+  target: SettingsDialogTarget
 }
 
-export interface SettingsPanelSubmitRequest extends ExtensionScopedRpcParams {
-  panelId: string
+export interface SettingsFrameRefreshRequest extends ExtensionScopedRpcParams {
+  contributionId: string
   sessionId: string
+  frameId: string
+}
+
+export interface SettingsFrameResult {
+  frameId: string
+  screenId: string
+  params: Record<string, SerializableValue>
+  screen: SettingsResolvedScreenModel
+}
+
+export interface SettingsFrameSubmitRequest extends ExtensionScopedRpcParams {
+  contributionId: string
+  sessionId: string
+  frameId: string
   values: Record<string, SerializableValue>
 }
 
-export interface SettingsPanelInvokeRequest extends ExtensionScopedRpcParams {
-  panelId: string
+export interface SettingsFrameInvokeRequest extends ExtensionScopedRpcParams {
+  contributionId: string
   sessionId: string
+  frameId: string
   callbackId: string
   value?: SerializableValue
 }
 
-export interface SettingsPanelSessionReleaseRequest extends ExtensionScopedRpcParams {
-  panelId: string
+export interface SettingsInteractionResponse {
+  result: SettingsInteractionResult
+}
+
+export interface SettingsFrameReleaseRequest extends ExtensionScopedRpcParams {
+  contributionId: string
+  sessionId: string
+  frameId: string
+}
+
+export interface SettingsSessionReleaseRequest extends ExtensionScopedRpcParams {
+  contributionId: string
   sessionId: string
 }
 
@@ -211,16 +243,13 @@ export interface MainToHostContributionRpcRequestMap
   'entityMenus.resolve': RpcMethodDefinition<EntityMenuResolveRequest, EntityMenuResolveResult>
   'entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
   'entityMenus.session.release': RpcMethodDefinition<EntityMenuSessionReleaseRequest, RpcNoPayload>
-  'settingsPanels.resolve': RpcMethodDefinition<
-    SettingsPanelResolveRequest,
-    SettingsPanelResolveResult
-  >
-  'settingsPanels.submit': RpcMethodDefinition<SettingsPanelSubmitRequest, UiCallbackResult>
-  'settingsPanels.invoke': RpcMethodDefinition<SettingsPanelInvokeRequest, UiCallbackResult>
-  'settingsPanels.session.release': RpcMethodDefinition<
-    SettingsPanelSessionReleaseRequest,
-    RpcNoPayload
-  >
+  'settings.open': RpcMethodDefinition<SettingsSessionOpenRequest, SettingsFrameResult>
+  'settings.frame.open': RpcMethodDefinition<SettingsFrameOpenRequest, SettingsFrameResult>
+  'settings.frame.refresh': RpcMethodDefinition<SettingsFrameRefreshRequest, SettingsFrameResult>
+  'settings.submit': RpcMethodDefinition<SettingsFrameSubmitRequest, SettingsInteractionResponse>
+  'settings.invoke': RpcMethodDefinition<SettingsFrameInvokeRequest, SettingsInteractionResponse>
+  'settings.frame.release': RpcMethodDefinition<SettingsFrameReleaseRequest, RpcNoPayload>
+  'settings.session.release': RpcMethodDefinition<SettingsSessionReleaseRequest, RpcNoPayload>
   'deeplinks.handle': RpcMethodDefinition<DeeplinkHandleRequest, DeeplinkResponse>
 }
 
@@ -233,12 +262,12 @@ export type HostToMainContributionRpcRequestMap = {
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
-  'bridge.settingsPanels.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { contribution: SettingsPanelContributionRegistration },
+  'bridge.settings.register': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { contribution: SettingsContributionRegistration },
     RpcNoPayload
   >
-  'bridge.settingsPanels.unregister': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { panelId: string },
+  'bridge.settings.unregister': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
   'bridge.scrapers.games.register': RpcMethodDefinition<

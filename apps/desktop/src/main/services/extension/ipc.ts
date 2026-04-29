@@ -4,8 +4,11 @@ import type {
   ExtensionCatalogInfo,
   ExtensionEntityMenuInvokeRequest,
   ExtensionRegistryEntry,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelSubmitRequest,
+  ExtensionSettingsFrameOpenRequest,
+  ExtensionSettingsFrameRefreshRequest,
+  ExtensionSettingsFrameReleaseRequest,
+  ExtensionSettingsInvokeRequest,
+  ExtensionSettingsSubmitRequest,
   ExtensionUpdateInfo as SharedExtensionUpdateInfo
 } from '@shared/extension'
 import type {
@@ -127,11 +130,11 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:get-settings-panels', () => {
+  ipc.handle('extension:get-settings-contributions', () => {
     try {
       return {
         success: true,
-        data: service.getSettingsPanels()
+        data: service.getSettingsContributions()
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -169,13 +172,13 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:resolve-settings-panel', async (_, extensionId, panelId) => {
+  ipc.handle('extension:open-settings-session', async (_, extensionId, contributionId) => {
     try {
       return {
         success: true,
-        data: await service.resolveSettingsPanel(
+        data: await service.openSettingsSession(
           requireSafeExtensionId(extensionId),
-          requireNonEmptyString(panelId, 'panelId')
+          requireNonEmptyString(contributionId, 'contributionId')
         )
       }
     } catch (error) {
@@ -183,35 +186,66 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:submit-settings-panel', async (_, request) => {
+  ipc.handle('extension:open-settings-frame', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.submitSettingsPanel(requireSettingsPanelSubmitRequest(request))
+        data: await service.openSettingsFrame(requireSettingsFrameOpenRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:invoke-settings-panel', async (_, request) => {
+  ipc.handle('extension:refresh-settings-frame', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.invokeSettingsPanelCallback(requireSettingsPanelInvokeRequest(request))
+        data: await service.refreshSettingsFrame(requireSettingsFrameRefreshRequest(request))
       }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:submit-settings-frame', async (_, request) => {
+    try {
+      return {
+        success: true,
+        data: await service.submitSettingsFrame(requireSettingsSubmitRequest(request))
+      }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:invoke-settings-node', async (_, request) => {
+    try {
+      return {
+        success: true,
+        data: await service.invokeSettingsNode(requireSettingsInvokeRequest(request))
+      }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:release-settings-frame', async (_, request) => {
+    try {
+      await service.releaseSettingsFrame(requireSettingsFrameReleaseRequest(request))
+      return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
   ipc.handle(
-    'extension:release-settings-panel-session',
-    async (_, extensionId: string, panelId: string, sessionId: string) => {
+    'extension:release-settings-session',
+    async (_, extensionId: string, contributionId: string, sessionId: string) => {
       try {
-        await service.releaseSettingsPanelSession(
+        await service.releaseSettingsSession(
           requireSafeExtensionId(extensionId),
-          requireNonEmptyString(panelId, 'panelId'),
+          requireNonEmptyString(contributionId, 'contributionId'),
           requireNonEmptyString(sessionId, 'sessionId')
         )
         return { success: true }
@@ -363,23 +397,62 @@ function requireEntityMenuInvokeRequest(value: unknown): ExtensionEntityMenuInvo
   }
 }
 
-function requireSettingsPanelSubmitRequest(value: unknown): ExtensionSettingsPanelSubmitRequest {
+function requireSettingsFrameOpenRequest(value: unknown): ExtensionSettingsFrameOpenRequest {
   const request = requireRecord(value, 'request')
+  const target = requireRecord(request.target, 'target')
   return {
-    ...(value as ExtensionSettingsPanelSubmitRequest),
+    ...(value as ExtensionSettingsFrameOpenRequest),
     extensionId: requireSafeExtensionId(request.extensionId),
-    panelId: requireNonEmptyString(request.panelId, 'panelId'),
-    sessionId: requireNonEmptyString(request.sessionId, 'sessionId')
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    target: {
+      ...(target as unknown as ExtensionSettingsFrameOpenRequest['target']),
+      screenId: requireNonEmptyString(target.screenId, 'screenId')
+    }
   }
 }
 
-function requireSettingsPanelInvokeRequest(value: unknown): ExtensionSettingsPanelInvokeRequest {
+function requireSettingsFrameRefreshRequest(value: unknown): ExtensionSettingsFrameRefreshRequest {
   const request = requireRecord(value, 'request')
   return {
-    ...(value as ExtensionSettingsPanelInvokeRequest),
+    ...(value as ExtensionSettingsFrameRefreshRequest),
     extensionId: requireSafeExtensionId(request.extensionId),
-    panelId: requireNonEmptyString(request.panelId, 'panelId'),
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    frameId: requireNonEmptyString(request.frameId, 'frameId')
+  }
+}
+
+function requireSettingsSubmitRequest(value: unknown): ExtensionSettingsSubmitRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    ...(value as ExtensionSettingsSubmitRequest),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    frameId: requireNonEmptyString(request.frameId, 'frameId')
+  }
+}
+
+function requireSettingsInvokeRequest(value: unknown): ExtensionSettingsInvokeRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    ...(value as ExtensionSettingsInvokeRequest),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    frameId: requireNonEmptyString(request.frameId, 'frameId'),
     callbackId: requireNonEmptyString(request.callbackId, 'callbackId')
+  }
+}
+
+function requireSettingsFrameReleaseRequest(value: unknown): ExtensionSettingsFrameReleaseRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    ...(value as ExtensionSettingsFrameReleaseRequest),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
+    frameId: requireNonEmptyString(request.frameId, 'frameId')
   }
 }

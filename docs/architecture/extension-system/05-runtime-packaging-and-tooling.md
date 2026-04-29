@@ -42,28 +42,29 @@ type RpcMessage =
 
 renderer 的所有扩展相关操作都走 main 暴露的 IPC facade：
 
-- 获取设置面板列表
+- 获取 settings contribution 列表
 - 打开菜单并获取已解析的菜单结果
 - 触发菜单交互
-- 打开设置面板并获取当前完整面板节点列表
-- 提交设置面板
-- 触发设置面板按钮与高级动作
+- 打开 settings session 并获取 root frame
+- 打开/刷新/释放 settings frame
+- 提交 settings frame
+- 触发 settings node callback
 - 获取 theme 列表
 
 renderer 不认识共享扩展宿主进程，也不直接与之通信。
 
 受控 UI 的桥接时机统一为：
 
-- 菜单或设置面板打开时，main 才会请求一次对应的 `resolve`
+- 菜单或 settings session/frame 打开时，main 才会请求一次对应的 `resolve`
 - 后续不会自动重复 `resolve`
-- 只有扩展回调返回的 `UiCallbackResult` 中 `refresh: true`，main 才会再次请求对应 UI surface 的 `resolve`
+- 设置 UI 只通过 `SettingsInteractionResult.commands` 显式请求 `refresh/open/close`
 
 UI 回调桥接协议统一为：
 
-- 菜单项回调、设置面板控件回调和 `onSubmit` 都返回结构化 `UiCallbackResult`
-- `success`、`refresh`、`error` 字段都必须可序列化
+- 菜单项回调返回结构化 `UiCallbackResult`，settings 节点回调和 submit 返回结构化 `SettingsInteractionResult`
+- `success`、`error`、`commands` 字段都必须可序列化
 - main 不再通过 `void`、特殊字面量或异常分支推断 UI 行为
-- 扩展回调抛出异常时，extension host 必须记录完整日志，并把响应归一化为 `success: false` 的 `UiCallbackResult`
+- 扩展回调抛出异常时，extension host 必须记录完整日志，并把响应归一化为 `success: false` 的结构化失败结果
 
 ## 共享扩展宿主进程设计
 
@@ -97,7 +98,7 @@ runtime/
     sdk-bridge.ts
     contributions/
       entity-menus.ts
-      settings-panels.ts
+      settings.ts
       scrapers.ts
       deeplinks.ts
       themes.ts
@@ -107,7 +108,7 @@ runtime/
 
 - 分扩展 runtime registry
 - 进程内 callback registry
-- entity menu / settings panel 在各自 `contributions/*.ts` 中内聚管理的 session/refresh 状态
+- entity menu / settings flow 在各自 `contributions/*.ts` 中内聚管理 session、frame、callback 与 refresh 状态
 - protocol request/response 处理
 - 结构化日志上报
 - 单扩展 load/unload/reload

@@ -13,11 +13,15 @@ import type {
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResult,
   ExtensionResolvedEntityMenu,
-  ExtensionResolvedSettingsPanel,
-  ExtensionSettingsPanelCallbackResult,
-  ExtensionSettingsPanelInfo,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelSubmitRequest,
+  ExtensionResolvedSettingsFrame,
+  ExtensionSettingsContributionInfo,
+  ExtensionSettingsFrameOpenRequest,
+  ExtensionSettingsFrameRefreshRequest,
+  ExtensionSettingsFrameReleaseRequest,
+  ExtensionSettingsInteractionResponse,
+  ExtensionSettingsInvokeRequest,
+  ExtensionSettingsSession,
+  ExtensionSettingsSubmitRequest,
   ExtensionThemeContributionInfo
 } from '@shared/extension'
 import type { EntityMenuResolveInput } from '@kisaki/extension-api'
@@ -348,8 +352,8 @@ export class ExtensionService implements IService {
     return this.contributions.getSnapshot()
   }
 
-  getSettingsPanels(): readonly ExtensionSettingsPanelInfo[] {
-    return this.contributions.settingsPanels.getSnapshot()
+  getSettingsContributions(): readonly ExtensionSettingsContributionInfo[] {
+    return this.contributions.settings.getSnapshot()
   }
 
   getThemeContributions(): readonly ExtensionThemeContributionInfo[] {
@@ -373,39 +377,67 @@ export class ExtensionService implements IService {
     return this.contributions.entityMenus.releaseSession(sessionId)
   }
 
-  resolveSettingsPanel(
+  openSettingsSession(
     extensionId: string,
-    panelId: string
-  ): Promise<ExtensionResolvedSettingsPanel> {
-    return this.contributions.settingsPanels.resolve(requireSafeExtensionId(extensionId), panelId)
+    contributionId: string
+  ): Promise<ExtensionSettingsSession> {
+    return this.contributions.settings.openSession(
+      requireSafeExtensionId(extensionId),
+      contributionId
+    )
   }
 
-  submitSettingsPanel(
-    request: ExtensionSettingsPanelSubmitRequest
-  ): Promise<ExtensionSettingsPanelCallbackResult> {
-    return this.contributions.settingsPanels.submit({
+  openSettingsFrame(
+    request: ExtensionSettingsFrameOpenRequest
+  ): Promise<ExtensionResolvedSettingsFrame> {
+    return this.contributions.settings.openFrame({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  invokeSettingsPanelCallback(
-    request: ExtensionSettingsPanelInvokeRequest
-  ): Promise<ExtensionSettingsPanelCallbackResult> {
-    return this.contributions.settingsPanels.invoke({
+  refreshSettingsFrame(
+    request: ExtensionSettingsFrameRefreshRequest
+  ): Promise<ExtensionResolvedSettingsFrame> {
+    return this.contributions.settings.refreshFrame({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  releaseSettingsPanelSession(
+  submitSettingsFrame(
+    request: ExtensionSettingsSubmitRequest
+  ): Promise<ExtensionSettingsInteractionResponse> {
+    return this.contributions.settings.submit({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  invokeSettingsNode(
+    request: ExtensionSettingsInvokeRequest
+  ): Promise<ExtensionSettingsInteractionResponse> {
+    return this.contributions.settings.invoke({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  releaseSettingsFrame(request: ExtensionSettingsFrameReleaseRequest): Promise<void> {
+    return this.contributions.settings.releaseFrame({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  releaseSettingsSession(
     extensionId: string,
-    panelId: string,
+    contributionId: string,
     sessionId: string
   ): Promise<void> {
-    return this.contributions.settingsPanels.releaseSession(
+    return this.contributions.settings.releaseSession(
       requireSafeExtensionId(extensionId),
-      panelId,
+      contributionId,
       sessionId
     )
   }

@@ -1,4 +1,4 @@
-import type { Disposable, SerializableValue, UiCallbackResult } from '../../shared'
+import type { Disposable, ExtensionErrorShape, SerializableValue } from '../../shared'
 
 export type SettingsNoticeTone = 'info' | 'warning' | 'error' | 'success'
 
@@ -7,6 +7,43 @@ export type SettingsStatusTone = 'neutral' | 'success' | 'warning' | 'danger'
 export type SettingsTextTone = 'default' | 'muted' | 'danger'
 
 export type SettingsButtonTone = 'default' | 'primary' | 'danger'
+
+export type SettingsDialogSize = 'sm' | 'md' | 'lg' | 'xl'
+
+export type SettingsRefreshScope = 'current' | 'parent' | 'stack'
+
+export type SettingsCloseScope = 'current' | 'all'
+
+export interface SettingsDialogTarget {
+  screenId: string
+  params?: Record<string, SerializableValue>
+}
+
+export type SettingsCommand =
+  | {
+      type: 'refresh'
+      scope: SettingsRefreshScope
+    }
+  | {
+      type: 'close'
+      scope: SettingsCloseScope
+    }
+  | {
+      type: 'open'
+      target: SettingsDialogTarget
+    }
+
+export type SettingsInteractionResult =
+  | {
+      success: true
+      message?: string
+      commands?: readonly SettingsCommand[]
+    }
+  | {
+      success: false
+      error: ExtensionErrorShape
+      commands?: readonly SettingsCommand[]
+    }
 
 export interface SettingsNodeBase {
   id: string
@@ -19,15 +56,20 @@ export interface SettingsControlBase extends SettingsNodeBase {
   disabled?: boolean
 }
 
-export interface SettingsPanelCallbackContext {
-  panelId: string
+export interface SettingsFrameContext {
+  contributionId: string
+  screenId: string
+  frameId: string
+  params: Record<string, SerializableValue>
   signal: AbortSignal
 }
 
-export interface SettingsSubmitEvent {
-  panelId: string
+export interface SettingsCallbackContext extends SettingsFrameContext {
+  nodeId: string
+}
+
+export interface SettingsSubmitEvent extends SettingsFrameContext {
   values: Record<string, SerializableValue>
-  signal: AbortSignal
 }
 
 export interface SettingsTextNode extends SettingsNodeBase {
@@ -39,13 +81,19 @@ export interface SettingsTextNode extends SettingsNodeBase {
 export interface SettingsSwitchNode extends SettingsControlBase {
   kind: 'switch'
   value: boolean
-  onChange?: (value: boolean, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onChange?: (
+    value: boolean,
+    context: SettingsCallbackContext
+  ) => Promise<SettingsInteractionResult>
 }
 
 export interface SettingsCheckboxNode extends SettingsControlBase {
   kind: 'checkbox'
   value: boolean
-  onChange?: (value: boolean, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onChange?: (
+    value: boolean,
+    context: SettingsCallbackContext
+  ) => Promise<SettingsInteractionResult>
 }
 
 export interface SettingsSelectOption {
@@ -60,7 +108,7 @@ export interface SettingsSelectNode extends SettingsControlBase {
   value?: string
   placeholder?: string
   options: readonly SettingsSelectOption[]
-  onChange?: (value: string, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onChange?: (value: string, context: SettingsCallbackContext) => Promise<SettingsInteractionResult>
 }
 
 export interface SettingsTextInputNode extends SettingsControlBase {
@@ -68,7 +116,7 @@ export interface SettingsTextInputNode extends SettingsControlBase {
   value?: string
   placeholder?: string
   inputMode?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'password'
-  onChange?: (value: string, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onChange?: (value: string, context: SettingsCallbackContext) => Promise<SettingsInteractionResult>
 }
 
 export interface SettingsTextareaNode extends SettingsControlBase {
@@ -76,7 +124,7 @@ export interface SettingsTextareaNode extends SettingsControlBase {
   value?: string
   placeholder?: string
   rows?: number
-  onChange?: (value: string, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onChange?: (value: string, context: SettingsCallbackContext) => Promise<SettingsInteractionResult>
 }
 
 export interface SettingsNumberInputNode extends SettingsControlBase {
@@ -86,14 +134,22 @@ export interface SettingsNumberInputNode extends SettingsControlBase {
   min?: number
   max?: number
   step?: number
-  onChange?: (value: number, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onChange?: (value: number, context: SettingsCallbackContext) => Promise<SettingsInteractionResult>
 }
 
 export interface SettingsButtonNode extends SettingsControlBase {
   kind: 'button'
   text?: string
   tone?: SettingsButtonTone
-  onClick?: (value: undefined, context: SettingsPanelCallbackContext) => Promise<UiCallbackResult>
+  onClick?: (
+    value: undefined,
+    context: SettingsCallbackContext
+  ) => Promise<SettingsInteractionResult>
+}
+
+export interface SettingsDialogNode extends SettingsControlBase {
+  kind: 'dialog'
+  target: SettingsDialogTarget
 }
 
 export interface SettingsNoticeNode extends SettingsNodeBase {
@@ -113,7 +169,15 @@ export interface SettingsDividerNode extends SettingsNodeBase {
   kind: 'divider'
 }
 
-export type SettingsPanelControlNode =
+export interface SettingsSectionNode extends SettingsNodeBase {
+  kind: 'section'
+  title?: string
+  description?: string
+  children: readonly SettingsNode[]
+}
+
+export type SettingsNode =
+  | SettingsSectionNode
   | SettingsTextNode
   | SettingsSwitchNode
   | SettingsCheckboxNode
@@ -122,20 +186,7 @@ export type SettingsPanelControlNode =
   | SettingsTextareaNode
   | SettingsNumberInputNode
   | SettingsButtonNode
-  | SettingsNoticeNode
-  | SettingsStatusNode
-  | SettingsDividerNode
-
-export interface SettingsSectionNode extends SettingsNodeBase {
-  kind: 'section'
-  title: string
-  description?: string
-  controls: readonly SettingsPanelControlNode[]
-}
-
-export type SettingsPanelNode =
-  | SettingsSectionNode
-  | SettingsTextNode
+  | SettingsDialogNode
   | SettingsNoticeNode
   | SettingsStatusNode
   | SettingsDividerNode
@@ -168,7 +219,12 @@ export interface SettingsResolvedButtonNode extends Omit<SettingsButtonNode, 'on
   callbackId?: string
 }
 
-export type SettingsPanelResolvedControlNode =
+export interface SettingsResolvedSectionNode extends Omit<SettingsSectionNode, 'children'> {
+  children: readonly SettingsResolvedNode[]
+}
+
+export type SettingsResolvedNode =
+  | SettingsResolvedSectionNode
   | SettingsTextNode
   | SettingsResolvedSwitchNode
   | SettingsResolvedCheckboxNode
@@ -177,22 +233,34 @@ export type SettingsPanelResolvedControlNode =
   | SettingsResolvedTextareaNode
   | SettingsResolvedNumberInputNode
   | SettingsResolvedButtonNode
+  | SettingsDialogNode
   | SettingsNoticeNode
   | SettingsStatusNode
   | SettingsDividerNode
 
-export interface SettingsResolvedSectionNode extends Omit<SettingsSectionNode, 'controls'> {
-  controls: readonly SettingsPanelResolvedControlNode[]
+export interface SettingsScreenModel {
+  title?: string
+  description?: string
+  size?: SettingsDialogSize
+  nodes: readonly SettingsNode[]
 }
 
-export type SettingsPanelResolvedNode =
-  | SettingsResolvedSectionNode
-  | SettingsTextNode
-  | SettingsNoticeNode
-  | SettingsStatusNode
-  | SettingsDividerNode
+export interface SettingsResolvedScreenModel extends Omit<SettingsScreenModel, 'nodes'> {
+  nodes: readonly SettingsResolvedNode[]
+}
 
-export interface SettingsPanelBuilder {
+export interface SettingsScreen {
+  resolve(
+    context: SettingsFrameContext,
+    settings: SettingsBuilder
+  ): Promise<SettingsScreenModel> | SettingsScreenModel
+  submit?(
+    event: SettingsSubmitEvent
+  ): Promise<SettingsInteractionResult> | SettingsInteractionResult
+}
+
+export interface SettingsBuilder {
+  screen(model: SettingsScreenModel): SettingsScreenModel
   section(node: Omit<SettingsSectionNode, 'kind'>): SettingsSectionNode
   text(node: Omit<SettingsTextNode, 'kind'>): SettingsTextNode
   switch(node: Omit<SettingsSwitchNode, 'kind'>): SettingsSwitchNode
@@ -202,26 +270,21 @@ export interface SettingsPanelBuilder {
   textarea(node: Omit<SettingsTextareaNode, 'kind'>): SettingsTextareaNode
   numberInput(node: Omit<SettingsNumberInputNode, 'kind'>): SettingsNumberInputNode
   button(node: Omit<SettingsButtonNode, 'kind'>): SettingsButtonNode
+  dialog(node: Omit<SettingsDialogNode, 'kind'>): SettingsDialogNode
   notice(node: Omit<SettingsNoticeNode, 'kind'>): SettingsNoticeNode
   status(node: Omit<SettingsStatusNode, 'kind'>): SettingsStatusNode
   divider(node: Omit<SettingsDividerNode, 'kind'>): SettingsDividerNode
 }
 
-export interface SettingsPanelContribution {
+export interface SettingsContribution {
   id: string
   title: string
   description?: string
   order?: number
-  resolve(panel: SettingsPanelBuilder): Promise<readonly SettingsPanelNode[]>
-  onSubmit?(event: SettingsSubmitEvent): Promise<UiCallbackResult>
+  rootScreenId: string
+  screens: Record<string, SettingsScreen>
 }
 
-/**
- * Registrar for the extension's single settings panel.
- *
- * An extension may register at most one settings panel at a time. Dispose the
- * previous panel before registering a replacement.
- */
-export interface SettingsPanelRegistrar {
-  register(contribution: SettingsPanelContribution): Disposable
+export interface SettingsRegistrar {
+  register(contribution: SettingsContribution): Disposable
 }

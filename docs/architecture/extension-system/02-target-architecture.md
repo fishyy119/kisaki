@@ -25,7 +25,7 @@
 │  ├─ RuntimeManager                                          │
 │  ├─ ContributionRegistry                                    │
 │  ├─ CapabilityGateway                                       │
-│  ├─ Contribution modules (entity-menus/settings-panels/    │
+│  ├─ Contribution modules (entity-menus/settings/           │
 │  │  themes/scrapers/                                       │
 │  │  deeplinks, with host integration)                      │
 │  └─ Renderer IPC facade                                     │
@@ -38,7 +38,7 @@
 │ one shared process for all enabled   │   │                                  │
 │ extensions                           │   │                                  │
 │                                      │   │ core/extensions/                 │
-│  entry -> activate(context)          │   │ ├─ settings panels               │
+│  entry -> activate(context)          │   │ ├─ settings dialog flows         │
 │  SDK global API                      │   │ ├─ entity menu rendering         │
 │  callbacks + event handlers          │   │ ├─ theme choices                 │
 │  remote providers                    │   │ └─ extension manager UI          │
@@ -146,7 +146,7 @@ apps/desktop/src/main/services/extension/
       sdk-bridge.ts
       contributions/
         entity-menus.ts
-        settings-panels.ts
+        settings.ts
         scrapers.ts
         deeplinks.ts
         themes.ts
@@ -162,7 +162,7 @@ apps/desktop/src/main/services/extension/
   contributions/
     registry.ts
     entity-menus.ts
-    settings-panels.ts
+    settings.ts
     themes.ts
     scrapers.ts
     deeplinks.ts
@@ -225,7 +225,7 @@ packages/create-kisaki-extension/
 扩展在 `activate(context)` 中完成：
 
 - 菜单贡献注册
-- 设置面板注册
+- 设置 dialog flow 注册
 - scraper provider 注册
 - deeplink handler 注册
 - theme 注册
@@ -304,21 +304,20 @@ Renderer 点击 action / checkbox / select
   -> Main 通知 renderer 刷新菜单或提示状态
 ```
 
-## 3. 设置面板渲染
+## 3. 设置 Dialog Flow 渲染
 
 ```text
-Renderer 打开扩展设置页
-  -> Main 向共享宿主中的目标扩展运行槽位调用 resolvePanel(...)
-  -> 共享宿主返回当前完整设置面板节点列表
-  -> Renderer 用宿主内置表单控件渲染，并基于该节点列表初始化本地草稿
-  -> 用户点击提交后回传表单值
-  -> Main 转发给共享宿主中的目标扩展 onSubmit
-  -> `onSubmit` 或按钮/高级控件回调返回结构化 `UiCallbackResult`
-  -> 若结果中的 `refresh: true`，则 Main 再次调用 resolvePanel(...)
-  -> Renderer 用新的面板节点列表重建当前面板
+Renderer 打开扩展设置入口
+  -> Main 向共享宿主中的目标扩展运行槽位打开 settings session
+  -> 共享宿主解析 root screen 并返回第一个 frame
+  -> Renderer 用 dialog stack 渲染 frame，并基于 screen 节点初始化本地草稿
+  -> dialog 节点继续向 Main 请求 push frame，实现嵌套设置弹窗
+  -> 用户提交 frame 或触发节点 callback 后，Main 转发给共享宿主
+  -> 扩展回调返回结构化 SettingsInteractionResult commands
+  -> Renderer 按 command 执行 refresh/open/close，必要时请求刷新对应 frame
 ```
 
-设置面板和菜单统一遵循同一条时机规则：`resolve` 仅在 UI 打开时自动执行，后续不做隐式刷新；只有扩展回调返回的 `UiCallbackResult.refresh === true` 时，宿主才会再次执行 `resolve`。
+设置 flow 和菜单统一遵循显式刷新原则：`resolve` 仅在 session/frame 打开时自动执行，后续不做隐式刷新；只有扩展回调返回 `SettingsInteractionResult.commands` 中的 `refresh` 命令时，renderer 才会请求刷新指定 frame。
 
 ## 4. Scraper 调用
 
@@ -385,7 +384,7 @@ Renderer 打开扩展设置页
 主进程统一维护所有“已经过 host 归一化的结构化贡献视图”，并对 renderer 与宿主业务模块提供稳定查询入口；它不直接持有扩展回调实现，也不拥有 UI session 状态：
 
 - entity menus
-- settings panels
+- settings dialog flows
 - themes
 - scrapers
 - deeplinks

@@ -4,20 +4,20 @@ import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
 import { ExtensionDeeplinkContributionHost } from './deeplinks'
 import { ExtensionEntityMenuContributionHost } from './entity-menus'
 import { ExtensionScraperContributionHost } from './scrapers'
-import { ExtensionSettingsPanelContributionHost } from './settings-panels'
+import { ExtensionSettingsContributionHost } from './settings'
 import { ExtensionThemeContributionHost } from './themes'
 import type { ExtensionContributionHostOptions } from './types'
 
 export class ExtensionContributionRegistry {
   readonly entityMenus: ExtensionEntityMenuContributionHost
-  readonly settingsPanels: ExtensionSettingsPanelContributionHost
+  readonly settings: ExtensionSettingsContributionHost
   readonly themes: ExtensionThemeContributionHost
   readonly deeplinks: ExtensionDeeplinkContributionHost
   readonly scrapers: ExtensionScraperContributionHost
 
   constructor(private readonly options: ExtensionContributionHostOptions) {
     this.entityMenus = new ExtensionEntityMenuContributionHost(options)
-    this.settingsPanels = new ExtensionSettingsPanelContributionHost(options)
+    this.settings = new ExtensionSettingsContributionHost(options)
     this.themes = new ExtensionThemeContributionHost(options)
     this.deeplinks = new ExtensionDeeplinkContributionHost(options)
     this.scrapers = new ExtensionScraperContributionHost(options)
@@ -40,18 +40,15 @@ export class ExtensionContributionRegistry {
         return {}
       }
     )
+    rpc.handleHostRequest('bridge.settings.register', async ({ runtimeHandle, contribution }) => {
+      this.settings.register(runtimeHandle, contribution)
+      this.notifyChanged()
+      return {}
+    })
     rpc.handleHostRequest(
-      'bridge.settingsPanels.register',
-      async ({ runtimeHandle, contribution }) => {
-        this.settingsPanels.register(runtimeHandle, contribution)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'bridge.settingsPanels.unregister',
-      async ({ runtimeHandle, panelId }) => {
-        this.settingsPanels.unregister(runtimeHandle, panelId)
+      'bridge.settings.unregister',
+      async ({ runtimeHandle, contributionId }) => {
+        this.settings.unregister(runtimeHandle, contributionId)
         this.notifyChanged()
         return {}
       }
@@ -145,7 +142,7 @@ export class ExtensionContributionRegistry {
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     try {
       this.entityMenus.releaseRuntime(runtimeHandle)
-      this.settingsPanels.releaseRuntime(runtimeHandle)
+      this.settings.releaseRuntime(runtimeHandle)
       this.themes.releaseRuntime(runtimeHandle)
       this.deeplinks.releaseRuntime(runtimeHandle)
       await this.scrapers.releaseRuntime(runtimeHandle)
@@ -157,7 +154,7 @@ export class ExtensionContributionRegistry {
   async releaseAll(): Promise<void> {
     try {
       this.entityMenus.releaseAll()
-      this.settingsPanels.releaseAll()
+      this.settings.releaseAll()
       this.themes.releaseAll()
       this.deeplinks.releaseAll()
       await this.scrapers.releaseAll()
@@ -169,7 +166,7 @@ export class ExtensionContributionRegistry {
   getSnapshot(): ExtensionContributionSnapshot {
     return {
       entityMenus: this.entityMenus.getSnapshot(),
-      settingsPanels: this.settingsPanels.getSnapshot(),
+      settings: this.settings.getSnapshot(),
       themes: this.themes.getSnapshot(),
       deeplinks: this.deeplinks.getSnapshot(),
       scrapers: this.scrapers.getSnapshot()

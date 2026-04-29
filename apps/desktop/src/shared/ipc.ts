@@ -62,11 +62,15 @@ import type {
   ExtensionEntityMenuInvokeResult,
   ExtensionRegistryEntry,
   ExtensionResolvedEntityMenu,
-  ExtensionResolvedSettingsPanel,
-  ExtensionSettingsPanelCallbackResult,
-  ExtensionSettingsPanelInfo,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelSubmitRequest,
+  ExtensionResolvedSettingsFrame,
+  ExtensionSettingsContributionInfo,
+  ExtensionSettingsFrameOpenRequest,
+  ExtensionSettingsFrameRefreshRequest,
+  ExtensionSettingsFrameReleaseRequest,
+  ExtensionSettingsInteractionResponse,
+  ExtensionSettingsInvokeRequest,
+  ExtensionSettingsSession,
+  ExtensionSettingsSubmitRequest,
   ExtensionThemeContributionInfo,
   ExtensionUpdateInfo
 } from './extension'
@@ -384,7 +388,9 @@ export interface IpcMainHandlers {
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
   'extension:get-contribution-snapshot': () => IpcResult<ExtensionContributionSnapshot>
-  'extension:get-settings-panels': () => IpcResult<readonly ExtensionSettingsPanelInfo[]>
+  'extension:get-settings-contributions': () => IpcResult<
+    readonly ExtensionSettingsContributionInfo[]
+  >
   'extension:resolve-entity-menu': (
     input: EntityMenuResolveInput
   ) => IpcResult<ExtensionResolvedEntityMenu>
@@ -392,19 +398,28 @@ export interface IpcMainHandlers {
     request: ExtensionEntityMenuInvokeRequest
   ) => IpcResult<ExtensionEntityMenuInvokeResult>
   'extension:release-entity-menu-session': (sessionId: string) => IpcVoidResult
-  'extension:resolve-settings-panel': (
+  'extension:open-settings-session': (
     extensionId: string,
-    panelId: string
-  ) => IpcResult<ExtensionResolvedSettingsPanel>
-  'extension:submit-settings-panel': (
-    request: ExtensionSettingsPanelSubmitRequest
-  ) => IpcResult<ExtensionSettingsPanelCallbackResult>
-  'extension:invoke-settings-panel': (
-    request: ExtensionSettingsPanelInvokeRequest
-  ) => IpcResult<ExtensionSettingsPanelCallbackResult>
-  'extension:release-settings-panel-session': (
+    contributionId: string
+  ) => IpcResult<ExtensionSettingsSession>
+  'extension:open-settings-frame': (
+    request: ExtensionSettingsFrameOpenRequest
+  ) => IpcResult<ExtensionResolvedSettingsFrame>
+  'extension:refresh-settings-frame': (
+    request: ExtensionSettingsFrameRefreshRequest
+  ) => IpcResult<ExtensionResolvedSettingsFrame>
+  'extension:submit-settings-frame': (
+    request: ExtensionSettingsSubmitRequest
+  ) => IpcResult<ExtensionSettingsInteractionResponse>
+  'extension:invoke-settings-node': (
+    request: ExtensionSettingsInvokeRequest
+  ) => IpcResult<ExtensionSettingsInteractionResponse>
+  'extension:release-settings-frame': (
+    request: ExtensionSettingsFrameReleaseRequest
+  ) => IpcVoidResult
+  'extension:release-settings-session': (
     extensionId: string,
-    panelId: string,
+    contributionId: string,
     sessionId: string
   ) => IpcVoidResult
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeContributionInfo[]>
