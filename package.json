@@ -11,7 +11,7 @@
     "build:linux": "pnpm --filter kisaki build:linux",
     "build:extension-contracts": "pnpm --filter @kisaki/extension-api build && pnpm --filter @kisaki/extension-sdk build",
     "build:extension-tooling": "pnpm build:extension-contracts && pnpm --filter @kisaki/extension-cli build && pnpm --filter create-kisaki-extension build",
-    "typecheck": "pnpm -r --parallel typecheck",
+    "typecheck": "pnpm build:extension-contracts && pnpm -r --parallel typecheck",
     "lint": "pnpm -r --parallel lint",
     "lint:fix": "pnpm -r --parallel lint:fix",
     "format": "prettier --write .",
