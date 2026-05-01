@@ -24,7 +24,7 @@ export interface SettingsContribution {
   title: string
   description?: string
   order?: number
-  view: ExtensionUiMount
+  view: ExtensionUiMount<ExtensionUiParams, ExtensionUiSettingsSurfaceInput>
 }
 ```
 
@@ -77,7 +77,7 @@ export interface EntityMenuContribution<
   id: string
   target: TInput['target']
   order?: number
-  view: ExtensionUiMount<TInput>
+  view: ExtensionUiMount<ExtensionUiParams, ExtensionUiEntityMenuSurfaceInput<TInput>>
 }
 ```
 
@@ -88,7 +88,7 @@ export interface EntityMenuContribution<
 - `EntityMenuNode`
 - `EntityMenuItem` 专用 callback model
 
-entity menu contribution 的 view root 应是 `MenuNode` 或 `Fragment<MenuNode>`。它不返回完整 `Menu` root，因为注册环境已经是主应用 entity menu 的 content 区域。host validation 会根据 surface 限制组件集合。
+这里的泛型分两层：`TInput` 是原有 `EntityMenuResolveInput` 的具体分支；`ExtensionUiEntityMenuSurfaceInput<TInput>` 才是 mount params resolver 收到的 surface input。entity menu contribution 的 view root 应是 `MenuNode` 或 `Fragment<MenuNode>`。它不返回完整 `Menu` root，因为注册环境已经是主应用 entity menu 的 content 区域。host validation 会根据 surface 限制组件集合。
 
 后续普通 UI 中的完整 `Menu` overlay 必须通过 `presentation: 'dropdown' | 'context'` 对齐 renderer 的 dropdown/context menu。entity menu contribution 不使用完整 `ui.menu(...)`，只贡献 `ui.menu.item(...)`、`ui.menu.group(...)`、`ui.menu.separator(...)` 等内容节点，由主应用已有菜单容器决定最终是 dropdown 还是 context。
 
@@ -164,6 +164,8 @@ export interface ExtensionContributionSnapshot {
 
 `openExtensionUiSession` 只负责打开注册 contribution。`openExtensionUiMountSession` 负责从当前 session 或 explicit owner 打开 mount target，main 必须验证 target component 属于同一 extension runtime。
 
+renderer dispatch 不直接传 `extensionId`、`runtimeHandle` 或 `surfaceInput`。main 通过 active session owner table 找到 runtime owner，再转发给 host；旧 API 删除后不再保留可由 renderer 自报 owner 的 settings/entity menu invoke 入口。
+
 ## Built-in Bangumi 改写
 
 当前 `extensions/bangumi/src/index.ts` settings 应改为：
@@ -191,7 +193,7 @@ const BangumiSettings = ui.defineComponent('bangumi.settings', async (ctx) => {
                   control: ui.input({
                     name: 'accessToken',
                     type: 'password',
-                    value: typeof accessToken === 'string' ? accessToken : ''
+                    defaultValue: typeof accessToken === 'string' ? accessToken : ''
                   })
                 }
               }),

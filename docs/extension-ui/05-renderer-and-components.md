@@ -11,6 +11,7 @@ apps/desktop/src/renderer/src/core/extensions/ui/
   store.ts
   draft.ts
   events.ts
+  patch.ts
   types.ts
 
 apps/desktop/src/renderer/src/components/shared/extension/
@@ -52,18 +53,25 @@ apps/desktop/src/renderer/src/components/shared/extension/
 - `dispatchExtensionUiEvent(request)`
 - `releaseExtensionUiSession(request)`
 
-`events.ts` 或 surface driver 层提供 command dispatcher，用于解释 static command。`open` command 的 `outlet` 决定调用当前 surface stack 还是应用级 dialog outlet；document update command 只能来自 host action result，不允许 renderer 从静态 handler 直接执行 replace/patch。
+`events.ts` 或 surface driver 层提供 command dispatcher，用于解释 static command。`open` command 的 `outlet` 决定调用当前 surface stack 还是应用级 dialog outlet；`open`、`notify`、`refresh` 这类需要 owner/session 校验的命令仍要经过 main IPC。document update command 只能来自 host action result，不允许 renderer 从静态 handler 直接执行 replace 或 patch。
+
+renderer 需要提供一个小型 patch applier，但不实现自动 diff。patch applier 只接受 host 已校验的节点级 patch，并在本地再次校验 `baseDocumentId`、目标 nodeId、root 约束和 component allowlist。应用成功后用 patch command 的新 `documentId` 更新当前 document；应用失败时自动 refresh 一次，避免局部状态和 host session 分叉。
 
 `store.ts` 接收 `extension:contributions-changed`，但 snapshot 内使用 Extension UI contribution info。
 
 `draft.ts` 管表单值：
 
 - 按 `Form` scope 收集 `name`。
-- `defaultValue` 初始化本地 draft；`value` 表示受控值，refresh/replace document 后以新 document 为准。
+- `defaultValue` 初始化非受控本地 draft；refresh/replace/patch document 后以新 document 的 `defaultValue` 重新初始化当前 form scope。
+- `value` 是受控值，由 document 驱动显示；用户编辑受控控件时必须触发 `onChange` dispatch，等待 host 返回 refresh/replace/patch 后以新 document value 提交。
+- 同一个控件不能同时声明 `defaultValue` 和 `value`；renderer adapter 发现冲突时显示局部 fallback 并记录 warning。
 - `disabled` 同时阻止本地 draft 更新和 dispatch。
 - submit 时发送当前 form scope 的 `values`。
-- change action 缺省只更新本地 draft；显式声明 `onChange` 时才 dispatch 到 host。
+- 非受控 change 缺省只更新本地 draft；显式声明 `onChange` 时才额外 dispatch 到 host。
+- 受控 change 如果没有 `onChange`，控件按 read-only 渲染；action pending 时可显示临时 busy/optimistic state，但必须在 action 完成后以 document value 重新对齐。
+- Input、Textarea、Select、Checkbox、Switch、RadioGroup、Slider、SegmentedControl 等值控件都遵守同一套 `defaultValue` / `value` 二选一规则。
 - dialog footer 中的 submit button 通过 `form` 关联 `Form.id`，不需要把按钮放在 form children 内。
+- dispatch payload 不携带 `extensionId`、`runtimeHandle` 或 `surfaceInput`；renderer 只提交 session/document/action ids 和表单值。
 
 ## Component registry
 
@@ -137,7 +145,7 @@ entity menu adapter 把每个 contribution 的 menu content document 映射到�
 - 每个 session 返回一个 menu content document，root 是 `MenuNode` 或 `Fragment<MenuNode>`。
 - `MenuContentGroup` 将 Extension UI menu content node 映射到主应用已有 entity menu 的 dropdown/context menu primitives。
 - entity menu surface 把扩展贡献的 menu content 追加到主应用已有 entity menu 中，并提供 target input 和宿主 menu component set。
-- action dispatch 后按 command 决定刷新当前 session、关闭菜单、替换 document，或把 `outlet: 'dialog'` 的 open command 转交给应用级 dialog outlet。
+- action dispatch 后按 command 决定刷新当前 session、关闭菜单、替换或 patch document，或把 `outlet: 'dialog'` 的 open command 转交给应用级 dialog outlet。
 
 entity menu surface 必须限制组件：
 
@@ -161,7 +169,7 @@ Extension UI `Button` 映射到 `components/ui/button`：
 
 - `variant`: `default | destructive | outline | secondary | ghost | link | text`
 - `size`: `xs | sm | md | lg | icon`
-- `icon`: Iconify class
+- `icon`: Kisaki 公共 icon id 或构建期 safelist 内的 Iconify class
 - `type`: `button | submit | reset`
 - `form`: associated form id for dialog footer submit buttons
 - `onClick`: action
@@ -177,6 +185,7 @@ Extension UI `Input` 映射到 `components/ui/input`：
 
 - `name`
 - `type`: `text | number | password | email | url | search | tel`
+- `defaultValue`
 - `value`
 - `placeholder`
 - `min`、`max`、`step`: `type: 'number'` 时可用
@@ -185,6 +194,7 @@ Extension UI `Input` 映射到 `components/ui/input`：
 Extension UI `Select` 映射到 `components/ui/select`：
 
 - `name`
+- `defaultValue`
 - `value`
 - `placeholder`
 - `options`
@@ -203,7 +213,7 @@ Extension UI menu content 映射到调用方传入的 `MenuComponents`：
 - `MenuGroup`、`MenuItem`、`MenuCheckboxItem`、`MenuRadioGroup`、`MenuRadioItem`、`MenuSub`、`MenuSeparator`、`MenuLabel`
 - entity menu contribution 不渲染 `Menu` root；它只渲染 `ui.menu.*` 内容节点，并由 entity menu surface 选择当前宿主正在使用的 dropdown 或 context primitives。
 
-以下 adapter 推迟到 Phase 7 或后续小版本：`Tabs`、`Popover`、完整 `Menu` overlay、`Table`、`Image`、`Markdown`、`Progress`、`Empty`、图表和 VirtualList。renderer 已有组件不等于 Extension UI 第一版必须公开。
+以下 adapter 推迟到后续独立小版本：`Tabs`、`Popover`、完整 `Menu` overlay、`Table`、`Image`、`Markdown`、`Progress`、`Empty`、图表和 VirtualList。renderer 已有组件不等于 Extension UI 第一版必须公开。
 
 ## 可访问性和交互状态
 
