@@ -1,6 +1,8 @@
 import type { HTMLAttributes } from 'vue'
 
 export type HeatmapGranularity = 'day' | 'week' | 'month'
+export type HeatmapLayoutMode = 'packed' | 'weekColumns'
+export type HeatmapLayoutByGranularity = Partial<Record<HeatmapGranularity, HeatmapLayoutMode>>
 
 export interface HeatmapDataPoint {
   date: Date
@@ -18,11 +20,17 @@ export interface HeatmapProps {
   inlineDetailsMinCellSizePx?: number
   /** Available granularities (defaults to all). Selector hidden when only one. */
   availableGranularities?: HeatmapGranularity[]
+  /**
+   * Override the layout strategy for specific granularities.
+   * `weekColumns` is only applied to `day` granularity.
+   * When a granularity switches to `weekColumns`, inline labels are disabled for that mode.
+   */
+  layoutByGranularity?: HeatmapLayoutByGranularity
   /** Custom value formatter for tooltips */
   formatValue?: (value: number) => string
   /** Custom date formatter for tooltips */
   formatDate?: (date: Date, granularity: HeatmapGranularity) => string
-  /** Chart height in pixels */
+  /** Preferred chart height in pixels. Some layouts may derive height from width. */
   height?: number
   /** Show legend */
   showLegend?: boolean

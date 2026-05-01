@@ -1,5 +1,6 @@
 import { ComponentCore, type ComponentConfigInterface } from '@unovis/ts'
 import { smartTransition } from '@unovis/ts/utils/d3'
+import { clampNonNegative, clampNonNegativeInt, getRootFontSizePx } from './heatmap-utils'
 
 export type HeatmapRectGridDatum = object
 
@@ -45,20 +46,6 @@ export const HeatmapRectGridDefaultConfig = {
 } satisfies HeatmapRectGridConfigInterface<HeatmapRectGridDatum>
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
-
-function getRootFontSizePx(): number {
-  if (typeof window === 'undefined') return 16
-  const v = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
-  return Number.isFinite(v) && v > 0 ? v : 16
-}
-
-function clampNonNegative(n: number): number {
-  return Number.isFinite(n) && n >= 0 ? n : 0
-}
-
-function clampNonNegativeInt(n: number): number {
-  return Math.max(0, Math.floor(clampNonNegative(n)))
-}
 
 function normalizeLabelMinCellSizePx(value: unknown): number {
   if (typeof value !== 'number') return Number.POSITIVE_INFINITY
