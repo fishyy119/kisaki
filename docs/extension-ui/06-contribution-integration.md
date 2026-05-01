@@ -42,8 +42,8 @@ export interface SettingsContribution {
 
 - `ExtensionUiMount`
 - `ExtensionUiDocument`
-- `ExtensionUiDispatchResult`
-- `ExtensionUiCommand`
+- `ExtensionUiActionResult`
+- `ExtensionUiNormalizedCommand`
 
 ## Settings root
 
@@ -111,6 +111,7 @@ entity menu 点击后可以正常关闭并释放自己的短生命周期 session
 
 ```ts
 export interface ExtensionUiContributionInfo extends ExtensionContributionOwnerInfo {
+  uiContributionId: string
   contributionId: string
   surface: ExtensionUiContributionSurfaceKind
   title?: string
@@ -126,6 +127,8 @@ export interface ExtensionContributionSnapshot {
   scrapers: readonly ExtensionScraperProviderInfo[]
 }
 ```
+
+`uiContributionId` 由 main 生成，作为 renderer 打开 contribution session 的 opaque key。`extensionId`、`extensionName`、`contributionId` 仍可用于展示、排序、诊断和日志，但 renderer 不应把它们当作 dispatch 路由凭据。
 
 如果希望 renderer 查询更方便，可以在 `core/extensions/ui/store.ts` 提供：
 
@@ -155,7 +158,7 @@ export interface ExtensionContributionSnapshot {
 新增：
 
 - `getExtensionUiContributions(surface?)`
-- `openExtensionUiSession(request)`
+- `openExtensionUiSession(request)`，renderer 侧 request 使用 `uiContributionId`。
 - `openExtensionUiMountSession(request)`，用于 `ui.command.open(ui.mount(...))` 打开同 extension component。
 - `refreshExtensionUiSession(request)`
 - `dispatchExtensionUiEvent(request)`
@@ -164,7 +167,7 @@ export interface ExtensionContributionSnapshot {
 
 `openExtensionUiSession` 只负责打开注册 contribution。`openExtensionUiMountSession` 负责从当前 session 或 explicit owner 打开 mount target，main 必须验证 target component 属于同一 extension runtime。
 
-renderer dispatch 不直接传 `extensionId`、`runtimeHandle` 或 `surfaceInput`。main 通过 active session owner table 找到 runtime owner，再转发给 host；旧 API 删除后不再保留可由 renderer 自报 owner 的 settings/entity menu invoke 入口。
+renderer 打开 contribution 时只传 `uiContributionId`；dispatch 不直接传 `extensionId`、`runtimeHandle` 或 `surfaceInput`。main 通过 contribution registry 和 active session owner table 找到 runtime owner，再转发给 host；旧 API 删除后不再保留可由 renderer 自报 owner 的 settings/entity menu invoke 入口。
 
 ## Built-in Bangumi 改写
 
@@ -193,7 +196,7 @@ const BangumiSettings = ui.defineComponent('bangumi.settings', async (ctx) => {
                   control: ui.input({
                     name: 'accessToken',
                     type: 'password',
-                    defaultValue: typeof accessToken === 'string' ? accessToken : ''
+                    value: typeof accessToken === 'string' ? accessToken : ''
                   })
                 }
               }),

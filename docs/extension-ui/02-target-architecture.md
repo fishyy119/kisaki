@@ -49,7 +49,7 @@ SDK 不拥有 runtime 状态，只负责构造类型安全的 Extension UI defin
 - `registry.ts`: 保存每个 runtime 的 Extension UI contribution 与 component definitions。
 - `renderer.ts`: 在 extension execution scope 内执行 component render。
 - `session.ts`: 管理 UI session、document version、callback/action map 和确定性 cleanup。
-- `actions.ts`: 处理 dispatch、运行 action、返回 replace document 或受限节点级 patch。
+- `actions.ts`: 处理 dispatch、运行 action、把 authoring action result normalize 成 replace document 或受限节点级 patch。
 - `patch.ts`: 在 host 内对当前 normalized document 应用节点级 patch，并重新生成 action map 与 validation 结果。
 - `normalizer.ts`: 校验 document，替换函数引用，生成 action id。
 
@@ -72,7 +72,7 @@ main 不理解每个 UI 组件怎么渲染，只理解 surface、session、docum
 
 - `ipc.ts`: Extension UI IPC facade。
 - `store.ts`: contribution snapshot 和 active session 辅助状态。
-- `draft.ts`: 表单 draft、defaultValue/value 双模式、dirty state。
+- `draft.ts`: 表单 draft、value 初始化、dirty state 和 resetKey。
 - `events.ts`: 把组件事件转成 dispatch request。
 
 新增/重组 `apps/desktop/src/renderer/src/components/shared/extension/`：
@@ -116,7 +116,7 @@ Document 树由 node 组成，且必须完全可序列化：
 - `open` command 的 `outlet` 决定打开位置；`mount` target 只描述 component 和 params。
 - action event 携带 `actionId`、`value`、`values` 和 `nodeId`；`surfaceInput` 由 host 从 session 读取，不由 renderer 回传。
 - host 执行 action 后返回 `ExtensionUiDispatchResponse`。
-- response 可以返回 notification、close/open/refresh、replace document、patch document、surface-specific result。
+- extension action handler 返回 authoring result；host normalize 后的 response 可以返回 notification、close/open/refresh、replace document、patch document、surface-specific result。
 
 ## Surface driver
 
@@ -130,7 +130,7 @@ settings surface 负责：
 - 提供 settings contribution title/description/order。
 - 管理 dialog stack。
 - 处理 `ui.command.close`、`ui.command.open`、`ui.command.refresh`。
-- 提供 `surface.params` 和 frame params。
+- 提供 settings surface input，并把 mount params 作为独立 render params 传给组件。
 
 settings surface 严格期望根节点是 `Dialog`。settings 在产品形态上就是 dialog，而不是抽象 screen；Dialog 的 header、body、footer、尺寸、关闭行为和堆叠样式都由同一套结构化组件表达。
 
@@ -155,11 +155,11 @@ entity menu surface 负责：
 
 ### Surface input
 
-所有 surface 都把宿主输入放在统一字段 `surfaceInput` 中。`surfaceInput.surface` 标识场景，具体输入在该对象内：
+所有 surface 都把宿主输入放在统一字段 `surfaceInput` 中。`surfaceInput.surface` 标识场景，具体输入在该对象内。`surfaceInput` 只表达宿主上下文，不承载组件 params；组件 params 来自 `ui.mount(...)` 的静态 params 或 params resolver 输出。
 
-- settings: `{ surface: 'settings', frameId?: string, params?: ExtensionUiParams }`
+- settings: `{ surface: 'settings', frameId?: string }`
 - entity menu: `{ surface: 'entity-menu', input: EntityMenuResolveInput }`
-- dialog outlet: `{ surface: 'dialog', opener?: ExtensionUiDialogOpenerInfo, params?: ExtensionUiParams }`
+- dialog outlet: `{ surface: 'dialog', opener?: ExtensionUiDialogOpenerInfo }`
 
 SDK 的 params resolver 接收 `{ surfaceInput, extension, contributionId? }`，示例和协议都使用 `surfaceInput` 命名，避免 `input.input` 或 `menu` 这类 surface-specific 参数泄漏到通用 API。
 
@@ -172,7 +172,7 @@ SDK 的 params resolver 接收 `{ surfaceInput, extension, contributionId? }`，
 5. main 返回 document 给 renderer。
 6. renderer 根据 registry 渲染白名单组件。
 7. 用户交互触发 dispatch，main 转发给 host。
-8. host 执行 action，返回 commands 和 document update（replace 或 patch）。
+8. host 执行 action，先把 authoring result normalize，再返回 commands 和 document update（replace 或 patch）。
 9. session 在 renderer release、surface 关闭、surface input 变化、runtime unload/reload、host crash 或 app shutdown 时清理。第一版不使用 session TTL。
 
 ## 与现有架构的关系

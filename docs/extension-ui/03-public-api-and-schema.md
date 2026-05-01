@@ -25,7 +25,6 @@ export type ExtensionUiContributionSurfaceKind = 'settings' | 'entity-menu'
 export interface ExtensionUiSettingsSurfaceInput {
   surface: 'settings'
   frameId?: string
-  params?: ExtensionUiParams
 }
 
 export interface ExtensionUiEntityMenuSurfaceInput<
@@ -38,7 +37,6 @@ export interface ExtensionUiEntityMenuSurfaceInput<
 export interface ExtensionUiDialogSurfaceInput {
   surface: 'dialog'
   opener?: ExtensionUiDialogOpenerInfo
-  params?: ExtensionUiParams
 }
 
 export type ExtensionUiSurfaceInput =
@@ -95,6 +93,7 @@ export interface ExtensionUiRenderContext<
   logger: ExtensionLogger
   kisaki: KisakiApi
   surfaceInput: TInput
+  params: ExtensionUiParams
   signal: AbortSignal
 }
 
@@ -133,6 +132,8 @@ export interface ExtensionUiMount<
 ```
 
 `ExtensionUiAuthoringNode` 是 SDK 内部类型，可以表示 element、fragment、text、component reference、mount target 和 action handler。host normalizer 必须把它全部转换为 `ExtensionUiNode` 和 session-local action map；转换失败时该 session open/refresh 返回 validation error。`ExtensionUiMount.title` 只作为 contribution list 或 opener fallback metadata，不参与 document rendering。
+
+`surfaceInput` 与 `params` 是两个不同来源。`surfaceInput` 只描述宿主场景，例如 entity menu 的 target input 或 dialog opener；`params` 只来自 `ui.mount(...)` 的静态 params 或 params resolver 输出。不要把组件 params 塞进 `surfaceInput`，否则 settings frame params、dialog opener params 和 mount params 会出现重复优先级。
 
 ### 组件定义注册与生命周期
 
@@ -187,6 +188,23 @@ export type ExtensionUiStaticCommand =
       message?: string
     }
 
+export interface ExtensionUiAuthoringOpenCommand {
+  type: 'open'
+  target: ExtensionUiMount | ExtensionUiMountTarget
+  outlet?: ExtensionUiOpenOutlet
+}
+
+export type ExtensionUiAuthoringStaticCommand =
+  | { type: 'refresh'; scope: 'current' | 'parent' | 'stack' | 'session' }
+  | ExtensionUiAuthoringOpenCommand
+  | { type: 'close'; scope: 'current' | 'all' }
+  | {
+      type: 'notify'
+      tone: 'success' | 'info' | 'warning' | 'error'
+      title: string
+      message?: string
+    }
+
 export type ExtensionUiPatch =
   | { op: 'mergeProps'; nodeId: string; props: ExtensionUiProps }
   | { op: 'replaceNode'; nodeId: string; node: ExtensionUiNode }
@@ -205,12 +223,37 @@ export type ExtensionUiDocumentUpdateCommand =
   | { type: 'replace'; document: ExtensionUiDocument }
   | ExtensionUiPatchCommand
 
-export type ExtensionUiCommand = ExtensionUiStaticCommand | ExtensionUiDocumentUpdateCommand
+export type ExtensionUiNormalizedCommand =
+  | ExtensionUiStaticCommand
+  | ExtensionUiDocumentUpdateCommand
 
 export interface ExtensionUiDispatchResult {
   success: boolean
   error?: ExtensionErrorShape
-  commands?: readonly ExtensionUiCommand[]
+  commands?: readonly ExtensionUiNormalizedCommand[]
+}
+
+export type ExtensionUiAuthoringPatch =
+  | { op: 'mergeProps'; nodeId: string; props: ExtensionUiProps }
+  | { op: 'replaceNode'; nodeId: string; node: ExtensionUiAuthoringNode }
+  | { op: 'removeNode'; nodeId: string }
+  | { op: 'replaceChildren'; nodeId: string; children: readonly ExtensionUiAuthoringNode[] }
+  | {
+      op: 'replaceSlot'
+      nodeId: string
+      slot: string
+      children: readonly ExtensionUiAuthoringNode[]
+    }
+
+export type ExtensionUiActionCommand =
+  | ExtensionUiAuthoringStaticCommand
+  | { type: 'replace'; root: ExtensionUiAuthoringNode }
+  | { type: 'patch'; baseDocumentId?: string; patches: readonly ExtensionUiAuthoringPatch[] }
+
+export interface ExtensionUiActionResult {
+  success: boolean
+  error?: ExtensionErrorShape
+  commands?: readonly ExtensionUiActionCommand[]
 }
 
 export type ExtensionUiEventHandler =
@@ -221,13 +264,22 @@ export type ExtensionUiEventHandler =
 
 第一版支持 `replace`、`refresh` 和受限节点级 `patch`。patch 属于基础协议，不等到补强阶段，但它不是 RFC JSON Patch，也不开放任意 JSON Pointer、数组下标 diff 或自动 diff 引擎。第一版只支持按稳定 `nodeId` 定位的少量操作：合并 props、替换节点、删除节点、替换 children、替换命名 slot。
 
-`ExtensionUiPatchCommand.baseDocumentId` 是前置条件，必须等于当前 session documentId；`documentId` 是应用 patch 后的新 documentId。host 在返回 patch 前必须先在 session 内把 patch 应用到当前 normalized document，并重新生成 action map 与 validation 结果；renderer 只负责把已经校验过的 patch 应用到当前 document。patchable node 必须有稳定 `id`；无 id 节点只能通过父节点的 `replaceChildren`/`replaceSlot` 或整段 `replaceNode` 更新。root 节点删除、跨 surface root 约束破坏、目标 nodeId 不存在、插入节点包含函数或非法 action ref 都必须被拒绝。需要替换整个 root 或大段结构时使用 `replace`。
+这里有两层 result，不能混用：
+
+- `ExtensionUiActionResult` 是扩展 action handler 返回的 authoring result。它可以包含 `ExtensionUiAuthoringNode`、组件引用和 action handler，但只停留在 extension host 内。
+- `ExtensionUiDispatchResult` 是 host 发给 main/renderer 的 normalized result。它只能包含 `ExtensionUiDocument`、`ExtensionUiNode`、opaque action id 和静态 command。
+
+扩展作者不直接构造 `ExtensionUiDocument` 或 normalized `ExtensionUiPatchCommand`。如果 action 要替换文档，应返回 authoring root，例如 `ui.result.replace(ui.dialog(...))`；如果 action 要局部更新，应返回 authoring patch，例如 `ui.result.patch([{ op: 'replaceNode', nodeId, node: ui.notice(...) }])`。host 负责 normalize 新节点、生成新的 `documentId` 和 action map，并把结果转换成 `ExtensionUiDispatchResult`。
+
+static command 也有 authoring 与 normalized 两层。SDK 中的 `ui.command.open(ui.mount(Component, ...))` 可以携带 component definition 或 params resolver；normalized document 中的 `ExtensionUiOpenCommand.target` 必须已经变成纯 `ExtensionUiMountTarget`，只包含 `componentId`、已解析 params 和可选 title。
+
+`ExtensionUiPatchCommand.baseDocumentId` 是 wire-level 前置条件，必须等于当前 session documentId；`documentId` 是应用 patch 后的新 documentId。host 在返回 patch 前必须先在 session 内把 authoring patch normalize 并应用到当前 normalized document，再重新生成 action map 与 validation 结果；renderer 只负责把已经校验过的 patch 应用到当前 document。patchable node 必须有稳定 `id`；无 id 节点只能通过父节点的 `replaceChildren`/`replaceSlot` 或整段 `replaceNode` 更新。root 节点删除、跨 surface root 约束破坏、目标 nodeId 不存在、normalize 后插入节点仍包含函数或非法 action ref 都必须被拒绝。需要替换整个 root 或大段结构时使用 authoring `replace`。
 
 `ui.action(name, handler)` 中的 `name` 只用于日志和诊断，不是 document 中的稳定 identity。每次 normalize 都为 handler 生成 opaque `actionId`，作用域是当前 `sessionId + documentId`；同一 document 内重复 action name 允许存在。没有 handler 的 `ui.action(name)` 不是有效事件 handler；无需扩展代码参与的交互应使用 static command，例如 `ui.command.notify(...)` 或 `ui.command.open(...)`。
 
 renderer dispatch 时只能提交 `sessionId`、`documentId`、`actionId`、`event`、`nodeId`、`value` 和 `values`。`surfaceInput` 不由 renderer 回传，host 必须从 session 记录中读取真实 surface input，避免 renderer 篡改 entity/menu 输入。
 
-事件 props 可以绑定 action，也可以绑定纯声明式 static command。绑定 command 时 renderer 不执行扩展函数，只把 command 交给当前 surface driver 校验和处理；绑定 action 时才会 dispatch 到 extension host。`replace`、`patch` 等 document update command 只能由 host action 返回，不能作为静态事件 handler 直接嵌入 document。
+事件 props 可以绑定 action，也可以绑定纯声明式 static command。绑定 command 时 renderer 不执行扩展函数，只把 command 交给当前 surface driver 校验和处理；绑定 action 时才会 dispatch 到 extension host。`replace`、`patch` 等 document update command 只能由 host normalize 后的 action result 返回，不能作为静态事件 handler 直接嵌入 document。
 
 `ui.mount(...)` 只描述要打开的 target，也就是 component identity 和 params。打开位置、生命周期和 surface routing 属于 `open` command：
 
@@ -274,7 +326,7 @@ const BangumiSettings = ui.defineComponent<BangumiSettingsParams>(
                     control: ui.input({
                       name: 'accessToken',
                       type: 'password',
-                      defaultValue: typeof accessToken === 'string' ? accessToken : ''
+                      value: typeof accessToken === 'string' ? accessToken : ''
                     })
                   }
                 }),
@@ -289,7 +341,10 @@ const BangumiSettings = ui.defineComponent<BangumiSettingsParams>(
           onSubmit: ui.action('saveSettings', async (event, ctx) => {
             const token = event.values?.accessToken
             await ctx.storage.set('accessToken', typeof token === 'string' ? token.trim() : '')
-            return ui.result.closeAll({ message: 'Settings saved.' })
+            return ui.result.commands([
+              ui.command.notify({ tone: 'success', title: 'Settings saved.' }),
+              ui.command.close({ scope: 'all' })
+            ])
           })
         }),
         footer: ui.dialog.footer({
@@ -433,7 +488,7 @@ const GameMenuContent = ui.defineComponent<{ gameId: string }>(
       children: [
         ui.menu.item({
           id: 'open-bangumi',
-          icon: 'icon-[mdi--open-in-new]',
+          icon: 'openExternal',
           children: ['Open in Bangumi'],
           onSelect: ui.action('openGame', async () => {
             await openBangumiPage(params.gameId)
@@ -555,25 +610,29 @@ ui.menu({
 
 - 使用 semantic variants，不开放 arbitrary class。
 - 尺寸使用 `xs | sm | md | lg` 或 surface-specific density。
-- icon 第一版使用 Kisaki 维护的公共 icon id 或构建期 safelist 内的 Iconify class；不能让扩展运行时传入任意 `icon-[...]`，否则 Tailwind/Iconify 可能没有生成对应 CSS。
+- icon 第一版使用 Kisaki 维护的公共 `ExtensionUiIconId` union，例如 `openExternal`、`check`、`warning`。构建期 safelist 只是 renderer 内部实现细节，不作为公共 API；扩展运行时不能传任意 `icon-[...]`，否则 Tailwind/Iconify 可能没有生成对应 CSS。
 - 图片 URL 只允许 `https:`、`data:` 安全子集、extension asset URL 或 app-provided file URL。
 - markdown 禁止 raw HTML，renderer 继续使用安全 markdown renderer。
 - action props 命名贴近项目和 DOM 语义：按钮使用 `onClick`，表单使用 `onSubmit`，值控件使用 `onChange`，菜单项使用 `onSelect`，受控展开状态使用 `onOpenChange`。
 - 表单控件使用 `name` 表示 form value key，`id` 表示 node identity。两者可以相同，但语义分开。
-- 第一版表单控件同时支持 `defaultValue` 和受控 `value`，但同一个控件不能同时声明两者。
-- `defaultValue` 表示非受控模式：renderer 用它初始化本地 draft，用户编辑只更新本地 draft，submit 时发送当前 form values；显式声明 `onChange` 时才额外 dispatch。
-- `value` 表示受控模式：document value 是 source of truth，用户编辑必须通过 `onChange` dispatch 到 host；action 应返回 `refresh`、`replace` 或 `patch` 产生新 document value 来提交新值。没有 `onChange` 的受控控件按 read-only 渲染。
-- refresh/replace/patch document 会用新 `defaultValue` 或 `value` 重新同步对应 form scope；非受控控件的普通 change action 不会自动覆盖正在编辑的本地 draft，受控控件则始终以最新 document value 为准。
+- 第一版表单控件只暴露 `value`，不引入 `defaultValue`/controlled 双模式。
+- 在 `Form` scope 内，`value` 是 renderer 本地 draft 的初始值和服务端对齐值；用户编辑先更新本地 draft，submit 时发送当前 form values。
+- 显式声明 `onChange` 时，用户编辑在更新本地 draft 后额外 dispatch 到 host；host 可以返回 refresh、replace 或 patch 更新 document。
+- refresh/replace/patch document 只用新 `value` 同步 pristine 字段；dirty 字段保留用户正在编辑的本地 draft，避免后台刷新覆盖输入。
+- `Form.resetKey` 用于显式重置 draft；当 `resetKey` 变化、字段被移除、或 surface 执行 reset/close 时，renderer 才清空对应 form scope 的 dirty 状态。
+- 不在 `Form` scope 内的值控件以 document `value` 为 source of truth；如果需要交互，必须声明 `onChange` 或显式 read-only 语义。
 
 ## MVP Contract Invariants
 
 - Document 中不存在函数、component definition、slot function、params resolver 或 raw class。
+- action handler 返回 authoring result；main/renderer 收到的 dispatch result 必须已经由 host normalize，不能包含 authoring node、component reference 或 handler。
 - `documentId` 每次 render/refresh/replace/patch 都变化；旧 document 的 action dispatch 必须返回 `stale_document`。
 - `actionId` 只在当前 `sessionId + documentId` 内有效，renderer 不能跨 session 复用。
 - renderer 不回传 `surfaceInput`；host 从 session 读取真实 surface input。
 - settings/dialog outlet root 必须是 `Dialog`；entity menu contribution root 只能是 `Menu*` 内容节点或其 fragment。
-- 表单控件的 `defaultValue` 与 `value` 互斥；`value` 属于第一版 public contract。
-- static event handler 只能包含 static command；document update command 只能来自 host action result。
+- 表单控件不支持 `defaultValue`；`value` 属于第一版 public contract。
+- form draft 的 dirty 字段不会被普通 refresh/patch 覆盖，除非 `Form.resetKey` 变化或字段被移除。
+- static event handler 只能包含 static command；document update command 只能来自 host-normalized action result。
 - patch 只支持第一版定义的节点级操作；复杂 diff helper、自动 patch 生成和可视化诊断属于后续减少重复劳动的 SDK/tooling。
 - 完整 `Menu` overlay、`Popover`、`Table`、`VirtualList` 不属于第一版 public contract。
 
@@ -589,12 +648,13 @@ ui.menu({
 - `name` 在同一 form scope 内唯一。
 - params、props、values 全部可序列化。
 - action ref 必须存在于当前 session action map。
-- static event handler 只能包含 static command；`replace`、`patch` 等 document update command 只能来自 action result。
+- action handler result 中的 static/open/replace/patch 必须先 normalize 成 wire command；normalized dispatch result 不得包含 authoring node、component reference、params resolver 或 handler。
+- static event handler 只能包含 static command；`replace`、`patch` 等 document update command 只能来自 host-normalized action result。
 - patch command 的 `baseDocumentId` 必须匹配当前 session document，`documentId` 必须是新的 document version；目标 nodeId 必须存在且唯一，root 删除不允许，插入或替换的节点必须通过完整 document node validation。
 - slots 名称必须是 component 支持的 slot，并满足父子关系约束。
 - surface root 约束：settings/dialog outlet 必须返回 `Dialog` root；entity menu contribution 只能返回 `Menu*` 内容节点或其 fragment。
-- form control value mode：`defaultValue` 和 `value` 不能同时出现；受控 `value` 控件必须有 `onChange` 或显式 read-only 语义。
+- form control value semantics：不允许 `defaultValue`；`Form` scope 内的 `value` 初始化本地 draft，非 `Form` scope 的交互型值控件必须有 `onChange` 或显式 read-only 语义。
 - children 深度、节点数量、字符串长度有上限，防止扩展生成过大 UI。
 - component 展开深度和节点总数有上限；normalizer 必须在超限时返回可诊断错误。
 - componentId 在同一 extension runtime 内唯一，跨 extension 不能引用。
-- validation error 必须包含稳定 `code`、简短 message 和 path；dev mode 可以展示详细 diagnostics，production renderer 只展示可读摘要。
+- validation error 必须包含稳定 `code`、简短 message 和 path；UI runtime error 使用 `stale_session`、`stale_document`、`invalid_document`、`invalid_patch`、`unknown_component`、`command_denied`、`action_not_found`、`owner_mismatch` 等稳定 code。dev mode 可以展示详细 diagnostics，production renderer 只展示可读摘要。

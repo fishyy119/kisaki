@@ -9,10 +9,12 @@
 主要修改：
 
 - 固化 `ExtensionUiValue = SerializableValue`、`ExtensionUiParams`、surface input type alias。
+- 固化 `surfaceInput` 与 mount `params` 的边界：surface input 只描述宿主上下文，组件 params 只来自 `ui.mount(...)`。
 - 固化 `ExtensionUiMount<TParams, TSurfaceInput>` 泛型顺序，entity menu 使用 `ExtensionUiEntityMenuSurfaceInput<TInput>`。
-- 固化 action 规则：action name 只用于诊断，`actionId` 只在 `sessionId + documentId` 内有效，renderer 不回传 `surfaceInput`。
-- 固化第一版支持受控 `value` 和受限节点级 patch，但不公开完整 menu overlay、popover、table、virtual list。
-- 固化 main active session owner table、无 session TTL 的确定性 cleanup、component registry lifecycle 和 icon allowlist 规则。
+- 固化 action 规则：action name 只用于诊断，`actionId` 只在 `sessionId + documentId` 内有效，action handler 返回 authoring result，host 输出 normalized dispatch result，renderer 不回传 `surfaceInput`。
+- 固化第一版只暴露 `value`，由 `Form` scope 管本地 draft；不引入 `defaultValue`/controlled 双模式。
+- 固化 main-generated `uiContributionId`、active session owner table、无 session TTL 的确定性 cleanup、component registry lifecycle 和 public icon-id 映射规则。
+- 固化 form draft dirty 语义：普通 refresh/patch 不覆盖 dirty 字段，除非 `Form.resetKey` 变化或字段被移除。
 
 验收：
 
@@ -26,7 +28,9 @@
 
 - 新增 `packages/extension-api/src/ui/`。
 - 定义 `ExtensionUiValue`、authoring definition 类型、`ExtensionUiNode`、`ExtensionUiDocument`、MVP component props、action/event/command、surface types。
+- 为每个 MVP component 固化 props、slots、children 和 event handler schema，不只保留组件名称列表。
 - command 拆成 static command 与 document update command；第一版 public union 包含 `replace` 和受限节点级 `patch`。
+- action handler result 与 normalized dispatch result 分层；static open、replace、patch 中的 component reference、params resolver 和 authoring node 必须由 host normalize 后才能进入 wire command。
 - 新增 `ExtensionUiContributionRegistration`、`ExtensionUiSession*`、`ExtensionUiMountSession*`、`ExtensionUiDispatch*` RPC 类型。
 - 更新 `packages/extension-api/src/rpc/contributions.ts`，加入 `ui.*` RPC。
 - 更新 package exports。
@@ -35,7 +39,7 @@
 
 - `pnpm --filter @kisaki/extension-api typecheck`
 - `pnpm --filter @kisaki/extension-api build`
-- validation 覆盖无效 component、不可序列化值、重复 id、重复 componentId、非法 action ref、`defaultValue`/`value` 冲突、非法 patch target、静态 command 中非法 document update、过深树、surface root 约束、entity menu allowlist。
+- validation 覆盖无效 component、不可序列化值、重复 id、重复 componentId、非法 action ref、非法 patch target、action result normalization、静态 command 中非法 document update、过深树、surface root 约束、entity menu allowlist。
 
 ## Phase 2: SDK authoring API
 
@@ -90,9 +94,11 @@
 - 更新 `apps/desktop/src/shared/extension.ts`，新增 `ExtensionUiContributionInfo` 和 Extension UI session 类型；最终 snapshot 形态是 `ui` list，迁移期可以保留旧字段。
 - 更新 `apps/desktop/src/shared/ipc.ts` 与 `apps/desktop/src/main/services/extension/ipc.ts`。
 - 新增 active session owner table。
+- 新增 main-generated `uiContributionId`，renderer open contribution session 时使用该 opaque key。
 - 新增 `openExtensionUiMountSession`，根据 source session 或 main 已验证 owner 找到 runtime。
 - dispatch/refresh/release 不信任 renderer 自报 owner 或 surfaceInput。
 - dispatch 返回 replace/patch 后，main 更新 active session record 的当前 `documentId`。
+- main 对 host 返回的 document、patch 和 command 做轻量 schema validation，失败时返回稳定 UI error code。
 
 验收：
 
@@ -100,7 +106,8 @@
 - main 能返回 Extension UI contribution snapshot。
 - entity menu aggregation 可以并发打开多个 Extension UI menu session。
 - dialog outlet 可以通过 mount session 打开目标 Dialog document。
-- renderer 只传 session/document/action ids 时，main 可以正确路由；伪造 owner、过期 document、已释放 session 都返回结构化错误。
+- renderer 使用 `uiContributionId` 打开 contribution session，并且 dispatch 只传 session/document/action ids 时，main 可以正确路由；伪造 owner、过期 document、已释放 session 都返回结构化错误。
+- host 返回 invalid document/patch 时，main 不转发给 renderer，并返回 `invalid_document` 或 `invalid_patch`。
 - 所有 IPC handler 仍返回 `IpcResult`。
 - 旧 renderer settings/entity menu 调用点仍可工作。
 
@@ -117,13 +124,13 @@
 - 新增 Extension UI settings dialog stack 和 entity menu items；旧组件可到 Phase 6 再删除。
 - 调整 extension installed card、game/character/company/person/collection/tag menu 调用点，使其能消费新 `ui` contribution。
 - 实现 renderer patch applier，只应用 host 已校验的节点级 patch，失败时自动 refresh 一次。
-- 实现 form draft 的 `defaultValue` 非受控语义、`value` 受控语义和 icon allowlist/safelist。
+- 实现 form draft 的 `value` 初始化、dirty/pristine 同步、`Form.resetKey` 和 public icon-id 映射。
 
 验收：
 
 - `pnpm --filter kisaki typecheck:web`
 - settings dialog 可打开、提交、刷新、打开第二层 dialog、关闭。
-- 受控 input/select/switch change 会 dispatch 到 host，并通过 refresh/replace/patch 后的新 document value 对齐显示。
+- 带 `onChange` 的 input/select/switch change 会在更新本地 draft 后 dispatch 到 host，并通过 refresh/replace/patch 后的新 document value 对齐 pristine 字段。
 - patch 后当前 documentId 更新，旧 documentId dispatch 返回 `stale_document`。
 - entity menu 可 resolve、多 contribution 分组、执行 action、刷新。
 - entity menu action 可通过 `outlet: 'dialog'` 打开独立 dialog，menu 关闭后 dialog 不被卸载。
@@ -179,7 +186,8 @@
 - Renderer adapter 爆炸：每个组件必须通过 registry 单点接入，禁止业务组件绕开 registry。
 - Params resolver 滥用：resolver 只在 host 执行，必须 timeout，并且输出必须是 `ExtensionUiValue`。
 - Session owner 混乱：main 维护 active session owner table，renderer dispatch 不传 runtime owner 或 surfaceInput。
-- Runtime icon 不可见：第一版只允许公共 icon id 或构建期 safelist 内的 Iconify class。
+- Runtime icon 不可见：第一版 public props 只允许公共 icon id；构建期 safelist 作为 renderer 内部映射实现，不暴露给扩展运行时。
+- Form refresh 覆盖编辑内容：form draft 使用 dirty/pristine 跟踪，普通 refresh/patch 不覆盖 dirty 字段；需要重置时由 `Form.resetKey` 或 surface lifecycle 明确表达。
 - Entity menu content surface 复杂度失控：entity menu surface 使用 allowlist，复杂交互引导到 settings/dialog surface；后续完整 `Menu` overlay 只在普通 Extension UI 中通过 `presentation` 使用。
 - 旧代码残留：Phase 6 必须删除旧 settings/entity menu UI 类型和 renderer 组件，避免双系统并存。
 

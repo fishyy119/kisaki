@@ -19,6 +19,7 @@
 - `@kisaki/extension-api` 定义纯类型、schema、验证器、RPC contract。
 - `@kisaki/extension-sdk` 暴露 `ui` builder、组件定义、参数化 mount、action 绑定。
 - SDK authoring tree 和 renderer document 明确分层：扩展作者可以写函数、组件引用和 action handler，但 renderer 永远只收到 normalized DTO。
+- action handler 返回 authoring result；replace/patch 中的新节点仍由 host normalize 后才进入 main/renderer。
 - extension host 执行扩展 UI render 和 action callback，但只把序列化后的 Extension UI document 发给 main。
 - main 只保存贡献点元数据、管理会话、转发 IPC/RPC，不执行扩展代码。
 - renderer 只根据 Extension UI document 渲染白名单组件，并把事件 dispatch 回 main。
@@ -32,9 +33,9 @@
 - settings 和 entity menus 变成 Extension UI 的两个 surface。后续详情页面板、向导、状态页、扩展命令面板可以复用同一套协议。
 - 组件 API 命名参考 `apps/desktop/src/renderer/src/components/ui/`，但 Extension UI props 是稳定的公共契约，不直接泄露 Vue/Reka/Tailwind 内部类型。
 - 第一版按最小端到端闭环收窄组件集，优先覆盖 settings dialog、entity menu content、action dispatch、dialog outlet 和受限节点级 patch；复杂 table、popover、完整 menu overlay 等能力后续追加。
-- main 维护 active UI session owner table；renderer dispatch 不自报 runtime owner，也不回传 `surfaceInput`。
-- 第一版表单控件同时支持非受控 `defaultValue` 和受控 `value`；节点级 patch 作为基础 document update 协议一并定稿；复杂数据视图留到后续阶段。
-- icon 使用 Kisaki 公共 icon id 或构建期 safelist，不接受扩展运行时传入任意 Tailwind/Iconify class。
+- main 维护 active UI session owner table；renderer 打开 contribution 时使用 main 生成的 opaque `uiContributionId`，dispatch 不自报 runtime owner，也不回传 `surfaceInput`。
+- 第一版表单控件只暴露 `value`，不引入 `defaultValue`/controlled 双模式；`Form` scope 管本地 draft，`onChange` 只用于需要 live dispatch 的场景。
+- icon 使用 Kisaki 公共 icon id；构建期 safelist 只是 renderer 内部映射实现，不接受扩展运行时传入任意 Tailwind/Iconify class。
 
 ## 建议落点
 

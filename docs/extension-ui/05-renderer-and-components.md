@@ -53,7 +53,7 @@ apps/desktop/src/renderer/src/components/shared/extension/
 - `dispatchExtensionUiEvent(request)`
 - `releaseExtensionUiSession(request)`
 
-`events.ts` 或 surface driver 层提供 command dispatcher，用于解释 static command。`open` command 的 `outlet` 决定调用当前 surface stack 还是应用级 dialog outlet；`open`、`notify`、`refresh` 这类需要 owner/session 校验的命令仍要经过 main IPC。document update command 只能来自 host action result，不允许 renderer 从静态 handler 直接执行 replace 或 patch。
+`openExtensionUiSession(request)` 使用 snapshot 中的 opaque `uiContributionId` 打开注册 contribution；`openExtensionUiMountSession(request)` 必须带 `sourceSessionId`，由 main 从 session owner table 反查 runtime owner。`events.ts` 或 surface driver 层提供 command dispatcher，用于解释 static command。`open` command 的 `outlet` 决定调用当前 surface stack 还是应用级 dialog outlet；`open`、`notify`、`refresh` 这类需要 owner/session 校验的命令仍要经过 main IPC。document update command 只能来自 host-normalized action result，不允许 renderer 从静态 handler 直接执行 replace 或 patch。
 
 renderer 需要提供一个小型 patch applier，但不实现自动 diff。patch applier 只接受 host 已校验的节点级 patch，并在本地再次校验 `baseDocumentId`、目标 nodeId、root 约束和 component allowlist。应用成功后用 patch command 的新 `documentId` 更新当前 document；应用失败时自动 refresh 一次，避免局部状态和 host session 分叉。
 
@@ -62,14 +62,15 @@ renderer 需要提供一个小型 patch applier，但不实现自动 diff。patc
 `draft.ts` 管表单值：
 
 - 按 `Form` scope 收集 `name`。
-- `defaultValue` 初始化非受控本地 draft；refresh/replace/patch document 后以新 document 的 `defaultValue` 重新初始化当前 form scope。
-- `value` 是受控值，由 document 驱动显示；用户编辑受控控件时必须触发 `onChange` dispatch，等待 host 返回 refresh/replace/patch 后以新 document value 提交。
-- 同一个控件不能同时声明 `defaultValue` 和 `value`；renderer adapter 发现冲突时显示局部 fallback 并记录 warning。
+- `value` 初始化本地 draft，并作为服务端对齐值参与后续 refresh/replace/patch。
+- refresh/replace/patch document 后只同步 pristine 字段，dirty 字段保留用户正在编辑的值。
+- `Form` 可以提供 `resetKey`。当新 document 的 `resetKey` 变化、字段被移除、或 surface 明确执行 reset/close 后，renderer 才重置对应 form scope 的 dirty draft。
 - `disabled` 同时阻止本地 draft 更新和 dispatch。
 - submit 时发送当前 form scope 的 `values`。
-- 非受控 change 缺省只更新本地 draft；显式声明 `onChange` 时才额外 dispatch 到 host。
-- 受控 change 如果没有 `onChange`，控件按 read-only 渲染；action pending 时可显示临时 busy/optimistic state，但必须在 action 完成后以 document value 重新对齐。
-- Input、Textarea、Select、Checkbox、Switch、RadioGroup、Slider、SegmentedControl 等值控件都遵守同一套 `defaultValue` / `value` 二选一规则。
+- change 缺省只更新本地 draft；显式声明 `onChange` 时才额外 dispatch 到 host。
+- 不在 `Form` scope 内的值控件以 document `value` 为 source of truth；交互型控件必须有 `onChange` 或显式 read-only 语义。
+- action pending 时可显示临时 busy/optimistic state，但 action 完成后仍以 form draft 和最新 document value 规则重新对齐。
+- Input、Textarea、Select、Checkbox、Switch、RadioGroup、Slider、SegmentedControl 等值控件都遵守同一套 `value` + form draft 规则。
 - dialog footer 中的 submit button 通过 `form` 关联 `Form.id`，不需要把按钮放在 form children 内。
 - dispatch payload 不携带 `extensionId`、`runtimeHandle` 或 `surfaceInput`；renderer 只提交 session/document/action ids 和表单值。
 
@@ -131,7 +132,7 @@ Phase 5 MVP 新增 `apps/desktop/src/renderer/src/components/ui/layout/`：
 settings adapter 复用现有 dialog stack 体验，但内部渲染 Extension UI document：
 
 - root document 必须是 `Dialog`，由扩展声明 `title`、`description`、`size`，并提供 `content`、`footer` slots。
-- `ExtensionUiCommand.open` 默认使用 `outlet: 'current'`，返回的 `Dialog` document 由同一个 settings dialog stack 处理。
+- `ui.command.open` 默认使用 `outlet: 'current'`，返回的 `Dialog` document 由同一个 settings dialog stack 处理。
 - `outlet: 'dialog'` 可以显式转交给应用级 Extension UI dialog outlet。
 - `close all`、`close current`、`refresh current`、`refresh stack` 由 surface adapter 处理。
 
@@ -169,7 +170,7 @@ Extension UI `Button` 映射到 `components/ui/button`：
 
 - `variant`: `default | destructive | outline | secondary | ghost | link | text`
 - `size`: `xs | sm | md | lg | icon`
-- `icon`: Kisaki 公共 icon id 或构建期 safelist 内的 Iconify class
+- `icon`: Kisaki 公共 `ExtensionUiIconId`，renderer adapter 再映射到内部 Iconify/Tailwind class
 - `type`: `button | submit | reset`
 - `form`: associated form id for dialog footer submit buttons
 - `onClick`: action
@@ -179,13 +180,18 @@ Extension UI `Field` 映射到 `components/ui/field`：
 - `orientation`: `vertical | horizontal | responsive`
 - `label`
 - `description`
-- `control` slot: 单个表单控件或受控组合
+- `control` slot: 单个表单控件或值控件组合
+
+Extension UI `Form` 映射到标准 form element 和 renderer draft scope：
+
+- `id`
+- `resetKey`: 变化时重置该 form scope 的 dirty draft
+- `onSubmit`
 
 Extension UI `Input` 映射到 `components/ui/input`：
 
 - `name`
 - `type`: `text | number | password | email | url | search | tel`
-- `defaultValue`
 - `value`
 - `placeholder`
 - `min`、`max`、`step`: `type: 'number'` 时可用
@@ -194,7 +200,6 @@ Extension UI `Input` 映射到 `components/ui/input`：
 Extension UI `Select` 映射到 `components/ui/select`：
 
 - `name`
-- `defaultValue`
 - `value`
 - `placeholder`
 - `options`

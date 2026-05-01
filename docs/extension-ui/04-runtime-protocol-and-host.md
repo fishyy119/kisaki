@@ -47,18 +47,17 @@ export interface ExtensionUiContributionRegistration {
 'ui.session.release'
 ```
 
-请求结构。session open 分两类：打开注册 contribution，或从已有 session/action 打开同一 extension 的 mount target：
+以下请求结构只用于 main -> host RPC，不能复用为 renderer IPC。session open 分两类：打开注册 contribution，或从已有 session/action 打开同一 extension 的 mount target：
 
 ```ts
-export interface ExtensionUiContributionSessionOpenRequest extends ContributionScopedRpcParams {
+export interface HostExtensionUiContributionSessionOpenRequest extends ContributionScopedRpcParams {
   kind: 'contribution'
   sessionId: string
   surface: ExtensionUiContributionSurfaceKind
   surfaceInput?: ExtensionUiSurfaceInput
-  params?: ExtensionUiParams
 }
 
-export interface ExtensionUiMountSessionOpenRequest extends ExtensionScopedRpcParams {
+export interface HostExtensionUiMountSessionOpenRequest extends ExtensionScopedRpcParams {
   kind: 'mount'
   sessionId: string
   sourceSessionId?: string
@@ -67,11 +66,11 @@ export interface ExtensionUiMountSessionOpenRequest extends ExtensionScopedRpcPa
   target: ExtensionUiMountTarget
 }
 
-export type ExtensionUiSessionOpenRequest =
-  | ExtensionUiContributionSessionOpenRequest
-  | ExtensionUiMountSessionOpenRequest
+export type HostExtensionUiSessionOpenRequest =
+  | HostExtensionUiContributionSessionOpenRequest
+  | HostExtensionUiMountSessionOpenRequest
 
-export interface ExtensionUiDispatchRequest extends ExtensionScopedRpcParams {
+export interface HostExtensionUiDispatchRequest extends ExtensionScopedRpcParams {
   contributionId?: string
   sessionId: string
   documentId: string
@@ -107,6 +106,41 @@ renderer 只和 main IPC 交互：
 'extension:get-ui-contributions'
 ```
 
+renderer IPC request 不携带 `runtimeHandle`，也不携带可决定 owner 的 `extensionId`。打开注册 contribution 时，renderer 使用 contribution snapshot 中由 main 生成的 opaque `uiContributionId`；main 用它反查真实 owner：
+
+```ts
+export interface ExtensionUiSessionOpenIpcRequest {
+  uiContributionId: string
+  surfaceInput?: ExtensionUiSurfaceInput
+}
+
+export interface ExtensionUiMountSessionOpenIpcRequest {
+  sourceSessionId: string
+  surface: ExtensionUiSurfaceKind
+  surfaceInput?: ExtensionUiSurfaceInput
+  target: ExtensionUiMountTarget
+}
+
+export interface ExtensionUiDispatchIpcRequest {
+  sessionId: string
+  documentId: string
+  actionId: string
+  event: ExtensionUiEventName
+  nodeId?: string
+  value?: ExtensionUiValue
+  values?: Record<string, ExtensionUiValue>
+}
+
+export interface ExtensionUiRefreshIpcRequest {
+  sessionId: string
+  documentId?: string
+}
+
+export interface ExtensionUiReleaseIpcRequest {
+  sessionId: string
+}
+```
+
 settings 和 entity menu 可以保留语义化 facade 函数，但底层 IPC 统一：
 
 - `openExtensionSettingsSession()` 调 `extension:open-ui-session`，surface 为 `settings`。
@@ -124,6 +158,7 @@ main 必须维护 active UI session 表，而不是信任 renderer 传入的 own
 ```ts
 interface ExtensionUiMainSessionRecord {
   sessionId: string
+  uiContributionId?: string
   runtimeHandle: ExtensionRuntimeHandle
   extensionId: string
   contributionId?: string
@@ -134,7 +169,26 @@ interface ExtensionUiMainSessionRecord {
 }
 ```
 
-open contribution session 时，main 从 contribution registry 找到 owner 并创建 session record。open mount session 时，main 优先通过 `sourceSessionId` 找到 owner；没有 source session 的 internal call 必须显式传入 main 已验证过的 owner，不允许 renderer 自报 owner。dispatch、refresh、release 都先查 session record，再校验 `documentId` 和 surface，最后才转发给 host。session 不存在、document 过期或 owner 不匹配时返回结构化错误，例如 `stale_session`、`stale_document`、`unavailable`。
+open contribution session 时，main 从 `uiContributionId` 反查 contribution registry 中的 owner 并创建 session record。open mount session 时，main 优先通过 `sourceSessionId` 找到 owner；没有 source session 的 internal call 必须显式传入 main 已验证过的 owner，不允许 renderer 自报 owner。dispatch、refresh、release 都先查 session record，再校验 `documentId` 和 surface，最后才转发给 host。session 不存在、document 过期或 owner 不匹配时返回结构化错误，例如 `stale_session`、`stale_document`、`unavailable`。
+
+第一版固定 UI 专属错误码，避免 renderer 只能靠 message 分支：
+
+```ts
+export type ExtensionUiErrorCode =
+  | 'stale_session'
+  | 'stale_document'
+  | 'invalid_document'
+  | 'invalid_patch'
+  | 'unknown_component'
+  | 'command_denied'
+  | 'action_not_found'
+  | 'owner_mismatch'
+  | 'unavailable'
+  | 'timeout'
+  | 'internal'
+```
+
+这些 code 放在 `ExtensionErrorShape.code` 中；production renderer 只展示可读摘要，dev mode 可以显示 diagnostics path 和详细原因。
 
 ## Host session 管理
 
@@ -160,7 +214,7 @@ interface ExtensionUiSession {
 render 流程：
 
 1. 根据 open kind 选择 mount：contribution session 从 contribution registry 取注册 view；mount session 从 target componentId 取同 runtime component definition。
-2. 解析静态 params 或执行 params resolver，resolver 接收统一 `surfaceInput`。
+2. 解析 `ui.mount(...)` 的静态 params 或执行 params resolver，resolver 接收统一 `surfaceInput`，输出作为独立 `params` 保存到 session。
 3. 创建 `ExtensionUiRenderContext`，包含 extension scope、surfaceInput、params、storage、capabilities、abort signal。
 4. 执行 component render，得到 authoring tree。
 5. normalize authoring tree：递归展开 `ui.component(...)`，解析 slots，替换 action handler 为 actionId，生成 `ExtensionUiDocument`。
@@ -181,7 +235,7 @@ interface ExtensionUiActionRecord {
   invoke(
     event: ExtensionUiEvent,
     context: ExtensionUiActionContext
-  ): Promise<ExtensionUiDispatchResult>
+  ): Promise<ExtensionUiActionResult>
 }
 ```
 
@@ -190,14 +244,15 @@ interface ExtensionUiActionRecord {
 - action 总是在 extension execution scope 中运行。
 - action receives `AbortSignal`，runtime unload、session release、RPC timeout 时 abort。
 - action context 从 host session 读取 `surfaceInput`、params、storage、logger、kisaki API；renderer event 不包含也不能覆盖这些字段。
-- action result 必须经 `validateExtensionUiDispatchResult`。
-- action result 可以返回 document update command，例如 `replace` 或受限节点级 `patch`；静态 event handler 不允许直接包含 document update command。
+- action result 先按 authoring result 校验，再由 host normalize 成 `ExtensionUiDispatchResult`；其中 static open command 的 mount/component reference 也必须 normalize 成纯 `ExtensionUiMountTarget`。
+- action result 可以返回 authoring document update，例如 `replace` 或受限节点级 `patch`；静态 event handler 不允许直接包含 document update command。
 - 抛错会转换为 `{ success: false, error }`，main 记录详细日志，renderer 只展示可读错误。
 - action 可返回 commands，例如 refresh、replace、patch、close、notify。
+- host 返回 main 前必须已经完成完整 validation；main 仍做轻量 document/command shape validation 和 owner/session 前置条件校验，再转发给 renderer。
 
 ### Document update command
 
-`replace` 和 `patch` 都只能来自 host action result。host 处理 document update 时必须先更新自己的 session 当前 document 和 action map，再把 normalized command 返回给 main/renderer。main 根据返回的新 documentId 更新 active session owner table；renderer 只接受当前 documentId 匹配的 update。
+`replace` 和 `patch` 都只能来自 host action result。扩展 action handler 返回的是 authoring root/patch；host 处理 document update 时必须先 normalize、validation、更新自己的 session 当前 document 和 action map，再把 normalized command 返回给 main/renderer。main 根据返回的新 documentId 更新 active session owner table；renderer 只接受当前 documentId 匹配的 update。
 
 `patch` 是第一版基础设施，但只做节点级小集合：
 
@@ -231,7 +286,9 @@ export type ExtensionUiSurfaceInput =
   | ExtensionUiDialogSurfaceInput
 ```
 
-`ExtensionUiCommand.open` 使用 `ExtensionUiMountTarget` 按需挂载扩展组件。`mount` target 是纯目标描述，不携带 outlet、stack、presentation 这类打开策略：
+`surfaceInput` 只描述宿主场景，不携带组件 params。组件 params 来自 mount target 的静态 params 或 params resolver 输出，并作为 session `params` 独立保存。
+
+`ui.command.open` 使用 `ExtensionUiMountTarget` 按需挂载扩展组件。`mount` target 是纯目标描述，不携带 outlet、stack、presentation 这类打开策略：
 
 ```ts
 export interface ExtensionUiMountTarget {
@@ -269,7 +326,8 @@ main 新增 `ExtensionUiContributionHost`，替换：
 
 - registration owner lookup。
 - active session owner table。
-- public contribution id uniqueness。
+- main-generated `uiContributionId` 分配和 lookup。
+- 单个 extension 内的 public contribution id uniqueness。
 - snapshot sorting。
 - session open/refresh/dispatch/release forwarding。
 - mount session open：根据 source session 或 explicit owner 找到 runtime，并要求 target component 属于同一 extension。
@@ -306,4 +364,5 @@ entity menu 聚合仍可并发请求多个 contribution，但每个 contribution
 - asset URL 通过 main/host 生成安全 URL 或显式校验。
 - actionId 随 session 生成，renderer 不能伪造其他 session 的 action。
 - main 在所有 IPC handler 通过 session owner table 校验 sessionId、documentId、surface 和 owner；renderer 不能自报 runtime owner 或 surfaceInput。
+- main 对 host 返回的 document、patch 和 command 做轻量 schema validation；失败时返回 `invalid_document` 或 `invalid_patch`，不把坏 DTO 转发到 renderer。
 - renderer 对 unknown component 显示安全错误占位，不崩溃整个 app。
