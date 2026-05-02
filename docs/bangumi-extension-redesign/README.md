@@ -8,7 +8,7 @@
 
 - [01-facts-and-scope.md](01-facts-and-scope.md): 官方事实源、Bangumi API 能力边界、项目范围。
 - [02-extension-architecture.md](02-extension-architecture.md): Bangumi 扩展内部模块与核心对象。
-- [03-host-capabilities.md](03-host-capabilities.md): Kisaki 需要补齐的扩展能力，包括 secrets、openExternal、ingest、command、background task、DB event projector。
+- [03-host-capabilities.md](03-host-capabilities.md): Kisaki 需要补齐的扩展能力和 context API，包括 `context.secrets`、openExternal、ingest、command、background task、DB event projector。
 - [04-oauth-and-api-client.md](04-oauth-and-api-client.md): Kisaki OAuth Relay、扩展自组 OAuth flow、Bangumi API client 和速率限制。
 - [05-library-events.md](05-library-events.md): 基于 SQLite trigger 的 typed event projector，以及实体级 `changes` 判别联合事件契约。
 - [06-sync-and-import.md](06-sync-and-import.md): 自动同步、手动全量同步、用户数据库导入、Bangumi 目录导入。
@@ -21,6 +21,7 @@
 - 以 Bangumi 官方 API、OpenAPI 和开发者文档为唯一事实源。
 - 不新增主应用 OAuth service；Bangumi OAuth 是扩展业务流程，由扩展组合通用能力完成。
 - Kisaki 官方 `client_secret` 不进入桌面端、扩展源码、manifest、extension storage 或本机 secrets。
+- `secrets` 是 `ExtensionContext` 上的 API，不作为 extension capability/权限点或主应用 service；它与 extension storage 同类，按 extension 隔离保存敏感值。
 - Kisaki OAuth Relay 作为独立 Docker 服务部署到服务器，默认通过 `https://kisaki.me/_tmp/bangumi-oauth/*` 这类临时域名路径暴露。
 - 批量导入保持并行；所有触达 `api.bgm.tv` 的请求都经过共享 `BangumiClient` limiter。
 - scraper profile 查询属于现有 scraper capability；不新增顶级 `scraperProfiles` capability。

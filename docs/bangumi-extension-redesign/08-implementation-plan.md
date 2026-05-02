@@ -6,19 +6,27 @@
 - 增加 Bangumi OpenAPI 类型生成或手写 DTO 校验策略，类型文件标注来源 URL 和 OpenAPI version。
 - 删除旧 Bangumi 扩展内部 client/provider 假设。
 
-## Phase 1: 补齐 Kisaki extension host 能力
+## Phase 1A: 实现/修改主应用 service
 
-- 新增 secure secrets capability。
-- 新增 `kisaki.runtime.openExternal` capability；Bangumi 扩展自行组合 network、deeplink、secrets、openExternal 完成 OAuth Relay flow。
+- 新增或修改主应用内部 service：CommandService、BackgroundTaskService、DB event projector、scraper profile 查询、ingest from scraper application service。
+- 主应用 service 实现只依赖 app/main 内部 domain types、repository、IPC/service contracts，不 import `@kisaki/extension-api` 或 `@kisaki/extension-sdk`。
+- 如果主应用 service 与扩展 public API 需要共享形状，由 host bridge/adapter 做显式转换；不要把 API 包类型混入 service 实现。
+- 新增 `runtime.openExternal` 的主应用执行入口；Bangumi 扩展自行组合 network、deeplink、`context.secrets`、openExternal 完成 OAuth Relay flow。
+- 在现有 scraper 服务中补齐 profile list/get 能力，例如 `listScraperProfiles({ mediaType: "game" })`。
+- 在主应用 ingest/service 层新增最小 ingest from scraper 能力；第一版不实现或暴露 `updateGameFromScraper`。
+- 在 DbService 中新增 typed event projector 子模块，基于 SQLite trigger 聚合 raw DB event 并发出实体级 library domain event。
+- 增强 SQLite trigger raw payload，提供可供 projector 使用的 OLD/NEW row snapshot。
+
+## Phase 1B: 暴露 extension context/API/SDK/host bridge
+
+- 新增 `context.secrets` API，不作为 extension capability/权限点，也不作为主应用 service；它与 extension storage 同类，是按 extension 隔离的 secure key-value storage。
+- 新增 `kisaki.runtime.openExternal` public API。
 - 重构 deeplink contribution API：`DeeplinkContribution.route` 改为 extension-local `path`，`register()` 返回 canonical `kisaki://ext/<extensionId>/<path>` URL handle，host 负责内部路由归一化。
 - 在现有 scraper capability 下新增 profile list/get 能力，例如 `kisaki.scrapers.profiles.list({ mediaType: "game" })`。
 - 新增最小 ingest from scraper capability：`kisaki.ingest.games.addFromScraper(profileId, lookup, options)`；第一版不暴露 `updateGameFromScraper`。
-- 新增 CommandService，并允许扩展注册可执行 command。
-- 新增 BackgroundTaskService，并允许扩展创建/删除自己拥有的 task，允许用户把 command 配置成启动时/定时后台任务。
-- 在 DbService 中新增 typed event projector 子模块，基于 SQLite trigger 聚合 raw DB event 并发出实体级 library domain event。
-- 增强 SQLite trigger raw payload，提供可供 projector 使用的 OLD/NEW row snapshot。
-- 自动同步跳过逻辑以 fingerprint、debounce、短期 suppress set 为准；event `source` 只作为可选诊断归因。
-- 覆盖 extension-api、extension-sdk、host bridge、main IPC 测试。
+- 暴露 command 注册 API，并允许扩展注册可执行 command。
+- 暴露 background task API，并允许扩展创建/删除自己拥有的 task，允许用户把 command 配置成启动时/定时后台任务。
+- host bridge 调用 Phase 1A 的主应用 service，并负责 public API DTO 与主应用内部类型之间的转换。
 
 ## Phase 2: 实现并部署 Kisaki OAuth Relay
 
@@ -92,7 +100,7 @@
 - Kisaki 官方 Bangumi 应用 `client_secret` 不出现在桌面端包、扩展源码或 extension storage 中。
 - Kisaki OAuth Relay 可通过 Docker Compose 启动，并能经 Nginx Proxy Manager 从 `https://kisaki.me/healthz` 或 `https://kisaki.me/_tmp/bangumi-oauth/healthz` 访问健康检查。
 - access token 过期时，扩展能通过 Kisaki OAuth Relay 使用 refresh token 自动续期。
-- Bangumi OAuth 登录 flow 由扩展组合 `network`、`deeplink`、`secrets`、`runtime.openExternal` 完成，不要求主应用新增 OAuth-specific service。
+- Bangumi OAuth 登录 flow 由扩展组合 `network`、`deeplink`、`context.secrets`、`runtime.openExternal` 完成，不要求主应用新增 OAuth-specific service。
 - 直接 Drizzle 写入 `games.score` 后，DB event projector 发出 `library.game.updated`，`changes` 包含 `facet: "score"`，并带类型安全的 `before.score` 和 `after.score`。
 - 直接 Drizzle 写入 `games.status` 后，DB event projector 发出 `library.game.updated`，`changes` 包含 `facet: "status"`，并带类型安全的 `before.status` 和 `after.status`。
 - 直接 Drizzle 写入 `game_external_ids` 后，DB event projector 发出对应 `library.game.updated`，`changes` 包含 `facet: "identity"`，并带类型安全的 `before.externalIds` 和 `after.externalIds`。
@@ -111,8 +119,7 @@
 
 - Bangumi OAuth 对桌面应用要求 `client_secret`：生产版通过 Kisaki OAuth Relay 持有官方 secret；桌面端只保存用户 token。
 - Kisaki OAuth Relay 不可用会影响登录和 token refresh：普通 API 请求不经 relay，但 token 过期后需要 relay 恢复；UI 必须给出明确错误和重试入口。
-- 当前 extension storage 非加密：必须先做 secrets capability，再保存用户 access/refresh token。
-- 自动同步可能出现 echo write，例如“从 Bangumi 导入状态到 Kisaki”后又被自动同步写回 Bangumi：第一版用 fingerprint、debounce 和短期 suppress set 避免重复写入；event source 只做诊断，不作为必要机制。
+- 当前 extension storage 非加密：必须先提供与 extension storage 同类的 `context.secrets` secure storage API，再保存用户 access/refresh token。
 - DB event projector 的 facet 映射必须稳定：表结构可以调整，但对外 facet 语义不能随意变化；`fields` 只用于诊断，不给扩展做强兼容承诺。
 - 旧值/新值的公共快照必须是领域类型，不是 DB row dump；tracked 字段和关系都应通过 raw old/next 构造 `before` / `after`，只有显式声明的派生 facet 才能省略 `before`。
 - 批量导入需要调用 app ingest：必须通过公共 ingest capability 暴露，不直接 import app internals。

@@ -80,9 +80,9 @@ interface BangumiSettingsV2 {
 - `jobs.history`
 - `imports.lastResult`
 
-## Secrets
+## Context Secrets API
 
-敏感值存 secure secrets：
+敏感值通过 `context.secrets` API 保存；它不是 capability/权限点，也不是主应用 service，而是与 extension storage 同类的 extension-scoped secure storage：
 
 - `oauth.accessToken`
 - `oauth.refreshToken`

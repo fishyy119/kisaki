@@ -10,12 +10,12 @@ Kisaki 官方应用的 `client_secret` 只存在于服务器环境变量，例�
 
 ## 扩展自组 OAuth
 
-不新增主应用 OAuth service。Bangumi OAuth 是 Bangumi 扩展自己的业务流程，扩展通过通用 capability 自己组合：
+不新增主应用 OAuth service。Bangumi OAuth 是 Bangumi 扩展自己的业务流程，扩展通过通用能力和 context API 自己组合：
 
 - `kisaki.network.request`: 调用 Kisaki OAuth Relay。
 - `context.contributes.deeplinks.register`: 注册扩展自己的局部 callback path，由主应用生成 `kisaki://ext/<extensionId>/...` 回跳。
 - `kisaki.runtime.openExternal`: 打开系统浏览器。
-- `kisaki.secrets`: 保存用户 token。
+- `context.secrets`: 保存用户 token。
 
 推荐流程：
 
@@ -25,7 +25,7 @@ Kisaki 官方应用的 `client_secret` 只存在于服务器环境变量，例�
 4. Bangumi redirect 到 Kisaki 服务器的 HTTPS callback。
 5. Relay 在服务器端使用 `client_secret` exchange token，并把结果保存在短 TTL 一次性 session 中。
 6. 浏览器通过 `kisaki://...` 唤醒桌面端，或扩展轮询 session 状态。
-7. 扩展调用 relay complete endpoint 取回 token 并写入 secure secrets。
+7. 扩展调用 relay complete endpoint 取回 token 并写入 `context.secrets`。
 
 当前 Bangumi 内置扩展 id 是 `builtin.bangumi`。扩展只声明自己的局部 callback path，例如 `oauth-callback`；主应用根据扩展 id 归一化为内部路由 `ext/builtin.bangumi/oauth-callback`，并提供或生成 canonical 桌面回跳 URL `kisaki://ext/builtin.bangumi/oauth-callback`。`kisaki://bangumi/oauth-callback` 不会进入 extension deeplink handler。
 

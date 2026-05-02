@@ -1,15 +1,17 @@
 # 03 Host Capabilities
 
-现有扩展 API 已有 `settingsPanels`、`scrapers`、`library`、`events`、`network`、`runtime.delay`。本需求还需要以下宿主能力，否则 Bangumi 扩展会被迫触碰 app internals。
+现有扩展 API 已有 `settingsPanels`、`scrapers`、`library`、`events`、`network`、`runtime.delay`。本需求还需要以下宿主能力与 context API，否则 Bangumi 扩展会被迫触碰 app internals。
 
-## Secure Secrets Capability
+## Context Secrets API
 
-新增 `kisaki.secrets` 或 `context.secrets`：
+新增 `context.secrets`：
 
 - `get(key)`
 - `set(key, value)`
 - `delete(key)`
 - `listKeys(prefix?)`
+
+`secrets` 不作为 extension capability/权限点，也不放在 `kisaki.*` capability namespace 中；它是 `ExtensionContext` 提供的通用 API。它与 extension storage 同类，是按 extension 隔离的 key-value storage，只是敏感值必须走安全存储后端；不要把它建模成独立主应用 service。
 
 用于保存用户的 `access_token`、`refresh_token`、`expires_at` 等 token 数据。Kisaki 官方 Bangumi 应用的 `client_secret` 只保存在 Kisaki 服务器环境变量中，绝不进入桌面安装包、扩展源码、manifest、extension storage 或用户本机 secrets。
 
@@ -22,7 +24,7 @@ Bangumi OAuth 不新增主应用 OAuth service。扩展自己组合：
 - `kisaki.network.request`: 调用 Kisaki OAuth Relay 的 session、complete、refresh endpoint。
 - `context.contributes.deeplinks.register`: 注册 Bangumi 扩展自己的 deeplink callback handler。
 - `kisaki.runtime.openExternal`: 打开系统浏览器访问 relay 返回的 authorize URL。
-- `kisaki.secrets`: 保存用户 token。
+- `context.secrets`: 保存用户 token。
 
 主应用只提供通用 primitive；Bangumi 扩展负责 state/session、relay complete、token refresh、取消、超时和错误处理。
 
