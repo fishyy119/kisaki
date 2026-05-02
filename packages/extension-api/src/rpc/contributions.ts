@@ -1,3 +1,5 @@
+import type { CommandExecutionSource } from '../capabilities/commands'
+import type { CommandContribution } from '../contributions/commands'
 import type { DeeplinkRequest, DeeplinkResponse } from '../contributions/deeplinks'
 import type {
   EntityMenuItem,
@@ -26,7 +28,7 @@ import type {
   ScraperLookup
 } from '../contributions/scrapers'
 import type { ThemeContribution } from '../contributions/themes'
-import type { Locale, SerializableValue, UiCallbackResult } from '../shared'
+import type { Locale, SerializableRecord, SerializableValue, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
@@ -46,7 +48,8 @@ export interface SettingsContributionRegistration {
 
 export interface DeeplinkContributionRegistration {
   id: string
-  route: string
+  path: string
+  url: string
 }
 
 export interface GameScraperProviderRegistration {
@@ -75,6 +78,16 @@ export interface CharacterScraperProviderRegistration {
   name: string
   externalIdSource: string
   capabilities: readonly ('search' | CharacterScraperSlot)[]
+}
+
+export type CommandContributionRegistrationRpcInput = Omit<CommandContribution, 'execute'>
+
+export interface CommandRegisterRequest extends ExtensionScopedRpcParams {
+  command: CommandContributionRegistrationRpcInput
+}
+
+export interface CommandUnregisterRequest extends ExtensionScopedRpcParams {
+  commandId: string
 }
 
 export interface EntityMenuResolveRequest extends ContributionScopedRpcParams {
@@ -155,6 +168,17 @@ export interface DeeplinkHandleRequest extends ContributionScopedRpcParams {
   input: DeeplinkRequest
 }
 
+export interface CommandExecuteRequest extends ExtensionScopedRpcParams {
+  commandId: string
+  executionId: string
+  args: SerializableRecord
+  source: CommandExecutionSource
+}
+
+export interface CommandExecuteResult {
+  output?: SerializableValue
+}
+
 export interface ScraperProviderScopedRpcParams extends ExtensionScopedRpcParams {
   providerId: string
 }
@@ -217,105 +241,135 @@ export type ScraperProviderRpcRequestMap<
 export interface MainToHostContributionRpcRequestMap
   extends
     ScraperProviderRpcRequestMap<
-      'scrapers.games',
+      'contributions.scrapers.games',
       GameSearchResult,
       GameScraperSlot,
       GameSessionResultMap
     >,
     ScraperProviderRpcRequestMap<
-      'scrapers.persons',
+      'contributions.scrapers.persons',
       PersonSearchResult,
       PersonScraperSlot,
       PersonSessionResultMap
     >,
     ScraperProviderRpcRequestMap<
-      'scrapers.companies',
+      'contributions.scrapers.companies',
       CompanySearchResult,
       CompanyScraperSlot,
       CompanySessionResultMap
     >,
     ScraperProviderRpcRequestMap<
-      'scrapers.characters',
+      'contributions.scrapers.characters',
       CharacterSearchResult,
       CharacterScraperSlot,
       CharacterSessionResultMap
     > {
-  'entityMenus.resolve': RpcMethodDefinition<EntityMenuResolveRequest, EntityMenuResolveResult>
-  'entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
-  'entityMenus.session.release': RpcMethodDefinition<EntityMenuSessionReleaseRequest, RpcNoPayload>
-  'settings.open': RpcMethodDefinition<SettingsSessionOpenRequest, SettingsFrameResult>
-  'settings.frame.open': RpcMethodDefinition<SettingsFrameOpenRequest, SettingsFrameResult>
-  'settings.frame.refresh': RpcMethodDefinition<SettingsFrameRefreshRequest, SettingsFrameResult>
-  'settings.submit': RpcMethodDefinition<SettingsFrameSubmitRequest, SettingsInteractionResponse>
-  'settings.invoke': RpcMethodDefinition<SettingsFrameInvokeRequest, SettingsInteractionResponse>
-  'settings.frame.release': RpcMethodDefinition<SettingsFrameReleaseRequest, RpcNoPayload>
-  'settings.session.release': RpcMethodDefinition<SettingsSessionReleaseRequest, RpcNoPayload>
-  'deeplinks.handle': RpcMethodDefinition<DeeplinkHandleRequest, DeeplinkResponse>
+  'contributions.entityMenus.resolve': RpcMethodDefinition<
+    EntityMenuResolveRequest,
+    EntityMenuResolveResult
+  >
+  'contributions.entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
+  'contributions.entityMenus.session.release': RpcMethodDefinition<
+    EntityMenuSessionReleaseRequest,
+    RpcNoPayload
+  >
+  'contributions.settings.open': RpcMethodDefinition<
+    SettingsSessionOpenRequest,
+    SettingsFrameResult
+  >
+  'contributions.settings.frame.open': RpcMethodDefinition<
+    SettingsFrameOpenRequest,
+    SettingsFrameResult
+  >
+  'contributions.settings.frame.refresh': RpcMethodDefinition<
+    SettingsFrameRefreshRequest,
+    SettingsFrameResult
+  >
+  'contributions.settings.submit': RpcMethodDefinition<
+    SettingsFrameSubmitRequest,
+    SettingsInteractionResponse
+  >
+  'contributions.settings.invoke': RpcMethodDefinition<
+    SettingsFrameInvokeRequest,
+    SettingsInteractionResponse
+  >
+  'contributions.settings.frame.release': RpcMethodDefinition<
+    SettingsFrameReleaseRequest,
+    RpcNoPayload
+  >
+  'contributions.settings.session.release': RpcMethodDefinition<
+    SettingsSessionReleaseRequest,
+    RpcNoPayload
+  >
+  'contributions.deeplinks.handle': RpcMethodDefinition<DeeplinkHandleRequest, DeeplinkResponse>
+  'contributions.commands.execute': RpcMethodDefinition<CommandExecuteRequest, CommandExecuteResult>
 }
 
 export type HostToMainContributionRpcRequestMap = {
-  'bridge.entityMenus.register': RpcMethodDefinition<
+  'contributions.entityMenus.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contribution: EntityMenuContributionRegistration },
     RpcNoPayload
   >
-  'bridge.entityMenus.unregister': RpcMethodDefinition<
+  'contributions.entityMenus.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
-  'bridge.settings.register': RpcMethodDefinition<
+  'contributions.settings.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contribution: SettingsContributionRegistration },
     RpcNoPayload
   >
-  'bridge.settings.unregister': RpcMethodDefinition<
+  'contributions.settings.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
-  'bridge.scrapers.games.register': RpcMethodDefinition<
+  'contributions.scrapers.games.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { provider: GameScraperProviderRegistration },
     RpcNoPayload
   >
-  'bridge.scrapers.games.unregister': RpcMethodDefinition<
+  'contributions.scrapers.games.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { providerId: string },
     RpcNoPayload
   >
-  'bridge.scrapers.persons.register': RpcMethodDefinition<
+  'contributions.scrapers.persons.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { provider: PersonScraperProviderRegistration },
     RpcNoPayload
   >
-  'bridge.scrapers.persons.unregister': RpcMethodDefinition<
+  'contributions.scrapers.persons.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { providerId: string },
     RpcNoPayload
   >
-  'bridge.scrapers.companies.register': RpcMethodDefinition<
+  'contributions.scrapers.companies.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { provider: CompanyScraperProviderRegistration },
     RpcNoPayload
   >
-  'bridge.scrapers.companies.unregister': RpcMethodDefinition<
+  'contributions.scrapers.companies.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { providerId: string },
     RpcNoPayload
   >
-  'bridge.scrapers.characters.register': RpcMethodDefinition<
+  'contributions.scrapers.characters.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { provider: CharacterScraperProviderRegistration },
     RpcNoPayload
   >
-  'bridge.scrapers.characters.unregister': RpcMethodDefinition<
+  'contributions.scrapers.characters.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { providerId: string },
     RpcNoPayload
   >
-  'bridge.deeplinks.register': RpcMethodDefinition<
+  'contributions.deeplinks.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contribution: DeeplinkContributionRegistration },
     RpcNoPayload
   >
-  'bridge.deeplinks.unregister': RpcMethodDefinition<
+  'contributions.deeplinks.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
-  'bridge.themes.register': RpcMethodDefinition<
+  'contributions.themes.register': RpcMethodDefinition<
     ExtensionScopedRpcParams & { theme: ThemeContribution },
     RpcNoPayload
   >
-  'bridge.themes.unregister': RpcMethodDefinition<
+  'contributions.themes.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { themeId: string },
     RpcNoPayload
   >
+  'contributions.commands.register': RpcMethodDefinition<CommandRegisterRequest, RpcNoPayload>
+  'contributions.commands.unregister': RpcMethodDefinition<CommandUnregisterRequest, RpcNoPayload>
 }

@@ -1,48 +1,52 @@
-import type { ExtensionStorage } from '@kisaki/extension-api'
+import type { ExtensionSecrets, SerializableValue } from '@kisaki/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
 import { toSerializableValue } from './utils/serialization'
 
-interface ExtensionStorageOptions {
+interface ExtensionSecretsOptions {
   scope: ActiveExtensionScope
   rpc: ExtensionHostRpcServer
   getRequestOptions(scope: ActiveExtensionScope): { signal?: AbortSignal } | undefined
 }
 
 /**
- * Creates the extension-scoped persistent storage SDK facade.
+ * Creates the extension-scoped secure storage SDK facade.
  */
-export function createExtensionStorage(options: ExtensionStorageOptions): ExtensionStorage {
+export function createExtensionSecrets(options: ExtensionSecretsOptions): ExtensionSecrets {
   const getRequestOptions = () => options.getRequestOptions(options.scope)
 
   return {
-    get: async <T>(key: string, fallback: T): Promise<T> => {
+    get: async <T extends SerializableValue = SerializableValue>(
+      key: string
+    ): Promise<T | undefined> => {
       const result = await options.rpc.requestMain(
-        'runtime.storage.get',
+        'runtime.secrets.get',
         {
           runtimeHandle: options.scope.runtimeHandle,
-          key,
-          fallback: toSerializableValue(fallback, 'storage fallback')
+          key
         },
         getRequestOptions()
       )
 
-      return result.value as T
+      return result.value as T | undefined
     },
-    set: async <T>(key: string, value: T): Promise<void> => {
+    set: async <T extends SerializableValue = SerializableValue>(
+      key: string,
+      value: T
+    ): Promise<void> => {
       await options.rpc.requestMain(
-        'runtime.storage.set',
+        'runtime.secrets.set',
         {
           runtimeHandle: options.scope.runtimeHandle,
           key,
-          value: toSerializableValue(value, 'storage value')
+          value: toSerializableValue(value, 'secrets value')
         },
         getRequestOptions()
       )
     },
     delete: async (key: string): Promise<void> => {
       await options.rpc.requestMain(
-        'runtime.storage.delete',
+        'runtime.secrets.delete',
         {
           runtimeHandle: options.scope.runtimeHandle,
           key
@@ -52,7 +56,7 @@ export function createExtensionStorage(options: ExtensionStorageOptions): Extens
     },
     listKeys: async (prefix?: string): Promise<readonly string[]> => {
       const result = await options.rpc.requestMain(
-        'runtime.storage.listKeys',
+        'runtime.secrets.listKeys',
         {
           runtimeHandle: options.scope.runtimeHandle,
           prefix

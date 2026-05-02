@@ -1,5 +1,6 @@
 import type {
   CharacterScraperProvider,
+  CommandContribution,
   CompanyScraperProvider,
   DeeplinkContribution,
   DisposableStore,
@@ -10,6 +11,23 @@ import type {
   ThemeContribution
 } from '@kisaki/extension-api'
 import type { ActiveExtensionScope, ExtensionSdkBridge } from './types'
+
+/**
+ * Creates the command contribution registrar bound to runtime subscriptions.
+ */
+export function createCommandRegistrar(
+  bridge: ExtensionSdkBridge,
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
+) {
+  return {
+    async register(command: CommandContribution) {
+      const disposable = await bridge.registerCommand(scope, command)
+      subscriptions.add(disposable)
+      return disposable
+    }
+  }
+}
 
 /**
  * Creates the entity menu contribution registrar bound to runtime subscriptions.

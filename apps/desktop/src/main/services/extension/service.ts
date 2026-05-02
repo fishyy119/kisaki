@@ -69,6 +69,9 @@ export class ExtensionService implements IService {
     'event',
     'notify',
     'scraper',
+    'ingest',
+    'command',
+    'background-task',
     'deeplink'
   ] as const satisfies readonly ServiceName[]
 
@@ -113,13 +116,19 @@ export class ExtensionService implements IService {
     this.catalog = new ExtensionCatalog(this.paths, this.stateStore)
     this.installer = new ExtensionInstaller(this.paths, this.stateStore, this.sources)
     this.capabilities = new ExtensionCapabilityGateway({
+      backgroundTask: container.get('background-task'),
+      command: container.get('command'),
       db: container.get('db'),
       event: container.get('event'),
+      ingest: container.get('ingest'),
       network: container.get('network'),
       notify: container.get('notify'),
-      resolveRuntimeHandle: (runtimeHandle) => this.runtime?.resolveRuntimeHandle(runtimeHandle)
+      scraper: container.get('scraper'),
+      resolveRuntimeHandle: (runtimeHandle) =>
+        this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null
     })
     this.contributions = new ExtensionContributionRegistry({
+      command: container.get('command'),
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
       onDidChange: () => this.emitContributionSnapshotChanged(),

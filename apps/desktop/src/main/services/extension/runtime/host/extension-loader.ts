@@ -79,7 +79,8 @@ export class ExtensionLoader {
       companyScrapers: new Map(),
       characterScrapers: new Map(),
       deeplinks: new Map(),
-      themes: new Map()
+      themes: new Map(),
+      commands: new Map()
     }
 
     this.registry.add(runtime)

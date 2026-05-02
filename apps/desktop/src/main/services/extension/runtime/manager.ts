@@ -24,6 +24,7 @@ import { registerHostRequests } from './host-request'
 import { ExtensionHostController, type ExtensionHostExitInfo } from './host-controller'
 import { ExtensionHostRpcClient } from './rpc-client'
 import type { RpcRequestOptions } from './rpc-core'
+import { ExtensionRuntimeSecrets } from './secrets'
 import {
   createRuntimeFailureState,
   createRuntimeRunningState,
@@ -71,6 +72,9 @@ export class RuntimeManager {
   private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
   private readonly runtimeStates = new Map<string, ExtensionRuntimeState>()
   private readonly storage = new ExtensionRuntimeStorage(
+    (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
+  )
+  private readonly secrets = new ExtensionRuntimeSecrets(
     (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
   )
   private controller: ExtensionHostController | null = null
@@ -323,6 +327,7 @@ export class RuntimeManager {
     registerHostRequests({
       rpc,
       storage: this.storage,
+      secrets: this.secrets,
       capabilities: this.options.capabilities,
       contributions: this.options.contributions,
       resolveRuntimeHandle: (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
@@ -383,6 +388,7 @@ export class RuntimeManager {
       this.loadedExtensions.clear()
       this.runtimeHandles.clear()
       this.storage.clear()
+      this.secrets.clear()
 
       if (info.expected) {
         log.info(`[RuntimeManager] Extension host exited cleanly with code ${info.code}`)
@@ -494,6 +500,7 @@ export class RuntimeManager {
     this.loadedExtensions.clear()
     this.runtimeHandles.clear()
     this.storage.clear()
+    this.secrets.clear()
 
     if (controller) {
       await controller.stop()

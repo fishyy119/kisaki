@@ -18,5 +18,5 @@ export function getScraperRpcMethod(
   domain: ScraperDomain,
   action: ScraperRpcAction
 ): MainToHostRpcMethod {
-  return `scrapers.${domain.kind}.${action}` as MainToHostRpcMethod
+  return `contributions.scrapers.${domain.kind}.${action}` as MainToHostRpcMethod
 }

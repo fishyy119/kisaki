@@ -105,7 +105,7 @@ export class ExtensionSettingsContributionHost {
     const registration = this.requireRegistration(extensionId, contributionId)
     const sessionId = randomUUID()
     const frame = await this.options.requestHost(
-      'settings.open',
+      'contributions.settings.open',
       {
         runtimeHandle: registration.owner.runtimeHandle,
         contributionId: registration.contribution.id,
@@ -127,7 +127,7 @@ export class ExtensionSettingsContributionHost {
   ): Promise<ExtensionResolvedSettingsFrame> {
     const registration = this.requireRegistration(request.extensionId, request.contributionId)
     const frame = await this.options.requestHost(
-      'settings.frame.open',
+      'contributions.settings.frame.open',
       {
         runtimeHandle: registration.owner.runtimeHandle,
         contributionId: registration.contribution.id,
@@ -150,7 +150,7 @@ export class ExtensionSettingsContributionHost {
   ): Promise<ExtensionResolvedSettingsFrame> {
     const registration = this.requireRegistration(request.extensionId, request.contributionId)
     const frame = await this.options.requestHost(
-      'settings.frame.refresh',
+      'contributions.settings.frame.refresh',
       {
         runtimeHandle: registration.owner.runtimeHandle,
         contributionId: registration.contribution.id,
@@ -181,7 +181,7 @@ export class ExtensionSettingsContributionHost {
 
     try {
       const response = await this.options.requestHost(
-        'settings.submit',
+        'contributions.settings.submit',
         {
           runtimeHandle: registration.owner.runtimeHandle,
           contributionId: registration.contribution.id,
@@ -221,7 +221,7 @@ export class ExtensionSettingsContributionHost {
 
     try {
       const response = await this.options.requestHost(
-        'settings.invoke',
+        'contributions.settings.invoke',
         {
           runtimeHandle: registration.owner.runtimeHandle,
           contributionId: registration.contribution.id,
@@ -257,7 +257,7 @@ export class ExtensionSettingsContributionHost {
 
     try {
       await this.options.requestHost(
-        'settings.frame.release',
+        'contributions.settings.frame.release',
         {
           runtimeHandle: registration.owner.runtimeHandle,
           contributionId: registration.contribution.id,
@@ -286,7 +286,7 @@ export class ExtensionSettingsContributionHost {
 
     try {
       await this.options.requestHost(
-        'settings.session.release',
+        'contributions.settings.session.release',
         {
           runtimeHandle: registration.owner.runtimeHandle,
           contributionId: registration.contribution.id,

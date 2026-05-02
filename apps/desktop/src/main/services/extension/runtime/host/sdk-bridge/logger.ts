@@ -21,7 +21,7 @@ export function createExtensionLogger(options: ExtensionLoggerOptions): Extensio
   ) => {
     void options.rpc
       .requestMain(
-        'bridge.logger.log',
+        'runtime.logger.log',
         {
           runtimeHandle: options.scope.runtimeHandle,
           level,

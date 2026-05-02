@@ -1,5 +1,6 @@
 import type {
   CharacterScraperProvider,
+  CommandContribution,
   DeeplinkContribution,
   EntityMenuContribution,
   ExtensionContext,
@@ -30,6 +31,7 @@ export interface LoadedExtensionRuntime {
   characterScrapers: Map<string, CharacterScraperProvider>
   deeplinks: Map<string, DeeplinkContribution>
   themes: Map<string, ThemeContribution>
+  commands: Map<string, CommandContribution>
 }
 
 /**
@@ -144,6 +146,14 @@ export class ExtensionRegistry {
 
   unregisterTheme(extensionId: string, themeId: string): void {
     this.require(extensionId).themes.delete(themeId)
+  }
+
+  registerCommand(extensionId: string, command: CommandContribution): void {
+    this.require(extensionId).commands.set(command.id, command)
+  }
+
+  unregisterCommand(extensionId: string, commandId: string): void {
+    this.require(extensionId).commands.delete(commandId)
   }
 
   private require(extensionId: string): LoadedExtensionRuntime {

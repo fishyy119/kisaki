@@ -6,7 +6,7 @@ export default defineExtension({
   async activate(context) {
     context.logger.info(`${extensionName} activated.`)
 
-    context.contributes.settings.register({
+    context.contributions.settings.register({
       id: 'general',
       title: extensionName,
       rootScreenId: 'general',

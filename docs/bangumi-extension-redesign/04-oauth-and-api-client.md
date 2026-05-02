@@ -13,7 +13,7 @@ Kisaki 官方应用的 `client_secret` 只存在于服务器环境变量，例�
 不新增主应用 OAuth service。Bangumi OAuth 是 Bangumi 扩展自己的业务流程，扩展通过通用能力和 context API 自己组合：
 
 - `kisaki.network.request`: 调用 Kisaki OAuth Relay。
-- `context.contributes.deeplinks.register`: 注册扩展自己的局部 callback path，由主应用生成 `kisaki://ext/<extensionId>/...` 回跳。
+- `context.contributions.deeplinks.register`: 注册扩展自己的局部 callback path，由主应用生成 `kisaki://ext/<extensionId>/...` 回跳。
 - `kisaki.runtime.openExternal`: 打开系统浏览器。
 - `context.secrets`: 保存用户 token。
 

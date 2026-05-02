@@ -84,7 +84,7 @@ export class HostSettingsContributions {
     this.options.trackMainRequest(
       scope,
       this.options.rpc.requestMain(
-        'bridge.settings.register',
+        'contributions.settings.register',
         {
           runtimeHandle: scope.runtimeHandle,
           contribution: {
@@ -117,7 +117,7 @@ export class HostSettingsContributions {
     }
 
     await this.options.rpc.requestMain(
-      'bridge.settings.unregister',
+      'contributions.settings.unregister',
       {
         runtimeHandle: scope.runtimeHandle,
         contributionId

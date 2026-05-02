@@ -22,7 +22,7 @@
 Bangumi OAuth 不新增主应用 OAuth service。扩展自己组合：
 
 - `kisaki.network.request`: 调用 Kisaki OAuth Relay 的 session、complete、refresh endpoint。
-- `context.contributes.deeplinks.register`: 注册 Bangumi 扩展自己的 deeplink callback handler。
+- `context.contributions.deeplinks.register`: 注册 Bangumi 扩展自己的 deeplink callback handler。
 - `kisaki.runtime.openExternal`: 打开系统浏览器访问 relay 返回的 authorize URL。
 - `context.secrets`: 保存用户 token。
 
@@ -33,7 +33,7 @@ Bangumi OAuth 不新增主应用 OAuth service。扩展自己组合：
 本次重构调整 deeplink 注册点公共契约，不保留旧的完整 `route` 注册语义。扩展只声明自己拥有的局部 `path`，主应用根据 extension id 生成内部路由和 canonical 桌面 URL：
 
 ```ts
-const callback = context.contributes.deeplinks.register({
+const callback = context.contributions.deeplinks.register({
   id: 'oauth-callback',
   path: 'oauth-callback',
   async handle(input) {

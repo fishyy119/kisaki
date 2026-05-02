@@ -1,5 +1,6 @@
-import type { Disposable, DisposableStore } from './shared'
+import type { Disposable, DisposableStore, SerializableValue } from './shared'
 import type {
+  CommandRegistrar,
   DeeplinkRegistrar,
   EntityMenuRegistrar,
   ScraperRegistrar,
@@ -34,18 +35,27 @@ export interface ExtensionStorage {
   listKeys(prefix?: string): Promise<readonly string[]>
 }
 
+export interface ExtensionSecrets {
+  get<T extends SerializableValue = SerializableValue>(key: string): Promise<T | undefined>
+  set<T extends SerializableValue = SerializableValue>(key: string, value: T): Promise<void>
+  delete(key: string): Promise<void>
+  listKeys(prefix?: string): Promise<readonly string[]>
+}
+
 export interface ExtensionContext {
   readonly extension: ExtensionRuntimeMetadata
   readonly logger: ExtensionLogger
   readonly storage: ExtensionStorage
+  readonly secrets: ExtensionSecrets
   readonly subscriptions: DisposableStore
   readonly abortSignal: AbortSignal
-  readonly contributes: {
+  readonly contributions: {
     entityMenus: EntityMenuRegistrar
     settings: SettingsRegistrar
     scrapers: ScraperRegistrar
     deeplinks: DeeplinkRegistrar
     themes: ThemeRegistrar
+    commands: CommandRegistrar
   }
   asAbsolutePath(relativePath: string): string
   registerDisposable(disposable: Disposable): void

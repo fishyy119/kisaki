@@ -1,12 +1,15 @@
 import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
+  CommandContribution,
   DeeplinkContribution,
+  DeeplinkRegistrationHandle,
   Disposable,
   EntityMenuContribution,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionLogger,
+  ExtensionSecrets,
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   ExtensionStorage,
@@ -52,6 +55,8 @@ export interface ExtensionSdkBridge {
   readonly api: KisakiApi
   createLogger(scope: ActiveExtensionScope, extension: ExtensionRuntimeMetadata): ExtensionLogger
   createStorage(scope: ActiveExtensionScope): ExtensionStorage
+  createSecrets(scope: ActiveExtensionScope): ExtensionSecrets
+  registerCommand(scope: ActiveExtensionScope, command: CommandContribution): Promise<Disposable>
   registerEntityMenu(scope: ActiveExtensionScope, contribution: EntityMenuContribution): Disposable
   registerSettings(scope: ActiveExtensionScope, contribution: SettingsContribution): Disposable
   registerGameScraperProvider(
@@ -70,7 +75,10 @@ export interface ExtensionSdkBridge {
     scope: ActiveExtensionScope,
     provider: CharacterScraperProvider
   ): Disposable
-  registerDeeplink(scope: ActiveExtensionScope, contribution: DeeplinkContribution): Disposable
+  registerDeeplink(
+    scope: ActiveExtensionScope,
+    contribution: DeeplinkContribution
+  ): DeeplinkRegistrationHandle
   registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): Disposable
   asAbsolutePath(extensionPath: string, relativePath: string): string
 }

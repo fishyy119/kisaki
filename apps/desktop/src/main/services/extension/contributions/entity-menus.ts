@@ -107,7 +107,7 @@ export class ExtensionEntityMenuContributionHost {
 
     try {
       const result = await this.options.requestHost(
-        'entityMenus.invoke',
+        'contributions.entityMenus.invoke',
         {
           runtimeHandle: registration.owner.runtimeHandle,
           contributionId: registration.contribution.id,
@@ -147,7 +147,7 @@ export class ExtensionEntityMenuContributionHost {
       [...this.registrations.values()].map((registration) =>
         this.options
           .requestHost(
-            'entityMenus.session.release',
+            'contributions.entityMenus.session.release',
             {
               runtimeHandle: registration.owner.runtimeHandle,
               contributionId: registration.contribution.id,
@@ -182,7 +182,7 @@ export class ExtensionEntityMenuContributionHost {
       registrations.map(async (registration) => ({
         registration,
         resolved: await this.options.requestHost(
-          'entityMenus.resolve',
+          'contributions.entityMenus.resolve',
           {
             runtimeHandle: registration.owner.runtimeHandle,
             contributionId: registration.contribution.id,

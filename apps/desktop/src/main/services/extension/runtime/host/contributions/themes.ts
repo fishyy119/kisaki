@@ -26,7 +26,7 @@ export class HostThemeContributions {
     this.options.trackMainRequest(
       scope,
       this.options.rpc.requestMain(
-        'bridge.themes.register',
+        'contributions.themes.register',
         {
           runtimeHandle: scope.runtimeHandle,
           theme
@@ -38,7 +38,7 @@ export class HostThemeContributions {
     return createContributionDisposable(async () => {
       this.options.registry.unregisterTheme(scope.extensionId, theme.id)
       await this.options.rpc.requestMain(
-        'bridge.themes.unregister',
+        'contributions.themes.unregister',
         {
           runtimeHandle: scope.runtimeHandle,
           themeId: theme.id

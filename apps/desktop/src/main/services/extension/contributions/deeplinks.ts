@@ -33,22 +33,28 @@ export class ExtensionDeeplinkContributionHost {
     contribution: DeeplinkContributionRegistration
   ): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)
-    assertExtensionRoute(owner.extension.id, contribution.route)
+    const path = normalizeExtensionLocalPath(contribution.path)
+    const route = toInternalRoute(owner.extension.id, path)
+    const url = toCanonicalUrl(owner.extension.id, path)
 
-    const existing = this.byRoute.get(contribution.route)
+    const existing = this.byRoute.get(route)
     if (existing) {
       throw new Error(
-        `Deeplink route "${contribution.route}" is already registered by "${existing.owner.extension.id}:${existing.contribution.id}".`
+        `Deeplink path "${path}" is already registered by "${existing.owner.extension.id}:${existing.contribution.id}".`
       )
     }
 
     const registration: DeeplinkRegistration = {
       owner,
-      contribution
+      contribution: {
+        id: contribution.id,
+        path,
+        url
+      }
     }
 
     this.registrations.set(getRuntimeContributionKey(runtimeHandle, contribution.id), registration)
-    this.byRoute.set(contribution.route, registration)
+    this.byRoute.set(route, registration)
   }
 
   unregister(runtimeHandle: ExtensionRuntimeHandle, contributionId: string): void {
@@ -59,14 +65,18 @@ export class ExtensionDeeplinkContributionHost {
     }
 
     this.registrations.delete(key)
-    this.byRoute.delete(registration.contribution.route)
+    this.byRoute.delete(
+      toInternalRoute(registration.owner.extension.id, registration.contribution.path)
+    )
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
     for (const [key, registration] of [...this.registrations]) {
       if (registration.owner.runtimeHandle === runtimeHandle) {
         this.registrations.delete(key)
-        this.byRoute.delete(registration.contribution.route)
+        this.byRoute.delete(
+          toInternalRoute(registration.owner.extension.id, registration.contribution.path)
+        )
       }
     }
   }
@@ -82,7 +92,7 @@ export class ExtensionDeeplinkContributionHost {
         ...toContributionOwnerInfo(registration.owner),
         contribution: registration.contribution
       }))
-      .sort((left, right) => left.contribution.route.localeCompare(right.contribution.route))
+      .sort((left, right) => left.contribution.path.localeCompare(right.contribution.path))
   }
 
   async handle(route: string, input: DeeplinkRequest): Promise<DeeplinkResponse | null> {
@@ -92,11 +102,14 @@ export class ExtensionDeeplinkContributionHost {
     }
 
     return this.options.requestHost(
-      'deeplinks.handle',
+      'contributions.deeplinks.handle',
       {
         runtimeHandle: registration.owner.runtimeHandle,
         contributionId: registration.contribution.id,
-        input
+        input: {
+          ...input,
+          path: registration.contribution.path
+        }
       },
       { timeoutMs: 15_000 }
     )
@@ -113,7 +126,7 @@ class ExtensionDeeplinkHandler implements DeeplinkHandler {
 
     try {
       const response = await this.host.handle(route, {
-        route,
+        path: deeplink.resource,
         params: deeplink.params,
         rawUrl: deeplink.raw
       })
@@ -143,13 +156,25 @@ class ExtensionDeeplinkHandler implements DeeplinkHandler {
   }
 }
 
-function assertExtensionRoute(extensionId: string, route: string): void {
-  const requiredPrefix = `ext/${extensionId}/`
-  if (route === `ext/${extensionId}` || route.startsWith(requiredPrefix)) {
-    return
+function normalizeExtensionLocalPath(path: string): string {
+  const normalized = path.trim().replace(/^\/+|\/+$/g, '')
+  if (!/^[a-z0-9._~-]+(?:\/[a-z0-9._~-]+)*$/i.test(normalized)) {
+    throw new Error(
+      `Extension deeplink path "${path}" must contain URL-safe path segments without leading slash.`
+    )
   }
 
-  throw new Error(
-    `Extension deeplink route "${route}" must be "ext/${extensionId}" or under "${requiredPrefix}...".`
-  )
+  if (normalized === 'ext' || normalized.startsWith('ext/')) {
+    throw new Error('Extension deeplink path must not include the host "ext" namespace.')
+  }
+
+  return normalized
+}
+
+function toInternalRoute(extensionId: string, path: string): string {
+  return `ext/${extensionId}/${path}`
+}
+
+function toCanonicalUrl(extensionId: string, path: string): string {
+  return `kisaki://ext/${extensionId}/${path}`
 }

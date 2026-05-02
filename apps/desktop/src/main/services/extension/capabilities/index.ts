@@ -1,20 +1,32 @@
 import { createUnavailableError, type ExtensionRuntimeMetadata } from '@kisaki/extension-api'
+import type { BackgroundTaskService } from '@main/services/background-task'
+import type { CommandService } from '@main/services/command'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
+import type { IngestService } from '@main/services/ingest'
 import type { NetworkService } from '@main/services/network'
 import type { NotifyService } from '@main/services/notify'
+import type { ScraperService } from '@main/services/scraper'
 import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
+import { ExtensionBackgroundTasksCapabilityHost } from './background-tasks'
+import { ExtensionCommandsCapabilityHost } from './commands'
 import { ExtensionEventsCapabilityHost } from './events'
+import { ExtensionIngestCapabilityHost } from './ingest'
 import { ExtensionLibraryCapabilityHost } from './library'
 import { ExtensionNetworkCapabilityHost } from './network'
 import { ExtensionNotifyCapabilityHost } from './notify'
 import { ExtensionRuntimeCapabilityHost } from './runtime'
+import { ExtensionScrapersCapabilityHost } from './scrapers'
 
 export interface ExtensionCapabilityGatewayOptions {
+  backgroundTask: BackgroundTaskService
+  command: CommandService
   db: DbService
   event: EventService
+  ingest: IngestService
   network: NetworkService
   notify: NotifyService
+  scraper: ScraperService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
@@ -24,6 +36,10 @@ export class ExtensionCapabilityGateway {
   readonly notify: ExtensionNotifyCapabilityHost
   readonly events: ExtensionEventsCapabilityHost
   readonly runtime: ExtensionRuntimeCapabilityHost
+  readonly scrapers: ExtensionScrapersCapabilityHost
+  readonly ingest: ExtensionIngestCapabilityHost
+  readonly commands: ExtensionCommandsCapabilityHost
+  readonly backgroundTasks: ExtensionBackgroundTasksCapabilityHost
 
   constructor(options: ExtensionCapabilityGatewayOptions) {
     this.library = new ExtensionLibraryCapabilityHost({
@@ -43,6 +59,23 @@ export class ExtensionCapabilityGateway {
       event: options.event
     })
     this.runtime = new ExtensionRuntimeCapabilityHost({
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
+    this.scrapers = new ExtensionScrapersCapabilityHost({
+      scraper: options.scraper,
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
+    this.ingest = new ExtensionIngestCapabilityHost({
+      ingest: options.ingest,
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
+    this.commands = new ExtensionCommandsCapabilityHost({
+      command: options.command,
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
+    this.backgroundTasks = new ExtensionBackgroundTasksCapabilityHost({
+      backgroundTask: options.backgroundTask,
+      command: options.command,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
   }
@@ -107,6 +140,95 @@ export class ExtensionCapabilityGateway {
       await this.runtime.openExternal(runtimeHandle, url)
       return {}
     })
+
+    rpc.handleHostRequest(
+      'capabilities.scrapers.profiles.list',
+      async ({ runtimeHandle, query }) => ({
+        items: this.scrapers.listProfiles(runtimeHandle, query)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.scrapers.profiles.get',
+      async ({ runtimeHandle, profileId }) => ({
+        profile: this.scrapers.getProfile(runtimeHandle, profileId)
+      })
+    )
+
+    rpc.handleHostRequest(
+      'capabilities.ingest.games.addFromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }) => ({
+        result: await this.ingest.addGameFromScraper(runtimeHandle, profileId, lookup, options)
+      })
+    )
+
+    rpc.handleHostRequest('capabilities.commands.list', async ({ runtimeHandle }) => ({
+      items: this.commands.list(runtimeHandle)
+    }))
+    rpc.handleHostRequest('capabilities.commands.get', async ({ runtimeHandle, commandId }) => ({
+      command: this.commands.get(runtimeHandle, commandId)
+    }))
+    rpc.handleHostRequest('capabilities.commands.start', async ({ runtimeHandle, request }) => ({
+      result: this.commands.start(runtimeHandle, request)
+    }))
+    rpc.handleHostRequest('capabilities.commands.wait', async ({ runtimeHandle, executionId }) => ({
+      result: await this.commands.wait(runtimeHandle, executionId)
+    }))
+    rpc.handleHostRequest('capabilities.commands.execute', async ({ runtimeHandle, request }) => ({
+      result: await this.commands.execute(runtimeHandle, request)
+    }))
+    rpc.handleHostRequest(
+      'capabilities.commands.cancel',
+      async ({ runtimeHandle, executionId }) => ({
+        cancelled: this.commands.cancel(runtimeHandle, executionId)
+      })
+    )
+
+    rpc.handleHostRequest('capabilities.backgroundTasks.list', async ({ runtimeHandle }) => ({
+      items: this.backgroundTasks.list(runtimeHandle)
+    }))
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.get',
+      async ({ runtimeHandle, taskId }) => ({
+        task: this.backgroundTasks.get(runtimeHandle, taskId)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.create',
+      async ({ runtimeHandle, input }) => ({
+        task: await this.backgroundTasks.create(runtimeHandle, input)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.update',
+      async ({ runtimeHandle, taskId, patch }) => ({
+        task: await this.backgroundTasks.update(runtimeHandle, taskId, patch)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.setEnabled',
+      async ({ runtimeHandle, taskId, enabled }) => ({
+        task: await this.backgroundTasks.setEnabled(runtimeHandle, taskId, enabled)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.delete',
+      async ({ runtimeHandle, taskId }) => {
+        await this.backgroundTasks.delete(runtimeHandle, taskId)
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.run',
+      async ({ runtimeHandle, taskId }) => ({
+        record: await this.backgroundTasks.run(runtimeHandle, taskId)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.backgroundTasks.cancel',
+      async ({ runtimeHandle, taskId }) => ({
+        cancelled: this.backgroundTasks.cancel(runtimeHandle, taskId)
+      })
+    )
   }
 
   detachRpc(): void {
@@ -116,11 +238,13 @@ export class ExtensionCapabilityGateway {
   releaseRuntime(runtimeHandle: string): void {
     this.events.releaseRuntime(runtimeHandle)
     this.notify.releaseRuntime(runtimeHandle)
+    this.commands.releaseRuntime(runtimeHandle)
   }
 
   releaseAll(): void {
     this.events.releaseAll()
     this.notify.releaseAll()
+    this.commands.releaseAll()
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {

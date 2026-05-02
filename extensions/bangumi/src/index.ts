@@ -5,8 +5,8 @@ export default defineExtension({
   activate(context) {
     context.logger.info('Built-in Bangumi scraper activated.')
 
-    context.contributes.scrapers.registerGameProvider(new BangumiProvider(context))
-    context.contributes.settings.register({
+    context.contributions.scrapers.registerGameProvider(new BangumiProvider(context))
+    context.contributions.settings.register({
       id: 'settings',
       title: 'Bangumi',
       rootScreenId: 'general',

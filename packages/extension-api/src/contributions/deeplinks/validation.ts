@@ -11,9 +11,9 @@ import {
   validateUnknownKeys
 } from '../../shared/validation'
 
-const DEEPLINK_CONTRIBUTION_KEYS = new Set<string>(['id', 'route', 'handle'])
+const DEEPLINK_CONTRIBUTION_KEYS = new Set<string>(['id', 'path', 'handle'])
 
-const DEEPLINK_REQUEST_KEYS = new Set<string>(['route', 'params', 'rawUrl'])
+const DEEPLINK_REQUEST_KEYS = new Set<string>(['path', 'params', 'rawUrl'])
 
 const DEEPLINK_RESPONSE_KEYS = new Set<string>(['success', 'status', 'message', 'data'])
 
@@ -30,9 +30,9 @@ export function validateDeeplinkContributionShape(value: unknown): ValidationIss
       trim: true,
       valueMessage: 'Contribution id must be a non-empty string.'
     }),
-    ...validateRequiredString(value.route, '$.route', {
+    ...validateRequiredString(value.path, '$.path', {
       trim: true,
-      valueMessage: 'route must be a non-empty string.'
+      valueMessage: 'path must be a non-empty string.'
     }),
     ...validateRequiredFunction(value.handle, '$.handle').map((issue) => ({
       ...issue,
@@ -48,9 +48,9 @@ export function validateDeeplinkRequest(value: unknown): ValidationIssue[] {
 
   const issues: ValidationIssue[] = [
     ...validateUnknownKeys(value, DEEPLINK_REQUEST_KEYS),
-    ...validateRequiredString(value.route, '$.route', {
+    ...validateRequiredString(value.path, '$.path', {
       trim: true,
-      valueMessage: 'route must be a non-empty string.'
+      valueMessage: 'path must be a non-empty string.'
     }),
     ...validateRequiredString(value.rawUrl, '$.rawUrl', {
       trim: true,

@@ -1,5 +1,6 @@
 import {
   type DeeplinkContribution,
+  type DeeplinkRegistrationHandle,
   type DeeplinkHandleRequest,
   type DeeplinkResponse,
   validateDeeplinkContributionShape,
@@ -10,7 +11,6 @@ import {
   createContributionDisposable,
   requireRuntimeByScope,
   throwValidationIssues,
-  type ContributionDisposable,
   type HostContributionDomainOptions,
   type HostContributionScope
 } from './types'
@@ -21,7 +21,7 @@ export class HostDeeplinkContributions {
   register(
     scope: HostContributionScope,
     contribution: DeeplinkContribution
-  ): ContributionDisposable {
+  ): DeeplinkRegistrationHandle {
     const issues = validateDeeplinkContributionShape(contribution)
     if (issues.length > 0) {
       throwValidationIssues('Deeplink contribution', issues)
@@ -34,26 +34,29 @@ export class HostDeeplinkContributions {
       )
     }
 
-    this.options.registry.registerDeeplink(scope.extensionId, contribution)
+    const path = normalizeDeeplinkPath(contribution.path)
+    this.options.registry.registerDeeplink(scope.extensionId, { ...contribution, path })
+    const url = `kisaki://ext/${scope.extensionId}/${path}`
     this.options.trackMainRequest(
       scope,
       this.options.rpc.requestMain(
-        'bridge.deeplinks.register',
+        'contributions.deeplinks.register',
         {
           runtimeHandle: scope.runtimeHandle,
           contribution: {
             id: contribution.id,
-            route: contribution.route
+            path,
+            url
           }
         },
         this.options.getRequestOptions(scope)
       )
     )
 
-    return createContributionDisposable(async () => {
+    const disposable = createContributionDisposable(async () => {
       this.options.registry.unregisterDeeplink(scope.extensionId, contribution.id)
       await this.options.rpc.requestMain(
-        'bridge.deeplinks.unregister',
+        'contributions.deeplinks.unregister',
         {
           runtimeHandle: scope.runtimeHandle,
           contributionId: contribution.id
@@ -61,6 +64,10 @@ export class HostDeeplinkContributions {
         this.options.getCleanupRequestOptions(scope)
       )
     })
+    return {
+      url,
+      dispose: disposable.dispose
+    }
   }
 
   async handle(request: DeeplinkHandleRequest): Promise<DeeplinkResponse> {
@@ -101,4 +108,19 @@ export class HostDeeplinkContributions {
       runtime.deeplinks.clear()
     }
   }
+}
+
+function normalizeDeeplinkPath(path: string): string {
+  const normalized = path.trim().replace(/^\/+|\/+$/g, '')
+  if (!/^[a-z0-9._~-]+(?:\/[a-z0-9._~-]+)*$/i.test(normalized)) {
+    throw new Error(
+      `Extension deeplink path "${path}" must contain URL-safe path segments without leading slash.`
+    )
+  }
+
+  if (normalized === 'ext' || normalized.startsWith('ext/')) {
+    throw new Error('Extension deeplink path must not include the host "ext" namespace.')
+  }
+
+  return normalized
 }

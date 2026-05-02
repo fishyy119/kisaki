@@ -1,5 +1,6 @@
 export * from './core'
 export * from './lifecycle'
+export * from './runtime'
 export * from './contributions'
 export * from './capabilities'
 
@@ -19,13 +20,15 @@ import type {
   RpcTypedResponseMessage
 } from './core'
 import type { MainToHostLifecycleRpcRequestMap } from './lifecycle'
+import type { HostToMainRuntimeRpcRequestMap, MainToHostRuntimeRpcEventMap } from './runtime'
 
 export type MainToHostRpcRequestMap = MainToHostLifecycleRpcRequestMap &
   MainToHostContributionRpcRequestMap
 
-export type MainToHostRpcEventMap = MainToHostCapabilityRpcEventMap
+export type MainToHostRpcEventMap = MainToHostRuntimeRpcEventMap & MainToHostCapabilityRpcEventMap
 
 export type HostToMainRpcRequestMap = HostToMainContributionRpcRequestMap &
+  HostToMainRuntimeRpcRequestMap &
   HostToMainCapabilityRpcRequestMap
 
 export type HostToMainRpcEventMap = Record<never, never>

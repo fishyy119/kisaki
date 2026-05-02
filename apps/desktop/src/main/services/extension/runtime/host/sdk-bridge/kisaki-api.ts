@@ -312,6 +312,111 @@ export function createKisakiApi(
       openExternal: async (url: string) => {
         await requestMain('capabilities.runtime.openExternal', { url })
       }
+    },
+    scrapers: {
+      profiles: {
+        list: async (query) =>
+          (
+            await requestMain('capabilities.scrapers.profiles.list', {
+              query
+            })
+          ).items,
+        get: async (profileId) =>
+          (
+            await requestMain('capabilities.scrapers.profiles.get', {
+              profileId
+            })
+          ).profile
+      }
+    },
+    ingest: {
+      games: {
+        addFromScraper: async (profileId, lookup, options) =>
+          (
+            await requestMain('capabilities.ingest.games.addFromScraper', {
+              profileId,
+              lookup,
+              options
+            })
+          ).result
+      }
+    },
+    commands: {
+      list: async () => (await requestMain('capabilities.commands.list', {})).items,
+      get: async (commandId) =>
+        (
+          await requestMain('capabilities.commands.get', {
+            commandId
+          })
+        ).command,
+      start: async (request) =>
+        (
+          await requestMain('capabilities.commands.start', {
+            request
+          })
+        ).result,
+      wait: async (executionId) =>
+        (
+          await requestMain('capabilities.commands.wait', {
+            executionId
+          })
+        ).result,
+      execute: async (request) =>
+        (
+          await requestMain('capabilities.commands.execute', {
+            request
+          })
+        ).result,
+      cancel: async (executionId) =>
+        (
+          await requestMain('capabilities.commands.cancel', {
+            executionId
+          })
+        ).cancelled
+    },
+    backgroundTasks: {
+      list: async () => (await requestMain('capabilities.backgroundTasks.list', {})).items,
+      get: async (taskId) =>
+        (
+          await requestMain('capabilities.backgroundTasks.get', {
+            taskId
+          })
+        ).task,
+      create: async (input) =>
+        (
+          await requestMain('capabilities.backgroundTasks.create', {
+            input
+          })
+        ).task,
+      update: async (taskId, patch) =>
+        (
+          await requestMain('capabilities.backgroundTasks.update', {
+            taskId,
+            patch
+          })
+        ).task,
+      setEnabled: async (taskId, enabled) =>
+        (
+          await requestMain('capabilities.backgroundTasks.setEnabled', {
+            taskId,
+            enabled
+          })
+        ).task,
+      delete: async (taskId) => {
+        await requestMain('capabilities.backgroundTasks.delete', { taskId })
+      },
+      run: async (taskId) =>
+        (
+          await requestMain('capabilities.backgroundTasks.run', {
+            taskId
+          })
+        ).record,
+      cancel: async (taskId) =>
+        (
+          await requestMain('capabilities.backgroundTasks.cancel', {
+            taskId
+          })
+        ).cancelled
     }
   }
 }
@@ -337,6 +442,18 @@ export function createScopeCapturingKisakiApi(
     },
     get runtime() {
       return getApi().runtime
+    },
+    get scrapers() {
+      return getApi().scrapers
+    },
+    get ingest() {
+      return getApi().ingest
+    },
+    get commands() {
+      return getApi().commands
+    },
+    get backgroundTasks() {
+      return getApi().backgroundTasks
     }
   }
 }

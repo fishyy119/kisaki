@@ -7,10 +7,12 @@ import type {
   RpcResult
 } from '@kisaki/extension-api'
 import type { DeeplinkService } from '@main/services/deeplink'
+import type { CommandService } from '@main/services/command'
 import type { ScraperService } from '@main/services/scraper'
 import type { RpcRequestOptions } from '../runtime/rpc-core'
 
 export interface ExtensionContributionHostOptions {
+  command?: CommandService
   deeplink?: DeeplinkService
   scraper?: ScraperService
   onDidChange?: () => void

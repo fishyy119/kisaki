@@ -1,5 +1,22 @@
 import type { HostEventTopic, HostEvents } from '../capabilities/events'
 import type {
+  BackgroundTask,
+  BackgroundTaskCreateInput,
+  BackgroundTaskRunRecord,
+  BackgroundTaskUpdateInput
+} from '../capabilities/background-tasks'
+import type {
+  CommandDescriptor,
+  CommandExecutionResult,
+  CommandExecutionStartResult,
+  CommandListItem,
+  CommandExecutionRequest
+} from '../capabilities/commands'
+import type {
+  IngestAddGameFromScraperOptions,
+  IngestAddGameFromScraperResult
+} from '../capabilities/ingest'
+import type {
   LibraryAttachment,
   LibraryAttachmentRemoveInput,
   LibraryAttachmentWriteInput,
@@ -41,41 +58,10 @@ import type {
 } from '../capabilities/network'
 import type { NotificationHandle, NotificationKind, NotifyOptions } from '../capabilities/notify'
 import type { RuntimeInfo } from '../capabilities/runtime'
-import type { SerializableValue } from '../shared'
-import { RPC_ABORT_EVENT, type RpcMethodDefinition, type RpcNoPayload, type RpcValue } from './core'
+import type { ScraperProfileListQuery, ScraperProfileSummary } from '../capabilities/scrapers'
+import type { ScraperLookup } from '../contributions/scrapers'
+import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
-
-export interface ExtensionLogRequest extends ExtensionScopedRpcParams {
-  level: 'debug' | 'info' | 'warn' | 'error'
-  message: string
-  args: readonly RpcValue[]
-}
-
-export interface StorageGetRequest extends ExtensionScopedRpcParams {
-  key: string
-  fallback: SerializableValue
-}
-
-export interface StorageGetResult {
-  value: SerializableValue
-}
-
-export interface StorageSetRequest extends ExtensionScopedRpcParams {
-  key: string
-  value: SerializableValue
-}
-
-export interface StorageDeleteRequest extends ExtensionScopedRpcParams {
-  key: string
-}
-
-export interface StorageListKeysRequest extends ExtensionScopedRpcParams {
-  prefix?: string
-}
-
-export interface StorageListKeysResult {
-  keys: readonly string[]
-}
 
 export interface NotifyShowRequest extends ExtensionScopedRpcParams {
   kind: NotificationKind
@@ -111,6 +97,66 @@ export interface HostEventNotification {
   payload: HostEvents[HostEventTopic]
 }
 
+export interface CommandGetRequest extends ExtensionScopedRpcParams {
+  commandId: string
+}
+
+export interface CommandExecutionRpcRequest extends ExtensionScopedRpcParams {
+  request: CommandExecutionRequest
+}
+
+export interface CommandWaitRequest extends ExtensionScopedRpcParams {
+  executionId: string
+}
+
+export interface CommandCancelRequest extends ExtensionScopedRpcParams {
+  executionId: string
+}
+
+export interface ScraperProfilesListRequest extends ExtensionScopedRpcParams {
+  query?: ScraperProfileListQuery
+}
+
+export interface ScraperProfileGetRequest extends ExtensionScopedRpcParams {
+  profileId: string
+}
+
+export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParams {
+  profileId: string
+  lookup: ScraperLookup
+  options?: IngestAddGameFromScraperOptions
+}
+
+export interface BackgroundTaskCreateRequest extends ExtensionScopedRpcParams {
+  input: BackgroundTaskCreateInput
+}
+
+export interface BackgroundTaskGetRequest extends ExtensionScopedRpcParams {
+  taskId: string
+}
+
+export interface BackgroundTaskUpdateRequest extends ExtensionScopedRpcParams {
+  taskId: string
+  patch: BackgroundTaskUpdateInput
+}
+
+export interface BackgroundTaskSetEnabledRequest extends ExtensionScopedRpcParams {
+  taskId: string
+  enabled: boolean
+}
+
+export interface BackgroundTaskDeleteRequest extends ExtensionScopedRpcParams {
+  taskId: string
+}
+
+export interface BackgroundTaskRunRequest extends ExtensionScopedRpcParams {
+  taskId: string
+}
+
+export interface BackgroundTaskCancelRequest extends ExtensionScopedRpcParams {
+  taskId: string
+}
+
 export type LibraryEntityRpcRequestMap<TPrefix extends string, TEntity, TCreate, TPatch, TQuery> = {
   [K in `${TPrefix}.get`]: RpcMethodDefinition<
     ExtensionScopedRpcParams & { id: string },
@@ -139,11 +185,6 @@ export type LibraryEntityRpcRequestMap<TPrefix extends string, TEntity, TCreate,
 }
 
 export type HostToMainCapabilityRpcRequestMap = {
-  'bridge.logger.log': RpcMethodDefinition<ExtensionLogRequest, RpcNoPayload>
-  'bridge.storage.get': RpcMethodDefinition<StorageGetRequest, StorageGetResult>
-  'bridge.storage.set': RpcMethodDefinition<StorageSetRequest, RpcNoPayload>
-  'bridge.storage.delete': RpcMethodDefinition<StorageDeleteRequest, RpcNoPayload>
-  'bridge.storage.listKeys': RpcMethodDefinition<StorageListKeysRequest, StorageListKeysResult>
   'capabilities.library.relations.list': RpcMethodDefinition<
     ExtensionScopedRpcParams & { query?: LibraryRelationQuery },
     { items: readonly LibraryRelation[] }
@@ -185,6 +226,71 @@ export type HostToMainCapabilityRpcRequestMap = {
   'capabilities.notify.dismiss': RpcMethodDefinition<NotifyDismissRequest, RpcNoPayload>
   'capabilities.runtime.getInfo': RpcMethodDefinition<RuntimeInfoRequest, { info: RuntimeInfo }>
   'capabilities.runtime.openExternal': RpcMethodDefinition<RuntimeOpenExternalRequest, RpcNoPayload>
+  'capabilities.scrapers.profiles.list': RpcMethodDefinition<
+    ScraperProfilesListRequest,
+    { items: readonly ScraperProfileSummary[] }
+  >
+  'capabilities.scrapers.profiles.get': RpcMethodDefinition<
+    ScraperProfileGetRequest,
+    { profile: ScraperProfileSummary | null }
+  >
+  'capabilities.ingest.games.addFromScraper': RpcMethodDefinition<
+    IngestGameAddFromScraperRequest,
+    { result: IngestAddGameFromScraperResult }
+  >
+  'capabilities.commands.list': RpcMethodDefinition<
+    ExtensionScopedRpcParams,
+    { items: readonly CommandListItem[] }
+  >
+  'capabilities.commands.get': RpcMethodDefinition<
+    CommandGetRequest,
+    { command: CommandDescriptor | null }
+  >
+  'capabilities.commands.start': RpcMethodDefinition<
+    CommandExecutionRpcRequest,
+    { result: CommandExecutionStartResult }
+  >
+  'capabilities.commands.wait': RpcMethodDefinition<
+    CommandWaitRequest,
+    { result: CommandExecutionResult }
+  >
+  'capabilities.commands.execute': RpcMethodDefinition<
+    CommandExecutionRpcRequest,
+    { result: CommandExecutionResult }
+  >
+  'capabilities.commands.cancel': RpcMethodDefinition<CommandCancelRequest, { cancelled: boolean }>
+  'capabilities.backgroundTasks.list': RpcMethodDefinition<
+    ExtensionScopedRpcParams,
+    { items: readonly BackgroundTask[] }
+  >
+  'capabilities.backgroundTasks.get': RpcMethodDefinition<
+    BackgroundTaskGetRequest,
+    { task: BackgroundTask | null }
+  >
+  'capabilities.backgroundTasks.create': RpcMethodDefinition<
+    BackgroundTaskCreateRequest,
+    { task: BackgroundTask }
+  >
+  'capabilities.backgroundTasks.update': RpcMethodDefinition<
+    BackgroundTaskUpdateRequest,
+    { task: BackgroundTask }
+  >
+  'capabilities.backgroundTasks.setEnabled': RpcMethodDefinition<
+    BackgroundTaskSetEnabledRequest,
+    { task: BackgroundTask }
+  >
+  'capabilities.backgroundTasks.delete': RpcMethodDefinition<
+    BackgroundTaskDeleteRequest,
+    RpcNoPayload
+  >
+  'capabilities.backgroundTasks.run': RpcMethodDefinition<
+    BackgroundTaskRunRequest,
+    { record: BackgroundTaskRunRecord }
+  >
+  'capabilities.backgroundTasks.cancel': RpcMethodDefinition<
+    BackgroundTaskCancelRequest,
+    { cancelled: boolean }
+  >
   'capabilities.events.subscribeHost': RpcMethodDefinition<
     HostEventSubscriptionRequest,
     RpcNoPayload
@@ -237,6 +343,5 @@ export type HostToMainCapabilityRpcRequestMap = {
   >
 
 export interface MainToHostCapabilityRpcEventMap {
-  [RPC_ABORT_EVENT]: { requestId: string }
   'capabilities.events.host': HostEventNotification
 }

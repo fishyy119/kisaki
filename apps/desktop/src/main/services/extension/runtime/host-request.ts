@@ -8,6 +8,7 @@ import {
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions/registry'
 import type { ExtensionHostRpcClient } from './rpc-client'
+import type { ExtensionRuntimeSecrets } from './secrets'
 import type { ExtensionRuntimeStorage } from './storage'
 
 const EMPTY_RPC_RESULT = Object.freeze({})
@@ -15,13 +16,14 @@ const EMPTY_RPC_RESULT = Object.freeze({})
 export interface HostRequestOptions {
   rpc: ExtensionHostRpcClient
   storage: ExtensionRuntimeStorage
+  secrets: ExtensionRuntimeSecrets
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
 }
 
 export function registerHostRequests(options: HostRequestOptions): void {
-  options.rpc.handleHostRequest('bridge.logger.log', async (params) => {
+  options.rpc.handleHostRequest('runtime.logger.log', async (params) => {
     try {
       const extension = requireRuntimeHandle(options, params.runtimeHandle)
       writeExtensionLog(extension.id, params.level, params.message, params.args)
@@ -31,7 +33,7 @@ export function registerHostRequests(options: HostRequestOptions): void {
     }
   })
 
-  options.rpc.handleHostRequest('bridge.storage.get', async (params, context) => {
+  options.rpc.handleHostRequest('runtime.storage.get', async (params, context) => {
     try {
       const value = await options.storage.get(
         params.runtimeHandle,
@@ -45,7 +47,7 @@ export function registerHostRequests(options: HostRequestOptions): void {
     }
   })
 
-  options.rpc.handleHostRequest('bridge.storage.set', async (params, context) => {
+  options.rpc.handleHostRequest('runtime.storage.set', async (params, context) => {
     try {
       await options.storage.set(params.runtimeHandle, params.key, params.value, context.signal)
       return EMPTY_RPC_RESULT
@@ -54,7 +56,7 @@ export function registerHostRequests(options: HostRequestOptions): void {
     }
   })
 
-  options.rpc.handleHostRequest('bridge.storage.delete', async (params, context) => {
+  options.rpc.handleHostRequest('runtime.storage.delete', async (params, context) => {
     try {
       await options.storage.delete(params.runtimeHandle, params.key, context.signal)
       return EMPTY_RPC_RESULT
@@ -63,7 +65,7 @@ export function registerHostRequests(options: HostRequestOptions): void {
     }
   })
 
-  options.rpc.handleHostRequest('bridge.storage.listKeys', async (params, context) => {
+  options.rpc.handleHostRequest('runtime.storage.listKeys', async (params, context) => {
     try {
       const keys = await options.storage.listKeys(
         params.runtimeHandle,
@@ -73,6 +75,46 @@ export function registerHostRequests(options: HostRequestOptions): void {
       return { keys }
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to list extension storage keys.')
+    }
+  })
+
+  options.rpc.handleHostRequest('runtime.secrets.get', async (params, context) => {
+    try {
+      const value = await options.secrets.get(params.runtimeHandle, params.key, context.signal)
+      return value === undefined ? EMPTY_RPC_RESULT : { value }
+    } catch (error) {
+      throw normalizeCapabilityError(error, 'Failed to read extension secret.')
+    }
+  })
+
+  options.rpc.handleHostRequest('runtime.secrets.set', async (params, context) => {
+    try {
+      await options.secrets.set(params.runtimeHandle, params.key, params.value, context.signal)
+      return EMPTY_RPC_RESULT
+    } catch (error) {
+      throw normalizeCapabilityError(error, 'Failed to write extension secret.')
+    }
+  })
+
+  options.rpc.handleHostRequest('runtime.secrets.delete', async (params, context) => {
+    try {
+      await options.secrets.delete(params.runtimeHandle, params.key, context.signal)
+      return EMPTY_RPC_RESULT
+    } catch (error) {
+      throw normalizeCapabilityError(error, 'Failed to delete extension secret.')
+    }
+  })
+
+  options.rpc.handleHostRequest('runtime.secrets.listKeys', async (params, context) => {
+    try {
+      const keys = await options.secrets.listKeys(
+        params.runtimeHandle,
+        params.prefix,
+        context.signal
+      )
+      return { keys }
+    } catch (error) {
+      throw normalizeCapabilityError(error, 'Failed to list extension secret keys.')
     }
   })
 

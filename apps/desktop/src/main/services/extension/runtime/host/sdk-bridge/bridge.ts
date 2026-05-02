@@ -3,7 +3,9 @@ import { randomUUID } from 'node:crypto'
 import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
+  CommandContribution,
   DeeplinkContribution,
+  DeeplinkRegistrationHandle,
   Disposable,
   DisposableStore,
   EntityMenuContribution,
@@ -27,6 +29,7 @@ import type {
 import { isExtensionEventTopic } from '@kisaki/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
+import { HostCommandContributions } from '../contributions/commands'
 import { HostDeeplinkContributions } from '../contributions/deeplinks'
 import { HostEntityMenuContributions } from '../contributions/entity-menus'
 import { HostScraperContributions, MAIN_TO_HOST_SCRAPER_RPC } from '../contributions/scrapers'
@@ -43,6 +46,7 @@ import { createExtensionLogger } from './logger'
 import { resolveInsideExtension } from './utils/paths'
 import {
   createDeeplinkRegistrar,
+  createCommandRegistrar,
   createEntityMenuRegistrar,
   createScraperRegistrar,
   createSettingsRegistrar,
@@ -50,6 +54,7 @@ import {
 } from './registrars'
 import { toSerializableRecord } from './utils/serialization'
 import { createExtensionStorage } from './storage'
+import { createExtensionSecrets } from './secrets'
 import { configureExtensionSdkBridge, resetExtensionSdkBridge } from './store'
 import type {
   ActiveExtensionScope,
@@ -78,6 +83,7 @@ export class ExtensionHostSdkBridge {
   private readonly scrapers: HostScraperContributions
   private readonly deeplinks: HostDeeplinkContributions
   private readonly themes: HostThemeContributions
+  private readonly commands: HostCommandContributions
   private readonly hostEventSubscriptions = new Map<string, HostEventSubscriptionRecord>()
   private readonly extensionEventListeners = new Map<
     ExtensionEventTopic,
@@ -110,6 +116,7 @@ export class ExtensionHostSdkBridge {
     this.scrapers = new HostScraperContributions(contributionOptions)
     this.deeplinks = new HostDeeplinkContributions(contributionOptions)
     this.themes = new HostThemeContributions(contributionOptions)
+    this.commands = new HostCommandContributions(contributionOptions)
     this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
       this.handleHostEventNotification(payload)
     )
@@ -126,6 +133,7 @@ export class ExtensionHostSdkBridge {
     await this.scrapers.releaseAll()
     this.deeplinks.releaseAll()
     this.themes.releaseAll()
+    this.commands.releaseAll()
     this.pendingMainRequests.clear()
     this.scopedApis.clear()
     this.hostEventSubscriptions.clear()
@@ -134,40 +142,43 @@ export class ExtensionHostSdkBridge {
   }
 
   registerContributionRpcHandlers(): void {
-    this.rpc.handle('entityMenus.resolve', (params, context) =>
+    this.rpc.handle('contributions.entityMenus.resolve', (params, context) =>
       this.entityMenus.resolve(params, context.signal)
     )
-    this.rpc.handle('entityMenus.invoke', (params, context) =>
+    this.rpc.handle('contributions.entityMenus.invoke', (params, context) =>
       this.entityMenus.invoke(params, context.signal)
     )
-    this.rpc.handle('entityMenus.session.release', (params) => {
+    this.rpc.handle('contributions.entityMenus.session.release', (params) => {
       this.entityMenus.releaseSession(params)
       return {}
     })
-    this.rpc.handle('settings.open', (params, context) =>
+    this.rpc.handle('contributions.settings.open', (params, context) =>
       this.settings.open(params, context.signal)
     )
-    this.rpc.handle('settings.frame.open', (params, context) =>
+    this.rpc.handle('contributions.settings.frame.open', (params, context) =>
       this.settings.openFrame(params, context.signal)
     )
-    this.rpc.handle('settings.frame.refresh', (params, context) =>
+    this.rpc.handle('contributions.settings.frame.refresh', (params, context) =>
       this.settings.refreshFrame(params, context.signal)
     )
-    this.rpc.handle('settings.submit', (params, context) =>
+    this.rpc.handle('contributions.settings.submit', (params, context) =>
       this.settings.submit(params, context.signal)
     )
-    this.rpc.handle('settings.invoke', (params, context) =>
+    this.rpc.handle('contributions.settings.invoke', (params, context) =>
       this.settings.invoke(params, context.signal)
     )
-    this.rpc.handle('settings.frame.release', (params) => {
+    this.rpc.handle('contributions.settings.frame.release', (params) => {
       this.settings.releaseFrame(params)
       return {}
     })
-    this.rpc.handle('settings.session.release', (params) => {
+    this.rpc.handle('contributions.settings.session.release', (params) => {
       this.settings.releaseSession(params)
       return {}
     })
-    this.rpc.handle('deeplinks.handle', (params) => this.deeplinks.handle(params))
+    this.rpc.handle('contributions.deeplinks.handle', (params) => this.deeplinks.handle(params))
+    this.rpc.handle('contributions.commands.execute', (params, context) =>
+      this.commands.execute(params, context.signal)
+    )
     this.registerScraperRpcHandlers()
   }
 
@@ -230,6 +241,7 @@ export class ExtensionHostSdkBridge {
     await this.scrapers.releaseRuntime(runtimeHandle)
     this.deeplinks.releaseRuntime(runtimeHandle)
     this.themes.releaseRuntime(runtimeHandle)
+    this.commands.releaseRuntime(runtimeHandle)
     await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
     this.disposeExtensionEventListenersForRuntime(runtimeHandle)
     this.scopedApis.delete(runtimeHandle)
@@ -252,9 +264,11 @@ export class ExtensionHostSdkBridge {
         extension: options.extension,
         logger: this.bridge.createLogger(scope, options.extension),
         storage: this.bridge.createStorage(scope),
+        secrets: this.bridge.createSecrets(scope),
         subscriptions,
         abortSignal: options.abortSignal,
-        contributes: {
+        contributions: {
+          commands: createCommandRegistrar(this.bridge, subscriptions, scope),
           entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions, scope),
           settings: createSettingsRegistrar(this.bridge, subscriptions, scope),
           scrapers: createScraperRegistrar(this.bridge, subscriptions, scope),
@@ -297,6 +311,13 @@ export class ExtensionHostSdkBridge {
           rpc: this.rpc,
           getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
         }),
+      createSecrets: (scope) =>
+        createExtensionSecrets({
+          scope,
+          rpc: this.rpc,
+          getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
+        }),
+      registerCommand: (scope, command) => this.registerCommand(scope, command),
       registerEntityMenu: (scope, contribution) => this.registerEntityMenu(scope, contribution),
       registerSettings: (scope, contribution) => this.registerSettings(scope, contribution),
       registerGameScraperProvider: (scope, provider) =>
@@ -352,6 +373,13 @@ export class ExtensionHostSdkBridge {
     )
   }
 
+  private async registerCommand(
+    scope: ActiveExtensionScope,
+    command: CommandContribution
+  ): Promise<Disposable> {
+    return this.commands.register(scope, command)
+  }
+
   private registerEntityMenu(
     scope: ActiveExtensionScope,
     contribution: EntityMenuContribution
@@ -397,7 +425,7 @@ export class ExtensionHostSdkBridge {
   private registerDeeplink(
     scope: ActiveExtensionScope,
     contribution: DeeplinkContribution
-  ): Disposable {
+  ): DeeplinkRegistrationHandle {
     return this.deeplinks.register(scope, contribution)
   }
 

@@ -1,7 +1,7 @@
 import type { Disposable, SerializableValue } from '../../shared'
 
 export interface DeeplinkRequest {
-  route: string
+  path: string
   params: Record<string, string>
   rawUrl: string
 }
@@ -15,10 +15,14 @@ export interface DeeplinkResponse {
 
 export interface DeeplinkContribution {
   id: string
-  route: string
+  path: string
   handle(input: DeeplinkRequest): Promise<DeeplinkResponse>
 }
 
+export interface DeeplinkRegistrationHandle extends Disposable {
+  readonly url: string
+}
+
 export interface DeeplinkRegistrar {
-  register(contribution: DeeplinkContribution): Disposable
+  register(contribution: DeeplinkContribution): DeeplinkRegistrationHandle
 }

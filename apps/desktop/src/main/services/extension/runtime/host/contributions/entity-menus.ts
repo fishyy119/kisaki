@@ -72,7 +72,7 @@ export class HostEntityMenuContributions {
     this.options.trackMainRequest(
       scope,
       this.options.rpc.requestMain(
-        'bridge.entityMenus.register',
+        'contributions.entityMenus.register',
         {
           runtimeHandle: scope.runtimeHandle,
           contribution: {
@@ -103,7 +103,7 @@ export class HostEntityMenuContributions {
     }
 
     await this.options.rpc.requestMain(
-      'bridge.entityMenus.unregister',
+      'contributions.entityMenus.unregister',
       {
         runtimeHandle: scope.runtimeHandle,
         contributionId

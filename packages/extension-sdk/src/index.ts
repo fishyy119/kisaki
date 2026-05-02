@@ -22,5 +22,17 @@ export const kisaki: KisakiApi = {
   },
   get runtime() {
     return getExtensionSdkBridge().api.runtime
+  },
+  get scrapers() {
+    return getExtensionSdkBridge().api.scrapers
+  },
+  get ingest() {
+    return getExtensionSdkBridge().api.ingest
+  },
+  get commands() {
+    return getExtensionSdkBridge().api.commands
+  },
+  get backgroundTasks() {
+    return getExtensionSdkBridge().api.backgroundTasks
   }
 }
