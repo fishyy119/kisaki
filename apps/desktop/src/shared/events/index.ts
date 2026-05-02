@@ -6,8 +6,28 @@
  * Defines application-owned events shared between main and renderer.
  */
 
-import type { AppLocale } from './locale'
-import type { TableName } from './db/table-names'
+import type { AppLocale } from '../locale'
+import type {
+  LibraryCharacterCreatedEvent,
+  LibraryCharacterDeletedEvent,
+  LibraryCharacterUpdatedEvent,
+  LibraryCollectionCreatedEvent,
+  LibraryCollectionDeletedEvent,
+  LibraryCollectionUpdatedEvent,
+  LibraryCompanyCreatedEvent,
+  LibraryCompanyDeletedEvent,
+  LibraryCompanyUpdatedEvent,
+  LibraryGameCreatedEvent,
+  LibraryGameDeletedEvent,
+  LibraryGameUpdatedEvent,
+  LibraryPersonCreatedEvent,
+  LibraryPersonDeletedEvent,
+  LibraryPersonUpdatedEvent,
+  LibraryTagCreatedEvent,
+  LibraryTagDeletedEvent,
+  LibraryTagUpdatedEvent,
+  RawDbChangeEvent
+} from './library'
 
 // =============================================================================
 // Application Events
@@ -25,9 +45,29 @@ export interface AppEvents {
   // =========================================================================
 
   'db:ready': [boolean]
-  'db:inserted': [{ table: TableName; id: string }]
-  'db:updated': [{ table: TableName; id: string }]
-  'db:deleted': [{ table: TableName; id: string }]
+  'db:inserted': [RawDbChangeEvent]
+  'db:updated': [RawDbChangeEvent]
+  'db:deleted': [RawDbChangeEvent]
+
+  // Typed library domain events
+  'library.game.created': [LibraryGameCreatedEvent]
+  'library.game.updated': [LibraryGameUpdatedEvent]
+  'library.game.deleted': [LibraryGameDeletedEvent]
+  'library.person.created': [LibraryPersonCreatedEvent]
+  'library.person.updated': [LibraryPersonUpdatedEvent]
+  'library.person.deleted': [LibraryPersonDeletedEvent]
+  'library.company.created': [LibraryCompanyCreatedEvent]
+  'library.company.updated': [LibraryCompanyUpdatedEvent]
+  'library.company.deleted': [LibraryCompanyDeletedEvent]
+  'library.character.created': [LibraryCharacterCreatedEvent]
+  'library.character.updated': [LibraryCharacterUpdatedEvent]
+  'library.character.deleted': [LibraryCharacterDeletedEvent]
+  'library.collection.created': [LibraryCollectionCreatedEvent]
+  'library.collection.updated': [LibraryCollectionUpdatedEvent]
+  'library.collection.deleted': [LibraryCollectionDeletedEvent]
+  'library.tag.created': [LibraryTagCreatedEvent]
+  'library.tag.updated': [LibraryTagUpdatedEvent]
+  'library.tag.deleted': [LibraryTagDeletedEvent]
 
   // =========================================================================
   // Entity Events

@@ -1,17 +1,18 @@
-import type {
-  AppLocale,
-  Disposable,
-  ExternalId,
-  LibraryBloodType,
-  LibraryCupSize,
-  LibraryGender,
-  MaybePromise,
-  PartialDate,
-  RelatedSite,
-  SerializableRecord,
-  SerializableValue
-} from '../shared'
-import type { DynamicCollectionConfig, LibraryGameStatus } from './library/entities'
+import type { BloodType, CupSize, Gender, Status } from '../db/enums'
+import type { DynamicCollectionConfig, PartialDate, RelatedSite } from '../db/json-types'
+import type { TableName } from '../db/table-names'
+import type { ExternalId } from '../identity'
+
+export type RawDbChangeOperation = 'inserted' | 'updated' | 'deleted'
+
+export interface RawDbChangeEvent {
+  operation: RawDbChangeOperation
+  table: TableName
+  id: string
+  old?: Record<string, unknown>
+  next?: Record<string, unknown>
+  occurredAt: number
+}
 
 export interface LibraryGameCoreSnapshot {
   name?: string
@@ -27,66 +28,71 @@ export interface LibraryGameAssetSnapshot {
   iconFile?: string | null
 }
 
+export interface LibraryGameActivitySnapshot {
+  totalDuration?: number
+  lastActiveAt?: number | null
+}
+
 export interface LibraryGameRelationSnapshot {
-  personLinkIds: readonly string[]
-  companyLinkIds: readonly string[]
-  characterLinkIds: readonly string[]
+  personLinkIds: string[]
+  companyLinkIds: string[]
+  characterLinkIds: string[]
 }
 
 export type LibraryGameChange =
   | {
       facet: 'status'
-      before: { status: LibraryGameStatus }
-      after: { status: LibraryGameStatus }
-      fields?: readonly ['status']
+      before: { status: Status }
+      after: { status: Status }
+      fields?: ['status']
     }
   | {
       facet: 'score'
       before: { score: number | null }
       after: { score: number | null }
-      fields?: readonly ['score']
+      fields?: ['score']
     }
   | {
       facet: 'identity'
-      before: { externalIds: readonly ExternalId[] }
-      after: { externalIds: readonly ExternalId[] }
-      fields?: readonly string[]
+      before: { externalIds: ExternalId[] }
+      after: { externalIds: ExternalId[] }
+      fields?: string[]
     }
   | {
       facet: 'activity'
-      before: { totalDuration?: number; lastActiveAt?: number | null }
-      after: { totalDuration?: number; lastActiveAt?: number | null }
-      fields?: readonly string[]
+      before: LibraryGameActivitySnapshot
+      after: LibraryGameActivitySnapshot
+      fields?: string[]
     }
   | {
       facet: 'tags'
-      before: { tagIds: readonly string[] }
-      after: { tagIds: readonly string[] }
-      fields?: readonly string[]
+      before: { tagIds: string[] }
+      after: { tagIds: string[] }
+      fields?: string[]
     }
   | {
       facet: 'collections'
-      before: { collectionIds: readonly string[] }
-      after: { collectionIds: readonly string[] }
-      fields?: readonly string[]
+      before: { collectionIds: string[] }
+      after: { collectionIds: string[] }
+      fields?: string[]
     }
   | {
       facet: 'assets'
       before: Partial<LibraryGameAssetSnapshot>
       after: Partial<LibraryGameAssetSnapshot>
-      fields?: readonly string[]
+      fields?: string[]
     }
   | {
       facet: 'relations'
       before: LibraryGameRelationSnapshot
       after: LibraryGameRelationSnapshot
-      fields?: readonly string[]
+      fields?: string[]
     }
   | {
       facet: 'core'
       before: Partial<LibraryGameCoreSnapshot>
       after: Partial<LibraryGameCoreSnapshot>
-      fields?: readonly string[]
+      fields?: string[]
     }
 
 export interface LibraryGameCreatedEvent {
@@ -97,7 +103,7 @@ export interface LibraryGameCreatedEvent {
 
 export interface LibraryGameUpdatedEvent {
   gameId: string
-  changes: readonly LibraryGameChange[]
+  changes: LibraryGameChange[]
   occurredAt: number
 }
 
@@ -115,8 +121,8 @@ export interface LibraryPersonCoreSnapshot {
   isNsfw?: boolean
   birthDate?: PartialDate | null
   deathDate?: PartialDate | null
-  gender?: LibraryGender | null
-  relatedSites?: readonly RelatedSite[]
+  gender?: Gender | null
+  relatedSites?: RelatedSite[]
 }
 
 export interface LibraryCompanyCoreSnapshot {
@@ -127,7 +133,7 @@ export interface LibraryCompanyCoreSnapshot {
   isFavorite?: boolean
   isNsfw?: boolean
   foundedDate?: PartialDate | null
-  relatedSites?: readonly RelatedSite[]
+  relatedSites?: RelatedSite[]
 }
 
 export interface LibraryCharacterCoreSnapshot {
@@ -138,16 +144,16 @@ export interface LibraryCharacterCoreSnapshot {
   isFavorite?: boolean
   isNsfw?: boolean
   birthDate?: PartialDate | null
-  gender?: LibraryGender | null
-  bloodType?: LibraryBloodType | null
+  gender?: Gender | null
+  bloodType?: BloodType | null
   height?: number | null
   weight?: number | null
   bust?: number | null
   waist?: number | null
   hips?: number | null
-  cup?: LibraryCupSize | null
+  cup?: CupSize | null
   age?: number | null
-  relatedSites?: readonly RelatedSite[]
+  relatedSites?: RelatedSite[]
 }
 
 export interface LibraryCollectionCoreSnapshot {
@@ -185,66 +191,66 @@ export interface LibraryCollectionAssetSnapshot {
 }
 
 export interface LibraryCollectionMembershipSnapshot {
-  gameIds?: readonly string[]
-  personIds?: readonly string[]
-  companyIds?: readonly string[]
-  characterIds?: readonly string[]
+  gameIds?: string[]
+  personIds?: string[]
+  companyIds?: string[]
+  characterIds?: string[]
 }
 
 export type LibraryCoreChange<TSnapshot extends object> = {
   facet: 'core'
   before: Partial<TSnapshot>
   after: Partial<TSnapshot>
-  fields?: readonly string[]
+  fields?: string[]
 }
 
 export type LibraryScoreChange = {
   facet: 'score'
   before: { score: number | null }
   after: { score: number | null }
-  fields?: readonly ['score']
+  fields?: ['score']
 }
 
 export type LibraryIdentityChange = {
   facet: 'identity'
-  before: { externalIds: readonly ExternalId[] }
-  after: { externalIds: readonly ExternalId[] }
-  fields?: readonly string[]
+  before: { externalIds: ExternalId[] }
+  after: { externalIds: ExternalId[] }
+  fields?: string[]
 }
 
 export type LibraryTagsChange = {
   facet: 'tags'
-  before: { tagIds: readonly string[] }
-  after: { tagIds: readonly string[] }
-  fields?: readonly string[]
+  before: { tagIds: string[] }
+  after: { tagIds: string[] }
+  fields?: string[]
 }
 
 export type LibraryAssetChange<TSnapshot extends object> = {
   facet: 'assets'
   before: Partial<TSnapshot>
   after: Partial<TSnapshot>
-  fields?: readonly string[]
+  fields?: string[]
 }
 
 export type LibraryRelationsChange<TSnapshot extends object> = {
   facet: 'relations'
   before: TSnapshot
   after: TSnapshot
-  fields?: readonly string[]
+  fields?: string[]
 }
 
 export type LibraryMembershipChange<TSnapshot extends object> = {
   facet: 'membership'
   before: TSnapshot
   after: TSnapshot
-  fields?: readonly string[]
+  fields?: string[]
 }
 
 export type LibraryDynamicConfigChange = {
   facet: 'dynamicConfig'
   before: Partial<LibraryCollectionDynamicConfigSnapshot>
   after: Partial<LibraryCollectionDynamicConfigSnapshot>
-  fields?: readonly string[]
+  fields?: string[]
 }
 
 export type LibraryPersonChange =
@@ -276,6 +282,13 @@ export type LibraryCollectionChange =
 
 export type LibraryTagChange = LibraryCoreChange<LibraryTagCoreSnapshot>
 
+export type LibraryEntityChange =
+  | LibraryPersonChange
+  | LibraryCompanyChange
+  | LibraryCharacterChange
+  | LibraryCollectionChange
+  | LibraryTagChange
+
 export interface LibraryPersonCreatedEvent {
   personId: string
   name?: string
@@ -284,7 +297,7 @@ export interface LibraryPersonCreatedEvent {
 
 export interface LibraryPersonUpdatedEvent {
   personId: string
-  changes: readonly LibraryPersonChange[]
+  changes: LibraryPersonChange[]
   occurredAt: number
 }
 
@@ -301,7 +314,7 @@ export interface LibraryCompanyCreatedEvent {
 
 export interface LibraryCompanyUpdatedEvent {
   companyId: string
-  changes: readonly LibraryCompanyChange[]
+  changes: LibraryCompanyChange[]
   occurredAt: number
 }
 
@@ -318,7 +331,7 @@ export interface LibraryCharacterCreatedEvent {
 
 export interface LibraryCharacterUpdatedEvent {
   characterId: string
-  changes: readonly LibraryCharacterChange[]
+  changes: LibraryCharacterChange[]
   occurredAt: number
 }
 
@@ -335,7 +348,7 @@ export interface LibraryCollectionCreatedEvent {
 
 export interface LibraryCollectionUpdatedEvent {
   collectionId: string
-  changes: readonly LibraryCollectionChange[]
+  changes: LibraryCollectionChange[]
   occurredAt: number
 }
 
@@ -352,70 +365,11 @@ export interface LibraryTagCreatedEvent {
 
 export interface LibraryTagUpdatedEvent {
   tagId: string
-  changes: readonly LibraryTagChange[]
+  changes: LibraryTagChange[]
   occurredAt: number
 }
 
 export interface LibraryTagDeletedEvent {
   tagId: string
   occurredAt: number
-}
-
-export interface HostEvents {
-  'app.ready': Record<string, never>
-  'app.locale.changed': { locale: AppLocale | null }
-  'app.settings.changed': { key: string; value: SerializableValue | undefined }
-  'theme.changed': { themeId: string; mode: 'light' | 'dark' | 'system' }
-  'extension.enabled': { extensionId: string }
-  'extension.disabled': { extensionId: string }
-  'library.game.created': LibraryGameCreatedEvent
-  'library.game.updated': LibraryGameUpdatedEvent
-  'library.game.deleted': LibraryGameDeletedEvent
-  'library.person.created': LibraryPersonCreatedEvent
-  'library.person.updated': LibraryPersonUpdatedEvent
-  'library.person.deleted': LibraryPersonDeletedEvent
-  'library.character.created': LibraryCharacterCreatedEvent
-  'library.character.updated': LibraryCharacterUpdatedEvent
-  'library.character.deleted': LibraryCharacterDeletedEvent
-  'library.company.created': LibraryCompanyCreatedEvent
-  'library.company.updated': LibraryCompanyUpdatedEvent
-  'library.company.deleted': LibraryCompanyDeletedEvent
-  'library.collection.created': LibraryCollectionCreatedEvent
-  'library.collection.updated': LibraryCollectionUpdatedEvent
-  'library.collection.deleted': LibraryCollectionDeletedEvent
-  'library.tag.created': LibraryTagCreatedEvent
-  'library.tag.updated': LibraryTagUpdatedEvent
-  'library.tag.deleted': LibraryTagDeletedEvent
-  'scanner.completed': { scannerId: string; stats: Record<string, number> }
-  'scanner.failed': { scannerId: string; error: string }
-}
-
-export type HostEventTopic = keyof HostEvents
-
-export type ExtensionEventTopic = `ext.${string}`
-
-export type HostEventListener<K extends HostEventTopic> = (
-  payload: HostEvents[K]
-) => MaybePromise<void>
-
-export type ExtensionEventPayload = SerializableRecord
-
-export type ExtensionEventListener<TPayload extends ExtensionEventPayload = ExtensionEventPayload> =
-  (payload: TPayload) => MaybePromise<void>
-
-export interface EventsCapability {
-  on<K extends HostEventTopic>(topic: K, listener: HostEventListener<K>): Promise<Disposable>
-  once<K extends HostEventTopic>(topic: K, listener: HostEventListener<K>): Promise<Disposable>
-  onExtension<TPayload extends ExtensionEventPayload = ExtensionEventPayload>(
-    topic: ExtensionEventTopic,
-    listener: ExtensionEventListener<TPayload>
-  ): Promise<Disposable>
-  emit<TPayload extends ExtensionEventPayload = ExtensionEventPayload>(
-    topic: ExtensionEventTopic,
-    payload: TPayload
-  ): Promise<void>
-}
-
-export function isExtensionEventTopic(value: string): value is ExtensionEventTopic {
-  return /^ext\.[a-z0-9.-]+(\.[a-z0-9.-]+)+$/i.test(value)
 }

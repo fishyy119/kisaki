@@ -1,0 +1,1 @@
+export { BackgroundTaskService } from './service'

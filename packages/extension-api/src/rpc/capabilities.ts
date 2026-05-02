@@ -96,6 +96,10 @@ export interface NotifyDismissRequest extends ExtensionScopedRpcParams {
 
 export type RuntimeInfoRequest = ExtensionScopedRpcParams
 
+export interface RuntimeOpenExternalRequest extends ExtensionScopedRpcParams {
+  url: string
+}
+
 export interface HostEventSubscriptionRequest extends ExtensionScopedRpcParams {
   subscriptionId: string
   topic: HostEventTopic
@@ -180,6 +184,7 @@ export type HostToMainCapabilityRpcRequestMap = {
   'capabilities.notify.update': RpcMethodDefinition<NotifyUpdateRequest, RpcNoPayload>
   'capabilities.notify.dismiss': RpcMethodDefinition<NotifyDismissRequest, RpcNoPayload>
   'capabilities.runtime.getInfo': RpcMethodDefinition<RuntimeInfoRequest, { info: RuntimeInfo }>
+  'capabilities.runtime.openExternal': RpcMethodDefinition<RuntimeOpenExternalRequest, RpcNoPayload>
   'capabilities.events.subscribeHost': RpcMethodDefinition<
     HostEventSubscriptionRequest,
     RpcNoPayload

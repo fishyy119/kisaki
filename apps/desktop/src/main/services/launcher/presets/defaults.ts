@@ -1,6 +1,5 @@
 import { dirname } from 'path'
 import type { DbService } from '@main/services/db'
-import type { EventService } from '@main/services/event'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
 import log from 'electron-log/main'
@@ -15,7 +14,6 @@ import log from 'electron-log/main'
  */
 export async function applyDefaultLaunchConfig(
   dbService: DbService,
-  eventService: EventService,
   gameId: string,
   filePath: string
 ): Promise<void> {
@@ -33,6 +31,5 @@ export async function applyDefaultLaunchConfig(
     .where(eq(games.id, gameId))
     .run()
 
-  eventService.emit('db:updated', { table: 'games', id: gameId })
   log.info(`[Launcher] Applied default config for game ${gameId}: ${filePath}`)
 }

@@ -30,6 +30,7 @@ import { ThumbnailStore } from './thumbnail'
 import { HelperStore } from './helper'
 import { FtsStore } from './fts'
 import { TriggerStore } from './trigger'
+import { DbEventProjector } from './projector'
 
 // Re-export types
 export type { ThumbnailOptions, ThumbnailFit, FileColumns, FilesColumns } from './types'
@@ -71,6 +72,7 @@ export class DbService implements IService {
   helper!: HelperStore
   fts!: FtsStore
   trigger!: TriggerStore
+  projector!: DbEventProjector
 
   // ==================== Lifecycle ====================
 
@@ -94,6 +96,8 @@ export class DbService implements IService {
     const event = container.get('event')
     this.trigger = new TriggerStore(this.sqlite, event)
     this.trigger.init()
+    this.projector = new DbEventProjector(this.sqlite, event)
+    this.projector.init()
 
     // Initialize settings singleton table (after triggers are set up)
     this.db.insert(settings).values({ id: 0 }).onConflictDoNothing().run()
@@ -312,6 +316,7 @@ export class DbService implements IService {
   }
 
   async dispose(): Promise<void> {
+    this.projector?.dispose()
     this.attachment?.dispose()
     this.thumbnail?.dispose()
     if (this.sqlite) {

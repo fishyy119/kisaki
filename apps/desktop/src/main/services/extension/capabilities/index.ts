@@ -103,6 +103,10 @@ export class ExtensionCapabilityGateway {
     rpc.handleHostRequest('capabilities.runtime.getInfo', async ({ runtimeHandle }) => ({
       info: this.runtime.getInfo(runtimeHandle)
     }))
+    rpc.handleHostRequest('capabilities.runtime.openExternal', async ({ runtimeHandle, url }) => {
+      await this.runtime.openExternal(runtimeHandle, url)
+      return {}
+    })
   }
 
   detachRpc(): void {

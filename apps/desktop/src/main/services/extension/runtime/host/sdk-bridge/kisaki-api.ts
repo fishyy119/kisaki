@@ -308,6 +308,9 @@ export function createKisakiApi(
       },
       delay: async (ms: number) => {
         await new Promise((resolve) => setTimeout(resolve, ms))
+      },
+      openExternal: async (url: string) => {
+        await requestMain('capabilities.runtime.openExternal', { url })
       }
     }
   }

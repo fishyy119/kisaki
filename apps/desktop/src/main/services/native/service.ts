@@ -11,6 +11,7 @@ import { dirname } from 'path'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
+import { openExternalLink } from '@main/utils'
 import { NativeTray } from './tray'
 
 export class NativeService implements IService {
@@ -56,6 +57,18 @@ export class NativeService implements IService {
     this.ipcService.handle('native:open-path', async (_, input) => {
       try {
         await this.openPath(input)
+        return { success: true }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }
+    })
+
+    this.ipcService.handle('native:open-external', async (_, url) => {
+      try {
+        await this.openExternal(url)
         return { success: true }
       } catch (error) {
         return {
@@ -148,6 +161,10 @@ export class NativeService implements IService {
       log.error('[NativeService] Failed to open path:', targetPath, error)
       throw error
     }
+  }
+
+  async openExternal(url: string): Promise<void> {
+    await openExternalLink(url)
   }
 
   private async ensureFolderPath(path: string): Promise<string> {

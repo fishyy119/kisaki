@@ -29,6 +29,8 @@ import type {
   CharacterScraperProviderInfo,
   GameImageSlot,
   ScrapedGameBundle,
+  ScraperProfileListQuery,
+  ScraperProfileSummary,
   ScrapedPersonBundle,
   ScrapedCompanyBundle,
   ScrapedCharacterBundle
@@ -78,6 +80,18 @@ import type { EntityMenuResolveInput } from '@kisaki/extension-api'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
+import type {
+  CommandExecutionRequest,
+  CommandExecutionResult,
+  CommandExecutionStartResult,
+  CommandListItem
+} from './command'
+import type {
+  BackgroundTask,
+  BackgroundTaskCreateInput,
+  BackgroundTaskRunRecord,
+  BackgroundTaskUpdateInput
+} from './background-task'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import type {
   DeeplinkResult,
@@ -171,6 +185,26 @@ export interface IpcMainHandlers {
   'updater:reload-settings': () => IpcVoidResult
   'updater:quit-and-install': () => IpcVoidResult
 
+  // Commands
+  'command:list': () => IpcResult<CommandListItem[]>
+  'command:start': (request: CommandExecutionRequest) => IpcResult<CommandExecutionStartResult>
+  'command:wait': (executionId: string) => IpcResult<CommandExecutionResult>
+  'command:execute': (request: CommandExecutionRequest) => IpcResult<CommandExecutionResult>
+  'command:cancel': (executionId: string) => IpcResult<boolean>
+
+  // Background tasks
+  'background-task:list': () => IpcResult<BackgroundTask[]>
+  'background-task:get': (taskId: string) => IpcResult<BackgroundTask | null>
+  'background-task:create': (input: BackgroundTaskCreateInput) => IpcResult<BackgroundTask>
+  'background-task:update': (
+    taskId: string,
+    patch: BackgroundTaskUpdateInput
+  ) => IpcResult<BackgroundTask>
+  'background-task:set-enabled': (taskId: string, enabled: boolean) => IpcResult<BackgroundTask>
+  'background-task:delete': (taskId: string) => IpcVoidResult
+  'background-task:run': (taskId: string) => IpcResult<BackgroundTaskRunRecord>
+  'background-task:cancel': (taskId: string) => IpcResult<boolean>
+
   // Debug mode
   'debug:get-mode': () => IpcResult<boolean>
   'debug:is-inspector-active': () => IpcResult<boolean>
@@ -261,6 +295,8 @@ export interface IpcMainHandlers {
   'ingest:update-character-from-scraper': (request: CharacterUpdateRequest) => IpcVoidResult
 
   // Scraper
+  'scraper:list-profiles': (query?: ScraperProfileListQuery) => IpcResult<ScraperProfileSummary[]>
+  'scraper:get-profile': (profileId: string) => IpcResult<ScraperProfileSummary | null>
   'scraper:list-game-providers': () => IpcResult<GameScraperProviderInfo[]>
   'scraper:get-game-provider': (providerId: string) => IpcResult<GameScraperProviderInfo>
   'scraper:search-game': (profileId: string, query: string) => IpcResult<GameSearchResult[]>
@@ -344,6 +380,7 @@ export interface IpcMainHandlers {
           ensure?: 'auto' | 'folder' | 'file'
         }
   ) => IpcVoidResult
+  'native:open-external': (url: string) => IpcVoidResult
   'native:get-auto-launch': () => IpcResult<boolean>
   'native:set-auto-launch': (enabled: boolean) => IpcVoidResult
 

@@ -38,6 +38,12 @@ import {
   SCANNER_PARALLEL_COUNT_MAX,
   SCANNER_PARALLEL_COUNT_MIN
 } from './constants'
+import type {
+  BackgroundTaskCreatedBy,
+  BackgroundTaskFailurePolicy,
+  BackgroundTaskRunRecord,
+  BackgroundTaskSchedule
+} from '../background-task'
 
 import type {
   RelatedSite,
@@ -388,6 +394,13 @@ export const sortDirection = createEnumType<SortDirection>(
   'sortDirection'
 )
 
+const BACKGROUND_TASK_CREATED_BY_VALUES = ['user', 'extension'] as const
+export const backgroundTaskCreatedBy = createEnumType<BackgroundTaskCreatedBy>(
+  BACKGROUND_TASK_CREATED_BY_VALUES,
+  'user',
+  'backgroundTaskCreatedBy'
+)
+
 // =============================================================================
 // Partial Date Custom Type
 // =============================================================================
@@ -719,6 +732,170 @@ export const nameExtractionRules = customType<{
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
+
+function isBackgroundTaskSchedule(value: unknown): value is BackgroundTaskSchedule {
+  if (!isPlainObject(value) || typeof value.type !== 'string') return false
+
+  switch (value.type) {
+    case 'manual':
+    case 'onStartup':
+      return true
+    case 'interval':
+      return typeof value.everyMs === 'number' && Number.isFinite(value.everyMs)
+    case 'daily':
+      return typeof value.timeOfDay === 'string'
+    case 'weekly':
+      return typeof value.dayOfWeek === 'number' && typeof value.timeOfDay === 'string'
+    default:
+      return false
+  }
+}
+
+function isBackgroundTaskFailurePolicy(value: unknown): value is BackgroundTaskFailurePolicy {
+  if (!isPlainObject(value) || typeof value.type !== 'string') return false
+
+  switch (value.type) {
+    case 'none':
+      return true
+    case 'retry':
+      return typeof value.retryCount === 'number'
+    case 'pauseTask':
+      return value.retryCount === undefined || typeof value.retryCount === 'number'
+    default:
+      return false
+  }
+}
+
+const BACKGROUND_TASK_RUN_STATUSES = new Set(['success', 'failed', 'cancelled', 'skipped'])
+const BACKGROUND_TASK_RUN_TRIGGERS = new Set(['manual', 'startup', 'schedule'])
+
+function isBackgroundTaskRunRecord(value: unknown): value is BackgroundTaskRunRecord {
+  if (!isPlainObject(value)) return false
+
+  const error = value.error
+  return (
+    typeof value.id === 'string' &&
+    typeof value.taskId === 'string' &&
+    typeof value.commandId === 'string' &&
+    typeof value.startedAt === 'number' &&
+    typeof value.finishedAt === 'number' &&
+    typeof value.attempt === 'number' &&
+    typeof value.status === 'string' &&
+    BACKGROUND_TASK_RUN_STATUSES.has(value.status) &&
+    typeof value.trigger === 'string' &&
+    BACKGROUND_TASK_RUN_TRIGGERS.has(value.trigger) &&
+    (error === undefined || typeof error === 'string')
+  )
+}
+
+function parseJsonValue(value: string | null): unknown {
+  if (value === null || value === '') return null
+  return JSON.parse(value)
+}
+
+export const backgroundTaskArgs = customType<{
+  data: Record<string, unknown>
+  driverData: string
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string): Record<string, unknown> {
+    try {
+      const parsed = parseJsonValue(value)
+      return isPlainObject(parsed) ? parsed : {}
+    } catch (error) {
+      console.error('Failed to parse backgroundTaskArgs:', error)
+      return {}
+    }
+  },
+
+  toDriver(value: Record<string, unknown>): string {
+    if (!isPlainObject(value)) {
+      throw new Error('backgroundTaskArgs must be an object')
+    }
+    return JSON.stringify(value)
+  }
+})
+
+export const backgroundTaskSchedule = customType<{
+  data: BackgroundTaskSchedule
+  driverData: string
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string): BackgroundTaskSchedule {
+    try {
+      const parsed = parseJsonValue(value)
+      return isBackgroundTaskSchedule(parsed) ? parsed : { type: 'manual' }
+    } catch (error) {
+      console.error('Failed to parse backgroundTaskSchedule:', error)
+      return { type: 'manual' }
+    }
+  },
+
+  toDriver(value: BackgroundTaskSchedule): string {
+    if (!isBackgroundTaskSchedule(value)) {
+      throw new Error('backgroundTaskSchedule must be a valid schedule')
+    }
+    return JSON.stringify(value)
+  }
+})
+
+export const backgroundTaskFailurePolicy = customType<{
+  data: BackgroundTaskFailurePolicy
+  driverData: string
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string): BackgroundTaskFailurePolicy {
+    try {
+      const parsed = parseJsonValue(value)
+      return isBackgroundTaskFailurePolicy(parsed) ? parsed : { type: 'none' }
+    } catch (error) {
+      console.error('Failed to parse backgroundTaskFailurePolicy:', error)
+      return { type: 'none' }
+    }
+  },
+
+  toDriver(value: BackgroundTaskFailurePolicy): string {
+    if (!isBackgroundTaskFailurePolicy(value)) {
+      throw new Error('backgroundTaskFailurePolicy must be a valid failure policy')
+    }
+    return JSON.stringify(value)
+  }
+})
+
+export const backgroundTaskHistory = customType<{
+  data: BackgroundTaskRunRecord[]
+  driverData: string
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string): BackgroundTaskRunRecord[] {
+    try {
+      const parsed = parseJsonValue(value)
+      return Array.isArray(parsed) ? parsed.filter(isBackgroundTaskRunRecord) : []
+    } catch (error) {
+      console.error('Failed to parse backgroundTaskHistory:', error)
+      return []
+    }
+  },
+
+  toDriver(value: BackgroundTaskRunRecord[]): string {
+    if (!Array.isArray(value) || !value.every(isBackgroundTaskRunRecord)) {
+      throw new Error('backgroundTaskHistory must be an array of run records')
+    }
+    return JSON.stringify(value)
+  }
+})
 
 function normalizeFilterValueForStorage(value: unknown): FilterState[string] | undefined {
   if (value === undefined || value === null) return undefined

@@ -15,6 +15,7 @@ import log from 'electron-log/main'
 import type { EventService } from '@main/services/event'
 import * as schema from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
+import type { RawDbChangeEvent, RawDbChangeOperation } from '@shared/events/library'
 
 /**
  * Extract all table names from Drizzle schema.
@@ -51,14 +52,37 @@ export class TriggerStore {
    * This bridges SQLite triggers with the JavaScript event system.
    */
   private registerEmitFunction(): void {
-    this.sqlite.function('emit_db_change', { deterministic: false }, (operation, table, id) => {
-      const eventName = `db:${operation}` as 'db:inserted' | 'db:updated' | 'db:deleted'
-      // Defer event emission until the current SQL statement completes.
-      // This prevents "connection is busy" errors when listeners try to access the DB.
-      queueMicrotask(() => {
-        this.event.emit(eventName, { table: table as TableName, id: id as string })
-      })
-    })
+    this.sqlite.function(
+      'emit_db_change',
+      { deterministic: false },
+      (operation, table, id, oldJson, nextJson) => {
+        const change = this.createRawChangeEvent(operation, table, id, oldJson, nextJson)
+        const eventName = `db:${change.operation}` as 'db:inserted' | 'db:updated' | 'db:deleted'
+
+        // Defer event emission until the current SQL statement completes.
+        // This prevents "connection is busy" errors when listeners try to access the DB.
+        queueMicrotask(() => {
+          this.event.emit(eventName, change)
+        })
+      }
+    )
+  }
+
+  private createRawChangeEvent(
+    operation: unknown,
+    table: unknown,
+    id: unknown,
+    oldJson: unknown,
+    nextJson: unknown
+  ): RawDbChangeEvent {
+    return {
+      operation: normalizeOperation(operation),
+      table: table as TableName,
+      id: String(id),
+      old: parseRowSnapshot(oldJson),
+      next: parseRowSnapshot(nextJson),
+      occurredAt: Date.now()
+    }
   }
 
   /**
@@ -75,34 +99,88 @@ export class TriggerStore {
    */
   private createTriggersForTable(table: string): void {
     const idColumn = 'id'
+    const columns = this.getTableColumns(table)
+    const oldSnapshot = this.createRowSnapshotExpression('OLD', columns)
+    const nextSnapshot = this.createRowSnapshotExpression('NEW', columns)
 
     // Drop existing triggers first (for idempotent initialization)
-    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${table}_after_insert`)
-    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${table}_after_update`)
-    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${table}_after_delete`)
+    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(`${table}_after_insert`)}`)
+    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(`${table}_after_update`)}`)
+    this.sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(`${table}_after_delete`)}`)
 
     // Create AFTER INSERT trigger
     this.sqlite.exec(`
-      CREATE TRIGGER ${table}_after_insert AFTER INSERT ON ${table}
+      CREATE TRIGGER ${quoteIdentifier(`${table}_after_insert`)} AFTER INSERT ON ${quoteIdentifier(table)}
       BEGIN
-        SELECT emit_db_change('inserted', '${table}', NEW.${idColumn});
+        SELECT emit_db_change('inserted', '${table}', NEW.${quoteIdentifier(idColumn)}, NULL, ${nextSnapshot});
       END
     `)
 
     // Create AFTER UPDATE trigger
     this.sqlite.exec(`
-      CREATE TRIGGER ${table}_after_update AFTER UPDATE ON ${table}
+      CREATE TRIGGER ${quoteIdentifier(`${table}_after_update`)} AFTER UPDATE ON ${quoteIdentifier(table)}
       BEGIN
-        SELECT emit_db_change('updated', '${table}', NEW.${idColumn});
+        SELECT emit_db_change('updated', '${table}', NEW.${quoteIdentifier(idColumn)}, ${oldSnapshot}, ${nextSnapshot});
       END
     `)
 
     // Create AFTER DELETE trigger
     this.sqlite.exec(`
-      CREATE TRIGGER ${table}_after_delete AFTER DELETE ON ${table}
+      CREATE TRIGGER ${quoteIdentifier(`${table}_after_delete`)} AFTER DELETE ON ${quoteIdentifier(table)}
       BEGIN
-        SELECT emit_db_change('deleted', '${table}', OLD.${idColumn});
+        SELECT emit_db_change('deleted', '${table}', OLD.${quoteIdentifier(idColumn)}, ${oldSnapshot}, NULL);
       END
     `)
   }
+
+  private getTableColumns(table: string): string[] {
+    const rows = this.sqlite
+      .prepare(`PRAGMA table_info(${quoteIdentifier(table)})`)
+      .all() as Array<{
+      name?: unknown
+    }>
+    const columns = rows.map((row) => String(row.name)).filter(Boolean)
+    if (!columns.includes('id')) {
+      throw new Error(`Tracked table "${table}" must have an id column.`)
+    }
+    return columns
+  }
+
+  private createRowSnapshotExpression(alias: 'OLD' | 'NEW', columns: string[]): string {
+    const args = columns
+      .map((column) => `${quoteString(column)}, ${alias}.${quoteIdentifier(column)}`)
+      .join(', ')
+    return `json_object(${args})`
+  }
+}
+
+function normalizeOperation(value: unknown): RawDbChangeOperation {
+  if (value === 'inserted' || value === 'updated' || value === 'deleted') {
+    return value
+  }
+  throw new Error(`Unknown DB change operation: ${String(value)}`)
+}
+
+function parseRowSnapshot(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== 'string' || !value) {
+    return undefined
+  }
+
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined
+  } catch (error) {
+    log.warn('[TriggerStore] Failed to parse row snapshot:', error)
+    return undefined
+  }
+}
+
+function quoteIdentifier(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`
+}
+
+function quoteString(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`
 }

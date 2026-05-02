@@ -27,6 +27,7 @@
 - 暴露 command 注册 API，并允许扩展注册可执行 command。
 - 暴露 background task API，并允许扩展创建/删除自己拥有的 task，允许用户把 command 配置成启动时/定时后台任务。
 - host bridge 调用 Phase 1A 的主应用 service，并负责 public API DTO 与主应用内部类型之间的转换。
+- host bridge 暴露事件时同样需要显式 DTO 转换，避免把 `shared/events/library.ts` 等主应用内部事件结构直接透传为 extension public API。
 
 ## Phase 2: 实现并部署 Kisaki OAuth Relay
 

@@ -22,6 +22,8 @@ import { NetworkService } from './services/network'
 import { NotifyService } from './services/notify'
 import { DeeplinkService } from './services/deeplink'
 import { UpdaterService } from './services/updater'
+import { CommandService } from './services/command'
+import { BackgroundTaskService } from './services/background-task'
 
 // Bootstrap (pre-ready modules)
 import { registerAttachmentScheme, DEEPLINK_SCHEME } from './bootstrap/protocol'
@@ -115,6 +117,8 @@ async function onAppReady(): Promise<void> {
   await container.register(new DbService())
   await container.register(new UpdaterService())
   await container.register(new NetworkService())
+  await container.register(new CommandService())
+  await container.register(new BackgroundTaskService())
   await container.register(new NativeService())
   await container.register(new I18nService())
   await container.register(new ScraperService())

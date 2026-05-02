@@ -2,8 +2,7 @@ import type { HostEventTopic, HostEvents, SerializableValue } from '@kisaki/exte
 import { createValidationError, normalizeCapabilityError } from '@kisaki/extension-api'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
-import { eq } from 'drizzle-orm'
-import { games } from '@shared/db'
+import type { AppEvents } from '@shared/events'
 import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
 
 type EventUnsubscribe = () => void
@@ -115,73 +114,122 @@ export class ExtensionEventsCapabilityHost {
           })
         })
       case 'library.game.created':
-        return this.options.event.on('db:inserted', ({ table, id }) => {
-          if (table !== 'games') {
-            return
-          }
-
-          const game = this.options.db.db.select().from(games).where(eq(games.id, id)).get()
-
-          this.emitSubscriptionEvent(subscriptionId, topic, {
-            gameId: id,
-            name: game?.name ?? id
-          })
+        return this.options.event.on('library.game.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameCreatedEvent(event))
         })
       case 'library.game.updated':
-        return this.options.event.on('db:updated', ({ table, id }) => {
-          if (table !== 'games') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { gameId: id })
+        return this.options.event.on('library.game.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameUpdatedEvent(event))
         })
       case 'library.game.deleted':
-        return this.options.event.on('db:deleted', ({ table, id }) => {
-          if (table !== 'games') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { gameId: id })
+        return this.options.event.on('library.game.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameDeletedEvent(event))
+        })
+      case 'library.person.created':
+        return this.options.event.on('library.person.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonCreatedEvent(event))
         })
       case 'library.person.updated':
-        return this.options.event.on('db:updated', ({ table, id }) => {
-          if (table !== 'persons') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { personId: id })
+        return this.options.event.on('library.person.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonUpdatedEvent(event))
+        })
+      case 'library.person.deleted':
+        return this.options.event.on('library.person.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonDeletedEvent(event))
+        })
+      case 'library.character.created':
+        return this.options.event.on('library.character.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            characterId: event.characterId,
+            name: event.name,
+            occurredAt: event.occurredAt
+          })
         })
       case 'library.character.updated':
-        return this.options.event.on('db:updated', ({ table, id }) => {
-          if (table !== 'characters') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { characterId: id })
+        return this.options.event.on('library.character.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            characterId: event.characterId,
+            changes: cloneHostValue(event.changes),
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.character.deleted':
+        return this.options.event.on('library.character.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            characterId: event.characterId,
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.company.created':
+        return this.options.event.on('library.company.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            companyId: event.companyId,
+            name: event.name,
+            occurredAt: event.occurredAt
+          })
         })
       case 'library.company.updated':
-        return this.options.event.on('db:updated', ({ table, id }) => {
-          if (table !== 'companies') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { companyId: id })
+        return this.options.event.on('library.company.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            companyId: event.companyId,
+            changes: cloneHostValue(event.changes),
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.company.deleted':
+        return this.options.event.on('library.company.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            companyId: event.companyId,
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.collection.created':
+        return this.options.event.on('library.collection.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            collectionId: event.collectionId,
+            name: event.name,
+            occurredAt: event.occurredAt
+          })
         })
       case 'library.collection.updated':
-        return this.options.event.on('db:updated', ({ table, id }) => {
-          if (table !== 'collections') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { collectionId: id })
+        return this.options.event.on('library.collection.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            collectionId: event.collectionId,
+            changes: cloneHostValue(
+              event.changes
+            ) as HostEvents['library.collection.updated']['changes'],
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.collection.deleted':
+        return this.options.event.on('library.collection.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            collectionId: event.collectionId,
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.tag.created':
+        return this.options.event.on('library.tag.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            tagId: event.tagId,
+            name: event.name,
+            occurredAt: event.occurredAt
+          })
         })
       case 'library.tag.updated':
-        return this.options.event.on('db:updated', ({ table, id }) => {
-          if (table !== 'tags') {
-            return
-          }
-
-          this.emitSubscriptionEvent(subscriptionId, topic, { tagId: id })
+        return this.options.event.on('library.tag.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            tagId: event.tagId,
+            changes: cloneHostValue(event.changes),
+            occurredAt: event.occurredAt
+          })
+        })
+      case 'library.tag.deleted':
+        return this.options.event.on('library.tag.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, {
+            tagId: event.tagId,
+            occurredAt: event.occurredAt
+          })
         })
       case 'scanner.completed':
         return this.options.event.on('scanner:completed', ({ scannerId, stats }) => {
@@ -251,4 +299,66 @@ function toSerializableValue(value: unknown): SerializableValue | undefined {
   }
 
   return String(value)
+}
+
+function toHostLibraryGameCreatedEvent(
+  event: AppEvents['library.game.created'][0]
+): HostEvents['library.game.created'] {
+  return {
+    gameId: event.gameId,
+    name: event.name,
+    occurredAt: event.occurredAt
+  }
+}
+
+function toHostLibraryGameUpdatedEvent(
+  event: AppEvents['library.game.updated'][0]
+): HostEvents['library.game.updated'] {
+  return {
+    gameId: event.gameId,
+    changes: cloneHostValue(event.changes),
+    occurredAt: event.occurredAt
+  }
+}
+
+function toHostLibraryGameDeletedEvent(
+  event: AppEvents['library.game.deleted'][0]
+): HostEvents['library.game.deleted'] {
+  return {
+    gameId: event.gameId,
+    occurredAt: event.occurredAt
+  }
+}
+
+function toHostLibraryPersonCreatedEvent(
+  event: AppEvents['library.person.created'][0]
+): HostEvents['library.person.created'] {
+  return {
+    personId: event.personId,
+    name: event.name,
+    occurredAt: event.occurredAt
+  }
+}
+
+function toHostLibraryPersonUpdatedEvent(
+  event: AppEvents['library.person.updated'][0]
+): HostEvents['library.person.updated'] {
+  return {
+    personId: event.personId,
+    changes: cloneHostValue(event.changes),
+    occurredAt: event.occurredAt
+  }
+}
+
+function toHostLibraryPersonDeletedEvent(
+  event: AppEvents['library.person.deleted'][0]
+): HostEvents['library.person.deleted'] {
+  return {
+    personId: event.personId,
+    occurredAt: event.occurredAt
+  }
+}
+
+function cloneHostValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
 }

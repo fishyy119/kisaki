@@ -13,6 +13,7 @@ import type {
   EventUnsubscribe,
   EventEmitOptions
 } from '@shared/events'
+import type { RawDbChangeEvent } from '@shared/events/library'
 
 export class EventService implements IService {
   readonly id = 'event'
@@ -102,7 +103,7 @@ export class EventService implements IService {
     // Forward to renderer process if not local-only
     if (!options.local && this.isReady) {
       try {
-        this.ipcService.send('event:forward', event, eventArgs)
+        this.ipcService.send('event:forward', event, sanitizeForwardedEventArgs(event, eventArgs))
       } catch (error) {
         log.error(`[EventService] Failed to forward event "${String(event)}":`, error)
       }
@@ -129,4 +130,27 @@ export class EventService implements IService {
   listenerCount<K extends keyof AppEvents>(event: K): number {
     return this.listeners.get(event)?.size ?? 0
   }
+}
+
+function sanitizeForwardedEventArgs<K extends keyof AppEvents>(
+  event: K,
+  args: AppEvents[K]
+): unknown[] {
+  if (event !== 'db:inserted' && event !== 'db:updated' && event !== 'db:deleted') {
+    return args
+  }
+
+  const change = args[0] as RawDbChangeEvent | undefined
+  if (!change) {
+    return args
+  }
+
+  return [
+    {
+      operation: change.operation,
+      table: change.table,
+      id: change.id,
+      occurredAt: change.occurredAt
+    }
+  ]
 }

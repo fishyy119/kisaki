@@ -39,6 +39,8 @@ import type { NetworkService } from '@main/services/network/service'
 import type { NotifyService } from '@main/services/notify/service'
 import type { DeeplinkService } from '@main/services/deeplink/service'
 import type { UpdaterService } from '@main/services/updater/service'
+import type { CommandService } from '@main/services/command/service'
+import type { BackgroundTaskService } from '@main/services/background-task/service'
 
 /**
  * Service Registry - Centralized type mapping for all core services.
@@ -62,6 +64,8 @@ export interface ServiceRegistry {
   notify: NotifyService
   deeplink: DeeplinkService
   updater: UpdaterService
+  command: CommandService
+  'background-task': BackgroundTaskService
 }
 
 /**

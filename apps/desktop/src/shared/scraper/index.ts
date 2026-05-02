@@ -34,6 +34,11 @@ export {
 } from './slot'
 
 export type { ExternalId } from '@shared/identity'
+export type {
+  ScraperProfileListQuery,
+  ScraperProfileProviderSlot,
+  ScraperProfileSummary
+} from './profile'
 export {
   type ScrapedGameBundle,
   type ScrapedPersonBundle,

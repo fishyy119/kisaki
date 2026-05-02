@@ -13,4 +13,5 @@ export interface RuntimeInfo {
 export interface RuntimeCapability {
   getInfo(): Promise<RuntimeInfo>
   delay(ms: number): Promise<void>
+  openExternal(url: string): Promise<void>
 }

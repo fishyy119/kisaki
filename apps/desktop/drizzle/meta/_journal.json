@@ -36,6 +36,13 @@
       "when": 1777086647705,
       "tag": "0004_wide_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1777713729771,
+      "tag": "0005_reflective_saracen",
+      "breakpoints": true
     }
   ]
 }

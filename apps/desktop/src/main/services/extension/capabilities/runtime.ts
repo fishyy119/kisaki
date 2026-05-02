@@ -5,6 +5,7 @@ import {
   type ExtensionRuntimeMetadata,
   type RuntimeInfo
 } from '@kisaki/extension-api'
+import { openExternalLink } from '@main/utils'
 
 export interface ExtensionRuntimeCapabilityHostOptions {
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
@@ -30,6 +31,15 @@ export class ExtensionRuntimeCapabilityHost {
       platform: toRuntimePlatform(process.platform),
       arch: process.arch
     }
+  }
+
+  async openExternal(runtimeHandle: string, url: string): Promise<void> {
+    const metadata = this.getMetadata(runtimeHandle)
+    if (!metadata) {
+      throw createUnavailableError(`Runtime handle "${runtimeHandle}" is not active.`)
+    }
+
+    await openExternalLink(url)
   }
 }
 

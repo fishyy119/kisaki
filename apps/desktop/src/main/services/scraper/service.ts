@@ -10,9 +10,14 @@
  */
 
 import log from 'electron-log/main'
+import { asc, eq } from 'drizzle-orm'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import type { ContentEntityType } from '@shared/common'
+import * as schema from '@shared/db'
+import { scraperProfiles, type ScraperProfile } from '@shared/db'
+import type { ScraperProfileListQuery, ScraperProfileSummary } from '@shared/scraper'
 import { createScraperProviderDeps } from './deps'
 import type { ScraperProviderDeps } from './types'
 import { GameScraperHandler } from './handlers/game'
@@ -37,9 +42,11 @@ export class ScraperService implements IContentService {
   character!: CharacterScraperHandler
 
   private ipcService!: IpcService
+  private db!: BetterSQLite3Database<typeof schema>
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
+    this.db = dbService.db
     const i18n = container.get('i18n')
     this.ipcService = container.get('ipc')
     const providerDeps = createScraperProviderDeps({
@@ -65,6 +72,26 @@ export class ScraperService implements IContentService {
 
   private setupIpcHandlers(): void {
     const ipc = this.ipcService
+
+    // =========================================================================
+    // Profile Info
+    // =========================================================================
+
+    ipc.handle('scraper:list-profiles', async (_, query) => {
+      try {
+        return { success: true as const, data: this.listProfiles(query) }
+      } catch (error) {
+        return { success: false as const, error: (error as Error).message }
+      }
+    })
+
+    ipc.handle('scraper:get-profile', async (_, profileId) => {
+      try {
+        return { success: true as const, data: this.getProfile(profileId) }
+      } catch (error) {
+        return { success: false as const, error: (error as Error).message }
+      }
+    })
 
     // =========================================================================
     // Provider Info
@@ -270,6 +297,31 @@ export class ScraperService implements IContentService {
     return ['game', 'character', 'person', 'company']
   }
 
+  listProfiles(query: ScraperProfileListQuery = {}): ScraperProfileSummary[] {
+    const rows = this.db
+      .select()
+      .from(scraperProfiles)
+      .orderBy(asc(scraperProfiles.order), asc(scraperProfiles.name))
+      .all()
+    const filtered = query.mediaType
+      ? rows.filter((profile) => profile.mediaType === query.mediaType)
+      : rows
+
+    return filtered.map((profile) => toScraperProfileSummary(profile))
+  }
+
+  getProfile(profileId: string): ScraperProfileSummary | null {
+    const profile =
+      this.db
+        .select()
+        .from(scraperProfiles)
+        .where(eq(scraperProfiles.id, profileId))
+        .limit(1)
+        .get() ?? null
+
+    return profile ? toScraperProfileSummary(profile) : null
+  }
+
   // ===========================================================================
   // Provider management for built-in and extension providers.
   // ===========================================================================
@@ -304,5 +356,23 @@ export class ScraperService implements IContentService {
 
   async unregisterCharacterProvider(providerId: string): Promise<void> {
     this.character.unregisterProvider(providerId)
+  }
+}
+
+function toScraperProfileSummary(profile: ScraperProfile): ScraperProfileSummary {
+  return {
+    id: profile.id,
+    name: profile.name,
+    description: profile.description,
+    mediaType: profile.mediaType,
+    searchProviderId: profile.searchProviderId,
+    defaultLocale: profile.defaultLocale,
+    providerSlots: Object.entries(profile.slotConfigs).map(([slot, config]) => ({
+      slot,
+      providerIds: config.providers
+        .filter((provider) => provider.enabled)
+        .sort((left, right) => left.priority - right.priority)
+        .map((provider) => provider.providerId)
+    }))
   }
 }
