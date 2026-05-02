@@ -126,7 +126,6 @@ SERVER_USER_AGENT=your-bangumi-user-id KisakiOAuthRelay/1.0 https://kisaki.me
 FROM node:22-alpine AS build
 
 WORKDIR /app
-ENV NODE_ENV=production
 
 COPY package.json tsconfig.json ./
 RUN npm install
@@ -610,12 +609,12 @@ function toErrorMessage(error: unknown): string {
 
 ## Desktop Deeplink Callback
 
-当前 Bangumi 内置扩展 manifest id 是 `builtin.bangumi`。扩展 deeplink contribution 必须注册：
+当前 Bangumi 内置扩展 manifest id 是 `builtin.bangumi`。扩展 deeplink contribution 只注册扩展自己的局部 callback path：
 
 ```ts
 context.contributes.deeplinks.register({
   id: 'oauth-callback',
-  route: 'ext/builtin.bangumi/oauth-callback',
+  path: 'oauth-callback',
   async handle(input) {
     // input.params.sessionId / input.params.state
     return { success: true, status: 'handled' }
@@ -623,13 +622,13 @@ context.contributes.deeplinks.register({
 })
 ```
 
-对应桌面回跳 URL 是：
+主应用基于 manifest id 自动归一化为内部路由 `ext/builtin.bangumi/oauth-callback`，并提供或生成对应桌面回跳 URL：
 
 ```text
 kisaki://ext/builtin.bangumi/oauth-callback
 ```
 
-Kisaki 现有 deeplink parser 使用 `kisaki://action/resource` 结构。`action=ext` 时，extension contribution host 会把 resource 拼成 `ext/${resource}`，因此 `kisaki://ext/builtin.bangumi/oauth-callback` 会命中 `ext/builtin.bangumi/oauth-callback`。`kisaki://bangumi/oauth-callback` 不会命中扩展 handler。
+Kisaki deeplink parser 使用 `kisaki://action/resource` 结构。`action=ext` 时，extension contribution host 应把 resource 映射到对应扩展的局部 path，因此 `kisaki://ext/builtin.bangumi/oauth-callback` 会命中 `builtin.bangumi` 扩展注册的 `oauth-callback` handler。`kisaki://bangumi/oauth-callback` 不会命中扩展 handler。
 
 如果 `kisaki.me` 只用于 relay：
 

@@ -26,6 +26,31 @@ Bangumi OAuth 不新增主应用 OAuth service。扩展自己组合：
 
 主应用只提供通用 primitive；Bangumi 扩展负责 state/session、relay complete、token refresh、取消、超时和错误处理。
 
+## Deeplink Contribution API
+
+本次重构调整 deeplink 注册点公共契约，不保留旧的完整 `route` 注册语义。扩展只声明自己拥有的局部 `path`，主应用根据 extension id 生成内部路由和 canonical 桌面 URL：
+
+```ts
+const callback = context.contributes.deeplinks.register({
+  id: 'oauth-callback',
+  path: 'oauth-callback',
+  async handle(input) {
+    return { success: true, status: 'handled' }
+  }
+})
+
+callback.url
+// kisaki://ext/<extensionId>/oauth-callback
+```
+
+公共 API 语义：
+
+- `DeeplinkContribution.path`: extension-local path，不包含 `ext/` 或 extension id。
+- `register()` 返回的 handle 包含 canonical `url`，供扩展传给 relay、设置页诊断或外部调用方。
+- 主应用内部把 `<extensionId>` 和 `path` 归一化为 `ext/<extensionId>/<path>`。
+- `DeeplinkRequest` 应携带匹配到的局部 `path`、`params` 和原始 `rawUrl`；扩展不需要解析主应用命名空间。
+- `kisaki://ext/<extensionId>/<path>` 是扩展 deeplink 的唯一外显 URL 形态；`kisaki://<extensionId>/...` 不作为扩展入口。
+
 ## Scraper Capability Additions
 
 scraper profile 查询应放在现有 scraper capability 下，不新增顶级 `scraperProfiles` capability。

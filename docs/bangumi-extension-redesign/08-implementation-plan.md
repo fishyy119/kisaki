@@ -10,6 +10,7 @@
 
 - 新增 secure secrets capability。
 - 新增 `kisaki.runtime.openExternal` capability；Bangumi 扩展自行组合 network、deeplink、secrets、openExternal 完成 OAuth Relay flow。
+- 重构 deeplink contribution API：`DeeplinkContribution.route` 改为 extension-local `path`，`register()` 返回 canonical `kisaki://ext/<extensionId>/<path>` URL handle，host 负责内部路由归一化。
 - 在现有 scraper capability 下新增 profile list/get 能力，例如 `kisaki.scrapers.profiles.list({ mediaType: "game" })`。
 - 新增最小 ingest from scraper capability：`kisaki.ingest.games.addFromScraper(profileId, lookup, options)`；第一版不暴露 `updateGameFromScraper`。
 - 新增 CommandService，并允许扩展注册可执行 command。
