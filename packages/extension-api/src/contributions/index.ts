@@ -1,4 +1,4 @@
-export * from './entity-menus'
+export * from './menus'
 export * from './settings'
 export * from './scrapers'
 export * from './deeplinks'

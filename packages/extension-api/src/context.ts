@@ -2,7 +2,7 @@ import type { Disposable, DisposableStore, SerializableValue } from './shared'
 import type {
   CommandRegistrar,
   DeeplinkRegistrar,
-  EntityMenuRegistrar,
+  MenuRegistrar,
   ScraperRegistrar,
   SettingsRegistrar,
   ThemeRegistrar
@@ -50,7 +50,7 @@ export interface ExtensionContext {
   readonly subscriptions: DisposableStore
   readonly abortSignal: AbortSignal
   readonly contributions: {
-    entityMenus: EntityMenuRegistrar
+    menus: MenuRegistrar
     settings: SettingsRegistrar
     scrapers: ScraperRegistrar
     deeplinks: DeeplinkRegistrar

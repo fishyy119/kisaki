@@ -1,11 +1,7 @@
 import type { CommandExecutionSource } from '../capabilities/commands'
 import type { CommandContribution } from '../contributions/commands'
 import type { DeeplinkRequest, DeeplinkResponse } from '../contributions/deeplinks'
-import type {
-  EntityMenuItem,
-  EntityMenuResolveInput,
-  EntityMenuTarget
-} from '../contributions/entity-menus'
+import type { MenuDomain, MenuInput, MenuRefreshReason, MenuScope } from '../contributions/menus'
 import type {
   SettingsDialogButtonResult,
   SettingsDialogCommitResult,
@@ -37,11 +33,16 @@ import type { Locale, SerializableRecord, SerializableValue, UiCallbackResult } 
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
-export interface EntityMenuContributionRegistration {
-  id: string
-  target: EntityMenuTarget
-  order?: number
-}
+export type MenuContributionRegistration = {
+  [TDomain in MenuDomain]: {
+    [TScope in MenuScope<TDomain>]: {
+      id: string
+      domain: TDomain
+      scope: TScope
+      order?: number
+    }
+  }[MenuScope<TDomain>]
+}[MenuDomain]
 
 export interface SettingsContributionRegistration {
   id: string
@@ -94,24 +95,29 @@ export interface CommandUnregisterRequest extends ExtensionScopedRpcParams {
   commandId: string
 }
 
-export interface EntityMenuResolveRequest extends ContributionScopedRpcParams {
+export interface MenuResolveRequest extends ContributionScopedRpcParams {
   sessionId: string
-  input: EntityMenuResolveInput
+  input: MenuInput
 }
 
-export interface EntityMenuResolveResult {
-  items: readonly EntityMenuItem[]
+export interface MenuResolveResult {
+  nodes: readonly SerializableRecord[]
 }
 
-export interface EntityMenuInvokeRequest extends ContributionScopedRpcParams {
+export interface MenuInvokeRequest extends ContributionScopedRpcParams {
   sessionId: string
-  callbackId: string
-  input: EntityMenuResolveInput
+  nodePath: readonly string[]
+  input: MenuInput
   value?: boolean | string
 }
 
-export interface EntityMenuSessionReleaseRequest extends ContributionScopedRpcParams {
+export interface MenuReleaseRequest {
   sessionId: string
+}
+
+export interface MenuRefreshRequestedNotification extends ExtensionScopedRpcParams {
+  contributionId: string
+  reason?: MenuRefreshReason
 }
 
 export type SettingsRpcSurface = 'root' | 'dialog' | 'popover'
@@ -374,15 +380,9 @@ export interface MainToHostContributionRpcRequestMap
       CharacterScraperSlot,
       CharacterSessionResultMap
     > {
-  'contributions.entityMenus.resolve': RpcMethodDefinition<
-    EntityMenuResolveRequest,
-    EntityMenuResolveResult
-  >
-  'contributions.entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
-  'contributions.entityMenus.session.release': RpcMethodDefinition<
-    EntityMenuSessionReleaseRequest,
-    RpcNoPayload
-  >
+  'contributions.menus.resolve': RpcMethodDefinition<MenuResolveRequest, MenuResolveResult>
+  'contributions.menus.invoke': RpcMethodDefinition<MenuInvokeRequest, UiCallbackResult>
+  'contributions.menus.release': RpcMethodDefinition<MenuReleaseRequest, RpcNoPayload>
   'contributions.settings.open': RpcMethodDefinition<SettingsOpenRequest, SettingsOpenResult>
   'contributions.settings.refresh': RpcMethodDefinition<
     SettingsRefreshRequest,
@@ -402,12 +402,16 @@ export interface MainToHostContributionRpcRequestMap
 }
 
 export type HostToMainContributionRpcRequestMap = {
-  'contributions.entityMenus.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { contribution: EntityMenuContributionRegistration },
+  'contributions.menus.register': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { contribution: MenuContributionRegistration },
     RpcNoPayload
   >
-  'contributions.entityMenus.unregister': RpcMethodDefinition<
+  'contributions.menus.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
+    RpcNoPayload
+  >
+  'contributions.menus.refreshRequested': RpcMethodDefinition<
+    MenuRefreshRequestedNotification,
     RpcNoPayload
   >
   'contributions.settings.register': RpcMethodDefinition<
