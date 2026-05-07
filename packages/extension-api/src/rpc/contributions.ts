@@ -7,9 +7,14 @@ import type {
   EntityMenuTarget
 } from '../contributions/entity-menus'
 import type {
-  SettingsDialogTarget,
-  SettingsInteractionResult,
-  SettingsResolvedScreenModel
+  SettingsDialogButtonResult,
+  SettingsDialogCommitResult,
+  SettingsDialogSubmitResult,
+  SettingsPopoverActionResult,
+  SettingsRefreshReason,
+  SettingsRootButtonResult,
+  SettingsRootCommitResult,
+  SettingsRootSubmitResult
 } from '../contributions/settings'
 import type {
   CharacterScraperSlot,
@@ -43,7 +48,6 @@ export interface SettingsContributionRegistration {
   title: string
   description?: string
   order?: number
-  rootScreenId: string
 }
 
 export interface DeeplinkContributionRegistration {
@@ -110,58 +114,164 @@ export interface EntityMenuSessionReleaseRequest extends ContributionScopedRpcPa
   sessionId: string
 }
 
-export interface SettingsSessionOpenRequest extends ExtensionScopedRpcParams {
-  contributionId: string
+export type SettingsRpcSurface = 'root' | 'dialog' | 'popover'
+export type SettingsRpcScope = SettingsRpcSurface | 'all'
+
+export interface SettingsDraftSnapshot {
+  values: SerializableRecord
+  dirtyNodeIds: readonly string[]
+}
+
+export type SettingsParentRef = { surface: 'root' } | { surface: 'dialog'; dialogId: string }
+
+export interface SettingsSessionRef extends ContributionScopedRpcParams {
   sessionId: string
 }
 
-export interface SettingsFrameOpenRequest extends ExtensionScopedRpcParams {
-  contributionId: string
-  sessionId: string
-  target: SettingsDialogTarget
-}
+export type SettingsOpenRequest =
+  | (ContributionScopedRpcParams & {
+      surface: 'root'
+      sessionId: string
+      reason?: SettingsRefreshReason
+    })
+  | (SettingsSessionRef & {
+      surface: 'dialog'
+      dialogId: string
+      params?: SerializableRecord
+      parentDraft: SettingsDraftSnapshot
+      revision: number
+    })
+  | (SettingsSessionRef & {
+      surface: 'popover'
+      popoverId: string
+      parent: SettingsParentRef
+      params?: SerializableRecord
+      parentDraft: SettingsDraftSnapshot
+      anchorNodeKey: string
+      revision: number
+    })
 
-export interface SettingsFrameRefreshRequest extends ExtensionScopedRpcParams {
-  contributionId: string
-  sessionId: string
-  frameId: string
-}
+export type SettingsRefreshRequest =
+  | (SettingsSessionRef & {
+      surface: 'root'
+      draft: SettingsDraftSnapshot
+      reason?: SettingsRefreshReason
+      revision: number
+    })
+  | (SettingsSessionRef & {
+      surface: 'dialog'
+      dialogId: string
+      draft: SettingsDraftSnapshot
+      parentDraft: SettingsDraftSnapshot
+      reason?: SettingsRefreshReason
+      revision: number
+    })
+  | (SettingsSessionRef & {
+      surface: 'popover'
+      popoverId: string
+      parent: SettingsParentRef
+      draft: SettingsDraftSnapshot
+      parentDraft: SettingsDraftSnapshot
+      reason?: SettingsRefreshReason
+      revision: number
+    })
+  | (SettingsSessionRef & {
+      surface: 'all'
+      rootDraft: SettingsDraftSnapshot
+      activeDialog?: {
+        dialogId: string
+        draft: SettingsDraftSnapshot
+      }
+      reason?: SettingsRefreshReason
+      revision: number
+    })
 
-export interface SettingsFrameResult {
-  frameId: string
-  screenId: string
-  params: Record<string, SerializableValue>
-  screen: SettingsResolvedScreenModel
-}
+export type SettingsSubmitRequest =
+  | (SettingsSessionRef & {
+      surface: 'root'
+      draft: SettingsDraftSnapshot
+      revision: number
+    })
+  | (SettingsSessionRef & {
+      surface: 'dialog'
+      dialogId: string
+      draft: SettingsDraftSnapshot
+      parentDraft: SettingsDraftSnapshot
+      revision: number
+    })
 
-export interface SettingsFrameSubmitRequest extends ExtensionScopedRpcParams {
-  contributionId: string
-  sessionId: string
-  frameId: string
-  values: Record<string, SerializableValue>
-}
-
-export interface SettingsFrameInvokeRequest extends ExtensionScopedRpcParams {
-  contributionId: string
-  sessionId: string
-  frameId: string
+export interface SettingsInvokeBase extends SettingsSessionRef {
   callbackId: string
+  fieldId: string
+  nodeId: string
   value?: SerializableValue
+  requestId: string
+  revision: number
 }
 
-export interface SettingsInteractionResponse {
-  result: SettingsInteractionResult
+export type SettingsInvokeRequest =
+  | (SettingsInvokeBase & {
+      surface: 'root'
+      draft: SettingsDraftSnapshot
+    })
+  | (SettingsInvokeBase & {
+      surface: 'dialog'
+      dialogId: string
+      draft: SettingsDraftSnapshot
+      parentDraft: SettingsDraftSnapshot
+    })
+  | (SettingsInvokeBase & {
+      surface: 'popover'
+      popoverId: string
+      parent: SettingsParentRef
+      draft: SettingsDraftSnapshot
+      parentDraft: SettingsDraftSnapshot
+    })
+
+export type SettingsReleaseRequest =
+  | (SettingsSessionRef & { surface: 'root' | 'all' })
+  | (SettingsSessionRef & { surface: 'dialog'; dialogId: string })
+  | (SettingsSessionRef & {
+      surface: 'popover'
+      popoverId: string
+      parent: SettingsParentRef
+    })
+
+export type SettingsResolvedSurfacePayload = SerializableRecord
+
+export type SettingsOpenResult =
+  | {
+      surface: 'root'
+      sessionId: string
+      view: SettingsResolvedSurfacePayload
+    }
+  | {
+      surface: 'dialog'
+      dialog: SettingsResolvedSurfacePayload
+    }
+  | {
+      surface: 'popover'
+      popover: SettingsResolvedSurfacePayload
+    }
+
+export type SettingsRefreshResult = SettingsOpenResult
+
+export type SettingsCallbackResult =
+  | SettingsRootCommitResult
+  | SettingsDialogCommitResult
+  | SettingsPopoverActionResult
+  | SettingsRootButtonResult
+  | SettingsDialogButtonResult
+  | SettingsRootSubmitResult
+  | SettingsDialogSubmitResult
+
+export interface SettingsCallbackResponse {
+  result: SettingsCallbackResult
 }
 
-export interface SettingsFrameReleaseRequest extends ExtensionScopedRpcParams {
+export interface SettingsRefreshRequestedNotification extends ExtensionScopedRpcParams {
   contributionId: string
-  sessionId: string
-  frameId: string
-}
-
-export interface SettingsSessionReleaseRequest extends ExtensionScopedRpcParams {
-  contributionId: string
-  sessionId: string
+  reason?: SettingsRefreshReason
 }
 
 export interface DeeplinkHandleRequest extends ContributionScopedRpcParams {
@@ -273,34 +383,20 @@ export interface MainToHostContributionRpcRequestMap
     EntityMenuSessionReleaseRequest,
     RpcNoPayload
   >
-  'contributions.settings.open': RpcMethodDefinition<
-    SettingsSessionOpenRequest,
-    SettingsFrameResult
-  >
-  'contributions.settings.frame.open': RpcMethodDefinition<
-    SettingsFrameOpenRequest,
-    SettingsFrameResult
-  >
-  'contributions.settings.frame.refresh': RpcMethodDefinition<
-    SettingsFrameRefreshRequest,
-    SettingsFrameResult
+  'contributions.settings.open': RpcMethodDefinition<SettingsOpenRequest, SettingsOpenResult>
+  'contributions.settings.refresh': RpcMethodDefinition<
+    SettingsRefreshRequest,
+    SettingsRefreshResult
   >
   'contributions.settings.submit': RpcMethodDefinition<
-    SettingsFrameSubmitRequest,
-    SettingsInteractionResponse
+    SettingsSubmitRequest,
+    SettingsCallbackResponse
   >
   'contributions.settings.invoke': RpcMethodDefinition<
-    SettingsFrameInvokeRequest,
-    SettingsInteractionResponse
+    SettingsInvokeRequest,
+    SettingsCallbackResponse
   >
-  'contributions.settings.frame.release': RpcMethodDefinition<
-    SettingsFrameReleaseRequest,
-    RpcNoPayload
-  >
-  'contributions.settings.session.release': RpcMethodDefinition<
-    SettingsSessionReleaseRequest,
-    RpcNoPayload
-  >
+  'contributions.settings.release': RpcMethodDefinition<SettingsReleaseRequest, RpcNoPayload>
   'contributions.deeplinks.handle': RpcMethodDefinition<DeeplinkHandleRequest, DeeplinkResponse>
   'contributions.commands.execute': RpcMethodDefinition<CommandExecuteRequest, CommandExecuteResult>
 }
@@ -320,6 +416,10 @@ export type HostToMainContributionRpcRequestMap = {
   >
   'contributions.settings.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
+    RpcNoPayload
+  >
+  'contributions.settings.refreshRequested': RpcMethodDefinition<
+    SettingsRefreshRequestedNotification,
     RpcNoPayload
   >
   'contributions.scrapers.games.register': RpcMethodDefinition<

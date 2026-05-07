@@ -90,7 +90,6 @@ Settings surface 能力矩阵：
 | submit        | 支持           | 支持      | 不支持  |
 | open dialog   | 仅 root button | 不支持    | 不支持  |
 | open popover  | 仅 button      | 仅 button | 不支持  |
-| parent patch  | 不支持         | 支持      | 支持    |
 | close root    | 支持           | 不支持    | 不支持  |
 | close dialog  | 不支持         | 支持      | 不支持  |
 | close popover | 支持           | 支持      | 支持    |
@@ -106,7 +105,6 @@ export interface SettingsSuccessOptions<
   TRefresh extends SettingsRefreshTarget = SettingsRefreshTarget
 > {
   message?: string
-  patch?: SerializableRecord
   refresh?: TRefresh
   closePopover?: boolean
 }
@@ -114,14 +112,20 @@ export interface SettingsSuccessOptions<
 export interface SettingsFailureOptions<
   TRefresh extends SettingsRefreshTarget = SettingsRefreshTarget
 > {
-  patch?: SerializableRecord
   refresh?: TRefresh
   closePopover?: boolean
 }
 
 export interface SettingsOpenOptions {
   message?: string
-  patch?: SerializableRecord
+  closePopover?: boolean
+}
+
+export interface SettingsCloseOptions {
+  message?: string
+}
+
+export interface SettingsClosePopoverOptions extends SettingsCloseOptions {
   closePopover?: boolean
 }
 ```
@@ -142,17 +146,6 @@ export interface SettingsRegistrar {
   ): SettingsRegistration
 }
 
-export function defineSettingsPopover<
-  const TParams extends SerializableRecord = SerializableRecord
->(definition: SettingsPopoverDefinition<TParams>): SettingsPopoverDefinition<TParams>
-
-export function defineSettingsDialog<
-  const TParams extends SerializableRecord = SerializableRecord,
-  const TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap
->(
-  definition: SettingsDialogDefinition<TParams, TPopovers>
-): SettingsDialogDefinition<TParams, TPopovers>
-
 export function defineSettingsContribution<
   const TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
   const TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
@@ -166,7 +159,7 @@ export interface SettingsRefreshReason {
 }
 ```
 
-`defineSettingsContribution()`、`defineSettingsDialog()`、`defineSettingsPopover()` 是正式公共 helper。它们不包装运行时行为，只稳定 const generic 推导，让 `openDialog()` 和 `openPopover()` 能拿到精确 key。
+`defineSettingsContribution()` 是唯一正式公共 helper。它不包装运行时行为，只稳定完整 contribution 上下文的 const generic 推导，让 `openDialog()` 和 `openPopover()` 能拿到精确 key。Dialog 与 popover definition 不提供独立 helper，因为它们脱离完整 settings 注册上下文后无法保持一致的 id 推导语义。
 
 ### Maps 与 ID 推导
 
@@ -287,8 +280,12 @@ export interface SettingsFieldNodeBase {
   width?: SettingsNodeWidth
 }
 
-export interface SettingsValueNodeBase<TCommitEvent, TCommitResult> extends SettingsFieldNodeBase {
-  valueKey: string
+export interface SettingsValueNodeBase<
+  TValue,
+  TCommitEvent,
+  TCommitResult
+> extends SettingsFieldNodeBase {
+  initialValue: TValue
   onCommit?: (event: TCommitEvent) => MaybePromise<TCommitResult>
 }
 ```
@@ -297,6 +294,7 @@ export interface SettingsValueNodeBase<TCommitEvent, TCommitResult> extends Sett
 
 ```ts
 export interface SettingsSwitchNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  boolean,
   TCommitEvent,
   TCommitResult
 > {
@@ -304,6 +302,7 @@ export interface SettingsSwitchNode<TCommitEvent, TCommitResult> extends Setting
 }
 
 export interface SettingsCheckboxNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  boolean,
   TCommitEvent,
   TCommitResult
 > {
@@ -311,6 +310,7 @@ export interface SettingsCheckboxNode<TCommitEvent, TCommitResult> extends Setti
 }
 
 export interface SettingsSelectNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  string,
   TCommitEvent,
   TCommitResult
 > {
@@ -320,6 +320,7 @@ export interface SettingsSelectNode<TCommitEvent, TCommitResult> extends Setting
 }
 
 export interface SettingsMultiSelectNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  readonly string[],
   TCommitEvent,
   TCommitResult
 > {
@@ -328,6 +329,7 @@ export interface SettingsMultiSelectNode<TCommitEvent, TCommitResult> extends Se
 }
 
 export interface SettingsTextInputNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  string,
   TCommitEvent,
   TCommitResult
 > {
@@ -337,6 +339,7 @@ export interface SettingsTextInputNode<TCommitEvent, TCommitResult> extends Sett
 }
 
 export interface SettingsTextareaNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  string,
   TCommitEvent,
   TCommitResult
 > {
@@ -346,6 +349,7 @@ export interface SettingsTextareaNode<TCommitEvent, TCommitResult> extends Setti
 }
 
 export interface SettingsNumberInputNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  number,
   TCommitEvent,
   TCommitResult
 > {
@@ -357,6 +361,7 @@ export interface SettingsNumberInputNode<TCommitEvent, TCommitResult> extends Se
 }
 
 export interface SettingsStringListNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  readonly string[],
   TCommitEvent,
   TCommitResult
 > {
@@ -366,6 +371,7 @@ export interface SettingsStringListNode<TCommitEvent, TCommitResult> extends Set
 }
 
 export interface SettingsRecordListNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
+  readonly SerializableRecord[],
   TCommitEvent,
   TCommitResult
 > {
@@ -543,7 +549,6 @@ export interface SettingsRootModelBase {
   title?: string
   description?: string
   size?: SettingsDialogSize
-  initialValues: SerializableRecord
 }
 ```
 
@@ -557,7 +562,6 @@ export interface SettingsDialogModel<
   title?: string
   description?: string
   size?: SettingsDialogSize
-  initialValues: SerializableRecord
   fields: readonly SettingsField<SettingsDialogNodeEvents<TParams, TPopovers>>[]
 }
 
@@ -565,7 +569,6 @@ export interface SettingsPopoverModel<TParams extends SerializableRecord = Seria
   title?: string
   description?: string
   width?: SettingsPopoverWidth
-  initialValues: SerializableRecord
   fields: readonly SettingsField<SettingsPopoverNodeEvents<TParams>>[]
 }
 ```
@@ -579,7 +582,7 @@ export interface SettingsResolveContextBase {
   contributionId: string
   sessionId: string
   values: SerializableRecord
-  dirtyValueKeys: readonly string[]
+  dirtyNodeIds: readonly string[]
   reason?: SettingsRefreshReason
   signal: AbortSignal
 }
@@ -595,7 +598,7 @@ export interface SettingsDialogResolveContext<
   dialogId: string
   params: TParams
   parentValues: SerializableRecord
-  parentDirtyValueKeys: readonly string[]
+  parentDirtyNodeIds: readonly string[]
 }
 
 export interface SettingsPopoverResolveContext<
@@ -606,7 +609,7 @@ export interface SettingsPopoverResolveContext<
   params: TParams
   parent: { surface: 'root' } | { surface: 'dialog'; dialogId: string }
   parentValues: SerializableRecord
-  parentDirtyValueKeys: readonly string[]
+  parentDirtyNodeIds: readonly string[]
 }
 ```
 
@@ -615,8 +618,7 @@ Action 事件：
 ```ts
 export interface SettingsCommitEventBase {
   fieldId: string
-  nodeId?: string
-  valueKey: string
+  nodeId: string
   value: SerializableValue
 }
 
@@ -682,26 +684,33 @@ export type SettingsRefreshTarget = 'self' | 'root' | 'dialog' | 'popover' | 'al
 Result 类型是少量 effect 的能力别名。非法 effect 必须通过类型别名排除，不应该留到运行时校验。
 
 ```ts
-export type SettingsResult<TEffect extends object = Record<never, never>> =
-  | ({ success: true; message?: string; patch?: SerializableRecord } & TEffect)
+export type SettingsResult<
+  TEffect extends object = Record<never, never>,
+  TFailureRefresh extends SettingsRefreshTarget = SettingsRefreshTarget
+> =
+  | ({ success: true; message?: string } & TEffect)
   | {
       success: false
       error: ExtensionErrorShape
-      patch?: SerializableRecord
-      refresh?: SettingsRefreshTarget
+      refresh?: TFailureRefresh
       closePopover?: boolean
     }
 
-export type SettingsRootCommitResult = SettingsResult<{
-  refresh?: 'self' | 'root' | 'all'
-  closePopover?: boolean
-}>
+export type SettingsRootCommitResult = SettingsResult<
+  {
+    refresh?: 'self' | 'root' | 'all'
+    closePopover?: boolean
+  },
+  'self' | 'root' | 'all'
+>
 
-export type SettingsDialogCommitResult = SettingsResult<{
-  parentPatch?: SerializableRecord
-  refresh?: 'self' | 'dialog' | 'root' | 'all'
-  closePopover?: boolean
-}>
+export type SettingsDialogCommitResult = SettingsResult<
+  {
+    refresh?: 'self' | 'dialog' | 'root' | 'all'
+    closePopover?: boolean
+  },
+  'self' | 'dialog' | 'root' | 'all'
+>
 
 export type SettingsRootButtonEffect<
   TPopovers extends SettingsPopoverMap,
@@ -737,7 +746,6 @@ export type SettingsRootButtonEffect<
 
 export type SettingsDialogButtonEffect<TPopovers extends SettingsPopoverMap> =
   | {
-      parentPatch?: SerializableRecord
       refresh?: 'self' | 'dialog' | 'root' | 'all'
       closePopover?: boolean
       openPopover?: never
@@ -745,58 +753,75 @@ export type SettingsDialogButtonEffect<TPopovers extends SettingsPopoverMap> =
     }
   | {
       openPopover: SettingsPopoverTarget<TPopovers>
-      parentPatch?: SerializableRecord
       closePopover?: boolean
       refresh?: never
       close?: never
     }
   | {
       close: 'dialog'
-      parentPatch?: SerializableRecord
       closePopover?: boolean
       refresh?: never
       openPopover?: never
     }
 
 export type SettingsPopoverEffect = {
-  parentPatch?: SerializableRecord
   refresh?: 'self' | 'popover' | 'dialog' | 'root' | 'all'
   closePopover?: boolean
 }
 
-export type SettingsPopoverActionResult = SettingsResult<SettingsPopoverEffect>
+export type SettingsPopoverActionResult = SettingsResult<
+  SettingsPopoverEffect,
+  'self' | 'popover' | 'dialog' | 'root' | 'all'
+>
 
 export type SettingsPopoverCommitResult = SettingsPopoverActionResult
 
 export type SettingsRootButtonResult<
   TPopovers extends SettingsPopoverMap,
   TDialogs extends SettingsDialogMap<TPopovers>
-> = SettingsResult<SettingsRootButtonEffect<TPopovers, TDialogs>>
+> = SettingsResult<SettingsRootButtonEffect<TPopovers, TDialogs>, 'self' | 'root' | 'all'>
 
 export type SettingsDialogButtonResult<TPopovers extends SettingsPopoverMap> = SettingsResult<
-  SettingsDialogButtonEffect<TPopovers>
+  SettingsDialogButtonEffect<TPopovers>,
+  'self' | 'dialog' | 'root' | 'all'
 >
 
 export type SettingsPopoverButtonResult = SettingsPopoverActionResult
 
-export type SettingsRootSubmitResult = SettingsResult<{
-  refresh?: 'self' | 'root' | 'all'
-  close?: 'root'
-}>
+export type SettingsRootSubmitResult = SettingsResult<
+  | {
+      refresh?: 'self' | 'root' | 'all'
+      closePopover?: boolean
+      close?: never
+    }
+  | {
+      close: 'root'
+      closePopover?: boolean
+      refresh?: never
+    },
+  'self' | 'root' | 'all'
+>
 
-export type SettingsDialogSubmitResult = SettingsResult<{
-  parentPatch?: SerializableRecord
-  refresh?: 'self' | 'dialog' | 'root' | 'all'
-  close?: 'dialog'
-  closePopover?: boolean
-}>
+export type SettingsDialogSubmitResult = SettingsResult<
+  | {
+      refresh?: 'self' | 'dialog' | 'root' | 'all'
+      closePopover?: boolean
+      close?: never
+    }
+  | {
+      close: 'dialog'
+      closePopover?: boolean
+      refresh?: never
+    },
+  'self' | 'dialog' | 'root' | 'all'
+>
 ```
 
 Effect 别名必须表达以下规则：
 
 - `openDialog`、`openPopover`、`close` 是互斥的最终 effect。
 - `openDialog` 和 `openPopover` 不能与 `refresh` 同时出现。
-- root result 不能包含 `parentPatch`。
+- result 不能包含 `patch` 或 `parentPatch`；UI 当前态只能来自 `resolve()`。
 - dialog result 不能关闭 root。
 - 只有 root button result 可以包含 `openDialog`。
 - 只有 root/dialog button result 可以包含 `openPopover`。
@@ -817,17 +842,13 @@ export interface SettingsRootButtonHelpers<
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'root' | 'all'>
   ): SettingsRootButtonResult<TPopovers, TDialogs>
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
   refresh(
     target?: 'self' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
   ): SettingsRootButtonResult<TPopovers, TDialogs>
   close(
     target: 'root',
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
+    options?: SettingsCloseOptions
   ): SettingsRootButtonResult<TPopovers, TDialogs>
   closePopover(
     options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
@@ -850,10 +871,6 @@ export interface SettingsRootCommitHelpers {
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'root' | 'all'>
   ): SettingsRootCommitResult
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootCommitResult
   refresh(
     target?: 'self' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
@@ -867,18 +884,11 @@ export interface SettingsRootSubmitHelpers {
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'root' | 'all'>
   ): SettingsRootSubmitResult
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootSubmitResult
   refresh(
     target?: 'self' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
   ): SettingsRootSubmitResult
-  close(
-    target: 'root',
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootSubmitResult
+  close(target: 'root', options?: SettingsClosePopoverOptions): SettingsRootSubmitResult
   closePopover(options?: SettingsSuccessOptions<'self' | 'root' | 'all'>): SettingsRootSubmitResult
 }
 
@@ -890,21 +900,13 @@ export interface SettingsDialogButtonHelpers<TPopovers extends SettingsPopoverMa
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'dialog' | 'root' | 'all'>
   ): SettingsDialogButtonResult<TPopovers>
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogButtonResult<TPopovers>
-  parentPatch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogButtonResult<TPopovers>
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
   ): SettingsDialogButtonResult<TPopovers>
   close(
     target: 'dialog',
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+    options?: SettingsClosePopoverOptions
   ): SettingsDialogButtonResult<TPopovers>
   closePopover(
     options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
@@ -924,14 +926,6 @@ export interface SettingsDialogCommitHelpers {
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'dialog' | 'root' | 'all'>
   ): SettingsDialogCommitResult
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogCommitResult
-  parentPatch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogCommitResult
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
@@ -949,22 +943,11 @@ export interface SettingsDialogSubmitHelpers {
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'dialog' | 'root' | 'all'>
   ): SettingsDialogSubmitResult
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
-  parentPatch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
   ): SettingsDialogSubmitResult
-  close(
-    target: 'dialog',
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
+  close(target: 'dialog', options?: SettingsClosePopoverOptions): SettingsDialogSubmitResult
   closePopover(
     options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
   ): SettingsDialogSubmitResult
@@ -978,14 +961,6 @@ export interface SettingsPopoverActionHelpers {
     error: ExtensionErrorShape,
     options?: SettingsFailureOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
   ): SettingsPopoverActionResult
-  patch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
-  ): SettingsPopoverActionResult
-  parentPatch(
-    values: SerializableRecord,
-    options?: SettingsSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
-  ): SettingsPopoverActionResult
   refresh(
     target?: 'self' | 'popover' | 'dialog' | 'root' | 'all',
     options?: SettingsSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
@@ -996,7 +971,7 @@ export interface SettingsPopoverActionHelpers {
 }
 ```
 
-Dialog button helper 不提供 `openDialog`，但提供 `parentPatch`；dialog submit/commit helper 不提供 `openPopover`。Popover helper 不提供 `openDialog`、`openPopover` 和 root/dialog close，但保留 `parentPatch`。
+Dialog button helper 不提供 `openDialog`；dialog submit/commit helper 不提供 `openPopover`。Popover helper 不提供 `openDialog`、`openPopover` 和 root/dialog close。所有 UI 值更新都应通过重新 `resolve()` 完成。
 
 ## Settings Node 工厂
 
@@ -1053,11 +1028,10 @@ const registration = context.contributions.settings.register(
     id: 'bangumi',
     title: 'Bangumi',
     popovers: {
-      'oauth-diagnostics': defineSettingsPopover({
+      'oauth-diagnostics': {
         title: 'OAuth diagnostics',
         async resolve(_ctx, settings) {
           return {
-            initialValues: {},
             fields: [
               {
                 id: 'redirect-uri',
@@ -1072,15 +1046,14 @@ const registration = context.contributions.settings.register(
             ]
           }
         }
-      })
+      }
     },
     dialogs: {
-      'sync-preview': defineSettingsDialog({
+      'sync-preview': {
         title: 'Sync preview',
         async resolve(ctx, settings) {
           const plan = await createSyncPlan(ctx.parentValues)
           return {
-            initialValues: {},
             fields: [
               {
                 id: 'plan-preview',
@@ -1094,14 +1067,13 @@ const registration = context.contributions.settings.register(
             ]
           }
         }
-      })
+      }
     },
     async resolve(_ctx, settings) {
+      const accessToken = await readAccessToken()
+      const autoSync = await readAutoSync()
+
       return {
-        initialValues: {
-          accessToken: await readAccessToken(),
-          autoSync: await readAutoSync()
-        },
         tabs: [
           {
             id: 'account',
@@ -1114,7 +1086,7 @@ const registration = context.contributions.settings.register(
                 content: [
                   settings.textInput({
                     id: 'access-token-input',
-                    valueKey: 'accessToken',
+                    initialValue: accessToken,
                     inputMode: 'password',
                     grow: true
                   }),
@@ -1122,7 +1094,7 @@ const registration = context.contributions.settings.register(
                     id: 'verify-account',
                     label: 'Verify',
                     async onClick(ctx) {
-                      await verifyAccount(ctx.values.accessToken)
+                      await verifyAccount(ctx.values['access-token-input'])
                       return ctx.refresh('root', { message: 'Account verified' })
                     }
                   }),
@@ -1147,7 +1119,7 @@ const registration = context.contributions.settings.register(
                 content: [
                   settings.switch({
                     id: 'auto-sync-switch',
-                    valueKey: 'autoSync'
+                    initialValue: autoSync
                   })
                 ]
               },
@@ -1189,12 +1161,10 @@ context.subscriptions.add(registration)
 - Field 不递归，不能包含子 field。
 - Field id 在同一个 surface 内唯一。
 - 所有 settings node 都必须提供 `id`。
-- Node id 在同一个 field 内唯一；host 使用 `fieldId + nodeId` 定位 UI node。
-- `valueKey` 只表示 draft slot 绑定，不承担 node identity 职责。
-- Control node 的 `valueKey` 不要求唯一，多个 control 可以绑定同一个 draft slot。
-- 如果多个 control 绑定同一个 `valueKey`，它们的 value schema 必须一致。
-- `initialValues`、`patch` 和 `parentPatch` 必须是可序列化 record。
-- 与已知 `valueKey` 对应的值必须通过 schema 校验；不做隐式类型转换。
+- Node id 在同一个 surface 内唯一；value node 的 `id` 同时是 draft slot id。
+- Value node 必须提供 `initialValue`；renderer 用它初始化 draft，并在 refresh merge 时作为非 dirty draft slot 的新基准。
+- `initialValue` 必须通过对应 node schema 校验；不做隐式类型转换。
+- `patch` / `parentPatch` 不属于 settings result；UI 当前态只能来自重新 `resolve()` 的模型。
 
 控制节点 schema：
 
@@ -1242,7 +1212,7 @@ export type ExtensionSettingsScope = ExtensionSettingsSurface | 'all'
 
 export interface ExtensionSettingsDraftSnapshot {
   values: SerializableRecord
-  dirtyValueKeys: readonly string[]
+  dirtyNodeIds: readonly string[]
 }
 
 export interface ExtensionSettingsSessionRef {
@@ -1343,8 +1313,7 @@ export type ExtensionSettingsSubmitRequest =
 export interface ExtensionSettingsInvokeBase extends ExtensionSettingsSessionRef {
   callbackId: string
   fieldId: string
-  nodeId?: string
-  valueKey?: string
+  nodeId: string
   value?: SerializableValue
   requestId: string
   revision: number
@@ -1447,7 +1416,7 @@ Surface state 包含：
 
 - 已 resolve 的 model
 - draft 值
-- dirty value key 列表
+- dirty node id 列表
 - revision
 - pending request id 集合
 - active callback id 集合
@@ -1912,11 +1881,12 @@ Main 职责：
 - Dialog callback 不能打开 dialog。
 - Dialog result 不能关闭 root。
 - Popover callback 不能打开 dialog、打开 popover、关闭 root 或关闭 dialog。
-- Root result 不能返回 `parentPatch`。
 - 所有 settings node 都必须有 `id`。
-- `valueKey` 只用于 draft slot 绑定，不承担 node identity 职责。
+- Settings value node 必须使用 `initialValue`，不能使用 surface 级 `initialValues`。
+- Value node 的 `id` 同时是 draft slot id，且 node id 在同一个 surface 内唯一。
+- Settings result 不能返回 `patch` 或 `parentPatch`。
 - Settings refresh 使用显式 target，不使用 boolean `true`。
-- 渲染进程 draft merge 在 refresh 后保留 dirty value key。
+- 渲染进程 draft merge 在 refresh 后保留 dirty node id 对应的 draft。
 - `registration.refresh()` 会刷新已打开的渲染进程 session，但不直接推送 DTO。
 - Menus 使用 `context.contributions.menus.<domain>.<scope>`。
 - Menu domain/scope/input 类型由 `MenuInputMap` 派生。
