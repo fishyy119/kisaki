@@ -28,17 +28,18 @@
 
 命名规则是本次重构的类型边界，所有新增类型必须遵守。
 
-| 后缀                                       | 含义                                                            |
-| ------------------------------------------ | --------------------------------------------------------------- |
-| `Definition`                               | 扩展作者注册的定义，例如 `SettingsDialogDefinition`             |
-| `Model`                                    | 扩展 `resolve` 返回的公共结构，例如 `SettingsRootModel`         |
-| `Node`                                     | 可渲染 DTO 单元，例如 `SettingsTextInputNode`、`MenuActionNode` |
-| `Field` / `Tab`                            | Settings 布局结构，不属于 node                                  |
-| `Event`                                    | callback / submit 的入参                                        |
-| `Result`                                   | callback / submit 的出参                                        |
-| `Factory`                                  | 只补全 `kind` 并保持推导，不保存状态                            |
-| `ExtensionResolved*`                       | main 提供给渲染进程的归一化 DTO                                 |
-| `Extension*Request` / `Extension*Response` | 渲染进程 IPC 请求与响应                                         |
+| 后缀                                       | 含义                                                                                          |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `Contribution`                             | 扩展作者注册到贡献点的完整贡献对象，例如 `SettingsContribution`、`GameSingleMenuContribution` |
+| `Definition`                               | 扩展作者注册的定义，例如 `SettingsDialogDefinition`                                           |
+| `Model`                                    | 扩展 `resolve` 返回的公共结构，例如 `SettingsRootModel`                                       |
+| `Node`                                     | 可渲染 DTO 单元，例如 `SettingsTextInputNode`、`MenuActionNode`                               |
+| `Field` / `Tab`                            | Settings 布局结构，不属于 node                                                                |
+| `Event`                                    | callback / submit 的入参                                                                      |
+| `Result`                                   | callback / submit 的出参                                                                      |
+| `Factory`                                  | 只补全 `kind` 并保持推导，不保存状态                                                          |
+| `ExtensionResolved*`                       | main 提供给渲染进程的归一化 DTO                                                               |
+| `Extension*Request` / `Extension*Response` | 渲染进程 IPC 请求与响应                                                                       |
 
 统一规则：
 
@@ -50,6 +51,7 @@
 - `settings` button 与 menu action 都使用 `label`，不使用 `text` 表示按钮文案。
 - `TaskDialog` 只作为文档术语，公共类型名使用 `SettingsDialogDefinition`。
 - `settings` 泛型顺序统一为 `<TPopovers, TDialogs>`，因为 dialogs 依赖 popovers。
+- `menus` 中 `Input` 只表示 `resolve(input, menu)` 的入参；domain/scope 选择后的 `register()` 参数类型必须使用 `Contribution` 后缀，例如 `GameSingleMenuContribution`。
 
 ## 架构分层
 
@@ -1492,7 +1494,19 @@ export interface TagSingleMenuInput extends MenuInputBase {
 }
 ```
 
-Menu domain/scope 映射是唯一事实源：
+Menu contribution 使用命名类型表达 register 参数，避免把 `resolve()` input 与注册对象混在一起：
+
+```ts
+export type GameSingleMenuContribution = MenuContribution<GameSingleMenuInput>
+export type GameBatchMenuContribution = MenuContribution<GameBatchMenuInput>
+export type CharacterSingleMenuContribution = MenuContribution<CharacterSingleMenuInput>
+export type PersonSingleMenuContribution = MenuContribution<PersonSingleMenuInput>
+export type CompanySingleMenuContribution = MenuContribution<CompanySingleMenuInput>
+export type CollectionSingleMenuContribution = MenuContribution<CollectionSingleMenuInput>
+export type TagSingleMenuContribution = MenuContribution<TagSingleMenuInput>
+```
+
+Menu domain/scope/input 映射是 input 的唯一事实源；register 参数通过同 key 的 contribution 映射保留命名类型；最终暴露给 `context.contributions.menus` 的整棵注册入口使用 `MenuRegistrar` 类型：
 
 ```ts
 export interface MenuInputMap {
@@ -1517,6 +1531,28 @@ export interface MenuInputMap {
   }
 }
 
+export interface MenuContributionMap {
+  game: {
+    single: GameSingleMenuContribution
+    batch: GameBatchMenuContribution
+  }
+  character: {
+    single: CharacterSingleMenuContribution
+  }
+  person: {
+    single: PersonSingleMenuContribution
+  }
+  company: {
+    single: CompanySingleMenuContribution
+  }
+  collection: {
+    single: CollectionSingleMenuContribution
+  }
+  tag: {
+    single: TagSingleMenuContribution
+  }
+}
+
 export type MenuDomain = keyof MenuInputMap
 export type MenuScope<TDomain extends MenuDomain> = keyof MenuInputMap[TDomain]
 
@@ -1524,9 +1560,11 @@ export type MenuInput = {
   [TDomain in keyof MenuInputMap]: MenuInputMap[TDomain][keyof MenuInputMap[TDomain]]
 }[keyof MenuInputMap]
 
-export type MenuContributions = {
-  [TDomain in keyof MenuInputMap]: {
-    [TScope in keyof MenuInputMap[TDomain]]: MenuRegistrar<MenuInputMap[TDomain][TScope]>
+export type MenuRegistrar = {
+  [TDomain in keyof MenuContributionMap]: {
+    [TScope in keyof MenuContributionMap[TDomain]]: MenuRegistrationPoint<
+      MenuContributionMap[TDomain][TScope]
+    >
   }
 }
 ```
@@ -1538,8 +1576,8 @@ export interface MenuRegistration extends Disposable {
   refresh(reason?: MenuRefreshReason): Promise<void>
 }
 
-export interface MenuRegistrar<TInput extends MenuInput> {
-  register(contribution: MenuContribution<TInput>): MenuRegistration
+export interface MenuRegistrationPoint<TContribution extends MenuContribution<MenuInput>> {
+  register(contribution: TContribution): MenuRegistration
 }
 
 export interface MenuContribution<TInput extends MenuInput> {
@@ -1675,7 +1713,8 @@ context.subscriptions.add(registration)
 
 ## Menus 校验
 
-- Domain/scope 注册入口由 `MenuInputMap` 派生。
+- Domain/scope 注册入口由 `MenuInputMap`、同 key 的 `MenuContributionMap` 和 `MenuRegistrar` 派生。
+- `MenuContributionMap` 必须与 `MenuInputMap` 保持完全相同的 domain/scope key。
 - `MenuNode.id` 在同级节点中必须唯一。
 - `separator.id` 在公共 API 中是可选的。
 - Normalize 阶段会生成稳定的内部 separator id，用于渲染进程 key。
@@ -1860,7 +1899,7 @@ Main 职责：
 
 1. 重写 `packages/extension-api/src/contributions/settings/contracts.ts`。
 2. 按新的统一 node 核心和 capability result alias 重写 settings validation。
-3. 把 entity menu 公共 API 重命名为 `menus`，并实现由 `MenuInputMap` 派生的注册入口。
+3. 把 entity menu 公共 API 重命名为 `menus`，并实现由 `MenuInputMap` / `MenuContributionMap` / `MenuRegistrar` 派生的注册入口。
 4. 更新 `packages/extension-api/src/context.ts`。
 5. 更新 SDK bridge registrar 与 extension host contribution handler。
 6. 重写 `apps/desktop/src/shared/extension.ts` 中的 settings/menu DTO。
@@ -1889,7 +1928,8 @@ Main 职责：
 - 渲染进程 draft merge 在 refresh 后保留 dirty node id 对应的 draft。
 - `registration.refresh()` 会刷新已打开的渲染进程 session，但不直接推送 DTO。
 - Menus 使用 `context.contributions.menus.<domain>.<scope>`。
-- Menu domain/scope/input 类型由 `MenuInputMap` 派生。
+- Menu domain/scope/input 类型由 `MenuInputMap` 派生，register 参数类型由同 key 的 `MenuContributionMap` 派生。
+- 每个 menu domain/scope 的 register 参数都有明确的 `Contribution` 后缀命名类型，例如 `GameSingleMenuContribution`。
 - Submenu 使用 `MenuSubmenuNode` 和 `kind: 'submenu'`。
 - Menu callback 通过 `nodePath` 调用。
 - 渲染进程 settings/menus 组件不从 `@renderer/core/extensions` 导入。
