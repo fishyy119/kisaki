@@ -14,7 +14,7 @@ import { getEntityIcon } from '@renderer/utils'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
+import { ExtensionMenuItems } from '@renderer/components/extension/menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { characters, collections, collectionCharacterLinks, type Character } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
@@ -92,9 +92,8 @@ const collectionsData = computed(() => data.value?.collectionsData ?? null)
 const extensionMenuInput = computed(
   () =>
     ({
+      domain: 'character',
       scope: 'single',
-      target: 'character.single',
-      entityType: 'character',
       entityId: props.characterId
     }) as const
 )
@@ -346,7 +345,7 @@ const displayScore = computed(() =>
       管理外部ID
     </component>
 
-    <ExtensionEntityMenuItems
+    <ExtensionMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

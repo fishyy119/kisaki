@@ -1,11 +1,10 @@
 import { computed, shallowRef } from 'vue'
-import { ipcManager } from '@renderer/core/ipc'
-import { getExtensionContributionSnapshot } from './ipc'
-import type { ExtensionContributionSnapshot, ExtensionSettingsContributionInfo } from './types'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
+import type { ExtensionContributionSnapshot } from '@shared/extension'
 
 function createEmptySnapshot(): ExtensionContributionSnapshot {
   return {
-    entityMenus: [],
+    menus: [],
     settings: [],
     themes: [],
     deeplinks: [],
@@ -19,7 +18,7 @@ let refreshPromise: Promise<ExtensionContributionSnapshot> | null = null
 
 export const extensionContributionStore = {
   snapshot,
-  entityMenus: computed(() => snapshot.value.entityMenus),
+  menus: computed(() => snapshot.value.menus),
   settings: computed(() => snapshot.value.settings),
   themes: computed(() => snapshot.value.themes),
   deeplinks: computed(() => snapshot.value.deeplinks),
@@ -40,7 +39,9 @@ export async function refreshExtensionContributionSnapshot(): Promise<ExtensionC
   setupExtensionContributionStore()
 
   if (!refreshPromise) {
-    refreshPromise = getExtensionContributionSnapshot()
+    refreshPromise = ipcManager
+      .invoke('extension:get-contribution-snapshot')
+      .then(unwrapIpcData)
       .then((nextSnapshot) => {
         snapshot.value = nextSnapshot
         return nextSnapshot
@@ -51,10 +52,4 @@ export async function refreshExtensionContributionSnapshot(): Promise<ExtensionC
   }
 
   return refreshPromise
-}
-
-export function getExtensionSettingsFor(
-  extensionId: string
-): readonly ExtensionSettingsContributionInfo[] {
-  return snapshot.value.settings.filter((contribution) => contribution.extensionId === extensionId)
 }

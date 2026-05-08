@@ -18,7 +18,7 @@ import {
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
-import { getExtensionSources } from '@renderer/core/extensions'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
@@ -49,7 +49,7 @@ const store = useDiscoverExtensionStore()
 
 const { data: registries } = useAsyncData(
   async () => {
-    return getExtensionSources()
+    return unwrapIpcData(await ipcManager.invoke('extension:get-sources'))
   },
   { immediate: true }
 )

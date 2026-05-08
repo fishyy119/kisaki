@@ -8,7 +8,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { cn } from '@renderer/utils/cn'
-import { installExtension } from '@renderer/core/extensions'
+import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import type { ExtensionRegistryEntry } from '@shared/extension'
 
@@ -26,7 +26,7 @@ const iconError = ref(false)
 async function handleInstall() {
   installing.value = true
   try {
-    await installExtension(props.extension.locator)
+    unwrapIpcVoid(await ipcManager.invoke('extension:install', props.extension.locator))
     await props.refreshInstalledState()
     notify.success('扩展安装成功')
   } catch (error) {

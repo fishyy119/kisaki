@@ -1,13 +1,13 @@
 <!--
 Extension Browse Panel renders extension discovery results.
-Boundary: reads store filters and queries the extension IPC facade.
+Boundary: reads store filters and queries extension discovery channels.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
-import { getExtensionCatalog, searchExtensions } from '@renderer/core/extensions'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
@@ -21,12 +21,14 @@ const store = useDiscoverExtensionStore()
 async function searchExtensionPage(
   page: number
 ): Promise<{ results: ExtensionRegistryEntry[]; hasMore: boolean }> {
-  const data = await searchExtensions(store.selectedRegistry, store.searchQuery, {
-    page,
-    limit: PAGE_SIZE,
-    sortBy: store.sortField === 'updatedAt' ? 'updated' : store.sortField,
-    sortDirection: store.sortDirection
-  })
+  const data = unwrapIpcData(
+    await ipcManager.invoke('extension:search', store.selectedRegistry, store.searchQuery, {
+      page,
+      limit: PAGE_SIZE,
+      sortBy: store.sortField === 'updatedAt' ? 'updated' : store.sortField,
+      sortDirection: store.sortDirection
+    })
+  )
 
   return { results: data.entries, hasMore: data.hasMore }
 }
@@ -48,9 +50,12 @@ const {
   watch: [queryKey],
   immediate: true
 })
-const { data: catalog, refetch: refetchCatalog } = useAsyncData(() => getExtensionCatalog(), {
-  immediate: true
-})
+const { data: catalog, refetch: refetchCatalog } = useAsyncData(
+  async () => unwrapIpcData(await ipcManager.invoke('extension:get-catalog')),
+  {
+    immediate: true
+  }
+)
 
 watch(
   queryKey,

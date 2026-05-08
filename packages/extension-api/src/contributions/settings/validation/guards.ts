@@ -6,7 +6,7 @@ import type {
   SettingsDialogModel,
   SettingsDialogSubmitResult,
   SettingsField,
-  SettingsFieldNode,
+  SettingsFieldContentNode,
   SettingsPopoverActionResult,
   SettingsPopoverButtonResult,
   SettingsPopoverCommitResult,
@@ -60,7 +60,9 @@ export function isSettingsTab(value: unknown): value is SettingsTab<SettingsAnyN
   return validateSettingsTab(value).length === 0
 }
 
-export function isSettingsNode(value: unknown): value is SettingsFieldNode<SettingsAnyNodeEvents> {
+export function isSettingsNode(
+  value: unknown
+): value is SettingsFieldContentNode<SettingsAnyNodeEvents> {
   return validateSettingsNode(value).length === 0
 }
 

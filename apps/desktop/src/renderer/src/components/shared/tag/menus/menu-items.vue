@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
+import { ExtensionMenuItems } from '@renderer/components/extension/menus'
 import { tags, type Tag } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 
@@ -49,9 +49,8 @@ useEvent('db:updated', ({ table, id }) => {
 const extensionMenuInput = computed(
   () =>
     ({
+      domain: 'tag',
       scope: 'single',
-      target: 'tag.single',
-      entityType: 'tag',
       entityId: props.tagId
     }) as const
 )
@@ -97,7 +96,7 @@ async function handleToggleNsfw() {
       NSFW
     </component>
 
-    <ExtensionEntityMenuItems
+    <ExtensionMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

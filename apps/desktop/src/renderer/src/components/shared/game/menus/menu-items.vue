@@ -15,7 +15,7 @@ import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
+import { ExtensionMenuItems } from '@renderer/components/extension/menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { games, collections, collectionGameLinks, type Game } from '@shared/db'
 import { Status } from '@shared/db'
@@ -108,9 +108,8 @@ const canOpenGameDir = computed(() => {
 const extensionMenuInput = computed(
   () =>
     ({
+      domain: 'game',
       scope: 'single',
-      target: 'game.single',
-      entityType: 'game',
       entityId: props.gameId
     }) as const
 )
@@ -430,7 +429,7 @@ async function handleOpenGameDir() {
       管理外部ID
     </component>
 
-    <ExtensionEntityMenuItems
+    <ExtensionMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

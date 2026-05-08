@@ -23,7 +23,7 @@ import {
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
+import { ExtensionMenuItems } from '@renderer/components/extension/menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections, collectionGameLinks, games } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
@@ -112,9 +112,8 @@ const contextMenuComponents: MenuComponents = {
 const extensionMenuInput = computed(
   () =>
     ({
+      domain: 'game',
       scope: 'batch',
-      target: 'game.batch',
-      entityType: 'game',
       entityIds: props.gameIds
     }) as const
 )
@@ -286,7 +285,7 @@ async function handleSetFavorite(isFavorite: boolean) {
     批量更新元数据
   </ContextMenuItem>
 
-  <ExtensionEntityMenuItems
+  <ExtensionMenuItems
     :input="extensionMenuInput"
     :components="contextMenuComponents"
     :enabled="props.enabled"

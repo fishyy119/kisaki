@@ -10,16 +10,13 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { ExtensionSettingsDialogStack } from '@renderer/components/shared/extension'
+import { ExtensionSettingsDialog } from '@renderer/components/extension/settings'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
+import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import {
-  disableExtension,
-  enableExtension,
   extensionContributionStore,
-  refreshExtensionContributionSnapshot,
-  uninstallExtension,
-  updateExtension
+  refreshExtensionContributionSnapshot
 } from '@renderer/core/extensions'
 import type { ExtensionCatalogInfo, ExtensionUpdateInfo } from '@shared/extension'
 
@@ -106,7 +103,11 @@ async function handleToggle(enabled: boolean) {
 
   toggling.value = true
   try {
-    await (enabled ? enableExtension(props.extension.id) : disableExtension(props.extension.id))
+    if (enabled) {
+      unwrapIpcVoid(await ipcManager.invoke('extension:enable', props.extension.id))
+    } else {
+      unwrapIpcVoid(await ipcManager.invoke('extension:disable', props.extension.id))
+    }
     await refreshExtensionContributionSnapshot()
 
     notify.success(enabled ? '扩展已启用' : '扩展已禁用')
@@ -128,7 +129,7 @@ const enabledModel = computed({
 async function handleUninstall() {
   uninstalling.value = true
   try {
-    await uninstallExtension(props.extension.id)
+    unwrapIpcVoid(await ipcManager.invoke('extension:uninstall', props.extension.id))
     await refreshExtensionContributionSnapshot()
 
     notify.success('扩展已卸载')
@@ -144,7 +145,7 @@ async function handleUninstall() {
 async function handleUpdate() {
   updating.value = true
   try {
-    await updateExtension(props.extension.id)
+    unwrapIpcVoid(await ipcManager.invoke('extension:update', props.extension.id))
     await refreshExtensionContributionSnapshot()
 
     notify.success('扩展更新成功')
@@ -329,7 +330,7 @@ function openSettings() {
     </div>
 
     <!-- Settings Dialog -->
-    <ExtensionSettingsDialogStack
+    <ExtensionSettingsDialog
       v-if="settingsOpen && settingsContribution"
       v-model:open="settingsOpen"
       :contribution="settingsContribution"

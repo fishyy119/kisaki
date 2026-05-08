@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
+import { ExtensionMenuItems } from '@renderer/components/extension/menus'
 import { collections, type Collection } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 
@@ -56,9 +56,8 @@ const isDynamic = computed(() => collection.value?.isDynamic ?? false)
 const extensionMenuInput = computed(
   () =>
     ({
+      domain: 'collection',
       scope: 'single',
-      target: 'collection.single',
-      entityType: 'collection',
       entityId: props.collectionId
     }) as const
 )
@@ -147,7 +146,7 @@ async function handleToggleNsfw() {
       NSFW
     </component>
 
-    <ExtensionEntityMenuItems
+    <ExtensionMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

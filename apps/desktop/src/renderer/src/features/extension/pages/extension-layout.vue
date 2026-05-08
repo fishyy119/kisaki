@@ -5,7 +5,7 @@ Boundary: coordinates updates and install dialog state for child routes.
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { checkExtensionUpdates } from '@renderer/core/extensions'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { ExtensionHeader } from '../components'
 import { ExtensionInstallDialog } from '../components'
 import type { ExtensionUpdateInfo } from '@shared/extension'
@@ -23,7 +23,7 @@ const installDialogOpen = ref(false)
 async function handleCheckUpdates() {
   checkingUpdates.value = true
   try {
-    updates.value = await checkExtensionUpdates()
+    updates.value = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
   } catch (error) {
     console.error('Failed to check updates:', error)
   } finally {

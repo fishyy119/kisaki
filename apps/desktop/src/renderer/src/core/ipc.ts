@@ -57,3 +57,19 @@ export class IpcManager {
 }
 
 export const ipcManager = new IpcManager()
+
+export function unwrapIpcData<T>(
+  result: { success: true; data: T } | { success: false; error: string }
+): T {
+  if (result.success) {
+    return result.data
+  }
+
+  throw new Error(result.error)
+}
+
+export function unwrapIpcVoid(result: { success: true } | { success: false; error: string }): void {
+  if (!result.success) {
+    throw new Error(result.error)
+  }
+}

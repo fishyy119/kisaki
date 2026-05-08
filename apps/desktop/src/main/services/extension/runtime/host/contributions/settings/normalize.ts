@@ -1,7 +1,7 @@
 import type {
   SettingsDialogModel,
   SettingsField,
-  SettingsFieldNode,
+  SettingsFieldContentNode,
   SettingsPopoverModel,
   SettingsResolvedSurfacePayload,
   SettingsRootModel,
@@ -112,7 +112,7 @@ function normalizeSettingsField(
 
 function normalizeSettingsNode(
   fieldId: string,
-  node: SettingsFieldNode<any>,
+  node: SettingsFieldContentNode<any>,
   context: NormalizeSettingsContext
 ): Record<string, unknown> {
   switch (node.kind) {

@@ -1,6 +1,6 @@
 <!--
 Extension Install Dialog installs extensions from supported sources.
-Boundary: delegates installation to the extension IPC facade.
+Boundary: owns install-source inputs and delegates work to main over IPC.
 -->
 <script setup lang="ts">
 import { ref, watch } from 'vue'
@@ -20,8 +20,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldContent, FieldLabel, FieldDescription } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { ipcManager } from '@renderer/core/ipc'
-import { installExtension, installExtensionFromFile } from '@renderer/core/extensions'
+import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 
 type InstallMethod = 'github' | 'url' | 'local'
 
@@ -67,7 +66,7 @@ async function handleInstallFromGitHub() {
   installing.value = true
   try {
     const source = `github:${githubRepo.value.trim()}`
-    await installExtension(source)
+    unwrapIpcVoid(await ipcManager.invoke('extension:install', source))
 
     notify.success('扩展安装成功')
     githubRepo.value = ''
@@ -96,7 +95,7 @@ async function handleInstallFromUrl() {
 
   installing.value = true
   try {
-    await installExtension(extensionUrl.value.trim())
+    unwrapIpcVoid(await ipcManager.invoke('extension:install', extensionUrl.value.trim()))
 
     notify.success('扩展安装成功')
     extensionUrl.value = ''
@@ -120,7 +119,7 @@ async function handleInstallFromFile() {
 
     if (res.success && res.data && !res.data.canceled && res.data.filePaths.length > 0) {
       const filePath = res.data.filePaths[0]
-      await installExtensionFromFile(filePath)
+      unwrapIpcVoid(await ipcManager.invoke('extension:install-from-file', filePath))
 
       notify.success('扩展安装成功')
       open.value = false

@@ -1,8 +1,7 @@
-import { ipcManager } from '@renderer/core/ipc'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { themeManager, type ThemeDefinition } from '@renderer/core/theme'
-import { getExtensionThemeContributions } from './ipc'
 import { isSafeThemeColorToken, type ThemeContribution } from '@kisaki/extension-api'
-import type { ExtensionThemeContributionInfo } from './types'
+import type { ExtensionThemeContributionInfo } from '@shared/extension'
 
 const extensionThemeDisposers = new Map<string, () => void>()
 const extensionThemeCss = new Map<string, string>()
@@ -21,7 +20,7 @@ export function setupExtensionThemeSync(): void {
 }
 
 export async function refreshExtensionThemes(): Promise<void> {
-  syncExtensionThemes(await getExtensionThemeContributions())
+  syncExtensionThemes(unwrapIpcData(await ipcManager.invoke('extension:get-theme-contributions')))
 }
 
 export function syncExtensionThemes(

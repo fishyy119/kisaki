@@ -14,7 +14,7 @@ import { getEntityIcon } from '@renderer/utils'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionEntityMenuItems } from '@renderer/components/shared/extension'
+import { ExtensionMenuItems } from '@renderer/components/extension/menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { companies, collections, collectionCompanyLinks, type Company } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
@@ -92,9 +92,8 @@ const collectionsData = computed(() => data.value?.collectionsData ?? null)
 const extensionMenuInput = computed(
   () =>
     ({
+      domain: 'company',
       scope: 'single',
-      target: 'company.single',
-      entityType: 'company',
       entityId: props.companyId
     }) as const
 )
@@ -346,7 +345,7 @@ async function handleToggleNsfw() {
       管理外部ID
     </component>
 
-    <ExtensionEntityMenuItems
+    <ExtensionMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

@@ -1,15 +1,13 @@
 <!--
 Extension Installed Panel renders installed extension management.
-Boundary: fetches catalog and contribution snapshots through core extensions.
+Boundary: fetches catalog and contribution snapshots for installed extensions.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
-import {
-  getExtensionCatalog,
-  refreshExtensionContributionSnapshot
-} from '@renderer/core/extensions'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
+import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
@@ -37,7 +35,7 @@ const {
 } = useAsyncData(
   async () => {
     const [catalog] = await Promise.all([
-      getExtensionCatalog(),
+      ipcManager.invoke('extension:get-catalog').then(unwrapIpcData),
       refreshExtensionContributionSnapshot()
     ])
     return catalog

@@ -18,7 +18,7 @@ export interface SettingsField<TEvents extends SettingsAnyNodeEvents> {
   span?: 1 | 2 | 3 | 'full'
   contentLayout?: 'stack' | 'inline' | 'grid'
   contentColumns?: 1 | 2 | 3
-  content: readonly SettingsFieldNode<TEvents>[]
+  content: readonly SettingsFieldContentNode<TEvents>[]
 }
 
 export interface SettingsTab<TEvents extends SettingsAnyNodeEvents> {
@@ -29,7 +29,7 @@ export interface SettingsTab<TEvents extends SettingsAnyNodeEvents> {
   fields: readonly SettingsField<TEvents>[]
 }
 
-export interface SettingsFieldNodeBase {
+export interface SettingsNodeBase {
   id: string
   hidden?: boolean
   disabled?: boolean
@@ -41,7 +41,7 @@ export interface SettingsValueNodeBase<
   TValue,
   TCommitEvent,
   TCommitResult
-> extends SettingsFieldNodeBase {
+> extends SettingsNodeBase {
   initialValue: TValue
   onCommit?: (event: TCommitEvent) => MaybePromise<TCommitResult>
 }
@@ -134,7 +134,7 @@ export interface SettingsRecordListNode<TCommitEvent, TCommitResult> extends Set
   emptyLabel?: string
 }
 
-export interface SettingsButtonNode<TButtonEvent, TButtonResult> extends SettingsFieldNodeBase {
+export interface SettingsButtonNode<TButtonEvent, TButtonResult> extends SettingsNodeBase {
   kind: 'button'
   label: string
   icon?: string
@@ -142,26 +142,26 @@ export interface SettingsButtonNode<TButtonEvent, TButtonResult> extends Setting
   onClick?: (event: TButtonEvent) => MaybePromise<TButtonResult>
 }
 
-export interface SettingsTextNode extends SettingsFieldNodeBase {
+export interface SettingsTextNode extends SettingsNodeBase {
   kind: 'text'
   text: string
   tone?: 'default' | 'muted' | 'danger'
 }
 
-export interface SettingsNoticeNode extends SettingsFieldNodeBase {
+export interface SettingsNoticeNode extends SettingsNodeBase {
   kind: 'notice'
   tone: 'info' | 'warning' | 'error' | 'success'
   text: string
 }
 
-export interface SettingsStatusNode extends SettingsFieldNodeBase {
+export interface SettingsStatusNode extends SettingsNodeBase {
   kind: 'status'
   tone?: 'neutral' | 'success' | 'warning' | 'danger'
   label?: string
   value: string
 }
 
-export interface SettingsTableNode extends SettingsFieldNodeBase {
+export interface SettingsTableNode extends SettingsNodeBase {
   kind: 'table'
   title?: string
   columns?: readonly SettingsTableColumn[]
@@ -169,14 +169,14 @@ export interface SettingsTableNode extends SettingsFieldNodeBase {
   emptyLabel?: string
 }
 
-export interface SettingsImageNode extends SettingsFieldNodeBase {
+export interface SettingsImageNode extends SettingsNodeBase {
   kind: 'image'
   src: string
   alt?: string
   fit?: 'contain' | 'cover'
 }
 
-export interface SettingsDividerNode extends SettingsFieldNodeBase {
+export interface SettingsDividerNode extends SettingsNodeBase {
   kind: 'divider'
 }
 
@@ -204,7 +204,7 @@ export type SettingsDisplayNode =
   | SettingsImageNode
   | SettingsDividerNode
 
-export type SettingsFieldNode<TEvents extends SettingsAnyNodeEvents> =
+export type SettingsFieldContentNode<TEvents extends SettingsAnyNodeEvents> =
   | SettingsControlNode<TEvents>
   | SettingsActionNode<TEvents>
   | SettingsDisplayNode
