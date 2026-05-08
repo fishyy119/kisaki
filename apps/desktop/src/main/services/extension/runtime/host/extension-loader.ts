@@ -72,7 +72,7 @@ export class ExtensionLoader {
       context,
       subscriptions,
       abortController,
-      entityMenus: new Map(),
+      menus: new Map(),
       settings: new Map(),
       gameScrapers: new Map(),
       personScrapers: new Map(),

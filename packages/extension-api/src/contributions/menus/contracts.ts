@@ -81,7 +81,7 @@ export type MenuInput = {
   [TDomain in keyof MenuInputMap]: MenuInputMap[TDomain][keyof MenuInputMap[TDomain]]
 }[keyof MenuInputMap]
 
-type MenuInputFor<
+export type MenuInputFor<
   TDomain extends MenuDomain,
   TScope extends MenuScope<TDomain>
 > = MenuInputMap[TDomain][TScope] extends MenuInput ? MenuInputMap[TDomain][TScope] : never

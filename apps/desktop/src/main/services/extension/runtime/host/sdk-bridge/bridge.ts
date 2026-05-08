@@ -8,7 +8,6 @@ import type {
   DeeplinkRegistrationHandle,
   Disposable,
   DisposableStore,
-  EntityMenuContribution,
   ExtensionContext,
   ExtensionEventListener,
   ExtensionEventPayload,
@@ -20,10 +19,16 @@ import type {
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
   KisakiApi,
+  MenuContribution,
+  MenuDomain,
+  MenuInputFor,
+  MenuRegistration,
+  MenuScope,
   PersonScraperProvider,
   RpcParams,
   RpcResult,
   SettingsContribution,
+  SettingsRegistration,
   ThemeContribution
 } from '@kisaki/extension-api'
 import { isExtensionEventTopic } from '@kisaki/extension-api'
@@ -31,7 +36,7 @@ import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-reg
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostCommandContributions } from '../contributions/commands'
 import { HostDeeplinkContributions } from '../contributions/deeplinks'
-import { HostEntityMenuContributions } from '../contributions/entity-menus'
+import { HostMenuContributions } from '../contributions/menus'
 import { HostScraperContributions, MAIN_TO_HOST_SCRAPER_RPC } from '../contributions/scrapers'
 import { HostSettingsContributions } from '../contributions/settings'
 import { HostThemeContributions } from '../contributions/themes'
@@ -47,7 +52,7 @@ import { resolveInsideExtension } from './utils/paths'
 import {
   createDeeplinkRegistrar,
   createCommandRegistrar,
-  createEntityMenuRegistrar,
+  createMenuRegistrar,
   createScraperRegistrar,
   createSettingsRegistrar,
   createThemeRegistrar
@@ -78,7 +83,7 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
 export class ExtensionHostSdkBridge {
   private readonly executionScope = new AsyncLocalStorage<ActiveExtensionScope>()
   private readonly bridge: ExtensionSdkBridge
-  private readonly entityMenus: HostEntityMenuContributions
+  private readonly menus: HostMenuContributions
   private readonly settings: HostSettingsContributions
   private readonly scrapers: HostScraperContributions
   private readonly deeplinks: HostDeeplinkContributions
@@ -111,7 +116,7 @@ export class ExtensionHostSdkBridge {
         this.trackMainRequest(scope, request)
       }
     }
-    this.entityMenus = new HostEntityMenuContributions(contributionOptions)
+    this.menus = new HostMenuContributions(contributionOptions)
     this.settings = new HostSettingsContributions(contributionOptions)
     this.scrapers = new HostScraperContributions(contributionOptions)
     this.deeplinks = new HostDeeplinkContributions(contributionOptions)
@@ -128,7 +133,7 @@ export class ExtensionHostSdkBridge {
 
   async dispose(): Promise<void> {
     this.mainEventCleanup()
-    this.entityMenus.releaseAll()
+    this.menus.releaseAll()
     this.settings.releaseAll()
     await this.scrapers.releaseAll()
     this.deeplinks.releaseAll()
@@ -142,24 +147,21 @@ export class ExtensionHostSdkBridge {
   }
 
   registerContributionRpcHandlers(): void {
-    this.rpc.handle('contributions.entityMenus.resolve', (params, context) =>
-      this.entityMenus.resolve(params, context.signal)
+    this.rpc.handle('contributions.menus.resolve', (params, context) =>
+      this.menus.resolve(params, context.signal)
     )
-    this.rpc.handle('contributions.entityMenus.invoke', (params, context) =>
-      this.entityMenus.invoke(params, context.signal)
+    this.rpc.handle('contributions.menus.invoke', (params, context) =>
+      this.menus.invoke(params, context.signal)
     )
-    this.rpc.handle('contributions.entityMenus.session.release', (params) => {
-      this.entityMenus.releaseSession(params)
+    this.rpc.handle('contributions.menus.release', (params) => {
+      this.menus.release(params)
       return {}
     })
     this.rpc.handle('contributions.settings.open', (params, context) =>
       this.settings.open(params, context.signal)
     )
-    this.rpc.handle('contributions.settings.frame.open', (params, context) =>
-      this.settings.openFrame(params, context.signal)
-    )
-    this.rpc.handle('contributions.settings.frame.refresh', (params, context) =>
-      this.settings.refreshFrame(params, context.signal)
+    this.rpc.handle('contributions.settings.refresh', (params, context) =>
+      this.settings.refresh(params, context.signal)
     )
     this.rpc.handle('contributions.settings.submit', (params, context) =>
       this.settings.submit(params, context.signal)
@@ -167,12 +169,8 @@ export class ExtensionHostSdkBridge {
     this.rpc.handle('contributions.settings.invoke', (params, context) =>
       this.settings.invoke(params, context.signal)
     )
-    this.rpc.handle('contributions.settings.frame.release', (params) => {
-      this.settings.releaseFrame(params)
-      return {}
-    })
-    this.rpc.handle('contributions.settings.session.release', (params) => {
-      this.settings.releaseSession(params)
+    this.rpc.handle('contributions.settings.release', (params) => {
+      this.settings.release(params)
       return {}
     })
     this.rpc.handle('contributions.deeplinks.handle', (params) => this.deeplinks.handle(params))
@@ -236,7 +234,7 @@ export class ExtensionHostSdkBridge {
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
-    this.entityMenus.releaseRuntime(runtimeHandle)
+    this.menus.releaseRuntime(runtimeHandle)
     this.settings.releaseRuntime(runtimeHandle)
     await this.scrapers.releaseRuntime(runtimeHandle)
     this.deeplinks.releaseRuntime(runtimeHandle)
@@ -269,7 +267,7 @@ export class ExtensionHostSdkBridge {
         abortSignal: options.abortSignal,
         contributions: {
           commands: createCommandRegistrar(this.bridge, subscriptions, scope),
-          entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions, scope),
+          menus: createMenuRegistrar(this.bridge, subscriptions, scope),
           settings: createSettingsRegistrar(this.bridge, subscriptions, scope),
           scrapers: createScraperRegistrar(this.bridge, subscriptions, scope),
           deeplinks: createDeeplinkRegistrar(this.bridge, subscriptions, scope),
@@ -318,7 +316,8 @@ export class ExtensionHostSdkBridge {
           getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
         }),
       registerCommand: (scope, command) => this.registerCommand(scope, command),
-      registerEntityMenu: (scope, contribution) => this.registerEntityMenu(scope, contribution),
+      registerMenu: (scope, domain, menuScope, contribution) =>
+        this.registerMenu(scope, domain, menuScope, contribution),
       registerSettings: (scope, contribution) => this.registerSettings(scope, contribution),
       registerGameScraperProvider: (scope, provider) =>
         this.registerGameScraperProvider(scope, provider),
@@ -380,17 +379,19 @@ export class ExtensionHostSdkBridge {
     return this.commands.register(scope, command)
   }
 
-  private registerEntityMenu(
+  private registerMenu<TDomain extends MenuDomain, TScope extends MenuScope<TDomain>>(
     scope: ActiveExtensionScope,
-    contribution: EntityMenuContribution
-  ): Disposable {
-    return this.entityMenus.register(scope, contribution)
+    domain: TDomain,
+    menuScope: TScope,
+    contribution: MenuContribution<MenuInputFor<TDomain, TScope>>
+  ): MenuRegistration {
+    return this.menus.register(scope, domain, menuScope, contribution)
   }
 
   private registerSettings(
     scope: ActiveExtensionScope,
-    contribution: SettingsContribution
-  ): Disposable {
+    contribution: SettingsContribution<any, any>
+  ): SettingsRegistration {
     return this.settings.register(scope, contribution)
   }
 

@@ -4,10 +4,17 @@ import type {
   CompanyScraperProvider,
   DeeplinkContribution,
   DisposableStore,
-  EntityMenuContribution,
   GameScraperProvider,
+  MenuContribution,
+  MenuInputFor,
+  MenuInputMap,
+  MenuRegistrar,
+  MenuScope,
   PersonScraperProvider,
   SettingsContribution,
+  SettingsDialogMap,
+  SettingsPopoverMap,
+  SettingsRegistrar,
   ThemeContribution
 } from '@kisaki/extension-api'
 import type { ActiveExtensionScope, ExtensionSdkBridge } from './types'
@@ -30,18 +37,43 @@ export function createCommandRegistrar(
 }
 
 /**
- * Creates the entity menu contribution registrar bound to runtime subscriptions.
+ * Creates the menu contribution registrar bound to runtime subscriptions.
  */
-export function createEntityMenuRegistrar(
+export function createMenuRegistrar(
   bridge: ExtensionSdkBridge,
   subscriptions: DisposableStore,
   scope: ActiveExtensionScope
-) {
-  return {
-    register(contribution: EntityMenuContribution) {
-      const disposable = bridge.registerEntityMenu(scope, contribution)
+): MenuRegistrar {
+  const point = <const TDomain extends keyof MenuInputMap, const TScope extends MenuScope<TDomain>>(
+    domain: TDomain,
+    menuScope: TScope
+  ) => ({
+    register(contribution: MenuContribution<MenuInputFor<TDomain, TScope>>) {
+      const disposable = bridge.registerMenu(scope, domain, menuScope, contribution)
       subscriptions.add(disposable)
       return disposable
+    }
+  })
+
+  return {
+    game: {
+      single: point('game', 'single'),
+      batch: point('game', 'batch')
+    },
+    character: {
+      single: point('character', 'single')
+    },
+    person: {
+      single: point('person', 'single')
+    },
+    company: {
+      single: point('company', 'single')
+    },
+    collection: {
+      single: point('collection', 'single')
+    },
+    tag: {
+      single: point('tag', 'single')
     }
   }
 }
@@ -53,9 +85,12 @@ export function createSettingsRegistrar(
   bridge: ExtensionSdkBridge,
   subscriptions: DisposableStore,
   scope: ActiveExtensionScope
-) {
+): SettingsRegistrar {
   return {
-    register(contribution: SettingsContribution) {
+    register<
+      const TPopovers extends SettingsPopoverMap,
+      const TDialogs extends SettingsDialogMap<TPopovers>
+    >(contribution: SettingsContribution<TPopovers, TDialogs>) {
       const disposable = bridge.registerSettings(scope, contribution)
       subscriptions.add(disposable)
       return disposable

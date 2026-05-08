@@ -260,7 +260,17 @@ export type SettingsOpenResult =
       popover: SettingsResolvedSurfacePayload
     }
 
-export type SettingsRefreshResult = SettingsOpenResult
+export type SettingsRefreshResult =
+  | SettingsOpenResult
+  | {
+      surface: 'all'
+      sessionId: string
+      view: SettingsResolvedSurfacePayload
+      activeDialog?: {
+        dialogId: string
+        dialog: SettingsResolvedSurfacePayload
+      }
+    }
 
 export type SettingsCallbackResult =
   | SettingsRootCommitResult

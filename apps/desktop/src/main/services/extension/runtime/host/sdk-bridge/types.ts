@@ -5,7 +5,6 @@ import type {
   DeeplinkContribution,
   DeeplinkRegistrationHandle,
   Disposable,
-  EntityMenuContribution,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionLogger,
@@ -17,8 +16,14 @@ import type {
   HostEventListener,
   HostEventTopic,
   KisakiApi,
+  MenuContribution,
+  MenuDomain,
+  MenuInputFor,
+  MenuRegistration,
+  MenuScope,
   PersonScraperProvider,
   SettingsContribution,
+  SettingsRegistration,
   ThemeContribution
 } from '@kisaki/extension-api'
 
@@ -57,8 +62,16 @@ export interface ExtensionSdkBridge {
   createStorage(scope: ActiveExtensionScope): ExtensionStorage
   createSecrets(scope: ActiveExtensionScope): ExtensionSecrets
   registerCommand(scope: ActiveExtensionScope, command: CommandContribution): Promise<Disposable>
-  registerEntityMenu(scope: ActiveExtensionScope, contribution: EntityMenuContribution): Disposable
-  registerSettings(scope: ActiveExtensionScope, contribution: SettingsContribution): Disposable
+  registerMenu<TDomain extends MenuDomain, TScope extends MenuScope<TDomain>>(
+    scope: ActiveExtensionScope,
+    domain: TDomain,
+    menuScope: TScope,
+    contribution: MenuContribution<MenuInputFor<TDomain, TScope>>
+  ): MenuRegistration
+  registerSettings(
+    scope: ActiveExtensionScope,
+    contribution: SettingsContribution<any, any>
+  ): SettingsRegistration
   registerGameScraperProvider(
     scope: ActiveExtensionScope,
     provider: GameScraperProvider

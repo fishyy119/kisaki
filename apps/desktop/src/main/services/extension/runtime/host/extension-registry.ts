@@ -2,12 +2,15 @@ import type {
   CharacterScraperProvider,
   CommandContribution,
   DeeplinkContribution,
-  EntityMenuContribution,
   ExtensionContext,
   ExtensionDefinition,
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   GameScraperProvider,
+  MenuContribution,
+  MenuDomain,
+  MenuInputFor,
+  MenuScope,
   PersonScraperProvider,
   CompanyScraperProvider,
   SettingsContribution,
@@ -23,8 +26,8 @@ export interface LoadedExtensionRuntime {
   context: ExtensionContext
   subscriptions: DisposableStore
   abortController: AbortController
-  entityMenus: Map<string, EntityMenuContribution>
-  settings: Map<string, SettingsContribution>
+  menus: Map<string, RegisteredMenuContribution>
+  settings: Map<string, SettingsContribution<any, any>>
   gameScrapers: Map<string, GameScraperProvider>
   personScrapers: Map<string, PersonScraperProvider>
   companyScrapers: Map<string, CompanyScraperProvider>
@@ -33,6 +36,23 @@ export interface LoadedExtensionRuntime {
   themes: Map<string, ThemeContribution>
   commands: Map<string, CommandContribution>
 }
+
+export interface RegisteredMenuContributionFor<
+  TDomain extends MenuDomain,
+  TScope extends MenuScope<TDomain>
+> {
+  id: string
+  domain: TDomain
+  scope: TScope
+  order?: number
+  contribution: MenuContribution<MenuInputFor<TDomain, TScope>>
+}
+
+export type RegisteredMenuContribution = {
+  [TDomain in MenuDomain]: {
+    [TScope in MenuScope<TDomain>]: RegisteredMenuContributionFor<TDomain, TScope>
+  }[MenuScope<TDomain>]
+}[MenuDomain]
 
 /**
  * Tracks all extension runtime state inside the shared extension host process.
@@ -84,15 +104,18 @@ export class ExtensionRegistry {
     return [...this.loaded.values()]
   }
 
-  registerEntityMenu(extensionId: string, contribution: EntityMenuContribution): void {
-    this.require(extensionId).entityMenus.set(contribution.id, contribution)
+  registerMenu<TDomain extends MenuDomain, TScope extends MenuScope<TDomain>>(
+    extensionId: string,
+    registration: RegisteredMenuContributionFor<TDomain, TScope>
+  ): void {
+    this.require(extensionId).menus.set(registration.id, registration as RegisteredMenuContribution)
   }
 
-  unregisterEntityMenu(extensionId: string, contributionId: string): void {
-    this.require(extensionId).entityMenus.delete(contributionId)
+  unregisterMenu(extensionId: string, contributionId: string): void {
+    this.require(extensionId).menus.delete(contributionId)
   }
 
-  registerSettings(extensionId: string, contribution: SettingsContribution): void {
+  registerSettings(extensionId: string, contribution: SettingsContribution<any, any>): void {
     this.require(extensionId).settings.set(contribution.id, contribution)
   }
 
