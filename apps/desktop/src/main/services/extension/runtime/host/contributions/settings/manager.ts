@@ -156,24 +156,30 @@ export class HostSettingsContributions {
         sessionId: request.sessionId,
         ttlTimer: null
       }
-      this.storeSession(this.getSessionKey(request), session)
+      const sessionKey = this.getSessionKey(request)
+      this.storeSession(sessionKey, session)
       signal.addEventListener(
         'abort',
         () => {
-          this.deleteSession(this.getSessionKey(request))
+          this.deleteSession(sessionKey)
         },
         { once: true }
       )
 
-      const view = await this.resolveRoot({
-        runtime,
-        contribution,
-        session,
-        draft: EMPTY_DRAFT,
-        reason: request.reason,
-        signal
-      })
-      return { surface: 'root', sessionId: request.sessionId, view }
+      try {
+        const view = await this.resolveRoot({
+          runtime,
+          contribution,
+          session,
+          draft: EMPTY_DRAFT,
+          reason: request.reason,
+          signal
+        })
+        return { surface: 'root', sessionId: request.sessionId, view }
+      } catch (error) {
+        this.deleteSession(sessionKey)
+        throw error
+      }
     }
 
     const session = this.requireSession(request)
@@ -195,6 +201,7 @@ export class HostSettingsContributions {
       return { surface: 'dialog', dialog }
     }
 
+    this.requireActiveParentSurface(session, request.parent)
     const popover = await this.resolvePopover({
       runtime,
       contribution,
@@ -529,6 +536,20 @@ export class HostSettingsContributions {
     }
 
     return this.requireActivePopover(session, request.parent, request.popoverId)
+  }
+
+  private requireActiveParentSurface(
+    session: SettingsSession,
+    parent: SettingsParentRef
+  ): SettingsSurfaceSession {
+    if (parent.surface === 'root') {
+      if (!session.root) {
+        throw new Error('Settings root is no longer active.')
+      }
+      return session.root
+    }
+
+    return this.requireActiveDialog(session, parent.dialogId)
   }
 
   private async resolveRoot(options: ResolveRootOptions): Promise<SettingsResolvedSurfacePayload> {

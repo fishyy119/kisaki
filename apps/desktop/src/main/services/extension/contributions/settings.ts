@@ -3,18 +3,28 @@ import log from 'electron-log/main'
 import {
   readErrorCode,
   type ExtensionRuntimeHandle,
+  type SettingsCallbackResult,
   type SettingsContributionRegistration,
-  type SettingsFrameResult,
-  type SettingsInteractionResult
+  type SettingsOpenRequest as HostSettingsOpenRequest,
+  type SettingsRefreshRequest as HostSettingsRefreshRequest,
+  type SettingsReleaseRequest as HostSettingsReleaseRequest,
+  type SettingsResolvedSurfacePayload,
+  type SettingsSubmitRequest as HostSettingsSubmitRequest,
+  type SettingsInvokeRequest as HostSettingsInvokeRequest
 } from '@kisaki/extension-api'
 import type {
-  ExtensionResolvedSettingsFrame,
+  ExtensionResolvedSettingsDialog,
+  ExtensionResolvedSettingsPopover,
+  ExtensionResolvedSettingsRoot,
+  ExtensionSettingsCallbackResponse,
   ExtensionSettingsContributionInfo,
-  ExtensionSettingsFrameOpenRequest,
-  ExtensionSettingsFrameRefreshRequest,
-  ExtensionSettingsFrameReleaseRequest,
-  ExtensionSettingsInteractionResponse,
   ExtensionSettingsInvokeRequest,
+  ExtensionSettingsOpenRequest,
+  ExtensionSettingsOpenResponse,
+  ExtensionSettingsRefreshRequest,
+  ExtensionSettingsRefreshResponse,
+  ExtensionSettingsRefreshRequestedEvent,
+  ExtensionSettingsReleaseRequest,
   ExtensionSettingsSession,
   ExtensionSettingsSubmitRequest
 } from '@shared/extension'
@@ -98,158 +108,162 @@ export class ExtensionSettingsContributionHost {
       )
   }
 
-  async openSession(
-    extensionId: string,
-    contributionId: string
-  ): Promise<ExtensionSettingsSession> {
-    const registration = this.requireRegistration(extensionId, contributionId)
-    const sessionId = randomUUID()
-    const frame = await this.options.requestHost(
-      'contributions.settings.open',
-      {
-        runtimeHandle: registration.owner.runtimeHandle,
-        contributionId: registration.contribution.id,
-        sessionId
-      },
-      { timeoutMs: 15_000 }
+  notifyRefreshRequested(
+    runtimeHandle: ExtensionRuntimeHandle,
+    contributionId: string,
+    reason?: ExtensionSettingsRefreshRequestedEvent['reason']
+  ): void {
+    const registration = this.registrations.get(
+      getRuntimeContributionKey(runtimeHandle, contributionId)
     )
+    if (!registration) {
+      return
+    }
 
-    return {
-      sessionId,
-      extensionId,
+    this.options.onSettingsRefreshRequested?.({
+      extensionId: registration.owner.extension.id,
       contributionId,
-      frame: toResolvedSettingsFrame(extensionId, contributionId, sessionId, frame)
+      reason
+    })
+  }
+
+  async open(request: ExtensionSettingsOpenRequest): Promise<ExtensionSettingsOpenResponse> {
+    const registration = this.requireRegistration(request.extensionId, request.contributionId)
+    const hostRequest = toHostOpenRequest(request, registration)
+    const response = await this.options.requestHost('contributions.settings.open', hostRequest, {
+      timeoutMs: 15_000
+    })
+
+    switch (response.surface) {
+      case 'root':
+        return {
+          surface: 'root',
+          session: toSettingsSession(
+            request.extensionId,
+            request.contributionId,
+            response.sessionId
+          ),
+          view: toResolvedRoot(response.view)
+        }
+
+      case 'dialog':
+        return {
+          surface: 'dialog',
+          dialog: toResolvedDialog(response.dialog)
+        }
+
+      case 'popover':
+        return {
+          surface: 'popover',
+          popover: toResolvedPopover(response.popover)
+        }
     }
   }
 
-  async openFrame(
-    request: ExtensionSettingsFrameOpenRequest
-  ): Promise<ExtensionResolvedSettingsFrame> {
+  async refresh(
+    request: ExtensionSettingsRefreshRequest
+  ): Promise<ExtensionSettingsRefreshResponse> {
     const registration = this.requireRegistration(request.extensionId, request.contributionId)
-    const frame = await this.options.requestHost(
-      'contributions.settings.frame.open',
-      {
-        runtimeHandle: registration.owner.runtimeHandle,
-        contributionId: registration.contribution.id,
-        sessionId: request.sessionId,
-        target: request.target
-      },
+    const response = await this.options.requestHost(
+      'contributions.settings.refresh',
+      toHostRefreshRequest(request, registration),
       { timeoutMs: 15_000 }
     )
 
-    return toResolvedSettingsFrame(
-      request.extensionId,
-      request.contributionId,
-      request.sessionId,
-      frame
-    )
-  }
+    switch (response.surface) {
+      case 'root':
+        return {
+          surface: 'root',
+          view: toResolvedRoot(response.view)
+        }
 
-  async refreshFrame(
-    request: ExtensionSettingsFrameRefreshRequest
-  ): Promise<ExtensionResolvedSettingsFrame> {
-    const registration = this.requireRegistration(request.extensionId, request.contributionId)
-    const frame = await this.options.requestHost(
-      'contributions.settings.frame.refresh',
-      {
-        runtimeHandle: registration.owner.runtimeHandle,
-        contributionId: registration.contribution.id,
-        sessionId: request.sessionId,
-        frameId: request.frameId
-      },
-      { timeoutMs: 15_000 }
-    )
+      case 'dialog':
+        return {
+          surface: 'dialog',
+          dialog: toResolvedDialog(response.dialog)
+        }
 
-    return toResolvedSettingsFrame(
-      request.extensionId,
-      request.contributionId,
-      request.sessionId,
-      frame
-    )
+      case 'popover':
+        return {
+          surface: 'popover',
+          popover: toResolvedPopover(response.popover)
+        }
+
+      case 'all':
+        return {
+          surface: 'all',
+          view: toResolvedRoot(response.view),
+          activeDialog: response.activeDialog
+            ? {
+                dialogId: response.activeDialog.dialogId,
+                dialog: toResolvedDialog(response.activeDialog.dialog)
+              }
+            : undefined
+        }
+    }
   }
 
   async submit(
     request: ExtensionSettingsSubmitRequest
-  ): Promise<ExtensionSettingsInteractionResponse> {
+  ): Promise<ExtensionSettingsCallbackResponse> {
     const registration = this.findRegistration(request.extensionId, request.contributionId)
     if (!registration) {
       return {
-        result: createSettingsError('Settings contribution is no longer active.', 'unavailable'),
-        refreshedFrames: []
+        result: createSettingsError('Settings contribution is no longer active.', 'unavailable')
       }
     }
 
     try {
-      const response = await this.options.requestHost(
+      return await this.options.requestHost(
         'contributions.settings.submit',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          contributionId: registration.contribution.id,
-          sessionId: request.sessionId,
-          frameId: request.frameId,
-          values: request.values
-        },
+        toHostSubmitRequest(request, registration),
         { timeoutMs: 15_000 }
       )
-
-      return { ...response, refreshedFrames: [] }
     } catch (error) {
       log.warn(
-        `[ExtensionContributionRegistry] Settings submit "${request.extensionId}:${request.contributionId}:${request.frameId}" failed:`,
+        `[ExtensionContributionRegistry] Settings submit "${request.extensionId}:${request.contributionId}:${request.surface}" failed:`,
         error
       )
       return {
         result: createSettingsError(
           toErrorMessage(error, 'Settings submit failed.'),
           readErrorCode(error) ?? 'internal'
-        ),
-        refreshedFrames: []
+        )
       }
     }
   }
 
   async invoke(
     request: ExtensionSettingsInvokeRequest
-  ): Promise<ExtensionSettingsInteractionResponse> {
+  ): Promise<ExtensionSettingsCallbackResponse> {
     const registration = this.findRegistration(request.extensionId, request.contributionId)
     if (!registration) {
       return {
-        result: createSettingsError('Settings contribution is no longer active.', 'unavailable'),
-        refreshedFrames: []
+        result: createSettingsError('Settings contribution is no longer active.', 'unavailable')
       }
     }
 
     try {
-      const response = await this.options.requestHost(
+      return await this.options.requestHost(
         'contributions.settings.invoke',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          contributionId: registration.contribution.id,
-          sessionId: request.sessionId,
-          frameId: request.frameId,
-          callbackId: request.callbackId,
-          value: request.value
-        },
+        toHostInvokeRequest(request, registration),
         { timeoutMs: 15_000 }
       )
-
-      return { ...response, refreshedFrames: [] }
     } catch (error) {
       log.warn(
-        `[ExtensionContributionRegistry] Settings callback "${request.extensionId}:${request.contributionId}:${request.frameId}" failed:`,
+        `[ExtensionContributionRegistry] Settings callback "${request.extensionId}:${request.contributionId}:${request.surface}:${request.nodeId}" failed:`,
         error
       )
       return {
         result: createSettingsError(
           toErrorMessage(error, 'Settings callback failed.'),
           readErrorCode(error) ?? 'internal'
-        ),
-        refreshedFrames: []
+        )
       }
     }
   }
 
-  async releaseFrame(request: ExtensionSettingsFrameReleaseRequest): Promise<void> {
+  async release(request: ExtensionSettingsReleaseRequest): Promise<void> {
     const registration = this.findRegistration(request.extensionId, request.contributionId)
     if (!registration) {
       return
@@ -257,46 +271,13 @@ export class ExtensionSettingsContributionHost {
 
     try {
       await this.options.requestHost(
-        'contributions.settings.frame.release',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          contributionId: registration.contribution.id,
-          sessionId: request.sessionId,
-          frameId: request.frameId
-        },
+        'contributions.settings.release',
+        toHostReleaseRequest(request, registration),
         { timeoutMs: 5_000 }
       )
     } catch (error) {
       log.warn(
-        `[ExtensionContributionRegistry] Failed to release settings frame "${request.extensionId}:${request.contributionId}:${request.sessionId}:${request.frameId}":`,
-        error
-      )
-    }
-  }
-
-  async releaseSession(
-    extensionId: string,
-    contributionId: string,
-    sessionId: string
-  ): Promise<void> {
-    const registration = this.findRegistration(extensionId, contributionId)
-    if (!registration) {
-      return
-    }
-
-    try {
-      await this.options.requestHost(
-        'contributions.settings.session.release',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          contributionId: registration.contribution.id,
-          sessionId
-        },
-        { timeoutMs: 5_000 }
-      )
-    } catch (error) {
-      log.warn(
-        `[ExtensionContributionRegistry] Failed to release settings session "${extensionId}:${contributionId}:${sessionId}":`,
+        `[ExtensionContributionRegistry] Failed to release settings "${request.extensionId}:${request.contributionId}:${request.sessionId}:${request.surface}":`,
         error
       )
     }
@@ -328,29 +309,243 @@ function toSettingsContributionInfo(
     contributionId: registration.contribution.id,
     title: registration.contribution.title,
     description: registration.contribution.description,
-    order: registration.contribution.order ?? 0,
-    rootScreenId: registration.contribution.rootScreenId
+    order: registration.contribution.order ?? 0
   }
 }
 
-function toResolvedSettingsFrame(
+function toHostOpenRequest(
+  request: ExtensionSettingsOpenRequest,
+  registration: SettingsRegistration
+): HostSettingsOpenRequest {
+  if (request.surface === 'root') {
+    return {
+      runtimeHandle: registration.owner.runtimeHandle,
+      contributionId: registration.contribution.id,
+      surface: 'root',
+      sessionId: randomUUID(),
+      reason: request.reason
+    }
+  }
+
+  if (request.surface === 'dialog') {
+    return {
+      runtimeHandle: registration.owner.runtimeHandle,
+      contributionId: registration.contribution.id,
+      surface: 'dialog',
+      sessionId: request.sessionId,
+      dialogId: request.dialogId,
+      params: request.params,
+      parentDraft: request.parentDraft,
+      revision: request.revision
+    }
+  }
+
+  return {
+    runtimeHandle: registration.owner.runtimeHandle,
+    contributionId: registration.contribution.id,
+    surface: 'popover',
+    sessionId: request.sessionId,
+    popoverId: request.popoverId,
+    parent: request.parent,
+    params: request.params,
+    parentDraft: request.parentDraft,
+    anchorNodeKey: request.anchorNodeKey,
+    revision: request.revision
+  }
+}
+
+function toHostRefreshRequest(
+  request: ExtensionSettingsRefreshRequest,
+  registration: SettingsRegistration
+): HostSettingsRefreshRequest {
+  const base = {
+    runtimeHandle: registration.owner.runtimeHandle,
+    contributionId: registration.contribution.id,
+    sessionId: request.sessionId
+  }
+
+  switch (request.surface) {
+    case 'root':
+      return {
+        ...base,
+        surface: 'root',
+        draft: request.draft,
+        reason: request.reason,
+        revision: request.revision
+      }
+
+    case 'dialog':
+      return {
+        ...base,
+        surface: 'dialog',
+        dialogId: request.dialogId,
+        draft: request.draft,
+        parentDraft: request.parentDraft,
+        reason: request.reason,
+        revision: request.revision
+      }
+
+    case 'popover':
+      return {
+        ...base,
+        surface: 'popover',
+        popoverId: request.popoverId,
+        parent: request.parent,
+        draft: request.draft,
+        parentDraft: request.parentDraft,
+        reason: request.reason,
+        revision: request.revision
+      }
+
+    case 'all':
+      return {
+        ...base,
+        surface: 'all',
+        rootDraft: request.rootDraft,
+        activeDialog: request.activeDialog,
+        reason: request.reason,
+        revision: request.revision
+      }
+  }
+}
+
+function toHostSubmitRequest(
+  request: ExtensionSettingsSubmitRequest,
+  registration: SettingsRegistration
+): HostSettingsSubmitRequest {
+  const base = {
+    runtimeHandle: registration.owner.runtimeHandle,
+    contributionId: registration.contribution.id,
+    sessionId: request.sessionId
+  }
+
+  if (request.surface === 'root') {
+    return {
+      ...base,
+      surface: 'root',
+      draft: request.draft,
+      revision: request.revision
+    }
+  }
+
+  return {
+    ...base,
+    surface: 'dialog',
+    dialogId: request.dialogId,
+    draft: request.draft,
+    parentDraft: request.parentDraft,
+    revision: request.revision
+  }
+}
+
+function toHostInvokeRequest(
+  request: ExtensionSettingsInvokeRequest,
+  registration: SettingsRegistration
+): HostSettingsInvokeRequest {
+  const base = {
+    runtimeHandle: registration.owner.runtimeHandle,
+    contributionId: registration.contribution.id,
+    sessionId: request.sessionId,
+    callbackId: request.callbackId,
+    fieldId: request.fieldId,
+    nodeId: request.nodeId,
+    value: request.value,
+    requestId: request.requestId,
+    revision: request.revision
+  }
+
+  if (request.surface === 'root') {
+    return {
+      ...base,
+      surface: 'root',
+      draft: request.draft
+    }
+  }
+
+  if (request.surface === 'dialog') {
+    return {
+      ...base,
+      surface: 'dialog',
+      dialogId: request.dialogId,
+      draft: request.draft,
+      parentDraft: request.parentDraft
+    }
+  }
+
+  return {
+    ...base,
+    surface: 'popover',
+    popoverId: request.popoverId,
+    parent: request.parent,
+    draft: request.draft,
+    parentDraft: request.parentDraft
+  }
+}
+
+function toHostReleaseRequest(
+  request: ExtensionSettingsReleaseRequest,
+  registration: SettingsRegistration
+): HostSettingsReleaseRequest {
+  const base = {
+    runtimeHandle: registration.owner.runtimeHandle,
+    contributionId: registration.contribution.id,
+    sessionId: request.sessionId
+  }
+
+  switch (request.surface) {
+    case 'root':
+    case 'all':
+      return {
+        ...base,
+        surface: request.surface
+      }
+
+    case 'dialog':
+      return {
+        ...base,
+        surface: 'dialog',
+        dialogId: request.dialogId
+      }
+
+    case 'popover':
+      return {
+        ...base,
+        surface: 'popover',
+        popoverId: request.popoverId,
+        parent: request.parent
+      }
+  }
+}
+
+function toSettingsSession(
   extensionId: string,
   contributionId: string,
-  sessionId: string,
-  frame: SettingsFrameResult
-): ExtensionResolvedSettingsFrame {
+  sessionId: string
+): ExtensionSettingsSession {
   return {
     sessionId,
     extensionId,
-    contributionId,
-    frameId: frame.frameId,
-    screenId: frame.screenId,
-    params: frame.params,
-    screen: frame.screen
+    contributionId
   }
 }
 
-function createSettingsError(message: string, code?: string): SettingsInteractionResult {
+function toResolvedRoot(payload: SettingsResolvedSurfacePayload): ExtensionResolvedSettingsRoot {
+  return payload as unknown as ExtensionResolvedSettingsRoot
+}
+
+function toResolvedDialog(
+  payload: SettingsResolvedSurfacePayload
+): ExtensionResolvedSettingsDialog {
+  return payload as unknown as ExtensionResolvedSettingsDialog
+}
+
+function toResolvedPopover(
+  payload: SettingsResolvedSurfacePayload
+): ExtensionResolvedSettingsPopover {
+  return payload as unknown as ExtensionResolvedSettingsPopover
+}
+
+function createSettingsError(message: string, code?: string): SettingsCallbackResult {
   return {
     success: false,
     error: {

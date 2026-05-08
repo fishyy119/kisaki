@@ -188,11 +188,16 @@ export class HostMenuContributions {
       toSerializableRecord(node, `resolved menu node ${index}`)
     )
 
-    this.storeSession(request.sessionId, session)
+    const sessionKey = getSessionKey(
+      request.runtimeHandle,
+      request.contributionId,
+      request.sessionId
+    )
+    this.storeSession(sessionKey, session)
     signal.addEventListener(
       'abort',
       () => {
-        this.deleteSession(request.sessionId)
+        this.deleteSession(sessionKey)
       },
       { once: true }
     )
@@ -202,7 +207,12 @@ export class HostMenuContributions {
 
   async invoke(request: MenuInvokeRequest, signal: AbortSignal): Promise<UiCallbackResult> {
     const runtime = this.requireRuntimeForRequest(request.runtimeHandle)
-    const session = this.sessions.get(request.sessionId)
+    const sessionKey = getSessionKey(
+      request.runtimeHandle,
+      request.contributionId,
+      request.sessionId
+    )
+    const session = this.sessions.get(sessionKey)
     if (!session || session.runtimeHandle !== request.runtimeHandle) {
       return createUiError('Menu session is no longer active.', {
         code: 'unavailable',
@@ -218,25 +228,29 @@ export class HostMenuContributions {
       })
     }
 
-    this.touchSession(request.sessionId)
+    this.touchSession(sessionKey)
     return this.options.runInExtensionContext(runtime, () => callback.invoke(request.value, signal))
   }
 
   release(request: MenuReleaseRequest): void {
-    this.deleteSession(request.sessionId)
+    for (const [sessionKey, session] of [...this.sessions]) {
+      if (session.sessionId === request.sessionId) {
+        this.deleteSession(sessionKey)
+      }
+    }
   }
 
   releaseRuntime(runtimeHandle: string): void {
-    for (const [sessionId, session] of [...this.sessions]) {
+    for (const [sessionKey, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle) {
-        this.deleteSession(sessionId)
+        this.deleteSession(sessionKey)
       }
     }
   }
 
   releaseAll(): void {
-    for (const sessionId of [...this.sessions.keys()]) {
-      this.deleteSession(sessionId)
+    for (const sessionKey of [...this.sessions.keys()]) {
+      this.deleteSession(sessionKey)
     }
   }
 
@@ -249,21 +263,21 @@ export class HostMenuContributions {
   }
 
   private clearContributionSessions(runtimeHandle: string, contributionId: string): void {
-    for (const [sessionId, session] of [...this.sessions]) {
+    for (const [sessionKey, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle && session.contributionId === contributionId) {
-        this.deleteSession(sessionId)
+        this.deleteSession(sessionKey)
       }
     }
   }
 
-  private storeSession(sessionId: string, session: MenuSession): void {
-    this.deleteSession(sessionId)
-    session.ttlTimer = this.createSessionTimer(sessionId)
-    this.sessions.set(sessionId, session)
+  private storeSession(sessionKey: string, session: MenuSession): void {
+    this.deleteSession(sessionKey)
+    session.ttlTimer = this.createSessionTimer(sessionKey)
+    this.sessions.set(sessionKey, session)
   }
 
-  private deleteSession(sessionId: string): void {
-    const session = this.sessions.get(sessionId)
+  private deleteSession(sessionKey: string): void {
+    const session = this.sessions.get(sessionKey)
     if (!session) {
       return
     }
@@ -271,11 +285,11 @@ export class HostMenuContributions {
     if (session.ttlTimer) {
       clearTimeout(session.ttlTimer)
     }
-    this.sessions.delete(sessionId)
+    this.sessions.delete(sessionKey)
   }
 
-  private touchSession(sessionId: string): void {
-    const session = this.sessions.get(sessionId)
+  private touchSession(sessionKey: string): void {
+    const session = this.sessions.get(sessionKey)
     if (!session) {
       return
     }
@@ -283,12 +297,12 @@ export class HostMenuContributions {
     if (session.ttlTimer) {
       clearTimeout(session.ttlTimer)
     }
-    session.ttlTimer = this.createSessionTimer(sessionId)
+    session.ttlTimer = this.createSessionTimer(sessionKey)
   }
 
-  private createSessionTimer(sessionId: string): ReturnType<typeof setTimeout> {
+  private createSessionTimer(sessionKey: string): ReturnType<typeof setTimeout> {
     const timer = setTimeout(() => {
-      this.sessions.delete(sessionId)
+      this.sessions.delete(sessionKey)
     }, SESSION_TTL_MS)
     if (typeof timer === 'object' && 'unref' in timer) {
       timer.unref()
@@ -393,13 +407,15 @@ function normalizeMenuNodes(
   parentPath: readonly string[] = []
 ): readonly Record<string, unknown>[] {
   const normalized: Record<string, unknown>[] = []
+  const usedNodeIds = collectExplicitMenuNodeIds(nodes)
 
   for (const [index, node] of nodes.entries()) {
     if (node.hidden === true) {
       continue
     }
 
-    const nodeId = getMenuNodeId(node, index)
+    const nodeId = getMenuNodeId(node, index, usedNodeIds)
+    usedNodeIds.add(nodeId)
     const nodePath = [...parentPath, nodeId]
 
     if (node.kind === 'separator') {
@@ -522,12 +538,37 @@ function createMenuEvent(
   }
 }
 
-function getMenuNodeId(node: MenuNode, index: number): string {
-  return typeof node.id === 'string' && node.id.length > 0 ? node.id : `separator:${index}`
+function collectExplicitMenuNodeIds(nodes: readonly MenuNode[]): Set<string> {
+  const ids = new Set<string>()
+  for (const node of nodes) {
+    if (typeof node.id === 'string' && node.id.length > 0) {
+      ids.add(node.id)
+    }
+  }
+  return ids
+}
+
+function getMenuNodeId(node: MenuNode, index: number, usedNodeIds: ReadonlySet<string>): string {
+  if (typeof node.id === 'string' && node.id.length > 0) {
+    return node.id
+  }
+
+  const base = `__kisaki_separator:${index}`
+  let candidate = base
+  let suffix = 1
+  while (usedNodeIds.has(candidate)) {
+    candidate = `${base}:${suffix}`
+    suffix += 1
+  }
+  return candidate
 }
 
 function getNodePathKey(nodePath: readonly string[]): string {
   return nodePath.join('\u0000')
+}
+
+function getSessionKey(runtimeHandle: string, contributionId: string, sessionId: string): string {
+  return `${runtimeHandle}:${contributionId}:${sessionId}`
 }
 
 function compactRecord(record: Record<string, unknown>): Record<string, unknown> {

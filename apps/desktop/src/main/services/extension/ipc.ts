@@ -2,12 +2,14 @@ import { pathToFileURL } from 'node:url'
 import type { IpcService } from '@main/services/ipc'
 import type {
   ExtensionCatalogInfo,
-  ExtensionEntityMenuInvokeRequest,
+  ExtensionMenuInvokeRequest,
+  ExtensionMenuReleaseRequest,
+  ExtensionMenuResolveRequest,
   ExtensionRegistryEntry,
-  ExtensionSettingsFrameOpenRequest,
-  ExtensionSettingsFrameRefreshRequest,
-  ExtensionSettingsFrameReleaseRequest,
   ExtensionSettingsInvokeRequest,
+  ExtensionSettingsOpenRequest,
+  ExtensionSettingsRefreshRequest,
+  ExtensionSettingsReleaseRequest,
   ExtensionSettingsSubmitRequest,
   ExtensionUpdateInfo as SharedExtensionUpdateInfo
 } from '@shared/extension'
@@ -141,78 +143,76 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:resolve-entity-menu', async (_, input) => {
+  ipc.handle('extension:resolve-menu', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.resolveEntityMenu(input)
+        data: await service.resolveMenu(requireMenuResolveRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:invoke-entity-menu', async (_, request) => {
+  ipc.handle('extension:invoke-menu', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.invokeEntityMenuCallback(requireEntityMenuInvokeRequest(request))
+        data: await service.invokeMenuCallback(requireMenuInvokeRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:release-entity-menu-session', async (_, sessionId: string) => {
+  ipc.handle('extension:release-menu', async (_, request) => {
     try {
-      await service.releaseEntityMenuSession(requireNonEmptyString(sessionId, 'sessionId'))
+      await service.releaseMenu(requireMenuReleaseRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:open-settings-session', async (_, extensionId, contributionId) => {
+  ipc.handle('extension:open-settings', async (_, request) => {
     try {
-      return {
-        success: true,
-        data: await service.openSettingsSession(
-          requireSafeExtensionId(extensionId),
-          requireNonEmptyString(contributionId, 'contributionId')
-        )
+      const data = await service.openSettings(requireSettingsOpenRequest(request))
+      switch (data.surface) {
+        case 'root':
+          return { success: true, data }
+        case 'dialog':
+          return { success: true, data }
+        case 'popover':
+          return { success: true, data }
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:open-settings-frame', async (_, request) => {
+  ipc.handle('extension:refresh-settings', async (_, request) => {
     try {
-      return {
-        success: true,
-        data: await service.openSettingsFrame(requireSettingsFrameOpenRequest(request))
+      const data = await service.refreshSettings(requireSettingsRefreshRequest(request))
+      switch (data.surface) {
+        case 'root':
+          return { success: true, data }
+        case 'dialog':
+          return { success: true, data }
+        case 'popover':
+          return { success: true, data }
+        case 'all':
+          return { success: true, data }
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:refresh-settings-frame', async (_, request) => {
+  ipc.handle('extension:submit-settings', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.refreshSettingsFrame(requireSettingsFrameRefreshRequest(request))
-      }
-    } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
-    }
-  })
-
-  ipc.handle('extension:submit-settings-frame', async (_, request) => {
-    try {
-      return {
-        success: true,
-        data: await service.submitSettingsFrame(requireSettingsSubmitRequest(request))
+        data: await service.submitSettings(requireSettingsSubmitRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -230,30 +230,14 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:release-settings-frame', async (_, request) => {
+  ipc.handle('extension:release-settings', async (_, request) => {
     try {
-      await service.releaseSettingsFrame(requireSettingsFrameReleaseRequest(request))
+      await service.releaseSettings(requireSettingsReleaseRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
-
-  ipc.handle(
-    'extension:release-settings-session',
-    async (_, extensionId: string, contributionId: string, sessionId: string) => {
-      try {
-        await service.releaseSettingsSession(
-          requireSafeExtensionId(extensionId),
-          requireNonEmptyString(contributionId, 'contributionId'),
-          requireNonEmptyString(sessionId, 'sessionId')
-        )
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: toErrorMessage(error) }
-      }
-    }
-  )
 
   ipc.handle('extension:get-theme-contributions', () => {
     try {
@@ -386,73 +370,313 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
-function requireEntityMenuInvokeRequest(value: unknown): ExtensionEntityMenuInvokeRequest {
+function requireMenuResolveRequest(value: unknown): ExtensionMenuResolveRequest {
   const request = requireRecord(value, 'request')
   return {
-    ...(value as ExtensionEntityMenuInvokeRequest),
-    extensionId: requireSafeExtensionId(request.extensionId),
-    contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
-    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    callbackId: requireNonEmptyString(request.callbackId, 'callbackId')
+    input: requireMenuInput(request.input)
   }
 }
 
-function requireSettingsFrameOpenRequest(value: unknown): ExtensionSettingsFrameOpenRequest {
+function requireMenuInvokeRequest(value: unknown): ExtensionMenuInvokeRequest {
   const request = requireRecord(value, 'request')
-  const target = requireRecord(request.target, 'target')
+  const callbackValue = request.value
+  if (
+    callbackValue !== undefined &&
+    typeof callbackValue !== 'boolean' &&
+    typeof callbackValue !== 'string'
+  ) {
+    throw new Error('value must be a boolean or string when provided.')
+  }
+
   return {
-    ...(value as ExtensionSettingsFrameOpenRequest),
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    target: {
-      ...(target as unknown as ExtensionSettingsFrameOpenRequest['target']),
-      screenId: requireNonEmptyString(target.screenId, 'screenId')
+    nodePath: requireStringArray(request.nodePath, 'nodePath'),
+    input: requireMenuInput(request.input),
+    value: callbackValue as ExtensionMenuInvokeRequest['value']
+  }
+}
+
+function requireMenuReleaseRequest(value: unknown): ExtensionMenuReleaseRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId')
+  }
+}
+
+function requireSettingsOpenRequest(value: unknown): ExtensionSettingsOpenRequest {
+  const request = requireRecord(value, 'request')
+  const surface = requireSurface(request.surface, ['root', 'dialog', 'popover'], 'surface')
+  const base = {
+    extensionId: requireSafeExtensionId(request.extensionId),
+    contributionId: requireNonEmptyString(request.contributionId, 'contributionId')
+  }
+
+  if (surface === 'root') {
+    return {
+      ...base,
+      surface,
+      reason: request.reason as Extract<ExtensionSettingsOpenRequest, { surface: 'root' }>['reason']
     }
   }
+
+  const sessionId = requireNonEmptyString(request.sessionId, 'sessionId')
+  if (surface === 'dialog') {
+    return {
+      ...base,
+      surface,
+      sessionId,
+      dialogId: requireNonEmptyString(request.dialogId, 'dialogId'),
+      params: request.params as Extract<
+        ExtensionSettingsOpenRequest,
+        { surface: 'dialog' }
+      >['params'],
+      parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft'),
+      revision: requireFiniteNumber(request.revision, 'revision')
+    }
+  }
+
+  return {
+    ...base,
+    surface,
+    sessionId,
+    popoverId: requireNonEmptyString(request.popoverId, 'popoverId'),
+    parent: requireSettingsParentRef(request.parent),
+    params: request.params as Extract<
+      ExtensionSettingsOpenRequest,
+      { surface: 'popover' }
+    >['params'],
+    parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft'),
+    anchorNodeKey: requireNonEmptyString(request.anchorNodeKey, 'anchorNodeKey'),
+    revision: requireFiniteNumber(request.revision, 'revision')
+  }
 }
 
-function requireSettingsFrameRefreshRequest(value: unknown): ExtensionSettingsFrameRefreshRequest {
+function requireSettingsRefreshRequest(value: unknown): ExtensionSettingsRefreshRequest {
   const request = requireRecord(value, 'request')
-  return {
-    ...(value as ExtensionSettingsFrameRefreshRequest),
+  const surface = requireSurface(request.surface, ['root', 'dialog', 'popover', 'all'], 'surface')
+  const base = {
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    frameId: requireNonEmptyString(request.frameId, 'frameId')
+    reason: request.reason as ExtensionSettingsRefreshRequest['reason'],
+    revision: requireFiniteNumber(request.revision, 'revision')
+  }
+
+  switch (surface) {
+    case 'root':
+      return {
+        ...base,
+        surface,
+        draft: requireSettingsDraftSnapshot(request.draft, 'draft')
+      }
+
+    case 'dialog':
+      return {
+        ...base,
+        surface,
+        dialogId: requireNonEmptyString(request.dialogId, 'dialogId'),
+        draft: requireSettingsDraftSnapshot(request.draft, 'draft'),
+        parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft')
+      }
+
+    case 'popover':
+      return {
+        ...base,
+        surface,
+        popoverId: requireNonEmptyString(request.popoverId, 'popoverId'),
+        parent: requireSettingsParentRef(request.parent),
+        draft: requireSettingsDraftSnapshot(request.draft, 'draft'),
+        parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft')
+      }
+
+    case 'all':
+      return {
+        ...base,
+        surface,
+        rootDraft: requireSettingsDraftSnapshot(request.rootDraft, 'rootDraft'),
+        activeDialog: requireOptionalActiveDialogRefresh(request.activeDialog)
+      }
   }
 }
 
 function requireSettingsSubmitRequest(value: unknown): ExtensionSettingsSubmitRequest {
   const request = requireRecord(value, 'request')
-  return {
-    ...(value as ExtensionSettingsSubmitRequest),
+  const surface = requireSurface(request.surface, ['root', 'dialog'], 'surface')
+  const base = {
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    frameId: requireNonEmptyString(request.frameId, 'frameId')
+    revision: requireFiniteNumber(request.revision, 'revision')
+  }
+
+  if (surface === 'root') {
+    return {
+      ...base,
+      surface,
+      draft: requireSettingsDraftSnapshot(request.draft, 'draft')
+    }
+  }
+
+  return {
+    ...base,
+    surface,
+    dialogId: requireNonEmptyString(request.dialogId, 'dialogId'),
+    draft: requireSettingsDraftSnapshot(request.draft, 'draft'),
+    parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft')
   }
 }
 
 function requireSettingsInvokeRequest(value: unknown): ExtensionSettingsInvokeRequest {
   const request = requireRecord(value, 'request')
-  return {
-    ...(value as ExtensionSettingsInvokeRequest),
+  const surface = requireSurface(request.surface, ['root', 'dialog', 'popover'], 'surface')
+  const base = {
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    frameId: requireNonEmptyString(request.frameId, 'frameId'),
-    callbackId: requireNonEmptyString(request.callbackId, 'callbackId')
+    callbackId: requireNonEmptyString(request.callbackId, 'callbackId'),
+    fieldId: requireNonEmptyString(request.fieldId, 'fieldId'),
+    nodeId: requireNonEmptyString(request.nodeId, 'nodeId'),
+    value: request.value as ExtensionSettingsInvokeRequest['value'],
+    requestId: requireNonEmptyString(request.requestId, 'requestId'),
+    revision: requireFiniteNumber(request.revision, 'revision')
+  }
+
+  if (surface === 'root') {
+    return {
+      ...base,
+      surface,
+      draft: requireSettingsDraftSnapshot(request.draft, 'draft')
+    }
+  }
+
+  if (surface === 'dialog') {
+    return {
+      ...base,
+      surface,
+      dialogId: requireNonEmptyString(request.dialogId, 'dialogId'),
+      draft: requireSettingsDraftSnapshot(request.draft, 'draft'),
+      parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft')
+    }
+  }
+
+  return {
+    ...base,
+    surface,
+    popoverId: requireNonEmptyString(request.popoverId, 'popoverId'),
+    parent: requireSettingsParentRef(request.parent),
+    draft: requireSettingsDraftSnapshot(request.draft, 'draft'),
+    parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft')
   }
 }
 
-function requireSettingsFrameReleaseRequest(value: unknown): ExtensionSettingsFrameReleaseRequest {
+function requireSettingsReleaseRequest(value: unknown): ExtensionSettingsReleaseRequest {
   const request = requireRecord(value, 'request')
-  return {
-    ...(value as ExtensionSettingsFrameReleaseRequest),
+  const surface = requireSurface(request.surface, ['root', 'dialog', 'popover', 'all'], 'surface')
+  const base = {
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
-    sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    frameId: requireNonEmptyString(request.frameId, 'frameId')
+    sessionId: requireNonEmptyString(request.sessionId, 'sessionId')
+  }
+
+  if (surface === 'root' || surface === 'all') {
+    return {
+      ...base,
+      surface
+    }
+  }
+
+  if (surface === 'dialog') {
+    return {
+      ...base,
+      surface,
+      dialogId: requireNonEmptyString(request.dialogId, 'dialogId')
+    }
+  }
+
+  return {
+    ...base,
+    surface,
+    popoverId: requireNonEmptyString(request.popoverId, 'popoverId'),
+    parent: requireSettingsParentRef(request.parent)
+  }
+}
+
+function requireMenuInput(value: unknown): ExtensionMenuResolveRequest['input'] {
+  const input = requireRecord(value, 'input')
+  requireNonEmptyString(input.domain, 'input.domain')
+  requireNonEmptyString(input.scope, 'input.scope')
+  return input as unknown as ExtensionMenuResolveRequest['input']
+}
+
+function requireStringArray(value: unknown, label: string): readonly string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
+    throw new Error(`${label} must be an array of strings.`)
+  }
+
+  return value
+}
+
+function requireSurface<const TSurface extends string>(
+  value: unknown,
+  allowed: readonly TSurface[],
+  label: string
+): TSurface {
+  if (typeof value !== 'string' || !allowed.includes(value as TSurface)) {
+    throw new Error(`${label} must be one of: ${allowed.join(', ')}.`)
+  }
+
+  return value as TSurface
+}
+
+function requireFiniteNumber(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${label} must be a finite number.`)
+  }
+
+  return value
+}
+
+function requireSettingsDraftSnapshot(
+  value: unknown,
+  label: string
+): Extract<ExtensionSettingsRefreshRequest, { surface: 'root' }>['draft'] {
+  const snapshot = requireRecord(value, label)
+  return {
+    values: requireRecord(snapshot.values, `${label}.values`) as Extract<
+      ExtensionSettingsRefreshRequest,
+      { surface: 'root' }
+    >['draft']['values'],
+    dirtyNodeIds: requireStringArray(snapshot.dirtyNodeIds, `${label}.dirtyNodeIds`)
+  }
+}
+
+function requireSettingsParentRef(
+  value: unknown
+): Extract<ExtensionSettingsOpenRequest, { surface: 'popover' }>['parent'] {
+  const parent = requireRecord(value, 'parent')
+  const surface = requireSurface(parent.surface, ['root', 'dialog'], 'parent.surface')
+  if (surface === 'root') {
+    return { surface }
+  }
+
+  return {
+    surface,
+    dialogId: requireNonEmptyString(parent.dialogId, 'parent.dialogId')
+  }
+}
+
+function requireOptionalActiveDialogRefresh(
+  value: unknown
+): Extract<ExtensionSettingsRefreshRequest, { surface: 'all' }>['activeDialog'] {
+  if (value === undefined) {
+    return undefined
+  }
+
+  const activeDialog = requireRecord(value, 'activeDialog')
+  return {
+    dialogId: requireNonEmptyString(activeDialog.dialogId, 'activeDialog.dialogId'),
+    draft: requireSettingsDraftSnapshot(activeDialog.draft, 'activeDialog.draft')
   }
 }

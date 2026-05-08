@@ -10,21 +10,22 @@ import type { EventService } from '@main/services/event'
 import { getBootstrapArgs } from '@main/bootstrap/args'
 import type {
   ExtensionContributionSnapshot,
-  ExtensionEntityMenuInvokeRequest,
-  ExtensionEntityMenuInvokeResult,
-  ExtensionResolvedEntityMenu,
-  ExtensionResolvedSettingsFrame,
+  ExtensionMenuInvokeRequest,
+  ExtensionMenuInvokeResponse,
+  ExtensionMenuReleaseRequest,
+  ExtensionMenuResolveRequest,
+  ExtensionResolvedMenu,
+  ExtensionSettingsCallbackResponse,
   ExtensionSettingsContributionInfo,
-  ExtensionSettingsFrameOpenRequest,
-  ExtensionSettingsFrameRefreshRequest,
-  ExtensionSettingsFrameReleaseRequest,
-  ExtensionSettingsInteractionResponse,
   ExtensionSettingsInvokeRequest,
-  ExtensionSettingsSession,
+  ExtensionSettingsOpenRequest,
+  ExtensionSettingsOpenResponse,
+  ExtensionSettingsRefreshRequest,
+  ExtensionSettingsRefreshResponse,
+  ExtensionSettingsReleaseRequest,
   ExtensionSettingsSubmitRequest,
   ExtensionThemeContributionInfo
 } from '@shared/extension'
-import type { EntityMenuResolveInput } from '@kisaki/extension-api'
 import type {
   ExtensionCatalogEntry,
   ExtensionSearchOptions,
@@ -132,6 +133,9 @@ export class ExtensionService implements IService {
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
       onDidChange: () => this.emitContributionSnapshotChanged(),
+      onMenusRefreshRequested: (event) => this.ipc.send('extension:menus-refresh-requested', event),
+      onSettingsRefreshRequested: (event) =>
+        this.ipc.send('extension:settings-refresh-requested', event),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)
@@ -369,54 +373,40 @@ export class ExtensionService implements IService {
     return this.contributions.themes.getSnapshot()
   }
 
-  resolveEntityMenu(input: EntityMenuResolveInput): Promise<ExtensionResolvedEntityMenu> {
-    return this.contributions.entityMenus.resolve(input)
+  resolveMenu(request: ExtensionMenuResolveRequest): Promise<ExtensionResolvedMenu> {
+    return this.contributions.menus.resolve(request)
   }
 
-  invokeEntityMenuCallback(
-    request: ExtensionEntityMenuInvokeRequest
-  ): Promise<ExtensionEntityMenuInvokeResult> {
-    return this.contributions.entityMenus.invoke({
+  invokeMenuCallback(request: ExtensionMenuInvokeRequest): Promise<ExtensionMenuInvokeResponse> {
+    return this.contributions.menus.invoke({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  releaseEntityMenuSession(sessionId: string): Promise<void> {
-    return this.contributions.entityMenus.releaseSession(sessionId)
+  releaseMenu(request: ExtensionMenuReleaseRequest): Promise<void> {
+    return this.contributions.menus.release(request)
   }
 
-  openSettingsSession(
-    extensionId: string,
-    contributionId: string
-  ): Promise<ExtensionSettingsSession> {
-    return this.contributions.settings.openSession(
-      requireSafeExtensionId(extensionId),
-      contributionId
-    )
-  }
-
-  openSettingsFrame(
-    request: ExtensionSettingsFrameOpenRequest
-  ): Promise<ExtensionResolvedSettingsFrame> {
-    return this.contributions.settings.openFrame({
+  openSettings(request: ExtensionSettingsOpenRequest): Promise<ExtensionSettingsOpenResponse> {
+    return this.contributions.settings.open({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  refreshSettingsFrame(
-    request: ExtensionSettingsFrameRefreshRequest
-  ): Promise<ExtensionResolvedSettingsFrame> {
-    return this.contributions.settings.refreshFrame({
+  refreshSettings(
+    request: ExtensionSettingsRefreshRequest
+  ): Promise<ExtensionSettingsRefreshResponse> {
+    return this.contributions.settings.refresh({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  submitSettingsFrame(
+  submitSettings(
     request: ExtensionSettingsSubmitRequest
-  ): Promise<ExtensionSettingsInteractionResponse> {
+  ): Promise<ExtensionSettingsCallbackResponse> {
     return this.contributions.settings.submit({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
@@ -425,30 +415,18 @@ export class ExtensionService implements IService {
 
   invokeSettingsNode(
     request: ExtensionSettingsInvokeRequest
-  ): Promise<ExtensionSettingsInteractionResponse> {
+  ): Promise<ExtensionSettingsCallbackResponse> {
     return this.contributions.settings.invoke({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  releaseSettingsFrame(request: ExtensionSettingsFrameReleaseRequest): Promise<void> {
-    return this.contributions.settings.releaseFrame({
+  releaseSettings(request: ExtensionSettingsReleaseRequest): Promise<void> {
+    return this.contributions.settings.release({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
-  }
-
-  releaseSettingsSession(
-    extensionId: string,
-    contributionId: string,
-    sessionId: string
-  ): Promise<void> {
-    return this.contributions.settings.releaseSession(
-      requireSafeExtensionId(extensionId),
-      contributionId,
-      sessionId
-    )
   }
 
   async dispose(): Promise<void> {

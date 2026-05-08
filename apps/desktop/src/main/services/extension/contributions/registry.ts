@@ -3,14 +3,14 @@ import type { ExtensionContributionSnapshot } from '@shared/extension'
 import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
 import { ExtensionCommandContributionHost } from './commands'
 import { ExtensionDeeplinkContributionHost } from './deeplinks'
-import { ExtensionEntityMenuContributionHost } from './entity-menus'
+import { ExtensionMenuContributionHost } from './menus'
 import { ExtensionScraperContributionHost } from './scrapers'
 import { ExtensionSettingsContributionHost } from './settings'
 import { ExtensionThemeContributionHost } from './themes'
 import type { ExtensionContributionHostOptions } from './types'
 
 export class ExtensionContributionRegistry {
-  readonly entityMenus: ExtensionEntityMenuContributionHost
+  readonly menus: ExtensionMenuContributionHost
   readonly settings: ExtensionSettingsContributionHost
   readonly themes: ExtensionThemeContributionHost
   readonly deeplinks: ExtensionDeeplinkContributionHost
@@ -18,7 +18,7 @@ export class ExtensionContributionRegistry {
   readonly commands: ExtensionCommandContributionHost
 
   constructor(private readonly options: ExtensionContributionHostOptions) {
-    this.entityMenus = new ExtensionEntityMenuContributionHost(options)
+    this.menus = new ExtensionMenuContributionHost(options)
     this.settings = new ExtensionSettingsContributionHost(options)
     this.themes = new ExtensionThemeContributionHost(options)
     this.deeplinks = new ExtensionDeeplinkContributionHost(options)
@@ -28,18 +28,25 @@ export class ExtensionContributionRegistry {
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
     rpc.handleHostRequest(
-      'contributions.entityMenus.register',
+      'contributions.menus.register',
       async ({ runtimeHandle, contribution }) => {
-        this.entityMenus.register(runtimeHandle, contribution)
+        this.menus.register(runtimeHandle, contribution)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.entityMenus.unregister',
+      'contributions.menus.unregister',
       async ({ runtimeHandle, contributionId }) => {
-        this.entityMenus.unregister(runtimeHandle, contributionId)
+        this.menus.unregister(runtimeHandle, contributionId)
         this.notifyChanged()
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'contributions.menus.refreshRequested',
+      async ({ runtimeHandle, contributionId, reason }) => {
+        this.menus.notifyRefreshRequested(runtimeHandle, contributionId, reason)
         return {}
       }
     )
@@ -48,6 +55,13 @@ export class ExtensionContributionRegistry {
       async ({ runtimeHandle, contribution }) => {
         this.settings.register(runtimeHandle, contribution)
         this.notifyChanged()
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'contributions.settings.refreshRequested',
+      async ({ runtimeHandle, contributionId, reason }) => {
+        this.settings.notifyRefreshRequested(runtimeHandle, contributionId, reason)
         return {}
       }
     )
@@ -164,7 +178,7 @@ export class ExtensionContributionRegistry {
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     try {
-      this.entityMenus.releaseRuntime(runtimeHandle)
+      this.menus.releaseRuntime(runtimeHandle)
       this.settings.releaseRuntime(runtimeHandle)
       this.themes.releaseRuntime(runtimeHandle)
       this.deeplinks.releaseRuntime(runtimeHandle)
@@ -177,7 +191,7 @@ export class ExtensionContributionRegistry {
 
   async releaseAll(): Promise<void> {
     try {
-      this.entityMenus.releaseAll()
+      this.menus.releaseAll()
       this.settings.releaseAll()
       this.themes.releaseAll()
       this.deeplinks.releaseAll()
@@ -190,7 +204,7 @@ export class ExtensionContributionRegistry {
 
   getSnapshot(): ExtensionContributionSnapshot {
     return {
-      entityMenus: this.entityMenus.getSnapshot(),
+      menus: this.menus.getSnapshot(),
       settings: this.settings.getSnapshot(),
       themes: this.themes.getSnapshot(),
       deeplinks: this.deeplinks.getSnapshot(),
