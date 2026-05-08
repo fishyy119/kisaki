@@ -1858,7 +1858,6 @@ Main 职责：
 - `extension:open-settings-frame`
 - `extension:refresh-settings-frame`
 - `extension:submit-settings-frame`
-- `extension:invoke-settings-node`
 - `extension:release-settings-frame`
 - `extension:release-settings-session`
 - `extension:resolve-entity-menu`

@@ -60,23 +60,26 @@ import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
   ExtensionCatalogInfo,
   ExtensionContributionSnapshot,
-  ExtensionEntityMenuInvokeRequest,
-  ExtensionEntityMenuInvokeResult,
+  ExtensionMenuInvokeRequest,
+  ExtensionMenuInvokeResponse,
+  ExtensionMenuRefreshRequestedEvent,
+  ExtensionMenuReleaseRequest,
+  ExtensionMenuResolveRequest,
   ExtensionRegistryEntry,
-  ExtensionResolvedEntityMenu,
-  ExtensionResolvedSettingsFrame,
+  ExtensionResolvedMenu,
   ExtensionSettingsContributionInfo,
-  ExtensionSettingsFrameOpenRequest,
-  ExtensionSettingsFrameRefreshRequest,
-  ExtensionSettingsFrameReleaseRequest,
-  ExtensionSettingsInteractionResponse,
+  ExtensionSettingsCallbackResponse,
   ExtensionSettingsInvokeRequest,
-  ExtensionSettingsSession,
+  ExtensionSettingsOpenRequest,
+  ExtensionSettingsOpenResponse,
+  ExtensionSettingsRefreshRequest,
+  ExtensionSettingsRefreshResponse,
+  ExtensionSettingsRefreshRequestedEvent,
+  ExtensionSettingsReleaseRequest,
   ExtensionSettingsSubmitRequest,
   ExtensionThemeContributionInfo,
   ExtensionUpdateInfo
 } from './extension'
-import type { EntityMenuResolveInput } from '@kisaki/extension-api'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
@@ -428,37 +431,26 @@ export interface IpcMainHandlers {
   'extension:get-settings-contributions': () => IpcResult<
     readonly ExtensionSettingsContributionInfo[]
   >
-  'extension:resolve-entity-menu': (
-    input: EntityMenuResolveInput
-  ) => IpcResult<ExtensionResolvedEntityMenu>
-  'extension:invoke-entity-menu': (
-    request: ExtensionEntityMenuInvokeRequest
-  ) => IpcResult<ExtensionEntityMenuInvokeResult>
-  'extension:release-entity-menu-session': (sessionId: string) => IpcVoidResult
-  'extension:open-settings-session': (
-    extensionId: string,
-    contributionId: string
-  ) => IpcResult<ExtensionSettingsSession>
-  'extension:open-settings-frame': (
-    request: ExtensionSettingsFrameOpenRequest
-  ) => IpcResult<ExtensionResolvedSettingsFrame>
-  'extension:refresh-settings-frame': (
-    request: ExtensionSettingsFrameRefreshRequest
-  ) => IpcResult<ExtensionResolvedSettingsFrame>
-  'extension:submit-settings-frame': (
+  'extension:resolve-menu': (
+    request: ExtensionMenuResolveRequest
+  ) => IpcResult<ExtensionResolvedMenu>
+  'extension:invoke-menu': (
+    request: ExtensionMenuInvokeRequest
+  ) => IpcResult<ExtensionMenuInvokeResponse>
+  'extension:release-menu': (request: ExtensionMenuReleaseRequest) => IpcVoidResult
+  'extension:open-settings': (
+    request: ExtensionSettingsOpenRequest
+  ) => IpcResult<ExtensionSettingsOpenResponse>
+  'extension:refresh-settings': (
+    request: ExtensionSettingsRefreshRequest
+  ) => IpcResult<ExtensionSettingsRefreshResponse>
+  'extension:submit-settings': (
     request: ExtensionSettingsSubmitRequest
-  ) => IpcResult<ExtensionSettingsInteractionResponse>
+  ) => IpcResult<ExtensionSettingsCallbackResponse>
   'extension:invoke-settings-node': (
     request: ExtensionSettingsInvokeRequest
-  ) => IpcResult<ExtensionSettingsInteractionResponse>
-  'extension:release-settings-frame': (
-    request: ExtensionSettingsFrameReleaseRequest
-  ) => IpcVoidResult
-  'extension:release-settings-session': (
-    extensionId: string,
-    contributionId: string,
-    sessionId: string
-  ) => IpcVoidResult
+  ) => IpcResult<ExtensionSettingsCallbackResponse>
+  'extension:release-settings': (request: ExtensionSettingsReleaseRequest) => IpcVoidResult
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeContributionInfo[]>
   'extension:get-sources': () => IpcResult<
     Array<{ name: string; displayName: string; searchable: boolean }>
@@ -519,6 +511,8 @@ export interface IpcRendererEvents {
 
   // Extension contribution refresh (main -> renderer)
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
+  'extension:settings-refresh-requested': [event: ExtensionSettingsRefreshRequestedEvent]
+  'extension:menus-refresh-requested': [event: ExtensionMenuRefreshRequestedEvent]
 
   // Deeplink events (main → renderer)
   'deeplink:navigate': [DeeplinkNavigatePayload]
