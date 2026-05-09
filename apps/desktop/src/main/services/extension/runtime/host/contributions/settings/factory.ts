@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import type { SettingsAnyNodeEvents, SettingsNodeFactory } from '@kisaki/extension-api'
 
 export function createSettingsNodeFactory<
@@ -20,6 +19,6 @@ export function createSettingsNodeFactory<
     status: (node) => ({ ...node, kind: 'status' }),
     table: (node) => ({ ...node, kind: 'table' }),
     image: (node) => ({ ...node, kind: 'image' }),
-    divider: (node = { id: randomUUID() }) => ({ ...node, kind: 'divider' })
+    divider: (node) => ({ ...node, kind: 'divider' })
   }
 }

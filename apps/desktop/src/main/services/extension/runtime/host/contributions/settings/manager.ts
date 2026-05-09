@@ -267,6 +267,7 @@ export class HostSettingsContributions {
         params: activePopover.params,
         draft: request.draft,
         parentDraft: request.parentDraft,
+        anchorNodeKey: activePopover.anchorNodeKey,
         reason: request.reason,
         signal
       })
@@ -629,6 +630,7 @@ export class HostSettingsContributions {
       surface: 'popover',
       popoverId: options.popoverId,
       parent: options.parent,
+      anchorNodeKey: options.anchorNodeKey,
       params: options.params,
       callbacks: new Map()
     }

@@ -3,19 +3,9 @@ import log from 'electron-log/main'
 import {
   readErrorCode,
   type ExtensionRuntimeHandle,
-  type SettingsCallbackResult,
-  type SettingsContributionRegistration,
-  type SettingsOpenRequest as HostSettingsOpenRequest,
-  type SettingsRefreshRequest as HostSettingsRefreshRequest,
-  type SettingsReleaseRequest as HostSettingsReleaseRequest,
-  type SettingsResolvedSurfacePayload,
-  type SettingsSubmitRequest as HostSettingsSubmitRequest,
-  type SettingsInvokeRequest as HostSettingsInvokeRequest
+  type SettingsContributionRegistration
 } from '@kisaki/extension-api'
 import type {
-  ExtensionResolvedSettingsDialog,
-  ExtensionResolvedSettingsPopover,
-  ExtensionResolvedSettingsRoot,
   ExtensionSettingsCallbackResponse,
   ExtensionSettingsContributionInfo,
   ExtensionSettingsInvokeRequest,
@@ -25,25 +15,33 @@ import type {
   ExtensionSettingsRefreshResponse,
   ExtensionSettingsRefreshRequestedEvent,
   ExtensionSettingsReleaseRequest,
-  ExtensionSettingsSession,
   ExtensionSettingsSubmitRequest
 } from '@shared/extension'
 import {
   getRuntimeContributionKey,
   requireContributionOwner,
-  toContributionOwnerInfo,
-  type ExtensionContributionHostOptions,
-  type RuntimeContributionOwner
-} from './types'
-
-interface SettingsRegistration {
-  owner: RuntimeContributionOwner
-  contribution: SettingsContributionRegistration
-}
+  type ExtensionContributionHostOptions
+} from '../types'
+import {
+  toHostInvokeRequest,
+  toHostOpenRequest,
+  toHostRefreshRequest,
+  toHostReleaseRequest,
+  toHostSubmitRequest,
+  toResolvedDialog,
+  toResolvedPopover,
+  toResolvedRoot,
+  toSettingsContributionInfo,
+  toSettingsSession
+} from './requests'
+import { SettingsSessionStore } from './sessions'
+import type { SettingsRegistration } from './types'
+import { createSettingsError, getPublicContributionKey, toErrorMessage } from './utils'
 
 export class ExtensionSettingsContributionHost {
   private readonly registrations = new Map<string, SettingsRegistration>()
   private readonly byPublicId = new Map<string, SettingsRegistration>()
+  private readonly sessionStore = new SettingsSessionStore()
 
   constructor(private readonly options: ExtensionContributionHostOptions) {}
 
@@ -81,6 +79,7 @@ export class ExtensionSettingsContributionHost {
     this.byPublicId.delete(
       getPublicContributionKey(registration.owner.extension.id, contributionId)
     )
+    this.sessionStore.clearContributionSessions(registration.owner.extension.id, contributionId)
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
@@ -92,11 +91,13 @@ export class ExtensionSettingsContributionHost {
         )
       }
     }
+    this.sessionStore.clearRuntimeSessions(runtimeHandle)
   }
 
   releaseAll(): void {
     this.registrations.clear()
     this.byPublicId.clear()
+    this.sessionStore.clear()
   }
 
   getSnapshot(): readonly ExtensionSettingsContributionInfo[] {
@@ -129,34 +130,82 @@ export class ExtensionSettingsContributionHost {
 
   async open(request: ExtensionSettingsOpenRequest): Promise<ExtensionSettingsOpenResponse> {
     const registration = this.requireRegistration(request.extensionId, request.contributionId)
-    const hostRequest = toHostOpenRequest(request, registration)
-    const response = await this.options.requestHost('contributions.settings.open', hostRequest, {
-      timeoutMs: 15_000
-    })
+
+    if (request.surface === 'root') {
+      const sessionId = randomUUID()
+      const response = await this.options.requestHost(
+        'contributions.settings.open',
+        toHostOpenRequest(request, registration, sessionId),
+        { timeoutMs: 15_000 }
+      )
+
+      if (response.surface !== 'root') {
+        throw new Error('Settings host returned an unexpected root open response.')
+      }
+
+      this.sessionStore.set({
+        extensionId: request.extensionId,
+        contributionId: request.contributionId,
+        runtimeHandle: registration.owner.runtimeHandle,
+        sessionId: response.sessionId,
+        root: { revision: 1 }
+      })
+
+      return {
+        surface: 'root',
+        session: toSettingsSession(request.extensionId, request.contributionId, response.sessionId),
+        view: toResolvedRoot(response.view)
+      }
+    }
+
+    const session = this.sessionStore.requireForRegistration(request, registration)
+    this.sessionStore.assertRegistrationMatchesSession(session, registration)
+
+    if (request.surface === 'dialog') {
+      this.sessionStore.assertRevision(session.root, request.revision, 'settings root')
+    } else {
+      const parentSurface = this.sessionStore.requireParentSurface(session, request.parent)
+      this.sessionStore.assertRevision(parentSurface, request.revision, 'settings popover parent')
+    }
+
+    const response = await this.options.requestHost(
+      'contributions.settings.open',
+      toHostOpenRequest(request, registration),
+      { timeoutMs: 15_000 }
+    )
 
     switch (response.surface) {
-      case 'root':
-        return {
-          surface: 'root',
-          session: toSettingsSession(
-            request.extensionId,
-            request.contributionId,
-            response.sessionId
-          ),
-          view: toResolvedRoot(response.view)
-        }
-
       case 'dialog':
+        if (request.surface !== 'dialog') {
+          throw new Error('Settings host returned an unexpected dialog open response.')
+        }
+        session.activeRootPopover = undefined
+        session.activeDialogPopover = undefined
+        session.activeDialog = {
+          dialogId: response.dialog.dialogId as string,
+          revision: 1
+        }
         return {
           surface: 'dialog',
           dialog: toResolvedDialog(response.dialog)
         }
 
       case 'popover':
+        if (request.surface !== 'popover') {
+          throw new Error('Settings host returned an unexpected popover open response.')
+        }
+        this.sessionStore.setActivePopover(session, {
+          popoverId: response.popover.popoverId as string,
+          parent: request.parent,
+          revision: 1
+        })
         return {
           surface: 'popover',
           popover: toResolvedPopover(response.popover)
         }
+
+      case 'root':
+        throw new Error('Settings host returned an unexpected root open response.')
     }
   }
 
@@ -164,6 +213,10 @@ export class ExtensionSettingsContributionHost {
     request: ExtensionSettingsRefreshRequest
   ): Promise<ExtensionSettingsRefreshResponse> {
     const registration = this.requireRegistration(request.extensionId, request.contributionId)
+    const session = this.sessionStore.requireForRegistration(request, registration)
+    this.sessionStore.assertRegistrationMatchesSession(session, registration)
+    this.sessionStore.assertRefreshRequest(session, request)
+
     const response = await this.options.requestHost(
       'contributions.settings.refresh',
       toHostRefreshRequest(request, registration),
@@ -172,24 +225,65 @@ export class ExtensionSettingsContributionHost {
 
     switch (response.surface) {
       case 'root':
+        if (request.surface !== 'root') {
+          throw new Error('Settings host returned an unexpected root refresh response.')
+        }
+        session.root.revision += 1
+        session.activeRootPopover = undefined
         return {
           surface: 'root',
           view: toResolvedRoot(response.view)
         }
 
       case 'dialog':
+        if (request.surface !== 'dialog') {
+          throw new Error('Settings host returned an unexpected dialog refresh response.')
+        }
+        session.activeDialog = {
+          dialogId: response.dialog.dialogId as string,
+          revision: (session.activeDialog?.revision ?? 0) + 1
+        }
+        session.activeDialogPopover = undefined
         return {
           surface: 'dialog',
           dialog: toResolvedDialog(response.dialog)
         }
 
-      case 'popover':
+      case 'popover': {
+        if (request.surface !== 'popover') {
+          throw new Error('Settings host returned an unexpected popover refresh response.')
+        }
+        const previousPopover = this.sessionStore.requireActivePopover(
+          session,
+          request.parent,
+          request.popoverId
+        )
+        this.sessionStore.setActivePopover(session, {
+          popoverId: response.popover.popoverId as string,
+          parent: request.parent,
+          revision: previousPopover.revision + 1
+        })
         return {
           surface: 'popover',
           popover: toResolvedPopover(response.popover)
         }
+      }
 
       case 'all':
+        if (request.surface !== 'all') {
+          throw new Error('Settings host returned an unexpected all refresh response.')
+        }
+        session.root.revision += 1
+        session.activeRootPopover = undefined
+        session.activeDialogPopover = undefined
+        if (response.activeDialog) {
+          session.activeDialog = {
+            dialogId: response.activeDialog.dialogId,
+            revision: (session.activeDialog?.revision ?? 0) + 1
+          }
+        } else {
+          session.activeDialog = undefined
+        }
         return {
           surface: 'all',
           view: toResolvedRoot(response.view),
@@ -214,6 +308,9 @@ export class ExtensionSettingsContributionHost {
     }
 
     try {
+      const session = this.sessionStore.requireForRegistration(request, registration)
+      this.sessionStore.assertRegistrationMatchesSession(session, registration)
+      this.sessionStore.assertSubmitRequest(session, request)
       return await this.options.requestHost(
         'contributions.settings.submit',
         toHostSubmitRequest(request, registration),
@@ -244,6 +341,9 @@ export class ExtensionSettingsContributionHost {
     }
 
     try {
+      const session = this.sessionStore.requireForRegistration(request, registration)
+      this.sessionStore.assertRegistrationMatchesSession(session, registration)
+      this.sessionStore.assertInvokeRequest(session, request)
       return await this.options.requestHost(
         'contributions.settings.invoke',
         toHostInvokeRequest(request, registration),
@@ -266,6 +366,7 @@ export class ExtensionSettingsContributionHost {
   async release(request: ExtensionSettingsReleaseRequest): Promise<void> {
     const registration = this.findRegistration(request.extensionId, request.contributionId)
     if (!registration) {
+      this.sessionStore.applyRelease(request)
       return
     }
 
@@ -280,6 +381,8 @@ export class ExtensionSettingsContributionHost {
         `[ExtensionContributionRegistry] Failed to release settings "${request.extensionId}:${request.contributionId}:${request.sessionId}:${request.surface}":`,
         error
       )
+    } finally {
+      this.sessionStore.applyRelease(request)
     }
   }
 
@@ -299,266 +402,4 @@ export class ExtensionSettingsContributionHost {
   ): SettingsRegistration | undefined {
     return this.byPublicId.get(getPublicContributionKey(extensionId, contributionId))
   }
-}
-
-function toSettingsContributionInfo(
-  registration: SettingsRegistration
-): ExtensionSettingsContributionInfo {
-  return {
-    ...toContributionOwnerInfo(registration.owner),
-    contributionId: registration.contribution.id,
-    title: registration.contribution.title,
-    description: registration.contribution.description,
-    order: registration.contribution.order ?? 0
-  }
-}
-
-function toHostOpenRequest(
-  request: ExtensionSettingsOpenRequest,
-  registration: SettingsRegistration
-): HostSettingsOpenRequest {
-  if (request.surface === 'root') {
-    return {
-      runtimeHandle: registration.owner.runtimeHandle,
-      contributionId: registration.contribution.id,
-      surface: 'root',
-      sessionId: randomUUID(),
-      reason: request.reason
-    }
-  }
-
-  if (request.surface === 'dialog') {
-    return {
-      runtimeHandle: registration.owner.runtimeHandle,
-      contributionId: registration.contribution.id,
-      surface: 'dialog',
-      sessionId: request.sessionId,
-      dialogId: request.dialogId,
-      params: request.params,
-      parentDraft: request.parentDraft,
-      revision: request.revision
-    }
-  }
-
-  return {
-    runtimeHandle: registration.owner.runtimeHandle,
-    contributionId: registration.contribution.id,
-    surface: 'popover',
-    sessionId: request.sessionId,
-    popoverId: request.popoverId,
-    parent: request.parent,
-    params: request.params,
-    parentDraft: request.parentDraft,
-    anchorNodeKey: request.anchorNodeKey,
-    revision: request.revision
-  }
-}
-
-function toHostRefreshRequest(
-  request: ExtensionSettingsRefreshRequest,
-  registration: SettingsRegistration
-): HostSettingsRefreshRequest {
-  const base = {
-    runtimeHandle: registration.owner.runtimeHandle,
-    contributionId: registration.contribution.id,
-    sessionId: request.sessionId
-  }
-
-  switch (request.surface) {
-    case 'root':
-      return {
-        ...base,
-        surface: 'root',
-        draft: request.draft,
-        reason: request.reason,
-        revision: request.revision
-      }
-
-    case 'dialog':
-      return {
-        ...base,
-        surface: 'dialog',
-        dialogId: request.dialogId,
-        draft: request.draft,
-        parentDraft: request.parentDraft,
-        reason: request.reason,
-        revision: request.revision
-      }
-
-    case 'popover':
-      return {
-        ...base,
-        surface: 'popover',
-        popoverId: request.popoverId,
-        parent: request.parent,
-        draft: request.draft,
-        parentDraft: request.parentDraft,
-        reason: request.reason,
-        revision: request.revision
-      }
-
-    case 'all':
-      return {
-        ...base,
-        surface: 'all',
-        rootDraft: request.rootDraft,
-        activeDialog: request.activeDialog,
-        reason: request.reason,
-        revision: request.revision
-      }
-  }
-}
-
-function toHostSubmitRequest(
-  request: ExtensionSettingsSubmitRequest,
-  registration: SettingsRegistration
-): HostSettingsSubmitRequest {
-  const base = {
-    runtimeHandle: registration.owner.runtimeHandle,
-    contributionId: registration.contribution.id,
-    sessionId: request.sessionId
-  }
-
-  if (request.surface === 'root') {
-    return {
-      ...base,
-      surface: 'root',
-      draft: request.draft,
-      revision: request.revision
-    }
-  }
-
-  return {
-    ...base,
-    surface: 'dialog',
-    dialogId: request.dialogId,
-    draft: request.draft,
-    parentDraft: request.parentDraft,
-    revision: request.revision
-  }
-}
-
-function toHostInvokeRequest(
-  request: ExtensionSettingsInvokeRequest,
-  registration: SettingsRegistration
-): HostSettingsInvokeRequest {
-  const base = {
-    runtimeHandle: registration.owner.runtimeHandle,
-    contributionId: registration.contribution.id,
-    sessionId: request.sessionId,
-    callbackId: request.callbackId,
-    fieldId: request.fieldId,
-    nodeId: request.nodeId,
-    value: request.value,
-    requestId: request.requestId,
-    revision: request.revision
-  }
-
-  if (request.surface === 'root') {
-    return {
-      ...base,
-      surface: 'root',
-      draft: request.draft
-    }
-  }
-
-  if (request.surface === 'dialog') {
-    return {
-      ...base,
-      surface: 'dialog',
-      dialogId: request.dialogId,
-      draft: request.draft,
-      parentDraft: request.parentDraft
-    }
-  }
-
-  return {
-    ...base,
-    surface: 'popover',
-    popoverId: request.popoverId,
-    parent: request.parent,
-    draft: request.draft,
-    parentDraft: request.parentDraft
-  }
-}
-
-function toHostReleaseRequest(
-  request: ExtensionSettingsReleaseRequest,
-  registration: SettingsRegistration
-): HostSettingsReleaseRequest {
-  const base = {
-    runtimeHandle: registration.owner.runtimeHandle,
-    contributionId: registration.contribution.id,
-    sessionId: request.sessionId
-  }
-
-  switch (request.surface) {
-    case 'root':
-    case 'all':
-      return {
-        ...base,
-        surface: request.surface
-      }
-
-    case 'dialog':
-      return {
-        ...base,
-        surface: 'dialog',
-        dialogId: request.dialogId
-      }
-
-    case 'popover':
-      return {
-        ...base,
-        surface: 'popover',
-        popoverId: request.popoverId,
-        parent: request.parent
-      }
-  }
-}
-
-function toSettingsSession(
-  extensionId: string,
-  contributionId: string,
-  sessionId: string
-): ExtensionSettingsSession {
-  return {
-    sessionId,
-    extensionId,
-    contributionId
-  }
-}
-
-function toResolvedRoot(payload: SettingsResolvedSurfacePayload): ExtensionResolvedSettingsRoot {
-  return payload as unknown as ExtensionResolvedSettingsRoot
-}
-
-function toResolvedDialog(
-  payload: SettingsResolvedSurfacePayload
-): ExtensionResolvedSettingsDialog {
-  return payload as unknown as ExtensionResolvedSettingsDialog
-}
-
-function toResolvedPopover(
-  payload: SettingsResolvedSurfacePayload
-): ExtensionResolvedSettingsPopover {
-  return payload as unknown as ExtensionResolvedSettingsPopover
-}
-
-function createSettingsError(message: string, code?: string): SettingsCallbackResult {
-  return {
-    success: false,
-    error: {
-      code,
-      message
-    }
-  }
-}
-
-function getPublicContributionKey(extensionId: string, contributionId: string): string {
-  return `${extensionId}:${contributionId}`
-}
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback
 }

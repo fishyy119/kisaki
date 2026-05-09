@@ -54,5 +54,5 @@ export interface SettingsNodeFactory<TEvents extends SettingsAnyNodeEvents> {
   status(node: Omit<SettingsStatusNode, 'kind'>): SettingsStatusNode
   table(node: Omit<SettingsTableNode, 'kind'>): SettingsTableNode
   image(node: Omit<SettingsImageNode, 'kind'>): SettingsImageNode
-  divider(node?: Omit<SettingsDividerNode, 'kind'>): SettingsDividerNode
+  divider(node: Omit<SettingsDividerNode, 'kind'>): SettingsDividerNode
 }

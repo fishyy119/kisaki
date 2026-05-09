@@ -27,6 +27,7 @@ export interface SettingsSurfaceSession {
   dialogId?: string
   popoverId?: string
   parent?: SettingsParentRef
+  anchorNodeKey?: string
   params: SerializableRecord
   callbacks: Map<string, SettingsCallbackRecord>
 }

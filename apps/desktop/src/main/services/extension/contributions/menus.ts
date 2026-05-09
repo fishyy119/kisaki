@@ -31,9 +31,17 @@ interface MenuRegistration {
   contribution: MenuContributionRegistration
 }
 
+interface MainMenuSession {
+  sessionId: string
+  input: ExtensionMenuResolveRequest['input']
+  contributionKeys: Set<string>
+  runtimeHandles: Set<ExtensionRuntimeHandle>
+}
+
 export class ExtensionMenuContributionHost {
   private readonly registrations = new Map<string, MenuRegistration>()
   private readonly byPublicId = new Map<string, MenuRegistration>()
+  private readonly sessions = new Map<string, MainMenuSession>()
 
   constructor(private readonly options: ExtensionContributionHostOptions) {}
 
@@ -71,6 +79,7 @@ export class ExtensionMenuContributionHost {
     this.byPublicId.delete(
       getPublicContributionKey(registration.owner.extension.id, contributionId)
     )
+    this.clearContributionSessions(registration.owner.extension.id, contributionId)
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
@@ -82,11 +91,13 @@ export class ExtensionMenuContributionHost {
         )
       }
     }
+    this.clearRuntimeSessions(runtimeHandle)
   }
 
   releaseAll(): void {
     this.registrations.clear()
     this.byPublicId.clear()
+    this.sessions.clear()
   }
 
   getSnapshot(): readonly ExtensionMenuContributionInfo[] {
@@ -127,10 +138,25 @@ export class ExtensionMenuContributionHost {
   }
 
   async invoke(request: ExtensionMenuInvokeRequest): Promise<ExtensionMenuInvokeResponse> {
+    const session = this.sessions.get(request.sessionId)
+    if (!session || !menuInputsEqual(session.input, request.input)) {
+      return {
+        result: createUiError('Menu session is no longer active.', {
+          code: 'unavailable',
+          refresh: false
+        })
+      }
+    }
+
     const registration = this.byPublicId.get(
       getPublicContributionKey(request.extensionId, request.contributionId)
     )
-    if (!registration) {
+    if (
+      !registration ||
+      !session.contributionKeys.has(
+        getPublicContributionKey(request.extensionId, request.contributionId)
+      )
+    ) {
       return {
         result: createUiError('Menu contribution is no longer active.', {
           code: 'unavailable',
@@ -186,6 +212,8 @@ export class ExtensionMenuContributionHost {
         `[ExtensionContributionRegistry] Failed to release menu session "${request.sessionId}":`,
         error
       )
+    } finally {
+      this.sessions.delete(request.sessionId)
     }
   }
 
@@ -223,12 +251,21 @@ export class ExtensionMenuContributionHost {
     )
 
     const groups: ExtensionResolvedMenuGroup[] = []
+    const contributionKeys = new Set<string>()
+    const runtimeHandles = new Set<ExtensionRuntimeHandle>()
     for (const [index, result] of resolvedEntries.entries()) {
       if (result.status === 'fulfilled') {
         groups.push({
           ...toMenuInfo(result.value.registration),
           nodes: result.value.resolved.nodes as unknown as readonly ExtensionResolvedMenuNode[]
         })
+        contributionKeys.add(
+          getPublicContributionKey(
+            result.value.registration.owner.extension.id,
+            result.value.registration.contribution.id
+          )
+        )
+        runtimeHandles.add(result.value.registration.owner.runtimeHandle)
         continue
       }
 
@@ -242,11 +279,35 @@ export class ExtensionMenuContributionHost {
       }
     }
 
+    this.sessions.set(sessionId, {
+      sessionId,
+      input: request.input,
+      contributionKeys,
+      runtimeHandles
+    })
+
     return {
       sessionId,
       input: request.input,
       groups,
       errors
+    }
+  }
+
+  private clearContributionSessions(extensionId: string, contributionId: string): void {
+    const contributionKey = getPublicContributionKey(extensionId, contributionId)
+    for (const [sessionId, session] of [...this.sessions]) {
+      if (session.contributionKeys.has(contributionKey)) {
+        this.sessions.delete(sessionId)
+      }
+    }
+  }
+
+  private clearRuntimeSessions(runtimeHandle: ExtensionRuntimeHandle): void {
+    for (const [sessionId, session] of [...this.sessions]) {
+      if (session.runtimeHandles.has(runtimeHandle)) {
+        this.sessions.delete(sessionId)
+      }
     }
   }
 }
@@ -275,6 +336,31 @@ function toContributionError(
 
 function getPublicContributionKey(extensionId: string, contributionId: string): string {
   return `${extensionId}:${contributionId}`
+}
+
+function menuInputsEqual(
+  left: ExtensionMenuResolveRequest['input'],
+  right: ExtensionMenuResolveRequest['input']
+): boolean {
+  if (left.domain !== right.domain || left.scope !== right.scope) {
+    return false
+  }
+
+  if ('entityIds' in left || 'entityIds' in right) {
+    return (
+      'entityIds' in left && 'entityIds' in right && arraysEqual(left.entityIds, right.entityIds)
+    )
+  }
+
+  if ('entityId' in left || 'entityId' in right) {
+    return 'entityId' in left && 'entityId' in right && left.entityId === right.entityId
+  }
+
+  return true
+}
+
+function arraysEqual(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index])
 }
 
 function toErrorMessage(error: unknown, fallback: string): string {

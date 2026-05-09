@@ -1016,7 +1016,7 @@ export interface SettingsNodeFactory<TEvents extends SettingsAnyNodeEvents> {
   status(node: Omit<SettingsStatusNode, 'kind'>): SettingsStatusNode
   table(node: Omit<SettingsTableNode, 'kind'>): SettingsTableNode
   image(node: Omit<SettingsImageNode, 'kind'>): SettingsImageNode
-  divider(node?: Omit<SettingsDividerNode, 'kind'>): SettingsDividerNode
+  divider(node: Omit<SettingsDividerNode, 'kind'>): SettingsDividerNode
 }
 ```
 
@@ -1433,6 +1433,9 @@ Surface state 包含：
 - refresh root 会关闭 root popover。
 - refresh dialog 会关闭 dialog popover。
 - refresh all 会关闭所有 popover。
+- refresh popover 必须保留原 `anchorNodeKey`，popover 始终锚定到打开它的 button node。
+
+Main 是 settings session 生命周期的权威来源：负责创建 `sessionId`、登记 session 所属 extension/contribution/runtime、校验当前 surface 与 revision、处理 release/runtime unload 后的失效。Host 持有可执行 callback lease：负责扩展回调、callback map、resolve/submit/invoke 执行上下文和不可序列化状态。Renderer 只持有 UI draft、pending request 和 loading/error。
 
 Host session state 使用同样的 surface shape，并复用 normalize、callback map 注册、invoke、refresh 和 release 的通用 helper。它可以暴露私有 `openRoot()`、`openDialog()` 和 `openPopover()` 方法，但不能实现三条互不相关的流水线。
 
@@ -1753,6 +1756,10 @@ Host 到 main 的 RPC：
 - `contributions.menus.unregister`
 - `contributions.menus.refreshRequested`
 
+Menu session 生命周期同样由 main 轻量登记：main 创建/释放 `sessionId`，校验 invoke 是否来自仍然有效的 menu session，并在贡献点注销或 runtime 释放时使相关 session 失效。Host 只持有每个 menu session 的 callback lease。
+
+Renderer 到 main 的 settings/menu IPC 是主应用内部 typed boundary，由 `apps/desktop/src/shared` 的请求/响应类型约束。运行时完整 schema 校验集中在扩展边界：扩展注册的 definition、resolve 返回的 model/node 以及 callback/submit result。
+
 ## 渲染进程文件组织
 
 新增文件：
@@ -1811,11 +1818,17 @@ apps/desktop/src/renderer/src/components/extension/
 
 ```text
 apps/desktop/src/main/services/extension/contributions/
-  settings.ts
+  settings/
+    index.ts
+    manager.ts
+    requests.ts
+    sessions.ts
+    types.ts
+    utils.ts
   menus.ts
 
 apps/desktop/src/main/services/extension/runtime/host/contributions/
-  settings.ts
+  settings/
   menus.ts
 ```
 
@@ -1832,10 +1845,12 @@ Host 职责：
 Main 职责：
 
 - 持有已安装贡献点 snapshot。
+- 持有 settings/menu session 的轻量生命周期登记。
+- 校验 settings surface / revision 与 menu session 是否仍然有效。
 - 持有面向渲染进程的 IPC handler。
 - 把 resolve/invoke/release 转发给 host。
 - 发送 refresh-requested event。
-- 作为 settings/menu session 生命周期的权威来源。
+- 作为 settings/menu session 生命周期的权威来源，但不保存扩展 callback 函数。
 
 ## 删除旧模型
 
