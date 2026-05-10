@@ -21,7 +21,7 @@
 
 - 新增 `context.secrets` API，不作为 extension capability/权限点，也不作为主应用 service；它与 extension storage 同类，是按 extension 隔离的 secure key-value storage。
 - 新增 `kisaki.runtime.openExternal` public API。
-- 重构 deeplink contribution API：`DeeplinkContribution.route` 改为 extension-local `path`，`register()` 返回 canonical `kisaki://ext/<extensionId>/<path>` URL handle，host 负责内部路由归一化。
+- 重构 deeplink route contribution API：`DeeplinkRouteContribution.path` 使用 extension-local leading-slash path，`register()` 返回 canonical `kisaki://ext/<extensionId>/<path>` URL handle，host 负责内部路由归一化。
 - 在现有 scraper capability 下新增 profile list/get 能力，例如 `kisaki.scrapers.profiles.list({ mediaType: "game" })`。
 - 新增最小 ingest from scraper capability：`kisaki.ingest.games.addFromScraper(profileId, lookup, options)`；第一版不暴露 `updateGameFromScraper`。
 - 暴露 command 注册 API，并允许扩展注册可执行 command。

@@ -1,6 +1,6 @@
 # 03 Host Capabilities
 
-现有扩展 API 已有 `settingsPanels`、`scrapers`、`library`、`events`、`network`、`runtime.delay`。本需求还需要以下宿主能力与 context API，否则 Bangumi 扩展会被迫触碰 app internals。
+现有扩展 API 已有 `settingsPanels`、`scraperProviders`、`library`、`events`、`network`、`runtime.delay`。本需求还需要以下宿主能力与 context API，否则 Bangumi 扩展会被迫触碰 app internals。
 
 ## Context Secrets API
 
@@ -35,8 +35,8 @@ Bangumi OAuth 不新增主应用 OAuth service。扩展自己组合：
 ```ts
 const callback = context.contributions.deeplinkRoutes.register({
   id: 'oauth-callback',
-  path: 'oauth-callback',
-  async handle(input) {
+  path: '/oauth-callback',
+  async handle(event) {
     return { success: true, status: 'handled' }
   }
 })
@@ -47,10 +47,10 @@ callback.url
 
 公共 API 语义：
 
-- `DeeplinkContribution.path`: extension-local path，不包含 `ext/` 或 extension id。
+- `DeeplinkRouteContribution.path`: extension-local leading-slash path，不包含 `ext/` 或 extension id。
 - `register()` 返回的 handle 包含 canonical `url`，供扩展传给 relay、设置页诊断或外部调用方。
 - 主应用内部把 `<extensionId>` 和 `path` 归一化为 `ext/<extensionId>/<path>`。
-- `DeeplinkRequest` 应携带匹配到的局部 `path`、`params` 和原始 `rawUrl`；扩展不需要解析主应用命名空间。
+- `DeeplinkRouteHandleEvent` 应携带匹配到的局部 `path`、`params` 和原始 `rawUrl`；扩展不需要解析主应用命名空间。
 - `kisaki://ext/<extensionId>/<path>` 是扩展 deeplink 的唯一外显 URL 形态；`kisaki://<extensionId>/...` 不作为扩展入口。
 
 ## Scraper Capability Additions

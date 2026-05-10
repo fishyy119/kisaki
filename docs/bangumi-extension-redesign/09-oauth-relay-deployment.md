@@ -614,9 +614,9 @@ function toErrorMessage(error: unknown): string {
 ```ts
 context.contributions.deeplinkRoutes.register({
   id: 'oauth-callback',
-  path: 'oauth-callback',
-  async handle(input) {
-    // input.params.sessionId / input.params.state
+  path: '/oauth-callback',
+  async handle(event) {
+    // event.params.sessionId / event.params.state
     return { success: true, status: 'handled' }
   }
 })
