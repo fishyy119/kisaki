@@ -619,9 +619,11 @@ registry/
   index.ts
   manifest.ts
   validation.ts
-  compatibility.ts
+  artifact.ts
   integrity.ts
 ```
+
+`artifact.ts` 只处理 artifact 层职责：artifact target 解析、当前平台匹配、精确 target 与 `any` 的优先级选择，以及 artifact URL、size、sha256 等基础字段辅助校验。release `engines.kisaki`、channel、yanked、pin、signer trust 和更新候选排序不放在这里。
 
 导出：
 
@@ -634,7 +636,7 @@ export interface ExtensionRegistrySigningKey
 export interface ParsedExtensionRegistryManifest
 
 export function parseExtensionRegistryManifest(value: unknown): ParsedExtensionRegistryManifest
-export function selectCompatibleExtensionArtifact(...)
+export function selectExtensionArtifactForTarget(...)
 export function getExtensionReleaseDigest(...)
 ```
 
