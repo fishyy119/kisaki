@@ -10,7 +10,8 @@
         "default": "./dist/index.mjs"
       }
     },
-    "./schemas/extension-manifest.schema.json": "./schemas/extension-manifest.schema.json"
+    "./schemas/extension-manifest.schema.json": "./schemas/extension-manifest.schema.json",
+    "./schemas/extension-registry.schema.json": "./schemas/extension-registry.schema.json"
   },
   "files": [
     "dist",

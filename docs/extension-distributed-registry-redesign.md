@@ -91,7 +91,7 @@ Repository manifest  ->  Repository snapshot  ->  Aggregated catalog  ->  Instal
 
 ### Repository URL
 
-仓库 URL 必须是 `https:`。只有开发模式允许 `http://localhost`、`http://127.0.0.1` 和本地文件导入。
+仓库 URL 必须是 `https:`。只有开发模式允许 `http://localhost`、`http://127.0.0.1` 和本地 repository manifest 文件导入。这个限制只针对仓库 manifest；本地 `.kisx` 安装是正式能力，由 `extension:install-from-file` 承担，不限开发模式。
 
 URL 指向一个 JSON manifest。manifest 可以托管在任意静态站点、GitHub raw、对象存储、CDN 或自建服务上。Kisaki 不要求仓库实现动态 API。
 
@@ -108,7 +108,8 @@ packages/extension-api/schemas/extension-registry.schema.json
 ```text
 packages/extension-api/src/registry/manifest.ts
 packages/extension-api/src/registry/validation.ts
-packages/extension-api/src/registry/types.ts
+packages/extension-api/src/registry/artifact.ts
+packages/extension-api/src/registry/integrity.ts
 ```
 
 目标 manifest：
@@ -266,7 +267,7 @@ Artifact：
 
 ## 信任与安全模型
 
-签名不是中心化审核机制。Kisaki 允许扩展作者自签名，软件本身只负责验证签名数学上是否正确，并把 signing key fingerprint、仓库 URL、artifact URL 和风险状态展示给用户。安全模型只保留一层信任：用户是否信任某个 extension 的 signing key fingerprint。仓库本身只有启用、禁用和阻止状态，不表达“可信”。
+签名不是中心化审核机制。Kisaki 允许扩展作者自签名，软件本身只负责验证签名数学上是否正确，并把 signing key fingerprint、仓库 URL、artifact URL 和风险状态展示给用户。安全模型只保留一层信任：用户是否信任某个 extension 的 signing key fingerprint。仓库本身只有启用和禁用状态，不表达“可信”。
 
 ### 机制说明
 
@@ -284,7 +285,7 @@ Artifact：
 
 ### 默认策略
 
-- 仓库配置只决定是否参与刷新和展示：`enabled`、`disabled`、`blocked`。
+- 仓库配置只决定是否参与刷新和 discover/catalog 展示：`enabled`、`disabled`。
 - 官方仓库只是应用内置的默认仓库配置，不是安全信任等级。若官方 release 需要免确认安装，应用内置对应 extension-scoped signer fingerprint，并通过同一套 signer trust 判断。
 - 第三方仓库添加后默认可浏览、可安装；安装未信任 signer、unsigned release 或 signer changed 时必须展示确认。
 - 所有远程 artifact 必须校验 `sha256`。
@@ -366,7 +367,7 @@ apps/desktop/drizzle/
 | `id`                | text primary key           | 本机仓库 id。官方仓库固定，第三方仓库可用 manifest id；冲突时生成本地 id。            |
 | `url`               | text unique                | manifest URL。                                                                        |
 | `name`              | text                       | 展示名，来自 manifest 或用户输入。                                                    |
-| `state`             | text                       | `enabled`、`disabled`、`blocked`。                                                    |
+| `state`             | text                       | `enabled`、`disabled`。                                                               |
 | `built_in`          | integer boolean            | 是否为应用预置仓库。预置仓库不是安全信任等级，只表示来源由应用内置。                  |
 | `priority`          | integer                    | 聚合排序。官方仓库默认 0，第三方按添加顺序递增。                                      |
 | `manifest_snapshot` | json text nullable         | 最近一次成功解析后的规范化 manifest，用于启动展示、离线浏览、更新检查和安装来源审计。 |
@@ -381,9 +382,8 @@ apps/desktop/drizzle/
 
 Repository state 规则：
 
-- `enabled`：参与刷新、展示和 catalog 聚合。
+- `enabled`：参与刷新、discover/catalog 展示和 catalog 聚合。
 - `disabled`：保留配置和 snapshot，但不刷新、不参与 catalog 聚合。
-- `blocked`：不刷新、不展示、不参与 catalog 聚合；用于用户明确阻止某个仓库。
 - 官方仓库通过 `built_in`、固定 `id` 和默认 `priority` 表达预置来源，不表达安全信任。
 
 Catalog 查询规则：
@@ -457,7 +457,7 @@ export type ExtensionInstallationSource =
 约束：
 
 - `unique(extension_id, fingerprint)`。
-- signer trust 不从 repository 派生；仓库是否预置、启用或阻止都不改变 signing key 是否被信任。
+- signer trust 不从 repository 派生；仓库是否预置、启用或禁用都不改变 signing key 是否被信任。
 - 移除 trusted signer 后，后续自动更新会跳过该 signer 签名的 release，但已安装版本不会被自动卸载。
 
 ## 文件系统布局
@@ -534,6 +534,7 @@ apps/desktop/src/main/services/extension/
   types.ts
   repositories/
     index.ts
+    store.ts
     manager.ts
     fetcher.ts
     manifest.ts
@@ -589,6 +590,7 @@ apps/desktop/src/main/services/extension/sources/
 | 类                                     | 职责                                                                                                         |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `ExtensionRepositoryManager`           | 管理仓库配置、刷新、manifest snapshot 和 catalog 聚合。                                                      |
+| `ExtensionRepositoryStore`             | 读写 `extension_repositories`，封装仓库配置、snapshot 和 HTTP cache 字段的持久化。                           |
 | `ExtensionRepositoryFetcher`           | HTTP 抓取 manifest，处理 ETag、Last-Modified、超时和大小限制。                                               |
 | `ExtensionRepositoryAggregator`        | 将启用仓库的 manifest snapshot 合并为内存 catalog。                                                          |
 | `ExtensionSignerTrustManager`          | 计算 fingerprint，并应用 extension-scoped signer trust。                                                     |
@@ -636,8 +638,9 @@ export interface ExtensionRegistrySigningKey
 export interface ParsedExtensionRegistryManifest
 
 export function parseExtensionRegistryManifest(value: unknown): ParsedExtensionRegistryManifest
-export function selectExtensionArtifactForTarget(...)
-export function getExtensionReleaseDigest(...)
+export function selectExtensionRegistryArtifact(...)
+export function createExtensionRegistryReleaseDigest(...)
+export function createExtensionRegistryArtifactSignaturePayload(...)
 ```
 
 这些类型是 registry manifest 协议的一部分，可以被 CLI、官网发布工具和 desktop 主进程共同使用。
@@ -1013,7 +1016,7 @@ Discover：
 Repositories：
 
 - 列出官方和第三方仓库。
-- 支持添加 manifest URL、启用、禁用、阻止、刷新、删除、修改优先级。
+- 支持添加 manifest URL、启用、禁用、刷新、删除、修改优先级。
 - 显示 state、built-in 标记、last success、last error、manifest digest、package count。
 - 不在仓库页表达“仓库可信”。signer 信任只在安装、更新确认和 signer 管理视图中展示。
 
@@ -1180,7 +1183,7 @@ Renderer 显示：
 4. 将规范化 manifest 写入 `extension_repositories.manifest_snapshot`。
 5. 实现 `ExtensionRepositoryAggregator`，从 manifest snapshot 聚合内存 catalog。
 6. 实现 `ExtensionIconManager`，renderer 只消费 main 提供的 app-local icon URL。
-7. 接入 `extension:list-repositories`、`extension:add-repository`、`extension:refresh-repositories` 和 `extension:search-catalog`。
+7. 接入 `extension:list-repositories`、`extension:add-repository`、`extension:update-repository`、`extension:remove-repository`、`extension:refresh-repository`、`extension:refresh-repositories` 和 `extension:search-catalog`。
 
 ### Phase 5：安装垂直切换
 
@@ -1266,7 +1269,8 @@ ExtensionCatalogInfo -> ExtensionInstalledPackageInfo
 
 ```powershell
 rg -n "ExtensionSourceProvider|ExtensionSourceLocator|ExtensionSourceProviderInfo" apps packages docs .codex --glob "!docs/extension-distributed-registry-redesign.md"
-rg -n "ExtensionRegistryEntry|extension:get-sources|extension:search|extension:install'|extension:install\\\"" apps packages docs .codex --glob "!docs/extension-distributed-registry-redesign.md"
+rg -n "ExtensionRegistryEntry|extension:get-sources|extension:install\\(source\\)|extension:install'|extension:install\\\"" apps packages docs .codex --glob "!docs/extension-distributed-registry-redesign.md"
+rg -n 'extension:search(["''`\s),]|$)' apps packages docs .codex --glob "!docs/extension-distributed-registry-redesign.md"
 rg -n "state\\.json|ExtensionStateStore|services/extension/sources" apps packages docs .codex --glob "!docs/extension-distributed-registry-redesign.md"
 rg -n "provider.*locator|locator.*provider" apps/desktop/src/main/services/extension apps/desktop/src/shared apps/desktop/src/renderer/src/features/extension
 ```
@@ -1275,7 +1279,7 @@ rg -n "provider.*locator|locator.*provider" apps/desktop/src/main/services/exten
 
 ```powershell
 rg -n "ExtensionRegistryManifest|ExtensionRegistryRelease|ExtensionRegistryArtifact" packages/extension-api apps docs
-rg -n "extension:search-catalog|extension:list-repositories|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
+rg -n "extension:search-catalog|extension:list-repositories|extension:add-repository|extension:update-repository|extension:remove-repository|extension:refresh-repository|extension:refresh-repositories|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
 rg -n "ExtensionRepositoryManager|ExtensionPackageInstaller|ExtensionUpdatePlanner|ExtensionSignerTrustManager" apps/desktop/src/main/services/extension
 rg -n "ExtensionPackageTransaction|ExtensionIconManager" apps/desktop/src/main/services/extension
 rg -n "extension_repositories|extension_installations|extension_trusted_signers" apps/desktop/src/shared/db apps/desktop/drizzle
