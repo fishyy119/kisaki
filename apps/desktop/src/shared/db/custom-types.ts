@@ -17,6 +17,14 @@ import {
   type AllEntityType
 } from '../common'
 import { LOCALES, APP_LOCALES, type Locale, type AppLocale } from '../locale'
+import {
+  parseExtensionInstallationSource,
+  type ExtensionInstallationSource
+} from '../extension/installation-source'
+import {
+  parseExtensionRegistryManifest,
+  type ExtensionRegistryManifest
+} from '@kisaki/extension-api'
 
 import type {
   Status,
@@ -399,6 +407,38 @@ export const backgroundTaskCreatedBy = createEnumType<BackgroundTaskCreatedBy>(
   BACKGROUND_TASK_CREATED_BY_VALUES,
   'user',
   'backgroundTaskCreatedBy'
+)
+
+export const EXTENSION_REPOSITORY_STATE_VALUES = ['enabled', 'disabled'] as const
+export type ExtensionRepositoryState = (typeof EXTENSION_REPOSITORY_STATE_VALUES)[number]
+export const extensionRepositoryState = createEnumType<ExtensionRepositoryState>(
+  EXTENSION_REPOSITORY_STATE_VALUES,
+  'disabled',
+  'extensionRepositoryState'
+)
+
+export const EXTENSION_INSTALL_REASON_VALUES = ['manual', 'update', 'local-file'] as const
+export type ExtensionInstallReason = (typeof EXTENSION_INSTALL_REASON_VALUES)[number]
+export const extensionInstallReason = createEnumType<ExtensionInstallReason>(
+  EXTENSION_INSTALL_REASON_VALUES,
+  'manual',
+  'extensionInstallReason'
+)
+
+export const EXTENSION_UPDATE_POLICY_VALUES = ['manual', 'notify', 'auto', 'pinned'] as const
+export type ExtensionUpdatePolicy = (typeof EXTENSION_UPDATE_POLICY_VALUES)[number]
+export const extensionUpdatePolicy = createEnumType<ExtensionUpdatePolicy>(
+  EXTENSION_UPDATE_POLICY_VALUES,
+  'manual',
+  'extensionUpdatePolicy'
+)
+
+export const EXTENSION_SIGNER_ALGORITHM_VALUES = ['ed25519'] as const
+export type ExtensionSignerAlgorithm = (typeof EXTENSION_SIGNER_ALGORITHM_VALUES)[number]
+export const extensionSignerAlgorithm = createEnumType<ExtensionSignerAlgorithm>(
+  EXTENSION_SIGNER_ALGORITHM_VALUES,
+  'ed25519',
+  'extensionSignerAlgorithm'
 )
 
 // =============================================================================
@@ -896,6 +936,88 @@ export const backgroundTaskHistory = customType<{
     return JSON.stringify(value)
   }
 })
+
+export const extensionRegistryManifestSnapshot = customType<{
+  data: ExtensionRegistryManifest | null
+  driverData: string | null
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string | null): ExtensionRegistryManifest | null {
+    if (!value) return null
+    try {
+      const parsed = JSON.parse(value)
+      const manifest = parsePersistedExtensionRegistryManifestSnapshot(parsed)
+      if (!manifest) {
+        console.warn('Invalid extensionRegistryManifestSnapshot value from database:', value)
+      }
+      return manifest
+    } catch (error) {
+      console.error('Failed to parse extensionRegistryManifestSnapshot:', error)
+      return null
+    }
+  },
+
+  toDriver(value: ExtensionRegistryManifest | null): string | null {
+    if (value === null || value === undefined) return null
+    const manifest = parsePersistedExtensionRegistryManifestSnapshot(value)
+    if (!manifest) {
+      throw new Error('extensionRegistryManifestSnapshot must be a valid registry manifest or null')
+    }
+    return JSON.stringify(manifest)
+  }
+})
+
+export const extensionInstallationSource = customType<{
+  data: ExtensionInstallationSource | null
+  driverData: string
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string): ExtensionInstallationSource | null {
+    try {
+      const parsed = JSON.parse(value)
+      const source = parseExtensionInstallationSource(parsed)
+      if (!source) {
+        console.warn('Invalid extensionInstallationSource value from database:', value)
+      }
+      return source
+    } catch (error) {
+      console.error('Failed to parse extensionInstallationSource:', error)
+      return null
+    }
+  },
+
+  toDriver(value: ExtensionInstallationSource | null): string {
+    const source = parseExtensionInstallationSource(value)
+    if (!source) {
+      throw new Error('extensionInstallationSource must be a valid installation source')
+    }
+    return JSON.stringify(source)
+  }
+})
+
+function parsePersistedExtensionRegistryManifestSnapshot(
+  value: unknown
+): ExtensionRegistryManifest | null {
+  const result = parseExtensionRegistryManifest(value, { allowInsecureLocalUrls: true })
+  if (result.manifest) {
+    return result.manifest
+  }
+
+  if (result.issues.length > 0) {
+    console.warn(
+      'Invalid extensionRegistryManifestSnapshot manifest:',
+      result.issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ')
+    )
+  }
+
+  return null
+}
 
 function normalizeFilterValueForStorage(value: unknown): FilterState[string] | undefined {
   if (value === undefined || value === null) return undefined
