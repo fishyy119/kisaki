@@ -296,7 +296,7 @@ Artifact：
 ### Signer Trust
 
 ```ts
-export interface ExtensionTrustedSigner {
+export interface ExtensionSignerTrust {
   id: string
   extensionId: string
   fingerprint: string
@@ -314,7 +314,7 @@ export interface ExtensionTrustedSigner {
 - signer trust 是 extension-scoped：信任 `bangumi` 的某个 fingerprint，不会自动信任其它 extension。
 - fingerprint 使用 public key 原始 bytes 的 `sha256` hex。`keyId` 只用于在 manifest 中查找 public key，不参与信任判断。
 - `signed + fingerprint 已被该 extension 信任`：允许自动更新。
-- `signed + fingerprint 未被该 extension 信任`：允许手动安装/更新，确认后可以写入 trusted signer。
+- `signed + fingerprint 未被该 extension 信任`：允许手动安装/更新，确认后可以写入 signer trust。
 - `signed + fingerprint 与当前已安装版本不同`：视为 signer changed，必须手动确认。
 - `unsigned remote release`：允许手动安装，永远不能自动更新。
 - 仓库 manifest 被篡改时，攻击者无法伪造已信任 key 的签名；如果换成 unsigned 或新 key release，会被安装计划挡在手动确认前。
@@ -343,7 +343,7 @@ export interface ExtensionTrustedSigner {
 
 ## 本地状态模型
 
-v1 新增三张核心表：仓库表、安装表和 trusted signer 表。远程 catalog 不单独建表，而是从 `extension_repositories.manifest_snapshot` 动态聚合。这里的 snapshot 不是一套额外缓存系统，而是“最近一次成功抓取并解析的仓库 manifest”。它用于启动时快速展示、仓库离线时继续浏览、更新检查和安装来源审计。扩展数量和仓库数量在可预期范围内不会大到需要复杂索引；未来如果要做评分、排行榜或全文搜索，再新增可重建的 catalog index 表。
+v1 新增三张核心表：仓库表、安装表和 signer trust 表。远程 catalog 不单独建表，而是从 `extension_repositories.manifest_snapshot` 动态聚合。这里的 snapshot 不是一套额外缓存系统，而是“最近一次成功抓取并解析的仓库 manifest”。它用于启动时快速展示、仓库离线时继续浏览、更新检查和安装来源审计。扩展数量和仓库数量在可预期范围内不会大到需要复杂索引；未来如果要做评分、排行榜或全文搜索，再新增可重建的 catalog index 表。
 
 删除 `ExtensionStateStore` 和 `state.json`。新系统只以 SQLite installation 记录作为本机安装事实，不读取、不迁移、不回写旧状态文件。
 
@@ -438,11 +438,11 @@ export type ExtensionInstallationSource =
     }
 ```
 
-#### `extension_trusted_signers`
+#### `extension_signer_trusts`
 
 | 字段                          | 类型              | 说明                                                                       |
 | ----------------------------- | ----------------- | -------------------------------------------------------------------------- |
-| `id`                          | text primary key  | 本地 trusted signer id，可由 `${extension_id}:${fingerprint}` 稳定生成。   |
+| `id`                          | text primary key  | 本地 signer trust id，可由 `${extension_id}:${fingerprint}` 稳定生成。     |
 | `extension_id`                | text              | 信任范围对应的扩展 id。                                                    |
 | `fingerprint`                 | text              | signing public key fingerprint，使用 public key 原始 bytes 的 sha256 hex。 |
 | `algorithm`                   | text              | v1 固定为 `ed25519`。                                                      |
@@ -458,7 +458,8 @@ export type ExtensionInstallationSource =
 
 - `unique(extension_id, fingerprint)`。
 - signer trust 不从 repository 派生；仓库是否预置、启用或禁用都不改变 signing key 是否被信任。
-- 移除 trusted signer 后，后续自动更新会跳过该 signer 签名的 release，但已安装版本不会被自动卸载。
+- 这张表记录“某个 extension 信任某个 signer fingerprint”的关系，不表示 signer 全局可信。
+- 移除 signer trust 后，后续自动更新会跳过该 signer 签名的 release，但已安装版本不会被自动卸载。
 
 ## 文件系统布局
 
@@ -514,7 +515,7 @@ v1 不在 package 目录中写入额外的来源文件。安装来源只记录�
 
 - repository 安装写入 `kind = repository`、repository id/url、manifest digest、release digest、artifact URL、artifact sha256、signature key id 和 signer fingerprint。
 - 本地文件安装写入 `kind = local-file`、原始文件路径和 artifact sha256，并设置 `install_reason = local-file`。
-- trusted signer 选择写入 `extension_trusted_signers`，不复制到 package 目录。
+- signer trust 选择写入 `extension_signer_trusts`，不复制到 package 目录。
 
 原因：
 
@@ -594,7 +595,7 @@ apps/desktop/src/main/services/extension/sources/
 | `ExtensionRepositoryFetcher`           | HTTP 抓取 manifest，处理 ETag、Last-Modified、超时和大小限制。                                               |
 | `ExtensionRepositoryAggregator`        | 将启用仓库的 manifest snapshot 合并为内存 catalog。                                                          |
 | `ExtensionSignerTrustManager`          | 计算 fingerprint，并应用 extension-scoped signer trust。                                                     |
-| `ExtensionTrustedSignerStore`          | 读写 `extension_trusted_signers`。                                                                           |
+| `ExtensionSignerTrustStore`            | 读写 `extension_signer_trusts`。                                                                             |
 | `ExtensionInstallationStore`           | 读写 `extension_installations`，取代旧 `ExtensionStateStore`。                                               |
 | `ExtensionInstallationCatalog`         | 聚合 built-in、安装记录、package manifest 和 runtime 状态，输出 installed 列表。                             |
 | `ExtensionInstallationMetadataFactory` | 从 installation、built-in 和 dev 记录创建 `ExtensionRuntimeMetadata`，实现放在 `installations/metadata.ts`。 |
@@ -625,25 +626,36 @@ registry/
   integrity.ts
 ```
 
-`artifact.ts` 只处理 artifact 层职责：artifact target 解析、当前平台匹配、精确 target 与 `any` 的优先级选择，以及 artifact URL、size、sha256 等基础字段辅助校验。release `engines.kisaki`、channel、yanked、pin、signer trust 和更新候选排序不放在这里。
+`artifact.ts` 只处理 artifact 层职责：artifact target 类型、当前平台 target、精确 target 与 `any` 的优先级选择，以及 artifact signature payload 生成。artifact URL、size、sha256、signature 结构校验放在 `validation.ts`；release `engines.kisaki`、channel、yanked、pin、signer trust 和更新候选排序不放在这里。
 
-导出：
+`integrity.ts` 只处理协议级完整性标识：canonical JSON、release digest payload、release digest 和 signer fingerprint。它不负责下载校验、签名验签、signer trust 判断或安装安全决策。
+
+核心导出包括：
 
 ```ts
 export interface ExtensionRegistryManifest
 export interface ExtensionRegistryPackage
 export interface ExtensionRegistryRelease
 export interface ExtensionRegistryArtifact
+export interface ExtensionRegistryArtifactSignaturePayload
+export interface ExtensionRegistryReleaseDigestPayload
 export interface ExtensionRegistrySigningKey
 export interface ParsedExtensionRegistryManifest
+export type ExtensionRegistryArtifactTarget
 
 export function parseExtensionRegistryManifest(value: unknown): ParsedExtensionRegistryManifest
+export function isExtensionRegistryManifest(value: unknown): value is ExtensionRegistryManifest
+export function getCurrentExtensionRegistryArtifactTarget(...)
+export function isExtensionRegistryArtifactTargetCompatible(...)
 export function selectExtensionRegistryArtifact(...)
+export function createExtensionRegistryReleaseDigestPayload(...)
 export function createExtensionRegistryReleaseDigest(...)
 export function createExtensionRegistryArtifactSignaturePayload(...)
+export function createExtensionRegistrySignerFingerprint(...)
+export function stringifyExtensionRegistryCanonicalJson(...)
 ```
 
-这些类型是 registry manifest 协议的一部分，可以被 CLI、官网发布工具和 desktop 主进程共同使用。
+这些类型和 helper 是 registry manifest 协议的一部分，可以被 CLI、官网发布工具和 desktop 主进程共同使用。
 
 ### Shared Renderer DTO
 
@@ -662,7 +674,7 @@ export interface ExtensionInstallPlan
 export interface ExtensionInstalledPackageInfo
 export interface ExtensionUpdateCandidateInfo
 export interface ExtensionUninstallRequest
-export interface ExtensionTrustedSignerInfo
+export interface ExtensionSignerTrustInfo
 ```
 
 删除：
@@ -833,7 +845,7 @@ Transaction recovery 规则：
 10. 进入不可取消提交阶段，创建内存 rollback context。
 11. 如果目标目录已存在，先移动到 `temp/operations/backups/<operation-id>`。
 12. 将 staging package 原子移动到目标目录。
-13. 在 SQLite transaction 中写 `extension_installations`；如果用户选择信任 signer，同时写入 `extension_trusted_signers`。
+13. 在 SQLite transaction 中写 `extension_installations`；如果用户选择信任 signer，同时写入 `extension_signer_trusts`。
 14. 如果安装后应启用，调用 `RuntimeManager.reconcile()`。
 15. 如果当前进程内发生 runtime failed，使用内存 rollback context 回滚 DB 和文件；如果用户选择“安装但保持禁用”，则写安装记录但不启用。
 16. 清理 backup/download/staging。
@@ -1162,10 +1174,10 @@ Renderer 显示：
 
 ### Phase 2：数据库与 shared 状态类型
 
-1. 在 Drizzle schema 中新增 `extension_repositories`、`extension_installations` 和 `extension_trusted_signers` 三张表。
+1. 在 Drizzle schema 中新增 `extension_repositories`、`extension_installations` 和 `extension_signer_trusts` 三张表。
 2. 生成 migration。
 3. 在 shared 层新增 `ExtensionInstallationSource`、parser 和 type guard，并让 DB custom type 与 main service 共用。
-4. 新增 `ExtensionInstallationStore`、`ExtensionRepositoryStore` 和 `ExtensionTrustedSignerStore`。
+4. 新增 `ExtensionInstallationStore`、`ExtensionRepositoryStore` 和 `ExtensionSignerTrustStore`。
 
 ### Phase 3：包操作核心与恢复
 
@@ -1282,7 +1294,7 @@ rg -n "ExtensionRegistryManifest|ExtensionRegistryRelease|ExtensionRegistryArtif
 rg -n "extension:search-catalog|extension:list-repositories|extension:add-repository|extension:update-repository|extension:remove-repository|extension:refresh-repository|extension:refresh-repositories|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
 rg -n "ExtensionRepositoryManager|ExtensionPackageInstaller|ExtensionUpdatePlanner|ExtensionSignerTrustManager" apps/desktop/src/main/services/extension
 rg -n "ExtensionPackageTransaction|ExtensionIconManager" apps/desktop/src/main/services/extension
-rg -n "extension_repositories|extension_installations|extension_trusted_signers" apps/desktop/src/shared/db apps/desktop/drizzle
+rg -n "extension_repositories|extension_installations|extension_signer_trusts" apps/desktop/src/shared/db apps/desktop/drizzle
 ```
 
 ## 验收标准
