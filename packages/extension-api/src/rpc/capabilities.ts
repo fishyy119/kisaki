@@ -59,7 +59,7 @@ import type {
 import type { NotificationHandle, NotificationKind, NotifyOptions } from '../capabilities/notify'
 import type { RuntimeInfo } from '../capabilities/runtime'
 import type { ScraperProfileListQuery, ScraperProfileSummary } from '../capabilities/scrapers'
-import type { ScraperLookup } from '../contributions/scrapers'
+import type { ScraperLookup } from '../contributions/scraper-providers'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
 

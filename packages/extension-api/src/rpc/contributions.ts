@@ -6,13 +6,13 @@ import type {
 import type {
   DeeplinkRouteHandleEvent,
   DeeplinkRouteHandleResult
-} from '../contributions/deeplinks'
+} from '../contributions/deeplink-routes'
 import type {
   EntityMenuDomain,
   EntityMenuInput,
   EntityMenuRefreshReason,
   EntityMenuScope
-} from '../contributions/menus'
+} from '../contributions/entity-menus'
 import type {
   SettingsPanelDialogButtonResult,
   SettingsPanelDialogCommitResult,
@@ -22,7 +22,7 @@ import type {
   SettingsPanelRootButtonResult,
   SettingsPanelRootCommitResult,
   SettingsPanelRootSubmitResult
-} from '../contributions/settings'
+} from '../contributions/settings-panels'
 import type {
   CharacterScraperSlot,
   CharacterSessionResultMap,
@@ -40,7 +40,7 @@ import type {
   ScraperCapability,
   ScraperLookup,
   ScraperMediaType
-} from '../contributions/scrapers'
+} from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
 import type { Locale, SerializableRecord, SerializableValue, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'

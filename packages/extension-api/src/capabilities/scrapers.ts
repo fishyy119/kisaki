@@ -1,5 +1,5 @@
 import type { Locale } from '../shared'
-import type { ScraperMediaType } from '../contributions/scrapers'
+import type { ScraperMediaType } from '../contributions/scraper-providers'
 
 export interface ScraperProfileProviderSlot {
   slot: string

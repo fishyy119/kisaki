@@ -1,4 +1,4 @@
-import type { ScraperLookup } from '../contributions/scrapers'
+import type { ScraperLookup } from '../contributions/scraper-providers'
 
 export type IngestExistingReason = 'externalId' | 'path'
 
