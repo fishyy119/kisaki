@@ -1,4 +1,4 @@
-import type { MenuContribution, MenuInput } from './contracts'
+import type { EntityMenuContribution, EntityMenuInput } from './contracts'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
@@ -12,14 +12,14 @@ import {
   validateUnknownKeys
 } from '../../shared/validation'
 
-const MENU_MAX_SUBMENU_DEPTH = 3
+const ENTITY_MENU_MAX_SUBMENU_DEPTH = 3
 
-const MENU_CONTRIBUTION_KEYS = new Set<string>(['id', 'order', 'resolve'])
+const ENTITY_MENU_CONTRIBUTION_KEYS = new Set<string>(['id', 'order', 'resolve'])
 
-const MENU_NODE_BASE_KEYS = new Set<string>(['kind', 'id', 'hidden', 'disabled'])
+const ENTITY_MENU_NODE_BASE_KEYS = new Set<string>(['kind', 'id', 'hidden', 'disabled'])
 
-const MENU_ACTION_NODE_KEYS = new Set<string>([
-  ...MENU_NODE_BASE_KEYS,
+const ENTITY_MENU_ACTION_NODE_KEYS = new Set<string>([
+  ...ENTITY_MENU_NODE_BASE_KEYS,
   'label',
   'icon',
   'tone',
@@ -27,16 +27,16 @@ const MENU_ACTION_NODE_KEYS = new Set<string>([
   'onClick'
 ])
 
-const MENU_CHECKBOX_NODE_KEYS = new Set<string>([
-  ...MENU_NODE_BASE_KEYS,
+const ENTITY_MENU_CHECKBOX_NODE_KEYS = new Set<string>([
+  ...ENTITY_MENU_NODE_BASE_KEYS,
   'label',
   'icon',
   'checked',
   'onChange'
 ])
 
-const MENU_SELECT_NODE_KEYS = new Set<string>([
-  ...MENU_NODE_BASE_KEYS,
+const ENTITY_MENU_SELECT_NODE_KEYS = new Set<string>([
+  ...ENTITY_MENU_NODE_BASE_KEYS,
   'label',
   'icon',
   'value',
@@ -44,23 +44,23 @@ const MENU_SELECT_NODE_KEYS = new Set<string>([
   'onChange'
 ])
 
-const MENU_SUBMENU_NODE_KEYS = new Set<string>([
-  ...MENU_NODE_BASE_KEYS,
+const ENTITY_MENU_SUBMENU_NODE_KEYS = new Set<string>([
+  ...ENTITY_MENU_NODE_BASE_KEYS,
   'label',
   'icon',
   'children'
 ])
 
-const MENU_SEPARATOR_NODE_KEYS = new Set<string>(['kind', 'id', 'hidden'])
+const ENTITY_MENU_SEPARATOR_NODE_KEYS = new Set<string>(['kind', 'id', 'hidden'])
 
-const MENU_SELECT_OPTION_KEYS = new Set<string>(['value', 'label', 'disabled'])
+const ENTITY_MENU_SELECT_OPTION_KEYS = new Set<string>(['value', 'label', 'disabled'])
 
-function validateMenuContributionBase(
+function validateEntityMenuContributionBase(
   value: Record<string, unknown>,
   path: string
 ): ValidationIssue[] {
   return [
-    ...validateUnknownKeys(value, MENU_CONTRIBUTION_KEYS, path),
+    ...validateUnknownKeys(value, ENTITY_MENU_CONTRIBUTION_KEYS, path),
     ...validateRequiredString(value.id, `${path}.id`, {
       trim: true,
       valueMessage: 'Contribution id must be a non-empty string.'
@@ -77,11 +77,14 @@ function validateMenuContributionBase(
   ]
 }
 
-function validateMenuNodeBase(value: Record<string, unknown>, path: string): ValidationIssue[] {
+function validateEntityMenuNodeBase(
+  value: Record<string, unknown>,
+  path: string
+): ValidationIssue[] {
   return [
     ...validateRequiredString(value.id, `${path}.id`, {
       trim: true,
-      valueMessage: 'Menu node id must be a non-empty string.'
+      valueMessage: 'Entity menu node id must be a non-empty string.'
     }),
     ...validateOptionalBoolean(value.hidden, `${path}.hidden`).map((issue) => ({
       ...issue,
@@ -94,13 +97,13 @@ function validateMenuNodeBase(value: Record<string, unknown>, path: string): Val
   ]
 }
 
-function validateMenuIcon(value: unknown, path: string): ValidationIssue[] {
+function validateEntityMenuIcon(value: unknown, path: string): ValidationIssue[] {
   return validateOptionalString(value, path, {
     typeMessage: 'icon must be a string when provided.'
   })
 }
 
-function validateMenuTone(
+function validateEntityMenuTone(
   value: unknown,
   path: string,
   allowed: readonly string[]
@@ -116,7 +119,7 @@ function validateMenuTone(
   return []
 }
 
-function validateMenuSelectOptions(value: unknown, path: string): ValidationIssue[] {
+function validateEntityMenuSelectOptions(value: unknown, path: string): ValidationIssue[] {
   const issues = validateRequiredArray(value, path, {
     typeMessage: 'options must be an array.'
   })
@@ -132,13 +135,13 @@ function validateMenuSelectOptions(value: unknown, path: string): ValidationIssu
     if (!isPlainObject(option)) {
       issues.push({
         path: optionPath,
-        message: 'Select option must be an object.'
+        message: 'Entity menu select option must be an object.'
       })
       continue
     }
 
     issues.push(
-      ...validateUnknownKeys(option, MENU_SELECT_OPTION_KEYS, optionPath),
+      ...validateUnknownKeys(option, ENTITY_MENU_SELECT_OPTION_KEYS, optionPath),
       ...validateRequiredString(option.value, `${optionPath}.value`, {
         trim: true,
         valueMessage: 'Option value must be a non-empty string.'
@@ -167,13 +170,13 @@ function validateMenuSelectOptions(value: unknown, path: string): ValidationIssu
   return issues
 }
 
-function validateMenuNodeLike(
+function validateEntityMenuNodeLike(
   value: unknown,
   path: string,
   submenuDepth: number
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path, message: 'Menu node must be an object.' }]
+    return [{ path, message: 'Entity menu node must be an object.' }]
   }
 
   if (typeof value.kind !== 'string') {
@@ -183,14 +186,14 @@ function validateMenuNodeLike(
   switch (value.kind) {
     case 'action':
       return [
-        ...validateUnknownKeys(value, MENU_ACTION_NODE_KEYS, path),
-        ...validateMenuNodeBase(value, path),
+        ...validateUnknownKeys(value, ENTITY_MENU_ACTION_NODE_KEYS, path),
+        ...validateEntityMenuNodeBase(value, path),
         ...validateRequiredString(value.label, `${path}.label`, {
           trim: true,
           valueMessage: 'label must be a non-empty string.'
         }),
-        ...validateMenuIcon(value.icon, `${path}.icon`),
-        ...validateMenuTone(value.tone, `${path}.tone`, ['default', 'danger']),
+        ...validateEntityMenuIcon(value.icon, `${path}.icon`),
+        ...validateEntityMenuTone(value.tone, `${path}.tone`, ['default', 'danger']),
         ...validateOptionalString(value.shortcut, `${path}.shortcut`, {
           typeMessage: 'shortcut must be a string when provided.'
         }),
@@ -202,13 +205,13 @@ function validateMenuNodeLike(
 
     case 'checkbox':
       return [
-        ...validateUnknownKeys(value, MENU_CHECKBOX_NODE_KEYS, path),
-        ...validateMenuNodeBase(value, path),
+        ...validateUnknownKeys(value, ENTITY_MENU_CHECKBOX_NODE_KEYS, path),
+        ...validateEntityMenuNodeBase(value, path),
         ...validateRequiredString(value.label, `${path}.label`, {
           trim: true,
           valueMessage: 'label must be a non-empty string.'
         }),
-        ...validateMenuIcon(value.icon, `${path}.icon`),
+        ...validateEntityMenuIcon(value.icon, `${path}.icon`),
         ...validateRequiredBoolean(value.checked, `${path}.checked`).map((issue) => ({
           ...issue,
           message: 'checked must be a boolean.'
@@ -221,18 +224,18 @@ function validateMenuNodeLike(
 
     case 'select':
       return [
-        ...validateUnknownKeys(value, MENU_SELECT_NODE_KEYS, path),
-        ...validateMenuNodeBase(value, path),
+        ...validateUnknownKeys(value, ENTITY_MENU_SELECT_NODE_KEYS, path),
+        ...validateEntityMenuNodeBase(value, path),
         ...validateRequiredString(value.label, `${path}.label`, {
           trim: true,
           valueMessage: 'label must be a non-empty string.'
         }),
-        ...validateMenuIcon(value.icon, `${path}.icon`),
+        ...validateEntityMenuIcon(value.icon, `${path}.icon`),
         ...validateRequiredString(value.value, `${path}.value`, {
           minLength: 0,
           typeMessage: 'value must be a string.'
         }),
-        ...validateMenuSelectOptions(value.options, `${path}.options`),
+        ...validateEntityMenuSelectOptions(value.options, `${path}.options`),
         ...validateRequiredFunction(value.onChange, `${path}.onChange`).map((issue) => ({
           ...issue,
           message: 'onChange must be a function.'
@@ -241,25 +244,25 @@ function validateMenuNodeLike(
 
     case 'submenu': {
       const issues = [
-        ...validateUnknownKeys(value, MENU_SUBMENU_NODE_KEYS, path),
-        ...validateMenuNodeBase(value, path),
+        ...validateUnknownKeys(value, ENTITY_MENU_SUBMENU_NODE_KEYS, path),
+        ...validateEntityMenuNodeBase(value, path),
         ...validateRequiredString(value.label, `${path}.label`, {
           trim: true,
           valueMessage: 'label must be a non-empty string.'
         }),
-        ...validateMenuIcon(value.icon, `${path}.icon`)
+        ...validateEntityMenuIcon(value.icon, `${path}.icon`)
       ]
 
-      if (submenuDepth > MENU_MAX_SUBMENU_DEPTH) {
+      if (submenuDepth > ENTITY_MENU_MAX_SUBMENU_DEPTH) {
         issues.push({
           path,
-          message: `submenu nesting depth must not exceed ${MENU_MAX_SUBMENU_DEPTH}.`
+          message: `submenu nesting depth must not exceed ${ENTITY_MENU_MAX_SUBMENU_DEPTH}.`
         })
       }
 
-      issues.push(...validateMenuNodeArray(value.children, `${path}.children`, submenuDepth))
+      issues.push(...validateEntityMenuNodeArray(value.children, `${path}.children`, submenuDepth))
 
-      if (Array.isArray(value.children) && getVisibleMenuNodes(value.children).length === 0) {
+      if (Array.isArray(value.children) && getVisibleEntityMenuNodes(value.children).length === 0) {
         issues.push({
           path: `${path}.children`,
           message: 'submenu children must contain at least one visible node.'
@@ -271,7 +274,7 @@ function validateMenuNodeLike(
 
     case 'separator':
       return [
-        ...validateUnknownKeys(value, MENU_SEPARATOR_NODE_KEYS, path),
+        ...validateUnknownKeys(value, ENTITY_MENU_SEPARATOR_NODE_KEYS, path),
         ...validateOptionalString(value.id, `${path}.id`, {
           minLength: 1,
           trim: true,
@@ -294,9 +297,9 @@ function validateMenuNodeLike(
   }
 }
 
-function validateMenuNodeArray(value: unknown, path = '$', depth = 0): ValidationIssue[] {
+function validateEntityMenuNodeArray(value: unknown, path = '$', depth = 0): ValidationIssue[] {
   const issues = validateRequiredArray(value, path, {
-    typeMessage: 'Menu nodes must be an array.'
+    typeMessage: 'Entity menu nodes must be an array.'
   })
 
   if (!Array.isArray(value)) {
@@ -306,13 +309,13 @@ function validateMenuNodeArray(value: unknown, path = '$', depth = 0): Validatio
   const seenIds = new Set<string>()
   for (const [index, node] of value.entries()) {
     const nodePath = `${path}[${index}]`
-    issues.push(...validateMenuNodeLike(node, nodePath, depth + 1))
+    issues.push(...validateEntityMenuNodeLike(node, nodePath, depth + 1))
 
     if (isPlainObject(node) && typeof node.id === 'string') {
       if (seenIds.has(node.id)) {
         issues.push({
           path: `${nodePath}.id`,
-          message: 'Menu node id must be unique within the same sibling group.'
+          message: 'Entity menu node id must be unique within the same sibling group.'
         })
       }
       seenIds.add(node.id)
@@ -324,7 +327,7 @@ function validateMenuNodeArray(value: unknown, path = '$', depth = 0): Validatio
   return issues
 }
 
-function getVisibleMenuNodes(
+function getVisibleEntityMenuNodes(
   nodes: readonly unknown[]
 ): readonly { node: Record<string, unknown>; index: number }[] {
   return nodes
@@ -339,7 +342,7 @@ function validateVisibleSeparatorPlacement(
   nodes: readonly unknown[],
   path: string
 ): ValidationIssue[] {
-  const visibleNodes = getVisibleMenuNodes(nodes)
+  const visibleNodes = getVisibleEntityMenuNodes(nodes)
   const issues: ValidationIssue[] = []
 
   if (visibleNodes.length === 0) {
@@ -366,22 +369,24 @@ function validateVisibleSeparatorPlacement(
   return issues
 }
 
-export function validateMenuContributionShape(value: unknown): ValidationIssue[] {
+export function validateEntityMenuContributionShape(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Menu contribution must be an object.' }]
+    return [{ path: '$', message: 'Entity menu contribution must be an object.' }]
   }
 
-  return validateMenuContributionBase(value, '$')
+  return validateEntityMenuContributionBase(value, '$')
 }
 
-export function validateMenuNode(value: unknown): ValidationIssue[] {
-  return validateMenuNodeLike(value, '$', 1)
+export function validateEntityMenuNode(value: unknown): ValidationIssue[] {
+  return validateEntityMenuNodeLike(value, '$', 1)
 }
 
-export function validateMenuNodes(value: unknown): ValidationIssue[] {
-  return validateMenuNodeArray(value)
+export function validateEntityMenuNodes(value: unknown): ValidationIssue[] {
+  return validateEntityMenuNodeArray(value)
 }
 
-export function isMenuContribution(value: unknown): value is MenuContribution<MenuInput> {
-  return validateMenuContributionShape(value).length === 0
+export function isEntityMenuContribution(
+  value: unknown
+): value is EntityMenuContribution<EntityMenuInput> {
+  return validateEntityMenuContributionShape(value).length === 0
 }

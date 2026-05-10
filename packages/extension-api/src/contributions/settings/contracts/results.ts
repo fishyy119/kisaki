@@ -1,40 +1,40 @@
 import type { ExtensionErrorShape } from '../../../shared'
 import type {
-  SettingsDialogId,
-  SettingsDialogMap,
-  SettingsDialogParams,
-  SettingsPopoverId,
-  SettingsPopoverMap,
-  SettingsPopoverParams
+  SettingsPanelDialogId,
+  SettingsPanelDialogMap,
+  SettingsPanelDialogParams,
+  SettingsPanelPopoverId,
+  SettingsPanelPopoverMap,
+  SettingsPanelPopoverParams
 } from './definitions'
 import type {
-  SettingsCloseOptions,
-  SettingsClosePopoverOptions,
-  SettingsFailureOptions,
-  SettingsOpenOptions,
-  SettingsRefreshTarget,
-  SettingsSuccessOptions
+  SettingsPanelCloseOptions,
+  SettingsPanelClosePopoverOptions,
+  SettingsPanelFailureOptions,
+  SettingsPanelOpenOptions,
+  SettingsPanelRefreshTarget,
+  SettingsPanelSuccessOptions
 } from './shared'
 
-export interface SettingsDialogTarget<
+export interface SettingsPanelDialogTarget<
   TDialogs,
-  TDialogId extends SettingsDialogId<TDialogs> = SettingsDialogId<TDialogs>
+  TDialogId extends SettingsPanelDialogId<TDialogs> = SettingsPanelDialogId<TDialogs>
 > {
   dialogId: TDialogId
-  params?: SettingsDialogParams<TDialogs[TDialogId]>
+  params?: SettingsPanelDialogParams<TDialogs[TDialogId]>
 }
 
-export interface SettingsPopoverTarget<
+export interface SettingsPanelPopoverTarget<
   TPopovers,
-  TPopoverId extends SettingsPopoverId<TPopovers> = SettingsPopoverId<TPopovers>
+  TPopoverId extends SettingsPanelPopoverId<TPopovers> = SettingsPanelPopoverId<TPopovers>
 > {
   popoverId: TPopoverId
-  params?: SettingsPopoverParams<TPopovers[TPopoverId]>
+  params?: SettingsPanelPopoverParams<TPopovers[TPopoverId]>
 }
 
-export type SettingsResult<
+export type SettingsPanelResult<
   TEffect extends object = Record<never, never>,
-  TFailureRefresh extends SettingsRefreshTarget = SettingsRefreshTarget
+  TFailureRefresh extends SettingsPanelRefreshTarget = SettingsPanelRefreshTarget
 > =
   | ({ success: true; message?: string } & TEffect)
   | {
@@ -44,7 +44,7 @@ export type SettingsResult<
       closePopover?: boolean
     }
 
-export type SettingsRootCommitResult = SettingsResult<
+export type SettingsPanelRootCommitResult = SettingsPanelResult<
   {
     refresh?: 'self' | 'root' | 'all'
     closePopover?: boolean
@@ -52,7 +52,7 @@ export type SettingsRootCommitResult = SettingsResult<
   'self' | 'root' | 'all'
 >
 
-export type SettingsDialogCommitResult = SettingsResult<
+export type SettingsPanelDialogCommitResult = SettingsPanelResult<
   {
     refresh?: 'self' | 'dialog' | 'root' | 'all'
     closePopover?: boolean
@@ -60,9 +60,9 @@ export type SettingsDialogCommitResult = SettingsResult<
   'self' | 'dialog' | 'root' | 'all'
 >
 
-export type SettingsRootButtonEffect<
-  TPopovers extends SettingsPopoverMap = SettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers> = SettingsDialogMap<TPopovers>
+export type SettingsPanelRootButtonEffect<
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers> = SettingsPanelDialogMap<TPopovers>
 > =
   | {
       refresh?: 'self' | 'root' | 'all'
@@ -72,14 +72,14 @@ export type SettingsRootButtonEffect<
       close?: never
     }
   | {
-      openDialog: SettingsDialogTarget<TDialogs>
+      openDialog: SettingsPanelDialogTarget<TDialogs>
       closePopover?: boolean
       refresh?: never
       openPopover?: never
       close?: never
     }
   | {
-      openPopover: SettingsPopoverTarget<TPopovers>
+      openPopover: SettingsPanelPopoverTarget<TPopovers>
       closePopover?: boolean
       refresh?: never
       openDialog?: never
@@ -93,7 +93,9 @@ export type SettingsRootButtonEffect<
       closePopover?: never
     }
 
-export type SettingsDialogButtonEffect<TPopovers extends SettingsPopoverMap = SettingsPopoverMap> =
+export type SettingsPanelDialogButtonEffect<
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap
+> =
   | {
       refresh?: 'self' | 'dialog' | 'root' | 'all'
       closePopover?: boolean
@@ -101,7 +103,7 @@ export type SettingsDialogButtonEffect<TPopovers extends SettingsPopoverMap = Se
       close?: never
     }
   | {
-      openPopover: SettingsPopoverTarget<TPopovers>
+      openPopover: SettingsPanelPopoverTarget<TPopovers>
       closePopover?: boolean
       refresh?: never
       close?: never
@@ -113,29 +115,33 @@ export type SettingsDialogButtonEffect<TPopovers extends SettingsPopoverMap = Se
       openPopover?: never
     }
 
-export type SettingsPopoverEffect = {
+export type SettingsPanelPopoverEffect = {
   refresh?: 'self' | 'popover' | 'dialog' | 'root' | 'all'
   closePopover?: boolean
 }
 
-export type SettingsPopoverActionResult = SettingsResult<
-  SettingsPopoverEffect,
+export type SettingsPanelPopoverActionResult = SettingsPanelResult<
+  SettingsPanelPopoverEffect,
   'self' | 'popover' | 'dialog' | 'root' | 'all'
 >
 
-export type SettingsPopoverCommitResult = SettingsPopoverActionResult
+export type SettingsPanelPopoverCommitResult = SettingsPanelPopoverActionResult
 
-export type SettingsRootButtonResult<
-  TPopovers extends SettingsPopoverMap = SettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers> = SettingsDialogMap<TPopovers>
-> = SettingsResult<SettingsRootButtonEffect<TPopovers, TDialogs>, 'self' | 'root' | 'all'>
+export type SettingsPanelRootButtonResult<
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers> = SettingsPanelDialogMap<TPopovers>
+> = SettingsPanelResult<SettingsPanelRootButtonEffect<TPopovers, TDialogs>, 'self' | 'root' | 'all'>
 
-export type SettingsDialogButtonResult<TPopovers extends SettingsPopoverMap = SettingsPopoverMap> =
-  SettingsResult<SettingsDialogButtonEffect<TPopovers>, 'self' | 'dialog' | 'root' | 'all'>
+export type SettingsPanelDialogButtonResult<
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap
+> = SettingsPanelResult<
+  SettingsPanelDialogButtonEffect<TPopovers>,
+  'self' | 'dialog' | 'root' | 'all'
+>
 
-export type SettingsPopoverButtonResult = SettingsPopoverActionResult
+export type SettingsPanelPopoverButtonResult = SettingsPanelPopoverActionResult
 
-export type SettingsRootSubmitEffect =
+export type SettingsPanelRootSubmitEffect =
   | {
       refresh?: 'self' | 'root' | 'all'
       closePopover?: boolean
@@ -147,12 +153,12 @@ export type SettingsRootSubmitEffect =
       refresh?: never
     }
 
-export type SettingsRootSubmitResult = SettingsResult<
-  SettingsRootSubmitEffect,
+export type SettingsPanelRootSubmitResult = SettingsPanelResult<
+  SettingsPanelRootSubmitEffect,
   'self' | 'root' | 'all'
 >
 
-export type SettingsDialogSubmitEffect =
+export type SettingsPanelDialogSubmitEffect =
   | {
       refresh?: 'self' | 'dialog' | 'root' | 'all'
       closePopover?: boolean
@@ -164,146 +170,157 @@ export type SettingsDialogSubmitEffect =
       refresh?: never
     }
 
-export type SettingsDialogSubmitResult = SettingsResult<
-  SettingsDialogSubmitEffect,
+export type SettingsPanelDialogSubmitResult = SettingsPanelResult<
+  SettingsPanelDialogSubmitEffect,
   'self' | 'dialog' | 'root' | 'all'
 >
 
-export interface SettingsRootButtonHelpers<
-  TPopovers extends SettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers>
+export interface SettingsPanelRootButtonHelpers<
+  TPopovers extends SettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers>
 > {
   success(
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
   fail(
     error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'root' | 'all'>
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
+    options?: SettingsPanelFailureOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
   refresh(
     target?: 'self' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
   close(
     target: 'root',
-    options?: SettingsCloseOptions
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
+    options?: SettingsPanelCloseOptions
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
   closePopover(
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
-  openDialog<TDialogId extends SettingsDialogId<TDialogs>>(
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
+  openDialog<TDialogId extends SettingsPanelDialogId<TDialogs>>(
     dialogId: TDialogId,
-    params?: SettingsDialogParams<TDialogs[TDialogId]>,
-    options?: SettingsOpenOptions
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
-  openPopover<TPopoverId extends SettingsPopoverId<TPopovers>>(
+    params?: SettingsPanelDialogParams<TDialogs[TDialogId]>,
+    options?: SettingsPanelOpenOptions
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
+  openPopover<TPopoverId extends SettingsPanelPopoverId<TPopovers>>(
     popoverId: TPopoverId,
-    params?: SettingsPopoverParams<TPopovers[TPopoverId]>,
-    options?: SettingsOpenOptions
-  ): SettingsRootButtonResult<TPopovers, TDialogs>
+    params?: SettingsPanelPopoverParams<TPopovers[TPopoverId]>,
+    options?: SettingsPanelOpenOptions
+  ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
 }
 
-export interface SettingsRootCommitHelpers {
-  success(options?: SettingsSuccessOptions<'self' | 'root' | 'all'>): SettingsRootCommitResult
-  fail(
-    error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'root' | 'all'>
-  ): SettingsRootCommitResult
-  refresh(
-    target?: 'self' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootCommitResult
-  closePopover(options?: SettingsSuccessOptions<'self' | 'root' | 'all'>): SettingsRootCommitResult
-}
-
-export interface SettingsRootSubmitHelpers {
-  success(options?: SettingsSuccessOptions<'self' | 'root' | 'all'>): SettingsRootSubmitResult
-  fail(
-    error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'root' | 'all'>
-  ): SettingsRootSubmitResult
-  refresh(
-    target?: 'self' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsRootSubmitResult
-  close(target: 'root', options?: SettingsClosePopoverOptions): SettingsRootSubmitResult
-  closePopover(options?: SettingsSuccessOptions<'self' | 'root' | 'all'>): SettingsRootSubmitResult
-}
-
-export interface SettingsDialogButtonHelpers<TPopovers extends SettingsPopoverMap> {
+export interface SettingsPanelRootCommitHelpers {
   success(
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogButtonResult<TPopovers>
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootCommitResult
   fail(
     error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogButtonResult<TPopovers>
+    options?: SettingsPanelFailureOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootCommitResult
+  refresh(
+    target?: 'self' | 'root' | 'all',
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootCommitResult
+  closePopover(
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootCommitResult
+}
+
+export interface SettingsPanelRootSubmitHelpers {
+  success(
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootSubmitResult
+  fail(
+    error: ExtensionErrorShape,
+    options?: SettingsPanelFailureOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootSubmitResult
+  refresh(
+    target?: 'self' | 'root' | 'all',
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootSubmitResult
+  close(target: 'root', options?: SettingsPanelClosePopoverOptions): SettingsPanelRootSubmitResult
+  closePopover(
+    options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
+  ): SettingsPanelRootSubmitResult
+}
+
+export interface SettingsPanelDialogButtonHelpers<TPopovers extends SettingsPanelPopoverMap> {
+  success(
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogButtonResult<TPopovers>
+  fail(
+    error: ExtensionErrorShape,
+    options?: SettingsPanelFailureOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogButtonResult<TPopovers>
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogButtonResult<TPopovers>
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogButtonResult<TPopovers>
   close(
     target: 'dialog',
-    options?: SettingsClosePopoverOptions
-  ): SettingsDialogButtonResult<TPopovers>
+    options?: SettingsPanelClosePopoverOptions
+  ): SettingsPanelDialogButtonResult<TPopovers>
   closePopover(
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogButtonResult<TPopovers>
-  openPopover<TPopoverId extends SettingsPopoverId<TPopovers>>(
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogButtonResult<TPopovers>
+  openPopover<TPopoverId extends SettingsPanelPopoverId<TPopovers>>(
     popoverId: TPopoverId,
-    params?: SettingsPopoverParams<TPopovers[TPopoverId]>,
-    options?: SettingsOpenOptions
-  ): SettingsDialogButtonResult<TPopovers>
+    params?: SettingsPanelPopoverParams<TPopovers[TPopoverId]>,
+    options?: SettingsPanelOpenOptions
+  ): SettingsPanelDialogButtonResult<TPopovers>
 }
 
-export interface SettingsDialogCommitHelpers {
+export interface SettingsPanelDialogCommitHelpers {
   success(
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogCommitResult
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogCommitResult
   fail(
     error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogCommitResult
+    options?: SettingsPanelFailureOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogCommitResult
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogCommitResult
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogCommitResult
   closePopover(
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogCommitResult
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogCommitResult
 }
 
-export interface SettingsDialogSubmitHelpers {
+export interface SettingsPanelDialogSubmitHelpers {
   success(
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogSubmitResult
   fail(
     error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
+    options?: SettingsPanelFailureOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogSubmitResult
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
-  close(target: 'dialog', options?: SettingsClosePopoverOptions): SettingsDialogSubmitResult
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogSubmitResult
+  close(
+    target: 'dialog',
+    options?: SettingsPanelClosePopoverOptions
+  ): SettingsPanelDialogSubmitResult
   closePopover(
-    options?: SettingsSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsDialogSubmitResult
+    options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelDialogSubmitResult
 }
 
-export interface SettingsPopoverActionHelpers {
+export interface SettingsPanelPopoverActionHelpers {
   success(
-    options?: SettingsSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
-  ): SettingsPopoverActionResult
+    options?: SettingsPanelSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelPopoverActionResult
   fail(
     error: ExtensionErrorShape,
-    options?: SettingsFailureOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
-  ): SettingsPopoverActionResult
+    options?: SettingsPanelFailureOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelPopoverActionResult
   refresh(
     target?: 'self' | 'popover' | 'dialog' | 'root' | 'all',
-    options?: SettingsSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
-  ): SettingsPopoverActionResult
+    options?: SettingsPanelSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelPopoverActionResult
   closePopover(
-    options?: SettingsSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
-  ): SettingsPopoverActionResult
+    options?: SettingsPanelSuccessOptions<'self' | 'popover' | 'dialog' | 'root' | 'all'>
+  ): SettingsPanelPopoverActionResult
 }

@@ -1,66 +1,67 @@
 import type { SerializableRecord, SerializableValue } from '../../../shared'
-import type { SettingsDialogMap, SettingsPopoverMap } from './definitions'
-import type { SettingsNodeEvents } from './nodes'
+import type { SettingsPanelDialogMap, SettingsPanelPopoverMap } from './definitions'
+import type { SettingsPanelNodeEvents } from './nodes'
 import type {
-  SettingsDialogButtonHelpers,
-  SettingsDialogButtonResult,
-  SettingsDialogCommitHelpers,
-  SettingsDialogCommitResult,
-  SettingsDialogSubmitHelpers,
-  SettingsPopoverActionHelpers,
-  SettingsPopoverButtonResult,
-  SettingsPopoverCommitResult,
-  SettingsRootButtonHelpers,
-  SettingsRootButtonResult,
-  SettingsRootCommitHelpers,
-  SettingsRootCommitResult,
-  SettingsRootSubmitHelpers
+  SettingsPanelDialogButtonHelpers,
+  SettingsPanelDialogButtonResult,
+  SettingsPanelDialogCommitHelpers,
+  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogSubmitHelpers,
+  SettingsPanelPopoverActionHelpers,
+  SettingsPanelPopoverButtonResult,
+  SettingsPanelPopoverCommitResult,
+  SettingsPanelRootButtonHelpers,
+  SettingsPanelRootButtonResult,
+  SettingsPanelRootCommitHelpers,
+  SettingsPanelRootCommitResult,
+  SettingsPanelRootSubmitHelpers
 } from './results'
-import type { SettingsRefreshReason } from './shared'
+import type { SettingsPanelRefreshReason } from './shared'
 
-export type SettingsRootNodeEvents<
-  TPopovers extends SettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers>
-> = SettingsNodeEvents<
-  SettingsRootCommitEvent,
-  SettingsRootCommitResult,
-  SettingsRootButtonClickEvent<TPopovers, TDialogs>,
-  SettingsRootButtonResult<TPopovers, TDialogs>
+export type SettingsPanelRootNodeEvents<
+  TPopovers extends SettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers>
+> = SettingsPanelNodeEvents<
+  SettingsPanelRootCommitEvent,
+  SettingsPanelRootCommitResult,
+  SettingsPanelRootButtonClickEvent<TPopovers, TDialogs>,
+  SettingsPanelRootButtonResult<TPopovers, TDialogs>
 >
 
-export type SettingsDialogNodeEvents<
+export type SettingsPanelDialogNodeEvents<
   TParams extends SerializableRecord,
-  TPopovers extends SettingsPopoverMap
-> = SettingsNodeEvents<
-  SettingsDialogCommitEvent<TParams>,
-  SettingsDialogCommitResult,
-  SettingsDialogButtonClickEvent<TParams, TPopovers>,
-  SettingsDialogButtonResult<TPopovers>
+  TPopovers extends SettingsPanelPopoverMap
+> = SettingsPanelNodeEvents<
+  SettingsPanelDialogCommitEvent<TParams>,
+  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogButtonClickEvent<TParams, TPopovers>,
+  SettingsPanelDialogButtonResult<TPopovers>
 >
 
-export type SettingsPopoverNodeEvents<TParams extends SerializableRecord> = SettingsNodeEvents<
-  SettingsPopoverCommitEvent<TParams>,
-  SettingsPopoverCommitResult,
-  SettingsPopoverButtonClickEvent<TParams>,
-  SettingsPopoverButtonResult
->
+export type SettingsPanelPopoverNodeEvents<TParams extends SerializableRecord> =
+  SettingsPanelNodeEvents<
+    SettingsPanelPopoverCommitEvent<TParams>,
+    SettingsPanelPopoverCommitResult,
+    SettingsPanelPopoverButtonClickEvent<TParams>,
+    SettingsPanelPopoverButtonResult
+  >
 
-export interface SettingsResolveContextBase {
+export interface SettingsPanelResolveContextBase {
   contributionId: string
   sessionId: string
   values: SerializableRecord
   dirtyNodeIds: readonly string[]
-  reason?: SettingsRefreshReason
+  reason?: SettingsPanelRefreshReason
   signal: AbortSignal
 }
 
-export interface SettingsRootResolveContext extends SettingsResolveContextBase {
+export interface SettingsPanelRootResolveContext extends SettingsPanelResolveContextBase {
   surface: 'root'
 }
 
-export interface SettingsDialogResolveContext<
+export interface SettingsPanelDialogResolveContext<
   TParams extends SerializableRecord = SerializableRecord
-> extends SettingsResolveContextBase {
+> extends SettingsPanelResolveContextBase {
   surface: 'dialog'
   dialogId: string
   params: TParams
@@ -68,9 +69,9 @@ export interface SettingsDialogResolveContext<
   parentDirtyNodeIds: readonly string[]
 }
 
-export interface SettingsPopoverResolveContext<
+export interface SettingsPanelPopoverResolveContext<
   TParams extends SerializableRecord = SerializableRecord
-> extends SettingsResolveContextBase {
+> extends SettingsPanelResolveContextBase {
   surface: 'popover'
   popoverId: string
   params: TParams
@@ -79,49 +80,57 @@ export interface SettingsPopoverResolveContext<
   parentDirtyNodeIds: readonly string[]
 }
 
-export interface SettingsCommitEventBase {
+export interface SettingsPanelCommitEventBase {
   fieldId: string
   nodeId: string
   value: SerializableValue
 }
 
-export interface SettingsButtonClickEventBase {
+export interface SettingsPanelButtonClickEventBase {
   fieldId: string
   nodeId: string
 }
 
-export type SettingsRootCommitEvent = SettingsRootResolveContext &
-  SettingsRootCommitHelpers &
-  SettingsCommitEventBase
+export type SettingsPanelRootCommitEvent = SettingsPanelRootResolveContext &
+  SettingsPanelRootCommitHelpers &
+  SettingsPanelCommitEventBase
 
-export type SettingsDialogCommitEvent<TParams extends SerializableRecord = SerializableRecord> =
-  SettingsDialogResolveContext<TParams> & SettingsDialogCommitHelpers & SettingsCommitEventBase
-
-export type SettingsPopoverCommitEvent<TParams extends SerializableRecord = SerializableRecord> =
-  SettingsPopoverResolveContext<TParams> & SettingsPopoverActionHelpers & SettingsCommitEventBase
-
-export type SettingsRootButtonClickEvent<
-  TPopovers extends SettingsPopoverMap = SettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers> = SettingsDialogMap<TPopovers>
-> = SettingsRootResolveContext &
-  SettingsRootButtonHelpers<TPopovers, TDialogs> &
-  SettingsButtonClickEventBase
-
-export type SettingsDialogButtonClickEvent<
-  TParams extends SerializableRecord = SerializableRecord,
-  TPopovers extends SettingsPopoverMap = SettingsPopoverMap
-> = SettingsDialogResolveContext<TParams> &
-  SettingsDialogButtonHelpers<TPopovers> &
-  SettingsButtonClickEventBase
-
-export type SettingsPopoverButtonClickEvent<
+export type SettingsPanelDialogCommitEvent<
   TParams extends SerializableRecord = SerializableRecord
-> = SettingsPopoverResolveContext<TParams> &
-  SettingsPopoverActionHelpers &
-  SettingsButtonClickEventBase
+> = SettingsPanelDialogResolveContext<TParams> &
+  SettingsPanelDialogCommitHelpers &
+  SettingsPanelCommitEventBase
 
-export interface SettingsRootSubmitEvent
-  extends SettingsRootResolveContext, SettingsRootSubmitHelpers {}
+export type SettingsPanelPopoverCommitEvent<
+  TParams extends SerializableRecord = SerializableRecord
+> = SettingsPanelPopoverResolveContext<TParams> &
+  SettingsPanelPopoverActionHelpers &
+  SettingsPanelCommitEventBase
 
-export interface SettingsDialogSubmitEvent<TParams extends SerializableRecord = SerializableRecord>
-  extends SettingsDialogResolveContext<TParams>, SettingsDialogSubmitHelpers {}
+export type SettingsPanelRootButtonClickEvent<
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers> = SettingsPanelDialogMap<TPopovers>
+> = SettingsPanelRootResolveContext &
+  SettingsPanelRootButtonHelpers<TPopovers, TDialogs> &
+  SettingsPanelButtonClickEventBase
+
+export type SettingsPanelDialogButtonClickEvent<
+  TParams extends SerializableRecord = SerializableRecord,
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap
+> = SettingsPanelDialogResolveContext<TParams> &
+  SettingsPanelDialogButtonHelpers<TPopovers> &
+  SettingsPanelButtonClickEventBase
+
+export type SettingsPanelPopoverButtonClickEvent<
+  TParams extends SerializableRecord = SerializableRecord
+> = SettingsPanelPopoverResolveContext<TParams> &
+  SettingsPanelPopoverActionHelpers &
+  SettingsPanelButtonClickEventBase
+
+export interface SettingsPanelRootSubmitEvent
+  extends SettingsPanelRootResolveContext, SettingsPanelRootSubmitHelpers {}
+
+export interface SettingsPanelDialogSubmitEvent<
+  TParams extends SerializableRecord = SerializableRecord
+>
+  extends SettingsPanelDialogResolveContext<TParams>, SettingsPanelDialogSubmitHelpers {}

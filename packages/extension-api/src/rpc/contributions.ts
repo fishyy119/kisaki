@@ -1,16 +1,27 @@
 import type { CommandExecutionSource } from '../capabilities/commands'
-import type { CommandContribution } from '../contributions/commands'
-import type { DeeplinkRequest, DeeplinkResponse } from '../contributions/deeplinks'
-import type { MenuDomain, MenuInput, MenuRefreshReason, MenuScope } from '../contributions/menus'
 import type {
-  SettingsDialogButtonResult,
-  SettingsDialogCommitResult,
-  SettingsDialogSubmitResult,
-  SettingsPopoverActionResult,
-  SettingsRefreshReason,
-  SettingsRootButtonResult,
-  SettingsRootCommitResult,
-  SettingsRootSubmitResult
+  CommandContribution,
+  CommandContributionExecuteResult
+} from '../contributions/commands'
+import type {
+  DeeplinkRouteHandleEvent,
+  DeeplinkRouteHandleResult
+} from '../contributions/deeplinks'
+import type {
+  EntityMenuDomain,
+  EntityMenuInput,
+  EntityMenuRefreshReason,
+  EntityMenuScope
+} from '../contributions/menus'
+import type {
+  SettingsPanelDialogButtonResult,
+  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogSubmitResult,
+  SettingsPanelPopoverActionResult,
+  SettingsPanelRefreshReason,
+  SettingsPanelRootButtonResult,
+  SettingsPanelRootCommitResult,
+  SettingsPanelRootSubmitResult
 } from '../contributions/settings'
 import type {
   CharacterScraperSlot,
@@ -26,187 +37,189 @@ import type {
   PersonScraperSlot,
   PersonSessionResultMap,
   PersonSearchResult,
-  ScraperLookup
+  ScraperCapability,
+  ScraperLookup,
+  ScraperMediaType
 } from '../contributions/scrapers'
 import type { ThemeContribution } from '../contributions/themes'
 import type { Locale, SerializableRecord, SerializableValue, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
-export type MenuContributionRegistration = {
-  [TDomain in MenuDomain]: {
-    [TScope in MenuScope<TDomain>]: {
+export type EntityMenuRegistrationInfo = {
+  [TDomain in EntityMenuDomain]: {
+    [TScope in EntityMenuScope<TDomain>]: {
       id: string
       domain: TDomain
       scope: TScope
       order?: number
     }
-  }[MenuScope<TDomain>]
-}[MenuDomain]
+  }[EntityMenuScope<TDomain>]
+}[EntityMenuDomain]
 
-export interface SettingsContributionRegistration {
+export interface SettingsPanelRegistrationInfo {
   id: string
   title: string
   description?: string
   order?: number
 }
 
-export interface DeeplinkContributionRegistration {
+export interface DeeplinkRouteRegistrationInfo {
   id: string
   path: string
   url: string
 }
 
-export interface GameScraperProviderRegistration {
+export interface GameScraperProviderRegistrationInfo {
   id: string
   name: string
   externalIdSource: string
-  capabilities: readonly ('search' | GameScraperSlot)[]
+  capabilities: readonly ScraperCapability<GameScraperSlot>[]
 }
 
-export interface PersonScraperProviderRegistration {
+export interface PersonScraperProviderRegistrationInfo {
   id: string
   name: string
   externalIdSource: string
-  capabilities: readonly ('search' | PersonScraperSlot)[]
+  capabilities: readonly ScraperCapability<PersonScraperSlot>[]
 }
 
-export interface CompanyScraperProviderRegistration {
+export interface CompanyScraperProviderRegistrationInfo {
   id: string
   name: string
   externalIdSource: string
-  capabilities: readonly ('search' | CompanyScraperSlot)[]
+  capabilities: readonly ScraperCapability<CompanyScraperSlot>[]
 }
 
-export interface CharacterScraperProviderRegistration {
+export interface CharacterScraperProviderRegistrationInfo {
   id: string
   name: string
   externalIdSource: string
-  capabilities: readonly ('search' | CharacterScraperSlot)[]
+  capabilities: readonly ScraperCapability<CharacterScraperSlot>[]
 }
 
-export type CommandContributionRegistrationRpcInput = Omit<CommandContribution, 'execute'>
+export type CommandContributionRegistrationInfo = Omit<CommandContribution, 'execute'>
 
 export interface CommandRegisterRequest extends ExtensionScopedRpcParams {
-  command: CommandContributionRegistrationRpcInput
+  command: CommandContributionRegistrationInfo
 }
 
 export interface CommandUnregisterRequest extends ExtensionScopedRpcParams {
   commandId: string
 }
 
-export interface MenuResolveRequest extends ContributionScopedRpcParams {
+export interface EntityMenuResolveRequest extends ContributionScopedRpcParams {
   sessionId: string
-  input: MenuInput
+  input: EntityMenuInput
 }
 
-export interface MenuResolveResult {
+export interface EntityMenuResolveResponse {
   nodes: readonly SerializableRecord[]
 }
 
-export interface MenuInvokeRequest extends ContributionScopedRpcParams {
+export interface EntityMenuInvokeRequest extends ContributionScopedRpcParams {
   sessionId: string
   nodePath: readonly string[]
-  input: MenuInput
+  input: EntityMenuInput
   value?: boolean | string
 }
 
-export interface MenuReleaseRequest {
+export interface EntityMenuReleaseRequest {
   sessionId: string
 }
 
-export interface MenuRefreshRequestedNotification extends ExtensionScopedRpcParams {
+export interface EntityMenuRefreshRequestedNotification extends ExtensionScopedRpcParams {
   contributionId: string
-  reason?: MenuRefreshReason
+  reason?: EntityMenuRefreshReason
 }
 
-export type SettingsRpcSurface = 'root' | 'dialog' | 'popover'
-export type SettingsRpcScope = SettingsRpcSurface | 'all'
+export type SettingsPanelRpcSurface = 'root' | 'dialog' | 'popover'
+export type SettingsPanelRpcScope = SettingsPanelRpcSurface | 'all'
 
-export interface SettingsDraftSnapshot {
+export interface SettingsPanelDraftSnapshot {
   values: SerializableRecord
   dirtyNodeIds: readonly string[]
 }
 
-export type SettingsParentRef = { surface: 'root' } | { surface: 'dialog'; dialogId: string }
+export type SettingsPanelParentRef = { surface: 'root' } | { surface: 'dialog'; dialogId: string }
 
-export interface SettingsSessionRef extends ContributionScopedRpcParams {
+export interface SettingsPanelSessionRef extends ContributionScopedRpcParams {
   sessionId: string
 }
 
-export type SettingsOpenRequest =
+export type SettingsPanelOpenRequest =
   | (ContributionScopedRpcParams & {
       surface: 'root'
       sessionId: string
-      reason?: SettingsRefreshReason
+      reason?: SettingsPanelRefreshReason
     })
-  | (SettingsSessionRef & {
+  | (SettingsPanelSessionRef & {
       surface: 'dialog'
       dialogId: string
       params?: SerializableRecord
-      parentDraft: SettingsDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
       revision: number
     })
-  | (SettingsSessionRef & {
+  | (SettingsPanelSessionRef & {
       surface: 'popover'
       popoverId: string
-      parent: SettingsParentRef
+      parent: SettingsPanelParentRef
       params?: SerializableRecord
-      parentDraft: SettingsDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
       anchorNodeKey: string
       revision: number
     })
 
-export type SettingsRefreshRequest =
-  | (SettingsSessionRef & {
+export type SettingsPanelRefreshRequest =
+  | (SettingsPanelSessionRef & {
       surface: 'root'
-      draft: SettingsDraftSnapshot
-      reason?: SettingsRefreshReason
+      draft: SettingsPanelDraftSnapshot
+      reason?: SettingsPanelRefreshReason
       revision: number
     })
-  | (SettingsSessionRef & {
+  | (SettingsPanelSessionRef & {
       surface: 'dialog'
       dialogId: string
-      draft: SettingsDraftSnapshot
-      parentDraft: SettingsDraftSnapshot
-      reason?: SettingsRefreshReason
+      draft: SettingsPanelDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
+      reason?: SettingsPanelRefreshReason
       revision: number
     })
-  | (SettingsSessionRef & {
+  | (SettingsPanelSessionRef & {
       surface: 'popover'
       popoverId: string
-      parent: SettingsParentRef
-      draft: SettingsDraftSnapshot
-      parentDraft: SettingsDraftSnapshot
-      reason?: SettingsRefreshReason
+      parent: SettingsPanelParentRef
+      draft: SettingsPanelDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
+      reason?: SettingsPanelRefreshReason
       revision: number
     })
-  | (SettingsSessionRef & {
+  | (SettingsPanelSessionRef & {
       surface: 'all'
-      rootDraft: SettingsDraftSnapshot
+      rootDraft: SettingsPanelDraftSnapshot
       activeDialog?: {
         dialogId: string
-        draft: SettingsDraftSnapshot
+        draft: SettingsPanelDraftSnapshot
       }
-      reason?: SettingsRefreshReason
+      reason?: SettingsPanelRefreshReason
       revision: number
     })
 
-export type SettingsSubmitRequest =
-  | (SettingsSessionRef & {
+export type SettingsPanelSubmitRequest =
+  | (SettingsPanelSessionRef & {
       surface: 'root'
-      draft: SettingsDraftSnapshot
+      draft: SettingsPanelDraftSnapshot
       revision: number
     })
-  | (SettingsSessionRef & {
+  | (SettingsPanelSessionRef & {
       surface: 'dialog'
       dialogId: string
-      draft: SettingsDraftSnapshot
-      parentDraft: SettingsDraftSnapshot
+      draft: SettingsPanelDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
       revision: number
     })
 
-export interface SettingsInvokeBase extends SettingsSessionRef {
+export interface SettingsPanelInvokeBase extends SettingsPanelSessionRef {
   callbackId: string
   fieldId: string
   nodeId: string
@@ -215,84 +228,86 @@ export interface SettingsInvokeBase extends SettingsSessionRef {
   revision: number
 }
 
-export type SettingsInvokeRequest =
-  | (SettingsInvokeBase & {
+export type SettingsPanelInvokeRequest =
+  | (SettingsPanelInvokeBase & {
       surface: 'root'
-      draft: SettingsDraftSnapshot
+      draft: SettingsPanelDraftSnapshot
     })
-  | (SettingsInvokeBase & {
+  | (SettingsPanelInvokeBase & {
       surface: 'dialog'
       dialogId: string
-      draft: SettingsDraftSnapshot
-      parentDraft: SettingsDraftSnapshot
+      draft: SettingsPanelDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
     })
-  | (SettingsInvokeBase & {
+  | (SettingsPanelInvokeBase & {
       surface: 'popover'
       popoverId: string
-      parent: SettingsParentRef
-      draft: SettingsDraftSnapshot
-      parentDraft: SettingsDraftSnapshot
+      parent: SettingsPanelParentRef
+      draft: SettingsPanelDraftSnapshot
+      parentDraft: SettingsPanelDraftSnapshot
     })
 
-export type SettingsReleaseRequest =
-  | (SettingsSessionRef & { surface: 'root' | 'all' })
-  | (SettingsSessionRef & { surface: 'dialog'; dialogId: string })
-  | (SettingsSessionRef & {
+export type SettingsPanelReleaseRequest =
+  | (SettingsPanelSessionRef & { surface: 'root' | 'all' })
+  | (SettingsPanelSessionRef & { surface: 'dialog'; dialogId: string })
+  | (SettingsPanelSessionRef & {
       surface: 'popover'
       popoverId: string
-      parent: SettingsParentRef
+      parent: SettingsPanelParentRef
     })
 
-export type SettingsResolvedSurfacePayload = SerializableRecord
+export type SettingsPanelResolvedSurfacePayload = SerializableRecord
 
-export type SettingsOpenResult =
+export type SettingsPanelOpenResponse =
   | {
       surface: 'root'
       sessionId: string
-      view: SettingsResolvedSurfacePayload
+      view: SettingsPanelResolvedSurfacePayload
     }
   | {
       surface: 'dialog'
-      dialog: SettingsResolvedSurfacePayload
+      dialog: SettingsPanelResolvedSurfacePayload
     }
   | {
       surface: 'popover'
-      popover: SettingsResolvedSurfacePayload
+      popover: SettingsPanelResolvedSurfacePayload
     }
 
-export type SettingsRefreshResult =
-  | SettingsOpenResult
+export type SettingsPanelRefreshResponse =
+  | SettingsPanelOpenResponse
   | {
       surface: 'all'
       sessionId: string
-      view: SettingsResolvedSurfacePayload
+      view: SettingsPanelResolvedSurfacePayload
       activeDialog?: {
         dialogId: string
-        dialog: SettingsResolvedSurfacePayload
+        dialog: SettingsPanelResolvedSurfacePayload
       }
     }
 
-export type SettingsCallbackResult =
-  | SettingsRootCommitResult
-  | SettingsDialogCommitResult
-  | SettingsPopoverActionResult
-  | SettingsRootButtonResult
-  | SettingsDialogButtonResult
-  | SettingsRootSubmitResult
-  | SettingsDialogSubmitResult
+export type SettingsPanelCallbackResult =
+  | SettingsPanelRootCommitResult
+  | SettingsPanelDialogCommitResult
+  | SettingsPanelPopoverActionResult
+  | SettingsPanelRootButtonResult
+  | SettingsPanelDialogButtonResult
+  | SettingsPanelRootSubmitResult
+  | SettingsPanelDialogSubmitResult
 
-export interface SettingsCallbackResponse {
-  result: SettingsCallbackResult
+export interface SettingsPanelCallbackResponse {
+  result: SettingsPanelCallbackResult
 }
 
-export interface SettingsRefreshRequestedNotification extends ExtensionScopedRpcParams {
+export interface SettingsPanelRefreshRequestedNotification extends ExtensionScopedRpcParams {
   contributionId: string
-  reason?: SettingsRefreshReason
+  reason?: SettingsPanelRefreshReason
 }
 
-export interface DeeplinkHandleRequest extends ContributionScopedRpcParams {
-  input: DeeplinkRequest
+export interface DeeplinkRouteHandleRequest extends ContributionScopedRpcParams {
+  event: DeeplinkRouteHandleEvent
 }
+
+export type DeeplinkRouteHandleResponse = DeeplinkRouteHandleResult
 
 export interface CommandExecuteRequest extends ExtensionScopedRpcParams {
   commandId: string
@@ -301,178 +316,239 @@ export interface CommandExecuteRequest extends ExtensionScopedRpcParams {
   source: CommandExecutionSource
 }
 
-export interface CommandExecuteResult {
-  output?: SerializableValue
+export interface CommandExecuteResponse {
+  output?: Exclude<CommandContributionExecuteResult, void>
 }
 
-export interface ScraperProviderScopedRpcParams extends ExtensionScopedRpcParams {
-  providerId: string
-}
+type ScraperProviderScopedRpcParamsFor<TMediaType extends ScraperMediaType> =
+  ExtensionScopedRpcParams & {
+    mediaType: TMediaType
+    providerId: string
+  }
 
-export interface ScraperSearchRequest extends ScraperProviderScopedRpcParams {
-  query: string
-  locale?: Locale
-}
+export type ScraperProviderScopedRpcParams =
+  | ScraperProviderScopedRpcParamsFor<'game'>
+  | ScraperProviderScopedRpcParamsFor<'person'>
+  | ScraperProviderScopedRpcParamsFor<'company'>
+  | ScraperProviderScopedRpcParamsFor<'character'>
 
-export interface ScraperResolveRequest extends ScraperProviderScopedRpcParams {
-  lookup: ScraperLookup
-  locale: Locale
-}
+export type ScraperProviderRegisterRequest =
+  | (ExtensionScopedRpcParams & {
+      mediaType: 'game'
+      provider: GameScraperProviderRegistrationInfo
+    })
+  | (ExtensionScopedRpcParams & {
+      mediaType: 'person'
+      provider: PersonScraperProviderRegistrationInfo
+    })
+  | (ExtensionScopedRpcParams & {
+      mediaType: 'company'
+      provider: CompanyScraperProviderRegistrationInfo
+    })
+  | (ExtensionScopedRpcParams & {
+      mediaType: 'character'
+      provider: CharacterScraperProviderRegistrationInfo
+    })
 
-export interface ScraperSessionOpenRequest extends ScraperProviderScopedRpcParams {
-  target: IdResolvedTarget
-  locale: Locale
-}
+export type ScraperProviderUnregisterRequest = ScraperProviderScopedRpcParams
 
-export interface ScraperSessionGetRequest<
-  TSlot extends string
-> extends ScraperProviderScopedRpcParams {
-  sessionId: string
-  slots: readonly TSlot[]
-}
+export type ScraperProviderSearchRequest =
+  | (ScraperProviderScopedRpcParamsFor<'game'> & {
+      query: string
+      locale?: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'person'> & {
+      query: string
+      locale?: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'company'> & {
+      query: string
+      locale?: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'character'> & {
+      query: string
+      locale?: Locale
+    })
 
-export interface ScraperSessionCloseRequest extends ScraperProviderScopedRpcParams {
-  sessionId: string
-}
+export type ScraperProviderSearchResponse =
+  | { mediaType: 'game'; results: readonly GameSearchResult[] }
+  | { mediaType: 'person'; results: readonly PersonSearchResult[] }
+  | { mediaType: 'company'; results: readonly CompanySearchResult[] }
+  | { mediaType: 'character'; results: readonly CharacterSearchResult[] }
 
-export type ScraperProviderRpcRequestMap<
-  TPrefix extends string,
-  TSearchResult,
-  TSlot extends string,
-  TResultMap
-> = {
-  [K in `${TPrefix}.search`]: RpcMethodDefinition<
-    ScraperSearchRequest,
-    { results: readonly TSearchResult[] }
+export type ScraperProviderResolveRequest =
+  | (ScraperProviderScopedRpcParamsFor<'game'> & {
+      lookup: ScraperLookup
+      locale: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'person'> & {
+      lookup: ScraperLookup
+      locale: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'company'> & {
+      lookup: ScraperLookup
+      locale: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'character'> & {
+      lookup: ScraperLookup
+      locale: Locale
+    })
+
+export type ScraperProviderResolveResponse =
+  | { mediaType: 'game'; target: IdResolvedTarget | null }
+  | { mediaType: 'person'; target: IdResolvedTarget | null }
+  | { mediaType: 'company'; target: IdResolvedTarget | null }
+  | { mediaType: 'character'; target: IdResolvedTarget | null }
+
+export type ScraperProviderSessionOpenRequest =
+  | (ScraperProviderScopedRpcParamsFor<'game'> & {
+      target: IdResolvedTarget
+      locale: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'person'> & {
+      target: IdResolvedTarget
+      locale: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'company'> & {
+      target: IdResolvedTarget
+      locale: Locale
+    })
+  | (ScraperProviderScopedRpcParamsFor<'character'> & {
+      target: IdResolvedTarget
+      locale: Locale
+    })
+
+export type ScraperProviderSessionOpenResponse =
+  | { mediaType: 'game'; sessionId: string }
+  | { mediaType: 'person'; sessionId: string }
+  | { mediaType: 'company'; sessionId: string }
+  | { mediaType: 'character'; sessionId: string }
+
+export type ScraperProviderSessionGetRequest =
+  | (ScraperProviderScopedRpcParamsFor<'game'> & {
+      sessionId: string
+      slots: readonly GameScraperSlot[]
+    })
+  | (ScraperProviderScopedRpcParamsFor<'person'> & {
+      sessionId: string
+      slots: readonly PersonScraperSlot[]
+    })
+  | (ScraperProviderScopedRpcParamsFor<'company'> & {
+      sessionId: string
+      slots: readonly CompanyScraperSlot[]
+    })
+  | (ScraperProviderScopedRpcParamsFor<'character'> & {
+      sessionId: string
+      slots: readonly CharacterScraperSlot[]
+    })
+
+export type ScraperProviderSessionGetResponse =
+  | { mediaType: 'game'; results: Partial<GameSessionResultMap> }
+  | { mediaType: 'person'; results: Partial<PersonSessionResultMap> }
+  | { mediaType: 'company'; results: Partial<CompanySessionResultMap> }
+  | { mediaType: 'character'; results: Partial<CharacterSessionResultMap> }
+
+export type ScraperProviderSessionCloseRequest =
+  | (ScraperProviderScopedRpcParamsFor<'game'> & { sessionId: string })
+  | (ScraperProviderScopedRpcParamsFor<'person'> & { sessionId: string })
+  | (ScraperProviderScopedRpcParamsFor<'company'> & { sessionId: string })
+  | (ScraperProviderScopedRpcParamsFor<'character'> & { sessionId: string })
+
+export interface MainToHostContributionRpcRequestMap {
+  'contributions.entityMenus.resolve': RpcMethodDefinition<
+    EntityMenuResolveRequest,
+    EntityMenuResolveResponse
   >
-} & {
-  [K in `${TPrefix}.resolve`]: RpcMethodDefinition<
-    ScraperResolveRequest,
-    { target: IdResolvedTarget | null }
+  'contributions.entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
+  'contributions.entityMenus.release': RpcMethodDefinition<EntityMenuReleaseRequest, RpcNoPayload>
+  'contributions.settingsPanels.open': RpcMethodDefinition<
+    SettingsPanelOpenRequest,
+    SettingsPanelOpenResponse
   >
-} & {
-  [K in `${TPrefix}.session.open`]: RpcMethodDefinition<
-    ScraperSessionOpenRequest,
-    { sessionId: string }
+  'contributions.settingsPanels.refresh': RpcMethodDefinition<
+    SettingsPanelRefreshRequest,
+    SettingsPanelRefreshResponse
   >
-} & {
-  [K in `${TPrefix}.session.get`]: RpcMethodDefinition<
-    ScraperSessionGetRequest<TSlot>,
-    { results: Partial<TResultMap> }
+  'contributions.settingsPanels.submit': RpcMethodDefinition<
+    SettingsPanelSubmitRequest,
+    SettingsPanelCallbackResponse
   >
-} & {
-  [K in `${TPrefix}.session.close`]: RpcMethodDefinition<ScraperSessionCloseRequest, RpcNoPayload>
-}
-
-export interface MainToHostContributionRpcRequestMap
-  extends
-    ScraperProviderRpcRequestMap<
-      'contributions.scrapers.games',
-      GameSearchResult,
-      GameScraperSlot,
-      GameSessionResultMap
-    >,
-    ScraperProviderRpcRequestMap<
-      'contributions.scrapers.persons',
-      PersonSearchResult,
-      PersonScraperSlot,
-      PersonSessionResultMap
-    >,
-    ScraperProviderRpcRequestMap<
-      'contributions.scrapers.companies',
-      CompanySearchResult,
-      CompanyScraperSlot,
-      CompanySessionResultMap
-    >,
-    ScraperProviderRpcRequestMap<
-      'contributions.scrapers.characters',
-      CharacterSearchResult,
-      CharacterScraperSlot,
-      CharacterSessionResultMap
-    > {
-  'contributions.menus.resolve': RpcMethodDefinition<MenuResolveRequest, MenuResolveResult>
-  'contributions.menus.invoke': RpcMethodDefinition<MenuInvokeRequest, UiCallbackResult>
-  'contributions.menus.release': RpcMethodDefinition<MenuReleaseRequest, RpcNoPayload>
-  'contributions.settings.open': RpcMethodDefinition<SettingsOpenRequest, SettingsOpenResult>
-  'contributions.settings.refresh': RpcMethodDefinition<
-    SettingsRefreshRequest,
-    SettingsRefreshResult
+  'contributions.settingsPanels.invoke': RpcMethodDefinition<
+    SettingsPanelInvokeRequest,
+    SettingsPanelCallbackResponse
   >
-  'contributions.settings.submit': RpcMethodDefinition<
-    SettingsSubmitRequest,
-    SettingsCallbackResponse
+  'contributions.settingsPanels.release': RpcMethodDefinition<
+    SettingsPanelReleaseRequest,
+    RpcNoPayload
   >
-  'contributions.settings.invoke': RpcMethodDefinition<
-    SettingsInvokeRequest,
-    SettingsCallbackResponse
+  'contributions.scraperProviders.search': RpcMethodDefinition<
+    ScraperProviderSearchRequest,
+    ScraperProviderSearchResponse
   >
-  'contributions.settings.release': RpcMethodDefinition<SettingsReleaseRequest, RpcNoPayload>
-  'contributions.deeplinks.handle': RpcMethodDefinition<DeeplinkHandleRequest, DeeplinkResponse>
-  'contributions.commands.execute': RpcMethodDefinition<CommandExecuteRequest, CommandExecuteResult>
+  'contributions.scraperProviders.resolve': RpcMethodDefinition<
+    ScraperProviderResolveRequest,
+    ScraperProviderResolveResponse
+  >
+  'contributions.scraperProviders.session.open': RpcMethodDefinition<
+    ScraperProviderSessionOpenRequest,
+    ScraperProviderSessionOpenResponse
+  >
+  'contributions.scraperProviders.session.get': RpcMethodDefinition<
+    ScraperProviderSessionGetRequest,
+    ScraperProviderSessionGetResponse
+  >
+  'contributions.scraperProviders.session.close': RpcMethodDefinition<
+    ScraperProviderSessionCloseRequest,
+    RpcNoPayload
+  >
+  'contributions.deeplinkRoutes.handle': RpcMethodDefinition<
+    DeeplinkRouteHandleRequest,
+    DeeplinkRouteHandleResponse
+  >
+  'contributions.commands.execute': RpcMethodDefinition<
+    CommandExecuteRequest,
+    CommandExecuteResponse
+  >
 }
 
 export type HostToMainContributionRpcRequestMap = {
-  'contributions.menus.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { contribution: MenuContributionRegistration },
+  'contributions.entityMenus.register': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { menu: EntityMenuRegistrationInfo },
     RpcNoPayload
   >
-  'contributions.menus.unregister': RpcMethodDefinition<
+  'contributions.entityMenus.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
-  'contributions.menus.refreshRequested': RpcMethodDefinition<
-    MenuRefreshRequestedNotification,
+  'contributions.entityMenus.refreshRequested': RpcMethodDefinition<
+    EntityMenuRefreshRequestedNotification,
     RpcNoPayload
   >
-  'contributions.settings.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { contribution: SettingsContributionRegistration },
+  'contributions.settingsPanels.register': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { panel: SettingsPanelRegistrationInfo },
     RpcNoPayload
   >
-  'contributions.settings.unregister': RpcMethodDefinition<
+  'contributions.settingsPanels.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >
-  'contributions.settings.refreshRequested': RpcMethodDefinition<
-    SettingsRefreshRequestedNotification,
+  'contributions.settingsPanels.refreshRequested': RpcMethodDefinition<
+    SettingsPanelRefreshRequestedNotification,
     RpcNoPayload
   >
-  'contributions.scrapers.games.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { provider: GameScraperProviderRegistration },
+  'contributions.scraperProviders.register': RpcMethodDefinition<
+    ScraperProviderRegisterRequest,
     RpcNoPayload
   >
-  'contributions.scrapers.games.unregister': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { providerId: string },
+  'contributions.scraperProviders.unregister': RpcMethodDefinition<
+    ScraperProviderUnregisterRequest,
     RpcNoPayload
   >
-  'contributions.scrapers.persons.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { provider: PersonScraperProviderRegistration },
+  'contributions.deeplinkRoutes.register': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { route: DeeplinkRouteRegistrationInfo },
     RpcNoPayload
   >
-  'contributions.scrapers.persons.unregister': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { providerId: string },
-    RpcNoPayload
-  >
-  'contributions.scrapers.companies.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { provider: CompanyScraperProviderRegistration },
-    RpcNoPayload
-  >
-  'contributions.scrapers.companies.unregister': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { providerId: string },
-    RpcNoPayload
-  >
-  'contributions.scrapers.characters.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { provider: CharacterScraperProviderRegistration },
-    RpcNoPayload
-  >
-  'contributions.scrapers.characters.unregister': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { providerId: string },
-    RpcNoPayload
-  >
-  'contributions.deeplinks.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { contribution: DeeplinkContributionRegistration },
-    RpcNoPayload
-  >
-  'contributions.deeplinks.unregister': RpcMethodDefinition<
+  'contributions.deeplinkRoutes.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
     RpcNoPayload
   >

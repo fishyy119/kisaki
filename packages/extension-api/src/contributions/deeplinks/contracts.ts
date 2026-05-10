@@ -1,28 +1,28 @@
-import type { Disposable, SerializableValue } from '../../shared'
+import type { Disposable, MaybePromise, SerializableValue } from '../../shared'
 
-export interface DeeplinkRequest {
+export interface DeeplinkRouteHandleEvent {
   path: string
   params: Record<string, string>
   rawUrl: string
 }
 
-export interface DeeplinkResponse {
+export interface DeeplinkRouteHandleResult {
   success: boolean
   status?: 'handled' | 'ignored' | 'error'
   message?: string
   data?: SerializableValue
 }
 
-export interface DeeplinkContribution {
+export interface DeeplinkRouteContribution {
   id: string
   path: string
-  handle(input: DeeplinkRequest): Promise<DeeplinkResponse>
+  handle(event: DeeplinkRouteHandleEvent): MaybePromise<DeeplinkRouteHandleResult>
 }
 
-export interface DeeplinkRegistrationHandle extends Disposable {
+export interface DeeplinkRouteRegistration extends Disposable {
   readonly url: string
 }
 
-export interface DeeplinkRegistrar {
-  register(contribution: DeeplinkContribution): DeeplinkRegistrationHandle
+export interface DeeplinkRouteRegistrar {
+  register(route: DeeplinkRouteContribution): DeeplinkRouteRegistration
 }

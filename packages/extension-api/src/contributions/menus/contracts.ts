@@ -1,179 +1,197 @@
 import type { Disposable, MaybePromise, SerializableRecord, UiCallbackResult } from '../../shared'
 
-export interface MenuRefreshReason {
+export interface EntityMenuRefreshReason {
   reason?: string
   params?: SerializableRecord
 }
 
-export interface MenuInputBase {
-  domain: MenuDomain
+export interface EntityMenuInputBase {
+  domain: EntityMenuDomain
   scope: string
 }
 
-export interface GameSingleMenuInput extends MenuInputBase {
+export interface EntityMenuGameSingleInput extends EntityMenuInputBase {
   domain: 'game'
   scope: 'single'
   entityId: string
 }
 
-export interface GameBatchMenuInput extends MenuInputBase {
+export interface EntityMenuGameBatchInput extends EntityMenuInputBase {
   domain: 'game'
   scope: 'batch'
   entityIds: readonly string[]
 }
 
-export interface CharacterSingleMenuInput extends MenuInputBase {
+export interface EntityMenuCharacterSingleInput extends EntityMenuInputBase {
   domain: 'character'
   scope: 'single'
   entityId: string
 }
 
-export interface PersonSingleMenuInput extends MenuInputBase {
+export interface EntityMenuPersonSingleInput extends EntityMenuInputBase {
   domain: 'person'
   scope: 'single'
   entityId: string
 }
 
-export interface CompanySingleMenuInput extends MenuInputBase {
+export interface EntityMenuCompanySingleInput extends EntityMenuInputBase {
   domain: 'company'
   scope: 'single'
   entityId: string
 }
 
-export interface CollectionSingleMenuInput extends MenuInputBase {
+export interface EntityMenuCollectionSingleInput extends EntityMenuInputBase {
   domain: 'collection'
   scope: 'single'
   entityId: string
 }
 
-export interface TagSingleMenuInput extends MenuInputBase {
+export interface EntityMenuTagSingleInput extends EntityMenuInputBase {
   domain: 'tag'
   scope: 'single'
   entityId: string
 }
 
-export interface MenuInputMap {
+export interface EntityMenuInputMap {
   game: {
-    single: GameSingleMenuInput
-    batch: GameBatchMenuInput
+    single: EntityMenuGameSingleInput
+    batch: EntityMenuGameBatchInput
   }
   character: {
-    single: CharacterSingleMenuInput
+    single: EntityMenuCharacterSingleInput
   }
   person: {
-    single: PersonSingleMenuInput
+    single: EntityMenuPersonSingleInput
   }
   company: {
-    single: CompanySingleMenuInput
+    single: EntityMenuCompanySingleInput
   }
   collection: {
-    single: CollectionSingleMenuInput
+    single: EntityMenuCollectionSingleInput
   }
   tag: {
-    single: TagSingleMenuInput
+    single: EntityMenuTagSingleInput
   }
 }
 
-export type MenuDomain = keyof MenuInputMap
-export type MenuScope<TDomain extends MenuDomain> = Extract<keyof MenuInputMap[TDomain], string>
+export type EntityMenuDomain = keyof EntityMenuInputMap
+export type EntityMenuScope<TDomain extends EntityMenuDomain> = Extract<
+  keyof EntityMenuInputMap[TDomain],
+  string
+>
 
-export type MenuInput = {
-  [TDomain in keyof MenuInputMap]: MenuInputMap[TDomain][keyof MenuInputMap[TDomain]]
-}[keyof MenuInputMap]
+export type EntityMenuInput = {
+  [TDomain in keyof EntityMenuInputMap]: EntityMenuInputMap[TDomain][keyof EntityMenuInputMap[TDomain]]
+}[keyof EntityMenuInputMap]
 
-export type MenuInputFor<
-  TDomain extends MenuDomain,
-  TScope extends MenuScope<TDomain>
-> = MenuInputMap[TDomain][TScope] extends MenuInput ? MenuInputMap[TDomain][TScope] : never
+export type EntityMenuInputFor<
+  TDomain extends EntityMenuDomain,
+  TScope extends EntityMenuScope<TDomain>
+> = EntityMenuInputMap[TDomain][TScope] extends EntityMenuInput
+  ? EntityMenuInputMap[TDomain][TScope]
+  : never
 
-export type MenuRegistrar = {
-  [TDomain in MenuDomain]: {
-    [TScope in MenuScope<TDomain>]: MenuRegistrationPoint<MenuInputFor<TDomain, TScope>>
+export type EntityMenuRegistrar = {
+  [TDomain in EntityMenuDomain]: {
+    [TScope in EntityMenuScope<TDomain>]: EntityMenuRegistrationPoint<
+      EntityMenuInputFor<TDomain, TScope>
+    >
   }
 }
 
-export interface MenuContribution<TInput extends MenuInput> {
+export interface EntityMenuContribution<TInput extends EntityMenuInput> {
   id: string
   order?: number
-  resolve(input: TInput, menu: MenuNodeFactory<TInput>): MaybePromise<readonly MenuNode<TInput>[]>
+  resolve(
+    input: TInput,
+    menu: EntityMenuNodeFactory<TInput>
+  ): MaybePromise<readonly EntityMenuNode<TInput>[]>
 }
 
-export interface MenuRegistrationPoint<TInput extends MenuInput> {
-  register(contribution: MenuContribution<TInput>): MenuRegistration
+export interface EntityMenuRegistrationPoint<TInput extends EntityMenuInput> {
+  register(menu: EntityMenuContribution<TInput>): EntityMenuRegistration
 }
 
-export interface MenuRegistration extends Disposable {
-  refresh(reason?: MenuRefreshReason): Promise<void>
+export interface EntityMenuRegistration extends Disposable {
+  refresh(reason?: EntityMenuRefreshReason): Promise<void>
 }
 
-export interface MenuNodeBase {
+export interface EntityMenuNodeBase {
   id: string
   hidden?: boolean
   disabled?: boolean
 }
 
-export interface MenuActionNode<TInput extends MenuInput = MenuInput> extends MenuNodeBase {
+export interface EntityMenuActionNode<
+  TInput extends EntityMenuInput = EntityMenuInput
+> extends EntityMenuNodeBase {
   kind: 'action'
   label: string
   icon?: string
   tone?: 'default' | 'danger'
   shortcut?: string
-  onClick(event: MenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
+  onClick(event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
 }
 
-export interface MenuCheckboxNode<TInput extends MenuInput = MenuInput> extends MenuNodeBase {
+export interface EntityMenuCheckboxNode<
+  TInput extends EntityMenuInput = EntityMenuInput
+> extends EntityMenuNodeBase {
   kind: 'checkbox'
   label: string
   icon?: string
   checked: boolean
-  onChange(checked: boolean, event: MenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
+  onChange(checked: boolean, event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
 }
 
-export interface MenuSelectNode<TInput extends MenuInput = MenuInput> extends MenuNodeBase {
+export interface EntityMenuSelectNode<
+  TInput extends EntityMenuInput = EntityMenuInput
+> extends EntityMenuNodeBase {
   kind: 'select'
   label: string
   icon?: string
   value: string
-  options: readonly MenuSelectOption[]
-  onChange(value: string, event: MenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
+  options: readonly EntityMenuSelectOption[]
+  onChange(value: string, event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
 }
 
-export interface MenuSubmenuNode<TInput extends MenuInput = MenuInput> extends MenuNodeBase {
+export interface EntityMenuSubmenuNode<
+  TInput extends EntityMenuInput = EntityMenuInput
+> extends EntityMenuNodeBase {
   kind: 'submenu'
   label: string
   icon?: string
-  children: readonly MenuNode<TInput>[]
+  children: readonly EntityMenuNode<TInput>[]
 }
 
-export interface MenuSeparatorNode {
+export interface EntityMenuSeparatorNode {
   kind: 'separator'
   id?: string
   hidden?: boolean
 }
 
-export type MenuNode<TInput extends MenuInput = MenuInput> =
-  | MenuActionNode<TInput>
-  | MenuCheckboxNode<TInput>
-  | MenuSelectNode<TInput>
-  | MenuSubmenuNode<TInput>
-  | MenuSeparatorNode
+export type EntityMenuNode<TInput extends EntityMenuInput = EntityMenuInput> =
+  | EntityMenuActionNode<TInput>
+  | EntityMenuCheckboxNode<TInput>
+  | EntityMenuSelectNode<TInput>
+  | EntityMenuSubmenuNode<TInput>
+  | EntityMenuSeparatorNode
 
-export interface MenuSelectOption {
+export interface EntityMenuSelectOption {
   value: string
   label: string
   disabled?: boolean
 }
 
-export interface MenuNodeEvent<TInput extends MenuInput = MenuInput> {
+export interface EntityMenuNodeEvent<TInput extends EntityMenuInput = EntityMenuInput> {
   input: TInput
   nodeId: string
   nodePath: readonly string[]
 }
 
-export interface MenuNodeFactory<TInput extends MenuInput = MenuInput> {
-  action(node: Omit<MenuActionNode<TInput>, 'kind'>): MenuActionNode<TInput>
-  checkbox(node: Omit<MenuCheckboxNode<TInput>, 'kind'>): MenuCheckboxNode<TInput>
-  select(node: Omit<MenuSelectNode<TInput>, 'kind'>): MenuSelectNode<TInput>
-  submenu(node: Omit<MenuSubmenuNode<TInput>, 'kind'>): MenuSubmenuNode<TInput>
-  separator(node?: Omit<MenuSeparatorNode, 'kind'>): MenuSeparatorNode
+export interface EntityMenuNodeFactory<TInput extends EntityMenuInput = EntityMenuInput> {
+  action(node: Omit<EntityMenuActionNode<TInput>, 'kind'>): EntityMenuActionNode<TInput>
+  checkbox(node: Omit<EntityMenuCheckboxNode<TInput>, 'kind'>): EntityMenuCheckboxNode<TInput>
+  select(node: Omit<EntityMenuSelectNode<TInput>, 'kind'>): EntityMenuSelectNode<TInput>
+  submenu(node: Omit<EntityMenuSubmenuNode<TInput>, 'kind'>): EntityMenuSubmenuNode<TInput>
+  separator(node?: Omit<EntityMenuSeparatorNode, 'kind'>): EntityMenuSeparatorNode
 }

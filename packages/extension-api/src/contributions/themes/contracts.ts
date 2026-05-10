@@ -28,8 +28,10 @@ export interface ThemeContribution {
   }
 }
 
+export type ThemeRegistration = Disposable
+
 export interface ThemeRegistrar {
-  register(theme: ThemeContribution): Disposable
+  register(theme: ThemeContribution): ThemeRegistration
 }
 
 export function isThemeTokenName(value: string): value is ThemeTokenName {

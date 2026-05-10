@@ -1,4 +1,4 @@
-import type { DeeplinkContribution } from './contracts'
+import type { DeeplinkRouteContribution } from './contracts'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
@@ -11,29 +11,55 @@ import {
   validateUnknownKeys
 } from '../../shared/validation'
 
-const DEEPLINK_CONTRIBUTION_KEYS = new Set<string>(['id', 'path', 'handle'])
+const DEEPLINK_ROUTE_CONTRIBUTION_KEYS = new Set<string>(['id', 'path', 'handle'])
 
-const DEEPLINK_REQUEST_KEYS = new Set<string>(['path', 'params', 'rawUrl'])
+const DEEPLINK_ROUTE_HANDLE_EVENT_KEYS = new Set<string>(['path', 'params', 'rawUrl'])
 
-const DEEPLINK_RESPONSE_KEYS = new Set<string>(['success', 'status', 'message', 'data'])
+const DEEPLINK_ROUTE_HANDLE_RESULT_KEYS = new Set<string>(['success', 'status', 'message', 'data'])
 
-const DEEPLINK_RESPONSE_STATUS_VALUES = ['handled', 'ignored', 'error'] as const
+const DEEPLINK_ROUTE_HANDLE_RESULT_STATUS_VALUES = ['handled', 'ignored', 'error'] as const
 
-export function validateDeeplinkContributionShape(value: unknown): ValidationIssue[] {
+function validateDeeplinkRoutePath(value: unknown, path: string): ValidationIssue[] {
+  const issues = validateRequiredString(value, path, {
+    trim: true,
+    valueMessage: 'path must be a non-empty string.'
+  })
+
+  if (typeof value !== 'string') {
+    return issues
+  }
+
+  if (!value.startsWith('/')) {
+    issues.push({ path, message: 'path must start with /.' })
+  }
+
+  if (value.includes('?') || value.includes('#') || /^[a-z][a-z0-9+.-]*:/i.test(value)) {
+    issues.push({ path, message: 'path must not include query, hash, or a full URL.' })
+  }
+
+  if (value.includes('\\') || value.split('/').some((segment) => segment === '..')) {
+    issues.push({ path, message: 'path must not include backslashes or .. segments.' })
+  }
+
+  if (value.length > 1 && value.split('/').some((segment, index) => index > 0 && segment === '')) {
+    issues.push({ path, message: 'path must not include empty segments.' })
+  }
+
+  return issues
+}
+
+export function validateDeeplinkRouteContributionShape(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Deeplink contribution must be an object.' }]
+    return [{ path: '$', message: 'Deeplink route contribution must be an object.' }]
   }
 
   return [
-    ...validateUnknownKeys(value, DEEPLINK_CONTRIBUTION_KEYS),
+    ...validateUnknownKeys(value, DEEPLINK_ROUTE_CONTRIBUTION_KEYS),
     ...validateRequiredString(value.id, '$.id', {
       trim: true,
       valueMessage: 'Contribution id must be a non-empty string.'
     }),
-    ...validateRequiredString(value.path, '$.path', {
-      trim: true,
-      valueMessage: 'path must be a non-empty string.'
-    }),
+    ...validateDeeplinkRoutePath(value.path, '$.path'),
     ...validateRequiredFunction(value.handle, '$.handle').map((issue) => ({
       ...issue,
       message: 'handle must be a function.'
@@ -41,17 +67,14 @@ export function validateDeeplinkContributionShape(value: unknown): ValidationIss
   ]
 }
 
-export function validateDeeplinkRequest(value: unknown): ValidationIssue[] {
+export function validateDeeplinkRouteHandleEvent(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Deeplink request must be an object.' }]
+    return [{ path: '$', message: 'Deeplink route handle event must be an object.' }]
   }
 
   const issues: ValidationIssue[] = [
-    ...validateUnknownKeys(value, DEEPLINK_REQUEST_KEYS),
-    ...validateRequiredString(value.path, '$.path', {
-      trim: true,
-      valueMessage: 'path must be a non-empty string.'
-    }),
+    ...validateUnknownKeys(value, DEEPLINK_ROUTE_HANDLE_EVENT_KEYS),
+    ...validateDeeplinkRoutePath(value.path, '$.path'),
     ...validateRequiredString(value.rawUrl, '$.rawUrl', {
       trim: true,
       valueMessage: 'rawUrl must be a non-empty string.'
@@ -77,13 +100,13 @@ export function validateDeeplinkRequest(value: unknown): ValidationIssue[] {
   return issues
 }
 
-export function validateDeeplinkResponse(value: unknown): ValidationIssue[] {
+export function validateDeeplinkRouteHandleResult(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Deeplink response must be an object.' }]
+    return [{ path: '$', message: 'Deeplink route handle result must be an object.' }]
   }
 
   const issues: ValidationIssue[] = [
-    ...validateUnknownKeys(value, DEEPLINK_RESPONSE_KEYS),
+    ...validateUnknownKeys(value, DEEPLINK_ROUTE_HANDLE_RESULT_KEYS),
     ...validateRequiredBoolean(value.success, '$.success').map((issue) => ({
       ...issue,
       message: 'success must be a boolean.'
@@ -91,7 +114,7 @@ export function validateDeeplinkResponse(value: unknown): ValidationIssue[] {
     ...validateOptionalEnumString(
       value.status,
       '$.status',
-      DEEPLINK_RESPONSE_STATUS_VALUES,
+      DEEPLINK_ROUTE_HANDLE_RESULT_STATUS_VALUES,
       'status must be one of handled, ignored, or error when provided.'
     ),
     ...validateOptionalString(value.message, '$.message', {
@@ -106,6 +129,6 @@ export function validateDeeplinkResponse(value: unknown): ValidationIssue[] {
   return issues
 }
 
-export function isDeeplinkContribution(value: unknown): value is DeeplinkContribution {
-  return validateDeeplinkContributionShape(value).length === 0
+export function isDeeplinkRouteContribution(value: unknown): value is DeeplinkRouteContribution {
+  return validateDeeplinkRouteContributionShape(value).length === 0
 }

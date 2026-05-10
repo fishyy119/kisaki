@@ -16,21 +16,21 @@ import {
   NODE_BASE_KEYS,
   RECORD_LIST_COLUMN_KEYS,
   SELECT_OPTION_KEYS,
-  SETTINGS_BUTTON_TONE_VALUES,
-  SETTINGS_CONTENT_LAYOUT_VALUES,
-  SETTINGS_FIELD_ORIENTATION_VALUES,
-  SETTINGS_IMAGE_FIT_VALUES,
-  SETTINGS_NODE_WIDTH_VALUES,
-  SETTINGS_NOTICE_TONE_VALUES,
-  SETTINGS_RECORD_LIST_COLUMN_KIND_VALUES,
-  SETTINGS_STATUS_TONE_VALUES,
-  SETTINGS_TABLE_COLUMN_KIND_VALUES,
-  SETTINGS_TEXT_INPUT_MODE_VALUES,
-  SETTINGS_TEXT_TONE_VALUES,
+  SETTINGS_PANEL_BUTTON_TONE_VALUES,
+  SETTINGS_PANEL_CONTENT_LAYOUT_VALUES,
+  SETTINGS_PANEL_FIELD_ORIENTATION_VALUES,
+  SETTINGS_PANEL_IMAGE_FIT_VALUES,
+  SETTINGS_PANEL_NODE_WIDTH_VALUES,
+  SETTINGS_PANEL_NOTICE_TONE_VALUES,
+  SETTINGS_PANEL_RECORD_LIST_COLUMN_KIND_VALUES,
+  SETTINGS_PANEL_STATUS_TONE_VALUES,
+  SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES,
+  SETTINGS_PANEL_TEXT_INPUT_MODE_VALUES,
+  SETTINGS_PANEL_TEXT_TONE_VALUES,
   TAB_KEYS,
   TABLE_COLUMN_KEYS,
   VALUE_NODE_BASE_KEYS,
-  type SettingsValueSchema,
+  type SettingsPanelValueSchema,
   type SurfaceValidationState
 } from './constants'
 import {
@@ -43,25 +43,25 @@ import {
   validateValueAgainstSchema
 } from './helpers'
 
-export function validateSettingsField(value: unknown): ValidationIssue[] {
-  return validateSettingsFieldLike(value, '$', createSurfaceValidationState())
+export function validateSettingsPanelField(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelFieldLike(value, '$', createSurfaceValidationState())
 }
 
-export function validateSettingsFields(value: unknown): ValidationIssue[] {
-  return validateSettingsFieldArray(value, '$', createSurfaceValidationState())
+export function validateSettingsPanelFields(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelFieldArray(value, '$', createSurfaceValidationState())
 }
 
-export function validateSettingsTab(value: unknown): ValidationIssue[] {
-  return validateSettingsTabLike(value, '$', createSurfaceValidationState(), new Set<string>())
+export function validateSettingsPanelTab(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelTabLike(value, '$', createSurfaceValidationState(), new Set<string>())
 }
 
-export function validateSettingsNode(value: unknown): ValidationIssue[] {
-  return validateSettingsNodeLike(value, '$', createSurfaceValidationState())
+export function validateSettingsPanelNode(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelNodeLike(value, '$', createSurfaceValidationState())
 }
 
-export function validateSettingsNodes(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelNodes(value: unknown): ValidationIssue[] {
   const issues = validateRequiredArray(value, '$', {
-    typeMessage: 'Settings nodes must be an array.'
+    typeMessage: 'Settings panel nodes must be an array.'
   })
 
   if (!Array.isArray(value)) {
@@ -70,13 +70,13 @@ export function validateSettingsNodes(value: unknown): ValidationIssue[] {
 
   const state = createSurfaceValidationState()
   for (const [index, node] of value.entries()) {
-    issues.push(...validateSettingsNodeLike(node, `$[${index}]`, state))
+    issues.push(...validateSettingsPanelNodeLike(node, `$[${index}]`, state))
   }
 
   return issues
 }
 
-export function validateSettingsFieldArray(
+export function validateSettingsPanelFieldArray(
   value: unknown,
   path: string,
   state: SurfaceValidationState,
@@ -93,13 +93,13 @@ export function validateSettingsFieldArray(
   }
 
   for (const [index, field] of value.entries()) {
-    issues.push(...validateSettingsFieldLike(field, `${path}[${index}]`, state))
+    issues.push(...validateSettingsPanelFieldLike(field, `${path}[${index}]`, state))
   }
 
   return issues
 }
 
-export function validateSettingsTabArray(
+export function validateSettingsPanelTabArray(
   value: unknown,
   path: string,
   state: SurfaceValidationState
@@ -116,19 +116,19 @@ export function validateSettingsTabArray(
 
   const seenTabIds = new Set<string>()
   for (const [index, tab] of value.entries()) {
-    issues.push(...validateSettingsTabLike(tab, `${path}[${index}]`, state, seenTabIds))
+    issues.push(...validateSettingsPanelTabLike(tab, `${path}[${index}]`, state, seenTabIds))
   }
 
   return issues
 }
 
-function validateSettingsFieldLike(
+function validateSettingsPanelFieldLike(
   value: unknown,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path, message: 'Settings field must be an object.' }]
+    return [{ path, message: 'Settings panel field must be an object.' }]
   }
 
   const issues = [
@@ -154,14 +154,14 @@ function validateSettingsFieldLike(
     ...validateOptionalEnumString(
       value.orientation,
       `${path}.orientation`,
-      SETTINGS_FIELD_ORIENTATION_VALUES,
+      SETTINGS_PANEL_FIELD_ORIENTATION_VALUES,
       'orientation must be vertical, horizontal, or responsive.'
     ),
     ...validateFieldSpan(value.span, `${path}.span`),
     ...validateOptionalEnumString(
       value.contentLayout,
       `${path}.contentLayout`,
-      SETTINGS_CONTENT_LAYOUT_VALUES,
+      SETTINGS_PANEL_CONTENT_LAYOUT_VALUES,
       'contentLayout must be stack, inline, or grid.'
     ),
     ...validateContentColumns(value.contentColumns, `${path}.contentColumns`)
@@ -171,7 +171,7 @@ function validateSettingsFieldLike(
     if (state.fieldIds.has(value.id)) {
       issues.push({
         path: `${path}.id`,
-        message: 'Field id must be unique within a settings surface.'
+        message: 'Field id must be unique within a settings panel surface.'
       })
     }
     state.fieldIds.add(value.id)
@@ -181,14 +181,14 @@ function validateSettingsFieldLike(
   return issues
 }
 
-function validateSettingsTabLike(
+function validateSettingsPanelTabLike(
   value: unknown,
   path: string,
   state: SurfaceValidationState,
   seenTabIds: Set<string>
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path, message: 'Settings tab must be an object.' }]
+    return [{ path, message: 'Settings panel tab must be an object.' }]
   }
 
   const issues = [
@@ -207,14 +207,14 @@ function validateSettingsTabLike(
     ...validateOptionalString(value.icon, `${path}.icon`, {
       typeMessage: 'icon must be a string when provided.'
     }),
-    ...validateSettingsFieldArray(value.fields, `${path}.fields`, state)
+    ...validateSettingsPanelFieldArray(value.fields, `${path}.fields`, state)
   ]
 
   if (typeof value.id === 'string') {
     if (seenTabIds.has(value.id)) {
       issues.push({
         path: `${path}.id`,
-        message: 'Tab id must be unique within a settings root model.'
+        message: 'Tab id must be unique within a settings panel root model.'
       })
     }
     seenTabIds.add(value.id)
@@ -237,19 +237,19 @@ function validateFieldContent(
   }
 
   for (const [index, node] of value.entries()) {
-    issues.push(...validateSettingsNodeLike(node, `${path}[${index}]`, state))
+    issues.push(...validateSettingsPanelNodeLike(node, `${path}[${index}]`, state))
   }
 
   return issues
 }
 
-function validateSettingsNodeLike(
+function validateSettingsPanelNodeLike(
   value: unknown,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path, message: 'Settings node must be an object.' }]
+    return [{ path, message: 'Settings panel node must be an object.' }]
   }
 
   if (typeof value.kind !== 'string') {
@@ -258,55 +258,55 @@ function validateSettingsNodeLike(
 
   switch (value.kind) {
     case 'switch':
-      return validateSettingsValueNode(value, path, state, 'boolean')
+      return validateSettingsPanelValueNode(value, path, state, 'boolean')
     case 'checkbox':
-      return validateSettingsValueNode(value, path, state, 'boolean')
+      return validateSettingsPanelValueNode(value, path, state, 'boolean')
     case 'select':
-      return validateSettingsSelect(value, path, state)
+      return validateSettingsPanelSelect(value, path, state)
     case 'multiSelect':
-      return validateSettingsMultiSelect(value, path, state)
+      return validateSettingsPanelMultiSelect(value, path, state)
     case 'textInput':
-      return validateSettingsTextInput(value, path, state)
+      return validateSettingsPanelTextInput(value, path, state)
     case 'textarea':
-      return validateSettingsTextarea(value, path, state)
+      return validateSettingsPanelTextarea(value, path, state)
     case 'numberInput':
-      return validateSettingsNumberInput(value, path, state)
+      return validateSettingsPanelNumberInput(value, path, state)
     case 'stringList':
-      return validateSettingsStringList(value, path, state)
+      return validateSettingsPanelStringList(value, path, state)
     case 'recordList':
-      return validateSettingsRecordList(value, path, state)
+      return validateSettingsPanelRecordList(value, path, state)
     case 'button':
-      return validateSettingsButton(value, path, state)
+      return validateSettingsPanelButton(value, path, state)
     case 'text':
-      return validateSettingsText(value, path, state)
+      return validateSettingsPanelText(value, path, state)
     case 'notice':
-      return validateSettingsNotice(value, path, state)
+      return validateSettingsPanelNotice(value, path, state)
     case 'status':
-      return validateSettingsStatus(value, path, state)
+      return validateSettingsPanelStatus(value, path, state)
     case 'table':
-      return validateSettingsTable(value, path, state)
+      return validateSettingsPanelTable(value, path, state)
     case 'image':
-      return validateSettingsImage(value, path, state)
+      return validateSettingsPanelImage(value, path, state)
     case 'divider':
-      return validateSettingsDivider(value, path, state)
+      return validateSettingsPanelDivider(value, path, state)
     default:
-      return [{ path: `${path}.kind`, message: 'Unknown settings node kind.' }]
+      return [{ path: `${path}.kind`, message: 'Unknown settings panel node kind.' }]
   }
 }
 
-function validateSettingsValueNode(
+function validateSettingsPanelValueNode(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState,
-  schema: SettingsValueSchema
+  schema: SettingsPanelValueSchema
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...VALUE_NODE_BASE_KEYS), path),
-    ...validateSettingsValueNodeBase(value, path, state, schema)
+    ...validateSettingsPanelValueNodeBase(value, path, state, schema)
   ]
 }
 
-function validateSettingsSelect(
+function validateSettingsPanelSelect(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -317,27 +317,27 @@ function validateSettingsSelect(
       createKeySet(...VALUE_NODE_BASE_KEYS, 'placeholder', 'options'),
       path
     ),
-    ...validateSettingsValueNodeBase(value, path, state, 'string'),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'string'),
     ...validateOptionalString(value.placeholder, `${path}.placeholder`, {
       typeMessage: 'placeholder must be a string when provided.'
     }),
-    ...validateSettingsSelectOptions(value.options, `${path}.options`)
+    ...validateSettingsPanelSelectOptions(value.options, `${path}.options`)
   ]
 }
 
-function validateSettingsMultiSelect(
+function validateSettingsPanelMultiSelect(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...VALUE_NODE_BASE_KEYS, 'options'), path),
-    ...validateSettingsValueNodeBase(value, path, state, 'stringArray'),
-    ...validateSettingsSelectOptions(value.options, `${path}.options`)
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'stringArray'),
+    ...validateSettingsPanelSelectOptions(value.options, `${path}.options`)
   ]
 }
 
-function validateSettingsTextInput(
+function validateSettingsPanelTextInput(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -348,20 +348,20 @@ function validateSettingsTextInput(
       createKeySet(...VALUE_NODE_BASE_KEYS, 'placeholder', 'inputMode'),
       path
     ),
-    ...validateSettingsValueNodeBase(value, path, state, 'string'),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'string'),
     ...validateOptionalString(value.placeholder, `${path}.placeholder`, {
       typeMessage: 'placeholder must be a string when provided.'
     }),
     ...validateOptionalEnumString(
       value.inputMode,
       `${path}.inputMode`,
-      SETTINGS_TEXT_INPUT_MODE_VALUES,
+      SETTINGS_PANEL_TEXT_INPUT_MODE_VALUES,
       'inputMode must be one of the supported text input modes.'
     )
   ]
 }
 
-function validateSettingsTextarea(
+function validateSettingsPanelTextarea(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -372,7 +372,7 @@ function validateSettingsTextarea(
       createKeySet(...VALUE_NODE_BASE_KEYS, 'placeholder', 'rows'),
       path
     ),
-    ...validateSettingsValueNodeBase(value, path, state, 'string'),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'string'),
     ...validateOptionalString(value.placeholder, `${path}.placeholder`, {
       typeMessage: 'placeholder must be a string when provided.'
     }),
@@ -393,7 +393,7 @@ function validateSettingsTextarea(
   return issues
 }
 
-function validateSettingsNumberInput(
+function validateSettingsPanelNumberInput(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -404,7 +404,7 @@ function validateSettingsNumberInput(
       createKeySet(...VALUE_NODE_BASE_KEYS, 'placeholder', 'min', 'max', 'step'),
       path
     ),
-    ...validateSettingsValueNodeBase(value, path, state, 'number'),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'number'),
     ...validateOptionalString(value.placeholder, `${path}.placeholder`, {
       typeMessage: 'placeholder must be a string when provided.'
     }),
@@ -436,7 +436,7 @@ function validateSettingsNumberInput(
   return issues
 }
 
-function validateSettingsStringList(
+function validateSettingsPanelStringList(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -447,7 +447,7 @@ function validateSettingsStringList(
       createKeySet(...VALUE_NODE_BASE_KEYS, 'addPlaceholder', 'itemPlaceholder'),
       path
     ),
-    ...validateSettingsValueNodeBase(value, path, state, 'stringArray'),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'stringArray'),
     ...validateOptionalString(value.addPlaceholder, `${path}.addPlaceholder`, {
       typeMessage: 'addPlaceholder must be a string when provided.'
     }),
@@ -457,7 +457,7 @@ function validateSettingsStringList(
   ]
 }
 
-function validateSettingsRecordList(
+function validateSettingsPanelRecordList(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -468,8 +468,8 @@ function validateSettingsRecordList(
       createKeySet(...VALUE_NODE_BASE_KEYS, 'columns', 'addLabel', 'emptyLabel'),
       path
     ),
-    ...validateSettingsValueNodeBase(value, path, state, 'recordArray'),
-    ...validateSettingsRecordListColumns(value.columns, `${path}.columns`),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'recordArray'),
+    ...validateSettingsPanelRecordListColumns(value.columns, `${path}.columns`),
     ...validateOptionalString(value.addLabel, `${path}.addLabel`, {
       typeMessage: 'addLabel must be a string when provided.'
     }),
@@ -479,7 +479,7 @@ function validateSettingsRecordList(
   ]
 }
 
-function validateSettingsButton(
+function validateSettingsPanelButton(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -490,7 +490,7 @@ function validateSettingsButton(
       createKeySet(...NODE_BASE_KEYS, 'label', 'icon', 'tone', 'onClick'),
       path
     ),
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateRequiredString(value.label, `${path}.label`, {
       trim: true,
       valueMessage: 'label must be a non-empty string.'
@@ -501,7 +501,7 @@ function validateSettingsButton(
     ...validateOptionalEnumString(
       value.tone,
       `${path}.tone`,
-      SETTINGS_BUTTON_TONE_VALUES,
+      SETTINGS_PANEL_BUTTON_TONE_VALUES,
       'tone must be one of the supported button tones.'
     ),
     ...validateOptionalFunction(value.onClick, `${path}.onClick`).map((issue) => ({
@@ -511,38 +511,38 @@ function validateSettingsButton(
   ]
 }
 
-function validateSettingsText(
+function validateSettingsPanelText(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...NODE_BASE_KEYS, 'text', 'tone'), path),
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateRequiredString(value.text, `${path}.text`, {
       valueMessage: 'text must be a non-empty string.'
     }),
     ...validateOptionalEnumString(
       value.tone,
       `${path}.tone`,
-      SETTINGS_TEXT_TONE_VALUES,
+      SETTINGS_PANEL_TEXT_TONE_VALUES,
       'tone must be one of the supported text tones.'
     )
   ]
 }
 
-function validateSettingsNotice(
+function validateSettingsPanelNotice(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...NODE_BASE_KEYS, 'tone', 'text'), path),
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateRequiredEnumString(
       value.tone,
       `${path}.tone`,
-      SETTINGS_NOTICE_TONE_VALUES,
+      SETTINGS_PANEL_NOTICE_TONE_VALUES,
       'tone must be one of the supported notice tones.'
     ),
     ...validateRequiredString(value.text, `${path}.text`, {
@@ -551,18 +551,18 @@ function validateSettingsNotice(
   ]
 }
 
-function validateSettingsStatus(
+function validateSettingsPanelStatus(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...NODE_BASE_KEYS, 'tone', 'label', 'value'), path),
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateOptionalEnumString(
       value.tone,
       `${path}.tone`,
-      SETTINGS_STATUS_TONE_VALUES,
+      SETTINGS_PANEL_STATUS_TONE_VALUES,
       'tone must be one of the supported status tones.'
     ),
     ...validateOptionalString(value.label, `${path}.label`, {
@@ -574,7 +574,7 @@ function validateSettingsStatus(
   ]
 }
 
-function validateSettingsTable(
+function validateSettingsPanelTable(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -585,26 +585,26 @@ function validateSettingsTable(
       createKeySet(...NODE_BASE_KEYS, 'title', 'columns', 'rows', 'emptyLabel'),
       path
     ),
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateOptionalString(value.title, `${path}.title`, {
       typeMessage: 'title must be a string when provided.'
     }),
     ...validateOptionalString(value.emptyLabel, `${path}.emptyLabel`, {
       typeMessage: 'emptyLabel must be a string when provided.'
     }),
-    ...validateSettingsTableColumns(value.columns, `${path}.columns`),
+    ...validateSettingsPanelTableColumns(value.columns, `${path}.columns`),
     ...validateRecordArray(value.rows, `${path}.rows`, 'rows must be an array.')
   ]
 }
 
-function validateSettingsImage(
+function validateSettingsPanelImage(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...NODE_BASE_KEYS, 'src', 'alt', 'fit'), path),
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateRequiredString(value.src, `${path}.src`, {
       trim: true,
       valueMessage: 'src must be a non-empty string.'
@@ -615,24 +615,24 @@ function validateSettingsImage(
     ...validateOptionalEnumString(
       value.fit,
       `${path}.fit`,
-      SETTINGS_IMAGE_FIT_VALUES,
+      SETTINGS_PANEL_IMAGE_FIT_VALUES,
       'fit must be contain or cover.'
     )
   ]
 }
 
-function validateSettingsDivider(
+function validateSettingsPanelDivider(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
     ...validateUnknownKeys(value, createKeySet(...NODE_BASE_KEYS), path),
-    ...validateSettingsNodeBase(value, path, state)
+    ...validateSettingsPanelNodeBase(value, path, state)
   ]
 }
 
-function validateSettingsNodeBase(
+function validateSettingsPanelNodeBase(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState
@@ -657,7 +657,7 @@ function validateSettingsNodeBase(
     ...validateOptionalEnumString(
       value.width,
       `${path}.width`,
-      SETTINGS_NODE_WIDTH_VALUES,
+      SETTINGS_PANEL_NODE_WIDTH_VALUES,
       'width must be one of the supported node widths.'
     )
   ]
@@ -666,7 +666,7 @@ function validateSettingsNodeBase(
     if (state.nodeIds.has(value.id)) {
       issues.push({
         path: `${path}.id`,
-        message: 'Node id must be unique within a settings surface.'
+        message: 'Node id must be unique within a settings panel surface.'
       })
     }
     state.nodeIds.add(value.id)
@@ -675,14 +675,14 @@ function validateSettingsNodeBase(
   return issues
 }
 
-function validateSettingsValueNodeBase(
+function validateSettingsPanelValueNodeBase(
   value: Record<string, unknown>,
   path: string,
   state: SurfaceValidationState,
-  schema: SettingsValueSchema
+  schema: SettingsPanelValueSchema
 ): ValidationIssue[] {
   const issues = [
-    ...validateSettingsNodeBase(value, path, state),
+    ...validateSettingsPanelNodeBase(value, path, state),
     ...validateOptionalFunction(value.onCommit, `${path}.onCommit`).map((issue) => ({
       ...issue,
       message: 'onCommit must be a function when provided.'
@@ -692,7 +692,7 @@ function validateSettingsValueNodeBase(
   if (value.initialValue === undefined) {
     issues.push({
       path: `${path}.initialValue`,
-      message: 'initialValue is required for settings value nodes.'
+      message: 'initialValue is required for settings panel value nodes.'
     })
   } else {
     issues.push(...validateValueAgainstSchema(value.initialValue, schema, `${path}.initialValue`))
@@ -701,7 +701,7 @@ function validateSettingsValueNodeBase(
   return issues
 }
 
-function validateSettingsSelectOptions(value: unknown, path: string): ValidationIssue[] {
+function validateSettingsPanelSelectOptions(value: unknown, path: string): ValidationIssue[] {
   const issues = validateRequiredArray(value, path, {
     typeMessage: 'options must be an array.'
   })
@@ -714,7 +714,7 @@ function validateSettingsSelectOptions(value: unknown, path: string): Validation
   for (const [index, option] of value.entries()) {
     const optionPath = `${path}[${index}]`
     if (!isPlainObject(option)) {
-      issues.push({ path: optionPath, message: 'Select option must be an object.' })
+      issues.push({ path: optionPath, message: 'Settings panel select option must be an object.' })
       continue
     }
 
@@ -751,7 +751,7 @@ function validateSettingsSelectOptions(value: unknown, path: string): Validation
   return issues
 }
 
-function validateSettingsTableColumns(value: unknown, path: string): ValidationIssue[] {
+function validateSettingsPanelTableColumns(value: unknown, path: string): ValidationIssue[] {
   if (value === undefined) {
     return []
   }
@@ -785,7 +785,7 @@ function validateSettingsTableColumns(value: unknown, path: string): ValidationI
       ...validateOptionalEnumString(
         column.kind,
         `${columnPath}.kind`,
-        SETTINGS_TABLE_COLUMN_KIND_VALUES,
+        SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES,
         'Column kind must be text, number, boolean, or badge.'
       )
     )
@@ -796,7 +796,7 @@ function validateSettingsTableColumns(value: unknown, path: string): ValidationI
   return issues
 }
 
-function validateSettingsRecordListColumns(value: unknown, path: string): ValidationIssue[] {
+function validateSettingsPanelRecordListColumns(value: unknown, path: string): ValidationIssue[] {
   const issues = validateRequiredArray(value, path, {
     minLength: 1,
     typeMessage: 'columns must be an array.',
@@ -828,13 +828,13 @@ function validateSettingsRecordListColumns(value: unknown, path: string): Valida
       ...validateOptionalEnumString(
         column.kind,
         `${columnPath}.kind`,
-        SETTINGS_RECORD_LIST_COLUMN_KIND_VALUES,
+        SETTINGS_PANEL_RECORD_LIST_COLUMN_KIND_VALUES,
         'Column kind must be text, select, number, or boolean.'
       )
     )
 
     if (column.options !== undefined) {
-      issues.push(...validateSettingsSelectOptions(column.options, `${columnPath}.options`))
+      issues.push(...validateSettingsPanelSelectOptions(column.options, `${columnPath}.options`))
     }
 
     pushUniqueKeyIssue(column.key, seenKeys, `${columnPath}.key`, issues, 'Column')

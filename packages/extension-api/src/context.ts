@@ -1,10 +1,10 @@
-import type { Disposable, DisposableStore, SerializableValue } from './shared'
+import type { DisposableStore, SerializableValue } from './shared'
 import type {
   CommandRegistrar,
-  DeeplinkRegistrar,
-  MenuRegistrar,
-  ScraperRegistrar,
-  SettingsRegistrar,
+  DeeplinkRouteRegistrar,
+  EntityMenuRegistrar,
+  ScraperProviderRegistrar,
+  SettingsPanelRegistrar,
   ThemeRegistrar
 } from './contributions'
 
@@ -49,16 +49,17 @@ export interface ExtensionContext {
   readonly secrets: ExtensionSecrets
   readonly subscriptions: DisposableStore
   readonly abortSignal: AbortSignal
-  readonly contributions: {
-    menus: MenuRegistrar
-    settings: SettingsRegistrar
-    scrapers: ScraperRegistrar
-    deeplinks: DeeplinkRegistrar
-    themes: ThemeRegistrar
-    commands: CommandRegistrar
-  }
+  readonly contributions: ExtensionContributionRegistrars
   asAbsolutePath(relativePath: string): string
-  registerDisposable(disposable: Disposable): void
+}
+
+export interface ExtensionContributionRegistrars {
+  readonly entityMenus: EntityMenuRegistrar
+  readonly settingsPanels: SettingsPanelRegistrar
+  readonly scraperProviders: ScraperProviderRegistrar
+  readonly deeplinkRoutes: DeeplinkRouteRegistrar
+  readonly themes: ThemeRegistrar
+  readonly commands: CommandRegistrar
 }
 
 export interface ExtensionDefinition {

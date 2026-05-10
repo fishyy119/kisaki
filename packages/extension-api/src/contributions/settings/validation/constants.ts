@@ -1,4 +1,9 @@
-export type SettingsValueSchema = 'boolean' | 'string' | 'number' | 'stringArray' | 'recordArray'
+export type SettingsPanelValueSchema =
+  | 'boolean'
+  | 'string'
+  | 'number'
+  | 'stringArray'
+  | 'recordArray'
 
 export interface SurfaceValidationState {
   fieldIds: Set<string>
@@ -6,28 +11,37 @@ export interface SurfaceValidationState {
 }
 
 export interface ResultCapability {
-  allowedRefreshTargets: readonly SettingsRefreshTargetValue[]
+  allowedRefreshTargets: readonly SettingsPanelRefreshTargetValue[]
   allowClosePopover?: boolean
   allowOpenDialog?: boolean
   allowOpenPopover?: boolean
-  allowedCloseTargets?: readonly SettingsCloseTargetValue[]
+  allowedCloseTargets?: readonly SettingsPanelCloseTargetValue[]
   allowClosePopoverWithClose?: boolean
 }
 
-export type SettingsRefreshTargetValue = 'self' | 'root' | 'dialog' | 'popover' | 'all'
-export type SettingsCloseTargetValue = 'root' | 'dialog'
+export type SettingsPanelRefreshTargetValue = 'self' | 'root' | 'dialog' | 'popover' | 'all'
+export type SettingsPanelCloseTargetValue = 'root' | 'dialog'
 
-export const SETTINGS_DIALOG_SIZE_VALUES = ['sm', 'md', 'lg', 'xl'] as const
-export const SETTINGS_POPOVER_WIDTH_VALUES = ['sm', 'md', 'lg'] as const
-export const SETTINGS_NOTICE_TONE_VALUES = ['info', 'warning', 'error', 'success'] as const
-export const SETTINGS_STATUS_TONE_VALUES = ['neutral', 'success', 'warning', 'danger'] as const
-export const SETTINGS_TEXT_TONE_VALUES = ['default', 'muted', 'danger'] as const
-export const SETTINGS_BUTTON_TONE_VALUES = ['default', 'primary', 'danger'] as const
-export const SETTINGS_NODE_WIDTH_VALUES = ['auto', 'sm', 'md', 'lg', 'full'] as const
-export const SETTINGS_FIELD_ORIENTATION_VALUES = ['vertical', 'horizontal', 'responsive'] as const
-export const SETTINGS_FIELD_SPAN_VALUES = ['full'] as const
-export const SETTINGS_CONTENT_LAYOUT_VALUES = ['stack', 'inline', 'grid'] as const
-export const SETTINGS_TEXT_INPUT_MODE_VALUES = [
+export const SETTINGS_PANEL_DIALOG_SIZE_VALUES = ['sm', 'md', 'lg', 'xl'] as const
+export const SETTINGS_PANEL_POPOVER_WIDTH_VALUES = ['sm', 'md', 'lg'] as const
+export const SETTINGS_PANEL_NOTICE_TONE_VALUES = ['info', 'warning', 'error', 'success'] as const
+export const SETTINGS_PANEL_STATUS_TONE_VALUES = [
+  'neutral',
+  'success',
+  'warning',
+  'danger'
+] as const
+export const SETTINGS_PANEL_TEXT_TONE_VALUES = ['default', 'muted', 'danger'] as const
+export const SETTINGS_PANEL_BUTTON_TONE_VALUES = ['default', 'primary', 'danger'] as const
+export const SETTINGS_PANEL_NODE_WIDTH_VALUES = ['auto', 'sm', 'md', 'lg', 'full'] as const
+export const SETTINGS_PANEL_FIELD_ORIENTATION_VALUES = [
+  'vertical',
+  'horizontal',
+  'responsive'
+] as const
+export const SETTINGS_PANEL_FIELD_SPAN_VALUES = ['full'] as const
+export const SETTINGS_PANEL_CONTENT_LAYOUT_VALUES = ['stack', 'inline', 'grid'] as const
+export const SETTINGS_PANEL_TEXT_INPUT_MODE_VALUES = [
   'text',
   'email',
   'url',
@@ -35,14 +49,19 @@ export const SETTINGS_TEXT_INPUT_MODE_VALUES = [
   'tel',
   'password'
 ] as const
-export const SETTINGS_TABLE_COLUMN_KIND_VALUES = ['text', 'number', 'boolean', 'badge'] as const
-export const SETTINGS_RECORD_LIST_COLUMN_KIND_VALUES = [
+export const SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES = [
+  'text',
+  'number',
+  'boolean',
+  'badge'
+] as const
+export const SETTINGS_PANEL_RECORD_LIST_COLUMN_KIND_VALUES = [
   'text',
   'select',
   'number',
   'boolean'
 ] as const
-export const SETTINGS_IMAGE_FIT_VALUES = ['contain', 'cover'] as const
+export const SETTINGS_PANEL_IMAGE_FIT_VALUES = ['contain', 'cover'] as const
 
 export const CONTRIBUTION_KEYS = new Set<string>([
   'id',

@@ -1,100 +1,109 @@
 import type { Disposable, MaybePromise, SerializableRecord } from '../../../shared'
 import type {
-  SettingsDialogNodeEvents,
-  SettingsDialogResolveContext,
-  SettingsDialogSubmitEvent,
-  SettingsPopoverNodeEvents,
-  SettingsPopoverResolveContext,
-  SettingsRootNodeEvents,
-  SettingsRootResolveContext,
-  SettingsRootSubmitEvent
+  SettingsPanelDialogNodeEvents,
+  SettingsPanelDialogResolveContext,
+  SettingsPanelDialogSubmitEvent,
+  SettingsPanelPopoverNodeEvents,
+  SettingsPanelPopoverResolveContext,
+  SettingsPanelRootNodeEvents,
+  SettingsPanelRootResolveContext,
+  SettingsPanelRootSubmitEvent
 } from './events'
-import type { SettingsNodeFactory } from './factory'
-import type { SettingsDialogModel, SettingsPopoverModel, SettingsRootModel } from './models'
-import type { SettingsDialogSubmitResult, SettingsRootSubmitResult } from './results'
-import type { SettingsDialogSize, SettingsPopoverWidth, SettingsRefreshReason } from './shared'
+import type { SettingsPanelNodeFactory } from './factory'
+import type {
+  SettingsPanelDialogModel,
+  SettingsPanelPopoverModel,
+  SettingsPanelRootModel
+} from './models'
+import type { SettingsPanelDialogSubmitResult, SettingsPanelRootSubmitResult } from './results'
+import type {
+  SettingsPanelDialogSize,
+  SettingsPanelPopoverWidth,
+  SettingsPanelRefreshReason
+} from './shared'
 
-export interface SettingsRegistration extends Disposable {
-  refresh(reason?: SettingsRefreshReason): Promise<void>
+export interface SettingsPanelRegistration extends Disposable {
+  refresh(reason?: SettingsPanelRefreshReason): Promise<void>
 }
 
-export interface SettingsRegistrar {
+export interface SettingsPanelRegistrar {
   register<
-    const TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
-    const TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
+    const TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap,
+    const TDialogs extends SettingsPanelDialogMap<TPopovers> = EmptySettingsPanelDialogMap
   >(
-    contribution: SettingsContribution<TPopovers, TDialogs>
-  ): SettingsRegistration
+    panel: SettingsPanelContribution<TPopovers, TDialogs>
+  ): SettingsPanelRegistration
 }
 
-export function defineSettingsContribution<
-  const TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
-  const TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
+export function defineSettingsPanel<
+  const TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap,
+  const TDialogs extends SettingsPanelDialogMap<TPopovers> = EmptySettingsPanelDialogMap
 >(
-  contribution: SettingsContribution<TPopovers, TDialogs>
-): SettingsContribution<TPopovers, TDialogs> {
+  contribution: SettingsPanelContribution<TPopovers, TDialogs>
+): SettingsPanelContribution<TPopovers, TDialogs> {
   return contribution
 }
 
-export type SettingsPopoverMap = Record<string, SettingsPopoverDefinition>
-export type EmptySettingsPopoverMap = Record<never, never>
+export type SettingsPanelPopoverMap = Record<string, SettingsPanelPopoverDefinition>
+export type EmptySettingsPanelPopoverMap = Record<never, never>
 
-export type SettingsDialogMap<TPopovers extends SettingsPopoverMap = SettingsPopoverMap> = Record<
-  string,
-  SettingsDialogDefinition<SerializableRecord, TPopovers>
->
+export type SettingsPanelDialogMap<
+  TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap
+> = Record<string, SettingsPanelDialogDefinition<SerializableRecord, TPopovers>>
 
-export type EmptySettingsDialogMap = Record<never, never>
+export type EmptySettingsPanelDialogMap = Record<never, never>
 
-export type SettingsPopoverId<TPopovers> = Extract<keyof TPopovers, string>
+export type SettingsPanelPopoverId<TPopovers> = Extract<keyof TPopovers, string>
 
-export type SettingsDialogId<TDialogs> = Extract<keyof TDialogs, string>
+export type SettingsPanelDialogId<TDialogs> = Extract<keyof TDialogs, string>
 
-export type SettingsPopoverParams<TPopover> =
-  TPopover extends SettingsPopoverDefinition<infer TParams> ? TParams : SerializableRecord
+export type SettingsPanelPopoverParams<TPopover> =
+  TPopover extends SettingsPanelPopoverDefinition<infer TParams> ? TParams : SerializableRecord
 
-export type SettingsDialogParams<TDialog> =
-  TDialog extends SettingsDialogDefinition<infer TParams, infer _TPopovers>
+export type SettingsPanelDialogParams<TDialog> =
+  TDialog extends SettingsPanelDialogDefinition<infer TParams, infer _TPopovers>
     ? TParams
     : SerializableRecord
 
-export interface SettingsContribution<
-  TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
+export interface SettingsPanelContribution<
+  TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers> = EmptySettingsPanelDialogMap
 > {
   id: string
   title: string
   description?: string
   order?: number
-  popovers?: TPopovers & SettingsPopoverMap
-  dialogs?: TDialogs & SettingsDialogMap<TPopovers>
+  popovers?: TPopovers & SettingsPanelPopoverMap
+  dialogs?: TDialogs & SettingsPanelDialogMap<TPopovers>
   resolve(
-    context: SettingsRootResolveContext,
-    settings: SettingsNodeFactory<SettingsRootNodeEvents<TPopovers, TDialogs>>
-  ): MaybePromise<SettingsRootModel<TPopovers, TDialogs>>
-  submit?(event: SettingsRootSubmitEvent): MaybePromise<SettingsRootSubmitResult>
+    context: SettingsPanelRootResolveContext,
+    settings: SettingsPanelNodeFactory<SettingsPanelRootNodeEvents<TPopovers, TDialogs>>
+  ): MaybePromise<SettingsPanelRootModel<TPopovers, TDialogs>>
+  submit?(event: SettingsPanelRootSubmitEvent): MaybePromise<SettingsPanelRootSubmitResult>
 }
 
-export interface SettingsDialogDefinition<
+export interface SettingsPanelDialogDefinition<
   TParams extends SerializableRecord = SerializableRecord,
-  TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap
+  TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap
 > {
   title?: string
-  size?: SettingsDialogSize
+  size?: SettingsPanelDialogSize
   resolve(
-    context: SettingsDialogResolveContext<TParams>,
-    settings: SettingsNodeFactory<SettingsDialogNodeEvents<TParams, TPopovers>>
-  ): MaybePromise<SettingsDialogModel<TParams, TPopovers>>
-  submit?(event: SettingsDialogSubmitEvent<TParams>): MaybePromise<SettingsDialogSubmitResult>
+    context: SettingsPanelDialogResolveContext<TParams>,
+    settings: SettingsPanelNodeFactory<SettingsPanelDialogNodeEvents<TParams, TPopovers>>
+  ): MaybePromise<SettingsPanelDialogModel<TParams, TPopovers>>
+  submit?(
+    event: SettingsPanelDialogSubmitEvent<TParams>
+  ): MaybePromise<SettingsPanelDialogSubmitResult>
 }
 
-export interface SettingsPopoverDefinition<
+export interface SettingsPanelPopoverDefinition<
   TParams extends SerializableRecord = SerializableRecord
 > {
   title?: string
-  width?: SettingsPopoverWidth
+  width?: SettingsPanelPopoverWidth
   resolve(
-    context: SettingsPopoverResolveContext<TParams>,
-    settings: SettingsNodeFactory<SettingsPopoverNodeEvents<TParams>>
-  ): MaybePromise<SettingsPopoverModel<TParams>>
+    context: SettingsPanelPopoverResolveContext<TParams>,
+    settings: SettingsPanelNodeFactory<SettingsPanelPopoverNodeEvents<TParams>>
+  ): MaybePromise<SettingsPanelPopoverModel<TParams>>
 }

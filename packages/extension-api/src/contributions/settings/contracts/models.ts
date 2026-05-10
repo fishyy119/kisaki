@@ -1,54 +1,56 @@
 import type { SerializableRecord } from '../../../shared'
 import type {
-  EmptySettingsDialogMap,
-  EmptySettingsPopoverMap,
-  SettingsDialogMap,
-  SettingsPopoverMap
+  EmptySettingsPanelDialogMap,
+  EmptySettingsPanelPopoverMap,
+  SettingsPanelDialogMap,
+  SettingsPanelPopoverMap
 } from './definitions'
 import type {
-  SettingsDialogNodeEvents,
-  SettingsPopoverNodeEvents,
-  SettingsRootNodeEvents
+  SettingsPanelDialogNodeEvents,
+  SettingsPanelPopoverNodeEvents,
+  SettingsPanelRootNodeEvents
 } from './events'
-import type { SettingsField, SettingsTab } from './nodes'
-import type { SettingsDialogSize, SettingsPopoverWidth } from './shared'
+import type { SettingsPanelField, SettingsPanelTab } from './nodes'
+import type { SettingsPanelDialogSize, SettingsPanelPopoverWidth } from './shared'
 
-export type SettingsRootModel<
-  TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
-  TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
-> = SettingsRootModelBase &
+export type SettingsPanelRootModel<
+  TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap,
+  TDialogs extends SettingsPanelDialogMap<TPopovers> = EmptySettingsPanelDialogMap
+> = SettingsPanelRootModelBase &
   (
     | {
-        fields: readonly SettingsField<SettingsRootNodeEvents<TPopovers, TDialogs>>[]
+        fields: readonly SettingsPanelField<SettingsPanelRootNodeEvents<TPopovers, TDialogs>>[]
         tabs?: never
         activeTabId?: never
       }
     | {
-        tabs: readonly SettingsTab<SettingsRootNodeEvents<TPopovers, TDialogs>>[]
+        tabs: readonly SettingsPanelTab<SettingsPanelRootNodeEvents<TPopovers, TDialogs>>[]
         activeTabId?: string
         fields?: never
       }
   )
 
-export interface SettingsRootModelBase {
+export interface SettingsPanelRootModelBase {
   title?: string
   description?: string
-  size?: SettingsDialogSize
+  size?: SettingsPanelDialogSize
 }
 
-export interface SettingsDialogModel<
+export interface SettingsPanelDialogModel<
   TParams extends SerializableRecord = SerializableRecord,
-  TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap
+  TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap
 > {
   title?: string
   description?: string
-  size?: SettingsDialogSize
-  fields: readonly SettingsField<SettingsDialogNodeEvents<TParams, TPopovers>>[]
+  size?: SettingsPanelDialogSize
+  fields: readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, TPopovers>>[]
 }
 
-export interface SettingsPopoverModel<TParams extends SerializableRecord = SerializableRecord> {
+export interface SettingsPanelPopoverModel<
+  TParams extends SerializableRecord = SerializableRecord
+> {
   title?: string
   description?: string
-  width?: SettingsPopoverWidth
-  fields: readonly SettingsField<SettingsPopoverNodeEvents<TParams>>[]
+  width?: SettingsPanelPopoverWidth
+  fields: readonly SettingsPanelField<SettingsPanelPopoverNodeEvents<TParams>>[]
 }

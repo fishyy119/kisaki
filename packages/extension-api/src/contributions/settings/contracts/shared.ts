@@ -2,41 +2,41 @@ import type { SerializableRecord } from '../../../shared'
 
 export type { MaybePromise } from '../../../shared'
 
-export interface SettingsRefreshReason {
+export interface SettingsPanelRefreshReason {
   reason?: string
   params?: SerializableRecord
 }
 
-export type SettingsRefreshTarget = 'self' | 'root' | 'dialog' | 'popover' | 'all'
+export type SettingsPanelRefreshTarget = 'self' | 'root' | 'dialog' | 'popover' | 'all'
 
-export interface SettingsSuccessOptions<
-  TRefresh extends SettingsRefreshTarget = SettingsRefreshTarget
+export interface SettingsPanelSuccessOptions<
+  TRefresh extends SettingsPanelRefreshTarget = SettingsPanelRefreshTarget
 > {
   message?: string
   refresh?: TRefresh
   closePopover?: boolean
 }
 
-export interface SettingsFailureOptions<
-  TRefresh extends SettingsRefreshTarget = SettingsRefreshTarget
+export interface SettingsPanelFailureOptions<
+  TRefresh extends SettingsPanelRefreshTarget = SettingsPanelRefreshTarget
 > {
   refresh?: TRefresh
   closePopover?: boolean
 }
 
-export interface SettingsOpenOptions {
+export interface SettingsPanelOpenOptions {
   message?: string
   closePopover?: boolean
 }
 
-export interface SettingsCloseOptions {
+export interface SettingsPanelCloseOptions {
   message?: string
 }
 
-export interface SettingsClosePopoverOptions extends SettingsCloseOptions {
+export interface SettingsPanelClosePopoverOptions extends SettingsPanelCloseOptions {
   closePopover?: boolean
 }
 
-export type SettingsDialogSize = 'sm' | 'md' | 'lg' | 'xl'
-export type SettingsPopoverWidth = 'sm' | 'md' | 'lg'
-export type SettingsNodeWidth = 'auto' | 'sm' | 'md' | 'lg' | 'full'
+export type SettingsPanelDialogSize = 'sm' | 'md' | 'lg' | 'xl'
+export type SettingsPanelPopoverWidth = 'sm' | 'md' | 'lg'
+export type SettingsPanelNodeWidth = 'auto' | 'sm' | 'md' | 'lg' | 'full'

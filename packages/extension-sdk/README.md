@@ -8,6 +8,68 @@ Public entry points:
 - `kisaki`
 - all public contract types re-exported from `@kisaki/extension-api`
 
+## Contribution API
+
+Contribution registrars live on `context.contributions`. Top-level keys name the registered
+contribution type, and every registrar uses `register(...)`.
+
+```ts
+import { defineExtension, defineSettingsPanel } from '@kisaki/extension-sdk'
+
+export default defineExtension({
+  activate(context) {
+    context.contributions.scraperProviders.game.register(new BangumiProvider(context))
+
+    context.contributions.settingsPanels.register(
+      defineSettingsPanel({
+        id: 'general',
+        title: 'Bangumi',
+        async resolve(_context, settings) {
+          return {
+            fields: [
+              {
+                id: 'api',
+                label: 'API',
+                content: [
+                  settings.textInput({
+                    id: 'accessToken',
+                    initialValue: '',
+                    inputMode: 'password'
+                  })
+                ]
+              }
+            ]
+          }
+        }
+      })
+    )
+
+    context.contributions.deeplinkRoutes.register({
+      id: 'oauth-callback',
+      path: '/oauth/callback',
+      handle() {
+        return { success: true, status: 'handled' }
+      }
+    })
+
+    context.contributions.entityMenus.game.single.register({
+      id: 'open-source',
+      async resolve(input, menu) {
+        return [
+          menu.action({
+            id: 'open',
+            label: `Open ${input.entityId}`,
+            onClick() {
+              return { success: true }
+            }
+          })
+        ]
+      }
+    })
+  }
+})
+```
+
 ## Architecture
 
 `kisaki` is a thin view over the host-provided `KisakiApi`.

@@ -1,5 +1,14 @@
-import type { CommandDangerLevel, CommandExecutionContext } from '../../capabilities/commands'
+import type { CommandDangerLevel, CommandExecutionSource } from '../../capabilities/commands'
 import type { Disposable, MaybePromise, SerializableRecord, SerializableValue } from '../../shared'
+
+export interface CommandContributionExecuteEvent {
+  commandId: string
+  executionId: string
+  source: CommandExecutionSource
+  signal: AbortSignal
+}
+
+export type CommandContributionExecuteResult = SerializableValue | void
 
 export interface CommandContribution {
   id: string
@@ -11,10 +20,12 @@ export interface CommandContribution {
   cancelable?: boolean
   execute(
     args: SerializableRecord,
-    context: CommandExecutionContext
-  ): MaybePromise<SerializableValue | void>
+    event: CommandContributionExecuteEvent
+  ): MaybePromise<CommandContributionExecuteResult>
 }
 
+export type CommandRegistration = Disposable
+
 export interface CommandRegistrar {
-  register(command: CommandContribution): Promise<Disposable>
+  register(command: CommandContribution): CommandRegistration
 }

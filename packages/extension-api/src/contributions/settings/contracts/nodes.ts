@@ -1,14 +1,14 @@
 import type { MaybePromise, SerializableRecord } from '../../../shared'
-import type { SettingsNodeWidth } from './shared'
+import type { SettingsPanelNodeWidth } from './shared'
 
-export interface SettingsNodeEvents<TCommitEvent, TCommitResult, TButtonEvent, TButtonResult> {
+export interface SettingsPanelNodeEvents<TCommitEvent, TCommitResult, TButtonEvent, TButtonResult> {
   commitEvent: TCommitEvent
   commitResult: TCommitResult
   buttonEvent: TButtonEvent
   buttonResult: TButtonResult
 }
 
-export interface SettingsField<TEvents extends SettingsAnyNodeEvents> {
+export interface SettingsPanelField<TEvents extends SettingsPanelAnyNodeEvents> {
   id: string
   label?: string
   description?: string
@@ -18,94 +18,87 @@ export interface SettingsField<TEvents extends SettingsAnyNodeEvents> {
   span?: 1 | 2 | 3 | 'full'
   contentLayout?: 'stack' | 'inline' | 'grid'
   contentColumns?: 1 | 2 | 3
-  content: readonly SettingsFieldContentNode<TEvents>[]
+  content: readonly SettingsPanelFieldContentNode<TEvents>[]
 }
 
-export interface SettingsTab<TEvents extends SettingsAnyNodeEvents> {
+export interface SettingsPanelTab<TEvents extends SettingsPanelAnyNodeEvents> {
   id: string
   label: string
   description?: string
   icon?: string
-  fields: readonly SettingsField<TEvents>[]
+  fields: readonly SettingsPanelField<TEvents>[]
 }
 
-export interface SettingsNodeBase {
+export interface SettingsPanelNodeBase {
   id: string
   hidden?: boolean
   disabled?: boolean
   grow?: boolean
-  width?: SettingsNodeWidth
+  width?: SettingsPanelNodeWidth
 }
 
-export interface SettingsValueNodeBase<
+export interface SettingsPanelValueNodeBase<
   TValue,
   TCommitEvent,
   TCommitResult
-> extends SettingsNodeBase {
+> extends SettingsPanelNodeBase {
   initialValue: TValue
   onCommit?: (event: TCommitEvent) => MaybePromise<TCommitResult>
 }
 
-export interface SettingsSwitchNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  boolean,
+export interface SettingsPanelSwitchNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<boolean, TCommitEvent, TCommitResult> {
   kind: 'switch'
 }
 
-export interface SettingsCheckboxNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  boolean,
+export interface SettingsPanelCheckboxNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<boolean, TCommitEvent, TCommitResult> {
   kind: 'checkbox'
 }
 
-export interface SettingsSelectNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  string,
+export interface SettingsPanelSelectNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
   kind: 'select'
   placeholder?: string
-  options: readonly SettingsSelectOption[]
+  options: readonly SettingsPanelSelectOption[]
 }
 
-export interface SettingsMultiSelectNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  readonly string[],
+export interface SettingsPanelMultiSelectNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<readonly string[], TCommitEvent, TCommitResult> {
   kind: 'multiSelect'
-  options: readonly SettingsSelectOption[]
+  options: readonly SettingsPanelSelectOption[]
 }
 
-export interface SettingsTextInputNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  string,
+export interface SettingsPanelTextInputNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
   kind: 'textInput'
   placeholder?: string
   inputMode?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'password'
 }
 
-export interface SettingsTextareaNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  string,
+export interface SettingsPanelTextareaNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
   kind: 'textarea'
   placeholder?: string
   rows?: number
 }
 
-export interface SettingsNumberInputNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  number,
+export interface SettingsPanelNumberInputNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<number, TCommitEvent, TCommitResult> {
   kind: 'numberInput'
   placeholder?: string
   min?: number
@@ -113,28 +106,29 @@ export interface SettingsNumberInputNode<TCommitEvent, TCommitResult> extends Se
   step?: number
 }
 
-export interface SettingsStringListNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  readonly string[],
+export interface SettingsPanelStringListNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<readonly string[], TCommitEvent, TCommitResult> {
   kind: 'stringList'
   addPlaceholder?: string
   itemPlaceholder?: string
 }
 
-export interface SettingsRecordListNode<TCommitEvent, TCommitResult> extends SettingsValueNodeBase<
-  readonly SerializableRecord[],
+export interface SettingsPanelRecordListNode<
   TCommitEvent,
   TCommitResult
-> {
+> extends SettingsPanelValueNodeBase<readonly SerializableRecord[], TCommitEvent, TCommitResult> {
   kind: 'recordList'
-  columns: readonly SettingsRecordListColumn[]
+  columns: readonly SettingsPanelRecordListColumn[]
   addLabel?: string
   emptyLabel?: string
 }
 
-export interface SettingsButtonNode<TButtonEvent, TButtonResult> extends SettingsNodeBase {
+export interface SettingsPanelButtonNode<
+  TButtonEvent,
+  TButtonResult
+> extends SettingsPanelNodeBase {
   kind: 'button'
   label: string
   icon?: string
@@ -142,91 +136,89 @@ export interface SettingsButtonNode<TButtonEvent, TButtonResult> extends Setting
   onClick?: (event: TButtonEvent) => MaybePromise<TButtonResult>
 }
 
-export interface SettingsTextNode extends SettingsNodeBase {
+export interface SettingsPanelTextNode extends SettingsPanelNodeBase {
   kind: 'text'
   text: string
   tone?: 'default' | 'muted' | 'danger'
 }
 
-export interface SettingsNoticeNode extends SettingsNodeBase {
+export interface SettingsPanelNoticeNode extends SettingsPanelNodeBase {
   kind: 'notice'
   tone: 'info' | 'warning' | 'error' | 'success'
   text: string
 }
 
-export interface SettingsStatusNode extends SettingsNodeBase {
+export interface SettingsPanelStatusNode extends SettingsPanelNodeBase {
   kind: 'status'
   tone?: 'neutral' | 'success' | 'warning' | 'danger'
   label?: string
   value: string
 }
 
-export interface SettingsTableNode extends SettingsNodeBase {
+export interface SettingsPanelTableNode extends SettingsPanelNodeBase {
   kind: 'table'
   title?: string
-  columns?: readonly SettingsTableColumn[]
+  columns?: readonly SettingsPanelTableColumn[]
   rows: readonly SerializableRecord[]
   emptyLabel?: string
 }
 
-export interface SettingsImageNode extends SettingsNodeBase {
+export interface SettingsPanelImageNode extends SettingsPanelNodeBase {
   kind: 'image'
   src: string
   alt?: string
   fit?: 'contain' | 'cover'
 }
 
-export interface SettingsDividerNode extends SettingsNodeBase {
+export interface SettingsPanelDividerNode extends SettingsPanelNodeBase {
   kind: 'divider'
 }
 
-export type SettingsControlNode<TEvents extends SettingsAnyNodeEvents> =
-  | SettingsSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsStringListNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>
+export type SettingsPanelControlNode<TEvents extends SettingsPanelAnyNodeEvents> =
+  | SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelStringListNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>
 
-export type SettingsActionNode<TEvents extends SettingsAnyNodeEvents> = SettingsButtonNode<
-  TEvents['buttonEvent'],
-  TEvents['buttonResult']
->
+export type SettingsPanelActionNode<TEvents extends SettingsPanelAnyNodeEvents> =
+  SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>
 
-export type SettingsDisplayNode =
-  | SettingsTextNode
-  | SettingsNoticeNode
-  | SettingsStatusNode
-  | SettingsTableNode
-  | SettingsImageNode
-  | SettingsDividerNode
+export type SettingsPanelDisplayNode =
+  | SettingsPanelTextNode
+  | SettingsPanelNoticeNode
+  | SettingsPanelStatusNode
+  | SettingsPanelTableNode
+  | SettingsPanelImageNode
+  | SettingsPanelDividerNode
 
-export type SettingsFieldContentNode<TEvents extends SettingsAnyNodeEvents> =
-  | SettingsControlNode<TEvents>
-  | SettingsActionNode<TEvents>
-  | SettingsDisplayNode
+export type SettingsPanelFieldContentNode<TEvents extends SettingsPanelAnyNodeEvents> =
+  | SettingsPanelControlNode<TEvents>
+  | SettingsPanelActionNode<TEvents>
+  | SettingsPanelDisplayNode
 
-export type SettingsAnyNodeEvents = SettingsNodeEvents<unknown, unknown, unknown, unknown>
+export type SettingsPanelAnyNodeEvents = SettingsPanelNodeEvents<unknown, unknown, unknown, unknown>
 
-export interface SettingsSelectOption {
+export interface SettingsPanelSelectOption {
   value: string
   label: string
   description?: string
   disabled?: boolean
 }
 
-export interface SettingsTableColumn {
+export interface SettingsPanelTableColumn {
   key: string
   label: string
   kind?: 'text' | 'number' | 'boolean' | 'badge'
 }
 
-export interface SettingsRecordListColumn {
+export interface SettingsPanelRecordListColumn {
   key: string
   label: string
   kind?: 'text' | 'select' | 'number' | 'boolean'
-  options?: readonly SettingsSelectOption[]
+  options?: readonly SettingsPanelSelectOption[]
 }

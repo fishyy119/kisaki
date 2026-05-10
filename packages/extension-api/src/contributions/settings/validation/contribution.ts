@@ -13,14 +13,14 @@ import {
   CONTRIBUTION_KEYS,
   DIALOG_DEFINITION_KEYS,
   POPOVER_DEFINITION_KEYS,
-  SETTINGS_DIALOG_SIZE_VALUES,
-  SETTINGS_POPOVER_WIDTH_VALUES
+  SETTINGS_PANEL_DIALOG_SIZE_VALUES,
+  SETTINGS_PANEL_POPOVER_WIDTH_VALUES
 } from './constants'
 import { validateDefinitionMap } from './helpers'
 
-export function validateSettingsContributionShape(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelContributionShape(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Settings contribution must be an object.' }]
+    return [{ path: '$', message: 'Settings panel contribution must be an object.' }]
   }
 
   const issues = [
@@ -52,16 +52,16 @@ export function validateSettingsContributionShape(value: unknown): ValidationIss
   ]
 
   issues.push(
-    ...validateDefinitionMap(value.popovers, '$.popovers', validateSettingsPopoverDefinition),
-    ...validateDefinitionMap(value.dialogs, '$.dialogs', validateSettingsDialogDefinition)
+    ...validateDefinitionMap(value.popovers, '$.popovers', validateSettingsPanelPopoverDefinition),
+    ...validateDefinitionMap(value.dialogs, '$.dialogs', validateSettingsPanelDialogDefinition)
   )
 
   return issues
 }
 
-export function validateSettingsDialogDefinition(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelDialogDefinition(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Settings dialog definition must be an object.' }]
+    return [{ path: '$', message: 'Settings panel dialog definition must be an object.' }]
   }
 
   return [
@@ -72,7 +72,7 @@ export function validateSettingsDialogDefinition(value: unknown): ValidationIssu
     ...validateOptionalEnumString(
       value.size,
       '$.size',
-      SETTINGS_DIALOG_SIZE_VALUES,
+      SETTINGS_PANEL_DIALOG_SIZE_VALUES,
       'size must be one of the supported dialog sizes.'
     ),
     ...validateRequiredFunction(value.resolve, '$.resolve').map((issue) => ({
@@ -86,9 +86,9 @@ export function validateSettingsDialogDefinition(value: unknown): ValidationIssu
   ]
 }
 
-export function validateSettingsPopoverDefinition(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelPopoverDefinition(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Settings popover definition must be an object.' }]
+    return [{ path: '$', message: 'Settings panel popover definition must be an object.' }]
   }
 
   return [
@@ -99,7 +99,7 @@ export function validateSettingsPopoverDefinition(value: unknown): ValidationIss
     ...validateOptionalEnumString(
       value.width,
       '$.width',
-      SETTINGS_POPOVER_WIDTH_VALUES,
+      SETTINGS_PANEL_POPOVER_WIDTH_VALUES,
       'width must be one of the supported popover widths.'
     ),
     ...validateRequiredFunction(value.resolve, '$.resolve').map((issue) => ({

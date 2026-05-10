@@ -45,7 +45,7 @@ export type ScraperSlot =
   | CompanyScraperSlot
   | CharacterScraperSlot
 
-export type ScraperCapability = 'search' | ScraperSlot
+export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search' | TSlot
 
 export interface ScraperLookup {
   name: string
@@ -271,40 +271,46 @@ export type CharacterScraperSession = BaseScraperSession<
   CharacterSessionResultMap
 >
 
-export interface BaseScraperProvider {
+export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
   readonly id: string
   readonly name: string
   readonly externalIdSource: string
-  readonly capabilities: readonly ScraperCapability[]
+  readonly capabilities: readonly ScraperCapability<TSlot>[]
 }
 
-export interface GameScraperProvider extends BaseScraperProvider {
+export interface GameScraperProvider extends BaseScraperProvider<GameScraperSlot> {
   search(query: string, locale?: Locale): Promise<readonly GameSearchResult[]>
   resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, locale: Locale): Promise<GameScraperSession>
 }
 
-export interface PersonScraperProvider extends BaseScraperProvider {
+export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
   search(query: string, locale?: Locale): Promise<readonly PersonSearchResult[]>
   resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, locale: Locale): Promise<PersonScraperSession>
 }
 
-export interface CompanyScraperProvider extends BaseScraperProvider {
+export interface CompanyScraperProvider extends BaseScraperProvider<CompanyScraperSlot> {
   search(query: string, locale?: Locale): Promise<readonly CompanySearchResult[]>
   resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, locale: Locale): Promise<CompanyScraperSession>
 }
 
-export interface CharacterScraperProvider extends BaseScraperProvider {
+export interface CharacterScraperProvider extends BaseScraperProvider<CharacterScraperSlot> {
   search(query: string, locale?: Locale): Promise<readonly CharacterSearchResult[]>
   resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
   openSession(target: IdResolvedTarget, locale: Locale): Promise<CharacterScraperSession>
 }
 
-export interface ScraperRegistrar {
-  registerGameProvider(provider: GameScraperProvider): Disposable
-  registerPersonProvider(provider: PersonScraperProvider): Disposable
-  registerCompanyProvider(provider: CompanyScraperProvider): Disposable
-  registerCharacterProvider(provider: CharacterScraperProvider): Disposable
+export type ScraperProviderRegistration = Disposable
+
+export interface ScraperProviderRegistrationPoint<TProvider extends BaseScraperProvider> {
+  register(provider: TProvider): ScraperProviderRegistration
+}
+
+export interface ScraperProviderRegistrar {
+  readonly game: ScraperProviderRegistrationPoint<GameScraperProvider>
+  readonly person: ScraperProviderRegistrationPoint<PersonScraperProvider>
+  readonly company: ScraperProviderRegistrationPoint<CompanyScraperProvider>
+  readonly character: ScraperProviderRegistrationPoint<CharacterScraperProvider>
 }

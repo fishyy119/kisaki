@@ -19,50 +19,50 @@ import {
   type ResultCapability
 } from './constants'
 
-type SettingsKnownTargetIds = ReadonlySet<string> | readonly string[]
+type SettingsPanelKnownTargetIds = ReadonlySet<string> | readonly string[]
 
-interface SettingsResultTargetValidationContext {
-  dialogIds?: SettingsKnownTargetIds
-  popoverIds?: SettingsKnownTargetIds
+interface SettingsPanelResultTargetValidationContext {
+  dialogIds?: SettingsPanelKnownTargetIds
+  popoverIds?: SettingsPanelKnownTargetIds
 }
 
-export function validateSettingsRootCommitResult(value: unknown): ValidationIssue[] {
-  return validateSettingsResultLike(value, {
+export function validateSettingsPanelRootCommitResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'root', 'all'],
     allowClosePopover: true
   })
 }
 
-export function validateSettingsDialogCommitResult(value: unknown): ValidationIssue[] {
-  return validateSettingsResultLike(value, {
+export function validateSettingsPanelDialogCommitResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'dialog', 'root', 'all'],
     allowClosePopover: true
   })
 }
 
-export function validateSettingsPopoverActionResult(value: unknown): ValidationIssue[] {
-  return validateSettingsResultLike(value, {
+export function validateSettingsPanelPopoverActionResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'popover', 'dialog', 'root', 'all'],
     allowClosePopover: true
   })
 }
 
-export function validateSettingsPopoverCommitResult(value: unknown): ValidationIssue[] {
-  return validateSettingsPopoverActionResult(value)
+export function validateSettingsPanelPopoverCommitResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelPopoverActionResult(value)
 }
 
-export function validateSettingsPopoverButtonResult(value: unknown): ValidationIssue[] {
-  return validateSettingsPopoverActionResult(value)
+export function validateSettingsPanelPopoverButtonResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelPopoverActionResult(value)
 }
 
-export function validateSettingsRootButtonResult(
+export function validateSettingsPanelRootButtonResult(
   value: unknown,
   targets?: {
     dialogIds?: ReadonlySet<string> | readonly string[]
     popoverIds?: ReadonlySet<string> | readonly string[]
   }
 ): ValidationIssue[] {
-  return validateSettingsResultLike(
+  return validateSettingsPanelResultLike(
     value,
     {
       allowedRefreshTargets: ['self', 'root', 'all'],
@@ -75,13 +75,13 @@ export function validateSettingsRootButtonResult(
   )
 }
 
-export function validateSettingsDialogButtonResult(
+export function validateSettingsPanelDialogButtonResult(
   value: unknown,
   targets?: {
     popoverIds?: ReadonlySet<string> | readonly string[]
   }
 ): ValidationIssue[] {
-  return validateSettingsResultLike(
+  return validateSettingsPanelResultLike(
     value,
     {
       allowedRefreshTargets: ['self', 'dialog', 'root', 'all'],
@@ -94,8 +94,8 @@ export function validateSettingsDialogButtonResult(
   )
 }
 
-export function validateSettingsRootSubmitResult(value: unknown): ValidationIssue[] {
-  return validateSettingsResultLike(value, {
+export function validateSettingsPanelRootSubmitResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'root', 'all'],
     allowClosePopover: true,
     allowedCloseTargets: ['root'],
@@ -103,8 +103,8 @@ export function validateSettingsRootSubmitResult(value: unknown): ValidationIssu
   })
 }
 
-export function validateSettingsDialogSubmitResult(value: unknown): ValidationIssue[] {
-  return validateSettingsResultLike(value, {
+export function validateSettingsPanelDialogSubmitResult(value: unknown): ValidationIssue[] {
+  return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'dialog', 'root', 'all'],
     allowClosePopover: true,
     allowedCloseTargets: ['dialog'],
@@ -112,13 +112,13 @@ export function validateSettingsDialogSubmitResult(value: unknown): ValidationIs
   })
 }
 
-function validateSettingsResultLike(
+function validateSettingsPanelResultLike(
   value: unknown,
   capability: ResultCapability,
-  targets?: SettingsResultTargetValidationContext
+  targets?: SettingsPanelResultTargetValidationContext
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Settings result must be an object.' }]
+    return [{ path: '$', message: 'Settings panel result must be an object.' }]
   }
 
   const issues = [
@@ -129,15 +129,15 @@ function validateSettingsResultLike(
   ]
 
   if (value.success === false) {
-    issues.push(...validateSettingsFailureResult(value, capability))
+    issues.push(...validateSettingsPanelFailureResult(value, capability))
     return issues
   }
 
-  issues.push(...validateSettingsSuccessResult(value, capability, targets))
+  issues.push(...validateSettingsPanelSuccessResult(value, capability, targets))
   return issues
 }
 
-function validateSettingsFailureResult(
+function validateSettingsPanelFailureResult(
   value: Record<string, unknown>,
   capability: ResultCapability
 ): ValidationIssue[] {
@@ -151,7 +151,7 @@ function validateSettingsFailureResult(
       value.refresh,
       '$.refresh',
       capability.allowedRefreshTargets,
-      'refresh is not supported for this settings surface.'
+      'refresh is not supported for this settings panel surface.'
     )
   ]
 
@@ -164,10 +164,10 @@ function validateSettingsFailureResult(
   return issues
 }
 
-function validateSettingsSuccessResult(
+function validateSettingsPanelSuccessResult(
   value: Record<string, unknown>,
   capability: ResultCapability,
-  targets?: SettingsResultTargetValidationContext
+  targets?: SettingsPanelResultTargetValidationContext
 ): ValidationIssue[] {
   const issues = [
     ...validateUnknownKeys(value, createSuccessResultKeySet()),
@@ -191,7 +191,7 @@ function validateSettingsSuccessResult(
     } else {
       issues.push({
         path: '$.closePopover',
-        message: 'closePopover is not supported for this settings surface.'
+        message: 'closePopover is not supported for this settings panel surface.'
       })
     }
   }
@@ -212,11 +212,11 @@ function validateSettingsSuccessResult(
     if (!capability.allowOpenDialog) {
       issues.push({
         path: '$.openDialog',
-        message: 'openDialog is not supported for this settings surface.'
+        message: 'openDialog is not supported for this settings panel surface.'
       })
     }
     issues.push(
-      ...validateSettingsDialogTarget(value.openDialog, '$.openDialog', targets?.dialogIds)
+      ...validateSettingsPanelDialogTarget(value.openDialog, '$.openDialog', targets?.dialogIds)
     )
   }
 
@@ -224,11 +224,11 @@ function validateSettingsSuccessResult(
     if (!capability.allowOpenPopover) {
       issues.push({
         path: '$.openPopover',
-        message: 'openPopover is not supported for this settings surface.'
+        message: 'openPopover is not supported for this settings panel surface.'
       })
     }
     issues.push(
-      ...validateSettingsPopoverTarget(value.openPopover, '$.openPopover', targets?.popoverIds)
+      ...validateSettingsPanelPopoverTarget(value.openPopover, '$.openPopover', targets?.popoverIds)
     )
   }
 
@@ -237,7 +237,7 @@ function validateSettingsSuccessResult(
     if (closeTargets.length === 0) {
       issues.push({
         path: '$.close',
-        message: 'close is not supported for this settings surface.'
+        message: 'close is not supported for this settings panel surface.'
       })
     } else {
       issues.push(
@@ -253,7 +253,7 @@ function validateSettingsSuccessResult(
     if (value.closePopover !== undefined && !capability.allowClosePopoverWithClose) {
       issues.push({
         path: '$.closePopover',
-        message: 'closePopover cannot be combined with close for this settings surface.'
+        message: 'closePopover cannot be combined with close for this settings panel surface.'
       })
     }
   }
@@ -264,7 +264,7 @@ function validateSettingsSuccessResult(
         value.refresh,
         '$.refresh',
         capability.allowedRefreshTargets,
-        'refresh is not supported for this settings surface.'
+        'refresh is not supported for this settings panel surface.'
       )
     )
 
@@ -279,10 +279,10 @@ function validateSettingsSuccessResult(
   return issues
 }
 
-function validateSettingsDialogTarget(
+function validateSettingsPanelDialogTarget(
   value: unknown,
   path: string,
-  knownDialogIds?: SettingsKnownTargetIds
+  knownDialogIds?: SettingsPanelKnownTargetIds
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
     return [{ path, message: 'openDialog must be an object.' }]
@@ -305,17 +305,17 @@ function validateSettingsDialogTarget(
       value.dialogId,
       `${path}.dialogId`,
       knownDialogIds,
-      'dialogId must reference a registered settings dialog.'
+      'dialogId must reference a registered settings panel dialog.'
     )
   )
 
   return issues
 }
 
-function validateSettingsPopoverTarget(
+function validateSettingsPanelPopoverTarget(
   value: unknown,
   path: string,
-  knownPopoverIds?: SettingsKnownTargetIds
+  knownPopoverIds?: SettingsPanelKnownTargetIds
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
     return [{ path, message: 'openPopover must be an object.' }]
@@ -338,7 +338,7 @@ function validateSettingsPopoverTarget(
       value.popoverId,
       `${path}.popoverId`,
       knownPopoverIds,
-      'popoverId must reference a registered settings popover.'
+      'popoverId must reference a registered settings panel popover.'
     )
   )
 
@@ -348,7 +348,7 @@ function validateSettingsPopoverTarget(
 function validateKnownTargetId(
   value: unknown,
   path: string,
-  knownIds: SettingsKnownTargetIds | undefined,
+  knownIds: SettingsPanelKnownTargetIds | undefined,
   message: string
 ): ValidationIssue[] {
   if (knownIds === undefined || typeof value !== 'string' || value.trim().length === 0) {
@@ -362,7 +362,7 @@ function validateKnownTargetId(
   return [{ path, message }]
 }
 
-function hasKnownTargetId(knownIds: SettingsKnownTargetIds, id: string): boolean {
+function hasKnownTargetId(knownIds: SettingsPanelKnownTargetIds, id: string): boolean {
   return 'has' in knownIds ? knownIds.has(id) : knownIds.includes(id)
 }
 

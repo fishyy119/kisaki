@@ -1,109 +1,129 @@
 import type {
-  SettingsAnyNodeEvents,
-  SettingsContribution,
-  SettingsDialogButtonResult,
-  SettingsDialogCommitResult,
-  SettingsDialogModel,
-  SettingsDialogSubmitResult,
-  SettingsField,
-  SettingsFieldContentNode,
-  SettingsPopoverActionResult,
-  SettingsPopoverButtonResult,
-  SettingsPopoverCommitResult,
-  SettingsPopoverModel,
-  SettingsRootButtonResult,
-  SettingsRootCommitResult,
-  SettingsRootModel,
-  SettingsRootSubmitResult,
-  SettingsTab
+  SettingsPanelAnyNodeEvents,
+  SettingsPanelContribution,
+  SettingsPanelDialogButtonResult,
+  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogModel,
+  SettingsPanelDialogSubmitResult,
+  SettingsPanelField,
+  SettingsPanelFieldContentNode,
+  SettingsPanelPopoverActionResult,
+  SettingsPanelPopoverButtonResult,
+  SettingsPanelPopoverCommitResult,
+  SettingsPanelPopoverModel,
+  SettingsPanelRootButtonResult,
+  SettingsPanelRootCommitResult,
+  SettingsPanelRootModel,
+  SettingsPanelRootSubmitResult,
+  SettingsPanelTab
 } from '../contracts'
-import { validateSettingsContributionShape } from './contribution'
+import { validateSettingsPanelContributionShape } from './contribution'
 import {
-  validateSettingsDialogModel,
-  validateSettingsPopoverModel,
-  validateSettingsRootModel
+  validateSettingsPanelDialogModel,
+  validateSettingsPanelPopoverModel,
+  validateSettingsPanelRootModel
 } from './models'
-import { validateSettingsField, validateSettingsNode, validateSettingsTab } from './nodes'
 import {
-  validateSettingsDialogButtonResult,
-  validateSettingsDialogCommitResult,
-  validateSettingsDialogSubmitResult,
-  validateSettingsPopoverActionResult,
-  validateSettingsPopoverButtonResult,
-  validateSettingsPopoverCommitResult,
-  validateSettingsRootButtonResult,
-  validateSettingsRootCommitResult,
-  validateSettingsRootSubmitResult
+  validateSettingsPanelField,
+  validateSettingsPanelNode,
+  validateSettingsPanelTab
+} from './nodes'
+import {
+  validateSettingsPanelDialogButtonResult,
+  validateSettingsPanelDialogCommitResult,
+  validateSettingsPanelDialogSubmitResult,
+  validateSettingsPanelPopoverActionResult,
+  validateSettingsPanelPopoverButtonResult,
+  validateSettingsPanelPopoverCommitResult,
+  validateSettingsPanelRootButtonResult,
+  validateSettingsPanelRootCommitResult,
+  validateSettingsPanelRootSubmitResult
 } from './results'
 
-export function isSettingsContribution(value: unknown): value is SettingsContribution {
-  return validateSettingsContributionShape(value).length === 0
+export function isSettingsPanelContribution(value: unknown): value is SettingsPanelContribution {
+  return validateSettingsPanelContributionShape(value).length === 0
 }
 
-export function isSettingsRootModel(value: unknown): value is SettingsRootModel {
-  return validateSettingsRootModel(value).length === 0
+export function isSettingsPanelRootModel(value: unknown): value is SettingsPanelRootModel {
+  return validateSettingsPanelRootModel(value).length === 0
 }
 
-export function isSettingsDialogModel(value: unknown): value is SettingsDialogModel {
-  return validateSettingsDialogModel(value).length === 0
+export function isSettingsPanelDialogModel(value: unknown): value is SettingsPanelDialogModel {
+  return validateSettingsPanelDialogModel(value).length === 0
 }
 
-export function isSettingsPopoverModel(value: unknown): value is SettingsPopoverModel {
-  return validateSettingsPopoverModel(value).length === 0
+export function isSettingsPanelPopoverModel(value: unknown): value is SettingsPanelPopoverModel {
+  return validateSettingsPanelPopoverModel(value).length === 0
 }
 
-export function isSettingsField(value: unknown): value is SettingsField<SettingsAnyNodeEvents> {
-  return validateSettingsField(value).length === 0
-}
-
-export function isSettingsTab(value: unknown): value is SettingsTab<SettingsAnyNodeEvents> {
-  return validateSettingsTab(value).length === 0
-}
-
-export function isSettingsNode(
+export function isSettingsPanelField(
   value: unknown
-): value is SettingsFieldContentNode<SettingsAnyNodeEvents> {
-  return validateSettingsNode(value).length === 0
+): value is SettingsPanelField<SettingsPanelAnyNodeEvents> {
+  return validateSettingsPanelField(value).length === 0
 }
 
-export function isSettingsRootCommitResult(value: unknown): value is SettingsRootCommitResult {
-  return validateSettingsRootCommitResult(value).length === 0
-}
-
-export function isSettingsDialogCommitResult(value: unknown): value is SettingsDialogCommitResult {
-  return validateSettingsDialogCommitResult(value).length === 0
-}
-
-export function isSettingsPopoverActionResult(
+export function isSettingsPanelTab(
   value: unknown
-): value is SettingsPopoverActionResult {
-  return validateSettingsPopoverActionResult(value).length === 0
+): value is SettingsPanelTab<SettingsPanelAnyNodeEvents> {
+  return validateSettingsPanelTab(value).length === 0
 }
 
-export function isSettingsPopoverCommitResult(
+export function isSettingsPanelNode(
   value: unknown
-): value is SettingsPopoverCommitResult {
-  return validateSettingsPopoverCommitResult(value).length === 0
+): value is SettingsPanelFieldContentNode<SettingsPanelAnyNodeEvents> {
+  return validateSettingsPanelNode(value).length === 0
 }
 
-export function isSettingsPopoverButtonResult(
+export function isSettingsPanelRootCommitResult(
   value: unknown
-): value is SettingsPopoverButtonResult {
-  return validateSettingsPopoverButtonResult(value).length === 0
+): value is SettingsPanelRootCommitResult {
+  return validateSettingsPanelRootCommitResult(value).length === 0
 }
 
-export function isSettingsRootButtonResult(value: unknown): value is SettingsRootButtonResult {
-  return validateSettingsRootButtonResult(value).length === 0
+export function isSettingsPanelDialogCommitResult(
+  value: unknown
+): value is SettingsPanelDialogCommitResult {
+  return validateSettingsPanelDialogCommitResult(value).length === 0
 }
 
-export function isSettingsDialogButtonResult(value: unknown): value is SettingsDialogButtonResult {
-  return validateSettingsDialogButtonResult(value).length === 0
+export function isSettingsPanelPopoverActionResult(
+  value: unknown
+): value is SettingsPanelPopoverActionResult {
+  return validateSettingsPanelPopoverActionResult(value).length === 0
 }
 
-export function isSettingsRootSubmitResult(value: unknown): value is SettingsRootSubmitResult {
-  return validateSettingsRootSubmitResult(value).length === 0
+export function isSettingsPanelPopoverCommitResult(
+  value: unknown
+): value is SettingsPanelPopoverCommitResult {
+  return validateSettingsPanelPopoverCommitResult(value).length === 0
 }
 
-export function isSettingsDialogSubmitResult(value: unknown): value is SettingsDialogSubmitResult {
-  return validateSettingsDialogSubmitResult(value).length === 0
+export function isSettingsPanelPopoverButtonResult(
+  value: unknown
+): value is SettingsPanelPopoverButtonResult {
+  return validateSettingsPanelPopoverButtonResult(value).length === 0
+}
+
+export function isSettingsPanelRootButtonResult(
+  value: unknown
+): value is SettingsPanelRootButtonResult {
+  return validateSettingsPanelRootButtonResult(value).length === 0
+}
+
+export function isSettingsPanelDialogButtonResult(
+  value: unknown
+): value is SettingsPanelDialogButtonResult {
+  return validateSettingsPanelDialogButtonResult(value).length === 0
+}
+
+export function isSettingsPanelRootSubmitResult(
+  value: unknown
+): value is SettingsPanelRootSubmitResult {
+  return validateSettingsPanelRootSubmitResult(value).length === 0
+}
+
+export function isSettingsPanelDialogSubmitResult(
+  value: unknown
+): value is SettingsPanelDialogSubmitResult {
+  return validateSettingsPanelDialogSubmitResult(value).length === 0
 }

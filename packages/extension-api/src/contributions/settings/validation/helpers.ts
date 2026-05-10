@@ -10,9 +10,9 @@ import {
   validateSerializableRecord
 } from '../../../shared/validation'
 import {
-  SETTINGS_DIALOG_SIZE_VALUES,
-  SETTINGS_FIELD_SPAN_VALUES,
-  type SettingsValueSchema,
+  SETTINGS_PANEL_DIALOG_SIZE_VALUES,
+  SETTINGS_PANEL_FIELD_SPAN_VALUES,
+  type SettingsPanelValueSchema,
   type SurfaceValidationState
 } from './constants'
 
@@ -51,7 +51,7 @@ export function validateRootModelBase(value: Record<string, unknown>): Validatio
     ...validateOptionalEnumString(
       value.size,
       '$.size',
-      SETTINGS_DIALOG_SIZE_VALUES,
+      SETTINGS_PANEL_DIALOG_SIZE_VALUES,
       'size must be one of the supported dialog sizes.'
     )
   ]
@@ -69,7 +69,7 @@ export function validateFieldSpan(value: unknown, path: string): ValidationIssue
   return validateRequiredEnumString(
     value,
     path,
-    SETTINGS_FIELD_SPAN_VALUES,
+    SETTINGS_PANEL_FIELD_SPAN_VALUES,
     'span must be 1, 2, 3, or full.'
   )
 }
@@ -120,7 +120,7 @@ export function validateStringArray(value: unknown, path: string): ValidationIss
 
 export function validateValueAgainstSchema(
   value: unknown,
-  schema: SettingsValueSchema,
+  schema: SettingsPanelValueSchema,
   path: string
 ): ValidationIssue[] {
   switch (schema) {

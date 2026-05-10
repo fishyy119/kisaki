@@ -1,58 +1,64 @@
 import type {
-  SettingsAnyNodeEvents,
-  SettingsButtonNode,
-  SettingsCheckboxNode,
-  SettingsDividerNode,
-  SettingsImageNode,
-  SettingsMultiSelectNode,
-  SettingsNoticeNode,
-  SettingsNumberInputNode,
-  SettingsRecordListNode,
-  SettingsSelectNode,
-  SettingsStatusNode,
-  SettingsStringListNode,
-  SettingsSwitchNode,
-  SettingsTableNode,
-  SettingsTextInputNode,
-  SettingsTextNode,
-  SettingsTextareaNode
+  SettingsPanelAnyNodeEvents,
+  SettingsPanelButtonNode,
+  SettingsPanelCheckboxNode,
+  SettingsPanelDividerNode,
+  SettingsPanelImageNode,
+  SettingsPanelMultiSelectNode,
+  SettingsPanelNoticeNode,
+  SettingsPanelNumberInputNode,
+  SettingsPanelRecordListNode,
+  SettingsPanelSelectNode,
+  SettingsPanelStatusNode,
+  SettingsPanelStringListNode,
+  SettingsPanelSwitchNode,
+  SettingsPanelTableNode,
+  SettingsPanelTextInputNode,
+  SettingsPanelTextNode,
+  SettingsPanelTextareaNode
 } from './nodes'
 
-export interface SettingsNodeFactory<TEvents extends SettingsAnyNodeEvents> {
+export interface SettingsPanelNodeFactory<TEvents extends SettingsPanelAnyNodeEvents> {
   switch(
-    node: Omit<SettingsSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
   checkbox(
-    node: Omit<SettingsCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
   select(
-    node: Omit<SettingsSelectNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
   multiSelect(
-    node: Omit<SettingsMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<
+      SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>,
+      'kind'
+    >
+  ): SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
   textInput(
-    node: Omit<SettingsTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
   textarea(
-    node: Omit<SettingsTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>
   numberInput(
-    node: Omit<SettingsNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<
+      SettingsPanelNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>,
+      'kind'
+    >
+  ): SettingsPanelNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>
   stringList(
-    node: Omit<SettingsStringListNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsStringListNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelStringListNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelStringListNode<TEvents['commitEvent'], TEvents['commitResult']>
   recordList(
-    node: Omit<SettingsRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>
   button(
-    node: Omit<SettingsButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>, 'kind'>
-  ): SettingsButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>
-  text(node: Omit<SettingsTextNode, 'kind'>): SettingsTextNode
-  notice(node: Omit<SettingsNoticeNode, 'kind'>): SettingsNoticeNode
-  status(node: Omit<SettingsStatusNode, 'kind'>): SettingsStatusNode
-  table(node: Omit<SettingsTableNode, 'kind'>): SettingsTableNode
-  image(node: Omit<SettingsImageNode, 'kind'>): SettingsImageNode
-  divider(node: Omit<SettingsDividerNode, 'kind'>): SettingsDividerNode
+    node: Omit<SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>, 'kind'>
+  ): SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>
+  text(node: Omit<SettingsPanelTextNode, 'kind'>): SettingsPanelTextNode
+  notice(node: Omit<SettingsPanelNoticeNode, 'kind'>): SettingsPanelNoticeNode
+  status(node: Omit<SettingsPanelStatusNode, 'kind'>): SettingsPanelStatusNode
+  table(node: Omit<SettingsPanelTableNode, 'kind'>): SettingsPanelTableNode
+  image(node: Omit<SettingsPanelImageNode, 'kind'>): SettingsPanelImageNode
+  divider(node: Omit<SettingsPanelDividerNode, 'kind'>): SettingsPanelDividerNode
 }
