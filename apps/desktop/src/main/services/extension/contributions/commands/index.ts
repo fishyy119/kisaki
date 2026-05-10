@@ -1,0 +1,1 @@
+export { ExtensionCommandContributionHost } from './manager'

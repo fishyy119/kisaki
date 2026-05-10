@@ -8,6 +8,21 @@ export interface ExtensionLogRequest extends ExtensionScopedRpcParams {
   args: readonly RpcValue[]
 }
 
+export type ExtensionRuntimeDiagnosticSeverity = 'info' | 'warning' | 'error'
+
+export interface ExtensionRuntimeDiagnostic {
+  severity: ExtensionRuntimeDiagnosticSeverity
+  source: string
+  code: string
+  message: string
+  details?: string
+  createdAt: string
+}
+
+export interface ExtensionRuntimeDiagnosticReportRequest extends ExtensionScopedRpcParams {
+  diagnostic: ExtensionRuntimeDiagnostic
+}
+
 export interface StorageGetRequest extends ExtensionScopedRpcParams {
   key: string
   fallback: SerializableValue
@@ -61,6 +76,10 @@ export interface SecretsListKeysResult {
 
 export type HostToMainRuntimeRpcRequestMap = {
   'runtime.logger.log': RpcMethodDefinition<ExtensionLogRequest, RpcNoPayload>
+  'runtime.diagnostics.report': RpcMethodDefinition<
+    ExtensionRuntimeDiagnosticReportRequest,
+    RpcNoPayload
+  >
   'runtime.storage.get': RpcMethodDefinition<StorageGetRequest, StorageGetResult>
   'runtime.storage.set': RpcMethodDefinition<StorageSetRequest, RpcNoPayload>
   'runtime.storage.delete': RpcMethodDefinition<StorageDeleteRequest, RpcNoPayload>

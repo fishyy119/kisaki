@@ -1,4 +1,4 @@
-import { defineExtension, defineSettingsContribution, kisaki } from '@kisaki/extension-sdk'
+import { defineExtension, defineSettingsPanel, kisaki } from '@kisaki/extension-sdk'
 
 const extensionName = `__EXTENSION_NAME__`
 
@@ -6,8 +6,8 @@ export default defineExtension({
   async activate(context) {
     context.logger.info(`${extensionName} activated.`)
 
-    context.contributions.settings.register(
-      defineSettingsContribution({
+    context.contributions.settingsPanels.register(
+      defineSettingsPanel({
         id: 'general',
         title: extensionName,
         dialogs: {

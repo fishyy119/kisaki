@@ -1,1 +1,0 @@
-export { ExtensionScraperContributionHost } from './manager'

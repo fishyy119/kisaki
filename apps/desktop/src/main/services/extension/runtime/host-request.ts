@@ -1,5 +1,6 @@
 import log from 'electron-log/main'
 import {
+  type ExtensionRuntimeDiagnostic,
   normalizeCapabilityError,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
@@ -20,6 +21,10 @@ export interface HostRequestOptions {
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
+  reportDiagnostic(
+    runtimeHandle: ExtensionRuntimeHandle,
+    diagnostic: ExtensionRuntimeDiagnostic
+  ): void
 }
 
 export function registerHostRequests(options: HostRequestOptions): void {
@@ -30,6 +35,16 @@ export function registerHostRequests(options: HostRequestOptions): void {
       return EMPTY_RPC_RESULT
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to write extension log.')
+    }
+  })
+
+  options.rpc.handleHostRequest('runtime.diagnostics.report', async (params) => {
+    try {
+      requireRuntimeHandle(options, params.runtimeHandle)
+      options.reportDiagnostic(params.runtimeHandle, params.diagnostic)
+      return EMPTY_RPC_RESULT
+    } catch (error) {
+      throw normalizeCapabilityError(error, 'Failed to report extension runtime diagnostic.')
     }
   })
 

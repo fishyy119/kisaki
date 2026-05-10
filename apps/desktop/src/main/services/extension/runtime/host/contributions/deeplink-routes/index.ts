@@ -1,0 +1,1 @@
+export { HostDeeplinkRouteContributions } from './manager'

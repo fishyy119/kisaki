@@ -1,0 +1,1 @@
+export { HostSettingsPanelContributions } from './manager'

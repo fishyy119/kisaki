@@ -1,0 +1,1 @@
+export { ExtensionEntityMenuContributionHost } from './manager'

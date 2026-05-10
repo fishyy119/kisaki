@@ -1,0 +1,1 @@
+export { ExtensionSettingsPanelContributionHost } from './manager'

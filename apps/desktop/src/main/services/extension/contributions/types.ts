@@ -7,8 +7,8 @@ import type {
   RpcResult
 } from '@kisaki/extension-api'
 import type {
-  ExtensionMenuRefreshRequestedEvent,
-  ExtensionSettingsRefreshRequestedEvent
+  ExtensionEntityMenuRefreshRequestedEvent,
+  ExtensionSettingsPanelRefreshRequestedEvent
 } from '@shared/extension'
 import type { DeeplinkService } from '@main/services/deeplink'
 import type { CommandService } from '@main/services/command'
@@ -20,8 +20,8 @@ export interface ExtensionContributionHostOptions {
   deeplink?: DeeplinkService
   scraper?: ScraperService
   onDidChange?: () => void
-  onMenusRefreshRequested?: (event: ExtensionMenuRefreshRequestedEvent) => void
-  onSettingsRefreshRequested?: (event: ExtensionSettingsRefreshRequestedEvent) => void
+  onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
+  onSettingsPanelsRefreshRequested?: (event: ExtensionSettingsPanelRefreshRequestedEvent) => void
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   requestHost<K extends MainToHostRpcMethod>(
     method: K,

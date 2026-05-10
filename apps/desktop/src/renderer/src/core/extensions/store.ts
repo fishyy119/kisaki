@@ -4,11 +4,11 @@ import type { ExtensionContributionSnapshot } from '@shared/extension'
 
 function createEmptySnapshot(): ExtensionContributionSnapshot {
   return {
-    menus: [],
-    settings: [],
-    themes: [],
-    deeplinks: [],
-    scrapers: []
+    entityMenus: [],
+    settingsPanels: [],
+    scraperProviders: [],
+    deeplinkRoutes: [],
+    themes: []
   }
 }
 
@@ -18,11 +18,11 @@ let refreshPromise: Promise<ExtensionContributionSnapshot> | null = null
 
 export const extensionContributionStore = {
   snapshot,
-  menus: computed(() => snapshot.value.menus),
-  settings: computed(() => snapshot.value.settings),
-  themes: computed(() => snapshot.value.themes),
-  deeplinks: computed(() => snapshot.value.deeplinks),
-  scrapers: computed(() => snapshot.value.scrapers)
+  entityMenus: computed(() => snapshot.value.entityMenus),
+  settingsPanels: computed(() => snapshot.value.settingsPanels),
+  scraperProviders: computed(() => snapshot.value.scraperProviders),
+  deeplinkRoutes: computed(() => snapshot.value.deeplinkRoutes),
+  themes: computed(() => snapshot.value.themes)
 }
 
 export function setupExtensionContributionStore(): void {

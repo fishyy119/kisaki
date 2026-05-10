@@ -1,46 +1,50 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import type {
-  CharacterScraperProvider,
-  CompanyScraperProvider,
+  CommandRegistration,
   CommandContribution,
-  DeeplinkContribution,
-  DeeplinkRegistrationHandle,
+  DeeplinkRouteContribution,
+  DeeplinkRouteRegistration,
   Disposable,
   DisposableStore,
+  EntityMenuContribution,
+  EntityMenuDomain,
+  EntityMenuInputFor,
+  EntityMenuRegistration,
+  EntityMenuScope,
   ExtensionContext,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionEventTopic,
+  ExtensionRuntimeDiagnostic,
   ExtensionRuntimeHandle,
-  GameScraperProvider,
   HostEventListener,
   HostEventTopic,
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
   KisakiApi,
-  MenuContribution,
-  MenuDomain,
-  MenuInputFor,
-  MenuRegistration,
-  MenuScope,
-  PersonScraperProvider,
+  ScraperMediaType,
+  ScraperProviderRegistration,
   RpcParams,
   RpcResult,
-  SettingsContribution,
-  SettingsRegistration,
-  ThemeContribution
+  SettingsPanelContribution,
+  SettingsPanelRegistration,
+  ThemeContribution,
+  ThemeRegistration
 } from '@kisaki/extension-api'
 import { isExtensionEventTopic } from '@kisaki/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostCommandContributions } from '../contributions/commands'
-import { HostDeeplinkContributions } from '../contributions/deeplinks'
-import { HostMenuContributions } from '../contributions/menus'
-import { HostScraperContributions, MAIN_TO_HOST_SCRAPER_RPC } from '../contributions/scrapers'
-import { HostSettingsContributions } from '../contributions/settings'
+import { HostDeeplinkRouteContributions } from '../contributions/deeplink-routes'
+import { HostEntityMenuContributions } from '../contributions/entity-menus'
+import {
+  HostScraperProviderContributions,
+  MAIN_TO_HOST_SCRAPER_RPC
+} from '../contributions/scraper-providers'
+import { HostSettingsPanelContributions } from '../contributions/settings-panels'
 import { HostThemeContributions } from '../contributions/themes'
-import type { HostContributionScope } from '../contributions/types'
+import type { HostContributionDiagnosticInput, HostContributionScope } from '../contributions/types'
 import { createDisposable, createDisposableStore } from './disposables'
 import {
   createKisakiApi,
@@ -50,11 +54,11 @@ import {
 import { createExtensionLogger } from './logger'
 import { resolveInsideExtension } from './utils/paths'
 import {
-  createDeeplinkRegistrar,
+  createDeeplinkRouteRegistrar,
   createCommandRegistrar,
-  createMenuRegistrar,
-  createScraperRegistrar,
-  createSettingsRegistrar,
+  createEntityMenuRegistrar,
+  createScraperProviderRegistrar,
+  createSettingsPanelRegistrar,
   createThemeRegistrar
 } from './registrars'
 import { toSerializableRecord } from './utils/serialization'
@@ -65,10 +69,12 @@ import type {
   ActiveExtensionScope,
   ExtensionEventListenerRecord,
   ExtensionSdkBridge,
+  ScraperProviderFor,
   HostEventSubscriptionRecord
 } from './types'
 import type { ExtensionContextOptions } from './types'
 
+const CONTRIBUTION_SYNC_REQUEST_TIMEOUT_MS = 10_000
 const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({ timeoutMs: 5_000 })
 
 type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
@@ -83,10 +89,10 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
 export class ExtensionHostSdkBridge {
   private readonly executionScope = new AsyncLocalStorage<ActiveExtensionScope>()
   private readonly bridge: ExtensionSdkBridge
-  private readonly menus: HostMenuContributions
-  private readonly settings: HostSettingsContributions
-  private readonly scrapers: HostScraperContributions
-  private readonly deeplinks: HostDeeplinkContributions
+  private readonly entityMenus: HostEntityMenuContributions
+  private readonly settingsPanels: HostSettingsPanelContributions
+  private readonly scraperProviders: HostScraperProviderContributions
+  private readonly deeplinkRoutes: HostDeeplinkRouteContributions
   private readonly themes: HostThemeContributions
   private readonly commands: HostCommandContributions
   private readonly hostEventSubscriptions = new Map<string, HostEventSubscriptionRecord>()
@@ -106,7 +112,8 @@ export class ExtensionHostSdkBridge {
     const contributionOptions = {
       registry: this.registry,
       rpc: this.rpc,
-      getRequestOptions: (scope: HostContributionScope) => this.getRequestOptions(scope),
+      getRequestOptions: (scope: HostContributionScope) =>
+        this.getContributionRequestOptions(scope),
       getCleanupRequestOptions: () => CONTRIBUTION_CLEANUP_REQUEST_OPTIONS,
       runInExtensionContext: <T>(
         runtimeOrScope: LoadedExtensionRuntime | HostContributionScope,
@@ -114,12 +121,18 @@ export class ExtensionHostSdkBridge {
       ) => this.runInExtensionContext(runtimeOrScope, callback),
       trackMainRequest: (scope: HostContributionScope, request: Promise<unknown>) => {
         this.trackMainRequest(scope, request)
+      },
+      reportDiagnostic: (
+        scope: HostContributionScope,
+        diagnostic: HostContributionDiagnosticInput
+      ) => {
+        this.reportRuntimeDiagnostic(scope, diagnostic)
       }
     }
-    this.menus = new HostMenuContributions(contributionOptions)
-    this.settings = new HostSettingsContributions(contributionOptions)
-    this.scrapers = new HostScraperContributions(contributionOptions)
-    this.deeplinks = new HostDeeplinkContributions(contributionOptions)
+    this.entityMenus = new HostEntityMenuContributions(contributionOptions)
+    this.settingsPanels = new HostSettingsPanelContributions(contributionOptions)
+    this.scraperProviders = new HostScraperProviderContributions(contributionOptions)
+    this.deeplinkRoutes = new HostDeeplinkRouteContributions(contributionOptions)
     this.themes = new HostThemeContributions(contributionOptions)
     this.commands = new HostCommandContributions(contributionOptions)
     this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
@@ -133,10 +146,10 @@ export class ExtensionHostSdkBridge {
 
   async dispose(): Promise<void> {
     this.mainEventCleanup()
-    this.menus.releaseAll()
-    this.settings.releaseAll()
-    await this.scrapers.releaseAll()
-    this.deeplinks.releaseAll()
+    this.entityMenus.releaseAll()
+    this.settingsPanels.releaseAll()
+    await this.scraperProviders.releaseAll()
+    this.deeplinkRoutes.releaseAll()
     this.themes.releaseAll()
     this.commands.releaseAll()
     this.pendingMainRequests.clear()
@@ -147,33 +160,35 @@ export class ExtensionHostSdkBridge {
   }
 
   registerContributionRpcHandlers(): void {
-    this.rpc.handle('contributions.menus.resolve', (params, context) =>
-      this.menus.resolve(params, context.signal)
+    this.rpc.handle('contributions.entityMenus.resolve', (params, context) =>
+      this.entityMenus.resolve(params, context.signal)
     )
-    this.rpc.handle('contributions.menus.invoke', (params, context) =>
-      this.menus.invoke(params, context.signal)
+    this.rpc.handle('contributions.entityMenus.invoke', (params, context) =>
+      this.entityMenus.invoke(params, context.signal)
     )
-    this.rpc.handle('contributions.menus.release', (params) => {
-      this.menus.release(params)
+    this.rpc.handle('contributions.entityMenus.release', (params) => {
+      this.entityMenus.release(params)
       return {}
     })
-    this.rpc.handle('contributions.settings.open', (params, context) =>
-      this.settings.open(params, context.signal)
+    this.rpc.handle('contributions.settingsPanels.open', (params, context) =>
+      this.settingsPanels.open(params, context.signal)
     )
-    this.rpc.handle('contributions.settings.refresh', (params, context) =>
-      this.settings.refresh(params, context.signal)
+    this.rpc.handle('contributions.settingsPanels.refresh', (params, context) =>
+      this.settingsPanels.refresh(params, context.signal)
     )
-    this.rpc.handle('contributions.settings.submit', (params, context) =>
-      this.settings.submit(params, context.signal)
+    this.rpc.handle('contributions.settingsPanels.submit', (params, context) =>
+      this.settingsPanels.submit(params, context.signal)
     )
-    this.rpc.handle('contributions.settings.invoke', (params, context) =>
-      this.settings.invoke(params, context.signal)
+    this.rpc.handle('contributions.settingsPanels.invoke', (params, context) =>
+      this.settingsPanels.invoke(params, context.signal)
     )
-    this.rpc.handle('contributions.settings.release', (params) => {
-      this.settings.release(params)
+    this.rpc.handle('contributions.settingsPanels.release', (params) => {
+      this.settingsPanels.release(params)
       return {}
     })
-    this.rpc.handle('contributions.deeplinks.handle', (params) => this.deeplinks.handle(params))
+    this.rpc.handle('contributions.deeplinkRoutes.handle', (params) =>
+      this.deeplinkRoutes.handle(params)
+    )
     this.rpc.handle('contributions.commands.execute', (params, context) =>
       this.commands.execute(params, context.signal)
     )
@@ -181,63 +196,38 @@ export class ExtensionHostSdkBridge {
   }
 
   private registerScraperRpcHandlers(): void {
-    const games = MAIN_TO_HOST_SCRAPER_RPC.games.methods
-    this.rpc.handle(games.search, (params) => this.scrapers.searchGames(params))
-    this.rpc.handle(games.resolve, (params) => this.scrapers.resolveGame(params))
-    this.rpc.handle(games.open, (params) => this.scrapers.openGameSession(params))
-    this.rpc.handle(games.get, (params) => this.scrapers.getGameSession(params))
-    this.rpc.handle(games.close, async (params) => {
-      await this.scrapers.closeGameSession(params)
-      return {}
-    })
-
-    const persons = MAIN_TO_HOST_SCRAPER_RPC.persons.methods
-    this.rpc.handle(persons.search, (params) => this.scrapers.searchPersons(params))
-    this.rpc.handle(persons.resolve, (params) => this.scrapers.resolvePerson(params))
-    this.rpc.handle(persons.open, (params) => this.scrapers.openPersonSession(params))
-    this.rpc.handle(persons.get, (params) => this.scrapers.getPersonSession(params))
-    this.rpc.handle(persons.close, async (params) => {
-      await this.scrapers.closePersonSession(params)
-      return {}
-    })
-
-    const companies = MAIN_TO_HOST_SCRAPER_RPC.companies.methods
-    this.rpc.handle(companies.search, (params) => this.scrapers.searchCompanies(params))
-    this.rpc.handle(companies.resolve, (params) => this.scrapers.resolveCompany(params))
-    this.rpc.handle(companies.open, (params) => this.scrapers.openCompanySession(params))
-    this.rpc.handle(companies.get, (params) => this.scrapers.getCompanySession(params))
-    this.rpc.handle(companies.close, async (params) => {
-      await this.scrapers.closeCompanySession(params)
-      return {}
-    })
-
-    const characters = MAIN_TO_HOST_SCRAPER_RPC.characters.methods
-    this.rpc.handle(characters.search, (params) => this.scrapers.searchCharacters(params))
-    this.rpc.handle(characters.resolve, (params) => this.scrapers.resolveCharacter(params))
-    this.rpc.handle(characters.open, (params) => this.scrapers.openCharacterSession(params))
-    this.rpc.handle(characters.get, (params) => this.scrapers.getCharacterSession(params))
-    this.rpc.handle(characters.close, async (params) => {
-      await this.scrapers.closeCharacterSession(params)
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.search, (params) =>
+      this.scraperProviders.search(params)
+    )
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.resolve, (params) =>
+      this.scraperProviders.resolve(params)
+    )
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.open, (params) =>
+      this.scraperProviders.openSession(params)
+    )
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.get, (params) =>
+      this.scraperProviders.getSession(params)
+    )
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.close, async (params) => {
+      await this.scraperProviders.closeSession(params)
       return {}
     })
   }
 
   async flushRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
-    while (true) {
-      const pending = this.pendingMainRequests.get(runtimeHandle)
-      if (!pending || pending.size === 0) {
-        return
-      }
-
-      await Promise.all([...pending])
+    const pending = this.pendingMainRequests.get(runtimeHandle)
+    if (!pending || pending.size === 0) {
+      return
     }
+
+    await Promise.allSettled([...pending])
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
-    this.menus.releaseRuntime(runtimeHandle)
-    this.settings.releaseRuntime(runtimeHandle)
-    await this.scrapers.releaseRuntime(runtimeHandle)
-    this.deeplinks.releaseRuntime(runtimeHandle)
+    this.entityMenus.releaseRuntime(runtimeHandle)
+    this.settingsPanels.releaseRuntime(runtimeHandle)
+    await this.scraperProviders.releaseRuntime(runtimeHandle)
+    this.deeplinkRoutes.releaseRuntime(runtimeHandle)
     this.themes.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
     await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
@@ -267,17 +257,14 @@ export class ExtensionHostSdkBridge {
         abortSignal: options.abortSignal,
         contributions: {
           commands: createCommandRegistrar(this.bridge, subscriptions, scope),
-          menus: createMenuRegistrar(this.bridge, subscriptions, scope),
-          settings: createSettingsRegistrar(this.bridge, subscriptions, scope),
-          scrapers: createScraperRegistrar(this.bridge, subscriptions, scope),
-          deeplinks: createDeeplinkRegistrar(this.bridge, subscriptions, scope),
+          entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions, scope),
+          settingsPanels: createSettingsPanelRegistrar(this.bridge, subscriptions, scope),
+          scraperProviders: createScraperProviderRegistrar(this.bridge, subscriptions, scope),
+          deeplinkRoutes: createDeeplinkRouteRegistrar(this.bridge, subscriptions, scope),
           themes: createThemeRegistrar(this.bridge, subscriptions, scope)
         },
         asAbsolutePath: (relativePath: string) =>
-          this.bridge.asAbsolutePath(options.extension.extensionPath, relativePath),
-        registerDisposable: (disposable: Disposable) => {
-          subscriptions.add(disposable)
-        }
+          this.bridge.asAbsolutePath(options.extension.extensionPath, relativePath)
       },
       subscriptions,
       scope
@@ -316,18 +303,14 @@ export class ExtensionHostSdkBridge {
           getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
         }),
       registerCommand: (scope, command) => this.registerCommand(scope, command),
-      registerMenu: (scope, domain, menuScope, contribution) =>
-        this.registerMenu(scope, domain, menuScope, contribution),
-      registerSettings: (scope, contribution) => this.registerSettings(scope, contribution),
-      registerGameScraperProvider: (scope, provider) =>
-        this.registerGameScraperProvider(scope, provider),
-      registerPersonScraperProvider: (scope, provider) =>
-        this.registerPersonScraperProvider(scope, provider),
-      registerCompanyScraperProvider: (scope, provider) =>
-        this.registerCompanyScraperProvider(scope, provider),
-      registerCharacterScraperProvider: (scope, provider) =>
-        this.registerCharacterScraperProvider(scope, provider),
-      registerDeeplink: (scope, contribution) => this.registerDeeplink(scope, contribution),
+      registerEntityMenu: (scope, domain, menuScope, contribution) =>
+        this.registerEntityMenu(scope, domain, menuScope, contribution),
+      registerSettingsPanel: (scope, contribution) =>
+        this.registerSettingsPanel(scope, contribution),
+      registerScraperProvider: (scope, mediaType, provider) =>
+        this.registerScraperProvider(scope, mediaType, provider),
+      registerDeeplinkRoute: (scope, contribution) =>
+        this.registerDeeplinkRoute(scope, contribution),
       registerTheme: (scope, theme) => this.registerTheme(scope, theme),
       asAbsolutePath: (extensionPath, relativePath) =>
         resolveInsideExtension(extensionPath, relativePath)
@@ -372,65 +355,48 @@ export class ExtensionHostSdkBridge {
     )
   }
 
-  private async registerCommand(
+  private registerCommand(
     scope: ActiveExtensionScope,
     command: CommandContribution
-  ): Promise<Disposable> {
+  ): CommandRegistration {
     return this.commands.register(scope, command)
   }
 
-  private registerMenu<TDomain extends MenuDomain, TScope extends MenuScope<TDomain>>(
+  private registerEntityMenu<
+    TDomain extends EntityMenuDomain,
+    TScope extends EntityMenuScope<TDomain>
+  >(
     scope: ActiveExtensionScope,
     domain: TDomain,
     menuScope: TScope,
-    contribution: MenuContribution<MenuInputFor<TDomain, TScope>>
-  ): MenuRegistration {
-    return this.menus.register(scope, domain, menuScope, contribution)
+    contribution: EntityMenuContribution<EntityMenuInputFor<TDomain, TScope>>
+  ): EntityMenuRegistration {
+    return this.entityMenus.register(scope, domain, menuScope, contribution)
   }
 
-  private registerSettings(
+  private registerSettingsPanel(
     scope: ActiveExtensionScope,
-    contribution: SettingsContribution<any, any>
-  ): SettingsRegistration {
-    return this.settings.register(scope, contribution)
+    contribution: SettingsPanelContribution<any, any>
+  ): SettingsPanelRegistration {
+    return this.settingsPanels.register(scope, contribution)
   }
 
-  private registerGameScraperProvider(
+  private registerScraperProvider<TMediaType extends ScraperMediaType>(
     scope: ActiveExtensionScope,
-    provider: GameScraperProvider
-  ): Disposable {
-    return this.scrapers.registerGameProvider(scope, provider)
+    mediaType: TMediaType,
+    provider: ScraperProviderFor<TMediaType>
+  ): ScraperProviderRegistration {
+    return this.scraperProviders.registerScraperProvider(scope, mediaType, provider)
   }
 
-  private registerPersonScraperProvider(
+  private registerDeeplinkRoute(
     scope: ActiveExtensionScope,
-    provider: PersonScraperProvider
-  ): Disposable {
-    return this.scrapers.registerPersonProvider(scope, provider)
+    contribution: DeeplinkRouteContribution
+  ): DeeplinkRouteRegistration {
+    return this.deeplinkRoutes.register(scope, contribution)
   }
 
-  private registerCompanyScraperProvider(
-    scope: ActiveExtensionScope,
-    provider: CompanyScraperProvider
-  ): Disposable {
-    return this.scrapers.registerCompanyProvider(scope, provider)
-  }
-
-  private registerCharacterScraperProvider(
-    scope: ActiveExtensionScope,
-    provider: CharacterScraperProvider
-  ): Disposable {
-    return this.scrapers.registerCharacterProvider(scope, provider)
-  }
-
-  private registerDeeplink(
-    scope: ActiveExtensionScope,
-    contribution: DeeplinkContribution
-  ): DeeplinkRegistrationHandle {
-    return this.deeplinks.register(scope, contribution)
-  }
-
-  private registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): Disposable {
+  private registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): ThemeRegistration {
     return this.themes.register(scope, theme)
   }
 
@@ -656,6 +622,16 @@ export class ExtensionHostSdkBridge {
     return signal ? { signal } : undefined
   }
 
+  private getContributionRequestOptions(scope: ActiveExtensionScope): {
+    timeoutMs: number
+    signal?: AbortSignal
+  } {
+    const signal = this.registry.getByRuntimeHandle(scope.runtimeHandle)?.abortController.signal
+    return signal
+      ? { timeoutMs: CONTRIBUTION_SYNC_REQUEST_TIMEOUT_MS, signal }
+      : { timeoutMs: CONTRIBUTION_SYNC_REQUEST_TIMEOUT_MS }
+  }
+
   private trackMainRequest(scope: HostContributionScope, request: Promise<unknown>): void {
     let pending = this.pendingMainRequests.get(scope.runtimeHandle)
     if (!pending) {
@@ -665,6 +641,12 @@ export class ExtensionHostSdkBridge {
 
     const tracked = Promise.resolve(request)
       .then(() => undefined)
+      .catch((error) => {
+        console.warn(
+          `[ExtensionHost][${scope.extensionId}] Failed to synchronize contribution registry:`,
+          error
+        )
+      })
       .finally(() => {
         pending?.delete(tracked)
         if (pending?.size === 0) {
@@ -673,12 +655,30 @@ export class ExtensionHostSdkBridge {
       })
 
     pending.add(tracked)
-    void tracked.catch((error) => {
-      console.warn(
-        `[ExtensionHost][${scope.extensionId}] Failed to synchronize contribution registry:`,
-        error
+  }
+
+  private reportRuntimeDiagnostic(
+    scope: HostContributionScope,
+    diagnostic: Omit<ExtensionRuntimeDiagnostic, 'createdAt'>
+  ): void {
+    void this.rpc
+      .requestMain(
+        'runtime.diagnostics.report',
+        {
+          runtimeHandle: scope.runtimeHandle,
+          diagnostic: {
+            ...diagnostic,
+            createdAt: new Date().toISOString()
+          }
+        },
+        this.getRequestOptions(scope)
       )
-    })
+      .catch((error) => {
+        console.warn(
+          `[ExtensionHost][${scope.extensionId}] Failed to report runtime diagnostic:`,
+          error
+        )
+      })
   }
 }
 

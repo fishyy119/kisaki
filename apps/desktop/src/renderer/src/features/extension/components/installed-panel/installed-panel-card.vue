@@ -10,7 +10,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { ExtensionSettingsDialog } from '@renderer/components/extension/settings'
+import { ExtensionSettingsPanelDialog } from '@renderer/components/extension/settings-panels'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -40,7 +40,7 @@ const settingsOpen = ref(false)
 
 const settingsContribution = computed(
   () =>
-    extensionContributionStore.settings.value.find(
+    extensionContributionStore.settingsPanels.value.find(
       (contribution) => contribution.extensionId === props.extension.id
     ) ?? null
 )
@@ -158,7 +158,7 @@ async function handleUpdate() {
   }
 }
 
-function openSettings() {
+function openSettingsPanel() {
   if (!settingsContribution.value) {
     return
   }
@@ -294,7 +294,7 @@ function openSettings() {
             <Button
               size="icon-sm"
               variant="ghost"
-              @click="openSettings"
+              @click="openSettingsPanel"
             >
               <Icon
                 icon="icon-[mdi--cog-outline]"
@@ -330,7 +330,7 @@ function openSettings() {
     </div>
 
     <!-- Settings Dialog -->
-    <ExtensionSettingsDialog
+    <ExtensionSettingsPanelDialog
       v-if="settingsOpen && settingsContribution"
       v-model:open="settingsOpen"
       :contribution="settingsContribution"

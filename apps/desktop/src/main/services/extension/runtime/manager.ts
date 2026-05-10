@@ -8,6 +8,7 @@ import {
   EXTENSION_RPC_PROTOCOL_VERSION,
   RpcTimeoutError,
   type ExtensionRuntimeChangeCause,
+  type ExtensionRuntimeDiagnostic,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
   type ExtensionUnloadReason,
@@ -29,6 +30,7 @@ import {
   createRuntimeFailureState,
   createRuntimeRunningState,
   createRuntimeStoppedState,
+  appendRuntimeDiagnostic,
   isSameRuntimeMetadata,
   mapLoadedMetadata,
   toChangeCause,
@@ -46,6 +48,7 @@ export interface RuntimeManagerOptions {
   hostModulePath: string
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
+  onRuntimeStateChanged?(extensionId: string, state: ExtensionRuntimeState): void
 }
 
 export interface RuntimeReconcileOptions {
@@ -243,6 +246,7 @@ export class RuntimeManager {
     const generation = this.nextGeneration()
     const runtimeHandle = randomUUID()
     this.runtimeHandles.set(runtimeHandle, extension)
+    this.setRuntimeState(extension.id, createRuntimeRunningState())
 
     try {
       await this.requestHostLifecycle(
@@ -330,7 +334,9 @@ export class RuntimeManager {
       secrets: this.secrets,
       capabilities: this.options.capabilities,
       contributions: this.options.contributions,
-      resolveRuntimeHandle: (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
+      resolveRuntimeHandle: (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null,
+      reportDiagnostic: (runtimeHandle, diagnostic) =>
+        this.recordRuntimeDiagnostic(runtimeHandle, diagnostic)
     })
 
     await controller.start((message) => rpc.onMessage(message))
@@ -590,11 +596,14 @@ export class RuntimeManager {
   }
 
   private recordRuntimeRunning(extensionId: string): void {
-    this.runtimeStates.set(extensionId, createRuntimeRunningState())
+    this.setRuntimeState(
+      extensionId,
+      createRuntimeRunningState(this.runtimeStates.get(extensionId)?.diagnostics ?? [])
+    )
   }
 
   private recordRuntimeFailure(extensionId: string, error: string): void {
-    this.runtimeStates.set(extensionId, createRuntimeFailureState(error))
+    this.setRuntimeState(extensionId, createRuntimeFailureState(error))
   }
 
   private recordHostStartupFailure(error: unknown): void {
@@ -609,7 +618,28 @@ export class RuntimeManager {
   }
 
   private recordRuntimeStopped(extensionId: string): void {
-    this.runtimeStates.set(extensionId, createRuntimeStoppedState())
+    this.setRuntimeState(extensionId, createRuntimeStoppedState())
+  }
+
+  private recordRuntimeDiagnostic(
+    runtimeHandle: ExtensionRuntimeHandle,
+    diagnostic: ExtensionRuntimeDiagnostic
+  ): void {
+    const extension = this.runtimeHandles.get(runtimeHandle)
+    if (!extension) {
+      log.warn(
+        `[RuntimeManager] Ignoring diagnostic for inactive runtime handle "${runtimeHandle}"`
+      )
+      return
+    }
+
+    const current = this.runtimeStates.get(extension.id) ?? createRuntimeRunningState()
+    this.setRuntimeState(extension.id, appendRuntimeDiagnostic(current, diagnostic))
+  }
+
+  private setRuntimeState(extensionId: string, state: ExtensionRuntimeState): void {
+    this.runtimeStates.set(extensionId, state)
+    this.options.onRuntimeStateChanged?.(extensionId, state)
   }
 }
 

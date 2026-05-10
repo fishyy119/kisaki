@@ -57,6 +57,12 @@ export type EntityMenuRegistrationInfo = {
   }[EntityMenuScope<TDomain>]
 }[EntityMenuDomain]
 
+export interface EntityMenuScopedRpcParams extends ExtensionScopedRpcParams {
+  contributionId: string
+  domain: EntityMenuDomain
+  scope: EntityMenuRegistrationInfo['scope']
+}
+
 export interface SettingsPanelRegistrationInfo {
   id: string
   title: string
@@ -108,7 +114,7 @@ export interface CommandUnregisterRequest extends ExtensionScopedRpcParams {
   commandId: string
 }
 
-export interface EntityMenuResolveRequest extends ContributionScopedRpcParams {
+export type EntityMenuResolveRequest = EntityMenuScopedRpcParams & {
   sessionId: string
   input: EntityMenuInput
 }
@@ -117,7 +123,7 @@ export interface EntityMenuResolveResponse {
   nodes: readonly SerializableRecord[]
 }
 
-export interface EntityMenuInvokeRequest extends ContributionScopedRpcParams {
+export type EntityMenuInvokeRequest = EntityMenuScopedRpcParams & {
   sessionId: string
   nodePath: readonly string[]
   input: EntityMenuInput
@@ -128,8 +134,7 @@ export interface EntityMenuReleaseRequest {
   sessionId: string
 }
 
-export interface EntityMenuRefreshRequestedNotification extends ExtensionScopedRpcParams {
-  contributionId: string
+export type EntityMenuRefreshRequestedNotification = EntityMenuScopedRpcParams & {
   reason?: EntityMenuRefreshReason
 }
 
@@ -517,7 +522,7 @@ export type HostToMainContributionRpcRequestMap = {
     RpcNoPayload
   >
   'contributions.entityMenus.unregister': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { contributionId: string },
+    EntityMenuScopedRpcParams,
     RpcNoPayload
   >
   'contributions.entityMenus.refreshRequested': RpcMethodDefinition<

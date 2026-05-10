@@ -1,0 +1,1 @@
+export { HostThemeContributions } from './manager'

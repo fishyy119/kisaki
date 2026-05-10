@@ -15,7 +15,7 @@ It contains:
 - `ExtensionContext` and `KisakiApi` contracts
 - capability contracts for host APIs such as library, network, notify, events, commands, and runtime
 - library DTOs and relation command/query contracts
-- controlled contribution models for menus, settings panels, scrapers, deeplinks, commands, and themes
+- controlled contribution models for entity menus, settings panels, scraper providers, deeplink routes, commands, and themes
 - RPC contracts split by runtime context services, host capabilities, extension contributions, and lifecycle transport
 
 Package boundary:

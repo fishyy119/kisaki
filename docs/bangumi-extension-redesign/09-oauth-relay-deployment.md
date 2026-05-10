@@ -612,7 +612,7 @@ function toErrorMessage(error: unknown): string {
 当前 Bangumi 内置扩展 manifest id 是 `builtin.bangumi`。扩展 deeplink contribution 只注册扩展自己的局部 callback path：
 
 ```ts
-context.contributions.deeplinks.register({
+context.contributions.deeplinkRoutes.register({
   id: 'oauth-callback',
   path: 'oauth-callback',
   async handle(input) {

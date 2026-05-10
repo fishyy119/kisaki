@@ -23,7 +23,7 @@ import {
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionMenuItems } from '@renderer/components/extension/menus'
+import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections, collectionGameLinks, games } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
@@ -285,7 +285,7 @@ async function handleSetFavorite(isFavorite: boolean) {
     批量更新元数据
   </ContextMenuItem>
 
-  <ExtensionMenuItems
+  <ExtensionEntityMenuItems
     :input="extensionMenuInput"
     :components="contextMenuComponents"
     :enabled="props.enabled"

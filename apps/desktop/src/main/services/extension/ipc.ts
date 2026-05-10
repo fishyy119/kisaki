@@ -2,15 +2,15 @@ import { pathToFileURL } from 'node:url'
 import type { IpcService } from '@main/services/ipc'
 import type {
   ExtensionCatalogInfo,
-  ExtensionMenuInvokeRequest,
-  ExtensionMenuReleaseRequest,
-  ExtensionMenuResolveRequest,
+  ExtensionEntityMenuInvokeRequest,
+  ExtensionEntityMenuReleaseRequest,
+  ExtensionEntityMenuResolveRequest,
   ExtensionRegistryEntry,
-  ExtensionSettingsInvokeRequest,
-  ExtensionSettingsOpenRequest,
-  ExtensionSettingsRefreshRequest,
-  ExtensionSettingsReleaseRequest,
-  ExtensionSettingsSubmitRequest,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelOpenRequest,
+  ExtensionSettingsPanelRefreshRequest,
+  ExtensionSettingsPanelReleaseRequest,
+  ExtensionSettingsPanelSubmitRequest,
   ExtensionUpdateInfo as SharedExtensionUpdateInfo
 } from '@shared/extension'
 import type {
@@ -132,51 +132,51 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:get-settings-contributions', () => {
+  ipc.handle('extension:get-settings-panel-contributions', () => {
     try {
       return {
         success: true,
-        data: service.getSettingsContributions()
+        data: service.getSettingsPanelContributions()
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:resolve-menu', async (_, request) => {
+  ipc.handle('extension:resolve-entity-menu', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.resolveMenu(requireMenuResolveRequest(request))
+        data: await service.resolveEntityMenu(requireMenuResolveRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:invoke-menu', async (_, request) => {
+  ipc.handle('extension:invoke-entity-menu', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.invokeMenuCallback(requireMenuInvokeRequest(request))
+        data: await service.invokeEntityMenuCallback(requireMenuInvokeRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:release-menu', async (_, request) => {
+  ipc.handle('extension:release-entity-menu', async (_, request) => {
     try {
-      await service.releaseMenu(requireMenuReleaseRequest(request))
+      await service.releaseEntityMenu(requireMenuReleaseRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:open-settings', async (_, request) => {
+  ipc.handle('extension:open-settings-panel', async (_, request) => {
     try {
-      const data = await service.openSettings(requireSettingsOpenRequest(request))
+      const data = await service.openSettingsPanel(requireSettingsOpenRequest(request))
       switch (data.surface) {
         case 'root':
           return { success: true, data }
@@ -190,9 +190,9 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:refresh-settings', async (_, request) => {
+  ipc.handle('extension:refresh-settings-panel', async (_, request) => {
     try {
-      const data = await service.refreshSettings(requireSettingsRefreshRequest(request))
+      const data = await service.refreshSettingsPanel(requireSettingsRefreshRequest(request))
       switch (data.surface) {
         case 'root':
           return { success: true, data }
@@ -208,31 +208,31 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:submit-settings', async (_, request) => {
+  ipc.handle('extension:submit-settings-panel', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.submitSettings(requireSettingsSubmitRequest(request))
+        data: await service.submitSettingsPanel(requireSettingsSubmitRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:invoke-settings-node', async (_, request) => {
+  ipc.handle('extension:invoke-settings-panel-node', async (_, request) => {
     try {
       return {
         success: true,
-        data: await service.invokeSettingsNode(requireSettingsInvokeRequest(request))
+        data: await service.invokeSettingsPanelNode(requireSettingsInvokeRequest(request))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:release-settings', async (_, request) => {
+  ipc.handle('extension:release-settings-panel', async (_, request) => {
     try {
-      await service.releaseSettings(requireSettingsReleaseRequest(request))
+      await service.releaseSettingsPanel(requireSettingsReleaseRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -292,6 +292,8 @@ function toExtensionCatalogInfo(
   const runtimeStatus =
     entry.enabled && entry.status === 'ready' ? (runtimeState?.status ?? 'stopped') : 'stopped'
   const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
+  const runtimeDiagnostics =
+    entry.enabled && entry.status === 'ready' ? (runtimeState?.diagnostics ?? []) : []
 
   return {
     builtin: entry.builtin,
@@ -309,6 +311,7 @@ function toExtensionCatalogInfo(
     status: entry.status,
     runtimeStatus,
     runtimeError,
+    runtimeDiagnostics,
     source: entry.source,
     directory: entry.packagePath,
     issues: entry.issues
@@ -370,14 +373,14 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
-function requireMenuResolveRequest(value: unknown): ExtensionMenuResolveRequest {
+function requireMenuResolveRequest(value: unknown): ExtensionEntityMenuResolveRequest {
   const request = requireRecord(value, 'request')
   return {
     input: requireMenuInput(request.input)
   }
 }
 
-function requireMenuInvokeRequest(value: unknown): ExtensionMenuInvokeRequest {
+function requireMenuInvokeRequest(value: unknown): ExtensionEntityMenuInvokeRequest {
   const request = requireRecord(value, 'request')
   const callbackValue = request.value
   if (
@@ -391,21 +394,29 @@ function requireMenuInvokeRequest(value: unknown): ExtensionMenuInvokeRequest {
   return {
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
+    domain: requireNonEmptyString(
+      request.domain,
+      'domain'
+    ) as ExtensionEntityMenuInvokeRequest['domain'],
+    scope: requireNonEmptyString(
+      request.scope,
+      'scope'
+    ) as ExtensionEntityMenuInvokeRequest['scope'],
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
     nodePath: requireStringArray(request.nodePath, 'nodePath'),
     input: requireMenuInput(request.input),
-    value: callbackValue as ExtensionMenuInvokeRequest['value']
+    value: callbackValue as ExtensionEntityMenuInvokeRequest['value']
   }
 }
 
-function requireMenuReleaseRequest(value: unknown): ExtensionMenuReleaseRequest {
+function requireMenuReleaseRequest(value: unknown): ExtensionEntityMenuReleaseRequest {
   const request = requireRecord(value, 'request')
   return {
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId')
   }
 }
 
-function requireSettingsOpenRequest(value: unknown): ExtensionSettingsOpenRequest {
+function requireSettingsOpenRequest(value: unknown): ExtensionSettingsPanelOpenRequest {
   const request = requireRecord(value, 'request')
   const surface = requireSurface(request.surface, ['root', 'dialog', 'popover'], 'surface')
   const base = {
@@ -417,7 +428,10 @@ function requireSettingsOpenRequest(value: unknown): ExtensionSettingsOpenReques
     return {
       ...base,
       surface,
-      reason: request.reason as Extract<ExtensionSettingsOpenRequest, { surface: 'root' }>['reason']
+      reason: request.reason as Extract<
+        ExtensionSettingsPanelOpenRequest,
+        { surface: 'root' }
+      >['reason']
     }
   }
 
@@ -429,7 +443,7 @@ function requireSettingsOpenRequest(value: unknown): ExtensionSettingsOpenReques
       sessionId,
       dialogId: requireNonEmptyString(request.dialogId, 'dialogId'),
       params: request.params as Extract<
-        ExtensionSettingsOpenRequest,
+        ExtensionSettingsPanelOpenRequest,
         { surface: 'dialog' }
       >['params'],
       parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft'),
@@ -444,7 +458,7 @@ function requireSettingsOpenRequest(value: unknown): ExtensionSettingsOpenReques
     popoverId: requireNonEmptyString(request.popoverId, 'popoverId'),
     parent: requireSettingsParentRef(request.parent),
     params: request.params as Extract<
-      ExtensionSettingsOpenRequest,
+      ExtensionSettingsPanelOpenRequest,
       { surface: 'popover' }
     >['params'],
     parentDraft: requireSettingsDraftSnapshot(request.parentDraft, 'parentDraft'),
@@ -453,14 +467,14 @@ function requireSettingsOpenRequest(value: unknown): ExtensionSettingsOpenReques
   }
 }
 
-function requireSettingsRefreshRequest(value: unknown): ExtensionSettingsRefreshRequest {
+function requireSettingsRefreshRequest(value: unknown): ExtensionSettingsPanelRefreshRequest {
   const request = requireRecord(value, 'request')
   const surface = requireSurface(request.surface, ['root', 'dialog', 'popover', 'all'], 'surface')
   const base = {
     extensionId: requireSafeExtensionId(request.extensionId),
     contributionId: requireNonEmptyString(request.contributionId, 'contributionId'),
     sessionId: requireNonEmptyString(request.sessionId, 'sessionId'),
-    reason: request.reason as ExtensionSettingsRefreshRequest['reason'],
+    reason: request.reason as ExtensionSettingsPanelRefreshRequest['reason'],
     revision: requireFiniteNumber(request.revision, 'revision')
   }
 
@@ -501,7 +515,7 @@ function requireSettingsRefreshRequest(value: unknown): ExtensionSettingsRefresh
   }
 }
 
-function requireSettingsSubmitRequest(value: unknown): ExtensionSettingsSubmitRequest {
+function requireSettingsSubmitRequest(value: unknown): ExtensionSettingsPanelSubmitRequest {
   const request = requireRecord(value, 'request')
   const surface = requireSurface(request.surface, ['root', 'dialog'], 'surface')
   const base = {
@@ -528,7 +542,7 @@ function requireSettingsSubmitRequest(value: unknown): ExtensionSettingsSubmitRe
   }
 }
 
-function requireSettingsInvokeRequest(value: unknown): ExtensionSettingsInvokeRequest {
+function requireSettingsInvokeRequest(value: unknown): ExtensionSettingsPanelInvokeRequest {
   const request = requireRecord(value, 'request')
   const surface = requireSurface(request.surface, ['root', 'dialog', 'popover'], 'surface')
   const base = {
@@ -538,7 +552,7 @@ function requireSettingsInvokeRequest(value: unknown): ExtensionSettingsInvokeRe
     callbackId: requireNonEmptyString(request.callbackId, 'callbackId'),
     fieldId: requireNonEmptyString(request.fieldId, 'fieldId'),
     nodeId: requireNonEmptyString(request.nodeId, 'nodeId'),
-    value: request.value as ExtensionSettingsInvokeRequest['value'],
+    value: request.value as ExtensionSettingsPanelInvokeRequest['value'],
     requestId: requireNonEmptyString(request.requestId, 'requestId'),
     revision: requireFiniteNumber(request.revision, 'revision')
   }
@@ -571,7 +585,7 @@ function requireSettingsInvokeRequest(value: unknown): ExtensionSettingsInvokeRe
   }
 }
 
-function requireSettingsReleaseRequest(value: unknown): ExtensionSettingsReleaseRequest {
+function requireSettingsReleaseRequest(value: unknown): ExtensionSettingsPanelReleaseRequest {
   const request = requireRecord(value, 'request')
   const surface = requireSurface(request.surface, ['root', 'dialog', 'popover', 'all'], 'surface')
   const base = {
@@ -603,11 +617,11 @@ function requireSettingsReleaseRequest(value: unknown): ExtensionSettingsRelease
   }
 }
 
-function requireMenuInput(value: unknown): ExtensionMenuResolveRequest['input'] {
+function requireMenuInput(value: unknown): ExtensionEntityMenuResolveRequest['input'] {
   const input = requireRecord(value, 'input')
   requireNonEmptyString(input.domain, 'input.domain')
   requireNonEmptyString(input.scope, 'input.scope')
-  return input as unknown as ExtensionMenuResolveRequest['input']
+  return input as unknown as ExtensionEntityMenuResolveRequest['input']
 }
 
 function requireStringArray(value: unknown, label: string): readonly string[] {
@@ -641,11 +655,11 @@ function requireFiniteNumber(value: unknown, label: string): number {
 function requireSettingsDraftSnapshot(
   value: unknown,
   label: string
-): Extract<ExtensionSettingsRefreshRequest, { surface: 'root' }>['draft'] {
+): Extract<ExtensionSettingsPanelRefreshRequest, { surface: 'root' }>['draft'] {
   const snapshot = requireRecord(value, label)
   return {
     values: requireRecord(snapshot.values, `${label}.values`) as Extract<
-      ExtensionSettingsRefreshRequest,
+      ExtensionSettingsPanelRefreshRequest,
       { surface: 'root' }
     >['draft']['values'],
     dirtyNodeIds: requireStringArray(snapshot.dirtyNodeIds, `${label}.dirtyNodeIds`)
@@ -654,7 +668,7 @@ function requireSettingsDraftSnapshot(
 
 function requireSettingsParentRef(
   value: unknown
-): Extract<ExtensionSettingsOpenRequest, { surface: 'popover' }>['parent'] {
+): Extract<ExtensionSettingsPanelOpenRequest, { surface: 'popover' }>['parent'] {
   const parent = requireRecord(value, 'parent')
   const surface = requireSurface(parent.surface, ['root', 'dialog'], 'parent.surface')
   if (surface === 'root') {
@@ -669,7 +683,7 @@ function requireSettingsParentRef(
 
 function requireOptionalActiveDialogRefresh(
   value: unknown
-): Extract<ExtensionSettingsRefreshRequest, { surface: 'all' }>['activeDialog'] {
+): Extract<ExtensionSettingsPanelRefreshRequest, { surface: 'all' }>['activeDialog'] {
   if (value === undefined) {
     return undefined
   }

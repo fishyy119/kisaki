@@ -1,0 +1,1 @@
+export { ExtensionThemeContributionHost } from './manager'

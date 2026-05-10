@@ -14,7 +14,7 @@ import { getEntityIcon } from '@renderer/utils'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionMenuItems } from '@renderer/components/extension/menus'
+import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { usePreferencesStore } from '@renderer/stores'
 import { persons, collections, collectionPersonLinks, type Person } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
@@ -345,7 +345,7 @@ async function handleToggleNsfw() {
       管理外部ID
     </component>
 
-    <ExtensionMenuItems
+    <ExtensionEntityMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

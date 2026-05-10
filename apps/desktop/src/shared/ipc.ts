@@ -60,24 +60,24 @@ import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
   ExtensionCatalogInfo,
   ExtensionContributionSnapshot,
-  ExtensionMenuInvokeRequest,
-  ExtensionMenuInvokeResponse,
-  ExtensionMenuRefreshRequestedEvent,
-  ExtensionMenuReleaseRequest,
-  ExtensionMenuResolveRequest,
+  ExtensionEntityMenuInvokeRequest,
+  ExtensionEntityMenuInvokeResponse,
+  ExtensionEntityMenuRefreshRequestedEvent,
+  ExtensionEntityMenuReleaseRequest,
+  ExtensionEntityMenuResolveRequest,
   ExtensionRegistryEntry,
-  ExtensionResolvedMenu,
-  ExtensionSettingsContributionInfo,
-  ExtensionSettingsCallbackResponse,
-  ExtensionSettingsInvokeRequest,
-  ExtensionSettingsOpenRequest,
-  ExtensionSettingsOpenResponse,
-  ExtensionSettingsRefreshRequest,
-  ExtensionSettingsRefreshResponse,
-  ExtensionSettingsRefreshRequestedEvent,
-  ExtensionSettingsReleaseRequest,
-  ExtensionSettingsSubmitRequest,
-  ExtensionThemeContributionInfo,
+  ExtensionResolvedEntityMenu,
+  ExtensionSettingsPanelRegistrationInfo,
+  ExtensionSettingsPanelCallbackResponse,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelOpenRequest,
+  ExtensionSettingsPanelOpenResponse,
+  ExtensionSettingsPanelRefreshRequest,
+  ExtensionSettingsPanelRefreshResponse,
+  ExtensionSettingsPanelRefreshRequestedEvent,
+  ExtensionSettingsPanelReleaseRequest,
+  ExtensionSettingsPanelSubmitRequest,
+  ExtensionThemeRegistrationInfo,
   ExtensionUpdateInfo
 } from './extension'
 import type { NotifyOptions } from './notify'
@@ -428,30 +428,32 @@ export interface IpcMainHandlers {
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
   'extension:get-contribution-snapshot': () => IpcResult<ExtensionContributionSnapshot>
-  'extension:get-settings-contributions': () => IpcResult<
-    readonly ExtensionSettingsContributionInfo[]
+  'extension:get-settings-panel-contributions': () => IpcResult<
+    readonly ExtensionSettingsPanelRegistrationInfo[]
   >
-  'extension:resolve-menu': (
-    request: ExtensionMenuResolveRequest
-  ) => IpcResult<ExtensionResolvedMenu>
-  'extension:invoke-menu': (
-    request: ExtensionMenuInvokeRequest
-  ) => IpcResult<ExtensionMenuInvokeResponse>
-  'extension:release-menu': (request: ExtensionMenuReleaseRequest) => IpcVoidResult
-  'extension:open-settings': (
-    request: ExtensionSettingsOpenRequest
-  ) => IpcResult<ExtensionSettingsOpenResponse>
-  'extension:refresh-settings': (
-    request: ExtensionSettingsRefreshRequest
-  ) => IpcResult<ExtensionSettingsRefreshResponse>
-  'extension:submit-settings': (
-    request: ExtensionSettingsSubmitRequest
-  ) => IpcResult<ExtensionSettingsCallbackResponse>
-  'extension:invoke-settings-node': (
-    request: ExtensionSettingsInvokeRequest
-  ) => IpcResult<ExtensionSettingsCallbackResponse>
-  'extension:release-settings': (request: ExtensionSettingsReleaseRequest) => IpcVoidResult
-  'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeContributionInfo[]>
+  'extension:resolve-entity-menu': (
+    request: ExtensionEntityMenuResolveRequest
+  ) => IpcResult<ExtensionResolvedEntityMenu>
+  'extension:invoke-entity-menu': (
+    request: ExtensionEntityMenuInvokeRequest
+  ) => IpcResult<ExtensionEntityMenuInvokeResponse>
+  'extension:release-entity-menu': (request: ExtensionEntityMenuReleaseRequest) => IpcVoidResult
+  'extension:open-settings-panel': (
+    request: ExtensionSettingsPanelOpenRequest
+  ) => IpcResult<ExtensionSettingsPanelOpenResponse>
+  'extension:refresh-settings-panel': (
+    request: ExtensionSettingsPanelRefreshRequest
+  ) => IpcResult<ExtensionSettingsPanelRefreshResponse>
+  'extension:submit-settings-panel': (
+    request: ExtensionSettingsPanelSubmitRequest
+  ) => IpcResult<ExtensionSettingsPanelCallbackResponse>
+  'extension:invoke-settings-panel-node': (
+    request: ExtensionSettingsPanelInvokeRequest
+  ) => IpcResult<ExtensionSettingsPanelCallbackResponse>
+  'extension:release-settings-panel': (
+    request: ExtensionSettingsPanelReleaseRequest
+  ) => IpcVoidResult
+  'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeRegistrationInfo[]>
   'extension:get-sources': () => IpcResult<
     Array<{ name: string; displayName: string; searchable: boolean }>
   >
@@ -511,8 +513,10 @@ export interface IpcRendererEvents {
 
   // Extension contribution refresh (main -> renderer)
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
-  'extension:settings-refresh-requested': [event: ExtensionSettingsRefreshRequestedEvent]
-  'extension:menus-refresh-requested': [event: ExtensionMenuRefreshRequestedEvent]
+  'extension:settings-panels-refresh-requested': [
+    event: ExtensionSettingsPanelRefreshRequestedEvent
+  ]
+  'extension:entity-menus-refresh-requested': [event: ExtensionEntityMenuRefreshRequestedEvent]
 
   // Deeplink events (main → renderer)
   'deeplink:navigate': [DeeplinkNavigatePayload]

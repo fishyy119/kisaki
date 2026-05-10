@@ -1,13 +1,13 @@
-import { defineExtension, defineSettingsContribution } from '@kisaki/extension-sdk'
+import { defineExtension, defineSettingsPanel } from '@kisaki/extension-sdk'
 import { BangumiProvider } from './scraper/provider'
 
 export default defineExtension({
   activate(context) {
     context.logger.info('Built-in Bangumi scraper activated.')
 
-    context.contributions.scrapers.registerGameProvider(new BangumiProvider(context))
-    context.contributions.settings.register(
-      defineSettingsContribution({
+    context.contributions.scraperProviders.game.register(new BangumiProvider(context))
+    context.contributions.settingsPanels.register(
+      defineSettingsPanel({
         id: 'settings',
         title: 'Bangumi',
         async resolve(_context, settings) {

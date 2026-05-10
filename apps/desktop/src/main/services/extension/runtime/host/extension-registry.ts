@@ -1,22 +1,60 @@
 import type {
   CharacterScraperProvider,
   CommandContribution,
-  DeeplinkContribution,
+  DeeplinkRouteContribution,
+  EntityMenuContribution,
+  EntityMenuDomain,
+  EntityMenuInput,
+  EntityMenuInputFor,
+  EntityMenuScope,
   ExtensionContext,
   ExtensionDefinition,
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   GameScraperProvider,
-  MenuContribution,
-  MenuDomain,
-  MenuInputFor,
-  MenuScope,
   PersonScraperProvider,
   CompanyScraperProvider,
-  SettingsContribution,
+  SettingsPanelContribution,
+  ScraperMediaType,
   ThemeContribution,
   DisposableStore
 } from '@kisaki/extension-api'
+
+export interface RegisteredEntityMenuContributionFor<
+  TDomain extends EntityMenuDomain,
+  TScope extends EntityMenuScope<TDomain>
+> {
+  id: string
+  domain: TDomain
+  scope: TScope
+  order?: number
+  contribution: EntityMenuContribution<EntityMenuInputFor<TDomain, TScope>>
+}
+
+export type RegisteredEntityMenuContribution = {
+  [TDomain in EntityMenuDomain]: {
+    [TScope in EntityMenuScope<TDomain>]: RegisteredEntityMenuContributionFor<TDomain, TScope>
+  }[EntityMenuScope<TDomain>]
+}[EntityMenuDomain]
+
+export type EntityMenuRegistrationMaps = {
+  [TDomain in EntityMenuDomain]: {
+    [TScope in EntityMenuScope<TDomain>]: Map<
+      string,
+      RegisteredEntityMenuContributionFor<TDomain, TScope>
+    >
+  }
+}
+
+export interface ScraperProviderMaps {
+  game: Map<string, GameScraperProvider>
+  person: Map<string, PersonScraperProvider>
+  company: Map<string, CompanyScraperProvider>
+  character: Map<string, CharacterScraperProvider>
+}
+
+export type ScraperProviderFor<TMediaType extends ScraperMediaType> =
+  ScraperProviderMaps[TMediaType] extends Map<string, infer TProvider> ? TProvider : never
 
 export interface LoadedExtensionRuntime {
   metadata: ExtensionRuntimeMetadata
@@ -26,33 +64,13 @@ export interface LoadedExtensionRuntime {
   context: ExtensionContext
   subscriptions: DisposableStore
   abortController: AbortController
-  menus: Map<string, RegisteredMenuContribution>
-  settings: Map<string, SettingsContribution<any, any>>
-  gameScrapers: Map<string, GameScraperProvider>
-  personScrapers: Map<string, PersonScraperProvider>
-  companyScrapers: Map<string, CompanyScraperProvider>
-  characterScrapers: Map<string, CharacterScraperProvider>
-  deeplinks: Map<string, DeeplinkContribution>
+  entityMenus: EntityMenuRegistrationMaps
+  settingsPanels: Map<string, SettingsPanelContribution<any, any>>
+  scraperProviders: ScraperProviderMaps
+  deeplinkRoutes: Map<string, DeeplinkRouteContribution>
   themes: Map<string, ThemeContribution>
   commands: Map<string, CommandContribution>
 }
-
-export interface RegisteredMenuContributionFor<
-  TDomain extends MenuDomain,
-  TScope extends MenuScope<TDomain>
-> {
-  id: string
-  domain: TDomain
-  scope: TScope
-  order?: number
-  contribution: MenuContribution<MenuInputFor<TDomain, TScope>>
-}
-
-export type RegisteredMenuContribution = {
-  [TDomain in MenuDomain]: {
-    [TScope in MenuScope<TDomain>]: RegisteredMenuContributionFor<TDomain, TScope>
-  }[MenuScope<TDomain>]
-}[MenuDomain]
 
 /**
  * Tracks all extension runtime state inside the shared extension host process.
@@ -104,63 +122,66 @@ export class ExtensionRegistry {
     return [...this.loaded.values()]
   }
 
-  registerMenu<TDomain extends MenuDomain, TScope extends MenuScope<TDomain>>(
+  registerEntityMenu<TDomain extends EntityMenuDomain, TScope extends EntityMenuScope<TDomain>>(
     extensionId: string,
-    registration: RegisteredMenuContributionFor<TDomain, TScope>
+    registration: RegisteredEntityMenuContributionFor<TDomain, TScope>
   ): void {
-    this.require(extensionId).menus.set(registration.id, registration as RegisteredMenuContribution)
+    getEntityMenuRegistrationMap(
+      this.require(extensionId),
+      registration.domain,
+      registration.scope
+    ).set(registration.id, registration)
   }
 
-  unregisterMenu(extensionId: string, contributionId: string): void {
-    this.require(extensionId).menus.delete(contributionId)
+  unregisterEntityMenu<TDomain extends EntityMenuDomain, TScope extends EntityMenuScope<TDomain>>(
+    extensionId: string,
+    domain: TDomain,
+    scope: TScope,
+    contributionId: string
+  ): void {
+    getEntityMenuRegistrationMap(this.require(extensionId), domain, scope).delete(contributionId)
   }
 
-  registerSettings(extensionId: string, contribution: SettingsContribution<any, any>): void {
-    this.require(extensionId).settings.set(contribution.id, contribution)
+  registerSettingsPanel(
+    extensionId: string,
+    contribution: SettingsPanelContribution<any, any>
+  ): void {
+    this.require(extensionId).settingsPanels.set(contribution.id, contribution)
   }
 
-  unregisterSettings(extensionId: string, contributionId: string): void {
-    this.require(extensionId).settings.delete(contributionId)
+  unregisterSettingsPanel(extensionId: string, contributionId: string): void {
+    this.require(extensionId).settingsPanels.delete(contributionId)
   }
 
-  registerGameScraper(extensionId: string, provider: GameScraperProvider): void {
-    this.require(extensionId).gameScrapers.set(provider.id, provider)
+  getScraperProviders<TMediaType extends ScraperMediaType>(
+    extensionId: string,
+    mediaType: TMediaType
+  ): LoadedExtensionRuntime['scraperProviders'][TMediaType] {
+    return this.require(extensionId).scraperProviders[mediaType]
   }
 
-  unregisterGameScraper(extensionId: string, providerId: string): void {
-    this.require(extensionId).gameScrapers.delete(providerId)
+  registerScraperProvider<TMediaType extends ScraperMediaType>(
+    extensionId: string,
+    mediaType: TMediaType,
+    provider: ScraperProviderFor<TMediaType> & { id: string }
+  ): void {
+    getScraperProviderMap(this.require(extensionId), mediaType).set(provider.id, provider)
   }
 
-  registerPersonScraper(extensionId: string, provider: PersonScraperProvider): void {
-    this.require(extensionId).personScrapers.set(provider.id, provider)
+  unregisterScraperProvider<TMediaType extends ScraperMediaType>(
+    extensionId: string,
+    mediaType: TMediaType,
+    providerId: string
+  ): void {
+    getScraperProviderMap(this.require(extensionId), mediaType).delete(providerId)
   }
 
-  unregisterPersonScraper(extensionId: string, providerId: string): void {
-    this.require(extensionId).personScrapers.delete(providerId)
+  registerDeeplinkRoute(extensionId: string, contribution: DeeplinkRouteContribution): void {
+    this.require(extensionId).deeplinkRoutes.set(contribution.id, contribution)
   }
 
-  registerCompanyScraper(extensionId: string, provider: CompanyScraperProvider): void {
-    this.require(extensionId).companyScrapers.set(provider.id, provider)
-  }
-
-  unregisterCompanyScraper(extensionId: string, providerId: string): void {
-    this.require(extensionId).companyScrapers.delete(providerId)
-  }
-
-  registerCharacterScraper(extensionId: string, provider: CharacterScraperProvider): void {
-    this.require(extensionId).characterScrapers.set(provider.id, provider)
-  }
-
-  unregisterCharacterScraper(extensionId: string, providerId: string): void {
-    this.require(extensionId).characterScrapers.delete(providerId)
-  }
-
-  registerDeeplink(extensionId: string, contribution: DeeplinkContribution): void {
-    this.require(extensionId).deeplinks.set(contribution.id, contribution)
-  }
-
-  unregisterDeeplink(extensionId: string, contributionId: string): void {
-    this.require(extensionId).deeplinks.delete(contributionId)
+  unregisterDeeplinkRoute(extensionId: string, contributionId: string): void {
+    this.require(extensionId).deeplinkRoutes.delete(contributionId)
   }
 
   registerTheme(extensionId: string, theme: ThemeContribution): void {
@@ -186,5 +207,83 @@ export class ExtensionRegistry {
     }
 
     return runtime
+  }
+}
+
+export function createEntityMenuRegistrationMaps(): EntityMenuRegistrationMaps {
+  return {
+    game: {
+      single: new Map(),
+      batch: new Map()
+    },
+    character: {
+      single: new Map()
+    },
+    person: {
+      single: new Map()
+    },
+    company: {
+      single: new Map()
+    },
+    collection: {
+      single: new Map()
+    },
+    tag: {
+      single: new Map()
+    }
+  } as EntityMenuRegistrationMaps
+}
+
+export function getEntityMenuRegistrationMap<
+  TDomain extends EntityMenuDomain,
+  TScope extends EntityMenuScope<TDomain>
+>(
+  runtime: LoadedExtensionRuntime,
+  domain: TDomain,
+  scope: TScope
+): Map<string, RegisteredEntityMenuContributionFor<TDomain, TScope>> {
+  return runtime.entityMenus[domain][scope] as unknown as Map<
+    string,
+    RegisteredEntityMenuContributionFor<TDomain, TScope>
+  >
+}
+
+export function getEntityMenuRegistrationForInput(
+  runtime: LoadedExtensionRuntime,
+  input: EntityMenuInput,
+  contributionId: string
+): RegisteredEntityMenuContribution | undefined {
+  switch (input.domain) {
+    case 'game':
+      return runtime.entityMenus.game[input.scope].get(contributionId)
+    case 'character':
+      return runtime.entityMenus.character.single.get(contributionId)
+    case 'person':
+      return runtime.entityMenus.person.single.get(contributionId)
+    case 'company':
+      return runtime.entityMenus.company.single.get(contributionId)
+    case 'collection':
+      return runtime.entityMenus.collection.single.get(contributionId)
+    case 'tag':
+      return runtime.entityMenus.tag.single.get(contributionId)
+  }
+}
+
+export function getScraperProviderMap<TMediaType extends ScraperMediaType>(
+  runtime: LoadedExtensionRuntime,
+  mediaType: TMediaType
+): Map<string, ScraperProviderFor<TMediaType>> {
+  return runtime.scraperProviders[mediaType] as unknown as Map<
+    string,
+    ScraperProviderFor<TMediaType>
+  >
+}
+
+export function createScraperProviderMaps(): ScraperProviderMaps {
+  return {
+    game: new Map(),
+    person: new Map(),
+    company: new Map(),
+    character: new Map()
   }
 }

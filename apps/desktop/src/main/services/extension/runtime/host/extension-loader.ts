@@ -7,7 +7,12 @@ import type {
 } from '@kisaki/extension-api'
 import { toRpcErrorPayload } from '@kisaki/extension-api'
 import { readExtensionManifestFile, resolveExtensionFilePath } from '../../manifest'
-import type { ExtensionRegistry, LoadedExtensionRuntime } from './extension-registry'
+import {
+  createEntityMenuRegistrationMaps,
+  createScraperProviderMaps,
+  type ExtensionRegistry,
+  type LoadedExtensionRuntime
+} from './extension-registry'
 import type { ExtensionHostSdkBridge } from './sdk-bridge'
 
 /**
@@ -72,13 +77,10 @@ export class ExtensionLoader {
       context,
       subscriptions,
       abortController,
-      menus: new Map(),
-      settings: new Map(),
-      gameScrapers: new Map(),
-      personScrapers: new Map(),
-      companyScrapers: new Map(),
-      characterScrapers: new Map(),
-      deeplinks: new Map(),
+      entityMenus: createEntityMenuRegistrationMaps(),
+      settingsPanels: new Map(),
+      scraperProviders: createScraperProviderMaps(),
+      deeplinkRoutes: new Map(),
       themes: new Map(),
       commands: new Map()
     }
@@ -157,9 +159,25 @@ export class ExtensionLoader {
       // Best-effort cleanup only.
     }
 
-    await runtime.subscriptions.clear()
-    await this.sdkBridge.releaseRuntime(runtime.runtimeHandle)
-    this.registry.delete(runtime.metadata.id)
+    try {
+      await runtime.subscriptions.clear()
+    } catch (error) {
+      console.warn(
+        `[ExtensionHost][${runtime.metadata.id}] Failed to clear subscriptions after activation failed:`,
+        error
+      )
+    }
+
+    try {
+      await this.sdkBridge.releaseRuntime(runtime.runtimeHandle)
+    } catch (error) {
+      console.warn(
+        `[ExtensionHost][${runtime.metadata.id}] Failed to release runtime after activation failed:`,
+        error
+      )
+    } finally {
+      this.registry.delete(runtime.metadata.id)
+    }
   }
 }
 

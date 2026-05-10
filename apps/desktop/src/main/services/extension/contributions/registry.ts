@@ -2,153 +2,108 @@ import type { ExtensionRuntimeHandle } from '@kisaki/extension-api'
 import type { ExtensionContributionSnapshot } from '@shared/extension'
 import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
 import { ExtensionCommandContributionHost } from './commands'
-import { ExtensionDeeplinkContributionHost } from './deeplinks'
-import { ExtensionMenuContributionHost } from './menus'
-import { ExtensionScraperContributionHost } from './scrapers'
-import { ExtensionSettingsContributionHost } from './settings'
+import { ExtensionDeeplinkRouteContributionHost } from './deeplink-routes'
+import { ExtensionEntityMenuContributionHost } from './entity-menus'
+import { ExtensionScraperProviderContributionHost } from './scraper-providers'
+import { ExtensionSettingsPanelContributionHost } from './settings-panels'
 import { ExtensionThemeContributionHost } from './themes'
 import type { ExtensionContributionHostOptions } from './types'
 
 export class ExtensionContributionRegistry {
-  readonly menus: ExtensionMenuContributionHost
-  readonly settings: ExtensionSettingsContributionHost
+  readonly entityMenus: ExtensionEntityMenuContributionHost
+  readonly settingsPanels: ExtensionSettingsPanelContributionHost
   readonly themes: ExtensionThemeContributionHost
-  readonly deeplinks: ExtensionDeeplinkContributionHost
-  readonly scrapers: ExtensionScraperContributionHost
+  readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionHost
+  readonly scraperProviders: ExtensionScraperProviderContributionHost
   readonly commands: ExtensionCommandContributionHost
 
   constructor(private readonly options: ExtensionContributionHostOptions) {
-    this.menus = new ExtensionMenuContributionHost(options)
-    this.settings = new ExtensionSettingsContributionHost(options)
+    this.entityMenus = new ExtensionEntityMenuContributionHost(options)
+    this.settingsPanels = new ExtensionSettingsPanelContributionHost(options)
     this.themes = new ExtensionThemeContributionHost(options)
-    this.deeplinks = new ExtensionDeeplinkContributionHost(options)
-    this.scrapers = new ExtensionScraperContributionHost(options)
+    this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionHost(options)
+    this.scraperProviders = new ExtensionScraperProviderContributionHost(options)
     this.commands = new ExtensionCommandContributionHost(options)
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
+    rpc.handleHostRequest('contributions.entityMenus.register', async ({ runtimeHandle, menu }) => {
+      this.entityMenus.register(runtimeHandle, menu)
+      this.notifyChanged()
+      return {}
+    })
     rpc.handleHostRequest(
-      'contributions.menus.register',
-      async ({ runtimeHandle, contribution }) => {
-        this.menus.register(runtimeHandle, contribution)
+      'contributions.entityMenus.unregister',
+      async ({ runtimeHandle, domain, scope, contributionId }) => {
+        this.entityMenus.unregister(runtimeHandle, domain, scope, contributionId)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.menus.unregister',
-      async ({ runtimeHandle, contributionId }) => {
-        this.menus.unregister(runtimeHandle, contributionId)
+      'contributions.entityMenus.refreshRequested',
+      async ({ runtimeHandle, domain, scope, contributionId, reason }) => {
+        this.entityMenus.notifyRefreshRequested(
+          runtimeHandle,
+          domain,
+          scope,
+          contributionId,
+          reason
+        )
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'contributions.settingsPanels.register',
+      async ({ runtimeHandle, panel }) => {
+        this.settingsPanels.register(runtimeHandle, panel)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.menus.refreshRequested',
+      'contributions.settingsPanels.refreshRequested',
       async ({ runtimeHandle, contributionId, reason }) => {
-        this.menus.notifyRefreshRequested(runtimeHandle, contributionId, reason)
+        this.settingsPanels.notifyRefreshRequested(runtimeHandle, contributionId, reason)
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.settings.register',
-      async ({ runtimeHandle, contribution }) => {
-        this.settings.register(runtimeHandle, contribution)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.settings.refreshRequested',
-      async ({ runtimeHandle, contributionId, reason }) => {
-        this.settings.notifyRefreshRequested(runtimeHandle, contributionId, reason)
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.settings.unregister',
+      'contributions.settingsPanels.unregister',
       async ({ runtimeHandle, contributionId }) => {
-        this.settings.unregister(runtimeHandle, contributionId)
+        this.settingsPanels.unregister(runtimeHandle, contributionId)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.scrapers.games.register',
-      async ({ runtimeHandle, provider }) => {
-        await this.scrapers.registerGameProvider(runtimeHandle, provider)
+      'contributions.scraperProviders.register',
+      async ({ runtimeHandle, mediaType, provider }) => {
+        await this.scraperProviders.registerProvider(runtimeHandle, mediaType, provider)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.scrapers.games.unregister',
-      async ({ runtimeHandle, providerId }) => {
-        await this.scrapers.unregisterGameProvider(runtimeHandle, providerId)
+      'contributions.scraperProviders.unregister',
+      async ({ runtimeHandle, mediaType, providerId }) => {
+        await this.scraperProviders.unregisterProvider(runtimeHandle, mediaType, providerId)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.scrapers.persons.register',
-      async ({ runtimeHandle, provider }) => {
-        await this.scrapers.registerPersonProvider(runtimeHandle, provider)
+      'contributions.deeplinkRoutes.register',
+      async ({ runtimeHandle, route }) => {
+        this.deeplinkRoutes.register(runtimeHandle, route)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.scrapers.persons.unregister',
-      async ({ runtimeHandle, providerId }) => {
-        await this.scrapers.unregisterPersonProvider(runtimeHandle, providerId)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.scrapers.companies.register',
-      async ({ runtimeHandle, provider }) => {
-        await this.scrapers.registerCompanyProvider(runtimeHandle, provider)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.scrapers.companies.unregister',
-      async ({ runtimeHandle, providerId }) => {
-        await this.scrapers.unregisterCompanyProvider(runtimeHandle, providerId)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.scrapers.characters.register',
-      async ({ runtimeHandle, provider }) => {
-        await this.scrapers.registerCharacterProvider(runtimeHandle, provider)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.scrapers.characters.unregister',
-      async ({ runtimeHandle, providerId }) => {
-        await this.scrapers.unregisterCharacterProvider(runtimeHandle, providerId)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.deeplinks.register',
-      async ({ runtimeHandle, contribution }) => {
-        this.deeplinks.register(runtimeHandle, contribution)
-        this.notifyChanged()
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.deeplinks.unregister',
+      'contributions.deeplinkRoutes.unregister',
       async ({ runtimeHandle, contributionId }) => {
-        this.deeplinks.unregister(runtimeHandle, contributionId)
+        this.deeplinkRoutes.unregister(runtimeHandle, contributionId)
         this.notifyChanged()
         return {}
       }
@@ -178,11 +133,11 @@ export class ExtensionContributionRegistry {
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     try {
-      this.menus.releaseRuntime(runtimeHandle)
-      this.settings.releaseRuntime(runtimeHandle)
+      this.entityMenus.releaseRuntime(runtimeHandle)
+      this.settingsPanels.releaseRuntime(runtimeHandle)
       this.themes.releaseRuntime(runtimeHandle)
-      this.deeplinks.releaseRuntime(runtimeHandle)
-      await this.scrapers.releaseRuntime(runtimeHandle)
+      this.deeplinkRoutes.releaseRuntime(runtimeHandle)
+      await this.scraperProviders.releaseRuntime(runtimeHandle)
       this.commands.releaseRuntime(runtimeHandle)
     } finally {
       this.notifyChanged()
@@ -191,11 +146,11 @@ export class ExtensionContributionRegistry {
 
   async releaseAll(): Promise<void> {
     try {
-      this.menus.releaseAll()
-      this.settings.releaseAll()
+      this.entityMenus.releaseAll()
+      this.settingsPanels.releaseAll()
       this.themes.releaseAll()
-      this.deeplinks.releaseAll()
-      await this.scrapers.releaseAll()
+      this.deeplinkRoutes.releaseAll()
+      await this.scraperProviders.releaseAll()
       this.commands.releaseAll()
     } finally {
       this.notifyChanged()
@@ -204,11 +159,11 @@ export class ExtensionContributionRegistry {
 
   getSnapshot(): ExtensionContributionSnapshot {
     return {
-      menus: this.menus.getSnapshot(),
-      settings: this.settings.getSnapshot(),
-      themes: this.themes.getSnapshot(),
-      deeplinks: this.deeplinks.getSnapshot(),
-      scrapers: this.scrapers.getSnapshot()
+      entityMenus: this.entityMenus.getSnapshot(),
+      settingsPanels: this.settingsPanels.getSnapshot(),
+      scraperProviders: this.scraperProviders.getSnapshot(),
+      deeplinkRoutes: this.deeplinkRoutes.getSnapshot(),
+      themes: this.themes.getSnapshot()
     }
   }
 

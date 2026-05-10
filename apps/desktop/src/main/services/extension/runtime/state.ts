@@ -1,4 +1,5 @@
 import type {
+  ExtensionRuntimeDiagnostic,
   ExtensionRuntimeChangeCause,
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
@@ -6,10 +7,12 @@ import type {
 } from '@kisaki/extension-api'
 
 export type ExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
+const MAX_RUNTIME_DIAGNOSTICS = 50
 
 export interface ExtensionRuntimeState {
   status: ExtensionRuntimeStatus
   error: string | null
+  diagnostics: readonly ExtensionRuntimeDiagnostic[]
   updatedAt: string
 }
 
@@ -19,10 +22,13 @@ export interface LoadedExtensionState {
   generation: number
 }
 
-export function createRuntimeRunningState(): ExtensionRuntimeState {
+export function createRuntimeRunningState(
+  diagnostics: readonly ExtensionRuntimeDiagnostic[] = []
+): ExtensionRuntimeState {
   return {
     status: 'running',
     error: null,
+    diagnostics,
     updatedAt: new Date().toISOString()
   }
 }
@@ -31,6 +37,7 @@ export function createRuntimeFailureState(error: string): ExtensionRuntimeState 
   return {
     status: 'failed',
     error,
+    diagnostics: [],
     updatedAt: new Date().toISOString()
   }
 }
@@ -39,6 +46,18 @@ export function createRuntimeStoppedState(): ExtensionRuntimeState {
   return {
     status: 'stopped',
     error: null,
+    diagnostics: [],
+    updatedAt: new Date().toISOString()
+  }
+}
+
+export function appendRuntimeDiagnostic(
+  state: ExtensionRuntimeState,
+  diagnostic: ExtensionRuntimeDiagnostic
+): ExtensionRuntimeState {
+  return {
+    ...state,
+    diagnostics: [...state.diagnostics, diagnostic].slice(-MAX_RUNTIME_DIAGNOSTICS),
     updatedAt: new Date().toISOString()
   }
 }

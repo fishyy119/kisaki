@@ -10,21 +10,21 @@ import type { EventService } from '@main/services/event'
 import { getBootstrapArgs } from '@main/bootstrap/args'
 import type {
   ExtensionContributionSnapshot,
-  ExtensionMenuInvokeRequest,
-  ExtensionMenuInvokeResponse,
-  ExtensionMenuReleaseRequest,
-  ExtensionMenuResolveRequest,
-  ExtensionResolvedMenu,
-  ExtensionSettingsCallbackResponse,
-  ExtensionSettingsContributionInfo,
-  ExtensionSettingsInvokeRequest,
-  ExtensionSettingsOpenRequest,
-  ExtensionSettingsOpenResponse,
-  ExtensionSettingsRefreshRequest,
-  ExtensionSettingsRefreshResponse,
-  ExtensionSettingsReleaseRequest,
-  ExtensionSettingsSubmitRequest,
-  ExtensionThemeContributionInfo
+  ExtensionEntityMenuInvokeRequest,
+  ExtensionEntityMenuInvokeResponse,
+  ExtensionEntityMenuReleaseRequest,
+  ExtensionEntityMenuResolveRequest,
+  ExtensionResolvedEntityMenu,
+  ExtensionSettingsPanelCallbackResponse,
+  ExtensionSettingsPanelRegistrationInfo,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelOpenRequest,
+  ExtensionSettingsPanelOpenResponse,
+  ExtensionSettingsPanelRefreshRequest,
+  ExtensionSettingsPanelRefreshResponse,
+  ExtensionSettingsPanelReleaseRequest,
+  ExtensionSettingsPanelSubmitRequest,
+  ExtensionThemeRegistrationInfo
 } from '@shared/extension'
 import type {
   ExtensionCatalogEntry,
@@ -133,9 +133,10 @@ export class ExtensionService implements IService {
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
       onDidChange: () => this.emitContributionSnapshotChanged(),
-      onMenusRefreshRequested: (event) => this.ipc.send('extension:menus-refresh-requested', event),
-      onSettingsRefreshRequested: (event) =>
-        this.ipc.send('extension:settings-refresh-requested', event),
+      onEntityMenusRefreshRequested: (event) =>
+        this.ipc.send('extension:entity-menus-refresh-requested', event),
+      onSettingsPanelsRefreshRequested: (event) =>
+        this.ipc.send('extension:settings-panels-refresh-requested', event),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)
@@ -365,65 +366,71 @@ export class ExtensionService implements IService {
     return this.contributions.getSnapshot()
   }
 
-  getSettingsContributions(): readonly ExtensionSettingsContributionInfo[] {
-    return this.contributions.settings.getSnapshot()
+  getSettingsPanelContributions(): readonly ExtensionSettingsPanelRegistrationInfo[] {
+    return this.contributions.settingsPanels.getSnapshot()
   }
 
-  getThemeContributions(): readonly ExtensionThemeContributionInfo[] {
+  getThemeContributions(): readonly ExtensionThemeRegistrationInfo[] {
     return this.contributions.themes.getSnapshot()
   }
 
-  resolveMenu(request: ExtensionMenuResolveRequest): Promise<ExtensionResolvedMenu> {
-    return this.contributions.menus.resolve(request)
+  resolveEntityMenu(
+    request: ExtensionEntityMenuResolveRequest
+  ): Promise<ExtensionResolvedEntityMenu> {
+    return this.contributions.entityMenus.resolve(request)
   }
 
-  invokeMenuCallback(request: ExtensionMenuInvokeRequest): Promise<ExtensionMenuInvokeResponse> {
-    return this.contributions.menus.invoke({
+  invokeEntityMenuCallback(
+    request: ExtensionEntityMenuInvokeRequest
+  ): Promise<ExtensionEntityMenuInvokeResponse> {
+    return this.contributions.entityMenus.invoke({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  releaseMenu(request: ExtensionMenuReleaseRequest): Promise<void> {
-    return this.contributions.menus.release(request)
+  releaseEntityMenu(request: ExtensionEntityMenuReleaseRequest): Promise<void> {
+    return this.contributions.entityMenus.release(request)
   }
 
-  openSettings(request: ExtensionSettingsOpenRequest): Promise<ExtensionSettingsOpenResponse> {
-    return this.contributions.settings.open({
+  openSettingsPanel(
+    request: ExtensionSettingsPanelOpenRequest
+  ): Promise<ExtensionSettingsPanelOpenResponse> {
+    return this.contributions.settingsPanels.open({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  refreshSettings(
-    request: ExtensionSettingsRefreshRequest
-  ): Promise<ExtensionSettingsRefreshResponse> {
-    return this.contributions.settings.refresh({
+  refreshSettingsPanel(
+    request: ExtensionSettingsPanelRefreshRequest
+  ): Promise<ExtensionSettingsPanelRefreshResponse> {
+    return this.contributions.settingsPanels.refresh({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  submitSettings(
-    request: ExtensionSettingsSubmitRequest
-  ): Promise<ExtensionSettingsCallbackResponse> {
-    return this.contributions.settings.submit({
+  submitSettingsPanel(
+    request: ExtensionSettingsPanelSubmitRequest
+  ): Promise<ExtensionSettingsPanelCallbackResponse> {
+    return this.contributions.settingsPanels.submit({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  invokeSettingsNode(
-    request: ExtensionSettingsInvokeRequest
-  ): Promise<ExtensionSettingsCallbackResponse> {
-    return this.contributions.settings.invoke({
+  invokeSettingsPanelNode(
+    request: ExtensionSettingsPanelInvokeRequest
+  ): Promise<ExtensionSettingsPanelCallbackResponse> {
+    return this.contributions.settingsPanels.invoke({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
   }
 
-  releaseSettings(request: ExtensionSettingsReleaseRequest): Promise<void> {
-    return this.contributions.settings.release({
+  releaseSettingsPanel(request: ExtensionSettingsPanelReleaseRequest): Promise<void> {
+    return this.contributions.settingsPanels.release({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })

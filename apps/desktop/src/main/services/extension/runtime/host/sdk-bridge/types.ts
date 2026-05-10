@@ -2,9 +2,14 @@ import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
   CommandContribution,
-  DeeplinkContribution,
-  DeeplinkRegistrationHandle,
-  Disposable,
+  CommandRegistration,
+  DeeplinkRouteContribution,
+  DeeplinkRouteRegistration,
+  EntityMenuContribution,
+  EntityMenuDomain,
+  EntityMenuInputFor,
+  EntityMenuRegistration,
+  EntityMenuScope,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionLogger,
@@ -16,16 +21,22 @@ import type {
   HostEventListener,
   HostEventTopic,
   KisakiApi,
-  MenuContribution,
-  MenuDomain,
-  MenuInputFor,
-  MenuRegistration,
-  MenuScope,
   PersonScraperProvider,
-  SettingsContribution,
-  SettingsRegistration,
+  ScraperMediaType,
+  ScraperProviderRegistration,
+  SettingsPanelContribution,
+  SettingsPanelRegistration,
+  ThemeRegistration,
   ThemeContribution
 } from '@kisaki/extension-api'
+
+export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
+  ? GameScraperProvider
+  : TMediaType extends 'person'
+    ? PersonScraperProvider
+    : TMediaType extends 'company'
+      ? CompanyScraperProvider
+      : CharacterScraperProvider
 
 /**
  * Identifies the extension runtime currently allowed to call SDK APIs.
@@ -61,38 +72,27 @@ export interface ExtensionSdkBridge {
   createLogger(scope: ActiveExtensionScope, extension: ExtensionRuntimeMetadata): ExtensionLogger
   createStorage(scope: ActiveExtensionScope): ExtensionStorage
   createSecrets(scope: ActiveExtensionScope): ExtensionSecrets
-  registerCommand(scope: ActiveExtensionScope, command: CommandContribution): Promise<Disposable>
-  registerMenu<TDomain extends MenuDomain, TScope extends MenuScope<TDomain>>(
+  registerCommand(scope: ActiveExtensionScope, command: CommandContribution): CommandRegistration
+  registerEntityMenu<TDomain extends EntityMenuDomain, TScope extends EntityMenuScope<TDomain>>(
     scope: ActiveExtensionScope,
     domain: TDomain,
     menuScope: TScope,
-    contribution: MenuContribution<MenuInputFor<TDomain, TScope>>
-  ): MenuRegistration
-  registerSettings(
+    contribution: EntityMenuContribution<EntityMenuInputFor<TDomain, TScope>>
+  ): EntityMenuRegistration
+  registerSettingsPanel(
     scope: ActiveExtensionScope,
-    contribution: SettingsContribution<any, any>
-  ): SettingsRegistration
-  registerGameScraperProvider(
+    contribution: SettingsPanelContribution<any, any>
+  ): SettingsPanelRegistration
+  registerScraperProvider<TMediaType extends ScraperMediaType>(
     scope: ActiveExtensionScope,
-    provider: GameScraperProvider
-  ): Disposable
-  registerPersonScraperProvider(
+    mediaType: TMediaType,
+    provider: ScraperProviderFor<TMediaType>
+  ): ScraperProviderRegistration
+  registerDeeplinkRoute(
     scope: ActiveExtensionScope,
-    provider: PersonScraperProvider
-  ): Disposable
-  registerCompanyScraperProvider(
-    scope: ActiveExtensionScope,
-    provider: CompanyScraperProvider
-  ): Disposable
-  registerCharacterScraperProvider(
-    scope: ActiveExtensionScope,
-    provider: CharacterScraperProvider
-  ): Disposable
-  registerDeeplink(
-    scope: ActiveExtensionScope,
-    contribution: DeeplinkContribution
-  ): DeeplinkRegistrationHandle
-  registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): Disposable
+    contribution: DeeplinkRouteContribution
+  ): DeeplinkRouteRegistration
+  registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): ThemeRegistration
   asAbsolutePath(extensionPath: string, relativePath: string): string
 }
 

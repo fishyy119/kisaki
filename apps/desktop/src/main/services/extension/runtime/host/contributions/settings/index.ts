@@ -1,1 +1,0 @@
-export { HostSettingsContributions } from './manager'

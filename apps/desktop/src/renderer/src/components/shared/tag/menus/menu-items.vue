@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { ExtensionMenuItems } from '@renderer/components/extension/menus'
+import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
 import { tags, type Tag } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
 
@@ -96,7 +96,7 @@ async function handleToggleNsfw() {
       NSFW
     </component>
 
-    <ExtensionMenuItems
+    <ExtensionEntityMenuItems
       :input="extensionMenuInput"
       :components="props.components"
       :enabled="props.enabled"

@@ -1,7 +1,7 @@
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { themeManager, type ThemeDefinition } from '@renderer/core/theme'
 import { isSafeThemeColorToken, type ThemeContribution } from '@kisaki/extension-api'
-import type { ExtensionThemeContributionInfo } from '@shared/extension'
+import type { ExtensionThemeRegistrationInfo } from '@shared/extension'
 
 const extensionThemeDisposers = new Map<string, () => void>()
 const extensionThemeCss = new Map<string, string>()
@@ -24,7 +24,7 @@ export async function refreshExtensionThemes(): Promise<void> {
 }
 
 export function syncExtensionThemes(
-  contributions: readonly ExtensionThemeContributionInfo[]
+  contributions: readonly ExtensionThemeRegistrationInfo[]
 ): void {
   const nextIds = new Set<string>()
 
@@ -52,7 +52,7 @@ export function syncExtensionThemes(
   }
 }
 
-function toThemeDefinition(info: ExtensionThemeContributionInfo): ThemeDefinition {
+function toThemeDefinition(info: ExtensionThemeRegistrationInfo): ThemeDefinition {
   const id = getExtensionThemeId(info.extensionId, info.theme.id)
   return {
     id,

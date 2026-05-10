@@ -12,7 +12,7 @@
 - `settings` root 支持直接 `fields` 或 `tabs`；分类只用 tabs。
 - `settings` dialog 只表示一层任务对话框，不作为分类导航。
 - `settings` popover 只表示锚定到 button node 的轻量临时 surface。
-- `menus` 使用 `context.contributions.menus.game.single` 这类 domain/scope 入口注册。
+- `entityMenus` 使用 `context.contributions.entityMenus.game.single` 这类 domain/scope 入口注册。
 - 渲染进程不执行扩展代码，只渲染 main 提供的结构化 DTO。
 - 渲染进程 settings/menus 不再通过纯中转 wrapper 或总出口导入类型和 IPC helper。
 
@@ -139,7 +139,7 @@ export interface SettingsRegistration extends Disposable {
   refresh(reason?: SettingsRefreshReason): Promise<void>
 }
 
-export interface SettingsRegistrar {
+export interface SettingsPanelRegistrar {
   register<
     const TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
     const TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
@@ -148,7 +148,7 @@ export interface SettingsRegistrar {
   ): SettingsRegistration
 }
 
-export function defineSettingsContribution<
+export function defineSettingsPanel<
   const TPopovers extends SettingsPopoverMap = EmptySettingsPopoverMap,
   const TDialogs extends SettingsDialogMap<TPopovers> = EmptySettingsDialogMap
 >(
@@ -161,7 +161,7 @@ export interface SettingsRefreshReason {
 }
 ```
 
-`defineSettingsContribution()` 是唯一正式公共 helper。它不包装运行时行为，只稳定完整 contribution 上下文的 const generic 推导，让 `openDialog()` 和 `openPopover()` 能拿到精确 key。Dialog 与 popover definition 不提供独立 helper，因为它们脱离完整 settings 注册上下文后无法保持一致的 id 推导语义。
+`defineSettingsPanel()` 是唯一正式公共 helper。它不包装运行时行为，只稳定完整 contribution 上下文的 const generic 推导，让 `openDialog()` 和 `openPopover()` 能拿到精确 key。Dialog 与 popover definition 不提供独立 helper，因为它们脱离完整 settings 注册上下文后无法保持一致的 id 推导语义。
 
 ### Maps 与 ID 推导
 
@@ -1025,8 +1025,8 @@ export interface SettingsNodeFactory<TEvents extends SettingsAnyNodeEvents> {
 ## Settings 示例
 
 ```ts
-const registration = context.contributions.settings.register(
-  defineSettingsContribution({
+const registration = context.contributions.settingsPanels.register(
+  defineSettingsPanel({
     id: 'bangumi',
     title: 'Bangumi',
     popovers: {
@@ -1497,13 +1497,13 @@ export interface TagSingleMenuInput extends MenuInputBase {
 }
 ```
 
-Menu domain/scope/input 映射是 input 的唯一事实源。`MenuRegistrar` 从
-`MenuInputMap` 直接派生，domain/scope 选择后的 `register()` 参数类型是
-`MenuContribution<MenuInputMap[domain][scope]>` 的等价形式，不再维护额外的
+Entity menu domain/scope/input 映射是 input 的唯一事实源。`EntityMenuRegistrar` 从
+`EntityMenuInputMap` 直接派生，domain/scope 选择后的 `register()` 参数类型是
+`MenuContribution<EntityMenuInputMap[domain][scope]>` 的等价形式，不再维护额外的
 contribution 映射或每个 domain/scope 的命名 contribution alias：
 
 ```ts
-export interface MenuInputMap {
+export interface EntityMenuInputMap {
   game: {
     single: GameSingleMenuInput
     batch: GameBatchMenuInput
@@ -1525,19 +1525,24 @@ export interface MenuInputMap {
   }
 }
 
-export type MenuDomain = keyof MenuInputMap
-export type MenuScope<TDomain extends MenuDomain> = Extract<keyof MenuInputMap[TDomain], string>
+export type MenuDomain = keyof EntityMenuInputMap
+export type MenuScope<TDomain extends MenuDomain> = Extract<
+  keyof EntityMenuInputMap[TDomain],
+  string
+>
 
 export type MenuInput = {
-  [TDomain in keyof MenuInputMap]: MenuInputMap[TDomain][keyof MenuInputMap[TDomain]]
-}[keyof MenuInputMap]
+  [TDomain in keyof EntityMenuInputMap]: EntityMenuInputMap[TDomain][keyof EntityMenuInputMap[TDomain]]
+}[keyof EntityMenuInputMap]
 
 type MenuInputFor<
   TDomain extends MenuDomain,
   TScope extends MenuScope<TDomain>
-> = MenuInputMap[TDomain][TScope] extends MenuInput ? MenuInputMap[TDomain][TScope] : never
+> = EntityMenuInputMap[TDomain][TScope] extends MenuInput
+  ? EntityMenuInputMap[TDomain][TScope]
+  : never
 
-export type MenuRegistrar = {
+export type EntityMenuRegistrar = {
   [TDomain in MenuDomain]: {
     [TScope in MenuScope<TDomain>]: MenuRegistrationPoint<MenuInputFor<TDomain, TScope>>
   }
@@ -1647,7 +1652,7 @@ export interface MenuNodeFactory<TInput extends MenuInput = MenuInput> {
 示例：
 
 ```ts
-const registration = context.contributions.menus.game.single.register({
+const registration = context.contributions.entityMenus.game.single.register({
   id: 'open-bangumi',
   order: 20,
   async resolve(input, menu) {
@@ -1688,8 +1693,8 @@ context.subscriptions.add(registration)
 
 ## Menus 校验
 
-- Domain/scope 注册入口由 `MenuInputMap` 和 `MenuRegistrar` 派生。
-- `MenuInputMap` 是 menus domain/scope/input 的唯一事实源；不要维护同 key 的 contribution map。
+- Domain/scope 注册入口由 `EntityMenuInputMap` 和 `EntityMenuRegistrar` 派生。
+- `EntityMenuInputMap` 是 menus domain/scope/input 的唯一事实源；不要维护同 key 的 contribution map。
 - `MenuNode.id` 在同级节点中必须唯一。
 - `separator.id` 在公共 API 中是可选的。
 - Normalize 阶段会生成稳定的内部 separator id，用于渲染进程 key。
@@ -1877,7 +1882,7 @@ Main 职责：
 - `extension:release-settings-session`
 - `extension:resolve-entity-menu`
 - `extension:invoke-entity-menu`
-- `extension:release-entity-menu-session`
+- `extension:release-entity-menu`
 - `contributions.entityMenus.*`
 - 渲染进程 settings/menus 纯 IPC wrapper 和类型总出口
 
@@ -1885,7 +1890,7 @@ Main 职责：
 
 1. 重写 `packages/extension-api/src/contributions/settings/contracts.ts`。
 2. 按新的统一 node 核心和 capability result alias 重写 settings validation。
-3. 把 entity menu 公共 API 重命名为 `menus`，并实现由 `MenuInputMap` / `MenuRegistrar` 派生的注册入口。
+3. 把 entity menu 公共 API 重命名为 `entityMenus`，并实现由 `EntityMenuInputMap` / `EntityMenuRegistrar` 派生的注册入口。
 4. 更新 `packages/extension-api/src/context.ts`。
 5. 更新 SDK bridge registrar 与 extension host contribution handler。
 6. 重写 `apps/desktop/src/shared/extension.ts` 中的 settings/menu DTO。
@@ -1913,8 +1918,8 @@ Main 职责：
 - Settings refresh 使用显式 target，不使用 boolean `true`。
 - 渲染进程 draft merge 在 refresh 后保留 dirty node id 对应的 draft。
 - `registration.refresh()` 会刷新已打开的渲染进程 session，但不直接推送 DTO。
-- Menus 使用 `context.contributions.menus.<domain>.<scope>`。
-- Menu domain/scope/input 类型由 `MenuInputMap` 派生，register 参数类型由 `MenuContribution<MenuInputMap[domain][scope]>` 的等价形式派生。
+- Entity menus 使用 `context.contributions.entityMenus.<domain>.<scope>`。
+- Menu domain/scope/input 类型由 `EntityMenuInputMap` 派生，register 参数类型由 `MenuContribution<EntityMenuInputMap[domain][scope]>` 的等价形式派生。
 - 不为每个 menu domain/scope 手写 `Contribution` 后缀命名类型。
 - Submenu 使用 `MenuSubmenuNode` 和 `kind: 'submenu'`。
 - Menu callback 通过 `nodePath` 调用。

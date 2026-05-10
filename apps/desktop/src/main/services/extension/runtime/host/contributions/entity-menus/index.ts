@@ -1,0 +1,1 @@
+export { HostEntityMenuContributions } from './manager'
