@@ -14,9 +14,9 @@ import log from 'electron-log/renderer'
  */
 export function setupDeeplinkHandlers(): void {
   // Handle navigation events
-  ipcManager.on('deeplink:navigate', (_, { route, params }) => {
+  ipcManager.on('deeplink:navigate', (_, { route, query }) => {
     log.info(`[Deeplink] Navigating to: ${route}`)
-    router.push({ path: route, query: params })
+    router.push({ path: route, query })
   })
 
   // Handle auth callback events
@@ -57,12 +57,12 @@ export async function handleDeeplink(url: string): Promise<boolean> {
 }
 
 /**
- * Get all registered deeplink actions.
+ * Get all registered deeplink route patterns.
  */
-export async function getDeeplinkActions(): Promise<string[]> {
-  const result = await ipcManager.invoke('deeplink:get-actions')
+export async function getDeeplinkRoutes(): Promise<string[]> {
+  const result = await ipcManager.invoke('deeplink:list-routes')
   if (result.success) {
-    return result.data
+    return result.data.map((route) => route.pattern)
   }
   return []
 }

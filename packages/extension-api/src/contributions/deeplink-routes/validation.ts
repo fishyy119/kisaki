@@ -13,13 +13,19 @@ import {
 
 const DEEPLINK_ROUTE_CONTRIBUTION_KEYS = new Set<string>(['id', 'path', 'handle'])
 
-const DEEPLINK_ROUTE_HANDLE_EVENT_KEYS = new Set<string>(['path', 'params', 'rawUrl'])
+const DEEPLINK_ROUTE_HANDLE_EVENT_KEYS = new Set<string>([
+  'path',
+  'pattern',
+  'params',
+  'query',
+  'rawUrl'
+])
 
 const DEEPLINK_ROUTE_HANDLE_RESULT_KEYS = new Set<string>(['success', 'status', 'message', 'data'])
 
 const DEEPLINK_ROUTE_HANDLE_RESULT_STATUS_VALUES = ['handled', 'ignored', 'error'] as const
 
-function validateDeeplinkRoutePath(value: unknown, path: string): ValidationIssue[] {
+function validateDeeplinkPath(value: unknown, path: string): ValidationIssue[] {
   const issues = validateRequiredString(value, path, {
     trim: true,
     valueMessage: 'path must be a non-empty string.'
@@ -48,6 +54,45 @@ function validateDeeplinkRoutePath(value: unknown, path: string): ValidationIssu
   return issues
 }
 
+function validateDeeplinkRoutePattern(value: unknown, path: string): ValidationIssue[] {
+  const issues = validateDeeplinkPath(value, path)
+  if (typeof value !== 'string') {
+    return issues
+  }
+
+  issues.push(...validateDeeplinkRoutePatternSegments(value, path))
+  return issues
+}
+
+function validateDeeplinkRoutePatternSegments(value: string, path: string): ValidationIssue[] {
+  const issues: ValidationIssue[] = []
+  const segments = value === '/' ? [] : value.slice(1).split('/')
+  segments.forEach((segment, index) => {
+    if (segment.startsWith(':')) {
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(segment.slice(1))) {
+        issues.push({ path, message: `Route parameter segment "${segment}" has an invalid name.` })
+      }
+      return
+    }
+
+    if (segment.startsWith('*')) {
+      if (index !== segments.length - 1) {
+        issues.push({ path, message: `Route wildcard segment "${segment}" must be final.` })
+      }
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(segment.slice(1))) {
+        issues.push({ path, message: `Route wildcard segment "${segment}" has an invalid name.` })
+      }
+      return
+    }
+
+    if (segment.includes(':') || segment.includes('*')) {
+      issues.push({ path, message: `Route literal segment "${segment}" must not contain : or *.` })
+    }
+  })
+
+  return issues
+}
+
 export function validateDeeplinkRouteContributionShape(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
     return [{ path: '$', message: 'Deeplink route contribution must be an object.' }]
@@ -59,7 +104,7 @@ export function validateDeeplinkRouteContributionShape(value: unknown): Validati
       trim: true,
       valueMessage: 'Contribution id must be a non-empty string.'
     }),
-    ...validateDeeplinkRoutePath(value.path, '$.path'),
+    ...validateDeeplinkRoutePattern(value.path, '$.path'),
     ...validateRequiredFunction(value.handle, '$.handle').map((issue) => ({
       ...issue,
       message: 'handle must be a function.'
@@ -74,29 +119,34 @@ export function validateDeeplinkRouteHandleEvent(value: unknown): ValidationIssu
 
   const issues: ValidationIssue[] = [
     ...validateUnknownKeys(value, DEEPLINK_ROUTE_HANDLE_EVENT_KEYS),
-    ...validateDeeplinkRoutePath(value.path, '$.path'),
+    ...validateDeeplinkPath(value.path, '$.path'),
+    ...validateDeeplinkRoutePattern(value.pattern, '$.pattern'),
     ...validateRequiredString(value.rawUrl, '$.rawUrl', {
       trim: true,
       valueMessage: 'rawUrl must be a non-empty string.'
     })
   ]
 
-  if (!isPlainObject(value.params)) {
-    issues.push({
-      path: '$.params',
-      message: 'params must be an object.'
-    })
-  } else {
-    for (const [key, entry] of Object.entries(value.params)) {
-      if (typeof entry !== 'string') {
-        issues.push({
-          path: `$.params.${key}`,
-          message: 'Deeplink params values must be strings.'
-        })
-      }
-    }
+  issues.push(...validateStringRecord(value.params, '$.params', 'params'))
+  issues.push(...validateStringRecord(value.query, '$.query', 'query'))
+
+  return issues
+}
+
+function validateStringRecord(value: unknown, path: string, label: string): ValidationIssue[] {
+  if (!isPlainObject(value)) {
+    return [{ path, message: `${label} must be an object.` }]
   }
 
+  const issues: ValidationIssue[] = []
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry !== 'string') {
+      issues.push({
+        path: `${path}.${key}`,
+        message: `Deeplink ${label} values must be strings.`
+      })
+    }
+  }
   return issues
 }
 

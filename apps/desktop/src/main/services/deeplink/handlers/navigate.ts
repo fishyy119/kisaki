@@ -15,27 +15,29 @@
  */
 
 import log from 'electron-log/main'
-import type { DeeplinkHandler, ParsedDeeplink, DeeplinkResult } from '../types'
+import type { DeeplinkResult, DeeplinkRouteContext, DeeplinkRouteHandler } from '../types'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
 
-export class NavigateHandler implements DeeplinkHandler {
-  readonly action = 'navigate' as const
+export const NAVIGATE_DEEPLINK_ROUTE = '/navigate/*routePath' as const
 
+type NavigateDeeplinkContext = DeeplinkRouteContext<typeof NAVIGATE_DEEPLINK_ROUTE>
+
+export class NavigateHandler implements DeeplinkRouteHandler<typeof NAVIGATE_DEEPLINK_ROUTE> {
   constructor(
     private readonly ipc: IpcService,
     private readonly windowService: WindowService
   ) {}
 
-  async handle(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
-    // Build route from resource path
-    const route = '/' + deeplink.resource
+  async handle(deeplink: NavigateDeeplinkContext): Promise<DeeplinkResult> {
+    const routePath = deeplink.params.routePath
+    const route = routePath ? `/${routePath}` : '/'
 
     try {
       // Send navigation event to renderer
       this.ipc.send('deeplink:navigate', {
         route,
-        params: deeplink.params
+        query: deeplink.query
       })
 
       // Focus window
@@ -45,15 +47,17 @@ export class NavigateHandler implements DeeplinkHandler {
 
       return {
         success: true,
-        action: this.action,
+        path: deeplink.path,
+        pattern: deeplink.pattern,
         message: `Navigating to: ${route}`,
-        data: { route, params: deeplink.params }
+        data: { route, query: deeplink.query }
       }
     } catch (error) {
       log.error('[NavigateHandler] Navigation failed:', error)
       return {
         success: false,
-        action: this.action,
+        path: deeplink.path,
+        pattern: deeplink.pattern,
         message: (error as Error).message
       }
     }

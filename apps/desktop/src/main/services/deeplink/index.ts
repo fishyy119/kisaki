@@ -6,4 +6,17 @@
 
 export { DeeplinkService } from './service'
 export { DeeplinkRouter } from './router'
-export type { DeeplinkHandler, DeeplinkAction, ParsedDeeplink, DeeplinkResult } from './types'
+export {
+  compileDeeplinkRoutePattern,
+  matchDeeplinkRoutePath,
+  normalizeDeeplinkRoutePath,
+  normalizeDeeplinkRoutePattern
+} from './route-pattern'
+export type { CompiledDeeplinkRoutePattern } from './route-pattern'
+export type {
+  DeeplinkRouteContext,
+  DeeplinkRouteHandler,
+  DeeplinkRouteInfo,
+  DeeplinkResult,
+  ParsedDeeplink
+} from './types'

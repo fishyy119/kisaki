@@ -154,7 +154,7 @@ export function createDeeplinkRouteRegistrar(
   scope: ActiveExtensionScope
 ): DeeplinkRouteRegistrar {
   return {
-    register(contribution: DeeplinkRouteContribution) {
+    register<const TPattern extends string>(contribution: DeeplinkRouteContribution<TPattern>) {
       const disposable = bridge.registerDeeplinkRoute(scope, contribution)
       subscriptions.add(disposable)
       return disposable

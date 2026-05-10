@@ -98,7 +98,7 @@ import type {
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import type {
   DeeplinkResult,
-  DeeplinkAction,
+  DeeplinkRouteInfo,
   DeeplinkNavigatePayload,
   DeeplinkAuthCallbackPayload,
   DeeplinkAuthErrorPayload
@@ -485,7 +485,7 @@ export interface IpcMainHandlers {
 
   // Deeplink
   'deeplink:handle': (url: string) => IpcResult<DeeplinkResult>
-  'deeplink:get-actions': () => IpcResult<DeeplinkAction[]>
+  'deeplink:list-routes': () => IpcResult<DeeplinkRouteInfo[]>
 }
 
 /**

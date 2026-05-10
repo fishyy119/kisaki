@@ -46,8 +46,9 @@ export default defineExtension({
 
     context.contributions.deeplinkRoutes.register({
       id: 'oauth-callback',
-      path: '/oauth/callback',
-      handle() {
+      path: '/oauth/callback/:provider',
+      handle(event) {
+        context.logger.info(`OAuth callback for ${event.params.provider}`)
         return { success: true, status: 'handled' }
       }
     })

@@ -1,56 +1,87 @@
-/**
- * Deeplink Router
- *
- * Routes deeplink requests to appropriate handlers based on action type.
- */
+import type {
+  DeeplinkResult,
+  DeeplinkRouteContext,
+  DeeplinkRouteHandler,
+  ParsedDeeplink
+} from './types'
+import {
+  compileDeeplinkRoutePattern,
+  matchDeeplinkRoutePathInfo,
+  type CompiledDeeplinkRoutePattern
+} from './route-pattern'
 
-import type { DeeplinkAction, ParsedDeeplink, DeeplinkResult, DeeplinkHandler } from './types'
+interface DeeplinkRouteRecord {
+  compiled: CompiledDeeplinkRoutePattern
+  handler: DeeplinkRouteHandler
+  order: number
+}
 
 export class DeeplinkRouter {
-  private handlers = new Map<DeeplinkAction, DeeplinkHandler>()
+  private routes: DeeplinkRouteRecord[] = []
+  private nextOrder = 0
 
-  /**
-   * Register a handler for a specific action
-   */
-  register(handler: DeeplinkHandler): void {
-    this.handlers.set(handler.action, handler)
-  }
-
-  /**
-   * Unregister a handler
-   */
-  unregister(action: DeeplinkAction): void {
-    this.handlers.delete(action)
-  }
-
-  /**
-   * Route a deeplink to its handler
-   */
-  async route(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
-    const handler = this.handlers.get(deeplink.action)
-
-    if (!handler) {
-      return {
-        success: false,
-        action: deeplink.action,
-        message: `Unknown action: ${deeplink.action}`
-      }
+  register<const TPattern extends string>(
+    pattern: TPattern,
+    handler: DeeplinkRouteHandler<TPattern>
+  ): () => void {
+    const compiled = compileDeeplinkRoutePattern(pattern)
+    if (this.routes.some((route) => route.compiled.pattern === compiled.pattern)) {
+      throw new Error(`Deeplink route "${compiled.pattern}" is already registered.`)
     }
 
-    return handler.handle(deeplink)
+    const record: DeeplinkRouteRecord = {
+      compiled,
+      handler: handler as unknown as DeeplinkRouteHandler,
+      order: this.nextOrder++
+    }
+    this.routes.push(record)
+    this.sortRoutes()
+
+    return () => {
+      this.routes = this.routes.filter((route) => route !== record)
+    }
   }
 
-  /**
-   * Get all registered action types
-   */
-  getRegisteredActions(): DeeplinkAction[] {
-    return Array.from(this.handlers.keys())
+  unregister(pattern: string): void {
+    const compiled = compileDeeplinkRoutePattern(pattern)
+    this.routes = this.routes.filter((route) => route.compiled.pattern !== compiled.pattern)
   }
 
-  /**
-   * Check if an action has a registered handler
-   */
-  hasHandler(action: DeeplinkAction): boolean {
-    return this.handlers.has(action)
+  async route(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
+    for (const route of this.routes) {
+      const match = matchDeeplinkRoutePathInfo(route.compiled, deeplink.path)
+      if (!match) {
+        continue
+      }
+
+      const context: DeeplinkRouteContext = {
+        ...deeplink,
+        path: match.path,
+        pattern: route.compiled.pattern,
+        params: match.params
+      }
+      return route.handler.handle(context)
+    }
+
+    return {
+      success: false,
+      path: deeplink.path,
+      message: `No deeplink route matched: ${deeplink.path}`
+    }
+  }
+
+  listRoutes(): { pattern: string }[] {
+    return this.routes.map((route) => ({ pattern: route.compiled.pattern }))
+  }
+
+  hasRoute(pattern: string): boolean {
+    const compiled = compileDeeplinkRoutePattern(pattern)
+    return this.routes.some((route) => route.compiled.pattern === compiled.pattern)
+  }
+
+  private sortRoutes(): void {
+    this.routes.sort(
+      (left, right) => right.compiled.score - left.compiled.score || left.order - right.order
+    )
   }
 }

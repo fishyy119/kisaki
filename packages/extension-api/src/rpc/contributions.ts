@@ -73,7 +73,7 @@ export interface SettingsPanelRegistrationInfo {
 export interface DeeplinkRouteRegistrationInfo {
   id: string
   path: string
-  url: string
+  urlPattern: string
 }
 
 export interface GameScraperProviderRegistrationInfo {

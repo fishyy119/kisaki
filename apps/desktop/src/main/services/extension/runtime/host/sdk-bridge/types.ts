@@ -88,9 +88,9 @@ export interface ExtensionSdkBridge {
     mediaType: TMediaType,
     provider: ScraperProviderFor<TMediaType>
   ): ScraperProviderRegistration
-  registerDeeplinkRoute(
+  registerDeeplinkRoute<const TPattern extends string>(
     scope: ActiveExtensionScope,
-    contribution: DeeplinkRouteContribution
+    contribution: DeeplinkRouteContribution<TPattern>
   ): DeeplinkRouteRegistration
   registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): ThemeRegistration
   asAbsolutePath(extensionPath: string, relativePath: string): string

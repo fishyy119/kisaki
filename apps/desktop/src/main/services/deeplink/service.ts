@@ -9,13 +9,13 @@ import { app } from 'electron'
 import log from 'electron-log/main'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { DeeplinkRouter } from './router'
-import type { DeeplinkAction, ParsedDeeplink, DeeplinkResult } from './types'
+import type { DeeplinkResult, DeeplinkRouteHandler, ParsedDeeplink } from './types'
 import { DEEPLINK_SCHEME } from '@main/bootstrap/protocol'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
-import { AuthHandler } from './handlers/auth'
-import { LaunchHandler } from './handlers/launch'
-import { NavigateHandler } from './handlers/navigate'
+import { AUTH_DEEPLINK_ROUTE, AuthHandler } from './handlers/auth'
+import { LAUNCH_DEEPLINK_ROUTE, LaunchHandler } from './handlers/launch'
+import { NAVIGATE_DEEPLINK_ROUTE, NavigateHandler } from './handlers/navigate'
 
 export class DeeplinkService implements IService {
   readonly id = 'deeplink'
@@ -24,7 +24,7 @@ export class DeeplinkService implements IService {
   private router!: DeeplinkRouter
   private ipc!: IpcService
   private windowService!: WindowService
-  private pendingDeeplinks: string[] = []
+  private pendingDeeplinks: ParsedDeeplink[] = []
   private isReady = false
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
@@ -34,9 +34,9 @@ export class DeeplinkService implements IService {
     const launcher = container.get('launcher')
 
     this.router = new DeeplinkRouter()
-    this.router.register(new LaunchHandler(launcher))
-    this.router.register(new AuthHandler(this.ipc, this.windowService))
-    this.router.register(new NavigateHandler(this.ipc, this.windowService))
+    this.registerRoute(LAUNCH_DEEPLINK_ROUTE, new LaunchHandler(launcher))
+    this.registerRoute(AUTH_DEEPLINK_ROUTE, new AuthHandler(this.ipc, this.windowService))
+    this.registerRoute(NAVIGATE_DEEPLINK_ROUTE, new NavigateHandler(this.ipc, this.windowService))
 
     // Setup IPC handlers
     this.setupIpc()
@@ -50,6 +50,17 @@ export class DeeplinkService implements IService {
     log.info('[DeeplinkService] Initialized')
   }
 
+  registerRoute<const TPattern extends string>(
+    pattern: TPattern,
+    handler: DeeplinkRouteHandler<TPattern>
+  ): () => void {
+    return this.router.register(pattern, handler)
+  }
+
+  listRoutes(): { pattern: string }[] {
+    return this.router.listRoutes()
+  }
+
   /**
    * Mark the service as ready and process any pending deeplinks.
    * Should be called after all services are initialized and window is created.
@@ -58,8 +69,8 @@ export class DeeplinkService implements IService {
     this.isReady = true
 
     // Process any deeplinks that arrived before we were ready
-    for (const url of this.pendingDeeplinks) {
-      this.handleDeeplink(url).catch((error) => {
+    for (const deeplink of this.pendingDeeplinks) {
+      this.routeDeeplink(deeplink).catch((error) => {
         log.error('[DeeplinkService] Error processing pending deeplink:', error)
       })
     }
@@ -72,35 +83,38 @@ export class DeeplinkService implements IService {
    * Handle a deeplink URL
    */
   async handleDeeplink(url: string): Promise<DeeplinkResult> {
+    const parsed = this.parseDeeplink(url)
+    if (!parsed) {
+      log.warn(`[DeeplinkService] Invalid deeplink format: ${url}`)
+      return {
+        success: false,
+        message: 'Invalid deeplink format'
+      }
+    }
+
     // Queue if not ready yet
     if (!this.isReady) {
-      log.info(`[DeeplinkService] Queuing deeplink (not ready): ${url}`)
-      this.pendingDeeplinks.push(url)
+      log.info(`[DeeplinkService] Queuing deeplink (not ready): ${parsed.path}`)
+      this.pendingDeeplinks.push(parsed)
       return {
         success: true,
-        action: 'launch',
+        path: parsed.path,
         message: 'Queued for processing'
       }
     }
 
-    try {
-      const parsed = this.parseDeeplink(url)
-      if (!parsed) {
-        log.warn(`[DeeplinkService] Invalid deeplink format: ${url}`)
-        return {
-          success: false,
-          action: 'launch',
-          message: 'Invalid deeplink format'
-        }
-      }
+    return this.routeDeeplink(parsed)
+  }
 
-      log.info(`[DeeplinkService] Handling: ${parsed.action}/${parsed.resource}`)
-      return await this.router.route(parsed)
+  private async routeDeeplink(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
+    try {
+      log.info(`[DeeplinkService] Handling: ${deeplink.path}`)
+      return await this.router.route(deeplink)
     } catch (error) {
       log.error('[DeeplinkService] Error handling deeplink:', error)
       return {
         success: false,
-        action: 'launch',
+        path: deeplink.path,
         message: (error as Error).message
       }
     }
@@ -118,17 +132,18 @@ export class DeeplinkService implements IService {
         return null
       }
 
-      // kisaki://action/resource?params
-      // hostname = action, pathname = /resource
-      const action = parsed.hostname as DeeplinkAction
-      const resource = parsed.pathname.replace(/^\//, '')
-      const params: Record<string, string> = {}
+      const hostPath = parsed.hostname ? `/${parsed.hostname}` : ''
+      const routePath = `${hostPath}${parsed.pathname || ''}`
+      if (!routePath) {
+        return null
+      }
+      const query: Record<string, string> = {}
 
       parsed.searchParams.forEach((value, key) => {
-        params[key] = value
+        query[key] = value
       })
 
-      return { action, resource, params, raw: url }
+      return { path: routePath, query, rawUrl: url }
     } catch {
       return null
     }
@@ -193,16 +208,8 @@ export class DeeplinkService implements IService {
       }
     })
 
-    // Get registered actions
-    this.ipc.handle('deeplink:get-actions', () => {
-      return { success: true as const, data: this.router.getRegisteredActions() }
+    this.ipc.handle('deeplink:list-routes', () => {
+      return { success: true as const, data: this.listRoutes() }
     })
-  }
-
-  /**
-   * Get the router for external access (e.g., registering custom handlers)
-   */
-  getRouter(): DeeplinkRouter {
-    return this.router
   }
 }

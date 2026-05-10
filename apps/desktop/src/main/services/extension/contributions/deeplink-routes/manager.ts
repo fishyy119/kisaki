@@ -6,7 +6,17 @@ import type {
 } from '@kisaki/extension-api'
 import log from 'electron-log/main'
 import type { ExtensionDeeplinkRouteRegistrationInfo } from '@shared/extension'
-import type { DeeplinkHandler, DeeplinkResult, ParsedDeeplink } from '@main/services/deeplink'
+import type {
+  DeeplinkResult,
+  DeeplinkRouteContext,
+  DeeplinkRouteHandler
+} from '@main/services/deeplink'
+import {
+  compileDeeplinkRoutePattern,
+  matchNormalizedDeeplinkRoutePath,
+  normalizeDeeplinkRoutePattern,
+  type CompiledDeeplinkRoutePattern
+} from '@main/services/deeplink/route-pattern'
 import {
   getRuntimeContributionKey,
   requireContributionOwner,
@@ -18,14 +28,21 @@ import {
 interface DeeplinkRouteRegistration {
   owner: RuntimeContributionOwner
   contribution: DeeplinkRouteRegistrationInfo
+  compiled: CompiledDeeplinkRoutePattern
+  order: number
 }
+
+const EXTENSION_DEEPLINK_ROUTE = '/ext/:extensionId/*routePath' as const
+
+type ExtensionDeeplinkContext = DeeplinkRouteContext<typeof EXTENSION_DEEPLINK_ROUTE>
 
 export class ExtensionDeeplinkRouteContributionHost {
   private readonly registrations = new Map<string, DeeplinkRouteRegistration>()
-  private readonly byRoute = new Map<string, DeeplinkRouteRegistration>()
+  private readonly byExtension = new Map<string, DeeplinkRouteRegistration[]>()
+  private nextOrder = 0
 
   constructor(private readonly options: ExtensionContributionHostOptions) {
-    options.deeplink?.getRouter().register(new ExtensionDeeplinkHandler(this))
+    options.deeplink?.registerRoute(EXTENSION_DEEPLINK_ROUTE, new ExtensionDeeplinkHandler(this))
   }
 
   register(
@@ -34,10 +51,17 @@ export class ExtensionDeeplinkRouteContributionHost {
   ): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)
     const path = normalizeExtensionRoutePath(contribution.path)
-    const route = toInternalRoute(owner.extension.id, path)
-    const url = contribution.url
+    const key = getRuntimeContributionKey(runtimeHandle, contribution.id)
 
-    const existing = this.byRoute.get(route)
+    if (this.registrations.has(key)) {
+      throw new Error(
+        `Extension "${owner.extension.id}" already registered deeplink route "${contribution.id}".`
+      )
+    }
+
+    const existing = this.byExtension
+      .get(owner.extension.id)
+      ?.find((registration) => registration.contribution.path === path)
     if (existing) {
       throw new Error(
         `Deeplink path "${path}" is already registered by "${existing.owner.extension.id}:${existing.contribution.id}".`
@@ -49,12 +73,14 @@ export class ExtensionDeeplinkRouteContributionHost {
       contribution: {
         id: contribution.id,
         path,
-        url
-      }
+        urlPattern: contribution.urlPattern
+      },
+      compiled: compileDeeplinkRoutePattern(path),
+      order: this.nextOrder++
     }
 
-    this.registrations.set(getRuntimeContributionKey(runtimeHandle, contribution.id), registration)
-    this.byRoute.set(route, registration)
+    this.registrations.set(key, registration)
+    this.addExtensionRegistration(owner.extension.id, registration)
   }
 
   unregister(runtimeHandle: ExtensionRuntimeHandle, contributionId: string): void {
@@ -65,25 +91,21 @@ export class ExtensionDeeplinkRouteContributionHost {
     }
 
     this.registrations.delete(key)
-    this.byRoute.delete(
-      toInternalRoute(registration.owner.extension.id, registration.contribution.path)
-    )
+    this.removeExtensionRegistration(registration)
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
     for (const [key, registration] of [...this.registrations]) {
       if (registration.owner.runtimeHandle === runtimeHandle) {
         this.registrations.delete(key)
-        this.byRoute.delete(
-          toInternalRoute(registration.owner.extension.id, registration.contribution.path)
-        )
+        this.removeExtensionRegistration(registration)
       }
     }
   }
 
   releaseAll(): void {
     this.registrations.clear()
-    this.byRoute.clear()
+    this.byExtension.clear()
   }
 
   getSnapshot(): readonly ExtensionDeeplinkRouteRegistrationInfo[] {
@@ -96,63 +118,115 @@ export class ExtensionDeeplinkRouteContributionHost {
   }
 
   async handle(
-    route: string,
+    deeplink: ExtensionDeeplinkContext,
     event: DeeplinkRouteHandleEvent
   ): Promise<DeeplinkRouteHandleResult | null> {
-    const registration = this.byRoute.get(route)
-    if (!registration) {
+    const extensionId = deeplink.params.extensionId
+    const routePath = `/${deeplink.params.routePath ?? ''}`
+    const matched = this.findRegistration(extensionId, routePath)
+    if (!matched) {
       return null
     }
 
     return this.options.requestHost(
       'contributions.deeplinkRoutes.handle',
       {
-        runtimeHandle: registration.owner.runtimeHandle,
-        contributionId: registration.contribution.id,
+        runtimeHandle: matched.registration.owner.runtimeHandle,
+        contributionId: matched.registration.contribution.id,
         event: {
           ...event,
-          path: registration.contribution.path
+          path: routePath,
+          pattern: matched.registration.contribution.path,
+          params: matched.params
         }
       },
       { timeoutMs: 15_000 }
     )
   }
+
+  private addExtensionRegistration(
+    extensionId: string,
+    registration: DeeplinkRouteRegistration
+  ): void {
+    const scoped = this.byExtension.get(extensionId) ?? []
+    scoped.push(registration)
+    scoped.sort(
+      (left, right) => right.compiled.score - left.compiled.score || left.order - right.order
+    )
+    this.byExtension.set(extensionId, scoped)
+  }
+
+  private removeExtensionRegistration(registration: DeeplinkRouteRegistration): void {
+    const extensionId = registration.owner.extension.id
+    const scoped = this.byExtension.get(extensionId)
+    if (!scoped) {
+      return
+    }
+
+    const next = scoped.filter((entry) => entry !== registration)
+    if (next.length === 0) {
+      this.byExtension.delete(extensionId)
+      return
+    }
+
+    this.byExtension.set(extensionId, next)
+  }
+
+  private findRegistration(
+    extensionId: string,
+    routePath: string
+  ): { registration: DeeplinkRouteRegistration; params: Record<string, string> } | null {
+    const scoped = this.byExtension.get(extensionId)
+    if (!scoped) {
+      return null
+    }
+
+    for (const registration of scoped) {
+      const params = matchNormalizedDeeplinkRoutePath(registration.compiled, routePath)
+      if (params) {
+        return { registration, params }
+      }
+    }
+
+    return null
+  }
 }
 
-class ExtensionDeeplinkHandler implements DeeplinkHandler {
-  readonly action = 'ext' as const
-
+class ExtensionDeeplinkHandler implements DeeplinkRouteHandler<typeof EXTENSION_DEEPLINK_ROUTE> {
   constructor(private readonly host: ExtensionDeeplinkRouteContributionHost) {}
 
-  async handle(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
-    const route = `ext/${deeplink.resource}`
-
+  async handle(deeplink: ExtensionDeeplinkContext): Promise<DeeplinkResult> {
     try {
-      const response = await this.host.handle(route, {
-        path: deeplink.resource,
+      const response = await this.host.handle(deeplink, {
+        path: deeplink.path,
+        pattern: deeplink.pattern,
         params: deeplink.params,
-        rawUrl: deeplink.raw
+        query: deeplink.query,
+        rawUrl: deeplink.rawUrl
       })
 
       if (!response) {
         return {
           success: false,
-          action: this.action,
-          message: `Unknown extension deeplink route: ${route}`
+          path: deeplink.path,
+          pattern: deeplink.pattern,
+          message: `Unknown extension deeplink route: ${deeplink.path}`
         }
       }
 
       return {
         success: response.success,
-        action: this.action,
+        path: deeplink.path,
+        pattern: deeplink.pattern,
         message: response.message,
         data: response.data
       }
     } catch (error) {
-      log.warn(`[ExtensionDeeplinkRouteContributionHost] Route "${route}" failed:`, error)
+      log.warn(`[ExtensionDeeplinkRouteContributionHost] Route "${deeplink.path}" failed:`, error)
       return {
         success: false,
-        action: this.action,
+        path: deeplink.path,
+        pattern: deeplink.pattern,
         message: error instanceof Error ? error.message : 'Extension deeplink route failed.'
       }
     }
@@ -160,28 +234,11 @@ class ExtensionDeeplinkHandler implements DeeplinkHandler {
 }
 
 function normalizeExtensionRoutePath(path: string): string {
-  const normalized = path.trim()
-  if (
-    !normalized.startsWith('/') ||
-    normalized.includes('?') ||
-    normalized.includes('#') ||
-    normalized.includes('\\') ||
-    normalized.split('/').some((segment) => segment === '..') ||
-    (normalized.length > 1 &&
-      normalized.split('/').some((segment, index) => index > 0 && segment === ''))
-  ) {
-    throw new Error(
-      `Extension deeplink route path "${path}" must be a canonical leading-slash route path.`
-    )
-  }
+  const normalized = normalizeDeeplinkRoutePattern(path)
 
   if (normalized === '/ext' || normalized.startsWith('/ext/')) {
     throw new Error('Extension deeplink route path must not include the host "/ext" namespace.')
   }
 
   return normalized
-}
-
-function toInternalRoute(extensionId: string, path: string): string {
-  return `ext/${extensionId}${path}`
 }

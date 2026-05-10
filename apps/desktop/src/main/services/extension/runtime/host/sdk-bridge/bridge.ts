@@ -389,9 +389,9 @@ export class ExtensionHostSdkBridge {
     return this.scraperProviders.registerScraperProvider(scope, mediaType, provider)
   }
 
-  private registerDeeplinkRoute(
+  private registerDeeplinkRoute<const TPattern extends string>(
     scope: ActiveExtensionScope,
-    contribution: DeeplinkRouteContribution
+    contribution: DeeplinkRouteContribution<TPattern>
   ): DeeplinkRouteRegistration {
     return this.deeplinkRoutes.register(scope, contribution)
   }

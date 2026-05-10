@@ -14,9 +14,9 @@ import { createContributionRegistration } from '../registration'
 export class HostDeeplinkRouteContributions {
   constructor(private readonly options: HostContributionDomainOptions) {}
 
-  register(
+  register<const TPattern extends string>(
     scope: HostContributionScope,
-    contribution: DeeplinkRouteContribution
+    contribution: DeeplinkRouteContribution<TPattern>
   ): DeeplinkRouteRegistration {
     const issues = validateDeeplinkRouteContributionShape(contribution)
     if (issues.length > 0) {
@@ -39,8 +39,11 @@ export class HostDeeplinkRouteContributions {
       }
     }
 
-    this.options.registry.registerDeeplinkRoute(scope.extensionId, { ...contribution, path })
-    const url = `kisaki://ext/${scope.extensionId}${path}`
+    this.options.registry.registerDeeplinkRoute(scope.extensionId, {
+      ...contribution,
+      path
+    } as unknown as DeeplinkRouteContribution)
+    const urlPattern = `kisaki://ext/${scope.extensionId}${path}`
     const request = this.options.rpc.requestMain(
       'contributions.deeplinkRoutes.register',
       {
@@ -48,7 +51,7 @@ export class HostDeeplinkRouteContributions {
         route: {
           id: contribution.id,
           path,
-          url
+          urlPattern
         }
       },
       this.options.getRequestOptions(scope)
@@ -83,7 +86,7 @@ export class HostDeeplinkRouteContributions {
     })
     this.options.trackMainRequest(scope, registration.sync)
     return {
-      url,
+      urlPattern,
       dispose: () => registration.dispose()
     }
   }
