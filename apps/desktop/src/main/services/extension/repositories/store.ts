@@ -42,6 +42,12 @@ export interface ExtensionRepositoryRefreshFailureInput {
   refreshedAt?: Date
 }
 
+export interface ExtensionRepositoryRefreshNotModifiedInput {
+  etag?: string | null
+  lastModified?: string | null
+  refreshedAt?: Date
+}
+
 export class ExtensionRepositoryStore {
   constructor(private readonly db: DbContext) {}
 
@@ -108,6 +114,15 @@ export class ExtensionRepositoryStore {
       .update(extensionRepositories)
       .set({
         ...patch,
+        ...(patch.url
+          ? {
+              manifestSnapshot: null,
+              manifestDigest: null,
+              etag: null,
+              lastModified: null,
+              lastSuccessAt: null
+            }
+          : {}),
         updatedAt: new Date()
       })
       .where(eq(extensionRepositories.id, id))
@@ -153,6 +168,27 @@ export class ExtensionRepositoryStore {
       .set({
         lastRefreshAt: refreshedAt,
         lastError: input.error,
+        updatedAt: refreshedAt
+      })
+      .where(eq(extensionRepositories.id, id))
+      .run()
+
+    return this.require(id)
+  }
+
+  recordRefreshNotModified(
+    id: string,
+    input: ExtensionRepositoryRefreshNotModifiedInput = {}
+  ): ExtensionRepositoryRow {
+    const refreshedAt = input.refreshedAt ?? new Date()
+
+    this.db
+      .update(extensionRepositories)
+      .set({
+        etag: input.etag ?? undefined,
+        lastModified: input.lastModified ?? undefined,
+        lastRefreshAt: refreshedAt,
+        lastError: null,
         updatedAt: refreshedAt
       })
       .where(eq(extensionRepositories.id, id))

@@ -3,15 +3,17 @@
  *
  * Registers custom schemes for the application:
  * - attachment:// - Serves database attachments (images, backups)
+ * - kisaki-extension-icon:// - Lazily proxies extension catalog icons
  * - kisaki:// - Deeplink protocol for external triggers
  *
- * The attachment scheme must be registered before app.whenReady().
- * Its handler is set up by the attachment service.
+ * Custom schemes must be registered before app.whenReady().
+ * Their handlers are set up by the owning services.
  */
 
 import { protocol } from 'electron'
 
 const ATTACHMENT_SCHEME = 'attachment'
+const EXTENSION_ICON_SCHEME = 'kisaki-extension-icon'
 const DEEPLINK_SCHEME = 'kisaki'
 
 /**
@@ -21,10 +23,20 @@ const DEEPLINK_SCHEME = 'kisaki'
  * Note: kisaki:// deeplink scheme is registered via app.setAsDefaultProtocolClient()
  * in the main entry point, not here.
  */
-export function registerAttachmentScheme(): void {
+export function registerAppSchemes(): void {
   protocol.registerSchemesAsPrivileged([
     {
       scheme: ATTACHMENT_SCHEME,
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        bypassCSP: true,
+        stream: true
+      }
+    },
+    {
+      scheme: EXTENSION_ICON_SCHEME,
       privileges: {
         standard: true,
         secure: true,
@@ -36,4 +48,4 @@ export function registerAttachmentScheme(): void {
   ])
 }
 
-export { DEEPLINK_SCHEME }
+export { DEEPLINK_SCHEME, EXTENSION_ICON_SCHEME }

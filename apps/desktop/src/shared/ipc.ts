@@ -59,6 +59,8 @@ import type { GameRunningStatus } from './monitor'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
   ExtensionCatalogInfo,
+  ExtensionCatalogSearchRequest,
+  ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
@@ -66,6 +68,10 @@ import type {
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
   ExtensionRegistryEntry,
+  ExtensionRepositoryCreateRequest,
+  ExtensionRepositoryInfo,
+  ExtensionRepositoryRefreshResult,
+  ExtensionRepositoryUpdateRequest,
   ExtensionResolvedEntityMenu,
   ExtensionSettingsPanelRegistrationInfo,
   ExtensionSettingsPanelCallbackResponse,
@@ -428,6 +434,21 @@ export interface IpcMainHandlers {
   'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
+  'extension:list-repositories': () => IpcResult<readonly ExtensionRepositoryInfo[]>
+  'extension:add-repository': (
+    request: ExtensionRepositoryCreateRequest
+  ) => IpcResult<ExtensionRepositoryInfo>
+  'extension:update-repository': (
+    request: ExtensionRepositoryUpdateRequest
+  ) => IpcResult<ExtensionRepositoryInfo>
+  'extension:remove-repository': (repositoryId: string) => IpcVoidResult
+  'extension:refresh-repository': (
+    repositoryId: string
+  ) => IpcResult<ExtensionRepositoryRefreshResult>
+  'extension:refresh-repositories': () => IpcResult<readonly ExtensionRepositoryRefreshResult[]>
+  'extension:search-catalog': (
+    request?: ExtensionCatalogSearchRequest
+  ) => IpcResult<ExtensionCatalogSearchResult>
   'extension:get-contribution-snapshot': () => IpcResult<ExtensionContributionSnapshot>
   'extension:get-settings-panel-contributions': () => IpcResult<
     readonly ExtensionSettingsPanelRegistrationInfo[]
@@ -513,6 +534,8 @@ export interface IpcRendererEvents {
   'notify:dismiss': [{ toastId?: string }]
 
   // Extension contribution refresh (main -> renderer)
+  'extension:repositories-changed': []
+  'extension:catalog-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
   'extension:settings-panels-refresh-requested': [
     event: ExtensionSettingsPanelRefreshRequestedEvent

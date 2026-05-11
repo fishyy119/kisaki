@@ -11,11 +11,17 @@ import type { EventService } from '@main/services/event'
 import type * as dbSchema from '@shared/db'
 import { getBootstrapArgs } from '@main/bootstrap/args'
 import type {
+  ExtensionCatalogSearchRequest,
+  ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
+  ExtensionRepositoryCreateRequest,
+  ExtensionRepositoryInfo,
+  ExtensionRepositoryRefreshResult,
+  ExtensionRepositoryUpdateRequest,
   ExtensionResolvedEntityMenu,
   ExtensionSettingsPanelCallbackResponse,
   ExtensionSettingsPanelRegistrationInfo,
@@ -44,9 +50,15 @@ import { ExtensionReloadWatcher } from './reload-watcher'
 import { ExtensionStateStore } from './state'
 import {
   ExtensionPackageLayout,
+  ExtensionIconManager,
   ExtensionPackageOperationRegistry,
   ExtensionPackageTransaction
 } from './packages'
+import {
+  ExtensionRepositoryFetcher,
+  ExtensionRepositoryManager,
+  ExtensionRepositoryStore
+} from './repositories'
 import {
   RuntimeManager,
   type ExtensionRuntimeChangeCause,
@@ -93,6 +105,7 @@ export class ExtensionService implements IService {
   private event!: EventService
   private runtime!: RuntimeManager
   private reloadWatcher!: ExtensionReloadWatcher
+  private repositoryManager!: ExtensionRepositoryManager
   private capabilities!: ExtensionCapabilityGateway
   private contributions!: ExtensionContributionRegistry
   private snapshot: readonly ExtensionCatalogEntry[] = []
@@ -113,14 +126,32 @@ export class ExtensionService implements IService {
       statePath: resolveInsideRoot(rootDir, 'state.json')
     }
 
+    const dbService = container.get('db')
+    const networkService = container.get('network')
+
     this.stateStore = new ExtensionStateStore(this.paths.statePath)
     await this.stateStore.init()
     this.ipc = container.get('ipc')
     this.event = container.get('event')
-    await this.recoverPackageOperations(container.get('db').db)
+    await this.recoverPackageOperations(dbService.db)
+    const iconManager = new ExtensionIconManager(rootDir, networkService)
+    iconManager.registerProtocolHandler()
 
-    this.sources.register(new GitHubExtensionSourceProvider(container.get('network')))
-    this.sources.register(new UrlExtensionSourceProvider(container.get('network')))
+    this.repositoryManager = new ExtensionRepositoryManager({
+      store: new ExtensionRepositoryStore(dbService.db),
+      fetcher: new ExtensionRepositoryFetcher(networkService, {
+        allowInsecureLocalUrls: !app.isPackaged
+      }),
+      iconManager,
+      appVersion: app.getVersion(),
+      allowInsecureLocalUrls: !app.isPackaged,
+      onRepositoriesChanged: () => this.ipc.send('extension:repositories-changed'),
+      onCatalogChanged: () => this.ipc.send('extension:catalog-changed')
+    })
+    await this.repositoryManager.init()
+
+    this.sources.register(new GitHubExtensionSourceProvider(networkService))
+    this.sources.register(new UrlExtensionSourceProvider(networkService))
     this.sources.register(new LocalFileExtensionSourceProvider())
 
     this.catalog = new ExtensionCatalog(this.paths, this.stateStore)
@@ -163,6 +194,7 @@ export class ExtensionService implements IService {
     await this.refreshCatalog()
     this.devExtension = await this.resolveDevExtension()
     await this.applyRuntimeState({ cause: 'startup' })
+    this.repositoryManager.refreshRepositoriesInBackground()
     log.info('[ExtensionService] Initialized')
   }
 
@@ -185,6 +217,36 @@ export class ExtensionService implements IService {
 
   getCatalog(): readonly ExtensionCatalogEntry[] {
     return this.snapshot
+  }
+
+  listRepositories(): readonly ExtensionRepositoryInfo[] {
+    return this.repositoryManager.listRepositories()
+  }
+
+  addRepository(request: ExtensionRepositoryCreateRequest): Promise<ExtensionRepositoryInfo> {
+    return this.repositoryManager.addRepository(request)
+  }
+
+  updateRepository(request: ExtensionRepositoryUpdateRequest): Promise<ExtensionRepositoryInfo> {
+    return this.repositoryManager.updateRepository(request)
+  }
+
+  removeRepository(repositoryId: string): void {
+    this.repositoryManager.removeRepository(repositoryId)
+  }
+
+  refreshRepository(repositoryId: string): Promise<ExtensionRepositoryRefreshResult> {
+    return this.repositoryManager.refreshRepository(repositoryId)
+  }
+
+  refreshRepositories(): Promise<readonly ExtensionRepositoryRefreshResult[]> {
+    return this.repositoryManager.refreshRepositories()
+  }
+
+  searchCatalog(request: ExtensionCatalogSearchRequest = {}): ExtensionCatalogSearchResult {
+    return this.repositoryManager.searchCatalog(request, {
+      installedVersions: this.createInstalledVersionMap()
+    })
   }
 
   getExtension(extensionId: string): ExtensionCatalogEntry | undefined {
@@ -477,6 +539,16 @@ export class ExtensionService implements IService {
 
   private runMutatingOperation<T>(operation: () => Promise<T>): Promise<T> {
     return this.operationMutex.runExclusive(operation)
+  }
+
+  private createInstalledVersionMap(): ReadonlyMap<string, string> {
+    const versions = new Map<string, string>()
+    for (const entry of this.snapshot) {
+      if (entry.version) {
+        versions.set(entry.id, entry.version)
+      }
+    }
+    return versions
   }
 
   private assertUserManagedExtension(extensionId: string, operation: string): void {

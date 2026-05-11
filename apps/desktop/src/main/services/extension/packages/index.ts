@@ -1,5 +1,6 @@
 export * from './downloader'
 export * from './extractor'
+export * from './icon'
 export * from './layout'
 export * from './manifest'
 export * from './operations'

@@ -12,6 +12,10 @@ import type {
   EntityMenuSeparatorNode,
   EntityMenuSubmenuNode,
   ExtensionCategory,
+  ExtensionRegistryArtifactTarget,
+  ExtensionRegistryReleaseChannel,
+  ExtensionRegistryReleaseEngines,
+  ExtensionRegistrySigningAlgorithm,
   ExtensionRuntimeDiagnostic,
   GameScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo,
@@ -90,6 +94,140 @@ export interface ExtensionUpdateInfo {
   currentVersion: string
   latestVersion: string
   source: ExtensionSourceReference | null
+}
+
+export type ExtensionRepositoryState = 'enabled' | 'disabled'
+
+export interface ExtensionRepositoryInfo {
+  id: string
+  url: string
+  name: string
+  state: ExtensionRepositoryState
+  builtIn: boolean
+  priority: number
+  packageCount: number
+  manifestDigest: string | null
+  manifestUpdatedAt: string | null
+  lastRefreshAt: string | null
+  lastSuccessAt: string | null
+  lastError: string | null
+  etag: string | null
+  lastModified: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ExtensionRepositoryCreateRequest {
+  url: string
+  name?: string
+  state?: ExtensionRepositoryState
+  priority?: number
+}
+
+export interface ExtensionRepositoryUpdateRequest {
+  id: string
+  url?: string
+  name?: string
+  state?: ExtensionRepositoryState
+  priority?: number
+}
+
+export type ExtensionRepositoryRefreshStatus = 'success' | 'not-modified' | 'failed'
+
+export interface ExtensionRepositoryRefreshResult {
+  repository: ExtensionRepositoryInfo
+  status: ExtensionRepositoryRefreshStatus
+  changed: boolean
+  error: string | null
+}
+
+export interface ExtensionCatalogSearchRequest {
+  query?: string
+  category?: ExtensionCategory
+  channel?: string
+  repositoryId?: string
+  compatibleOnly?: boolean
+  installedOnly?: boolean
+  hasUpdateOnly?: boolean
+  sortBy?: 'relevance' | 'name' | 'updatedAt' | 'publishedAt' | 'repositoryPriority'
+  sortDirection?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}
+
+export interface ExtensionCatalogSearchResult {
+  packages: readonly ExtensionCatalogPackageInfo[]
+  total: number
+  hasMore: boolean
+}
+
+export interface ExtensionCatalogPackageInfo {
+  id: string
+  name: string
+  summary: string
+  description?: string
+  categories: readonly ExtensionCategory[]
+  keywords: readonly string[]
+  owner?: {
+    name: string
+    url?: string
+  }
+  homepage?: string
+  repository?: string
+  license?: string
+  iconUrl?: string
+  repositoryCount: number
+  latestRelease: ExtensionCatalogReleaseInfo | null
+  releases: readonly ExtensionCatalogReleaseInfo[]
+  sources: readonly ExtensionCatalogRepositorySourceInfo[]
+  updatedAt: string | null
+}
+
+export interface ExtensionCatalogRepositorySourceInfo {
+  repositoryId: string
+  repositoryName: string
+  repositoryUrl: string
+  repositoryPriority: number
+  manifestDigest: string | null
+}
+
+export interface ExtensionCatalogReleaseInfo {
+  id: string
+  releaseDigest: string
+  version: string
+  channel: ExtensionRegistryReleaseChannel
+  publishedAt: string
+  engines: ExtensionRegistryReleaseEngines
+  changelog?: {
+    text?: string
+    url?: string
+  }
+  yanked: boolean
+  compatible: boolean
+  repositoryCount: number
+  repositoryId: string
+  repositoryName: string
+  repositoryUrl: string
+  repositoryPriority: number
+  manifestDigest: string | null
+  sources: readonly ExtensionCatalogRepositorySourceInfo[]
+  artifact: ExtensionCatalogArtifactInfo | null
+  artifacts: readonly ExtensionCatalogArtifactInfo[]
+}
+
+export interface ExtensionCatalogArtifactInfo {
+  target: ExtensionRegistryArtifactTarget
+  url: string
+  host: string
+  size: number
+  sha256: string
+  signature: ExtensionCatalogArtifactSignatureInfo | null
+}
+
+export interface ExtensionCatalogArtifactSignatureInfo {
+  keyId: string
+  algorithm: ExtensionRegistrySigningAlgorithm
+  fingerprint: string
 }
 
 export interface ExtensionContributionOwnerInfo {

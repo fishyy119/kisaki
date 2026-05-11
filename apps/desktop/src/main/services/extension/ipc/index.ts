@@ -1,0 +1,1 @@
+export { registerExtensionIpc } from './register'

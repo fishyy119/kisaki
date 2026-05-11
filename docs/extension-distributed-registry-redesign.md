@@ -1194,7 +1194,7 @@ Renderer 显示：
 3. 实现 ETag / Last-Modified 缓存。
 4. 将规范化 manifest 写入 `extension_repositories.manifest_snapshot`。
 5. 实现 `ExtensionRepositoryAggregator`，从 manifest snapshot 聚合内存 catalog。
-6. 实现 `ExtensionIconManager`，renderer 只消费 main 提供的 app-local icon URL。
+6. 实现 `ExtensionIconManager`，renderer 只消费 main 提供的 app-local icon URL；图标由 main 代理按需下载并缓存，不在仓库刷新时全量预热。
 7. 接入 `extension:list-repositories`、`extension:add-repository`、`extension:update-repository`、`extension:remove-repository`、`extension:refresh-repository`、`extension:refresh-repositories` 和 `extension:search-catalog`。
 
 ### Phase 5：安装垂直切换

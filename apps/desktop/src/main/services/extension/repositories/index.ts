@@ -1,1 +1,5 @@
+export * from './aggregate'
+export * from './fetcher'
+export * from './manager'
 export * from './store'
+export * from './types'

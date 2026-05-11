@@ -26,7 +26,7 @@ import { CommandService } from './services/command'
 import { BackgroundTaskService } from './services/background-task'
 
 // Bootstrap (pre-ready modules)
-import { registerAttachmentScheme, DEEPLINK_SCHEME } from './bootstrap/protocol'
+import { registerAppSchemes, DEEPLINK_SCHEME } from './bootstrap/protocol'
 import { detectPortableMode, setupPortableIpc } from './bootstrap/portable'
 import { getBootstrapArgs, setupBootstrapArgsIpc } from './bootstrap/args'
 
@@ -59,7 +59,7 @@ if (bootstrapArgs.version) {
 }
 
 // Register custom protocols before app is ready
-registerAttachmentScheme()
+registerAppSchemes()
 
 // Initialize electron-log for main process
 log.initialize()
