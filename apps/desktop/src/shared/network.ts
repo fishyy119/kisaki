@@ -18,6 +18,8 @@ export interface FetchOptions {
   retries?: number
   /** Rate limit key (must be registered via registerRateLimit first) */
   rateLimitKey?: string
+  /** Maximum number of bytes allowed while streaming a download */
+  maxBytes?: number
 }
 
 /**

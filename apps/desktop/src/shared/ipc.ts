@@ -425,6 +425,7 @@ export interface IpcMainHandlers {
   'extension:uninstall': (extensionId: string) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateInfo[]>
   'extension:update': (extensionId: string) => IpcVoidResult
+  'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
   'extension:get-contribution-snapshot': () => IpcResult<ExtensionContributionSnapshot>

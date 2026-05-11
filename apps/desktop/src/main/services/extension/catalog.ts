@@ -1,7 +1,7 @@
 import fse from 'fs-extra'
 import log from 'electron-log/main'
 import type { ValidationIssue } from '@kisaki/extension-api'
-import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
+import { readExtensionManifestFile, validateInstalledExtensionPackage } from './packages/manifest'
 import type {
   ExtensionCatalogEntry,
   ExtensionServicePaths,

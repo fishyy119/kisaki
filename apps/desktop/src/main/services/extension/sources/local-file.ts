@@ -9,7 +9,7 @@ import type {
   ExtensionSearchResult,
   ExtensionSourceEntry
 } from '../types'
-import { parseExtensionManifest } from '../manifest'
+import { parseExtensionManifest } from '../packages/manifest'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
 /**

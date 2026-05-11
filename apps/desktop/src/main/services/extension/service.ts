@@ -3,10 +3,12 @@ import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
 import { Mutex } from 'async-mutex'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { ExtensionRuntimeMetadata } from '@kisaki/extension-api'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import type { EventService } from '@main/services/event'
+import type * as dbSchema from '@shared/db'
 import { getBootstrapArgs } from '@main/bootstrap/args'
 import type {
   ExtensionContributionSnapshot,
@@ -41,6 +43,11 @@ import { registerExtensionIpc } from './ipc'
 import { ExtensionReloadWatcher } from './reload-watcher'
 import { ExtensionStateStore } from './state'
 import {
+  ExtensionPackageLayout,
+  ExtensionPackageOperationRegistry,
+  ExtensionPackageTransaction
+} from './packages'
+import {
   RuntimeManager,
   type ExtensionRuntimeChangeCause,
   type ExtensionRuntimeState
@@ -51,7 +58,7 @@ import { UrlExtensionSourceProvider } from './sources/url'
 import { ExtensionSourceManager } from './sources/manager'
 import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions/registry'
-import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
+import { readExtensionManifestFile, validateInstalledExtensionPackage } from './packages/manifest'
 import {
   requireSafeExtensionId,
   resolveExtensionIdPath,
@@ -93,6 +100,7 @@ export class ExtensionService implements IService {
   private devExtension: ExtensionRuntimeMetadata | null = null
   private contributionSnapshotEmitQueued = false
   private readonly operationMutex = new Mutex()
+  private readonly packageOperations = new ExtensionPackageOperationRegistry()
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const rootDir = resolveInsideRoot(app.getPath('userData'), 'extensions')
@@ -109,6 +117,7 @@ export class ExtensionService implements IService {
     await this.stateStore.init()
     this.ipc = container.get('ipc')
     this.event = container.get('event')
+    await this.recoverPackageOperations(container.get('db').db)
 
     this.sources.register(new GitHubExtensionSourceProvider(container.get('network')))
     this.sources.register(new UrlExtensionSourceProvider(container.get('network')))
@@ -283,6 +292,10 @@ export class ExtensionService implements IService {
   async checkUpdates(): Promise<readonly ExtensionUpdateInfo[]> {
     const updates = await this.installer.checkUpdates()
     return updates.filter((update) => !this.byId.get(update.extensionId)?.builtin)
+  }
+
+  cancelOperation(operationId: string): boolean {
+    return this.packageOperations.cancel(operationId)
   }
 
   async enable(extensionId: string): Promise<ExtensionCatalogEntry> {
@@ -645,6 +658,21 @@ export class ExtensionService implements IService {
       this.contributionSnapshotEmitQueued = false
       this.ipc.send('extension:contributions-changed', this.getContributionSnapshot())
     })
+  }
+
+  private async recoverPackageOperations(
+    db: BetterSQLite3Database<typeof dbSchema>
+  ): Promise<void> {
+    const layout = new ExtensionPackageLayout(this.paths)
+    const recovery = await new ExtensionPackageTransaction(layout, db).recover()
+
+    for (const action of recovery.actions) {
+      log.info('[ExtensionService] Extension package recovery action:', action)
+    }
+
+    for (const issue of recovery.issues) {
+      log.warn('[ExtensionService] Extension package recovery issue:', issue)
+    }
   }
 }
 

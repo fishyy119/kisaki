@@ -21,7 +21,7 @@ import type {
 } from './types'
 import type { ExtensionRuntimeState } from './runtime/manager'
 import type { ExtensionService } from './service'
-import { resolveExtensionFilePath } from './manifest'
+import { resolveExtensionFilePath } from './packages/manifest'
 import { requireSafeExtensionId } from './shared/path-confinement'
 
 export function registerExtensionIpc(service: ExtensionService, ipc: IpcService): void {
@@ -93,6 +93,17 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       await service.update(requireSafeExtensionId(extensionId))
       return { success: true }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:cancel-operation', (_, operationId: string) => {
+    try {
+      return {
+        success: true,
+        data: service.cancelOperation(requireNonEmptyString(operationId, 'operationId'))
+      }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }

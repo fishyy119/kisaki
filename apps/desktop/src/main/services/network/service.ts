@@ -12,7 +12,7 @@ import log from 'electron-log/main'
 import { createWriteStream } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import path from 'path'
-import { Readable } from 'node:stream'
+import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import fse from 'fs-extra'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
@@ -121,9 +121,13 @@ export class NetworkService implements IService {
 
         const bodyStream = Readable.fromWeb(response.body as any)
         const fileStream = createWriteStream(tempPath)
+        const maxBytes = normalizeMaxBytes(options.maxBytes)
+        const streams = maxBytes
+          ? [bodyStream, createByteLimitTransform(maxBytes), fileStream]
+          : [bodyStream, fileStream]
 
         try {
-          await pipeline(bodyStream, fileStream, {
+          await pipeline(streams, {
             signal: options.signal
           })
           assertNotAborted(options.signal)
@@ -201,8 +205,12 @@ export class NetworkService implements IService {
         const currentError = error instanceof Error ? error : new Error(String(error))
         lastError = currentError
 
-        // Don't retry aborted requests.
-        if (isAbortError(currentError) || signal?.aborted) {
+        // Don't retry aborted requests or deterministic download budget failures.
+        if (
+          isAbortError(currentError) ||
+          isByteLimitExceededError(currentError) ||
+          signal?.aborted
+        ) {
           throw currentError
         }
 
@@ -240,6 +248,44 @@ export class NetworkService implements IService {
 
 function isAbortError(error: unknown): error is Error {
   return error instanceof Error && error.name === 'AbortError'
+}
+
+function isByteLimitExceededError(error: unknown): error is Error {
+  return error instanceof Error && error.name === 'ByteLimitExceededError'
+}
+
+function normalizeMaxBytes(value: number | undefined): number | null {
+  if (value === undefined) {
+    return null
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('Download maxBytes must be a positive safe integer.')
+  }
+
+  return value
+}
+
+function createByteLimitTransform(maxBytes: number): Transform {
+  let received = 0
+
+  return new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      received += chunk.byteLength
+      if (received > maxBytes) {
+        callback(createByteLimitExceededError(received, maxBytes))
+        return
+      }
+
+      callback(null, chunk)
+    }
+  })
+}
+
+function createByteLimitExceededError(received: number, maxBytes: number): Error {
+  const error = new Error(`Download exceeded the maximum allowed size: ${received} > ${maxBytes}.`)
+  error.name = 'ByteLimitExceededError'
+  return error
 }
 
 function assertNotAborted(signal?: AbortSignal): void {

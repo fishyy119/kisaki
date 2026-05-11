@@ -6,7 +6,7 @@ import fse from 'fs-extra'
 import semver from 'semver'
 import log from 'electron-log/main'
 import { normalizeExtensionPackagePath, type ExtensionManifest } from '@kisaki/extension-api'
-import { parseExtensionManifest, validateInstalledExtensionPackage } from './manifest'
+import { parseExtensionManifest, validateInstalledExtensionPackage } from './packages/manifest'
 import type {
   ExtensionInstallResult,
   ExtensionServicePaths,
