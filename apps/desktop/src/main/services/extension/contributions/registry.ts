@@ -7,7 +7,10 @@ import { ExtensionEntityMenuContributionHost } from './entity-menus'
 import { ExtensionScraperProviderContributionHost } from './scraper-providers'
 import { ExtensionSettingsPanelContributionHost } from './settings-panels'
 import { ExtensionThemeContributionHost } from './themes'
-import type { ExtensionContributionHostOptions } from './types'
+import type {
+  ExtensionContributionHostOptions,
+  ExtensionContributionReleaseDiagnostic
+} from './types'
 
 export class ExtensionContributionRegistry {
   readonly entityMenus: ExtensionEntityMenuContributionHost
@@ -167,7 +170,42 @@ export class ExtensionContributionRegistry {
     }
   }
 
+  assertReleased(extensionId: string, operation: string): void {
+    const diagnostics = [
+      ...this.entityMenus.getReleaseDiagnostics(extensionId),
+      ...this.settingsPanels.getReleaseDiagnostics(extensionId),
+      ...this.scraperProviders.getReleaseDiagnostics(extensionId),
+      ...this.deeplinkRoutes.getReleaseDiagnostics(extensionId),
+      ...this.themes.getReleaseDiagnostics(extensionId),
+      ...this.commands.getReleaseDiagnostics(extensionId)
+    ]
+
+    if (diagnostics.length === 0) {
+      return
+    }
+
+    throw new Error(
+      `Extension ${operation} did not release contributions for "${extensionId}": ${formatReleaseDiagnostics(diagnostics)}.`
+    )
+  }
+
   private notifyChanged(): void {
     this.options.onDidChange?.()
   }
+}
+
+function formatReleaseDiagnostics(
+  diagnostics: readonly ExtensionContributionReleaseDiagnostic[]
+): string {
+  const byDomain = new Map<string, Set<string>>()
+
+  for (const diagnostic of diagnostics) {
+    const details = byDomain.get(diagnostic.domain) ?? new Set<string>()
+    details.add(diagnostic.detail)
+    byDomain.set(diagnostic.domain, details)
+  }
+
+  return [...byDomain]
+    .map(([domain, details]) => `${domain} (${[...details].join(', ')})`)
+    .join('; ')
 }

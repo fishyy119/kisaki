@@ -21,6 +21,7 @@ import {
   getRuntimeContributionKey,
   requireContributionOwner,
   toContributionOwnerInfo,
+  type ExtensionContributionReleaseDiagnostic,
   type ExtensionContributionHostOptions,
   type RuntimeContributionOwner
 } from '../types'
@@ -115,6 +116,34 @@ export class ExtensionDeeplinkRouteContributionHost {
         contribution: registration.contribution
       }))
       .sort((left, right) => left.contribution.path.localeCompare(right.contribution.path))
+  }
+
+  getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
+    const diagnostics: ExtensionContributionReleaseDiagnostic[] = []
+    const primaryRegistrations = new Set<DeeplinkRouteRegistration>()
+
+    for (const registration of this.registrations.values()) {
+      if (registration.owner.extension.id !== extensionId) {
+        continue
+      }
+
+      primaryRegistrations.add(registration)
+      diagnostics.push({
+        domain: 'deeplink routes',
+        detail: `${registration.contribution.path}:${registration.contribution.id}`
+      })
+    }
+
+    for (const registration of this.byExtension.get(extensionId) ?? []) {
+      if (!primaryRegistrations.has(registration)) {
+        diagnostics.push({
+          domain: 'deeplink route index',
+          detail: `${registration.contribution.path}:${registration.contribution.id}`
+        })
+      }
+    }
+
+    return diagnostics
   }
 
   async handle(

@@ -332,6 +332,11 @@ export interface ExtensionInstallFromFileRequest extends ExtensionInstallPlanCon
   enabled?: boolean
 }
 
+export interface ExtensionPurgeDataRequest {
+  extensionId: string
+  force?: boolean
+}
+
 export type ExtensionInstallSourceKind = 'repository' | 'local-file'
 
 export type ExtensionInstallRiskCode =

@@ -6,6 +6,7 @@ import type {
   ExtensionEntityMenuResolveRequest,
   ExtensionInstallFromFileRequest,
   ExtensionInstallReleaseRequest,
+  ExtensionPurgeDataRequest,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryUpdateRequest,
   ExtensionSettingsPanelInvokeRequest,
@@ -146,6 +147,16 @@ export function requireInstallFromFileRequest(value: unknown): ExtensionInstallF
     planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
     acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
     enabled: requireOptionalBoolean(request.enabled, 'enabled')
+  }
+}
+
+export function requirePurgeDataRequest(value: unknown): ExtensionPurgeDataRequest {
+  const request =
+    typeof value === 'string' ? { extensionId: value } : requireRecord(value, 'request')
+
+  return {
+    extensionId: requireSafeExtensionId(request.extensionId),
+    force: requireOptionalBoolean(request.force, 'force')
   }
 }
 

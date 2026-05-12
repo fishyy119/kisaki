@@ -7,6 +7,7 @@ import type {
   ExtensionSettingsPanelSession,
   ExtensionSettingsPanelSubmitRequest
 } from '@shared/extension'
+import type { ExtensionContributionReleaseDiagnostic } from '../types'
 import type {
   MainSettingsSession,
   SettingsDialogLease,
@@ -28,6 +29,15 @@ export class SettingsSessionStore {
 
   clear(): void {
     this.sessions.clear()
+  }
+
+  getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
+    return [...this.sessions.values()]
+      .filter((session) => session.extensionId === extensionId)
+      .map((session) => ({
+        domain: 'settings panel sessions',
+        detail: `${session.contributionId}:${session.sessionId}`
+      }))
   }
 
   requireForRegistration(

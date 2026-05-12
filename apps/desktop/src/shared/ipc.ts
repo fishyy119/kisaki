@@ -71,6 +71,7 @@ import type {
   ExtensionInstallPlan,
   ExtensionInstallFromFileRequest,
   ExtensionInstallReleaseRequest,
+  ExtensionPurgeDataRequest,
   ExtensionRegistryEntry,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
@@ -440,6 +441,7 @@ export interface IpcMainHandlers {
   'extension:install-release': (request: ExtensionInstallReleaseRequest) => IpcVoidResult
   'extension:install-from-file': (request: ExtensionInstallFromFileRequest) => IpcVoidResult
   'extension:uninstall': (extensionId: string) => IpcVoidResult
+  'extension:purge-data': (request: ExtensionPurgeDataRequest) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateCheckResult>
   'extension:update': (request: ExtensionUpdateRequest) => IpcVoidResult
   'extension:update-all': () => IpcResult<ExtensionUpdateAllResult[]>

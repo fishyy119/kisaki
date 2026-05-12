@@ -4,6 +4,7 @@ import {
   getRuntimeContributionKey,
   requireContributionOwner,
   toContributionOwnerInfo,
+  type ExtensionContributionReleaseDiagnostic,
   type ExtensionContributionHostOptions,
   type RuntimeContributionOwner
 } from '../types'
@@ -49,5 +50,14 @@ export class ExtensionThemeContributionHost {
         theme: registration.theme
       }))
       .sort((left, right) => left.theme.id.localeCompare(right.theme.id))
+  }
+
+  getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
+    return [...this.registrations.values()]
+      .filter((registration) => registration.owner.extension.id === extensionId)
+      .map((registration) => ({
+        domain: 'themes',
+        detail: registration.theme.id
+      }))
   }
 }

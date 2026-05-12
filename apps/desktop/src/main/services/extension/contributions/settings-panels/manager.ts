@@ -20,6 +20,7 @@ import type {
 import {
   getRuntimeContributionKey,
   requireContributionOwner,
+  type ExtensionContributionReleaseDiagnostic,
   type ExtensionContributionHostOptions
 } from '../types'
 import {
@@ -107,6 +108,36 @@ export class ExtensionSettingsPanelContributionHost {
         (left, right) =>
           left.order - right.order || left.contributionId.localeCompare(right.contributionId)
       )
+  }
+
+  getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
+    const diagnostics: ExtensionContributionReleaseDiagnostic[] = []
+    const primaryKeys = new Set<string>()
+
+    for (const registration of this.registrations.values()) {
+      if (registration.owner.extension.id !== extensionId) {
+        continue
+      }
+
+      const publicKey = getPublicContributionKey(extensionId, registration.contribution.id)
+      primaryKeys.add(publicKey)
+      diagnostics.push({
+        domain: 'settings panels',
+        detail: registration.contribution.id
+      })
+    }
+
+    for (const [publicKey, registration] of this.byPublicId) {
+      if (registration.owner.extension.id === extensionId && !primaryKeys.has(publicKey)) {
+        diagnostics.push({
+          domain: 'settings panel index',
+          detail: publicKey.slice(extensionId.length + 1)
+        })
+      }
+    }
+
+    diagnostics.push(...this.sessionStore.getReleaseDiagnostics(extensionId))
+    return diagnostics
   }
 
   notifyRefreshRequested(

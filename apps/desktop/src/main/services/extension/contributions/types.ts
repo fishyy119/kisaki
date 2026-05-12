@@ -35,6 +35,11 @@ export interface RuntimeContributionOwner {
   extension: ExtensionRuntimeMetadata
 }
 
+export interface ExtensionContributionReleaseDiagnostic {
+  domain: string
+  detail: string
+}
+
 export function requireContributionOwner(
   options: ExtensionContributionHostOptions,
   runtimeHandle: ExtensionRuntimeHandle

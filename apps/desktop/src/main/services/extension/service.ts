@@ -22,6 +22,7 @@ import type {
   ExtensionInstallFromFileRequest,
   ExtensionInstallPlan,
   ExtensionInstallReleaseRequest,
+  ExtensionPurgeDataRequest,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
   ExtensionRepositoryRefreshResult,
@@ -399,22 +400,79 @@ export class ExtensionService implements IService {
     await this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       this.assertUserManagedExtension(safeExtensionId, 'uninstall')
-      await this.requireInstalledCatalogEntry(safeExtensionId)
-      await this.runtime.unloadExtension(safeExtensionId, 'disable')
-      await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
-      const handle = await this.packageTransaction.uninstallPackage({
-        operationId: randomUUID(),
-        extensionId: safeExtensionId
-      })
+      const previous = await this.requireInstalledCatalogEntry(safeExtensionId)
+      let handle: Awaited<ReturnType<ExtensionPackageTransaction['uninstallPackage']>> | null = null
+
       try {
+        await this.runtime.unloadExtension(safeExtensionId, 'disable')
+        this.contributions.assertReleased(safeExtensionId, 'uninstall')
+        await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
+        handle = await this.packageTransaction.uninstallPackage({
+          operationId: randomUUID(),
+          extensionId: safeExtensionId
+        })
         await this.refreshCatalog()
         await this.applyRuntimeState({ cause: 'uninstall' })
         await handle.commit()
         this.emitInstallationsChanged()
       } catch (error) {
-        await handle.rollback()
+        if (handle) {
+          await handle.rollback().catch((rollbackError) => {
+            log.error(
+              `[ExtensionService] Failed to roll back extension uninstall "${safeExtensionId}":`,
+              rollbackError
+            )
+          })
+        }
         await this.refreshCatalog()
-        await this.applyRuntimeState({ cause: 'uninstall' })
+        await this.applyRuntimeState({
+          cause: 'uninstall',
+          forceReloadIds: previous.enabled ? [safeExtensionId] : []
+        })
+        throw error
+      }
+    })
+  }
+
+  async purgeData(request: ExtensionPurgeDataRequest): Promise<void> {
+    await this.runMutatingOperation(async () => {
+      const safeExtensionId = requireSafeExtensionId(request.extensionId)
+      this.assertUserManagedExtension(safeExtensionId, 'purge data')
+
+      const installation = this.installationStore.get(safeExtensionId)
+      if (installation && !request.force) {
+        throw new Error(
+          `Extension "${safeExtensionId}" is still installed. Uninstall it before clearing data.`
+        )
+      }
+      if (!installation && this.runtime.getDesiredExtensions().has(safeExtensionId)) {
+        throw new Error(
+          `Extension "${safeExtensionId}" is still active. Stop it before clearing data.`
+        )
+      }
+
+      let disabledForPurge = false
+      try {
+        if (installation) {
+          if (installation.enabled) {
+            this.installationStore.setEnabled(safeExtensionId, false)
+            disabledForPurge = true
+          }
+          await this.refreshCatalog()
+          await this.runtime.unloadExtension(safeExtensionId, 'disable')
+          this.contributions.assertReleased(safeExtensionId, 'purge data')
+          await this.applyRuntimeState({ cause: 'disable' })
+          this.emitInstallationsChanged()
+        }
+
+        await Promise.all([
+          fse.remove(this.layout.dataPath(safeExtensionId)),
+          fse.remove(this.layout.runtimeTempPath(safeExtensionId))
+        ])
+      } catch (error) {
+        if (installation && disabledForPurge) {
+          await this.restoreEnabledAfterFailedPurge(safeExtensionId)
+        }
         throw error
       }
     })
@@ -1151,6 +1209,20 @@ export class ExtensionService implements IService {
         runtimeState?.status ?? 'missing'
       }".`
     )
+  }
+
+  private async restoreEnabledAfterFailedPurge(extensionId: string): Promise<void> {
+    try {
+      this.installationStore.setEnabled(extensionId, true)
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'enable', forceReloadIds: [extensionId] })
+      this.emitInstallationsChanged()
+    } catch (error) {
+      log.error(
+        `[ExtensionService] Failed to restore extension "${extensionId}" after data purge failure:`,
+        error
+      )
+    }
   }
 
   private emitContributionSnapshotChanged(): void {

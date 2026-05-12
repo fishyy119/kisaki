@@ -19,6 +19,7 @@ import {
   requireMenuReleaseRequest,
   requireMenuResolveRequest,
   requireNonEmptyString,
+  requirePurgeDataRequest,
   requireRepositoryCreateRequest,
   requireRepositoryUpdateRequest,
   requireSettingsInvokeRequest,
@@ -99,6 +100,15 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
   ipc.handle('extension:uninstall', async (_, extensionId: string) => {
     try {
       await service.uninstall(requireSafeExtensionId(extensionId))
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:purge-data', async (_, request) => {
+    try {
+      await service.purgeData(requirePurgeDataRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }

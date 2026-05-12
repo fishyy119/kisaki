@@ -8,6 +8,7 @@ import type { PersonScraperProvider } from '@main/services/scraper/handlers/pers
 import {
   requireContributionOwner,
   toContributionOwnerInfo,
+  type ExtensionContributionReleaseDiagnostic,
   type ExtensionContributionHostOptions
 } from '../types'
 import { getHostScraperProviderId, getScraperKey } from './descriptors'
@@ -116,6 +117,15 @@ export class ExtensionScraperProviderContributionHost {
           left.mediaType.localeCompare(right.mediaType) ||
           left.provider.id.localeCompare(right.provider.id)
       )
+  }
+
+  getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
+    return [...this.registrations.values()]
+      .filter((registration) => registration.owner.extension.id === extensionId)
+      .map((registration) => ({
+        domain: 'scraper providers',
+        detail: `${registration.mediaType}:${registration.provider.id}`
+      }))
   }
 
   private async register(

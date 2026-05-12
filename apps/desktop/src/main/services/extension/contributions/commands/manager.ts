@@ -5,14 +5,28 @@ import type {
   SerializableValue
 } from '@kisaki/extension-api'
 import type { CommandRegistrationInput, CommandService } from '@main/services/command'
-import { requireContributionOwner, type ExtensionContributionHostOptions } from '../types'
+import {
+  requireContributionOwner,
+  type ExtensionContributionReleaseDiagnostic,
+  type ExtensionContributionHostOptions,
+  type RuntimeContributionOwner
+} from '../types'
 
 export interface ExtensionCommandContributionHostOptions extends ExtensionContributionHostOptions {
   command?: CommandService
 }
 
+interface ExtensionCommandRegistration {
+  owner: RuntimeContributionOwner
+  commandId: string
+  dispose: () => void
+}
+
 export class ExtensionCommandContributionHost {
-  private readonly registrations = new Map<string, Map<string, () => void>>()
+  private readonly registrations = new Map<
+    ExtensionRuntimeHandle,
+    Map<string, ExtensionCommandRegistration>
+  >()
 
   constructor(private readonly options: ExtensionCommandContributionHostOptions) {}
 
@@ -58,19 +72,27 @@ export class ExtensionCommandContributionHost {
       }
     })
 
-    scopedRegistrations.set(command.id, dispose)
+    scopedRegistrations.set(command.id, {
+      owner,
+      commandId: command.id,
+      dispose
+    })
   }
 
   unregister(runtimeHandle: ExtensionRuntimeHandle, commandId: string): void {
     const scopedRegistrations = this.registrations.get(runtimeHandle)
-    const dispose = scopedRegistrations?.get(commandId)
-    if (!dispose) {
+    if (!scopedRegistrations) {
       return
     }
 
-    dispose()
-    scopedRegistrations!.delete(commandId)
-    if (scopedRegistrations!.size === 0) {
+    const registration = scopedRegistrations.get(commandId)
+    if (!registration) {
+      return
+    }
+
+    registration.dispose()
+    scopedRegistrations.delete(commandId)
+    if (scopedRegistrations.size === 0) {
       this.registrations.delete(runtimeHandle)
     }
   }
@@ -81,8 +103,8 @@ export class ExtensionCommandContributionHost {
       return
     }
 
-    for (const dispose of scopedRegistrations.values()) {
-      dispose()
+    for (const registration of scopedRegistrations.values()) {
+      registration.dispose()
     }
     this.registrations.delete(runtimeHandle)
   }
@@ -91,6 +113,23 @@ export class ExtensionCommandContributionHost {
     for (const runtimeHandle of [...this.registrations.keys()]) {
       this.releaseRuntime(runtimeHandle)
     }
+  }
+
+  getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
+    const diagnostics: ExtensionContributionReleaseDiagnostic[] = []
+
+    for (const scopedRegistrations of this.registrations.values()) {
+      for (const registration of scopedRegistrations.values()) {
+        if (registration.owner.extension.id === extensionId) {
+          diagnostics.push({
+            domain: 'commands',
+            detail: registration.commandId
+          })
+        }
+      }
+    }
+
+    return diagnostics
   }
 
   private requireCommandService(): CommandService {
