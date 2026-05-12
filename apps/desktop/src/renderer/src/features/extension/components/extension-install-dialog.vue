@@ -20,7 +20,8 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldContent, FieldLabel, FieldDescription } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
+import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
+import type { ExtensionInstallPlan } from '@shared/extension'
 
 type InstallMethod = 'github' | 'url' | 'local'
 
@@ -39,6 +40,8 @@ const githubRepo = ref('')
 
 // URL method state
 const extensionUrl = ref('')
+const localFilePath = ref<string | null>(null)
+const localInstallPlan = ref<ExtensionInstallPlan | null>(null)
 
 // Reset form when dialog opens
 watch(open, (isOpen) => {
@@ -46,6 +49,8 @@ watch(open, (isOpen) => {
     method.value = 'github'
     githubRepo.value = ''
     extensionUrl.value = ''
+    localFilePath.value = null
+    localInstallPlan.value = null
     installing.value = false
   }
 })
@@ -119,17 +124,58 @@ async function handleInstallFromFile() {
 
     if (res.success && res.data && !res.data.canceled && res.data.filePaths.length > 0) {
       const filePath = res.data.filePaths[0]
-      unwrapIpcVoid(await ipcManager.invoke('extension:install-from-file', filePath))
-
-      notify.success('扩展安装成功')
-      open.value = false
-      emit('installed')
+      localFilePath.value = filePath
+      localInstallPlan.value = unwrapIpcData(
+        await ipcManager.invoke('extension:create-install-plan', {
+          sourceKind: 'local-file',
+          filePath
+        })
+      )
     }
+  } catch (error) {
+    localFilePath.value = null
+    localInstallPlan.value = null
+    notify.error('无法创建安装计划', error instanceof Error ? error.message : String(error))
+  } finally {
+    installing.value = false
+  }
+}
+
+async function handleConfirmLocalInstall() {
+  const plan = localInstallPlan.value
+  const filePath = localFilePath.value
+  if (!plan || !filePath) {
+    await handleInstallFromFile()
+    return
+  }
+
+  installing.value = true
+  try {
+    unwrapIpcVoid(
+      await ipcManager.invoke('extension:install-from-file', {
+        operationId: createOperationId(),
+        filePath,
+        planId: plan.id,
+        planFingerprint: plan.fingerprint,
+        acceptedRiskIds: plan.risks.map((risk) => risk.id),
+        enabled: plan.defaultEnabled
+      })
+    )
+
+    notify.success('扩展安装成功')
+    localFilePath.value = null
+    localInstallPlan.value = null
+    open.value = false
+    emit('installed')
   } catch (error) {
     notify.error('安装失败', error instanceof Error ? error.message : String(error))
   } finally {
     installing.value = false
   }
+}
+
+function createOperationId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 </script>
 
@@ -216,12 +262,54 @@ async function handleInstallFromFile() {
             value="local"
             class="space-y-4"
           >
-            <div class="text-center py-6 border border-dashed border-border rounded-lg">
+            <div
+              v-if="!localInstallPlan"
+              class="text-center py-6 border border-dashed border-border rounded-lg"
+            >
               <Icon
                 icon="icon-[mdi--folder-zip-outline]"
                 class="size-12 text-muted-foreground/50 mx-auto mb-3"
               />
               <p class="text-sm text-muted-foreground mb-4">选择本地扩展包文件 (.kisx)</p>
+            </div>
+            <div
+              v-else
+              class="space-y-3"
+            >
+              <div class="rounded-md border border-border p-3">
+                <div class="flex items-start gap-2">
+                  <Icon
+                    icon="icon-[mdi--package-variant-closed]"
+                    class="size-5 text-muted-foreground shrink-0 mt-0.5"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium truncate">
+                      {{ localInstallPlan.package.name }}
+                    </div>
+                    <div class="text-xs text-muted-foreground">
+                      v{{ localInstallPlan.package.targetVersion }} · 本地导入 · unsigned
+                    </div>
+                    <div class="mt-2 text-xs text-muted-foreground break-all">
+                      SHA256: {{ localInstallPlan.localFile?.sha256 }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="localInstallPlan.risks.length > 0"
+                class="rounded-md border border-warning/40 bg-warning/5 p-3 text-xs"
+              >
+                <div class="font-medium mb-2">需要确认</div>
+                <ul class="space-y-1 text-muted-foreground">
+                  <li
+                    v-for="risk in localInstallPlan.risks"
+                    :key="risk.id"
+                  >
+                    {{ risk.message }}
+                  </li>
+                </ul>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
@@ -256,13 +344,13 @@ async function handleInstallFromFile() {
           v-if="method === 'local'"
           class="w-full"
           :disabled="installing"
-          @click="handleInstallFromFile"
+          @click="localInstallPlan ? handleConfirmLocalInstall() : handleInstallFromFile()"
         >
           <Spinner
             v-if="installing"
             class="size-4 mr-2"
           />
-          选择文件
+          {{ localInstallPlan ? '确认安装' : '选择文件' }}
         </Button>
       </DialogFooter>
     </DialogContent>

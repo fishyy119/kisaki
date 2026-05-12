@@ -1,8 +1,11 @@
 import type {
   ExtensionCatalogSearchRequest,
+  ExtensionCreateInstallPlanRequest,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
+  ExtensionInstallFromFileRequest,
+  ExtensionInstallReleaseRequest,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryUpdateRequest,
   ExtensionSettingsPanelInvokeRequest,
@@ -11,7 +14,10 @@ import type {
   ExtensionSettingsPanelReleaseRequest,
   ExtensionSettingsPanelSubmitRequest
 } from '@shared/extension'
+import { requireSafeOperationId } from '../packages/layout'
 import { requireSafeExtensionId } from '../shared/path-confinement'
+
+const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 
 export function requireString(value: unknown, label: string): string {
   if (typeof value !== 'string') {
@@ -76,6 +82,68 @@ export function requireCatalogSearchRequest(value: unknown): ExtensionCatalogSea
     ) as ExtensionCatalogSearchRequest['sortDirection'],
     page: requireOptionalPositiveInteger(request.page, 'page'),
     limit: requireOptionalPositiveInteger(request.limit, 'limit')
+  }
+}
+
+export function requireCreateInstallPlanRequest(value: unknown): ExtensionCreateInstallPlanRequest {
+  const request = requireRecord(value, 'request')
+  const sourceKind = request.sourceKind ?? 'repository'
+
+  if (sourceKind === 'local-file') {
+    return {
+      sourceKind,
+      filePath: requireNonEmptyString(request.filePath, 'filePath')
+    }
+  }
+
+  if (sourceKind !== 'repository') {
+    throw new Error('sourceKind must be repository or local-file.')
+  }
+
+  return {
+    sourceKind,
+    extensionId: requireSafeExtensionId(request.extensionId),
+    releaseId: requireOptionalString(request.releaseId, 'releaseId'),
+    repositoryId: requireOptionalString(request.repositoryId, 'repositoryId')
+  }
+}
+
+export function requireInstallReleaseRequest(value: unknown): ExtensionInstallReleaseRequest {
+  const request = requireRecord(value, 'request')
+  const updatePolicy = requireOptionalEnum(
+    request.updatePolicy,
+    ['manual', 'notify', 'auto', 'pinned'],
+    'updatePolicy'
+  ) as ExtensionInstallReleaseRequest['updatePolicy']
+
+  return {
+    sourceKind: 'repository',
+    extensionId: requireSafeExtensionId(request.extensionId),
+    releaseId: requireOptionalString(request.releaseId, 'releaseId'),
+    repositoryId: requireOptionalString(request.repositoryId, 'repositoryId'),
+    planId: requireNonEmptyString(request.planId, 'planId'),
+    planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
+    operationId: requireSafeOperationId(request.operationId),
+    acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
+    trustSignerFingerprint: requireOptionalBoolean(
+      request.trustSignerFingerprint,
+      'trustSignerFingerprint'
+    ),
+    enabled: requireOptionalBoolean(request.enabled, 'enabled'),
+    updatePolicy
+  }
+}
+
+export function requireInstallFromFileRequest(value: unknown): ExtensionInstallFromFileRequest {
+  const request = requireRecord(value, 'request')
+
+  return {
+    operationId: requireSafeOperationId(request.operationId),
+    filePath: requireNonEmptyString(request.filePath, 'filePath'),
+    planId: requireNonEmptyString(request.planId, 'planId'),
+    planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
+    acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
+    enabled: requireOptionalBoolean(request.enabled, 'enabled')
   }
 }
 
@@ -353,6 +421,14 @@ function requireOptionalString(value: unknown, label: string): string | undefine
   return value
 }
 
+function requireSha256Hex(value: unknown, label: string): string {
+  const normalized = requireNonEmptyString(value, label)
+  if (!SHA256_HEX_PATTERN.test(normalized)) {
+    throw new Error(`${label} must be a sha256 hex digest.`)
+  }
+  return normalized
+}
+
 function requireOptionalBoolean(value: unknown, label: string): boolean | undefined {
   if (value === undefined) {
     return undefined
@@ -414,6 +490,14 @@ function requireStringArray(value: unknown, label: string): readonly string[] {
   }
 
   return value
+}
+
+function requireOptionalStringArray(value: unknown, label: string): readonly string[] | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  return requireStringArray(value, label)
 }
 
 function requireSurface<const TSurface extends string>(

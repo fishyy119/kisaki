@@ -17,6 +17,9 @@ import { resolveExtensionFilePath } from '../packages/manifest'
 import { requireSafeExtensionId } from '../shared/path-confinement'
 import {
   requireCatalogSearchRequest,
+  requireCreateInstallPlanRequest,
+  requireInstallFromFileRequest,
+  requireInstallReleaseRequest,
   requireMenuInvokeRequest,
   requireMenuReleaseRequest,
   requireMenuResolveRequest,
@@ -67,9 +70,29 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:install-from-file', async (_, filePath: string) => {
+  ipc.handle('extension:create-install-plan', async (_, request) => {
     try {
-      await service.installFromFile(requireNonEmptyString(filePath, 'filePath'))
+      return {
+        success: true,
+        data: await service.createInstallPlan(requireCreateInstallPlanRequest(request))
+      }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:install-release', async (_, request) => {
+    try {
+      await service.installRelease(requireInstallReleaseRequest(request))
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:install-from-file', async (_, request) => {
+    try {
+      await service.installFromFile(requireInstallFromFileRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -405,10 +428,45 @@ function toExtensionCatalogInfo(
     runtimeStatus,
     runtimeError,
     runtimeDiagnostics,
-    source: entry.source,
+    source: toLegacySourceReference(entry.source),
+    installationSource: isInstallationSource(entry.source) ? entry.source : null,
     directory: entry.packagePath,
     issues: entry.issues
   }
+}
+
+function toLegacySourceReference(entrySource: ExtensionCatalogEntry['source']): {
+  provider: string
+  locator: string
+} | null {
+  if (!entrySource) {
+    return null
+  }
+
+  if ('provider' in entrySource) {
+    return entrySource
+  }
+
+  if (entrySource.kind === 'repository') {
+    return {
+      provider: entrySource.repositoryId,
+      locator: entrySource.releaseId
+    }
+  }
+
+  return {
+    provider: 'local-file',
+    locator: entrySource.path
+  }
+}
+
+function isInstallationSource(
+  entrySource: ExtensionCatalogEntry['source']
+): entrySource is Exclude<
+  ExtensionCatalogEntry['source'],
+  { provider: string; locator: string } | null
+> {
+  return Boolean(entrySource && 'kind' in entrySource)
 }
 
 function toSharedExtensionUpdateInfo(update: ExtensionUpdateInfo): SharedExtensionUpdateInfo {

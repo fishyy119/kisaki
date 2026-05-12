@@ -62,11 +62,15 @@ import type {
   ExtensionCatalogSearchRequest,
   ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
+  ExtensionCreateInstallPlanRequest,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
   ExtensionEntityMenuRefreshRequestedEvent,
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
+  ExtensionInstallPlan,
+  ExtensionInstallFromFileRequest,
+  ExtensionInstallReleaseRequest,
   ExtensionRegistryEntry,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
@@ -427,7 +431,11 @@ export interface IpcMainHandlers {
   'extension:enable': (extensionId: string) => IpcVoidResult
   'extension:is-enabled': (extensionId: string) => IpcResult<boolean>
   'extension:install': (source: string) => IpcVoidResult
-  'extension:install-from-file': (filePath: string) => IpcVoidResult
+  'extension:create-install-plan': (
+    request: ExtensionCreateInstallPlanRequest
+  ) => IpcResult<ExtensionInstallPlan>
+  'extension:install-release': (request: ExtensionInstallReleaseRequest) => IpcVoidResult
+  'extension:install-from-file': (request: ExtensionInstallFromFileRequest) => IpcVoidResult
   'extension:uninstall': (extensionId: string) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateInfo[]>
   'extension:update': (extensionId: string) => IpcVoidResult
@@ -536,6 +544,7 @@ export interface IpcRendererEvents {
   // Extension contribution refresh (main -> renderer)
   'extension:repositories-changed': []
   'extension:catalog-changed': []
+  'extension:installations-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
   'extension:settings-panels-refresh-requested': [
     event: ExtensionSettingsPanelRefreshRequestedEvent

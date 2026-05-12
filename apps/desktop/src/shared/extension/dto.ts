@@ -44,6 +44,7 @@ import type {
   ThemeContribution,
   UiCallbackResult
 } from '@kisaki/extension-api'
+import type { ExtensionInstallationSource } from './installation-source'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package' | 'orphaned'
 
@@ -70,6 +71,7 @@ export interface ExtensionCatalogInfo {
   runtimeError: string | null
   runtimeDiagnostics: readonly ExtensionRuntimeDiagnostic[]
   source: ExtensionSourceReference | null
+  installationSource?: ExtensionInstallationSource | null
   directory: string
   issues: readonly string[]
 }
@@ -228,6 +230,114 @@ export interface ExtensionCatalogArtifactSignatureInfo {
   keyId: string
   algorithm: ExtensionRegistrySigningAlgorithm
   fingerprint: string
+}
+
+export type ExtensionInstallUpdatePolicy = 'manual' | 'notify' | 'auto' | 'pinned'
+
+export type ExtensionCreateInstallPlanRequest =
+  | ExtensionCreateRepositoryInstallPlanRequest
+  | ExtensionCreateLocalInstallPlanRequest
+
+export interface ExtensionCreateRepositoryInstallPlanRequest {
+  sourceKind?: 'repository'
+  extensionId: string
+  releaseId?: string
+  repositoryId?: string
+}
+
+export interface ExtensionCreateLocalInstallPlanRequest {
+  sourceKind: 'local-file'
+  filePath: string
+}
+
+export interface ExtensionInstallPlanConfirmation {
+  planId: string
+  planFingerprint: string
+}
+
+export interface ExtensionInstallReleaseRequest
+  extends ExtensionCreateRepositoryInstallPlanRequest, ExtensionInstallPlanConfirmation {
+  operationId: string
+  acceptedRiskIds?: readonly string[]
+  trustSignerFingerprint?: boolean
+  enabled?: boolean
+  updatePolicy?: ExtensionInstallUpdatePolicy
+}
+
+export interface ExtensionInstallFromFileRequest extends ExtensionInstallPlanConfirmation {
+  operationId: string
+  filePath: string
+  acceptedRiskIds?: readonly string[]
+  enabled?: boolean
+}
+
+export type ExtensionInstallSourceKind = 'repository' | 'local-file'
+
+export type ExtensionInstallRiskCode =
+  | 'artifact-host-mismatch'
+  | 'downgrade'
+  | 'same-version'
+  | 'channel-change'
+  | 'yanked-release'
+  | 'unsigned-release'
+  | 'signer-untrusted'
+  | 'signer-changed'
+  | 'local-unsigned'
+
+export type ExtensionInstallRiskSeverity = 'info' | 'warning' | 'danger'
+
+export interface ExtensionInstallRiskInfo {
+  id: string
+  code: ExtensionInstallRiskCode
+  severity: ExtensionInstallRiskSeverity
+  message: string
+}
+
+export type ExtensionInstallSignerTrustStatus = 'trusted' | 'untrusted' | 'changed' | 'unsigned'
+
+export interface ExtensionInstallPlanSignerInfo {
+  status: ExtensionInstallSignerTrustStatus
+  keyId?: string
+  algorithm?: ExtensionRegistrySigningAlgorithm
+  fingerprint?: string
+  trusted: boolean
+}
+
+export interface ExtensionInstallPlanRepositoryInfo {
+  id: string
+  name: string
+  url: string
+  manifestDigest: string | null
+}
+
+export interface ExtensionInstallPlanPackageInfo {
+  id: string
+  name: string
+  summary?: string
+  currentVersion: string | null
+  targetVersion: string
+  channel: string
+}
+
+export interface ExtensionInstallPlan {
+  id: string
+  fingerprint: string
+  sourceKind: ExtensionInstallSourceKind
+  package: ExtensionInstallPlanPackageInfo
+  repository: ExtensionInstallPlanRepositoryInfo | null
+  release: ExtensionCatalogReleaseInfo | null
+  artifact: ExtensionCatalogArtifactInfo | null
+  localFile: ExtensionInstallPlanLocalFileInfo | null
+  signer: ExtensionInstallPlanSignerInfo
+  risks: readonly ExtensionInstallRiskInfo[]
+  defaultEnabled: boolean
+  updatePolicy: ExtensionInstallUpdatePolicy
+}
+
+export interface ExtensionInstallPlanLocalFileInfo {
+  path: string
+  size: number
+  sha256: string
 }
 
 export interface ExtensionContributionOwnerInfo {

@@ -5,6 +5,7 @@ import type {
   ExtensionRuntimeMetadata,
   ValidationIssue
 } from '@kisaki/extension-api'
+import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
 
 export interface ExtensionServicePaths {
   rootDir: string
@@ -12,7 +13,6 @@ export interface ExtensionServicePaths {
   builtinPackagesDir: string
   dataDir: string
   tempDir: string
-  statePath: string
 }
 
 export interface ExtensionSourceLocator {
@@ -55,7 +55,7 @@ export interface ExtensionCatalogEntry {
   enabled: boolean
   version: string | null
   categories: readonly ExtensionCategory[]
-  source: ExtensionSourceLocator | null
+  source: ExtensionInstallationSource | ExtensionSourceLocator | null
   installedAt: string | null
   updatedAt: string | null
   packagePath: string

@@ -1,5 +1,12 @@
 import type { ExtensionCatalogPackageInfo } from '@shared/extension'
-import type { ExtensionRegistryPackageIcon } from '@kisaki/extension-api'
+import type {
+  ExtensionRegistryArtifact,
+  ExtensionRegistryManifest,
+  ExtensionRegistryPackage,
+  ExtensionRegistryPackageIcon,
+  ExtensionRegistryRelease
+} from '@kisaki/extension-api'
+import type { ExtensionRepositoryRow } from '@shared/db'
 
 export interface ExtensionRepositoryCatalog {
   packages: readonly ExtensionRepositoryCatalogPackage[]
@@ -13,4 +20,13 @@ export interface ExtensionRepositoryCatalogPackage extends ExtensionCatalogPacka
 
 export interface ExtensionRepositorySearchContext {
   installedVersions?: ReadonlyMap<string, string>
+}
+
+export interface ExtensionRepositoryInstallCandidate {
+  repository: ExtensionRepositoryRow
+  manifest: ExtensionRegistryManifest
+  registryPackage: ExtensionRegistryPackage
+  release: ExtensionRegistryRelease
+  releaseDigest: string
+  artifact: ExtensionRegistryArtifact
 }

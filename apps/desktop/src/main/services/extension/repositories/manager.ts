@@ -1,7 +1,9 @@
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import log from 'electron-log/main'
+import semver from 'semver'
 import type {
+  ExtensionCreateRepositoryInstallPlanRequest,
   ExtensionCatalogSearchRequest,
   ExtensionCatalogSearchResult,
   ExtensionRepositoryCreateRequest,
@@ -11,12 +13,21 @@ import type {
   ExtensionRepositoryUpdateRequest
 } from '@shared/extension'
 import type { ExtensionRepositoryRow } from '@shared/db'
-import type { ExtensionRegistryPackageIcon } from '@kisaki/extension-api'
+import {
+  createExtensionRegistryReleaseDigest,
+  selectExtensionRegistryArtifact,
+  type ExtensionRegistryPackageIcon,
+  type ExtensionRegistryRelease
+} from '@kisaki/extension-api'
 import type { ExtensionIconManager } from '../packages/icon'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'
 import { ExtensionRepositoryStore } from './store'
-import type { ExtensionRepositoryCatalog, ExtensionRepositorySearchContext } from './types'
+import type {
+  ExtensionRepositoryCatalog,
+  ExtensionRepositoryInstallCandidate,
+  ExtensionRepositorySearchContext
+} from './types'
 
 export const OFFICIAL_EXTENSION_REPOSITORY_ID = 'kisaki.official'
 export const OFFICIAL_EXTENSION_REPOSITORY_NAME = 'Kisaki Official Extensions'
@@ -37,6 +48,7 @@ export class ExtensionRepositoryManager {
   private readonly fetcher: ExtensionRepositoryFetcher
   private readonly iconManager: ExtensionIconManager
   private readonly aggregator: ExtensionRepositoryAggregator
+  private readonly appVersion: string
   private readonly allowInsecureLocalUrls: boolean
   private readonly onRepositoriesChanged?: () => void
   private readonly onCatalogChanged?: () => void
@@ -49,6 +61,7 @@ export class ExtensionRepositoryManager {
     this.store = options.store
     this.fetcher = options.fetcher
     this.iconManager = options.iconManager
+    this.appVersion = options.appVersion
     this.allowInsecureLocalUrls = options.allowInsecureLocalUrls ?? false
     this.onRepositoriesChanged = options.onRepositoriesChanged
     this.onCatalogChanged = options.onCatalogChanged
@@ -239,6 +252,85 @@ export class ExtensionRepositoryManager {
     return this.catalog
   }
 
+  resolveInstallCandidate(
+    request: ExtensionCreateRepositoryInstallPlanRequest
+  ): ExtensionRepositoryInstallCandidate {
+    const extensionId = requireNonEmptyString(request.extensionId, 'extension id')
+    const repositoryId = request.repositoryId
+      ? requireNonEmptyString(request.repositoryId, 'repository id')
+      : undefined
+    const releaseId = request.releaseId
+      ? requireNonEmptyString(request.releaseId, 'release id')
+      : undefined
+    const repositories = repositoryId
+      ? [this.store.require(repositoryId)]
+      : this.store.listEnabled()
+    const candidates: ExtensionRepositoryInstallCandidate[] = []
+    let packageFound = false
+    let releaseFound = false
+
+    for (const repository of repositories) {
+      if (repository.state !== 'enabled' || !repository.manifestSnapshot) {
+        continue
+      }
+
+      const manifest = repository.manifestSnapshot
+      const registryPackage = manifest.packages.find((item) => item.id === extensionId)
+      if (!registryPackage) {
+        continue
+      }
+      packageFound = true
+
+      for (const release of registryPackage.releases) {
+        const releaseDigest = createExtensionRegistryReleaseDigest(
+          manifest,
+          registryPackage,
+          release
+        )
+        if (releaseId && releaseDigest !== releaseId) {
+          continue
+        }
+        releaseFound = true
+        if (!isReleaseCompatible(release, this.appVersion)) {
+          continue
+        }
+        if (!releaseId && release.yanked === true) {
+          continue
+        }
+
+        const artifact = selectExtensionRegistryArtifact(release)
+        if (!artifact) {
+          continue
+        }
+
+        candidates.push({
+          repository,
+          manifest,
+          registryPackage,
+          release,
+          releaseDigest,
+          artifact
+        })
+      }
+    }
+
+    if (candidates.length > 0) {
+      return candidates.toSorted((left, right) =>
+        compareInstallCandidates(left, right, this.appVersion)
+      )[0]
+    }
+
+    if (!packageFound) {
+      throw new Error(`Extension "${extensionId}" was not found in enabled repositories.`)
+    }
+
+    if (releaseId && !releaseFound) {
+      throw new Error(`Release "${releaseId}" was not found for extension "${extensionId}".`)
+    }
+
+    throw new Error(`No compatible artifact was found for extension "${extensionId}".`)
+  }
+
   private ensureOfficialRepository(): void {
     const byId = this.store.get(OFFICIAL_EXTENSION_REPOSITORY_ID)
     if (byId) {
@@ -412,6 +504,54 @@ function isLocalDevelopmentUrl(url: URL): boolean {
     hostname === '127.0.0.1' ||
     hostname === '::1' ||
     hostname === '[::1]'
+  )
+}
+
+function compareInstallCandidates(
+  left: ExtensionRepositoryInstallCandidate,
+  right: ExtensionRepositoryInstallCandidate,
+  appVersion: string
+): number {
+  return (
+    compareBooleans(
+      isReleaseCompatible(left.release, appVersion),
+      isReleaseCompatible(right.release, appVersion)
+    ) ||
+    compareBooleans(left.release.yanked !== true, right.release.yanked !== true) ||
+    compareBooleans(left.release.channel === 'stable', right.release.channel === 'stable') ||
+    semver.rcompare(left.release.version, right.release.version) ||
+    compareNullableTime(right.release.publishedAt, left.release.publishedAt) ||
+    compareNumbers(left.repository.priority, right.repository.priority) ||
+    compareStrings(left.repository.id, right.repository.id) ||
+    compareStrings(left.releaseDigest, right.releaseDigest)
+  )
+}
+
+function isReleaseCompatible(
+  release: Pick<ExtensionRegistryRelease, 'engines'>,
+  appVersion: string
+): boolean {
+  return semver.satisfies(appVersion, release.engines.kisaki)
+}
+
+function compareBooleans(left: boolean, right: boolean): number {
+  return left === right ? 0 : left ? -1 : 1
+}
+
+function compareNumbers(left: number, right: number): number {
+  return left === right ? 0 : left < right ? -1 : 1
+}
+
+function compareStrings(left: string, right: string): number {
+  return left.localeCompare(right)
+}
+
+function compareNullableTime(left: string | null, right: string | null): number {
+  const leftTime = left ? Date.parse(left) : 0
+  const rightTime = right ? Date.parse(right) : 0
+  return compareNumbers(
+    Number.isFinite(leftTime) ? leftTime : 0,
+    Number.isFinite(rightTime) ? rightTime : 0
   )
 }
 

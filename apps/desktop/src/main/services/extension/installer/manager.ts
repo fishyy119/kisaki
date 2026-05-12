@@ -1,6 +1,9 @@
 import type { ExtensionPackageDownloader } from '../packages/downloader'
 import type { ExtensionPackageExtractor } from '../packages/extractor'
-import type { ExtensionPackageOperationRegistry } from '../packages/operations'
+import type {
+  ExtensionPackageOperationRecord,
+  ExtensionPackageOperationRegistry
+} from '../packages/operations'
 import type { ExtensionPackageTransaction } from '../packages/transaction'
 import type {
   PrepareLocalExtensionPackageInput,
@@ -40,41 +43,46 @@ export class ExtensionPackageInstaller {
         kind: 'install',
         extensionId: input.registryPackage.id
       },
-      async (operation) => {
-        const cleanupAbort = linkAbortSignal(input.signal, () => operation.controller.abort())
-        operation.phase = 'download'
-        try {
-          const downloaded = await this.options.downloader.downloadArtifact({
-            operationId: input.operationId,
-            url: input.artifact.url,
-            expectedSize: input.artifact.size,
-            signal: operation.controller.signal
-          })
-
-          operation.phase = 'extract'
-          const extracted = await this.options.extractor.extract({
-            operationId: input.operationId,
-            archivePath: downloaded.filePath,
-            expectedArtifact: input.artifact,
-            registryPackage: input.registryPackage,
-            registryRelease: input.release,
-            signingKeys: input.manifest.signingKeys,
-            signal: operation.controller.signal
-          })
-
-          return {
-            operationId: input.operationId,
-            archivePath: downloaded.filePath,
-            packageDir: extracted.packageDir,
-            manifest: extracted.manifest,
-            archiveSha256: extracted.archiveSha256,
-            archiveSize: extracted.archiveSize
-          }
-        } finally {
-          cleanupAbort()
-        }
-      }
+      (operation) => this.prepareRepositoryPackageWithOperation(input, operation)
     )
+  }
+
+  async prepareRepositoryPackageWithOperation(
+    input: PrepareRepositoryExtensionPackageInput,
+    operation: ExtensionPackageOperationRecord
+  ): Promise<PreparedExtensionPackage> {
+    const cleanupAbort = linkAbortSignal(input.signal, () => operation.controller.abort())
+    operation.phase = 'download'
+    try {
+      const downloaded = await this.options.downloader.downloadArtifact({
+        operationId: input.operationId,
+        url: input.artifact.url,
+        expectedSize: input.artifact.size,
+        signal: operation.controller.signal
+      })
+
+      operation.phase = 'extract'
+      const extracted = await this.options.extractor.extract({
+        operationId: input.operationId,
+        archivePath: downloaded.filePath,
+        expectedArtifact: input.artifact,
+        registryPackage: input.registryPackage,
+        registryRelease: input.release,
+        signingKeys: input.manifest.signingKeys,
+        signal: operation.controller.signal
+      })
+
+      return {
+        operationId: input.operationId,
+        archivePath: downloaded.filePath,
+        packageDir: extracted.packageDir,
+        manifest: extracted.manifest,
+        archiveSha256: extracted.archiveSha256,
+        archiveSize: extracted.archiveSize
+      }
+    } finally {
+      cleanupAbort()
+    }
   }
 
   async prepareLocalPackage(
@@ -86,39 +94,44 @@ export class ExtensionPackageInstaller {
         kind: 'local-import',
         extensionId: input.expectedExtensionId
       },
-      async (operation) => {
-        const cleanupAbort = linkAbortSignal(input.signal, () => operation.controller.abort())
-        operation.phase = 'download'
-        try {
-          const copied = await this.options.downloader.copyLocalArtifact({
-            operationId: input.operationId,
-            filePath: input.filePath,
-            signal: operation.controller.signal
-          })
-
-          operation.phase = 'extract'
-          const extracted = await this.options.extractor.extract({
-            operationId: input.operationId,
-            archivePath: copied.filePath,
-            expectedIdentity: {
-              extensionId: input.expectedExtensionId
-            },
-            signal: operation.controller.signal
-          })
-
-          return {
-            operationId: input.operationId,
-            archivePath: copied.filePath,
-            packageDir: extracted.packageDir,
-            manifest: extracted.manifest,
-            archiveSha256: extracted.archiveSha256,
-            archiveSize: extracted.archiveSize
-          }
-        } finally {
-          cleanupAbort()
-        }
-      }
+      (operation) => this.prepareLocalPackageWithOperation(input, operation)
     )
+  }
+
+  async prepareLocalPackageWithOperation(
+    input: PrepareLocalExtensionPackageInput,
+    operation: ExtensionPackageOperationRecord
+  ): Promise<PreparedExtensionPackage> {
+    const cleanupAbort = linkAbortSignal(input.signal, () => operation.controller.abort())
+    operation.phase = 'download'
+    try {
+      const copied = await this.options.downloader.copyLocalArtifact({
+        operationId: input.operationId,
+        filePath: input.filePath,
+        signal: operation.controller.signal
+      })
+
+      operation.phase = 'extract'
+      const extracted = await this.options.extractor.extract({
+        operationId: input.operationId,
+        archivePath: copied.filePath,
+        expectedIdentity: {
+          extensionId: input.expectedExtensionId
+        },
+        signal: operation.controller.signal
+      })
+
+      return {
+        operationId: input.operationId,
+        archivePath: copied.filePath,
+        packageDir: extracted.packageDir,
+        manifest: extracted.manifest,
+        archiveSha256: extracted.archiveSha256,
+        archiveSize: extracted.archiveSize
+      }
+    } finally {
+      cleanupAbort()
+    }
   }
 }
 
