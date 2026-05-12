@@ -15,7 +15,7 @@ import { useInstalledExtensionStore } from '../../stores'
 import type { ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
-  updates: ExtensionUpdateInfo[]
+  updates: readonly ExtensionUpdateInfo[]
 }
 
 interface Emits {

@@ -1,3 +1,3 @@
-export * from './install-plan'
+export * from './planner'
 export * from './manager'
 export * from './types'

@@ -10,17 +10,22 @@ import { cn } from '@renderer/utils'
 
 interface Props {
   checkingUpdates?: boolean
+  updatingAll?: boolean
   updateCount?: number
+  automaticUpdateCount?: number
 }
 
 interface Emits {
   (e: 'checkUpdates'): void
+  (e: 'updateAll'): void
   (e: 'openInstallDialog'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   checkingUpdates: false,
-  updateCount: 0
+  updatingAll: false,
+  updateCount: 0,
+  automaticUpdateCount: 0
 })
 const emit = defineEmits<Emits>()
 
@@ -111,7 +116,7 @@ function isRouteActive(routeName: string): boolean {
         v-if="isRouteActive('extension-installed')"
         variant="ghost"
         size="sm"
-        :disabled="props.checkingUpdates"
+        :disabled="props.checkingUpdates || props.updatingAll"
         @click="emit('checkUpdates')"
       >
         <Icon
@@ -119,6 +124,26 @@ function isRouteActive(routeName: string): boolean {
           :class="cn('size-4', props.checkingUpdates && 'animate-spin')"
         />
         检查更新
+      </Button>
+
+      <Button
+        v-if="isRouteActive('extension-installed') && props.updateCount > 0"
+        variant="secondary"
+        size="sm"
+        :disabled="props.updatingAll || props.automaticUpdateCount === 0"
+        @click="emit('updateAll')"
+      >
+        <Icon
+          icon="icon-[mdi--update]"
+          :class="cn('size-4', props.updatingAll && 'animate-spin')"
+        />
+        自动更新
+        <span
+          v-if="props.automaticUpdateCount > 0"
+          class="ml-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] text-primary-foreground"
+        >
+          {{ props.automaticUpdateCount }}
+        </span>
       </Button>
 
       <!-- Install extension button -->

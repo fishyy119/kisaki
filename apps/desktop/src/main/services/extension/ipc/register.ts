@@ -1,15 +1,10 @@
 import { pathToFileURL } from 'node:url'
 import type { IpcService } from '@main/services/ipc'
-import type {
-  ExtensionCatalogInfo,
-  ExtensionRegistryEntry,
-  ExtensionUpdateInfo as SharedExtensionUpdateInfo
-} from '@shared/extension'
+import type { ExtensionCatalogInfo, ExtensionRegistryEntry } from '@shared/extension'
 import type {
   ExtensionCatalogEntry,
   ExtensionDiscoveryEntry,
-  ExtensionSearchOptions,
-  ExtensionUpdateInfo
+  ExtensionSearchOptions
 } from '../types'
 import type { ExtensionRuntimeState } from '../runtime/manager'
 import type { ExtensionService } from '../service'
@@ -31,6 +26,8 @@ import {
   requireSettingsRefreshRequest,
   requireSettingsReleaseRequest,
   requireSettingsSubmitRequest,
+  requireUpdatePolicyRequest,
+  requireUpdateRequest,
   requireString
 } from './validation'
 
@@ -110,18 +107,42 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:check-updates', async () => {
     try {
+      const result = await service.checkUpdates()
       return {
         success: true,
-        data: (await service.checkUpdates()).map(toSharedExtensionUpdateInfo)
+        data: {
+          updates: result.updates,
+          unavailable: result.unavailable
+        }
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
   })
 
-  ipc.handle('extension:update', async (_, extensionId: string) => {
+  ipc.handle('extension:update', async (_, request) => {
     try {
-      await service.update(requireSafeExtensionId(extensionId))
+      await service.update(requireUpdateRequest(request))
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:update-all', async () => {
+    try {
+      return {
+        success: true,
+        data: await service.updateAll()
+      }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:set-update-policy', async (_, request) => {
+    try {
+      await service.setUpdatePolicy(requireUpdatePolicyRequest(request))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -430,6 +451,9 @@ function toExtensionCatalogInfo(
     runtimeDiagnostics,
     source: toLegacySourceReference(entry.source),
     installationSource: isInstallationSource(entry.source) ? entry.source : null,
+    updatePolicy: entry.updatePolicy ?? undefined,
+    pinnedVersion: entry.pinnedVersion,
+    channel: entry.channel,
     directory: entry.packagePath,
     issues: entry.issues
   }
@@ -467,15 +491,6 @@ function isInstallationSource(
   { provider: string; locator: string } | null
 > {
   return Boolean(entrySource && 'kind' in entrySource)
-}
-
-function toSharedExtensionUpdateInfo(update: ExtensionUpdateInfo): SharedExtensionUpdateInfo {
-  return {
-    extensionId: update.extensionId,
-    currentVersion: update.currentVersion,
-    latestVersion: update.latestVersion,
-    source: update.source
-  }
 }
 
 function toExtensionRegistryEntry(entry: ExtensionDiscoveryEntry): ExtensionRegistryEntry {

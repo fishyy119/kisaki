@@ -36,18 +36,21 @@ import type {
   ExtensionSettingsPanelRefreshResponse,
   ExtensionSettingsPanelReleaseRequest,
   ExtensionSettingsPanelSubmitRequest,
-  ExtensionThemeRegistrationInfo
+  ExtensionThemeRegistrationInfo,
+  ExtensionUpdateAllResult,
+  ExtensionUpdateCheckResult,
+  ExtensionUpdatePolicyRequest,
+  ExtensionUpdateRequest
 } from '@shared/extension'
 import type {
   ExtensionCatalogEntry,
   ExtensionSearchOptions,
   ExtensionSearchResult,
   ExtensionSourceProviderInfo,
-  ExtensionUpdateInfo,
   ExtensionServicePaths
 } from './types'
 import { createExtensionRuntimeMetadata } from './types'
-import { ExtensionInstallPlanner } from './installer/install-plan'
+import { ExtensionInstallPlanner } from './installer/planner'
 import { ExtensionPackageInstaller } from './installer/manager'
 import { registerExtensionIpc } from './ipc'
 import { ExtensionReloadWatcher } from './reload-watcher'
@@ -78,6 +81,7 @@ import { LocalFileExtensionSourceProvider } from './sources/local-file'
 import { UrlExtensionSourceProvider } from './sources/url'
 import { ExtensionSourceManager } from './sources/manager'
 import { ExtensionSignerTrustStore, type TrustExtensionSignerInput } from './signers'
+import { ExtensionUpdatePlanner, type ExtensionUpdatePlan } from './updates'
 import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions/registry'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './packages/manifest'
@@ -111,6 +115,7 @@ export class ExtensionService implements IService {
   private packageVerifier!: ExtensionPackageVerifier
   private packageInstaller!: ExtensionPackageInstaller
   private installPlanner!: ExtensionInstallPlanner
+  private updatePlanner!: ExtensionUpdatePlanner
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
   private event!: EventService
@@ -172,6 +177,11 @@ export class ExtensionService implements IService {
       repositories: this.repositoryManager,
       installations: this.installationStore,
       signers: this.signerTrustStore
+    })
+    this.updatePlanner = new ExtensionUpdatePlanner({
+      repositories: this.repositoryManager,
+      installations: this.installationStore,
+      installPlanner: this.installPlanner
     })
 
     this.sources.register(new GitHubExtensionSourceProvider(networkService))
@@ -410,13 +420,62 @@ export class ExtensionService implements IService {
     })
   }
 
-  async update(extensionId: string): Promise<ExtensionCatalogEntry | null> {
-    requireSafeExtensionId(extensionId)
-    return null
+  async update(request: ExtensionUpdateRequest): Promise<ExtensionCatalogEntry | null> {
+    const result = await this.performUpdate(requireSafeExtensionId(request.extensionId), {
+      mode: 'manual',
+      operationId: request.operationId,
+      request
+    })
+    return result.entry
   }
 
-  async checkUpdates(): Promise<readonly ExtensionUpdateInfo[]> {
-    return []
+  async checkUpdates(): Promise<ExtensionUpdateCheckResult> {
+    return this.updatePlanner.checkUpdates()
+  }
+
+  async updateAll(): Promise<ExtensionUpdateAllResult[]> {
+    const plannedUpdates = this.updatePlanner.listAutomaticUpdatePlans()
+    const results: ExtensionUpdateAllResult[] = []
+
+    for (const plannedUpdate of plannedUpdates) {
+      try {
+        const result = await this.performUpdate(plannedUpdate.installation.id, {
+          mode: 'automatic',
+          operationId: randomUUID()
+        })
+        results.push({
+          extensionId: result.plan.installation.id,
+          success: true,
+          currentVersion: result.plan.installation.version,
+          targetVersion: result.plan.candidate.release.version
+        })
+      } catch (error) {
+        results.push({
+          extensionId: plannedUpdate.installation.id,
+          success: false,
+          currentVersion: plannedUpdate.installation.version,
+          targetVersion: plannedUpdate.candidate.release.version,
+          error: error instanceof Error ? error.message : 'Unknown extension update error'
+        })
+      }
+    }
+
+    return results
+  }
+
+  async setUpdatePolicy(request: ExtensionUpdatePolicyRequest): Promise<ExtensionCatalogEntry> {
+    return this.runMutatingOperation(async () => {
+      const safeExtensionId = requireSafeExtensionId(request.extensionId)
+      this.assertUserManagedExtension(safeExtensionId, 'set update policy')
+      const installation = this.installationStore.require(safeExtensionId)
+      const pinnedVersion =
+        request.updatePolicy === 'pinned' ? (request.pinnedVersion ?? installation.version) : null
+
+      this.installationStore.setUpdatePolicy(safeExtensionId, request.updatePolicy, pinnedVersion)
+      await this.refreshCatalog()
+      this.emitInstallationsChanged()
+      return this.requireCatalogEntry(safeExtensionId)
+    })
   }
 
   cancelOperation(operationId: string): boolean {
@@ -681,6 +740,144 @@ export class ExtensionService implements IService {
     }
   }
 
+  private async performUpdate(
+    extensionId: string,
+    options: {
+      mode: 'manual' | 'automatic'
+      operationId: string
+      request?: ExtensionUpdateRequest
+    }
+  ): Promise<{ entry: ExtensionCatalogEntry; plan: ExtensionUpdatePlan }> {
+    const operation = this.packageOperations.start({
+      operationId: options.operationId,
+      kind: 'update',
+      extensionId
+    })
+
+    try {
+      operation.phase = 'waiting-lock'
+      return await this.runMutatingOperation(async () => {
+        assertExtensionPackageOperationNotAborted(operation.controller.signal)
+        const updatePlan = this.updatePlanner.requireUpdatePlan(extensionId, {
+          mode: options.mode
+        })
+        if (options.request) {
+          this.updatePlanner.assertAccepted(updatePlan, options.request)
+        }
+        const candidate = updatePlan.candidate
+
+        const prepared = await this.packageInstaller.prepareRepositoryPackageWithOperation(
+          {
+            operationId: options.operationId,
+            manifest: candidate.manifest,
+            registryPackage: candidate.registryPackage,
+            release: candidate.release,
+            artifact: candidate.artifact,
+            signal: operation.controller.signal
+          },
+          operation
+        )
+
+        operation.phase = 'commit'
+        const entry = await this.commitPreparedUpdatePackage(
+          options.operationId,
+          updatePlan,
+          prepared.packageDir,
+          options.request?.trustSignerFingerprint === true
+        )
+        return { entry, plan: updatePlan }
+      })
+    } finally {
+      this.packageOperations.finish(options.operationId)
+    }
+  }
+
+  private async commitPreparedUpdatePackage(
+    operationId: string,
+    updatePlan: ExtensionUpdatePlan,
+    stagedPackageDir: string,
+    trustSignerFingerprint: boolean
+  ): Promise<ExtensionCatalogEntry> {
+    const { candidate, installation, info } = updatePlan
+    if (!candidate.repository.manifestDigest) {
+      throw new Error(`Repository "${candidate.repository.id}" does not have a manifest digest.`)
+    }
+
+    const extensionId = candidate.registryPackage.id
+    const source = {
+      kind: 'repository' as const,
+      repositoryId: candidate.repository.id,
+      repositoryUrl: candidate.repository.url,
+      releaseId: candidate.releaseDigest,
+      manifestDigest: candidate.repository.manifestDigest,
+      artifact: {
+        url: candidate.artifact.url,
+        sha256: candidate.artifact.sha256
+      },
+      ...(info.signer?.fingerprint
+        ? {
+            signature: {
+              keyId: info.signer.keyId,
+              fingerprint: info.signer.fingerprint
+            }
+          }
+        : {})
+    }
+    const signerTrusts = trustSignerFingerprint
+      ? this.createSignerTrustInputs(candidate, updatePlan.installPlan)
+      : []
+
+    let handle: Awaited<ReturnType<ExtensionPackageTransaction['replaceActivePackage']>> | null =
+      null
+
+    try {
+      await this.runtime.unloadExtension(extensionId, 'update')
+      await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
+      handle = await this.packageTransaction.replaceActivePackage({
+        operationId,
+        extensionId,
+        stagedPackageDir,
+        installation: {
+          id: extensionId,
+          enabled: installation.enabled,
+          version: candidate.release.version,
+          source,
+          installReason: 'update',
+          updatePolicy: installation.updatePolicy,
+          pinnedVersion: installation.pinnedVersion,
+          channel: candidate.release.channel
+        },
+        signerTrusts
+      })
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'package-update', forceReloadIds: [extensionId] })
+      if (installation.enabled) {
+        this.assertRuntimeReadyIfDesired(extensionId, 'update')
+      }
+      await handle.commit()
+      this.emitInstallationsChanged()
+      return this.requireCatalogEntry(extensionId)
+    } catch (error) {
+      if (handle) {
+        await handle.rollback().catch((rollbackError) => {
+          log.error(
+            `[ExtensionService] Failed to roll back extension update "${extensionId}":`,
+            rollbackError
+          )
+        })
+      } else {
+        const operationPaths = this.layout.operationPaths(operationId)
+        await Promise.all([
+          fse.remove(operationPaths.stagingDir).catch(() => undefined),
+          fse.remove(operationPaths.downloadPath).catch(() => undefined)
+        ])
+      }
+      await this.refreshCatalog()
+      await this.applyRuntimeState({ cause: 'package-update', forceReloadIds: [extensionId] })
+      throw error
+    }
+  }
+
   private async commitPreparedLocalPackage(
     operationId: string,
     filePath: string,
@@ -867,6 +1064,9 @@ export class ExtensionService implements IService {
         version: parsed.manifest.version,
         categories: parsed.manifest.categories,
         source: null,
+        updatePolicy: null,
+        pinnedVersion: null,
+        channel: null,
         installedAt: null,
         updatedAt: null,
         packagePath: extensionPath,

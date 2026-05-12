@@ -12,7 +12,9 @@ import type {
   ExtensionSettingsPanelOpenRequest,
   ExtensionSettingsPanelRefreshRequest,
   ExtensionSettingsPanelReleaseRequest,
-  ExtensionSettingsPanelSubmitRequest
+  ExtensionSettingsPanelSubmitRequest,
+  ExtensionUpdatePolicyRequest,
+  ExtensionUpdateRequest
 } from '@shared/extension'
 import { requireSafeOperationId } from '../packages/layout'
 import { requireSafeExtensionId } from '../shared/path-confinement'
@@ -144,6 +146,42 @@ export function requireInstallFromFileRequest(value: unknown): ExtensionInstallF
     planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
     acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
     enabled: requireOptionalBoolean(request.enabled, 'enabled')
+  }
+}
+
+export function requireUpdateRequest(value: unknown): ExtensionUpdateRequest {
+  const request = requireRecord(value, 'request')
+  return {
+    operationId: requireSafeOperationId(request.operationId),
+    extensionId: requireSafeExtensionId(request.extensionId),
+    planId: requireNonEmptyString(request.planId, 'planId'),
+    planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
+    acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
+    trustSignerFingerprint: requireOptionalBoolean(
+      request.trustSignerFingerprint,
+      'trustSignerFingerprint'
+    )
+  }
+}
+
+export function requireUpdatePolicyRequest(value: unknown): ExtensionUpdatePolicyRequest {
+  const request = requireRecord(value, 'request')
+  const updatePolicy = requireOptionalEnum(
+    request.updatePolicy,
+    ['manual', 'notify', 'auto', 'pinned'],
+    'updatePolicy'
+  )
+  if (!updatePolicy) {
+    throw new Error('updatePolicy must be provided.')
+  }
+
+  return {
+    extensionId: requireSafeExtensionId(request.extensionId),
+    updatePolicy,
+    pinnedVersion:
+      request.pinnedVersion === null
+        ? null
+        : requireOptionalString(request.pinnedVersion, 'pinnedVersion')
   }
 }
 

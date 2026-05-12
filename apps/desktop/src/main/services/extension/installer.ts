@@ -1,18 +1,14 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
 import semver from 'semver'
 import log from 'electron-log/main'
 import { normalizeExtensionPackagePath, type ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionUpdateInfo } from '@shared/extension'
 import { parseExtensionManifest, validateInstalledExtensionPackage } from './packages/manifest'
-import type {
-  ExtensionInstallResult,
-  ExtensionServicePaths,
-  ExtensionSourceLocator,
-  ExtensionUpdateInfo
-} from './types'
+import type { ExtensionInstallResult, ExtensionServicePaths, ExtensionSourceLocator } from './types'
 import type { ExtensionStateStore } from './state'
 import type { ExtensionSourceManager } from './sources/manager'
 import {
@@ -95,7 +91,14 @@ export class ExtensionInstaller {
       }
 
       if (semver.gt(latestVersion, record.version)) {
+        const planId = `${extensionId}:legacy:${latestVersion}`
         updates.push({
+          planId,
+          planFingerprint: createHash('sha256')
+            .update(
+              `${planId}:${record.version}:${record.source.provider}:${record.source.locator}`
+            )
+            .digest('hex'),
           extensionId,
           currentVersion: record.version,
           latestVersion,

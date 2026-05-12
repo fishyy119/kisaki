@@ -252,15 +252,72 @@ export class ExtensionRepositoryManager {
     return this.catalog
   }
 
+  listInstallCandidates(
+    extensionId: string,
+    options: {
+      repositoryId?: string
+      releaseId?: string
+      includeYanked?: boolean
+      compatibleOnly?: boolean
+    } = {}
+  ): readonly ExtensionRepositoryInstallCandidate[] {
+    const result = this.collectInstallCandidates(extensionId, options)
+    return result.candidates.toSorted((left, right) =>
+      compareInstallCandidates(left, right, this.appVersion)
+    )
+  }
+
   resolveInstallCandidate(
     request: ExtensionCreateRepositoryInstallPlanRequest
   ): ExtensionRepositoryInstallCandidate {
-    const extensionId = requireNonEmptyString(request.extensionId, 'extension id')
-    const repositoryId = request.repositoryId
-      ? requireNonEmptyString(request.repositoryId, 'repository id')
+    const result = this.collectInstallCandidates(request.extensionId, {
+      repositoryId: request.repositoryId,
+      releaseId: request.releaseId,
+      includeYanked: Boolean(request.releaseId),
+      compatibleOnly: true
+    })
+    const candidates = result.candidates
+
+    if (candidates.length > 0) {
+      return candidates.toSorted((left, right) =>
+        compareInstallCandidates(left, right, this.appVersion)
+      )[0]
+    }
+
+    if (!result.packageFound) {
+      throw new Error(`Extension "${result.extensionId}" was not found in enabled repositories.`)
+    }
+
+    if (result.releaseId && !result.releaseFound) {
+      throw new Error(
+        `Release "${result.releaseId}" was not found for extension "${result.extensionId}".`
+      )
+    }
+
+    throw new Error(`No compatible artifact was found for extension "${result.extensionId}".`)
+  }
+
+  private collectInstallCandidates(
+    extensionIdValue: string,
+    options: {
+      repositoryId?: string
+      releaseId?: string
+      includeYanked?: boolean
+      compatibleOnly?: boolean
+    } = {}
+  ): {
+    extensionId: string
+    releaseId?: string
+    packageFound: boolean
+    releaseFound: boolean
+    candidates: ExtensionRepositoryInstallCandidate[]
+  } {
+    const extensionId = requireNonEmptyString(extensionIdValue, 'extension id')
+    const repositoryId = options.repositoryId
+      ? requireNonEmptyString(options.repositoryId, 'repository id')
       : undefined
-    const releaseId = request.releaseId
-      ? requireNonEmptyString(request.releaseId, 'release id')
+    const releaseId = options.releaseId
+      ? requireNonEmptyString(options.releaseId, 'release id')
       : undefined
     const repositories = repositoryId
       ? [this.store.require(repositoryId)]
@@ -291,10 +348,10 @@ export class ExtensionRepositoryManager {
           continue
         }
         releaseFound = true
-        if (!isReleaseCompatible(release, this.appVersion)) {
+        if (options.compatibleOnly !== false && !isReleaseCompatible(release, this.appVersion)) {
           continue
         }
-        if (!releaseId && release.yanked === true) {
+        if (!options.includeYanked && release.yanked === true) {
           continue
         }
 
@@ -314,21 +371,13 @@ export class ExtensionRepositoryManager {
       }
     }
 
-    if (candidates.length > 0) {
-      return candidates.toSorted((left, right) =>
-        compareInstallCandidates(left, right, this.appVersion)
-      )[0]
+    return {
+      extensionId,
+      releaseId,
+      packageFound,
+      releaseFound,
+      candidates
     }
-
-    if (!packageFound) {
-      throw new Error(`Extension "${extensionId}" was not found in enabled repositories.`)
-    }
-
-    if (releaseId && !releaseFound) {
-      throw new Error(`Release "${releaseId}" was not found for extension "${extensionId}".`)
-    }
-
-    throw new Error(`No compatible artifact was found for extension "${extensionId}".`)
   }
 
   private ensureOfficialRepository(): void {

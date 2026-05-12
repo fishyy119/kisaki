@@ -5,6 +5,7 @@ import type {
   ExtensionRuntimeMetadata,
   ValidationIssue
 } from '@kisaki/extension-api'
+import type { ExtensionInstallUpdatePolicy } from '@shared/extension'
 import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
 
 export interface ExtensionServicePaths {
@@ -56,6 +57,9 @@ export interface ExtensionCatalogEntry {
   version: string | null
   categories: readonly ExtensionCategory[]
   source: ExtensionInstallationSource | ExtensionSourceLocator | null
+  updatePolicy: ExtensionInstallUpdatePolicy | null
+  pinnedVersion: string | null
+  channel: string | null
   installedAt: string | null
   updatedAt: string | null
   packagePath: string
@@ -119,13 +123,6 @@ export interface ExtensionInstallResult {
   manifest: ExtensionManifest
   commit?(): Promise<void>
   rollback?(): Promise<void>
-}
-
-export interface ExtensionUpdateInfo {
-  extensionId: string
-  currentVersion: string
-  latestVersion: string
-  source: ExtensionSourceLocator | null
 }
 
 export interface CreateRuntimeMetadataOptions {

@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { ExtensionSettingsPanelDialog } from '@renderer/components/extension/settings-panels'
 import ExtensionUninstallDialog from '../extension-uninstall-dialog.vue'
 import ExtensionUpdateDialog from '../extension-update-dialog.vue'
+import ExtensionUpdatePolicyDialog from '../extension-update-policy-dialog.vue'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -19,7 +20,11 @@ import {
   extensionContributionStore,
   refreshExtensionContributionSnapshot
 } from '@renderer/core/extensions'
-import type { ExtensionCatalogInfo, ExtensionUpdateInfo } from '@shared/extension'
+import type {
+  ExtensionCatalogInfo,
+  ExtensionInstallUpdatePolicy,
+  ExtensionUpdateInfo
+} from '@shared/extension'
 
 interface Props {
   extension: ExtensionCatalogInfo
@@ -37,7 +42,15 @@ const toggling = ref(false)
 const iconError = ref(false)
 const settingsOpen = ref(false)
 const updateDialogOpen = ref(false)
+const updatePolicyDialogOpen = ref(false)
 const uninstallDialogOpen = ref(false)
+
+const UPDATE_POLICY_LABELS: Record<ExtensionInstallUpdatePolicy, string> = {
+  manual: '手动',
+  notify: '通知',
+  auto: '自动',
+  pinned: '固定'
+}
 
 const settingsContribution = computed(
   () =>
@@ -53,6 +66,15 @@ const versionLabel = computed(() =>
 )
 const isBuiltin = computed(() => props.extension.builtin)
 const canToggle = computed(() => props.extension.status === 'ready' && !isBuiltin.value)
+const updatePolicyLabel = computed(() => {
+  if (isBuiltin.value) {
+    return '内置'
+  }
+
+  const policy = props.extension.updatePolicy ?? 'manual'
+  return UPDATE_POLICY_LABELS[policy]
+})
+const channelLabel = computed(() => props.extension.channel ?? 'stable')
 const statusLabel = computed(() => {
   switch (props.extension.status) {
     case 'ready':
@@ -208,7 +230,14 @@ function openSettingsPanel() {
     </div>
 
     <!-- Meta -->
-    <div class="text-xs text-muted-foreground mb-2">{{ props.extension.author || '未知' }}</div>
+    <div class="text-xs text-muted-foreground mb-2 space-y-1">
+      <div>{{ props.extension.author || '未知' }}</div>
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span>策略：{{ updatePolicyLabel }}</span>
+        <span v-if="!isBuiltin">频道：{{ channelLabel }}</span>
+        <span v-if="props.extension.pinnedVersion">固定：v{{ props.extension.pinnedVersion }}</span>
+      </div>
+    </div>
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
@@ -272,6 +301,21 @@ function openSettingsPanel() {
             <Button
               size="icon-sm"
               variant="ghost"
+              @click="updatePolicyDialogOpen = true"
+            >
+              <Icon
+                icon="icon-[mdi--update]"
+                class="size-4"
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>更新策略</TooltipContent>
+        </Tooltip>
+        <Tooltip v-if="!isBuiltin">
+          <TooltipTrigger as-child>
+            <Button
+              size="icon-sm"
+              variant="ghost"
               class="hover:text-destructive"
               @click="uninstallDialogOpen = true"
             >
@@ -298,6 +342,13 @@ function openSettingsPanel() {
       v-model:open="updateDialogOpen"
       :extension="props.extension"
       :update-info="props.updateInfo"
+      @updated="emit('refresh')"
+    />
+
+    <ExtensionUpdatePolicyDialog
+      v-if="updatePolicyDialogOpen"
+      v-model:open="updatePolicyDialogOpen"
+      :extension="props.extension"
       @updated="emit('refresh')"
     />
 

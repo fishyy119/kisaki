@@ -72,6 +72,9 @@ export interface ExtensionCatalogInfo {
   runtimeDiagnostics: readonly ExtensionRuntimeDiagnostic[]
   source: ExtensionSourceReference | null
   installationSource?: ExtensionInstallationSource | null
+  updatePolicy?: ExtensionInstallUpdatePolicy
+  pinnedVersion?: string | null
+  channel?: string | null
   directory: string
   issues: readonly string[]
 }
@@ -92,10 +95,45 @@ export interface ExtensionRegistryEntry {
 }
 
 export interface ExtensionUpdateInfo {
+  planId: string
+  planFingerprint: string
   extensionId: string
   currentVersion: string
   latestVersion: string
   source: ExtensionSourceReference | null
+  repository?: ExtensionInstallPlanRepositoryInfo | null
+  release?: ExtensionCatalogReleaseInfo | null
+  artifact?: ExtensionCatalogArtifactInfo | null
+  signer?: ExtensionInstallPlanSignerInfo
+  updatePolicy?: ExtensionInstallUpdatePolicy
+  channel?: string
+  automatic?: boolean
+  risks?: readonly ExtensionInstallRiskInfo[]
+}
+
+export type ExtensionUpdateUnavailableReason =
+  | 'auto-policy-disabled'
+  | 'invalid-current-version'
+  | 'local-file-source'
+  | 'no-compatible-release'
+  | 'no-newer-release'
+  | 'pinned-policy'
+  | 'repository-source-missing'
+  | 'requires-manual-confirmation'
+  | 'channel-mismatch'
+
+export interface ExtensionUpdateUnavailableInfo {
+  extensionId: string
+  currentVersion: string | null
+  updatePolicy?: ExtensionInstallUpdatePolicy | null
+  channel?: string | null
+  reason: ExtensionUpdateUnavailableReason
+  message: string
+}
+
+export interface ExtensionUpdateCheckResult {
+  updates: readonly ExtensionUpdateInfo[]
+  unavailable: readonly ExtensionUpdateUnavailableInfo[]
 }
 
 export type ExtensionRepositoryState = 'enabled' | 'disabled'
@@ -233,6 +271,29 @@ export interface ExtensionCatalogArtifactSignatureInfo {
 }
 
 export type ExtensionInstallUpdatePolicy = 'manual' | 'notify' | 'auto' | 'pinned'
+
+export interface ExtensionUpdatePolicyRequest {
+  extensionId: string
+  updatePolicy: ExtensionInstallUpdatePolicy
+  pinnedVersion?: string | null
+}
+
+export interface ExtensionUpdateRequest {
+  operationId: string
+  extensionId: string
+  planId: string
+  planFingerprint: string
+  acceptedRiskIds?: readonly string[]
+  trustSignerFingerprint?: boolean
+}
+
+export interface ExtensionUpdateAllResult {
+  extensionId: string
+  success: boolean
+  currentVersion: string
+  targetVersion: string
+  error?: string
+}
 
 export type ExtensionCreateInstallPlanRequest =
   | ExtensionCreateRepositoryInstallPlanRequest

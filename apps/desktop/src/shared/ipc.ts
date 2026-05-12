@@ -88,7 +88,10 @@ import type {
   ExtensionSettingsPanelReleaseRequest,
   ExtensionSettingsPanelSubmitRequest,
   ExtensionThemeRegistrationInfo,
-  ExtensionUpdateInfo
+  ExtensionUpdateAllResult,
+  ExtensionUpdateCheckResult,
+  ExtensionUpdatePolicyRequest,
+  ExtensionUpdateRequest
 } from './extension'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
@@ -437,8 +440,10 @@ export interface IpcMainHandlers {
   'extension:install-release': (request: ExtensionInstallReleaseRequest) => IpcVoidResult
   'extension:install-from-file': (request: ExtensionInstallFromFileRequest) => IpcVoidResult
   'extension:uninstall': (extensionId: string) => IpcVoidResult
-  'extension:check-updates': () => IpcResult<ExtensionUpdateInfo[]>
-  'extension:update': (extensionId: string) => IpcVoidResult
+  'extension:check-updates': () => IpcResult<ExtensionUpdateCheckResult>
+  'extension:update': (request: ExtensionUpdateRequest) => IpcVoidResult
+  'extension:update-all': () => IpcResult<ExtensionUpdateAllResult[]>
+  'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
