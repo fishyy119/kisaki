@@ -1,18 +1,24 @@
 <!--
-Extension Browse Panel renders extension discovery results.
-Boundary: reads store filters and queries extension discovery channels.
+Extension Browse Panel renders extension catalog results.
+Boundary: reads store filters and queries the repository-backed catalog.
 -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
+import ExtensionInstallDialog from '../extension-install-dialog.vue'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
+import ExtensionDiscoverPanelDetailsDialog from './discover-panel-details-dialog.vue'
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverExtensionStore } from '../../stores'
-import type { ExtensionCatalogInfo, ExtensionRegistryEntry } from '@shared/extension'
+import type {
+  ExtensionCatalogInfo,
+  ExtensionCatalogPackageInfo,
+  ExtensionCreateRepositoryInstallPlanRequest
+} from '@shared/extension'
 
 const PAGE_SIZE = 20
 
@@ -20,32 +26,50 @@ const store = useDiscoverExtensionStore()
 
 async function searchExtensionPage(
   page: number
-): Promise<{ results: ExtensionRegistryEntry[]; hasMore: boolean }> {
+): Promise<{ results: ExtensionCatalogPackageInfo[]; hasMore: boolean }> {
   const data = unwrapIpcData(
-    await ipcManager.invoke('extension:search', store.selectedRegistry, store.searchQuery, {
+    await ipcManager.invoke('extension:search-catalog', {
+      query: store.searchQuery,
       page,
       limit: PAGE_SIZE,
-      sortBy: store.sortField === 'updatedAt' ? 'updated' : store.sortField,
+      category: store.selectedCategory ?? undefined,
+      channel: store.selectedChannel ?? undefined,
+      repositoryId: store.selectedRepositoryId ?? undefined,
+      compatibleOnly: store.compatibleOnly,
+      sortBy: store.sortField,
       sortDirection: store.sortDirection
     })
   )
 
-  return { results: data.entries, hasMore: data.hasMore }
+  return { results: [...data.packages], hasMore: data.hasMore }
 }
 
-const additionalResults = ref<ExtensionRegistryEntry[]>([])
+const additionalResults = ref<ExtensionCatalogPackageInfo[]>([])
 const additionalHasMore = ref(false)
 const page = ref(1)
 const isLoadingMore = ref(false)
+const detailsPackage = ref<ExtensionCatalogPackageInfo | null>(null)
+const detailsOpen = ref(false)
+const installRequest = ref<ExtensionCreateRepositoryInstallPlanRequest | null>(null)
+const installDialogOpen = ref(false)
 const queryKey = computed(() =>
-  [store.searchTrigger, store.selectedRegistry, store.sortField, store.sortDirection].join(':')
+  [
+    store.searchTrigger,
+    store.selectedRepositoryId ?? 'all',
+    store.selectedCategory ?? 'all',
+    store.selectedChannel ?? 'all',
+    store.compatibleOnly ? 'compatible' : 'any',
+    store.sortField,
+    store.sortDirection
+  ].join(':')
 )
 
 // Use useAsyncData for the initial search (page 1)
 const {
   data: searchData,
   isFetching,
-  isLoading
+  isLoading,
+  refetch: refetchSearch
 } = useAsyncData(() => searchExtensionPage(1), {
   watch: [queryKey],
   immediate: true
@@ -56,6 +80,23 @@ const { data: catalog, refetch: refetchCatalog } = useAsyncData(
     immediate: true
   }
 )
+
+let unsubscribeCatalogChanged: (() => void) | null = null
+let unsubscribeInstallationsChanged: (() => void) | null = null
+
+onMounted(() => {
+  unsubscribeCatalogChanged = ipcManager.on('extension:catalog-changed', () => {
+    refetchSearch()
+  })
+  unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
+    refetchCatalog()
+  })
+})
+
+onUnmounted(() => {
+  unsubscribeCatalogChanged?.()
+  unsubscribeInstallationsChanged?.()
+})
 
 watch(
   queryKey,
@@ -77,30 +118,7 @@ const hasMore = computed(() => {
 })
 
 const displayedResults = computed(() => {
-  let result = [...allResults.value]
-
-  if (store.selectedCategory) {
-    result = result.filter((p) => p.categories?.includes(store.selectedCategory!))
-  }
-
-  const direction = store.sortDirection === 'asc' ? 1 : -1
-  result.sort((a, b) => {
-    let comparison = 0
-    switch (store.sortField) {
-      case 'stars':
-        comparison = (a.stars ?? 0) - (b.stars ?? 0)
-        break
-      case 'name':
-        comparison = a.name.localeCompare(b.name)
-        break
-      case 'updatedAt':
-        comparison = String(a.updatedAt ?? '').localeCompare(String(b.updatedAt ?? ''))
-        break
-    }
-    return direction * comparison
-  })
-
-  return result
+  return [...allResults.value]
 })
 
 const searched = computed(() => !isLoading.value)
@@ -127,32 +145,41 @@ async function handleLoadMore() {
 const loading = computed(() => isFetching.value || isLoadingMore.value)
 
 function getCatalogSourceKey(entry: ExtensionCatalogInfo): string | null {
-  if (!entry.source) {
+  if (!entry.installationSource || entry.installationSource.kind !== 'repository') {
     return null
   }
 
-  return getRegistrySourceKey(entry.source.provider, entry.source.locator)
+  return `${entry.installationSource.repositoryId}:${entry.installationSource.releaseId}`
 }
 
-function getRegistrySourceKey(provider: string, locator: string): string {
-  return `${provider}:${normalizeRegistryLocator(provider, locator)}`
-}
-
-function normalizeRegistryLocator(provider: string, locator: string): string {
-  if (provider === 'github' && locator.startsWith('github:')) {
-    const [ownerRepo] = locator.slice('github:'.length).split('@', 2)
-    return `github:${ownerRepo}`
-  }
-
-  return locator
-}
-
-function isInstalled(extension: ExtensionRegistryEntry): boolean {
+function isInstalled(extension: ExtensionCatalogPackageInfo): boolean {
   return (
     installedIds.value.has(extension.id) ||
-    installedSourceKeys.value.has(getRegistrySourceKey(extension.provider, extension.locator))
+    extension.releases.some((release) =>
+      installedSourceKeys.value.has(`${release.repositoryId}:${release.releaseDigest}`)
+    )
   )
 }
+
+function openInstallDialog(request: ExtensionCreateRepositoryInstallPlanRequest) {
+  installRequest.value = request
+  installDialogOpen.value = true
+}
+
+function openDetails(extension: ExtensionCatalogPackageInfo) {
+  detailsPackage.value = extension
+  detailsOpen.value = true
+}
+
+async function handleInstalled() {
+  await Promise.all([refetchCatalog(), refetchSearch()])
+}
+
+watch(detailsOpen, (open) => {
+  if (!open) {
+    detailsPackage.value = null
+  }
+})
 </script>
 
 <template>
@@ -174,7 +201,7 @@ function isInstalled(extension: ExtensionRegistryEntry): boolean {
           />
           <p class="font-medium">未找到扩展</p>
           <p class="text-sm mt-1 text-muted-foreground/70">
-            {{ store.selectedCategory ? '该分类下暂无扩展' : '暂无扩展' }}
+            {{ store.selectedCategory ? '该分类下暂无可用扩展' : '暂无可用扩展' }}
           </p>
         </div>
 
@@ -205,7 +232,8 @@ function isInstalled(extension: ExtensionRegistryEntry): boolean {
             :key="extension.id"
             :extension="extension"
             :installed="isInstalled(extension)"
-            :refresh-installed-state="refetchCatalog"
+            @install="openInstallDialog"
+            @details="openDetails"
           />
         </div>
 
@@ -228,5 +256,20 @@ function isInstalled(extension: ExtensionRegistryEntry): boolean {
         </div>
       </template>
     </div>
+
+    <ExtensionDiscoverPanelDetailsDialog
+      v-if="detailsPackage"
+      v-model:open="detailsOpen"
+      :extension="detailsPackage"
+      :installed="isInstalled(detailsPackage)"
+      @install="openInstallDialog"
+    />
+
+    <ExtensionInstallDialog
+      v-if="installDialogOpen"
+      v-model:open="installDialogOpen"
+      :request="installRequest"
+      @installed="handleInstalled"
+    />
   </div>
 </template>

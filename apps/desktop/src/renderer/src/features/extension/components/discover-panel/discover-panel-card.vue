@@ -1,40 +1,86 @@
 <!--
-Browse Extension Card renders one extension discovery result.
-Boundary: installs by locator, but does not own catalog refresh.
+Browse Extension Card renders one catalog package result.
+Boundary: emits install/details actions and does not perform mutations directly.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils/cn'
-import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
-import { notify } from '@renderer/core/notify'
-import type { ExtensionRegistryEntry } from '@shared/extension'
+import type {
+  ExtensionCatalogPackageInfo,
+  ExtensionCreateRepositoryInstallPlanRequest
+} from '@shared/extension'
 
 interface Props {
-  extension: ExtensionRegistryEntry
+  extension: ExtensionCatalogPackageInfo
   installed: boolean
-  refreshInstalledState: () => Promise<void>
+}
+
+interface Emits {
+  (e: 'install', request: ExtensionCreateRepositoryInstallPlanRequest): void
+  (e: 'details', extension: ExtensionCatalogPackageInfo): void
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 
-const installing = ref(false)
 const iconError = ref(false)
 
-async function handleInstall() {
-  installing.value = true
-  try {
-    unwrapIpcVoid(await ipcManager.invoke('extension:install', props.extension.locator))
-    await props.refreshInstalledState()
-    notify.success('扩展安装成功')
-  } catch (error) {
-    console.error('Install failed:', error)
-    notify.error('安装失败', (error as Error).message)
-  } finally {
-    installing.value = false
+const latestRelease = computed(() => props.extension.latestRelease)
+const canInstall = computed(
+  () =>
+    !props.installed &&
+    Boolean(latestRelease.value?.compatible) &&
+    !latestRelease.value?.yanked &&
+    Boolean(latestRelease.value?.artifact)
+)
+const ownerLabel = computed(() => props.extension.owner?.name ?? '未知作者')
+const signerLabel = computed(() => {
+  const signature = latestRelease.value?.artifact?.signature
+  if (!latestRelease.value?.artifact) {
+    return '无可用包'
   }
+
+  return signature ? '已签名' : '未签名'
+})
+const signerVariant = computed(() =>
+  latestRelease.value?.artifact?.signature ? 'success' : 'warning'
+)
+const compatibilityLabel = computed(() => {
+  const release = latestRelease.value
+  if (!release) {
+    return '无版本'
+  }
+  if (release.yanked) {
+    return '已撤回'
+  }
+  return release.compatible ? '兼容' : '不兼容'
+})
+const compatibilityVariant = computed(() => {
+  const release = latestRelease.value
+  if (!release) {
+    return 'secondary'
+  }
+  if (release.yanked) {
+    return 'destructive'
+  }
+  return release.compatible ? 'success' : 'warning'
+})
+
+function handleInstall() {
+  const release = latestRelease.value
+  if (!release || !canInstall.value) {
+    return
+  }
+
+  emit('install', {
+    sourceKind: 'repository',
+    extensionId: props.extension.id,
+    releaseId: release.releaseDigest,
+    repositoryId: release.repositoryId
+  })
 }
 </script>
 
@@ -56,31 +102,59 @@ async function handleInstall() {
       />
       <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
       <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
-        <template v-if="props.extension.version">v{{ props.extension.version }}</template>
-        <template v-else>仓库</template>
+        <template v-if="latestRelease">v{{ latestRelease.version }}</template>
+        <template v-else>无版本</template>
       </span>
     </div>
 
-    <!-- Meta - only author -->
-    <div class="text-xs text-muted-foreground mb-2">{{ props.extension.author || '未知' }}</div>
+    <!-- Meta -->
+    <div class="flex items-center gap-1.5 mb-2 min-w-0">
+      <span class="text-xs text-muted-foreground truncate">{{ ownerLabel }}</span>
+      <span class="text-xs text-muted-foreground/50">·</span>
+      <span class="text-xs text-muted-foreground shrink-0">
+        {{ props.extension.repositoryCount }} 个仓库
+      </span>
+    </div>
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.extension.description || '无描述' }}
+      {{ props.extension.summary || props.extension.description || '无描述' }}
     </p>
+
+    <div class="flex items-center gap-1.5 mb-3">
+      <Badge
+        :variant="compatibilityVariant"
+        class="text-[10px] h-5"
+      >
+        {{ compatibilityLabel }}
+      </Badge>
+      <Badge
+        :variant="signerVariant"
+        class="text-[10px] h-5"
+      >
+        {{ signerLabel }}
+      </Badge>
+      <Badge
+        v-if="latestRelease"
+        variant="secondary"
+        class="text-[10px] h-5"
+      >
+        {{ latestRelease.channel }}
+      </Badge>
+    </div>
 
     <!-- Footer -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3 text-xs text-muted-foreground">
         <span
-          v-if="props.extension.stars !== undefined"
+          v-if="latestRelease"
           class="flex items-center gap-1"
         >
           <Icon
-            icon="icon-[mdi--starburst-outline]"
+            icon="icon-[mdi--source-repository]"
             class="size-3.5"
           />
-          {{ props.extension.stars }}
+          {{ latestRelease.repositoryName }}
         </span>
         <a
           v-if="props.extension.homepage"
@@ -97,31 +171,36 @@ async function handleInstall() {
         </a>
       </div>
 
-      <Button
-        size="sm"
-        :variant="props.installed ? 'ghost' : 'default'"
-        :disabled="installing || props.installed"
-        @click="handleInstall"
-      >
-        <Spinner
-          v-if="installing"
-          class="size-3"
-        />
-        <template v-else-if="props.installed">
-          <Icon
-            icon="icon-[mdi--check]"
-            class="size-3.5"
-          />
-          已安装
-        </template>
-        <template v-else>
-          <Icon
-            icon="icon-[mdi--download]"
-            class="size-3.5"
-          />
-          安装
-        </template>
-      </Button>
+      <div class="flex items-center gap-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          @click="emit('details', props.extension)"
+        >
+          详情
+        </Button>
+        <Button
+          size="sm"
+          :variant="props.installed ? 'ghost' : 'default'"
+          :disabled="props.installed || !canInstall"
+          @click="handleInstall"
+        >
+          <template v-if="props.installed">
+            <Icon
+              icon="icon-[mdi--check]"
+              class="size-3.5"
+            />
+            已安装
+          </template>
+          <template v-else>
+            <Icon
+              icon="icon-[mdi--download]"
+              class="size-3.5"
+            />
+            安装
+          </template>
+        </Button>
+      </div>
     </div>
   </div>
 </template>

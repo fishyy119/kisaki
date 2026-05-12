@@ -2,7 +2,7 @@
  * Discover Extension Store
  *
  * Pinia store for extension marketplace UI state.
- * Manages search, filtering, sorting, and registry selection.
+ * Manages search, filtering, sorting, and repository selection.
  */
 
 import { ref } from 'vue'
@@ -10,7 +10,12 @@ import { defineStore } from 'pinia'
 import type { ExtensionCategory } from '@kisaki/extension-api'
 import type { SortDirection } from '@shared/common'
 
-export type DiscoverExtensionSortField = 'stars' | 'name' | 'updatedAt'
+export type DiscoverExtensionSortField =
+  | 'relevance'
+  | 'name'
+  | 'updatedAt'
+  | 'publishedAt'
+  | 'repositoryPriority'
 
 export const useDiscoverExtensionStore = defineStore(
   'discoverExtension',
@@ -24,14 +29,20 @@ export const useDiscoverExtensionStore = defineStore(
     // Search trigger counter (increments to trigger search)
     const searchTrigger = ref(0)
 
-    // Selected registry for browsing (e.g., 'github')
-    const selectedRegistry = ref('github')
+    // Selected repository for browsing (null = all enabled repositories)
+    const selectedRepositoryId = ref<string | null>(null)
 
     // Category filter (null = all categories)
     const selectedCategory = ref<ExtensionCategory | null>(null)
 
+    // Channel filter (null = all channels)
+    const selectedChannel = ref<string | null>('stable')
+
+    // Only show installable releases by default.
+    const compatibleOnly = ref(true)
+
     // Sort options
-    const sortField = ref<DiscoverExtensionSortField>('stars')
+    const sortField = ref<DiscoverExtensionSortField>('relevance')
     const sortDirection = ref<SortDirection>('desc')
 
     // Actions
@@ -50,12 +61,20 @@ export const useDiscoverExtensionStore = defineStore(
       searchTrigger.value++
     }
 
-    function setSelectedRegistry(registry: string) {
-      selectedRegistry.value = registry
+    function setSelectedRepositoryId(repositoryId: string | null) {
+      selectedRepositoryId.value = repositoryId
     }
 
     function setSelectedCategory(category: ExtensionCategory | null) {
       selectedCategory.value = category
+    }
+
+    function setSelectedChannel(channel: string | null) {
+      selectedChannel.value = channel
+    }
+
+    function setCompatibleOnly(value: boolean) {
+      compatibleOnly.value = value
     }
 
     function setSortField(field: DiscoverExtensionSortField) {
@@ -76,7 +95,10 @@ export const useDiscoverExtensionStore = defineStore(
       searchQuery.value = ''
       searchTrigger.value++
       selectedCategory.value = null
-      sortField.value = 'stars'
+      selectedRepositoryId.value = null
+      selectedChannel.value = 'stable'
+      compatibleOnly.value = true
+      sortField.value = 'relevance'
       sortDirection.value = 'desc'
     }
 
@@ -85,16 +107,20 @@ export const useDiscoverExtensionStore = defineStore(
       searchInput,
       searchQuery,
       searchTrigger,
-      selectedRegistry,
+      selectedRepositoryId,
       selectedCategory,
+      selectedChannel,
+      compatibleOnly,
       sortField,
       sortDirection,
       // Actions
       setSearchInput,
       triggerSearch,
       clearSearch,
-      setSelectedRegistry,
+      setSelectedRepositoryId,
       setSelectedCategory,
+      setSelectedChannel,
+      setCompatibleOnly,
       setSortField,
       setSortDirection,
       setSort,
@@ -103,7 +129,13 @@ export const useDiscoverExtensionStore = defineStore(
   },
   {
     persist: {
-      pick: ['selectedRegistry', 'sortField', 'sortDirection']
+      pick: [
+        'selectedRepositoryId',
+        'selectedChannel',
+        'compatibleOnly',
+        'sortField',
+        'sortDirection'
+      ]
     }
   }
 )

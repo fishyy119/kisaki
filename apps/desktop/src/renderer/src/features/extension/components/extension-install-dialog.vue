@@ -1,9 +1,9 @@
 <!--
-Extension Install Dialog installs extensions from supported sources.
-Boundary: owns install-source inputs and delegates work to main over IPC.
+Extension Install Dialog reviews install plans before installing.
+Boundary: creates repository/local plans and delegates package mutations to main over IPC.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import {
@@ -15,106 +15,100 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Button } from '@renderer/components/ui/button'
-import { Input } from '@renderer/components/ui/input'
-import { Field, FieldContent, FieldLabel, FieldDescription } from '@renderer/components/ui/field'
+import { Badge } from '@renderer/components/ui/badge'
+import { Switch } from '@renderer/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import type { ExtensionInstallPlan } from '@shared/extension'
+import type {
+  ExtensionCreateRepositoryInstallPlanRequest,
+  ExtensionInstallPlan,
+  ExtensionInstallUpdatePolicy
+} from '@shared/extension'
 
-type InstallMethod = 'github' | 'url' | 'local'
+interface Props {
+  request?: ExtensionCreateRepositoryInstallPlanRequest | null
+}
 
 interface Emits {
   (e: 'installed'): void
 }
 
+const props = withDefaults(defineProps<Props>(), {
+  request: null
+})
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 
-const method = ref<InstallMethod>('github')
-const installing = ref(false)
-
-// GitHub method state
-const githubRepo = ref('')
-
-// URL method state
-const extensionUrl = ref('')
+const plan = ref<ExtensionInstallPlan | null>(null)
 const localFilePath = ref<string | null>(null)
-const localInstallPlan = ref<ExtensionInstallPlan | null>(null)
+const loadingPlan = ref(false)
+const installing = ref(false)
+const enabled = ref(true)
+const updatePolicy = ref<ExtensionInstallUpdatePolicy>('manual')
+const trustSignerFingerprint = ref(false)
 
-// Reset form when dialog opens
-watch(open, (isOpen) => {
-  if (isOpen) {
-    method.value = 'github'
-    githubRepo.value = ''
-    extensionUrl.value = ''
-    localFilePath.value = null
-    localInstallPlan.value = null
-    installing.value = false
+const isRepositoryInstall = computed(() => props.request !== null)
+const title = computed(() => (isRepositoryInstall.value ? '安装扩展' : '导入本地扩展'))
+const description = computed(() =>
+  isRepositoryInstall.value ? '检查版本、来源和签名后继续安装' : '选择本地 .kisx 文件并确认导入'
+)
+const canTrustSigner = computed(
+  () => Boolean(plan.value?.signer.fingerprint) && plan.value?.signer.status !== 'unsigned'
+)
+const riskVariant = computed(() => {
+  if (!plan.value?.risks.some((risk) => risk.severity === 'danger')) {
+    return plan.value?.risks.some((risk) => risk.severity === 'warning') ? 'warning' : 'secondary'
   }
+
+  return 'destructive'
 })
 
-async function handleInstallFromGitHub() {
-  if (!githubRepo.value.trim()) {
-    notify.error('请输入仓库地址')
+watch(
+  () => [open.value, props.request] as const,
+  ([isOpen]) => {
+    if (!isOpen) {
+      return
+    }
+
+    resetState()
+    if (props.request) {
+      createRepositoryPlan()
+    }
+  },
+  { immediate: true }
+)
+
+async function createRepositoryPlan() {
+  if (!props.request) {
     return
   }
 
-  // Validate format: owner/repo
-  const repoPattern = /^[\w.-]+\/[\w.-]+$/
-  if (!repoPattern.test(githubRepo.value.trim())) {
-    notify.error('格式错误', '请使用 owner/repo 格式')
-    return
-  }
-
-  installing.value = true
+  loadingPlan.value = true
   try {
-    const source = `github:${githubRepo.value.trim()}`
-    unwrapIpcVoid(await ipcManager.invoke('extension:install', source))
-
-    notify.success('扩展安装成功')
-    githubRepo.value = ''
-    open.value = false
-    emit('installed')
+    plan.value = unwrapIpcData(
+      await ipcManager.invoke('extension:create-install-plan', props.request)
+    )
+    enabled.value = plan.value.defaultEnabled
+    updatePolicy.value = plan.value.updatePolicy
+    trustSignerFingerprint.value = false
   } catch (error) {
-    notify.error('安装失败', error instanceof Error ? error.message : String(error))
+    notify.error('无法创建安装计划', error instanceof Error ? error.message : String(error))
+    open.value = false
   } finally {
-    installing.value = false
+    loadingPlan.value = false
   }
 }
 
-async function handleInstallFromUrl() {
-  if (!extensionUrl.value.trim()) {
-    notify.error('请输入下载地址')
-    return
-  }
-
-  // Basic URL validation
-  try {
-    new URL(extensionUrl.value.trim())
-  } catch {
-    notify.error('格式错误', '请输入有效的 URL')
-    return
-  }
-
-  installing.value = true
-  try {
-    unwrapIpcVoid(await ipcManager.invoke('extension:install', extensionUrl.value.trim()))
-
-    notify.success('扩展安装成功')
-    extensionUrl.value = ''
-    open.value = false
-    emit('installed')
-  } catch (error) {
-    notify.error('安装失败', error instanceof Error ? error.message : String(error))
-  } finally {
-    installing.value = false
-  }
-}
-
-async function handleInstallFromFile() {
-  installing.value = true
+async function handleSelectLocalFile() {
+  loadingPlan.value = true
   try {
     const res = await ipcManager.invoke('native:open-dialog', {
       title: '选择扩展文件',
@@ -122,49 +116,79 @@ async function handleInstallFromFile() {
       properties: ['openFile']
     })
 
-    if (res.success && res.data && !res.data.canceled && res.data.filePaths.length > 0) {
-      const filePath = res.data.filePaths[0]
-      localFilePath.value = filePath
-      localInstallPlan.value = unwrapIpcData(
-        await ipcManager.invoke('extension:create-install-plan', {
-          sourceKind: 'local-file',
-          filePath
-        })
-      )
+    if (!res.success || res.data.canceled || res.data.filePaths.length === 0) {
+      return
     }
+
+    const filePath = res.data.filePaths[0]
+    localFilePath.value = filePath
+    plan.value = unwrapIpcData(
+      await ipcManager.invoke('extension:create-install-plan', {
+        sourceKind: 'local-file',
+        filePath
+      })
+    )
+    enabled.value = plan.value.defaultEnabled
+    updatePolicy.value = plan.value.updatePolicy
   } catch (error) {
     localFilePath.value = null
-    localInstallPlan.value = null
+    plan.value = null
     notify.error('无法创建安装计划', error instanceof Error ? error.message : String(error))
   } finally {
-    installing.value = false
+    loadingPlan.value = false
   }
 }
 
-async function handleConfirmLocalInstall() {
-  const plan = localInstallPlan.value
-  const filePath = localFilePath.value
-  if (!plan || !filePath) {
-    await handleInstallFromFile()
+async function handleInstall() {
+  const currentPlan = plan.value
+  if (!currentPlan) {
+    if (!isRepositoryInstall.value) {
+      await handleSelectLocalFile()
+    }
     return
   }
 
   installing.value = true
   try {
-    unwrapIpcVoid(
-      await ipcManager.invoke('extension:install-from-file', {
-        operationId: createOperationId(),
-        filePath,
-        planId: plan.id,
-        planFingerprint: plan.fingerprint,
-        acceptedRiskIds: plan.risks.map((risk) => risk.id),
-        enabled: plan.defaultEnabled
-      })
-    )
+    const acceptedRiskIds = currentPlan.risks.map((risk) => risk.id)
+    if (currentPlan.sourceKind === 'repository') {
+      const request = props.request ?? {
+        sourceKind: 'repository' as const,
+        extensionId: currentPlan.package.id,
+        releaseId: currentPlan.release?.releaseDigest,
+        repositoryId: currentPlan.release?.repositoryId
+      }
+      unwrapIpcVoid(
+        await ipcManager.invoke('extension:install-release', {
+          ...request,
+          sourceKind: 'repository',
+          operationId: createOperationId(),
+          planId: currentPlan.id,
+          planFingerprint: currentPlan.fingerprint,
+          acceptedRiskIds,
+          trustSignerFingerprint: trustSignerFingerprint.value,
+          enabled: enabled.value,
+          updatePolicy: updatePolicy.value
+        })
+      )
+    } else {
+      if (!localFilePath.value) {
+        throw new Error('Local extension file is missing.')
+      }
+
+      unwrapIpcVoid(
+        await ipcManager.invoke('extension:install-from-file', {
+          operationId: createOperationId(),
+          filePath: localFilePath.value,
+          planId: currentPlan.id,
+          planFingerprint: currentPlan.fingerprint,
+          acceptedRiskIds,
+          enabled: enabled.value
+        })
+      )
+    }
 
     notify.success('扩展安装成功')
-    localFilePath.value = null
-    localInstallPlan.value = null
     open.value = false
     emit('installed')
   } catch (error) {
@@ -174,183 +198,222 @@ async function handleConfirmLocalInstall() {
   }
 }
 
+function resetState() {
+  plan.value = null
+  localFilePath.value = null
+  loadingPlan.value = false
+  installing.value = false
+  enabled.value = true
+  updatePolicy.value = 'manual'
+  trustSignerFingerprint.value = false
+}
+
 function createOperationId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function signerLabel(value: ExtensionInstallPlan['signer']['status']): string {
+  switch (value) {
+    case 'trusted':
+      return '签名已信任'
+    case 'untrusted':
+      return '签名未信任'
+    case 'changed':
+      return '签名已变更'
+    case 'unsigned':
+      return '未签名'
+  }
+}
+
+function signerVariant(
+  value: ExtensionInstallPlan['signer']['status']
+): 'success' | 'warning' | 'destructive' {
+  if (value === 'trusted') {
+    return 'success'
+  }
+  if (value === 'changed') {
+    return 'destructive'
+  }
+  return 'warning'
+}
+
+function shortDigest(value: string | null | undefined): string {
+  return value ? value.slice(0, 12) : '无'
+}
+
+function formatBytes(value: number | undefined): string {
+  if (!value || value <= 0) {
+    return '未知大小'
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = value
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex += 1
+  }
+
+  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
 }
 </script>
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-md">
+    <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>安装扩展</DialogTitle>
-        <DialogDescription>选择安装来源以添加新扩展</DialogDescription>
+        <DialogTitle>{{ title }}</DialogTitle>
+        <DialogDescription>{{ description }}</DialogDescription>
       </DialogHeader>
-      <DialogBody>
-        <Tabs v-model="method">
-          <TabsList class="w-full">
-            <TabsTrigger
-              value="github"
-              class="flex-1 gap-1.5"
-            >
-              <Icon
-                icon="icon-[mdi--github]"
-                class="size-4"
-              />
-              GitHub
-            </TabsTrigger>
-            <TabsTrigger
-              value="url"
-              class="flex-1 gap-1.5"
-            >
-              <Icon
-                icon="icon-[mdi--link]"
-                class="size-4"
-              />
-              URL
-            </TabsTrigger>
-            <TabsTrigger
-              value="local"
-              class="flex-1 gap-1.5"
-            >
-              <Icon
-                icon="icon-[mdi--folder-open-outline]"
-                class="size-4"
-              />
-              本地
-            </TabsTrigger>
-          </TabsList>
 
-          <!-- GitHub installation -->
-          <TabsContent
-            value="github"
-            class="space-y-4"
-          >
-            <Field>
-              <FieldLabel>仓库地址</FieldLabel>
-              <FieldDescription>输入 GitHub 仓库的 owner/repo 格式</FieldDescription>
-              <FieldContent>
-                <Input
-                  v-model="githubRepo"
-                  placeholder="例如: ximu3/vndb-scraper"
-                  @keydown.enter="handleInstallFromGitHub"
-                />
-              </FieldContent>
-            </Field>
-          </TabsContent>
+      <DialogBody class="space-y-4">
+        <div
+          v-if="loadingPlan"
+          class="flex items-center justify-center h-40"
+        >
+          <Spinner class="size-6" />
+        </div>
 
-          <!-- URL installation -->
-          <TabsContent
-            value="url"
-            class="space-y-4"
-          >
-            <Field>
-              <FieldLabel>下载地址</FieldLabel>
-              <FieldDescription>输入扩展包 (.kisx) 的直接下载链接</FieldDescription>
-              <FieldContent>
-                <Input
-                  v-model="extensionUrl"
-                  placeholder="https://example.com/extension.kisx"
-                  @keydown.enter="handleInstallFromUrl"
-                />
-              </FieldContent>
-            </Field>
-          </TabsContent>
-
-          <!-- Local installation -->
-          <TabsContent
-            value="local"
-            class="space-y-4"
-          >
-            <div
-              v-if="!localInstallPlan"
-              class="text-center py-6 border border-dashed border-border rounded-lg"
-            >
+        <template v-else-if="plan">
+          <div class="rounded-md border border-border p-3 space-y-3">
+            <div class="flex items-start gap-3">
               <Icon
-                icon="icon-[mdi--folder-zip-outline]"
-                class="size-12 text-muted-foreground/50 mx-auto mb-3"
+                icon="icon-[mdi--package-variant-closed]"
+                class="size-5 text-muted-foreground shrink-0 mt-0.5"
               />
-              <p class="text-sm text-muted-foreground mb-4">选择本地扩展包文件 (.kisx)</p>
-            </div>
-            <div
-              v-else
-              class="space-y-3"
-            >
-              <div class="rounded-md border border-border p-3">
-                <div class="flex items-start gap-2">
-                  <Icon
-                    icon="icon-[mdi--package-variant-closed]"
-                    class="size-5 text-muted-foreground shrink-0 mt-0.5"
-                  />
-                  <div class="min-w-0 flex-1">
-                    <div class="text-sm font-medium truncate">
-                      {{ localInstallPlan.package.name }}
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      v{{ localInstallPlan.package.targetVersion }} · 本地导入 · unsigned
-                    </div>
-                    <div class="mt-2 text-xs text-muted-foreground break-all">
-                      SHA256: {{ localInstallPlan.localFile?.sha256 }}
-                    </div>
-                  </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="text-sm font-medium truncate">{{ plan.package.name }}</div>
+                  <Badge
+                    variant="secondary"
+                    class="text-[10px] h-5"
+                  >
+                    v{{ plan.package.targetVersion }}
+                  </Badge>
+                  <Badge
+                    :variant="signerVariant(plan.signer.status)"
+                    class="text-[10px] h-5"
+                  >
+                    {{ signerLabel(plan.signer.status) }}
+                  </Badge>
+                </div>
+                <div class="mt-1 text-xs text-muted-foreground">
+                  <template v-if="plan.repository">
+                    {{ plan.repository.name }} · {{ plan.artifact?.host ?? '无包主机' }}
+                  </template>
+                  <template v-else> 本地文件 · {{ formatBytes(plan.localFile?.size) }} </template>
                 </div>
               </div>
-
-              <div
-                v-if="localInstallPlan.risks.length > 0"
-                class="rounded-md border border-warning/40 bg-warning/5 p-3 text-xs"
-              >
-                <div class="font-medium mb-2">需要确认</div>
-                <ul class="space-y-1 text-muted-foreground">
-                  <li
-                    v-for="risk in localInstallPlan.risks"
-                    :key="risk.id"
-                  >
-                    {{ risk.message }}
-                  </li>
-                </ul>
-              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div>当前版本：{{ plan.package.currentVersion ?? '未安装' }}</div>
+              <div>目标频道：{{ plan.package.channel }}</div>
+              <div>
+                包 SHA256：{{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
+              </div>
+              <div>Manifest：{{ shortDigest(plan.repository?.manifestDigest) }}</div>
+              <div>签名指纹：{{ plan.signer.fingerprint ?? '无' }}</div>
+              <div>包大小：{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</div>
+            </div>
+          </div>
+
+          <div
+            v-if="plan.risks.length > 0"
+            class="rounded-md border p-3 text-xs space-y-2"
+            :class="
+              riskVariant === 'destructive'
+                ? 'border-destructive/40 bg-destructive/5'
+                : 'border-warning/40 bg-warning/5'
+            "
+          >
+            <div class="font-medium">需要确认</div>
+            <ul class="space-y-1 text-muted-foreground">
+              <li
+                v-for="risk in plan.risks"
+                :key="risk.id"
+              >
+                {{ risk.message }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <label
+              class="flex items-center justify-between rounded-md border border-border px-3 py-2"
+            >
+              <span class="text-sm">安装后启用</span>
+              <Switch v-model="enabled" />
+            </label>
+
+            <div class="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+              <span class="text-sm shrink-0">更新策略</span>
+              <Select v-model="updatePolicy">
+                <SelectTrigger
+                  size="sm"
+                  class="flex-1"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">手动</SelectItem>
+                  <SelectItem value="notify">提醒</SelectItem>
+                  <SelectItem value="auto">自动</SelectItem>
+                  <SelectItem value="pinned">固定</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <label
+              v-if="canTrustSigner"
+              class="col-span-2 flex items-center justify-between rounded-md border border-border px-3 py-2"
+            >
+              <span class="text-sm">信任此扩展的签名指纹</span>
+              <Switch v-model="trustSignerFingerprint" />
+            </label>
+          </div>
+        </template>
+
+        <div
+          v-else
+          class="text-center py-8 border border-dashed border-border rounded-md"
+        >
+          <Icon
+            icon="icon-[mdi--folder-zip-outline]"
+            class="size-12 text-muted-foreground/50 mx-auto mb-3"
+          />
+          <p class="text-sm text-muted-foreground mb-4">选择本地扩展包文件 (.kisx)</p>
+          <Button
+            variant="outline"
+            :disabled="loadingPlan"
+            @click="handleSelectLocalFile"
+          >
+            <Icon
+              icon="icon-[mdi--folder-open-outline]"
+              class="size-4"
+            />
+            选择文件
+          </Button>
+        </div>
       </DialogBody>
 
       <DialogFooter>
         <Button
-          v-if="method === 'github'"
-          class="w-full"
-          :disabled="installing || !githubRepo.trim()"
-          @click="handleInstallFromGitHub"
-        >
-          <Spinner
-            v-if="installing"
-            class="size-4 mr-2"
-          />
-          安装
-        </Button>
-        <Button
-          v-if="method === 'url'"
-          class="w-full"
-          :disabled="installing || !extensionUrl.trim()"
-          @click="handleInstallFromUrl"
-        >
-          <Spinner
-            v-if="installing"
-            class="size-4 mr-2"
-          />
-          安装
-        </Button>
-        <Button
-          v-if="method === 'local'"
-          class="w-full"
+          variant="outline"
           :disabled="installing"
-          @click="localInstallPlan ? handleConfirmLocalInstall() : handleInstallFromFile()"
+          @click="open = false"
+        >
+          取消
+        </Button>
+        <Button
+          :disabled="loadingPlan || installing || !plan"
+          @click="handleInstall"
         >
           <Spinner
             v-if="installing"
-            class="size-4 mr-2"
+            class="size-4"
           />
-          {{ localInstallPlan ? '确认安装' : '选择文件' }}
+          确认安装
         </Button>
       </DialogFooter>
     </DialogContent>

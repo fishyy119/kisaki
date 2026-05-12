@@ -1,5 +1,5 @@
 <!--
-Browse Extension Filter Bar controls discovery search and filters.
+Browse Extension Filter Bar controls catalog search and repository filters.
 Boundary: owns filter inputs, while results are fetched by the panel.
 -->
 <script setup lang="ts">
@@ -25,12 +25,6 @@ import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../.
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki/extension-api'
 
-// Registry display configuration
-const REGISTRY_CONFIG: Record<string, { label: string; icon: string }> = {
-  github: { label: 'GitHub', icon: 'icon-[mdi--github]' },
-  local: { label: '本地', icon: 'icon-[mdi--folder-outline]' }
-}
-
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {
   scraper: 'icon-[mdi--database-outline]',
@@ -40,21 +34,26 @@ const CATEGORY_ICONS: Record<string, string> = {
 }
 
 const SORT_OPTIONS: { value: DiscoverExtensionSortField; label: string }[] = [
-  { value: 'stars', label: '星标' },
+  { value: 'relevance', label: '相关' },
   { value: 'name', label: '名称' },
-  { value: 'updatedAt', label: '更新' }
+  { value: 'publishedAt', label: '发布' },
+  { value: 'updatedAt', label: '更新' },
+  { value: 'repositoryPriority', label: '仓库' }
 ]
 
 const store = useDiscoverExtensionStore()
 
-const { data: registries } = useAsyncData(
+const { data: repositories } = useAsyncData(
   async () => {
-    return unwrapIpcData(await ipcManager.invoke('extension:get-sources'))
+    return unwrapIpcData(await ipcManager.invoke('extension:list-repositories'))
   },
   { immediate: true }
 )
 
-const registriesList = computed(() => registries.value ?? [])
+const repositoriesList = computed(() => repositories.value ?? [])
+const enabledRepositories = computed(() =>
+  repositoriesList.value.filter((repository) => repository.state === 'enabled')
+)
 
 // Debounced search: auto-trigger search when input changes
 const debouncedSearchInput = useDebouncedRef(() => store.searchInput, 300)
@@ -79,6 +78,16 @@ const categoryModel = computed({
   get: () => store.selectedCategory ?? 'all',
   set: (value: string) =>
     store.setSelectedCategory(value === 'all' ? null : (value as ExtensionCategory))
+})
+
+const repositoryModel = computed({
+  get: () => store.selectedRepositoryId ?? 'all',
+  set: (value: string) => store.setSelectedRepositoryId(value === 'all' ? null : value)
+})
+
+const channelModel = computed({
+  get: () => store.selectedChannel ?? 'all',
+  set: (value: string) => store.setSelectedChannel(value === 'all' ? null : value)
 })
 
 function handleToggleSortDirection() {
@@ -121,32 +130,64 @@ function handleToggleSortDirection() {
       <!-- Spacer -->
       <div class="flex-1" />
 
-      <!-- Registry selector as button group -->
-      <ButtonGroup v-if="registriesList.length > 0">
-        <template
-          v-for="reg in registriesList"
-          :key="reg.name"
+      <!-- Repository selector -->
+      <Select v-model="repositoryModel">
+        <SelectTrigger
+          size="sm"
+          class="min-w-40"
         >
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                :variant="store.selectedRegistry === reg.name ? 'secondary' : 'outline'"
-                size="icon-sm"
-                :class="cn(store.selectedRegistry !== reg.name && 'text-muted-foreground')"
-                @click="store.setSelectedRegistry(reg.name)"
-              >
-                <Icon
-                  :icon="REGISTRY_CONFIG[reg.name]?.icon ?? 'icon-[mdi--folder-outline]'"
-                  class="size-4"
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {{ REGISTRY_CONFIG[reg.name]?.label ?? reg.name }}
-            </TooltipContent>
-          </Tooltip>
-        </template>
-      </ButtonGroup>
+          <Icon
+            icon="icon-[mdi--source-repository]"
+            class="size-4 text-muted-foreground"
+          />
+          <SelectValue class="leading-none" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">全部仓库</SelectItem>
+          <SelectItem
+            v-for="repository in enabledRepositories"
+            :key="repository.id"
+            :value="repository.id"
+          >
+            {{ repository.name }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+      <!-- Channel selector -->
+      <Select v-model="channelModel">
+        <SelectTrigger
+          size="sm"
+          class="w-24"
+        >
+          <SelectValue class="leading-none" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="stable">stable</SelectItem>
+          <SelectItem value="beta">beta</SelectItem>
+          <SelectItem value="nightly">nightly</SelectItem>
+          <SelectItem value="all">全部频道</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            :variant="store.compatibleOnly ? 'secondary' : 'outline'"
+            size="icon-sm"
+            :class="cn(!store.compatibleOnly && 'text-muted-foreground')"
+            @click="store.setCompatibleOnly(!store.compatibleOnly)"
+          >
+            <Icon
+              icon="icon-[mdi--shield-check-outline]"
+              class="size-4"
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {{ store.compatibleOnly ? '仅显示兼容版本' : '显示全部兼容状态' }}
+        </TooltipContent>
+      </Tooltip>
 
       <!-- Sort controls: Select + Direction toggle -->
       <ButtonGroup>

@@ -8,9 +8,10 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ExtensionSettingsPanelDialog } from '@renderer/components/extension/settings-panels'
+import ExtensionUninstallDialog from '../extension-uninstall-dialog.vue'
+import ExtensionUpdateDialog from '../extension-update-dialog.vue'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
@@ -33,10 +34,10 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const toggling = ref(false)
-const uninstalling = ref(false)
-const updating = ref(false)
 const iconError = ref(false)
 const settingsOpen = ref(false)
+const updateDialogOpen = ref(false)
+const uninstallDialogOpen = ref(false)
 
 const settingsContribution = computed(
   () =>
@@ -125,38 +126,6 @@ const enabledModel = computed({
   get: () => props.extension.enabled,
   set: (v: boolean) => handleToggle(v)
 })
-
-async function handleUninstall() {
-  uninstalling.value = true
-  try {
-    unwrapIpcVoid(await ipcManager.invoke('extension:uninstall', props.extension.id))
-    await refreshExtensionContributionSnapshot()
-
-    notify.success('扩展已卸载')
-    emit('refresh')
-  } catch (error) {
-    console.error('Uninstall failed:', error)
-    notify.error('卸载失败', (error as Error).message)
-  } finally {
-    uninstalling.value = false
-  }
-}
-
-async function handleUpdate() {
-  updating.value = true
-  try {
-    unwrapIpcVoid(await ipcManager.invoke('extension:update', props.extension.id))
-    await refreshExtensionContributionSnapshot()
-
-    notify.success('扩展更新成功')
-    emit('refresh')
-  } catch (error) {
-    console.error('Update failed:', error)
-    notify.error('更新失败', (error as Error).message)
-  } finally {
-    updating.value = false
-  }
-}
 
 function openSettingsPanel() {
   if (!settingsContribution.value) {
@@ -275,15 +244,9 @@ function openSettingsPanel() {
           v-if="props.updateInfo && !isBuiltin"
           size="sm"
           variant="default"
-          :disabled="updating"
-          @click="handleUpdate"
+          @click="updateDialogOpen = true"
         >
-          <Spinner
-            v-if="updating"
-            class="size-3"
-          />
           <Icon
-            v-else
             icon="icon-[mdi--refresh]"
             class="size-3.5"
           />
@@ -309,16 +272,10 @@ function openSettingsPanel() {
             <Button
               size="icon-sm"
               variant="ghost"
-              :disabled="uninstalling"
               class="hover:text-destructive"
-              @click="handleUninstall"
+              @click="uninstallDialogOpen = true"
             >
-              <Spinner
-                v-if="uninstalling"
-                class="size-3"
-              />
               <Icon
-                v-else
                 icon="icon-[mdi--delete-outline]"
                 class="size-4"
               />
@@ -334,6 +291,21 @@ function openSettingsPanel() {
       v-if="settingsOpen && settingsContribution"
       v-model:open="settingsOpen"
       :contribution="settingsContribution"
+    />
+
+    <ExtensionUpdateDialog
+      v-if="updateDialogOpen && props.updateInfo"
+      v-model:open="updateDialogOpen"
+      :extension="props.extension"
+      :update-info="props.updateInfo"
+      @updated="emit('refresh')"
+    />
+
+    <ExtensionUninstallDialog
+      v-if="uninstallDialogOpen"
+      v-model:open="uninstallDialogOpen"
+      :extension="props.extension"
+      @uninstalled="emit('refresh')"
     />
   </div>
 </template>

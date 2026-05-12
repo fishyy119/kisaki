@@ -31,7 +31,8 @@ import { ScannerPage } from '@renderer/features/scanner'
 import {
   ExtensionDiscoverPage,
   ExtensionInstalledPage,
-  ExtensionLayout
+  ExtensionLayout,
+  ExtensionRepositoriesPage
 } from '@renderer/features/extension'
 
 // Statistics pages
@@ -181,6 +182,11 @@ const routes: RouteRecordRaw[] = [
         path: 'installed',
         name: 'extension-installed',
         component: ExtensionInstalledPage
+      },
+      {
+        path: 'repositories',
+        name: 'extension-repositories',
+        component: ExtensionRepositoriesPage
       }
     ]
   },

@@ -27,12 +27,13 @@ const emit = defineEmits<Emits>()
 const route = useRoute()
 
 const navItems: {
-  routeName: 'extension-discover' | 'extension-installed'
+  routeName: 'extension-discover' | 'extension-installed' | 'extension-repositories'
   label: string
   icon: string
 }[] = [
   { routeName: 'extension-discover', label: '发现', icon: 'icon-[mdi--storefront-outline]' },
-  { routeName: 'extension-installed', label: '已安装', icon: 'icon-[mdi--check-circle-outline]' }
+  { routeName: 'extension-installed', label: '已安装', icon: 'icon-[mdi--check-circle-outline]' },
+  { routeName: 'extension-repositories', label: '仓库', icon: 'icon-[mdi--source-repository]' }
 ]
 
 function isRouteActive(routeName: string): boolean {
