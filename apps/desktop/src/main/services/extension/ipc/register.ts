@@ -1,9 +1,12 @@
 import { pathToFileURL } from 'node:url'
 import type { IpcService } from '@main/services/ipc'
+import type { IpcError } from '@shared/ipc'
 import type { ExtensionInstalledPackageInfo } from '@shared/extension'
+import { readErrorCode, readErrorDetails } from '@kisaki/extension-api'
 import type { ExtensionCatalogEntry } from '../types'
 import type { ExtensionRuntimeState } from '../runtime/manager'
 import type { ExtensionService } from '../service'
+import { ExtensionPackageError } from '../packages/types'
 import { resolveExtensionFilePath } from '../packages/manifest'
 import { requireSafeExtensionId } from '../shared/path-confinement'
 import {
@@ -33,7 +36,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.disable(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -42,7 +45,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.enable(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -50,7 +53,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       return { success: true, data: await service.isEnabled(requireSafeExtensionId(extensionId)) }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -61,7 +64,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.createInstallPlan(requireCreateInstallPlanRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -70,7 +73,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.installRelease(requireInstallReleaseRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -79,7 +82,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.installFromFile(requireInstallFromFileRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -88,7 +91,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.uninstall(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -97,7 +100,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.purgeData(requirePurgeDataRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -112,7 +115,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         }
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -121,7 +124,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.update(requireUpdateRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -132,7 +135,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.updateAll()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -141,7 +144,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.setUpdatePolicy(requireUpdatePolicyRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -152,7 +155,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.cancelOperation(requireNonEmptyString(operationId, 'operationId'))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -161,7 +164,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.reload(requireSafeExtensionId(extensionId))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -175,7 +178,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
           .map((entry) => toExtensionInstalledPackageInfo(entry, service.getRuntimeState(entry.id)))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -186,7 +189,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.listTrustedSigners()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -195,7 +198,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.removeTrustedSigner(requireNonEmptyString(trustedSignerId, 'trustedSignerId'))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -206,7 +209,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.listRepositories()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -217,7 +220,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.addRepository(requireRepositoryCreateRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -228,7 +231,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.updateRepository(requireRepositoryUpdateRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -237,7 +240,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       service.removeRepository(requireRepositoryId(repositoryId))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -248,7 +251,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.refreshRepository(requireRepositoryId(repositoryId))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -259,7 +262,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.refreshRepositories()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -270,7 +273,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.searchCatalog(requireCatalogSearchRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -281,7 +284,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.getContributionSnapshot()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -292,7 +295,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.getSettingsPanelContributions()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -303,7 +306,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.resolveEntityMenu(requireMenuResolveRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -314,7 +317,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.invokeEntityMenuCallback(requireMenuInvokeRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -323,7 +326,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.releaseEntityMenu(requireMenuReleaseRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -339,7 +342,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
           return { success: true, data }
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -357,7 +360,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
           return { success: true, data }
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -368,7 +371,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.submitSettingsPanel(requireSettingsSubmitRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -379,7 +382,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: await service.invokeSettingsPanelNode(requireSettingsInvokeRequest(request))
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -388,7 +391,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       await service.releaseSettingsPanel(requireSettingsReleaseRequest(request))
       return { success: true }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 
@@ -399,7 +402,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         data: service.getThemeContributions()
       }
     } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
+      return toIpcError(error)
     }
   })
 }
@@ -448,6 +451,47 @@ function requireRepositoryId(value: unknown): string {
   return value.trim()
 }
 
+function toIpcError(error: unknown): IpcError {
+  return {
+    success: false,
+    error: toErrorMessage(error),
+    code: toExtensionIpcErrorCode(error),
+    details: toExtensionIpcErrorDetails(error)
+  }
+}
+
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown extension service error'
+}
+
+function toExtensionIpcErrorCode(error: unknown): string {
+  const code = readErrorCode(error)
+  if (code) {
+    return code
+  }
+
+  if (error instanceof ExtensionPackageError) {
+    return `extension_package_${error.diagnostics[0]?.stage ?? 'operation'}`
+  }
+
+  if (error instanceof Error && error.name === 'AbortError') {
+    return 'cancelled'
+  }
+
+  return 'extension_service_error'
+}
+
+function toExtensionIpcErrorDetails(error: unknown): Record<string, unknown> | undefined {
+  const details = readErrorDetails(error)
+  if (details) {
+    return details
+  }
+
+  if (error instanceof ExtensionPackageError) {
+    return {
+      diagnostics: error.diagnostics
+    }
+  }
+
+  return undefined
 }

@@ -1,5 +1,6 @@
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
 import { and, eq } from 'drizzle-orm'
@@ -13,14 +14,20 @@ import {
   type ExtensionUpdatePolicy
 } from '@shared/db'
 import type * as schema from '@shared/db'
-import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
+import type {
+  ExtensionInstallationSource,
+  ExtensionRepositoryInstallationSource
+} from '@shared/extension/installation-source'
+import type { ExtensionRegistryArtifact } from '@kisaki/extension-registry'
+import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
 import type { TrustExtensionSignerInput } from '../signers/store'
 import { ExtensionSignerTrustStore } from '../signers/store'
 import { ExtensionInstallationStore } from '../installations/store'
-import type { ExtensionPackageLayout } from './layout'
+import { INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH, type ExtensionPackageLayout } from './layout'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
 import { assertInsideRoot, resolveInsideRoot } from '../shared/path-confinement'
 import { wrapExtensionPackageError } from './types'
+import { ExtensionPackageVerifier, hashFile, type ExtensionPackageArchiveEntry } from './verifier'
 
 export interface ExtensionPackageInstallationWrite {
   id: string
@@ -307,6 +314,7 @@ export class ExtensionPackageTransaction {
     })
 
     const installations = new ExtensionInstallationStore(this.db).list()
+    const installationById = new Map(installations.map((row) => [row.id, row]))
     const installationIds = new Set(installations.map((row) => row.id))
     const activePackages = await this.scanPackageDirectories(this.layout.packagesDir)
     const backupPackages = await this.scanOperationPackages(this.layout.backupsDir)
@@ -331,12 +339,12 @@ export class ExtensionPackageTransaction {
     }
 
     for (const installation of installations) {
-      const active = await inspectPackageDirectory(this.layout.packageDir(installation.id))
-      if (
-        active.valid &&
-        active.extensionId === installation.id &&
-        active.version === installation.version
-      ) {
+      const activeIssue = await validatePackageForInstallation(
+        this.layout,
+        installation,
+        this.layout.packageDir(installation.id)
+      )
+      if (!activeIssue) {
         for (const backup of backupPackages.filter(
           (entry) => entry.extensionId === installation.id
         )) {
@@ -352,13 +360,12 @@ export class ExtensionPackageTransaction {
         continue
       }
 
-      const backup = backupPackages.find(
-        (entry) => entry.extensionId === installation.id && entry.version === installation.version
+      const recoverySource = await findVerifiedRecoverySource(
+        this.layout,
+        installation,
+        backupPackages,
+        trashPackages
       )
-      const trash = trashPackages.find(
-        (entry) => entry.extensionId === installation.id && entry.version === installation.version
-      )
-      const recoverySource = backup ?? trash
 
       if (recoverySource) {
         await fse.remove(this.layout.packageDir(installation.id)).catch(() => undefined)
@@ -366,7 +373,7 @@ export class ExtensionPackageTransaction {
           overwrite: false
         })
         actions.push({
-          type: backup ? 'restored-backup' : 'restored-trash',
+          type: recoverySource.actionType,
           extensionId: installation.id,
           path: recoverySource.path
         })
@@ -380,7 +387,7 @@ export class ExtensionPackageTransaction {
       }
 
       issues.push(
-        `Extension "${installation.id}" has an installation record for ${installation.version}, but its active package is missing or invalid.`
+        `Extension "${installation.id}" has an installation record for ${installation.version}, but its active package is missing or invalid: ${activeIssue}`
       )
     }
 
@@ -389,10 +396,15 @@ export class ExtensionPackageTransaction {
         continue
       }
 
-      const active = backup.extensionId
-        ? await inspectPackageDirectory(this.layout.packageDir(backup.extensionId))
-        : null
-      if (!backup.extensionId || !installationIds.has(backup.extensionId) || active?.valid) {
+      const installation = backup.extensionId ? installationById.get(backup.extensionId) : null
+      const activeIssue = installation
+        ? await validatePackageForInstallation(
+            this.layout,
+            installation,
+            this.layout.packageDir(installation.id)
+          )
+        : 'missing installation'
+      if (!backup.extensionId || !installationIds.has(backup.extensionId) || !activeIssue) {
         await fse.remove(backup.path)
         actions.push({ type: 'removed-backup', path: backup.path })
       }
@@ -501,6 +513,10 @@ interface OperationPackageInfo {
   extensionId: string | null
   version: string | null
   valid: boolean
+}
+
+interface VerifiedRecoverySource extends OperationPackageInfo {
+  actionType: 'restored-backup' | 'restored-trash'
 }
 
 async function rollbackReplace(options: {
@@ -648,6 +664,238 @@ async function inspectPackageDirectory(packageDir: string): Promise<{
   }
 }
 
+async function findVerifiedRecoverySource(
+  layout: ExtensionPackageLayout,
+  installation: ExtensionInstallationRow,
+  backupPackages: readonly OperationPackageInfo[],
+  trashPackages: readonly OperationPackageInfo[]
+): Promise<VerifiedRecoverySource | null> {
+  const candidates: VerifiedRecoverySource[] = [
+    ...backupPackages
+      .filter(
+        (entry) => entry.extensionId === installation.id && entry.version === installation.version
+      )
+      .map((entry) => ({ ...entry, actionType: 'restored-backup' as const })),
+    ...trashPackages
+      .filter(
+        (entry) => entry.extensionId === installation.id && entry.version === installation.version
+      )
+      .map((entry) => ({ ...entry, actionType: 'restored-trash' as const }))
+  ]
+
+  for (const candidate of candidates) {
+    if (!(await fse.pathExists(candidate.path))) {
+      continue
+    }
+
+    const issue = await validatePackageForInstallation(layout, installation, candidate.path)
+    if (!issue) {
+      return candidate
+    }
+
+    log.warn(
+      `[ExtensionPackageTransaction] Ignored invalid recovery package "${candidate.path}": ${issue}`
+    )
+  }
+
+  return null
+}
+
+async function validatePackageForInstallation(
+  layout: ExtensionPackageLayout,
+  installation: ExtensionInstallationRow,
+  packageDir: string
+): Promise<string | null> {
+  const inspected = await inspectPackageDirectory(packageDir)
+  if (!inspected.valid) {
+    return 'the package manifest or declared files are invalid'
+  }
+
+  if (inspected.extensionId !== installation.id) {
+    return `package id mismatch: expected "${installation.id}", received "${inspected.extensionId ?? 'unknown'}"`
+  }
+
+  if (inspected.version !== installation.version) {
+    return `package version mismatch: expected "${installation.version}", received "${inspected.version ?? 'unknown'}"`
+  }
+
+  try {
+    await verifyInstalledPackageArchive(layout, installation, packageDir)
+    return null
+  } catch (error) {
+    return getErrorMessage(error)
+  }
+}
+
+async function verifyInstalledPackageArchive(
+  layout: ExtensionPackageLayout,
+  installation: ExtensionInstallationRow,
+  packageDir: string
+): Promise<void> {
+  const archivePath = layout.packageArchivePath(packageDir)
+  if (!(await fse.pathExists(archivePath))) {
+    throw new Error('installed package archive is missing')
+  }
+
+  const source = installation.source
+  if (!source) {
+    throw new Error('installation source is missing or invalid')
+  }
+
+  const verifier = new ExtensionPackageVerifier()
+  if (source.kind === 'repository') {
+    await verifyRepositoryInstalledArchive(verifier, source, archivePath, packageDir)
+    return
+  }
+
+  const verified = await verifier.verifyArchive({
+    archivePath,
+    expectedIdentity: {
+      extensionId: installation.id,
+      version: installation.version
+    }
+  })
+  if (verified.sha256 !== source.artifactSha256) {
+    throw new Error('local package archive sha256 checksum mismatch')
+  }
+
+  await assertPackageDirectoryMatchesArchive(packageDir, archivePath, verified.entries)
+}
+
+async function verifyRepositoryInstalledArchive(
+  verifier: ExtensionPackageVerifier,
+  source: ExtensionRepositoryInstallationSource,
+  archivePath: string,
+  packageDir: string
+): Promise<void> {
+  const snapshot = source.snapshot
+  const releaseDigest = createExtensionRegistryReleaseDigest(
+    {
+      schemaVersion: snapshot.schemaVersion,
+      signingKeys: snapshot.signingKeys
+    },
+    snapshot.package,
+    snapshot.release
+  )
+  if (releaseDigest !== source.releaseId) {
+    throw new Error('repository release digest no longer matches the installed source snapshot')
+  }
+
+  const artifact = snapshot.release.artifacts.find(
+    (item) => item.url === source.artifact.url && item.sha256 === source.artifact.sha256
+  )
+  if (!artifact) {
+    throw new Error('installed repository artifact is missing from the source snapshot')
+  }
+
+  const verified = await verifier.verifyArchive({
+    archivePath,
+    expectedArtifact: artifact,
+    registryPackage: snapshot.package,
+    registryRelease: snapshot.release,
+    signingKeys: snapshot.signingKeys
+  })
+
+  assertRepositorySignatureMatchesSource(artifact, source, verified.signature)
+  await assertPackageDirectoryMatchesArchive(packageDir, archivePath, verified.entries)
+}
+
+function assertRepositorySignatureMatchesSource(
+  artifact: ExtensionRegistryArtifact,
+  source: ExtensionRepositoryInstallationSource,
+  signature: { keyId: string; fingerprint: string } | null
+): void {
+  if (!artifact.signature) {
+    if (source.signature) {
+      throw new Error('unsigned repository artifact has a recorded signer fingerprint')
+    }
+    return
+  }
+
+  if (!signature) {
+    throw new Error('signed repository artifact did not produce a verified signer fingerprint')
+  }
+
+  if (!source.signature) {
+    throw new Error('signed repository artifact is missing its recorded signer fingerprint')
+  }
+
+  if (source.signature.keyId && source.signature.keyId !== signature.keyId) {
+    throw new Error('repository artifact signer key id mismatch')
+  }
+
+  if (source.signature.fingerprint !== signature.fingerprint) {
+    throw new Error('repository artifact signer fingerprint mismatch')
+  }
+}
+
+async function assertPackageDirectoryMatchesArchive(
+  packageDir: string,
+  archivePath: string,
+  entries: readonly ExtensionPackageArchiveEntry[]
+): Promise<void> {
+  const expectedNames = new Set(entries.map((entry) => entry.normalizedName))
+  const actualNames = await collectPackageFileNames(packageDir)
+  const extraName = actualNames.find((name) => !expectedNames.has(name))
+  if (extraName) {
+    throw new Error(`installed package contains an unexpected file "${extraName}"`)
+  }
+
+  const zip = new AdmZip(archivePath)
+  for (const entry of entries) {
+    const archiveEntry = zip.getEntry(entry.archiveName)
+    if (!archiveEntry || archiveEntry.isDirectory) {
+      throw new Error(`verified archive entry "${entry.archiveName}" is missing`)
+    }
+
+    const filePath = resolveInsideRoot(packageDir, entry.normalizedName)
+    const stat = await fse.lstat(filePath).catch(() => null)
+    if (!stat?.isFile()) {
+      throw new Error(`installed package file "${entry.normalizedName}" is missing`)
+    }
+
+    const fileInfo = await hashFile(filePath)
+    const archiveBytes = archiveEntry.getData()
+    if (
+      fileInfo.size !== archiveBytes.byteLength ||
+      fileInfo.sha256 !== createSha256(archiveBytes)
+    ) {
+      throw new Error(`installed package file "${entry.normalizedName}" does not match archive`)
+    }
+  }
+}
+
+async function collectPackageFileNames(packageDir: string): Promise<string[]> {
+  const names: string[] = []
+  await collectPackageFileNamesInto(packageDir, packageDir, names)
+  return names
+}
+
+async function collectPackageFileNamesInto(
+  rootDir: string,
+  directory: string,
+  names: string[]
+): Promise<void> {
+  const entries = await fse.readdir(directory, { withFileTypes: true })
+  for (const entry of entries) {
+    const entryPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) {
+      await collectPackageFileNamesInto(rootDir, entryPath, names)
+      continue
+    }
+
+    const relativePath = path.relative(rootDir, entryPath).split(path.sep).join('/')
+    if (relativePath === INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH) {
+      continue
+    }
+    names.push(relativePath)
+  }
+}
+
+function createSha256(data: Buffer): string {
+  return createHash('sha256').update(data).digest('hex')
+}
+
 async function removeCleanupPaths(paths: readonly string[]): Promise<void> {
   await Promise.all(paths.map((entryPath) => fse.remove(entryPath).catch(() => undefined)))
 }
@@ -671,4 +919,8 @@ function createQuarantineDirectoryName(pkg: PackageDirectoryInfo): string {
 function createSafeDirectoryHint(value: string): string {
   const normalized = value.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '')
   return (normalized || 'package').slice(0, 64)
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }

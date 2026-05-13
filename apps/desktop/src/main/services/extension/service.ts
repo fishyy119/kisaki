@@ -45,6 +45,7 @@ import type {
   ExtensionUpdateRequest
 } from '@shared/extension'
 import type { ExtensionSignerTrustRow } from '@shared/db'
+import type { ExtensionRepositoryInstallationSnapshot } from '@shared/extension/installation-source'
 import type { ExtensionCatalogEntry, ExtensionServicePaths } from './types'
 import { createExtensionRuntimeMetadata } from './types'
 import { ExtensionInstallPlanner } from './installer/planner'
@@ -736,6 +737,7 @@ export class ExtensionService implements IService {
         url: candidate.artifact.url,
         sha256: candidate.artifact.sha256
       },
+      snapshot: createRepositoryInstallationSnapshot(candidate),
       ...(plan.signer.fingerprint
         ? {
             signature: {
@@ -864,6 +866,7 @@ export class ExtensionService implements IService {
         url: candidate.artifact.url,
         sha256: candidate.artifact.sha256
       },
+      snapshot: createRepositoryInstallationSnapshot(candidate),
       ...(info.signer?.fingerprint
         ? {
             signature: {
@@ -1263,6 +1266,20 @@ function resolveBuiltinExtensionPackagesDir(): string {
   }
 
   return resolveInsideRoot(app.getAppPath(), 'out', 'extensions')
+}
+
+function createRepositoryInstallationSnapshot(
+  candidate: ExtensionRepositoryInstallCandidate
+): ExtensionRepositoryInstallationSnapshot {
+  return {
+    schemaVersion: candidate.manifest.schemaVersion,
+    signingKeys: candidate.manifest.signingKeys,
+    package: {
+      id: candidate.registryPackage.id,
+      categories: candidate.registryPackage.categories
+    },
+    release: candidate.release
+  }
 }
 
 function toExtensionTrustedSignerInfo(row: ExtensionSignerTrustRow): ExtensionTrustedSignerInfo {

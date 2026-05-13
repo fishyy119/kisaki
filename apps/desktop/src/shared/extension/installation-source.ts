@@ -1,3 +1,12 @@
+import type { ExtensionCategory } from '@kisaki/extension-api'
+import type {
+  ExtensionRegistryArtifact,
+  ExtensionRegistryPackage,
+  ExtensionRegistryRelease,
+  ExtensionRegistrySchemaVersion,
+  ExtensionRegistrySigningKey
+} from '@kisaki/extension-registry'
+
 export type ExtensionInstallationSource =
   | ExtensionRepositoryInstallationSource
   | ExtensionLocalFileInstallationSource
@@ -12,10 +21,18 @@ export interface ExtensionRepositoryInstallationSource {
     url: string
     sha256: string
   }
+  snapshot: ExtensionRepositoryInstallationSnapshot
   signature?: {
     keyId?: string
     fingerprint: string
   }
+}
+
+export interface ExtensionRepositoryInstallationSnapshot {
+  schemaVersion: ExtensionRegistrySchemaVersion
+  signingKeys: readonly ExtensionRegistrySigningKey[]
+  package: Pick<ExtensionRegistryPackage, 'id' | 'categories'>
+  release: ExtensionRegistryRelease
 }
 
 export interface ExtensionLocalFileInstallationSource {
@@ -25,6 +42,7 @@ export interface ExtensionLocalFileInstallationSource {
 }
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
+const SUPPORTED_SCHEMA_VERSION = 1 satisfies ExtensionRegistrySchemaVersion
 
 export function parseExtensionInstallationSource(
   value: unknown
@@ -58,13 +76,21 @@ function parseRepositoryInstallationSource(
     !isValidUrl(value.repositoryUrl) ||
     !isNonEmptyString(value.releaseId) ||
     !isSha256Hex(value.manifestDigest) ||
-    !isPlainRecord(value.artifact)
+    !isPlainRecord(value.artifact) ||
+    !isPlainRecord(value.snapshot)
   ) {
     return null
   }
 
   const artifact = parseRepositoryArtifact(value.artifact)
-  if (!artifact) {
+  const snapshot = parseRepositorySnapshot(value.snapshot)
+  if (
+    !artifact ||
+    !snapshot ||
+    !snapshot.release.artifacts.some(
+      (item) => item.url === artifact.url && item.sha256 === artifact.sha256
+    )
+  ) {
     return null
   }
 
@@ -74,7 +100,8 @@ function parseRepositoryInstallationSource(
     repositoryUrl: value.repositoryUrl,
     releaseId: value.releaseId,
     manifestDigest: value.manifestDigest,
-    artifact
+    artifact,
+    snapshot
   }
 
   if (value.signature !== undefined) {
@@ -112,6 +139,193 @@ function parseRepositoryArtifact(
   return {
     url: value.url,
     sha256: value.sha256
+  }
+}
+
+function parseRepositorySnapshot(
+  value: Record<string, unknown>
+): ExtensionRepositoryInstallationSnapshot | null {
+  if (
+    value.schemaVersion !== SUPPORTED_SCHEMA_VERSION ||
+    !Array.isArray(value.signingKeys) ||
+    !isPlainRecord(value.package) ||
+    !isPlainRecord(value.release)
+  ) {
+    return null
+  }
+
+  const registryPackage = parseSnapshotPackage(value.package)
+  const release = parseSnapshotRelease(value.release)
+  const signingKeys = value.signingKeys.map(parseSigningKey)
+
+  if (!registryPackage || !release || signingKeys.some((key) => !key)) {
+    return null
+  }
+
+  return {
+    schemaVersion: SUPPORTED_SCHEMA_VERSION,
+    signingKeys: signingKeys as ExtensionRegistrySigningKey[],
+    package: registryPackage,
+    release
+  }
+}
+
+function parseSnapshotPackage(
+  value: Record<string, unknown>
+): ExtensionRepositoryInstallationSnapshot['package'] | null {
+  if (!isNonEmptyString(value.id) || !Array.isArray(value.categories)) {
+    return null
+  }
+
+  const categories = value.categories.filter(isNonEmptyString) as ExtensionCategory[]
+  if (categories.length !== value.categories.length) {
+    return null
+  }
+
+  return {
+    id: value.id,
+    categories
+  }
+}
+
+function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistryRelease | null {
+  if (
+    !isNonEmptyString(value.version) ||
+    !isNonEmptyString(value.channel) ||
+    !isNonEmptyString(value.publishedAt) ||
+    !isPlainRecord(value.engines) ||
+    !Array.isArray(value.artifacts)
+  ) {
+    return null
+  }
+
+  const engines = parseReleaseEngines(value.engines)
+  const artifacts = value.artifacts.map(parseSnapshotArtifact)
+  const changelog =
+    value.changelog === undefined ? undefined : parseReleaseChangelog(value.changelog)
+  if (
+    !engines ||
+    artifacts.length === 0 ||
+    artifacts.some((artifact) => !artifact) ||
+    changelog === null
+  ) {
+    return null
+  }
+
+  if (value.yanked !== undefined && typeof value.yanked !== 'boolean') {
+    return null
+  }
+
+  return {
+    version: value.version,
+    channel: value.channel,
+    publishedAt: value.publishedAt,
+    engines,
+    ...(changelog ? { changelog } : {}),
+    ...(value.yanked !== undefined ? { yanked: value.yanked } : {}),
+    artifacts: artifacts as ExtensionRegistryArtifact[]
+  }
+}
+
+function parseReleaseEngines(
+  value: Record<string, unknown>
+): ExtensionRegistryRelease['engines'] | null {
+  if (!isNonEmptyString(value.kisaki)) {
+    return null
+  }
+
+  return {
+    kisaki: value.kisaki
+  }
+}
+
+function parseReleaseChangelog(value: unknown): ExtensionRegistryRelease['changelog'] | null {
+  if (!isPlainRecord(value)) {
+    return null
+  }
+
+  if (value.text !== undefined && !isNonEmptyString(value.text)) {
+    return null
+  }
+
+  if (value.url !== undefined && !isValidUrl(value.url)) {
+    return null
+  }
+
+  return {
+    ...(value.text ? { text: value.text } : {}),
+    ...(value.url ? { url: value.url } : {})
+  }
+}
+
+function parseSnapshotArtifact(value: unknown): ExtensionRegistryArtifact | null {
+  if (!isPlainRecord(value)) {
+    return null
+  }
+
+  if (
+    !isNonEmptyString(value.target) ||
+    !isValidUrl(value.url) ||
+    typeof value.size !== 'number' ||
+    !Number.isSafeInteger(value.size) ||
+    value.size <= 0 ||
+    !isSha256Hex(value.sha256)
+  ) {
+    return null
+  }
+
+  const signature =
+    value.signature === undefined ? undefined : parseArtifactSignature(value.signature)
+  if (signature === null) {
+    return null
+  }
+
+  return {
+    target: value.target as ExtensionRegistryArtifact['target'],
+    url: value.url,
+    size: value.size,
+    sha256: value.sha256,
+    ...(signature ? { signature } : {})
+  }
+}
+
+function parseArtifactSignature(value: unknown): ExtensionRegistryArtifact['signature'] | null {
+  if (!isPlainRecord(value)) {
+    return null
+  }
+
+  if (
+    !isNonEmptyString(value.keyId) ||
+    value.algorithm !== 'ed25519' ||
+    !isNonEmptyString(value.value)
+  ) {
+    return null
+  }
+
+  return {
+    keyId: value.keyId,
+    algorithm: 'ed25519',
+    value: value.value
+  }
+}
+
+function parseSigningKey(value: unknown): ExtensionRegistrySigningKey | null {
+  if (!isPlainRecord(value)) {
+    return null
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    value.algorithm !== 'ed25519' ||
+    !isNonEmptyString(value.publicKey)
+  ) {
+    return null
+  }
+
+  return {
+    id: value.id,
+    algorithm: 'ed25519',
+    publicKey: value.publicKey
   }
 }
 

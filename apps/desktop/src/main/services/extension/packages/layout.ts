@@ -5,6 +5,8 @@ import type { ExtensionServicePaths } from '../types'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
 
 const OPERATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
+export const INSTALLED_EXTENSION_METADATA_DIRECTORY = '.kisaki'
+export const INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH = `${INSTALLED_EXTENSION_METADATA_DIRECTORY}/source.kisx`
 
 export interface ExtensionPackageOperationPaths {
   operationId: string
@@ -75,6 +77,10 @@ export class ExtensionPackageLayout {
 
   packageManifestPath(extensionId: string): string {
     return resolveInsideRoot(this.packageDir(extensionId), 'manifest.json')
+  }
+
+  packageArchivePath(packageDir: string): string {
+    return resolveInsideRoot(packageDir, INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH)
   }
 
   dataPath(extensionId: string): string {

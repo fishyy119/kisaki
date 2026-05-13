@@ -19,9 +19,8 @@ export interface ExtensionPackageInstallerOptions {
 }
 
 /**
- * Phase-3 package-operation facade. Phase 5 wires this into install-release
- * and local import plans; this class keeps the low-level package mechanics
- * separate from repository catalog and renderer confirmation concerns.
+ * Coordinates low-level package mechanics while repository planning,
+ * confirmation, and runtime reconciliation stay in their owning modules.
  */
 export class ExtensionPackageInstaller {
   constructor(private readonly options: ExtensionPackageInstallerOptions) {}

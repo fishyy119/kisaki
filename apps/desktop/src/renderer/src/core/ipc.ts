@@ -5,7 +5,13 @@
  * Uses native Electron IPC with custom type wrappers for full type safety.
  */
 
-import type { IpcMainListeners, IpcMainHandlers, IpcRendererEvents } from '@shared/ipc'
+import type {
+  IpcError,
+  IpcMainListeners,
+  IpcMainHandlers,
+  IpcRendererEvents,
+  IpcSuccess
+} from '@shared/ipc'
 
 export class IpcManager {
   /**
@@ -58,18 +64,28 @@ export class IpcManager {
 
 export const ipcManager = new IpcManager()
 
-export function unwrapIpcData<T>(
-  result: { success: true; data: T } | { success: false; error: string }
-): T {
+export class IpcInvocationError extends Error {
+  readonly code?: string
+  readonly details?: Record<string, unknown>
+
+  constructor(error: IpcError) {
+    super(error.error)
+    this.name = 'IpcInvocationError'
+    this.code = error.code
+    this.details = error.details
+  }
+}
+
+export function unwrapIpcData<T>(result: IpcSuccess<T> | IpcError): T {
   if (result.success) {
     return result.data
   }
 
-  throw new Error(result.error)
+  throw new IpcInvocationError(result)
 }
 
-export function unwrapIpcVoid(result: { success: true } | { success: false; error: string }): void {
+export function unwrapIpcVoid(result: { success: true } | IpcError): void {
   if (!result.success) {
-    throw new Error(result.error)
+    throw new IpcInvocationError(result)
   }
 }

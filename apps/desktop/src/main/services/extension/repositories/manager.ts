@@ -394,16 +394,6 @@ export class ExtensionRepositoryManager {
       return
     }
 
-    const byUrl = this.store.getByUrl(OFFICIAL_EXTENSION_REPOSITORY_URL)
-    if (byUrl) {
-      this.store.update(byUrl.id, {
-        name: byUrl.name || OFFICIAL_EXTENSION_REPOSITORY_NAME,
-        builtIn: true,
-        priority: 0
-      })
-      return
-    }
-
     this.store.create({
       id: OFFICIAL_EXTENSION_REPOSITORY_ID,
       url: OFFICIAL_EXTENSION_REPOSITORY_URL,

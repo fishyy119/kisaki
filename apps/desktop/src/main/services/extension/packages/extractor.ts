@@ -68,6 +68,10 @@ export class ExtensionPackageExtractor {
         }
       })
 
+      const installedArchivePath = this.layout.packageArchivePath(operationPaths.stagingPackageDir)
+      await fse.ensureDir(path.dirname(installedArchivePath))
+      await fse.copy(input.archivePath, installedArchivePath, { overwrite: true })
+
       return {
         operationId: input.operationId,
         packageDir: operationPaths.stagingPackageDir,

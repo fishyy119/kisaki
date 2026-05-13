@@ -1,4 +1,3 @@
-import fs from 'node:fs'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
@@ -12,6 +11,7 @@ import { resolveInsideRoot } from '../shared/path-confinement'
 import { hashFile } from './verifier'
 
 const MAX_EXTENSION_ICON_BYTES = 5 * 1024 * 1024
+const EXTENSION_ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const ICON_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
 const ICON_CACHE_KEY_PATTERN = /^[a-f0-9]{64}$/
 
@@ -149,7 +149,14 @@ export class ExtensionIconManager {
     cacheKey: string,
     filePath: string
   ): Promise<boolean> {
-    if (!fs.existsSync(filePath)) {
+    const stat = await fse.stat(filePath).catch(() => null)
+    if (!stat?.isFile()) {
+      return false
+    }
+
+    if (Date.now() - stat.mtimeMs > EXTENSION_ICON_CACHE_TTL_MS) {
+      this.verifiedCacheKeys.delete(cacheKey)
+      await fse.remove(filePath).catch(() => undefined)
       return false
     }
 

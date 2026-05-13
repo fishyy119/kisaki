@@ -29,6 +29,7 @@ import {
   validateInstalledExtensionPackage
 } from './manifest'
 import { wrapExtensionPackageError } from './types'
+import { INSTALLED_EXTENSION_METADATA_DIRECTORY } from './layout'
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 const ED25519_RAW_PUBLIC_KEY_BYTES = 32
@@ -285,6 +286,9 @@ async function inspectArchive(archivePath: string): Promise<{
     if (!normalizedName) {
       throw new Error(`Package entry "${entry.entryName}" is outside the archive root.`)
     }
+    if (isInternalPackageMetadataPath(normalizedName)) {
+      throw new Error(`Package entry "${entry.entryName}" uses a reserved internal metadata path.`)
+    }
 
     const lowerName = normalizedName.toLowerCase()
     if (normalizedNames.has(normalizedName) || normalizedNamesLower.has(lowerName)) {
@@ -329,6 +333,13 @@ function normalizeArchiveEntryName(entryName: string): string | null {
   }
 
   return normalized
+}
+
+function isInternalPackageMetadataPath(normalizedName: string): boolean {
+  return (
+    normalizedName === INSTALLED_EXTENSION_METADATA_DIRECTORY ||
+    normalizedName.startsWith(`${INSTALLED_EXTENSION_METADATA_DIRECTORY}/`)
+  )
 }
 
 function isWindowsDevicePathSegment(segment: string): boolean {

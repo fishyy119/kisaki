@@ -139,11 +139,13 @@ export interface IpcSuccessVoid {
 }
 
 /**
- * Failed IPC result with error message
+ * Failed IPC result with an error message plus optional structured metadata.
  */
 export interface IpcError {
   success: false
   error: string
+  code?: string
+  details?: Record<string, unknown>
 }
 
 /**
