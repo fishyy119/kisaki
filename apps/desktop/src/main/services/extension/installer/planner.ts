@@ -24,12 +24,12 @@ import type { ExtensionInstallationRow } from '@shared/db'
 import type { ExtensionRepositoryInstallCandidate } from '../repositories'
 import { ExtensionInstallationStore } from '../installations'
 import { ExtensionRepositoryManager } from '../repositories'
-import { ExtensionSignerTrustStore } from '../signers'
+import type { ExtensionSignerTrustManager } from '../signers'
 
 export interface ExtensionInstallPlannerOptions {
   repositories: ExtensionRepositoryManager
   installations: ExtensionInstallationStore
-  signers: ExtensionSignerTrustStore
+  signers: ExtensionSignerTrustManager
 }
 
 export interface LocalExtensionInstallPlanInput {

@@ -20,10 +20,10 @@ import {
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
-import type { ExtensionCatalogInfo, ExtensionUpdateInfo } from '@shared/extension'
+import type { ExtensionInstalledPackageInfo, ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
-  extension: ExtensionCatalogInfo
+  extension: ExtensionInstalledPackageInfo
   updateInfo: ExtensionUpdateInfo
 }
 
@@ -55,12 +55,8 @@ const signerLabel = computed(() => {
 const signerTone = computed(() =>
   props.updateInfo.signer?.status === 'trusted' ? 'text-emerald-600' : 'text-amber-600'
 )
-const repositoryLabel = computed(
-  () => props.updateInfo.repository?.name ?? props.updateInfo.source?.provider ?? '未知仓库'
-)
-const releaseLabel = computed(
-  () => props.updateInfo.release?.releaseDigest ?? props.updateInfo.source?.locator ?? '未知'
-)
+const repositoryLabel = computed(() => props.updateInfo.repository?.name ?? '未知仓库')
+const releaseLabel = computed(() => props.updateInfo.release?.releaseDigest ?? '未知')
 const canTrustSigner = computed(() => {
   const signer = props.updateInfo.signer
   return Boolean(signer?.fingerprint && signer.status !== 'trusted' && signer.status !== 'unsigned')

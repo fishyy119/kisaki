@@ -236,10 +236,6 @@ export class ExtensionUpdatePlanner {
         extensionId: installation.id,
         currentVersion: installation.version,
         latestVersion: candidate.release.version,
-        source: {
-          provider: candidate.repository.id,
-          locator: candidate.releaseDigest
-        },
         repository: installPlan.repository,
         release: installPlan.release,
         artifact: installPlan.artifact,

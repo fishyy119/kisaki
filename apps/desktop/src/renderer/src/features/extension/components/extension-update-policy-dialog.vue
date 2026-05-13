@@ -25,10 +25,10 @@ import {
 } from '@renderer/components/ui/select'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
-import type { ExtensionCatalogInfo, ExtensionInstallUpdatePolicy } from '@shared/extension'
+import type { ExtensionInstalledPackageInfo, ExtensionInstallUpdatePolicy } from '@shared/extension'
 
 interface Props {
-  extension: ExtensionCatalogInfo
+  extension: ExtensionInstalledPackageInfo
 }
 
 interface Emits {

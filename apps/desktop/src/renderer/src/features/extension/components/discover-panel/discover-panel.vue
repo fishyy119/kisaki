@@ -15,9 +15,9 @@ import ExtensionDiscoverPanelDetailsDialog from './discover-panel-details-dialog
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverExtensionStore } from '../../stores'
 import type {
-  ExtensionCatalogInfo,
   ExtensionCatalogPackageInfo,
-  ExtensionCreateRepositoryInstallPlanRequest
+  ExtensionCreateRepositoryInstallPlanRequest,
+  ExtensionInstalledPackageInfo
 } from '@shared/extension'
 
 const PAGE_SIZE = 20
@@ -144,7 +144,7 @@ async function handleLoadMore() {
 
 const loading = computed(() => isFetching.value || isLoadingMore.value)
 
-function getCatalogSourceKey(entry: ExtensionCatalogInfo): string | null {
+function getCatalogSourceKey(entry: ExtensionInstalledPackageInfo): string | null {
   if (!entry.installationSource || entry.installationSource.kind !== 'repository') {
     return null
   }

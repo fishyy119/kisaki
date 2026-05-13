@@ -21,13 +21,13 @@ import {
   refreshExtensionContributionSnapshot
 } from '@renderer/core/extensions'
 import type {
-  ExtensionCatalogInfo,
+  ExtensionInstalledPackageInfo,
   ExtensionInstallUpdatePolicy,
   ExtensionUpdateInfo
 } from '@shared/extension'
 
 interface Props {
-  extension: ExtensionCatalogInfo
+  extension: ExtensionInstalledPackageInfo
   updateInfo?: ExtensionUpdateInfo
 }
 

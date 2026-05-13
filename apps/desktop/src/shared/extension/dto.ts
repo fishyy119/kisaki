@@ -52,12 +52,7 @@ export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package' |
 
 export type InstalledExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
 
-export interface ExtensionSourceReference {
-  provider: string
-  locator: string
-}
-
-export interface ExtensionCatalogInfo {
+export interface ExtensionInstalledPackageInfo {
   builtin: boolean
   id: string
   name: string
@@ -72,28 +67,12 @@ export interface ExtensionCatalogInfo {
   runtimeStatus: InstalledExtensionRuntimeStatus
   runtimeError: string | null
   runtimeDiagnostics: readonly ExtensionRuntimeDiagnostic[]
-  source: ExtensionSourceReference | null
-  installationSource?: ExtensionInstallationSource | null
+  installationSource: ExtensionInstallationSource | null
   updatePolicy?: ExtensionInstallUpdatePolicy
   pinnedVersion?: string | null
   channel?: string | null
   directory: string
   issues: readonly string[]
-}
-
-export interface ExtensionRegistryEntry {
-  id: string
-  name: string
-  version: string | null
-  description?: string
-  author?: string
-  homepage?: string
-  categories?: readonly ExtensionCategory[]
-  provider: string
-  locator: string
-  iconUrl?: string
-  stars?: number
-  updatedAt?: string
 }
 
 export interface ExtensionUpdateInfo {
@@ -102,7 +81,6 @@ export interface ExtensionUpdateInfo {
   extensionId: string
   currentVersion: string
   latestVersion: string
-  source: ExtensionSourceReference | null
   repository?: ExtensionInstallPlanRepositoryInfo | null
   release?: ExtensionCatalogReleaseInfo | null
   artifact?: ExtensionCatalogArtifactInfo | null

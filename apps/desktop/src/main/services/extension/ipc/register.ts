@@ -1,11 +1,7 @@
 import { pathToFileURL } from 'node:url'
 import type { IpcService } from '@main/services/ipc'
-import type { ExtensionCatalogInfo, ExtensionRegistryEntry } from '@shared/extension'
-import type {
-  ExtensionCatalogEntry,
-  ExtensionDiscoveryEntry,
-  ExtensionSearchOptions
-} from '../types'
+import type { ExtensionInstalledPackageInfo } from '@shared/extension'
+import type { ExtensionCatalogEntry } from '../types'
 import type { ExtensionRuntimeState } from '../runtime/manager'
 import type { ExtensionService } from '../service'
 import { resolveExtensionFilePath } from '../packages/manifest'
@@ -28,8 +24,7 @@ import {
   requireSettingsReleaseRequest,
   requireSettingsSubmitRequest,
   requireUpdatePolicyRequest,
-  requireUpdateRequest,
-  requireString
+  requireUpdateRequest
 } from './validation'
 
 export function registerExtensionIpc(service: ExtensionService, ipc: IpcService): void {
@@ -54,15 +49,6 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
   ipc.handle('extension:is-enabled', async (_, extensionId: string) => {
     try {
       return { success: true, data: await service.isEnabled(requireSafeExtensionId(extensionId)) }
-    } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
-    }
-  })
-
-  ipc.handle('extension:install', async (_, source: string) => {
-    try {
-      await service.install(requireNonEmptyString(source, 'source'))
-      return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }
@@ -186,7 +172,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
         success: true,
         data: service
           .getCatalog()
-          .map((entry) => toExtensionCatalogInfo(entry, service.getRuntimeState(entry.id)))
+          .map((entry) => toExtensionInstalledPackageInfo(entry, service.getRuntimeState(entry.id)))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -228,7 +214,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:remove-repository', async (_, repositoryId: string) => {
     try {
-      service.removeRepository(requireNonEmptyString(repositoryId, 'repositoryId'))
+      service.removeRepository(requireRepositoryId(repositoryId))
       return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -239,7 +225,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     try {
       return {
         success: true,
-        data: await service.refreshRepository(requireNonEmptyString(repositoryId, 'repositoryId'))
+        data: await service.refreshRepository(requireRepositoryId(repositoryId))
       }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
@@ -396,46 +382,12 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
       return { success: false, error: toErrorMessage(error) }
     }
   })
-
-  ipc.handle('extension:get-sources', () => {
-    try {
-      return {
-        success: true,
-        data: [...service.getSearchableSources()]
-      }
-    } catch (error) {
-      return { success: false, error: toErrorMessage(error) }
-    }
-  })
-
-  ipc.handle(
-    'extension:search',
-    async (_, sourceName: string, query: string, options?: ExtensionSearchOptions) => {
-      try {
-        const result = await service.searchSource(
-          requireNonEmptyString(sourceName, 'sourceName'),
-          requireString(query, 'query'),
-          options
-        )
-        return {
-          success: true,
-          data: {
-            entries: result.entries.map(toExtensionRegistryEntry),
-            total: result.total,
-            hasMore: result.hasMore
-          }
-        }
-      } catch (error) {
-        return { success: false, error: toErrorMessage(error) }
-      }
-    }
-  )
 }
 
-function toExtensionCatalogInfo(
+function toExtensionInstalledPackageInfo(
   entry: ExtensionCatalogEntry,
   runtimeState: ExtensionRuntimeState | null
-): ExtensionCatalogInfo {
+): ExtensionInstalledPackageInfo {
   const runtimeStatus =
     entry.enabled && entry.status === 'ready' ? (runtimeState?.status ?? 'stopped') : 'stopped'
   const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
@@ -459,8 +411,7 @@ function toExtensionCatalogInfo(
     runtimeStatus,
     runtimeError,
     runtimeDiagnostics,
-    source: toLegacySourceReference(entry.source),
-    installationSource: isInstallationSource(entry.source) ? entry.source : null,
+    installationSource: entry.source,
     updatePolicy: entry.updatePolicy ?? undefined,
     pinnedVersion: entry.pinnedVersion,
     channel: entry.channel,
@@ -469,55 +420,12 @@ function toExtensionCatalogInfo(
   }
 }
 
-function toLegacySourceReference(entrySource: ExtensionCatalogEntry['source']): {
-  provider: string
-  locator: string
-} | null {
-  if (!entrySource) {
-    return null
+function requireRepositoryId(value: unknown): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error('repositoryId must be a non-empty string')
   }
 
-  if ('provider' in entrySource) {
-    return entrySource
-  }
-
-  if (entrySource.kind === 'repository') {
-    return {
-      provider: entrySource.repositoryId,
-      locator: entrySource.releaseId
-    }
-  }
-
-  return {
-    provider: 'local-file',
-    locator: entrySource.path
-  }
-}
-
-function isInstallationSource(
-  entrySource: ExtensionCatalogEntry['source']
-): entrySource is Exclude<
-  ExtensionCatalogEntry['source'],
-  { provider: string; locator: string } | null
-> {
-  return Boolean(entrySource && 'kind' in entrySource)
-}
-
-function toExtensionRegistryEntry(entry: ExtensionDiscoveryEntry): ExtensionRegistryEntry {
-  return {
-    id: entry.id,
-    name: entry.name,
-    version: entry.version,
-    description: entry.description,
-    author: entry.author,
-    homepage: entry.homepage,
-    categories: entry.categories,
-    provider: entry.provider,
-    locator: entry.locator,
-    iconUrl: entry.iconUrl,
-    stars: entry.stars,
-    updatedAt: entry.updatedAt
-  }
+  return value.trim()
 }
 
 function toErrorMessage(error: unknown): string {

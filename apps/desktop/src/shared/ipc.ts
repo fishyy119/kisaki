@@ -58,7 +58,6 @@ import type {
 import type { GameRunningStatus } from './monitor'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
-  ExtensionCatalogInfo,
   ExtensionCatalogSearchRequest,
   ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
@@ -71,8 +70,8 @@ import type {
   ExtensionInstallPlan,
   ExtensionInstallFromFileRequest,
   ExtensionInstallReleaseRequest,
+  ExtensionInstalledPackageInfo,
   ExtensionPurgeDataRequest,
-  ExtensionRegistryEntry,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
   ExtensionRepositoryRefreshResult,
@@ -434,7 +433,6 @@ export interface IpcMainHandlers {
   'extension:disable': (extensionId: string) => IpcVoidResult
   'extension:enable': (extensionId: string) => IpcVoidResult
   'extension:is-enabled': (extensionId: string) => IpcResult<boolean>
-  'extension:install': (source: string) => IpcVoidResult
   'extension:create-install-plan': (
     request: ExtensionCreateInstallPlanRequest
   ) => IpcResult<ExtensionInstallPlan>
@@ -448,7 +446,7 @@ export interface IpcMainHandlers {
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
-  'extension:get-catalog': () => IpcResult<ExtensionCatalogInfo[]>
+  'extension:get-catalog': () => IpcResult<ExtensionInstalledPackageInfo[]>
   'extension:list-repositories': () => IpcResult<readonly ExtensionRepositoryInfo[]>
   'extension:add-repository': (
     request: ExtensionRepositoryCreateRequest
@@ -491,23 +489,6 @@ export interface IpcMainHandlers {
     request: ExtensionSettingsPanelReleaseRequest
   ) => IpcVoidResult
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeRegistrationInfo[]>
-  'extension:get-sources': () => IpcResult<
-    Array<{ name: string; displayName: string; searchable: boolean }>
-  >
-  'extension:search': (
-    sourceName: string,
-    query: string,
-    options?: {
-      page?: number
-      limit?: number
-      sortBy?: 'stars' | 'updated' | 'name'
-      sortDirection?: 'asc' | 'desc'
-    }
-  ) => IpcResult<{
-    entries: ExtensionRegistryEntry[]
-    total: number
-    hasMore: boolean
-  }>
 
   // Scanner
   'scanner:get-active-scans': () => IpcResult<ScanProgressData[]>

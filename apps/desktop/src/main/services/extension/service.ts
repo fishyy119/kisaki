@@ -43,13 +43,7 @@ import type {
   ExtensionUpdatePolicyRequest,
   ExtensionUpdateRequest
 } from '@shared/extension'
-import type {
-  ExtensionCatalogEntry,
-  ExtensionSearchOptions,
-  ExtensionSearchResult,
-  ExtensionSourceProviderInfo,
-  ExtensionServicePaths
-} from './types'
+import type { ExtensionCatalogEntry, ExtensionServicePaths } from './types'
 import { createExtensionRuntimeMetadata } from './types'
 import { ExtensionInstallPlanner } from './installer/planner'
 import { ExtensionPackageInstaller } from './installer/manager'
@@ -77,11 +71,11 @@ import {
   type ExtensionRuntimeChangeCause,
   type ExtensionRuntimeState
 } from './runtime/manager'
-import { GitHubExtensionSourceProvider } from './sources/github'
-import { LocalFileExtensionSourceProvider } from './sources/local-file'
-import { UrlExtensionSourceProvider } from './sources/url'
-import { ExtensionSourceManager } from './sources/manager'
-import { ExtensionSignerTrustStore, type TrustExtensionSignerInput } from './signers'
+import {
+  ExtensionSignerTrustManager,
+  ExtensionSignerTrustStore,
+  type TrustExtensionSignerInput
+} from './signers'
 import { ExtensionUpdatePlanner, type ExtensionUpdatePlan } from './updates'
 import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions/registry'
@@ -106,12 +100,10 @@ export class ExtensionService implements IService {
     'deeplink'
   ] as const satisfies readonly ServiceName[]
 
-  readonly sources = new ExtensionSourceManager()
-
   private layout!: ExtensionPackageLayout
   private catalog!: ExtensionInstallationCatalog
   private installationStore!: ExtensionInstallationStore
-  private signerTrustStore!: ExtensionSignerTrustStore
+  private signerTrustManager!: ExtensionSignerTrustManager
   private packageTransaction!: ExtensionPackageTransaction
   private packageVerifier!: ExtensionPackageVerifier
   private packageInstaller!: ExtensionPackageInstaller
@@ -149,7 +141,9 @@ export class ExtensionService implements IService {
     this.event = container.get('event')
     this.layout = new ExtensionPackageLayout(this.paths)
     this.installationStore = new ExtensionInstallationStore(dbService.db)
-    this.signerTrustStore = new ExtensionSignerTrustStore(dbService.db)
+    this.signerTrustManager = new ExtensionSignerTrustManager(
+      new ExtensionSignerTrustStore(dbService.db)
+    )
     this.packageTransaction = new ExtensionPackageTransaction(this.layout, dbService.db)
     this.packageVerifier = new ExtensionPackageVerifier()
     this.packageInstaller = new ExtensionPackageInstaller({
@@ -177,17 +171,13 @@ export class ExtensionService implements IService {
     this.installPlanner = new ExtensionInstallPlanner({
       repositories: this.repositoryManager,
       installations: this.installationStore,
-      signers: this.signerTrustStore
+      signers: this.signerTrustManager
     })
     this.updatePlanner = new ExtensionUpdatePlanner({
       repositories: this.repositoryManager,
       installations: this.installationStore,
       installPlanner: this.installPlanner
     })
-
-    this.sources.register(new GitHubExtensionSourceProvider(networkService))
-    this.sources.register(new UrlExtensionSourceProvider(networkService))
-    this.sources.register(new LocalFileExtensionSourceProvider())
 
     this.catalog = new ExtensionInstallationCatalog(this.layout, this.installationStore)
     this.capabilities = new ExtensionCapabilityGateway({
@@ -337,12 +327,6 @@ export class ExtensionService implements IService {
     } finally {
       this.packageOperations.finish(operationId)
     }
-  }
-
-  async install(source: string): Promise<ExtensionCatalogEntry> {
-    throw new Error(
-      `Legacy extension install source "${source}" is no longer supported. Use extension:create-install-plan and extension:install-release.`
-    )
   }
 
   async installFromFile(request: ExtensionInstallFromFileRequest): Promise<ExtensionCatalogEntry> {
@@ -588,18 +572,6 @@ export class ExtensionService implements IService {
     }
 
     return record.enabled
-  }
-
-  getSearchableSources(): readonly ExtensionSourceProviderInfo[] {
-    return this.sources.getSearchableProviders()
-  }
-
-  searchSource(
-    providerName: string,
-    query: string,
-    options?: ExtensionSearchOptions
-  ): Promise<ExtensionSearchResult> {
-    return this.sources.search(providerName, query, options)
   }
 
   createRuntimeMetadata(extensionId: string) {

@@ -21,10 +21,10 @@ import {
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
-import type { ExtensionCatalogInfo } from '@shared/extension'
+import type { ExtensionInstalledPackageInfo } from '@shared/extension'
 
 interface Props {
-  extension: ExtensionCatalogInfo
+  extension: ExtensionInstalledPackageInfo
 }
 
 interface Emits {
