@@ -46,7 +46,7 @@ import type {
 } from '@shared/extension'
 import type { ExtensionSignerTrustRow } from '@shared/db'
 import type { ExtensionRepositoryInstallationSnapshot } from '@shared/extension/installation-source'
-import type { ExtensionCatalogEntry, ExtensionServicePaths } from './types'
+import type { ExtensionInstalledEntry, ExtensionServicePaths } from './types'
 import { createExtensionRuntimeMetadata } from './types'
 import { ExtensionInstallPlanner } from './installer/planner'
 import { ExtensionPackageInstaller } from './installer/manager'
@@ -62,7 +62,7 @@ import {
   ExtensionPackageTransaction,
   ExtensionPackageVerifier
 } from './packages'
-import { ExtensionInstallationCatalog, ExtensionInstallationStore } from './installations'
+import { ExtensionInstallationStore, ExtensionInstallationView } from './installations'
 import {
   ExtensionRepositoryFetcher,
   ExtensionRepositoryManager,
@@ -104,7 +104,7 @@ export class ExtensionService implements IService {
   ] as const satisfies readonly ServiceName[]
 
   private layout!: ExtensionPackageLayout
-  private catalog!: ExtensionInstallationCatalog
+  private installationView!: ExtensionInstallationView
   private installationStore!: ExtensionInstallationStore
   private signerTrustManager!: ExtensionSignerTrustManager
   private packageTransaction!: ExtensionPackageTransaction
@@ -120,9 +120,9 @@ export class ExtensionService implements IService {
   private repositoryManager!: ExtensionRepositoryManager
   private capabilities!: ExtensionCapabilityGateway
   private contributions!: ExtensionContributionRegistry
-  private snapshot: readonly ExtensionCatalogEntry[] = []
-  private byId = new Map<string, ExtensionCatalogEntry>()
-  private devExtensionEntry: ExtensionCatalogEntry | null = null
+  private installedEntries: readonly ExtensionInstalledEntry[] = []
+  private installedById = new Map<string, ExtensionInstalledEntry>()
+  private devExtensionEntry: ExtensionInstalledEntry | null = null
   private contributionSnapshotEmitQueued = false
   private readonly operationMutex = new Mutex()
   private readonly packageOperations = new ExtensionPackageOperationRegistry()
@@ -160,7 +160,9 @@ export class ExtensionService implements IService {
     iconManager.registerProtocolHandler()
 
     this.repositoryManager = new ExtensionRepositoryManager({
-      store: new ExtensionRepositoryStore(dbService.db),
+      store: new ExtensionRepositoryStore(dbService.db, {
+        allowInsecureLocalUrls: !app.isPackaged
+      }),
       fetcher: new ExtensionRepositoryFetcher(networkService, {
         allowInsecureLocalUrls: !app.isPackaged
       }),
@@ -182,7 +184,7 @@ export class ExtensionService implements IService {
       installPlanner: this.installPlanner
     })
 
-    this.catalog = new ExtensionInstallationCatalog(this.layout, this.installationStore)
+    this.installationView = new ExtensionInstallationView(this.layout, this.installationStore)
     this.capabilities = new ExtensionCapabilityGateway({
       backgroundTask: container.get('background-task'),
       command: container.get('command'),
@@ -219,7 +221,7 @@ export class ExtensionService implements IService {
     registerExtensionIpc(this, this.ipc)
 
     this.devExtensionEntry = await this.resolveDevExtension()
-    await this.refreshCatalog()
+    await this.refreshInstalledPackages()
     await this.applyRuntimeState({ cause: 'startup' })
     this.repositoryManager.refreshRepositoriesInBackground()
     log.info('[ExtensionService] Initialized')
@@ -229,27 +231,27 @@ export class ExtensionService implements IService {
     return this.paths
   }
 
-  async refreshCatalog(): Promise<readonly ExtensionCatalogEntry[]> {
-    const entries = await this.catalog.refresh()
-    this.snapshot = this.devExtensionEntry
+  async refreshInstalledPackages(): Promise<readonly ExtensionInstalledEntry[]> {
+    const entries = await this.installationView.refresh()
+    this.installedEntries = this.devExtensionEntry
       ? [
           ...entries.filter((entry) => entry.id !== this.devExtensionEntry?.id),
           this.devExtensionEntry
         ]
       : entries
-    this.byId = new Map()
+    this.installedById = new Map()
 
-    for (const entry of this.snapshot) {
-      if (!this.byId.has(entry.id)) {
-        this.byId.set(entry.id, entry)
+    for (const entry of this.installedEntries) {
+      if (!this.installedById.has(entry.id)) {
+        this.installedById.set(entry.id, entry)
       }
     }
 
-    return this.snapshot
+    return this.installedEntries
   }
 
-  getCatalog(): readonly ExtensionCatalogEntry[] {
-    return this.snapshot
+  getInstalledEntries(): readonly ExtensionInstalledEntry[] {
+    return this.installedEntries
   }
 
   listRepositories(): readonly ExtensionRepositoryInfo[] {
@@ -297,8 +299,8 @@ export class ExtensionService implements IService {
     })
   }
 
-  getExtension(extensionId: string): ExtensionCatalogEntry | undefined {
-    return this.byId.get(requireSafeExtensionId(extensionId))
+  getExtension(extensionId: string): ExtensionInstalledEntry | undefined {
+    return this.installedById.get(requireSafeExtensionId(extensionId))
   }
 
   async createInstallPlan(
@@ -311,7 +313,7 @@ export class ExtensionService implements IService {
     return this.installPlanner.createRepositoryPlan(request)
   }
 
-  async installRelease(request: ExtensionInstallReleaseRequest): Promise<ExtensionCatalogEntry> {
+  async installRelease(request: ExtensionInstallReleaseRequest): Promise<ExtensionInstalledEntry> {
     const operationId = request.operationId
     const operation = this.packageOperations.start({
       operationId,
@@ -347,7 +349,9 @@ export class ExtensionService implements IService {
     }
   }
 
-  async installFromFile(request: ExtensionInstallFromFileRequest): Promise<ExtensionCatalogEntry> {
+  async installFromFile(
+    request: ExtensionInstallFromFileRequest
+  ): Promise<ExtensionInstalledEntry> {
     const operationId = request.operationId
     const operation = this.packageOperations.start({
       operationId,
@@ -402,7 +406,7 @@ export class ExtensionService implements IService {
     await this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       this.assertUserManagedExtension(safeExtensionId, 'uninstall')
-      const previous = await this.requireInstalledCatalogEntry(safeExtensionId)
+      const previous = await this.requireUserInstalledEntry(safeExtensionId)
       let handle: Awaited<ReturnType<ExtensionPackageTransaction['uninstallPackage']>> | null = null
 
       try {
@@ -413,7 +417,7 @@ export class ExtensionService implements IService {
           operationId: randomUUID(),
           extensionId: safeExtensionId
         })
-        await this.refreshCatalog()
+        await this.refreshInstalledPackages()
         await this.applyRuntimeState({ cause: 'uninstall' })
         await handle.commit()
         this.emitInstallationsChanged()
@@ -426,7 +430,7 @@ export class ExtensionService implements IService {
             )
           })
         }
-        await this.refreshCatalog()
+        await this.refreshInstalledPackages()
         await this.applyRuntimeState({
           cause: 'uninstall',
           forceReloadIds: previous.enabled ? [safeExtensionId] : []
@@ -460,7 +464,7 @@ export class ExtensionService implements IService {
             this.installationStore.setEnabled(safeExtensionId, false)
             disabledForPurge = true
           }
-          await this.refreshCatalog()
+          await this.refreshInstalledPackages()
           await this.runtime.unloadExtension(safeExtensionId, 'disable')
           this.contributions.assertReleased(safeExtensionId, 'purge data')
           await this.applyRuntimeState({ cause: 'disable' })
@@ -480,7 +484,7 @@ export class ExtensionService implements IService {
     })
   }
 
-  async update(request: ExtensionUpdateRequest): Promise<ExtensionCatalogEntry | null> {
+  async update(request: ExtensionUpdateRequest): Promise<ExtensionInstalledEntry | null> {
     const result = await this.performUpdate(requireSafeExtensionId(request.extensionId), {
       mode: 'manual',
       operationId: request.operationId,
@@ -523,7 +527,7 @@ export class ExtensionService implements IService {
     return results
   }
 
-  async setUpdatePolicy(request: ExtensionUpdatePolicyRequest): Promise<ExtensionCatalogEntry> {
+  async setUpdatePolicy(request: ExtensionUpdatePolicyRequest): Promise<ExtensionInstalledEntry> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(request.extensionId)
       this.assertUserManagedExtension(safeExtensionId, 'set update policy')
@@ -532,9 +536,9 @@ export class ExtensionService implements IService {
         request.updatePolicy === 'pinned' ? (request.pinnedVersion ?? installation.version) : null
 
       this.installationStore.setUpdatePolicy(safeExtensionId, request.updatePolicy, pinnedVersion)
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       this.emitInstallationsChanged()
-      return this.requireCatalogEntry(safeExtensionId)
+      return this.requireInstalledEntry(safeExtensionId)
     })
   }
 
@@ -542,46 +546,46 @@ export class ExtensionService implements IService {
     return this.packageOperations.cancel(operationId)
   }
 
-  async enable(extensionId: string): Promise<ExtensionCatalogEntry> {
+  async enable(extensionId: string): Promise<ExtensionInstalledEntry> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       this.assertUserManagedExtension(safeExtensionId, 'enable')
       const previous = this.installationStore.require(safeExtensionId)
       this.installationStore.setEnabled(safeExtensionId, true)
       try {
-        await this.refreshCatalog()
+        await this.refreshInstalledPackages()
         await this.applyRuntimeState({ cause: 'enable' })
         this.assertRuntimeReady(safeExtensionId, 'enable')
       } catch (error) {
         this.installationStore.setEnabled(safeExtensionId, previous.enabled)
-        await this.refreshCatalog()
+        await this.refreshInstalledPackages()
         await this.applyRuntimeState({ cause: 'disable' })
         throw error
       }
       this.emitInstallationsChanged()
       this.event.emit('extension:enabled', { extensionId: safeExtensionId })
-      return this.requireCatalogEntry(safeExtensionId)
+      return this.requireInstalledEntry(safeExtensionId)
     })
   }
 
-  async disable(extensionId: string): Promise<ExtensionCatalogEntry> {
+  async disable(extensionId: string): Promise<ExtensionInstalledEntry> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       this.assertUserManagedExtension(safeExtensionId, 'disable')
       this.installationStore.setEnabled(safeExtensionId, false)
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'disable' })
       this.emitInstallationsChanged()
       this.event.emit('extension:disabled', { extensionId: safeExtensionId })
-      return this.requireCatalogEntry(safeExtensionId)
+      return this.requireInstalledEntry(safeExtensionId)
     })
   }
 
   async isEnabled(extensionId: string): Promise<boolean> {
     const safeExtensionId = requireSafeExtensionId(extensionId)
-    const catalogEntry = this.byId.get(safeExtensionId)
-    if (catalogEntry?.builtin) {
-      return catalogEntry.enabled
+    const installedEntry = this.installedById.get(safeExtensionId)
+    if (installedEntry?.builtin) {
+      return installedEntry.enabled
     }
 
     const record = this.installationStore.get(safeExtensionId)
@@ -593,20 +597,20 @@ export class ExtensionService implements IService {
   }
 
   createRuntimeMetadata(extensionId: string) {
-    const entry = this.requireCatalogEntry(extensionId)
-    return this.createCatalogRuntimeMetadata(entry)
+    const entry = this.requireInstalledEntry(extensionId)
+    return this.createInstalledRuntimeMetadata(entry)
   }
 
   getRuntimeState(extensionId: string): ExtensionRuntimeState | null {
     return this.runtime.getRuntimeState(requireSafeExtensionId(extensionId))
   }
 
-  async reload(extensionId: string): Promise<ExtensionCatalogEntry> {
+  async reload(extensionId: string): Promise<ExtensionInstalledEntry> {
     return this.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       await this.reloadExtensionRuntime(safeExtensionId, 'user')
       this.assertRuntimeReady(safeExtensionId, 'reload')
-      return this.requireCatalogEntry(safeExtensionId)
+      return this.requireInstalledEntry(safeExtensionId)
     })
   }
 
@@ -719,7 +723,7 @@ export class ExtensionService implements IService {
     plan: ExtensionInstallPlan,
     request: ExtensionInstallReleaseRequest,
     stagedPackageDir: string
-  ): Promise<ExtensionCatalogEntry> {
+  ): Promise<ExtensionInstalledEntry> {
     if (!candidate.repository.manifestDigest) {
       throw new Error(`Repository "${candidate.repository.id}" does not have a manifest digest.`)
     }
@@ -768,7 +772,7 @@ export class ExtensionService implements IService {
     })
 
     try {
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'install', forceReloadIds: [extensionId] })
       if (enabled) {
         this.assertRuntimeReady(extensionId, 'install')
@@ -778,7 +782,7 @@ export class ExtensionService implements IService {
       if (signerTrusts.length > 0) {
         this.emitTrustedSignersChanged()
       }
-      return this.requireCatalogEntry(extensionId)
+      return this.requireInstalledEntry(extensionId)
     } catch (error) {
       await handle.rollback().catch((rollbackError) => {
         log.error(
@@ -786,7 +790,7 @@ export class ExtensionService implements IService {
           rollbackError
         )
       })
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'install', forceReloadIds: [extensionId] })
       throw error
     }
@@ -799,7 +803,7 @@ export class ExtensionService implements IService {
       operationId: string
       request?: ExtensionUpdateRequest
     }
-  ): Promise<{ entry: ExtensionCatalogEntry; plan: ExtensionUpdatePlan }> {
+  ): Promise<{ entry: ExtensionInstalledEntry; plan: ExtensionUpdatePlan }> {
     const operation = this.packageOperations.start({
       operationId: options.operationId,
       kind: 'update',
@@ -849,7 +853,7 @@ export class ExtensionService implements IService {
     updatePlan: ExtensionUpdatePlan,
     stagedPackageDir: string,
     trustSignerFingerprint: boolean
-  ): Promise<ExtensionCatalogEntry> {
+  ): Promise<ExtensionInstalledEntry> {
     const { candidate, installation, info } = updatePlan
     if (!candidate.repository.manifestDigest) {
       throw new Error(`Repository "${candidate.repository.id}" does not have a manifest digest.`)
@@ -902,7 +906,7 @@ export class ExtensionService implements IService {
         },
         signerTrusts
       })
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'package-update', forceReloadIds: [extensionId] })
       if (installation.enabled) {
         this.assertRuntimeReadyIfDesired(extensionId, 'update')
@@ -912,7 +916,7 @@ export class ExtensionService implements IService {
       if (signerTrusts.length > 0) {
         this.emitTrustedSignersChanged()
       }
-      return this.requireCatalogEntry(extensionId)
+      return this.requireInstalledEntry(extensionId)
     } catch (error) {
       if (handle) {
         await handle.rollback().catch((rollbackError) => {
@@ -928,7 +932,7 @@ export class ExtensionService implements IService {
           fse.remove(operationPaths.downloadPath).catch(() => undefined)
         ])
       }
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'package-update', forceReloadIds: [extensionId] })
       throw error
     }
@@ -941,7 +945,7 @@ export class ExtensionService implements IService {
     enabledOverride: boolean | undefined,
     stagedPackageDir: string,
     artifactSha256: string
-  ): Promise<ExtensionCatalogEntry> {
+  ): Promise<ExtensionInstalledEntry> {
     const extensionId = plan.package.id
     const enabled = enabledOverride ?? plan.defaultEnabled
     const handle = await this.packageTransaction.replaceActivePackage({
@@ -965,14 +969,14 @@ export class ExtensionService implements IService {
     })
 
     try {
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'install', forceReloadIds: [extensionId] })
       if (enabled) {
         this.assertRuntimeReady(extensionId, 'install')
       }
       await handle.commit()
       this.emitInstallationsChanged()
-      return this.requireCatalogEntry(extensionId)
+      return this.requireInstalledEntry(extensionId)
     } catch (error) {
       await handle.rollback().catch((rollbackError) => {
         log.error(
@@ -980,7 +984,7 @@ export class ExtensionService implements IService {
           rollbackError
         )
       })
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'install', forceReloadIds: [extensionId] })
       throw error
     }
@@ -1014,25 +1018,25 @@ export class ExtensionService implements IService {
     ]
   }
 
-  private requireCatalogEntry(extensionId: string): ExtensionCatalogEntry {
+  private requireInstalledEntry(extensionId: string): ExtensionInstalledEntry {
     const safeExtensionId = requireSafeExtensionId(extensionId)
-    const entry = this.byId.get(safeExtensionId)
+    const entry = this.installedById.get(safeExtensionId)
     if (!entry) {
-      throw new Error(`Extension "${safeExtensionId}" is not present in the catalog`)
+      throw new Error(`Extension "${safeExtensionId}" is not present in the installed view`)
     }
 
     return entry
   }
 
-  private async requireInstalledCatalogEntry(extensionId: string): Promise<ExtensionCatalogEntry> {
+  private async requireUserInstalledEntry(extensionId: string): Promise<ExtensionInstalledEntry> {
     const safeExtensionId = requireSafeExtensionId(extensionId)
     const installation = this.installationStore.get(safeExtensionId)
     if (!installation) {
       throw new Error(`Extension "${safeExtensionId}" is not installed`)
     }
 
-    await this.refreshCatalog()
-    return this.requireCatalogEntry(safeExtensionId)
+    await this.refreshInstalledPackages()
+    return this.requireInstalledEntry(safeExtensionId)
   }
 
   private runMutatingOperation<T>(operation: () => Promise<T>): Promise<T> {
@@ -1041,7 +1045,7 @@ export class ExtensionService implements IService {
 
   private createInstalledVersionMap(): ReadonlyMap<string, string> {
     const versions = new Map<string, string>()
-    for (const entry of this.snapshot) {
+    for (const entry of this.installedEntries) {
       if (entry.version) {
         versions.set(entry.id, entry.version)
       }
@@ -1050,7 +1054,7 @@ export class ExtensionService implements IService {
   }
 
   private assertUserManagedExtension(extensionId: string, operation: string): void {
-    const entry = this.byId.get(requireSafeExtensionId(extensionId))
+    const entry = this.installedById.get(requireSafeExtensionId(extensionId))
     if (entry?.builtin) {
       throw new Error(
         `Built-in extension "${extensionId}" is managed by Kisaki and cannot use ${operation}.`
@@ -1063,7 +1067,7 @@ export class ExtensionService implements IService {
     cause: ExtensionRuntimeChangeCause
   ): Promise<void> {
     const safeExtensionId = requireSafeExtensionId(extensionId)
-    await this.refreshCatalog()
+    await this.refreshInstalledPackages()
     this.devExtensionEntry = await this.resolveDevExtension()
     await this.applyRuntimeState({
       cause,
@@ -1081,7 +1085,7 @@ export class ExtensionService implements IService {
     this.emitContributionSnapshotChanged()
   }
 
-  private async resolveDevExtension(): Promise<ExtensionCatalogEntry | null> {
+  private async resolveDevExtension(): Promise<ExtensionInstalledEntry | null> {
     const devExtensionPath = getBootstrapArgs().devExtension
     if (!devExtensionPath) {
       return null
@@ -1139,12 +1143,12 @@ export class ExtensionService implements IService {
   private buildDesiredRuntimeMap(): Map<string, ExtensionRuntimeMetadata> {
     const desired = new Map<string, ExtensionRuntimeMetadata>()
 
-    for (const entry of this.snapshot) {
+    for (const entry of this.installedEntries) {
       if (!entry.enabled || entry.status !== 'ready' || !entry.manifest) {
         continue
       }
 
-      desired.set(entry.id, this.createCatalogRuntimeMetadata(entry))
+      desired.set(entry.id, this.createInstalledRuntimeMetadata(entry))
     }
 
     if (this.devExtensionEntry?.manifest) {
@@ -1157,7 +1161,7 @@ export class ExtensionService implements IService {
     return desired
   }
 
-  private createCatalogRuntimeMetadata(entry: ExtensionCatalogEntry): ExtensionRuntimeMetadata {
+  private createInstalledRuntimeMetadata(entry: ExtensionInstalledEntry): ExtensionRuntimeMetadata {
     return createExtensionRuntimeMetadata(entry, {
       mode: entry.builtin && !app.isPackaged ? 'development' : 'production'
     })
@@ -1212,7 +1216,7 @@ export class ExtensionService implements IService {
   private async restoreEnabledAfterFailedPurge(extensionId: string): Promise<void> {
     try {
       this.installationStore.setEnabled(extensionId, true)
-      await this.refreshCatalog()
+      await this.refreshInstalledPackages()
       await this.applyRuntimeState({ cause: 'enable', forceReloadIds: [extensionId] })
       this.emitInstallationsChanged()
     } catch (error) {

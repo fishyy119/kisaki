@@ -668,7 +668,6 @@ export const extensionRepositories = sqliteTable(
     url: text('url').notNull().unique(),
     name: text('name').notNull(),
     state: extensionRepositoryState('state').notNull().default('enabled'),
-    builtIn: integer('built_in', { mode: 'boolean' }).notNull().default(false),
     priority: integer('priority').notNull().default(0),
     manifestSnapshot: extensionRegistryManifestSnapshot('manifest_snapshot'),
     lastRefreshAt: integer('last_refresh_at', { mode: 'timestamp_ms' }),
@@ -678,10 +677,7 @@ export const extensionRepositories = sqliteTable(
     etag: text('etag'),
     lastModified: text('last_modified')
   },
-  (t) => [
-    index('idx_extension_repositories_state_priority').on(t.state, t.priority),
-    index('idx_extension_repositories_built_in').on(t.builtIn)
-  ]
+  (t) => [index('idx_extension_repositories_state_priority').on(t.state, t.priority)]
 )
 
 export type ExtensionRepositoryRow = InferSelectModel<typeof extensionRepositories>

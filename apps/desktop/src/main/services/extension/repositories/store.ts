@@ -1,14 +1,12 @@
 import { asc, eq } from 'drizzle-orm'
-import {
-  parseExtensionRegistryManifest,
-  type ExtensionRegistryManifest
-} from '@kisaki/extension-registry'
+import type { ExtensionRegistryManifest } from '@kisaki/extension-registry'
 import {
   extensionRepositories,
   type ExtensionRepositoryRow,
   type ExtensionRepositoryState
 } from '@shared/db'
 import type { DbContext } from '../../db/types'
+import { assertRegistryManifestUrlPolicy, type ExtensionRegistryUrlPolicy } from './url-policy'
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 
@@ -17,7 +15,6 @@ export interface CreateExtensionRepositoryInput {
   url: string
   name: string
   state?: ExtensionRepositoryState
-  builtIn?: boolean
   priority?: number
 }
 
@@ -25,7 +22,6 @@ export interface UpdateExtensionRepositoryInput {
   url?: string
   name?: string
   state?: ExtensionRepositoryState
-  builtIn?: boolean
   priority?: number
 }
 
@@ -49,7 +45,16 @@ export interface ExtensionRepositoryRefreshNotModifiedInput {
 }
 
 export class ExtensionRepositoryStore {
-  constructor(private readonly db: DbContext) {}
+  private readonly urlPolicy: ExtensionRegistryUrlPolicy
+
+  constructor(
+    private readonly db: DbContext,
+    urlPolicy: Partial<ExtensionRegistryUrlPolicy> = {}
+  ) {
+    this.urlPolicy = {
+      allowInsecureLocalUrls: urlPolicy.allowInsecureLocalUrls ?? false
+    }
+  }
 
   list(): ExtensionRepositoryRow[] {
     return this.db
@@ -101,7 +106,6 @@ export class ExtensionRepositoryStore {
         url: input.url,
         name: input.name,
         state: input.state ?? 'enabled',
-        builtIn: input.builtIn ?? false,
         priority: input.priority ?? this.nextPriority()
       })
       .run()
@@ -135,7 +139,7 @@ export class ExtensionRepositoryStore {
     id: string,
     input: ExtensionRepositoryRefreshSuccessInput
   ): ExtensionRepositoryRow {
-    assertValidRefreshSuccessInput(input)
+    assertValidRefreshSuccessInput(input, this.urlPolicy)
 
     const refreshedAt = input.refreshedAt ?? new Date()
 
@@ -212,18 +216,17 @@ export class ExtensionRepositoryStore {
   }
 }
 
-function assertValidRefreshSuccessInput(input: ExtensionRepositoryRefreshSuccessInput): void {
+function assertValidRefreshSuccessInput(
+  input: ExtensionRepositoryRefreshSuccessInput,
+  urlPolicy: ExtensionRegistryUrlPolicy
+): void {
   if (!SHA256_HEX_PATTERN.test(input.manifestDigest)) {
     throw new Error('Extension repository manifest digest must be a lowercase sha256 hex digest.')
   }
 
-  const result = parseExtensionRegistryManifest(input.manifestSnapshot, {
-    allowInsecureLocalUrls: true
-  })
-  if (!result.manifest) {
-    const details = result.issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ')
-    throw new Error(
-      `Extension repository manifest snapshot is invalid.${details ? ` ${details}` : ''}`
-    )
-  }
+  assertRegistryManifestUrlPolicy(
+    input.manifestSnapshot,
+    urlPolicy,
+    'Extension repository manifest snapshot'
+  )
 }

@@ -1004,6 +1004,8 @@ export const extensionInstallationSource = customType<{
 function parsePersistedExtensionRegistryManifestSnapshot(
   value: unknown
 ): ExtensionRegistryManifest | null {
+  // Persistence parsing preserves development snapshots; main-process repository
+  // services enforce the current runtime URL policy before catalog/install use.
   const result = parseExtensionRegistryManifest(value, { allowInsecureLocalUrls: true })
   if (result.manifest) {
     return result.manifest

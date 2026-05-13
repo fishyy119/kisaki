@@ -123,7 +123,6 @@ export interface ExtensionRepositoryInfo {
   url: string
   name: string
   state: ExtensionRepositoryState
-  builtIn: boolean
   priority: number
   packageCount: number
   manifestDigest: string | null

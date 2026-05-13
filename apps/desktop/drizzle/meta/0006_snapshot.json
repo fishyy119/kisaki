@@ -1606,14 +1606,6 @@
           "autoincrement": false,
           "default": "'enabled'"
         },
-        "built_in": {
-          "name": "built_in",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
         "priority": {
           "name": "priority",
           "type": "integer",
@@ -1681,11 +1673,6 @@
         "idx_extension_repositories_state_priority": {
           "name": "idx_extension_repositories_state_priority",
           "columns": ["state", "priority"],
-          "isUnique": false
-        },
-        "idx_extension_repositories_built_in": {
-          "name": "idx_extension_repositories_built_in",
-          "columns": ["built_in"],
           "isUnique": false
         }
       },

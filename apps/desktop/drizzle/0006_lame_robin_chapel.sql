@@ -21,7 +21,6 @@ CREATE TABLE `extension_repositories` (
 	`url` text NOT NULL,
 	`name` text NOT NULL,
 	`state` text DEFAULT 'enabled' NOT NULL,
-	`built_in` integer DEFAULT false NOT NULL,
 	`priority` integer DEFAULT 0 NOT NULL,
 	`manifest_snapshot` text,
 	`last_refresh_at` integer,
@@ -34,7 +33,6 @@ CREATE TABLE `extension_repositories` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `extension_repositories_url_unique` ON `extension_repositories` (`url`);--> statement-breakpoint
 CREATE INDEX `idx_extension_repositories_state_priority` ON `extension_repositories` (`state`,`priority`);--> statement-breakpoint
-CREATE INDEX `idx_extension_repositories_built_in` ON `extension_repositories` (`built_in`);--> statement-breakpoint
 CREATE TABLE `extension_signer_trusts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`created_at` integer NOT NULL,

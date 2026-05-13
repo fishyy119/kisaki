@@ -297,13 +297,6 @@ function shortDigest(value: string | null): string {
                 >
                   {{ healthLabel(repository) }}
                 </Badge>
-                <Badge
-                  v-if="repository.builtIn"
-                  variant="secondary"
-                  class="text-[10px] h-5"
-                >
-                  内置
-                </Badge>
               </div>
 
               <div class="text-xs text-muted-foreground truncate">{{ repository.url }}</div>
@@ -376,7 +369,6 @@ function shortDigest(value: string | null): string {
                 />
               </Button>
               <Button
-                v-if="!repository.builtIn"
                 variant="ghost"
                 size="icon-sm"
                 :disabled="busyRepositoryIds.has(repository.id)"

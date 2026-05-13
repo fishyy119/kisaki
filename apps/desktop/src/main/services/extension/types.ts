@@ -26,13 +26,13 @@ export interface ScannedExtensionPackage {
   issues: readonly ValidationIssue[]
 }
 
-export type ExtensionCatalogStatus = 'ready' | 'invalid' | 'missing-package'
+export type ExtensionInstalledEntryStatus = 'ready' | 'invalid' | 'missing-package'
 
-export interface ExtensionCatalogEntry {
+export interface ExtensionInstalledEntry {
   builtin: boolean
   id: string
   directoryName: string
-  status: ExtensionCatalogStatus
+  status: ExtensionInstalledEntryStatus
   manifest: ExtensionManifest | null
   issues: readonly string[]
   enabled: boolean
@@ -55,7 +55,7 @@ export interface CreateRuntimeMetadataOptions {
 }
 
 export function createExtensionRuntimeMetadata(
-  entry: ExtensionCatalogEntry,
+  entry: ExtensionInstalledEntry,
   options: CreateRuntimeMetadataOptions = {}
 ): ExtensionRuntimeMetadata {
   if (!entry.manifest) {

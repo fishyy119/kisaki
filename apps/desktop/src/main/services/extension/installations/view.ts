@@ -4,7 +4,7 @@ import type { ValidationIssue } from '@kisaki/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from '../packages/manifest'
 import type { ExtensionPackageLayout } from '../packages/layout'
-import type { ExtensionCatalogEntry, ScannedExtensionPackage } from '../types'
+import type { ExtensionInstalledEntry, ScannedExtensionPackage } from '../types'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionInstallationStore } from './store'
 
@@ -13,16 +13,16 @@ import type { ExtensionInstallationStore } from './store'
  * installation facts. Filesystem state is diagnostic; DB rows decide whether a
  * user-managed extension exists in the installed view.
  */
-export class ExtensionInstallationCatalog {
-  private snapshot: readonly ExtensionCatalogEntry[] = []
-  private byId = new Map<string, ExtensionCatalogEntry>()
+export class ExtensionInstallationView {
+  private entries: readonly ExtensionInstalledEntry[] = []
+  private byId = new Map<string, ExtensionInstalledEntry>()
 
   constructor(
     private readonly layout: ExtensionPackageLayout,
     private readonly installationStore: ExtensionInstallationStore
   ) {}
 
-  async refresh(): Promise<readonly ExtensionCatalogEntry[]> {
+  async refresh(): Promise<readonly ExtensionInstalledEntry[]> {
     await this.layout.ensureBaseDirectories()
 
     const installations = this.installationStore.list()
@@ -31,11 +31,11 @@ export class ExtensionInstallationCatalog {
       this.scanPackages(this.layout.packagesDir, false)
     ])
 
-    const nextEntries = new Map<string, ExtensionCatalogEntry>()
+    const nextEntries = new Map<string, ExtensionInstalledEntry>()
     const builtinIds = new Set<string>()
 
     for (const packageRecord of builtinPackages) {
-      const builtinEntry = buildCatalogEntry(this.layout, packageRecord.id, null, packageRecord)
+      const builtinEntry = buildInstalledEntry(this.layout, packageRecord.id, null, packageRecord)
       nextEntries.set(packageRecord.id, builtinEntry)
       builtinIds.add(packageRecord.id)
     }
@@ -49,12 +49,12 @@ export class ExtensionInstallationCatalog {
 
       nextEntries.set(
         installation.id,
-        buildCatalogEntry(this.layout, installation.id, installation, packageRecord)
+        buildInstalledEntry(this.layout, installation.id, installation, packageRecord)
       )
     }
 
-    const sortedEntries = [...nextEntries.values()].sort(compareCatalogEntries)
-    this.snapshot = sortedEntries
+    const sortedEntries = [...nextEntries.values()].sort(compareInstalledEntries)
+    this.entries = sortedEntries
     this.byId = new Map()
 
     for (const entry of sortedEntries) {
@@ -66,11 +66,11 @@ export class ExtensionInstallationCatalog {
     return sortedEntries
   }
 
-  list(): readonly ExtensionCatalogEntry[] {
-    return this.snapshot
+  list(): readonly ExtensionInstalledEntry[] {
+    return this.entries
   }
 
-  get(extensionId: string): ExtensionCatalogEntry | undefined {
+  get(extensionId: string): ExtensionInstalledEntry | undefined {
     return this.byId.get(extensionId)
   }
 
@@ -133,7 +133,7 @@ export class ExtensionInstallationCatalog {
         })
       } catch (error) {
         log.warn(
-          `[ExtensionInstallationCatalog] Failed to parse manifest for package "${directoryName}":`,
+          `[ExtensionInstallationView] Failed to parse manifest for package "${directoryName}":`,
           error
         )
         packages.push({
@@ -152,12 +152,12 @@ export class ExtensionInstallationCatalog {
   }
 }
 
-function buildCatalogEntry(
+function buildInstalledEntry(
   layout: ExtensionPackageLayout,
   extensionId: string,
   installation: ExtensionInstallationRow | null,
   pkg: ScannedExtensionPackage | null
-): ExtensionCatalogEntry {
+): ExtensionInstalledEntry {
   const builtin = pkg?.builtin ?? false
   const packagePath = pkg?.packagePath ?? layout.packageDir(extensionId)
   const manifestPath = pkg?.manifestPath ?? layout.packageManifestPath(extensionId)
@@ -204,7 +204,7 @@ function buildCatalogEntry(
   }
 
   const hasIssues = issues.length > 0
-  const status = getPackageCatalogStatus({ builtin, hasIssues })
+  const status = getInstalledPackageStatus({ builtin, hasIssues })
   const manifest = pkg.manifest
 
   return {
@@ -230,10 +230,10 @@ function buildCatalogEntry(
   }
 }
 
-function getPackageCatalogStatus(options: {
+function getInstalledPackageStatus(options: {
   builtin: boolean
   hasIssues: boolean
-}): ExtensionCatalogEntry['status'] {
+}): ExtensionInstalledEntry['status'] {
   if (options.builtin) {
     return options.hasIssues ? 'invalid' : 'ready'
   }
@@ -241,7 +241,10 @@ function getPackageCatalogStatus(options: {
   return options.hasIssues ? 'invalid' : 'ready'
 }
 
-function compareCatalogEntries(left: ExtensionCatalogEntry, right: ExtensionCatalogEntry): number {
+function compareInstalledEntries(
+  left: ExtensionInstalledEntry,
+  right: ExtensionInstalledEntry
+): number {
   const statusWeight = getStatusWeight(left.status) - getStatusWeight(right.status)
   if (statusWeight !== 0) {
     return statusWeight
@@ -252,7 +255,7 @@ function compareCatalogEntries(left: ExtensionCatalogEntry, right: ExtensionCata
   return leftName.localeCompare(rightName, 'en')
 }
 
-function getStatusWeight(status: ExtensionCatalogEntry['status']): number {
+function getStatusWeight(status: ExtensionInstalledEntry['status']): number {
   switch (status) {
     case 'ready':
       return 0

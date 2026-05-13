@@ -3,7 +3,7 @@ import type { IpcService } from '@main/services/ipc'
 import type { IpcError } from '@shared/ipc'
 import type { ExtensionInstalledPackageInfo } from '@shared/extension'
 import { readErrorCode, readErrorDetails } from '@kisaki/extension-api'
-import type { ExtensionCatalogEntry } from '../types'
+import type { ExtensionInstalledEntry } from '../types'
 import type { ExtensionRuntimeState } from '../runtime/manager'
 import type { ExtensionService } from '../service'
 import { ExtensionPackageError } from '../packages/types'
@@ -170,11 +170,11 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:get-installed-packages', async () => {
     try {
-      await service.refreshCatalog()
+      await service.refreshInstalledPackages()
       return {
         success: true,
         data: service
-          .getCatalog()
+          .getInstalledEntries()
           .map((entry) => toExtensionInstalledPackageInfo(entry, service.getRuntimeState(entry.id)))
       }
     } catch (error) {
@@ -408,7 +408,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 }
 
 function toExtensionInstalledPackageInfo(
-  entry: ExtensionCatalogEntry,
+  entry: ExtensionInstalledEntry,
   runtimeState: ExtensionRuntimeState | null
 ): ExtensionInstalledPackageInfo {
   const runtimeStatus =

@@ -15,6 +15,7 @@ import type {
 import type { ExtensionRepositoryRow } from '@shared/db'
 import {
   selectExtensionRegistryArtifact,
+  type ExtensionRegistryManifest,
   type ExtensionRegistryPackageIcon,
   type ExtensionRegistryRelease
 } from '@kisaki/extension-registry'
@@ -28,10 +29,7 @@ import type {
   ExtensionRepositoryInstallCandidate,
   ExtensionRepositorySearchContext
 } from './types'
-
-export const OFFICIAL_EXTENSION_REPOSITORY_ID = 'kisaki.official'
-export const OFFICIAL_EXTENSION_REPOSITORY_NAME = 'Kisaki Official Extensions'
-export const OFFICIAL_EXTENSION_REPOSITORY_URL = 'https://kisaki.dev/extensions/manifest.json'
+import { getRegistryManifestUrlPolicyIssues } from './url-policy'
 
 export interface ExtensionRepositoryManagerOptions {
   store: ExtensionRepositoryStore
@@ -50,6 +48,7 @@ export class ExtensionRepositoryManager {
   private readonly aggregator: ExtensionRepositoryAggregator
   private readonly appVersion: string
   private readonly allowInsecureLocalUrls: boolean
+  private readonly warnedDisallowedSnapshots = new Set<string>()
   private readonly onRepositoriesChanged?: () => void
   private readonly onCatalogChanged?: () => void
   private catalog: ExtensionRepositoryCatalog = {
@@ -72,7 +71,6 @@ export class ExtensionRepositoryManager {
   }
 
   async init(): Promise<void> {
-    this.ensureOfficialRepository()
     this.rebuildCatalog()
   }
 
@@ -98,7 +96,6 @@ export class ExtensionRepositoryManager {
       url,
       name: normalizeOptionalName(request.name) ?? fetched.manifest.name,
       state: normalizeRepositoryState(request.state) ?? 'enabled',
-      builtIn: false,
       priority: normalizePriority(request.priority) ?? this.store.nextPriority()
     })
     const row = this.store.recordRefreshSuccess(id, {
@@ -120,9 +117,6 @@ export class ExtensionRepositoryManager {
     const patch: Parameters<ExtensionRepositoryStore['update']>[1] = {}
 
     if (request.url !== undefined) {
-      if (existing.builtIn) {
-        throw new Error('Built-in extension repositories cannot change URL.')
-      }
       const url = this.normalizeManifestUrl(request.url)
       const duplicate = this.store.getByUrl(url)
       if (duplicate && duplicate.id !== id) {
@@ -156,10 +150,6 @@ export class ExtensionRepositoryManager {
 
   removeRepository(repositoryId: string): void {
     const row = this.store.require(requireNonEmptyString(repositoryId, 'repository id'))
-    if (row.builtIn) {
-      throw new Error('Built-in extension repositories cannot be removed.')
-    }
-
     this.store.remove(row.id)
     this.rebuildCatalogAndEmit()
   }
@@ -327,11 +317,15 @@ export class ExtensionRepositoryManager {
     let releaseFound = false
 
     for (const repository of repositories) {
-      if (repository.state !== 'enabled' || !repository.manifestSnapshot) {
+      if (repository.state !== 'enabled') {
         continue
       }
 
-      const manifest = repository.manifestSnapshot
+      const manifest = this.getAllowedManifestSnapshot(repository)
+      if (!manifest) {
+        continue
+      }
+
       const registryPackage = manifest.packages.find((item) => item.id === extensionId)
       if (!registryPackage) {
         continue
@@ -380,30 +374,6 @@ export class ExtensionRepositoryManager {
     }
   }
 
-  private ensureOfficialRepository(): void {
-    const byId = this.store.get(OFFICIAL_EXTENSION_REPOSITORY_ID)
-    if (byId) {
-      this.store.update(byId.id, {
-        ...(byId.url === OFFICIAL_EXTENSION_REPOSITORY_URL
-          ? {}
-          : { url: OFFICIAL_EXTENSION_REPOSITORY_URL }),
-        name: byId.name || OFFICIAL_EXTENSION_REPOSITORY_NAME,
-        builtIn: true,
-        priority: byId.priority
-      })
-      return
-    }
-
-    this.store.create({
-      id: OFFICIAL_EXTENSION_REPOSITORY_ID,
-      url: OFFICIAL_EXTENSION_REPOSITORY_URL,
-      name: OFFICIAL_EXTENSION_REPOSITORY_NAME,
-      state: 'enabled',
-      builtIn: true,
-      priority: 0
-    })
-  }
-
   private rebuildCatalogAndEmit(): void {
     this.rebuildCatalog()
     this.emitRepositoriesChanged()
@@ -411,21 +381,21 @@ export class ExtensionRepositoryManager {
   }
 
   private rebuildCatalog(): void {
-    this.catalog = this.aggregator.aggregate(this.store.listEnabled())
+    this.catalog = this.aggregator.aggregate(this.listCatalogRepositories())
     this.iconManager.setAvailableIcons(collectCatalogIcons(this.catalog))
   }
 
   private toRepositoryInfo(row: ExtensionRepositoryRow): ExtensionRepositoryInfo {
+    const manifestSnapshot = this.getAllowedManifestSnapshot(row)
     return {
       id: row.id,
       url: row.url,
       name: row.name,
       state: row.state,
-      builtIn: row.builtIn,
       priority: row.priority,
-      packageCount: row.manifestSnapshot?.packages.length ?? 0,
+      packageCount: manifestSnapshot?.packages.length ?? 0,
       manifestDigest: row.manifestDigest,
-      manifestUpdatedAt: row.manifestSnapshot?.updatedAt ?? null,
+      manifestUpdatedAt: manifestSnapshot?.updatedAt ?? null,
       lastRefreshAt: toIsoString(row.lastRefreshAt),
       lastSuccessAt: toIsoString(row.lastSuccessAt),
       lastError: row.lastError,
@@ -449,6 +419,37 @@ export class ExtensionRepositoryManager {
     }
 
     throw new Error(`Could not allocate a local repository id for "${manifestId}".`)
+  }
+
+  private listCatalogRepositories(): ExtensionRepositoryRow[] {
+    return this.store.listEnabled().map((repository) => ({
+      ...repository,
+      manifestSnapshot: this.getAllowedManifestSnapshot(repository)
+    }))
+  }
+
+  private getAllowedManifestSnapshot(
+    repository: ExtensionRepositoryRow
+  ): ExtensionRegistryManifest | null {
+    const manifest = repository.manifestSnapshot
+    if (!manifest) {
+      return null
+    }
+
+    const issues = getRegistryManifestUrlPolicyIssues(manifest, {
+      allowInsecureLocalUrls: this.allowInsecureLocalUrls
+    })
+    if (issues.length === 0) {
+      return manifest
+    }
+
+    if (!this.warnedDisallowedSnapshots.has(repository.id)) {
+      this.warnedDisallowedSnapshots.add(repository.id)
+      log.warn(
+        `[ExtensionRepositoryManager] Ignoring repository snapshot "${repository.id}" because it is not valid for the current URL policy: ${issues.join('; ')}`
+      )
+    }
+    return null
   }
 
   private normalizeManifestUrl(value: string): string {

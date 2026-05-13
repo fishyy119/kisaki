@@ -8,7 +8,7 @@
 
 Jellyfin 的插件仓库模型提供了三个值得吸收的核心点：
 
-1. 插件仓库是用户可维护的 manifest URL 列表。官方仓库不是硬编码唯一来源，第三方仓库也可以并存。
+1. 插件仓库是用户可维护的 manifest URL 列表，客户端不为某个远程仓库保留特殊身份。
 2. 仓库 manifest 只描述插件元数据和版本列表；每个版本指向独立的二进制包 URL，并携带兼容版本、校验和、发布时间等信息。
 3. 客户端聚合多个仓库，过滤不兼容版本，按插件身份合并版本，再执行下载和安装。
 
@@ -37,7 +37,7 @@ Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，�
 ## 目标
 
 - 用户可以添加、启用、禁用、刷新和删除扩展仓库。
-- 仓库是普通 HTTPS manifest URL；官方仓库只是默认预置仓库，第三方仓库使用同一套协议。
+- 仓库是普通 HTTPS manifest URL；所有远程仓库使用同一套协议和同一套本地状态。
 - 发现页展示所有启用仓库聚合后的兼容扩展，而不是直接搜索 GitHub。
 - 安装和更新始终基于一个明确 release，且 release 的来源、manifest digest、artifact digest、签名状态和安装时间可追溯。
 - 远程 `.kisx` 必须通过 `sha256` 完整性校验；签名允许扩展作者自签，是否为该 extension 信任 signer fingerprint 由用户决定。
@@ -91,7 +91,7 @@ Repository manifest  ->  Repository snapshot  ->  Aggregated catalog  ->  Instal
 
 ### Repository URL
 
-仓库 URL 必须是 `https:`。只有开发模式允许 `http://localhost`、`http://127.0.0.1` 和本地 repository manifest 文件导入。这个限制只针对仓库 manifest；本地 `.kisx` 安装是正式能力，由 `extension:install-from-file` 承担，不限开发模式。
+仓库 URL 必须是 `https:`。只有开发模式允许 `http://localhost`、`http://127.0.0.1` 和本地 repository manifest 文件导入。这个限制同时适用于 refresh 写入和已持久化 manifest snapshot 的 catalog/install 候选读取；包态不会因为 DB 里残留开发态 snapshot 而继续展示或安装本地 URL artifact。这个限制只针对仓库 manifest；本地 `.kisx` 安装是正式能力，由 `extension:install-from-file` 承担，不限开发模式。
 
 URL 指向一个 JSON manifest。manifest 可以托管在任意静态站点、GitHub raw、对象存储、CDN 或自建服务上。Kisaki 不要求仓库实现动态 API。
 
@@ -118,14 +118,14 @@ packages/extension-registry/src/registry/integrity.ts
 {
   "$schema": "https://kisaki.dev/schemas/extension-registry.schema.json",
   "schemaVersion": 1,
-  "id": "kisaki.official",
-  "name": "Kisaki Official Extensions",
-  "description": "Official Kisaki extensions.",
+  "id": "kisaki.extensions",
+  "name": "Kisaki Extensions",
+  "description": "Kisaki extension catalog.",
   "homepage": "https://kisaki.dev/extensions",
   "updatedAt": "2026-05-10T00:00:00.000Z",
   "signingKeys": [
     {
-      "id": "kisaki-official-2026",
+      "id": "kisaki-author-2026",
       "algorithm": "ed25519",
       "publicKey": "base64-public-key"
     }
@@ -169,7 +169,7 @@ packages/extension-registry/src/registry/integrity.ts
               "size": 123456,
               "sha256": "hex-sha256",
               "signature": {
-                "keyId": "kisaki-official-2026",
+                "keyId": "kisaki-author-2026",
                 "algorithm": "ed25519",
                 "value": "base64-signature"
               }
@@ -199,7 +199,7 @@ Package：
 - `name`、`summary`、`categories` 必填。
 - `description` 可以较长，用于详情页。
 - `categories` 复用 `ExtensionCategory`。
-- `icon.url` 必须是 `https:`；`icon.sha256` 推荐提供，官方仓库必须提供。
+- `icon.url` 必须是 `https:`；`icon.sha256` 推荐提供，用于图标缓存校验。
 - `releases` 至少包含一个 release。
 
 Release：
@@ -286,8 +286,8 @@ Artifact：
 ### 默认策略
 
 - 仓库配置只决定是否参与刷新和 discover/catalog 展示：`enabled`、`disabled`。
-- 官方仓库只是应用内置的默认仓库配置，不是安全信任等级。若官方 release 需要免确认安装，应用内置对应 extension-scoped signer fingerprint，并通过同一套 signer trust 判断。
-- 第三方仓库添加后默认可浏览、可安装；安装未信任 signer、unsigned release 或 signer changed 时必须展示确认。
+- 所有仓库同级；添加后默认可浏览、可安装，不存在仓库级信任或内置免确认通道。
+- 安装未信任 signer、unsigned release 或 signer changed 时必须展示确认。
 - 所有远程 artifact 必须校验 `sha256`。
 - 签名可选。若存在签名，验证失败必须拒绝安装；若没有签名，安装计划标记为 unsigned。
 - 下载 URL 的 hostname 与仓库 URL hostname 可以不同，但安装计划必须展示 artifact host。
@@ -364,12 +364,11 @@ apps/desktop/drizzle/
 
 | 字段                | 类型                       | 说明                                                                                  |
 | ------------------- | -------------------------- | ------------------------------------------------------------------------------------- |
-| `id`                | text primary key           | 本机仓库 id。官方仓库固定，第三方仓库可用 manifest id；冲突时生成本地 id。            |
+| `id`                | text primary key           | 本机仓库 id，优先使用 manifest id；冲突时生成本地 id。                                |
 | `url`               | text unique                | manifest URL。                                                                        |
 | `name`              | text                       | 展示名，来自 manifest 或用户输入。                                                    |
 | `state`             | text                       | `enabled`、`disabled`。                                                               |
-| `built_in`          | integer boolean            | 是否为应用预置仓库。预置仓库不是安全信任等级，只表示来源由应用内置。                  |
-| `priority`          | integer                    | 聚合排序。官方仓库默认 0，第三方按添加顺序递增。                                      |
+| `priority`          | integer                    | 聚合排序。                                                                            |
 | `manifest_snapshot` | json text nullable         | 最近一次成功解析后的规范化 manifest，用于启动展示、离线浏览、更新检查和安装来源审计。 |
 | `last_refresh_at`   | integer timestamp nullable | 最近刷新时间。                                                                        |
 | `last_success_at`   | integer timestamp nullable | 最近成功刷新时间。                                                                    |
@@ -384,7 +383,7 @@ Repository state 规则：
 
 - `enabled`：参与刷新、discover/catalog 展示和 catalog 聚合。
 - `disabled`：保留配置和 snapshot，但不刷新、不参与 catalog 聚合。
-- 官方仓库通过 `built_in`、固定 `id` 和默认 `priority` 表达预置来源，不表达安全信任。
+- 仓库没有官方、默认、内置或受管身份；删除、改名、改 URL、禁用和优先级调整都走同一套规则。
 
 Catalog 查询规则：
 
@@ -408,11 +407,11 @@ Catalog 查询规则：
 | `installed_at`   | integer timestamp | 首次安装时间。                                                   |
 | `updated_at`     | integer timestamp | 最近状态更新时间。                                               |
 
-`extension_installations` 只记录本机 active package 的持久事实和用户策略，不记录内存性质或启动时可重新计算的临时状态。因此不新增 `status`、`last_error`、`integrity_state` 这类字段。缺包、manifest 无效、runtime failed 等状态由 `ExtensionInstallationCatalog` 启动或刷新时动态计算，作为 installed DTO 的 `status`、`issues`、`runtimeStatus`、`runtimeError` 返回 renderer。
+`extension_installations` 只记录本机 active package 的持久事实和用户策略，不记录内存性质或启动时可重新计算的临时状态。因此不新增 `status`、`last_error`、`integrity_state` 这类字段。缺包、manifest 无效、runtime failed 等状态由 `ExtensionInstallationView` 启动或刷新时动态计算，作为 installed DTO 的 `status`、`issues`、`runtimeStatus`、`runtimeError` 返回 renderer。
 
 active package 路径不存入 DB。`extension_installations.id` 是唯一持久安装身份，`ExtensionPackageLayout` 只能从该 id 派生 `packages/<extension-id>`，并在每次读取时执行 path confinement。这样 DB 中不存在可被篡改为任意绝对路径的加载入口，Runtime 也不会直接信任持久化 path 字符串。
 
-`source` 使用 Drizzle `customType` 序列化为 JSON text，而不是拆成多个 `source_*` 列。原因是安装来源在业务上是一个整体对象；更新检查、安装详情和审计展示都会读取完整 installation 后在 TypeScript 中判断，不依赖 SQL 对单个 source 子字段建索引。若未来需要按仓库做大规模 SQL 统计或索引，再新增可派生列或独立索引表，不让 v1 表结构提前膨胀。`ExtensionInstallationSource` 类型和 parser 放在 shared 边界，例如 `apps/desktop/src/shared/extension-installation-source.ts` 或 `apps/desktop/src/shared/extension.ts`；`apps/desktop/src/shared/db/custom-types.ts` 只引用 shared parser，main 侧服务也复用同一个 parser。shared/db 不允许反向依赖 `apps/desktop/src/main/**`。无效 source 由 `ExtensionInstallationCatalog` 作为动态 issue 暴露，不写回临时状态字段。
+`source` 使用 Drizzle `customType` 序列化为 JSON text，而不是拆成多个 `source_*` 列。原因是安装来源在业务上是一个整体对象；更新检查、安装详情和审计展示都会读取完整 installation 后在 TypeScript 中判断，不依赖 SQL 对单个 source 子字段建索引。若未来需要按仓库做大规模 SQL 统计或索引，再新增可派生列或独立索引表，不让 v1 表结构提前膨胀。`ExtensionInstallationSource` 类型和 parser 放在 shared 边界，例如 `apps/desktop/src/shared/extension-installation-source.ts` 或 `apps/desktop/src/shared/extension.ts`；`apps/desktop/src/shared/db/custom-types.ts` 只引用 shared parser，main 侧服务也复用同一个 parser。shared/db 不允许反向依赖 `apps/desktop/src/main/**`。无效 source 由 `ExtensionInstallationView` 作为动态 issue 暴露，不写回临时状态字段。
 
 ```ts
 export type ExtensionInstallationSource =
@@ -503,7 +502,7 @@ userData/extensions/
 
 安装、更新、卸载的事务目录使用 `userData/extensions/temp/operations`，不使用 OS temp。原因是 staging、backup 和 trash 会参与 package 目录替换和回滚，必须尽量与 `packages/` 位于同一卷，避免跨盘 move 退化为 copy/delete。
 
-Active package 不使用 symlink，也不在 DB 中保存绝对 package path。`ExtensionInstallationCatalog` 从 `extension_installations.id` 和 `ExtensionPackageLayout` 派生 `packages/<extension-id>`，校验包内 manifest 后创建 `ExtensionRuntimeMetadata`。
+Active package 不使用 symlink，也不在 DB 中保存绝对 package path。`ExtensionInstallationView` 从 `extension_installations.id` 和 `ExtensionPackageLayout` 派生 `packages/<extension-id>`，校验包内 manifest 后创建 `ExtensionRuntimeMetadata`。
 
 更新时先完成下载、校验和解压 staging；进入提交阶段后再 unload 当前 runtime，把旧 package 目录移动到 `temp/operations/backups/<operation-id>`，新包加载成功后删除 backup；如果安装或 runtime activation 失败，再把 backup 移回原路径。v1 不保留多版本历史，也不提供长期回滚列表。
 
@@ -597,7 +596,7 @@ apps/desktop/src/main/services/extension/sources/
 | `ExtensionSignerTrustManager`          | 计算 fingerprint，并应用 extension-scoped signer trust。                                                     |
 | `ExtensionSignerTrustStore`            | 读写 `extension_signer_trusts`。                                                                             |
 | `ExtensionInstallationStore`           | 读写 `extension_installations`，取代旧 `ExtensionStateStore`。                                               |
-| `ExtensionInstallationCatalog`         | 聚合 built-in、安装记录、package manifest 和 runtime 状态，输出 installed 列表。                             |
+| `ExtensionInstallationView`            | 聚合 built-in、安装记录、package manifest 和 runtime 状态，输出 installed 列表。                             |
 | `ExtensionInstallationMetadataFactory` | 从 installation、built-in 和 dev 记录创建 `ExtensionRuntimeMetadata`，实现放在 `installations/metadata.ts`。 |
 | `ExtensionPackageLayout`               | 统一解析 packages、data、temp 路径。                                                                         |
 | `ExtensionPackageInstaller`            | 安装、更新、卸载的门面。                                                                                     |
@@ -784,11 +783,10 @@ Transaction recovery 规则：
 
 1. `ExtensionService.init()` 初始化 DB、paths、runtime、repositories、installer。
 2. `ExtensionPackageTransaction` 执行启动恢复，保证 package 目录和 DB installation 尽量重新一致。
-3. `ExtensionRepositoryManager` 确保官方仓库存在。
-4. 读取 `state = enabled` repositories。
-5. 使用最近成功 manifest snapshot 重建 catalog。
-6. 异步触发后台刷新，刷新成功后重建 catalog 并发送 `extension:catalog-changed`。
-7. `RuntimeManager` 只根据 installed packages 的 active package 加载扩展，不等待远程刷新。
+3. 读取 `state = enabled` repositories。
+4. 使用最近成功 manifest snapshot 重建 catalog。
+5. 异步触发后台刷新，刷新成功后重建 catalog 并发送 `extension:catalog-changed`。
+6. `RuntimeManager` 只根据 installed packages 的 active package 加载扩展，不等待远程刷新。
 
 手动刷新：
 
@@ -966,7 +964,7 @@ apps/desktop/resources/extensions
 - Built-in 不进入 remote repository。
 - Built-in 在 installed DTO 中可以有只读 installation view，但不写入 DB 安装记录。
 - Built-in 不允许禁用、卸载、更新、pin 或清除数据。
-- Built-in 不写入 `extension_installations`，不提供 `enabled_override`。`ExtensionInstallationCatalog` 从应用资源目录扫描 built-in package，manifest 有效时始终视为 enabled。
+- Built-in 不写入 `extension_installations`，不提供 `enabled_override`。`ExtensionInstallationView` 从应用资源目录扫描 built-in package，manifest 有效时始终视为 enabled。
 
 ## Runtime 接入
 
@@ -1029,9 +1027,9 @@ Discover：
 
 Repositories：
 
-- 列出官方和第三方仓库。
+- 列出所有仓库。
 - 支持添加 manifest URL、启用、禁用、刷新、删除、修改优先级。
-- 显示 state、built-in 标记、last success、last error、manifest digest、package count。
+- 显示 state、last success、last error、manifest digest、package count。
 - 不在仓库页表达“仓库可信”。signer 信任只在安装、更新确认和 signer 管理视图中展示。
 
 Installed：
@@ -1115,7 +1113,7 @@ dist/*.kisx
 icons/*    # optional, only if manifest icon.url points here
 ```
 
-官方仓库和第三方仓库使用同一套流程：
+所有仓库使用同一套发布流程：
 
 1. build extension。
 2. pack `.kisx`。
@@ -1206,7 +1204,7 @@ Renderer 显示：
 1. 新增 `create-install-plan` 和 `install-release` IPC。
 2. 改造 `install-from-file` 为本地导入 install plan。
 3. `ExtensionService` 接入新 installer、installation store 和 operation recovery。
-4. `ExtensionInstallationCatalog` 从 DB installation、built-in、dev extension 和 package manifest 构建 installed DTO。
+4. `ExtensionInstallationView` 从 DB installation、built-in、dev extension 和 package manifest 构建 installed DTO。
 5. 安装成功后接入 `RuntimeManager.reconcile()`。
 6. 此阶段结束时 `ExtensionService` 启动不再读 `state.json`。
 
@@ -1265,7 +1263,7 @@ ExtensionStateStore
 替换：
 
 ```text
-catalog.ts -> installations/catalog.ts
+view.ts -> installations/view.ts
 state.ts -> installations/store.ts
 manifest.ts -> packages/manifest.ts
 installer.ts -> installer/manager.ts
@@ -1306,7 +1304,7 @@ rg -n "extension_repositories|extension_installations|extension_signer_trusts" a
 
 - 扩展发现完全基于 repository manifest 聚合 catalog。
 - GitHub topic search 不再是发现入口。
-- 用户可以管理多个仓库；官方仓库不是唯一来源。
+- 用户可以管理多个同级仓库；没有官方、默认、内置或受管仓库身份。
 - 仓库 manifest、package release 和 artifact 都有 schema 和 parser。
 - 远程安装必须校验 sha256。
 - 签名允许扩展作者自签；Kisaki 验证签名，用户决定是否为该 extension 信任 signer fingerprint。
