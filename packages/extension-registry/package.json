@@ -1,7 +1,7 @@
 {
-  "name": "@kisaki/extension-api",
+  "name": "@kisaki/extension-registry",
   "version": "0.0.1",
-  "description": "Public contracts for the Kisaki extension system",
+  "description": "Distributed registry contracts and tooling for Kisaki extensions",
   "type": "module",
   "exports": {
     ".": {
@@ -10,7 +10,13 @@
         "default": "./dist/index.mjs"
       }
     },
-    "./schemas/extension-manifest.schema.json": "./schemas/extension-manifest.schema.json"
+    "./node": {
+      "import": {
+        "types": "./dist/node.d.mts",
+        "default": "./dist/node.mjs"
+      }
+    },
+    "./schemas/extension-registry.schema.json": "./schemas/extension-registry.schema.json"
   },
   "files": [
     "dist",
@@ -27,6 +33,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@kisaki/extension-api": "workspace:*",
     "semver": "^7.7.3"
   },
   "devDependencies": {
@@ -37,8 +44,7 @@
   "keywords": [
     "kisaki",
     "extension",
-    "api",
-    "contracts"
+    "registry"
   ],
   "license": "MIT"
 }

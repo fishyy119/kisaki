@@ -1,6 +1,5 @@
 import semver from 'semver'
-import { isExtensionCategory } from '../manifest'
-import { validateExtensionIdentifier } from '../shared/extension-id'
+import { isExtensionCategory, validateExtensionIdentifier } from '@kisaki/extension-api'
 import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,

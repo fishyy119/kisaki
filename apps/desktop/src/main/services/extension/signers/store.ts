@@ -1,8 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm'
-import {
-  createExtensionRegistrySignerFingerprint,
-  isExtensionIdentifier
-} from '@kisaki/extension-api'
+import { isExtensionIdentifier } from '@kisaki/extension-api'
+import { createExtensionRegistrySignerFingerprint } from '@kisaki/extension-registry/node'
 import {
   extensionSignerTrusts,
   type ExtensionSignerAlgorithm,

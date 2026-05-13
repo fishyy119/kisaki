@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto'
 import semver from 'semver'
+import type {
+  ExtensionRegistryArtifact,
+  ExtensionRegistryManifest,
+  ExtensionRegistrySigningAlgorithm
+} from '@kisaki/extension-registry'
 import {
   createExtensionRegistrySignerFingerprint,
-  stringifyExtensionRegistryCanonicalJson,
-  type ExtensionRegistryArtifact,
-  type ExtensionRegistryManifest,
-  type ExtensionRegistrySigningAlgorithm
-} from '@kisaki/extension-api'
+  stringifyExtensionRegistryCanonicalJson
+} from '@kisaki/extension-registry/node'
 import type {
   ExtensionCatalogArtifactInfo,
   ExtensionCatalogReleaseInfo,

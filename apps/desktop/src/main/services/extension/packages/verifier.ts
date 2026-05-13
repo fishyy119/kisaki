@@ -8,17 +8,21 @@ import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
 import semver from 'semver'
 import {
-  createExtensionRegistryArtifactSignaturePayload,
-  createExtensionRegistrySignerFingerprint,
   normalizeExtensionPackagePath,
-  stringifyExtensionRegistryCanonicalJson,
   type ExtensionCategory,
-  type ExtensionManifest,
+  type ExtensionManifest
+} from '@kisaki/extension-api'
+import {
+  createExtensionRegistryArtifactSignaturePayload,
   type ExtensionRegistryArtifact,
   type ExtensionRegistryPackage,
   type ExtensionRegistryRelease,
   type ExtensionRegistrySigningKey
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
+import {
+  createExtensionRegistrySignerFingerprint,
+  stringifyExtensionRegistryCanonicalJson
+} from '@kisaki/extension-registry/node'
 import {
   parseExtensionManifest,
   readExtensionManifestFile,

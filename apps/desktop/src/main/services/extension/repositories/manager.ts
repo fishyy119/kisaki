@@ -14,11 +14,11 @@ import type {
 } from '@shared/extension'
 import type { ExtensionRepositoryRow } from '@shared/db'
 import {
-  createExtensionRegistryReleaseDigest,
   selectExtensionRegistryArtifact,
   type ExtensionRegistryPackageIcon,
   type ExtensionRegistryRelease
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
+import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
 import type { ExtensionIconManager } from '../packages/icon'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'

@@ -24,7 +24,7 @@ import {
 import {
   parseExtensionRegistryManifest,
   type ExtensionRegistryManifest
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
 
 import type {
   Status,

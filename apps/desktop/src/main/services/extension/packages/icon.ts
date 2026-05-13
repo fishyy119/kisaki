@@ -7,7 +7,7 @@ import log from 'electron-log/main'
 import { net, protocol } from 'electron'
 import { EXTENSION_ICON_SCHEME } from '@main/bootstrap/protocol'
 import type { NetworkService } from '@main/services/network'
-import type { ExtensionRegistryPackageIcon } from '@kisaki/extension-api'
+import type { ExtensionRegistryPackageIcon } from '@kisaki/extension-registry'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import { hashFile } from './verifier'
 

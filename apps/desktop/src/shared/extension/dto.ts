@@ -12,10 +12,6 @@ import type {
   EntityMenuSeparatorNode,
   EntityMenuSubmenuNode,
   ExtensionCategory,
-  ExtensionRegistryArtifactTarget,
-  ExtensionRegistryReleaseChannel,
-  ExtensionRegistryReleaseEngines,
-  ExtensionRegistrySigningAlgorithm,
   ExtensionRuntimeDiagnostic,
   GameScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo,
@@ -44,6 +40,12 @@ import type {
   ThemeContribution,
   UiCallbackResult
 } from '@kisaki/extension-api'
+import type {
+  ExtensionRegistryArtifactTarget,
+  ExtensionRegistryReleaseChannel,
+  ExtensionRegistryReleaseEngines,
+  ExtensionRegistrySigningAlgorithm
+} from '@kisaki/extension-registry'
 import type { ExtensionInstallationSource } from './installation-source'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package' | 'orphaned'

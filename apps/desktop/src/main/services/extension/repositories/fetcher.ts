@@ -5,9 +5,9 @@ import fse from 'fs-extra'
 import type { NetworkService } from '@main/services/network'
 import {
   parseExtensionRegistryManifest,
-  stringifyExtensionRegistryCanonicalJson,
   type ExtensionRegistryManifest
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
+import { stringifyExtensionRegistryCanonicalJson } from '@kisaki/extension-registry/node'
 
 const MAX_REGISTRY_MANIFEST_BYTES = 2 * 1024 * 1024
 

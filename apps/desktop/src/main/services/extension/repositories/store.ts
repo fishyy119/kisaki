@@ -2,7 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import {
   parseExtensionRegistryManifest,
   type ExtensionRegistryManifest
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
 import {
   extensionRepositories,
   type ExtensionRepositoryRow,

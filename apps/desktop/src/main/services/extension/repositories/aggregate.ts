@@ -1,13 +1,15 @@
 import semver from 'semver'
 import {
-  createExtensionRegistryReleaseDigest,
-  createExtensionRegistrySignerFingerprint,
   selectExtensionRegistryArtifact,
   type ExtensionRegistryArtifact,
   type ExtensionRegistryManifest,
   type ExtensionRegistryPackage,
   type ExtensionRegistryRelease
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
+import {
+  createExtensionRegistryReleaseDigest,
+  createExtensionRegistrySignerFingerprint
+} from '@kisaki/extension-registry/node'
 import type {
   ExtensionCatalogArtifactInfo,
   ExtensionCatalogPackageInfo,

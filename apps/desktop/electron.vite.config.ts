@@ -7,7 +7,7 @@ export default defineConfig({
   main: {
     build: {
       externalizeDeps: {
-        exclude: ['@kisaki/extension-api']
+        exclude: ['@kisaki/extension-api', '@kisaki/extension-registry']
       },
       rollupOptions: {
         input: {

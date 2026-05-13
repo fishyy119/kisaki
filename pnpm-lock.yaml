@@ -44,6 +44,9 @@ importers:
       '@kisaki/extension-api':
         specifier: workspace:*
         version: link:../../packages/extension-api
+      '@kisaki/extension-registry':
+        specifier: workspace:*
+        version: link:../../packages/extension-registry
       '@ximu3/process-list':
         specifier: ^0.0.1
         version: 0.0.1
@@ -358,6 +361,25 @@ importers:
       '@types/archiver':
         specifier: ^6.0.4
         version: 6.0.4
+      '@types/node':
+        specifier: ^22.19.1
+        version: 22.19.11
+      '@types/semver':
+        specifier: ^7.7.1
+        version: 7.7.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/extension-registry:
+    dependencies:
+      '@kisaki/extension-api':
+        specifier: workspace:*
+        version: link:../extension-api
+      semver:
+        specifier: ^7.7.3
+        version: 7.7.4
+    devDependencies:
       '@types/node':
         specifier: ^22.19.1
         version: 22.19.11

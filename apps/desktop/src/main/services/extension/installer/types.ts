@@ -1,10 +1,10 @@
+import type { ExtensionManifest } from '@kisaki/extension-api'
 import type {
-  ExtensionManifest,
   ExtensionRegistryArtifact,
   ExtensionRegistryManifest,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
 
 export interface PrepareRepositoryExtensionPackageInput {
   operationId: string

@@ -1,4 +1,3 @@
-import process from 'node:process'
 import type {
   ExtensionRegistryRelease,
   ExtensionRegistryReleaseChannel,
@@ -39,21 +38,21 @@ export interface ExtensionRegistryArtifactSignaturePayload {
 }
 
 export function getCurrentExtensionRegistryArtifactTarget(): ExtensionRegistryArtifactTarget {
-  return `${process.platform}-${process.arch}` as ExtensionRegistryArtifactTarget
+  return `${getRuntimePlatform()}-${getRuntimeArch()}` as ExtensionRegistryArtifactTarget
 }
 
 export function isExtensionRegistryArtifactTargetCompatible(
   target: ExtensionRegistryArtifactTarget,
-  platform = process.platform,
-  arch = process.arch
+  platform = getRuntimePlatform(),
+  arch = getRuntimeArch()
 ): boolean {
   return target === 'any' || target === `${platform}-${arch}`
 }
 
 export function selectExtensionRegistryArtifact(
   release: Pick<ExtensionRegistryRelease, 'artifacts'>,
-  platform = process.platform,
-  arch = process.arch
+  platform = getRuntimePlatform(),
+  arch = getRuntimeArch()
 ): ExtensionRegistryArtifact | null {
   const exactTarget = `${platform}-${arch}`
   const exact = release.artifacts.find((artifact) => artifact.target === exactTarget)
@@ -83,4 +82,23 @@ export function createExtensionRegistryArtifactSignaturePayload(
     size: artifact.size,
     sha256: artifact.sha256
   }
+}
+
+interface RuntimeProcessLike {
+  platform?: unknown
+  arch?: unknown
+}
+
+function getRuntimePlatform(): string {
+  return getRuntimeProcessField('platform') ?? 'browser'
+}
+
+function getRuntimeArch(): string {
+  return getRuntimeProcessField('arch') ?? 'unknown'
+}
+
+function getRuntimeProcessField(field: keyof RuntimeProcessLike): string | null {
+  const processLike = (globalThis as { process?: RuntimeProcessLike }).process
+  const value = processLike?.[field]
+  return typeof value === 'string' && value.length > 0 ? value : null
 }

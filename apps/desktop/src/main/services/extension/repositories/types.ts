@@ -5,7 +5,7 @@ import type {
   ExtensionRegistryPackage,
   ExtensionRegistryPackageIcon,
   ExtensionRegistryRelease
-} from '@kisaki/extension-api'
+} from '@kisaki/extension-registry'
 import type { ExtensionRepositoryRow } from '@shared/db'
 
 export interface ExtensionRepositoryCatalog {

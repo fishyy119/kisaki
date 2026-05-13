@@ -1,7 +1,6 @@
 export * from './shared'
 export * from './version'
 export * from './manifest'
-export * from './registry'
 export * from './context'
 export * from './kisaki'
 export * from './rpc'

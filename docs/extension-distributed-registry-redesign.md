@@ -100,16 +100,16 @@ URL 指向一个 JSON manifest。manifest 可以托管在任意静态站点、Gi
 新增 schema：
 
 ```text
-packages/extension-api/schemas/extension-registry.schema.json
+packages/extension-registry/schemas/extension-registry.schema.json
 ```
 
 公共类型位置：
 
 ```text
-packages/extension-api/src/registry/manifest.ts
-packages/extension-api/src/registry/validation.ts
-packages/extension-api/src/registry/artifact.ts
-packages/extension-api/src/registry/integrity.ts
+packages/extension-registry/src/registry/manifest.ts
+packages/extension-registry/src/registry/validation.ts
+packages/extension-registry/src/registry/artifact.ts
+packages/extension-registry/src/registry/integrity.ts
 ```
 
 目标 manifest：
@@ -613,9 +613,9 @@ apps/desktop/src/main/services/extension/sources/
 
 ## Public Types 与 Shared DTO
 
-### Extension API Registry Types
+### Extension Registry Package
 
-`packages/extension-api/src/registry/`：
+`packages/extension-registry/src/registry/`：
 
 ```text
 registry/
@@ -625,6 +625,8 @@ registry/
   artifact.ts
   integrity.ts
 ```
+
+`@kisaki/extension-registry` 导出 browser-safe 的 registry manifest、artifact 类型、validation 和 artifact target 选择。`@kisaki/extension-registry/node` 导出依赖 `node:crypto` / `node:buffer` 的 digest、canonical JSON 和 signer fingerprint helper。`@kisaki/extension-api` 不再导出 registry 协议，避免 extension runtime API 与分发仓库工具耦合。
 
 `artifact.ts` 只处理 artifact 层职责：artifact target 类型、当前平台 target、精确 target 与 `any` 的优先级选择，以及 artifact signature payload 生成。artifact URL、size、sha256、signature 结构校验放在 `validation.ts`；release `engines.kisaki`、channel、yanked、pin、signer trust 和更新候选排序不放在这里。
 
@@ -1166,11 +1168,11 @@ Renderer 显示：
 
 ### Phase 1：协议与公共类型
 
-1. 新增 `packages/extension-api/src/registry/`。
-2. 新增 `extension-registry.schema.json`。
+1. 新增 `packages/extension-registry/src/registry/`。
+2. 新增 `packages/extension-registry/schemas/extension-registry.schema.json`。
 3. 实现 manifest parser、unknown key 校验、semver 校验、artifact target 选择、release digest canonicalization。
 4. 实现 artifact identity envelope 生成和签名 payload 类型。
-5. 更新 `packages/extension-api/src/index.ts` 导出 registry 类型。
+5. `@kisaki/extension-registry` 导出 browser-safe registry 类型；`@kisaki/extension-registry/node` 导出 Node-only 完整性 helper。
 
 ### Phase 2：数据库与 shared 状态类型
 

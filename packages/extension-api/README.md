@@ -22,6 +22,7 @@ Package boundary:
 
 - `@kisaki/extension-api` defines the stable contracts for both capabilities and contributions.
 - `@kisaki/extension-sdk` keeps capability access lightweight and direct.
+- `@kisaki/extension-registry` owns distributed registry manifests, release artifacts, repository validation, and signing/digest helpers.
 - Runtime context services such as logger, storage, and secrets are separate from both capabilities and contributions.
 
 Manifest schema path:
