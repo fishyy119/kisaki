@@ -10,6 +10,8 @@ export interface CreateArchiveOptions {
   outDir: string
 }
 
+const PUBLISH_ARTIFACT_EXTENSIONS = new Set(['.kisx', '.sig'])
+
 /**
  * Creates a .kisx archive using the official extension package layout.
  */
@@ -34,12 +36,18 @@ export async function createKisxArchive(
 
     archive.pipe(output)
     archive.file(project.manifestPath, { name: 'manifest.json' })
-    archive.directory(project.distDir, 'dist')
+    archive.directory(project.distDir, 'dist', (entry) => {
+      return shouldIncludeDistEntry(entry.name) ? entry : false
+    })
 
     void addOptionalFiles(project, manifest, archive)
       .then(() => archive.finalize())
       .catch(reject)
   })
+}
+
+function shouldIncludeDistEntry(entryName: string): boolean {
+  return !PUBLISH_ARTIFACT_EXTENSIONS.has(path.extname(entryName).toLowerCase())
 }
 
 async function addOptionalFiles(

@@ -342,6 +342,12 @@ importers:
       '@kisaki/extension-api':
         specifier: workspace:*
         version: link:../extension-api
+      '@kisaki/extension-registry':
+        specifier: workspace:*
+        version: link:../extension-registry
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
@@ -358,6 +364,9 @@ importers:
         specifier: ^7.7.3
         version: 7.7.4
     devDependencies:
+      '@types/adm-zip':
+        specifier: ^0.5.7
+        version: 0.5.7
       '@types/archiver':
         specifier: ^6.0.4
         version: 6.0.4

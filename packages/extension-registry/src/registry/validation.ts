@@ -10,7 +10,8 @@ import {
   validateRequiredString,
   validateUnknownKeys
 } from '../shared/validation'
-import type { ExtensionRegistryManifest } from './manifest'
+import type { ExtensionRegistryArtifactTarget } from './artifact'
+import type { ExtensionRegistryManifest, ExtensionRegistryReleaseChannel } from './manifest'
 import {
   EXTENSION_REGISTRY_SCHEMA_VERSION,
   EXTENSION_REGISTRY_SIGNING_ALGORITHMS
@@ -72,6 +73,18 @@ const ARTIFACT_TARGET_PATTERN = /^(?:any|[a-z][a-z0-9]*-[a-z0-9][a-z0-9_-]*)$/
 const RELEASE_CHANNEL_PATTERN = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 const ISO_UTC_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
+
+export function matchesExtensionRegistryArtifactTargetFormat(
+  value: string
+): value is ExtensionRegistryArtifactTarget {
+  return ARTIFACT_TARGET_PATTERN.test(value)
+}
+
+export function matchesExtensionRegistryReleaseChannelFormat(
+  value: string
+): value is ExtensionRegistryReleaseChannel {
+  return RELEASE_CHANNEL_PATTERN.test(value)
+}
 
 export function validateExtensionRegistryManifestShape(
   value: unknown,
@@ -317,8 +330,19 @@ function validateRegistryPackage(
     })
   )
   if (Array.isArray(releases)) {
+    const seenReleaseVersions = new Set<string>()
     for (const [index, release] of releases.entries()) {
-      issues.push(...validateRelease(release, `${path}.releases[${index}]`, options))
+      const releasePath = `${path}.releases[${index}]`
+      issues.push(...validateRelease(release, releasePath, options))
+      issues.push(
+        ...trackUniqueStringProperty(
+          release,
+          'version',
+          `${releasePath}.version`,
+          seenReleaseVersions,
+          'Duplicate release version. Use semver prerelease identifiers for beta or nightly builds.'
+        )
+      )
     }
   }
 
@@ -406,8 +430,19 @@ function validateRelease(
     })
   )
   if (Array.isArray(artifacts)) {
+    const seenArtifactTargets = new Set<string>()
     for (const [index, artifact] of artifacts.entries()) {
-      issues.push(...validateArtifact(artifact, `${path}.artifacts[${index}]`, options))
+      const artifactPath = `${path}.artifacts[${index}]`
+      issues.push(...validateArtifact(artifact, artifactPath, options))
+      issues.push(
+        ...trackUniqueStringProperty(
+          artifact,
+          'target',
+          `${artifactPath}.target`,
+          seenArtifactTargets,
+          'Duplicate artifact target.'
+        )
+      )
     }
   }
 
@@ -602,7 +637,7 @@ function validateRequiredChannel(value: unknown, path: string): ValidationIssue[
     valueMessage: 'channel must be a non-empty string.'
   })
 
-  if (typeof value === 'string' && !RELEASE_CHANNEL_PATTERN.test(value)) {
+  if (typeof value === 'string' && !matchesExtensionRegistryReleaseChannelFormat(value)) {
     issues.push({
       path,
       message:
@@ -620,7 +655,7 @@ function validateRequiredArtifactTarget(value: unknown, path: string): Validatio
     valueMessage: 'target must be a non-empty string.'
   })
 
-  if (typeof value === 'string' && !ARTIFACT_TARGET_PATTERN.test(value)) {
+  if (typeof value === 'string' && !matchesExtensionRegistryArtifactTargetFormat(value)) {
     issues.push({
       path,
       message: 'target must be "any" or a platform-architecture pair such as "win32-x64".'

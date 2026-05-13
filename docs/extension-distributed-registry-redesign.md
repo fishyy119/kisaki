@@ -57,17 +57,17 @@ Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，�
 
 ## 术语
 
-| 术语              | 含义                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| Extension         | Kisaki 扩展包。用户文案可称“插件”，代码和公共类型统一使用 `Extension`。               |
-| Repository        | 用户配置的扩展仓库，一个仓库对应一个 manifest URL。                                   |
-| Registry manifest | 仓库 URL 返回的 JSON 文档，描述仓库元信息、扩展包和 release 列表。                    |
-| Package           | 一个扩展身份，例如 `bangumi`。同一 package 可以有多个 release。                       |
-| Release           | 一个 package 的某个版本，包含兼容范围、artifact、校验和、签名、发布时间和 changelog。 |
-| Artifact          | 可下载的 `.kisx` 文件。一个 release 可以有多个 artifact，用于不同平台或架构。         |
-| Catalog           | Main 进程聚合并规范化后的可发现扩展目录。                                             |
-| Installation      | 本机某个扩展的安装记录，指向当前 active release。                                     |
-| Signer trust      | 用户对某个扩展 signing key fingerprint 的本地信任选择。                               |
+| 术语              | 含义                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| Extension         | Kisaki 扩展包。用户文案可称“插件”，代码和公共类型统一使用 `Extension`。                         |
+| Repository        | 用户配置的扩展仓库，一个仓库对应一个 manifest URL。                                             |
+| Registry manifest | 仓库 URL 返回的 JSON 文档，描述仓库元信息、扩展包和 release 列表。                              |
+| Package           | 一个扩展身份，例如 `bangumi`。同一 package 可以有多个 release，但 `version` 必须唯一。          |
+| Release           | 一个 package 的某个版本，包含 channel、兼容范围、artifact、校验和、签名、发布时间和 changelog。 |
+| Artifact          | 可下载的 `.kisx` 文件。一个 release 可以有多个 artifact，用于不同平台或架构。                   |
+| Catalog           | Main 进程聚合并规范化后的可发现扩展目录。                                                       |
+| Installation      | 本机某个扩展的安装记录，指向当前 active release。                                               |
+| Signer trust      | 用户对某个扩展 signing key fingerprint 的本地信任选择。                                         |
 
 ## 核心结论
 
@@ -204,12 +204,12 @@ Package：
 
 Release：
 
-- `version` 必须是 semver。
-- `channel` 为 `stable`、`beta`、`nightly` 或自定义字符串；UI 默认只显示 `stable`。
+- `version` 必须是 semver，并且在同一 package 的 release 列表中唯一。`version` 是发布身份；beta、nightly、rc 等非稳定版本必须使用 semver prerelease 后缀，例如 `1.3.0-beta.1`、`1.3.0-nightly.4`。
+- `channel` 为 `stable`、`beta`、`nightly` 或自定义字符串；它只是更新轨道标签，不参与同一 package 内的 release 唯一性判断。UI 默认只显示 `stable`。
 - `engines.kisaki` 必须是 semver range。
 - `publishedAt` 必须是 ISO 8601 UTC 时间。
 - `yanked: true` 表示不再用于新安装和自动更新，但已安装版本仍可显示来源。
-- `artifacts` 至少包含一个 artifact。
+- `artifacts` 至少包含一个 artifact；同一 release 内每个 `target` 只能出现一次。
 - release 在 manifest 中不需要人工维护 id；客户端使用规范化 release identity 的 `sha256` 作为 `releaseDigest`，并把它作为本地 `releaseId`。
 - `releaseDigest` 只标识可安装内容和安装策略相关身份，不标识仓库展示元数据。参与 digest 的字段固定为：`schemaVersion`、`packageId`、`version`、`channel`、`engines.kisaki`、每个 artifact 的 `target`、`size`、`sha256`、签名算法、signer fingerprint 和 signature value。`repositoryId`、`repositoryUrl`、artifact `url`、`publishedAt`、`changelog`、`yanked`、package 展示字段不参与 digest。
 - 规范化 JSON 使用稳定规则：对象 key 按字典序排序，数组按协议语义排序；artifact 数组按 `target`、`sha256`、signer fingerprint 排序；所有字符串保留原值但去除协议明确要求去除的首尾空白；缺省可选字段不写入 canonical payload。
@@ -1094,8 +1094,10 @@ kisx registry validate registry/manifest.json
 - 计算 `.kisx` 的 `sha256` 和 size。
 - 读取可选 signature，并把 public key 信息写入 `signingKeys`。
 - 如果 manifest 中没有该 package，则创建 package。
-- 如果 package 已存在，则追加 release。
-- 如果同一 package 已存在相同 version，默认拒绝，除非传 `--replace`。
+- 如果 package 已存在且没有相同 version，则追加 release。
+- 如果同一 package 已存在相同 version，要求 channel 和 `engines.kisaki` 与既有 release 完全一致；不同平台 artifact 可以追加到同一 release。
+- 如果同一 release 已存在相同 artifact target，默认拒绝，除非传 `--replace` 替换该 target 的 artifact。
+- 如果想发布 beta、nightly 或新的兼容范围，必须发布新的 semver version，而不是复用既有 version 更换 channel 或 `engines.kisaki`。
 - 输出可部署的静态 `manifest.json`。
 
 CLI 输出：
