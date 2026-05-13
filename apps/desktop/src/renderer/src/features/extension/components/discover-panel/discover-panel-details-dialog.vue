@@ -231,11 +231,11 @@ function shortDigest(value: string | null | undefined): string {
                   <div>仓库：{{ release.repositoryName }}</div>
                   <div>发布时间：{{ formatDate(release.publishedAt) }}</div>
                   <div>Kisaki：{{ release.engines.kisaki }}</div>
-                  <div>包大小：{{ formatBytes(release.artifact?.size) }}</div>
-                  <div>包主机：{{ release.artifact?.host ?? '无' }}</div>
-                  <div>SHA256：{{ shortDigest(release.artifact?.sha256) }}</div>
-                  <div>签名：{{ release.artifact?.signature?.fingerprint ?? '无' }}</div>
-                  <div>Release：{{ shortDigest(release.releaseDigest) }}</div>
+                  <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
+                  <div>下载主机：{{ release.artifact?.host ?? '无' }}</div>
+                  <div>安装包 SHA256：{{ shortDigest(release.artifact?.sha256) }}</div>
+                  <div>签名指纹：{{ release.artifact?.signature?.fingerprint ?? '无' }}</div>
+                  <div>版本摘要：{{ shortDigest(release.releaseDigest) }}</div>
                 </div>
 
                 <p

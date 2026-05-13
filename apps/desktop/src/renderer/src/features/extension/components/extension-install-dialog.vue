@@ -58,7 +58,9 @@ const trustSignerFingerprint = ref(false)
 const isRepositoryInstall = computed(() => props.request !== null)
 const title = computed(() => (isRepositoryInstall.value ? '安装扩展' : '导入本地扩展'))
 const description = computed(() =>
-  isRepositoryInstall.value ? '检查版本、来源和签名后继续安装' : '选择本地 .kisx 文件并确认导入'
+  isRepositoryInstall.value
+    ? '检查版本、仓库来源和签名后继续安装'
+    : '选择本地 .kisx 文件并确认导入'
 )
 const canTrustSigner = computed(
   () => Boolean(plan.value?.signer.fingerprint) && plan.value?.signer.status !== 'unsigned'
@@ -299,7 +301,7 @@ function formatBytes(value: number | undefined): string {
                 </div>
                 <div class="mt-1 text-xs text-muted-foreground">
                   <template v-if="plan.repository">
-                    {{ plan.repository.name }} · {{ plan.artifact?.host ?? '无包主机' }}
+                    仓库：{{ plan.repository.name }} · 下载主机：{{ plan.artifact?.host ?? '无' }}
                   </template>
                   <template v-else> 本地文件 · {{ formatBytes(plan.localFile?.size) }} </template>
                 </div>
@@ -310,11 +312,11 @@ function formatBytes(value: number | undefined): string {
               <div>当前版本：{{ plan.package.currentVersion ?? '未安装' }}</div>
               <div>目标频道：{{ plan.package.channel }}</div>
               <div>
-                包 SHA256：{{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
+                安装包 SHA256：{{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
               </div>
-              <div>Manifest：{{ shortDigest(plan.repository?.manifestDigest) }}</div>
+              <div>清单摘要：{{ shortDigest(plan.repository?.manifestDigest) }}</div>
               <div>签名指纹：{{ plan.signer.fingerprint ?? '无' }}</div>
-              <div>包大小：{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</div>
+              <div>安装包大小：{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</div>
             </div>
           </div>
 

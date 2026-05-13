@@ -131,7 +131,7 @@ const filteredExtensions = computed(() => {
             class="size-16 mb-3 opacity-30"
           />
           <p class="font-medium">暂无已安装的扩展</p>
-          <p class="text-sm mt-1 text-muted-foreground/70">从"发现"页面安装扩展</p>
+          <p class="text-sm mt-1 text-muted-foreground/70">从“发现”页面安装扩展</p>
         </div>
       </template>
 

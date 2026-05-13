@@ -143,9 +143,9 @@ function isCancelledUpdateError(error: unknown): boolean {
               icon="icon-[mdi--source-repository]"
               class="size-4"
             />
-            <span>来源：{{ repositoryLabel }}</span>
+            <span>来源仓库：{{ repositoryLabel }}</span>
           </div>
-          <div class="break-all">Release：{{ releaseLabel }}</div>
+          <div class="break-all">版本摘要：{{ releaseLabel }}</div>
           <div
             class="flex items-center gap-2"
             :class="signerTone"

@@ -65,7 +65,7 @@ onUnmounted(() => {
 
 async function handleAddRepository() {
   if (!formData.value.url.trim()) {
-    notify.error('请输入仓库 Manifest URL')
+    notify.error('请输入仓库清单 URL')
     return
   }
 
@@ -313,7 +313,7 @@ function shortDigest(value: string | null): string {
               >
                 <div>优先级：{{ repository.priority }}</div>
                 <div>包数量：{{ repository.packageCount }}</div>
-                <div>Manifest：{{ shortDigest(repository.manifestDigest) }}</div>
+                <div>清单摘要：{{ shortDigest(repository.manifestDigest) }}</div>
                 <div>更新时间：{{ formatDate(repository.manifestUpdatedAt) }}</div>
                 <div>上次刷新：{{ formatDate(repository.lastRefreshAt) }}</div>
                 <div>上次成功：{{ formatDate(repository.lastSuccessAt) }}</div>
@@ -401,7 +401,7 @@ function shortDigest(value: string | null): string {
         </DialogHeader>
         <DialogBody class="space-y-3">
           <div class="space-y-1.5">
-            <label class="text-xs text-muted-foreground">Manifest URL</label>
+            <label class="text-xs text-muted-foreground">仓库清单 URL</label>
             <Input
               v-model="formData.url"
               placeholder="https://example.com/extensions/manifest.json"
@@ -412,7 +412,7 @@ function shortDigest(value: string | null): string {
             <label class="text-xs text-muted-foreground">显示名称</label>
             <Input
               v-model="formData.name"
-              placeholder="留空使用仓库 manifest 名称"
+              placeholder="留空使用仓库清单名称"
               @keydown.enter="handleAddRepository"
             />
           </div>
