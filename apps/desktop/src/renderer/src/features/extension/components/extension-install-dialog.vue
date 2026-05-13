@@ -63,7 +63,10 @@ const description = computed(() =>
     : '选择本地 .kisx 文件并确认导入'
 )
 const canTrustSigner = computed(
-  () => Boolean(plan.value?.signer.fingerprint) && plan.value?.signer.status !== 'unsigned'
+  () =>
+    Boolean(plan.value?.signer.fingerprint) &&
+    plan.value?.signer.status !== 'unsigned' &&
+    plan.value?.signer.status !== 'trusted'
 )
 const riskVariant = computed(() => {
   if (!plan.value?.risks.some((risk) => risk.severity === 'danger')) {
@@ -348,7 +351,10 @@ function formatBytes(value: number | undefined): string {
               <Switch v-model="enabled" />
             </label>
 
-            <div class="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+            <div
+              v-if="isRepositoryInstall"
+              class="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+            >
               <span class="text-sm shrink-0">更新策略</span>
               <Select v-model="updatePolicy">
                 <SelectTrigger
@@ -364,6 +370,14 @@ function formatBytes(value: number | undefined): string {
                   <SelectItem value="pinned">固定</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div
+              v-else
+              class="flex items-center justify-between rounded-md border border-border px-3 py-2"
+            >
+              <span class="text-sm">更新策略</span>
+              <Badge variant="secondary">手动</Badge>
             </div>
 
             <label

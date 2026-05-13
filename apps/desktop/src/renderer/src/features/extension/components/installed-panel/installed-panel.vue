@@ -35,7 +35,7 @@ const {
 } = useAsyncData(
   async () => {
     const [catalog] = await Promise.all([
-      ipcManager.invoke('extension:get-catalog').then(unwrapIpcData),
+      ipcManager.invoke('extension:get-installed-packages').then(unwrapIpcData),
       refreshExtensionContributionSnapshot()
     ])
     return catalog

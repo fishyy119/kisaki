@@ -48,7 +48,7 @@ import type {
 } from '@kisaki/extension-registry'
 import type { ExtensionInstallationSource } from './installation-source'
 
-export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package' | 'orphaned'
+export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package'
 
 export type InstalledExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
 
@@ -159,6 +159,20 @@ export interface ExtensionRepositoryRefreshResult {
   status: ExtensionRepositoryRefreshStatus
   changed: boolean
   error: string | null
+}
+
+export interface ExtensionTrustedSignerInfo {
+  id: string
+  extensionId: string
+  fingerprint: string
+  algorithm: ExtensionRegistrySigningAlgorithm
+  publicKey: string
+  label: string | null
+  trustedFromRepositoryId: string | null
+  trustedFromRepositoryUrl: string | null
+  trustedAt: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ExtensionCatalogSearchRequest {

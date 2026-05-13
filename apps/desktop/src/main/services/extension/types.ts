@@ -26,7 +26,7 @@ export interface ScannedExtensionPackage {
   issues: readonly ValidationIssue[]
 }
 
-export type ExtensionCatalogStatus = 'ready' | 'invalid' | 'missing-package' | 'orphaned'
+export type ExtensionCatalogStatus = 'ready' | 'invalid' | 'missing-package'
 
 export interface ExtensionCatalogEntry {
   builtin: boolean

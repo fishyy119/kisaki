@@ -32,7 +32,8 @@ import {
   ExtensionDiscoverPage,
   ExtensionInstalledPage,
   ExtensionLayout,
-  ExtensionRepositoriesPage
+  ExtensionRepositoriesPage,
+  ExtensionSignersPage
 } from '@renderer/features/extension'
 
 // Statistics pages
@@ -187,6 +188,11 @@ const routes: RouteRecordRaw[] = [
         path: 'repositories',
         name: 'extension-repositories',
         component: ExtensionRepositoriesPage
+      },
+      {
+        path: 'signers',
+        name: 'extension-signers',
+        component: ExtensionSignersPage
       }
     ]
   },

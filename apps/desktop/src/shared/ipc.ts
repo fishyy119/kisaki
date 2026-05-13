@@ -88,6 +88,7 @@ import type {
   ExtensionSettingsPanelReleaseRequest,
   ExtensionSettingsPanelSubmitRequest,
   ExtensionThemeRegistrationInfo,
+  ExtensionTrustedSignerInfo,
   ExtensionUpdateAllResult,
   ExtensionUpdateCheckResult,
   ExtensionUpdatePolicyRequest,
@@ -446,7 +447,9 @@ export interface IpcMainHandlers {
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
-  'extension:get-catalog': () => IpcResult<ExtensionInstalledPackageInfo[]>
+  'extension:get-installed-packages': () => IpcResult<ExtensionInstalledPackageInfo[]>
+  'extension:list-trusted-signers': () => IpcResult<readonly ExtensionTrustedSignerInfo[]>
+  'extension:remove-trusted-signer': (trustedSignerId: string) => IpcVoidResult
   'extension:list-repositories': () => IpcResult<readonly ExtensionRepositoryInfo[]>
   'extension:add-repository': (
     request: ExtensionRepositoryCreateRequest
@@ -533,6 +536,7 @@ export interface IpcRendererEvents {
   'extension:repositories-changed': []
   'extension:catalog-changed': []
   'extension:installations-changed': []
+  'extension:trusted-signers-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
   'extension:settings-panels-refresh-requested': [
     event: ExtensionSettingsPanelRefreshRequestedEvent

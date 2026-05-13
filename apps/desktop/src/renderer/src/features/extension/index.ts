@@ -2,5 +2,6 @@ export {
   ExtensionDiscoverPage,
   ExtensionInstalledPage,
   ExtensionLayout,
-  ExtensionRepositoriesPage
+  ExtensionRepositoriesPage,
+  ExtensionSignersPage
 } from './pages'

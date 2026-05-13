@@ -9,9 +9,9 @@ import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionInstallationStore } from './store'
 
 /**
- * Builds the installed-extension view from SQLite installation facts and
- * package manifests. Filesystem state is diagnostic; DB rows decide whether a
- * user-managed extension is installed.
+ * Builds the installed-extension view from built-in packages and SQLite
+ * installation facts. Filesystem state is diagnostic; DB rows decide whether a
+ * user-managed extension exists in the installed view.
  */
 export class ExtensionInstallationCatalog {
   private snapshot: readonly ExtensionCatalogEntry[] = []
@@ -32,7 +32,6 @@ export class ExtensionInstallationCatalog {
     ])
 
     const nextEntries = new Map<string, ExtensionCatalogEntry>()
-    const linkedPackageIds = new Set<string>()
     const builtinIds = new Set<string>()
 
     for (const packageRecord of builtinPackages) {
@@ -47,27 +46,11 @@ export class ExtensionInstallationCatalog {
       }
 
       const packageRecord = findPackageRecord(installedPackages, installation.id)
-      if (packageRecord) {
-        linkedPackageIds.add(packageRecord.directoryName)
-      }
 
       nextEntries.set(
         installation.id,
         buildCatalogEntry(this.layout, installation.id, installation, packageRecord)
       )
-    }
-
-    for (const packageRecord of installedPackages) {
-      if (linkedPackageIds.has(packageRecord.directoryName)) {
-        continue
-      }
-
-      if (builtinIds.has(packageRecord.id) || builtinIds.has(packageRecord.directoryName)) {
-        continue
-      }
-
-      const orphanedEntry = buildCatalogEntry(this.layout, packageRecord.id, null, packageRecord)
-      nextEntries.set(createOrphanedMapKey(packageRecord), orphanedEntry)
     }
 
     const sortedEntries = [...nextEntries.values()].sort(compareCatalogEntries)
@@ -221,7 +204,7 @@ function buildCatalogEntry(
   }
 
   const hasIssues = issues.length > 0
-  const status = getPackageCatalogStatus({ builtin, hasIssues, registered: installation !== null })
+  const status = getPackageCatalogStatus({ builtin, hasIssues })
   const manifest = pkg.manifest
 
   return {
@@ -250,14 +233,9 @@ function buildCatalogEntry(
 function getPackageCatalogStatus(options: {
   builtin: boolean
   hasIssues: boolean
-  registered: boolean
 }): ExtensionCatalogEntry['status'] {
   if (options.builtin) {
     return options.hasIssues ? 'invalid' : 'ready'
-  }
-
-  if (!options.registered) {
-    return 'orphaned'
   }
 
   return options.hasIssues ? 'invalid' : 'ready'
@@ -282,8 +260,6 @@ function getStatusWeight(status: ExtensionCatalogEntry['status']): number {
       return 1
     case 'missing-package':
       return 2
-    case 'orphaned':
-      return 3
   }
 }
 
@@ -292,16 +268,12 @@ function findPackageRecord(
   extensionId: string
 ): ScannedExtensionPackage | null {
   for (const packageRecord of packages) {
-    if (packageRecord.directoryName === extensionId || packageRecord.id === extensionId) {
+    if (packageRecord.directoryName === extensionId) {
       return packageRecord
     }
   }
 
   return null
-}
-
-function createOrphanedMapKey(pkg: ScannedExtensionPackage): string {
-  return pkg.id === pkg.directoryName ? pkg.id : `${pkg.id}::${pkg.directoryName}`
 }
 
 function formatIssue(issue: ValidationIssue): string {

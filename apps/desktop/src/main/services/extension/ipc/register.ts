@@ -165,7 +165,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     }
   })
 
-  ipc.handle('extension:get-catalog', async () => {
+  ipc.handle('extension:get-installed-packages', async () => {
     try {
       await service.refreshCatalog()
       return {
@@ -174,6 +174,26 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
           .getCatalog()
           .map((entry) => toExtensionInstalledPackageInfo(entry, service.getRuntimeState(entry.id)))
       }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:list-trusted-signers', () => {
+    try {
+      return {
+        success: true,
+        data: service.listTrustedSigners()
+      }
+    } catch (error) {
+      return { success: false, error: toErrorMessage(error) }
+    }
+  })
+
+  ipc.handle('extension:remove-trusted-signer', async (_, trustedSignerId: string) => {
+    try {
+      await service.removeTrustedSigner(requireNonEmptyString(trustedSignerId, 'trustedSignerId'))
+      return { success: true }
     } catch (error) {
       return { success: false, error: toErrorMessage(error) }
     }

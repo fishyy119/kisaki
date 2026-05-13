@@ -83,8 +83,6 @@ const statusLabel = computed(() => {
       return '包无效'
     case 'missing-package':
       return '包缺失'
-    case 'orphaned':
-      return '未登记'
   }
 
   return null

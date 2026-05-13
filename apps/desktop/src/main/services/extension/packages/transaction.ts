@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
 import { and, eq } from 'drizzle-orm'
@@ -18,7 +19,7 @@ import { ExtensionSignerTrustStore } from '../signers/store'
 import { ExtensionInstallationStore } from '../installations/store'
 import type { ExtensionPackageLayout } from './layout'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
-import { assertInsideRoot } from '../shared/path-confinement'
+import { assertInsideRoot, resolveInsideRoot } from '../shared/path-confinement'
 import { wrapExtensionPackageError } from './types'
 
 export interface ExtensionPackageInstallationWrite {
@@ -65,11 +66,17 @@ export interface ExtensionPackageRecoveryResult {
 export type ExtensionPackageRecoveryAction =
   | { type: 'pruned-download'; path: string }
   | { type: 'pruned-staging'; path: string }
+  | { type: 'pruned-quarantine'; path: string }
   | { type: 'restored-backup'; extensionId: string; path: string }
   | { type: 'restored-trash'; extensionId: string; path: string }
   | { type: 'removed-backup'; path: string }
   | { type: 'removed-trash'; path: string }
-  | { type: 'removed-orphan-package'; extensionId: string | null; path: string }
+  | {
+      type: 'quarantined-untracked-package'
+      extensionId: string | null
+      path: string
+      quarantinePath: string
+    }
 
 export class ExtensionPackageTransaction {
   constructor(
@@ -295,6 +302,9 @@ export class ExtensionPackageTransaction {
     await this.pruneDirectoryChildren(this.layout.stagingDir, (entryPath) => {
       actions.push({ type: 'pruned-staging', path: entryPath })
     })
+    await this.pruneDirectoryChildren(this.layout.quarantineDir, (entryPath) => {
+      actions.push({ type: 'pruned-quarantine', path: entryPath })
+    })
 
     const installations = new ExtensionInstallationStore(this.db).list()
     const installationIds = new Set(installations.map((row) => row.id))
@@ -307,11 +317,16 @@ export class ExtensionPackageTransaction {
         continue
       }
 
-      await fse.remove(activePackage.path)
+      const quarantinePath = resolveInsideRoot(
+        this.layout.quarantineDir,
+        createQuarantineDirectoryName(activePackage)
+      )
+      await fse.move(activePackage.path, quarantinePath, { overwrite: false })
       actions.push({
-        type: 'removed-orphan-package',
+        type: 'quarantined-untracked-package',
         extensionId: activePackage.extensionId,
-        path: activePackage.path
+        path: activePackage.path,
+        quarantinePath
       })
     }
 
@@ -646,4 +661,14 @@ function createCleanupPaths(
     assertInsideRoot(entryPath, layout.operationsDir)
   }
   return uniquePaths
+}
+
+function createQuarantineDirectoryName(pkg: PackageDirectoryInfo): string {
+  const hint = createSafeDirectoryHint(pkg.extensionId ?? pkg.directoryName)
+  return `${Date.now()}-${randomUUID()}-${hint}`
+}
+
+function createSafeDirectoryHint(value: string): string {
+  const normalized = value.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '')
+  return (normalized || 'package').slice(0, 64)
 }

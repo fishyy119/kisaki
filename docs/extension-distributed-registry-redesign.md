@@ -723,8 +723,6 @@ extension:list-trusted-signers
 extension:remove-trusted-signer
 
 extension:search-catalog
-extension:get-catalog-package
-extension:list-catalog-releases
 
 extension:create-install-plan
 extension:install-release
@@ -746,6 +744,7 @@ Main to renderer events：
 extension:repositories-changed
 extension:catalog-changed
 extension:installations-changed
+extension:trusted-signers-changed
 ```
 
 保留贡献点相关事件：
@@ -766,7 +765,7 @@ IPC handler 规则：
 - 下载必须可中断。`install-release` 和 `update` request 携带 `operationId`，main 在等待 mutation mutex 前创建 operation record，并用 `ExtensionPackageOperationRegistry` 保存 `AbortController`。
 - `extension:cancel-operation(operationId)` 不获取 extension mutation mutex，只标记 abort 并中断当前可取消阶段。
 - 可取消阶段：等待 mutation mutex、下载、hash 计算和解压前准备。不可取消阶段：文件移动、SQLite transaction、runtime reconcile；进入不可取消阶段后只能完成或失败回滚。
-- 安装相关 temp 使用 `userData/extensions/temp/operations` 下的 `downloads`、`staging`、`backups` 和 `trash` 结构。每次操作在 `finally` 中清理本 operation 目录；应用启动时执行一次 transaction recovery，再 prune stale downloads/staging，并按 DB 和 package 目录复核 backups/trash。
+- 安装相关 temp 使用 `userData/extensions/temp/operations` 下的 `downloads`、`staging`、`backups`、`trash` 和 `quarantine` 结构。每次操作在 `finally` 中清理本 operation 目录；应用启动时执行一次 transaction recovery，再 prune stale downloads/staging/quarantine，并按 DB 和 package 目录复核 backups/trash。
 
 Transaction recovery 规则：
 
@@ -774,7 +773,7 @@ Transaction recovery 规则：
 - 提交阶段不写额外 operation JSON。`ExtensionPackageTransaction` 的内存 rollback context 只在当前进程内用于失败回滚；应用崩溃后不尝试恢复内存意图。
 - 启动恢复以 SQLite installation 为事实来源：DB 记录存在且 `packages/<id>` manifest 与 DB version 一致时，视为 committed，清理同 extension 的 stale backup。
 - DB 记录存在但 `packages/<id>` 缺失或无效时，如果 `backups/*` 中存在同 extension 且版本等于 DB version 的有效包，则恢复该 backup；否则 installed catalog 返回 missing/invalid issue，Runtime 不加载。
-- DB 记录不存在但 `packages/<id>` 存在时，视为 orphan package，不自动安装、不自动删除，由 installed catalog 暴露 issue。
+- DB 记录不存在但 `packages/<id>` 存在时，视为 active package 残留，移动到 `quarantine/`，不进入 installed catalog，也不参与 enable/update/uninstall。SQLite installation 是用户可见安装状态的唯一事实来源。
 - `backups/*` 中的包如果对应 extension 已有有效 active package，直接清理；`trash/*` 中的包如果 DB 已无对应 installation，直接清理。
 - 如果 DB 已提交新版本且 package 有效，即使崩溃发生在 runtime reconcile 前，启动后也按已安装版本加载；runtime 启动失败作为 runtime status/issue 暴露，不做跨进程自动回滚。
 - 签名、sha256、包内 manifest 仍必须从 manifest snapshot、安装记录和 package 文件重新校验；backup/trash/staging 目录从不作为安全信任来源。
@@ -877,6 +876,7 @@ Transaction recovery 规则：
 - 必须计算 `sha256`。
 - 允许 unsigned，但 UI 明确显示“本地 unsigned”。
 - 默认 update policy 为 `manual`。
+- Renderer 对本地导入只展示手动更新策略，不允许选择 repository update policy。
 - source kind 为 `local-file`。
 - 如果后续用户想接收更新，必须手动绑定到某个 repository release。绑定流程会校验 extension id、当前 version、artifact sha256 和签名状态。
 
@@ -1218,6 +1218,7 @@ Renderer 显示：
 4. 新增 package details / release list。
 5. 新增 renderer `install-dialog`、`update-dialog` 和 `uninstall-dialog`，替代主进程原生确认 dialog。
 6. 显示仓库健康、签名状态、兼容状态和 icon 代理结果。
+7. 新增签名信任页，接入 `extension:list-trusted-signers` 和 `extension:remove-trusted-signer`。
 
 ### Phase 7：更新策略
 
@@ -1295,7 +1296,7 @@ rg -n "provider.*locator|locator.*provider" apps/desktop/src/main/services/exten
 
 ```powershell
 rg -n "ExtensionRegistryManifest|ExtensionRegistryRelease|ExtensionRegistryArtifact" packages/extension-api apps docs
-rg -n "extension:search-catalog|extension:list-repositories|extension:add-repository|extension:update-repository|extension:remove-repository|extension:refresh-repository|extension:refresh-repositories|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
+rg -n "extension:search-catalog|extension:get-installed-packages|extension:list-repositories|extension:add-repository|extension:update-repository|extension:remove-repository|extension:refresh-repository|extension:refresh-repositories|extension:list-trusted-signers|extension:remove-trusted-signer|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
 rg -n "ExtensionRepositoryManager|ExtensionPackageInstaller|ExtensionUpdatePlanner|ExtensionSignerTrustManager" apps/desktop/src/main/services/extension
 rg -n "ExtensionPackageTransaction|ExtensionIconManager" apps/desktop/src/main/services/extension
 rg -n "extension_repositories|extension_installations|extension_signer_trusts" apps/desktop/src/shared/db apps/desktop/drizzle

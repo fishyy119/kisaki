@@ -38,11 +38,13 @@ import type {
   ExtensionSettingsPanelReleaseRequest,
   ExtensionSettingsPanelSubmitRequest,
   ExtensionThemeRegistrationInfo,
+  ExtensionTrustedSignerInfo,
   ExtensionUpdateAllResult,
   ExtensionUpdateCheckResult,
   ExtensionUpdatePolicyRequest,
   ExtensionUpdateRequest
 } from '@shared/extension'
+import type { ExtensionSignerTrustRow } from '@shared/db'
 import type { ExtensionCatalogEntry, ExtensionServicePaths } from './types'
 import { createExtensionRuntimeMetadata } from './types'
 import { ExtensionInstallPlanner } from './installer/planner'
@@ -271,6 +273,21 @@ export class ExtensionService implements IService {
 
   refreshRepositories(): Promise<readonly ExtensionRepositoryRefreshResult[]> {
     return this.repositoryManager.refreshRepositories()
+  }
+
+  listTrustedSigners(): readonly ExtensionTrustedSignerInfo[] {
+    return this.signerTrustManager.list().map(toExtensionTrustedSignerInfo)
+  }
+
+  async removeTrustedSigner(trustedSignerId: string): Promise<void> {
+    await this.runMutatingOperation(async () => {
+      const removed = this.signerTrustManager.remove(trustedSignerId)
+      if (!removed) {
+        throw new Error(`Trusted signer "${trustedSignerId}" does not exist.`)
+      }
+
+      this.emitTrustedSignersChanged()
+    })
   }
 
   searchCatalog(request: ExtensionCatalogSearchRequest = {}): ExtensionCatalogSearchResult {
@@ -756,6 +773,9 @@ export class ExtensionService implements IService {
       }
       await handle.commit()
       this.emitInstallationsChanged()
+      if (signerTrusts.length > 0) {
+        this.emitTrustedSignersChanged()
+      }
       return this.requireCatalogEntry(extensionId)
     } catch (error) {
       await handle.rollback().catch((rollbackError) => {
@@ -886,6 +906,9 @@ export class ExtensionService implements IService {
       }
       await handle.commit()
       this.emitInstallationsChanged()
+      if (signerTrusts.length > 0) {
+        this.emitTrustedSignersChanged()
+      }
       return this.requireCatalogEntry(extensionId)
     } catch (error) {
       if (handle) {
@@ -1214,6 +1237,10 @@ export class ExtensionService implements IService {
     this.ipc.send('extension:catalog-changed')
   }
 
+  private emitTrustedSignersChanged(): void {
+    this.ipc.send('extension:trusted-signers-changed')
+  }
+
   private async recoverPackageOperations(): Promise<void> {
     const recovery = await this.packageTransaction.recover()
 
@@ -1236,4 +1263,25 @@ function resolveBuiltinExtensionPackagesDir(): string {
   }
 
   return resolveInsideRoot(app.getAppPath(), 'out', 'extensions')
+}
+
+function toExtensionTrustedSignerInfo(row: ExtensionSignerTrustRow): ExtensionTrustedSignerInfo {
+  return {
+    id: row.id,
+    extensionId: row.extensionId,
+    fingerprint: row.fingerprint,
+    algorithm: row.algorithm,
+    publicKey: row.publicKey,
+    label: row.label,
+    trustedFromRepositoryId: row.trustedFromRepositoryId,
+    trustedFromRepositoryUrl: row.trustedFromRepositoryUrl,
+    trustedAt: toIsoString(row.trustedAt),
+    createdAt: toIsoString(row.createdAt),
+    updatedAt: toIsoString(row.updatedAt)
+  }
+}
+
+function toIsoString(value: Date | number | string): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.valueOf()) ? new Date(0).toISOString() : date.toISOString()
 }

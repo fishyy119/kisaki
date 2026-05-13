@@ -31,6 +31,7 @@ export class ExtensionPackageLayout {
   readonly stagingDir: string
   readonly backupsDir: string
   readonly trashDir: string
+  readonly quarantineDir: string
 
   constructor(
     paths: Pick<
@@ -52,6 +53,7 @@ export class ExtensionPackageLayout {
     this.stagingDir = resolveInsideRoot(this.operationsDir, 'staging')
     this.backupsDir = resolveInsideRoot(this.operationsDir, 'backups')
     this.trashDir = resolveInsideRoot(this.operationsDir, 'trash')
+    this.quarantineDir = resolveInsideRoot(this.operationsDir, 'quarantine')
   }
 
   async ensureBaseDirectories(): Promise<void> {
@@ -62,7 +64,8 @@ export class ExtensionPackageLayout {
       fse.ensureDir(this.downloadsDir),
       fse.ensureDir(this.stagingDir),
       fse.ensureDir(this.backupsDir),
-      fse.ensureDir(this.trashDir)
+      fse.ensureDir(this.trashDir),
+      fse.ensureDir(this.quarantineDir)
     ])
   }
 

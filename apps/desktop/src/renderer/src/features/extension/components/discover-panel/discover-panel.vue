@@ -75,7 +75,7 @@ const {
   immediate: true
 })
 const { data: catalog, refetch: refetchCatalog } = useAsyncData(
-  async () => unwrapIpcData(await ipcManager.invoke('extension:get-catalog')),
+  async () => unwrapIpcData(await ipcManager.invoke('extension:get-installed-packages')),
   {
     immediate: true
   }
