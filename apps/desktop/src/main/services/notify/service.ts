@@ -12,6 +12,7 @@ import type { IService, ServiceInitContainer, ServiceName } from '@main/containe
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
 import type { NotifyOptions, NotifyFunction } from '@shared/notify'
+import { registerNotifyIpc } from './ipc'
 
 export class NotifyService implements IService {
   readonly id = 'notify'
@@ -25,21 +26,9 @@ export class NotifyService implements IService {
     this.ipcService = container.get('ipc')
     this.windowService = container.get('window')
 
-    this.setupIpcHandlers()
+    registerNotifyIpc(this, this.ipcService)
     this._notify = this.createNotify()
     log.info('[NotifyService] Initialized')
-  }
-
-  private setupIpcHandlers(): void {
-    // Renderer requests native notification
-    this.ipcService.on('notify:native', (_, options) => {
-      this.showNative(options)
-    })
-
-    // Renderer requests auto notification
-    this.ipcService.on('notify:auto', (_, options) => {
-      this.handleAuto(options)
-    })
   }
 
   /**
@@ -91,7 +80,7 @@ export class NotifyService implements IService {
     }
   }
 
-  private handleAuto(options: NotifyOptions, toastId?: string): string | undefined {
+  handleAuto(options: NotifyOptions, toastId?: string): string | undefined {
     const isFocused = this.windowService.isMainWindowFocused()
     if (isFocused) {
       return this.forwardToRenderer(options, toastId)
@@ -101,7 +90,7 @@ export class NotifyService implements IService {
     }
   }
 
-  private showNative(options: NotifyOptions): void {
+  showNative(options: NotifyOptions): void {
     const notification = new Notification({
       title: options.title,
       body: options.message

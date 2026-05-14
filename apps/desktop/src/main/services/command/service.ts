@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import log from 'electron-log/main'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { IpcService } from '@main/services/ipc'
 import type {
   CommandDescriptor,
   CommandExecutionRequest,
@@ -10,6 +9,7 @@ import type {
   CommandExecutionStartResult,
   CommandListItem
 } from '@shared/command'
+import { registerCommandIpc } from './ipc'
 
 const COMPLETED_EXECUTION_LIMIT = 100
 
@@ -46,14 +46,12 @@ export class CommandService implements IService {
   readonly id = 'command'
   readonly deps = ['ipc'] as const satisfies readonly ServiceName[]
 
-  private ipc!: IpcService
   private readonly commands = new Map<string, CommandRegistrationRecord>()
   private readonly activeExecutions = new Map<string, ActiveCommandExecution>()
   private readonly completedExecutions = new Map<string, CommandExecutionResult>()
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
-    this.ipc = container.get('ipc')
-    this.setupIpcHandlers()
+    registerCommandIpc(this, container.get('ipc'))
     log.info('[CommandService] Initialized')
   }
 
@@ -219,54 +217,6 @@ export class CommandService implements IService {
 
     execution.controller.abort()
     return true
-  }
-
-  private setupIpcHandlers(): void {
-    this.ipc.handle('command:list', async () => {
-      try {
-        return { success: true as const, data: this.list() }
-      } catch (error) {
-        log.error('[CommandService] command:list failed:', error)
-        return { success: false as const, error: 'Could not list commands' }
-      }
-    })
-
-    this.ipc.handle('command:start', async (_, request) => {
-      try {
-        return { success: true as const, data: this.start(request) }
-      } catch (error) {
-        log.error('[CommandService] command:start failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('command:wait', async (_, executionId) => {
-      try {
-        return { success: true as const, data: await this.wait(executionId) }
-      } catch (error) {
-        log.error('[CommandService] command:wait failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('command:execute', async (_, request) => {
-      try {
-        const data = await this.execute(request)
-        return { success: true as const, data }
-      } catch (error) {
-        log.error('[CommandService] command:execute failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('command:cancel', async (_, executionId) => {
-      try {
-        return { success: true as const, data: this.cancel(executionId) }
-      } catch (error) {
-        log.error('[CommandService] command:cancel failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
   }
 
   private isCommandRunning(commandId: string): boolean {

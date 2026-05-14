@@ -12,13 +12,11 @@
 
 import type Database from 'better-sqlite3'
 import log from 'electron-log/main'
+import type { FtsEntityType } from '@shared/db/fts'
 
 // =============================================================================
 // Types
 // =============================================================================
-
-/** Entity types that support FTS */
-export type FtsEntityType = 'game' | 'character' | 'person' | 'company'
 
 /** FTS table configuration */
 interface FtsTableConfig {

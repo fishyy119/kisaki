@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import log from 'electron-log/main'
@@ -22,6 +23,7 @@ import type {
   ExtensionInstallFromFileRequest,
   ExtensionInstallPlan,
   ExtensionInstallReleaseRequest,
+  ExtensionInstalledPackageInfo,
   ExtensionPurgeDataRequest,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
@@ -84,7 +86,11 @@ import {
 import { ExtensionUpdatePlanner, type ExtensionUpdatePlan } from './updates'
 import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions/registry'
-import { readExtensionManifestFile, validateInstalledExtensionPackage } from './packages/manifest'
+import {
+  readExtensionManifestFile,
+  resolveExtensionFilePath,
+  validateInstalledExtensionPackage
+} from './packages/manifest'
 import { requireSafeExtensionId, resolveInsideRoot } from './shared/path-confinement'
 
 /**
@@ -264,6 +270,13 @@ export class ExtensionService implements IService {
 
   getInstalledEntries(): readonly ExtensionInstalledEntry[] {
     return this.installedEntries
+  }
+
+  async listInstalledPackageInfo(): Promise<ExtensionInstalledPackageInfo[]> {
+    await this.refreshInstalledPackages()
+    return this.installedEntries.map((entry) =>
+      toExtensionInstalledPackageInfo(entry, this.getRuntimeState(entry.id))
+    )
   }
 
   listRepositories(): readonly ExtensionRepositoryInfo[] {
@@ -1311,6 +1324,42 @@ function toExtensionTrustedSignerInfo(row: ExtensionSignerTrustRow): ExtensionTr
     trustedAt: toIsoString(row.trustedAt),
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt)
+  }
+}
+
+function toExtensionInstalledPackageInfo(
+  entry: ExtensionInstalledEntry,
+  runtimeState: ExtensionRuntimeState | null
+): ExtensionInstalledPackageInfo {
+  const runtimeStatus =
+    entry.enabled && entry.status === 'ready' ? (runtimeState?.status ?? 'stopped') : 'stopped'
+  const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
+  const runtimeDiagnostics =
+    entry.enabled && entry.status === 'ready' ? (runtimeState?.diagnostics ?? []) : []
+
+  return {
+    builtin: entry.builtin,
+    id: entry.id,
+    name: entry.manifest?.name ?? entry.id,
+    version: entry.version,
+    description: entry.manifest?.description,
+    author: entry.manifest?.author,
+    homepage: entry.manifest?.homepage,
+    iconUrl: entry.manifest?.icon
+      ? pathToFileURL(resolveExtensionFilePath(entry.packagePath, entry.manifest.icon)).toString()
+      : undefined,
+    categories: entry.categories,
+    enabled: entry.enabled,
+    status: entry.status,
+    runtimeStatus,
+    runtimeError,
+    runtimeDiagnostics,
+    installationSource: entry.source,
+    updatePolicy: entry.updatePolicy ?? undefined,
+    pinnedVersion: entry.pinnedVersion,
+    channel: entry.channel,
+    directory: entry.packagePath,
+    issues: entry.issues
   }
 }
 

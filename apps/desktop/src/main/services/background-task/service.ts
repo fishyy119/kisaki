@@ -5,7 +5,6 @@ import type { IService, ServiceInitContainer, ServiceName } from '@main/containe
 import type { CommandService } from '@main/services/command'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
-import type { IpcService } from '@main/services/ipc'
 import type {
   BackgroundTask,
   BackgroundTaskCreateInput,
@@ -15,6 +14,7 @@ import type {
   BackgroundTaskUpdateInput
 } from '@shared/background-task'
 import { backgroundTasks, type BackgroundTaskRow, type NewBackgroundTaskRow } from '@shared/db'
+import { registerBackgroundTaskIpc } from './ipc'
 
 const HISTORY_LIMIT = 50
 const DEFAULT_RETRY_DELAY_MS = 5_000
@@ -25,7 +25,6 @@ export class BackgroundTaskService implements IService {
   readonly deps = ['db', 'ipc', 'event', 'command'] as const satisfies readonly ServiceName[]
 
   private db!: DbService
-  private ipc!: IpcService
   private event!: EventService
   private command!: CommandService
   private readonly tasks = new Map<string, BackgroundTask>()
@@ -38,12 +37,11 @@ export class BackgroundTaskService implements IService {
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.db = container.get('db')
-    this.ipc = container.get('ipc')
     this.event = container.get('event')
     this.command = container.get('command')
 
     this.load()
-    this.setupIpcHandlers()
+    registerBackgroundTaskIpc(this, container.get('ipc'))
     this.unsubscribeAppReady = this.event.on('app:ready', () => {
       void this.runStartupTasks().catch((error) => {
         log.error('[BackgroundTaskService] Startup tasks failed:', error)
@@ -280,78 +278,6 @@ export class BackgroundTaskService implements IService {
 
     this.tasks.set(taskId, nextTask)
     this.persistTask(nextTask)
-  }
-
-  private setupIpcHandlers(): void {
-    this.ipc.handle('background-task:list', async () => {
-      try {
-        return { success: true as const, data: this.list() }
-      } catch (error) {
-        log.error('[BackgroundTaskService] background-task:list failed:', error)
-        return { success: false as const, error: 'Could not list background tasks' }
-      }
-    })
-
-    this.ipc.handle('background-task:get', async (_, taskId) => {
-      try {
-        return { success: true as const, data: this.get(taskId) }
-      } catch (error) {
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('background-task:create', async (_, input) => {
-      try {
-        return { success: true as const, data: await this.create(input) }
-      } catch (error) {
-        log.error('[BackgroundTaskService] background-task:create failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('background-task:update', async (_, taskId, patch) => {
-      try {
-        return { success: true as const, data: await this.update(taskId, patch) }
-      } catch (error) {
-        log.error('[BackgroundTaskService] background-task:update failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('background-task:set-enabled', async (_, taskId, enabled) => {
-      try {
-        return { success: true as const, data: await this.setEnabled(taskId, enabled) }
-      } catch (error) {
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('background-task:delete', async (_, taskId) => {
-      try {
-        await this.delete(taskId)
-        return { success: true as const }
-      } catch (error) {
-        log.error('[BackgroundTaskService] background-task:delete failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('background-task:run', async (_, taskId) => {
-      try {
-        return { success: true as const, data: await this.runNow(taskId) }
-      } catch (error) {
-        log.error('[BackgroundTaskService] background-task:run failed:', error)
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
-
-    this.ipc.handle('background-task:cancel', async (_, taskId) => {
-      try {
-        return { success: true as const, data: this.cancel(taskId) }
-      } catch (error) {
-        return { success: false as const, error: toErrorMessage(error) }
-      }
-    })
   }
 
   private load(): void {

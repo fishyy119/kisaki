@@ -13,7 +13,6 @@ import log from 'electron-log/main'
 import { asc, eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { IpcService } from '@main/services/ipc'
 import type { ContentEntityType } from '@shared/common'
 import * as schema from '@shared/db'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
@@ -31,6 +30,7 @@ import type { CharacterScraperProvider } from './handlers/character'
 import { IGDBProvider } from './handlers/game/providers/igdb'
 import { VNDBProvider } from './handlers/game/providers/vndb'
 import { YmgalProvider } from './handlers/game/providers/ymgal'
+import { registerScraperIpc } from './ipc'
 
 export class ScraperService implements IContentService {
   readonly id = 'scraper'
@@ -41,14 +41,13 @@ export class ScraperService implements IContentService {
   company!: CompanyScraperHandler
   character!: CharacterScraperHandler
 
-  private ipcService!: IpcService
   private db!: BetterSQLite3Database<typeof schema>
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
     this.db = dbService.db
     const i18n = container.get('i18n')
-    this.ipcService = container.get('ipc')
+    const ipcService = container.get('ipc')
     const providerDeps = createScraperProviderDeps({
       network: container.get('network'),
       log
@@ -59,7 +58,7 @@ export class ScraperService implements IContentService {
     this.company = new CompanyScraperHandler(dbService.db, i18n)
     this.character = new CharacterScraperHandler(dbService.db, i18n)
     this.registerBuiltinProviders(providerDeps)
-    this.setupIpcHandlers()
+    registerScraperIpc(this, ipcService)
 
     log.info('[ScraperService] Initialized')
   }
@@ -68,229 +67,6 @@ export class ScraperService implements IContentService {
     this.game.registerProvider(new YmgalProvider(deps))
     this.game.registerProvider(new IGDBProvider(deps))
     this.game.registerProvider(new VNDBProvider(deps))
-  }
-
-  private setupIpcHandlers(): void {
-    const ipc = this.ipcService
-
-    // =========================================================================
-    // Profile Info
-    // =========================================================================
-
-    ipc.handle('scraper:list-profiles', async (_, query) => {
-      try {
-        return { success: true as const, data: this.listProfiles(query) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-profile', async (_, profileId) => {
-      try {
-        return { success: true as const, data: this.getProfile(profileId) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    // =========================================================================
-    // Provider Info
-    // =========================================================================
-
-    ipc.handle('scraper:list-game-providers', async () => {
-      try {
-        return { success: true as const, data: this.game.getProviders() }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-game-provider', async (_, providerId) => {
-      try {
-        return { success: true as const, data: this.game.getProviderInfo(providerId) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:list-person-providers', async () => {
-      try {
-        return { success: true as const, data: this.person.getProviders() }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-person-provider', async (_, providerId) => {
-      try {
-        return { success: true as const, data: this.person.getProviderInfo(providerId) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:list-company-providers', async () => {
-      try {
-        return { success: true as const, data: this.company.getProviders() }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-company-provider', async (_, providerId) => {
-      try {
-        return { success: true as const, data: this.company.getProviderInfo(providerId) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:list-character-providers', async () => {
-      try {
-        return { success: true as const, data: this.character.getProviders() }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-character-provider', async (_, providerId) => {
-      try {
-        return { success: true as const, data: this.character.getProviderInfo(providerId) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    // =========================================================================
-    // Profile-Based Game Operations
-    // =========================================================================
-
-    ipc.handle('scraper:search-game', async (_, profileId, query) => {
-      try {
-        return { success: true as const, data: await this.game.search(profileId, query) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:scrape-game', async (_, profileId, lookup) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.game.scrape(profileId, lookup)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-game-provider-images', async (_, providerId, lookup, imageType) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.game.getProviderImages(providerId, lookup, imageType)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    // =========================================================================
-    // Profile-Based Metadata Entity Operations
-    // =========================================================================
-
-    ipc.handle('scraper:search-person', async (_, profileId, query) => {
-      try {
-        return { success: true as const, data: await this.person.search(profileId, query) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:scrape-person', async (_, profileId, lookup) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.person.scrape(profileId, lookup)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-person-provider-images', async (_, providerId, lookup, imageType) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.person.getProviderImages(providerId, lookup, imageType)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:search-company', async (_, profileId, query) => {
-      try {
-        return { success: true as const, data: await this.company.search(profileId, query) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:scrape-company', async (_, profileId, lookup) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.company.scrape(profileId, lookup)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:get-company-provider-images', async (_, providerId, lookup, imageType) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.company.getProviderImages(providerId, lookup, imageType)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:search-character', async (_, profileId, query) => {
-      try {
-        return { success: true as const, data: await this.character.search(profileId, query) }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('scraper:scrape-character', async (_, profileId, lookup) => {
-      try {
-        return {
-          success: true as const,
-          data: await this.character.scrape(profileId, lookup)
-        }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle(
-      'scraper:get-character-provider-images',
-      async (_, providerId, lookup, imageType) => {
-        try {
-          return {
-            success: true as const,
-            data: await this.character.getProviderImages(providerId, lookup, imageType)
-          }
-        } catch (error) {
-          return { success: false as const, error: (error as Error).message }
-        }
-      }
-    )
   }
 
   getSupportedContent(): ContentEntityType[] {

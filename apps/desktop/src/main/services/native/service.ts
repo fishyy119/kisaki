@@ -9,25 +9,24 @@ import log from 'electron-log/main'
 import { stat } from 'fs/promises'
 import { dirname } from 'path'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
 import { openExternalLink } from '@main/utils'
 import { NativeTray } from './tray'
+import { registerNativeIpc } from './ipc'
 
 export class NativeService implements IService {
   readonly id = 'native'
   readonly deps = ['ipc', 'window'] as const satisfies readonly ServiceName[]
 
-  private ipcService!: IpcService
   private windowService!: WindowService
   private tray: NativeTray | null = null
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
-    this.ipcService = container.get('ipc')
+    const ipcService = container.get('ipc')
     this.windowService = container.get('window')
-    this.setupIpcHandlers()
+    registerNativeIpc(this, ipcService)
 
-    this.tray = new NativeTray({ ipcService: this.ipcService, windowService: this.windowService })
+    this.tray = new NativeTray({ windowService: this.windowService })
     this.tray.init()
     log.info('[NativeService] Initialized')
   }
@@ -41,69 +40,6 @@ export class NativeService implements IService {
     log.info('[NativeService] Disposed')
   }
 
-  private setupIpcHandlers(): void {
-    this.ipcService.handle('native:open-dialog', async (_, options) => {
-      try {
-        const result = await this.showOpenDialog(options)
-        return { success: true, data: result }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
-
-    this.ipcService.handle('native:open-path', async (_, input) => {
-      try {
-        await this.openPath(input)
-        return { success: true }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
-
-    this.ipcService.handle('native:open-external', async (_, url) => {
-      try {
-        await this.openExternal(url)
-        return { success: true }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
-
-    this.ipcService.handle('native:get-auto-launch', async () => {
-      try {
-        return { success: true, data: this.getAutoLaunchEnabled() }
-      } catch (error) {
-        log.error('[NativeService] Failed to get auto launch setting:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
-
-    this.ipcService.handle('native:set-auto-launch', async (_, enabled) => {
-      try {
-        this.setAutoLaunchEnabled(enabled)
-        return { success: true }
-      } catch (error) {
-        log.error('[NativeService] Failed to set auto launch setting:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
-  }
-
   getAutoLaunchEnabled(): boolean {
     return !!app.getLoginItemSettings().openAtLogin
   }
@@ -114,6 +50,10 @@ export class NativeService implements IService {
       path: process.execPath,
       args: []
     })
+  }
+
+  updateTrayMenuHeight(height: number): void {
+    this.tray?.updateTrayMenuHeight(height)
   }
 
   /**

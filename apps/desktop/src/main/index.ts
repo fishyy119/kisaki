@@ -6,7 +6,7 @@ import log from 'electron-log/main'
 // Services
 import { container } from './container'
 import { DbService } from './services/db'
-import { IpcService } from './services/ipc'
+import { IpcService, wrapIpc, wrapIpcVoid } from './services/ipc'
 import { EventService } from './services/event'
 import { WindowService } from './services/window'
 import { NativeService } from './services/native'
@@ -140,12 +140,13 @@ async function onAppReady(): Promise<void> {
   setupPortableIpc(ipcService, eventService)
 
   ipcService.handle('app:get-version', () => {
-    return { success: true, data: app.getVersion() }
+    return wrapIpc(() => app.getVersion())
   })
 
   ipcService.handle('app:quit', () => {
-    setImmediate(() => app.quit())
-    return { success: true }
+    return wrapIpcVoid(() => {
+      setImmediate(() => app.quit())
+    })
   })
 
   // Create main window first (so renderer IPC listeners are ready)

@@ -16,6 +16,7 @@ import type { WindowService } from '@main/services/window'
 import { AUTH_DEEPLINK_ROUTE, AuthHandler } from './handlers/auth'
 import { LAUNCH_DEEPLINK_ROUTE, LaunchHandler } from './handlers/launch'
 import { NAVIGATE_DEEPLINK_ROUTE, NavigateHandler } from './handlers/navigate'
+import { registerDeeplinkIpc } from './ipc'
 
 export class DeeplinkService implements IService {
   readonly id = 'deeplink'
@@ -38,8 +39,7 @@ export class DeeplinkService implements IService {
     this.registerRoute(AUTH_DEEPLINK_ROUTE, new AuthHandler(this.ipc, this.windowService))
     this.registerRoute(NAVIGATE_DEEPLINK_ROUTE, new NavigateHandler(this.ipc, this.windowService))
 
-    // Setup IPC handlers
-    this.setupIpc()
+    registerDeeplinkIpc(this, this.ipc)
 
     // Setup second-instance handler (Windows/Linux)
     this.setupSecondInstance()
@@ -192,24 +192,5 @@ export class DeeplinkService implements IService {
     } catch (error) {
       log.error('[DeeplinkService] Error focusing main window:', error)
     }
-  }
-
-  /**
-   * Setup IPC handlers
-   */
-  private setupIpc(): void {
-    // Handle deeplink from renderer process
-    this.ipc.handle('deeplink:handle', async (_, url: string) => {
-      try {
-        const result = await this.handleDeeplink(url)
-        return { success: true as const, data: result }
-      } catch (error) {
-        return { success: false as const, error: (error as Error).message }
-      }
-    })
-
-    this.ipc.handle('deeplink:list-routes', () => {
-      return { success: true as const, data: this.listRoutes() }
-    })
   }
 }

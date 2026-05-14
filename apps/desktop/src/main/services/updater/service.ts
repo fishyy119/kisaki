@@ -22,6 +22,7 @@ import type { IService, ServiceInitContainer, ServiceName } from '@main/containe
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import type { NetworkService } from '@main/services/network'
+import { registerUpdaterIpc } from './ipc'
 
 interface UpdaterSettings {
   autoCheck: boolean
@@ -129,7 +130,7 @@ export class UpdaterService implements IService {
     this.ipcService = container.get('ipc')
     this.networkService = container.get('network')
 
-    this.setupIpcHandlers()
+    registerUpdaterIpc(this, this.ipcService)
     this.configureAutoUpdater()
     this.registerAutoUpdaterListeners()
 
@@ -150,91 +151,41 @@ export class UpdaterService implements IService {
     log.info('[UpdaterService] Disposed')
   }
 
-  private setupIpcHandlers(): void {
-    this.ipcService.handle('updater:get-state', async () => {
-      return { success: true, data: this.state }
-    })
+  getState(): AppUpdaterState {
+    return this.state
+  }
 
-    this.ipcService.handle('updater:get-changelog', async (_, version) => {
-      const normalizedVersion = this.normalizeVersion(version)
-      if (!normalizedVersion) {
-        return { success: false, error: 'Invalid update version.' }
-      }
+  async getChangelog(version: string): Promise<AppUpdaterChangelogBundle> {
+    const normalizedVersion = this.normalizeVersion(version)
+    if (!normalizedVersion) {
+      throw new Error('Invalid update version.')
+    }
 
-      try {
-        const bundle = await this.getChangelogBundle(normalizedVersion)
-        return { success: true, data: bundle }
-      } catch (error) {
-        log.error('[UpdaterService] Failed to fetch changelog:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
+    return this.getChangelogBundle(normalizedVersion)
+  }
 
-    this.ipcService.handle('updater:check-for-updates', async () => {
-      if (is.dev || !app.isPackaged) {
-        return {
-          success: false,
-          error: 'Manual update check is only available in packaged builds.'
-        }
-      }
+  async checkForUpdates(): Promise<void> {
+    if (is.dev || !app.isPackaged) {
+      throw new Error('Manual update check is only available in packaged builds.')
+    }
 
-      try {
-        await this.checkForUpdatesInternal({ autoDownload: false })
-        return { success: true }
-      } catch (error) {
-        log.error('[UpdaterService] Manual update check failed:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
+    await this.checkForUpdatesInternal({ autoDownload: false })
+  }
 
-    this.ipcService.handle('updater:download-update', async () => {
-      try {
-        await this.downloadUpdateInternal()
-        return { success: true }
-      } catch (error) {
-        log.error('[UpdaterService] Manual download failed:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
+  downloadUpdate(): Promise<void> {
+    return this.downloadUpdateInternal()
+  }
 
-    this.ipcService.handle('updater:reload-settings', async () => {
-      try {
-        this.reloadSettings()
-        return { success: true }
-      } catch (error) {
-        log.error('[UpdaterService] Failed to reload updater settings:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
+  reloadUpdaterSettings(): void {
+    this.reloadSettings()
+  }
 
-    this.ipcService.handle('updater:quit-and-install', async () => {
-      if (this.state.status !== 'downloaded' || !this.state.update) {
-        return { success: false, error: 'No downloaded update is available.' }
-      }
+  async quitAndInstall(): Promise<void> {
+    if (this.state.status !== 'downloaded' || !this.state.update) {
+      throw new Error('No downloaded update is available.')
+    }
 
-      try {
-        await this.quitAndInstallInternal()
-        return { success: true }
-      } catch (error) {
-        log.error('[UpdaterService] Failed to start update installation:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }
-    })
+    await this.quitAndInstallInternal()
   }
 
   private configureAutoUpdater(): void {

@@ -1,1 +1,0 @@
-export { registerExtensionIpc } from './register'

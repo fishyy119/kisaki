@@ -14,6 +14,7 @@ import type {
   EventEmitOptions
 } from '@shared/events'
 import type { RawDbChangeEvent } from '@shared/events/library'
+import { registerEventIpc } from './ipc'
 
 export class EventService implements IService {
   readonly id = 'event'
@@ -26,12 +27,7 @@ export class EventService implements IService {
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.ipcService = container.get('ipc')
 
-    // Receive events from renderer process
-    this.ipcService.on('event:forward', (_, event: keyof AppEvents, args: any[]) => {
-      // Emit locally with local flag to prevent infinite loop
-      this.emit(event, { local: true }, ...(args as [any]))
-    })
-
+    registerEventIpc(this, this.ipcService)
     this.isReady = true
     log.info('[EventService] Initialized')
   }

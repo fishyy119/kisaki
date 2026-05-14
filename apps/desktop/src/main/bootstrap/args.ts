@@ -6,11 +6,11 @@
 
 import log from 'electron-log/main'
 import type { BootstrapArgs } from '@shared/bootstrap'
-import type { IpcService } from '@main/services/ipc'
+import { wrapIpc, type IpcService } from '@main/services/ipc'
 
 export function setupBootstrapArgsIpc(ipc: Pick<IpcService, 'handle'>): void {
   ipc.handle('app:get-bootstrap-args', () => {
-    return { success: true, data: getBootstrapArgs() }
+    return wrapIpc(() => getBootstrapArgs())
   })
 }
 

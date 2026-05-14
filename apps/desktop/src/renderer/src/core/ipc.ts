@@ -65,14 +65,9 @@ export class IpcManager {
 export const ipcManager = new IpcManager()
 
 export class IpcInvocationError extends Error {
-  readonly code?: string
-  readonly details?: Record<string, unknown>
-
   constructor(error: IpcError) {
     super(error.error)
     this.name = 'IpcInvocationError'
-    this.code = error.code
-    this.details = error.details
   }
 }
 

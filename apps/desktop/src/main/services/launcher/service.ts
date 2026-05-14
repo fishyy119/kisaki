@@ -11,7 +11,7 @@ import type { MediaType } from '@shared/common'
 import type { DbService } from '@main/services/db'
 import { GameLauncherHandler } from './handlers/game'
 import { applyDefaultLaunchConfig } from './presets/defaults'
-import type { IpcService } from '@main/services/ipc'
+import { registerLauncherIpc } from './ipc'
 
 export class LauncherService implements IMediaService {
   readonly id = 'launcher'
@@ -27,39 +27,12 @@ export class LauncherService implements IMediaService {
     const nativeService = container.get('native')
 
     this.game = new GameLauncherHandler(this.dbService, monitorService, nativeService)
-    this.setupIpcHandlers(ipcService)
+    registerLauncherIpc(this, ipcService)
     log.info('[LauncherService] Initialized')
   }
 
-  private setupIpcHandlers(ipc: IpcService): void {
-    ipc.handle('launcher:launch-game', async (_, gameId) => {
-      try {
-        await this.game.launchGame(gameId)
-        return { success: true }
-      } catch (error) {
-        log.error('[LauncherService] launcher:launch-game failed:', error)
-        return { success: false, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('launcher:kill-game', async (_, gameId) => {
-      try {
-        await this.game.killGame(gameId)
-        return { success: true }
-      } catch (error) {
-        log.error('[LauncherService] launcher:kill-game failed:', error)
-        return { success: false, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('launcher:apply-default-config', async (_, gameId, filePath) => {
-      try {
-        await applyDefaultLaunchConfig(this.dbService, gameId, filePath)
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    })
+  applyDefaultConfig(gameId: string, filePath: string): Promise<void> {
+    return applyDefaultLaunchConfig(this.dbService, gameId, filePath)
   }
 
   getSupportedMedia(): MediaType[] {

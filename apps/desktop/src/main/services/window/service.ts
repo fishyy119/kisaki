@@ -15,6 +15,7 @@ import type { IpcService } from '@main/services/ipc'
 import { settings } from '@shared/db'
 import type { MainWindowCloseAction } from '@shared/db/enums'
 import { openExternalLink } from '@main/utils'
+import { registerWindowIpc } from './ipc'
 
 export class WindowService implements IService {
   readonly id = 'window'
@@ -31,51 +32,13 @@ export class WindowService implements IService {
     this.ipcService = container.get('ipc')
     this.dbService = container.get('db')
     this.mainWindowCloseAction = this.loadMainWindowCloseActionFromDb()
-    this.setupIpcHandlers()
+    registerWindowIpc(this, this.ipcService)
 
     app.on('before-quit', () => {
       this.isQuitting = true
     })
 
     log.info('[WindowService] Initialized')
-  }
-
-  private setupIpcHandlers(): void {
-    this.ipcService.on('window:set-main-window-close-action', (_e, action) => {
-      this.setMainWindowCloseAction(action)
-    })
-
-    this.ipcService.handle('window:minimize-main-window', () => {
-      const mainWindow = this.getMainWindow()
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.minimize()
-        return { success: true }
-      }
-      return { success: false, error: 'Window not available' }
-    })
-
-    this.ipcService.handle('window:toggle-main-window-maximize', () => {
-      const mainWindow = this.getMainWindow()
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        if (mainWindow.isMaximized()) {
-          mainWindow.unmaximize()
-        } else {
-          mainWindow.maximize()
-        }
-        return { success: true }
-      }
-      return { success: false, error: 'Window not available' }
-    })
-
-    this.ipcService.handle('window:close-main-window', () => {
-      const mainWindow = this.getMainWindow()
-      if (!mainWindow || mainWindow.isDestroyed()) {
-        return { success: false, error: 'Window not available' }
-      }
-
-      this.applyMainWindowCloseAction(this.mainWindowCloseAction)
-      return { success: true }
-    })
   }
 
   private loadMainWindowCloseActionFromDb(): MainWindowCloseAction {
@@ -95,7 +58,7 @@ export class WindowService implements IService {
     }
   }
 
-  private setMainWindowCloseAction(action: MainWindowCloseAction): void {
+  setMainWindowCloseAction(action: MainWindowCloseAction): void {
     if (action !== 'exit' && action !== 'tray') {
       log.warn('[WindowService] Ignored invalid main window close action:', action)
       return
@@ -104,6 +67,25 @@ export class WindowService implements IService {
     if (this.mainWindowCloseAction === action) return
     this.mainWindowCloseAction = action
     log.info('[WindowService] Updated main window close action:', action)
+  }
+
+  minimizeMainWindow(): void {
+    const mainWindow = this.requireMainWindow()
+    mainWindow.minimize()
+  }
+
+  toggleMainWindowMaximize(): void {
+    const mainWindow = this.requireMainWindow()
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize()
+    } else {
+      mainWindow.maximize()
+    }
+  }
+
+  closeMainWindowByConfiguredAction(): void {
+    this.requireMainWindow()
+    this.applyMainWindowCloseAction(this.mainWindowCloseAction)
   }
 
   private applyMainWindowCloseAction(action: MainWindowCloseAction, event?: Electron.Event): void {
@@ -333,5 +315,13 @@ export class WindowService implements IService {
    */
   isMainWindowFocused(): boolean {
     return this.mainWindow !== null && !this.mainWindow.isDestroyed() && this.mainWindow.isFocused()
+  }
+
+  private requireMainWindow(): BrowserWindow {
+    const mainWindow = this.getMainWindow()
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      throw new Error('Window not available')
+    }
+    return mainWindow
   }
 }

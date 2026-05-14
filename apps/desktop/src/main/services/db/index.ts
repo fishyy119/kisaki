@@ -9,4 +9,5 @@ export type { ThumbnailFit, ThumbnailOptions, FileColumns, DbContext } from './t
 export { AttachmentStore } from './attachment'
 export { ThumbnailStore } from './thumbnail'
 export { HelperStore } from './helper'
-export { FtsStore, type FtsEntityType } from './fts'
+export { FtsStore } from './fts'
+export type { FtsEntityType } from '@shared/db/fts'

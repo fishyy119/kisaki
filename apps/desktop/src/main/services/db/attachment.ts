@@ -5,9 +5,8 @@
  */
 
 import { Mutex } from 'async-mutex'
-import { eq } from 'drizzle-orm'
-import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import { getTableConfig } from 'drizzle-orm/sqlite-core'
+import { eq, getTableName, is } from 'drizzle-orm'
+import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { nanoid } from 'nanoid'
 import { fileTypeFromBuffer } from 'file-type'
@@ -20,6 +19,7 @@ import log from 'electron-log/main'
 import type { NetworkService } from '@main/services/network'
 import type { ThumbnailStore } from './thumbnail'
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
+import type { TableName } from '@shared/db/table-names'
 import * as schema from '@shared/db'
 
 /**
@@ -259,6 +259,57 @@ export class AttachmentStore {
     })
   }
 
+  async setFileByTableName(
+    tableName: TableName,
+    rowId: string,
+    field: string,
+    input: AttachmentInput,
+    signal?: AbortSignal
+  ): Promise<string> {
+    const table = this.getSchemaTableByName(tableName)
+    return this.setFile(table, rowId, this.requireFileField(table, field), input, signal)
+  }
+
+  async clearFileByTableName(tableName: TableName, rowId: string, field: string): Promise<void> {
+    const table = this.getSchemaTableByName(tableName)
+    return this.clearFile(table, rowId, this.requireFileField(table, field))
+  }
+
+  async addFileByTableName(
+    tableName: TableName,
+    rowId: string,
+    field: string,
+    input: AttachmentInput,
+    signal?: AbortSignal
+  ): Promise<string> {
+    const table = this.getSchemaTableByName(tableName)
+    return this.addFile(table, rowId, this.requireFilesField(table, field), input, signal)
+  }
+
+  async removeFileByTableName(
+    tableName: TableName,
+    rowId: string,
+    field: string,
+    fileName: string
+  ): Promise<void> {
+    const table = this.getSchemaTableByName(tableName)
+    return this.removeFile(table, rowId, this.requireFilesField(table, field), fileName)
+  }
+
+  async listFilesByTableName(
+    tableName: TableName,
+    rowId: string,
+    field: string
+  ): Promise<string[]> {
+    const table = this.getSchemaTableByName(tableName)
+    return this.listFiles(table, rowId, this.requireFilesField(table, field))
+  }
+
+  async clearFilesByTableName(tableName: TableName, rowId: string, field: string): Promise<void> {
+    const table = this.getSchemaTableByName(tableName)
+    return this.clearFiles(table, rowId, this.requireFilesField(table, field))
+  }
+
   /**
    * Cleanup storage directory for a deleted row.
    * Intended to be called from db:deleted event listeners.
@@ -308,6 +359,43 @@ export class AttachmentStore {
 
   private getRowLockKey(tableName: string, rowId: string): string {
     return `${tableName}:${rowId}`
+  }
+
+  private getSchemaTableByName(tableName: TableName): SQLiteTable {
+    for (const value of Object.values(schema)) {
+      if (is(value, SQLiteTable) && getTableName(value) === tableName) {
+        return value
+      }
+    }
+    throw new Error(`Unknown table: ${tableName}`)
+  }
+
+  private requireFileField<TTable extends SQLiteTable>(
+    table: TTable,
+    field: string
+  ): FileColumns<TTable> {
+    this.requireAttachmentField(table, field, 'File')
+    return field as FileColumns<TTable>
+  }
+
+  private requireFilesField<TTable extends SQLiteTable>(
+    table: TTable,
+    field: string
+  ): FilesColumns<TTable> {
+    this.requireAttachmentField(table, field, 'Files')
+    return field as FilesColumns<TTable>
+  }
+
+  private requireAttachmentField(
+    table: SQLiteTable,
+    field: string,
+    suffix: 'File' | 'Files'
+  ): void {
+    const tableName = getTableConfig(table).name
+
+    if (!field.endsWith(suffix) || !Object.prototype.hasOwnProperty.call(table, field)) {
+      throw new Error(`Unknown attachment field: ${tableName}.${field}`)
+    }
   }
 
   private startMutexCleaner(): void {

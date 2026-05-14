@@ -4,7 +4,7 @@ import fse from 'fs-extra'
 import log from 'electron-log/main'
 import { is } from '@electron-toolkit/utils'
 import type { EventService } from '@main/services/event'
-import type { IpcService } from '@main/services/ipc'
+import { wrapIpc, wrapIpcVoid, type IpcService } from '@main/services/ipc'
 
 /** Portable mode status */
 export interface PortableStatus {
@@ -242,47 +242,23 @@ export async function getPendingSwitch(): Promise<'portable' | 'normal' | null> 
  */
 export function setupPortableIpc(ipc: IpcService, event: EventService): void {
   ipc.handle('portable:get-status', async () => {
-    try {
-      return { success: true, data: getPortableStatus() }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
+    return wrapIpc(() => getPortableStatus())
   })
 
   ipc.handle('portable:get-pending-switch', async () => {
-    try {
-      const pending = await getPendingSwitch()
-      return { success: true, data: pending }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
+    return wrapIpc(() => getPendingSwitch())
   })
 
   ipc.handle('portable:switch-to-portable', async () => {
-    try {
-      await requestSwitchToPortable(event)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
+    return wrapIpcVoid(() => requestSwitchToPortable(event))
   })
 
   ipc.handle('portable:switch-to-normal', async () => {
-    try {
-      await requestSwitchToNormal(event)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
+    return wrapIpcVoid(() => requestSwitchToNormal(event))
   })
 
   ipc.handle('portable:cancel-pending-switch', async () => {
-    try {
-      await cancelPendingSwitch(event)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
+    return wrapIpcVoid(() => cancelPendingSwitch(event))
   })
 
   log.info('[Portable] IPC handlers registered')

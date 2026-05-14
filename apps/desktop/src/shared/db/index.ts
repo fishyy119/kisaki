@@ -24,3 +24,6 @@ export * from './schema-relations'
 
 // DB attachment shared types
 export * from './attachment'
+
+// FTS shared contracts
+export * from './fts'

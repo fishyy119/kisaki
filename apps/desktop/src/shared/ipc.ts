@@ -11,6 +11,7 @@ import type { AttachmentInput } from './db/attachment'
 import type { TableName } from './db/table-names'
 import type { NameExtractionRule, SaveBackup } from './db/json-types'
 import type { MainWindowCloseAction } from './db/enums'
+import type { FtsEntityType } from './db/fts'
 import type {
   EntityDeletePreview,
   EntityDeletePreviewRequest,
@@ -139,19 +140,17 @@ export interface IpcSuccessVoid {
 }
 
 /**
- * Failed IPC result with an error message plus optional structured metadata.
+ * Failed IPC result with a safe, user-visible English message.
  */
 export interface IpcError {
   success: false
   error: string
-  code?: string
-  details?: Record<string, unknown>
 }
 
 /**
  * Generic IPC result type
  */
-export type IpcResult<T = void> = T extends void
+export type IpcResult<T = void> = [T] extends [void]
   ? IpcSuccessVoid | IpcError
   : IpcSuccess<T> | IpcError
 
@@ -240,7 +239,8 @@ export interface IpcMainHandlers {
     params: unknown[],
     method: 'run' | 'all' | 'values' | 'get'
   ) => IpcResult<unknown[]>
-  'db:rebuild-fts': (entityType?: 'game' | 'character' | 'person' | 'company') => IpcVoidResult
+  'db:rebuild-fts': (entityType: FtsEntityType) => IpcVoidResult
+  'db:rebuild-all-fts': () => IpcVoidResult
   'db:preview-entity-delete': (params: EntityDeletePreviewRequest) => IpcResult<EntityDeletePreview>
   'db:delete-entities': (params: EntityDeleteRequest) => IpcResult<EntityDeleteResult>
 

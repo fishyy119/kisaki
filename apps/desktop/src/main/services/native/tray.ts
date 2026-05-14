@@ -1,7 +1,6 @@
 import { app, BrowserWindow, screen, Tray } from 'electron'
 import { join } from 'path'
 import log from 'electron-log/main'
-import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
 
 function clamp(value: number, min: number, max: number): number {
@@ -15,14 +14,12 @@ function getTrayIconPath(): string {
 }
 
 export class NativeTray {
-  private readonly ipcService: IpcService
   private readonly windowService: WindowService
 
   private tray: Tray | null = null
   private lastMenuAnchorPoint: Electron.Point | null = null
 
-  constructor(deps: { ipcService: IpcService; windowService: WindowService }) {
-    this.ipcService = deps.ipcService
+  constructor(deps: { windowService: WindowService }) {
     this.windowService = deps.windowService
   }
 
@@ -30,10 +27,6 @@ export class NativeTray {
     const iconPath = getTrayIconPath()
     this.tray = new Tray(iconPath)
     this.tray.setToolTip('Kisaki')
-
-    this.ipcService.on('native:set-tray-menu-height', (_e, height) => {
-      this.updateTrayMenuHeight(height)
-    })
 
     this.tray.on('click', () => {
       try {
@@ -114,7 +107,7 @@ export class NativeTray {
     win.focus()
   }
 
-  private updateTrayMenuHeight(height: number): void {
+  updateTrayMenuHeight(height: number): void {
     const win = this.windowService.getTrayMenuWindow()
     if (!win) return
     if (!Number.isFinite(height) || height <= 0) return

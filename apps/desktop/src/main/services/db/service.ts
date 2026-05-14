@@ -17,20 +17,16 @@ import fse from 'fs-extra'
 import { app } from 'electron'
 import path from 'path'
 import log from 'electron-log/main'
-import { getTableName, is } from 'drizzle-orm'
-import { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import * as schema from '@shared/db'
 import { settings } from '@shared/db'
-import type { AttachmentInput } from '@shared/db/attachment'
-import type { TableName } from '@shared/db/table-names'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { IpcService } from '@main/services/ipc'
 import { AttachmentStore } from './attachment'
 import { ThumbnailStore } from './thumbnail'
 import { HelperStore } from './helper'
 import { FtsStore } from './fts'
 import { TriggerStore } from './trigger'
 import { DbEventProjector } from './projector'
+import { registerDbIpc } from './ipc'
 
 // Re-export types
 export type { ThumbnailOptions, ThumbnailFit, FileColumns, FilesColumns } from './types'
@@ -46,15 +42,6 @@ const THUMBNAIL_SUPPORTED_EXTENSIONS = new Set([
   '.tiff',
   '.tif'
 ])
-
-function getSchemaTableByName(tableName: TableName): SQLiteTable {
-  for (const value of Object.values(schema)) {
-    if (is(value, SQLiteTable) && getTableName(value) === tableName) {
-      return value
-    }
-  }
-  throw new Error(`Unknown table: ${tableName}`)
-}
 
 export class DbService implements IService {
   readonly id = 'db'
@@ -125,144 +112,9 @@ export class DbService implements IService {
 
     // Register IPC handlers
     const ipc = container.get('ipc')
-    this.setupIpcHandlers(ipc)
+    registerDbIpc(this, ipc)
 
     log.info(`[DbService] Database initialized at ${this.dbPath}`)
-  }
-
-  private setupIpcHandlers(ipc: IpcService): void {
-    ipc.handle('db:execute', async (_, sqlstr, params, method) => {
-      try {
-        const data = this.execute(sqlstr, params, method)
-        return { success: true, data }
-      } catch (error) {
-        log.error('[DbService] Error executing DB command:', error, 'SQL:', sqlstr)
-        return { success: false, error: String(error) }
-      }
-    })
-
-    ipc.handle('db:rebuild-fts', async (_, entityType) => {
-      try {
-        if (entityType) {
-          this.fts.rebuild(entityType)
-        } else {
-          this.fts.rebuildAll()
-        }
-        return { success: true }
-      } catch (error) {
-        log.error('[DbService] Error rebuilding FTS:', error)
-        return { success: false, error: String(error) }
-      }
-    })
-
-    ipc.handle('db:preview-entity-delete', async (_, params) => {
-      try {
-        const data = this.helper.previewEntityDelete(params)
-        return { success: true, data }
-      } catch (error) {
-        log.error('[DbService] Error building delete preview:', error, params)
-        return { success: false, error: 'Could not load delete preview' }
-      }
-    })
-
-    ipc.handle('db:delete-entities', async (_, params) => {
-      try {
-        const data = this.helper.deleteEntities(params)
-        return { success: true, data }
-      } catch (error) {
-        log.error('[DbService] Error deleting entities:', error, params)
-        return { success: false, error: 'Could not delete entities' }
-      }
-    })
-
-    ipc.handle(
-      'db:attachment-set-file',
-      async (_, tableName, rowId, field, input: AttachmentInput) => {
-        try {
-          // NOTE: `field` is intentionally `string` at IPC boundary.
-          // Renderer client is table-aware (FileColumns/FilesColumns) and provides exact typing.
-          const table = getSchemaTableByName(tableName as TableName)
-          const data = await (this.attachment as any).setFile(table, rowId, field, input)
-          return { success: true, data }
-        } catch (error) {
-          return { success: false, error: (error as Error).message }
-        }
-      }
-    )
-
-    ipc.handle('db:attachment-clear-file', async (_, tableName, rowId, field) => {
-      try {
-        const table = getSchemaTableByName(tableName as TableName)
-        await (this.attachment as any).clearFile(table, rowId, field)
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle(
-      'db:attachment-add-file',
-      async (_, tableName, rowId, field, input: AttachmentInput) => {
-        try {
-          const table = getSchemaTableByName(tableName as TableName)
-          const data = await (this.attachment as any).addFile(table, rowId, field, input)
-          return { success: true, data }
-        } catch (error) {
-          return { success: false, error: (error as Error).message }
-        }
-      }
-    )
-
-    ipc.handle(
-      'db:attachment-remove-file',
-      async (_, tableName, rowId, field, fileName: string) => {
-        try {
-          const table = getSchemaTableByName(tableName as TableName)
-          await (this.attachment as any).removeFile(table, rowId, field, fileName)
-          return { success: true }
-        } catch (error) {
-          return { success: false, error: (error as Error).message }
-        }
-      }
-    )
-
-    ipc.handle('db:attachment-list-files', async (_, tableName, rowId, field) => {
-      try {
-        const table = getSchemaTableByName(tableName as TableName)
-        const data = await (this.attachment as any).listFiles(table, rowId, field)
-        return { success: true, data }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('db:attachment-clear-files', async (_, tableName, rowId, field) => {
-      try {
-        const table = getSchemaTableByName(tableName as TableName)
-        await (this.attachment as any).clearFiles(table, rowId, field)
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('db:attachment-cleanup-row', async (_, tableName, rowId) => {
-      try {
-        await this.attachment.cleanupRow(tableName as string, rowId)
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    })
-
-    ipc.handle('db:attachment-get-path', async (_, tableName, rowId, fileName) => {
-      try {
-        const data = this.attachment.getPath(tableName as string, rowId, fileName)
-        return { success: true, data }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    })
   }
 
   private setupAttachmentProtocol(): void {
