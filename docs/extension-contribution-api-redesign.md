@@ -750,28 +750,28 @@ contributions/
   types.ts
   commands/
     index.ts
-    manager.ts
+    point.ts
     types.ts
   deeplink-routes/
     index.ts
-    manager.ts
+    point.ts
     types.ts
   entity-menus/
     index.ts
-    manager.ts
+    point.ts
     sessions.ts
     types.ts
     normalize.ts
   scraper-providers/
     index.ts
-    manager.ts
+    point.ts
     adapters.ts
     descriptors.ts
     registrations.ts
     types.ts
   settings-panels/
     index.ts
-    manager.ts
+    point.ts
     requests.ts
     sessions.ts
     types.ts
@@ -779,30 +779,30 @@ contributions/
     utils.ts
   themes/
     index.ts
-    manager.ts
+    point.ts
     types.ts
 ```
 
 Main 侧类命名：
 
-| 贡献点             | Main manager                               |
-| ------------------ | ------------------------------------------ |
-| `entityMenus`      | `ExtensionEntityMenuContributionHost`      |
-| `settingsPanels`   | `ExtensionSettingsPanelContributionHost`   |
-| `scraperProviders` | `ExtensionScraperProviderContributionHost` |
-| `deeplinkRoutes`   | `ExtensionDeeplinkRouteContributionHost`   |
-| `themes`           | `ExtensionThemeContributionHost`           |
-| `commands`         | `ExtensionCommandContributionHost`         |
+| 贡献点             | Main contribution point                     |
+| ------------------ | ------------------------------------------- |
+| `entityMenus`      | `ExtensionEntityMenuContributionPoint`      |
+| `settingsPanels`   | `ExtensionSettingsPanelContributionPoint`   |
+| `scraperProviders` | `ExtensionScraperProviderContributionPoint` |
+| `deeplinkRoutes`   | `ExtensionDeeplinkRouteContributionPoint`   |
+| `themes`           | `ExtensionThemeContributionPoint`           |
+| `commands`         | `ExtensionCommandContributionPoint`         |
 
 `ExtensionContributionRegistry` 字段名与 snapshot key 一致：
 
 ```ts
-readonly entityMenus: ExtensionEntityMenuContributionHost
-readonly settingsPanels: ExtensionSettingsPanelContributionHost
-readonly scraperProviders: ExtensionScraperProviderContributionHost
-readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionHost
-readonly themes: ExtensionThemeContributionHost
-readonly commands: ExtensionCommandContributionHost
+readonly entityMenus: ExtensionEntityMenuContributionPoint
+readonly settingsPanels: ExtensionSettingsPanelContributionPoint
+readonly scraperProviders: ExtensionScraperProviderContributionPoint
+readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionPoint
+readonly themes: ExtensionThemeContributionPoint
+readonly commands: ExtensionCommandContributionPoint
 ```
 
 ## Extension Host 文件组织
@@ -817,26 +817,26 @@ contributions/
   utils.ts
   commands/
     index.ts
-    manager.ts
+    point.ts
   deeplink-routes/
     index.ts
-    manager.ts
+    point.ts
   entity-menus/
     index.ts
-    manager.ts
+    point.ts
     normalize.ts
     callbacks.ts
     types.ts
   scraper-providers/
     index.ts
-    manager.ts
+    point.ts
     descriptors.ts
     domain.ts
     registrations.ts
     types.ts
   settings-panels/
     index.ts
-    manager.ts
+    point.ts
     normalize.ts
     callbacks.ts
     context.ts
@@ -845,7 +845,7 @@ contributions/
     types.ts
   themes/
     index.ts
-    manager.ts
+    point.ts
 ```
 
 Host contribution 根目录职责：
@@ -856,14 +856,14 @@ Host contribution 根目录职责：
 
 Host 侧类命名：
 
-| 贡献点             | Host manager                       |
-| ------------------ | ---------------------------------- |
-| `entityMenus`      | `HostEntityMenuContributions`      |
-| `settingsPanels`   | `HostSettingsPanelContributions`   |
-| `scraperProviders` | `HostScraperProviderContributions` |
-| `deeplinkRoutes`   | `HostDeeplinkRouteContributions`   |
-| `themes`           | `HostThemeContributions`           |
-| `commands`         | `HostCommandContributions`         |
+| 贡献点             | Host contribution point                |
+| ------------------ | -------------------------------------- |
+| `entityMenus`      | `HostEntityMenuContributionPoint`      |
+| `settingsPanels`   | `HostSettingsPanelContributionPoint`   |
+| `scraperProviders` | `HostScraperProviderContributionPoint` |
+| `deeplinkRoutes`   | `HostDeeplinkRouteContributionPoint`   |
+| `themes`           | `HostThemeContributionPoint`           |
+| `commands`         | `HostCommandContributionPoint`         |
 
 `LoadedExtensionRuntime` 字段：
 

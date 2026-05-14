@@ -1,1 +1,1 @@
-export { ExtensionSettingsPanelContributionHost } from './manager'
+export { ExtensionSettingsPanelContributionPoint } from './point'

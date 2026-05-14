@@ -1,1 +1,1 @@
-export { HostSettingsPanelContributions } from './manager'
+export { HostSettingsPanelContributionPoint } from './point'

@@ -16,13 +16,13 @@ import type {
   CommandListItem as AppCommandListItem
 } from '@shared/command'
 
-export interface ExtensionCommandsCapabilityHostOptions {
+export interface ExtensionCommandsCapabilityProviderOptions {
   command: CommandService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionCommandsCapabilityHost {
-  constructor(private readonly options: ExtensionCommandsCapabilityHostOptions) {}
+export class ExtensionCommandsCapabilityProvider {
+  constructor(private readonly options: ExtensionCommandsCapabilityProviderOptions) {}
 
   list(runtimeHandle: string): CommandListItem[] {
     this.requireRuntime(runtimeHandle)

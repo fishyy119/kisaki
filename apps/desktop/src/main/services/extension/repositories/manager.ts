@@ -20,7 +20,7 @@ import {
   type ExtensionRegistryRelease
 } from '@kisaki/extension-registry'
 import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
-import type { ExtensionIconManager } from '../packages/icon'
+import type { ExtensionIconManager } from '../packages'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'
 import { ExtensionRepositoryStore } from './store'
@@ -37,6 +37,7 @@ export interface ExtensionRepositoryManagerOptions {
   iconManager: ExtensionIconManager
   appVersion: string
   allowInsecureLocalUrls?: boolean
+  getInstalledVersions?: () => ReadonlyMap<string, string>
   onRepositoriesChanged?: () => void
   onCatalogChanged?: () => void
 }
@@ -48,6 +49,7 @@ export class ExtensionRepositoryManager {
   private readonly aggregator: ExtensionRepositoryAggregator
   private readonly appVersion: string
   private readonly allowInsecureLocalUrls: boolean
+  private readonly getInstalledVersions?: () => ReadonlyMap<string, string>
   private readonly warnedDisallowedSnapshots = new Set<string>()
   private readonly onRepositoriesChanged?: () => void
   private readonly onCatalogChanged?: () => void
@@ -62,6 +64,7 @@ export class ExtensionRepositoryManager {
     this.iconManager = options.iconManager
     this.appVersion = options.appVersion
     this.allowInsecureLocalUrls = options.allowInsecureLocalUrls ?? false
+    this.getInstalledVersions = options.getInstalledVersions
     this.onRepositoriesChanged = options.onRepositoriesChanged
     this.onCatalogChanged = options.onCatalogChanged
     this.aggregator = new ExtensionRepositoryAggregator({
@@ -235,7 +238,10 @@ export class ExtensionRepositoryManager {
     request: ExtensionCatalogSearchRequest = {},
     context: ExtensionRepositorySearchContext = {}
   ): ExtensionCatalogSearchResult {
-    return this.aggregator.search(this.catalog, request, context)
+    return this.aggregator.search(this.catalog, request, {
+      ...context,
+      installedVersions: context.installedVersions ?? this.getInstalledVersions?.()
+    })
   }
 
   getCatalog(): ExtensionRepositoryCatalog {

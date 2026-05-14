@@ -1,1 +1,1 @@
-export { ExtensionEntityMenuContributionHost } from './manager'
+export { ExtensionEntityMenuContributionPoint } from './point'

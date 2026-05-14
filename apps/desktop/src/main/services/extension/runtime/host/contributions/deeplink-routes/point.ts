@@ -11,7 +11,7 @@ import { requireRuntimeByScope, throwValidationIssues } from '../utils'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 
-export class HostDeeplinkRouteContributions {
+export class HostDeeplinkRouteContributionPoint {
   constructor(private readonly options: HostContributionDomainOptions) {}
 
   register<const TPattern extends string>(

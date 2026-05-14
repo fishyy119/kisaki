@@ -125,13 +125,13 @@ const ATTACHMENT_SLOT_CONFIGS: readonly AttachmentSlotConfig[] = [
   }
 ]
 
-export interface ExtensionLibraryAttachmentsHostOptions {
+export interface ExtensionLibraryAttachmentStoreOptions {
   db: DbService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionLibraryAttachmentsHost {
-  constructor(private readonly options: ExtensionLibraryAttachmentsHostOptions) {}
+export class ExtensionLibraryAttachmentStore {
+  constructor(private readonly options: ExtensionLibraryAttachmentStoreOptions) {}
 
   async list(entity: LibraryAttachment['entity']): Promise<readonly LibraryAttachment[]> {
     const configs = ATTACHMENT_SLOT_CONFIGS.filter(

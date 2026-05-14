@@ -1,14 +1,9 @@
-import type {
-  ExtensionInstallFromFileRequest,
-  ExtensionInstallPlan,
-  ExtensionInstallReleaseRequest,
-  ExtensionUpdateRequest
-} from '@shared/extension'
+import type { ExtensionInstallPlan } from '@shared/extension'
+import type { ExtensionInstallReleaseApproval } from './types'
 
-type ExtensionInstallPlanConfirmationInput = Pick<
-  ExtensionInstallReleaseRequest | ExtensionInstallFromFileRequest | ExtensionUpdateRequest,
-  'planId' | 'planFingerprint'
-> & {
+export interface ExtensionInstallPlanConfirmationInput {
+  planId: string
+  planFingerprint: string
   trustSignerFingerprint?: boolean
 }
 
@@ -26,4 +21,18 @@ export function assertInstallPlanConfirmed(
   ) {
     throw new Error('Cannot trust an unsigned extension install plan.')
   }
+}
+
+export function assertInstallPlanApproved(
+  plan: ExtensionInstallPlan,
+  approval: ExtensionInstallReleaseApproval
+): void {
+  if (approval.kind === 'trusted-automatic') {
+    if (plan.signer.status !== 'trusted' || !plan.signer.trusted) {
+      throw new Error('Automatic extension update requires a trusted signer.')
+    }
+    return
+  }
+
+  assertInstallPlanConfirmed(plan, approval)
 }

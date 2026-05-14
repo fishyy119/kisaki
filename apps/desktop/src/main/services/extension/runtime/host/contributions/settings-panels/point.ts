@@ -57,7 +57,7 @@ import { createSettingsPanelError, parentsEqual, toParams } from './values'
  * It owns root/dialog/popover sessions and callback maps while returning only
  * serializable field/node DTOs to the main process.
  */
-export class HostSettingsPanelContributions {
+export class HostSettingsPanelContributionPoint {
   private readonly sessions = new Map<string, SettingsPanelSession>()
 
   constructor(private readonly options: HostContributionDomainOptions) {}

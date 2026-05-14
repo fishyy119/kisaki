@@ -1,1 +1,1 @@
-export { ExtensionCommandContributionHost } from './manager'
+export { ExtensionCommandContributionPoint } from './point'

@@ -7,7 +7,7 @@ import {
   type RpcValue
 } from '@kisaki/extension-api'
 import type { ExtensionCapabilityGateway } from '../capabilities'
-import type { ExtensionContributionRegistry } from '../contributions/registry'
+import type { ExtensionContributionRegistry } from '../contributions'
 import type { ExtensionHostRpcClient } from './rpc-client'
 import type { ExtensionRuntimeSecrets } from './secrets'
 import type { ExtensionRuntimeStorage } from './storage'

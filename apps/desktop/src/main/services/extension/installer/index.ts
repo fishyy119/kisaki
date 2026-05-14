@@ -1,4 +1,8 @@
-export * from './confirmation'
-export * from './planner'
-export * from './manager'
-export * from './types'
+export { ExtensionInstallerManager } from './manager'
+export type { ExtensionInstallerManagerOptions } from './manager'
+export { createInstallReleaseCommandFromRequest } from './types'
+export type {
+  ExtensionInstallReleaseApproval,
+  ExtensionInstallReleaseCommand,
+  ExtensionInstallReleaseReason
+} from './types'

@@ -191,12 +191,12 @@ const RELATION_CONFIGS: Record<LibraryRelationKind, RelationConfig> = {
   }
 }
 
-export interface ExtensionLibraryRelationsHostOptions {
+export interface ExtensionLibraryRelationStoreOptions {
   db: DbService
 }
 
-export class ExtensionLibraryRelationsHost {
-  constructor(private readonly options: ExtensionLibraryRelationsHostOptions) {}
+export class ExtensionLibraryRelationStore {
+  constructor(private readonly options: ExtensionLibraryRelationStoreOptions) {}
 
   list(query?: LibraryRelationQuery): readonly LibraryRelation[] {
     try {

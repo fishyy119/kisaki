@@ -13,9 +13,9 @@ import type {
 import type { DeeplinkService } from '@main/services/deeplink'
 import type { CommandService } from '@main/services/command'
 import type { ScraperService } from '@main/services/scraper'
-import type { RpcRequestOptions } from '../runtime/rpc-core'
+import type { RpcRequestOptions } from '../runtime'
 
-export interface ExtensionContributionHostOptions {
+export interface ExtensionContributionDomainOptions {
   command?: CommandService
   deeplink?: DeeplinkService
   scraper?: ScraperService
@@ -41,7 +41,7 @@ export interface ExtensionContributionReleaseDiagnostic {
 }
 
 export function requireContributionOwner(
-  options: ExtensionContributionHostOptions,
+  options: ExtensionContributionDomainOptions,
   runtimeHandle: ExtensionRuntimeHandle
 ): RuntimeContributionOwner {
   const extension = options.resolveRuntimeHandle(runtimeHandle)

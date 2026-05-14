@@ -15,14 +15,14 @@ import type {
   BackgroundTaskRunRecord as AppBackgroundTaskRunRecord
 } from '@shared/background-task'
 
-export interface ExtensionBackgroundTasksCapabilityHostOptions {
+export interface ExtensionBackgroundTasksCapabilityProviderOptions {
   backgroundTask: BackgroundTaskService
   command: CommandService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionBackgroundTasksCapabilityHost {
-  constructor(private readonly options: ExtensionBackgroundTasksCapabilityHostOptions) {}
+export class ExtensionBackgroundTasksCapabilityProvider {
+  constructor(private readonly options: ExtensionBackgroundTasksCapabilityProviderOptions) {}
 
   list(runtimeHandle: string): BackgroundTask[] {
     const metadata = this.requireRuntime(runtimeHandle)

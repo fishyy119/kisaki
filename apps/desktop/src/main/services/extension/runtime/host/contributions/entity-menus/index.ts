@@ -1,1 +1,1 @@
-export { HostEntityMenuContributions } from './manager'
+export { HostEntityMenuContributionPoint } from './point'

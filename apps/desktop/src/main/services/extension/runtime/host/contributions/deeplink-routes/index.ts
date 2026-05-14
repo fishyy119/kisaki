@@ -1,1 +1,1 @@
-export { HostDeeplinkRouteContributions } from './manager'
+export { HostDeeplinkRouteContributionPoint } from './point'

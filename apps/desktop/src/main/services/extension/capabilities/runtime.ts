@@ -7,12 +7,12 @@ import {
 } from '@kisaki/extension-api'
 import { openExternalLink } from '@main/utils'
 
-export interface ExtensionRuntimeCapabilityHostOptions {
+export interface ExtensionRuntimeCapabilityProviderOptions {
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionRuntimeCapabilityHost {
-  constructor(private readonly options: ExtensionRuntimeCapabilityHostOptions) {}
+export class ExtensionRuntimeCapabilityProvider {
+  constructor(private readonly options: ExtensionRuntimeCapabilityProviderOptions) {}
 
   getMetadata(runtimeHandle: string): ExtensionRuntimeMetadata | null {
     return this.options.resolveRuntimeHandle(runtimeHandle) ?? null

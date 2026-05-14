@@ -22,7 +22,7 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionHostOptions,
+  type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
 
@@ -37,12 +37,12 @@ const EXTENSION_DEEPLINK_ROUTE = '/ext/:extensionId/*routePath' as const
 
 type ExtensionDeeplinkContext = DeeplinkRouteContext<typeof EXTENSION_DEEPLINK_ROUTE>
 
-export class ExtensionDeeplinkRouteContributionHost {
+export class ExtensionDeeplinkRouteContributionPoint {
   private readonly registrations = new Map<string, DeeplinkRouteRegistration>()
   private readonly byExtension = new Map<string, DeeplinkRouteRegistration[]>()
   private nextOrder = 0
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {
+  constructor(private readonly options: ExtensionContributionDomainOptions) {
     options.deeplink?.registerRoute(EXTENSION_DEEPLINK_ROUTE, new ExtensionDeeplinkHandler(this))
   }
 
@@ -222,7 +222,7 @@ export class ExtensionDeeplinkRouteContributionHost {
 }
 
 class ExtensionDeeplinkHandler implements DeeplinkRouteHandler<typeof EXTENSION_DEEPLINK_ROUTE> {
-  constructor(private readonly host: ExtensionDeeplinkRouteContributionHost) {}
+  constructor(private readonly host: ExtensionDeeplinkRouteContributionPoint) {}
 
   async handle(deeplink: ExtensionDeeplinkContext): Promise<DeeplinkResult> {
     try {
@@ -251,7 +251,7 @@ class ExtensionDeeplinkHandler implements DeeplinkRouteHandler<typeof EXTENSION_
         data: response.data
       }
     } catch (error) {
-      log.warn(`[ExtensionDeeplinkRouteContributionHost] Route "${deeplink.path}" failed:`, error)
+      log.warn(`[ExtensionDeeplinkRouteContributionPoint] Route "${deeplink.path}" failed:`, error)
       return {
         success: false,
         path: deeplink.path,

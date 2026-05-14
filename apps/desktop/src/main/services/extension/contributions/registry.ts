@@ -1,32 +1,50 @@
 import type { ExtensionRuntimeHandle } from '@kisaki/extension-api'
-import type { ExtensionContributionSnapshot } from '@shared/extension'
-import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
-import { ExtensionCommandContributionHost } from './commands'
-import { ExtensionDeeplinkRouteContributionHost } from './deeplink-routes'
-import { ExtensionEntityMenuContributionHost } from './entity-menus'
-import { ExtensionScraperProviderContributionHost } from './scraper-providers'
-import { ExtensionSettingsPanelContributionHost } from './settings-panels'
-import { ExtensionThemeContributionHost } from './themes'
 import type {
-  ExtensionContributionHostOptions,
+  ExtensionContributionSnapshot,
+  ExtensionEntityMenuInvokeRequest,
+  ExtensionEntityMenuInvokeResponse,
+  ExtensionEntityMenuReleaseRequest,
+  ExtensionEntityMenuResolveRequest,
+  ExtensionResolvedEntityMenu,
+  ExtensionSettingsPanelCallbackResponse,
+  ExtensionSettingsPanelInvokeRequest,
+  ExtensionSettingsPanelOpenRequest,
+  ExtensionSettingsPanelOpenResponse,
+  ExtensionSettingsPanelRefreshRequest,
+  ExtensionSettingsPanelRefreshResponse,
+  ExtensionSettingsPanelRegistrationInfo,
+  ExtensionSettingsPanelReleaseRequest,
+  ExtensionSettingsPanelSubmitRequest,
+  ExtensionThemeRegistrationInfo
+} from '@shared/extension'
+import type { ExtensionHostRpcClient } from '../runtime'
+import { requireSafeExtensionId } from '../shared/path-confinement'
+import { ExtensionCommandContributionPoint } from './commands'
+import { ExtensionDeeplinkRouteContributionPoint } from './deeplink-routes'
+import { ExtensionEntityMenuContributionPoint } from './entity-menus'
+import { ExtensionScraperProviderContributionPoint } from './scraper-providers'
+import { ExtensionSettingsPanelContributionPoint } from './settings-panels'
+import { ExtensionThemeContributionPoint } from './themes'
+import type {
+  ExtensionContributionDomainOptions,
   ExtensionContributionReleaseDiagnostic
 } from './types'
 
 export class ExtensionContributionRegistry {
-  readonly entityMenus: ExtensionEntityMenuContributionHost
-  readonly settingsPanels: ExtensionSettingsPanelContributionHost
-  readonly themes: ExtensionThemeContributionHost
-  readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionHost
-  readonly scraperProviders: ExtensionScraperProviderContributionHost
-  readonly commands: ExtensionCommandContributionHost
+  readonly entityMenus: ExtensionEntityMenuContributionPoint
+  readonly settingsPanels: ExtensionSettingsPanelContributionPoint
+  readonly themes: ExtensionThemeContributionPoint
+  readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionPoint
+  readonly scraperProviders: ExtensionScraperProviderContributionPoint
+  readonly commands: ExtensionCommandContributionPoint
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {
-    this.entityMenus = new ExtensionEntityMenuContributionHost(options)
-    this.settingsPanels = new ExtensionSettingsPanelContributionHost(options)
-    this.themes = new ExtensionThemeContributionHost(options)
-    this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionHost(options)
-    this.scraperProviders = new ExtensionScraperProviderContributionHost(options)
-    this.commands = new ExtensionCommandContributionHost(options)
+  constructor(private readonly options: ExtensionContributionDomainOptions) {
+    this.entityMenus = new ExtensionEntityMenuContributionPoint(options)
+    this.settingsPanels = new ExtensionSettingsPanelContributionPoint(options)
+    this.themes = new ExtensionThemeContributionPoint(options)
+    this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint(options)
+    this.scraperProviders = new ExtensionScraperProviderContributionPoint(options)
+    this.commands = new ExtensionCommandContributionPoint(options)
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
@@ -168,6 +186,76 @@ export class ExtensionContributionRegistry {
       deeplinkRoutes: this.deeplinkRoutes.getSnapshot(),
       themes: this.themes.getSnapshot()
     }
+  }
+
+  listSettingsPanels(): readonly ExtensionSettingsPanelRegistrationInfo[] {
+    return this.settingsPanels.getSnapshot()
+  }
+
+  listThemes(): readonly ExtensionThemeRegistrationInfo[] {
+    return this.themes.getSnapshot()
+  }
+
+  resolveEntityMenu(
+    request: ExtensionEntityMenuResolveRequest
+  ): Promise<ExtensionResolvedEntityMenu> {
+    return this.entityMenus.resolve(request)
+  }
+
+  invokeEntityMenuCallback(
+    request: ExtensionEntityMenuInvokeRequest
+  ): Promise<ExtensionEntityMenuInvokeResponse> {
+    return this.entityMenus.invoke({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  releaseEntityMenu(request: ExtensionEntityMenuReleaseRequest): Promise<void> {
+    return this.entityMenus.release(request)
+  }
+
+  openSettingsPanel(
+    request: ExtensionSettingsPanelOpenRequest
+  ): Promise<ExtensionSettingsPanelOpenResponse> {
+    return this.settingsPanels.open({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  refreshSettingsPanel(
+    request: ExtensionSettingsPanelRefreshRequest
+  ): Promise<ExtensionSettingsPanelRefreshResponse> {
+    return this.settingsPanels.refresh({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  submitSettingsPanel(
+    request: ExtensionSettingsPanelSubmitRequest
+  ): Promise<ExtensionSettingsPanelCallbackResponse> {
+    return this.settingsPanels.submit({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  invokeSettingsPanelNode(
+    request: ExtensionSettingsPanelInvokeRequest
+  ): Promise<ExtensionSettingsPanelCallbackResponse> {
+    return this.settingsPanels.invoke({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
+  }
+
+  releaseSettingsPanel(request: ExtensionSettingsPanelReleaseRequest): Promise<void> {
+    return this.settingsPanels.release({
+      ...request,
+      extensionId: requireSafeExtensionId(request.extensionId)
+    })
   }
 
   assertReleased(extensionId: string, operation: string): void {

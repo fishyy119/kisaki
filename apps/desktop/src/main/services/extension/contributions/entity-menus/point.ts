@@ -22,7 +22,7 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionHostOptions,
+  type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
 
@@ -38,12 +38,12 @@ interface MainMenuSession {
   runtimeHandles: Set<ExtensionRuntimeHandle>
 }
 
-export class ExtensionEntityMenuContributionHost {
+export class ExtensionEntityMenuContributionPoint {
   private readonly registrations = new Map<string, MenuRegistration>()
   private readonly byPublicId = new Map<string, MenuRegistration>()
   private readonly sessions = new Map<string, MainMenuSession>()
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {}
+  constructor(private readonly options: ExtensionContributionDomainOptions) {}
 
   register(runtimeHandle: ExtensionRuntimeHandle, contribution: EntityMenuRegistrationInfo): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)

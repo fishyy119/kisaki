@@ -10,7 +10,7 @@ import type { HostContributionDomainOptions, HostContributionScope } from '../ty
 import { createContributionRegistration } from '../registration'
 import { toSerializableValue } from '../../sdk-bridge/utils/serialization'
 
-export class HostCommandContributions {
+export class HostCommandContributionPoint {
   constructor(private readonly options: HostContributionDomainOptions) {}
 
   register(scope: HostContributionScope, command: CommandContribution): CommandRegistration {

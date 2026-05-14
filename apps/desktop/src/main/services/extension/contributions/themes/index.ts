@@ -1,1 +1,1 @@
-export { ExtensionThemeContributionHost } from './manager'
+export { ExtensionThemeContributionPoint } from './point'

@@ -603,13 +603,13 @@ apps/desktop/src/main/services/extension/sources/
 | `ExtensionInstallationView`            | 聚合 built-in、安装记录、package manifest 和 runtime 状态，输出 installed 列表。                             |
 | `ExtensionInstallationMetadataFactory` | 从 installation、built-in 和 dev 记录创建 `ExtensionRuntimeMetadata`，实现放在 `installations/metadata.ts`。 |
 | `ExtensionPackageLayout`               | 统一解析 packages、data、temp 路径。                                                                         |
-| `ExtensionPackageInstaller`            | 安装、更新、卸载的门面。                                                                                     |
+| `ExtensionInstallerManager`            | 安装、更新、卸载的门面。                                                                                     |
 | `ExtensionPackageDownloader`           | 下载 `.kisx` 到 temp。                                                                                       |
 | `ExtensionPackageOperationRegistry`    | 在内存中跟踪正在运行的 install/update operation，并保存下载阶段的 `AbortController`。                        |
 | `ExtensionIconManager`                 | 由 main 代理 catalog 图标下载、大小限制、可选 sha256 校验和本地 URL 映射；实现放在 `packages/icon.ts`。      |
 | `ExtensionPackageVerifier`             | 校验 sha256、签名、zip 安全和包内 manifest。                                                                 |
 | `ExtensionPackageExtractor`            | 解压到 staging 并验证文件存在。                                                                              |
-| `ExtensionPackageTransaction`          | 文件系统和数据库事务协调。                                                                                   |
+| `ExtensionPackageTransaction`          | active package、installation DB 和 signer trust 的事务协调。                                                 |
 | `ExtensionUpdatePlanner`               | 选择更新候选和解释不可更新原因。                                                                             |
 
 `ExtensionService` 保持 main-process facade，只编排这些 helper，不放复杂业务逻辑。`extension/` 根目录只保留服务门面、IPC 注册和共享类型；远程仓库、已安装状态、本地包文件系统和安装编排必须分别进入 `repositories/`、`installations/`、`packages/` 和 `installer/`。
@@ -1299,7 +1299,7 @@ rg -n "provider.*locator|locator.*provider" apps/desktop/src/main/services/exten
 ```powershell
 rg -n "ExtensionRegistryManifest|ExtensionRegistryRelease|ExtensionRegistryArtifact" packages/extension-api apps docs
 rg -n "extension:search-catalog|extension:get-installed-packages|extension:list-repositories|extension:add-repository|extension:update-repository|extension:remove-repository|extension:refresh-repository|extension:refresh-repositories|extension:list-trusted-signers|extension:remove-trusted-signer|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
-rg -n "ExtensionRepositoryManager|ExtensionPackageInstaller|ExtensionUpdatePlanner|ExtensionSignerTrustManager" apps/desktop/src/main/services/extension
+rg -n "ExtensionRepositoryManager|ExtensionInstallerManager|ExtensionUpdatePlanner|ExtensionSignerTrustManager" apps/desktop/src/main/services/extension
 rg -n "ExtensionPackageTransaction|ExtensionIconManager" apps/desktop/src/main/services/extension
 rg -n "extension_repositories|extension_installations|extension_signer_trusts" apps/desktop/src/shared/db apps/desktop/drizzle
 ```

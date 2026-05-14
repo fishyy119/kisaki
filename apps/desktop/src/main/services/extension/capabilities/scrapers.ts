@@ -7,13 +7,13 @@ import {
 import type { ScraperService } from '@main/services/scraper'
 import type { ScraperProfileSummary as AppScraperProfileSummary } from '@shared/scraper'
 
-export interface ExtensionScrapersCapabilityHostOptions {
+export interface ExtensionScrapersCapabilityProviderOptions {
   scraper: ScraperService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionScrapersCapabilityHost {
-  constructor(private readonly options: ExtensionScrapersCapabilityHostOptions) {}
+export class ExtensionScrapersCapabilityProvider {
+  constructor(private readonly options: ExtensionScrapersCapabilityProviderOptions) {}
 
   listProfiles(runtimeHandle: string, query?: ScraperProfileListQuery): ScraperProfileSummary[] {
     this.requireRuntime(runtimeHandle)

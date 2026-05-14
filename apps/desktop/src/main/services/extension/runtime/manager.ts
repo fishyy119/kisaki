@@ -39,7 +39,7 @@ import {
 } from './state'
 import { ExtensionRuntimeStorage } from './storage'
 import type { ExtensionCapabilityGateway } from '../capabilities'
-import type { ExtensionContributionRegistry } from '../contributions/registry'
+import type { ExtensionContributionRegistry } from '../contributions'
 
 export type { ExtensionRuntimeChangeCause } from '@kisaki/extension-api'
 export type { ExtensionRuntimeState, ExtensionRuntimeStatus } from './state'

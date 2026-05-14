@@ -8,11 +8,11 @@ import type { CommandRegistrationInput, CommandService } from '@main/services/co
 import {
   requireContributionOwner,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionHostOptions,
+  type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
 
-export interface ExtensionCommandContributionHostOptions extends ExtensionContributionHostOptions {
+export interface ExtensionCommandContributionPointOptions extends ExtensionContributionDomainOptions {
   command?: CommandService
 }
 
@@ -22,13 +22,13 @@ interface ExtensionCommandRegistration {
   dispose: () => void
 }
 
-export class ExtensionCommandContributionHost {
+export class ExtensionCommandContributionPoint {
   private readonly registrations = new Map<
     ExtensionRuntimeHandle,
     Map<string, ExtensionCommandRegistration>
   >()
 
-  constructor(private readonly options: ExtensionCommandContributionHostOptions) {}
+  constructor(private readonly options: ExtensionCommandContributionPointOptions) {}
 
   register(
     runtimeHandle: ExtensionRuntimeHandle,

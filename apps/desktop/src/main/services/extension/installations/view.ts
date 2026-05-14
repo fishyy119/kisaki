@@ -2,8 +2,11 @@ import fse from 'fs-extra'
 import log from 'electron-log/main'
 import type { ValidationIssue } from '@kisaki/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
-import { readExtensionManifestFile, validateInstalledExtensionPackage } from '../packages/manifest'
-import type { ExtensionPackageLayout } from '../packages/layout'
+import {
+  type ExtensionPackageLayout,
+  readExtensionManifestFile,
+  validateInstalledExtensionPackage
+} from '../packages'
 import type { ExtensionInstalledEntry, ScannedExtensionPackage } from '../types'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionInstallationStore } from './store'

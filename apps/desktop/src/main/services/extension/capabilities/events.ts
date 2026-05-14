@@ -3,7 +3,7 @@ import { createValidationError, normalizeCapabilityError } from '@kisaki/extensi
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
 import type { AppEvents } from '@shared/events'
-import type { ExtensionHostRpcClient } from '../runtime/rpc-client'
+import type { ExtensionHostRpcClient } from '../runtime'
 
 type EventUnsubscribe = () => void
 
@@ -12,16 +12,16 @@ interface HostEventSubscriptionRecord {
   unsubscribe: EventUnsubscribe
 }
 
-export interface ExtensionEventsCapabilityHostOptions {
+export interface ExtensionEventsCapabilityProviderOptions {
   db: DbService
   event: EventService
 }
 
-export class ExtensionEventsCapabilityHost {
+export class ExtensionEventsCapabilityProvider {
   private readonly subscriptions = new Map<string, Map<string, HostEventSubscriptionRecord>>()
   private rpc: ExtensionHostRpcClient | null = null
 
-  constructor(private readonly options: ExtensionEventsCapabilityHostOptions) {}
+  constructor(private readonly options: ExtensionEventsCapabilityProviderOptions) {}
 
   attachRpc(rpc: ExtensionHostRpcClient): void {
     this.rpc = rpc

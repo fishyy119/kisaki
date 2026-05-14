@@ -18,13 +18,13 @@ import type { NetworkService } from '@main/services/network'
 import type { FetchOptions } from '@shared/network'
 import { assertInsideAnyRoot, resolveInsideRoot } from '../shared/path-confinement'
 
-export interface ExtensionNetworkCapabilityHostOptions {
+export interface ExtensionNetworkCapabilityProviderOptions {
   network: NetworkService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionNetworkCapabilityHost {
-  constructor(private readonly options: ExtensionNetworkCapabilityHostOptions) {}
+export class ExtensionNetworkCapabilityProvider {
+  constructor(private readonly options: ExtensionNetworkCapabilityProviderOptions) {}
 
   async request(
     runtimeHandle: string,

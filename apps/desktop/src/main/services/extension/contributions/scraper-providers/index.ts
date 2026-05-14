@@ -1,1 +1,1 @@
-export { ExtensionScraperProviderContributionHost } from './manager'
+export { ExtensionScraperProviderContributionPoint } from './point'

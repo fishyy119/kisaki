@@ -35,15 +35,15 @@ import type {
 import { isExtensionEventTopic } from '@kisaki/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
-import { HostCommandContributions } from '../contributions/commands'
-import { HostDeeplinkRouteContributions } from '../contributions/deeplink-routes'
-import { HostEntityMenuContributions } from '../contributions/entity-menus'
+import { HostCommandContributionPoint } from '../contributions/commands'
+import { HostDeeplinkRouteContributionPoint } from '../contributions/deeplink-routes'
+import { HostEntityMenuContributionPoint } from '../contributions/entity-menus'
 import {
-  HostScraperProviderContributions,
+  HostScraperProviderContributionPoint,
   MAIN_TO_HOST_SCRAPER_RPC
 } from '../contributions/scraper-providers'
-import { HostSettingsPanelContributions } from '../contributions/settings-panels'
-import { HostThemeContributions } from '../contributions/themes'
+import { HostSettingsPanelContributionPoint } from '../contributions/settings-panels'
+import { HostThemeContributionPoint } from '../contributions/themes'
 import type { HostContributionDiagnosticInput, HostContributionScope } from '../contributions/types'
 import { createDisposable, createDisposableStore } from './disposables'
 import {
@@ -89,12 +89,12 @@ type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
 export class ExtensionHostSdkBridge {
   private readonly executionScope = new AsyncLocalStorage<ActiveExtensionScope>()
   private readonly bridge: ExtensionSdkBridge
-  private readonly entityMenus: HostEntityMenuContributions
-  private readonly settingsPanels: HostSettingsPanelContributions
-  private readonly scraperProviders: HostScraperProviderContributions
-  private readonly deeplinkRoutes: HostDeeplinkRouteContributions
-  private readonly themes: HostThemeContributions
-  private readonly commands: HostCommandContributions
+  private readonly entityMenus: HostEntityMenuContributionPoint
+  private readonly settingsPanels: HostSettingsPanelContributionPoint
+  private readonly scraperProviders: HostScraperProviderContributionPoint
+  private readonly deeplinkRoutes: HostDeeplinkRouteContributionPoint
+  private readonly themes: HostThemeContributionPoint
+  private readonly commands: HostCommandContributionPoint
   private readonly hostEventSubscriptions = new Map<string, HostEventSubscriptionRecord>()
   private readonly extensionEventListeners = new Map<
     ExtensionEventTopic,
@@ -129,12 +129,12 @@ export class ExtensionHostSdkBridge {
         this.reportRuntimeDiagnostic(scope, diagnostic)
       }
     }
-    this.entityMenus = new HostEntityMenuContributions(contributionOptions)
-    this.settingsPanels = new HostSettingsPanelContributions(contributionOptions)
-    this.scraperProviders = new HostScraperProviderContributions(contributionOptions)
-    this.deeplinkRoutes = new HostDeeplinkRouteContributions(contributionOptions)
-    this.themes = new HostThemeContributions(contributionOptions)
-    this.commands = new HostCommandContributions(contributionOptions)
+    this.entityMenus = new HostEntityMenuContributionPoint(contributionOptions)
+    this.settingsPanels = new HostSettingsPanelContributionPoint(contributionOptions)
+    this.scraperProviders = new HostScraperProviderContributionPoint(contributionOptions)
+    this.deeplinkRoutes = new HostDeeplinkRouteContributionPoint(contributionOptions)
+    this.themes = new HostThemeContributionPoint(contributionOptions)
+    this.commands = new HostCommandContributionPoint(contributionOptions)
     this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
       this.handleHostEventNotification(payload)
     )

@@ -94,6 +94,32 @@ export class ExtensionInstallationStore {
     return this.require(extensionId)
   }
 
+  restoreSnapshot(extensionId: string, snapshot: ExtensionInstallationRow | null): void {
+    if (!snapshot) {
+      this.remove(extensionId)
+      return
+    }
+
+    this.db
+      .insert(extensionInstallations)
+      .values(snapshot)
+      .onConflictDoUpdate({
+        target: extensionInstallations.id,
+        set: {
+          enabled: snapshot.enabled,
+          version: snapshot.version,
+          source: snapshot.source,
+          installReason: snapshot.installReason,
+          updatePolicy: snapshot.updatePolicy,
+          pinnedVersion: snapshot.pinnedVersion,
+          channel: snapshot.channel,
+          installedAt: snapshot.installedAt,
+          updatedAt: snapshot.updatedAt
+        }
+      })
+      .run()
+  }
+
   setEnabled(extensionId: string, enabled: boolean): ExtensionInstallationRow {
     return this.update(extensionId, { enabled })
   }

@@ -1,1 +1,1 @@
-export { HostCommandContributions } from './manager'
+export { HostCommandContributionPoint } from './point'

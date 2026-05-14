@@ -5,7 +5,7 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionHostOptions,
+  type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
 
@@ -14,10 +14,10 @@ interface ThemeRegistration {
   theme: ThemeContribution
 }
 
-export class ExtensionThemeContributionHost {
+export class ExtensionThemeContributionPoint {
   private readonly registrations = new Map<string, ThemeRegistration>()
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {}
+  constructor(private readonly options: ExtensionContributionDomainOptions) {}
 
   register(runtimeHandle: ExtensionRuntimeHandle, theme: ThemeContribution): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)

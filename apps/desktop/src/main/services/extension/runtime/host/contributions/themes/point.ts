@@ -7,7 +7,7 @@ import { requireRuntimeByScope, throwValidationIssues } from '../utils'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 
-export class HostThemeContributions {
+export class HostThemeContributionPoint {
   constructor(private readonly options: HostContributionDomainOptions) {}
 
   register(scope: HostContributionScope, theme: ThemeContribution): ThemeRegistration {

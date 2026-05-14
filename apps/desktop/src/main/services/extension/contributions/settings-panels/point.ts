@@ -21,7 +21,7 @@ import {
   getRuntimeContributionKey,
   requireContributionOwner,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionHostOptions
+  type ExtensionContributionDomainOptions
 } from '../types'
 import {
   toHostInvokeRequest,
@@ -39,12 +39,12 @@ import { SettingsSessionStore } from './sessions'
 import type { SettingsRegistration } from './types'
 import { createSettingsError, getPublicContributionKey, toErrorMessage } from './utils'
 
-export class ExtensionSettingsPanelContributionHost {
+export class ExtensionSettingsPanelContributionPoint {
   private readonly registrations = new Map<string, SettingsRegistration>()
   private readonly byPublicId = new Map<string, SettingsRegistration>()
   private readonly sessionStore = new SettingsSessionStore()
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {}
+  constructor(private readonly options: ExtensionContributionDomainOptions) {}
 
   register(
     runtimeHandle: ExtensionRuntimeHandle,

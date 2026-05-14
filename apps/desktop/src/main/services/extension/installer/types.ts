@@ -1,32 +1,48 @@
-import type { ExtensionManifest } from '@kisaki/extension-api'
 import type {
-  ExtensionRegistryArtifact,
-  ExtensionRegistryManifest,
-  ExtensionRegistryPackage,
-  ExtensionRegistryRelease
-} from '@kisaki/extension-registry'
+  ExtensionInstallReleaseRequest,
+  ExtensionInstallUpdatePolicy
+} from '@shared/extension'
 
-export interface PrepareRepositoryExtensionPackageInput {
+export type ExtensionInstallReleaseReason = 'manual' | 'update'
+
+export type ExtensionInstallReleaseApproval =
+  | {
+      kind: 'user-confirmed'
+      planId: string
+      planFingerprint: string
+      trustSignerFingerprint: boolean
+    }
+  | {
+      kind: 'trusted-automatic'
+    }
+
+export interface ExtensionInstallReleaseCommand {
   operationId: string
-  manifest: Pick<ExtensionRegistryManifest, 'signingKeys'>
-  registryPackage: Pick<ExtensionRegistryPackage, 'id' | 'categories'>
-  release: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines'>
-  artifact: ExtensionRegistryArtifact
-  signal?: AbortSignal
+  extensionId: string
+  releaseId?: string
+  repositoryId?: string
+  reason: ExtensionInstallReleaseReason
+  approval: ExtensionInstallReleaseApproval
+  enabled?: boolean
+  updatePolicy?: ExtensionInstallUpdatePolicy
 }
 
-export interface PrepareLocalExtensionPackageInput {
-  operationId: string
-  filePath: string
-  expectedExtensionId?: string
-  signal?: AbortSignal
-}
-
-export interface PreparedExtensionPackage {
-  operationId: string
-  archivePath: string
-  packageDir: string
-  manifest: ExtensionManifest
-  archiveSha256: string
-  archiveSize: number
+export function createInstallReleaseCommandFromRequest(
+  request: ExtensionInstallReleaseRequest
+): ExtensionInstallReleaseCommand {
+  return {
+    operationId: request.operationId,
+    extensionId: request.extensionId,
+    releaseId: request.releaseId,
+    repositoryId: request.repositoryId,
+    reason: 'manual',
+    approval: {
+      kind: 'user-confirmed',
+      planId: request.planId,
+      planFingerprint: request.planFingerprint,
+      trustSignerFingerprint: request.trustSignerFingerprint === true
+    },
+    enabled: request.enabled,
+    updatePolicy: request.updatePolicy
+  }
 }

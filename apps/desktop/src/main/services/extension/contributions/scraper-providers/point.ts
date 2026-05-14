@@ -9,7 +9,7 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionHostOptions
+  type ExtensionContributionDomainOptions
 } from '../types'
 import { getHostScraperProviderId, getScraperKey } from './descriptors'
 import type {
@@ -20,7 +20,7 @@ import type {
 } from './domain'
 import { createProviderAdapter } from './registrations'
 
-export class ExtensionScraperProviderContributionHost {
+export class ExtensionScraperProviderContributionPoint {
   private readonly registrations = new Map<string, ScraperRegistration>()
   private readonly domainsByMediaType: ReadonlyMap<ScraperMediaType, ScraperDomain>
   private readonly gameDomain: ScraperDomain = {
@@ -56,7 +56,7 @@ export class ExtensionScraperProviderContributionHost {
       scraper.unregisterCharacterProvider(hostProviderId)
   }
 
-  constructor(private readonly options: ExtensionContributionHostOptions) {
+  constructor(private readonly options: ExtensionContributionDomainOptions) {
     this.domainsByMediaType = new Map<ScraperMediaType, ScraperDomain>([
       [this.gameDomain.mediaType, this.gameDomain],
       [this.personDomain.mediaType, this.personDomain],
@@ -193,7 +193,7 @@ export class ExtensionScraperProviderContributionHost {
       )
     } catch (error) {
       log.warn(
-        `[ExtensionScraperProviderContributionHost] Failed to unregister provider "${registration.hostProviderId}":`,
+        `[ExtensionScraperProviderContributionPoint] Failed to unregister provider "${registration.hostProviderId}":`,
         error
       )
     }

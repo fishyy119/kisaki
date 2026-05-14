@@ -1,1 +1,1 @@
-export { HostThemeContributions } from './manager'
+export { HostThemeContributionPoint } from './point'

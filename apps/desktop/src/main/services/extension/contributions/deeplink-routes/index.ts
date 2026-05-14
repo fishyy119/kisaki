@@ -1,1 +1,1 @@
-export { ExtensionDeeplinkRouteContributionHost } from './manager'
+export { ExtensionDeeplinkRouteContributionPoint } from './point'

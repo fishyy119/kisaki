@@ -9,13 +9,13 @@ import type { IngestService } from '@main/services/ingest'
 import type { ScraperLookup as AppScraperLookup } from '@shared/scraper'
 import type { IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult } from '@shared/ingest/add'
 
-export interface ExtensionIngestCapabilityHostOptions {
+export interface ExtensionIngestCapabilityProviderOptions {
   ingest: IngestService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionIngestCapabilityHost {
-  constructor(private readonly options: ExtensionIngestCapabilityHostOptions) {}
+export class ExtensionIngestCapabilityProvider {
+  constructor(private readonly options: ExtensionIngestCapabilityProviderOptions) {}
 
   async addGameFromScraper(
     runtimeHandle: string,

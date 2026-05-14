@@ -54,7 +54,7 @@ const SESSION_TTL_MS = 10 * 60 * 1000
  * It keeps callback functions in the extension host and only exposes resolved,
  * serializable menu nodes to the main process.
  */
-export class HostEntityMenuContributions {
+export class HostEntityMenuContributionPoint {
   private readonly sessions = new Map<string, EntityMenuSession>()
 
   constructor(private readonly options: HostContributionDomainOptions) {}

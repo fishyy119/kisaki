@@ -1,2 +1,2 @@
-export { ExtensionLibraryEntitiesHost } from './host'
-export type { ExtensionLibraryEntitiesHostOptions } from './host'
+export { ExtensionLibraryEntityStore } from './store'
+export type { ExtensionLibraryEntityStoreOptions } from './store'

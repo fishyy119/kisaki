@@ -6,7 +6,7 @@ import type {
   ExtensionRuntimeMetadata
 } from '@kisaki/extension-api'
 import { toRpcErrorPayload } from '@kisaki/extension-api'
-import { readExtensionManifestFile, resolveExtensionFilePath } from '../../packages/manifest'
+import { readExtensionManifestFile, resolveExtensionFilePath } from '../../packages'
 import {
   createEntityMenuRegistrationMaps,
   createScraperProviderMaps,

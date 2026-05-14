@@ -1,11 +1,11 @@
 import type { Locale } from '@shared/locale'
 import type { ScraperLookup } from '@shared/scraper'
-import type { ExtensionContributionHostOptions } from '../types'
+import type { ExtensionContributionDomainOptions } from '../types'
 import { getScraperRpcMethod } from './descriptors'
 import type { ScraperDomain, ScraperRegistration } from './domain'
 
 export function createProviderAdapter(
-  options: ExtensionContributionHostOptions,
+  options: ExtensionContributionDomainOptions,
   registration: ScraperRegistration,
   domain: ScraperDomain
 ): unknown {
@@ -69,7 +69,7 @@ export function createProviderAdapter(
 }
 
 function createSessionAdapter(
-  options: ExtensionContributionHostOptions,
+  options: ExtensionContributionDomainOptions,
   registration: ScraperRegistration,
   domain: ScraperDomain,
   sessionId: string
@@ -110,7 +110,7 @@ function createSessionAdapter(
 }
 
 async function requestScraperHost<TResponse>(
-  options: ExtensionContributionHostOptions,
+  options: ExtensionContributionDomainOptions,
   domain: ScraperDomain,
   action: 'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close',
   params: Record<string, unknown>,

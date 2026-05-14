@@ -14,16 +14,16 @@ import {
 import type { NotifyService } from '@main/services/notify'
 import type { NotifyOptions as SharedNotifyOptions } from '@shared/notify'
 
-export interface ExtensionNotifyCapabilityHostOptions {
+export interface ExtensionNotifyCapabilityProviderOptions {
   notify: NotifyService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
-export class ExtensionNotifyCapabilityHost {
+export class ExtensionNotifyCapabilityProvider {
   private readonly handleOwners = new Map<string, string>()
   private readonly handlesByRuntime = new Map<string, Set<string>>()
 
-  constructor(private readonly options: ExtensionNotifyCapabilityHostOptions) {}
+  constructor(private readonly options: ExtensionNotifyCapabilityProviderOptions) {}
 
   async show(
     runtimeHandle: string,

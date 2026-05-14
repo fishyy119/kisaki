@@ -1,11 +1,11 @@
 import semver from 'semver'
 import type { ExtensionInstallationRow } from '@shared/db'
 import type {
+  ExtensionInstallPlan,
   ExtensionUpdateCheckResult,
   ExtensionUpdateInfo,
   ExtensionUpdateUnavailableInfo
 } from '@shared/extension'
-import type { ExtensionInstallPlanner } from '../installer/planner'
 import type { ExtensionInstallationStore } from '../installations'
 import type {
   ExtensionRepositoryInstallCandidate,
@@ -18,7 +18,7 @@ export interface ExtensionUpdatePlan {
   installation: ExtensionInstallationRow
   candidate: ExtensionRepositoryInstallCandidate
   info: ExtensionUpdateInfo
-  installPlan: ReturnType<ExtensionInstallPlanner['createRepositoryPlanForCandidate']>
+  installPlan: ExtensionInstallPlan
   trustedSigner: boolean
   automatic: boolean
 }
@@ -30,7 +30,7 @@ export interface SelectExtensionUpdatePlanOptions {
 export interface ExtensionUpdatePlannerOptions {
   repositories: ExtensionRepositoryManager
   installations: ExtensionInstallationStore
-  installPlanner: ExtensionInstallPlanner
+  createInstallPlan(candidate: ExtensionRepositoryInstallCandidate): ExtensionInstallPlan
 }
 
 export class ExtensionUpdatePlanner {
@@ -215,7 +215,7 @@ export class ExtensionUpdatePlanner {
     installation: ExtensionInstallationRow,
     candidate: ExtensionRepositoryInstallCandidate
   ): ExtensionUpdatePlan {
-    const installPlan = this.options.installPlanner.createRepositoryPlanForCandidate(candidate)
+    const installPlan = this.options.createInstallPlan(candidate)
     const trustedSigner = installPlan.signer.status === 'trusted' && installPlan.signer.trusted
     const automatic = installation.updatePolicy === 'auto' && trustedSigner
 

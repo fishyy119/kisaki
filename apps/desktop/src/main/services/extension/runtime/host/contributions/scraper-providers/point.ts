@@ -59,7 +59,7 @@ type ScraperProviderInput<TMediaType extends ScraperMediaType> = TMediaType exte
       ? CompanyScraperProvider
       : CharacterScraperProvider
 
-export class HostScraperProviderContributions {
+export class HostScraperProviderContributionPoint {
   private readonly options: HostContributionDomainOptions
   private readonly gameSessions = new Map<string, ScraperSessionRecord<GameScraperSession>>()
   private readonly personSessions = new Map<string, ScraperSessionRecord<PersonScraperSession>>()

@@ -54,12 +54,12 @@ import type {
   LibraryEntityTable
 } from './types'
 
-export interface ExtensionLibraryEntitiesHostOptions {
+export interface ExtensionLibraryEntityStoreOptions {
   db: DbService
 }
 
-export class ExtensionLibraryEntitiesHost {
-  constructor(private readonly options: ExtensionLibraryEntitiesHostOptions) {}
+export class ExtensionLibraryEntityStore {
+  constructor(private readonly options: ExtensionLibraryEntityStoreOptions) {}
 
   getGame(id: string): LibraryGame | null {
     return this.getEntity(id, GAME_CONFIG)
