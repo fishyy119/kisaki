@@ -127,7 +127,6 @@ export function requireInstallReleaseRequest(value: unknown): ExtensionInstallRe
     planId: requireNonEmptyString(request.planId, 'planId'),
     planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
     operationId: requireSafeOperationId(request.operationId),
-    acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
     trustSignerFingerprint: requireOptionalBoolean(
       request.trustSignerFingerprint,
       'trustSignerFingerprint'
@@ -145,7 +144,6 @@ export function requireInstallFromFileRequest(value: unknown): ExtensionInstallF
     filePath: requireNonEmptyString(request.filePath, 'filePath'),
     planId: requireNonEmptyString(request.planId, 'planId'),
     planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
-    acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
     enabled: requireOptionalBoolean(request.enabled, 'enabled')
   }
 }
@@ -167,7 +165,6 @@ export function requireUpdateRequest(value: unknown): ExtensionUpdateRequest {
     extensionId: requireSafeExtensionId(request.extensionId),
     planId: requireNonEmptyString(request.planId, 'planId'),
     planFingerprint: requireSha256Hex(request.planFingerprint, 'planFingerprint'),
-    acceptedRiskIds: requireOptionalStringArray(request.acceptedRiskIds, 'acceptedRiskIds'),
     trustSignerFingerprint: requireOptionalBoolean(
       request.trustSignerFingerprint,
       'trustSignerFingerprint'
@@ -539,14 +536,6 @@ function requireStringArray(value: unknown, label: string): readonly string[] {
   }
 
   return value
-}
-
-function requireOptionalStringArray(value: unknown, label: string): readonly string[] | undefined {
-  if (value === undefined) {
-    return undefined
-  }
-
-  return requireStringArray(value, label)
 }
 
 function requireSurface<const TSurface extends string>(

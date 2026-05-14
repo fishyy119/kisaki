@@ -23,7 +23,8 @@ import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry
 import type { TrustExtensionSignerInput } from '../signers/store'
 import { ExtensionSignerTrustStore } from '../signers/store'
 import { ExtensionInstallationStore } from '../installations/store'
-import { INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH, type ExtensionPackageLayout } from './layout'
+import type { ExtensionPackageArchiveStore } from './archive'
+import type { ExtensionPackageLayout } from './layout'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
 import { assertInsideRoot, resolveInsideRoot } from '../shared/path-confinement'
 import { wrapExtensionPackageError } from './types'
@@ -74,6 +75,7 @@ export type ExtensionPackageRecoveryAction =
   | { type: 'pruned-download'; path: string }
   | { type: 'pruned-staging'; path: string }
   | { type: 'pruned-quarantine'; path: string }
+  | { type: 'pruned-archive'; path: string }
   | { type: 'restored-backup'; extensionId: string; path: string }
   | { type: 'restored-trash'; extensionId: string; path: string }
   | { type: 'removed-backup'; path: string }
@@ -88,7 +90,8 @@ export type ExtensionPackageRecoveryAction =
 export class ExtensionPackageTransaction {
   constructor(
     private readonly layout: ExtensionPackageLayout,
-    private readonly db: BetterSQLite3Database<typeof schema>
+    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly archiveStore: ExtensionPackageArchiveStore
   ) {}
 
   async replaceActivePackage(
@@ -314,6 +317,11 @@ export class ExtensionPackageTransaction {
     })
 
     const installations = new ExtensionInstallationStore(this.db).list()
+    const retainedArchiveSha256s = createRetainedArchiveSha256Set(installations)
+    await this.archiveStore.pruneUnusedArchives(retainedArchiveSha256s, (entryPath) => {
+      actions.push({ type: 'pruned-archive', path: entryPath })
+    })
+
     const installationById = new Map(installations.map((row) => [row.id, row]))
     const installationIds = new Set(installations.map((row) => row.id))
     const activePackages = await this.scanPackageDirectories(this.layout.packagesDir)
@@ -340,7 +348,7 @@ export class ExtensionPackageTransaction {
 
     for (const installation of installations) {
       const activeIssue = await validatePackageForInstallation(
-        this.layout,
+        this.archiveStore,
         installation,
         this.layout.packageDir(installation.id)
       )
@@ -361,7 +369,7 @@ export class ExtensionPackageTransaction {
       }
 
       const recoverySource = await findVerifiedRecoverySource(
-        this.layout,
+        this.archiveStore,
         installation,
         backupPackages,
         trashPackages
@@ -399,7 +407,7 @@ export class ExtensionPackageTransaction {
       const installation = backup.extensionId ? installationById.get(backup.extensionId) : null
       const activeIssue = installation
         ? await validatePackageForInstallation(
-            this.layout,
+            this.archiveStore,
             installation,
             this.layout.packageDir(installation.id)
           )
@@ -665,7 +673,7 @@ async function inspectPackageDirectory(packageDir: string): Promise<{
 }
 
 async function findVerifiedRecoverySource(
-  layout: ExtensionPackageLayout,
+  archiveStore: ExtensionPackageArchiveStore,
   installation: ExtensionInstallationRow,
   backupPackages: readonly OperationPackageInfo[],
   trashPackages: readonly OperationPackageInfo[]
@@ -688,7 +696,7 @@ async function findVerifiedRecoverySource(
       continue
     }
 
-    const issue = await validatePackageForInstallation(layout, installation, candidate.path)
+    const issue = await validatePackageForInstallation(archiveStore, installation, candidate.path)
     if (!issue) {
       return candidate
     }
@@ -702,7 +710,7 @@ async function findVerifiedRecoverySource(
 }
 
 async function validatePackageForInstallation(
-  layout: ExtensionPackageLayout,
+  archiveStore: ExtensionPackageArchiveStore,
   installation: ExtensionInstallationRow,
   packageDir: string
 ): Promise<string | null> {
@@ -720,7 +728,7 @@ async function validatePackageForInstallation(
   }
 
   try {
-    await verifyInstalledPackageArchive(layout, installation, packageDir)
+    await verifyInstalledPackageArchive(archiveStore, installation, packageDir)
     return null
   } catch (error) {
     return getErrorMessage(error)
@@ -728,19 +736,15 @@ async function validatePackageForInstallation(
 }
 
 async function verifyInstalledPackageArchive(
-  layout: ExtensionPackageLayout,
+  archiveStore: ExtensionPackageArchiveStore,
   installation: ExtensionInstallationRow,
   packageDir: string
 ): Promise<void> {
-  const archivePath = layout.packageArchivePath(packageDir)
-  if (!(await fse.pathExists(archivePath))) {
-    throw new Error('installed package archive is missing')
-  }
-
   const source = installation.source
   if (!source) {
     throw new Error('installation source is missing or invalid')
   }
+  const archivePath = await archiveStore.requireArchive(getInstallationArchiveSha256(source))
 
   const verifier = new ExtensionPackageVerifier()
   if (source.kind === 'repository') {
@@ -885,11 +889,26 @@ async function collectPackageFileNamesInto(
     }
 
     const relativePath = path.relative(rootDir, entryPath).split(path.sep).join('/')
-    if (relativePath === INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH) {
-      continue
-    }
     names.push(relativePath)
   }
+}
+
+function createRetainedArchiveSha256Set(
+  installations: readonly ExtensionInstallationRow[]
+): ReadonlySet<string> {
+  const retained = new Set<string>()
+  for (const installation of installations) {
+    const source = installation.source
+    if (source) {
+      retained.add(getInstallationArchiveSha256(source))
+    }
+  }
+
+  return retained
+}
+
+function getInstallationArchiveSha256(source: ExtensionInstallationSource): string {
+  return source.kind === 'repository' ? source.artifact.sha256 : source.artifactSha256
 }
 
 function createSha256(data: Buffer): string {

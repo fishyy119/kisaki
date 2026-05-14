@@ -48,6 +48,7 @@ import type { ExtensionSignerTrustRow } from '@shared/db'
 import type { ExtensionRepositoryInstallationSnapshot } from '@shared/extension/installation-source'
 import type { ExtensionInstalledEntry, ExtensionServicePaths } from './types'
 import { createExtensionRuntimeMetadata } from './types'
+import { assertInstallPlanConfirmed } from './installer/confirmation'
 import { ExtensionInstallPlanner } from './installer/planner'
 import { ExtensionPackageInstaller } from './installer/manager'
 import { registerExtensionIpc } from './ipc'
@@ -55,6 +56,7 @@ import { ExtensionReloadWatcher } from './reload-watcher'
 import {
   assertExtensionPackageOperationNotAborted,
   ExtensionIconManager,
+  ExtensionPackageArchiveStore,
   ExtensionPackageDownloader,
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
@@ -108,6 +110,7 @@ export class ExtensionService implements IService {
   private installationStore!: ExtensionInstallationStore
   private signerTrustManager!: ExtensionSignerTrustManager
   private packageTransaction!: ExtensionPackageTransaction
+  private packageArchiveStore!: ExtensionPackageArchiveStore
   private packageVerifier!: ExtensionPackageVerifier
   private packageInstaller!: ExtensionPackageInstaller
   private installPlanner!: ExtensionInstallPlanner
@@ -143,15 +146,24 @@ export class ExtensionService implements IService {
     this.ipc = container.get('ipc')
     this.event = container.get('event')
     this.layout = new ExtensionPackageLayout(this.paths)
+    this.packageArchiveStore = new ExtensionPackageArchiveStore(this.layout)
     this.installationStore = new ExtensionInstallationStore(dbService.db)
     this.signerTrustManager = new ExtensionSignerTrustManager(
       new ExtensionSignerTrustStore(dbService.db)
     )
-    this.packageTransaction = new ExtensionPackageTransaction(this.layout, dbService.db)
+    this.packageTransaction = new ExtensionPackageTransaction(
+      this.layout,
+      dbService.db,
+      this.packageArchiveStore
+    )
     this.packageVerifier = new ExtensionPackageVerifier()
     this.packageInstaller = new ExtensionPackageInstaller({
       downloader: new ExtensionPackageDownloader(this.layout, networkService),
-      extractor: new ExtensionPackageExtractor(this.layout, this.packageVerifier),
+      extractor: new ExtensionPackageExtractor(
+        this.layout,
+        this.packageArchiveStore,
+        this.packageVerifier
+      ),
       transaction: this.packageTransaction,
       operations: this.packageOperations
     })
@@ -327,7 +339,7 @@ export class ExtensionService implements IService {
         assertExtensionPackageOperationNotAborted(operation.controller.signal)
         const candidate = this.repositoryManager.resolveInstallCandidate(request)
         const plan = this.installPlanner.createRepositoryPlanForCandidate(candidate)
-        this.installPlanner.assertAccepted(plan, request)
+        assertInstallPlanConfirmed(plan, request)
 
         const prepared = await this.packageInstaller.prepareRepositoryPackageWithOperation(
           {
@@ -366,7 +378,7 @@ export class ExtensionService implements IService {
           { sourceKind: 'local-file', filePath: request.filePath },
           operation.controller.signal
         )
-        this.installPlanner.assertAccepted(plan, request)
+        assertInstallPlanConfirmed(plan, request)
 
         const prepared = await this.packageInstaller.prepareLocalPackageWithOperation(
           {
@@ -385,7 +397,7 @@ export class ExtensionService implements IService {
           fileSize: prepared.archiveSize,
           artifactSha256: prepared.archiveSha256
         })
-        this.installPlanner.assertAccepted(preparedPlan, request)
+        assertInstallPlanConfirmed(preparedPlan, request)
 
         operation.phase = 'commit'
         return this.commitPreparedLocalPackage(
@@ -818,7 +830,7 @@ export class ExtensionService implements IService {
           mode: options.mode
         })
         if (options.request) {
-          this.updatePlanner.assertAccepted(updatePlan, options.request)
+          assertInstallPlanConfirmed(updatePlan.installPlan, options.request)
         }
         const candidate = updatePlan.candidate
 

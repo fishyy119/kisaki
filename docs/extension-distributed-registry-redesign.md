@@ -478,6 +478,8 @@ userData/extensions/
       manifest.json
       dist/
       README.md
+  archives/
+    <artifact-sha256>.kisx
   data/
     <extension-id>/
       storage.json
@@ -498,7 +500,7 @@ userData/extensions/
         <operation-id>/
 ```
 
-`temp/runtime/<extension-id>` 是 extension runtime 暴露给扩展的临时目录，生命周期属于该扩展的数据域。`temp/operations/*` 是安装、更新、卸载的事务目录，生命周期属于单次 operation。
+`archives/<artifact-sha256>.kisx` 是按内容摘要寻址的原始安装包归档存储，用于恢复和完整性校验，不属于 active package payload。`temp/runtime/<extension-id>` 是 extension runtime 暴露给扩展的临时目录，生命周期属于该扩展的数据域。`temp/operations/*` 是安装、更新、卸载的事务目录，生命周期属于单次 operation。
 
 安装、更新、卸载的事务目录使用 `userData/extensions/temp/operations`，不使用 OS temp。原因是 staging、backup 和 trash 会参与 package 目录替换和回滚，必须尽量与 `packages/` 位于同一卷，避免跨盘 move 退化为 copy/delete。
 
@@ -515,11 +517,13 @@ v1 不在 package 目录中写入额外的来源文件。安装来源只记录�
 - repository 安装写入 `kind = repository`、repository id/url、manifest digest、release digest、artifact URL、artifact sha256、signature key id 和 signer fingerprint。
 - 本地文件安装写入 `kind = local-file`、原始文件路径和 artifact sha256，并设置 `install_reason = local-file`。
 - signer trust 选择写入 `extension_signer_trusts`，不复制到 package 目录。
+- 原始 `.kisx` 包写入 `archives/<artifact-sha256>.kisx` 内容寻址归档存储，不写入 `packages/<extension-id>`。
 
 原因：
 
 - package 目录内的来源文件会与 SQLite `source` 字段重复，但又不是唯一可信事实。
 - 如果用户或外部程序能改 package 目录，也能改同目录来源文件；它不能提供额外安全性。
+- 原始 `.kisx` 是安装包归档和恢复输入，不是 runtime payload；从 active package 目录剥离后，运行目录、归档目录和事务目录各自职责清晰。
 - Runtime 加载只需要 DB installation id、由 layout 派生的 active package、包内 manifest、entry/可选 icon 校验和 enabled 状态。
 - DB 丢失时 v1 不自动从 package 目录恢复安装记录；孤儿 package 只作为动态 catalog issue 展示，用户可以卸载或重新安装。
 
@@ -826,8 +830,8 @@ Transaction recovery 规则：
 
 - Renderer 调用 `extension:create-install-plan`。
 - Renderer 使用 `@renderer/features/extension/components/install-dialog/` 展示版本、仓库、artifact host、sha256、签名状态、权限/风险和更新策略。
-- 用户确认后，renderer 调用 `extension:install-release` 并携带 `acceptedRiskIds`、`trustSignerFingerprint` 等显式确认字段。
-- Main 校验确认字段是否覆盖当前 plan 中的风险；若 plan 已变化，拒绝安装并要求 renderer 重新获取 plan。
+- 用户确认后，renderer 调用 `extension:install-release` 并携带 `planId`、`planFingerprint`、`trustSignerFingerprint` 等确认字段。
+- Main 重新生成 plan 并校验 `planId` 和 `planFingerprint`；fingerprint 覆盖风险列表、artifact、签名、版本和来源身份。若 plan 已变化，拒绝安装并要求 renderer 重新获取 plan。
 - 不再使用主进程 Electron 原生确认 dialog。系统原生 dialog 只保留给选择本地 `.kisx` 文件这类 OS 文件选择场景。
 
 `extension:install-release`：

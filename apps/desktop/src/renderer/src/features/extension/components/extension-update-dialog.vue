@@ -73,7 +73,6 @@ async function handleUpdate() {
         extensionId: props.extension.id,
         planId: props.updateInfo.planId,
         planFingerprint: props.updateInfo.planFingerprint,
-        acceptedRiskIds: props.updateInfo.risks?.map((risk) => risk.id) ?? [],
         trustSignerFingerprint: trustSignerFingerprint.value
       })
     )

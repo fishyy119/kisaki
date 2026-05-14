@@ -13,10 +13,8 @@ import type {
   ExtensionCatalogArtifactInfo,
   ExtensionCatalogReleaseInfo,
   ExtensionCreateRepositoryInstallPlanRequest,
-  ExtensionInstallFromFileRequest,
   ExtensionInstallPlan,
   ExtensionInstallPlanSignerInfo,
-  ExtensionInstallReleaseRequest,
   ExtensionInstallRiskCode,
   ExtensionInstallRiskInfo
 } from '@shared/extension'
@@ -42,13 +40,6 @@ export interface LocalExtensionInstallPlanInput {
 }
 
 type CreateExtensionInstallPlanInput = Omit<ExtensionInstallPlan, 'fingerprint'>
-
-type ExtensionInstallPlanAcceptanceInput = Pick<
-  ExtensionInstallReleaseRequest | ExtensionInstallFromFileRequest,
-  'planId' | 'planFingerprint' | 'acceptedRiskIds'
-> & {
-  trustSignerFingerprint?: boolean
-}
 
 export class ExtensionInstallPlanner {
   constructor(private readonly options: ExtensionInstallPlannerOptions) {}
@@ -148,29 +139,6 @@ export class ExtensionInstallPlanner {
       defaultEnabled: existing?.enabled ?? true,
       updatePolicy: 'manual'
     })
-  }
-
-  assertAccepted(plan: ExtensionInstallPlan, request: ExtensionInstallPlanAcceptanceInput): void {
-    if (request.planId !== plan.id || request.planFingerprint !== plan.fingerprint) {
-      throw new Error('Extension install plan has changed. Please review the latest plan.')
-    }
-
-    const acceptedRiskIds = new Set(request.acceptedRiskIds ?? [])
-    const missingRisks = plan.risks.filter((risk) => !acceptedRiskIds.has(risk.id))
-    if (missingRisks.length > 0) {
-      throw new Error(
-        `Extension install plan requires confirmation for: ${missingRisks
-          .map((risk) => risk.code)
-          .join(', ')}.`
-      )
-    }
-
-    if (
-      request.trustSignerFingerprint &&
-      (!plan.signer.fingerprint || plan.signer.status === 'unsigned')
-    ) {
-      throw new Error('Cannot trust an unsigned extension install plan.')
-    }
   }
 
   private createSignerInfo(

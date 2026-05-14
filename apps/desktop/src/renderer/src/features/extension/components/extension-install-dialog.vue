@@ -155,7 +155,6 @@ async function handleInstall() {
 
   installing.value = true
   try {
-    const acceptedRiskIds = currentPlan.risks.map((risk) => risk.id)
     if (currentPlan.sourceKind === 'repository') {
       const request = props.request ?? {
         sourceKind: 'repository' as const,
@@ -170,7 +169,6 @@ async function handleInstall() {
           operationId: createOperationId(),
           planId: currentPlan.id,
           planFingerprint: currentPlan.fingerprint,
-          acceptedRiskIds,
           trustSignerFingerprint: trustSignerFingerprint.value,
           enabled: enabled.value,
           updatePolicy: updatePolicy.value
@@ -187,7 +185,6 @@ async function handleInstall() {
           filePath: localFilePath.value,
           planId: currentPlan.id,
           planFingerprint: currentPlan.fingerprint,
-          acceptedRiskIds,
           enabled: enabled.value
         })
       )

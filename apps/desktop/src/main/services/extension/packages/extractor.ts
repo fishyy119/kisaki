@@ -3,6 +3,7 @@ import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
 import type { ExtensionManifest } from '@kisaki/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
+import type { ExtensionPackageArchiveStore } from './archive'
 import type { ExtensionPackageLayout } from './layout'
 import { assertExtensionPackageOperationNotAborted } from './operations'
 import { wrapExtensionPackageError } from './types'
@@ -23,6 +24,7 @@ export interface ExtractExtensionPackageResult {
 export class ExtensionPackageExtractor {
   constructor(
     private readonly layout: ExtensionPackageLayout,
+    private readonly archiveStore: ExtensionPackageArchiveStore,
     private readonly verifier: ExtensionPackageVerifier
   ) {}
 
@@ -68,9 +70,10 @@ export class ExtensionPackageExtractor {
         }
       })
 
-      const installedArchivePath = this.layout.packageArchivePath(operationPaths.stagingPackageDir)
-      await fse.ensureDir(path.dirname(installedArchivePath))
-      await fse.copy(input.archivePath, installedArchivePath, { overwrite: true })
+      await this.archiveStore.storeArchive({
+        archivePath: input.archivePath,
+        sha256: verified.sha256
+      })
 
       return {
         operationId: input.operationId,

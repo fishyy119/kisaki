@@ -1,3 +1,4 @@
+export * from './archive'
 export * from './downloader'
 export * from './extractor'
 export * from './icon'

@@ -276,7 +276,6 @@ export interface ExtensionUpdateRequest {
   extensionId: string
   planId: string
   planFingerprint: string
-  acceptedRiskIds?: readonly string[]
   trustSignerFingerprint?: boolean
 }
 
@@ -312,7 +311,6 @@ export interface ExtensionInstallPlanConfirmation {
 export interface ExtensionInstallReleaseRequest
   extends ExtensionCreateRepositoryInstallPlanRequest, ExtensionInstallPlanConfirmation {
   operationId: string
-  acceptedRiskIds?: readonly string[]
   trustSignerFingerprint?: boolean
   enabled?: boolean
   updatePolicy?: ExtensionInstallUpdatePolicy
@@ -321,7 +319,6 @@ export interface ExtensionInstallReleaseRequest
 export interface ExtensionInstallFromFileRequest extends ExtensionInstallPlanConfirmation {
   operationId: string
   filePath: string
-  acceptedRiskIds?: readonly string[]
   enabled?: boolean
 }
 

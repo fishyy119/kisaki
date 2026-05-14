@@ -5,8 +5,7 @@ import type { ExtensionServicePaths } from '../types'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
 
 const OPERATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
-export const INSTALLED_EXTENSION_METADATA_DIRECTORY = '.kisaki'
-export const INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH = `${INSTALLED_EXTENSION_METADATA_DIRECTORY}/source.kisx`
+const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 
 export interface ExtensionPackageOperationPaths {
   operationId: string
@@ -25,6 +24,7 @@ export class ExtensionPackageLayout {
   readonly rootDir: string
   readonly packagesDir: string
   readonly builtinPackagesDir: string
+  readonly archivesDir: string
   readonly dataDir: string
   readonly tempDir: string
   readonly runtimeTempDir: string
@@ -47,6 +47,7 @@ export class ExtensionPackageLayout {
       path.relative(this.rootDir, paths.packagesDir)
     )
     this.builtinPackagesDir = path.resolve(paths.builtinPackagesDir)
+    this.archivesDir = resolveInsideRoot(this.rootDir, 'archives')
     this.dataDir = resolveInsideRoot(this.rootDir, path.relative(this.rootDir, paths.dataDir))
     this.tempDir = resolveInsideRoot(this.rootDir, path.relative(this.rootDir, paths.tempDir))
     this.runtimeTempDir = resolveInsideRoot(this.tempDir, 'runtime')
@@ -61,6 +62,7 @@ export class ExtensionPackageLayout {
   async ensureBaseDirectories(): Promise<void> {
     await Promise.all([
       fse.ensureDir(this.packagesDir),
+      fse.ensureDir(this.archivesDir),
       fse.ensureDir(this.dataDir),
       fse.ensureDir(this.runtimeTempDir),
       fse.ensureDir(this.downloadsDir),
@@ -79,8 +81,8 @@ export class ExtensionPackageLayout {
     return resolveInsideRoot(this.packageDir(extensionId), 'manifest.json')
   }
 
-  packageArchivePath(packageDir: string): string {
-    return resolveInsideRoot(packageDir, INSTALLED_EXTENSION_ARCHIVE_RELATIVE_PATH)
+  archivePath(sha256: string): string {
+    return resolveInsideRoot(this.archivesDir, `${requireSafeArchiveSha256(sha256)}.kisx`)
   }
 
   dataPath(extensionId: string): string {
@@ -104,6 +106,14 @@ export class ExtensionPackageLayout {
       trashDir: resolveInsideRoot(this.trashDir, safeOperationId)
     }
   }
+}
+
+export function requireSafeArchiveSha256(value: unknown): string {
+  if (typeof value === 'string' && SHA256_HEX_PATTERN.test(value)) {
+    return value
+  }
+
+  throw createValidationError('archive sha256 must be a lowercase SHA256 hex digest.')
 }
 
 export function requireSafeOperationId(value: unknown): string {

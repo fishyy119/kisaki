@@ -3,7 +3,6 @@ import type { ExtensionInstallationRow } from '@shared/db'
 import type {
   ExtensionUpdateCheckResult,
   ExtensionUpdateInfo,
-  ExtensionUpdateRequest,
   ExtensionUpdateUnavailableInfo
 } from '@shared/extension'
 import type { ExtensionInstallPlanner } from '../installer/planner'
@@ -80,10 +79,6 @@ export class ExtensionUpdatePlanner {
     }
 
     return plan
-  }
-
-  assertAccepted(plan: ExtensionUpdatePlan, request: ExtensionUpdateRequest): void {
-    this.options.installPlanner.assertAccepted(plan.installPlan, request)
   }
 
   private listUpdatePlans(
