@@ -12,7 +12,7 @@ Jellyfin 的插件仓库模型提供了三个值得吸收的核心点：
 2. 仓库 manifest 只描述插件元数据和版本列表；每个版本指向独立的二进制包 URL，并携带兼容版本、校验和、发布时间等信息。
 3. 客户端聚合多个仓库，过滤不兼容版本，按插件身份合并版本，再执行下载和安装。
 
-Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，扩展包格式是 `.kisx`，版本使用 semver，扩展可执行 JavaScript 代码，因此必须补上完整性校验、作者自签名、signer 信任选择、事务安装、可回滚更新、可审计安装来源和更清晰的 UI 状态。
+Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，扩展包格式是 `.kisx`，版本使用 semver，扩展可执行 JavaScript 代码，因此必须补上完整性校验、作者自签名、signer 信任选择、package commit/recovery、可审计安装来源和更清晰的 UI 状态。
 
 参考资料：
 
@@ -564,7 +564,9 @@ apps/desktop/src/main/services/extension/
     operations.ts
     verifier.ts
     extractor.ts
-    transaction.ts
+    commit.ts
+    integrity.ts
+    recovery.ts
     types.ts
   installer/
     index.ts
@@ -609,7 +611,9 @@ apps/desktop/src/main/services/extension/sources/
 | `ExtensionIconManager`                 | 由 main 代理 catalog 图标下载、大小限制、可选 sha256 校验和本地 URL 映射；实现放在 `packages/icon.ts`。      |
 | `ExtensionPackageVerifier`             | 校验 sha256、签名、zip 安全和包内 manifest。                                                                 |
 | `ExtensionPackageExtractor`            | 解压到 staging 并验证文件存在。                                                                              |
-| `ExtensionPackageTransaction`          | active package、installation DB 和 signer trust 的事务协调。                                                 |
+| `ExtensionPackageCommitter`            | 提交 active package 和 installation row，或移除 active package 和 installation row。                         |
+| `ExtensionPackageRecovery`             | 启动时按 installation row、active package、backup/trash/quarantine 收敛 package store。                      |
+| `ExtensionPackageIntegrity`            | 校验 active package、manifest、archive、source snapshot 和 signature 的一致性。                              |
 | `ExtensionUpdatePlanner`               | 选择更新候选和解释不可更新原因。                                                                             |
 
 `ExtensionService` 保持 main-process facade，只编排这些 helper，不放复杂业务逻辑。`extension/` 根目录只保留服务门面、IPC 注册和共享类型；远程仓库、已安装状态、本地包文件系统和安装编排必须分别进入 `repositories/`、`installations/`、`packages/` 和 `installer/`。
@@ -764,16 +768,16 @@ IPC handler 规则：
 - 复杂校验函数放在 `repositories/manifest.ts`、`packages/verifier.ts` 或 `shared` helper。
 - 所有 DTO 必须可序列化。
 - Main 不展示安装、更新、卸载确认 UI，也不调用 Electron 系统原生 dialog。Main 只返回 install/update plan、风险项和校验结果；确认交互由 renderer 的业务 dialog 完成。
-- v1 不持久化安装任务状态。安装、更新、卸载是互斥的异步 IPC 调用；需要更细粒度进度时，后续可接入已有 `BackgroundTaskService`。崩溃恢复不依赖额外 JSON 任务记录，而是由 `ExtensionPackageTransaction` 按 DB installation、package 目录、backup/trash/staging 目录执行确定性恢复。
+- v1 不持久化安装任务状态。安装、更新、卸载是互斥的异步 IPC 调用；需要更细粒度进度时，后续可接入已有 `BackgroundTaskService`。崩溃恢复不依赖额外 JSON 任务记录，而是由 `ExtensionPackageRecovery` 按 DB installation、package 目录、backup/trash/staging 目录执行确定性恢复。
 - 下载必须可中断。`install-release` 和 `update` request 携带 `operationId`，main 在等待 mutation mutex 前创建 operation record，并用 `ExtensionPackageOperationRegistry` 保存 `AbortController`。
 - `extension:cancel-operation(operationId)` 不获取 extension mutation mutex，只标记 abort 并中断当前可取消阶段。
-- 可取消阶段：等待 mutation mutex、下载、hash 计算和解压前准备。不可取消阶段：文件移动、SQLite transaction、runtime reconcile；进入不可取消阶段后只能完成或失败回滚。
-- 安装相关 temp 使用 `userData/extensions/temp/operations` 下的 `downloads`、`staging`、`backups`、`trash` 和 `quarantine` 结构。每次操作在 `finally` 中清理本 operation 目录；应用启动时执行一次 transaction recovery，再 prune stale downloads/staging/quarantine，并按 DB 和 package 目录复核 backups/trash。
+- 可取消阶段：等待 mutation mutex、下载、hash 计算和解压前准备。不可取消阶段：package commit、installation row 写入和 runtime reconcile；commit 成功后不再提供业务撤销。
+- 安装相关 temp 使用 `userData/extensions/temp/operations` 下的 `downloads`、`staging`、`backups`、`trash` 和 `quarantine` 结构。每次操作尽力清理本 operation 目录；应用启动时执行一次 package recovery，再 prune stale downloads/staging/quarantine，并按 DB 和 package 目录复核 backups/trash。
 
-Transaction recovery 规则：
+Package recovery 规则：
 
 - 下载、hash、解压属于可取消阶段，只允许留下 `downloads/` 或 `staging/` 临时文件；启动恢复可以直接删除。
-- 提交阶段不写额外 operation JSON。`ExtensionPackageTransaction` 的内存 rollback context 只在当前进程内用于失败回滚；应用崩溃后不尝试恢复内存意图。
+- 提交阶段不写额外 operation JSON。`ExtensionPackageCommitter` 只做函数内部局部补偿；应用崩溃后不尝试恢复内存意图。
 - 启动恢复以 SQLite installation 为事实来源：DB 记录存在且 `packages/<id>` manifest 与 DB version 一致时，视为 committed，清理同 extension 的 stale backup。
 - DB 记录存在但 `packages/<id>` 缺失或无效时，如果 `backups/*` 中存在同 extension 且版本等于 DB version 的有效包，则恢复该 backup；否则 installed catalog 返回 missing/invalid issue，Runtime 不加载。
 - DB 记录不存在但 `packages/<id>` 存在时，视为 active package 残留，移动到 `quarantine/`，不进入 installed catalog，也不参与 enable/update/uninstall。SQLite installation 是用户可见安装状态的唯一事实来源。
@@ -786,7 +790,7 @@ Transaction recovery 规则：
 启动流程：
 
 1. `ExtensionService.init()` 初始化 DB、paths、runtime、repositories、installer。
-2. `ExtensionPackageTransaction` 执行启动恢复，保证 package 目录和 DB installation 尽量重新一致。
+2. `ExtensionPackageRecovery` 执行启动恢复，保证 package 目录和 DB installation 尽量重新一致。
 3. 读取 `state = enabled` repositories。
 4. 使用最近成功 manifest snapshot 重建 catalog。
 5. 异步触发后台刷新，刷新成功后重建 catalog 并发送 `extension:catalog-changed`。
@@ -840,25 +844,25 @@ Transaction recovery 规则：
 2. 等待全局 extension mutation mutex；等待期间如果 operation 已取消，直接退出。
 3. 再次读取 catalog release，防止 UI 使用过期计划。
 4. 如果 release 带有未信任 signer、unsigned、降级等风险，要求 request 携带用户确认标记。
-5. 下载 artifact 到 `temp/operations/downloads/<operation-id>.kisx`；如果收到 `extension:cancel-operation`，下载中断并清理临时文件。
-6. 校验 size、sha256；如果提供 signature，则按 artifact identity envelope 验证 signature。
-7. 解压到 `temp/operations/staging/<operation-id>/package`。
-8. 校验包内 manifest、entry、可选 icon 和 package id/version。
-9. 准备目标目录 `packages/<id>`。
-10. 进入不可取消提交阶段，创建内存 rollback context。
-11. 如果目标目录已存在，先移动到 `temp/operations/backups/<operation-id>`。
-12. 将 staging package 原子移动到目标目录。
-13. 在 SQLite transaction 中写 `extension_installations`；如果用户选择信任 signer，同时写入 `extension_signer_trusts`。
-14. 如果安装后应启用，调用 `RuntimeManager.reconcile()`。
-15. 如果当前进程内发生 runtime failed，使用内存 rollback context 回滚 DB 和文件；如果用户选择“安装但保持禁用”，则写安装记录但不启用。
-16. 清理 backup/download/staging。
+5. 如果用户选择信任 signer，在 package prepare 前写入 `extension_signer_trusts`；后续安装失败不撤回该用户偏好。
+6. 下载 artifact 到 `temp/operations/downloads/<operation-id>.kisx`；如果收到 `extension:cancel-operation`，下载中断并清理临时文件。
+7. 校验 size、sha256；如果提供 signature，则按 artifact identity envelope 验证 signature。
+8. 解压到 `temp/operations/staging/<operation-id>/package`。
+9. 校验包内 manifest、entry、可选 icon 和 package id/version。
+10. 进入不可取消提交阶段，调用 `ExtensionPackageCommitter.putActivePackage`。
+11. 如果目标目录已存在且本次语义允许替换，先移动到 `temp/operations/backups/<operation-id>`。
+12. 将 staging package 原子移动到 `packages/<id>`。
+13. 写入或更新 `extension_installations`。
+14. 清理 backup/download/staging；清理失败只记录 warning，交给启动 recovery 兜底。
+15. 如果安装后应启用，调用 `RuntimeManager.reconcile()`。
+16. Runtime failed 时保留 active package 和 installation row，通过 installed view 暴露失败状态。
 17. 发送 `extension:installations-changed` 和 contribution snapshot 事件。
 
 安装成功只说明：
 
 - 包已落盘。
 - DB active version 已指向该包。
-- 如果启用，运行时已加载成功。
+- 如果启用，runtime 已尝试加载；加载失败通过 runtime status/diagnostics 暴露。
 
 安装失败必须保证：
 
@@ -874,7 +878,7 @@ Transaction recovery 规则：
 规则：
 
 - 不走 repository catalog。
-- 仍先创建 install plan，和远程安装共用风险确认、验证、解压、事务和 runtime reconcile 流程。
+- 仍先创建 install plan，和远程安装共用风险确认、验证、解压、package commit 和 runtime reconcile 流程。
 - 必须计算 `sha256`。
 - 允许 unsigned，但 UI 明确显示“本地 unsigned”。
 - 默认 update policy 为 `manual`。
@@ -904,14 +908,14 @@ Transaction recovery 规则：
 2. 创建 operation record，获取 extension mutation mutex；mutex 持有期间 extension 仍保持运行。
 3. 重新读取安装记录和 catalog release，确认 update policy、channel、pin、release digest、artifact sha256 和 signer trust 仍满足计划。
 4. 下载、校验、解压新 release 到 staging；下载阶段可通过 `extension:cancel-operation` 中断。
-5. 进入不可取消提交阶段，创建内存 rollback context。
+5. 进入不可取消提交阶段，调用 `ExtensionPackageCommitter.putActivePackage`，要求当前 active package 存在。
 6. 卸载当前 runtime，但不删除旧 package。
 7. 将旧 package 移动到 `temp/operations/backups/<operation-id>`。
 8. 将 staging package 移动到 `packages/<extension-id>`。
-9. 在 SQLite transaction 中更新 `extension_installations.version`、source 字段、channel 和 `updated_at`。
+9. 更新 `extension_installations.version`、source 字段、channel 和 `updated_at`。
 10. 重新加载 runtime。
-11. 如果当前进程内发生 runtime failed，使用内存 rollback context 回滚 DB 和文件，并重新加载旧 package。
-12. 成功后删除 backup。
+11. Runtime failed 时更新仍视为已提交，通过 installed view 暴露 runtime failed。
+12. 成功提交后删除 backup；清理失败由启动 recovery 兜底。
 
 `extension:update-all`：
 
@@ -936,9 +940,9 @@ extension:purge-data
 4. 卸载 runtime。
 5. 从 contribution registry 释放扩展贡献。
 6. 将 `packages/<extension-id>` 移动到 `temp/operations/trash/<operation-id>`；如果 package 目录已不存在，继续执行 DB 删除。
-7. 在 SQLite transaction 中删除 `extension_installations`。
-8. transaction 成功后清理 trash。
-9. 如果 DB 删除或后续 reconcile 失败，把 trash 中的 package 移回原路径，恢复安装记录，并按原 enabled 状态重新 reconcile runtime。
+7. 删除 `extension_installations`。
+8. 删除成功后清理 trash；清理失败由启动 recovery 兜底。
+9. 如果 DB 删除失败，`ExtensionPackageCommitter` 尝试把 trash 中的 package 移回原路径。删除提交成功后不再恢复安装记录。
 10. 保留 `data/<extension-id>` 和 `temp/runtime/<extension-id>`。
 11. 发送安装状态和贡献点事件。
 
@@ -1149,7 +1153,7 @@ export type ExtensionRegistryErrorCode =
   | 'package-manifest-invalid'
   | 'package-identity-mismatch'
   | 'package-entry-missing'
-  | 'install-transaction-failed'
+  | 'package-commit-failed'
   | 'operation-recovery-failed'
   | 'runtime-activation-failed'
 ```
@@ -1189,8 +1193,8 @@ Renderer 显示：
 
 1. 拆分旧 `ExtensionInstaller` 为 `packages/`、`installer/`、`installations/` 子目录。
 2. 实现 `ExtensionPackageLayout`，所有 package/data/temp 路径都从 extension id 派生并执行 path confinement。
-3. 实现 downloader、verifier、extractor 和 transaction。
-4. 实现启动 recovery：DB/package 复核、stale temp prune、backup/trash 清理或恢复。
+3. 实现 downloader、verifier、extractor、package commit 和 package integrity。
+4. 实现启动 package recovery：DB/package 复核、stale temp prune、backup/trash 清理或恢复。
 5. 实现内存 `ExtensionPackageOperationRegistry` 和 `extension:cancel-operation`。
 
 ### Phase 4：仓库刷新与聚合
@@ -1207,7 +1211,7 @@ Renderer 显示：
 
 1. 新增 `create-install-plan` 和 `install-release` IPC。
 2. 改造 `install-from-file` 为本地导入 install plan。
-3. `ExtensionService` 接入新 installer、installation store 和 operation recovery。
+3. `ExtensionService` 接入新 installer、installation store 和 package recovery。
 4. `ExtensionInstallationView` 从 DB installation、built-in、dev extension 和 package manifest 构建 installed DTO。
 5. 安装成功后接入 `RuntimeManager.reconcile()`。
 6. 此阶段结束时 `ExtensionService` 启动不再读 `state.json`。
@@ -1227,7 +1231,7 @@ Renderer 显示：
 1. 实现 `ExtensionUpdatePlanner`。
 2. 新增 update policy 字段和 IPC。
 3. 改造 `checkUpdates`。
-4. 改造 `update` 和 `updateAll`，共用 Phase 3 的 transaction。
+4. 改造 `update` 和 `updateAll`，共用 Phase 3 的 package commit。
 5. 实现失败回滚 active version。
 
 ### Phase 8：卸载与清除数据
@@ -1300,7 +1304,7 @@ rg -n "provider.*locator|locator.*provider" apps/desktop/src/main/services/exten
 rg -n "ExtensionRegistryManifest|ExtensionRegistryRelease|ExtensionRegistryArtifact" packages/extension-api apps docs
 rg -n "extension:search-catalog|extension:get-installed-packages|extension:list-repositories|extension:add-repository|extension:update-repository|extension:remove-repository|extension:refresh-repository|extension:refresh-repositories|extension:list-trusted-signers|extension:remove-trusted-signer|extension:install-release" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer
 rg -n "ExtensionRepositoryManager|ExtensionInstallerManager|ExtensionUpdatePlanner|ExtensionSignerTrustManager" apps/desktop/src/main/services/extension
-rg -n "ExtensionPackageTransaction|ExtensionIconManager" apps/desktop/src/main/services/extension
+rg -n "ExtensionPackageCommitter|ExtensionPackageRecovery|ExtensionIconManager" apps/desktop/src/main/services/extension
 rg -n "extension_repositories|extension_installations|extension_signer_trusts" apps/desktop/src/shared/db apps/desktop/drizzle
 ```
 
@@ -1316,7 +1320,7 @@ rg -n "extension_repositories|extension_installations|extension_signer_trusts" a
 - 本地文件安装有明确 unsigned 标识和 `manual` update policy。
 - v1 不新增 `extension_jobs` 和 `extension_package_versions` 表。
 - 下载阶段可中断，但取消状态不持久化。
-- 提交阶段不写额外 operation JSON；应用异常退出后由 transaction recovery 根据 DB、package、backup/trash/staging 目录恢复到可诊断的一致状态。
+- 提交阶段不写额外 operation JSON；应用异常退出后由 package recovery 根据 DB、package、backup/trash/staging 目录恢复到可诊断的一致状态。
 - DB 不保存可直接执行加载的绝对 package path；runtime path 必须由 installation id 经 layout 派生。
 - 安装、更新、卸载确认 UI 全部由 renderer dialog 承担；main 不使用 Electron 原生确认 dialog。
 - 安装、更新、卸载都有事务回滚和错误诊断。
@@ -1343,4 +1347,4 @@ rg -n "extension_repositories|extension_installations|extension_signer_trusts" a
 - Contribution registry 负责运行后贡献点。
 - Renderer 负责展示和发起用户动作。
 
-这套边界让扩展生态可以分布式增长，同时让本机安装行为保持可验证、可回滚、可诊断。
+这套边界让扩展生态可以分布式增长，同时让本机安装行为保持可验证、可恢复、可诊断。

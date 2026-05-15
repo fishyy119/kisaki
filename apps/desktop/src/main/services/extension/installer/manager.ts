@@ -1,6 +1,5 @@
 import path from 'node:path'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
 import type {
   ExtensionCreateInstallPlanRequest,
   ExtensionCreateLocalInstallPlanRequest,
@@ -14,7 +13,7 @@ import type {
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
   ExtensionPackageOperationRegistry,
-  ExtensionPackageTransactionCoordinator,
+  ExtensionPackageCommitter,
   ExtensionPackageVerifier
 } from '../packages'
 import { assertExtensionPackageOperationNotAborted, ExtensionPackagePreparer } from '../packages'
@@ -38,7 +37,7 @@ export interface ExtensionInstallerManagerOptions {
   packageDownloader: ExtensionPackageDownloader
   packageExtractor: ExtensionPackageExtractor
   packageVerifier: ExtensionPackageVerifier
-  packageTransactionCoordinator: ExtensionPackageTransactionCoordinator
+  packageCommitter: ExtensionPackageCommitter
   packageOperations: ExtensionPackageOperationRegistry
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
@@ -50,10 +49,11 @@ export class ExtensionInstallerManager {
   private readonly runtime: RuntimeManager
   private readonly repositories: ExtensionRepositoryManager
   private readonly installations: ExtensionInstallationManager
+  private readonly signers: ExtensionSignerTrustManager
   private readonly installPlanner: ExtensionInstallPlanner
   private readonly packagePreparer: ExtensionPackagePreparer
   private readonly packageVerifier: ExtensionPackageVerifier
-  private readonly packageTransactionCoordinator: ExtensionPackageTransactionCoordinator
+  private readonly packageCommitter: ExtensionPackageCommitter
   private readonly packageOperations: ExtensionPackageOperationRegistry
 
   constructor(private readonly options: ExtensionInstallerManagerOptions) {
@@ -61,6 +61,7 @@ export class ExtensionInstallerManager {
     this.runtime = options.runtime
     this.repositories = options.repositories
     this.installations = options.installations
+    this.signers = options.signers
     this.installPlanner = new ExtensionInstallPlanner({
       repositories: options.repositories,
       installations: options.installations.store,
@@ -71,7 +72,7 @@ export class ExtensionInstallerManager {
       extractor: options.packageExtractor
     })
     this.packageVerifier = options.packageVerifier
-    this.packageTransactionCoordinator = options.packageTransactionCoordinator
+    this.packageCommitter = options.packageCommitter
     this.packageOperations = options.packageOperations
   }
 
@@ -106,6 +107,17 @@ export class ExtensionInstallerManager {
         const candidate = this.repositories.resolveInstallCandidate(command)
         const plan = this.installPlanner.createRepositoryPlanForCandidate(candidate)
         assertInstallPlanApproved(plan, command.approval)
+        const signerTrusts =
+          command.approval.kind === 'user-confirmed' && command.approval.trustSignerFingerprint
+            ? createSignerTrustInputs(candidate, plan)
+            : []
+
+        for (const signerTrust of signerTrusts) {
+          this.signers.trust(signerTrust)
+        }
+        if (signerTrusts.length > 0) {
+          this.emitTrustedSignersChanged()
+        }
 
         const prepared = await this.packagePreparer.prepareRepositoryPackage(
           {
@@ -122,6 +134,9 @@ export class ExtensionInstallerManager {
         operation.phase = 'commit'
         return this.commitPreparedRepositoryPackage(candidate, plan, command, prepared.packageDir)
       })
+    } catch (error) {
+      await this.cleanupPackageOperation(operationId)
+      throw error
     } finally {
       this.packageOperations.finish(operationId)
     }
@@ -175,6 +190,9 @@ export class ExtensionInstallerManager {
           prepared.archiveSha256
         )
       })
+    } catch (error) {
+      await this.cleanupPackageOperation(operationId)
+      throw error
     } finally {
       this.packageOperations.finish(operationId)
     }
@@ -249,21 +267,13 @@ export class ExtensionInstallerManager {
           }
         : {})
     }
-    const signerTrusts =
-      command.approval.kind === 'user-confirmed' && command.approval.trustSignerFingerprint
-        ? createSignerTrustInputs(candidate, plan)
-        : []
-    let handle: Awaited<
-      ReturnType<ExtensionPackageTransactionCoordinator['replaceActivePackage']>
-    > | null = null
-
     try {
       if (command.reason === 'update') {
         await this.runtime.unloadExtension(extensionId, 'update')
         await this.installations.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
       }
 
-      handle = await this.packageTransactionCoordinator.replaceActivePackage({
+      await this.packageCommitter.putActivePackage({
         operationId: command.operationId,
         extensionId,
         stagedPackageDir,
@@ -277,37 +287,17 @@ export class ExtensionInstallerManager {
           pinnedVersion,
           channel: candidate.release.channel
         },
-        signerTrusts
+        expectedPrevious: command.reason === 'update' ? 'present' : 'none'
       })
       await this.installations.refresh()
       await this.installations.applyRuntimeState({
         cause: command.reason === 'update' ? 'package-update' : 'install',
         forceReloadIds: [extensionId]
       })
-      if (enabled) {
-        if (command.reason === 'update') {
-          this.installations.assertRuntimeReadyIfDesired(extensionId, 'update')
-        } else {
-          this.installations.assertRuntimeReady(extensionId, 'install')
-        }
-      }
-      await handle.commit()
       this.emitInstallationsChanged()
-      if (signerTrusts.length > 0) {
-        this.emitTrustedSignersChanged()
-      }
       return this.installations.require(extensionId)
     } catch (error) {
-      if (handle) {
-        await handle.rollback().catch((rollbackError) => {
-          log.error(
-            `[ExtensionService] Failed to roll back extension ${command.reason} "${extensionId}":`,
-            rollbackError
-          )
-        })
-      } else {
-        await this.cleanupPackageOperation(command.operationId)
-      }
+      await this.cleanupPackageOperation(command.operationId)
       await this.installations.refresh()
       await this.installations.applyRuntimeState({
         cause: command.reason === 'update' ? 'package-update' : 'install',
@@ -327,45 +317,37 @@ export class ExtensionInstallerManager {
   ): Promise<ExtensionInstalledEntry> {
     const extensionId = plan.package.id
     const enabled = enabledOverride ?? plan.defaultEnabled
-    const handle = await this.packageTransactionCoordinator.replaceActivePackage({
-      operationId,
-      extensionId,
-      stagedPackageDir,
-      installation: {
-        id: extensionId,
-        enabled,
-        version: plan.package.targetVersion,
-        source: {
-          kind: 'local-file',
-          path: path.resolve(filePath),
-          artifactSha256
-        },
-        installReason: 'local-file',
-        updatePolicy: 'manual',
-        pinnedVersion: null,
-        channel: 'stable'
-      }
-    })
 
     try {
+      await this.packageCommitter.putActivePackage({
+        operationId,
+        extensionId,
+        stagedPackageDir,
+        installation: {
+          id: extensionId,
+          enabled,
+          version: plan.package.targetVersion,
+          source: {
+            kind: 'local-file',
+            path: path.resolve(filePath),
+            artifactSha256
+          },
+          installReason: 'local-file',
+          updatePolicy: 'manual',
+          pinnedVersion: null,
+          channel: 'stable'
+        },
+        expectedPrevious: this.installations.store.get(extensionId) ? 'any' : 'none'
+      })
       await this.installations.refresh()
       await this.installations.applyRuntimeState({
         cause: 'install',
         forceReloadIds: [extensionId]
       })
-      if (enabled) {
-        this.installations.assertRuntimeReady(extensionId, 'install')
-      }
-      await handle.commit()
       this.emitInstallationsChanged()
       return this.installations.require(extensionId)
     } catch (error) {
-      await handle.rollback().catch((rollbackError) => {
-        log.error(
-          `[ExtensionService] Failed to roll back local extension import "${extensionId}":`,
-          rollbackError
-        )
-      })
+      await this.cleanupPackageOperation(operationId)
       await this.installations.refresh()
       await this.installations.applyRuntimeState({
         cause: 'install',

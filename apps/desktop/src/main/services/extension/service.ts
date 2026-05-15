@@ -16,11 +16,12 @@ import { registerExtensionIpc } from './ipc'
 import {
   ExtensionIconManager,
   ExtensionPackageArchiveStore,
+  ExtensionPackageCommitter,
   ExtensionPackageDownloader,
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
   ExtensionPackageOperationRegistry,
-  ExtensionPackageTransactionCoordinator,
+  ExtensionPackageRecovery,
   ExtensionPackageVerifier
 } from './packages'
 import {
@@ -65,7 +66,8 @@ export class ExtensionService implements IService {
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
   private reloadWatcher!: ExtensionReloadWatcher
-  private packageTransactionCoordinator!: ExtensionPackageTransactionCoordinator
+  private packageCommitter!: ExtensionPackageCommitter
+  private packageRecovery!: ExtensionPackageRecovery
   private contributionSnapshotEmitQueued = false
   private readonly operationMutex = new Mutex()
   private readonly packageOperations = new ExtensionPackageOperationRegistry()
@@ -86,13 +88,14 @@ export class ExtensionService implements IService {
     const packageArchiveStore = new ExtensionPackageArchiveStore(layout)
     const packageVerifier = new ExtensionPackageVerifier()
     this.ipc = container.get('ipc')
-    this.packageTransactionCoordinator = new ExtensionPackageTransactionCoordinator(
-      layout,
-      dbService.db,
-      packageArchiveStore
-    )
 
     const installationStore = new ExtensionInstallationStore(dbService.db)
+    this.packageCommitter = new ExtensionPackageCommitter(layout, installationStore)
+    this.packageRecovery = new ExtensionPackageRecovery(
+      layout,
+      packageArchiveStore,
+      installationStore
+    )
     const packageDownloader = new ExtensionPackageDownloader(layout, networkService)
     const packageExtractor = new ExtensionPackageExtractor(
       layout,
@@ -100,7 +103,7 @@ export class ExtensionService implements IService {
       packageVerifier
     )
 
-    await this.recoverPackageTransactions()
+    await this.recoverPackages()
 
     const iconManager = new ExtensionIconManager(rootDir, networkService)
     iconManager.registerProtocolHandler()
@@ -166,7 +169,7 @@ export class ExtensionService implements IService {
       runtime: this.runtime,
       contributions: this.contributions,
       reloadWatcher: this.reloadWatcher,
-      packageTransactionCoordinator: this.packageTransactionCoordinator,
+      packageCommitter: this.packageCommitter,
       event: container.get('event'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
@@ -182,7 +185,7 @@ export class ExtensionService implements IService {
       packageDownloader,
       packageExtractor,
       packageVerifier,
-      packageTransactionCoordinator: this.packageTransactionCoordinator,
+      packageCommitter: this.packageCommitter,
       packageOperations: this.packageOperations,
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
@@ -237,8 +240,8 @@ export class ExtensionService implements IService {
     this.ipc.send('extension:trusted-signers-changed')
   }
 
-  private async recoverPackageTransactions(): Promise<void> {
-    const recovery = await this.packageTransactionCoordinator.recover()
+  private async recoverPackages(): Promise<void> {
+    const recovery = await this.packageRecovery.recover()
 
     for (const action of recovery.actions) {
       log.info('[ExtensionService] Extension package recovery action:', action)

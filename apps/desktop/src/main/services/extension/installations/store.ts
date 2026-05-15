@@ -8,7 +8,7 @@ import {
 import type { DbContext } from '../../db/types'
 import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
 
-export interface CreateExtensionInstallationInput {
+export interface CreateOrUpdateExtensionInstallationInput {
   id: string
   enabled?: boolean
   version: string
@@ -59,7 +59,7 @@ export class ExtensionInstallationStore {
     return row
   }
 
-  create(input: CreateExtensionInstallationInput): ExtensionInstallationRow {
+  create(input: CreateOrUpdateExtensionInstallationInput): ExtensionInstallationRow {
     const now = new Date()
 
     this.db
@@ -81,6 +81,23 @@ export class ExtensionInstallationStore {
     return this.require(input.id)
   }
 
+  createOrUpdate(input: CreateOrUpdateExtensionInstallationInput): ExtensionInstallationRow {
+    const existing = this.get(input.id)
+    if (!existing) {
+      return this.create(input)
+    }
+
+    return this.update(input.id, {
+      enabled: input.enabled,
+      version: input.version,
+      source: input.source,
+      installReason: input.installReason,
+      updatePolicy: input.updatePolicy,
+      pinnedVersion: input.pinnedVersion,
+      channel: input.channel
+    })
+  }
+
   update(extensionId: string, patch: UpdateExtensionInstallationInput): ExtensionInstallationRow {
     this.db
       .update(extensionInstallations)
@@ -92,32 +109,6 @@ export class ExtensionInstallationStore {
       .run()
 
     return this.require(extensionId)
-  }
-
-  restoreSnapshot(extensionId: string, snapshot: ExtensionInstallationRow | null): void {
-    if (!snapshot) {
-      this.remove(extensionId)
-      return
-    }
-
-    this.db
-      .insert(extensionInstallations)
-      .values(snapshot)
-      .onConflictDoUpdate({
-        target: extensionInstallations.id,
-        set: {
-          enabled: snapshot.enabled,
-          version: snapshot.version,
-          source: snapshot.source,
-          installReason: snapshot.installReason,
-          updatePolicy: snapshot.updatePolicy,
-          pinnedVersion: snapshot.pinnedVersion,
-          channel: snapshot.channel,
-          installedAt: snapshot.installedAt,
-          updatedAt: snapshot.updatedAt
-        }
-      })
-      .run()
   }
 
   setEnabled(extensionId: string, enabled: boolean): ExtensionInstallationRow {

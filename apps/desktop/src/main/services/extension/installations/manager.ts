@@ -15,8 +15,8 @@ import type { ExtensionRuntimeChangeCause, ExtensionRuntimeState, RuntimeManager
 import type { ExtensionContributionRegistry } from '../contributions'
 import type { ExtensionReloadWatcher } from '../reload-watcher'
 import {
+  type ExtensionPackageCommitter,
   type ExtensionPackageLayout,
-  type ExtensionPackageTransactionCoordinator,
   readExtensionManifestFile,
   resolveExtensionFilePath,
   validateInstalledExtensionPackage
@@ -34,7 +34,7 @@ export interface ExtensionInstallationManagerOptions {
   runtime: RuntimeManager
   contributions: ExtensionContributionRegistry
   reloadWatcher: ExtensionReloadWatcher
-  packageTransactionCoordinator: ExtensionPackageTransactionCoordinator
+  packageCommitter: ExtensionPackageCommitter
   event: EventService
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
@@ -49,7 +49,7 @@ export class ExtensionInstallationManager {
   private readonly runtime: RuntimeManager
   private readonly contributions: ExtensionContributionRegistry
   private readonly reloadWatcher: ExtensionReloadWatcher
-  private readonly packageTransactionCoordinator: ExtensionPackageTransactionCoordinator
+  private readonly packageCommitter: ExtensionPackageCommitter
   private readonly event: EventService
   private installedEntries: readonly ExtensionInstalledEntry[] = []
   private installedById = new Map<string, ExtensionInstalledEntry>()
@@ -62,7 +62,7 @@ export class ExtensionInstallationManager {
     this.runtime = options.runtime
     this.contributions = options.contributions
     this.reloadWatcher = options.reloadWatcher
-    this.packageTransactionCoordinator = options.packageTransactionCoordinator
+    this.packageCommitter = options.packageCommitter
     this.event = options.event
   }
 
@@ -216,35 +216,25 @@ export class ExtensionInstallationManager {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       this.assertUserManaged(safeExtensionId, 'uninstall')
       const previous = await this.requireUserInstalled(safeExtensionId)
-      let handle: Awaited<
-        ReturnType<ExtensionPackageTransactionCoordinator['uninstallPackage']>
-      > | null = null
+      let packageRemoved = false
 
       try {
         await this.runtime.unloadExtension(safeExtensionId, 'disable')
         this.contributions.assertReleased(safeExtensionId, 'uninstall')
         await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
-        handle = await this.packageTransactionCoordinator.uninstallPackage({
+        await this.packageCommitter.removeActivePackage({
           operationId: randomUUID(),
           extensionId: safeExtensionId
         })
+        packageRemoved = true
         await this.refresh()
         await this.applyRuntimeState({ cause: 'uninstall' })
-        await handle.commit()
         this.emitInstallationsChanged()
       } catch (error) {
-        if (handle) {
-          await handle.rollback().catch((rollbackError) => {
-            log.error(
-              `[ExtensionService] Failed to roll back extension uninstall "${safeExtensionId}":`,
-              rollbackError
-            )
-          })
-        }
         await this.refresh()
         await this.applyRuntimeState({
           cause: 'uninstall',
-          forceReloadIds: previous.enabled ? [safeExtensionId] : []
+          forceReloadIds: !packageRemoved && previous.enabled ? [safeExtensionId] : []
         })
         throw error
       }

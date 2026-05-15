@@ -23,12 +23,6 @@ export interface TrustExtensionSignerInput {
   trustedAt?: Date
 }
 
-export interface RestoreExtensionSignerTrustSnapshotInput {
-  extensionId: string
-  fingerprint: string
-  row: ExtensionSignerTrustRow | null
-}
-
 export class ExtensionSignerTrustStore {
   constructor(private readonly db: DbContext) {}
 
@@ -132,46 +126,6 @@ export class ExtensionSignerTrustStore {
       )
       .run()
     return result.changes > 0
-  }
-
-  restoreSnapshots(snapshots: readonly RestoreExtensionSignerTrustSnapshotInput[]): void {
-    if (snapshots.length === 0) {
-      return
-    }
-
-    for (const snapshot of snapshots) {
-      if (!snapshot.row) {
-        this.db
-          .delete(extensionSignerTrusts)
-          .where(
-            and(
-              eq(extensionSignerTrusts.extensionId, snapshot.extensionId),
-              eq(extensionSignerTrusts.fingerprint, snapshot.fingerprint)
-            )
-          )
-          .run()
-        continue
-      }
-
-      this.db
-        .insert(extensionSignerTrusts)
-        .values(snapshot.row)
-        .onConflictDoUpdate({
-          target: [extensionSignerTrusts.extensionId, extensionSignerTrusts.fingerprint],
-          set: {
-            id: snapshot.row.id,
-            algorithm: snapshot.row.algorithm,
-            publicKey: snapshot.row.publicKey,
-            label: snapshot.row.label,
-            trustedFromRepositoryId: snapshot.row.trustedFromRepositoryId,
-            trustedFromRepositoryUrl: snapshot.row.trustedFromRepositoryUrl,
-            trustedAt: snapshot.row.trustedAt,
-            createdAt: snapshot.row.createdAt,
-            updatedAt: snapshot.row.updatedAt
-          }
-        })
-        .run()
-    }
   }
 }
 

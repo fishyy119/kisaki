@@ -9,16 +9,24 @@ import type {
 } from '@shared/extension/installation-source'
 import type { ExtensionRegistryArtifact } from '@kisaki/extension-registry'
 import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
-import type { ExtensionPackageArchiveStore } from '../archive'
-import { readExtensionManifestFile, validateInstalledExtensionPackage } from '../manifest'
-import { ExtensionPackageVerifier, hashFile, type ExtensionPackageArchiveEntry } from '../verifier'
-import { resolveInsideRoot } from '../../shared/path-confinement'
+import { resolveInsideRoot } from '../shared/path-confinement'
+import type { ExtensionPackageArchiveStore } from './archive'
+import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
+import { ExtensionPackageVerifier, hashFile, type ExtensionPackageArchiveEntry } from './verifier'
 
-export async function inspectPackageDirectory(packageDir: string): Promise<{
+export interface ExtensionPackageInspection {
   valid: boolean
   extensionId: string | null
   version: string | null
-}> {
+}
+
+export interface ExtensionPackageIntegrityIssue {
+  message: string
+}
+
+export async function inspectPackageDirectory(
+  packageDir: string
+): Promise<ExtensionPackageInspection> {
   try {
     const parsed = await readExtensionManifestFile(path.join(packageDir, 'manifest.json'))
     if (!parsed.manifest) {
@@ -36,7 +44,7 @@ export async function inspectPackageDirectory(packageDir: string): Promise<{
   }
 }
 
-export async function validatePackageForInstallation(
+export async function validateInstalledPackageIntegrity(
   archiveStore: ExtensionPackageArchiveStore,
   installation: ExtensionInstallationRow,
   packageDir: string
@@ -47,11 +55,15 @@ export async function validatePackageForInstallation(
   }
 
   if (inspected.extensionId !== installation.id) {
-    return `package id mismatch: expected "${installation.id}", received "${inspected.extensionId ?? 'unknown'}"`
+    return `package id mismatch: expected "${installation.id}", received "${
+      inspected.extensionId ?? 'unknown'
+    }"`
   }
 
   if (inspected.version !== installation.version) {
-    return `package version mismatch: expected "${installation.version}", received "${inspected.version ?? 'unknown'}"`
+    return `package version mismatch: expected "${installation.version}", received "${
+      inspected.version ?? 'unknown'
+    }"`
   }
 
   try {

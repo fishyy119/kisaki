@@ -1,0 +1,184 @@
+import path from 'node:path'
+import fse from 'fs-extra'
+import log from 'electron-log/main'
+import type {
+  CreateOrUpdateExtensionInstallationInput,
+  ExtensionInstallationStore
+} from '../installations'
+import { assertInsideRoot } from '../shared/path-confinement'
+import { createOperationCleanupPaths, removeCleanupPaths } from './cleanup'
+import type { ExtensionPackageLayout } from './layout'
+import { wrapExtensionPackageError } from './types'
+
+const LOG_PREFIX = '[ExtensionPackageCommitter]'
+
+export type ExpectedPreviousActivePackage = 'none' | 'present' | 'any'
+
+export interface PutActiveExtensionPackageInput {
+  operationId: string
+  extensionId: string
+  stagedPackageDir: string
+  installation: CreateOrUpdateExtensionInstallationInput
+  expectedPrevious: ExpectedPreviousActivePackage
+  cleanupPaths?: readonly string[]
+}
+
+export interface RemoveActiveExtensionPackageInput {
+  operationId: string
+  extensionId: string
+  cleanupPaths?: readonly string[]
+}
+
+export class ExtensionPackageCommitter {
+  constructor(
+    private readonly layout: ExtensionPackageLayout,
+    private readonly installations: ExtensionInstallationStore
+  ) {}
+
+  async putActivePackage(input: PutActiveExtensionPackageInput): Promise<void> {
+    const operationPaths = this.layout.operationPaths(input.operationId)
+    const packagePath = this.layout.packageDir(input.extensionId)
+    const backupPath = operationPaths.backupDir
+    const operationTempCleanupPaths = createOperationCleanupPaths(this.layout, [
+      operationPaths.stagingDir,
+      operationPaths.downloadPath,
+      ...(input.cleanupPaths ?? [])
+    ])
+    const successCleanupPaths = createOperationCleanupPaths(this.layout, [
+      operationPaths.backupDir,
+      ...operationTempCleanupPaths
+    ])
+
+    let backupCreated = false
+    let stagedMoved = false
+    let committed = false
+
+    try {
+      if (input.extensionId !== input.installation.id) {
+        throw new Error(
+          `Package commit extension id "${input.extensionId}" does not match installation id "${input.installation.id}".`
+        )
+      }
+
+      assertInsideRoot(input.stagedPackageDir, operationPaths.stagingDir)
+      const existingPackage = await fse.pathExists(packagePath)
+      assertExpectedPrevious(input.expectedPrevious, existingPackage, input.extensionId)
+
+      await Promise.all([
+        fse.ensureDir(this.layout.packagesDir),
+        fse.ensureDir(path.dirname(backupPath))
+      ])
+      await fse.remove(backupPath).catch(() => undefined)
+
+      if (existingPackage) {
+        await fse.move(packagePath, backupPath, { overwrite: false })
+        backupCreated = true
+      }
+
+      await fse.move(input.stagedPackageDir, packagePath, { overwrite: false })
+      stagedMoved = true
+
+      this.installations.createOrUpdate(input.installation)
+      committed = true
+    } catch (error) {
+      await restorePreviousActivePackage({
+        packagePath,
+        backupPath,
+        backupCreated,
+        stagedMoved
+      }).catch((restoreError) => {
+        log.error(`${LOG_PREFIX} Failed to restore previous active package:`, restoreError)
+      })
+
+      throw wrapExtensionPackageError(error, {
+        stage: 'commit',
+        message: 'Failed to commit extension package state',
+        path: packagePath
+      })
+    } finally {
+      await removeCleanupPaths(
+        committed ? successCleanupPaths : operationTempCleanupPaths,
+        LOG_PREFIX
+      )
+    }
+  }
+
+  async removeActivePackage(input: RemoveActiveExtensionPackageInput): Promise<void> {
+    const operationPaths = this.layout.operationPaths(input.operationId)
+    const packagePath = this.layout.packageDir(input.extensionId)
+    const trashPath = operationPaths.trashDir
+    const operationTempCleanupPaths = createOperationCleanupPaths(this.layout, [
+      operationPaths.stagingDir,
+      operationPaths.downloadPath,
+      ...(input.cleanupPaths ?? [])
+    ])
+    const successCleanupPaths = createOperationCleanupPaths(this.layout, [
+      operationPaths.trashDir,
+      ...operationTempCleanupPaths
+    ])
+
+    let trashed = false
+    let committed = false
+
+    try {
+      const existingPackage = await fse.pathExists(packagePath)
+
+      await fse.ensureDir(path.dirname(trashPath))
+      await fse.remove(trashPath).catch(() => undefined)
+
+      if (existingPackage) {
+        await fse.move(packagePath, trashPath, { overwrite: false })
+        trashed = true
+      }
+
+      this.installations.remove(input.extensionId)
+      committed = true
+    } catch (error) {
+      if (trashed) {
+        await fse.move(trashPath, packagePath, { overwrite: false }).catch((restoreError) => {
+          log.error(`${LOG_PREFIX} Failed to restore trashed extension package:`, restoreError)
+        })
+      }
+
+      throw wrapExtensionPackageError(error, {
+        stage: 'commit',
+        message: 'Failed to remove active extension package state',
+        path: packagePath
+      })
+    } finally {
+      await removeCleanupPaths(
+        committed ? successCleanupPaths : operationTempCleanupPaths,
+        LOG_PREFIX
+      )
+    }
+  }
+}
+
+async function restorePreviousActivePackage(options: {
+  packagePath: string
+  backupPath: string
+  backupCreated: boolean
+  stagedMoved: boolean
+}): Promise<void> {
+  if (options.stagedMoved) {
+    await fse.remove(options.packagePath)
+  }
+
+  if (options.backupCreated) {
+    await fse.move(options.backupPath, options.packagePath, { overwrite: false })
+  }
+}
+
+function assertExpectedPrevious(
+  expectedPrevious: ExpectedPreviousActivePackage,
+  activePackageExists: boolean,
+  extensionId: string
+): void {
+  if (expectedPrevious === 'none' && activePackageExists) {
+    throw new Error(`Extension "${extensionId}" already has an active package.`)
+  }
+
+  if (expectedPrevious === 'present' && !activePackageExists) {
+    throw new Error(`Extension "${extensionId}" does not have an active package to replace.`)
+  }
+}
