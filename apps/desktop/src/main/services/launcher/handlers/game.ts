@@ -11,13 +11,15 @@ import { promisify } from 'util'
 import { Game } from '@shared/db'
 import { existsSync } from 'fs'
 import { resolve } from 'path'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { MonitorService } from '@main/services/monitor'
 import type { DbService } from '@main/services/db'
 import type { NativeService } from '@main/services/native'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
 import { openExternalProtocol } from '@main/utils'
+
+const log = createLogger('Launcher')
 
 const execAsync = promisify(exec)
 
@@ -53,7 +55,7 @@ export class GameLauncherHandler {
         if (options?.cancelBehavior === 'throw') {
           throw new Error('Launcher path selection cancelled')
         }
-        log.info(`[Launcher] Launcher path selection cancelled: ${game.name} (${game.id})`)
+        log.info('Launcher path selection cancelled.', { gameName: game.name, gameId: game.id })
         return
       }
 
@@ -84,7 +86,7 @@ export class GameLauncherHandler {
     // Start monitoring after successful launch
     await this.monitorService.game.startMonitoring(game.id)
 
-    log.info(`[Launcher] Game launched successfully: ${game.name} (${game.id})`)
+    log.info('Game launched successfully.', { gameName: game.name, gameId: game.id })
   }
 
   private async selectLauncherPath(game: Game): Promise<string | null> {
@@ -170,7 +172,7 @@ export class GameLauncherHandler {
 
     // Error handling
     process.on('error', (error) => {
-      log.error(`[Launcher] Failed to launch game ${game.id}:`, error)
+      log.error('Failed to launch game.', error, { gameId: game.id })
     })
 
     // Detach process to run independently
@@ -196,6 +198,6 @@ export class GameLauncherHandler {
       process.kill(status.pid, 'SIGTERM')
     }
 
-    log.info(`[Launcher] Killed game process: ${gameId} (PID: ${status.pid})`)
+    log.info('Killed game process.', { gameId: gameId, statusPid: status.pid })
   }
 }

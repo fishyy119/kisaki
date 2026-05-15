@@ -2,13 +2,15 @@ import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { net, protocol } from 'electron'
 import { EXTENSION_ICON_SCHEME } from '@main/bootstrap/protocol'
 import type { NetworkService } from '@main/services/network'
 import type { ExtensionRegistryPackageIcon } from '@kisaki/extension-registry'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import { hashFile } from './verifier'
+
+const log = createLogger('Extension')
 
 const MAX_EXTENSION_ICON_BYTES = 5 * 1024 * 1024
 const EXTENSION_ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -83,7 +85,7 @@ export class ExtensionIconManager {
       const filePath = await this.getOrDownloadIcon(icon)
       return await net.fetch(pathToFileURL(filePath).toString())
     } catch (error) {
-      log.warn('[ExtensionIconManager] Failed to serve extension icon:', error)
+      log.warn('Failed to serve extension icon:', error)
       return new Response('Failed to load extension icon', { status: 500 })
     }
   }

@@ -6,7 +6,7 @@
  */
 
 import { app } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { DeeplinkRouter } from './router'
 import type { DeeplinkResult, DeeplinkRouteHandler, ParsedDeeplink } from './types'
@@ -17,6 +17,8 @@ import { AUTH_DEEPLINK_ROUTE, AuthHandler } from './handlers/auth'
 import { LAUNCH_DEEPLINK_ROUTE, LaunchHandler } from './handlers/launch'
 import { NAVIGATE_DEEPLINK_ROUTE, NavigateHandler } from './handlers/navigate'
 import { registerDeeplinkIpc } from './ipc'
+
+const log = createLogger('Deeplink')
 
 export class DeeplinkService implements IService {
   readonly id = 'deeplink'
@@ -47,7 +49,7 @@ export class DeeplinkService implements IService {
     // Setup open-url handler (macOS)
     this.setupOpenUrl()
 
-    log.info('[DeeplinkService] Initialized')
+    log.info('Initialized')
   }
 
   registerRoute<const TPattern extends string>(
@@ -71,12 +73,12 @@ export class DeeplinkService implements IService {
     // Process any deeplinks that arrived before we were ready
     for (const deeplink of this.pendingDeeplinks) {
       this.routeDeeplink(deeplink).catch((error) => {
-        log.error('[DeeplinkService] Error processing pending deeplink:', error)
+        log.error('Error processing pending deeplink:', error)
       })
     }
     this.pendingDeeplinks = []
 
-    log.info('[DeeplinkService] Ready, processed pending deeplinks')
+    log.info('Ready, processed pending deeplinks')
   }
 
   /**
@@ -85,7 +87,7 @@ export class DeeplinkService implements IService {
   async handleDeeplink(url: string): Promise<DeeplinkResult> {
     const parsed = this.parseDeeplink(url)
     if (!parsed) {
-      log.warn(`[DeeplinkService] Invalid deeplink format: ${url}`)
+      log.warn('Invalid deeplink format.', { url: url })
       return {
         success: false,
         message: 'Invalid deeplink format'
@@ -94,7 +96,7 @@ export class DeeplinkService implements IService {
 
     // Queue if not ready yet
     if (!this.isReady) {
-      log.info(`[DeeplinkService] Queuing deeplink (not ready): ${parsed.path}`)
+      log.info('Queuing deeplink (not ready).', { parsedPath: parsed.path })
       this.pendingDeeplinks.push(parsed)
       return {
         success: true,
@@ -108,10 +110,10 @@ export class DeeplinkService implements IService {
 
   private async routeDeeplink(deeplink: ParsedDeeplink): Promise<DeeplinkResult> {
     try {
-      log.info(`[DeeplinkService] Handling: ${deeplink.path}`)
+      log.info('Handling.', { deeplinkPath: deeplink.path })
       return await this.router.route(deeplink)
     } catch (error) {
-      log.error('[DeeplinkService] Error handling deeplink:', error)
+      log.error('Error handling deeplink:', error)
       return {
         success: false,
         path: deeplink.path,
@@ -158,7 +160,7 @@ export class DeeplinkService implements IService {
       const deeplinkUrl = argv.find((arg) => arg.startsWith(`${DEEPLINK_SCHEME}://`))
       if (deeplinkUrl) {
         this.handleDeeplink(deeplinkUrl).catch((error) => {
-          log.error('[DeeplinkService] Error handling second-instance deeplink:', error)
+          log.error('Error handling second-instance deeplink:', error)
         })
       }
 
@@ -174,7 +176,7 @@ export class DeeplinkService implements IService {
     app.on('open-url', (event, url) => {
       event.preventDefault()
       this.handleDeeplink(url).catch((error) => {
-        log.error('[DeeplinkService] Error handling open-url deeplink:', error)
+        log.error('Error handling open-url deeplink:', error)
       })
     })
   }
@@ -190,7 +192,7 @@ export class DeeplinkService implements IService {
         mainWindow.focus()
       }
     } catch (error) {
-      log.error('[DeeplinkService] Error focusing main window:', error)
+      log.error('Error focusing main window:', error)
     }
   }
 }

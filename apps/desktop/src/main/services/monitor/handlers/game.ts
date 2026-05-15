@@ -12,7 +12,7 @@
  */
 
 import { getProcesses, type ProcessInfo } from '@ximu3/process-list'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { Game, gameSessions } from '@shared/db'
 import type { GameRunningStatus } from '@shared/monitor'
 import type { DbService } from '@main/services/db'
@@ -22,6 +22,8 @@ import { normalize, dirname, basename } from 'path'
 import type { IpcService } from '@main/services/ipc'
 import type { EventService } from '@main/services/event'
 import type { GameAttachmentHandler } from '@main/services/attachment/handlers/game'
+
+const log = createLogger('Monitor')
 
 /**
  * Game monitor info
@@ -53,7 +55,7 @@ export class GameMonitorHandler {
     private eventService: EventService,
     private gameAttachment: GameAttachmentHandler
   ) {
-    log.info('[Monitor] GameMonitorHandler initialized')
+    log.info('GameMonitorHandler initialized')
   }
 
   /**
@@ -103,7 +105,7 @@ export class GameMonitorHandler {
         return
       }
       // Otherwise, clean up stale monitor entry
-      log.info(`[Monitor] Cleaning up stale monitor entry for game: ${gameId}`)
+      log.info('Cleaning up stale monitor entry for game.', { gameId: gameId })
       if (existingInfo.backgroundTimer) {
         clearTimeout(existingInfo.backgroundTimer)
       }
@@ -138,8 +140,11 @@ export class GameMonitorHandler {
 
     this.monitors.set(gameId, monitorInfo)
 
-    log.info(`[Monitor] Started monitoring game: ${game.name} (${gameId})`)
-    log.info(`[Monitor] Target: ${game.monitorMode} -> ${effectiveMonitorPath}`)
+    log.info('Started monitoring game.', { gameName: game.name, gameId: gameId })
+    log.info('Resolved monitor target.', {
+      gameMonitorMode: game.monitorMode,
+      effectiveMonitorPath: effectiveMonitorPath
+    })
 
     // Start global polling timer if not already running
     this.ensurePollingRunning()
@@ -166,7 +171,7 @@ export class GameMonitorHandler {
 
     this.monitors.delete(gameId)
 
-    log.info(`[Monitor] Stopped monitoring game: ${gameId}`)
+    log.info('Stopped monitoring game.', { gameId: gameId })
 
     // Stop polling if no more games are being monitored
     this.stopPollingIfEmpty()
@@ -227,7 +232,7 @@ export class GameMonitorHandler {
       this.pollingTimer = undefined
     }
 
-    log.info('[Monitor] GameMonitorHandler cleaned up')
+    log.info('GameMonitorHandler cleaned up')
   }
 
   /**
@@ -240,11 +245,11 @@ export class GameMonitorHandler {
 
     this.pollingTimer = setInterval(() => {
       this.pollAllGames().catch((err) => {
-        log.error('[Monitor] Polling error:', err)
+        log.error('Polling error:', err)
       })
     }, this.POLLING_INTERVAL)
 
-    log.info(`[Monitor] Polling started (interval: ${this.POLLING_INTERVAL}ms)`)
+    log.info('Polling started (interval: ms).', { POLLING_INTERVAL: this.POLLING_INTERVAL })
   }
 
   /**
@@ -254,7 +259,7 @@ export class GameMonitorHandler {
     if (this.monitors.size === 0 && this.pollingTimer) {
       clearInterval(this.pollingTimer)
       this.pollingTimer = undefined
-      log.info('[Monitor] Polling stopped (no games to monitor)')
+      log.info('Polling stopped (no games to monitor)')
     }
   }
 
@@ -370,7 +375,7 @@ export class GameMonitorHandler {
       .where(eq(games.id, gameId))
       .run()
 
-    log.info(`[Monitor] Game started: ${info.game.name} (PID: ${process.pid})`)
+    log.info('Game started.', { infoGameName: info.game.name, processPid: process.pid })
 
     // Send IPC event
     this.ipcService.send('monitor:game-started', gameId)
@@ -419,11 +424,11 @@ export class GameMonitorHandler {
       .where(eq(games.id, gameId))
       .run()
 
-    log.info(`[Monitor] Game stopped: ${info.game.name}`)
+    log.info('Game stopped.', { infoGameName: info.game.name })
 
     // Trigger auto-backup
     this.gameAttachment.tryAutoBackup(gameId).catch((err) => {
-      log.error(`[Monitor] Auto-backup error:`, err)
+      log.error('Auto-backup failed.', err)
     })
 
     // Send IPC event
@@ -449,14 +454,14 @@ export class GameMonitorHandler {
       if (info.backgroundTimer) {
         clearTimeout(info.backgroundTimer)
         info.backgroundTimer = undefined
-        log.info(`[Monitor] Background pending cancelled: ${info.game.name}`)
+        log.info('Background pending cancelled.', { infoGameName: info.game.name })
       }
 
       // THEN: If not already in foreground, switch to foreground
       if (!info.isForeground) {
         info.isForeground = true
         info.foregroundStartTime = now
-        log.info(`[Monitor] Game foreground: ${info.game.name}`)
+        log.info('Game foreground.', { infoGameName: info.game.name })
         this.ipcService.send('monitor:game-foreground', gameId)
       }
     } else if (info.isForeground && !info.backgroundTimer) {
@@ -473,13 +478,14 @@ export class GameMonitorHandler {
         currentInfo.isForeground = false
         currentInfo.foregroundStartTime = undefined
         currentInfo.backgroundTimer = undefined
-        log.info(`[Monitor] Game background (after buffer): ${currentInfo.game.name}`)
+        log.info('Game background (after buffer).', { currentInfoGameName: currentInfo.game.name })
         this.ipcService.send('monitor:game-background', gameId)
       }, this.BACKGROUND_BUFFER_TIME)
 
-      log.info(
-        `[Monitor] Game background pending (${this.BACKGROUND_BUFFER_TIME / 1000}s buffer): ${info.game.name}`
-      )
+      log.info('Game background pending (s buffer).', {
+        value0: this.BACKGROUND_BUFFER_TIME / 1000,
+        infoGameName: info.game.name
+      })
     }
   }
 
@@ -509,6 +515,6 @@ export class GameMonitorHandler {
       .where(eq(games.id, gameId))
       .run()
 
-    log.info(`[Monitor] Session saved: ${Math.round(duration / 1000)}s`)
+    log.info('Session saved.', { MathRound: Math.round(duration / 1000) })
   }
 }

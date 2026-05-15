@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ExtensionInstallationRow } from '@shared/db'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionInstallationStore } from '../installations'
@@ -12,6 +12,8 @@ import {
   inspectPackageDirectory,
   validateInstalledPackageIntegrity
 } from './integrity'
+
+const log = createLogger('Extension')
 
 interface PackageDirectoryInfo extends OperationPackageInfo {
   directoryName: string
@@ -301,9 +303,7 @@ async function findVerifiedRecoverySource(
       return candidate
     }
 
-    log.warn(
-      `[ExtensionPackageRecovery] Ignored invalid recovery package "${candidate.path}": ${issue}`
-    )
+    log.warn('Ignored invalid recovery package.', { candidatePath: candidate.path, issue: issue })
   }
 
   return null

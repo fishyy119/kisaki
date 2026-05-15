@@ -11,11 +11,13 @@
 import type Database from 'better-sqlite3'
 import { getTableName, is } from 'drizzle-orm'
 import { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { EventService } from '@main/services/event'
 import * as schema from '@shared/db'
 import type { TableName } from '@shared/db/table-names'
 import type { RawDbChangeEvent, RawDbChangeOperation } from '@shared/events/library'
+
+const log = createLogger('Db')
 
 /**
  * Extract all table names from Drizzle schema.
@@ -44,7 +46,7 @@ export class TriggerStore {
   init(): void {
     this.registerEmitFunction()
     this.createTriggers()
-    log.info('[TriggerStore] Initialized with triggers for', this.trackedTables.length, 'tables')
+    log.info('Initialized with triggers for', this.trackedTables.length, 'tables')
   }
 
   /**
@@ -172,7 +174,7 @@ function parseRowSnapshot(value: unknown): Record<string, unknown> | undefined {
       ? (parsed as Record<string, unknown>)
       : undefined
   } catch (error) {
-    log.warn('[TriggerStore] Failed to parse row snapshot:', error)
+    log.warn('Failed to parse row snapshot:', error)
     return undefined
   }
 }

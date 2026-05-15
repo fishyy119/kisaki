@@ -29,7 +29,13 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import { PartialDateInput, type PartialDateInputExpose } from '@renderer/components/ui/partial-date-input'
+import {
+  PartialDateInput,
+  type PartialDateInputExpose
+} from '@renderer/components/ui/partial-date-input'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Character')
 
 interface Props {
   characterId: string
@@ -211,7 +217,7 @@ async function handleSubmit() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false
@@ -274,9 +280,7 @@ function handleCancel() {
                   <FieldLabel>性别</FieldLabel>
                   <FieldContent>
                     <Select v-model="genderModel">
-                      <SelectTrigger
-                        class="w-full"
-                      >
+                      <SelectTrigger class="w-full">
                         <SelectValue placeholder="选择性别" />
                       </SelectTrigger>
                       <SelectContent>
@@ -318,9 +322,7 @@ function handleCancel() {
                   <FieldLabel>血型</FieldLabel>
                   <FieldContent>
                     <Select v-model="bloodTypeModel">
-                      <SelectTrigger
-                        class="w-full"
-                      >
+                      <SelectTrigger class="w-full">
                         <SelectValue placeholder="选择血型" />
                       </SelectTrigger>
                       <SelectContent>
@@ -398,9 +400,7 @@ function handleCancel() {
                   <FieldLabel>罩杯</FieldLabel>
                   <FieldContent>
                     <Select v-model="cupModel">
-                      <SelectTrigger
-                        class="w-full"
-                      >
+                      <SelectTrigger class="w-full">
                         <SelectValue placeholder="罩杯" />
                       </SelectTrigger>
                       <SelectContent>

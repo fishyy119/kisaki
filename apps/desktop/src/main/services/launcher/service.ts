@@ -5,13 +5,15 @@
  * Provides namespace-style access to media-specific handlers.
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
 import type { DbService } from '@main/services/db'
 import { GameLauncherHandler } from './handlers/game'
 import { applyDefaultLaunchConfig } from './presets/defaults'
 import { registerLauncherIpc } from './ipc'
+
+const log = createLogger('Launcher')
 
 export class LauncherService implements IMediaService {
   readonly id = 'launcher'
@@ -28,7 +30,7 @@ export class LauncherService implements IMediaService {
 
     this.game = new GameLauncherHandler(this.dbService, monitorService, nativeService)
     registerLauncherIpc(this, ipcService)
-    log.info('[LauncherService] Initialized')
+    log.info('Initialized')
   }
 
   applyDefaultConfig(gameId: string, filePath: string): Promise<void> {

@@ -22,6 +22,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Game')
 
 interface Props {
   gameId: string
@@ -74,7 +77,7 @@ watch(open, async (isOpen, wasOpen) => {
     try {
       await gcOnCancel()
     } catch (error) {
-      console.warn('Inline attachment cleanup failed:', error)
+      log.warn('Inline attachment cleanup failed:', error)
     }
   }
 })
@@ -93,7 +96,7 @@ async function handleSubmit() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

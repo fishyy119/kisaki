@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { asc, eq } from 'drizzle-orm'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { CommandService } from '@main/services/command'
@@ -15,6 +15,8 @@ import type {
 } from '@shared/background-task'
 import { backgroundTasks, type BackgroundTaskRow, type NewBackgroundTaskRow } from '@shared/db'
 import { registerBackgroundTaskIpc } from './ipc'
+
+const log = createLogger('BackgroundTask')
 
 const HISTORY_LIMIT = 50
 const DEFAULT_RETRY_DELAY_MS = 5_000
@@ -44,11 +46,11 @@ export class BackgroundTaskService implements IService {
     registerBackgroundTaskIpc(this, container.get('ipc'))
     this.unsubscribeAppReady = this.event.on('app:ready', () => {
       void this.runStartupTasks().catch((error) => {
-        log.error('[BackgroundTaskService] Startup tasks failed:', error)
+        log.error('Startup tasks failed:', error)
       })
     })
     this.refreshAllTimers()
-    log.info('[BackgroundTaskService] Initialized')
+    log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
@@ -62,7 +64,7 @@ export class BackgroundTaskService implements IService {
       }
     }
     this.runningTasks.clear()
-    log.info('[BackgroundTaskService] Disposed')
+    log.info('Disposed')
   }
 
   list(): BackgroundTask[] {
@@ -151,7 +153,7 @@ export class BackgroundTaskService implements IService {
 
     for (const taskId of startupTaskIds) {
       await this.runTask(taskId, 'startup').catch((error) => {
-        log.error(`[BackgroundTaskService] Startup task "${taskId}" failed:`, error)
+        log.error('Startup task failed.', error, { taskId: taskId })
       })
     }
   }
@@ -345,7 +347,7 @@ export class BackgroundTaskService implements IService {
     const delayMs = Math.max(0, Math.min(nextRunAt - Date.now(), MAX_TIMEOUT_MS))
     const timer = setTimeout(() => {
       void this.runTask(taskId, 'schedule').catch((error) => {
-        log.error(`[BackgroundTaskService] Scheduled task "${taskId}" failed:`, error)
+        log.error('Scheduled task failed.', error, { taskId: taskId })
       })
     }, delayMs)
     this.timers.set(taskId, timer)

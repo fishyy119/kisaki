@@ -29,6 +29,9 @@ import { MarkdownEditor } from '@renderer/components/ui/markdown'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { ImagePicker } from '@renderer/components/ui/image-picker'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Game')
 
 interface Props {
   gameId: string
@@ -124,7 +127,7 @@ watch(open, async (isOpen, wasOpen) => {
   try {
     await gcOnCancel()
   } catch (error) {
-    console.warn('Inline attachment cleanup failed:', error)
+    log.warn('Inline attachment cleanup failed:', error)
   }
 })
 
@@ -147,7 +150,7 @@ async function handlePickCover() {
     coverMode.value = 'set'
     coverPath.value = path
   } catch (error) {
-    console.error('Pick cover failed:', error)
+    log.error('Pick cover failed:', error)
     notify.error('选择封面失败')
   }
 }
@@ -210,7 +213,7 @@ async function handleSubmit() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Save note failed:', error)
+    log.error('Save note failed:', error)
     notify.error('保存失败')
   } finally {
     isSaving.value = false

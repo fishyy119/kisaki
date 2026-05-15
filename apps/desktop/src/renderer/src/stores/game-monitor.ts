@@ -8,6 +8,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Monitor')
 
 export interface GameMonitorStatus {
   isRunning: boolean
@@ -125,7 +128,7 @@ export const useGameMonitorStore = defineStore('gameMonitor', () => {
         }
       }
     } catch (error) {
-      console.error('[GameMonitorStore] Failed to fetch initial status:', error)
+      log.error('Failed to fetch initial status:', error)
     }
 
     initialized.value = true

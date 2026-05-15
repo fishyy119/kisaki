@@ -35,6 +35,9 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import GameDurationSessionItem from './duration-session-item.vue'
 import GameDurationSessionFormDialog from './duration-session-form-dialog.vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Game')
 
 interface Props {
   gameId: string
@@ -141,7 +144,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false
@@ -154,7 +157,7 @@ async function handleDeleteSession(sessionId: string) {
     sessions.value = sessions.value.filter((s) => s.id !== sessionId)
     notify.success('已删除记录')
   } catch (error) {
-    console.error('Delete session failed:', error)
+    log.error('Delete session failed:', error)
     notify.error('删除失败')
   } finally {
     deleteId.value = null
@@ -193,7 +196,7 @@ async function handleSessionFormSubmit(data: { startedAt: Date; endedAt: Date })
     })
     sessions.value = updated
   } catch (error) {
-    console.error('Session save failed:', error)
+    log.error('Session save failed:', error)
     notify.error(editingId.value ? '更新失败' : '添加失败')
   }
   sessionFormOpen.value = false

@@ -174,7 +174,6 @@ function createEnumType<T extends string>(
       if (validValues.includes(value as T)) {
         return value as T
       }
-      console.warn(`Invalid ${typeName} value from database:`, value)
       return defaultValue
     },
 
@@ -204,7 +203,6 @@ function createNullableEnumType<T extends string>(validValues: readonly T[], typ
       if (validValues.includes(value as T)) {
         return value as T
       }
-      console.warn(`Invalid ${typeName} value from database:`, value)
       return null
     },
 
@@ -240,7 +238,6 @@ export function createBoundedIntegerType(
         return value
       }
 
-      console.warn(`Invalid ${typeName} value from database:`, value)
       return defaultValue
     },
 
@@ -459,12 +456,8 @@ export const partialDate = customType<{
     try {
       const parsed = JSON.parse(value)
       const normalized = normalizePartialDate(parsed)
-      if (!normalized) {
-        console.warn('Invalid partialDate value from database:', value)
-      }
       return normalized
-    } catch (error) {
-      console.error('Failed to parse partialDate:', error)
+    } catch {
       return null
     }
   },
@@ -497,12 +490,10 @@ export const stringArrayJson = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) {
-        console.warn('stringArrayJson value is not an array:', value)
         return []
       }
       return parsed.filter((v) => typeof v === 'string') as string[]
-    } catch (error) {
-      console.error('Failed to parse stringArrayJson:', error)
+    } catch {
       return []
     }
   },
@@ -533,7 +524,6 @@ export const relatedSites = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) {
-        console.warn('RelatedSites value is not an array:', value)
         return []
       }
 
@@ -550,8 +540,7 @@ export const relatedSites = customType<{
       })
 
       return validated
-    } catch (error) {
-      console.error('Failed to parse relatedSites:', error)
+    } catch {
       return []
     }
   },
@@ -604,7 +593,6 @@ export const saveBackups = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) {
-        console.warn('SaveBackups value is not an array:', value)
         return []
       }
       return parsed.filter(
@@ -616,8 +604,7 @@ export const saveBackups = customType<{
           typeof item.locked === 'boolean' &&
           typeof item.saveFile === 'string'
       )
-    } catch (error) {
-      console.error('Failed to parse saveBackups:', error)
+    } catch {
       return []
     }
   },
@@ -656,7 +643,6 @@ export const failedScans = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) {
-        console.warn('FailedScans value is not an array:', value)
         return []
       }
       return parsed.filter(
@@ -667,8 +653,7 @@ export const failedScans = customType<{
           typeof item.reason === 'string' &&
           typeof item.path === 'string'
       )
-    } catch (error) {
-      console.error('Failed to parse failedScans:', error)
+    } catch {
       return []
     }
   },
@@ -706,12 +691,10 @@ export const scannerIgnoredNames = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) {
-        console.warn('scannerIgnoredNames value is not an array:', value)
         return []
       }
       return parsed.filter((item): item is string => typeof item === 'string')
-    } catch (error) {
-      console.error('Failed to parse scannerIgnoredNames:', error)
+    } catch {
       return []
     }
   },
@@ -743,7 +726,6 @@ export const nameExtractionRules = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) {
-        console.warn('nameExtractionRules value is not an array:', value)
         return []
       }
       return parsed.filter(
@@ -755,8 +737,7 @@ export const nameExtractionRules = customType<{
           typeof item.pattern === 'string' &&
           typeof item.enabled === 'boolean'
       )
-    } catch (error) {
-      console.error('Failed to parse nameExtractionRules:', error)
+    } catch {
       return []
     }
   },
@@ -845,8 +826,7 @@ export const backgroundTaskArgs = customType<{
     try {
       const parsed = parseJsonValue(value)
       return isPlainObject(parsed) ? parsed : {}
-    } catch (error) {
-      console.error('Failed to parse backgroundTaskArgs:', error)
+    } catch {
       return {}
     }
   },
@@ -871,8 +851,7 @@ export const backgroundTaskSchedule = customType<{
     try {
       const parsed = parseJsonValue(value)
       return isBackgroundTaskSchedule(parsed) ? parsed : { type: 'manual' }
-    } catch (error) {
-      console.error('Failed to parse backgroundTaskSchedule:', error)
+    } catch {
       return { type: 'manual' }
     }
   },
@@ -897,8 +876,7 @@ export const backgroundTaskFailurePolicy = customType<{
     try {
       const parsed = parseJsonValue(value)
       return isBackgroundTaskFailurePolicy(parsed) ? parsed : { type: 'none' }
-    } catch (error) {
-      console.error('Failed to parse backgroundTaskFailurePolicy:', error)
+    } catch {
       return { type: 'none' }
     }
   },
@@ -923,8 +901,7 @@ export const backgroundTaskHistory = customType<{
     try {
       const parsed = parseJsonValue(value)
       return Array.isArray(parsed) ? parsed.filter(isBackgroundTaskRunRecord) : []
-    } catch (error) {
-      console.error('Failed to parse backgroundTaskHistory:', error)
+    } catch {
       return []
     }
   },
@@ -950,12 +927,8 @@ export const extensionRegistryManifestSnapshot = customType<{
     try {
       const parsed = JSON.parse(value)
       const manifest = parsePersistedExtensionRegistryManifestSnapshot(parsed)
-      if (!manifest) {
-        console.warn('Invalid extensionRegistryManifestSnapshot value from database:', value)
-      }
       return manifest
-    } catch (error) {
-      console.error('Failed to parse extensionRegistryManifestSnapshot:', error)
+    } catch {
       return null
     }
   },
@@ -982,12 +955,8 @@ export const extensionInstallationSource = customType<{
     try {
       const parsed = JSON.parse(value)
       const source = parseExtensionInstallationSource(parsed)
-      if (!source) {
-        console.warn('Invalid extensionInstallationSource value from database:', value)
-      }
       return source
-    } catch (error) {
-      console.error('Failed to parse extensionInstallationSource:', error)
+    } catch {
       return null
     }
   },
@@ -1009,13 +978,6 @@ function parsePersistedExtensionRegistryManifestSnapshot(
   const result = parseExtensionRegistryManifest(value, { allowInsecureLocalUrls: true })
   if (result.manifest) {
     return result.manifest
-  }
-
-  if (result.issues.length > 0) {
-    console.warn(
-      'Invalid extensionRegistryManifestSnapshot manifest:',
-      result.issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ')
-    )
   }
 
   return null
@@ -1092,7 +1054,6 @@ export const filterState = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!isPlainObject(parsed)) {
-        console.warn('filterState value is not an object:', value)
         return {}
       }
 
@@ -1105,8 +1066,7 @@ export const filterState = customType<{
         }
       }
       return normalized
-    } catch (error) {
-      console.error('Failed to parse filterState:', error)
+    } catch {
       return {}
     }
   },
@@ -1139,12 +1099,10 @@ export const dynamicCollectionConfig = customType<{
     try {
       const parsed = JSON.parse(value)
       if (typeof parsed !== 'object' || parsed === null) {
-        console.warn('dynamicCollectionConfig value is not an object:', value)
         return null
       }
       return parsed as DynamicCollectionConfig
-    } catch (error) {
-      console.error('Failed to parse dynamicCollectionConfig:', error)
+    } catch {
       return null
     }
   },
@@ -1178,12 +1136,10 @@ export const scraperSlotConfigs = customType<{
     try {
       const parsed = JSON.parse(value)
       if (!isPlainObject(parsed)) {
-        console.warn('scraperSlotConfigs value is not an object:', value)
         return {}
       }
       return parsed as ScraperSlotConfigs
-    } catch (error) {
-      console.error('Failed to parse scraperSlotConfigs:', error)
+    } catch {
       return {}
     }
   },

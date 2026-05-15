@@ -4,7 +4,7 @@ import type {
   DeeplinkRouteRegistrationInfo,
   ExtensionRuntimeHandle
 } from '@kisaki/extension-api'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ExtensionDeeplinkRouteRegistrationInfo } from '@shared/extension'
 import type {
   DeeplinkResult,
@@ -25,6 +25,8 @@ import {
   type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
+
+const log = createLogger('Extension')
 
 interface DeeplinkRouteRegistration {
   owner: RuntimeContributionOwner
@@ -251,7 +253,7 @@ class ExtensionDeeplinkHandler implements DeeplinkRouteHandler<typeof EXTENSION_
         data: response.data
       }
     } catch (error) {
-      log.warn(`[ExtensionDeeplinkRouteContributionPoint] Route "${deeplink.path}" failed:`, error)
+      log.warn('Deeplink route failed.', error, { deeplinkPath: deeplink.path })
       return {
         success: false,
         path: deeplink.path,

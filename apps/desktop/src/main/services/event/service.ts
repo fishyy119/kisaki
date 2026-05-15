@@ -4,7 +4,7 @@
  * Type-safe event emitter that can forward events to renderer process.
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import type {
@@ -15,6 +15,8 @@ import type {
 } from '@shared/events'
 import type { RawDbChangeEvent } from '@shared/events/library'
 import { registerEventIpc } from './ipc'
+
+const log = createLogger('Event')
 
 export class EventService implements IService {
   readonly id = 'event'
@@ -29,7 +31,7 @@ export class EventService implements IService {
 
     registerEventIpc(this, this.ipcService)
     this.isReady = true
-    log.info('[EventService] Initialized')
+    log.info('Initialized')
   }
 
   /**
@@ -91,7 +93,7 @@ export class EventService implements IService {
         try {
           listener(...eventArgs)
         } catch (error) {
-          log.error(`[EventService] Error in listener for "${String(event)}":`, error)
+          log.error('Error in listener.', error, { event: String(event) })
         }
       }
     }
@@ -101,7 +103,7 @@ export class EventService implements IService {
       try {
         this.ipcService.send('event:forward', event, sanitizeForwardedEventArgs(event, eventArgs))
       } catch (error) {
-        log.error(`[EventService] Failed to forward event "${String(event)}":`, error)
+        log.error('Failed to forward event.', error, { event: String(event) })
       }
     }
   }

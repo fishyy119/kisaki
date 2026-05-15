@@ -26,6 +26,9 @@ import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-di
 import { notify } from '@renderer/core/notify'
 import CompanyTagsItem from './tag-item.vue'
 import CompanyTagsItemFormDialog from './tag-item-form-dialog.vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Company')
 
 interface TagItem {
   id: string
@@ -123,7 +126,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Save failed:', error)
+    log.error('Save failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

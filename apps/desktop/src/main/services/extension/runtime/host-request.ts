@@ -1,14 +1,13 @@
-import log from 'electron-log/main'
 import {
   type ExtensionRuntimeDiagnostic,
   normalizeCapabilityError,
   type ExtensionRuntimeHandle,
-  type ExtensionRuntimeMetadata,
-  type RpcValue
+  type ExtensionRuntimeMetadata
 } from '@kisaki/extension-api'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions'
 import type { ExtensionHostRpcClient } from './rpc-client'
+import type { ExtensionRuntimeLogs } from './logs'
 import type { ExtensionRuntimeSecrets } from './secrets'
 import type { ExtensionRuntimeStorage } from './storage'
 
@@ -16,6 +15,7 @@ const EMPTY_RPC_RESULT = Object.freeze({})
 
 export interface HostRequestOptions {
   rpc: ExtensionHostRpcClient
+  logs: ExtensionRuntimeLogs
   storage: ExtensionRuntimeStorage
   secrets: ExtensionRuntimeSecrets
   capabilities?: ExtensionCapabilityGateway
@@ -28,10 +28,15 @@ export interface HostRequestOptions {
 }
 
 export function registerHostRequests(options: HostRequestOptions): void {
-  options.rpc.handleHostRequest('runtime.logger.log', async (params) => {
+  options.rpc.handleHostRequest('runtime.logger.log', async (params, context) => {
     try {
-      const extension = requireRuntimeHandle(options, params.runtimeHandle)
-      writeExtensionLog(extension.id, params.level, params.message, params.args)
+      await options.logs.write(
+        params.runtimeHandle,
+        params.level,
+        params.message,
+        params.args,
+        context.signal
+      )
       return EMPTY_RPC_RESULT
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to write extension log.')
@@ -147,28 +152,4 @@ function requireRuntimeHandle(
   }
 
   return extension
-}
-
-function writeExtensionLog(
-  extensionId: string,
-  level: 'debug' | 'info' | 'warn' | 'error',
-  message: string,
-  args: readonly RpcValue[]
-): void {
-  const prefix = `[ExtensionHost][${extensionId}] ${message}`
-
-  switch (level) {
-    case 'debug':
-      log.debug(prefix, ...args)
-      break
-    case 'info':
-      log.info(prefix, ...args)
-      break
-    case 'warn':
-      log.warn(prefix, ...args)
-      break
-    case 'error':
-      log.error(prefix, ...args)
-      break
-  }
 }

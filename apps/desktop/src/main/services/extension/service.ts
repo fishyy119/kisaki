@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { Mutex } from 'async-mutex'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
@@ -35,6 +35,8 @@ import { ExtensionSignerTrustManager, ExtensionSignerTrustStore } from './signer
 import { ExtensionUpdateManager, ExtensionUpdatePlanner } from './updates'
 import type { ExtensionServicePaths } from './types'
 import { resolveInsideRoot } from './shared/path-confinement'
+
+const log = createLogger('Extension')
 
 /**
  * Main-process composition root for the extension system.
@@ -203,7 +205,7 @@ export class ExtensionService implements IService {
     registerExtensionIpc(this, this.ipc)
     await this.installations.init()
     this.repositories.refreshRepositoriesInBackground()
-    log.info('[ExtensionService] Initialized')
+    log.info('Initialized')
   }
 
   getPaths(): ExtensionServicePaths {
@@ -244,11 +246,11 @@ export class ExtensionService implements IService {
     const recovery = await this.packageRecovery.recover()
 
     for (const action of recovery.actions) {
-      log.info('[ExtensionService] Extension package recovery action:', action)
+      log.info('Extension package recovery action:', action)
     }
 
     for (const issue of recovery.issues) {
-      log.warn('[ExtensionService] Extension package recovery issue:', issue)
+      log.warn('Extension package recovery issue:', issue)
     }
   }
 }

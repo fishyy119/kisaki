@@ -8,7 +8,7 @@ import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is, platform } from '@electron-toolkit/utils'
 import windowStateKeeper from 'electron-window-state'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
@@ -16,6 +16,8 @@ import { settings } from '@shared/db'
 import type { MainWindowCloseAction } from '@shared/db/enums'
 import { openExternalLink } from '@main/utils'
 import { registerWindowIpc } from './ipc'
+
+const log = createLogger('Window')
 
 export class WindowService implements IService {
   readonly id = 'window'
@@ -38,7 +40,7 @@ export class WindowService implements IService {
       this.isQuitting = true
     })
 
-    log.info('[WindowService] Initialized')
+    log.info('Initialized')
   }
 
   private loadMainWindowCloseActionFromDb(): MainWindowCloseAction {
@@ -50,23 +52,20 @@ export class WindowService implements IService {
 
       return row?.action ?? 'exit'
     } catch (error) {
-      log.warn(
-        '[WindowService] Failed to read mainWindowCloseAction from settings, fallback to exit:',
-        error
-      )
+      log.warn('Failed to read mainWindowCloseAction from settings, fallback to exit:', error)
       return 'exit'
     }
   }
 
   setMainWindowCloseAction(action: MainWindowCloseAction): void {
     if (action !== 'exit' && action !== 'tray') {
-      log.warn('[WindowService] Ignored invalid main window close action:', action)
+      log.warn('Ignored invalid main window close action:', action)
       return
     }
 
     if (this.mainWindowCloseAction === action) return
     this.mainWindowCloseAction = action
-    log.info('[WindowService] Updated main window close action:', action)
+    log.info('Updated main window close action:', action)
   }
 
   minimizeMainWindow(): void {
@@ -125,7 +124,7 @@ export class WindowService implements IService {
       }
     }
     this.mainWindow = null
-    log.info('[WindowService] Disposed')
+    log.info('Disposed')
   }
 
   /**
@@ -173,7 +172,7 @@ export class WindowService implements IService {
 
     this.mainWindow.webContents.setWindowOpenHandler((details) => {
       void openExternalLink(details.url).catch((error) => {
-        log.warn('[WindowService] Blocked external navigation:', error)
+        log.warn('Blocked external navigation:', error)
       })
       return { action: 'deny' }
     })
@@ -202,7 +201,7 @@ export class WindowService implements IService {
       this.mainWindow.loadFile(join(__dirname, '../renderer/main.html'))
     }
 
-    log.info('[WindowService] Main window created')
+    log.info('Main window created')
     return this.mainWindow
   }
 
@@ -249,15 +248,15 @@ export class WindowService implements IService {
         base.endsWith('/') ? base : `${base}/`
       ).toString()
       this.trayMenuWindow.loadURL(trayMenuUrl).catch((error) => {
-        log.error('[WindowService] Failed to load tray menu window URL:', error)
+        log.error('Failed to load tray menu window URL:', error)
       })
     } else {
       this.trayMenuWindow.loadFile(join(__dirname, '../renderer/tray-menu.html')).catch((error) => {
-        log.error('[WindowService] Failed to load tray menu window file:', error)
+        log.error('Failed to load tray menu window file:', error)
       })
     }
 
-    log.info('[WindowService] Tray menu window created')
+    log.info('Tray menu window created')
     return this.trayMenuWindow
   }
 

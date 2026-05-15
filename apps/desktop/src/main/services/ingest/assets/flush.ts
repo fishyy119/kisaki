@@ -1,8 +1,10 @@
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { IngestWarning } from '@shared/ingest'
 import { characters, companies, games, persons } from '@shared/db'
 import type { PendingAssetTask } from './types'
+
+const log = createLogger('Ingest')
 
 function describePendingAsset(asset: PendingAssetTask): string {
   switch (asset.type) {
@@ -52,7 +54,7 @@ export async function flushPendingAssets(
         }
       } catch (error) {
         const message = `Asset persistence failed for ${describePendingAsset(asset)}.`
-        log.warn(`[IngestAssets] ${message}`, error)
+        log.warn('Asset flush warning.', error, { message: message })
         return {
           code: 'asset-persist-failed',
           message

@@ -3,10 +3,11 @@
  */
 
 import type { NetworkService } from '@main/services/network'
+import type { Logger } from '@main/log'
 import type { PartialDate } from '@shared/db'
 import type { ScraperLookup } from '@shared/scraper'
 
-type ScraperLogger = typeof import('electron-log/main').default
+type ScraperLogger = Logger
 
 /**
  * Provider-specific target resolved from a cross-provider scraper lookup.

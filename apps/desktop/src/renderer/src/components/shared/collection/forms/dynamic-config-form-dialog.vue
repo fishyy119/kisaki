@@ -42,6 +42,9 @@ import type { FilterState } from '@shared/filter'
 import { collections, type DynamicCollectionConfig, type DynamicEntityConfig } from '@shared/db'
 import type { ContentEntityType, SortDirection } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Collection')
 
 interface Props {
   collectionId: string
@@ -83,7 +86,9 @@ function createDefaultConfig(): DynamicCollectionConfig {
   }
 }
 
-function normalizeConfig(value: DynamicCollectionConfig | null | undefined): DynamicCollectionConfig {
+function normalizeConfig(
+  value: DynamicCollectionConfig | null | undefined
+): DynamicCollectionConfig {
   const v = value ?? null
   return {
     game: v?.game ?? createDefaultEntityConfig(),
@@ -169,7 +174,9 @@ watch(
 watch(existingCollection, (data) => {
   if (!open.value) return
   if (initialized.value) return
-  localConfig.value = normalizeConfig((data?.dynamicConfig as DynamicCollectionConfig | null) ?? null)
+  localConfig.value = normalizeConfig(
+    (data?.dynamicConfig as DynamicCollectionConfig | null) ?? null
+  )
   initialized.value = true
 })
 
@@ -220,7 +227,7 @@ function handleConfirm() {
       emit('updated', localConfig.value)
       open.value = false
     } catch (error) {
-      console.error('Failed to update filter config:', error)
+      log.error('Failed to update filter config:', error)
       notify.error('更新失败')
     } finally {
       isSubmitting.value = false

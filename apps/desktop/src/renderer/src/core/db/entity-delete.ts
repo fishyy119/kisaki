@@ -14,7 +14,7 @@ export async function previewEntityDelete(
 ): Promise<EntityDeletePreview> {
   const result = await ipcManager.invoke('db:preview-entity-delete', params)
   if (!result.success) {
-    throw new Error(result.error || 'Could not load delete preview')
+    throw new Error('Could not load delete preview.')
   }
 
   return result.data
@@ -26,7 +26,7 @@ export async function previewEntityDelete(
 export async function deleteEntities(params: EntityDeleteRequest): Promise<EntityDeleteResult> {
   const result = await ipcManager.invoke('db:delete-entities', params)
   if (!result.success) {
-    throw new Error(result.error || 'Could not delete entities')
+    throw new Error('Could not delete entities.')
   }
 
   return result.data

@@ -7,12 +7,14 @@
 
 import { Notification } from 'electron'
 import { nanoid } from 'nanoid'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
 import type { NotifyOptions, NotifyFunction } from '@shared/notify'
 import { registerNotifyIpc } from './ipc'
+
+const log = createLogger('Notify')
 
 export class NotifyService implements IService {
   readonly id = 'notify'
@@ -28,7 +30,7 @@ export class NotifyService implements IService {
 
     registerNotifyIpc(this, this.ipcService)
     this._notify = this.createNotify()
-    log.info('[NotifyService] Initialized')
+    log.info('Initialized')
   }
 
   /**

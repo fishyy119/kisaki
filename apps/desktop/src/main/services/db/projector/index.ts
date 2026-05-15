@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { EventService } from '@main/services/event'
 import type { AppEvents, EventUnsubscribe } from '@shared/events'
 import type { LibraryEntityChange, RawDbChangeEvent } from '@shared/events/library'
@@ -14,6 +14,8 @@ import {
 } from './entities'
 import { PROJECTOR_DEBOUNCE_MS, type ConfiguredEntityTopic, type EntityGroup } from './types'
 import { dedupeTargets, stringValue } from './utils'
+
+const log = createLogger('Db')
 
 export class DbEventProjector {
   private readonly groups = new Map<string, EntityGroup>()
@@ -31,7 +33,7 @@ export class DbEventProjector {
       this.event.on('db:updated', (change) => this.enqueue(change)),
       this.event.on('db:deleted', (change) => this.enqueue(change))
     )
-    log.info('[DbEventProjector] Initialized')
+    log.info('Initialized')
   }
 
   dispose(): void {
@@ -75,7 +77,7 @@ export class DbEventProjector {
           this.emitEntityEvent(group.entity, group.id, group.changes)
         }
       } catch (error) {
-        log.error(`[DbEventProjector] Failed to project ${group.entity}:${group.id}:`, error)
+        log.error('Failed to project.', error, { groupEntity: group.entity, groupId: group.id })
       }
     }
   }

@@ -8,6 +8,9 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ipcManager } from '@renderer/core/ipc'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from '@shared/updater'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Updater')
 
 const defaultState: AppUpdaterState = {
   status: 'idle',
@@ -118,7 +121,7 @@ export const useUpdaterStore = defineStore('updater', () => {
       try {
         const result = await ipcManager.invoke('updater:get-changelog', normalizedVersion)
         if (!result.success) {
-          throw new Error(result.error)
+          throw new Error('Failed to fetch update changelog.')
         }
 
         setChangelog(result.data)
@@ -165,7 +168,7 @@ export const useUpdaterStore = defineStore('updater', () => {
         setState(result.data)
       }
     } catch (error) {
-      console.error('[UpdaterStore] Failed to fetch initial updater state:', error)
+      log.error('Failed to fetch initial updater state:', error)
     }
 
     initialized.value = true
@@ -178,7 +181,7 @@ export const useUpdaterStore = defineStore('updater', () => {
     try {
       const result = await ipcManager.invoke('updater:quit-and-install')
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error('Failed to install downloaded update.')
       }
     } catch (error) {
       isInstalling.value = false
@@ -193,7 +196,7 @@ export const useUpdaterStore = defineStore('updater', () => {
     try {
       const result = await ipcManager.invoke('updater:check-for-updates')
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error('Failed to check for updates.')
       }
     } finally {
       isManuallyChecking.value = false
@@ -207,7 +210,7 @@ export const useUpdaterStore = defineStore('updater', () => {
     try {
       const result = await ipcManager.invoke('updater:download-update')
       if (!result.success) {
-        throw new Error(result.error)
+        throw new Error('Failed to download update.')
       }
     } finally {
       isStartingDownload.value = false

@@ -22,11 +22,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import {
-  buildFilterConditions,
-  buildOrderBy,
-  getFilterQuerySpec
-} from '@shared/filter'
+import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
 import {
   collections,
   collectionGameLinks,
@@ -36,6 +32,9 @@ import {
   type DynamicCollectionConfig
 } from '@shared/db'
 import type { SortDirection } from '@shared/common'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Collection')
 
 interface Props {
   collectionId: string
@@ -53,7 +52,11 @@ const emit = defineEmits<{
 
 const isConverting = ref(false)
 
-const { data: collection, isLoading, refetch } = useAsyncData(
+const {
+  data: collection,
+  isLoading,
+  refetch
+} = useAsyncData(
   async () => {
     const data = await db.query.collections.findFirst({
       where: eq(collections.id, props.collectionId)
@@ -93,7 +96,9 @@ async function materializeDynamicCollection(config: DynamicCollectionConfig) {
     .delete(collectionCharacterLinks)
     .where(eq(collectionCharacterLinks.collectionId, collectionId))
   await db.delete(collectionPersonLinks).where(eq(collectionPersonLinks.collectionId, collectionId))
-  await db.delete(collectionCompanyLinks).where(eq(collectionCompanyLinks.collectionId, collectionId))
+  await db
+    .delete(collectionCompanyLinks)
+    .where(eq(collectionCompanyLinks.collectionId, collectionId))
 
   if (config.game?.enabled) {
     const whereCondition = buildFilterConditions(getFilterQuerySpec('game'), config.game.filter)
@@ -171,7 +176,10 @@ async function materializeDynamicCollection(config: DynamicCollectionConfig) {
   }
 
   if (config.company?.enabled) {
-    const whereCondition = buildFilterConditions(getFilterQuerySpec('company'), config.company.filter)
+    const whereCondition = buildFilterConditions(
+      getFilterQuerySpec('company'),
+      config.company.filter
+    )
     const orderBy = buildOrderBy(
       getFilterQuerySpec('company'),
       config.company.sortField,
@@ -212,7 +220,7 @@ async function handleConfirm() {
     emit('converted', props.collectionId)
     open.value = false
   } catch (error) {
-    console.error('Failed to convert to static:', error)
+    log.error('Failed to convert to static:', error)
     notify.error('转换失败')
   } finally {
     isConverting.value = false

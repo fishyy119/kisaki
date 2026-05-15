@@ -12,7 +12,8 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
-    console.error(error)
+    // Preload runs before the renderer logger is available.
+    console.error('Failed to expose preload APIs.', error)
   }
 } else {
   // @ts-expect-error (define in dts)

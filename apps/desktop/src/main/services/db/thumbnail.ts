@@ -9,8 +9,10 @@ import sharp from 'sharp'
 import smartcrop from 'smartcrop-sharp'
 import fse from 'fs-extra'
 import path from 'path'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ThumbnailFit, ThumbnailOptions } from './types'
+
+const log = createLogger('Db')
 
 /**
  * Thumbnail generation and caching manager.
@@ -76,11 +78,11 @@ export class ThumbnailStore {
             .toFile(thumbnailPath)
         }
 
-        log.debug(`Generated thumbnail: ${thumbnailPath}`)
+        log.debug('Generated thumbnail.', { thumbnailPath: thumbnailPath })
         return thumbnailPath
       } catch (error) {
-        log.error(`Failed to generate thumbnail for ${originalPath}:`, error)
-        throw error
+        log.error('Failed to generate thumbnail.', error, { originalPath: originalPath })
+        throw new Error('Failed to generate thumbnail.')
       }
     })
   }
@@ -103,11 +105,11 @@ export class ThumbnailStore {
         if (thumbnailPattern.test(file)) {
           const filePath = path.join(thumbnailDir, file)
           await fse.remove(filePath)
-          log.debug(`Deleted thumbnail: ${filePath}`)
+          log.debug('Deleted thumbnail.', { filePath: filePath })
         }
       }
     } catch (error) {
-      log.warn(`Failed to delete thumbnails for ${originalPath}:`, error)
+      log.warn('Failed to delete thumbnails.', error, { originalPath: originalPath })
     }
   }
 
@@ -211,7 +213,7 @@ export class ThumbnailStore {
       })
 
       if (keysToDelete.length > 0) {
-        log.debug(`[ThumbnailStore] Cleaned up ${keysToDelete.length} unused mutexes`)
+        log.debug('Cleaned up unused mutexes.', { keysToDeleteLength: keysToDelete.length })
       }
     }, CLEANUP_INTERVAL)
   }

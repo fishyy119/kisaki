@@ -16,6 +16,9 @@ import { eq } from 'drizzle-orm'
 import zhHans from './locales/zh-Hans.json'
 import en from './locales/en.json'
 import ja from './locales/ja.json'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Locale')
 
 /** i18next instance for renderer process */
 export const i18n: I18nInstance = i18next.createInstance()
@@ -31,7 +34,7 @@ async function detectInitialLocale(): Promise<AppLocale> {
       return result.locale
     }
   } catch (error) {
-    console.warn('[i18n] Failed to read locale from settings:', error)
+    log.warn('Failed to read locale from settings:', error)
   }
 
   // Fallback to system locale
@@ -58,14 +61,14 @@ export async function initI18n(): Promise<typeof i18n> {
     }
   })
 
-  console.log(`[i18n] Renderer process initialized with locale: ${initialLocale}`)
+  log.info('Renderer process initialized with locale.', { initialLocale: initialLocale })
 
   // Listen for locale changes from main process
   eventManager.on('app:locale-changed', ({ locale }: { locale: AppLocale | null }) => {
     const targetLocale = locale ?? (navigator.language as AppLocale)
     if (APP_LOCALES.includes(targetLocale) && i18n.language !== targetLocale) {
       i18n.changeLanguage(targetLocale)
-      console.log(`[i18n] Renderer process locale changed to: ${targetLocale}`)
+      log.info('Renderer process locale changed.', { targetLocale: targetLocale })
     }
   })
 
@@ -97,7 +100,8 @@ export async function setLocale(locale: AppLocale | null): Promise<void> {
   // Notify other processes
   eventManager.emit('app:locale-changed', { locale })
 
-  console.log(
-    `[i18n] Locale changed and persisted: ${locale ?? 'system'} (actual: ${targetLocale})`
-  )
+  log.info('Locale changed and persisted.', {
+    value0: locale ?? 'system',
+    targetLocale: targetLocale
+  })
 }

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import { Mutex } from 'async-mutex'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import {
   EXTENSION_API_VERSION,
   EXTENSION_RPC_PROTOCOL_VERSION,
@@ -24,6 +24,7 @@ import { delay, toRuntimeErrorMessage } from './errors'
 import { registerHostRequests } from './host-request'
 import { ExtensionHostController, type ExtensionHostExitInfo } from './host-controller'
 import { ExtensionHostRpcClient } from './rpc-client'
+import { ExtensionRuntimeLogs } from './logs'
 import type { RpcRequestOptions } from './rpc-core'
 import { ExtensionRuntimeSecrets } from './secrets'
 import {
@@ -40,6 +41,8 @@ import {
 import { ExtensionRuntimeStorage } from './storage'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions'
+
+const log = createLogger('Extension')
 
 export type { ExtensionRuntimeChangeCause } from '@kisaki/extension-api'
 export type { ExtensionRuntimeState, ExtensionRuntimeStatus } from './state'
@@ -74,6 +77,9 @@ export class RuntimeManager {
   private readonly loadedExtensions = new Map<string, LoadedExtensionState>()
   private readonly runtimeHandles = new Map<ExtensionRuntimeHandle, ExtensionRuntimeMetadata>()
   private readonly runtimeStates = new Map<string, ExtensionRuntimeState>()
+  private readonly logs = new ExtensionRuntimeLogs(
+    (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
+  )
   private readonly storage = new ExtensionRuntimeStorage(
     (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null
   )
@@ -227,7 +233,7 @@ export class RuntimeManager {
         try {
           await this.loadIntoHostLocked(metadata, cause)
         } catch (error) {
-          log.error(`[RuntimeManager] Failed to load extension "${extensionId}":`, error)
+          log.error('Failed to load extension.', error, { extensionId: extensionId })
         }
         continue
       }
@@ -299,10 +305,9 @@ export class RuntimeManager {
       )
       logUnloadResult(extensionId, result)
     } catch (error) {
-      log.warn(
-        `[RuntimeManager] Failed to unload extension "${extensionId}", restarting host to enforce desired state:`,
-        error
-      )
+      log.warn('Failed to unload extension, restarting host to enforce desired state.', error, {
+        extensionId: extensionId
+      })
 
       if (!(error instanceof RpcTimeoutError)) {
         await this.restartHostLocked('host-timeout', new Set([extensionId]))
@@ -330,6 +335,7 @@ export class RuntimeManager {
     const rpc = new ExtensionHostRpcClient((message) => controller.send(message))
     registerHostRequests({
       rpc,
+      logs: this.logs,
       storage: this.storage,
       secrets: this.secrets,
       capabilities: this.options.capabilities,
@@ -342,14 +348,14 @@ export class RuntimeManager {
     await controller.start((message) => rpc.onMessage(message))
     controller.onExit((info) => {
       void this.handleHostExit(info).catch((error) => {
-        log.error('[RuntimeManager] Failed to process extension host exit:', error)
+        log.error('Failed to process extension host exit:', error)
       })
     })
 
     this.controller = controller
     this.rpc = rpc
     this.handshaken = false
-    log.info('[RuntimeManager] Extension host started')
+    log.info('Extension host started')
   }
 
   private async handshakeLocked(): Promise<void> {
@@ -379,7 +385,7 @@ export class RuntimeManager {
     }
 
     this.handshaken = true
-    log.info('[RuntimeManager] Extension host handshake completed')
+    log.info('Extension host handshake completed')
   }
 
   private async handleHostExit(info: ExtensionHostExitInfo): Promise<void> {
@@ -397,11 +403,11 @@ export class RuntimeManager {
       this.secrets.clear()
 
       if (info.expected) {
-        log.info(`[RuntimeManager] Extension host exited cleanly with code ${info.code}`)
+        log.info('Extension host exited cleanly with code.', { infoCode: info.code })
         return
       }
 
-      log.warn(`[RuntimeManager] Extension host exited unexpectedly with code ${info.code}`)
+      log.warn('Extension host exited unexpectedly with code.', { infoCode: info.code })
 
       if (this.desiredExtensions.size === 0) {
         return
@@ -409,9 +415,7 @@ export class RuntimeManager {
 
       const decision = this.crashPolicy.recordCrash()
       if (!decision.restart) {
-        log.error(
-          '[RuntimeManager] Extension host crash limit reached; automatic recovery has been disabled'
-        )
+        log.error('Extension host crash limit reached; automatic recovery has been disabled')
         for (const extensionId of this.desiredExtensions.keys()) {
           this.recordRuntimeFailure(extensionId, 'Extension host crashed repeatedly.')
         }
@@ -420,7 +424,7 @@ export class RuntimeManager {
 
       await delay(decision.delayMs)
       await this.recoverDesiredExtensionsLocked('crash-recovery')
-      log.info('[RuntimeManager] Extension host recovered and desired extensions were reloaded')
+      log.info('Extension host recovered and desired extensions were reloaded')
     })
   }
 
@@ -433,7 +437,7 @@ export class RuntimeManager {
   }
 
   private async recycleHostLocked(cause: ExtensionRuntimeChangeCause): Promise<void> {
-    log.info(`[RuntimeManager] Recycling extension host for "${cause}"`)
+    log.info('Recycling extension host.', { cause: cause })
     await this.stopHostLocked({
       clearDesired: false,
       unloadReason: toRecycleUnloadReason(cause)
@@ -464,7 +468,7 @@ export class RuntimeManager {
       try {
         await this.loadIntoHostLocked(extension, cause)
       } catch (error) {
-        log.error(`[RuntimeManager] Failed to recover extension "${extension.id}":`, error)
+        log.error('Failed to recover extension.', error, { extensionId: extension.id })
       }
     }
   }
@@ -489,10 +493,9 @@ export class RuntimeManager {
           )
           logUnloadResult(extensionId, result)
         } catch (error) {
-          log.warn(
-            `[RuntimeManager] Failed to unload extension "${extensionId}" during shutdown:`,
-            error
-          )
+          log.warn('Failed to unload extension during shutdown.', error, {
+            extensionId: extensionId
+          })
         }
       }
     }
@@ -544,9 +547,10 @@ export class RuntimeManager {
     cause: ExtensionRuntimeChangeCause,
     error: RpcTimeoutError
   ): Promise<void> {
-    log.warn(
-      `[RuntimeManager] Lifecycle RPC "${error.method}" for extension "${extensionId}" timed out; restarting host`
-    )
+    log.warn('Lifecycle RPC timed out; restarting host.', {
+      errorMethod: error.method,
+      extensionId: extensionId
+    })
 
     await this.stopHostLocked({ clearDesired: false, unloadBeforeStop: false })
     await this.recoverDesiredExtensionsLocked(
@@ -608,7 +612,7 @@ export class RuntimeManager {
 
   private recordHostStartupFailure(error: unknown): void {
     const message = toRuntimeErrorMessage(error)
-    log.error('[RuntimeManager] Failed to start extension host:', error)
+    log.error('Failed to start extension host:', error)
 
     for (const extension of this.desiredExtensions.values()) {
       if (!this.loadedExtensions.has(extension.id)) {
@@ -627,9 +631,7 @@ export class RuntimeManager {
   ): void {
     const extension = this.runtimeHandles.get(runtimeHandle)
     if (!extension) {
-      log.warn(
-        `[RuntimeManager] Ignoring diagnostic for inactive runtime handle "${runtimeHandle}"`
-      )
+      log.warn('Ignoring diagnostic for inactive runtime handle.', { runtimeHandle: runtimeHandle })
       return
     }
 
@@ -659,15 +661,17 @@ function logUnloadResult(extensionId: string, result: ExtensionUnloadResult): vo
   }
 
   if (result.deactivateError) {
-    log.warn(
-      `[RuntimeManager] Extension "${extensionId}" threw during deactivate: ${result.deactivateError.message}`
-    )
+    log.warn('Extension threw during deactivate.', {
+      extensionId: extensionId,
+      resultDeactivateErrorMessage: result.deactivateError.message
+    })
   }
 
   if (result.cleanupError) {
-    log.warn(
-      `[RuntimeManager] Extension "${extensionId}" threw during cleanup: ${result.cleanupError.message}`
-    )
+    log.warn('Extension threw during cleanup.', {
+      extensionId: extensionId,
+      resultCleanupErrorMessage: result.cleanupError.message
+    })
   }
 }
 

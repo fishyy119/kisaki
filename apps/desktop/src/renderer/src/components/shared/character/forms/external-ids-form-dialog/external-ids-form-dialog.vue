@@ -24,6 +24,9 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import CharacterExternalIdItem from './external-id-item.vue'
 import CharacterExternalIdItemFormDialog from './external-id-item-form-dialog.vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Character')
 
 interface Props {
   characterId: string
@@ -111,7 +114,9 @@ async function handleSave() {
       seen.add(key)
     }
 
-    await db.delete(characterExternalIds).where(eq(characterExternalIds.characterId, props.characterId))
+    await db
+      .delete(characterExternalIds)
+      .where(eq(characterExternalIds.characterId, props.characterId))
 
     if (normalizedItems.length > 0) {
       await db.insert(characterExternalIds).values(
@@ -128,7 +133,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Save failed:', error)
+    log.error('Save failed:', error)
     notify.error('保存失败，请检查是否与其他实体存在重复外部ID')
   } finally {
     isSaving.value = false
@@ -172,10 +177,7 @@ function handleAddNew() {
   itemFormOpen.value = true
 }
 
-function handleItemFormSubmit(data: {
-  source: string
-  externalId: string
-}) {
+function handleItemFormSubmit(data: { source: string; externalId: string }) {
   const updatedItem: ExternalIdItem = {
     id: editingItem.value!.id,
     source: data.source,

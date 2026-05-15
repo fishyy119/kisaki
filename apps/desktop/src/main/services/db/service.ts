@@ -16,7 +16,7 @@ import { pathToFileURL } from 'url'
 import fse from 'fs-extra'
 import { app } from 'electron'
 import path from 'path'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import * as schema from '@shared/db'
 import { settings } from '@shared/db'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
@@ -27,6 +27,8 @@ import { FtsStore } from './fts'
 import { TriggerStore } from './trigger'
 import { DbEventProjector } from './projector'
 import { registerDbIpc } from './ipc'
+
+const log = createLogger('Db')
 
 // Re-export types
 export type { ThumbnailOptions, ThumbnailFit, FileColumns, FilesColumns } from './types'
@@ -103,7 +105,7 @@ export class DbService implements IService {
     // Cleanup attachment storage on row deletion (applies to all tables)
     event.on('db:deleted', ({ table, id }) => {
       this.attachment.cleanupRow(table, id).catch((error) => {
-        log.warn(`[DbService] Failed to cleanup attachment storage for ${table}:${id}`, error)
+        log.warn('Failed to cleanup attachment storage.', error, { table: table, id: id })
       })
     })
 
@@ -114,7 +116,7 @@ export class DbService implements IService {
     const ipc = container.get('ipc')
     registerDbIpc(this, ipc)
 
-    log.info(`[DbService] Database initialized at ${this.dbPath}`)
+    log.info('Database initialized.', { dbPath: this.dbPath })
   }
 
   private setupAttachmentProtocol(): void {
@@ -154,14 +156,16 @@ export class DbService implements IService {
             const thumbnailUrl = pathToFileURL(thumbnailPath).toString()
             return await net.fetch(thumbnailUrl)
           } catch (error) {
-            console.error('Thumbnail generation failed, falling back to original:', error)
+            log.warn('Thumbnail generation failed, falling back to original.', error, {
+              fileName
+            })
           }
         }
 
         const fileUrl = pathToFileURL(filePath).toString()
         return await net.fetch(fileUrl)
       } catch (error) {
-        console.error('Attachment protocol error:', error)
+        log.error('Attachment protocol failed.', error)
         return new Response('Failed to load attachment', { status: 500 })
       }
     })
@@ -173,7 +177,7 @@ export class DbService implements IService {
     this.thumbnail?.dispose()
     if (this.sqlite) {
       this.sqlite.close()
-      log.info('[DbService] Database connection closed')
+      log.info('Database connection closed')
     }
   }
 

@@ -6,7 +6,9 @@
 
 import { ipcManager } from './ipc'
 import { router } from './router'
-import log from 'electron-log/renderer'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Deeplink')
 
 /**
  * Setup deeplink event handlers.
@@ -15,13 +17,13 @@ import log from 'electron-log/renderer'
 export function setupDeeplinkHandlers(): void {
   // Handle navigation events
   ipcManager.on('deeplink:navigate', (_, { route, query }) => {
-    log.info(`[Deeplink] Navigating to: ${route}`)
+    log.info('Navigating to route.', { route })
     router.push({ path: route, query })
   })
 
   // Handle auth callback events
   ipcManager.on('deeplink:auth-callback', (_, { provider, code, state }) => {
-    log.info(`[Deeplink] Auth callback from: ${provider}`)
+    log.info('Auth callback received.', { provider })
     // Emit a custom event that auth-related components can listen to
     window.dispatchEvent(
       new CustomEvent('kisaki:auth-callback', {
@@ -32,7 +34,7 @@ export function setupDeeplinkHandlers(): void {
 
   // Handle auth error events
   ipcManager.on('deeplink:auth-error', (_, { provider, error, errorDescription }) => {
-    log.error(`[Deeplink] Auth error from ${provider}: ${error}`)
+    log.error('Auth callback failed.', { provider, error })
     // Emit a custom event that auth-related components can listen to
     window.dispatchEvent(
       new CustomEvent('kisaki:auth-error', {
@@ -41,7 +43,7 @@ export function setupDeeplinkHandlers(): void {
     )
   })
 
-  log.info('[Deeplink] Handlers initialized')
+  log.info('Handlers initialized')
 }
 
 /**

@@ -1,5 +1,5 @@
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ValidationIssue } from '@kisaki/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
 import {
@@ -10,6 +10,8 @@ import {
 import type { ExtensionInstalledEntry, ScannedExtensionPackage } from '../types'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionInstallationStore } from './store'
+
+const log = createLogger('Extension')
 
 /**
  * Builds the installed-extension view from built-in packages and SQLite
@@ -135,10 +137,7 @@ export class ExtensionInstallationView {
           issues
         })
       } catch (error) {
-        log.warn(
-          `[ExtensionInstallationView] Failed to parse manifest for package "${directoryName}":`,
-          error
-        )
+        log.warn('Failed to parse manifest for package.', error, { directoryName: directoryName })
         packages.push({
           builtin,
           id: directoryName,

@@ -23,6 +23,9 @@ import {
 import { ExtensionHeader } from '../components'
 import { ExtensionInstallDialog } from '../components'
 import type { ExtensionUpdateAllResult, ExtensionUpdateCheckResult } from '@shared/extension'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Extension')
 
 const router = useRouter()
 const route = useRoute()
@@ -50,7 +53,7 @@ async function handleCheckUpdates() {
   try {
     updateCheck.value = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
   } catch (error) {
-    console.error('Failed to check updates:', error)
+    log.error('Failed to check updates:', error)
   } finally {
     checkingUpdates.value = false
   }
@@ -179,7 +182,9 @@ function createUpdateAllSummary(
             >
               <Icon
                 :icon="
-                  result.success ? 'icon-[mdi--check-circle-outline]' : 'icon-[mdi--alert-circle-outline]'
+                  result.success
+                    ? 'icon-[mdi--check-circle-outline]'
+                    : 'icon-[mdi--alert-circle-outline]'
                 "
                 :class="result.success ? 'size-4 text-success' : 'size-4 text-destructive'"
               />

@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { electronApp, optimizer, platform, is } from '@electron-toolkit/utils'
 import path from 'path'
-import log from 'electron-log/main'
+import { createLogger, configureLogger, initializeLogger } from './log'
 
 // Services
 import { container } from './container'
@@ -29,6 +29,8 @@ import { BackgroundTaskService } from './services/background-task'
 import { registerAppSchemes, DEEPLINK_SCHEME } from './bootstrap/protocol'
 import { detectPortableMode, setupPortableIpc } from './bootstrap/portable'
 import { getBootstrapArgs, setupBootstrapArgsIpc } from './bootstrap/args'
+
+const log = createLogger('App')
 
 function printCliHelp(): void {
   console.log('Kisaki - Multimedia Library Manager')
@@ -61,9 +63,6 @@ if (bootstrapArgs.version) {
 // Register custom protocols before app is ready
 registerAppSchemes()
 
-// Initialize electron-log for main process
-log.initialize()
-
 // Register as default protocol handler for kisaki://
 // This must be done before app.whenReady()
 if (process.defaultApp) {
@@ -89,12 +88,6 @@ if (!gotTheLock) {
 // In production: detect portable mode or use default userData
 if (is.dev) {
   app.setPath('userData', path.join(process.cwd(), 'dev/app'))
-} else {
-  // Detect and setup portable mode before app is ready
-  // This must be done early to properly set userData path
-  detectPortableMode().catch((err) => {
-    console.error('Failed to detect portable mode:', err)
-  })
 }
 
 // This method will be called when Electron has finished
@@ -131,7 +124,7 @@ async function onAppReady(): Promise<void> {
   await container.register(new DeeplinkService())
 
   await container.initAll()
-  log.info('[Main] All services initialized')
+  log.info('All services initialized')
 
   // Setup portable IPC handlers (after services are ready)
   const ipcService = container.get<IpcService>('ipc')
@@ -164,7 +157,7 @@ async function onAppReady(): Promise<void> {
   const startupDeeplink = process.argv.find((arg) => arg.startsWith(`${DEEPLINK_SCHEME}://`))
   if (startupDeeplink) {
     deeplinkService.handleDeeplink(startupDeeplink).catch((error) => {
-      log.error('[Main] Failed to handle startup deeplink:', error)
+      log.error('Failed to handle startup deeplink.', error)
     })
   }
 
@@ -179,7 +172,7 @@ async function onAppReady(): Promise<void> {
   // const settings = await dbService.helper.getAppSettings()
   // if (settings.scannerStartAtOpen) {
   //   scannerService.game.scanAllScanners().catch((error) => {
-  //     log.error('[Main] Failed to scan all scanners on startup:', error)
+  //     log.error('Failed to scan all scanners on startup.', error)
   //   })
   // }
 
@@ -195,10 +188,23 @@ async function onAppReady(): Promise<void> {
 
 void (async () => {
   try {
+    if (!is.dev) {
+      await detectPortableMode()
+    }
+
+    configureLogger()
+    initializeLogger()
+
+    if (bootstrapArgs.devExtension) {
+      log.info('Dev extension requested.', { devExtension: bootstrapArgs.devExtension })
+    }
+
     await app.whenReady()
     await onAppReady()
   } catch (error) {
-    log.error('[Main] Failed during app ready bootstrap:', error)
+    configureLogger()
+    initializeLogger()
+    log.error('Failed during app ready bootstrap.', error)
     app.exit(1)
   }
 })()
@@ -219,17 +225,17 @@ app.on('before-quit', (event) => {
   event.preventDefault()
 
   const forceExitTimer = setTimeout(() => {
-    log.warn('[Main] Force exiting after shutdown timeout')
+    log.warn('Force exiting after shutdown timeout.')
     app.exit(1)
   }, 5000)
 
   ;(async () => {
     try {
-      log.info('[Main] Disposing all services...')
+      log.info('Disposing all services.')
       await container.disposeAll()
-      log.info('[Main] All services disposed')
+      log.info('All services disposed.')
     } catch (error) {
-      log.error('[Main] Shutdown error:', error)
+      log.error('Shutdown failed.', error)
     } finally {
       clearTimeout(forceExitTimer)
       app.exit(0)

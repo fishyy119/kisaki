@@ -47,6 +47,9 @@ import {
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Collection')
 
 export interface Props {
   /** Collection ID for edit mode */
@@ -174,7 +177,7 @@ async function handlePickCover() {
     coverMode.value = 'set'
     coverPath.value = path
   } catch (error) {
-    console.error('Pick cover failed:', error)
+    log.error('Pick cover failed:', error)
     notify.error('选择封面失败')
   }
 }
@@ -343,7 +346,7 @@ const canSubmit = computed(() => formData.value.name.trim())
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
-              <FieldGroup>
+            <FieldGroup>
               <Field>
                 <FieldLabel>名称</FieldLabel>
                 <FieldContent>
@@ -427,9 +430,7 @@ const canSubmit = computed(() => formData.value.name.trim())
                 <FieldLabel>成人内容</FieldLabel>
                 <FieldDescription>标记此合集包含成人内容</FieldDescription>
                 <FieldContent>
-                  <Switch
-                    v-model="formData.isNsfw"
-                  />
+                  <Switch v-model="formData.isNsfw" />
                 </FieldContent>
               </Field>
             </FieldGroup>

@@ -11,8 +11,10 @@
  */
 
 import type Database from 'better-sqlite3'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { FtsEntityType } from '@shared/db/fts'
+
+const log = createLogger('Db')
 
 // =============================================================================
 // Types
@@ -78,10 +80,10 @@ export class FtsStore {
       // FTS5 content tables don't auto-sync existing rows
       if (wasCreated) {
         this.populateFromSource(config)
-        log.info(`[FtsStore] Populated FTS index for ${entityType}`)
+        log.info('Populated FTS index.', { entityType: entityType })
       }
     }
-    log.info('[FtsStore] FTS5 tables initialized')
+    log.info('FTS5 tables initialized')
   }
 
   /**
@@ -107,7 +109,7 @@ export class FtsStore {
       `)
     })()
 
-    log.info(`[FtsStore] Rebuilt FTS index for ${entityType}`)
+    log.info('Rebuilt FTS index.', { entityType: entityType })
   }
 
   /**
@@ -117,7 +119,7 @@ export class FtsStore {
     for (const entityType of Object.keys(FTS_TABLES) as FtsEntityType[]) {
       this.rebuild(entityType)
     }
-    log.info('[FtsStore] All FTS indexes rebuilt')
+    log.info('All FTS indexes rebuilt')
   }
 
   /**

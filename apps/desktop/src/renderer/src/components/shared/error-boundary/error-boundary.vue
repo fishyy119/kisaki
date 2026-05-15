@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, onErrorCaptured, type Ref } from 'vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('App')
 
 const error: Ref<Error | null> = ref(null)
 const errorInfo: Ref<string | null> = ref(null)
@@ -7,7 +10,7 @@ const errorInfo: Ref<string | null> = ref(null)
 onErrorCaptured((err, _instance, info) => {
   error.value = err
   errorInfo.value = info
-  console.error('ErrorBoundary caught an error:', err, info)
+  log.error('ErrorBoundary caught an error:', err, info)
   return false
 })
 

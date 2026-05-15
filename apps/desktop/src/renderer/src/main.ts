@@ -18,6 +18,9 @@ import {
   useDefaultFromStore,
   useUpdaterStore
 } from './stores'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('App')
 
 async function initMainWindowRenderer() {
   // ===========================================================================
@@ -38,7 +41,7 @@ async function initMainWindowRenderer() {
 
   // Global error handler
   app.config.errorHandler = (err, _instance, info) => {
-    console.error('Vue Error:', err, info)
+    log.error('Vue Error:', err, info)
   }
 
   // ===========================================================================
@@ -57,7 +60,7 @@ async function initMainWindowRenderer() {
     // Extension contribution snapshot sync.
     setupExtensionContributionStore()
     void refreshExtensionContributionSnapshot().catch((error) => {
-      console.error('[Extension] Failed to refresh contribution snapshot:', error)
+      log.error('Failed to refresh contribution snapshot:', error)
     })
 
     // Store initialization (registers listeners + fetches initial state)

@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import semver from 'semver'
 import type {
   ExtensionCreateRepositoryInstallPlanRequest,
@@ -30,6 +30,8 @@ import type {
   ExtensionRepositorySearchContext
 } from './types'
 import { getRegistryManifestUrlPolicyIssues } from './url-policy'
+
+const log = createLogger('Extension')
 
 export interface ExtensionRepositoryManagerOptions {
   store: ExtensionRepositoryStore
@@ -230,7 +232,7 @@ export class ExtensionRepositoryManager {
 
   refreshRepositoriesInBackground(): void {
     this.refreshRepositories().catch((error) => {
-      log.warn('[ExtensionRepositoryManager] Background repository refresh failed:', error)
+      log.warn('Background repository refresh failed:', error)
     })
   }
 
@@ -451,9 +453,10 @@ export class ExtensionRepositoryManager {
 
     if (!this.warnedDisallowedSnapshots.has(repository.id)) {
       this.warnedDisallowedSnapshots.add(repository.id)
-      log.warn(
-        `[ExtensionRepositoryManager] Ignoring repository snapshot "${repository.id}" because it is not valid for the current URL policy: ${issues.join('; ')}`
-      )
+      log.warn('Ignoring repository snapshot because it is not valid for the current URL policy.', {
+        repositoryId: repository.id,
+        issuesText: issues.join('; ')
+      })
     }
     return null
   }

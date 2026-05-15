@@ -236,7 +236,7 @@ async function handleSubmit() {
           currentProfileId,
           queryName
         )
-        if (!searchResult.success) throw new Error(searchResult.error)
+        if (!searchResult.success) throw new Error('Metadata search failed.')
 
         const first = searchResult.data?.[0]
         if (!first) throw new Error('无搜索结果')
@@ -255,11 +255,8 @@ async function handleSubmit() {
           policy
         }
 
-        const result = await ipcManager.invoke(
-          'ingest:update-character-from-scraper',
-          request
-        )
-        if (!result.success) throw new Error(result.error)
+        const result = await ipcManager.invoke('ingest:update-character-from-scraper', request)
+        if (!result.success) throw new Error('Metadata update failed.')
 
         okCount++
       } catch (error) {

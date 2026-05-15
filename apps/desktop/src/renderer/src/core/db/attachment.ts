@@ -28,7 +28,7 @@ export const attachment = {
       field as string,
       input
     )
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to set attachment file.')
     return result.data
   },
 
@@ -43,7 +43,7 @@ export const attachment = {
       rowId,
       field as string
     )
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to clear attachment file.')
   },
 
   async addFile<TTable extends SQLiteTable>(
@@ -59,7 +59,7 @@ export const attachment = {
       field as string,
       input
     )
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to add attachment file.')
     return result.data
   },
 
@@ -76,7 +76,7 @@ export const attachment = {
       field as string,
       fileName
     )
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to remove attachment file.')
   },
 
   async listFiles<TTable extends SQLiteTable>(
@@ -90,7 +90,7 @@ export const attachment = {
       rowId,
       field as string
     )
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to list attachment files.')
     return result.data
   },
 
@@ -105,17 +105,17 @@ export const attachment = {
       rowId,
       field as string
     )
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to clear attachment files.')
   },
 
   async cleanupRow(tableName: TableName, rowId: string): Promise<void> {
     const result = await ipcManager.invoke('db:attachment-cleanup-row', tableName, rowId)
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to clean attachment row.')
   },
 
   async getPath(tableName: TableName, rowId: string, fileName: string): Promise<string> {
     const result = await ipcManager.invoke('db:attachment-get-path', tableName, rowId, fileName)
-    if (!result.success) throw new Error(result.error)
+    if (!result.success) throw new Error('Failed to get attachment path.')
     return result.data
   }
 } as const

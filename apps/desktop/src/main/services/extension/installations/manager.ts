@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ExtensionRuntimeMetadata } from '@kisaki/extension-api'
 import type { EventService } from '@main/services/event'
 import type {
@@ -26,6 +26,8 @@ import { createExtensionRuntimeMetadata, type ExtensionInstalledEntry } from '..
 import { ExtensionInstallationStore } from './store'
 import { ExtensionInstallationView } from './view'
 import { getBootstrapArgs } from '@main/bootstrap/args'
+
+const log = createLogger('Extension')
 
 export interface ExtensionInstallationManagerOptions {
   layout: ExtensionPackageLayout
@@ -380,9 +382,10 @@ export class ExtensionInstallationManager {
       const tempPath = this.layout.runtimeTempPath(parsed.manifest.id)
       await Promise.all([fse.ensureDir(dataPath), fse.ensureDir(tempPath)])
 
-      log.info(
-        `[ExtensionService] Registered dev extension override: ${parsed.manifest.id} -> ${extensionPath}`
-      )
+      log.info('Registered dev extension override.', {
+        parsedManifestId: parsed.manifest.id,
+        extensionPath: extensionPath
+      })
 
       return {
         builtin: false,
@@ -406,7 +409,7 @@ export class ExtensionInstallationManager {
         tempPath
       }
     } catch (error) {
-      log.error('[ExtensionService] Failed to load --dev-extension package:', error)
+      log.error('Failed to load --dev-extension package:', error)
       return null
     }
   }
@@ -457,10 +460,9 @@ export class ExtensionInstallationManager {
       await this.applyRuntimeState({ cause: 'enable', forceReloadIds: [extensionId] })
       this.emitInstallationsChanged()
     } catch (error) {
-      log.error(
-        `[ExtensionService] Failed to restore extension "${extensionId}" after data purge failure:`,
-        error
-      )
+      log.error('Failed to restore extension after data purge failure.', error, {
+        extensionId: extensionId
+      })
     }
   }
 

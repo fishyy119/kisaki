@@ -34,6 +34,9 @@ import type {
   SortDirection
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Library')
 
 // =============================================================================
 // Props & Emits
@@ -151,7 +154,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Save failed:', error)
+    log.error('Save failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

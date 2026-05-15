@@ -9,7 +9,7 @@
  */
 
 import { app } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import path from 'path'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { NetworkService } from '@main/services/network'
@@ -19,6 +19,8 @@ import type { AttachmentInput } from '@shared/db/attachment'
 import { GameAttachmentHandler } from './handlers/game'
 import { AttachmentCropper, type CropToTempOptions } from './crop'
 import { registerAttachmentIpc } from './ipc'
+
+const log = createLogger('Attachment')
 
 export class AttachmentService implements IMediaService {
   readonly id = 'attachment'
@@ -41,9 +43,9 @@ export class AttachmentService implements IMediaService {
     registerAttachmentIpc(this, ipcService)
 
     this.cropper.cleanupOldTempCrops(24 * 60 * 60 * 1000).catch((error) => {
-      log.warn('[AttachmentService] Failed to cleanup temp crops:', error)
+      log.warn('Failed to cleanup temp crops:', error)
     })
-    log.info('[AttachmentService] Initialized')
+    log.info('Initialized')
   }
 
   cropToTemp(

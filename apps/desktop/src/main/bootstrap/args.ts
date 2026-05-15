@@ -4,7 +4,6 @@
  * Parses early bootstrap arguments used by the main process.
  */
 
-import log from 'electron-log/main'
 import type { BootstrapArgs } from '@shared/bootstrap'
 import { wrapIpc, type IpcService } from '@main/services/ipc'
 
@@ -47,7 +46,6 @@ function parseBootstrapArgs(): BootstrapArgs {
 
     if (arg.startsWith('--dev-extension=')) {
       devExtension = arg.slice('--dev-extension='.length)
-      log.info('[Args] Dev extension:', devExtension)
       continue
     }
   }

@@ -15,12 +15,14 @@ import { createReadStream, createWriteStream, type Stats } from 'node:fs'
 import { open, rm } from 'node:fs/promises'
 import path from 'path'
 import { pipeline } from 'node:stream/promises'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { NetworkService } from '@main/services/network'
 import type { ThumbnailStore } from './thumbnail'
 import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
 import type { TableName } from '@shared/db/table-names'
 import * as schema from '@shared/db'
+
+const log = createLogger('Db')
 
 /**
  * Attachment storage manager.
@@ -83,11 +85,11 @@ export class AttachmentStore {
           this.scheduleDeleteFile(fileDir, oldFileName, `setFile:${lockKey}`)
         }
 
-        log.debug(`Saved file: ${filePath}`)
+        log.debug('Saved file.', { filePath: filePath })
         return fileName
       } catch (error) {
-        log.error(`Failed to setFile [${lockKey}]:`, error)
-        throw error
+        log.error('Failed to setFile.', error, { lockKey: lockKey })
+        throw new Error('Failed to set attachment file.')
       }
     })
   }
@@ -119,8 +121,8 @@ export class AttachmentStore {
 
         this.scheduleDeleteFile(fileDir, fileName, `clearFile:${lockKey}`)
       } catch (error) {
-        log.error(`Failed to clearFile [${lockKey}]:`, error)
-        throw error
+        log.error('Failed to clearFile.', error, { lockKey: lockKey })
+        throw new Error('Failed to clear attachment file.')
       }
     })
   }
@@ -162,11 +164,11 @@ export class AttachmentStore {
           throw error
         }
 
-        log.debug(`Added file: ${filePath}`)
+        log.debug('Added file.', { filePath: filePath })
         return fileName
       } catch (error) {
-        log.error(`Failed to addFile [${lockKey}]:`, error)
-        throw error
+        log.error('Failed to addFile.', error, { lockKey: lockKey })
+        throw new Error('Failed to add attachment file.')
       }
     })
   }
@@ -201,8 +203,8 @@ export class AttachmentStore {
 
         this.scheduleDeleteFile(fileDir, fileName, `removeFile:${lockKey}`)
       } catch (error) {
-        log.error(`Failed to removeFile [${lockKey}]:`, error)
-        throw error
+        log.error('Failed to removeFile.', error, { lockKey: lockKey })
+        throw new Error('Failed to remove attachment file.')
       }
     })
   }
@@ -253,8 +255,8 @@ export class AttachmentStore {
           this.scheduleDeleteFile(fileDir, fileName, `clearFiles:${lockKey}`)
         }
       } catch (error) {
-        log.error(`Failed to clearFiles [${lockKey}]:`, error)
-        throw error
+        log.error('Failed to clearFiles.', error, { lockKey: lockKey })
+        throw new Error('Failed to clear attachment files.')
       }
     })
   }
@@ -324,9 +326,9 @@ export class AttachmentStore {
 
       try {
         await fse.remove(fileDir)
-        log.debug(`[AttachmentStore] Cleaned row dir: ${fileDir}`)
+        log.debug('Cleaned row dir.', { fileDir: fileDir })
       } catch (error) {
-        log.warn(`[AttachmentStore] Failed to cleanup row dir: ${fileDir}`, error)
+        log.warn('Failed to cleanup row dir.', error, { fileDir: fileDir })
       }
     })
   }
@@ -421,7 +423,7 @@ export class AttachmentStore {
       })
 
       if (keysToDelete.length > 0) {
-        log.debug(`[AttachmentStore] Cleaned up ${keysToDelete.length} unused mutexes`)
+        log.debug('Cleaned up unused mutexes.', { keysToDeleteLength: keysToDelete.length })
       }
     }, CLEANUP_INTERVAL)
   }
@@ -584,7 +586,7 @@ export class AttachmentStore {
         maxRetries: this.FILE_DELETE_MAX_RETRIES,
         retryDelayMs: this.FILE_DELETE_RETRY_DELAY_MS
       }).catch((error) => {
-        log.warn(`[AttachmentStore] Failed to delete file (scheduled) [${reason}]`, error)
+        log.warn('Failed to delete file (scheduled).', error, { reason: reason })
       })
     }, this.FILE_DELETE_DELAY_MS)
   }
@@ -606,10 +608,10 @@ export class AttachmentStore {
 
     try {
       await rm(filePath, { force: true, maxRetries, retryDelay })
-      log.debug(`Deleted file: ${filePath}`)
+      log.debug('Deleted file.', { filePath: filePath })
     } catch (error) {
       if (!bestEffort) throw error
-      log.warn(`[AttachmentStore] Failed to delete file: ${filePath}`, error)
+      log.warn('Failed to delete file.', error, { filePath: filePath })
       return false
     }
 

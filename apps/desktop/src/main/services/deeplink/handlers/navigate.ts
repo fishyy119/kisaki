@@ -14,10 +14,12 @@
  * - kisaki://navigate/extension
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { DeeplinkResult, DeeplinkRouteContext, DeeplinkRouteHandler } from '../types'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
+
+const log = createLogger('Deeplink')
 
 export const NAVIGATE_DEEPLINK_ROUTE = '/navigate/*routePath' as const
 
@@ -43,7 +45,7 @@ export class NavigateHandler implements DeeplinkRouteHandler<typeof NAVIGATE_DEE
       // Focus window
       this.focusMainWindow()
 
-      log.info(`[NavigateHandler] Navigate to: ${route}`)
+      log.info('Navigate to.', { route: route })
 
       return {
         success: true,
@@ -53,7 +55,7 @@ export class NavigateHandler implements DeeplinkRouteHandler<typeof NAVIGATE_DEE
         data: { route, query: deeplink.query }
       }
     } catch (error) {
-      log.error('[NavigateHandler] Navigation failed:', error)
+      log.error('Navigation failed:', error)
       return {
         success: false,
         path: deeplink.path,
@@ -71,7 +73,7 @@ export class NavigateHandler implements DeeplinkRouteHandler<typeof NAVIGATE_DEE
         mainWindow.focus()
       }
     } catch (error) {
-      log.error('[NavigateHandler] Error focusing main window:', error)
+      log.error('Error focusing main window:', error)
     }
   }
 }

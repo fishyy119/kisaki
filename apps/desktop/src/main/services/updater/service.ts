@@ -6,7 +6,7 @@
 
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { autoUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
 import { valid as isValidSemver } from 'semver'
 import { settings } from '@shared/db'
@@ -23,6 +23,8 @@ import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import type { NetworkService } from '@main/services/network'
 import { registerUpdaterIpc } from './ipc'
+
+const log = createLogger('Updater')
 
 interface UpdaterSettings {
   autoCheck: boolean
@@ -70,7 +72,7 @@ export class UpdaterService implements IService {
     if (this.autoDownloadOnNextAvailable) {
       this.autoDownloadOnNextAvailable = false
       void this.downloadUpdateInternal().catch((error) => {
-        log.error('[UpdaterService] Failed to start auto download after update-available:', error)
+        log.error('Failed to start auto download after update-available:', error)
       })
     }
   }
@@ -118,7 +120,7 @@ export class UpdaterService implements IService {
     this.isDownloading = false
     this.autoDownloadOnNextAvailable = false
     const message = error?.message ?? String(error)
-    log.error('[UpdaterService] Auto updater error:', error)
+    log.error('Auto updater error:', error)
     this.updateState({
       status: 'error',
       error: message
@@ -138,7 +140,7 @@ export class UpdaterService implements IService {
       void this.checkForUpdatesOnStartup()
     }
 
-    log.info('[UpdaterService] Initialized')
+    log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
@@ -148,7 +150,7 @@ export class UpdaterService implements IService {
     autoUpdater.removeListener('download-progress', this.handleDownloadProgress)
     autoUpdater.removeListener('update-downloaded', this.handleUpdateDownloaded)
     autoUpdater.removeListener('error', this.handleUpdaterError)
-    log.info('[UpdaterService] Disposed')
+    log.info('Disposed')
   }
 
   getState(): AppUpdaterState {
@@ -229,7 +231,7 @@ export class UpdaterService implements IService {
         allowPrerelease: row?.allowPrerelease ?? false
       }
     } catch (error) {
-      log.warn('[UpdaterService] Failed to load updater settings, using defaults:', error)
+      log.warn('Failed to load updater settings, using defaults:', error)
       return {
         autoCheck: true,
         allowPrerelease: false
@@ -239,12 +241,12 @@ export class UpdaterService implements IService {
 
   private shouldCheckForUpdatesOnStartup(): boolean {
     if (!this.updaterSettings.autoCheck) {
-      log.info('[UpdaterService] Startup update check is disabled by settings.')
+      log.info('Startup update check is disabled by settings.')
       return false
     }
 
     if (is.dev || !app.isPackaged) {
-      log.info('[UpdaterService] Skipping startup update check in development mode.')
+      log.info('Skipping startup update check in development mode.')
       return false
     }
 
@@ -256,7 +258,7 @@ export class UpdaterService implements IService {
       await this.checkForUpdatesInternal({ autoDownload: true })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      log.error('[UpdaterService] Startup update check failed:', error)
+      log.error('Startup update check failed:', error)
       this.updateState({
         status: 'error',
         error: message
@@ -422,24 +424,24 @@ export class UpdaterService implements IService {
         timeout: 10000
       })
       if (!response.ok) {
-        log.warn(
-          `[UpdaterService] Missing changelog for v${version} locale ${locale}: ${response.status} ${response.statusText}`
-        )
+        log.warn('Missing changelog.', {
+          version: version,
+          locale: locale,
+          responseStatus: response.status,
+          responseStatusText: response.statusText
+        })
         return { locale, markdown: null }
       }
 
       const markdown = (await response.text()).trim()
       if (!markdown) {
-        log.warn(`[UpdaterService] Empty changelog for v${version} locale ${locale}.`)
+        log.warn('Empty changelog.', { version: version, locale: locale })
         return { locale, markdown: null }
       }
 
       return { locale, markdown }
     } catch (error) {
-      log.warn(
-        `[UpdaterService] Failed to fetch changelog for v${version} locale ${locale}:`,
-        error
-      )
+      log.warn('Failed to fetch changelog.', error, { version: version, locale: locale })
       return { locale, markdown: null }
     }
   }

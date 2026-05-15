@@ -8,10 +8,12 @@
  * - kisaki://auth/callback?provider={provider}&error={error}&error_description={desc}
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { DeeplinkResult, DeeplinkRouteContext, DeeplinkRouteHandler } from '../types'
 import type { IpcService } from '@main/services/ipc'
 import type { WindowService } from '@main/services/window'
+
+const log = createLogger('Deeplink')
 
 export const AUTH_DEEPLINK_ROUTE = '/auth/callback' as const
 
@@ -49,7 +51,7 @@ export class AuthHandler implements DeeplinkRouteHandler<typeof AUTH_DEEPLINK_RO
 
     // Handle error callback
     if (query.error) {
-      log.warn(`[AuthHandler] Auth error from ${query.provider}: ${query.error}`)
+      log.warn('Auth error received.', { queryProvider: query.provider, queryError: query.error })
 
       // Send error event to renderer
       this.ipc.send('deeplink:auth-error', {
@@ -80,7 +82,7 @@ export class AuthHandler implements DeeplinkRouteHandler<typeof AUTH_DEEPLINK_RO
       }
     }
 
-    log.info(`[AuthHandler] Auth callback received from ${query.provider}`)
+    log.info('Auth callback received.', { queryProvider: query.provider })
 
     // Send callback event to renderer for processing
     this.ipc.send('deeplink:auth-callback', {
@@ -109,7 +111,7 @@ export class AuthHandler implements DeeplinkRouteHandler<typeof AUTH_DEEPLINK_RO
         mainWindow.focus()
       }
     } catch (error) {
-      log.error('[AuthHandler] Error focusing main window:', error)
+      log.error('Error focusing main window:', error)
     }
   }
 }

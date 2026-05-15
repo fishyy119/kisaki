@@ -31,6 +31,9 @@ import {
 import { Form } from '@renderer/components/ui/form'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Tag')
 
 interface Props {
   tagId: string
@@ -101,7 +104,7 @@ async function handleSubmit() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false
@@ -127,7 +130,7 @@ async function handleSubmit() {
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
-              <FieldGroup>
+            <FieldGroup>
               <Field>
                 <FieldLabel>名称</FieldLabel>
                 <FieldContent>
@@ -153,9 +156,7 @@ async function handleSubmit() {
                 <FieldLabel>NSFW</FieldLabel>
                 <FieldDescription>标记此标签为成人内容</FieldDescription>
                 <FieldContent>
-                  <Switch
-                    v-model="formData.isNsfw"
-                  />
+                  <Switch v-model="formData.isNsfw" />
                 </FieldContent>
               </Field>
             </FieldGroup>

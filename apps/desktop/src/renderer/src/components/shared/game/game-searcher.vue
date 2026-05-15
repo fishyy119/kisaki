@@ -181,7 +181,7 @@ async function handleSearch() {
     )
 
     if (!result.success) {
-      throw new Error(result.error)
+      throw new Error('Search failed.')
     }
 
     searchResults.value = result.data ?? []

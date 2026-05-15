@@ -25,6 +25,9 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import CharacterTagsItem from './tag-item.vue'
 import CharacterTagsItemFormDialog from './tag-item-form-dialog.vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Character')
 
 interface Props {
   characterId: string
@@ -132,7 +135,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Save failed:', error)
+    log.error('Save failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

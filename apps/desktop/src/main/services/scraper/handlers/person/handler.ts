@@ -3,7 +3,7 @@
  */
 
 import { eq } from 'drizzle-orm'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db'
 import {
@@ -43,6 +43,8 @@ import type {
 import type { PersonScraperImageResult, PersonScraperImageSlot, PersonScraperResult } from './types'
 import type { SlotResult } from '../../types'
 
+const log = createLogger('Scraper')
+
 type RuntimePersonProfile = ScraperProfile & { slotConfigs: PersonScraperSlotConfigs }
 
 const PERSON_ALLOWED_CAPABILITIES = new Set(['search', ...PERSON_SCRAPER_SLOTS] as const)
@@ -76,12 +78,12 @@ export class PersonScraperHandler {
 
   registerProvider(provider: PersonScraperProvider): void {
     this.providers.register(provider)
-    log.info(`[Scraper] Registered person provider: ${provider.id}`)
+    log.info('Registered person provider.', { providerId: provider.id })
   }
 
   unregisterProvider(providerId: string): void {
     this.providers.delete(providerId)
-    log.info(`[Scraper] Unregistered person provider: ${providerId}`)
+    log.info('Unregistered person provider.', { providerId: providerId })
   }
 
   getProviders(): PersonScraperProviderInfo[] {
@@ -141,7 +143,7 @@ export class PersonScraperHandler {
         provider: searchProvider,
         lookup,
         locale: resolveLocale,
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
       const resolveProviderId = async (
@@ -152,7 +154,7 @@ export class PersonScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          log.warn('Provider not available.', { providerId: providerId })
           return null
         }
 
@@ -176,7 +178,7 @@ export class PersonScraperHandler {
         resolveProviderTarget: resolveProviderId,
         buildResult: ({ providerId, target, entry, data }) =>
           this.createPersonResult(providerId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly PersonScraperResult[]
 
       return mergePersonScraperBundle([...results], runtimeProfile)
@@ -192,12 +194,15 @@ export class PersonScraperHandler {
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn(`[Scraper] Person provider '${providerId}' not available`)
+      log.warn('Person provider not available.', { providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
-      log.warn(`[Scraper] Person provider '${providerId}' does not support slot '${imageType}'`)
+      log.warn('Person provider does not support image slot.', {
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     }
 
@@ -235,12 +240,12 @@ export class PersonScraperHandler {
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
           this.createPersonResult(resolvedProviderId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly PersonScraperImageResult[]
 
       return mergePersonScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
+      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
       return []
     } finally {
       await state.dispose()

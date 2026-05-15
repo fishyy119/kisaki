@@ -23,6 +23,9 @@ import { MarkdownEditor } from '@renderer/components/ui/markdown'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Company')
 
 interface Props {
   companyId: string
@@ -68,7 +71,7 @@ async function handleSubmit() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

@@ -7,9 +7,11 @@
  * - kisaki://launch/{mediaType}/{entityId}
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { DeeplinkResult, DeeplinkRouteContext, DeeplinkRouteHandler } from '../types'
 import type { LauncherService } from '@main/services/launcher'
+
+const log = createLogger('Deeplink')
 
 export const LAUNCH_DEEPLINK_ROUTE = '/launch/:mediaType/:entityId' as const
 
@@ -42,7 +44,7 @@ export class LaunchHandler implements DeeplinkRouteHandler<typeof LAUNCH_DEEPLIN
       // Launch the game
       await this.launcher.game.launchGame(gameId, { cancelBehavior: 'throw' })
 
-      log.info(`[LaunchHandler] Launched game via deeplink: ${gameId}`)
+      log.info('Launched game via deeplink.', { gameId: gameId })
 
       return {
         success: true,
@@ -52,7 +54,7 @@ export class LaunchHandler implements DeeplinkRouteHandler<typeof LAUNCH_DEEPLIN
         data: { mediaType: 'game', entityId: gameId }
       }
     } catch (error) {
-      log.error(`[LaunchHandler] Failed to launch game ${gameId}:`, error)
+      log.error('Failed to launch game.', error, { gameId: gameId })
       return {
         success: false,
         path: deeplink.path,

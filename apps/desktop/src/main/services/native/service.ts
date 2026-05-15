@@ -5,14 +5,16 @@
  */
 
 import { app, dialog, shell, OpenDialogOptions, OpenDialogReturnValue } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { stat } from 'fs/promises'
-import { dirname } from 'path'
+import { basename, dirname } from 'path'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { WindowService } from '@main/services/window'
 import { openExternalLink } from '@main/utils'
 import { NativeTray } from './tray'
 import { registerNativeIpc } from './ipc'
+
+const log = createLogger('Native')
 
 export class NativeService implements IService {
   readonly id = 'native'
@@ -28,7 +30,7 @@ export class NativeService implements IService {
 
     this.tray = new NativeTray({ windowService: this.windowService })
     this.tray.init()
-    log.info('[NativeService] Initialized')
+    log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
@@ -37,7 +39,7 @@ export class NativeService implements IService {
     } finally {
       this.tray = null
     }
-    log.info('[NativeService] Disposed')
+    log.info('Disposed')
   }
 
   getAutoLaunchEnabled(): boolean {
@@ -95,11 +97,14 @@ export class NativeService implements IService {
     try {
       const errorMessage = await shell.openPath(targetPath)
       if (errorMessage) {
-        throw new Error(errorMessage)
+        throw new Error('Shell openPath failed.')
       }
     } catch (error) {
-      log.error('[NativeService] Failed to open path:', targetPath, error)
-      throw error
+      log.error('Failed to open native path.', error, {
+        targetName: basename(targetPath),
+        ensure: config.ensure
+      })
+      throw new Error('Failed to open native path.')
     }
   }
 

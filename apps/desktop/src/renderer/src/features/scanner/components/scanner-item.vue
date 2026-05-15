@@ -35,6 +35,9 @@ import ScannerFailedScansDialog from './scanner-failed-scans-dialog.vue'
 import { ScannerSkippedScansDialog } from './scanner-skipped-scans-dialog'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Scanner')
 
 // =============================================================================
 // Props
@@ -218,28 +221,28 @@ function handleScan() {
     scannerStore.resetScannerState(props.scanner.id)
     ipcManager.send('scanner:scan-game', props.scanner.id)
   } catch (error) {
-    console.error('Failed to start scan:', error)
+    log.error('Failed to start scan:', error)
   }
 }
 
 async function handlePause() {
   const result = await ipcManager.invoke('scanner:pause-game', props.scanner.id)
   if (!result.success) {
-    console.error('Failed to pause scan:', result.error)
+    log.error('Failed to pause scan:', result.error)
   }
 }
 
 async function handleResume() {
   const result = await ipcManager.invoke('scanner:resume-game', props.scanner.id)
   if (!result.success) {
-    console.error('Failed to resume scan:', result.error)
+    log.error('Failed to resume scan:', result.error)
   }
 }
 
 async function handleAbort() {
   const result = await ipcManager.invoke('scanner:abort-game', props.scanner.id)
   if (!result.success) {
-    console.error('Failed to abort scan:', result.error)
+    log.error('Failed to abort scan:', result.error)
   }
 }
 
@@ -247,7 +250,7 @@ async function handleOpenPath() {
   try {
     await ipcManager.invoke('native:open-path', props.scanner.path)
   } catch (error) {
-    console.error('Failed to open path:', error)
+    log.error('Failed to open path:', error)
   }
 }
 </script>

@@ -18,6 +18,9 @@ import { useScannerStore } from '@renderer/stores'
 import { Button } from '@renderer/components/ui/button'
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
 import ScannerSettingsFormDialog from './scanner-settings-form-dialog.vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Scanner')
 
 // =============================================================================
 // State
@@ -69,7 +72,7 @@ function handleScanAll() {
     scannerStore.resetAllScannerStates()
     ipcManager.send('scanner:scan-all-game')
   } catch (error) {
-    console.error('Failed to scan all:', error)
+    log.error('Failed to scan all:', error)
   }
 }
 
@@ -80,7 +83,7 @@ async function handleAbortAll() {
 
   for (const result of results) {
     if (!result.success) {
-      console.error('Failed to abort scan:', result.error)
+      log.error('Failed to abort scan:', result.error)
     }
   }
 }

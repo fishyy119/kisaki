@@ -6,6 +6,9 @@
  */
 
 import { ref, watch, onUnmounted, toValue, type Ref, type MaybeRefOrGetter } from 'vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('AsyncData')
 
 /**
  * Options for useAsyncData
@@ -105,7 +108,7 @@ export function useAsyncData<T>(
 
       const err = e instanceof Error ? e : new Error(String(e))
       error.value = err.message
-      console.error('useAsyncData fetch error:', e)
+      log.error('Fetch failed.', e)
     } finally {
       isLoading.value = false
       isFetching.value = false

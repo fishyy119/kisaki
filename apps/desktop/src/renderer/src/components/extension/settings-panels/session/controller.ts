@@ -27,6 +27,9 @@ import type {
   SettingsPanelInvokeSource,
   SettingsPanelSurfaceState
 } from './types'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Extension')
 
 export function useExtensionSettingsPanelSession(
   contribution: Ref<ExtensionSettingsPanelRegistrationInfo>,
@@ -781,7 +784,7 @@ async function releaseSession(request: ExtensionSettingsPanelReleaseRequest): Pr
   try {
     await invokeIpc<void>('extension:release-settings-panel', request)
   } catch (e) {
-    console.warn('[ExtensionSettingsPanelSession] Failed to release settings session:', e)
+    log.warn('Failed to release settings session:', e)
   }
 }
 
@@ -824,7 +827,7 @@ async function invokeIpc<T>(
     return ('data' in result ? result.data : undefined) as T
   }
 
-  throw new Error(result.error)
+  throw new Error('Extension settings panel request failed.')
 }
 
 function createRequestId(): string {

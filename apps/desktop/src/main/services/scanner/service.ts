@@ -7,7 +7,7 @@
  * - Generic entity scanning utilities shared across all media types
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
 import type { ExtractionTestResult } from '@shared/scanner'
@@ -17,6 +17,8 @@ import { GameScannerHandler } from './handlers/game'
 import { ScannerPhash } from './phash'
 import { extractEntityName, scanForEntities } from './utils'
 import { registerScannerIpc } from './ipc'
+
+const log = createLogger('Scanner')
 
 // =============================================================================
 // Scanner Service
@@ -46,7 +48,7 @@ export class ScannerService implements IMediaService {
       ingestService
     )
     registerScannerIpc(this, ipcService)
-    log.info('[ScannerService] Initialized')
+    log.info('Initialized')
   }
 
   async testExtractionRules(
@@ -73,7 +75,7 @@ export class ScannerService implements IMediaService {
 
   async dispose(): Promise<void> {
     this.game.cleanup()
-    log.info('[ScannerService] Disposed')
+    log.info('Disposed')
   }
 
   getSupportedMedia(): MediaType[] {

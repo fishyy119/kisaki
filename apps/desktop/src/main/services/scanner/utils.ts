@@ -1,8 +1,10 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { NameExtractionRule } from '@shared/db'
 import type { EntityEntry } from '@shared/scanner'
+
+const log = createLogger('Scanner')
 
 export interface ScanOptions {
   /** Depth at which to collect entities (0 = immediate children) */
@@ -30,7 +32,7 @@ export function extractEntityName(
         return { extractedName: match.groups.name.trim(), matchedRuleId: rule.id }
       }
     } catch (error) {
-      log.warn(`[Scanner] Invalid regex pattern in rule ${rule.id}: ${error}`)
+      log.warn('Invalid regex pattern in rule.', { ruleId: rule.id, error: error })
     }
   }
   return { extractedName: originalName, matchedRuleId: null }
@@ -86,7 +88,7 @@ export async function scanForEntities(
       }
     })
   } catch (error) {
-    log.error(`[Scanner] Failed to scan directory ${rootPath}: ${error}`)
+    log.error('Failed to scan directory.', { rootPath: rootPath, error: error })
     return []
   }
 }

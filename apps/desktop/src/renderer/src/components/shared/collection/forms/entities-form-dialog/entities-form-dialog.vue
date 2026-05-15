@@ -34,6 +34,9 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import CollectionEntitiesItem from './entity-item.vue'
 import CollectionEntitiesItemFormDialog from './entity-item-form-dialog.vue'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Collection')
 
 interface EntityLink {
   id: string
@@ -317,7 +320,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Save failed:', error)
+    log.error('Save failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

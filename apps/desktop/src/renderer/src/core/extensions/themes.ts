@@ -2,6 +2,9 @@ import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { themeManager, type ThemeDefinition } from '@renderer/core/theme'
 import { isSafeThemeColorToken, type ThemeContribution } from '@kisaki/extension-api'
 import type { ExtensionThemeRegistrationInfo } from '@shared/extension'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Extension')
 
 const extensionThemeDisposers = new Map<string, () => void>()
 const extensionThemeCss = new Map<string, string>()
@@ -15,7 +18,7 @@ export function setupExtensionThemeSync(): void {
   }
 
   void refreshExtensionThemes().catch((error) => {
-    console.error('[ExtensionThemes] Failed to load extension themes:', error)
+    log.error('Failed to load extension themes:', error)
   })
 }
 

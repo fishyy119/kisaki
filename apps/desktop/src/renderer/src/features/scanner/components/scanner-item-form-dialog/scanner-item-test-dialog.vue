@@ -74,7 +74,7 @@ async function fetcher(): Promise<ExtractionTestResult[]> {
   if (result.success && result.data) {
     return result.data
   } else if (!result.success) {
-    throw new Error(result.error || '测试失败')
+    throw new Error('Scanner test failed.')
   }
   return []
 }

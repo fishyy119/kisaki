@@ -13,10 +13,12 @@ import { games } from '@shared/db'
 import { shell } from 'electron'
 import { compressDir, extractZip } from '@main/utils/archive'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
 import type { SaveBackup } from '@shared/db/json-types'
+
+const log = createLogger('Attachment')
 
 export class GameAttachmentHandler {
   constructor(private dbService: DbService) {}
@@ -64,7 +66,7 @@ export class GameAttachmentHandler {
 
     await this.cleanupExcessBackups(gameId)
 
-    log.info(`[Attachment] Created backup for game ${gameId}: ${saveFile}`)
+    log.info('Created backup for game.', { gameId: gameId, saveFile: saveFile })
     return newBackup
   }
 
@@ -89,7 +91,7 @@ export class GameAttachmentHandler {
       .where(eq(games.id, gameId))
       .run()
 
-    log.info(`[Attachment] Deleted backup for game ${gameId}: ${backup.saveFile}`)
+    log.info('Deleted backup for game.', { gameId: gameId, backupSaveFile: backup.saveFile })
   }
 
   async restoreBackup(gameId: string, backupAt: number): Promise<void> {
@@ -112,7 +114,7 @@ export class GameAttachmentHandler {
     }
 
     await extractZip(backupPath, game.savePath)
-    log.info(`[Attachment] Restored backup for game ${gameId}: ${backup.saveFile}`)
+    log.info('Restored backup for game.', { gameId: gameId, backupSaveFile: backup.saveFile })
   }
 
   async updateBackup(
@@ -138,7 +140,7 @@ export class GameAttachmentHandler {
       .where(eq(games.id, gameId))
       .run()
 
-    log.info(`[Attachment] Updated backup for game ${gameId}: ${backupAt}`)
+    log.info('Updated backup for game.', { gameId: gameId, backupAt: backupAt })
   }
 
   async openBackupFolder(gameId: string): Promise<void> {
@@ -169,9 +171,9 @@ export class GameAttachmentHandler {
       if (!(await fse.pathExists(game.savePath))) return
 
       await this.createBackup(gameId)
-      log.info(`[Attachment] Auto-backup completed for game ${gameId}`)
+      log.info('Auto-backup completed for game.', { gameId: gameId })
     } catch (error) {
-      log.error(`[Attachment] Auto-backup failed for game ${gameId}:`, error)
+      log.error('Auto-backup failed for game.', error, { gameId: gameId })
     }
   }
 
@@ -213,7 +215,10 @@ export class GameAttachmentHandler {
       .where(eq(games.id, gameId))
       .run()
 
-    log.info(`[Attachment] Cleaned up ${backupsToDelete.length} excess backups for game ${gameId}`)
+    log.info('Cleaned up excess backups for game.', {
+      backupsToDeleteLength: backupsToDelete.length,
+      gameId: gameId
+    })
   }
 
   private getGame(gameId: string) {

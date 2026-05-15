@@ -1,7 +1,10 @@
+import path from 'node:path'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ExtensionPackageLayout } from './layout'
 import { assertInsideRoot } from '../shared/path-confinement'
+
+const log = createLogger('Extension')
 
 export function createOperationCleanupPaths(
   layout: ExtensionPackageLayout,
@@ -14,14 +17,13 @@ export function createOperationCleanupPaths(
   return uniquePaths
 }
 
-export async function removeCleanupPaths(
-  paths: readonly string[],
-  logPrefix: string
-): Promise<void> {
+export async function removeCleanupPaths(paths: readonly string[]): Promise<void> {
   await Promise.all(
     paths.map(async (entryPath) => {
       await fse.remove(entryPath).catch((error) => {
-        log.warn(`${logPrefix} Failed to remove operation path "${entryPath}":`, error)
+        log.warn('Failed to remove operation path.', error, {
+          entryName: path.basename(entryPath)
+        })
       })
     })
   )

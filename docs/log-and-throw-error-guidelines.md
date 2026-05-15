@@ -4,10 +4,16 @@
 
 ## Log
 
-Kisaki 的 log 只是对 `electron-log` 的薄包装，只做三件事：
+Kisaki 的主应用 log 只是对 `electron-log` 的薄包装，只做三件事：
 
 - 给 message 加单级前缀。
-- 按来源分流到 `main.log`、`renderer.log`、`extension.log`。
+- 按来源分流到 `main.log`、`renderer.log`。
+- 透传 message 后的参数给 `electron-log`。
+
+扩展作者通过 `context.logger` 写出的 log 是单独的 extension-scoped logging capability：
+
+- 不加宿主前缀，不改写 extension message。
+- 写入该扩展自己的 `logs/extension.log`。
 - 透传 message 后的参数给 `electron-log`。
 
 不要做自定义格式化、JSON record、Error 序列化、字段裁剪、语义脱敏或其它日志协议。
@@ -17,14 +23,14 @@ Kisaki 的 log 只是对 `electron-log` 的薄包装，只做三件事：
 ```text
 userData/logs/main.log
 userData/logs/renderer.log
-userData/logs/extension.log
+userData/extensions/data/<extensionId>/logs/extension.log
 ```
 
 - `main.log`：main 进程、应用服务、数据库、窗口、IPC、扩展运行时基础设施、extension host stdout/stderr 兜底。
 - `renderer.log`：renderer 自身的 UI runtime、store/composable 初始化、跨进程同步、全局异常。
-- `extension.log`：扩展作者通过 `context.logger` 主动写出的日志。
+- `<extensionId>/logs/extension.log`：对应扩展通过 `context.logger` 主动写出的日志，和该扩展的 `storage.json` / `secrets.json` 一样绑定到扩展数据目录。
 
-日志路径在最终 `userData` 确定后配置给 `electron-log`。开发模式、普通安装和 portable mode 可以有不同 `userData`，但文件名和分流规则不变。
+主应用日志路径在最终 `userData` 确定后配置给 `electron-log`。开发模式、普通安装和 portable mode 可以有不同 `userData`，但文件名和分流规则不变。扩展作者日志路径由该扩展的 `dataPath` 决定。
 
 ## Logger API
 
@@ -114,7 +120,7 @@ Log 包装层不做语义脱敏，调用方不要传入敏感内容。
 
 路径默认只记录 basename、业务 id 或应用派生路径。用户选择的完整路径只在确有排障价值时记录，并优先放在 `debug`。
 
-第三方 extension 通过 `context.logger` 写入的内容由扩展作者负责。宿主只负责把来源归入 `extension.log`，不要替 extension message 做语义改写。
+第三方 extension 通过 `context.logger` 写入的内容由扩展作者负责。宿主只负责把日志写入该扩展自己的 `logs/extension.log`，不要替 extension message 做语义改写，也不要额外注入宿主前缀。
 
 ## Throw Error
 
@@ -177,4 +183,4 @@ throw new Error('Failed to open the game executable.')
 
 ## 一句话
 
-Log 只是 `electron-log` 的薄包装，只加单级前缀并分流到 `main.log`、`renderer.log`、`extension.log`；`catch` 只在需要增加业务语义、恢复或记录完整上下文时使用，重新抛出时写稳定安全的 `new Error('...')`。
+主应用 log 只是 `electron-log` 的薄包装，只加单级前缀并分流到 `main.log` / `renderer.log`；扩展作者 log 是独立的 extension-scoped capability，写入对应扩展自己的 `logs/extension.log` 且不改写 message；`catch` 只在需要增加业务语义、恢复或记录完整上下文时使用，重新抛出时写稳定安全的 `new Error('...')`。

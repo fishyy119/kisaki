@@ -3,7 +3,7 @@
  */
 
 import { eq } from 'drizzle-orm'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db'
 import {
@@ -47,6 +47,8 @@ import type {
 } from './types'
 import type { SlotResult } from '../../types'
 
+const log = createLogger('Scraper')
+
 type RuntimeCharacterProfile = ScraperProfile & { slotConfigs: CharacterScraperSlotConfigs }
 
 const CHARACTER_ALLOWED_CAPABILITIES = new Set(['search', ...CHARACTER_SCRAPER_SLOTS] as const)
@@ -82,12 +84,12 @@ export class CharacterScraperHandler {
 
   registerProvider(provider: CharacterScraperProvider): void {
     this.providers.register(provider)
-    log.info(`[Scraper] Registered character provider: ${provider.id}`)
+    log.info('Registered character provider.', { providerId: provider.id })
   }
 
   unregisterProvider(providerId: string): void {
     this.providers.delete(providerId)
-    log.info(`[Scraper] Unregistered character provider: ${providerId}`)
+    log.info('Unregistered character provider.', { providerId: providerId })
   }
 
   getProviders(): CharacterScraperProviderInfo[] {
@@ -151,7 +153,7 @@ export class CharacterScraperHandler {
         provider: searchProvider,
         lookup,
         locale: resolveLocale,
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
       const resolveProviderId = async (
@@ -162,7 +164,7 @@ export class CharacterScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          log.warn('Provider not available.', { providerId: providerId })
           return null
         }
 
@@ -186,7 +188,7 @@ export class CharacterScraperHandler {
         resolveProviderTarget: resolveProviderId,
         buildResult: ({ providerId, target, entry, data }) =>
           this.createCharacterResult(providerId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly CharacterScraperResult[]
 
       return mergeCharacterScraperBundle([...results], runtimeProfile)
@@ -202,12 +204,15 @@ export class CharacterScraperHandler {
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn(`[Scraper] Character provider '${providerId}' not available`)
+      log.warn('Character provider not available.', { providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
-      log.warn(`[Scraper] Character provider '${providerId}' does not support slot '${imageType}'`)
+      log.warn('Character provider does not support image slot.', {
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     }
 
@@ -245,12 +250,12 @@ export class CharacterScraperHandler {
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
           this.createCharacterResult(resolvedProviderId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly CharacterScraperImageResult[]
 
       return mergeCharacterScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
+      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
       return []
     } finally {
       await state.dispose()

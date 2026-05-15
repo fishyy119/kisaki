@@ -9,7 +9,7 @@
  * - Profile-based scraping operations via IPC
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { asc, eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
@@ -31,6 +31,8 @@ import { IGDBProvider } from './handlers/game/providers/igdb'
 import { VNDBProvider } from './handlers/game/providers/vndb'
 import { YmgalProvider } from './handlers/game/providers/ymgal'
 import { registerScraperIpc } from './ipc'
+
+const log = createLogger('Scraper')
 
 export class ScraperService implements IContentService {
   readonly id = 'scraper'
@@ -60,7 +62,7 @@ export class ScraperService implements IContentService {
     this.registerBuiltinProviders(providerDeps)
     registerScraperIpc(this, ipcService)
 
-    log.info('[ScraperService] Initialized')
+    log.info('Initialized')
   }
 
   private registerBuiltinProviders(deps: ScraperProviderDeps): void {

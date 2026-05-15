@@ -13,6 +13,9 @@ import { notify } from '@renderer/core/notify'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils'
 import { cva } from 'class-variance-authority'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Game')
 
 interface Props {
   gameId: string
@@ -75,7 +78,7 @@ async function handleClick(e: Event) {
     if (isRunning.value) {
       const result = await ipcManager.invoke('launcher:kill-game', props.gameId)
       if (!result.success) {
-        console.warn('[GamePlayButton] launcher:kill-game failed:', result.error)
+        log.warn('launcher:kill-game failed:', result.error)
         const message = result.error === 'Game is not running' ? '游戏未运行' : result.error
         notify.error('停止游戏失败', message)
         return
@@ -83,14 +86,14 @@ async function handleClick(e: Event) {
     } else {
       const result = await ipcManager.invoke('launcher:launch-game', props.gameId)
       if (!result.success) {
-        console.warn('[GamePlayButton] launcher:launch-game failed:', result.error)
+        log.warn('launcher:launch-game failed:', result.error)
         const message = result.error === 'Game not found' ? '游戏不存在' : result.error
         notify.error('启动游戏失败', message)
         return
       }
     }
   } catch (error) {
-    console.error('[GamePlayButton] launcher call threw:', error)
+    log.error('launcher call threw:', error)
     notify.error('操作失败')
   }
 }

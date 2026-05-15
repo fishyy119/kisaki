@@ -25,6 +25,9 @@ import type {
   ExtensionInstallUpdatePolicy,
   ExtensionUpdateInfo
 } from '@shared/extension'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Extension')
 
 interface Props {
   extension: ExtensionInstalledPackageInfo
@@ -134,7 +137,7 @@ async function handleToggle(enabled: boolean) {
     notify.success(enabled ? '扩展已启用' : '扩展已禁用')
     emit('refresh')
   } catch (error) {
-    console.error('Toggle failed:', error)
+    log.error('Toggle failed:', error)
     notify.error('操作失败', (error as Error).message)
   } finally {
     toggling.value = false

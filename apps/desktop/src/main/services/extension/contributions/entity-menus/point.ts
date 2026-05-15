@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import {
   createUiError,
   readErrorCode,
@@ -25,6 +25,8 @@ import {
   type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
+
+const log = createLogger('Extension')
 
 interface MenuRegistration {
   owner: RuntimeContributionOwner
@@ -257,10 +259,10 @@ export class ExtensionEntityMenuContributionPoint {
 
       return { result }
     } catch (error) {
-      log.warn(
-        `[ExtensionContributionRegistry] Menu callback "${request.extensionId}:${request.contributionId}" failed:`,
-        error
-      )
+      log.warn('Menu callback failed.', error, {
+        requestExtensionId: request.extensionId,
+        requestContributionId: request.contributionId
+      })
       return {
         result: createUiError(toErrorMessage(error, 'Menu callback failed.'), {
           code: readErrorCode(error) ?? 'internal',
@@ -284,10 +286,7 @@ export class ExtensionEntityMenuContributionPoint {
         { timeoutMs: 5_000 }
       )
     } catch (error) {
-      log.warn(
-        `[ExtensionContributionRegistry] Failed to release menu session "${request.sessionId}":`,
-        error
-      )
+      log.warn('Failed to release menu session.', error, { requestSessionId: request.sessionId })
     } finally {
       this.sessions.delete(request.sessionId)
     }
@@ -352,10 +351,10 @@ export class ExtensionEntityMenuContributionPoint {
 
       const registration = registrations[index]
       if (registration) {
-        log.warn(
-          `[ExtensionContributionRegistry] Failed to resolve menu "${registration.owner.extension.id}:${registration.contribution.id}":`,
-          result.reason
-        )
+        log.warn('Failed to resolve menu.', result.reason, {
+          registrationOwnerExtensionId: registration.owner.extension.id,
+          registrationContributionId: registration.contribution.id
+        })
         errors.push(toContributionError(registration, result.reason))
       }
     }

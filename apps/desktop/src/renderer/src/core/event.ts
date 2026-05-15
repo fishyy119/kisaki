@@ -12,6 +12,9 @@ import type {
   EventUnsubscribe,
   EventEmitOptions
 } from '@shared/events'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Event')
 
 class EventManager {
   private listeners: Map<keyof AppEvents, Set<(...args: unknown[]) => void>> = new Map()
@@ -93,7 +96,7 @@ class EventManager {
       try {
         ipcManager.send('event:forward', event, eventArgs)
       } catch (error) {
-        console.error(`Failed to forward event "${String(event)}" to main:`, error)
+        log.error('Failed to forward event to main.', error, { event: String(event) })
       }
     }
   }
@@ -108,7 +111,7 @@ class EventManager {
         try {
           listener(...args)
         } catch (error) {
-          console.error(`Error in event listener for "${String(event)}":`, error)
+          log.error('Error in event listener.', error, { event: String(event) })
         }
       }
     }

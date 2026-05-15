@@ -64,7 +64,7 @@ const { data, isLoading, error, refetch } = useAsyncData(
     ])
 
     if (!autoLaunchResult.success) {
-      throw new Error(autoLaunchResult.error)
+      throw new Error('Failed to read auto launch setting.')
     }
 
     if (!currentSettings) {
@@ -108,7 +108,7 @@ async function handleSubmit() {
   try {
     const result = await ipcManager.invoke('native:set-auto-launch', formData.value.autoLaunch)
     if (!result.success) {
-      throw new Error(result.error)
+      throw new Error('Failed to update auto launch setting.')
     }
 
     await db
@@ -123,7 +123,7 @@ async function handleSubmit() {
 
     const updaterResult = await ipcManager.invoke('updater:reload-settings')
     if (!updaterResult.success) {
-      throw new Error(updaterResult.error)
+      throw new Error('Failed to reload updater settings.')
     }
 
     ipcManager.send('window:set-main-window-close-action', formData.value.mainWindowCloseAction)

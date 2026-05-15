@@ -1,7 +1,9 @@
 import { app, BrowserWindow, screen, Tray } from 'electron'
 import { join } from 'path'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { WindowService } from '@main/services/window'
+
+const log = createLogger('Native')
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
@@ -32,7 +34,7 @@ export class NativeTray {
       try {
         this.windowService.focusMainWindow()
       } catch (error) {
-        log.error('[NativeTray] Tray click failed:', error)
+        log.error('Tray click failed:', error)
       }
     })
 
@@ -40,11 +42,11 @@ export class NativeTray {
       try {
         this.openTrayMenuWindow(screen.getCursorScreenPoint())
       } catch (error) {
-        log.error('[NativeTray] Open tray menu failed:', error)
+        log.error('Open tray menu failed:', error)
       }
     })
 
-    log.info('[NativeTray] Initialized')
+    log.info('Initialized')
   }
 
   dispose(): void {
@@ -54,7 +56,7 @@ export class NativeTray {
       this.tray = null
       this.lastMenuAnchorPoint = null
     }
-    log.info('[NativeTray] Disposed')
+    log.info('Disposed')
   }
 
   private getMenuAnchorPoint(): Electron.Point {
@@ -96,7 +98,7 @@ export class NativeTray {
   private openTrayMenuWindow(anchorPoint: Electron.Point): void {
     const win = this.windowService.getTrayMenuWindow()
     if (!win) {
-      log.warn('[NativeTray] Tray menu window not available')
+      log.warn('Tray menu window not available')
       return
     }
 

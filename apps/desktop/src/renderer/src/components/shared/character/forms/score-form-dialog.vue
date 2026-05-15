@@ -23,6 +23,9 @@ import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Character')
 
 interface Props {
   characterId: string
@@ -88,7 +91,7 @@ async function handleSubmit() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

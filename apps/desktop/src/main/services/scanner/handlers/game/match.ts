@@ -1,10 +1,12 @@
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { promises as fs } from 'fs'
 import path from 'path'
 import type { EntityEntry } from '@shared/scanner'
 import type { ScannerPhash } from '../../phash'
 import { GAME_PHASH_INDEX } from '../../types'
 import type { MatchedGame } from './types'
+
+const log = createLogger('Scanner')
 
 // Windows executable extensions
 const EXECUTABLE_EXTENSIONS = ['.exe', '.bat', '.cmd']
@@ -27,7 +29,7 @@ async function scanForExecutables(folderPath: string): Promise<string[]> {
 
     return executables
   } catch (error) {
-    log.error(`[Scanner] Failed to scan folder ${folderPath}: ${error}`)
+    log.error('Failed to scan folder.', { folderPath: folderPath, error: error })
     return []
   }
 }
@@ -56,13 +58,16 @@ export async function matchGameEntity(
 
     if (match) {
       if (match.distance === 0) {
-        log.info(
-          `[Scanner] Found exact phash match for ${match.record.name} (externalIds: ${match.record.externalIds.length})`
-        )
+        log.info('Found exact phash match.', {
+          matchRecordName: match.record.name,
+          matchRecordExternalIdsLength: match.record.externalIds.length
+        })
       } else {
-        log.info(
-          `[Scanner] Found phash match for ${match.record.name} (distance: ${match.distance}, externalIds: ${match.record.externalIds.length})`
-        )
+        log.info('Found phash match.', {
+          matchRecordName: match.record.name,
+          matchDistance: match.distance,
+          matchRecordExternalIdsLength: match.record.externalIds.length
+        })
       }
 
       return {

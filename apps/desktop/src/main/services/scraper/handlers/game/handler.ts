@@ -3,7 +3,7 @@
  */
 
 import { eq } from 'drizzle-orm'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db'
 import {
@@ -44,6 +44,8 @@ import type {
 import type { GameScraperImageResult, GameScraperResult } from './types'
 import type { SlotResult } from '../../types'
 
+const log = createLogger('Scraper')
+
 type RuntimeGameProfile = ScraperProfile & { slotConfigs: GameScraperSlotConfigs }
 
 const GAME_ALLOWED_CAPABILITIES = new Set(['search', ...GAME_SCRAPER_SLOTS] as const)
@@ -74,12 +76,12 @@ export class GameScraperHandler {
 
   registerProvider(provider: GameScraperProvider): void {
     this.providers.register(provider)
-    log.info(`[Scraper] Registered provider: ${provider.id}`)
+    log.info('Registered provider.', { providerId: provider.id })
   }
 
   unregisterProvider(providerId: string): void {
     this.providers.delete(providerId)
-    log.info(`[Scraper] Unregistered provider: ${providerId}`)
+    log.info('Unregistered provider.', { providerId: providerId })
   }
 
   getProviders(): GameScraperProviderInfo[] {
@@ -139,7 +141,7 @@ export class GameScraperHandler {
         provider: searchProvider,
         lookup,
         locale: resolveLocale,
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
       const resolveProviderId = async (
@@ -150,7 +152,7 @@ export class GameScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          log.warn('Provider not available.', { providerId: providerId })
           return null
         }
 
@@ -174,7 +176,7 @@ export class GameScraperHandler {
         resolveProviderTarget: resolveProviderId,
         buildResult: ({ providerId, target, entry, data }) =>
           this.createGameResult(providerId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly GameScraperResult[]
 
       return mergeGameScraperBundle([...results], runtimeProfile)
@@ -190,12 +192,15 @@ export class GameScraperHandler {
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn(`[Scraper] Provider '${providerId}' not available`)
+      log.warn('Provider not available.', { providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
-      log.warn(`[Scraper] Provider '${providerId}' does not support image slot '${imageType}'`)
+      log.warn('Provider does not support image slot.', {
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     }
 
@@ -233,12 +238,12 @@ export class GameScraperHandler {
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
           this.createGameResult(resolvedProviderId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly GameScraperImageResult[]
 
       return mergeGameScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
+      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
       return []
     } finally {
       await state.dispose()

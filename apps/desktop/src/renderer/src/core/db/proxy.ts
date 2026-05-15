@@ -7,14 +7,17 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import { ipcManager } from '../ipc'
 import * as schema from '@shared/db'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Db')
 
 export const db = drizzle(
   async (...args) => {
     const result = await ipcManager.invoke('db:execute', ...args)
 
     if (!result.success) {
-      console.error('DB execution error:', result.error)
-      throw new Error(result.error || 'Unknown DB execution error')
+      log.error('DB execution error:', result.error)
+      throw new Error('Database query failed.')
     }
 
     return { rows: result.data ?? [] }

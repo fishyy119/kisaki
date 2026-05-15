@@ -4,7 +4,7 @@
  * Orchestrates all metadata write flows through add/update handlers.
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IContentService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { ContentEntityType } from '@shared/common'
 import { IngestPersistHandlers } from './persist'
@@ -16,6 +16,8 @@ import {
   PersonUpdateHandler
 } from './update'
 import { registerIngestIpc } from './ipc'
+
+const log = createLogger('Ingest')
 
 interface IngestAddHandlers {
   game: GameAddHandler
@@ -58,7 +60,7 @@ export class IngestService implements IContentService {
     }
 
     registerIngestIpc(this, ipcService)
-    log.info('[IngestService] Initialized')
+    log.info('Initialized')
   }
 
   getSupportedContent(): ContentEntityType[] {

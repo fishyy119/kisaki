@@ -1,4 +1,4 @@
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { ScraperService } from '@main/services/scraper'
 import type { IngestPersistHandlers } from '../persist'
@@ -21,6 +21,8 @@ import {
   normalizeSelection,
   resolveUpdateSelection
 } from './utils'
+
+const log = createLogger('Ingest')
 
 export class GameUpdateHandler {
   constructor(
@@ -70,11 +72,9 @@ export class GameUpdateHandler {
 
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets)
     if (warnings.length > 0) {
-      log.warn(
-        `[IngestService] Game update completed with asset warnings: ${warnings
-          .map((warning) => warning.message)
-          .join(' | ')}`
-      )
+      log.warn('Game update completed with asset warnings.', {
+        warningsItemsText: warnings.map((warning) => warning.message).join(' | ')
+      })
     }
   }
 }

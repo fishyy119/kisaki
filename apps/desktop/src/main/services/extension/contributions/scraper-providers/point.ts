@@ -1,5 +1,5 @@
 import type { ExtensionRuntimeHandle } from '@kisaki/extension-api'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { ExtensionScraperProviderRegistrationInfo } from '@shared/extension'
 import type { CharacterScraperProvider } from '@main/services/scraper/handlers/character/provider'
 import type { CompanyScraperProvider } from '@main/services/scraper/handlers/company/provider'
@@ -19,6 +19,8 @@ import type {
   ScraperRegistration
 } from './domain'
 import { createProviderAdapter } from './registrations'
+
+const log = createLogger('Extension')
 
 export class ExtensionScraperProviderContributionPoint {
   private readonly registrations = new Map<string, ScraperRegistration>()
@@ -192,10 +194,9 @@ export class ExtensionScraperProviderContributionPoint {
         registration.hostProviderId
       )
     } catch (error) {
-      log.warn(
-        `[ExtensionScraperProviderContributionPoint] Failed to unregister provider "${registration.hostProviderId}":`,
-        error
-      )
+      log.warn('Failed to unregister provider.', error, {
+        registrationHostProviderId: registration.hostProviderId
+      })
     }
   }
 

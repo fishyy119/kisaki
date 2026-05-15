@@ -8,7 +8,7 @@
  */
 
 import { net, session } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { createWriteStream } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import path from 'path'
@@ -17,6 +17,8 @@ import { pipeline } from 'node:stream/promises'
 import fse from 'fs-extra'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { FetchOptions, RateLimitConfig } from '@shared/network'
+
+const log = createLogger('Network')
 
 export class NetworkService implements IService {
   readonly id = 'network'
@@ -37,7 +39,7 @@ export class NetworkService implements IService {
     // Explicitly use system proxy. (This is also Electron's default behavior.)
     await session.defaultSession.setProxy({ mode: 'system' })
 
-    log.info('[NetworkService] Initialized')
+    log.info('Initialized')
   }
 
   // ===========================================================================
@@ -148,9 +150,11 @@ export class NetworkService implements IService {
    */
   registerRateLimit(key: string, config: RateLimitConfig): void {
     this.rateLimiters.set(key, new RateLimiter(config))
-    log.debug(
-      `[NetworkService] Registered rate limit for '${key}': ${config.maxRequests} requests per ${config.windowMs}ms`
-    )
+    log.debug('Registered rate limit.', {
+      key: key,
+      configMaxRequests: config.maxRequests,
+      configWindowMs: config.windowMs
+    })
   }
 
   /**
@@ -217,9 +221,12 @@ export class NetworkService implements IService {
         if (attempt < retries) {
           // Exponential backoff: 1s, 2s, 4s, max 10s
           const delay = Math.min(1000 * Math.pow(2, attempt), 10000)
-          log.warn(
-            `[NetworkService] Retry ${attempt + 1}/${retries} after ${delay}ms: ${currentErrorMessage}`
-          )
+          log.warn('Retrying network request.', {
+            value0: attempt + 1,
+            retries: retries,
+            delay: delay,
+            currentErrorMessage: currentErrorMessage
+          })
           await this.sleep(delay, signal)
         }
       }

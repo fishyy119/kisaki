@@ -10,7 +10,7 @@
  * are delegated to the shared scanner coordinator in `handlers/common`.
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { promises as fs } from 'fs'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
@@ -29,6 +29,8 @@ import {
 } from '../common'
 import { matchGameEntity } from './match'
 import type { GameEntity } from './types'
+
+const log = createLogger('Scanner')
 
 function isRecoverableScraperFailure(error: unknown): boolean {
   if (!(error instanceof Error)) return false
@@ -102,10 +104,10 @@ export class GameScannerHandler {
     try {
       allScanners = this.dbService.db.select().from(scanners).where(eq(scanners.type, 'game')).all()
     } catch (error) {
-      log.error(`[Scanner] Failed to get all game scanners: ${error}`)
+      log.error('Failed to get all game scanners.', { error: error })
     }
 
-    log.info(`[Scanner] Found ${allScanners.length} game scanners to scan`)
+    log.info('Found game scanners to scan.', { allScannersLength: allScanners.length })
 
     const entries = await Promise.all(
       allScanners.map(async (scanner) => {
@@ -113,7 +115,10 @@ export class GameScannerHandler {
           const result = await this.scanScanner(scanner.id)
           return [scanner.id, result] as [string, ScanCompletedData]
         } catch (error) {
-          log.error(`[Scanner] Failed to scan games for scanner ${scanner.name}: ${error}`)
+          log.error('Failed to scan games for scanner.', {
+            scannerName: scanner.name,
+            error: error
+          })
           return [scanner.id, this.buildFailedScanResult(scanner, error)] as [
             string,
             ScanCompletedData
@@ -134,34 +139,36 @@ export class GameScannerHandler {
 
     const scanner = this.getScannerById(scannerId)
     if (!scanner) {
-      log.error(`[Scanner] Cannot schedule scanner ${scannerId}: not found`)
+      log.error('Cannot schedule scanner: not found.', { scannerId: scannerId })
       return
     }
 
     if (scanner.scanIntervalMinutes <= 0) {
-      log.info(
-        `[Scanner] Scanner ${scanner.name} has interval ${scanner.scanIntervalMinutes}, not scheduling`
-      )
+      log.info('Scanner scan interval disabled, not scheduling.', {
+        scannerName: scanner.name,
+        scannerScanIntervalMinutes: scanner.scanIntervalMinutes
+      })
       return
     }
 
     if (scanner.type !== 'game') {
-      log.warn(`[Scanner] Scanner ${scanner.name} is not a game scanner, cannot schedule`)
+      log.warn('Scanner is not a game scanner, cannot schedule.', { scannerName: scanner.name })
       return
     }
 
     const intervalMs = scanner.scanIntervalMinutes * 60 * 1000
 
-    log.info(
-      `[Scanner] Scheduling scanner ${scanner.name} to run every ${scanner.scanIntervalMinutes} minutes`
-    )
+    log.info('Scheduling scanner.', {
+      scannerName: scanner.name,
+      scannerScanIntervalMinutes: scanner.scanIntervalMinutes
+    })
 
     const intervalId = setInterval(async () => {
-      log.info(`[Scanner] Running scheduled scan for scanner: ${scanner.name}`)
+      log.info('Running scheduled scan for scanner.', { scannerName: scanner.name })
       try {
         await this.scanScanner(scannerId)
       } catch (error) {
-        log.error(`[Scanner] Scheduled scan failed for scanner ${scanner.name}: ${error}`)
+        log.error('Scheduled scan failed for scanner.', { scannerName: scanner.name, error: error })
       }
     }, intervalMs)
 
@@ -173,18 +180,18 @@ export class GameScannerHandler {
     if (intervalId) {
       clearInterval(intervalId)
       this.scheduledScanners.delete(scannerId)
-      log.info(`[Scanner] Unscheduled scanner: ${scannerId}`)
+      log.info('Unscheduled scanner.', { scannerId: scannerId })
     }
   }
 
   async scheduleAllScanners(): Promise<void> {
-    log.info('[Scanner] Scheduling all game scanners with intervals')
+    log.info('Scheduling all game scanners with intervals')
 
     let allScanners: Scanner[] = []
     try {
       allScanners = this.dbService.db.select().from(scanners).where(eq(scanners.type, 'game')).all()
     } catch (error) {
-      log.error(`[Scanner] Failed to get all game scanners: ${error}`)
+      log.error('Failed to get all game scanners.', { error: error })
     }
 
     for (const scanner of allScanners) {
@@ -193,7 +200,7 @@ export class GameScannerHandler {
   }
 
   unscheduleAllScanners(): void {
-    log.info('[Scanner] Unscheduling all game scanners')
+    log.info('Unscheduling all game scanners')
 
     for (const scannerId of this.scheduledScanners.keys()) {
       this.unscheduleScanner(scannerId)
@@ -230,18 +237,23 @@ export class GameScannerHandler {
     }
 
     if (!profile) {
-      log.warn(
-        `[Scanner] Scanner ${scanner.name} has no scraper profile, ${
+      log.warn('Scanner has no scraper profile.', {
+        scannerName: scanner.name,
+        value1:
           ingestMode === 'direct-only'
             ? 'using direct ingest mode'
             : 'using direct ingest fallback mode'
-        }`
-      )
+      })
     }
 
-    log.info(
-      `[Scanner] Starting game scan for: ${scanner.name} at ${scanner.path} (depth: ${scanner.entityDepth}, mode: ${ingestMode}, parallel: ${scannerParallelCount}, profile: ${profile?.name ?? 'none'})`
-    )
+    log.info('Starting game scan.', {
+      scannerName: scanner.name,
+      scannerPath: scanner.path,
+      scannerEntityDepth: scanner.entityDepth,
+      ingestMode: ingestMode,
+      scannerParallelCount: scannerParallelCount,
+      value5: profile?.name ?? 'none'
+    })
 
     const entities = await this.scanForEntities(scanner.path, {
       entityDepth: scanner.entityDepth,
@@ -249,7 +261,10 @@ export class GameScannerHandler {
       nameExtractionRules: scanner.nameExtractionRules
     })
 
-    log.info(`[Scanner] Found ${entities.length} entities at depth ${scanner.entityDepth}`)
+    log.info('Found entities at depth.', {
+      entitiesLength: entities.length,
+      scannerEntityDepth: scanner.entityDepth
+    })
 
     session.setTotal(entities.length)
     await session.processItemsWithConcurrency(entities, scannerParallelCount, async (entity) => {
@@ -262,9 +277,11 @@ export class GameScannerHandler {
       session.recordEntityResult(entityResult)
     })
 
-    log.info(
-      `[Scanner] Scan completed: ${session.progress.newCount} new, ${session.progress.skippedCount} skipped, ${session.progress.failedCount} failed`
-    )
+    log.info('Scan completed.', {
+      sessionProgressNewCount: session.progress.newCount,
+      sessionProgressSkippedCount: session.progress.skippedCount,
+      sessionProgressFailedCount: session.progress.failedCount
+    })
   }
 
   private async processGameEntity(
@@ -314,9 +331,10 @@ export class GameScannerHandler {
           }
 
           const message = error instanceof Error ? error.message : String(error)
-          log.warn(
-            `[Scanner] Scraper ingest failed for ${gameEntity.path}, fallback to direct ingest: ${message}`
-          )
+          log.warn('Scraper ingest failed, falling back to direct ingest.', {
+            gameEntityPath: gameEntity.path,
+            message: message
+          })
           result = await addDirect()
         }
         break
@@ -325,16 +343,17 @@ export class GameScannerHandler {
     }
 
     if (result.isNew) {
-      log.info(
-        `[Scanner] Successfully added game ${gameName} (ID: ${result.gameId}) from ${gameEntity.path}`
-      )
+      log.info('Successfully added game.', {
+        gameName: gameName,
+        resultGameId: result.gameId,
+        gameEntityPath: gameEntity.path
+      })
 
       if (result.warnings?.length) {
-        log.warn(
-          `[Scanner] Game ${result.gameId} completed with post-commit warnings: ${result.warnings
-            .map((warning) => warning.message)
-            .join(' | ')}`
-        )
+        log.warn('Game completed with post-commit warnings.', {
+          resultGameId: result.gameId,
+          resultWarningsItemsText: result.warnings.map((warning) => warning.message).join(' | ')
+        })
       }
     }
 
@@ -355,12 +374,12 @@ export class GameScannerHandler {
       try {
         stat = await fs.stat(entity.path)
       } catch (error) {
-        log.error(`[Scanner] Failed to stat entity ${entity.path}: ${error}`)
+        log.error('Failed to stat entity.', { entityPath: entity.path, error: error })
         return { kind: 'processed-only' }
       }
 
       if (!stat.isDirectory()) {
-        log.info(`[Scanner] Skipping non-directory entity: ${entity.path}`)
+        log.info('Skipping non-directory entity.', { entityPath: entity.path })
         return { kind: 'processed-only' }
       }
 
@@ -368,7 +387,10 @@ export class GameScannerHandler {
         path: entity.path
       })
       if (existingByPath) {
-        log.info(`[Scanner] Game already exists at path ${entity.path}: ${existingByPath.name}`)
+        log.info('Game already exists at path.', {
+          entityPath: entity.path,
+          existingByPathName: existingByPath.name
+        })
 
         return {
           kind: 'skipped',
@@ -396,9 +418,10 @@ export class GameScannerHandler {
         return { kind: 'new' }
       }
 
-      log.info(
-        `[Scanner] Game already exists for ${entity.path} (reason: ${addResult.existingReason})`
-      )
+      log.info('Game already exists.', {
+        entityPath: entity.path,
+        addResultExistingReason: addResult.existingReason
+      })
       return {
         kind: 'skipped',
         skippedScan: {
@@ -410,7 +433,7 @@ export class GameScannerHandler {
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error)
-      log.error(`[Scanner] Error processing entity ${entity.path}: ${errorMsg}`)
+      log.error('Error processing entity.', { entityPath: entity.path, errorMsg: errorMsg })
 
       return {
         kind: 'failed',
@@ -446,7 +469,7 @@ export class GameScannerHandler {
         .all()
       return result[0] || null
     } catch (error) {
-      log.error(`[Scanner] Failed to get scanner ${scannerId}: ${error}`)
+      log.error('Failed to get scanner.', { scannerId: scannerId, error: error })
       return null
     }
   }
@@ -461,7 +484,7 @@ export class GameScannerHandler {
         .all()
       return result[0] || null
     } catch (error) {
-      log.error(`[Scanner] Failed to get profile ${profileId}: ${error}`)
+      log.error('Failed to get profile.', { profileId: profileId, error: error })
       return null
     }
   }

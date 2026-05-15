@@ -9,6 +9,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ScanProgressData } from '@shared/scanner'
 import { ipcManager } from '@renderer/core/ipc'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Scanner')
 
 const activeStatuses = new Set<ScanProgressData['status']>([
   'queued',
@@ -85,7 +88,7 @@ export const useScannerStore = defineStore('scanner', () => {
         }
       }
     } catch (error) {
-      console.error('[ScannerStore] Failed to fetch initial status:', error)
+      log.error('Failed to fetch initial status:', error)
     }
 
     initialized.value = true

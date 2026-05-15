@@ -13,6 +13,9 @@ import type { Game, Character, Person, Company } from '@shared/db'
 import { buildFtsMatchText, normalizeSearchText } from '@shared/search'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Library')
 
 // =============================================================================
 // Types
@@ -147,7 +150,7 @@ export function useLibrarySearch(query: MaybeRefOrGetter<string>, debounceMs = 3
           }
         }
       } catch (error) {
-        console.error('[useLibrarySearch] Search failed:', error)
+        log.error('Search failed:', error)
         if (currentVersion === fetchVersion) {
           results.value = EMPTY_RESULT
         }

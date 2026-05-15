@@ -11,7 +11,9 @@
  */
 
 import type { IService, ServiceStatus, ServiceName, ServiceType } from './types'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
+
+const log = createLogger('Container')
 
 export class ServiceContainer {
   private services = new Map<string, IService>()
@@ -28,7 +30,7 @@ export class ServiceContainer {
 
     this.services.set(service.id, service)
     this.serviceStatus.set(service.id, 'registered')
-    log.info(`[Container] Registered: ${service.id}`)
+    log.info('Service registered.', { serviceId: service.id })
 
     return this
   }
@@ -42,10 +44,12 @@ export class ServiceContainer {
     }
 
     const initOrder = this.computeInitOrder()
-    log.info(`[Container] Initializing ${initOrder.length} services...`)
+    log.info('Service initialization started.', { serviceCount: initOrder.length })
 
     // Reset init order for this run (idempotent initAll is not supported).
     this.initOrder = []
+
+    let failedServiceId: string | null = null
 
     try {
       for (const id of initOrder) {
@@ -59,18 +63,19 @@ export class ServiceContainer {
           await service.init(this)
           this.serviceStatus.set(id, 'ready')
           this.initOrder.push(id)
-          log.info(`[Container] Ready: ${id}`)
+          log.info('Service ready.', { serviceId: id })
         } catch (error) {
           this.serviceStatus.set(id, 'failed')
-          log.error(`[Container] Failed to initialize ${id}:`, error)
+          failedServiceId = id
           throw error
         }
       }
 
-      log.info('[Container] All services initialized')
+      log.info('Service initialization completed.')
     } catch (error) {
       await this.rollbackInit()
-      throw error
+      log.error('Service initialization failed.', error, { failedServiceId: failedServiceId })
+      throw new Error('Failed to initialize services.')
     }
   }
 
@@ -172,14 +177,14 @@ export class ServiceContainer {
       throw new Error(`Service "${name}" is initializing and cannot be unregistered`)
     }
 
-    log.info(`[Container] Unregistering: ${name}`)
+    log.info('Service unregistering.', { serviceId: name })
 
     if (status === 'ready' && service.dispose) {
       this.serviceStatus.set(name, 'disposing')
       try {
         await service.dispose()
       } catch (error) {
-        log.error(`[Container] Error disposing ${name}:`, error)
+        log.error('Service disposal failed.', error, { serviceId: name })
       }
     }
 
@@ -193,19 +198,19 @@ export class ServiceContainer {
    * Called during application shutdown.
    */
   async disposeAll(): Promise<void> {
-    log.info('[Container] Disposing all services...')
+    log.info('Service disposal started.')
 
     const reverseOrder = [...this.initOrder].reverse()
     for (const name of reverseOrder) {
       const service = this.services.get(name)
       if (service?.dispose && this.serviceStatus.get(name) === 'ready') {
-        log.info(`[Container] Disposing: ${name}`)
+        log.info('Service disposing.', { serviceId: name })
         this.serviceStatus.set(name, 'disposing')
         try {
           await service.dispose()
           this.serviceStatus.set(name, 'disposed')
         } catch (error) {
-          log.error(`[Container] Error disposing ${name}:`, error)
+          log.error('Service disposal failed.', error, { serviceId: name })
         }
       }
     }
@@ -213,7 +218,7 @@ export class ServiceContainer {
     this.services.clear()
     this.serviceStatus.clear()
     this.initOrder = []
-    log.info('[Container] All services disposed')
+    log.info('Service disposal completed.')
   }
 
   private computeInitOrder(): string[] {
@@ -312,25 +317,25 @@ export class ServiceContainer {
   private async rollbackInit(): Promise<void> {
     if (this.initOrder.length === 0) return
 
-    log.warn('[Container] Rolling back initialized services...')
+    log.warn('Service initialization rollback started.')
 
     const reverse = [...this.initOrder].reverse()
     for (const id of reverse) {
       const service = this.services.get(id)
       if (!service?.dispose) continue
 
-      log.info(`[Container] Disposing (rollback): ${id}`)
+      log.info('Service disposing during rollback.', { serviceId: id })
       this.serviceStatus.set(id, 'disposing')
       try {
         await service.dispose()
         this.serviceStatus.set(id, 'disposed')
       } catch (error) {
-        log.error(`[Container] Error disposing ${id} during rollback:`, error)
+        log.error('Service disposal failed during rollback.', error, { serviceId: id })
       }
     }
 
     this.initOrder = []
-    log.warn('[Container] Rollback complete')
+    log.warn('Service initialization rollback completed.')
   }
 }
 

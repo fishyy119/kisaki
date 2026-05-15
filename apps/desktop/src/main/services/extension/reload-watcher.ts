@@ -1,7 +1,9 @@
 import path from 'node:path'
 import { watch, type FSWatcher } from 'chokidar'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { isInsideOrEqualPath } from './shared/path-confinement'
+
+const log = createLogger('Extension')
 
 export interface ExtensionReloadWatchTarget {
   extensionId: string
@@ -58,7 +60,7 @@ export class ExtensionReloadWatcher {
     this.watcher.on('change', (filePath) => this.scheduleReload(filePath))
     this.watcher.on('unlink', (filePath) => this.scheduleReload(filePath))
 
-    log.info(`[ExtensionReloadWatcher] Watching ${this.targets.length} active extension(s)`)
+    log.info('Watching active extension(s).', { targetsLength: this.targets.length })
   }
 
   async stop(): Promise<void> {
@@ -88,15 +90,10 @@ export class ExtensionReloadWatcher {
     const timer = setTimeout(() => {
       this.reloadDebounceTimers.delete(target.extensionId)
 
-      log.info(
-        `[ExtensionReloadWatcher] Reloading extension "${target.extensionId}" after file change`
-      )
+      log.info('Reloading extension after file change.', { targetExtensionId: target.extensionId })
 
       void Promise.resolve(this.onReload(target.extensionId)).catch((error) => {
-        log.error(
-          `[ExtensionReloadWatcher] Failed to reload extension "${target.extensionId}":`,
-          error
-        )
+        log.error('Failed to reload extension.', error, { targetExtensionId: target.extensionId })
       })
     }, 300)
 

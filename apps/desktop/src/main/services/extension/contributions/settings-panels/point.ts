@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import {
   readErrorCode,
   type ExtensionRuntimeHandle,
@@ -38,6 +38,8 @@ import {
 import { SettingsSessionStore } from './sessions'
 import type { SettingsRegistration } from './types'
 import { createSettingsError, getPublicContributionKey, toErrorMessage } from './utils'
+
+const log = createLogger('Extension')
 
 export class ExtensionSettingsPanelContributionPoint {
   private readonly registrations = new Map<string, SettingsRegistration>()
@@ -350,10 +352,11 @@ export class ExtensionSettingsPanelContributionPoint {
         { timeoutMs: 15_000 }
       )
     } catch (error) {
-      log.warn(
-        `[ExtensionContributionRegistry] Settings submit "${request.extensionId}:${request.contributionId}:${request.surface}" failed:`,
-        error
-      )
+      log.warn('Settings submit failed.', error, {
+        requestExtensionId: request.extensionId,
+        requestContributionId: request.contributionId,
+        requestSurface: request.surface
+      })
       return {
         result: createSettingsError(
           toErrorMessage(error, 'Settings submit failed.'),
@@ -383,10 +386,12 @@ export class ExtensionSettingsPanelContributionPoint {
         { timeoutMs: 15_000 }
       )
     } catch (error) {
-      log.warn(
-        `[ExtensionContributionRegistry] Settings callback "${request.extensionId}:${request.contributionId}:${request.surface}:${request.nodeId}" failed:`,
-        error
-      )
+      log.warn('Settings callback failed.', error, {
+        requestExtensionId: request.extensionId,
+        requestContributionId: request.contributionId,
+        requestSurface: request.surface,
+        requestNodeId: request.nodeId
+      })
       return {
         result: createSettingsError(
           toErrorMessage(error, 'Settings callback failed.'),
@@ -410,10 +415,12 @@ export class ExtensionSettingsPanelContributionPoint {
         { timeoutMs: 5_000 }
       )
     } catch (error) {
-      log.warn(
-        `[ExtensionContributionRegistry] Failed to release settings "${request.extensionId}:${request.contributionId}:${request.sessionId}:${request.surface}":`,
-        error
-      )
+      log.warn('Failed to release settings session.', error, {
+        requestExtensionId: request.extensionId,
+        requestContributionId: request.contributionId,
+        requestSessionId: request.sessionId,
+        requestSurface: request.surface
+      })
     } finally {
       this.sessionStore.applyRelease(request)
     }

@@ -17,6 +17,9 @@ import { gameNotes, type GameNote } from '@shared/db'
 import GameDetailNotesItem from './notes-item.vue'
 import GameDetailNotesViewDialog from './notes-view-dialog.vue'
 import { GameNotesFormDialog } from '../../../forms'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Game')
 
 // =============================================================================
 // State
@@ -87,7 +90,7 @@ async function handleDelete(noteId: string) {
     await db.delete(gameNotes).where(eq(gameNotes.id, noteId))
     notify.success('已删除笔记')
   } catch (error) {
-    console.error('Delete note failed:', error)
+    log.error('Delete note failed:', error)
     notify.error('删除失败')
   } finally {
     deleteTargetId.value = null
@@ -137,7 +140,7 @@ async function reorder(noteId: string, direction: -1 | 1) {
       .set({ orderInGame: source.orderInGame })
       .where(eq(gameNotes.id, neighbor.id))
   } catch (error) {
-    console.error('Reorder failed:', error)
+    log.error('Reorder failed:', error)
     notify.error('排序失败')
     displayNotes.value = [...notes.value]
   } finally {

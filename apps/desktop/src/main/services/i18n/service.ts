@@ -6,7 +6,7 @@
 
 import i18next, { type i18n as I18nInstance } from 'i18next'
 import { app } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { EventService } from '@main/services/event'
 import type { DbService } from '@main/services/db'
@@ -18,6 +18,8 @@ import { APP_LOCALES, DEFAULT_LOCALE } from '@shared/locale'
 import zhHans from './locales/zh-Hans.json'
 import en from './locales/en.json'
 import ja from './locales/ja.json'
+
+const log = createLogger('Locale')
 
 /** i18next instance for main process */
 export const i18n: I18nInstance = i18next.createInstance()
@@ -54,11 +56,11 @@ export class I18nService implements IService {
       const targetLocale = locale ?? this.getSystemLocale()
       if (APP_LOCALES.includes(targetLocale)) {
         await i18n.changeLanguage(targetLocale)
-        log.info(`[I18nService] Locale changed to: ${targetLocale}`)
+        log.info('Locale changed.', { targetLocale: targetLocale })
       }
     })
 
-    log.info(`[I18nService] Initialized with locale: ${initialLocale}`)
+    log.info('Initialized.', { initialLocale: initialLocale })
   }
 
   /**
@@ -98,7 +100,7 @@ export class I18nService implements IService {
         return result.locale
       }
     } catch (error) {
-      log.warn('[I18nService] Failed to read locale from settings:', error)
+      log.warn('Failed to read locale from settings:', error)
     }
 
     // Fallback to system locale
@@ -130,8 +132,9 @@ export class I18nService implements IService {
     // Notify other processes
     this.eventService.emit('app:locale-changed', { locale })
 
-    log.info(
-      `[I18nService] Locale changed and persisted: ${locale ?? 'system'} (actual: ${targetLocale})`
-    )
+    log.info('Locale changed and persisted.', {
+      value0: locale ?? 'system',
+      targetLocale: targetLocale
+    })
   }
 }

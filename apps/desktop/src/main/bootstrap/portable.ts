@@ -1,10 +1,12 @@
 import { app } from 'electron'
 import path from 'path'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import { is } from '@electron-toolkit/utils'
 import type { EventService } from '@main/services/event'
 import { wrapIpc, wrapIpcVoid, type IpcService } from '@main/services/ipc'
+
+const log = createLogger('Portable')
 
 /** Portable mode status */
 export interface PortableStatus {
@@ -261,5 +263,5 @@ export function setupPortableIpc(ipc: IpcService, event: EventService): void {
     return wrapIpcVoid(() => cancelPendingSwitch(event))
   })
 
-  log.info('[Portable] IPC handlers registered')
+  log.info('IPC handlers registered')
 }

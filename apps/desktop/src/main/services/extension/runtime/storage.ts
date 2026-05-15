@@ -2,7 +2,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { Mutex } from 'async-mutex'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import {
   createValidationError,
   createUnavailableError,
@@ -11,6 +11,8 @@ import {
   type SerializableValue
 } from '@kisaki/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
+
+const log = createLogger('Extension')
 
 export class ExtensionRuntimeStorage {
   private readonly mutexes = new Map<string, Mutex>()
@@ -89,10 +91,9 @@ export class ExtensionRuntimeStorage {
       const raw = await fse.readJson(storagePath)
       return normalizeSerializableRecord(raw)
     } catch (error) {
-      log.warn(
-        `[RuntimeStorage] Failed to read storage for runtime handle "${runtimeHandle}", using empty document:`,
-        error
-      )
+      log.warn('Failed to read extension storage document, using empty document.', error, {
+        runtimeHandle: runtimeHandle
+      })
       return {}
     }
   }

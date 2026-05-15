@@ -5,11 +5,13 @@
  * Provides namespace-style access to media-specific handlers.
  */
 
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
 import { GameMonitorHandler } from './handlers/game'
 import { registerMonitorIpc } from './ipc'
+
+const log = createLogger('Monitor')
 
 export class MonitorService implements IMediaService {
   readonly id = 'monitor'
@@ -27,7 +29,7 @@ export class MonitorService implements IMediaService {
     this.game = new GameMonitorHandler(dbService, ipcService, eventService, attachmentService.game)
 
     registerMonitorIpc(this, ipcService)
-    log.info('[MonitorService] Initialized')
+    log.info('Initialized')
   }
 
   getGameStatus(gameId?: string) {
@@ -50,7 +52,7 @@ export class MonitorService implements IMediaService {
 
   async dispose(): Promise<void> {
     await this.game.cleanup()
-    log.info('[MonitorService] Disposed')
+    log.info('Disposed')
   }
 
   getSupportedMedia(): MediaType[] {

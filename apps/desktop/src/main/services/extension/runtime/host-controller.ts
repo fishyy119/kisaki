@@ -1,7 +1,9 @@
 import { once } from 'node:events'
 import { utilityProcess, type UtilityProcess } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { RpcMessage } from '@kisaki/extension-api'
+
+const log = createLogger('Extension')
 
 export interface ExtensionHostExitInfo {
   code: number
@@ -30,12 +32,12 @@ export class ExtensionHostController {
 
     child.on('message', (message) => {
       void Promise.resolve(onMessage(message)).catch((error) => {
-        log.error('[ExtensionHostController] Failed to handle host message:', error)
+        log.error('Failed to handle host message.', error)
       })
     })
 
     child.on('error', (type, location, report) => {
-      log.error(`[ExtensionHostController] Host fatal error (${type}) at ${location}\n${report}`)
+      log.error('Host fatal error.', { type, location, report })
     })
 
     child.stdout?.on('data', (chunk: Buffer | string) => {
@@ -48,7 +50,7 @@ export class ExtensionHostController {
 
     this.process = child
     await once(child, 'spawn')
-    log.info(`[ExtensionHostController] Spawned extension host (pid=${child.pid ?? 'unknown'})`)
+    log.info('Spawned extension host.', { pid: child.pid ?? null })
   }
 
   async stop(): Promise<void> {
@@ -102,9 +104,9 @@ function writeHostStreamLog(stream: 'stdout' | 'stderr', chunk: Buffer | string)
     }
 
     if (stream === 'stderr') {
-      log.warn(`[ExtensionHost][stderr] ${line}`)
+      log.warn('Extension host stderr.', { line })
     } else {
-      log.info(`[ExtensionHost][stdout] ${line}`)
+      log.info('Extension host stdout.', { line })
     }
   }
 }

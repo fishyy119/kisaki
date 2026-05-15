@@ -1,6 +1,6 @@
 import path from 'node:path'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type {
   CreateOrUpdateExtensionInstallationInput,
   ExtensionInstallationStore
@@ -10,7 +10,7 @@ import { createOperationCleanupPaths, removeCleanupPaths } from './cleanup'
 import type { ExtensionPackageLayout } from './layout'
 import { wrapExtensionPackageError } from './types'
 
-const LOG_PREFIX = '[ExtensionPackageCommitter]'
+const log = createLogger('Extension')
 
 export type ExpectedPreviousActivePackage = 'none' | 'present' | 'any'
 
@@ -87,7 +87,9 @@ export class ExtensionPackageCommitter {
         backupCreated,
         stagedMoved
       }).catch((restoreError) => {
-        log.error(`${LOG_PREFIX} Failed to restore previous active package:`, restoreError)
+        log.error('Failed to restore previous active package.', restoreError, {
+          extensionId: input.extensionId
+        })
       })
 
       throw wrapExtensionPackageError(error, {
@@ -96,10 +98,7 @@ export class ExtensionPackageCommitter {
         path: packagePath
       })
     } finally {
-      await removeCleanupPaths(
-        committed ? successCleanupPaths : operationTempCleanupPaths,
-        LOG_PREFIX
-      )
+      await removeCleanupPaths(committed ? successCleanupPaths : operationTempCleanupPaths)
     }
   }
 
@@ -136,7 +135,9 @@ export class ExtensionPackageCommitter {
     } catch (error) {
       if (trashed) {
         await fse.move(trashPath, packagePath, { overwrite: false }).catch((restoreError) => {
-          log.error(`${LOG_PREFIX} Failed to restore trashed extension package:`, restoreError)
+          log.error('Failed to restore trashed extension package.', restoreError, {
+            extensionId: input.extensionId
+          })
         })
       }
 
@@ -146,10 +147,7 @@ export class ExtensionPackageCommitter {
         path: packagePath
       })
     } finally {
-      await removeCleanupPaths(
-        committed ? successCleanupPaths : operationTempCleanupPaths,
-        LOG_PREFIX
-      )
+      await removeCleanupPaths(committed ? successCleanupPaths : operationTempCleanupPaths)
     }
   }
 }

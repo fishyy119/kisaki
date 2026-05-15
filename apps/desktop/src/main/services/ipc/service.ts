@@ -6,9 +6,11 @@
  */
 
 import { app, BrowserWindow, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcMainListeners, IpcMainHandlers, IpcRendererEvents } from '@shared/ipc'
+
+const log = createLogger('Ipc')
 
 export class IpcService implements IService {
   readonly id = 'ipc'
@@ -26,7 +28,7 @@ export class IpcService implements IService {
       this.flushPendingRendererMessages()
     }
     app.on('browser-window-created', this.onBrowserWindowCreated)
-    log.info('[IpcService] Initialized')
+    log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
@@ -46,7 +48,7 @@ export class IpcService implements IService {
     this.registeredHandlers = []
     this.pendingRendererMessages = []
     this.hasEverHadWindow = false
-    log.info('[IpcService] Disposed')
+    log.info('Disposed')
   }
 
   /**
@@ -87,11 +89,11 @@ export class IpcService implements IService {
           this.pendingRendererMessages.shift()
         }
         this.pendingRendererMessages.push({ channel: channelString, args })
-        log.debug(`[IpcService] Buffered IPC message until window exists: "${channelString}"`)
+        log.debug('Buffered IPC message until window exists.', { channelString: channelString })
         return
       }
 
-      log.debug(`[IpcService] Dropped IPC message (no windows): "${channelString}"`)
+      log.debug('Dropped IPC message (no windows).', { channelString: channelString })
       return
     }
 
@@ -105,10 +107,10 @@ export class IpcService implements IService {
       try {
         win.webContents.send(channelString, ...(args as unknown[]))
       } catch (error) {
-        log.error(
-          `[IpcService] Failed to send IPC message "${channelString}" to window ${win.id}:`,
-          error
-        )
+        log.error('Failed to send IPC message to window.', error, {
+          channelString: channelString,
+          winId: win.id
+        })
       }
     }
   }
@@ -142,10 +144,10 @@ export class IpcService implements IService {
         try {
           win.webContents.send(channel, ...(args as unknown[]))
         } catch (error) {
-          log.error(
-            `[IpcService] Failed to flush buffered IPC message "${channel}" to window ${win.id}:`,
-            error
-          )
+          log.error('Failed to flush buffered IPC message to window.', error, {
+            channel: channel,
+            winId: win.id
+          })
         }
       }
     }

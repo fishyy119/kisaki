@@ -2,7 +2,9 @@ import { dirname } from 'path'
 import type { DbService } from '@main/services/db'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
+
+const log = createLogger('Launcher')
 
 /**
  * Apply default launch configuration based on selected file path.
@@ -31,5 +33,5 @@ export async function applyDefaultLaunchConfig(
     .where(eq(games.id, gameId))
     .run()
 
-  log.info(`[Launcher] Applied default config for game ${gameId}: ${filePath}`)
+  log.info('Applied default config for game.', { gameId: gameId, filePath: filePath })
 }

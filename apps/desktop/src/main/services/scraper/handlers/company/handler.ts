@@ -3,7 +3,7 @@
  */
 
 import { eq } from 'drizzle-orm'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '@shared/db'
 import {
@@ -47,6 +47,8 @@ import type {
 } from './types'
 import type { SlotResult } from '../../types'
 
+const log = createLogger('Scraper')
+
 type RuntimeCompanyProfile = ScraperProfile & { slotConfigs: CompanyScraperSlotConfigs }
 
 const COMPANY_ALLOWED_CAPABILITIES = new Set(['search', ...COMPANY_SCRAPER_SLOTS] as const)
@@ -80,12 +82,12 @@ export class CompanyScraperHandler {
 
   registerProvider(provider: CompanyScraperProvider): void {
     this.providers.register(provider)
-    log.info(`[Scraper] Registered company provider: ${provider.id}`)
+    log.info('Registered company provider.', { providerId: provider.id })
   }
 
   unregisterProvider(providerId: string): void {
     this.providers.delete(providerId)
-    log.info(`[Scraper] Unregistered company provider: ${providerId}`)
+    log.info('Unregistered company provider.', { providerId: providerId })
   }
 
   getProviders(): CompanyScraperProviderInfo[] {
@@ -145,7 +147,7 @@ export class CompanyScraperHandler {
         provider: searchProvider,
         lookup,
         locale: resolveLocale,
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
       const resolveProviderId = async (
@@ -156,7 +158,7 @@ export class CompanyScraperHandler {
 
         const provider = this.providers.get(providerId)
         if (!provider) {
-          log.warn(`[Scraper] Provider '${providerId}' not available`)
+          log.warn('Provider not available.', { providerId: providerId })
           return null
         }
 
@@ -180,7 +182,7 @@ export class CompanyScraperHandler {
         resolveProviderTarget: resolveProviderId,
         buildResult: ({ providerId, target, entry, data }) =>
           this.createCompanyResult(providerId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly CompanyScraperResult[]
 
       return mergeCompanyScraperBundle([...results], runtimeProfile)
@@ -196,12 +198,15 @@ export class CompanyScraperHandler {
   ): Promise<string[]> {
     const provider = this.providers.get(providerId)
     if (!provider) {
-      log.warn(`[Scraper] Company provider '${providerId}' not available`)
+      log.warn('Company provider not available.', { providerId: providerId })
       return []
     }
 
     if (!provider.capabilities.includes(imageType)) {
-      log.warn(`[Scraper] Company provider '${providerId}' does not support slot '${imageType}'`)
+      log.warn('Company provider does not support image slot.', {
+        providerId: providerId,
+        imageType: imageType
+      })
       return []
     }
 
@@ -239,12 +244,12 @@ export class CompanyScraperHandler {
         },
         buildResult: ({ providerId: resolvedProviderId, target, entry, data }) =>
           this.createCompanyResult(resolvedProviderId, target, entry, data),
-        warn: (message, error) => log.warn(message, error)
+        warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly CompanyScraperImageResult[]
 
       return mergeCompanyScraperImages([...results], 'enrich')
     } catch (error) {
-      log.warn(`[Scraper] ${providerId}.${imageType} failed:`, error)
+      log.warn('Provider request failed.', error, { providerId: providerId, imageType: imageType })
       return []
     } finally {
       await state.dispose()

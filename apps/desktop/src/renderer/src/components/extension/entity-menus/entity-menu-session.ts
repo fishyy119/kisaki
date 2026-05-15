@@ -11,6 +11,9 @@ import type {
   ExtensionResolvedEntityMenuGroup,
   ExtensionResolvedEntityMenuNode
 } from '@shared/extension'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Extension')
 
 export interface ExtensionEntityMenuSessionController {
   resolvedMenu: Ref<ExtensionResolvedEntityMenu | null>
@@ -220,7 +223,7 @@ function getCallbackKey(
 
 function releaseSession(sessionId: string): void {
   void invokeIpc<void>('extension:release-entity-menu', { sessionId }).catch((e) => {
-    console.warn('[ExtensionEntityMenuSession] Failed to release menu session:', e)
+    log.warn('Failed to release menu session:', e)
   })
 }
 
@@ -251,7 +254,7 @@ async function invokeIpc<T>(
     return ('data' in result ? result.data : undefined) as T
   }
 
-  throw new Error(result.error)
+  throw new Error('Extension entity menu request failed.')
 }
 
 function getErrorMessage(error: unknown): string {

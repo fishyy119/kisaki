@@ -23,6 +23,9 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import PersonRelatedSitesItem from './related-site-item.vue'
 import PersonRelatedSitesItemFormDialog from './related-site-item-form-dialog.vue'
+import { createLogger } from '@renderer/core/log'
+
+const log = createLogger('Person')
 
 interface Props {
   personId: string
@@ -85,7 +88,7 @@ async function handleSave() {
     notify.success('已保存')
     open.value = false
   } catch (error) {
-    console.error('Update failed:', error)
+    log.error('Update failed:', error)
     notify.error('保存失败，请重试')
   } finally {
     isSaving.value = false

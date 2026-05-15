@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { safeStorage } from 'electron'
 import { Mutex } from 'async-mutex'
 import fse from 'fs-extra'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import {
   createUnavailableError,
   createValidationError,
@@ -12,6 +12,8 @@ import {
   type SerializableValue
 } from '@kisaki/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
+
+const log = createLogger('Extension')
 
 interface StoredSecretValue {
   version: 1
@@ -95,10 +97,9 @@ export class ExtensionRuntimeSecrets {
       const raw = await fse.readJson(secretsPath)
       return normalizeStoredSecretDocument(raw)
     } catch (error) {
-      log.warn(
-        `[RuntimeSecrets] Failed to read secrets for runtime handle "${runtimeHandle}", using empty document:`,
-        error
-      )
+      log.warn('Failed to read extension secrets document, using empty document.', error, {
+        runtimeHandle: runtimeHandle
+      })
       return {}
     }
   }
@@ -143,7 +144,7 @@ export class ExtensionRuntimeSecrets {
       const plaintext = safeStorage.decryptString(Buffer.from(entry.data, 'base64'))
       return normalizeSerializableValue(JSON.parse(plaintext))
     } catch (error) {
-      log.warn('[RuntimeSecrets] Failed to decrypt extension secret:', error)
+      log.warn('Failed to decrypt extension secret:', error)
       return undefined
     }
   }

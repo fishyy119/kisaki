@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import log from 'electron-log/main'
+import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type {
   CommandDescriptor,
@@ -10,6 +10,8 @@ import type {
   CommandListItem
 } from '@shared/command'
 import { registerCommandIpc } from './ipc'
+
+const log = createLogger('Command')
 
 const COMPLETED_EXECUTION_LIMIT = 100
 
@@ -52,7 +54,7 @@ export class CommandService implements IService {
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     registerCommandIpc(this, container.get('ipc'))
-    log.info('[CommandService] Initialized')
+    log.info('Initialized')
   }
 
   async dispose(): Promise<void> {
@@ -62,7 +64,7 @@ export class CommandService implements IService {
     this.activeExecutions.clear()
     this.completedExecutions.clear()
     this.commands.clear()
-    log.info('[CommandService] Disposed')
+    log.info('Disposed')
   }
 
   register(command: CommandRegistrationInput): () => void {
