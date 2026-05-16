@@ -104,7 +104,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
     metadata: ExtensionRuntimeMetadata,
     commandId: string
   ): void {
-    const command = this.options.command.get(commandId)
+    const command = this.options.command.registry.get(commandId)
     if (!command) {
       throw new Error(`Command "${commandId}" is not registered.`)
     }

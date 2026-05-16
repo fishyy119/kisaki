@@ -60,7 +60,7 @@ export class BackgroundTaskService implements IService {
     for (const running of this.runningTasks.values()) {
       running.controller.abort()
       if (running.commandExecutionId) {
-        this.command.cancel(running.commandExecutionId)
+        this.command.executions.cancel(running.commandExecutionId)
       }
     }
     this.runningTasks.clear()
@@ -143,7 +143,9 @@ export class BackgroundTaskService implements IService {
     }
 
     running.controller.abort()
-    return running.commandExecutionId ? this.command.cancel(running.commandExecutionId) : true
+    return running.commandExecutionId
+      ? this.command.executions.cancel(running.commandExecutionId)
+      : true
   }
 
   private async runStartupTasks(): Promise<void> {
@@ -190,7 +192,7 @@ export class BackgroundTaskService implements IService {
         }
 
         const startedAt = Date.now()
-        const execution = this.command.start({
+        const execution = this.command.executions.start({
           commandId: task.commandId,
           args: task.args,
           source: {
@@ -204,7 +206,7 @@ export class BackgroundTaskService implements IService {
           controller: taskController,
           commandExecutionId: execution.executionId
         })
-        const result = await this.command.wait(execution.executionId)
+        const result = await this.command.executions.wait(execution.executionId)
 
         lastRecord = {
           id: randomUUID(),

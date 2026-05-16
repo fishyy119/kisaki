@@ -48,7 +48,7 @@ export class ExtensionCommandContributionPoint {
       )
     }
 
-    const dispose = commandService.register({
+    const dispose = commandService.registry.register({
       ...toCommandRegistrationInput(command),
       ownerExtensionId: owner.extension.id,
       execute: async (args, context) => {

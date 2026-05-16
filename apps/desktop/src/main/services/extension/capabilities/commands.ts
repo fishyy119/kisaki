@@ -26,19 +26,19 @@ export class ExtensionCommandsCapabilityProvider {
 
   list(runtimeHandle: string): CommandListItem[] {
     this.requireRuntime(runtimeHandle)
-    return this.options.command.list().map((command) => toPublicCommandListItem(command))
+    return this.options.command.registry.list().map((command) => toPublicCommandListItem(command))
   }
 
   get(runtimeHandle: string, commandId: string): CommandDescriptor | null {
     this.requireRuntime(runtimeHandle)
-    const command = this.options.command.get(commandId)
+    const command = this.options.command.registry.get(commandId)
     return command ? toPublicCommandDescriptor(command) : null
   }
 
   start(runtimeHandle: string, request: CommandExecutionRequest): CommandExecutionStartResult {
     const metadata = this.requireRuntime(runtimeHandle)
     this.assertCommandCallable(metadata, request.commandId)
-    return this.options.command.start({
+    return this.options.command.executions.start({
       commandId: request.commandId,
       args: request.args,
       source: { kind: 'extension', extensionId: metadata.id, commandId: request.commandId }
@@ -47,7 +47,7 @@ export class ExtensionCommandsCapabilityProvider {
 
   async wait(runtimeHandle: string, executionId: string): Promise<CommandExecutionResult> {
     this.requireRuntime(runtimeHandle)
-    return toPublicCommandExecutionResult(await this.options.command.wait(executionId))
+    return toPublicCommandExecutionResult(await this.options.command.executions.wait(executionId))
   }
 
   async execute(
@@ -60,7 +60,7 @@ export class ExtensionCommandsCapabilityProvider {
 
   cancel(runtimeHandle: string, executionId: string): boolean {
     this.requireRuntime(runtimeHandle)
-    return this.options.command.cancel(executionId)
+    return this.options.command.executions.cancel(executionId)
   }
 
   releaseRuntime(_runtimeHandle: string): void {}
@@ -68,7 +68,7 @@ export class ExtensionCommandsCapabilityProvider {
   releaseAll(): void {}
 
   private assertCommandCallable(metadata: ExtensionRuntimeMetadata, commandId: string): void {
-    const command = this.options.command.get(commandId)
+    const command = this.options.command.registry.get(commandId)
     if (!command) {
       throw new Error(`Command "${commandId}" is not registered.`)
     }
