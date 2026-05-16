@@ -46,7 +46,7 @@ export class PersonUpdateHandler {
 
     const bundle = await this.scraperService.person.scrape(request.profileId, lookup)
     const incoming = buildPersonIncoming(bundle, lookup)
-    const current = loadPersonCurrent(this.dbService.db, request.rootId, selection)
+    const current = loadPersonCurrent(this.dbService.client, request.rootId, selection)
     const plan = buildPersonPlan({
       current,
       incoming,
@@ -54,7 +54,7 @@ export class PersonUpdateHandler {
       policy
     })
 
-    const applyResult = this.dbService.db.transaction((tx) =>
+    const applyResult = this.dbService.client.transaction((tx) =>
       applyPersonPlan(tx, request.rootId, plan)
     )
 

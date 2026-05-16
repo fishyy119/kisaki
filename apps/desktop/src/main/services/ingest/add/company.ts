@@ -24,7 +24,7 @@ export class CompanyAddHandler {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
 
     if (normalized.lookup.knownIds?.length) {
-      const existingByExternalId = this.dbService.helper.findExistingCompany({
+      const existingByExternalId = this.dbService.entityFinder.findExistingCompany({
         externalIds: normalized.lookup.knownIds
       })
       if (existingByExternalId) {

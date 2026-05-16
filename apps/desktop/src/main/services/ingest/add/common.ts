@@ -65,7 +65,7 @@ export function addGameToCollection(
 ): void {
   if (!targetCollectionId) return
 
-  dbService.db
+  dbService.client
     .insert(collectionGameLinks)
     .values({
       collectionId: targetCollectionId,
@@ -83,7 +83,7 @@ export function addPersonToCollection(
 ): void {
   if (!targetCollectionId) return
 
-  dbService.db
+  dbService.client
     .insert(collectionPersonLinks)
     .values({
       collectionId: targetCollectionId,
@@ -101,7 +101,7 @@ export function addCompanyToCollection(
 ): void {
   if (!targetCollectionId) return
 
-  dbService.db
+  dbService.client
     .insert(collectionCompanyLinks)
     .values({
       collectionId: targetCollectionId,
@@ -119,7 +119,7 @@ export function addCharacterToCollection(
 ): void {
   if (!targetCollectionId) return
 
-  dbService.db
+  dbService.client
     .insert(collectionCharacterLinks)
     .values({
       collectionId: targetCollectionId,

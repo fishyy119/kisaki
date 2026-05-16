@@ -365,7 +365,7 @@ export class GameIngestPersistHandler {
       return this.persistGameGraphInternal(graph, options, tx)
     }
 
-    const result = this.dbService.db.transaction((trx) =>
+    const result = this.dbService.client.transaction((trx) =>
       this.persistGameGraphInternal(graph, options, trx)
     )
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets)
@@ -543,7 +543,7 @@ export class GameIngestPersistHandler {
     tx: DbContext
   ): { gameId: string; existingReason: 'path' | 'externalId' } | undefined {
     if (options?.gameDirPath) {
-      const existingByPath = this.dbService.helper.findExistingGame(
+      const existingByPath = this.dbService.entityFinder.findExistingGame(
         { path: options.gameDirPath },
         tx
       )
@@ -554,7 +554,7 @@ export class GameIngestPersistHandler {
 
     const externalIds = node.core.externalIds
     if (externalIds?.length) {
-      const existingByExternalId = this.dbService.helper.findExistingGame({ externalIds }, tx)
+      const existingByExternalId = this.dbService.entityFinder.findExistingGame({ externalIds }, tx)
       if (existingByExternalId) {
         return { gameId: existingByExternalId.id, existingReason: 'externalId' }
       }
@@ -597,7 +597,7 @@ export class GameIngestPersistHandler {
         .onConflictDoNothing()
         .run()
 
-      const existingTag = this.dbService.helper.findExistingTag({ name: tagData.name }, tx)
+      const existingTag = this.dbService.entityFinder.findExistingTag({ name: tagData.name }, tx)
       if (!existingTag) {
         continue
       }

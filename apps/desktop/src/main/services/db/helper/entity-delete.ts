@@ -1,5 +1,5 @@
 /**
- * Entity deleter.
+ * DB entity delete helper.
  *
  * Provides delete previews and executes entity deletion with optional
  * direct-related entity cleanup inside a single DB transaction.
@@ -50,7 +50,7 @@ const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[
 
 type RelatedIdMap = Partial<Record<AllEntityType, Set<string>>>
 
-export class EntityDeleter {
+export class DbEntityDeleteHelper {
   constructor(private db: BetterSQLite3Database<typeof schema>) {}
 
   /**

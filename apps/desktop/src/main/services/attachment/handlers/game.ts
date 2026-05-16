@@ -58,7 +58,7 @@ export class GameAttachmentHandler {
     const currentBackups = game.saveBackups || []
     const updatedBackups = [...currentBackups, newBackup]
 
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({ saveBackups: updatedBackups })
       .where(eq(games.id, gameId))
@@ -85,7 +85,7 @@ export class GameAttachmentHandler {
     }
 
     const updatedBackups = currentBackups.filter((b) => b.backupAt !== backupAt)
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({ saveBackups: updatedBackups })
       .where(eq(games.id, gameId))
@@ -134,7 +134,7 @@ export class GameAttachmentHandler {
     const updatedBackups = [...currentBackups]
     updatedBackups[backupIndex] = updatedBackup
 
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({ saveBackups: updatedBackups })
       .where(eq(games.id, gameId))
@@ -209,7 +209,7 @@ export class GameAttachmentHandler {
       (a, b) => a.backupAt - b.backupAt
     )
 
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({ saveBackups: finalBackups })
       .where(eq(games.id, gameId))
@@ -222,7 +222,12 @@ export class GameAttachmentHandler {
   }
 
   private getGame(gameId: string) {
-    const result = this.dbService.db.select().from(games).where(eq(games.id, gameId)).limit(1).all()
+    const result = this.dbService.client
+      .select()
+      .from(games)
+      .where(eq(games.id, gameId))
+      .limit(1)
+      .all()
 
     const game = result[0]
     if (!game) {

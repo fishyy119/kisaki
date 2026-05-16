@@ -94,7 +94,7 @@ export class I18nService implements IService {
    */
   private detectInitialLocale(): AppLocale {
     try {
-      const result = this.dbService.db.select({ locale: settings.locale }).from(settings).get()
+      const result = this.dbService.client.select({ locale: settings.locale }).from(settings).get()
 
       if (result?.locale && APP_LOCALES.includes(result.locale)) {
         return result.locale
@@ -127,7 +127,7 @@ export class I18nService implements IService {
     await i18n.changeLanguage(targetLocale)
 
     // Persist to database (null means follow system) - sync for better-sqlite3
-    this.dbService.db.update(settings).set({ locale }).run()
+    this.dbService.client.update(settings).set({ locale }).run()
 
     // Notify other processes
     this.eventService.emit('app:locale-changed', { locale })

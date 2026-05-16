@@ -102,7 +102,11 @@ export class GameScannerHandler {
 
     let allScanners: Scanner[] = []
     try {
-      allScanners = this.dbService.db.select().from(scanners).where(eq(scanners.type, 'game')).all()
+      allScanners = this.dbService.client
+        .select()
+        .from(scanners)
+        .where(eq(scanners.type, 'game'))
+        .all()
     } catch (error) {
       log.error('Failed to get all game scanners.', { error: error })
     }
@@ -189,7 +193,11 @@ export class GameScannerHandler {
 
     let allScanners: Scanner[] = []
     try {
-      allScanners = this.dbService.db.select().from(scanners).where(eq(scanners.type, 'game')).all()
+      allScanners = this.dbService.client
+        .select()
+        .from(scanners)
+        .where(eq(scanners.type, 'game'))
+        .all()
     } catch (error) {
       log.error('Failed to get all game scanners.', { error: error })
     }
@@ -223,7 +231,7 @@ export class GameScannerHandler {
     scanner: Scanner,
     session: ScannerRunSession<Scanner>
   ): Promise<void> {
-    const settingsData = this.dbService.helper.getAppSettings()
+    const settingsData = this.dbService.entityFinder.getAppSettings()
     const {
       scannerIgnoredNames: ignoredNames,
       scannerUsePhash,
@@ -383,7 +391,7 @@ export class GameScannerHandler {
         return { kind: 'processed-only' }
       }
 
-      const existingByPath = this.dbService.helper.findExistingGame({
+      const existingByPath = this.dbService.entityFinder.findExistingGame({
         path: entity.path
       })
       if (existingByPath) {
@@ -461,7 +469,7 @@ export class GameScannerHandler {
 
   private getScannerById(scannerId: string): Scanner | null {
     try {
-      const result = this.dbService.db
+      const result = this.dbService.client
         .select()
         .from(scanners)
         .where(eq(scanners.id, scannerId))
@@ -476,7 +484,7 @@ export class GameScannerHandler {
 
   private getScraperProfile(profileId: string): ScraperProfile | null {
     try {
-      const result = this.dbService.db
+      const result = this.dbService.client
         .select()
         .from(scraperProfiles)
         .where(eq(scraperProfiles.id, profileId))

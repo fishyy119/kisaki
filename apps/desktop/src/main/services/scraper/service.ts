@@ -47,7 +47,7 @@ export class ScraperService implements IContentService {
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
-    this.db = dbService.db
+    this.db = dbService.client
     const i18n = container.get('i18n')
     const ipcService = container.get('ipc')
     const providerDeps = createScraperProviderDeps({
@@ -55,10 +55,10 @@ export class ScraperService implements IContentService {
       log
     })
 
-    this.game = new GameScraperHandler(dbService.db, i18n)
-    this.person = new PersonScraperHandler(dbService.db, i18n)
-    this.company = new CompanyScraperHandler(dbService.db, i18n)
-    this.character = new CharacterScraperHandler(dbService.db, i18n)
+    this.game = new GameScraperHandler(dbService.client, i18n)
+    this.person = new PersonScraperHandler(dbService.client, i18n)
+    this.company = new CompanyScraperHandler(dbService.client, i18n)
+    this.character = new CharacterScraperHandler(dbService.client, i18n)
     this.registerBuiltinProviders(providerDeps)
     registerScraperIpc(this, ipcService)
 

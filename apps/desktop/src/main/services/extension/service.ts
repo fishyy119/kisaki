@@ -91,7 +91,7 @@ export class ExtensionService implements IService {
     const packageVerifier = new ExtensionPackageVerifier()
     this.ipc = container.get('ipc')
 
-    const installationStore = new ExtensionInstallationStore(dbService.db)
+    const installationStore = new ExtensionInstallationStore(dbService.client)
     this.packageCommitter = new ExtensionPackageCommitter(layout, installationStore)
     this.packageRecovery = new ExtensionPackageRecovery(
       layout,
@@ -111,12 +111,12 @@ export class ExtensionService implements IService {
     iconManager.registerProtocolHandler()
 
     this.signers = new ExtensionSignerTrustManager({
-      store: new ExtensionSignerTrustStore(dbService.db),
+      store: new ExtensionSignerTrustStore(dbService.client),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onTrustedSignersChanged: () => this.emitTrustedSignersChanged()
     })
     this.repositories = new ExtensionRepositoryManager({
-      store: new ExtensionRepositoryStore(dbService.db, {
+      store: new ExtensionRepositoryStore(dbService.client, {
         allowInsecureLocalUrls: !app.isPackaged
       }),
       fetcher: new ExtensionRepositoryFetcher(networkService, {

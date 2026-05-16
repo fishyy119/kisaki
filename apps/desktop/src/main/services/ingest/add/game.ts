@@ -67,7 +67,9 @@ export class GameAddHandler {
     options?: IngestAddGameDirectOptions | IngestAddGameFromScraperOptions
   ): IngestAddGameDirectResult | undefined {
     if (options?.gameDirPath) {
-      const existingByPath = this.dbService.helper.findExistingGame({ path: options.gameDirPath })
+      const existingByPath = this.dbService.entityFinder.findExistingGame({
+        path: options.gameDirPath
+      })
       if (existingByPath) {
         addGameToCollection(this.dbService, existingByPath.id, options.targetCollectionId)
         return {
@@ -79,7 +81,9 @@ export class GameAddHandler {
     }
 
     if (knownIds?.length) {
-      const existingByExternalId = this.dbService.helper.findExistingGame({ externalIds: knownIds })
+      const existingByExternalId = this.dbService.entityFinder.findExistingGame({
+        externalIds: knownIds
+      })
       if (existingByExternalId) {
         addGameToCollection(this.dbService, existingByExternalId.id, options?.targetCollectionId)
         return {

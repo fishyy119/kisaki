@@ -213,8 +213,8 @@ export class ExtensionLibraryRelationStore {
         }
 
         const rows = condition
-          ? this.options.db.db.select().from(config.table).where(condition).all()
-          : this.options.db.db.select().from(config.table).all()
+          ? this.options.db.client.select().from(config.table).where(condition).all()
+          : this.options.db.client.select().from(config.table).all()
 
         for (const row of rows) {
           relations.push(toRelation(config, row))
@@ -232,7 +232,7 @@ export class ExtensionLibraryRelationStore {
     validateRelationInput(config, input)
 
     try {
-      this.options.db.db.insert(config.table).values(buildInsertValues(config, input)).run()
+      this.options.db.client.insert(config.table).values(buildInsertValues(config, input)).run()
       const row = this.selectOne(
         config,
         input as unknown as LibraryRelationSelector<LibraryRelationKind>
@@ -261,7 +261,7 @@ export class ExtensionLibraryRelationStore {
         return toRelation(config, existing) as LibraryRelation<K>
       }
 
-      this.options.db.db
+      this.options.db.client
         .update(config.table)
         .set(values)
         .where(buildSelectorCondition(config, selector))
@@ -286,7 +286,7 @@ export class ExtensionLibraryRelationStore {
 
     try {
       this.selectOne(config, selector as unknown as LibraryRelationSelector<LibraryRelationKind>)
-      this.options.db.db
+      this.options.db.client
         .delete(config.table)
         .where(
           buildSelectorCondition(
@@ -304,7 +304,7 @@ export class ExtensionLibraryRelationStore {
     config: RelationConfig,
     selector: LibraryRelationSelector<LibraryRelationKind>
   ): Record<string, unknown> {
-    const row = this.options.db.db
+    const row = this.options.db.client
       .select()
       .from(config.table)
       .where(buildSelectorCondition(config, selector))

@@ -169,7 +169,7 @@ async function onAppReady(): Promise<void> {
   await scannerService.game.scheduleAllScanners()
 
   // Check if we should scan all scanners on app start
-  // const settings = await dbService.helper.getAppSettings()
+  // const settings = await dbService.entityFinder.getAppSettings()
   // if (settings.scannerStartAtOpen) {
   //   scannerService.game.scanAllScanners().catch((error) => {
   //     log.error('Failed to scan all scanners on startup.', error)

@@ -55,7 +55,7 @@ export class CharacterUpdateHandler {
       selection.relationSurfaces.length > 0 && bundle
         ? buildCharacterGraph(bundle, lookup)
         : undefined
-    const current = loadCharacterCurrent(this.dbService.db, request.rootId, selection)
+    const current = loadCharacterCurrent(this.dbService.client, request.rootId, selection)
     const plan = buildCharacterPlan({
       current,
       incoming,
@@ -64,7 +64,7 @@ export class CharacterUpdateHandler {
       policy
     })
 
-    const applyResult = this.dbService.db.transaction((tx) =>
+    const applyResult = this.dbService.client.transaction((tx) =>
       applyCharacterPlan(tx, request.rootId, plan, this.persistHandlers)
     )
 

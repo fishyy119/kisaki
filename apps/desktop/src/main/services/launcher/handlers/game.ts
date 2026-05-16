@@ -40,7 +40,12 @@ export class GameLauncherHandler {
     gameId: string,
     options?: { cancelBehavior?: 'return' | 'throw' }
   ): Promise<void> {
-    const [game] = this.dbService.db.select().from(games).where(eq(games.id, gameId)).limit(1).all()
+    const [game] = this.dbService.client
+      .select()
+      .from(games)
+      .where(eq(games.id, gameId))
+      .limit(1)
+      .all()
     if (!game) {
       throw new Error('Game not found')
     }
@@ -59,7 +64,7 @@ export class GameLauncherHandler {
         return
       }
 
-      this.dbService.db
+      this.dbService.client
         .update(games)
         .set({ launcherPath: selected })
         .where(eq(games.id, game.id))

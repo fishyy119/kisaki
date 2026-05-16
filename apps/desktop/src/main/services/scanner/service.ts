@@ -56,7 +56,7 @@ export class ScannerService implements IMediaService {
     entityDepth: number,
     rules: NameExtractionRule[]
   ): Promise<ExtractionTestResult[]> {
-    const settingsData = this.dbService.helper.getAppSettings()
+    const settingsData = this.dbService.entityFinder.getAppSettings()
     const entities = await scanForEntities(scannerPath, {
       entityDepth,
       ignoredNames: settingsData.scannerIgnoredNames,

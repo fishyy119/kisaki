@@ -46,7 +46,7 @@ export class CompanyUpdateHandler {
 
     const bundle = await this.scraperService.company.scrape(request.profileId, lookup)
     const incoming = buildCompanyIncoming(bundle, lookup)
-    const current = loadCompanyCurrent(this.dbService.db, request.rootId, selection)
+    const current = loadCompanyCurrent(this.dbService.client, request.rootId, selection)
     const plan = buildCompanyPlan({
       current,
       incoming,
@@ -54,7 +54,7 @@ export class CompanyUpdateHandler {
       policy
     })
 
-    const applyResult = this.dbService.db.transaction((tx) =>
+    const applyResult = this.dbService.client.transaction((tx) =>
       applyCompanyPlan(tx, request.rootId, plan)
     )
 

@@ -218,7 +218,7 @@ export class UpdaterService implements IService {
 
   private loadUpdaterSettings(): UpdaterSettings {
     try {
-      const row = this.dbService.db
+      const row = this.dbService.client
         .select({
           autoCheck: settings.updaterAutoCheck,
           allowPrerelease: settings.updaterAllowPrerelease

@@ -4,7 +4,7 @@ import type { DbService } from './service'
 
 export function registerDbIpc(service: DbService, ipc: IpcService): void {
   ipc.handle('db:execute', async (_, sqlstr, params, method) =>
-    wrapIpc(() => service.execute(sqlstr, params, method))
+    wrapIpc(() => service.sql.execute(sqlstr, params, method))
   )
 
   ipc.handle('db:rebuild-fts', async (_, entityType) =>
@@ -14,11 +14,11 @@ export function registerDbIpc(service: DbService, ipc: IpcService): void {
   ipc.handle('db:rebuild-all-fts', async () => wrapIpcVoid(() => service.fts.rebuildAll()))
 
   ipc.handle('db:preview-entity-delete', async (_, params) =>
-    wrapIpc(() => service.helper.previewEntityDelete(params))
+    wrapIpc(() => service.entityDelete.preview(params))
   )
 
   ipc.handle('db:delete-entities', async (_, params) =>
-    wrapIpc(() => service.helper.deleteEntities(params))
+    wrapIpc(() => service.entityDelete.delete(params))
   )
 
   ipc.handle('db:attachment-set-file', async (_, tableName, rowId, field, input) =>

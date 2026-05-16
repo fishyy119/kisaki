@@ -40,7 +40,7 @@ export class PersonIngestPersistHandler {
       return this.persistPersonGraphInternal(graph, options, tx)
     }
 
-    const result = this.dbService.db.transaction((trx) =>
+    const result = this.dbService.client.transaction((trx) =>
       this.persistPersonGraphInternal(graph, options, trx)
     )
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets)
@@ -106,7 +106,7 @@ export class PersonIngestPersistHandler {
         .onConflictDoNothing()
         .run()
 
-      const existingTag = this.dbService.helper.findExistingTag({ name: tagData.name }, tx)
+      const existingTag = this.dbService.entityFinder.findExistingTag({ name: tagData.name }, tx)
       if (!existingTag) {
         continue
       }
@@ -145,7 +145,7 @@ export class PersonIngestPersistHandler {
     const core = node.core
 
     if (core.externalIds?.length) {
-      const existingByExternalId = this.dbService.helper.findExistingPerson(
+      const existingByExternalId = this.dbService.entityFinder.findExistingPerson(
         { externalIds: core.externalIds },
         tx
       )

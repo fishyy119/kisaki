@@ -230,7 +230,7 @@ export class ExtensionLibraryAttachmentStore {
   }
 
   private getRow(table: AttachmentTableWithId, id: string): Record<string, unknown> {
-    const row = this.options.db.db.select().from(table).where(eq(table.id, id)).get()
+    const row = this.options.db.client.select().from(table).where(eq(table.id, id)).get()
     if (!row) {
       throw createNotFoundError(`Library entity "${id}" was not found.`)
     }

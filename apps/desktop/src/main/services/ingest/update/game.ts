@@ -57,7 +57,7 @@ export class GameUpdateHandler {
           ? buildGameGraph(bundle, lookup)
           : buildDirectGameGraph(lookup)
         : undefined
-    const current = loadGameCurrent(this.dbService.db, request.rootId, selection)
+    const current = loadGameCurrent(this.dbService.client, request.rootId, selection)
     const plan = buildGamePlan({
       current,
       incoming,
@@ -66,7 +66,7 @@ export class GameUpdateHandler {
       policy
     })
 
-    const applyResult = this.dbService.db.transaction((tx) =>
+    const applyResult = this.dbService.client.transaction((tx) =>
       applyGamePlan(tx, request.rootId, plan, this.persistHandlers)
     )
 

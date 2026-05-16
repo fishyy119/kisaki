@@ -21,7 +21,7 @@ export async function applyDefaultLaunchConfig(
 ): Promise<void> {
   const gameDirPath = dirname(filePath)
 
-  dbService.db
+  dbService.client
     .update(games)
     .set({
       launcherPath: filePath,

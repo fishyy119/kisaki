@@ -24,7 +24,7 @@ export class PersonAddHandler {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
 
     if (normalized.lookup.knownIds?.length) {
-      const existingByExternalId = this.dbService.helper.findExistingPerson({
+      const existingByExternalId = this.dbService.entityFinder.findExistingPerson({
         externalIds: normalized.lookup.knownIds
       })
       if (existingByExternalId) {

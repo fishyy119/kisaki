@@ -113,7 +113,7 @@ export class GameMonitorHandler {
     }
 
     // Query game info (sync for better-sqlite3)
-    const gameList = this.dbService.db
+    const gameList = this.dbService.client
       .select()
       .from(games)
       .where(eq(games.id, gameId))
@@ -369,7 +369,7 @@ export class GameMonitorHandler {
     }
 
     // Update database (sync for better-sqlite3)
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({ lastActiveAt: new Date(now) })
       .where(eq(games.id, gameId))
@@ -418,7 +418,7 @@ export class GameMonitorHandler {
     info.foregroundStartTime = undefined
 
     // Update database (sync for better-sqlite3)
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({ lastActiveAt: new Date(now) })
       .where(eq(games.id, gameId))
@@ -496,7 +496,7 @@ export class GameMonitorHandler {
     const now = Date.now()
 
     // Insert new session record (sync for better-sqlite3)
-    this.dbService.db
+    this.dbService.client
       .insert(gameSessions)
       .values({
         gameId,
@@ -506,7 +506,7 @@ export class GameMonitorHandler {
       .run()
 
     // Update lastActiveAt and increment totalDuration on the game (sync for better-sqlite3)
-    this.dbService.db
+    this.dbService.client
       .update(games)
       .set({
         lastActiveAt: new Date(now),

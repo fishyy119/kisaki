@@ -129,7 +129,7 @@ export class BackgroundTaskService implements IService {
   async delete(taskId: string): Promise<void> {
     this.clearTaskTimer(taskId)
     this.tasks.delete(taskId)
-    this.db.db.delete(backgroundTasks).where(eq(backgroundTasks.id, taskId)).run()
+    this.db.client.delete(backgroundTasks).where(eq(backgroundTasks.id, taskId)).run()
   }
 
   async runNow(taskId: string): Promise<BackgroundTaskRunRecord> {
@@ -283,7 +283,7 @@ export class BackgroundTaskService implements IService {
   }
 
   private load(): void {
-    const rows = this.db.db
+    const rows = this.db.client
       .select()
       .from(backgroundTasks)
       .orderBy(asc(backgroundTasks.createdAt))
@@ -297,7 +297,7 @@ export class BackgroundTaskService implements IService {
 
   private persistTask(task: BackgroundTask): void {
     const values = toTaskRow(task)
-    this.db.db
+    this.db.client
       .insert(backgroundTasks)
       .values(values)
       .onConflictDoUpdate({

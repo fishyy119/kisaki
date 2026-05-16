@@ -3,7 +3,7 @@
  *
  * Unified database service that provides:
  * - Database connection and lifecycle management
- * - Query helpers for finding existing entities
+ * - Entity lookup and deletion helpers
  * - Attachment storage (via attachment sub-store)
  * - Thumbnail generation (via thumbnail sub-store)
  */
@@ -11,10 +11,9 @@
 import Database from 'better-sqlite3'
 import { drizzle, BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { protocol, net } from 'electron'
+import { app, net, protocol } from 'electron'
 import { pathToFileURL } from 'url'
 import fse from 'fs-extra'
-import { app } from 'electron'
 import path from 'path'
 import { createLogger } from '@main/log'
 import * as schema from '@shared/db'
@@ -22,11 +21,12 @@ import { settings } from '@shared/db'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { AttachmentStore } from './attachment'
 import { ThumbnailStore } from './thumbnail'
-import { HelperStore } from './helper'
+import { DbEntityDeleteHelper, DbEntityFinderHelper } from './helper'
 import { FtsStore } from './fts'
 import { TriggerStore } from './trigger'
 import { DbEventProjector } from './projector'
 import { registerDbIpc } from './ipc'
+import { SqlExecutor } from './sql'
 
 const log = createLogger('Db')
 
@@ -50,18 +50,20 @@ export class DbService implements IService {
   readonly deps = ['event', 'ipc', 'network'] as const satisfies readonly ServiceName[]
 
   // Database infrastructure
-  sqlite!: Database.Database
-  db!: BetterSQLite3Database<typeof schema>
-  dbPath!: string
-  storageDir!: string
+  private sqlite!: Database.Database
+  client!: BetterSQLite3Database<typeof schema>
+  private dbPath!: string
+  private storageDir!: string
 
-  // Sub-stores (namespace-style API)
+  // First-level capabilities
   attachment!: AttachmentStore
-  thumbnail!: ThumbnailStore
-  helper!: HelperStore
+  private thumbnail!: ThumbnailStore
+  entityFinder!: DbEntityFinderHelper
+  entityDelete!: DbEntityDeleteHelper
   fts!: FtsStore
-  trigger!: TriggerStore
-  projector!: DbEventProjector
+  sql!: SqlExecutor
+  private trigger!: TriggerStore
+  private projector!: DbEventProjector
 
   // ==================== Lifecycle ====================
 
@@ -74,10 +76,10 @@ export class DbService implements IService {
 
     this.sqlite = new Database(this.dbPath)
     this.sqlite.pragma('journal_mode = WAL')
-    this.db = drizzle(this.sqlite, { schema })
+    this.client = drizzle(this.sqlite, { schema })
 
     // Run migrations
-    migrate(this.db, { migrationsFolder: path.join(__dirname, '../../drizzle') })
+    migrate(this.client, { migrationsFolder: path.join(__dirname, '../../drizzle') })
 
     // Initialize SQLite triggers for automatic event emission
     // IMPORTANT: Must register emit_db_change function BEFORE any DB writes
@@ -89,15 +91,17 @@ export class DbService implements IService {
     this.projector.init()
 
     // Initialize settings singleton table (after triggers are set up)
-    this.db.insert(settings).values({ id: 0 }).onConflictDoNothing().run()
+    this.client.insert(settings).values({ id: 0 }).onConflictDoNothing().run()
 
     const network = container.get('network')
 
-    // Initialize sub-stores
+    // Initialize first-level capabilities
     this.thumbnail = new ThumbnailStore()
-    this.attachment = new AttachmentStore(this.db, this.storageDir, this.thumbnail, network)
-    this.helper = new HelperStore(this.db)
+    this.attachment = new AttachmentStore(this.client, this.storageDir, this.thumbnail, network)
+    this.entityFinder = new DbEntityFinderHelper(this.client)
+    this.entityDelete = new DbEntityDeleteHelper(this.client)
     this.fts = new FtsStore(this.sqlite)
+    this.sql = new SqlExecutor(this.sqlite)
 
     // Initialize FTS5 tables and triggers
     this.fts.init()
@@ -179,34 +183,5 @@ export class DbService implements IService {
       this.sqlite.close()
       log.info('Database connection closed')
     }
-  }
-
-  // ==================== Raw SQL Execution ====================
-
-  execute(sqlstr: string, params: unknown[], method: 'run' | 'all' | 'values' | 'get') {
-    const stmt = this.sqlite.prepare(sqlstr)
-    type StatementMethod = (typeof stmt)['run'] | (typeof stmt)['all'] | (typeof stmt)['get']
-    const fn = stmt[method as keyof typeof stmt] as StatementMethod
-    const ret = fn.call(stmt, ...params)
-    return this.toDrizzleResult(ret, method, stmt)
-  }
-
-  private toDrizzleResult(
-    ret: any,
-    method: 'run' | 'all' | 'values' | 'get',
-    stmt: Database.Statement
-  ) {
-    if (method === 'run') return ret
-    if (method === 'get') {
-      if (ret === undefined) return []
-      const columns = stmt.columns().map((c) => c.name)
-      return columns.map((col) => ret[col])
-    }
-    if (Array.isArray(ret)) {
-      if (ret.length === 0) return []
-      const columns = stmt.columns().map((c) => c.name)
-      return ret.map((row) => columns.map((col) => row[col]))
-    }
-    return ret
   }
 }

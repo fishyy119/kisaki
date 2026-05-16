@@ -45,7 +45,7 @@ export class WindowService implements IService {
 
   private loadMainWindowCloseActionFromDb(): MainWindowCloseAction {
     try {
-      const row = this.dbService.db
+      const row = this.dbService.client
         .select({ action: settings.mainWindowCloseAction })
         .from(settings)
         .get()

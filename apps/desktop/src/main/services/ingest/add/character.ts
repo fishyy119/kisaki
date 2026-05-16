@@ -28,7 +28,7 @@ export class CharacterAddHandler {
     const normalized = normalizeIngestLookupInput(profileId, lookup)
 
     if (normalized.lookup.knownIds?.length) {
-      const existingByExternalId = this.dbService.helper.findExistingCharacter({
+      const existingByExternalId = this.dbService.entityFinder.findExistingCharacter({
         externalIds: normalized.lookup.knownIds
       })
       if (existingByExternalId) {

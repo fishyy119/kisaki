@@ -195,7 +195,7 @@ export class ExtensionLibraryEntityStore {
     ensureNonEmptyString(id, 'library entity id')
 
     try {
-      const row = this.options.db.db
+      const row = this.options.db.client
         .select()
         .from(config.table)
         .where(eq(config.table.id, id))
@@ -205,7 +205,7 @@ export class ExtensionLibraryEntityStore {
       }
 
       const externalIds = config.externalIds
-        ? (loadExternalIds(this.options.db.db, config.externalIds, [id]).get(id) ?? [])
+        ? (loadExternalIds(this.options.db.client, config.externalIds, [id]).get(id) ?? [])
         : []
       return config.toDto(row as TTable['$inferSelect'], externalIds)
     } catch (error) {
@@ -244,7 +244,7 @@ export class ExtensionLibraryEntityStore {
         conditions.push(searchCondition)
       }
 
-      let builder = this.options.db.db.select().from(config.table).$dynamic()
+      let builder = this.options.db.client.select().from(config.table).$dynamic()
       if (conditions.length > 0) {
         builder = builder.where(and(...conditions) as SQL)
       }
@@ -267,7 +267,7 @@ export class ExtensionLibraryEntityStore {
       const rows = builder.all()
       const ids = rows.map((row) => row.id)
       const externalIdsByEntity = config.externalIds
-        ? loadExternalIds(this.options.db.db, config.externalIds, ids)
+        ? loadExternalIds(this.options.db.client, config.externalIds, ids)
         : new Map<string, readonly ExternalId[]>()
 
       return rows.map((row) =>
@@ -293,7 +293,7 @@ export class ExtensionLibraryEntityStore {
 
     try {
       const id = nanoid()
-      this.options.db.db.transaction((tx) => {
+      this.options.db.client.transaction((tx) => {
         tx.insert(config.table).values(config.buildCreateValues(id, input)).run()
         if (config.externalIds) {
           syncExternalIds(tx, config.externalIds, id, input.externalIds)
@@ -325,7 +325,7 @@ export class ExtensionLibraryEntityStore {
     ensureNonEmptyString(id, 'library entity id')
 
     try {
-      this.options.db.db.transaction((tx) => {
+      this.options.db.client.transaction((tx) => {
         const existing = tx.select().from(config.table).where(eq(config.table.id, id)).get()
         if (!existing) {
           throw createNotFoundError(`Library entity "${id}" was not found.`)
@@ -366,7 +366,7 @@ export class ExtensionLibraryEntityStore {
     ensureNonEmptyString(id, 'library entity id')
 
     try {
-      const existing = this.options.db.db
+      const existing = this.options.db.client
         .select()
         .from(config.table)
         .where(eq(config.table.id, id))
@@ -375,7 +375,7 @@ export class ExtensionLibraryEntityStore {
         throw createNotFoundError(`Library entity "${id}" was not found.`)
       }
 
-      this.options.db.db.delete(config.table).where(eq(config.table.id, id)).run()
+      this.options.db.client.delete(config.table).where(eq(config.table.id, id)).run()
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to remove the library entity.')
     }
