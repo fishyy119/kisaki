@@ -26,7 +26,12 @@ export class MonitorService implements IMediaService {
     const attachmentService = container.get('attachment')
 
     // Create handler with attachment handler for auto-backup
-    this.game = new GameMonitorHandler(dbService, ipcService, eventService, attachmentService.game)
+    this.game = new GameMonitorHandler(
+      dbService,
+      ipcService,
+      eventService,
+      attachmentService.gameHandler
+    )
 
     registerMonitorIpc(this, ipcService)
     log.info('Initialized')
