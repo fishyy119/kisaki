@@ -9,6 +9,7 @@ export { DeeplinkRouter } from './router'
 export {
   compileDeeplinkRoutePattern,
   matchDeeplinkRoutePath,
+  matchNormalizedDeeplinkRoutePath,
   normalizeDeeplinkRoutePath,
   normalizeDeeplinkRoutePattern
 } from './route-pattern'

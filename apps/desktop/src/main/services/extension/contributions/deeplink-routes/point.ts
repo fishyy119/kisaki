@@ -6,17 +6,15 @@ import type {
 } from '@kisaki/extension-api'
 import { createLogger } from '@main/log'
 import type { ExtensionDeeplinkRouteRegistrationInfo } from '@shared/extension'
-import type {
-  DeeplinkResult,
-  DeeplinkRouteContext,
-  DeeplinkRouteHandler
-} from '@main/services/deeplink'
 import {
   compileDeeplinkRoutePattern,
   matchNormalizedDeeplinkRoutePath,
   normalizeDeeplinkRoutePattern,
-  type CompiledDeeplinkRoutePattern
-} from '@main/services/deeplink/route-pattern'
+  type CompiledDeeplinkRoutePattern,
+  type DeeplinkResult,
+  type DeeplinkRouteContext,
+  type DeeplinkRouteHandler
+} from '@main/services/deeplink'
 import {
   getRuntimeContributionKey,
   requireContributionOwner,
@@ -45,7 +43,7 @@ export class ExtensionDeeplinkRouteContributionPoint {
   private nextOrder = 0
 
   constructor(private readonly options: ExtensionContributionDomainOptions) {
-    options.deeplink?.registerRoute(EXTENSION_DEEPLINK_ROUTE, new ExtensionDeeplinkHandler(this))
+    options.deeplink?.router.register(EXTENSION_DEEPLINK_ROUTE, new ExtensionDeeplinkHandler(this))
   }
 
   register(
