@@ -21,7 +21,7 @@ export class AttachmentService implements IMediaService {
   readonly deps = ['db', 'ipc', 'network'] as const satisfies readonly ServiceName[]
 
   cropper!: AttachmentCropper
-  gameHandler!: GameAttachmentHandler
+  game!: GameAttachmentHandler
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const dbService = container.get('db')
@@ -32,7 +32,7 @@ export class AttachmentService implements IMediaService {
       tempDir: path.join(app.getPath('temp'), 'kisaki', 'crop'),
       downloadBuffer: async (url) => await networkService.downloadBuffer(url)
     })
-    this.gameHandler = new GameAttachmentHandler(dbService)
+    this.game = new GameAttachmentHandler(dbService)
     registerAttachmentIpc(this, ipcService)
 
     this.cropper.cleanupOldTempCrops(24 * 60 * 60 * 1000).catch((error) => {
