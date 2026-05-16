@@ -26,7 +26,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
 
   list(runtimeHandle: string): BackgroundTask[] {
     const metadata = this.requireRuntime(runtimeHandle)
-    return this.options.backgroundTask
+    return this.options.backgroundTask.store
       .list()
       .filter((task) => task.ownerExtensionId === metadata.id)
       .map((task) => toPublicBackgroundTask(task))
@@ -34,7 +34,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
 
   get(runtimeHandle: string, taskId: string): BackgroundTask | null {
     const metadata = this.requireRuntime(runtimeHandle)
-    const task = this.options.backgroundTask.get(taskId)
+    const task = this.options.backgroundTask.store.get(taskId)
     if (!task || task.ownerExtensionId !== metadata.id) {
       return null
     }
@@ -44,7 +44,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
   async create(runtimeHandle: string, input: BackgroundTaskCreateInput): Promise<BackgroundTask> {
     const metadata = this.requireRuntime(runtimeHandle)
     this.assertCommandOwnedByExtension(metadata, input.commandId)
-    const task = await this.options.backgroundTask.create({
+    const task = await this.options.backgroundTask.store.create({
       name: input.name,
       ownerExtensionId: metadata.id,
       createdBy: 'extension',
@@ -68,7 +68,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
       this.assertCommandOwnedByExtension(metadata, patch.commandId)
     }
 
-    const task = await this.options.backgroundTask.update(taskId, patch)
+    const task = await this.options.backgroundTask.store.update(taskId, patch)
     return toPublicBackgroundTask(task)
   }
 
@@ -79,25 +79,27 @@ export class ExtensionBackgroundTasksCapabilityProvider {
   ): Promise<BackgroundTask> {
     const metadata = this.requireRuntime(runtimeHandle)
     this.requireOwnedTask(metadata, taskId)
-    return toPublicBackgroundTask(await this.options.backgroundTask.setEnabled(taskId, enabled))
+    return toPublicBackgroundTask(
+      await this.options.backgroundTask.store.setEnabled(taskId, enabled)
+    )
   }
 
   async delete(runtimeHandle: string, taskId: string): Promise<void> {
     const metadata = this.requireRuntime(runtimeHandle)
     this.requireOwnedTask(metadata, taskId)
-    await this.options.backgroundTask.delete(taskId)
+    await this.options.backgroundTask.store.delete(taskId)
   }
 
   async run(runtimeHandle: string, taskId: string): Promise<BackgroundTaskRunRecord> {
     const metadata = this.requireRuntime(runtimeHandle)
     this.requireOwnedTask(metadata, taskId)
-    return toPublicBackgroundTaskRunRecord(await this.options.backgroundTask.runNow(taskId))
+    return toPublicBackgroundTaskRunRecord(await this.options.backgroundTask.runner.runNow(taskId))
   }
 
   cancel(runtimeHandle: string, taskId: string): boolean {
     const metadata = this.requireRuntime(runtimeHandle)
     this.requireOwnedTask(metadata, taskId)
-    return this.options.backgroundTask.cancel(taskId)
+    return this.options.backgroundTask.runner.cancel(taskId)
   }
 
   private assertCommandOwnedByExtension(
@@ -115,7 +117,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
   }
 
   private requireOwnedTask(metadata: ExtensionRuntimeMetadata, taskId: string): AppBackgroundTask {
-    const task = this.options.backgroundTask.get(taskId)
+    const task = this.options.backgroundTask.store.get(taskId)
     if (!task || task.ownerExtensionId !== metadata.id) {
       throw new Error(`Background task "${taskId}" is not owned by "${metadata.id}".`)
     }
