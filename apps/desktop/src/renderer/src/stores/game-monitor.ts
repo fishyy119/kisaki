@@ -115,10 +115,9 @@ export const useGameMonitorStore = defineStore('gameMonitor', () => {
 
     // Fetch initial status from main process
     try {
-      const result = await ipcManager.invoke('monitor:get-game-status')
+      const result = await ipcManager.invoke('monitor:list-game-statuses')
       if (result.success && result.data) {
-        const statusList = Array.isArray(result.data) ? result.data : [result.data]
-        for (const status of statusList) {
+        for (const status of result.data) {
           setGameStatus(status.gameId, {
             isRunning: status.isRunning,
             isForeground: status.isForeground,

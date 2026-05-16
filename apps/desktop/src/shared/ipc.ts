@@ -56,7 +56,7 @@ import type {
   GameUpdateRequest,
   PersonUpdateRequest
 } from './ingest/update'
-import type { GameRunningStatus } from './monitor'
+import type { GameMonitorPathConfig, GameRunningStatus } from './monitor'
 import type { PortableStatus, PortableSwitchTarget } from './portable'
 import type {
   ExtensionCatalogSearchRequest,
@@ -374,14 +374,9 @@ export interface IpcMainHandlers {
   // Monitor
   'monitor:start-game': (gameId: string) => IpcVoidResult
   'monitor:stop-game': (gameId: string) => IpcVoidResult
-  'monitor:get-game-status': (gameId?: string) => IpcResult<GameRunningStatus | GameRunningStatus[]>
-  'monitor:compute-effective-path': (config: {
-    monitorPath: string | null
-    monitorMode: 'folder' | 'file' | 'process'
-    gameDirPath: string | null
-    launcherMode: 'file' | 'url' | 'exec'
-    launcherPath: string | null
-  }) => IpcResult<string | null>
+  'monitor:list-game-statuses': () => IpcResult<GameRunningStatus[]>
+  'monitor:get-game-status': (gameId: string) => IpcResult<GameRunningStatus>
+  'monitor:compute-effective-path': (config: GameMonitorPathConfig) => IpcResult<string | null>
 
   // Launcher
   'launcher:kill-game': (gameId: string) => IpcVoidResult

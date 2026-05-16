@@ -32,24 +32,6 @@ export class MonitorService implements IMediaService {
     log.info('Initialized')
   }
 
-  getGameStatus(gameId?: string) {
-    if (!gameId) {
-      return this.game.getMonitoringStatus()
-    }
-
-    const status = this.game.getGameStatus(gameId)
-    if (!status) {
-      throw new Error(`No status found for game ${gameId}`)
-    }
-    return status
-  }
-
-  computeEffectivePath(
-    config: Parameters<typeof GameMonitorHandler.computeEffectiveMonitorPath>[0]
-  ) {
-    return GameMonitorHandler.computeEffectiveMonitorPath(config)
-  }
-
   async dispose(): Promise<void> {
     await this.game.cleanup()
     log.info('Disposed')

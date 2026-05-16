@@ -13,15 +13,15 @@
 
 import { getProcesses, type ProcessInfo } from '@ximu3/process-list'
 import { createLogger } from '@main/log'
-import { Game, gameSessions } from '@shared/db'
-import type { GameRunningStatus } from '@shared/monitor'
+import { games, gameSessions } from '@shared/db'
+import type { Game } from '@shared/db'
+import type { GameMonitorPathConfig, GameRunningStatus } from '@shared/monitor'
 import type { DbService } from '@main/services/db'
-import { games } from '@shared/db'
 import { eq, sql } from 'drizzle-orm'
 import { normalize, dirname, basename } from 'path'
 import type { IpcService } from '@main/services/ipc'
 import type { EventService } from '@main/services/event'
-import type { GameAttachmentHandler } from '@main/services/attachment/handlers/game'
+import type { GameAttachmentHandler } from '@main/services/attachment'
 
 const log = createLogger('Monitor')
 
@@ -59,16 +59,10 @@ export class GameMonitorHandler {
   }
 
   /**
-   * Configuration input for computing effective monitor path.
-   * Used by both internal methods and IPC handler.
+   * Resolves the configured monitor target, applying the same fallback chain used
+   * when monitoring starts.
    */
-  static computeEffectiveMonitorPath(config: {
-    monitorPath: string | null
-    monitorMode: 'folder' | 'file' | 'process'
-    gameDirPath: string | null
-    launcherMode: 'file' | 'url' | 'exec'
-    launcherPath: string | null
-  }): string | null {
+  computeEffectivePath(config: GameMonitorPathConfig): string | null {
     // User explicitly set a value - use it
     if (config.monitorPath) {
       return config.monitorPath
@@ -126,7 +120,7 @@ export class GameMonitorHandler {
     }
 
     // Compute effective monitor path with fallback chain
-    const effectiveMonitorPath = GameMonitorHandler.computeEffectiveMonitorPath(game)
+    const effectiveMonitorPath = this.computeEffectivePath(game)
     if (!effectiveMonitorPath) {
       throw new Error('Cannot determine monitor path: no valid configuration found')
     }
@@ -180,7 +174,7 @@ export class GameMonitorHandler {
   /**
    * Get status of all monitored games
    */
-  getMonitoringStatus(): GameRunningStatus[] {
+  listStatuses(): GameRunningStatus[] {
     const statuses: GameRunningStatus[] = []
 
     for (const [gameId, info] of this.monitors.entries()) {
@@ -201,7 +195,7 @@ export class GameMonitorHandler {
   /**
    * Get status of a specific game
    */
-  getGameStatus(gameId: string): GameRunningStatus | null {
+  getStatus(gameId: string): GameRunningStatus | null {
     const info = this.monitors.get(gameId)
     if (!info) {
       return null
@@ -216,6 +210,14 @@ export class GameMonitorHandler {
       exePath: info.currentExePath,
       startTime: info.sessionStartTime
     }
+  }
+
+  requireStatus(gameId: string): GameRunningStatus {
+    const status = this.getStatus(gameId)
+    if (!status) {
+      throw new Error(`No status found for game ${gameId}`)
+    }
+    return status
   }
 
   /**

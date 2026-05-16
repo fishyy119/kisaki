@@ -190,7 +190,7 @@ export class GameLauncherHandler {
    * @throws Error when game is not running or kill fails
    */
   async killGame(gameId: string): Promise<void> {
-    const status = this.monitorService.game.getGameStatus(gameId)
+    const status = this.monitorService.game.getStatus(gameId)
     if (!status || !status.isRunning || !status.pid) {
       throw new Error('Game is not running')
     }

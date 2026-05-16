@@ -11,11 +11,13 @@ export function registerMonitorIpc(service: MonitorService, ipc: IpcService): vo
     wrapIpcVoid(() => service.game.stopMonitoring(gameId))
   )
 
+  ipc.handle('monitor:list-game-statuses', async () => wrapIpc(() => service.game.listStatuses()))
+
   ipc.handle('monitor:get-game-status', async (_, gameId) =>
-    wrapIpc(() => service.getGameStatus(gameId))
+    wrapIpc(() => service.game.requireStatus(gameId))
   )
 
   ipc.handle('monitor:compute-effective-path', async (_, config) =>
-    wrapIpc(() => service.computeEffectivePath(config))
+    wrapIpc(() => service.game.computeEffectivePath(config))
   )
 }
