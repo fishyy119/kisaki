@@ -84,61 +84,61 @@ export class ExtensionEventsCapabilityProvider {
   private createHostSubscription(topic: HostEventTopic, subscriptionId: string): EventUnsubscribe {
     switch (topic) {
       case 'app.ready':
-        return this.options.event.on('app:ready', () => {
+        return this.options.event.bus.on('app:ready', () => {
           this.emitSubscriptionEvent(subscriptionId, topic, {})
         })
       case 'extension.enabled':
-        return this.options.event.on('extension:enabled', ({ extensionId }) => {
+        return this.options.event.bus.on('extension:enabled', ({ extensionId }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
         })
       case 'extension.disabled':
-        return this.options.event.on('extension:disabled', ({ extensionId }) => {
+        return this.options.event.bus.on('extension:disabled', ({ extensionId }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
         })
       case 'app.locale.changed':
-        return this.options.event.on('app:locale-changed', ({ locale }) => {
+        return this.options.event.bus.on('app:locale-changed', ({ locale }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { locale })
         })
       case 'app.settings.changed':
-        return this.options.event.on('app:settings-changed', ({ setting, value }) => {
+        return this.options.event.bus.on('app:settings-changed', ({ setting, value }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             key: setting,
             value: toSerializableValue(value)
           })
         })
       case 'theme.changed':
-        return this.options.event.on('app:theme-changed', ({ theme }) => {
+        return this.options.event.bus.on('app:theme-changed', ({ theme }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             themeId: 'active',
             mode: theme
           })
         })
       case 'library.game.created':
-        return this.options.event.on('library.game.created', (event) => {
+        return this.options.event.bus.on('library.game.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameCreatedEvent(event))
         })
       case 'library.game.updated':
-        return this.options.event.on('library.game.updated', (event) => {
+        return this.options.event.bus.on('library.game.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameUpdatedEvent(event))
         })
       case 'library.game.deleted':
-        return this.options.event.on('library.game.deleted', (event) => {
+        return this.options.event.bus.on('library.game.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameDeletedEvent(event))
         })
       case 'library.person.created':
-        return this.options.event.on('library.person.created', (event) => {
+        return this.options.event.bus.on('library.person.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonCreatedEvent(event))
         })
       case 'library.person.updated':
-        return this.options.event.on('library.person.updated', (event) => {
+        return this.options.event.bus.on('library.person.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonUpdatedEvent(event))
         })
       case 'library.person.deleted':
-        return this.options.event.on('library.person.deleted', (event) => {
+        return this.options.event.bus.on('library.person.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonDeletedEvent(event))
         })
       case 'library.character.created':
-        return this.options.event.on('library.character.created', (event) => {
+        return this.options.event.bus.on('library.character.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
             name: event.name,
@@ -146,7 +146,7 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.character.updated':
-        return this.options.event.on('library.character.updated', (event) => {
+        return this.options.event.bus.on('library.character.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
             changes: cloneHostValue(event.changes),
@@ -154,14 +154,14 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.character.deleted':
-        return this.options.event.on('library.character.deleted', (event) => {
+        return this.options.event.bus.on('library.character.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
             occurredAt: event.occurredAt
           })
         })
       case 'library.company.created':
-        return this.options.event.on('library.company.created', (event) => {
+        return this.options.event.bus.on('library.company.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
             name: event.name,
@@ -169,7 +169,7 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.company.updated':
-        return this.options.event.on('library.company.updated', (event) => {
+        return this.options.event.bus.on('library.company.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
             changes: cloneHostValue(event.changes),
@@ -177,14 +177,14 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.company.deleted':
-        return this.options.event.on('library.company.deleted', (event) => {
+        return this.options.event.bus.on('library.company.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
             occurredAt: event.occurredAt
           })
         })
       case 'library.collection.created':
-        return this.options.event.on('library.collection.created', (event) => {
+        return this.options.event.bus.on('library.collection.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
             name: event.name,
@@ -192,7 +192,7 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.collection.updated':
-        return this.options.event.on('library.collection.updated', (event) => {
+        return this.options.event.bus.on('library.collection.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
             changes: cloneHostValue(
@@ -202,14 +202,14 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.collection.deleted':
-        return this.options.event.on('library.collection.deleted', (event) => {
+        return this.options.event.bus.on('library.collection.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
             occurredAt: event.occurredAt
           })
         })
       case 'library.tag.created':
-        return this.options.event.on('library.tag.created', (event) => {
+        return this.options.event.bus.on('library.tag.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
             name: event.name,
@@ -217,7 +217,7 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.tag.updated':
-        return this.options.event.on('library.tag.updated', (event) => {
+        return this.options.event.bus.on('library.tag.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
             changes: cloneHostValue(event.changes),
@@ -225,18 +225,18 @@ export class ExtensionEventsCapabilityProvider {
           })
         })
       case 'library.tag.deleted':
-        return this.options.event.on('library.tag.deleted', (event) => {
+        return this.options.event.bus.on('library.tag.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
             occurredAt: event.occurredAt
           })
         })
       case 'scanner.completed':
-        return this.options.event.on('scanner:completed', ({ scannerId, stats }) => {
+        return this.options.event.bus.on('scanner:completed', ({ scannerId, stats }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { scannerId, stats })
         })
       case 'scanner.failed':
-        return this.options.event.on('scanner:error', ({ scannerId, error }) => {
+        return this.options.event.bus.on('scanner:error', ({ scannerId, error }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { scannerId, error })
         })
       default:

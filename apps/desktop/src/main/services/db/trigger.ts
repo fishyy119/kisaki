@@ -64,7 +64,7 @@ export class TriggerStore {
         // Defer event emission until the current SQL statement completes.
         // This prevents "connection is busy" errors when listeners try to access the DB.
         queueMicrotask(() => {
-          this.event.emit(eventName, change)
+          this.event.bus.emit(eventName, change)
         })
       }
     )

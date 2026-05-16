@@ -44,7 +44,7 @@ export class BackgroundTaskService implements IService {
 
     this.load()
     registerBackgroundTaskIpc(this, container.get('ipc'))
-    this.unsubscribeAppReady = this.event.on('app:ready', () => {
+    this.unsubscribeAppReady = this.event.bus.on('app:ready', () => {
       void this.runStartupTasks().catch((error) => {
         log.error('Startup tasks failed:', error)
       })

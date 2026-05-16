@@ -147,7 +147,7 @@ async function onAppReady(): Promise<void> {
   windowService.createMainWindow()
   windowService.createTrayMenuWindow()
 
-  eventService.emit('app:ready')
+  eventService.bus.emit('app:ready')
 
   // Mark deeplink service as ready and process any pending deeplinks
   const deeplinkService = container.get<DeeplinkService>('deeplink')

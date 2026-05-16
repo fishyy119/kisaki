@@ -383,7 +383,7 @@ export class GameMonitorHandler {
     this.ipcService.send('monitor:game-started', gameId)
 
     // Emit entity event for extension system.
-    this.eventService.emit('game:launched', { gameId, pid: process.pid })
+    this.eventService.bus.emit('game:launched', { gameId, pid: process.pid })
   }
 
   /**
@@ -437,7 +437,7 @@ export class GameMonitorHandler {
     this.ipcService.send('monitor:game-stopped', gameId)
 
     // Emit entity event for extension system.
-    this.eventService.emit('game:closed', { gameId, playTime: sessionDuration })
+    this.eventService.bus.emit('game:closed', { gameId, playTime: sessionDuration })
   }
 
   /**

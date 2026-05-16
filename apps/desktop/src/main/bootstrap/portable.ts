@@ -207,7 +207,7 @@ export async function requestSwitchToPortable(eventService: EventService): Promi
     throw new Error('Already in portable mode')
   }
   await setMigrationPending('portable')
-  eventService.emit('app:portable-mode-change-pending', { targetMode: 'portable' })
+  eventService.bus.emit('app:portable-mode-change-pending', { targetMode: 'portable' })
 }
 
 /**
@@ -219,7 +219,7 @@ export async function requestSwitchToNormal(eventService: EventService): Promise
     throw new Error('Already in normal mode')
   }
   await setMigrationPending('normal')
-  eventService.emit('app:portable-mode-change-pending', { targetMode: 'normal' })
+  eventService.bus.emit('app:portable-mode-change-pending', { targetMode: 'normal' })
 }
 
 /**
@@ -227,7 +227,7 @@ export async function requestSwitchToNormal(eventService: EventService): Promise
  */
 export async function cancelPendingSwitch(eventService: EventService): Promise<void> {
   await clearMigrationPending()
-  eventService.emit('app:portable-mode-change-cancelled', {})
+  eventService.bus.emit('app:portable-mode-change-cancelled')
 }
 
 /**

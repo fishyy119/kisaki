@@ -52,13 +52,16 @@ export class I18nService implements IService {
     })
 
     // Listen for locale changes from renderer
-    this.eventService.on('app:locale-changed', async ({ locale }: { locale: AppLocale | null }) => {
-      const targetLocale = locale ?? this.getSystemLocale()
-      if (APP_LOCALES.includes(targetLocale)) {
-        await i18n.changeLanguage(targetLocale)
-        log.info('Locale changed.', { targetLocale: targetLocale })
+    this.eventService.bus.on(
+      'app:locale-changed',
+      async ({ locale }: { locale: AppLocale | null }) => {
+        const targetLocale = locale ?? this.getSystemLocale()
+        if (APP_LOCALES.includes(targetLocale)) {
+          await i18n.changeLanguage(targetLocale)
+          log.info('Locale changed.', { targetLocale: targetLocale })
+        }
       }
-    })
+    )
 
     log.info('Initialized.', { initialLocale: initialLocale })
   }
@@ -130,7 +133,7 @@ export class I18nService implements IService {
     this.dbService.client.update(settings).set({ locale }).run()
 
     // Notify other processes
-    this.eventService.emit('app:locale-changed', { locale })
+    this.eventService.bus.emit('app:locale-changed', { locale })
 
     log.info('Locale changed and persisted.', {
       value0: locale ?? 'system',

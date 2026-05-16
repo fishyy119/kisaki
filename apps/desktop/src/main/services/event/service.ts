@@ -1,19 +1,7 @@
-/**
- * Event Service
- *
- * Type-safe event emitter that can forward events to renderer process.
- */
-
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
-import type {
-  AppEvents,
-  AppEventListener,
-  EventUnsubscribe,
-  EventEmitOptions
-} from '@shared/events'
-import type { RawDbChangeEvent } from '@shared/events/library'
+import { EventBus } from './bus'
 import { registerEventIpc } from './ipc'
 
 const log = createLogger('Event')
@@ -21,134 +9,25 @@ const log = createLogger('Event')
 export class EventService implements IService {
   readonly id = 'event'
   readonly deps = ['ipc'] as const satisfies readonly ServiceName[]
+  readonly bus = new EventBus({
+    forwardToRenderer: (event, args) => {
+      this.ipcService?.send('event:forward', event, args)
+    }
+  })
 
-  private listeners: Map<keyof AppEvents, Set<(...args: any[]) => void>> = new Map()
-  private ipcService!: IpcService
-  private isReady = false
+  private ipcService: IpcService | null = null
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
-    this.ipcService = container.get('ipc')
+    const ipc = container.get('ipc')
 
-    registerEventIpc(this, this.ipcService)
-    this.isReady = true
+    this.ipcService = ipc
+    registerEventIpc(this, ipc)
+    this.bus.enableForwarding()
     log.info('Initialized')
   }
 
-  /**
-   * Subscribe to an event
-   */
-  on<K extends keyof AppEvents>(event: K, listener: AppEventListener<K>): EventUnsubscribe {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set())
-    }
-
-    this.listeners.get(event)!.add(listener as any)
-
-    // Return unsubscribe function
-    return () => {
-      this.listeners.get(event)?.delete(listener as any)
-    }
+  async dispose(): Promise<void> {
+    this.bus.dispose()
+    this.ipcService = null
   }
-
-  /**
-   * Subscribe to an event once
-   */
-  once<K extends keyof AppEvents>(event: K, listener: AppEventListener<K>): EventUnsubscribe {
-    const wrappedListener = ((...args: AppEvents[K]) => {
-      listener(...args)
-      this.listeners.get(event)?.delete(wrappedListener as any)
-    }) as AppEventListener<K>
-
-    return this.on(event, wrappedListener)
-  }
-
-  /**
-   * Emit an event
-   */
-  emit<K extends keyof AppEvents>(
-    event: K,
-    ...args: AppEvents[K] extends [] ? [] : [AppEvents[K][0]]
-  ): void
-  emit<K extends keyof AppEvents>(
-    event: K,
-    options: EventEmitOptions,
-    ...args: AppEvents[K] extends [] ? [] : [AppEvents[K][0]]
-  ): void
-  emit<K extends keyof AppEvents>(event: K, ...args: any[]): void {
-    // Parse arguments
-    let options: EventEmitOptions = { local: false }
-    let eventArgs: AppEvents[K]
-
-    if (args.length > 0 && typeof args[0] === 'object' && 'local' in args[0]) {
-      options = args[0] as EventEmitOptions
-      eventArgs = args.slice(1) as AppEvents[K]
-    } else {
-      eventArgs = args as AppEvents[K]
-    }
-
-    // Emit to local listeners
-    const eventListeners = this.listeners.get(event)
-    if (eventListeners) {
-      for (const listener of eventListeners) {
-        try {
-          listener(...eventArgs)
-        } catch (error) {
-          log.error('Error in listener.', error, { event: String(event) })
-        }
-      }
-    }
-
-    // Forward to renderer process if not local-only
-    if (!options.local && this.isReady) {
-      try {
-        this.ipcService.send('event:forward', event, sanitizeForwardedEventArgs(event, eventArgs))
-      } catch (error) {
-        log.error('Failed to forward event.', error, { event: String(event) })
-      }
-    }
-  }
-
-  /**
-   * Remove all listeners for an event
-   */
-  off<K extends keyof AppEvents>(event: K): void {
-    this.listeners.delete(event)
-  }
-
-  /**
-   * Remove all listeners
-   */
-  removeAllListeners(): void {
-    this.listeners.clear()
-  }
-
-  /**
-   * Get the number of listeners for an event
-   */
-  listenerCount<K extends keyof AppEvents>(event: K): number {
-    return this.listeners.get(event)?.size ?? 0
-  }
-}
-
-function sanitizeForwardedEventArgs<K extends keyof AppEvents>(
-  event: K,
-  args: AppEvents[K]
-): unknown[] {
-  if (event !== 'db:inserted' && event !== 'db:updated' && event !== 'db:deleted') {
-    return args
-  }
-
-  const change = args[0] as RawDbChangeEvent | undefined
-  if (!change) {
-    return args
-  }
-
-  return [
-    {
-      operation: change.operation,
-      table: change.table,
-      id: change.id,
-      occurredAt: change.occurredAt
-    }
-  ]
 }

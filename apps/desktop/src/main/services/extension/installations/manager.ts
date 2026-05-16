@@ -165,7 +165,7 @@ export class ExtensionInstallationManager {
         throw error
       }
       this.emitInstallationsChanged()
-      this.event.emit('extension:enabled', { extensionId: safeExtensionId })
+      this.event.bus.emit('extension:enabled', { extensionId: safeExtensionId })
       return this.require(safeExtensionId)
     })
   }
@@ -178,7 +178,7 @@ export class ExtensionInstallationManager {
       await this.refresh()
       await this.applyRuntimeState({ cause: 'disable' })
       this.emitInstallationsChanged()
-      this.event.emit('extension:disabled', { extensionId: safeExtensionId })
+      this.event.bus.emit('extension:disabled', { extensionId: safeExtensionId })
       return this.require(safeExtensionId)
     })
   }

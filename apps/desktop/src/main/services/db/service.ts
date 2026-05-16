@@ -107,7 +107,7 @@ export class DbService implements IService {
     this.fts.init()
 
     // Cleanup attachment storage on row deletion (applies to all tables)
-    event.on('db:deleted', ({ table, id }) => {
+    event.bus.on('db:deleted', ({ table, id }) => {
       this.attachment.cleanupRow(table, id).catch((error) => {
         log.warn('Failed to cleanup attachment storage.', error, { table: table, id: id })
       })

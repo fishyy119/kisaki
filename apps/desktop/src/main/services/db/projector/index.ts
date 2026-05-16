@@ -29,9 +29,9 @@ export class DbEventProjector {
 
   init(): void {
     this.unsubscribes.push(
-      this.event.on('db:inserted', (change) => this.enqueue(change)),
-      this.event.on('db:updated', (change) => this.enqueue(change)),
-      this.event.on('db:deleted', (change) => this.enqueue(change))
+      this.event.bus.on('db:inserted', (change) => this.enqueue(change)),
+      this.event.bus.on('db:updated', (change) => this.enqueue(change)),
+      this.event.bus.on('db:deleted', (change) => this.enqueue(change))
     )
     log.info('Initialized')
   }
@@ -111,7 +111,7 @@ export class DbEventProjector {
     const occurredAt = Math.max(...changes.map((change) => change.occurredAt))
 
     if (deleted) {
-      this.event.emit('library.game.deleted', {
+      this.event.bus.emit('library.game.deleted', {
         gameId,
         occurredAt
       })
@@ -120,7 +120,7 @@ export class DbEventProjector {
 
     if (created) {
       const next = directGameChanges.findLast((change) => change.next)?.next
-      this.event.emit('library.game.created', {
+      this.event.bus.emit('library.game.created', {
         gameId,
         name: getGameCreatedName(this.sqlite, gameId, next),
         occurredAt
@@ -137,7 +137,7 @@ export class DbEventProjector {
       return
     }
 
-    this.event.emit('library.game.updated', {
+    this.event.bus.emit('library.game.updated', {
       gameId,
       changes: projectedChanges,
       occurredAt
@@ -206,42 +206,46 @@ export class DbEventProjector {
     if (kind === 'created') {
       switch (entity) {
         case 'person':
-          this.event.emit('library.person.created', { personId: entityId, name, occurredAt })
+          this.event.bus.emit('library.person.created', { personId: entityId, name, occurredAt })
           return
         case 'company':
-          this.event.emit('library.company.created', { companyId: entityId, name, occurredAt })
+          this.event.bus.emit('library.company.created', { companyId: entityId, name, occurredAt })
           return
         case 'character':
-          this.event.emit('library.character.created', { characterId: entityId, name, occurredAt })
+          this.event.bus.emit('library.character.created', {
+            characterId: entityId,
+            name,
+            occurredAt
+          })
           return
         case 'collection':
-          this.event.emit('library.collection.created', {
+          this.event.bus.emit('library.collection.created', {
             collectionId: entityId,
             name,
             occurredAt
           })
           return
         case 'tag':
-          this.event.emit('library.tag.created', { tagId: entityId, name, occurredAt })
+          this.event.bus.emit('library.tag.created', { tagId: entityId, name, occurredAt })
           return
       }
     }
 
     switch (entity) {
       case 'person':
-        this.event.emit('library.person.deleted', { personId: entityId, occurredAt })
+        this.event.bus.emit('library.person.deleted', { personId: entityId, occurredAt })
         return
       case 'company':
-        this.event.emit('library.company.deleted', { companyId: entityId, occurredAt })
+        this.event.bus.emit('library.company.deleted', { companyId: entityId, occurredAt })
         return
       case 'character':
-        this.event.emit('library.character.deleted', { characterId: entityId, occurredAt })
+        this.event.bus.emit('library.character.deleted', { characterId: entityId, occurredAt })
         return
       case 'collection':
-        this.event.emit('library.collection.deleted', { collectionId: entityId, occurredAt })
+        this.event.bus.emit('library.collection.deleted', { collectionId: entityId, occurredAt })
         return
       case 'tag':
-        this.event.emit('library.tag.deleted', { tagId: entityId, occurredAt })
+        this.event.bus.emit('library.tag.deleted', { tagId: entityId, occurredAt })
         return
     }
   }
@@ -254,35 +258,35 @@ export class DbEventProjector {
   ): void {
     switch (entity) {
       case 'person':
-        this.event.emit('library.person.updated', {
+        this.event.bus.emit('library.person.updated', {
           personId: entityId,
           changes: changes as AppEvents['library.person.updated'][0]['changes'],
           occurredAt
         })
         return
       case 'company':
-        this.event.emit('library.company.updated', {
+        this.event.bus.emit('library.company.updated', {
           companyId: entityId,
           changes: changes as AppEvents['library.company.updated'][0]['changes'],
           occurredAt
         })
         return
       case 'character':
-        this.event.emit('library.character.updated', {
+        this.event.bus.emit('library.character.updated', {
           characterId: entityId,
           changes: changes as AppEvents['library.character.updated'][0]['changes'],
           occurredAt
         })
         return
       case 'collection':
-        this.event.emit('library.collection.updated', {
+        this.event.bus.emit('library.collection.updated', {
           collectionId: entityId,
           changes: changes as AppEvents['library.collection.updated'][0]['changes'],
           occurredAt
         })
         return
       case 'tag':
-        this.event.emit('library.tag.updated', {
+        this.event.bus.emit('library.tag.updated', {
           tagId: entityId,
           changes: changes as AppEvents['library.tag.updated'][0]['changes'],
           occurredAt
