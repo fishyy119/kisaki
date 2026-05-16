@@ -17,14 +17,14 @@ export class ExtensionScrapersCapabilityProvider {
 
   listProfiles(runtimeHandle: string, query?: ScraperProfileListQuery): ScraperProfileSummary[] {
     this.requireRuntime(runtimeHandle)
-    return this.options.scraper
-      .listProfiles(query ? { mediaType: query.mediaType } : undefined)
+    return this.options.scraper.profiles
+      .list(query ? { mediaType: query.mediaType } : undefined)
       .map((profile) => toPublicScraperProfileSummary(profile))
   }
 
   getProfile(runtimeHandle: string, profileId: string): ScraperProfileSummary | null {
     this.requireRuntime(runtimeHandle)
-    const profile = this.options.scraper.getProfile(profileId)
+    const profile = this.options.scraper.profiles.get(profileId)
     return profile ? toPublicScraperProfileSummary(profile) : null
   }
 

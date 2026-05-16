@@ -34,5 +34,5 @@ export interface ScraperDomain {
   kind: ScraperKind
   mediaType: ScraperMediaType
   registerWithScraper(scraper: ScraperService, provider: unknown): void
-  unregisterFromScraper(scraper: ScraperService, hostProviderId: string): Promise<void>
+  unregisterFromScraper(scraper: ScraperService, hostProviderId: string): void | Promise<void>
 }

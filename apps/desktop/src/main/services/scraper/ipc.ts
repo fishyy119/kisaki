@@ -4,11 +4,11 @@ import type { ScraperService } from './service'
 
 export function registerScraperIpc(service: ScraperService, ipc: IpcService): void {
   ipc.handle('scraper:list-profiles', async (_, query) =>
-    wrapIpc(() => service.listProfiles(query))
+    wrapIpc(() => service.profiles.list(query))
   )
 
   ipc.handle('scraper:get-profile', async (_, profileId) =>
-    wrapIpc(() => service.getProfile(profileId))
+    wrapIpc(() => service.profiles.get(profileId))
   )
 
   ipc.handle('scraper:list-game-providers', async () => wrapIpc(() => service.game.getProviders()))
