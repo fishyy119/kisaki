@@ -12,6 +12,6 @@ export function registerLauncherIpc(service: LauncherService, ipc: IpcService): 
   )
 
   ipc.handle('launcher:apply-default-config', async (_, gameId, filePath) =>
-    wrapIpcVoid(() => service.applyDefaultConfig(gameId, filePath))
+    wrapIpcVoid(() => service.game.applyDefaultConfig(gameId, filePath))
   )
 }

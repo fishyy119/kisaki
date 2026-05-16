@@ -8,9 +8,9 @@ import { shell } from 'electron'
 import { platform } from '@electron-toolkit/utils'
 import { spawn, exec } from 'child_process'
 import { promisify } from 'util'
-import { Game } from '@shared/db'
+import type { Game } from '@shared/db'
 import { existsSync } from 'fs'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import { createLogger } from '@main/log'
 import type { MonitorService } from '@main/services/monitor'
 import type { DbService } from '@main/services/db'
@@ -29,6 +29,26 @@ export class GameLauncherHandler {
     private monitorService: MonitorService,
     private nativeService: NativeService
   ) {}
+
+  /**
+   * Apply default launch configuration based on a selected file path.
+   */
+  async applyDefaultConfig(gameId: string, filePath: string): Promise<void> {
+    const gameDirPath = dirname(filePath)
+
+    this.dbService.client
+      .update(games)
+      .set({
+        launcherPath: filePath,
+        launcherMode: 'file',
+        gameDirPath,
+        monitorMode: 'folder'
+      })
+      .where(eq(games.id, gameId))
+      .run()
+
+    log.info('Applied default config for game.', { gameId: gameId, filePath: filePath })
+  }
 
   /**
    * Launches a game
