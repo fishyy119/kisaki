@@ -204,7 +204,7 @@ export class GameScraperHandler {
       return []
     }
 
-    const locale = lookup.locale ?? (this.i18n.getLocale() as Locale)
+    const locale = lookup.locale ?? (this.i18n.locale.getCurrent() as Locale)
     const plan = buildSingleProviderExecutionPlan<GameImageSlot>({
       providerId,
       slot: imageType,
@@ -319,14 +319,14 @@ export class GameScraperHandler {
   }
 
   private getProfileLocale(profile: ScraperProfile): Locale {
-    return (profile.defaultLocale ?? this.i18n.getLocale()) as Locale
+    return (profile.defaultLocale ?? this.i18n.locale.getCurrent()) as Locale
   }
 
   private getResolveLocale(profile: ScraperProfile, lookup: ScraperLookup): Locale {
-    return (lookup.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
+    return (lookup.locale ?? profile.defaultLocale ?? this.i18n.locale.getCurrent()) as Locale
   }
 
   private getFetchLocale(profile: ScraperProfile, entry: { locale?: Locale | null }): Locale {
-    return (entry.locale ?? profile.defaultLocale ?? this.i18n.getLocale()) as Locale
+    return (entry.locale ?? profile.defaultLocale ?? this.i18n.locale.getCurrent()) as Locale
   }
 }
