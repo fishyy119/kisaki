@@ -123,7 +123,7 @@ export class GameLauncherHandler {
           ]
         : undefined
 
-    const result = await this.nativeService.showOpenDialog({
+    const result = await this.nativeService.dialogs.showOpenDialog({
       title: '选择启动文件',
       buttonLabel: '选择',
       defaultPath: game.gameDirPath ?? undefined,

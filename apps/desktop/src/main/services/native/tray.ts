@@ -109,7 +109,7 @@ export class NativeTray {
     win.focus()
   }
 
-  updateTrayMenuHeight(height: number): void {
+  updateMenuHeight(height: number): void {
     const win = this.windowService.getTrayMenuWindow()
     if (!win) return
     if (!Number.isFinite(height) || height <= 0) return
