@@ -20,10 +20,10 @@
 
 处理条件：
 
-- `autoSyncEnabled = true`。
-- created 事件只有 `syncOnCreate = true` 时处理。
+- `autoSync.enabled = true`。
+- created 事件只有 `autoSync.syncOnCreate = true` 时处理。
 - updated 事件只处理 `changes[].facet` 包含 `status`、`score` 或 `identity` 的事件。
-- 本地游戏必须有 Bangumi external id；否则按 `unmappedStrategy` 跳过、通知或尝试 resolve。
+- 本地游戏必须有 Bangumi external id；没有 Bangumi external id 时固定跳过。
 
 流程：
 
@@ -52,7 +52,7 @@ Fingerprint 输入：
 
 Suppress 规则：
 
-- `SyncEngine` 写入本地游玩状态/评分前后维护 fingerprint suppress，避免本扩展触发的本地变更再次写回 Bangumi。
+- `SyncEngine` 写入本地游玩状态/评分前后维护 fingerprint suppress，避免本扩展触发的本地变更再次回写 Bangumi。
 - `CollectionImporter` 和 `IndexImporter` 对每个 `ingest.games.addFromScraper` 返回的 `gameId` 写入 import suppress，覆盖 command 运行期和至少一个 debounce window。
 - import suppress 适用于 created 和 updated 事件，防止导入新游戏、写入新游戏用户态字段或 ingest 创建 external id 后，被自动同步立即回写到 Bangumi。
 - import suppress 只跳过短期事件；窗口结束后用户手动修改游戏状态或评分仍可按自动同步规则处理。
@@ -77,7 +77,7 @@ Suppress 规则：
 - score disabled 时不写 `rate`。
 - `score` 为 1-10 时写同值。
 - `score = null` 默认不写 `rate`。
-- 用户启用 `clearRemoteScoreWhenEmpty` 时，`score = null` 写 `rate = 0`。
+- 用户启用 `autoSync.clearRemoteScoreWhenEmpty` 时，`score = null` 写 `rate = 0`，用于删除 Bangumi 远端评分。
 - 本地非整数分数如未来出现，写入前必须按设置定义的策略处理；第一版只接受整数 1-10。
 
 ## 手动全量同步

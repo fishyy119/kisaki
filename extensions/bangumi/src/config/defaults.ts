@@ -5,14 +5,14 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
   auth: {
     loginTimeoutMs: 10 * 60 * 1000
   },
-  sync: {
-    autoSyncEnabled: false,
+  autoSync: {
+    enabled: false,
     syncOnCreate: false,
     playStatusEnabled: true,
     scoreEnabled: true,
     clearRemoteScoreWhenEmpty: false,
-    unmappedStrategy: 'skip',
     debounceMs: 3000,
+    notifyErrors: true,
     statusToBangumi: {
       notStarted: 1,
       inProgress: 3,
@@ -20,13 +20,6 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
       completed: 2,
       multiple: 2,
       shelved: 4
-    },
-    bangumiToStatus: {
-      1: 'notStarted',
-      2: 'completed',
-      3: 'inProgress',
-      4: 'shelved',
-      5: 'shelved'
     }
   },
   client: {
@@ -36,9 +29,6 @@ export const DEFAULT_BANGUMI_SETTINGS: BangumiSettingsV1 = {
     },
     timeoutMs: 30_000,
     retryCount: 3
-  },
-  diagnostics: {
-    notifySyncErrors: true
   }
 }
 

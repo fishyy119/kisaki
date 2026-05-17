@@ -29,10 +29,10 @@ export class TokenStore {
   }
 
   async setToken(token: Omit<BangumiTokenSecretV1, 'version'>): Promise<void> {
-    await this.secrets.set(BANGUMI_SECRET_KEYS.token, {
+    await this.secrets.set(BANGUMI_SECRET_KEYS.token, compactRecord({
       version: 1,
       ...token
-    })
+    }))
   }
 
   async getAccessToken(): Promise<string | undefined> {
@@ -55,10 +55,10 @@ export class TokenStore {
   async setPendingSession(
     session: Omit<BangumiPendingSessionSecretV1, 'version'>
   ): Promise<void> {
-    await this.secrets.set(BANGUMI_SECRET_KEYS.pendingSession, {
+    await this.secrets.set(BANGUMI_SECRET_KEYS.pendingSession, compactRecord({
       version: 1,
       ...session
-    })
+    }))
   }
 
   async deletePendingSession(): Promise<void> {
@@ -164,4 +164,14 @@ function normalizeRequiredNumber(value: unknown): number | undefined {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function compactRecord<T extends Record<string, unknown>>(record: T): T {
+  const compacted: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(record)) {
+    if (value !== undefined) {
+      compacted[key] = value
+    }
+  }
+  return compacted as T
 }

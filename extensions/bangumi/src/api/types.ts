@@ -56,6 +56,26 @@ export interface BangumiPaged<T> {
   data: T[]
 }
 
+export interface BangumiPageQuery {
+  limit?: number
+  offset?: number
+}
+
+export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
+
+// =============================================================================
+// Account
+// =============================================================================
+
+export interface BangumiMe {
+  id: number
+  username: string
+  nickname: string
+  avatar?: BangumiImages | null
+  sign?: string
+  user_group?: number
+}
+
 // =============================================================================
 // Subject
 // =============================================================================
@@ -203,3 +223,54 @@ export interface BangumiSearchSubjectPayload {
 
 export type BangumiImageType = 'small' | 'grid' | 'large' | 'medium' | 'common'
 export type BangumiEntityImageType = 'small' | 'grid' | 'large' | 'medium'
+
+// =============================================================================
+// Collections
+// =============================================================================
+
+export interface BangumiUserCollection {
+  subject_id?: number
+  subject?: BangumiSubject | null
+  type: BangumiCollectionType
+  rate?: number
+  comment?: string
+  tags?: string[]
+  private?: boolean
+  updated_at?: string
+}
+
+export interface BangumiCollectionQuery extends BangumiPageQuery {
+  subject_type?: BangumiSubjectType
+  type?: BangumiCollectionType
+}
+
+export interface BangumiCollectionPatch {
+  type?: BangumiCollectionType
+  rate?: number
+  tags?: readonly string[]
+}
+
+// =============================================================================
+// Indices
+// =============================================================================
+
+export interface BangumiIndex {
+  id: number
+  title: string
+  desc?: string
+  total?: number
+}
+
+export interface BangumiIndexSubject {
+  id: number
+  type: BangumiSubjectType
+  name: string
+  name_cn?: string
+  images?: BangumiImages | null
+  comment?: string
+  added_at?: string
+}
+
+export interface BangumiIndexSubjectsQuery extends BangumiPageQuery {
+  type?: BangumiSubjectType
+}

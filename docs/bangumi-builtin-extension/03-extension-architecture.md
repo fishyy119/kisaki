@@ -125,7 +125,7 @@ shared -> no project dependencies
 
 ## Settings Schema
 
-新版本从 `settings.v1` 开始；旧数据一律作废：
+新版本从 `settings.v1` 开始；旧数据一律作废，不为历史内部字段保留兼容迁移：
 
 ```ts
 interface BangumiSettingsV1 {
@@ -133,17 +133,15 @@ interface BangumiSettingsV1 {
   auth: {
     loginTimeoutMs: number
   }
-  sync: {
-    autoSyncEnabled: boolean
+  autoSync: {
+    enabled: boolean
     syncOnCreate: boolean
     playStatusEnabled: boolean
     scoreEnabled: boolean
     clearRemoteScoreWhenEmpty: boolean
-    unmappedStrategy: 'skip' | 'notify' | 'resolveWithProfile'
-    resolveProfileId?: string
     debounceMs: number
+    notifyErrors: boolean
     statusToBangumi: Record<LibraryGameStatus, BangumiCollectionType | 'skip'>
-    bangumiToStatus: Record<BangumiCollectionType, LibraryGameStatus | 'skip'>
   }
   client: {
     rateLimit: {
@@ -153,29 +151,24 @@ interface BangumiSettingsV1 {
     timeoutMs: number
     retryCount: number
   }
-  diagnostics: {
-    notifySyncErrors: boolean
-  }
 }
 ```
 
 默认值：
 
 - `loginTimeoutMs`: `10 * 60 * 1000`。
-- `autoSyncEnabled`: `false`。
-- `syncOnCreate`: `false`。
-- `playStatusEnabled`: `true`。
-- `scoreEnabled`: `true`。
-- `clearRemoteScoreWhenEmpty`: `false`。
-- `unmappedStrategy`: `skip`。
-- `statusToBangumi`: 使用 [01-scope-and-api-facts.md](01-scope-and-api-facts.md) 中的默认 Kisaki -> Bangumi 映射。
-- `bangumiToStatus`: `1 -> notStarted`、`2 -> completed`、`3 -> inProgress`、`4 -> shelved`、`5 -> shelved`。
+- `autoSync.enabled`: `false`。
+- `autoSync.syncOnCreate`: `false`。
+- `autoSync.playStatusEnabled`: `true`。
+- `autoSync.scoreEnabled`: `true`。
+- `autoSync.clearRemoteScoreWhenEmpty`: `false`。
+- `autoSync.statusToBangumi`: 使用 [01-scope-and-api-facts.md](01-scope-and-api-facts.md) 中的默认 Kisaki -> Bangumi 映射。
+- `autoSync.debounceMs`: `3000`。
+- `autoSync.notifyErrors`: `true`。
 - `rateLimit.maxRequests`: `120`。
 - `rateLimit.windowMs`: `60000`。
 - `timeoutMs`: `30000`。
 - `retryCount`: `3`。
-- `debounceMs`: `3000`。
-- `diagnostics.notifySyncErrors`: `true`。
 
 导入相关 profile、字段写入和目标合集不进入 `settings.v1`。它们是单次 command args；如果用户创建导入类 background task，则这些值作为 task args 由主应用 BackgroundTaskService 持久化。
 
@@ -228,7 +221,6 @@ keys:
 - `auth.account`
 - `sync.state`
 - `sync.queue`
-- `diagnostics.lastRelayHealth`
 
 task schedule、运行记录、输出和错误历史属于主应用 BackgroundTaskService。Bangumi extension storage 不保存 `jobs.history`、通用 `lastResult`、active execution id 或导入/同步命令结果副本；Bangumi settings panel 也不复制或展示 task history。
 

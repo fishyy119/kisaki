@@ -3,24 +3,21 @@ import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
 
 export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
-export type BangumiUnmappedStrategy = 'skip' | 'notify' | 'resolveWithProfile'
 
 export interface BangumiSettingsV1 {
   version: 1
   auth: {
     loginTimeoutMs: number
   }
-  sync: {
-    autoSyncEnabled: boolean
+  autoSync: {
+    enabled: boolean
     syncOnCreate: boolean
     playStatusEnabled: boolean
     scoreEnabled: boolean
     clearRemoteScoreWhenEmpty: boolean
-    unmappedStrategy: BangumiUnmappedStrategy
-    resolveProfileId?: string
     debounceMs: number
+    notifyErrors: boolean
     statusToBangumi: Record<LibraryGameStatus, BangumiStatusMappingValue>
-    bangumiToStatus: Record<BangumiCollectionType, LibraryGameStatus | 'skip'>
   }
   client: {
     rateLimit: {
@@ -29,9 +26,6 @@ export interface BangumiSettingsV1 {
     }
     timeoutMs: number
     retryCount: number
-  }
-  diagnostics: {
-    notifySyncErrors: boolean
   }
 }
 
@@ -44,7 +38,6 @@ const LIBRARY_GAME_STATUS_VALUES = [
   'multiple',
   'shelved'
 ] as const satisfies readonly LibraryGameStatus[]
-const UNMAPPED_STRATEGIES = ['skip', 'notify', 'resolveWithProfile'] as const
 
 export function normalizeBangumiSettings(value: unknown): BangumiSettingsV1 {
   const input = isRecord(value) && value.version === 1 ? value : undefined
@@ -53,9 +46,8 @@ export function normalizeBangumiSettings(value: unknown): BangumiSettingsV1 {
   return {
     version: 1,
     auth: normalizeAuthSettings(input?.auth, defaults.auth),
-    sync: normalizeSyncSettings(input?.sync, defaults.sync),
-    client: normalizeClientSettings(input?.client, defaults.client),
-    diagnostics: normalizeDiagnosticsSettings(input?.diagnostics, defaults.diagnostics)
+    autoSync: normalizeAutoSyncSettings(input?.autoSync, defaults.autoSync),
+    client: normalizeClientSettings(input?.client, defaults.client)
   }
 }
 
@@ -77,15 +69,14 @@ function normalizeAuthSettings(
   }
 }
 
-function normalizeSyncSettings(
+function normalizeAutoSyncSettings(
   value: unknown,
-  defaults: BangumiSettingsV1['sync']
-): BangumiSettingsV1['sync'] {
+  defaults: BangumiSettingsV1['autoSync']
+): BangumiSettingsV1['autoSync'] {
   const input = asRecord(value)
-  const resolveProfileId = normalizeOptionalString(input?.resolveProfileId)
 
   return {
-    autoSyncEnabled: normalizeBoolean(input?.autoSyncEnabled, defaults.autoSyncEnabled),
+    enabled: normalizeBoolean(input?.enabled, defaults.enabled),
     syncOnCreate: normalizeBoolean(input?.syncOnCreate, defaults.syncOnCreate),
     playStatusEnabled: normalizeBoolean(input?.playStatusEnabled, defaults.playStatusEnabled),
     scoreEnabled: normalizeBoolean(input?.scoreEnabled, defaults.scoreEnabled),
@@ -93,18 +84,12 @@ function normalizeSyncSettings(
       input?.clearRemoteScoreWhenEmpty,
       defaults.clearRemoteScoreWhenEmpty
     ),
-    unmappedStrategy: normalizeEnum(
-      input?.unmappedStrategy,
-      UNMAPPED_STRATEGIES,
-      defaults.unmappedStrategy
-    ),
-    ...(resolveProfileId ? { resolveProfileId } : {}),
     debounceMs: normalizeInteger(input?.debounceMs, defaults.debounceMs, {
       min: 250,
       max: 60_000
     }),
-    statusToBangumi: normalizeStatusToBangumi(input?.statusToBangumi, defaults.statusToBangumi),
-    bangumiToStatus: normalizeBangumiToStatus(input?.bangumiToStatus, defaults.bangumiToStatus)
+    notifyErrors: normalizeBoolean(input?.notifyErrors, defaults.notifyErrors),
+    statusToBangumi: normalizeStatusToBangumi(input?.statusToBangumi, defaults.statusToBangumi)
   }
 }
 
@@ -146,40 +131,15 @@ function normalizeRateLimitSettings(
   }
 }
 
-function normalizeDiagnosticsSettings(
-  value: unknown,
-  defaults: BangumiSettingsV1['diagnostics']
-): BangumiSettingsV1['diagnostics'] {
-  const input = asRecord(value)
-
-  return {
-    notifySyncErrors: normalizeBoolean(input?.notifySyncErrors, defaults.notifySyncErrors)
-  }
-}
-
 function normalizeStatusToBangumi(
   value: unknown,
-  defaults: BangumiSettingsV1['sync']['statusToBangumi']
-): BangumiSettingsV1['sync']['statusToBangumi'] {
+  defaults: BangumiSettingsV1['autoSync']['statusToBangumi']
+): BangumiSettingsV1['autoSync']['statusToBangumi'] {
   const input = asRecord(value)
   const output = { ...defaults }
 
   for (const status of LIBRARY_GAME_STATUS_VALUES) {
     output[status] = normalizeStatusMappingValue(input?.[status], defaults[status])
-  }
-
-  return output
-}
-
-function normalizeBangumiToStatus(
-  value: unknown,
-  defaults: BangumiSettingsV1['sync']['bangumiToStatus']
-): BangumiSettingsV1['sync']['bangumiToStatus'] {
-  const input = asRecord(value)
-  const output = { ...defaults }
-
-  for (const type of BANGUMI_COLLECTION_TYPES) {
-    output[type] = normalizeLibraryStatusOrSkip(input?.[String(type)], defaults[type])
   }
 
   return output
@@ -194,21 +154,6 @@ function normalizeStatusMappingValue(
   }
 
   return fallback
-}
-
-function normalizeLibraryStatusOrSkip(
-  value: unknown,
-  fallback: LibraryGameStatus | 'skip'
-): LibraryGameStatus | 'skip' {
-  if (value === 'skip' || LIBRARY_GAME_STATUS_VALUES.includes(value as LibraryGameStatus)) {
-    return value as LibraryGameStatus | 'skip'
-  }
-
-  return fallback
-}
-
-function normalizeOptionalString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined
 }
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
@@ -234,14 +179,6 @@ function normalizeNumber(
   }
 
   return Math.min(options.max, Math.max(options.min, value))
-}
-
-function normalizeEnum<T extends readonly string[]>(
-  value: unknown,
-  allowedValues: T,
-  fallback: T[number]
-): T[number] {
-  return typeof value === 'string' && allowedValues.includes(value) ? value : fallback
 }
 
 function settingsEqual(left: unknown, right: unknown): boolean {

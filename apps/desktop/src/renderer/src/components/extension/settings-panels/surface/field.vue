@@ -45,7 +45,7 @@ const fieldClass = computed(() =>
 const contentClass = computed(() =>
   cn(
     'gap-2',
-    props.field.contentLayout === 'inline' && 'flex flex-wrap items-center',
+    props.field.contentLayout === 'inline' && 'flex flex-row flex-wrap items-center',
     props.field.contentLayout === 'grid' && 'grid',
     props.field.contentLayout === 'grid' &&
       props.field.contentColumns === 2 &&

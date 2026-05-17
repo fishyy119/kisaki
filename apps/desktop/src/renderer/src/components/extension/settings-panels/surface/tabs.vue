@@ -21,13 +21,20 @@ const activeTabId = ref('')
 watch(
   tabs,
   (nextTabs) => {
-    activeTabId.value =
-      rootView.value.activeTabId && nextTabs.some((tab) => tab.id === rootView.value.activeTabId)
-        ? rootView.value.activeTabId
-        : (nextTabs[0]?.id ?? '')
+    if (nextTabs.some((tab) => tab.id === activeTabId.value)) {
+      return
+    }
+
+    activeTabId.value = resolveInitialTabId(nextTabs)
   },
   { immediate: true }
 )
+
+function resolveInitialTabId(nextTabs: typeof tabs.value): string {
+  return rootView.value.activeTabId && nextTabs.some((tab) => tab.id === rootView.value.activeTabId)
+    ? rootView.value.activeTabId
+    : (nextTabs[0]?.id ?? '')
+}
 </script>
 
 <template>

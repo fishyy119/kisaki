@@ -1,172 +1,117 @@
-/**
- * Bangumi API Client
- *
- * HTTP client for Bangumi v0 API.
- *
- * References:
- * - https://bangumi.github.io/api/
- * - https://bangumi.github.io/api/dist.json
- * - https://github.com/bangumi/api/
- */
-
-import type { NetworkCapability, SerializableValue } from '@kisaki/extension-sdk'
+import type {
+  ExtensionLogger,
+  NetworkCapability,
+  NetworkMethod,
+  NetworkResponse,
+  NetworkResponseType,
+  SerializableValue
+} from '@kisaki/extension-sdk'
+import {
+  BangumiApiError,
+  normalizeBangumiApiError,
+  readRetryAfterMs
+} from './errors'
+import { BangumiRateLimiter, delay, normalizeRateLimitConfig, throwIfAborted } from './limiter'
+import { normalizePageQuery, toPage, type Page, type PageQuery } from './pagination'
 import type {
   BangumiCharacterDetail,
   BangumiCharacterPerson,
+  BangumiCollectionPatch,
+  BangumiCollectionQuery,
   BangumiEntityImageType,
   BangumiImageType,
+  BangumiIndex,
+  BangumiIndexSubject,
+  BangumiIndexSubjectsQuery,
+  BangumiMe,
   BangumiPaged,
   BangumiRelatedCharacter,
   BangumiRelatedPerson,
   BangumiSearchSubjectPayload,
   BangumiSubject,
   BangumiSubjectRelation,
+  BangumiUserCollection,
   BangumiPersonDetail
 } from './types'
 import type { BangumiSettingsV1 } from '../config/schema'
+import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
+import { BangumiExtensionError } from '../shared/errors'
+import type { TokenService } from '../auth/token-service'
 
-// No official public rate limit in docs. Keep a conservative limit.
-const DEFAULT_RATE_LIMIT_CONFIG = { maxRequests: 120, windowMs: 60_000 }
+type BangumiClientSettings = Pick<BangumiSettingsV1['client'], 'rateLimit' | 'timeoutMs' | 'retryCount'>
+type AuthMode = 'none' | 'optional' | 'required'
 
-type BangumiRateLimitConfig = BangumiSettingsV1['client']['rateLimit']
+interface BangumiClientOptions {
+  userAgent: string
+  logger?: ExtensionLogger
+  baseUrl?: string
+}
+
+interface RequestOptions {
+  query?: Record<string, string | number | boolean | undefined>
+  body?: unknown
+  auth?: AuthMode
+  responseType?: NetworkResponseType
+  signal?: AbortSignal
+}
+
+interface SendOptions extends RequestOptions {
+  forceRefresh?: boolean
+}
 
 export class BangumiClient {
-  private readonly baseUrl = 'https://api.bgm.tv'
-  private readonly userAgent = 'ximu3/Kisaki/0.0.1 (https://github.com/ximu3/kisaki)'
-  private readonly requestTimestamps: number[] = []
-  private rateLimitQueue = Promise.resolve()
+  private readonly baseUrl: string
+  private readonly userAgent: string
+  private readonly logger?: ExtensionLogger
+  private readonly limiter: BangumiRateLimiter
 
   constructor(
     private readonly network: NetworkCapability,
-    private readonly getAccessToken?: () => Promise<string | undefined>,
-    private readonly getRateLimitConfig?: () => Promise<BangumiRateLimitConfig>
-  ) {}
+    private readonly tokenService: TokenService,
+    private readonly getClientSettings: () => Promise<BangumiClientSettings>,
+    options: BangumiClientOptions
+  ) {
+    this.baseUrl = options.baseUrl ?? BANGUMI_API_BASE_URL
+    this.userAgent = options.userAgent
+    this.logger = options.logger
+    this.limiter = new BangumiRateLimiter(async () =>
+      normalizeRateLimitConfig((await this.getClientSettings()).rateLimit)
+    )
+  }
 
-  private buildUrl(pathname: string, query?: Record<string, string | number | boolean>): string {
-    const url = new URL(pathname, this.baseUrl)
-    if (query) {
-      for (const [key, value] of Object.entries(query)) {
-        if (value === undefined || value === null) continue
-        url.searchParams.set(key, String(value))
+  async getMe(options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiMe> {
+    return normalizeMe(
+      await this.request<BangumiMe>('GET', '/v0/me', {
+        auth: 'required',
+        signal: options.signal
+      })
+    )
+  }
+
+  async searchGameSubjects(
+    payload: BangumiSearchSubjectPayload,
+    page: PageQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<Page<BangumiSubject>> {
+    const query = normalizePageQuery(page)
+    const response = await this.request<BangumiPaged<BangumiSubject>>(
+      'POST',
+      '/v0/search/subjects',
+      {
+        query,
+        body: {
+          ...payload,
+          filter: {
+            ...(payload.filter ?? {}),
+            type: [BANGUMI_SUBJECT_TYPE_GAME]
+          }
+        },
+        auth: 'optional',
+        signal: options.signal
       }
-    }
-    return url.toString()
-  }
+    )
 
-  private async buildHeaders(method: 'GET' | 'POST'): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-      'User-Agent': this.userAgent
-    }
-
-    if (method === 'POST') {
-      headers['Content-Type'] = 'application/json'
-    }
-
-    const accessToken = (await this.getAccessToken?.())?.trim()
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`
-    }
-
-    return headers
-  }
-
-  private async acquireRateLimit(): Promise<void> {
-    const previous = this.rateLimitQueue
-    let release!: () => void
-    this.rateLimitQueue = new Promise<void>((resolve) => {
-      release = resolve
-    })
-
-    await previous
-
-    try {
-      const config = await this.readRateLimitConfig()
-      while (true) {
-        const now = Date.now()
-        this.pruneRequestTimestamps(now, config.windowMs)
-
-        if (this.requestTimestamps.length < config.maxRequests) {
-          this.requestTimestamps.push(now)
-          return
-        }
-
-        const waitMs = config.windowMs - (now - this.requestTimestamps[0]!)
-        await delay(Math.max(1, waitMs))
-      }
-    } finally {
-      release()
-    }
-  }
-
-  private async readRateLimitConfig(): Promise<BangumiRateLimitConfig> {
-    const config = await this.getRateLimitConfig?.()
-    if (
-      !config ||
-      !Number.isFinite(config.maxRequests) ||
-      !Number.isFinite(config.windowMs) ||
-      config.maxRequests < 1 ||
-      config.windowMs < 1
-    ) {
-      return DEFAULT_RATE_LIMIT_CONFIG
-    }
-
-    return {
-      maxRequests: Math.max(1, Math.trunc(config.maxRequests)),
-      windowMs: Math.max(1, Math.trunc(config.windowMs))
-    }
-  }
-
-  private pruneRequestTimestamps(now: number, windowMs: number): void {
-    while (this.requestTimestamps.length > 0 && now - this.requestTimestamps[0]! >= windowMs) {
-      this.requestTimestamps.shift()
-    }
-  }
-
-  private async request<T>(
-    method: 'GET' | 'POST',
-    pathname: string,
-    query?: Record<string, string | number | boolean>,
-    body?: unknown
-  ): Promise<T> {
-    await this.acquireRateLimit()
-
-    const response = await this.network.request<T>({
-      url: this.buildUrl(pathname, query),
-      method,
-      headers: await this.buildHeaders(method),
-      body: body as SerializableValue | undefined,
-      responseType: 'json'
-    })
-
-    if (!response.ok) {
-      const detail = stringifyResponseData(response.data)
-      throw new Error(
-        `Bangumi API request failed: ${response.status}${detail ? ` - ${detail}` : ''}`
-      )
-    }
-
-    return response.data
-  }
-
-  private async requestRedirectUrl(
-    pathname: string,
-    query: Record<string, string | number | boolean>
-  ): Promise<string | undefined> {
-    await this.acquireRateLimit()
-
-    const response = await this.network.request<Uint8Array>({
-      url: this.buildUrl(pathname, query),
-      method: 'GET',
-      headers: await this.buildHeaders('GET'),
-      responseType: 'arrayBuffer'
-    })
-
-    if (!response.ok) {
-      return undefined
-    }
-
-    return response.url?.trim() || undefined
+    return toPage(response, query)
   }
 
   async searchSubjects(
@@ -174,40 +119,60 @@ export class BangumiClient {
     limit = 25,
     offset = 0
   ): Promise<BangumiPaged<BangumiSubject>> {
-    return this.request<BangumiPaged<BangumiSubject>>(
-      'POST',
-      '/v0/search/subjects',
-      { limit, offset },
-      payload
-    )
+    const page = await this.searchGameSubjects(payload, { limit, offset })
+    return {
+      total: page.total ?? page.items.length,
+      limit: page.limit,
+      offset: page.offset,
+      data: [...page.items]
+    }
+  }
+
+  async getSubject(subjectId: number, options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiSubject> {
+    return this.request<BangumiSubject>('GET', `/v0/subjects/${subjectId}`, {
+      auth: 'optional',
+      signal: options.signal
+    })
   }
 
   async getSubjectById(subjectId: number): Promise<BangumiSubject> {
-    return this.request<BangumiSubject>('GET', `/v0/subjects/${subjectId}`)
+    return this.getSubject(subjectId)
   }
 
   async getSubjectPersons(subjectId: number): Promise<BangumiRelatedPerson[]> {
-    return this.request<BangumiRelatedPerson[]>('GET', `/v0/subjects/${subjectId}/persons`)
+    return this.request<BangumiRelatedPerson[]>('GET', `/v0/subjects/${subjectId}/persons`, {
+      auth: 'optional'
+    })
   }
 
   async getSubjectCharacters(subjectId: number): Promise<BangumiRelatedCharacter[]> {
-    return this.request<BangumiRelatedCharacter[]>('GET', `/v0/subjects/${subjectId}/characters`)
+    return this.request<BangumiRelatedCharacter[]>('GET', `/v0/subjects/${subjectId}/characters`, {
+      auth: 'optional'
+    })
   }
 
   async getSubjectRelations(subjectId: number): Promise<BangumiSubjectRelation[]> {
-    return this.request<BangumiSubjectRelation[]>('GET', `/v0/subjects/${subjectId}/subjects`)
+    return this.request<BangumiSubjectRelation[]>('GET', `/v0/subjects/${subjectId}/subjects`, {
+      auth: 'optional'
+    })
   }
 
   async getCharacterById(characterId: number): Promise<BangumiCharacterDetail> {
-    return this.request<BangumiCharacterDetail>('GET', `/v0/characters/${characterId}`)
+    return this.request<BangumiCharacterDetail>('GET', `/v0/characters/${characterId}`, {
+      auth: 'optional'
+    })
   }
 
   async getCharacterPersons(characterId: number): Promise<BangumiCharacterPerson[]> {
-    return this.request<BangumiCharacterPerson[]>('GET', `/v0/characters/${characterId}/persons`)
+    return this.request<BangumiCharacterPerson[]>('GET', `/v0/characters/${characterId}/persons`, {
+      auth: 'optional'
+    })
   }
 
   async getPersonById(personId: number): Promise<BangumiPersonDetail> {
-    return this.request<BangumiPersonDetail>('GET', `/v0/persons/${personId}`)
+    return this.request<BangumiPersonDetail>('GET', `/v0/persons/${personId}`, {
+      auth: 'optional'
+    })
   }
 
   async getSubjectImageUrl(subjectId: number, type: BangumiImageType): Promise<string | undefined> {
@@ -227,24 +192,316 @@ export class BangumiClient {
   ): Promise<string | undefined> {
     return this.requestRedirectUrl(`/v0/persons/${personId}/image`, { type })
   }
+
+  async getUserCollections(
+    username: string,
+    query: BangumiCollectionQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<Page<BangumiUserCollection>> {
+    const pageQuery = normalizePageQuery(query)
+    const response = await this.request<BangumiPaged<BangumiUserCollection>>(
+      'GET',
+      `/v0/users/${encodeURIComponent(username)}/collections`,
+      {
+        query: {
+          ...pageQuery,
+          subject_type: query.subject_type ?? BANGUMI_SUBJECT_TYPE_GAME,
+          type: query.type
+        },
+        auth: 'required',
+        signal: options.signal
+      }
+    )
+
+    return toPage(response, pageQuery)
+  }
+
+  async getUserCollection(
+    username: string,
+    subjectId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiUserCollection> {
+    return this.request<BangumiUserCollection>(
+      'GET',
+      `/v0/users/${encodeURIComponent(username)}/collections/${subjectId}`,
+      {
+        auth: 'required',
+        signal: options.signal
+      }
+    )
+  }
+
+  async upsertMyCollection(
+    subjectId: number,
+    payload: BangumiCollectionPatch,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiUserCollection> {
+    return this.request<BangumiUserCollection>('POST', `/v0/users/-/collections/${subjectId}`, {
+      body: payload,
+      auth: 'required',
+      signal: options.signal
+    })
+  }
+
+  async patchMyCollection(
+    subjectId: number,
+    payload: BangumiCollectionPatch,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiUserCollection> {
+    return this.request<BangumiUserCollection>('PATCH', `/v0/users/-/collections/${subjectId}`, {
+      body: payload,
+      auth: 'required',
+      signal: options.signal
+    })
+  }
+
+  async getIndex(indexId: number, options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiIndex> {
+    return this.request<BangumiIndex>('GET', `/v0/indices/${indexId}`, {
+      auth: 'optional',
+      signal: options.signal
+    })
+  }
+
+  async getIndexSubjects(
+    indexId: number,
+    query: BangumiIndexSubjectsQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<Page<BangumiIndexSubject>> {
+    const pageQuery = normalizePageQuery(query)
+    const response = await this.request<BangumiPaged<BangumiIndexSubject>>(
+      'GET',
+      `/v0/indices/${indexId}/subjects`,
+      {
+        query: {
+          ...pageQuery,
+          type: query.type ?? BANGUMI_SUBJECT_TYPE_GAME
+        },
+        auth: 'optional',
+        signal: options.signal
+      }
+    )
+
+    return toPage(response, pageQuery)
+  }
+
+  private async request<T>(
+    method: NetworkMethod,
+    pathname: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    const response = await this.send<T>(method, pathname, options)
+    return response.data
+  }
+
+  private async requestRedirectUrl(
+    pathname: string,
+    query: Record<string, string | number | boolean>
+  ): Promise<string | undefined> {
+    try {
+      const response = await this.send<Uint8Array>('GET', pathname, {
+        query,
+        auth: 'optional',
+        responseType: 'arrayBuffer'
+      })
+
+      return response.url?.trim() || undefined
+    } catch (error) {
+      this.logger?.debug('Bangumi image redirect lookup failed.', toSafeErrorLog(error))
+      return undefined
+    }
+  }
+
+  private async send<T>(
+    method: NetworkMethod,
+    pathname: string,
+    options: SendOptions = {}
+  ): Promise<NetworkResponse<T>> {
+    const settings = await this.getClientSettings()
+    const retryCount = normalizeRetryCount(settings.retryCount)
+    let refreshedAfter401 = false
+    let lastError: unknown
+
+    for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+      throwIfAborted(options.signal)
+
+      try {
+        const response = await this.sendOnce<T>(method, pathname, {
+          ...options,
+          forceRefresh: refreshedAfter401
+        })
+
+        if (response.ok) {
+          return response
+        }
+
+        const retryAfterMs = readRetryAfterMs(response.headers)
+
+        if (
+          response.status === 401 &&
+          options.auth !== 'none' &&
+          !refreshedAfter401 &&
+          (await this.tryForceRefresh(options))
+        ) {
+          refreshedAfter401 = true
+          continue
+        }
+
+        if (shouldRetryStatus(response.status) && attempt < retryCount) {
+          await delay(resolveRetryDelayMs(attempt, retryAfterMs), options.signal)
+          continue
+        }
+
+        throw normalizeBangumiApiError(response.status, pathname, response.data, retryAfterMs)
+      } catch (error) {
+        if (isAbortLikeError(error)) {
+          throw new BangumiExtensionError('job_cancelled', '操作已取消。')
+        }
+
+        if (error instanceof BangumiExtensionError) {
+          throw error
+        }
+
+        lastError = error
+        if (attempt < retryCount) {
+          await delay(resolveRetryDelayMs(attempt), options.signal)
+          continue
+        }
+      }
+    }
+
+    throw new BangumiApiError('network_failed', 'Bangumi API 网络请求失败。', { path: pathname })
+  }
+
+  private async sendOnce<T>(
+    method: NetworkMethod,
+    pathname: string,
+    options: SendOptions
+  ): Promise<NetworkResponse<T>> {
+    const settings = await this.getClientSettings()
+    const authMode = options.auth ?? 'optional'
+    const accessToken =
+      authMode === 'none'
+        ? undefined
+        : await this.tokenService.getAccessToken({
+            optional: authMode === 'optional',
+            forceRefresh: options.forceRefresh,
+            signal: options.signal
+          })
+
+    await this.limiter.acquire(options.signal)
+
+    return this.network.request<T>({
+      url: this.buildUrl(pathname, options.query),
+      method,
+      headers: this.buildHeaders(method, accessToken),
+      body: options.body === undefined ? undefined : (options.body as SerializableValue),
+      timeoutMs: normalizeTimeoutMs(settings.timeoutMs),
+      responseType: options.responseType ?? 'json'
+    })
+  }
+
+  private async tryForceRefresh(options: SendOptions): Promise<boolean> {
+    try {
+      await this.tokenService.getAccessToken({
+        forceRefresh: true,
+        optional: options.auth === 'optional',
+        signal: options.signal
+      })
+      return true
+    } catch (error) {
+      this.logger?.warn('Bangumi token refresh after 401 failed.', toSafeErrorLog(error))
+      return false
+    }
+  }
+
+  private buildUrl(
+    pathname: string,
+    query?: Record<string, string | number | boolean | undefined>
+  ): string {
+    const url = new URL(pathname, this.baseUrl)
+    for (const [key, value] of Object.entries(query ?? {})) {
+      if (value !== undefined) {
+        url.searchParams.set(key, String(value))
+      }
+    }
+    return url.toString()
+  }
+
+  private buildHeaders(method: NetworkMethod, accessToken?: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'User-Agent': this.userAgent
+    }
+
+    if (method !== 'GET') {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`
+    }
+
+    return headers
+  }
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function normalizeMe(value: BangumiMe): BangumiMe {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    typeof value.id !== 'number' ||
+    !Number.isFinite(value.id) ||
+    typeof value.username !== 'string' ||
+    !value.username.trim()
+  ) {
+    throw new BangumiApiError('bangumi_validation', 'Bangumi 账号响应无法识别。', {
+      path: '/v0/me'
+    })
+  }
+
+  return {
+    ...value,
+    id: Math.trunc(value.id),
+    username: value.username.trim(),
+    nickname: typeof value.nickname === 'string' && value.nickname.trim() ? value.nickname.trim() : value.username.trim()
+  }
 }
 
-function stringifyResponseData(value: unknown): string {
-  if (value === null || value === undefined) {
-    return ''
+function normalizeRetryCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.min(10, Math.trunc(value))
+    : 3
+}
+
+function normalizeTimeoutMs(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.trunc(value)
+    : 30_000
+}
+
+function shouldRetryStatus(status: number): boolean {
+  return status === 429 || status >= 500
+}
+
+function resolveRetryDelayMs(attempt: number, retryAfterMs?: number): number {
+  if (retryAfterMs !== undefined) {
+    return Math.min(60_000, Math.max(250, retryAfterMs))
+  }
+  return Math.min(30_000, 500 * 2 ** attempt)
+}
+
+function isAbortLikeError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+function toSafeErrorLog(error: unknown): Record<string, unknown> {
+  if (error instanceof BangumiExtensionError) {
+    return { code: error.code, message: error.message }
   }
 
-  if (typeof value === 'string') {
-    return value
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message }
   }
 
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return String(value)
-  }
+  return { message: String(error) }
 }

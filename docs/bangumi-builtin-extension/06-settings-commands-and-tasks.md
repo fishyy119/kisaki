@@ -163,7 +163,6 @@ BackgroundTaskService 当前已经持久化 `history`，每个 task 保留最近
 - `auth.account`
 - `sync.state`
 - `sync.queue`
-- `diagnostics.lastRelayHealth`
 
 `context.secrets` keys:
 
@@ -185,7 +184,6 @@ settings resolve 应尽量并行读取：
 - account snapshot。
 - scraper profiles。
 - owned task summaries，用于判断推荐 task 是否已创建。
-- relay health cache。
 
 导入 dialog 的草稿值只存在当前 settings panel session；关闭 dialog 或重新打开时回到命令默认值，除非用户是在创建 background task，此时以 task args 为准。
 

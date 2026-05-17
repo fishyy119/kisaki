@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { computed, isRef, onBeforeUnmount, ref, toRaw, watch, type Ref } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import type {
@@ -850,12 +850,56 @@ async function invokeIpc<T>(
     | ExtensionSettingsPanelInvokeRequest
     | ExtensionSettingsPanelReleaseRequest
 ): Promise<T> {
-  const result = await ipcManager.invoke(channel, request as never)
+  const result = await ipcManager.invoke(channel, toPlainIpcPayload(request) as never)
   if (result.success) {
     return ('data' in result ? result.data : undefined) as T
   }
 
   throw new Error(result.error || 'Extension settings panel request failed.')
+}
+
+function toPlainIpcPayload<
+  T extends
+    | ExtensionSettingsPanelOpenRequest
+    | ExtensionSettingsPanelRefreshRequest
+    | ExtensionSettingsPanelSubmitRequest
+    | ExtensionSettingsPanelInvokeRequest
+    | ExtensionSettingsPanelReleaseRequest
+>(request: T): T {
+  return toPlainIpcValue(request, new WeakMap()) as T
+}
+
+function toPlainIpcValue(value: unknown, seen: WeakMap<object, unknown>): unknown {
+  if (isRef(value)) {
+    return toPlainIpcValue(value.value, seen)
+  }
+
+  if (value === null || typeof value !== 'object') {
+    return value
+  }
+
+  const raw = toRaw(value) as object
+  const cached = seen.get(raw)
+  if (cached) {
+    return cached
+  }
+
+  if (Array.isArray(raw)) {
+    const array: unknown[] = []
+    seen.set(raw, array)
+    for (const item of raw) {
+      array.push(toPlainIpcValue(item, seen))
+    }
+    return array
+  }
+
+  const record: Record<string, unknown> = {}
+  seen.set(raw, record)
+  for (const [key, entry] of Object.entries(raw)) {
+    record[key] = toPlainIpcValue(entry, seen)
+  }
+
+  return record
 }
 
 function createRequestId(): string {
