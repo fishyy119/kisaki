@@ -2,6 +2,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { createLogger } from '@main/log'
 import { Mutex } from 'async-mutex'
+import { getBootstrapArgs } from '@main/bootstrap/args'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import { ExtensionCapabilityGateway } from './capabilities'
@@ -158,6 +159,7 @@ export class ExtensionService implements IService {
     })
     this.runtime = new RuntimeManager({
       hostModulePath: resolveInsideRoot(app.getAppPath(), 'out', 'main', 'extension-host.js'),
+      hostInspect: getBootstrapArgs().extensionHostInspect,
       capabilities: this.capabilities,
       contributions: this.contributions
     })

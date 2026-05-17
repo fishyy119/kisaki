@@ -1,6 +1,7 @@
 import { once } from 'node:events'
-import { utilityProcess, type UtilityProcess } from 'electron'
+import { utilityProcess, type ForkOptions, type UtilityProcess } from 'electron'
 import { createLogger } from '@main/log'
+import type { ExtensionHostInspectOptions } from '@shared/bootstrap'
 import type { RpcMessage } from '@kisaki/extension-api'
 
 const log = createLogger('Extension')
@@ -17,7 +18,10 @@ export class ExtensionHostController {
   private process: UtilityProcess | null = null
   private expectedExit = false
 
-  constructor(private readonly modulePath: string) {}
+  constructor(
+    private readonly modulePath: string,
+    private readonly inspectOptions?: ExtensionHostInspectOptions
+  ) {}
 
   async start(onMessage: (message: unknown) => Promise<void> | void): Promise<void> {
     if (this.process?.pid) {
@@ -25,10 +29,16 @@ export class ExtensionHostController {
     }
 
     this.expectedExit = false
-    const child = utilityProcess.fork(this.modulePath, [], {
+    const forkOptions: ForkOptions = {
       serviceName: 'Kisaki Extension Host',
       stdio: 'pipe'
-    })
+    }
+    const inspectExecArgv = createInspectExecArgv(this.inspectOptions)
+    if (inspectExecArgv.length > 0) {
+      forkOptions.execArgv = inspectExecArgv
+    }
+
+    const child = utilityProcess.fork(this.modulePath, [], forkOptions)
 
     child.on('message', (message) => {
       void Promise.resolve(onMessage(message)).catch((error) => {
@@ -51,6 +61,9 @@ export class ExtensionHostController {
     this.process = child
     await once(child, 'spawn')
     log.info('Spawned extension host.', { pid: child.pid ?? null })
+    if (inspectExecArgv.length > 0) {
+      log.info('Extension host inspector enabled.', { execArgv: inspectExecArgv })
+    }
   }
 
   async stop(): Promise<void> {
@@ -90,6 +103,15 @@ export class ExtensionHostController {
       })
     })
   }
+}
+
+function createInspectExecArgv(options: ExtensionHostInspectOptions | undefined): string[] {
+  if (!options) {
+    return []
+  }
+
+  const flag = options.mode === 'inspect-brk' ? '--inspect-brk' : '--inspect'
+  return [`${flag}=${options.address}`]
 }
 
 function writeHostStreamLog(stream: 'stdout' | 'stderr', chunk: Buffer | string): void {

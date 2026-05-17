@@ -1,5 +1,6 @@
 import path from 'node:path'
-import { cp, mkdir, readdir, rename, rm } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { pathToFileURL } from 'node:url'
 import { watch, type FSWatcher } from 'chokidar'
 import type { ExtensionManifest } from '@kisaki/extension-api'
 import { CliError, logger } from '../logger'
@@ -17,11 +18,13 @@ export interface OutputCommandOptions {
   outDir: string
   project?: string
   watch?: boolean
+  debugSources?: boolean
 }
 
 export interface ExtensionOutputOptions {
   outDir: string
   preservePackageRoot?: boolean
+  debugSources?: boolean
 }
 
 export interface ExtensionOutputResult {
@@ -46,8 +49,14 @@ export async function outputCommand(options: OutputCommandOptions): Promise<void
     logger.heading('kisx output --watch', 'Watching extension package output.')
     logger.detail(`Project: ${project.rootDir}`)
     logger.detail(`Output: ${path.resolve(project.rootDir, options.outDir)}`)
+    if (options.debugSources) {
+      logger.detail('Debug source maps: enabled')
+    }
 
-    const session = await watchExtensionOutput(project, { outDir: options.outDir })
+    const session = await watchExtensionOutput(project, {
+      outDir: options.outDir,
+      debugSources: options.debugSources
+    })
     const result = await session.ready
     logger.success(`Output ready at ${path.relative(project.rootDir, result.packagePath)}`)
 
@@ -71,8 +80,14 @@ export async function outputCommand(options: OutputCommandOptions): Promise<void
   logger.heading('kisx output', 'Building extension package output.')
   logger.detail(`Project: ${project.rootDir}`)
   logger.detail(`Output: ${path.resolve(project.rootDir, options.outDir)}`)
+  if (options.debugSources) {
+    logger.detail('Debug source maps: enabled')
+  }
 
-  const result = await buildExtensionOutput(project, { outDir: options.outDir })
+  const result = await buildExtensionOutput(project, {
+    outDir: options.outDir,
+    debugSources: options.debugSources
+  })
   logger.success(`Output written to ${path.relative(project.rootDir, result.packagePath)}`)
 }
 
@@ -264,22 +279,28 @@ async function writeExtensionPackageOutput(
     await mkdir(packagePath, { recursive: true })
     await clearDirectoryContents(packagePath)
     await copyPackageFiles(project, manifest, packagePath)
+    if (options.debugSources) {
+      await rewriteCopiedDistSourceMaps(project.distDir, path.join(packagePath, 'dist'))
+    }
     return packagePath
   }
 
   const tempPackagePath = path.join(outputRoot, `.${manifest.id}.tmp-${process.pid}-${Date.now()}`)
 
-  await rm(tempPackagePath, { recursive: true, force: true })
+  await removePath(tempPackagePath)
   await mkdir(tempPackagePath, { recursive: true })
 
   try {
     await copyPackageFiles(project, manifest, tempPackagePath)
+    if (options.debugSources) {
+      await rewriteCopiedDistSourceMaps(project.distDir, path.join(tempPackagePath, 'dist'))
+    }
 
-    await rm(packagePath, { recursive: true, force: true })
+    await removePath(packagePath)
     await rename(tempPackagePath, packagePath)
     return packagePath
   } catch (error) {
-    await rm(tempPackagePath, { recursive: true, force: true }).catch(() => undefined)
+    await removePath(tempPackagePath).catch(() => undefined)
     throw error
   }
 }
@@ -315,9 +336,50 @@ async function copyOptionalPackageFiles(
 
 async function clearDirectoryContents(directoryPath: string): Promise<void> {
   const entries = await readdir(directoryPath)
-  await Promise.all(
-    entries.map((entry) => rm(path.join(directoryPath, entry), { recursive: true, force: true }))
-  )
+  await Promise.all(entries.map((entry) => removePath(path.join(directoryPath, entry))))
+}
+
+async function removePath(targetPath: string): Promise<void> {
+  await rm(targetPath, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 100
+  })
+}
+
+async function rewriteCopiedDistSourceMaps(
+  sourceDistDir: string,
+  targetDistDir: string
+): Promise<void> {
+  const entries = await readdir(targetDistDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const targetPath = path.join(targetDistDir, entry.name)
+    const sourcePath = path.join(sourceDistDir, entry.name)
+
+    if (entry.isDirectory()) {
+      await rewriteCopiedDistSourceMaps(sourcePath, targetPath)
+      continue
+    }
+
+    if (entry.isFile() && entry.name.endsWith('.map')) {
+      await rewriteSourceMapSourceRoot(targetPath, sourceDistDir)
+    }
+  }
+}
+
+async function rewriteSourceMapSourceRoot(mapPath: string, originalMapDir: string): Promise<void> {
+  const sourceMap = JSON.parse(await readFile(mapPath, 'utf8')) as Record<string, unknown>
+  sourceMap.sourceRoot = toDirectoryFileUrl(originalMapDir)
+  await writeFile(mapPath, `${JSON.stringify(sourceMap)}\n`)
+}
+
+function toDirectoryFileUrl(directoryPath: string): string {
+  const directoryWithSeparator = directoryPath.endsWith(path.sep)
+    ? directoryPath
+    : `${directoryPath}${path.sep}`
+  return pathToFileURL(directoryWithSeparator).href
 }
 
 function resolvePackageOutputPath(packagePath: string, relativePath: string): string {

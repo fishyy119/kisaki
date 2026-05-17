@@ -37,6 +37,7 @@ export async function runCli(argv = process.argv): Promise<void> {
       'Directory that will contain the extension package',
       'out/extensions'
     )
+    .option('--debug-sources', 'Rewrite copied source maps to workspace source paths', false)
     .option('-w, --watch', 'Watch-build and keep the package output synchronized', false)
     .action(outputCommand)
 
@@ -139,6 +140,11 @@ export async function runCli(argv = process.argv): Promise<void> {
       '-o, --out-dir <dir>',
       'Directory for development package output',
       '.kisaki/dev/extensions'
+    )
+    .option('--inspect-extension-host [address]', 'Enable extension host inspector')
+    .option(
+      '--inspect-brk-extension-host [address]',
+      'Enable extension host inspector and break on start'
     )
     .action(devCommand)
 

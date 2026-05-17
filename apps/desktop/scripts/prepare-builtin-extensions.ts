@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { access, mkdir, readdir, rm } from 'node:fs/promises'
+import { access, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 type BuildTarget = 'dev' | 'resources'
 
@@ -10,6 +10,7 @@ const desktopRoot = path.resolve(scriptDir, '..')
 const repoRoot = path.resolve(desktopRoot, '..', '..')
 const builtinExtensionsRoot = path.join(repoRoot, 'extensions')
 const extensionCliEntry = path.join(repoRoot, 'packages', 'extension-cli', 'src', 'index.ts')
+const extensionDebugPackageNames = ['extension-api', 'extension-sdk'] as const
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const shouldUseShell = process.platform === 'win32'
 
@@ -18,7 +19,7 @@ async function main(): Promise<void> {
 
   if (command === 'build') {
     const target = parseTarget(args)
-    await buildBuiltinExtensions(resolveOutputRoot(target))
+    await buildBuiltinExtensions(target)
     return
   }
 
@@ -35,9 +36,12 @@ async function main(): Promise<void> {
   throw new Error('Usage: prepare-builtin-extensions.ts <build|watch>')
 }
 
-async function buildBuiltinExtensions(outputRoot: string): Promise<void> {
+async function buildBuiltinExtensions(target: BuildTarget): Promise<void> {
+  const outputRoot = resolveOutputRoot(target)
+  const debugSources = target === 'dev'
   const projects = await findBuiltinExtensionProjects()
   await resetOutputRoot(outputRoot)
+  await prepareExtensionDebugPackages(outputRoot, debugSources)
 
   if (projects.length === 0) {
     console.log(`[builtin-extensions] No built-in extensions found in ${builtinExtensionsRoot}`)
@@ -46,18 +50,19 @@ async function buildBuiltinExtensions(outputRoot: string): Promise<void> {
 
   console.log(`[builtin-extensions] Building ${projects.length} built-in extension(s)`)
   for (const project of projects) {
-    await runKisxOutput(project, outputRoot, false)
+    await runKisxOutput(project, outputRoot, false, debugSources)
   }
 }
 
 async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]): Promise<void> {
   const projects = await findBuiltinExtensionProjects()
   await resetOutputRoot(outputRoot)
+  await prepareExtensionDebugPackages(outputRoot, true)
 
   if (projects.length > 0) {
     console.log(`[builtin-extensions] Preparing ${projects.length} built-in extension(s)`)
     for (const project of projects) {
-      await runKisxOutput(project, outputRoot, false)
+      await runKisxOutput(project, outputRoot, false, true)
     }
   } else {
     console.log(`[builtin-extensions] No built-in extensions found in ${builtinExtensionsRoot}`)
@@ -146,19 +151,64 @@ async function resetOutputRoot(outputRoot: string): Promise<void> {
   await mkdir(outputRoot, { recursive: true })
 }
 
-function runKisxOutput(projectDir: string, outputRoot: string, watch: boolean): Promise<void> {
-  return runProcess(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, watch), desktopRoot)
+async function prepareExtensionDebugPackages(
+  outputRoot: string,
+  debugSources: boolean
+): Promise<void> {
+  await buildExtensionDebugPackages()
+  await copyExtensionDebugPackages(resolveDebugPackagesRoot(outputRoot), debugSources)
+}
+
+async function buildExtensionDebugPackages(): Promise<void> {
+  for (const packageName of extensionDebugPackageNames) {
+    await runProcess(pnpmCommand, ['--filter', `@kisaki/${packageName}`, 'build'], repoRoot)
+  }
+}
+
+async function copyExtensionDebugPackages(
+  debugPackagesRoot: string,
+  debugSources: boolean
+): Promise<void> {
+  await rm(debugPackagesRoot, { recursive: true, force: true })
+
+  for (const packageName of extensionDebugPackageNames) {
+    const sourceDir = path.join(repoRoot, 'packages', packageName, 'dist')
+    const targetDir = path.join(debugPackagesRoot, packageName, 'dist')
+    await mkdir(path.dirname(targetDir), { recursive: true })
+    await cp(sourceDir, targetDir, { recursive: true })
+    if (debugSources) {
+      await rewriteCopiedDistSourceMaps(sourceDir, targetDir)
+    }
+  }
+}
+
+function runKisxOutput(
+  projectDir: string,
+  outputRoot: string,
+  watch: boolean,
+  debugSources: boolean
+): Promise<void> {
+  return runProcess(
+    pnpmCommand,
+    createKisxOutputArgs(projectDir, outputRoot, watch, debugSources),
+    desktopRoot
+  )
 }
 
 function spawnKisxOutputWatcher(projectDir: string, outputRoot: string): ChildProcess {
-  return spawn(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, true), {
+  return spawn(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, true, true), {
     cwd: desktopRoot,
     stdio: 'inherit',
     shell: shouldUseShell
   })
 }
 
-function createKisxOutputArgs(projectDir: string, outputRoot: string, watch: boolean): string[] {
+function createKisxOutputArgs(
+  projectDir: string,
+  outputRoot: string,
+  watch: boolean,
+  debugSources: boolean
+): string[] {
   const args = [
     'exec',
     'tsx',
@@ -169,6 +219,10 @@ function createKisxOutputArgs(projectDir: string, outputRoot: string, watch: boo
     '--out-dir',
     outputRoot
   ]
+
+  if (debugSources) {
+    args.push('--debug-sources')
+  }
 
   if (watch) {
     args.push('--watch')
@@ -222,6 +276,44 @@ function resolveOutputRoot(target: BuildTarget): string {
   }
 
   return path.join(desktopRoot, 'out', 'extensions')
+}
+
+function resolveDebugPackagesRoot(outputRoot: string): string {
+  return path.join(path.dirname(outputRoot), 'packages')
+}
+
+async function rewriteCopiedDistSourceMaps(
+  sourceDistDir: string,
+  targetDistDir: string
+): Promise<void> {
+  const entries = await readdir(targetDistDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const sourcePath = path.join(sourceDistDir, entry.name)
+    const targetPath = path.join(targetDistDir, entry.name)
+
+    if (entry.isDirectory()) {
+      await rewriteCopiedDistSourceMaps(sourcePath, targetPath)
+      continue
+    }
+
+    if (entry.isFile() && entry.name.endsWith('.map')) {
+      await rewriteSourceMapSourceRoot(targetPath, sourceDistDir)
+    }
+  }
+}
+
+async function rewriteSourceMapSourceRoot(mapPath: string, originalMapDir: string): Promise<void> {
+  const sourceMap = JSON.parse(await readFile(mapPath, 'utf8')) as Record<string, unknown>
+  sourceMap.sourceRoot = toDirectoryFileUrl(originalMapDir)
+  await writeFile(mapPath, `${JSON.stringify(sourceMap)}\n`)
+}
+
+function toDirectoryFileUrl(directoryPath: string): string {
+  const directoryWithSeparator = directoryPath.endsWith(path.sep)
+    ? directoryPath
+    : `${directoryPath}${path.sep}`
+  return pathToFileURL(directoryWithSeparator).href
 }
 
 main().catch((error: unknown) => {

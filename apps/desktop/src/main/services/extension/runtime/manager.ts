@@ -3,6 +3,7 @@ import { app } from 'electron'
 import fse from 'fs-extra'
 import { Mutex } from 'async-mutex'
 import { createLogger } from '@main/log'
+import type { ExtensionHostInspectOptions } from '@shared/bootstrap'
 import {
   EXTENSION_API_VERSION,
   EXTENSION_RPC_PROTOCOL_VERSION,
@@ -49,6 +50,7 @@ export type { ExtensionRuntimeState, ExtensionRuntimeStatus } from './state'
 
 export interface RuntimeManagerOptions {
   hostModulePath: string
+  hostInspect?: ExtensionHostInspectOptions
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
   onRuntimeStateChanged?(extensionId: string, state: ExtensionRuntimeState): void
@@ -331,7 +333,10 @@ export class RuntimeManager {
       throw new Error(`Extension host entry was not found at ${this.options.hostModulePath}`)
     }
 
-    const controller = new ExtensionHostController(this.options.hostModulePath)
+    const controller = new ExtensionHostController(
+      this.options.hostModulePath,
+      this.options.hostInspect
+    )
     const rpc = new ExtensionHostRpcClient((message) => controller.send(message))
     registerHostRequests({
       rpc,

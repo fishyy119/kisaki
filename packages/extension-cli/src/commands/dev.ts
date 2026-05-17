@@ -1,12 +1,14 @@
 import type { ChildProcess } from 'node:child_process'
 import { CliError, logger } from '../logger'
-import { launchKisaki } from '../launch'
+import { launchKisaki, type ExtensionHostInspectLaunchOptions } from '../launch'
 import { resolveProject } from '../project'
 import { watchExtensionOutput, type ExtensionOutputWatchSession } from './output'
 
 export interface DevCommandOptions {
   kisaki: string
   outDir: string
+  inspectExtensionHost?: string | boolean
+  inspectBrkExtensionHost?: string | boolean
 }
 
 /**
@@ -19,12 +21,14 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   logger.detail(`Project: ${project.rootDir}`)
   logger.detail(`Output: ${options.outDir}`)
 
-  const output = await watchExtensionOutput(project, { outDir: options.outDir })
+  const inspectOptions = resolveExtensionHostInspectOptions(options)
+  const output = await watchExtensionOutput(project, { outDir: options.outDir, debugSources: true })
   const ready = await output.ready
 
   const kisaki: ChildProcess = launchKisaki(ready.packagePath, {
     kisakiCommand: options.kisaki,
-    cwd: project.rootDir
+    cwd: project.rootDir,
+    extensionHostInspect: inspectOptions
   })
   let stopped = false
   const stop = (code = 0): void => {
@@ -61,6 +65,35 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   })
 
   await new Promise<void>(() => undefined)
+}
+
+function resolveExtensionHostInspectOptions(
+  options: DevCommandOptions
+): ExtensionHostInspectLaunchOptions | undefined {
+  const inspectBrkAddress = readOptionalAddress(options.inspectBrkExtensionHost)
+  if (inspectBrkAddress !== null) {
+    return { mode: 'inspect-brk', address: inspectBrkAddress }
+  }
+
+  const inspectAddress = readOptionalAddress(options.inspectExtensionHost)
+  if (inspectAddress !== null) {
+    return { mode: 'inspect', address: inspectAddress }
+  }
+
+  return undefined
+}
+
+function readOptionalAddress(value: string | boolean | undefined): string | undefined | null {
+  if (value === undefined || value === false) {
+    return null
+  }
+
+  if (value === true) {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
 }
 
 async function closeOutputAndExit(
