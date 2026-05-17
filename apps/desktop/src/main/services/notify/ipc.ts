@@ -7,6 +7,6 @@ export function registerNotifyIpc(service: NotifyService, ipc: IpcService): void
   })
 
   ipc.on('notify:auto', (_, options) => {
-    service.handleAuto(options)
+    service.showAuto(options)
   })
 }

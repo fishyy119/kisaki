@@ -40,7 +40,7 @@ export class ExtensionNotifyCapabilityProvider {
       }
 
       const handleId =
-        this.options.notify.showWithHandle(normalized.notifyOptions, normalized.requestedId) ??
+        this.options.notify.show(normalized.notifyOptions, normalized.requestedId) ??
         normalized.requestedId ??
         nanoid()
 
@@ -62,7 +62,7 @@ export class ExtensionNotifyCapabilityProvider {
 
     try {
       const normalized = normalizeOptions(title, options, kind)
-      this.options.notify.notify.update(id, normalized.notifyOptions)
+      this.options.notify.update(id, normalized.notifyOptions)
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to update the notification.')
     }
@@ -72,7 +72,7 @@ export class ExtensionNotifyCapabilityProvider {
     this.requireOwnedHandle(runtimeHandle, id)
 
     try {
-      this.options.notify.notify.dismiss(id)
+      this.options.notify.dismiss(id)
       this.untrackHandle(runtimeHandle, id)
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to dismiss the notification.')
@@ -87,7 +87,7 @@ export class ExtensionNotifyCapabilityProvider {
 
     for (const id of [...handles]) {
       try {
-        this.options.notify.notify.dismiss(id)
+        this.options.notify.dismiss(id)
       } catch {
         // Best-effort cleanup; renderer/native state may already be gone.
       } finally {
