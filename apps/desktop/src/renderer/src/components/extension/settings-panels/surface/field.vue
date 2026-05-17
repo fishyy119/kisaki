@@ -35,9 +35,7 @@ const props = defineProps<{
 }>()
 
 const visibleNodes = computed(() => props.field.content.filter((node) => !node.hidden))
-const orientation = computed(() =>
-  props.field.orientation === 'horizontal' ? 'horizontal' : 'vertical'
-)
+const orientation = computed(() => props.field.orientation ?? 'horizontal')
 const fieldClass = computed(() =>
   cn(
     props.field.span === 'full' && 'col-span-full',

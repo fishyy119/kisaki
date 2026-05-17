@@ -10,7 +10,6 @@
  */
 
 import type {
-  ExtensionContext,
   GameScraperProvider,
   GameScraperSession,
   GameScraperSlot,
@@ -27,10 +26,9 @@ import type {
   ScrapedGamePersonFact,
   ScraperLookup
 } from '@kisaki/extension-sdk'
-import { kisaki } from '@kisaki/extension-sdk'
-import { BangumiClient } from './client'
+import { BangumiClient } from '../api/client'
+import { BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
 import {
-  BANGUMI_SUBJECT_TYPE_GAME,
   buildBangumiCharacterUrl,
   buildBangumiPersonUrl,
   buildBangumiSubjectUrl,
@@ -62,7 +60,7 @@ import type {
   BangumiRelatedPerson,
   BangumiSubject,
   BangumiSubjectRelation
-} from './types'
+} from '../api/types'
 
 interface BangumiSubjectImageVariants {
   large?: string
@@ -87,13 +85,7 @@ export class BangumiProvider implements GameScraperProvider {
     'icons'
   ] as const
 
-  private readonly context: ExtensionContext
-  private readonly client: BangumiClient
-
-  constructor(context: ExtensionContext) {
-    this.context = context
-    this.client = new BangumiClient(kisaki.network, () => this.getAccessToken())
-  }
+  constructor(private readonly client: BangumiClient) {}
 
   // ===========================================================================
   // Search
@@ -793,10 +785,6 @@ export class BangumiProvider implements GameScraperProvider {
     return normalized || undefined
   }
 
-  private async getAccessToken(): Promise<string | undefined> {
-    const value = await this.context.storage.get('accessToken', '')
-    return typeof value === 'string' && value.trim() ? value.trim() : undefined
-  }
 }
 
 const PARTIAL_DATE_KEYS = new Set(['year', 'month', 'day'])

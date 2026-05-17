@@ -16,7 +16,7 @@ Bangumi 第一版需要的宿主能力已经存在，不再作为本设计的前
 | Host event        | `kisaki.events.on`                                     | 订阅 `library.game.created` / `library.game.updated`              |
 | Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | 导入时选择 game profile                                           |
 | Ingest            | `kisaki.ingest.games.addFromScraper`                   | 按 profile 创建或定位游戏                                         |
-| Library write     | `kisaki.library.*`                                     | 为本次新建游戏写 status/score、创建 tag/collection、建立 relation |
+| Library write     | `kisaki.library.*`                                     | 为本次新建游戏写游玩状态/评分、创建 tag/collection、建立 relation |
 | Command 注册      | `context.contributions.commands.register`              | 注册同步、导入、刷新等长任务                                      |
 | Command 执行      | `kisaki.commands.start/wait/cancel/getProgress`        | settings panel 启动和控制一次 job                                 |
 | Background task   | `kisaki.backgroundTasks`                               | 创建本扩展推荐 task 配置                                          |
@@ -96,7 +96,7 @@ Bangumi 自动同步只订阅：
 
 - 基于同步 payload 计算 fingerprint。
 - 记录最近成功 fingerprint。
-- 本扩展主动写入本地 status/score 后维护 fingerprint suppress；导入流程对 ingest 返回的 gameId 维护短期 import suppress，避免导入事件立刻回写 Bangumi。
+- 本扩展主动写入本地游玩状态/评分后维护 fingerprint suppress；导入流程对 ingest 返回的 gameId 维护短期 import suppress，避免导入事件立刻回写 Bangumi。
 - 对同一 `gameId` debounce/coalesce。
 - source 不作为跳过同步的必要条件。
 

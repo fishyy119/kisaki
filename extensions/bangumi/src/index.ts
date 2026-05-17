@@ -1,50 +1,31 @@
-import { defineExtension, defineSettingsPanel } from '@kisaki/extension-sdk'
+import { defineExtension, kisaki } from '@kisaki/extension-sdk'
+import { BangumiClient } from './api/client'
+import { TokenStore } from './auth/token-store'
+import { SettingsStore } from './config/store'
 import { BangumiProvider } from './scraper/provider'
+import { createBangumiSettingsPanel } from './ui/settings'
 
 export default defineExtension({
-  activate(context) {
-    context.logger.info('Built-in Bangumi scraper activated.')
+  async activate(context) {
+    const settingsStore = new SettingsStore(context.storage)
+    const tokenStore = new TokenStore(context.secrets)
+    await settingsStore.get()
 
-    context.contributions.scraperProviders.game.register(new BangumiProvider(context))
-    context.contributions.settingsPanels.register(
-      defineSettingsPanel({
-        id: 'settings',
-        title: 'Bangumi',
-        async resolve(_context, settings) {
-          const accessToken = await context.storage.get('accessToken', '')
+    const client = new BangumiClient(
+      kisaki.network,
+      () => tokenStore.getAccessToken(),
+      async () => (await settingsStore.get()).client.rateLimit
+    )
 
-          return {
-            fields: [
-              {
-                id: 'api',
-                label: 'API',
-                content: [
-                  settings.textInput({
-                    id: 'accessToken',
-                    initialValue: typeof accessToken === 'string' ? accessToken : '',
-                    inputMode: 'password',
-                    grow: true
-                  }),
-                  settings.notice({
-                    id: 'rate-limit',
-                    tone: 'info',
-                    text: 'Requests are limited to 4 per second.'
-                  })
-                ]
-              }
-            ]
-          }
-        },
-        async submit(event) {
-          const accessToken = event.values.accessToken
-          await context.storage.set(
-            'accessToken',
-            typeof accessToken === 'string' ? accessToken.trim() : ''
-          )
+    context.logger.info('Built-in Bangumi integration activated.')
 
-          return event.close('root', { message: 'Bangumi settings saved.' })
-        }
-      })
+    context.subscriptions.add(
+      context.contributions.scraperProviders.game.register(new BangumiProvider(client))
+    )
+    context.subscriptions.add(
+      context.contributions.settingsPanels.register(
+        createBangumiSettingsPanel({ settingsStore, tokenStore })
+      )
     )
   }
 })

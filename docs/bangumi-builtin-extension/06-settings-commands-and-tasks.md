@@ -11,11 +11,11 @@ title: Bangumi
 
 Root 使用 tabs，复杂流程使用 dialogs：
 
-- Account: 登录状态、账号摘要、relay 状态、登录/验证/刷新/退出。
-- Sync: 自动同步开关、状态/评分开关、mapping 表、手动全量同步入口。
+- Account: 登录状态、账号摘要、登录/验证/刷新/退出。
+- Sync: 自动同步开关、游玩状态/评分开关、mapping 表、手动全量同步入口。
 - Import: 我的收藏导入、目录导入，以及一次性目标合集和新建游戏的可选用户态字段写入参数。
 - Automation: 常用 task 创建入口和已创建状态摘要。
-- Advanced: rate limit、retry、诊断、清理 storage/secrets。
+- Advanced: 登录超时、API 请求窗口、API timeout、retry、诊断、清理 storage/secrets。
 
 UI 规则：
 
@@ -196,7 +196,6 @@ settings resolve 应尽量并行读取：
 统一中文文案：
 
 - `Bangumi 账号`
-- `Kisaki OAuth Relay`
 - `游戏收藏`
 - `想玩`、`玩过`、`在玩`、`搁置`、`抛弃`
 - `全量同步`

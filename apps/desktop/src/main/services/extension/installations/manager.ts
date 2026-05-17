@@ -28,6 +28,8 @@ import { ExtensionInstallationView } from './view'
 import { getBootstrapArgs } from '@main/bootstrap/args'
 
 const log = createLogger('Extension')
+const FILE_CHANGE_RELOAD_READY_ATTEMPTS = 12
+const FILE_CHANGE_RELOAD_READY_DELAY_MS = 250
 
 export interface ExtensionInstallationManagerOptions {
   layout: ExtensionPackageLayout
@@ -358,7 +360,10 @@ export class ExtensionInstallationManager {
     )
   }
 
-  private async resolveDevExtension(): Promise<ExtensionInstalledEntry | null> {
+  private async resolveDevExtension(
+    options: { logFailures?: boolean } = {}
+  ): Promise<ExtensionInstalledEntry | null> {
+    const logFailures = options.logFailures ?? true
     const devExtensionPath = getBootstrapArgs().devExtension
     if (!devExtensionPath) {
       return null
@@ -409,7 +414,9 @@ export class ExtensionInstallationManager {
         tempPath
       }
     } catch (error) {
-      log.error('Failed to load --dev-extension package:', error)
+      if (logFailures) {
+        log.error('Failed to load --dev-extension package:', error)
+      }
       return null
     }
   }
@@ -418,12 +425,67 @@ export class ExtensionInstallationManager {
     extensionId: string,
     cause: ExtensionRuntimeChangeCause
   ): Promise<void> {
-    this.devExtensionEntry = await this.resolveDevExtension()
-    await this.refresh()
+    const shouldApplyRuntimeState = await this.refreshForRuntimeReload(extensionId, cause)
+    if (!shouldApplyRuntimeState) {
+      return
+    }
+
     await this.applyRuntimeState({
       cause,
       forceReloadIds: [extensionId]
     })
+  }
+
+  private async refreshForRuntimeReload(
+    extensionId: string,
+    cause: ExtensionRuntimeChangeCause
+  ): Promise<boolean> {
+    if (cause !== 'file-change') {
+      this.devExtensionEntry = await this.resolveDevExtension()
+      await this.refresh()
+      return true
+    }
+
+    return this.refreshUntilReloadTargetReady(extensionId)
+  }
+
+  private async refreshUntilReloadTargetReady(extensionId: string): Promise<boolean> {
+    const previousDevExtensionEntry = this.devExtensionEntry
+    const previousInstalledEntries = this.installedEntries
+    const previousInstalledById = this.installedById
+    let lastEntry: ExtensionInstalledEntry | undefined
+
+    for (let attempt = 1; attempt <= FILE_CHANGE_RELOAD_READY_ATTEMPTS; attempt += 1) {
+      this.devExtensionEntry = await this.resolveDevExtension({
+        logFailures: attempt === FILE_CHANGE_RELOAD_READY_ATTEMPTS
+      })
+      await this.refresh()
+
+      lastEntry = this.installedById.get(extensionId)
+      if (isRuntimeReadyEntry(lastEntry)) {
+        if (attempt > 1) {
+          log.info('Extension package became ready after file-change wait.', {
+            extensionId: extensionId,
+            attempt: attempt
+          })
+        }
+        return true
+      }
+
+      if (attempt < FILE_CHANGE_RELOAD_READY_ATTEMPTS) {
+        await delay(FILE_CHANGE_RELOAD_READY_DELAY_MS)
+      }
+    }
+
+    log.warn('Extension package was not ready after file-change wait.', {
+      extensionId: extensionId,
+      entryStatus: lastEntry?.status ?? 'missing',
+      issueCount: lastEntry?.issues.length ?? 0
+    })
+    this.devExtensionEntry = previousDevExtensionEntry
+    this.installedEntries = previousInstalledEntries
+    this.installedById = previousInstalledById
+    return false
   }
 
   private buildDesiredRuntimeMap(): Map<string, ExtensionRuntimeMetadata> {
@@ -514,4 +576,14 @@ function toExtensionInstalledPackageInfo(
     directory: entry.packagePath,
     issues: entry.issues
   }
+}
+
+function isRuntimeReadyEntry(
+  entry: ExtensionInstalledEntry | undefined
+): entry is ExtensionInstalledEntry {
+  return Boolean(entry?.enabled && entry.status === 'ready' && entry.manifest)
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }

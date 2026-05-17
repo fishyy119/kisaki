@@ -347,7 +347,7 @@ export class RuntimeManager {
 
     await controller.start((message) => rpc.onMessage(message))
     controller.onExit((info) => {
-      void this.handleHostExit(info).catch((error) => {
+      void this.handleHostExit(controller, info).catch((error) => {
         log.error('Failed to process extension host exit:', error)
       })
     })
@@ -388,8 +388,16 @@ export class RuntimeManager {
     log.info('Extension host handshake completed')
   }
 
-  private async handleHostExit(info: ExtensionHostExitInfo): Promise<void> {
+  private async handleHostExit(
+    controller: ExtensionHostController,
+    info: ExtensionHostExitInfo
+  ): Promise<void> {
     await this.mutex.runExclusive(async () => {
+      if (this.controller !== controller) {
+        log.info('Ignoring stale extension host exit.', { infoCode: info.code })
+        return
+      }
+
       this.handshaken = false
       this.options.capabilities?.detachRpc()
       this.options.capabilities?.releaseAll()

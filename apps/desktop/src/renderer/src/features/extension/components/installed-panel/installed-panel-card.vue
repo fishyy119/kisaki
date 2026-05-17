@@ -23,6 +23,7 @@ import {
 import type {
   ExtensionInstalledPackageInfo,
   ExtensionInstallUpdatePolicy,
+  ExtensionSettingsPanelRegistrationInfo,
   ExtensionUpdateInfo
 } from '@shared/extension'
 import { createLogger } from '@renderer/core/log'
@@ -47,6 +48,9 @@ const settingsOpen = ref(false)
 const updateDialogOpen = ref(false)
 const updatePolicyDialogOpen = ref(false)
 const uninstallDialogOpen = ref(false)
+const activeSettingsContribution = ref<ExtensionSettingsPanelRegistrationInfo | null>(null)
+const settingsContributionMissingWhileOpen = ref(false)
+const settingsRegistrationRevision = ref(0)
 
 const UPDATE_POLICY_LABELS: Record<ExtensionInstallUpdatePolicy, string> = {
   manual: '手动',
@@ -61,7 +65,12 @@ const settingsContribution = computed(
       (contribution) => contribution.extensionId === props.extension.id
     ) ?? null
 )
-const hasSettings = computed(() => settingsContribution.value !== null)
+const hasSettings = computed(
+  () =>
+    settingsContribution.value !== null ||
+    Boolean(settingsOpen.value && activeSettingsContribution.value)
+)
+const settingsContributionAvailable = computed(() => settingsContribution.value !== null)
 
 const iconUrl = computed(() => props.extension.iconUrl)
 const versionLabel = computed(() =>
@@ -114,6 +123,44 @@ watch(iconUrl, () => {
   iconError.value = false
 })
 
+watch(settingsContribution, (contribution) => {
+  if (!settingsOpen.value) {
+    return
+  }
+
+  if (!contribution) {
+    settingsContributionMissingWhileOpen.value = true
+    return
+  }
+
+  const previous = activeSettingsContribution.value
+  activeSettingsContribution.value = contribution
+
+  if (
+    settingsContributionMissingWhileOpen.value ||
+    !previous ||
+    getSettingsContributionKey(previous) !== getSettingsContributionKey(contribution)
+  ) {
+    settingsRegistrationRevision.value += 1
+  }
+
+  settingsContributionMissingWhileOpen.value = false
+})
+
+watch(settingsOpen, (open) => {
+  if (!open) {
+    activeSettingsContribution.value = null
+    settingsContributionMissingWhileOpen.value = false
+    return
+  }
+
+  const contribution = settingsContribution.value
+  if (contribution) {
+    activeSettingsContribution.value = contribution
+    settingsContributionMissingWhileOpen.value = false
+  }
+})
+
 async function handleToggle(enabled: boolean) {
   if (isBuiltin.value) {
     notify.error('内置扩展由 Kisaki 管理')
@@ -155,7 +202,20 @@ function openSettingsPanel() {
     return
   }
 
+  activeSettingsContribution.value = settingsContribution.value
+  settingsContributionMissingWhileOpen.value = false
   settingsOpen.value = true
+}
+
+function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistrationInfo): string {
+  return [
+    contribution.extensionId,
+    contribution.contributionId,
+    contribution.extensionVersion,
+    contribution.title,
+    contribution.description ?? '',
+    contribution.order
+  ].join('\0')
 }
 </script>
 
@@ -333,9 +393,11 @@ function openSettingsPanel() {
 
     <!-- Settings Dialog -->
     <ExtensionSettingsPanelDialog
-      v-if="settingsOpen && settingsContribution"
+      v-if="settingsOpen && activeSettingsContribution"
       v-model:open="settingsOpen"
-      :contribution="settingsContribution"
+      :contribution="activeSettingsContribution"
+      :available="settingsContributionAvailable"
+      :registration-revision="settingsRegistrationRevision"
     />
 
     <ExtensionUpdateDialog

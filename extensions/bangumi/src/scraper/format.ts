@@ -13,9 +13,8 @@ import type {
   BangumiInfoboxItem,
   BangumiInfoboxValue,
   BangumiPersonCareer
-} from './types'
+} from '../api/types'
 
-export const BANGUMI_SUBJECT_TYPE_GAME = 4
 const DEFAULT_SUBJECT_PLACEHOLDER_URL = 'https://lain.bgm.tv/img/no_icon_subject.png'
 const URL_REGEX = /https?:\/\/[^\s<>"'()]+/gi
 

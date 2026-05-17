@@ -90,7 +90,7 @@ extensions/bangumi/src/
 - `AccountService`: 读取 `/v0/me`，保存账号快照，提供登录状态。
 - `BangumiProvider`: game scraper provider，使用 `BangumiClient`。
 - `IdentityResolver`: 统一 external id 读取、解析和绑定策略。
-- `SyncEngine`: 计算 status/score payload、fingerprint、远端写入策略并写 Bangumi 收藏。
+- `SyncEngine`: 计算游玩状态/评分 payload、fingerprint、远端写入策略并写 Bangumi 收藏。
 - `SyncSubscription`: 订阅 host library event，做 debounce、过滤和 suppress。
 - `CollectionImporter`: 导入当前用户 Bangumi 游戏收藏。
 - `IndexImporter`: 导入 Bangumi 目录游戏。
@@ -131,13 +131,12 @@ shared -> no project dependencies
 interface BangumiSettingsV1 {
   version: 1
   auth: {
-    relayBaseUrl: string
     loginTimeoutMs: number
   }
   sync: {
     autoSyncEnabled: boolean
     syncOnCreate: boolean
-    statusEnabled: boolean
+    playStatusEnabled: boolean
     scoreEnabled: boolean
     clearRemoteScoreWhenEmpty: boolean
     unmappedStrategy: 'skip' | 'notify' | 'resolveWithProfile'
@@ -147,12 +146,12 @@ interface BangumiSettingsV1 {
     bangumiToStatus: Record<BangumiCollectionType, LibraryGameStatus | 'skip'>
   }
   client: {
-    requestsPerSecond: number
-    burst: number
+    rateLimit: {
+      maxRequests: number
+      windowMs: number
+    }
     timeoutMs: number
     retryCount: number
-    backoffBaseMs: number
-    backoffMaxMs: number
   }
   diagnostics: {
     notifySyncErrors: boolean
@@ -162,22 +161,19 @@ interface BangumiSettingsV1 {
 
 默认值：
 
-- `relayBaseUrl`: 已部署 relay 的生产 URL。
 - `loginTimeoutMs`: `10 * 60 * 1000`。
 - `autoSyncEnabled`: `false`。
 - `syncOnCreate`: `false`。
-- `statusEnabled`: `true`。
+- `playStatusEnabled`: `true`。
 - `scoreEnabled`: `true`。
 - `clearRemoteScoreWhenEmpty`: `false`。
 - `unmappedStrategy`: `skip`。
 - `statusToBangumi`: 使用 [01-scope-and-api-facts.md](01-scope-and-api-facts.md) 中的默认 Kisaki -> Bangumi 映射。
 - `bangumiToStatus`: `1 -> notStarted`、`2 -> completed`、`3 -> inProgress`、`4 -> shelved`、`5 -> shelved`。
-- `requestsPerSecond`: `2`。
-- `burst`: `2`。
+- `rateLimit.maxRequests`: `120`。
+- `rateLimit.windowMs`: `60000`。
 - `timeoutMs`: `30000`。
 - `retryCount`: `3`。
-- `backoffBaseMs`: `1000`。
-- `backoffMaxMs`: `30000`。
 - `debounceMs`: `3000`。
 - `diagnostics.notifySyncErrors`: `true`。
 

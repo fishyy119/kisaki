@@ -21,11 +21,18 @@ defineOptions({
 
 const props = defineProps<{
   contribution: ExtensionSettingsPanelRegistrationInfo
+  available?: boolean
+  registrationRevision?: number
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
 const contributionRef = toRef(props, 'contribution')
-const session = useExtensionSettingsPanelSession(contributionRef, open)
+const available = computed(() => props.available ?? true)
+const registrationRevision = computed(() => props.registrationRevision ?? 0)
+const session = useExtensionSettingsPanelSession(contributionRef, open, {
+  available,
+  registrationRevision
+})
 const root = computed(() => session.root.value)
 const activeDialog = computed(() => session.activeDialog.value)
 const sizeClass = computed(() => getSizeClass(root.value?.view.size))
@@ -33,7 +40,7 @@ const sizeClass = computed(() => getSizeClass(root.value?.view.size))
 const openModel = computed({
   get: () => open.value,
   set: (value: boolean) => {
-    if (!value && !session.busy.value) {
+    if (!value && (!session.busy.value || !session.session.value)) {
       open.value = false
     }
   }

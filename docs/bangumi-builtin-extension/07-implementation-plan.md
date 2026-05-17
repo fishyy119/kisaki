@@ -72,7 +72,7 @@
 
 ## Phase 5: 同步引擎
 
-- 实现 status/score mapping。
+- 实现 play status/score mapping。
 - 实现 fingerprint 和 suppressor。
 - 实现 `SyncEngine.syncGame`。
 - 实现 `SyncSubscription` 订阅 `library.game.created/updated`。
@@ -92,7 +92,7 @@
 - 实现用户收藏分页拉取。
 - 实现 collection import planner。
 - 实现按 scraper profile ingest。
-- 实现 status/score/tag/collection mapping，并确保导入永远不修改已有游戏。
+- 实现 play status/score/tag/collection mapping，并确保导入永远不修改已有游戏。
 - 实现 dry run 和 execute。
 
 验收：
@@ -101,7 +101,7 @@
 - 已有 Bangumi external id 的本地游戏不重复创建。
 - 已有 Bangumi external id 的本地游戏不会被导入命令修改；单次导入 args 显式启用 `fields.score` 后，本次新建游戏可写入 Kisaki score。
 - target collection 可正确建立 membership。
-- 导入新建游戏时，即使自动同步开启，也不会立即把导入产生的本地状态/评分写回 Bangumi。
+- 导入新建游戏时，即使自动同步开启，也不会立即把导入产生的本地游玩状态/评分写回 Bangumi。
 
 ## Phase 7: 目录导入
 
@@ -167,7 +167,7 @@ pnpm --filter kisaki typecheck
 
 - OAuth 登录、refresh、退出。
 - Bangumi scraper provider 正常工作。
-- 自动同步 status/score。
+- 自动同步 play status/score。
 - 全量同步 dry run + execute。
 - 我的收藏导入 dry run + execute。
 - 目录导入 dry run + execute。

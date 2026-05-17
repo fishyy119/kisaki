@@ -23,9 +23,12 @@ import type {
   BangumiSubjectRelation,
   BangumiPersonDetail
 } from './types'
+import type { BangumiSettingsV1 } from '../config/schema'
 
 // No official public rate limit in docs. Keep a conservative limit.
-const RATE_LIMIT_CONFIG = { maxRequests: 4, windowMs: 1000 }
+const DEFAULT_RATE_LIMIT_CONFIG = { maxRequests: 120, windowMs: 60_000 }
+
+type BangumiRateLimitConfig = BangumiSettingsV1['client']['rateLimit']
 
 export class BangumiClient {
   private readonly baseUrl = 'https://api.bgm.tv'
@@ -35,7 +38,8 @@ export class BangumiClient {
 
   constructor(
     private readonly network: NetworkCapability,
-    private readonly getAccessToken?: () => Promise<string | undefined>
+    private readonly getAccessToken?: () => Promise<string | undefined>,
+    private readonly getRateLimitConfig?: () => Promise<BangumiRateLimitConfig>
   ) {}
 
   private buildUrl(pathname: string, query?: Record<string, string | number | boolean>): string {
@@ -77,31 +81,45 @@ export class BangumiClient {
     await previous
 
     try {
-      const now = Date.now()
-      while (
-        this.requestTimestamps.length > 0 &&
-        now - this.requestTimestamps[0]! >= RATE_LIMIT_CONFIG.windowMs
-      ) {
-        this.requestTimestamps.shift()
-      }
+      const config = await this.readRateLimitConfig()
+      while (true) {
+        const now = Date.now()
+        this.pruneRequestTimestamps(now, config.windowMs)
 
-      if (this.requestTimestamps.length >= RATE_LIMIT_CONFIG.maxRequests) {
-        const waitMs = RATE_LIMIT_CONFIG.windowMs - (now - this.requestTimestamps[0]!)
-        if (waitMs > 0) {
-          await delay(waitMs)
+        if (this.requestTimestamps.length < config.maxRequests) {
+          this.requestTimestamps.push(now)
+          return
         }
-      }
 
-      const nextNow = Date.now()
-      while (
-        this.requestTimestamps.length > 0 &&
-        nextNow - this.requestTimestamps[0]! >= RATE_LIMIT_CONFIG.windowMs
-      ) {
-        this.requestTimestamps.shift()
+        const waitMs = config.windowMs - (now - this.requestTimestamps[0]!)
+        await delay(Math.max(1, waitMs))
       }
-      this.requestTimestamps.push(nextNow)
     } finally {
       release()
+    }
+  }
+
+  private async readRateLimitConfig(): Promise<BangumiRateLimitConfig> {
+    const config = await this.getRateLimitConfig?.()
+    if (
+      !config ||
+      !Number.isFinite(config.maxRequests) ||
+      !Number.isFinite(config.windowMs) ||
+      config.maxRequests < 1 ||
+      config.windowMs < 1
+    ) {
+      return DEFAULT_RATE_LIMIT_CONFIG
+    }
+
+    return {
+      maxRequests: Math.max(1, Math.trunc(config.maxRequests)),
+      windowMs: Math.max(1, Math.trunc(config.windowMs))
+    }
+  }
+
+  private pruneRequestTimestamps(now: number, windowMs: number): void {
+    while (this.requestTimestamps.length > 0 && now - this.requestTimestamps[0]! >= windowMs) {
+      this.requestTimestamps.shift()
     }
   }
 

@@ -31,9 +31,15 @@ import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Extension')
 
+interface SettingsPanelSessionOptions {
+  available?: Ref<boolean>
+  registrationRevision?: Ref<number>
+}
+
 export function useExtensionSettingsPanelSession(
   contribution: Ref<ExtensionSettingsPanelRegistrationInfo>,
-  open: Ref<boolean>
+  open: Ref<boolean>,
+  options: SettingsPanelSessionOptions = {}
 ): ExtensionSettingsPanelSessionController {
   const session = ref<ExtensionSettingsPanelSession | null>(null)
   const root = ref<SettingsPanelSurfaceState<'root'> | null>(null)
@@ -73,13 +79,29 @@ export function useExtensionSettingsPanelSession(
   )
 
   watch(
-    [open, () => contribution.value.extensionId, () => contribution.value.contributionId],
+    [
+      open,
+      () => options.available?.value ?? true,
+      () => contribution.value.extensionId,
+      () => contribution.value.contributionId,
+      () => options.registrationRevision?.value ?? 0
+    ],
     ([isOpen], oldValue) => {
       const wasOpen = oldValue?.[0]
-      if (isOpen) {
+      const isAvailable = options.available?.value ?? true
+
+      if (!isOpen) {
+        if (wasOpen) {
+          releaseAll()
+        }
+        opening.value = false
+        return
+      }
+
+      if (isAvailable) {
         void openRoot()
-      } else if (wasOpen) {
-        releaseAll()
+      } else {
+        suspendForReload()
       }
     },
     { immediate: true }
@@ -128,6 +150,12 @@ export function useExtensionSettingsPanelSession(
         opening.value = false
       }
     }
+  }
+
+  function suspendForReload(): void {
+    releaseAll(true, { releaseHostSession: false })
+    opening.value = true
+    error.value = null
   }
 
   async function retry(): Promise<void> {
@@ -733,7 +761,7 @@ export function useExtensionSettingsPanelSession(
     submittingSurfaces.value = next
   }
 
-  function releaseAll(cancelPending = true): void {
+  function releaseAll(cancelPending = true, options: { releaseHostSession?: boolean } = {}): void {
     if (cancelPending) {
       openRequestId += 1
     }
@@ -749,7 +777,7 @@ export function useExtensionSettingsPanelSession(
     busyCallbacks.value = new Set()
     submittingSurfaces.value = new Set()
 
-    if (current) {
+    if (current && (options.releaseHostSession ?? true)) {
       void releaseSession({ ...current, surface: 'all' })
     }
   }
@@ -827,7 +855,7 @@ async function invokeIpc<T>(
     return ('data' in result ? result.data : undefined) as T
   }
 
-  throw new Error('Extension settings panel request failed.')
+  throw new Error(result.error || 'Extension settings panel request failed.')
 }
 
 function createRequestId(): string {

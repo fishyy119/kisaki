@@ -10,7 +10,7 @@ Kisaki OAuth Relay 已部署。扩展只需要把 relay 当成生产外部服务
 https://kisaki.me/_tmp/bangumi-oauth
 ```
 
-扩展应把 base URL 放在 `config/defaults.ts`，允许开发构建或高级设置覆盖，但生产默认不要求用户配置。
+扩展内部使用该生产 endpoint；settings panel 不暴露 relay URL 配置。
 
 约定 endpoint:
 
@@ -131,14 +131,14 @@ User-Agent 中不得包含用户 token、username 或本机路径。
 
 限速是 Bangumi provider client 级别的共享限制，不是 job 并发限制：
 
-- 默认 `2 req/s`，`burst = 2`。
-- 用户可在 Advanced 调整。
-- 设置修改只影响新 job 和新 client snapshot。
+- 默认每 `60` 秒最多 `120` 次请求。
+- 用户可在 Advanced 调整窗口请求数和窗口长度。
+- 设置修改影响后续进入 `BangumiClient` 队列的新请求。
 - 批量导入仍可并行执行 ingest item；只有触达 Bangumi API 的步骤排队。
 
 实现建议：
 
-- 使用 token bucket 或 sliding window。
+- 使用 sliding window。
 - `acquire(signal)` 支持取消。
 - 429 使用响应头可用信息优先，否则按 backoff 策略等待。
 - 5xx/network error 按指数 backoff 重试。

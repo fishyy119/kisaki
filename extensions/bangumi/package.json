@@ -1,7 +1,7 @@
 {
   "name": "@kisaki/builtin-bangumi",
   "version": "0.0.1",
-  "description": "Built-in Bangumi scraper extension for Kisaki",
+  "description": "Built-in Bangumi scraper and integration extension for Kisaki",
   "type": "module",
   "scripts": {
     "build": "kisx build",

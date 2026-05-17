@@ -126,8 +126,7 @@ export class MainWindowController implements MainWindowApi {
       fullScreen: false
     })
 
-    const icon =
-      platform.isLinux || is.dev ? join(__dirname, '../../../resources/icon.png') : undefined
+    const icon = platform.isLinux || is.dev ? resolveResourcePath('icon.png') : undefined
 
     const mainWindow = new BrowserWindow({
       x: mainWindowState.x,
@@ -139,7 +138,7 @@ export class MainWindowController implements MainWindowApi {
       autoHideMenuBar: true,
       ...(platform.isLinux || is.dev ? { icon } : {}),
       webPreferences: {
-        preload: join(__dirname, '../../preload/index.js'),
+        preload: join(__dirname, '../preload/index.js'),
         sandbox: false,
         webSecurity: false
       }
@@ -182,7 +181,7 @@ export class MainWindowController implements MainWindowApi {
       const mainUrl = new URL('main.html', base.endsWith('/') ? base : `${base}/`).toString()
       mainWindow.loadURL(mainUrl)
     } else {
-      mainWindow.loadFile(join(__dirname, '../../renderer/main.html'))
+      mainWindow.loadFile(join(__dirname, '../renderer/main.html'))
     }
 
     log.info('Main window created')
@@ -224,4 +223,12 @@ export class MainWindowController implements MainWindowApi {
     }
     return this.ipcService
   }
+}
+
+function resolveResourcePath(fileName: string): string {
+  if (app.isPackaged) {
+    return join(process.resourcesPath, 'app.asar.unpacked', 'resources', fileName)
+  }
+
+  return join(app.getAppPath(), 'resources', fileName)
 }

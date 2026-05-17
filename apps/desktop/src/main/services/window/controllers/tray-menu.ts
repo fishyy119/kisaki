@@ -46,7 +46,7 @@ export class TrayMenuWindowController implements TrayMenuWindowApi {
       transparent: false,
 
       webPreferences: {
-        preload: join(__dirname, '../../preload/index.js'),
+        preload: join(__dirname, '../preload/index.js'),
         sandbox: false,
         webSecurity: false
       }
@@ -73,7 +73,7 @@ export class TrayMenuWindowController implements TrayMenuWindowApi {
         log.error('Failed to load tray menu window URL:', error)
       })
     } else {
-      trayMenuWindow.loadFile(join(__dirname, '../../renderer/tray-menu.html')).catch((error) => {
+      trayMenuWindow.loadFile(join(__dirname, '../renderer/tray-menu.html')).catch((error) => {
         log.error('Failed to load tray menu window file:', error)
       })
     }

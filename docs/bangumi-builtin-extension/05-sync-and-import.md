@@ -43,7 +43,7 @@ Fingerprint 输入：
 
 - `gameId`
 - `subjectId`
-- status sync enabled + mapped type
+- play status sync enabled + mapped type
 - score sync enabled + mapped rate
 - clear remote score strategy
 - payload version
@@ -52,7 +52,7 @@ Fingerprint 输入：
 
 Suppress 规则：
 
-- `SyncEngine` 写入本地 status/score 前后维护 fingerprint suppress，避免本扩展触发的本地变更再次写回 Bangumi。
+- `SyncEngine` 写入本地游玩状态/评分前后维护 fingerprint suppress，避免本扩展触发的本地变更再次写回 Bangumi。
 - `CollectionImporter` 和 `IndexImporter` 对每个 `ingest.games.addFromScraper` 返回的 `gameId` 写入 import suppress，覆盖 command 运行期和至少一个 debounce window。
 - import suppress 适用于 created 和 updated 事件，防止导入新游戏、写入新游戏用户态字段或 ingest 创建 external id 后，被自动同步立即回写到 Bangumi。
 - import suppress 只跳过短期事件；窗口结束后用户手动修改游戏状态或评分仍可按自动同步规则处理。
@@ -91,9 +91,9 @@ bangumi.sync.full
 输入：
 
 - dry run: true/false。
-- scope: 全部、有 Bangumi ID、指定合集、指定状态、评分非空。
+- scope: 全部、有 Bangumi ID、指定合集、指定游玩状态、评分非空。
 - conflict policy: `overwriteRemote`、`fillRemoteMissing`、`skipExistingRemote`。
-- status/score override: 可临时覆盖 settings 开关。
+- play status/score override: 可临时覆盖 settings 开关。
 
 流程：
 
@@ -154,7 +154,7 @@ bangumi.import.my-collections
 2. 调用 `kisaki.ingest.games.addFromScraper(profileId, lookup)` 创建或定位游戏。为避免误改已有游戏，Bangumi importer 不把 `targetCollectionId` 直接传给 ingest。
 3. 对返回的 `gameId` 立即写入 import suppress。
 4. 如果 result 表示本地已有游戏，记录为已存在并结束该条处理，不写 status、score、tag 或 collection membership。
-5. 如果 result 表示本次新建游戏，且 status/score 导入开启，根据 field mapping 写入用户态字段。
+5. 如果 result 表示本次新建游戏，且游玩状态/评分导入开启，根据 field mapping 写入用户态字段。
 6. 如果 result 表示本次新建游戏，且 tag 导入开启，使用 Bangumi 用户收藏上的自定义 tags，先 list/create tag，再创建 `game-tag` relation。
 7. 如果 result 表示本次新建游戏，且 target collection strategy 不是 `none`，解析目标合集并通过 `collection-game` relation 建立 membership。
 8. 导入流程不得写 name、originalName、description、releaseDate、assets、relatedSites、externalIds 等资料元数据。新增游戏的资料元数据只来自 `ingest.games.addFromScraper` 使用的 scraper profile。

@@ -11,6 +11,7 @@ import { toSerializableRecord } from '../../sdk-bridge/utils/serialization'
 import { registerSettingsPanelCallback } from './callbacks'
 import type { NormalizeSettingsPanelContext } from './types'
 import { compactRecord } from './values'
+
 export function normalizeSettingsPanelRootModel(
   model: SettingsPanelRootModel<any, any>,
   context: NormalizeSettingsPanelContext
@@ -24,11 +25,11 @@ export function normalizeSettingsPanelRootModel(
 
   const tabs = (model as { tabs?: readonly SettingsPanelTab<any>[] }).tabs
   const payload = Array.isArray(tabs)
-    ? {
+    ? compactRecord({
         ...base,
         activeTabId: model.activeTabId,
         tabs: tabs.map((tab) => normalizeSettingsPanelTab(tab, context))
-      }
+      })
     : {
         ...base,
         fields: (model as { fields: readonly SettingsPanelField<any>[] }).fields.map((field) =>
@@ -102,7 +103,7 @@ function normalizeSettingsPanelField(
     description: field.description,
     hidden: field.hidden,
     disabled: field.disabled,
-    orientation: field.orientation,
+    orientation: field.orientation ?? 'horizontal',
     span: field.span,
     contentLayout: field.contentLayout,
     contentColumns: field.contentColumns,

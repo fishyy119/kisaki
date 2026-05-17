@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 import type { ExtensionSettingsPanelSessionController, SettingsPanelSurfaceState } from '../session'
 import type {
   ExtensionResolvedSettingsPanelSelectNode,
@@ -49,7 +55,10 @@ function updateValue(nextValue: unknown): void {
     @update:model-value="updateValue"
   >
     <SelectTrigger class="w-56 max-w-full">
-      <span class="truncate">{{ selectedLabel }}</span>
+      <SelectValue
+        class="truncate"
+        :placeholder="selectedLabel"
+      />
     </SelectTrigger>
     <SelectContent>
       <SelectItem

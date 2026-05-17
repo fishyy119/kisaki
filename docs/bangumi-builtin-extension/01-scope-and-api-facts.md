@@ -38,11 +38,11 @@ In:
 
 - 重写 `extensions/bangumi` 模块结构、settings panel 和 storage/secrets schema。
 - OAuth 登录、退出、验证、refresh token、账号摘要。
-- 自动同步本地游戏状态和评分到 Bangumi。
+- 自动同步本地游玩状态和评分到 Bangumi。
 - 手动全量同步，支持 dry run、过滤、冲突策略、结果摘要。
 - 用户 Bangumi 游戏收藏导入，支持收藏类型过滤、scraper profile、目标合集、可选用户态字段写入、dry run 和结果摘要。
 - Bangumi 目录导入，支持目录 ID/URL、预览、scraper profile、目标合集、dry run 和结果摘要。
-- 可配置 Bangumi API 限速、burst、超时、重试和 backoff。
+- 可配置 Bangumi API 请求窗口、超时和重试。
 - extension command job 与主应用 task 集成。
 - 保留并提升 Bangumi scraper provider 的搜索、解析、metadata、人物、公司、角色、图片能力。
 
