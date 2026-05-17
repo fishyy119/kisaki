@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { createLogger } from '@main/log'
+import type { DbService } from '@main/services/db'
 import type { NameExtractionRule } from '@shared/db'
-import type { EntityEntry } from '@shared/scanner'
+import type { EntityEntry, ExtractionTestResult } from '@shared/scanner'
 
 const log = createLogger('Scanner')
 
@@ -15,80 +16,102 @@ export interface ScanOptions {
   nameExtractionRules: NameExtractionRule[]
 }
 
-/**
- * Extract entity name using configured rules.
- * Tries each enabled rule in order until one matches.
- */
-export function extractEntityName(
-  originalName: string,
-  rules: NameExtractionRule[]
-): { extractedName: string; matchedRuleId: string | null } {
-  for (const rule of rules) {
-    if (!rule.enabled) continue
-    try {
-      const regex = new RegExp(rule.pattern)
-      const match = regex.exec(originalName)
-      if (match?.groups?.name) {
-        return { extractedName: match.groups.name.trim(), matchedRuleId: rule.id }
+export class ScannerDiscovery {
+  constructor(private readonly dbService: DbService) {}
+
+  /**
+   * Extract entity name using configured rules.
+   * Tries each enabled rule in order until one matches.
+   */
+  extractEntityName(
+    originalName: string,
+    rules: NameExtractionRule[]
+  ): { extractedName: string; matchedRuleId: string | null } {
+    for (const rule of rules) {
+      if (!rule.enabled) continue
+      try {
+        const regex = new RegExp(rule.pattern)
+        const match = regex.exec(originalName)
+        if (match?.groups?.name) {
+          return { extractedName: match.groups.name.trim(), matchedRuleId: rule.id }
+        }
+      } catch (error) {
+        log.warn('Invalid regex pattern in rule.', { ruleId: rule.id, error: error })
       }
+    }
+    return { extractedName: originalName, matchedRuleId: null }
+  }
+
+  /**
+   * Generic entity scanner - works for all media types.
+   * Returns all entries at the specified depth level.
+   */
+  async scanForEntities(rootPath: string, options: ScanOptions): Promise<EntityEntry[]> {
+    const { entityDepth, ignoredNames, nameExtractionRules } = options
+
+    try {
+      const entries = await fs.readdir(rootPath, { withFileTypes: true })
+
+      const ignoredNameSet = new Set(ignoredNames.map((name) => name.toLowerCase()))
+      const filtered = entries.filter((entry) => !ignoredNameSet.has(entry.name.toLowerCase()))
+
+      if (entityDepth > 0) {
+        const subDirs = filtered.filter((e) => e.isDirectory() || e.isSymbolicLink())
+        const results = await Promise.all(
+          subDirs.map((d) =>
+            this.scanForEntities(path.join(rootPath, d.name), {
+              entityDepth: entityDepth - 1,
+              ignoredNames,
+              nameExtractionRules
+            })
+          )
+        )
+        return results.flat()
+      }
+
+      return filtered.map((entry) => {
+        const originalName = entry.name
+        const originalBaseName = entry.isFile() ? path.parse(originalName).name : originalName
+        const { extractedName, matchedRuleId } = this.extractEntityName(
+          originalBaseName,
+          nameExtractionRules
+        )
+        return {
+          path: path.join(rootPath, entry.name),
+          originalName,
+          originalBaseName,
+          extractedName,
+          matchedRuleId
+        }
+      })
     } catch (error) {
-      log.warn('Invalid regex pattern in rule.', { ruleId: rule.id, error: error })
+      log.error('Failed to scan directory.', { rootPath: rootPath, error: error })
+      return []
     }
   }
-  return { extractedName: originalName, matchedRuleId: null }
-}
 
-/**
- * Generic entity scanner - works for all media types.
- * Returns all entries at the specified depth level.
- */
-export async function scanForEntities(
-  rootPath: string,
-  options: ScanOptions
-): Promise<EntityEntry[]> {
-  const { entityDepth, ignoredNames, nameExtractionRules } = options
+  async testExtractionRules(
+    scannerPath: string,
+    entityDepth: number,
+    rules: NameExtractionRule[]
+  ): Promise<ExtractionTestResult[]> {
+    const settingsData = this.dbService.entityFinder.getAppSettings()
+    const entities = await this.scanForEntities(scannerPath, {
+      entityDepth,
+      ignoredNames: settingsData.scannerIgnoredNames,
+      nameExtractionRules: []
+    })
 
-  try {
-    const entries = await fs.readdir(rootPath, { withFileTypes: true })
-
-    // Filter ignored names (case-insensitive)
-    const ignoredNameSet = new Set(ignoredNames.map((name) => name.toLowerCase()))
-    const filtered = entries.filter((entry) => !ignoredNameSet.has(entry.name.toLowerCase()))
-
-    if (entityDepth > 0) {
-      // Not at target depth yet - traverse directories only
-      // Include symlinks as they may point to directories
-      const subDirs = filtered.filter((e) => e.isDirectory() || e.isSymbolicLink())
-      const results = await Promise.all(
-        subDirs.map((d) =>
-          scanForEntities(path.join(rootPath, d.name), {
-            entityDepth: entityDepth - 1,
-            ignoredNames,
-            nameExtractionRules
-          })
-        )
-      )
-      return results.flat()
-    }
-
-    // At target depth - all entries become entities with name extraction applied
-    return filtered.map((entry) => {
-      const originalName = entry.name
-      const originalBaseName = entry.isFile() ? path.parse(originalName).name : originalName
-      const { extractedName, matchedRuleId } = extractEntityName(
-        originalBaseName,
-        nameExtractionRules
+    return entities.map((entity) => {
+      const { extractedName, matchedRuleId } = this.extractEntityName(
+        entity.originalBaseName,
+        rules
       )
       return {
-        path: path.join(rootPath, entry.name),
-        originalName,
-        originalBaseName,
+        originalName: entity.originalName,
         extractedName,
         matchedRuleId
       }
     })
-  } catch (error) {
-    log.error('Failed to scan directory.', { rootPath: rootPath, error: error })
-    return []
   }
 }

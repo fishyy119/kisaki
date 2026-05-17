@@ -21,7 +21,7 @@ import type { Scanner, ScannerIngestMode } from '@shared/db'
 import type { EntityEntry, ScanCompletedData, ScanProgressData } from '@shared/scanner'
 import type { IngestAddGameResult } from '@shared/ingest/add'
 import type { ScannerPhash } from '../../phash'
-import type { ScanOptions } from '../../discovery'
+import type { ScannerDiscovery } from '../../discovery'
 import {
   ScannerHandlerCoordinator,
   type ScannerEntityProcessResult,
@@ -61,10 +61,7 @@ export class GameScannerHandler {
   private readonly runner: ScannerHandlerCoordinator<Scanner>
 
   constructor(
-    private readonly scanForEntities: (
-      rootPath: string,
-      options: ScanOptions
-    ) => Promise<EntityEntry[]>,
+    private readonly discovery: ScannerDiscovery,
     private readonly phash: ScannerPhash,
     private readonly dbService: DbService,
     ipcService: IpcService,
@@ -263,7 +260,7 @@ export class GameScannerHandler {
       value5: profile?.name ?? 'none'
     })
 
-    const entities = await this.scanForEntities(scanner.path, {
+    const entities = await this.discovery.scanForEntities(scanner.path, {
       entityDepth: scanner.entityDepth,
       ignoredNames,
       nameExtractionRules: scanner.nameExtractionRules
