@@ -7,6 +7,7 @@ import type {
 } from '../capabilities/background-tasks'
 import type {
   CommandDescriptor,
+  CommandExecutionProgress,
   CommandExecutionResult,
   CommandExecutionStartResult,
   CommandListItem,
@@ -106,6 +107,10 @@ export interface CommandExecutionRpcRequest extends ExtensionScopedRpcParams {
 }
 
 export interface CommandWaitRequest extends ExtensionScopedRpcParams {
+  executionId: string
+}
+
+export interface CommandProgressRequest extends ExtensionScopedRpcParams {
   executionId: string
 }
 
@@ -253,6 +258,10 @@ export type HostToMainCapabilityRpcRequestMap = {
   'capabilities.commands.wait': RpcMethodDefinition<
     CommandWaitRequest,
     { result: CommandExecutionResult }
+  >
+  'capabilities.commands.getProgress': RpcMethodDefinition<
+    CommandProgressRequest,
+    { progress: CommandExecutionProgress | null }
   >
   'capabilities.commands.execute': RpcMethodDefinition<
     CommandExecutionRpcRequest,

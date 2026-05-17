@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type {
+  CommandExecutionProgress,
+  CommandExecutionProgressUpdate,
   CommandExecutionRequest,
   CommandExecutionResult,
   CommandExecutionSource,
@@ -11,6 +13,7 @@ const COMPLETED_EXECUTION_LIMIT = 100
 
 export interface CommandExecutionsOptions {
   getCommand(commandId: string): RegisteredCommand | null
+  onProgress?(progress: CommandExecutionProgress): void
 }
 
 interface ActiveCommandExecution {
@@ -18,6 +21,8 @@ interface ActiveCommandExecution {
   cancelable: boolean
   controller: AbortController
   promise: Promise<CommandExecutionResult>
+  progress?: CommandExecutionProgress
+  source: CommandExecutionSource
 }
 
 export class CommandExecutions {
@@ -55,7 +60,8 @@ export class CommandExecutions {
       commandId: command.descriptor.id,
       cancelable: command.descriptor.cancelable,
       controller,
-      promise
+      promise,
+      source
     })
 
     return {
@@ -99,6 +105,38 @@ export class CommandExecutions {
     return true
   }
 
+  getProgress(executionId: string): CommandExecutionProgress | null {
+    return this.activeExecutions.get(executionId)?.progress ?? null
+  }
+
+  reportProgress(
+    commandId: string,
+    executionId: string,
+    update: CommandExecutionProgressUpdate
+  ): CommandExecutionProgress | null {
+    const execution = this.activeExecutions.get(executionId)
+    if (!execution) {
+      return null
+    }
+
+    if (execution.commandId !== commandId) {
+      throw new Error(
+        `Command execution "${executionId}" belongs to "${execution.commandId}", not "${commandId}".`
+      )
+    }
+
+    const progress: CommandExecutionProgress = {
+      ...normalizeProgressUpdate(update),
+      commandId,
+      executionId,
+      source: cloneExecutionSource(execution.source),
+      updatedAt: Date.now()
+    }
+    execution.progress = progress
+    this.options.onProgress?.(progress)
+    return progress
+  }
+
   isRunning(commandId: string): boolean {
     for (const execution of this.activeExecutions.values()) {
       if (execution.commandId === commandId) {
@@ -131,7 +169,9 @@ export class CommandExecutions {
         commandId: command.descriptor.id,
         executionId: execution.executionId,
         source: execution.source,
-        signal: execution.controller.signal
+        signal: execution.controller.signal,
+        reportProgress: (progress) =>
+          this.reportProgress(command.descriptor.id, execution.executionId, progress)
       })
 
       const finishedAt = Date.now()
@@ -180,4 +220,68 @@ export class CommandExecutions {
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+function cloneExecutionSource(source: CommandExecutionSource): CommandExecutionSource {
+  return {
+    kind: source.kind,
+    extensionId: source.extensionId,
+    commandId: source.commandId,
+    taskId: source.taskId
+  }
+}
+
+function normalizeProgressUpdate(
+  update: CommandExecutionProgressUpdate
+): CommandExecutionProgressUpdate {
+  if (!update || typeof update !== 'object' || Array.isArray(update)) {
+    throw new Error('Command progress update must be an object.')
+  }
+
+  return {
+    phase: normalizeOptionalString(update.phase, 'phase'),
+    message: normalizeOptionalString(update.message, 'message'),
+    current: normalizeOptionalNonNegativeFiniteNumber(update.current, 'current'),
+    total: normalizeOptionalNonNegativeFiniteNumber(update.total, 'total'),
+    indeterminate: normalizeOptionalBoolean(update.indeterminate, 'indeterminate')
+  }
+}
+
+function normalizeOptionalString(value: unknown, field: string): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error(`Command progress "${field}" must be a string.`)
+  }
+
+  return value
+}
+
+function normalizeOptionalNonNegativeFiniteNumber(
+  value: unknown,
+  field: string
+): number | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Command progress "${field}" must be a non-negative finite number.`)
+  }
+
+  return value
+}
+
+function normalizeOptionalBoolean(value: unknown, field: string): boolean | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'boolean') {
+    throw new Error(`Command progress "${field}" must be a boolean.`)
+  }
+
+  return value
 }

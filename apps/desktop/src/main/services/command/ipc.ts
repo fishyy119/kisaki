@@ -13,6 +13,10 @@ export function registerCommandIpc(service: CommandService, ipc: IpcService): vo
     wrapIpc(() => service.executions.wait(executionId))
   )
 
+  ipc.handle('command:get-progress', async (_, executionId) =>
+    wrapIpc(() => service.executions.getProgress(executionId))
+  )
+
   ipc.handle('command:execute', async (_, request) =>
     wrapIpc(() => service.executions.execute(request))
   )

@@ -1,6 +1,7 @@
 import type {
   CommandContribution,
   CommandExecuteRequest,
+  CommandExecutionProgressUpdate,
   CommandRegistration,
   SerializableValue
 } from '@kisaki/extension-api'
@@ -87,7 +88,26 @@ export class HostCommandContributionPoint {
         commandId: request.commandId,
         executionId: request.executionId,
         source: request.source,
-        signal
+        signal,
+        reportProgress: (progress) => {
+          void this.options.rpc
+            .requestMain(
+              'contributions.commands.reportProgress',
+              {
+                runtimeHandle: request.runtimeHandle,
+                commandId: request.commandId,
+                executionId: request.executionId,
+                progress: normalizeCommandProgressUpdate(progress)
+              },
+              this.options.getRequestOptions({
+                extensionId: runtime.metadata.id,
+                runtimeHandle: request.runtimeHandle
+              })
+            )
+            .catch((error) => {
+              runtime.context.logger.warn('Failed to report command progress.', error)
+            })
+        }
       })
     )
 
@@ -121,4 +141,59 @@ function toCommandRegistrationRpcInput(command: CommandContribution) {
     dangerLevel: command.dangerLevel,
     cancelable: command.cancelable
   }
+}
+
+function normalizeCommandProgressUpdate(
+  update: CommandExecutionProgressUpdate
+): CommandExecutionProgressUpdate {
+  if (!update || typeof update !== 'object' || Array.isArray(update)) {
+    throw new Error('Command progress update must be an object.')
+  }
+
+  return {
+    phase: normalizeOptionalString(update.phase, 'phase'),
+    message: normalizeOptionalString(update.message, 'message'),
+    current: normalizeOptionalNonNegativeFiniteNumber(update.current, 'current'),
+    total: normalizeOptionalNonNegativeFiniteNumber(update.total, 'total'),
+    indeterminate: normalizeOptionalBoolean(update.indeterminate, 'indeterminate')
+  }
+}
+
+function normalizeOptionalString(value: unknown, field: string): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error(`Command progress "${field}" must be a string.`)
+  }
+
+  return value
+}
+
+function normalizeOptionalNonNegativeFiniteNumber(
+  value: unknown,
+  field: string
+): number | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Command progress "${field}" must be a non-negative finite number.`)
+  }
+
+  return value
+}
+
+function normalizeOptionalBoolean(value: unknown, field: string): boolean | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'boolean') {
+    throw new Error(`Command progress "${field}" must be a boolean.`)
+  }
+
+  return value
 }

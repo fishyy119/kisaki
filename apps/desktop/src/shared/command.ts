@@ -32,6 +32,21 @@ export interface CommandExecutionRequest {
   source?: CommandExecutionSource
 }
 
+export interface CommandExecutionProgressUpdate {
+  phase?: string
+  message?: string
+  current?: number
+  total?: number
+  indeterminate?: boolean
+}
+
+export interface CommandExecutionProgress extends CommandExecutionProgressUpdate {
+  commandId: string
+  executionId: string
+  source: CommandExecutionSource
+  updatedAt: number
+}
+
 export interface CommandExecutionStartResult {
   commandId: string
   executionId: string

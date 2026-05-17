@@ -231,6 +231,14 @@ export class ExtensionEventsCapabilityProvider {
             occurredAt: event.occurredAt
           })
         })
+      case 'command.progress':
+        return this.options.event.bus.on('command:progress', (progress) => {
+          this.emitSubscriptionEvent(
+            subscriptionId,
+            topic,
+            cloneHostValue(progress) as HostEvents['command.progress']
+          )
+        })
       case 'scanner.completed':
         return this.options.event.bus.on('scanner:completed', ({ scannerId, stats }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { scannerId, stats })

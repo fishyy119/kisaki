@@ -361,6 +361,12 @@ export function createKisakiApi(
             executionId
           })
         ).result,
+      getProgress: async (executionId) =>
+        (
+          await requestMain('capabilities.commands.getProgress', {
+            executionId
+          })
+        ).progress,
       execute: async (request) =>
         (
           await requestMain('capabilities.commands.execute', {

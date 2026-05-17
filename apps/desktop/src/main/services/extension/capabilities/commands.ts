@@ -1,8 +1,10 @@
 import {
   createUnavailableError,
   type CommandDescriptor,
+  type CommandExecutionProgress,
   type CommandExecutionRequest,
   type CommandExecutionResult,
+  type CommandExecutionSource,
   type CommandExecutionStartResult,
   type CommandListItem,
   type ExtensionRuntimeMetadata,
@@ -12,7 +14,9 @@ import {
 import type { CommandService } from '@main/services/command'
 import type {
   CommandDescriptor as AppCommandDescriptor,
+  CommandExecutionProgress as AppCommandExecutionProgress,
   CommandExecutionResult as AppCommandExecutionResult,
+  CommandExecutionSource as AppCommandExecutionSource,
   CommandListItem as AppCommandListItem
 } from '@shared/command'
 
@@ -48,6 +52,12 @@ export class ExtensionCommandsCapabilityProvider {
   async wait(runtimeHandle: string, executionId: string): Promise<CommandExecutionResult> {
     this.requireRuntime(runtimeHandle)
     return toPublicCommandExecutionResult(await this.options.command.executions.wait(executionId))
+  }
+
+  getProgress(runtimeHandle: string, executionId: string): CommandExecutionProgress | null {
+    this.requireRuntime(runtimeHandle)
+    const progress = this.options.command.executions.getProgress(executionId)
+    return progress ? toPublicCommandExecutionProgress(progress) : null
   }
 
   async execute(
@@ -120,6 +130,31 @@ function toPublicCommandExecutionResult(result: AppCommandExecutionResult): Comm
         ? undefined
         : toPublicSerializableValue(result.output, 'command output'),
     error: result.error
+  }
+}
+
+function toPublicCommandExecutionProgress(
+  progress: AppCommandExecutionProgress
+): CommandExecutionProgress {
+  return {
+    commandId: progress.commandId,
+    executionId: progress.executionId,
+    source: toPublicCommandExecutionSource(progress.source),
+    updatedAt: progress.updatedAt,
+    phase: progress.phase,
+    message: progress.message,
+    current: progress.current,
+    total: progress.total,
+    indeterminate: progress.indeterminate
+  }
+}
+
+function toPublicCommandExecutionSource(source: AppCommandExecutionSource): CommandExecutionSource {
+  return {
+    kind: source.kind,
+    extensionId: source.extensionId,
+    commandId: source.commandId,
+    taskId: source.taskId
   }
 }
 

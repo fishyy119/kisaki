@@ -173,6 +173,12 @@ export class ExtensionCapabilityGateway {
     rpc.handleHostRequest('capabilities.commands.wait', async ({ runtimeHandle, executionId }) => ({
       result: await this.commands.wait(runtimeHandle, executionId)
     }))
+    rpc.handleHostRequest(
+      'capabilities.commands.getProgress',
+      async ({ runtimeHandle, executionId }) => ({
+        progress: this.commands.getProgress(runtimeHandle, executionId)
+      })
+    )
     rpc.handleHostRequest('capabilities.commands.execute', async ({ runtimeHandle, request }) => ({
       result: await this.commands.execute(runtimeHandle, request)
     }))

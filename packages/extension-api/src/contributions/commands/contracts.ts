@@ -1,4 +1,8 @@
-import type { CommandDangerLevel, CommandExecutionSource } from '../../capabilities/commands'
+import type {
+  CommandDangerLevel,
+  CommandExecutionProgressUpdate,
+  CommandExecutionSource
+} from '../../capabilities/commands'
 import type { Disposable, MaybePromise, SerializableRecord, SerializableValue } from '../../shared'
 
 export interface CommandContributionExecuteEvent {
@@ -6,6 +10,7 @@ export interface CommandContributionExecuteEvent {
   executionId: string
   source: CommandExecutionSource
   signal: AbortSignal
+  reportProgress(progress: CommandExecutionProgressUpdate): void
 }
 
 export type CommandContributionExecuteResult = SerializableValue | void

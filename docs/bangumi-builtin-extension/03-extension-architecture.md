@@ -1,0 +1,238 @@
+# 03 Extension Architecture
+
+## 目标目录
+
+```text
+extensions/bangumi/src/
+  index.ts
+  shared/
+    constants.ts
+    errors.ts
+    ids.ts
+    result.ts
+  config/
+    defaults.ts
+    schema.ts
+    store.ts
+  api/
+    client.ts
+    errors.ts
+    limiter.ts
+    pagination.ts
+    types.ts
+    user-agent.ts
+  auth/
+    account.ts
+    oauth-flow.ts
+    relay-client.ts
+    token-store.ts
+  scraper/
+    provider.ts
+    session.ts
+    format.ts
+    types.ts
+  identity/
+    external-id.ts
+    resolver.ts
+  sync/
+    engine.ts
+    fingerprint.ts
+    mapping.ts
+    subscription.ts
+    suppressor.ts
+  import/
+    collection-importer.ts
+    index-importer.ts
+    planner.ts
+    field-mapping.ts
+  jobs/
+    commands.ts
+    runner.ts
+    summary.ts
+  tasks/
+    templates.ts
+  ui/
+    settings.ts
+    account.ts
+    sync.ts
+    import-collections.ts
+    import-index.ts
+    automation.ts
+    advanced.ts
+```
+
+文件命名遵循项目偏好：用职责名而不是重复目录名；`index.ts` 仅作为入口或显式 re-export。模块之间通过 public 对象协作，不跨目录读取私有 helper。
+
+## Activation Composition
+
+`index.ts` 是扩展 composition root：
+
+1. 创建 `SettingsStore`、`TokenStore`、`OAuthRelayClient`、`TokenService`、`BangumiClient`。
+2. 创建 `AccountService`、`IdentityResolver`、`SyncEngine`、importers、`JobRunner`。
+3. 注册 Bangumi game scraper provider。
+4. 注册 settings panel。
+5. 注册 deeplink route `/oauth-callback`。
+6. 注册 commands。
+7. 订阅 `library.game.created` / `library.game.updated`。
+8. 在 `context.subscriptions` 中统一挂载 disposable。
+
+`activate` 内只做装配，不塞业务流程。业务对象接收最小依赖，方便单测。
+
+## 核心对象
+
+- `SettingsStore`: 读写非敏感 settings，负责默认值、schema normalization 和版本升级。
+- `TokenStore`: 通过 `context.secrets` 读写用户 token；不接触 `client_secret`。
+- `OAuthFlow`: 组合 relay session、deeplink callback、openExternal、complete/polling 和取消/超时。
+- `OAuthRelayClient`: 对已部署 relay 的唯一访问入口。
+- `BangumiClient`: 对 Bangumi API 的唯一访问入口。
+- `AccountService`: 读取 `/v0/me`，保存账号快照，提供登录状态。
+- `BangumiProvider`: game scraper provider，使用 `BangumiClient`。
+- `IdentityResolver`: 统一 external id 读取、解析和绑定策略。
+- `SyncEngine`: 计算 status/score payload、fingerprint、冲突策略并写 Bangumi 收藏。
+- `SyncSubscription`: 订阅 host library event，做 debounce、过滤和 suppress。
+- `CollectionImporter`: 导入当前用户 Bangumi 游戏收藏。
+- `IndexImporter`: 导入 Bangumi 目录游戏。
+- `ImportPlanner`: dry run 计划与执行计划共用，输出新增、更新、跳过、冲突、错误。
+- `JobRunner`: 管理一次 Bangumi job command execution 的取消、progress 上报和输出摘要；不管理 task 生命周期。
+- `TaskTemplates`: 生成推荐 BackgroundTaskService task 创建输入；不运行、不取消、不读取 history。
+- `SettingsPanelController`: 组装 structured settings panel models 和 callbacks。
+
+## 依赖方向
+
+```text
+ui -> jobs -> sync/import/auth
+ui -> tasks -> config
+jobs -> config/api/identity
+tasks -> config
+sync/import/scraper -> api/identity/config
+auth -> api? no, auth uses relay-client and token-store
+api -> config/token-store/network
+shared -> no project dependencies
+```
+
+规则：
+
+- `api` 不依赖 `ui`、`jobs`、`sync`、`import`。
+- `scraper` 不读取 settings UI 状态，只接收 `BangumiClient`。
+- `sync` 和 `import` 不直接调用 `kisaki.network`，只调用 `BangumiClient`。
+- `ui` 不拼业务 payload；它把用户输入转成 command args 或 settings patch。
+- `jobs` 是 command 编排和输出摘要层，不承载 Bangumi API 细节，也不持久化运行历史。
+- `tasks` 只定义推荐 task 模板和创建输入，不调用 task run/cancel，不展示 task history。
+
+## Settings Schema
+
+新版本从 `settings.v1` 开始，不迁移旧 key：
+
+```ts
+interface BangumiSettingsV1 {
+  version: 1
+  auth: {
+    relayBaseUrl: string
+    loginTimeoutMs: number
+  }
+  sync: {
+    autoSyncEnabled: boolean
+    syncOnCreate: boolean
+    statusEnabled: boolean
+    scoreEnabled: boolean
+    clearRemoteScoreWhenEmpty: boolean
+    unmappedStrategy: 'skip' | 'notify' | 'resolveWithProfile'
+    resolveProfileId?: string
+    debounceMs: number
+    statusToBangumi: Record<LibraryGameStatus, BangumiCollectionType | 'skip'>
+    bangumiToStatus: Record<BangumiCollectionType, LibraryGameStatus | 'skip'>
+  }
+  imports: {
+    defaultProfileId?: string
+    defaultTargetCollectionId?: string
+    importStatus: boolean
+    importScore: boolean
+    importTags: boolean
+    importComment: false | 'metadata'
+    conflictPolicy: 'skip' | 'fillMissing' | 'overwriteSelected'
+  }
+  client: {
+    requestsPerSecond: number
+    burst: number
+    timeoutMs: number
+    retryCount: number
+    backoffBaseMs: number
+    backoffMaxMs: number
+  }
+  diagnostics: {
+    notifySyncErrors: boolean
+  }
+}
+```
+
+默认值：
+
+- `relayBaseUrl`: 已部署 relay 的生产 URL。
+- `requestsPerSecond`: `2`。
+- `burst`: `2`。
+- `timeoutMs`: `30000`。
+- `retryCount`: `3`。
+- `backoffBaseMs`: `1000`。
+- `backoffMaxMs`: `30000`。
+- `debounceMs`: `3000`。
+
+## Secrets Schema
+
+敏感值只存 `context.secrets`：
+
+```ts
+interface BangumiTokenSecretV1 {
+  version: 1
+  accessToken: string
+  refreshToken?: string
+  tokenType?: string
+  scope?: string | null
+  userId?: number
+  expiresAt?: number | null
+}
+```
+
+keys:
+
+- `auth.token`
+- `auth.pendingSession`，仅用于 OAuth flow 恢复，短期保存
+
+非敏感账号快照存 storage：
+
+- `auth.account`
+- `sync.state`
+- `sync.queue`
+- `diagnostics.lastRelayHealth`
+
+task schedule、运行记录、输出和错误历史属于主应用 BackgroundTaskService。Bangumi extension storage 不保存 `jobs.history`、通用 `lastResult` 或导入/同步命令结果副本；Bangumi settings panel 也不复制或展示 task history。
+
+## Error Model
+
+扩展内部统一错误类型：
+
+- `auth_required`
+- `auth_cancelled`
+- `auth_expired`
+- `relay_unavailable`
+- `bangumi_rate_limited`
+- `bangumi_validation`
+- `bangumi_not_found`
+- `network_failed`
+- `profile_missing`
+- `ingest_failed`
+- `library_update_failed`
+- `job_cancelled`
+
+对外显示时转换成 settings panel notice、command result error 和 notify 文案。日志使用 `context.logger`，不得记录 token、authorization code、refresh token、完整 HTTP body 或 secrets value。
+
+## Scraper Provider 目标
+
+`BangumiProvider` 保持 `externalIdSource = "bangumi"`，能力：
+
+- `search`: `/v0/search/subjects`，过滤游戏。
+- `resolve`: 优先识别 `lookup.knownIds` 中的 Bangumi subject ID。
+- `openSession`: `/v0/subjects/{id}`，按 slot 延迟加载 persons、characters、relations、images。
+- 输出 game metadata 时稳定包含 Bangumi external id。
+- 所有请求通过共享 `BangumiClient` 和同一个 limiter。
+
+当前 `scraper/format.ts` 中纯 mapping 逻辑可以保留或拆分，但新实现不能继续从 `context.storage.get('accessToken')` 读取 token，也不能保留硬编码 4 req/s 限速。

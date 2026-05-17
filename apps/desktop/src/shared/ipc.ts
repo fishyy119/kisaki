@@ -99,6 +99,7 @@ import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
+  CommandExecutionProgress,
   CommandExecutionRequest,
   CommandExecutionResult,
   CommandExecutionStartResult,
@@ -207,6 +208,7 @@ export interface IpcMainHandlers {
   'command:list': () => IpcResult<CommandListItem[]>
   'command:start': (request: CommandExecutionRequest) => IpcResult<CommandExecutionStartResult>
   'command:wait': (executionId: string) => IpcResult<CommandExecutionResult>
+  'command:get-progress': (executionId: string) => IpcResult<CommandExecutionProgress | null>
   'command:execute': (request: CommandExecutionRequest) => IpcResult<CommandExecutionResult>
   'command:cancel': (executionId: string) => IpcResult<boolean>
 
@@ -523,6 +525,7 @@ export interface IpcRendererEvents {
   'monitor:game-background': [string]
   'scanner:scan-progress': [ScanProgressData]
   'updater:state-changed': [state: AppUpdaterState]
+  'command:progress': [progress: CommandExecutionProgress]
 
   'notify:show': [NotifyOptions & { toastId?: string }]
   'notify:loading': [{ toastId: string; title: string; message?: string }]

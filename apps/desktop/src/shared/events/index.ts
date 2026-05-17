@@ -7,6 +7,7 @@
  */
 
 import type { AppLocale } from '../locale'
+import type { CommandExecutionProgress } from '../command'
 import type {
   LibraryCharacterCreatedEvent,
   LibraryCharacterDeletedEvent,
@@ -108,6 +109,9 @@ export interface AppEvents {
   'scanner:progress': [{ scannerId: string; current: number; total: number }]
   'scanner:completed': [{ scannerId: string; stats: Record<string, number> }]
   'scanner:error': [{ scannerId: string; error: string }]
+
+  // Command events
+  'command:progress': [CommandExecutionProgress]
 
   // Monitor events
   'monitor:status-changed': [{ gameId: string; isRunning: boolean; isForeground: boolean }]

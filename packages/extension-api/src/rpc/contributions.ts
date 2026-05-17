@@ -1,4 +1,7 @@
-import type { CommandExecutionSource } from '../capabilities/commands'
+import type {
+  CommandExecutionProgressUpdate,
+  CommandExecutionSource
+} from '../capabilities/commands'
 import type {
   CommandContribution,
   CommandContributionExecuteResult
@@ -325,6 +328,12 @@ export interface CommandExecuteResponse {
   output?: Exclude<CommandContributionExecuteResult, void>
 }
 
+export interface CommandProgressReportRequest extends ExtensionScopedRpcParams {
+  commandId: string
+  executionId: string
+  progress: CommandExecutionProgressUpdate
+}
+
 type ScraperProviderScopedRpcParamsFor<TMediaType extends ScraperMediaType> =
   ExtensionScopedRpcParams & {
     mediaType: TMediaType
@@ -567,4 +576,8 @@ export type HostToMainContributionRpcRequestMap = {
   >
   'contributions.commands.register': RpcMethodDefinition<CommandRegisterRequest, RpcNoPayload>
   'contributions.commands.unregister': RpcMethodDefinition<CommandUnregisterRequest, RpcNoPayload>
+  'contributions.commands.reportProgress': RpcMethodDefinition<
+    CommandProgressReportRequest,
+    RpcNoPayload
+  >
 }

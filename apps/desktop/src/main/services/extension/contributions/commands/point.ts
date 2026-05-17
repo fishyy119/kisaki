@@ -1,4 +1,5 @@
 import type {
+  CommandExecutionProgressUpdate,
   CommandContributionRegistrationInfo,
   ExtensionRuntimeHandle,
   SerializableRecord,
@@ -95,6 +96,23 @@ export class ExtensionCommandContributionPoint {
     if (scopedRegistrations.size === 0) {
       this.registrations.delete(runtimeHandle)
     }
+  }
+
+  reportProgress(
+    runtimeHandle: ExtensionRuntimeHandle,
+    commandId: string,
+    executionId: string,
+    progress: CommandExecutionProgressUpdate
+  ): void {
+    const owner = requireContributionOwner(this.options, runtimeHandle)
+    const registration = this.registrations.get(runtimeHandle)?.get(commandId)
+    if (!registration || registration.owner.extension.id !== owner.extension.id) {
+      throw new Error(
+        `Extension "${owner.extension.id}" has not registered command contribution "${commandId}".`
+      )
+    }
+
+    this.requireCommandService().executions.reportProgress(commandId, executionId, progress)
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {

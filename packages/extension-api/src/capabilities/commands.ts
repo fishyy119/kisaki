@@ -33,6 +33,21 @@ export interface CommandExecutionRequest {
   args?: SerializableRecord
 }
 
+export interface CommandExecutionProgressUpdate {
+  phase?: string
+  message?: string
+  current?: number
+  total?: number
+  indeterminate?: boolean
+}
+
+export interface CommandExecutionProgress extends CommandExecutionProgressUpdate {
+  commandId: string
+  executionId: string
+  source: CommandExecutionSource
+  updatedAt: number
+}
+
 export interface CommandExecutionStartResult {
   commandId: string
   executionId: string
@@ -55,6 +70,7 @@ export interface CommandExecutionContext {
   executionId: string
   source: CommandExecutionSource
   signal: AbortSignal
+  reportProgress(progress: CommandExecutionProgressUpdate): void
 }
 
 export interface CommandsCapability {
@@ -62,6 +78,7 @@ export interface CommandsCapability {
   get(commandId: string): Promise<CommandDescriptor | null>
   start(request: CommandExecutionRequest): Promise<CommandExecutionStartResult>
   wait(executionId: string): Promise<CommandExecutionResult>
+  getProgress(executionId: string): Promise<CommandExecutionProgress | null>
   execute(request: CommandExecutionRequest): Promise<CommandExecutionResult>
   cancel(executionId: string): Promise<boolean>
 }

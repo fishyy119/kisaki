@@ -1,10 +1,15 @@
-import type { CommandDescriptor, CommandExecutionSource } from '@shared/command'
+import type {
+  CommandDescriptor,
+  CommandExecutionProgressUpdate,
+  CommandExecutionSource
+} from '@shared/command'
 
 export interface CommandExecutionContext {
   commandId: string
   executionId: string
   source: CommandExecutionSource
   signal: AbortSignal
+  reportProgress(progress: CommandExecutionProgressUpdate): void
 }
 
 export interface CommandRegistrationInput
