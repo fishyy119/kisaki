@@ -10,7 +10,7 @@ import {
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { CompanyUpdatePlan, UpdateApplyResult } from '../types'
-import { ensureCompanyExternalIdsAvailable, findExistingTagId } from '../utils'
+import { ensureCompanyExternalIdsAvailable, findExistingTagId } from '../shared/availability'
 
 function replaceCompanyExternalIds(
   tx: DbContext,

@@ -5,7 +5,7 @@ import type {
   SerializableValue
 } from '@kisaki/extension-api'
 import { validateCommandContributionShape } from '@kisaki/extension-api'
-import { requireRuntimeByScope, throwValidationIssues } from '../utils'
+import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 import { toSerializableValue } from '../../sdk-bridge/utils/serialization'

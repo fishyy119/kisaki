@@ -6,7 +6,7 @@ import {
 } from '@shared/db'
 import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type { ScrapedPersonMetadata, ScrapedPersonBundle } from '@shared/scraper'
-import { applyImageStrategy, applyStrategy, filterBySlot, sortByRank } from '../../utils'
+import { applyImageStrategy, applyStrategy, filterBySlot, sortByRank } from '../../shared'
 import type {
   PersonScraperImageResult,
   PersonScraperPhotosResult,

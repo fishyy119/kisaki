@@ -13,7 +13,7 @@ import {
   mergeCharacterPersons,
   sortByRank,
   type RelationCollectionMergeOptions
-} from '../../utils'
+} from '../../shared'
 import type {
   CharacterScraperImageResult,
   CharacterScraperPhotosResult,

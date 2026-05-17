@@ -12,12 +12,9 @@ import { applyCompanyPlan } from './apply'
 import { loadCompanyCurrent } from './current'
 import { buildCompanyIncoming } from './incoming'
 import { buildCompanyPlan } from './plan'
-import {
-  normalizeLookup,
-  normalizePolicy,
-  normalizeSelection,
-  resolveUpdateSelection
-} from './utils'
+import { normalizeLookup } from './shared/normalization'
+import { normalizePolicy } from './shared/policy'
+import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 
 const log = createLogger('Ingest')
 

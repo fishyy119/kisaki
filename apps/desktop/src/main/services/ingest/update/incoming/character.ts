@@ -8,7 +8,7 @@ import {
   normalizeRelatedSites,
   normalizeTags,
   normalizeUrlCandidates
-} from '../utils'
+} from '../shared/normalization'
 
 function buildCharacterCore(
   bundle: ScrapedCharacterBundle | null,

@@ -21,7 +21,7 @@ import type { Scanner, ScannerIngestMode } from '@shared/db'
 import type { EntityEntry, ScanCompletedData, ScanProgressData } from '@shared/scanner'
 import type { IngestAddGameResult } from '@shared/ingest/add'
 import type { ScannerPhash } from '../../phash'
-import type { ScanOptions } from '../../utils'
+import type { ScanOptions } from '../../discovery'
 import {
   ScannerHandlerCoordinator,
   type ScannerEntityProcessResult,

@@ -3,5 +3,5 @@
  */
 
 export { ScannerService } from './service'
-export type { ScanOptions } from './utils'
+export type { ScanOptions } from './discovery'
 export { GameScannerHandler } from './handlers/game'

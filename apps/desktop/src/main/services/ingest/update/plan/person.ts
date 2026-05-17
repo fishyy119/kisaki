@@ -6,11 +6,10 @@ import {
   areTagsEqual,
   mergeExternalIds,
   mergeRelatedSites,
-  mergeTags,
-  pickFirstUrl,
-  shouldApplyMediaUpdate,
-  shouldApplyScalarUpdate
-} from '../utils'
+  mergeTags
+} from '../shared/merge'
+import { pickFirstUrl } from '../shared/normalization'
+import { shouldApplyMediaUpdate, shouldApplyScalarUpdate } from '../shared/policy'
 
 export function buildPersonPlan(context: PersonPlanContext): PersonUpdatePlan {
   const { current, incoming, selection, policy } = context

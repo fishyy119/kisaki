@@ -15,7 +15,7 @@ import type {
   SettingsRegistration,
   SettingsSurfaceLease
 } from './types'
-import { getSettingsSessionKey } from './utils'
+import { getSettingsSessionKey } from './shared'
 
 export class SettingsSessionStore {
   private readonly sessions = new Map<string, MainSettingsSession>()

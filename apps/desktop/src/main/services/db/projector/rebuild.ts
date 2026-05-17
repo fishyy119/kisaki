@@ -1,6 +1,6 @@
 import type { LibraryGameRelationSnapshot, RawDbChangeEvent } from '@shared/events/library'
 import type { ExternalId } from '@shared/identity'
-import { stringValue } from './utils'
+import { stringValue } from './shared/normalization'
 
 export function rebuildExternalIdsBefore(
   after: ExternalId[],

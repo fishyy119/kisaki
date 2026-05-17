@@ -22,7 +22,7 @@ import type {
 } from '@shared/scraper'
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
-import { ensureProviderExternalId } from '../../utils'
+import { ensureProviderExternalId } from '../../shared'
 import { executeScraperPlan } from '../common/executor'
 import {
   buildExecutionPlan,

@@ -12,7 +12,7 @@ import {
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { GameUpdatePlan, UpdateApplyResult } from '../types'
-import { ensureGameExternalIdsAvailable, findExistingTagId } from '../utils'
+import { ensureGameExternalIdsAvailable, findExistingTagId } from '../shared/availability'
 import {
   applyCharacterPersonRows,
   applyGameCharacterRows,

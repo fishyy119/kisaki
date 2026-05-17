@@ -16,15 +16,14 @@ import {
 } from '../rebuild'
 import type { GameRow, IdSnapshotReader } from '../types'
 import {
-  createPartialSnapshot,
   normalizeActivityValue,
   normalizeCoreValue,
   normalizeNullableString,
   nullableNumber,
-  sameJson,
   stringValue,
   uniqueStrings
-} from '../utils'
+} from '../shared/normalization'
+import { createPartialSnapshot, sameJson } from '../shared/snapshot'
 
 export function getGameIdsFromChange(change: RawDbChangeEvent): string[] {
   const gameTables = new Set([

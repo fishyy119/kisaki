@@ -12,12 +12,9 @@ import { applyPersonPlan } from './apply'
 import { loadPersonCurrent } from './current'
 import { buildPersonIncoming } from './incoming'
 import { buildPersonPlan } from './plan'
-import {
-  normalizeLookup,
-  normalizePolicy,
-  normalizeSelection,
-  resolveUpdateSelection
-} from './utils'
+import { normalizeLookup } from './shared/normalization'
+import { normalizePolicy } from './shared/policy'
+import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 
 const log = createLogger('Ingest')
 

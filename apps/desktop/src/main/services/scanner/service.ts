@@ -15,7 +15,7 @@ import type { DbService } from '@main/services/db'
 import type { NameExtractionRule } from '@shared/db'
 import { GameScannerHandler } from './handlers/game'
 import { ScannerPhash } from './phash'
-import { extractEntityName, scanForEntities } from './utils'
+import { extractEntityName, scanForEntities } from './discovery'
 import { registerScannerIpc } from './ipc'
 
 const log = createLogger('Scanner')

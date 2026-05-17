@@ -37,7 +37,7 @@ import {
 } from './requests'
 import { SettingsSessionStore } from './sessions'
 import type { SettingsRegistration } from './types'
-import { createSettingsError, getPublicContributionKey, toErrorMessage } from './utils'
+import { createSettingsError, getPublicContributionKey, toErrorMessage } from './shared'
 
 const log = createLogger('Extension')
 

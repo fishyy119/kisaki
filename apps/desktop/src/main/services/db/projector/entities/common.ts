@@ -7,11 +7,11 @@ import type {
 } from '@shared/events/library'
 import type { EntityProjection } from '../types'
 import {
-  createPartialSnapshot,
   normalizeEntityValue,
   normalizeNullableString,
   nullableNumber
-} from '../utils'
+} from '../shared/normalization'
+import { createPartialSnapshot } from '../shared/snapshot'
 
 export function projectEntityChanges(
   projection: EntityProjection,

@@ -13,7 +13,8 @@ import {
   projectGameChanges
 } from './entities'
 import { PROJECTOR_DEBOUNCE_MS, type ConfiguredEntityTopic, type EntityGroup } from './types'
-import { dedupeTargets, stringValue } from './utils'
+import { stringValue } from './shared/normalization'
+import { dedupeTargets } from './shared/targets'
 
 const log = createLogger('Db')
 

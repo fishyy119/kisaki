@@ -1,28 +1,3 @@
-export function createPartialSnapshot<TSnapshot extends object>(
-  beforeRow: Record<string, unknown>,
-  afterRow: Record<string, unknown>,
-  fieldMap: Record<string, string>,
-  normalize: (value: unknown, field: string) => unknown
-): { before: Partial<TSnapshot>; after: Partial<TSnapshot>; fields: string[] } {
-  const before: Partial<TSnapshot> = {}
-  const after: Partial<TSnapshot> = {}
-  const fields: string[] = []
-
-  for (const [dbField, publicField] of Object.entries(fieldMap)) {
-    const beforeValue = normalize(beforeRow[dbField], publicField)
-    const afterValue = normalize(afterRow[dbField], publicField)
-    if (sameJson(beforeValue, afterValue)) {
-      continue
-    }
-
-    ;(before as Record<string, unknown>)[publicField] = beforeValue
-    ;(after as Record<string, unknown>)[publicField] = afterValue
-    fields.push(publicField)
-  }
-
-  return { before, after, fields }
-}
-
 export function normalizeCoreValue(value: unknown, field: string): unknown {
   if (field === 'releaseDate') {
     return parseJsonValue(value)
@@ -74,21 +49,6 @@ export function uniqueStrings(values: Array<string | undefined>): string[] {
   return [...new Set(values.filter((value): value is string => Boolean(value)))]
 }
 
-export function dedupeTargets<TTarget extends { entity: string; id: string }>(
-  targets: TTarget[]
-): TTarget[] {
-  const seen = new Set<string>()
-  const deduped: TTarget[] = []
-  for (const target of targets) {
-    const key = `${target.entity}:${target.id}`
-    if (!seen.has(key)) {
-      seen.add(key)
-      deduped.push(target)
-    }
-  }
-  return deduped
-}
-
 export function parseJsonValue(value: unknown): unknown {
   if (typeof value !== 'string' || value.length === 0) {
     return value ?? null
@@ -99,8 +59,4 @@ export function parseJsonValue(value: unknown): unknown {
   } catch {
     return value
   }
-}
-
-export function sameJson(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
 }

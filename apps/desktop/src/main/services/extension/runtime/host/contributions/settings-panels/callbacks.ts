@@ -12,7 +12,7 @@ import {
   validateSettingsPanelRootButtonResult,
   validateSettingsPanelRootCommitResult
 } from '@kisaki/extension-api'
-import { formatValidationIssues } from '../utils'
+import { formatValidationIssues } from '../shared'
 import {
   createDialogButtonHelpers,
   createDialogCommitHelpers,

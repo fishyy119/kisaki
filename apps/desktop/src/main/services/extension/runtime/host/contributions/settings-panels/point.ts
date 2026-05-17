@@ -22,7 +22,7 @@ import {
   validateSettingsPanelRootModel,
   validateSettingsPanelRootSubmitResult
 } from '@kisaki/extension-api'
-import { requireRuntimeByScope, throwValidationIssues } from '../utils'
+import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 import { invokeSettingsPanelCallback } from './callbacks'

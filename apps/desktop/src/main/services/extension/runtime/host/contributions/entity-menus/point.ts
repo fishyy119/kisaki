@@ -18,7 +18,7 @@ import {
   validateEntityMenuContributionShape,
   validateEntityMenuNodes
 } from '@kisaki/extension-api'
-import { requireRuntimeByScope, throwValidationIssues } from '../utils'
+import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 import { invokeUiCallback } from '../ui'

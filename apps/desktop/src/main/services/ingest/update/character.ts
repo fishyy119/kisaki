@@ -15,12 +15,9 @@ import { applyCharacterPlan } from './apply'
 import { loadCharacterCurrent } from './current'
 import { buildCharacterIncoming } from './incoming'
 import { buildCharacterPlan } from './plan'
-import {
-  normalizeLookup,
-  normalizePolicy,
-  normalizeSelection,
-  resolveUpdateSelection
-} from './utils'
+import { normalizeLookup } from './shared/normalization'
+import { normalizePolicy } from './shared/policy'
+import { normalizeSelection, resolveUpdateSelection } from './shared/selection'
 
 const log = createLogger('Ingest')
 

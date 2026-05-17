@@ -22,7 +22,7 @@ import {
   mergePersonMetadataFields,
   sortByRank,
   type RelationCollectionMergeOptions
-} from '../../utils'
+} from '../../shared'
 import type {
   GameScraperCharactersResult,
   GameScraperCompaniesResult,

@@ -18,7 +18,7 @@ import {
   type NewGamePersonLink
 } from '@shared/db'
 import type { IngestUpdatePolicy } from '@shared/ingest/update'
-import { normalizeOptionalString } from '../utils'
+import { normalizeOptionalString } from '../shared/normalization'
 
 interface OrderedRelationRow<TType extends string> {
   relatedId: string

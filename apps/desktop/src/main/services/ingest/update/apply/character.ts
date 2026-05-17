@@ -12,7 +12,7 @@ import {
 } from '@shared/db'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { CharacterUpdatePlan, UpdateApplyResult } from '../types'
-import { ensureCharacterExternalIdsAvailable, findExistingTagId } from '../utils'
+import { ensureCharacterExternalIdsAvailable, findExistingTagId } from '../shared/availability'
 import { applyCharacterPersonRows, filterNodesByIdentity, resolvePersonNodes } from './relations'
 
 function replaceCharacterExternalIds(
