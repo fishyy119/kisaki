@@ -125,7 +125,7 @@ shared -> no project dependencies
 
 ## Settings Schema
 
-新版本从 `settings.v1` 开始，不迁移旧 key：
+新版本从 `settings.v1` 开始；旧数据一律作废：
 
 ```ts
 interface BangumiSettingsV1 {
@@ -265,4 +265,4 @@ task schedule、运行记录、输出和错误历史属于主应用 BackgroundTa
 - 输出 game metadata 时稳定包含 Bangumi external id。
 - 所有请求通过共享 `BangumiClient` 和同一个 limiter。
 
-当前 `scraper/format.ts` 中纯 mapping 逻辑可以保留或拆分，但新实现不能继续从 `context.storage.get('accessToken')` 读取 token，也不能保留硬编码 4 req/s 限速。
+当前 `scraper/format.ts` 中纯 mapping 逻辑可以保留或拆分，但新实现不能继续沿用旧机制或硬编码限速。

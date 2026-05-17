@@ -14,12 +14,13 @@
 - 实现 `SettingsStore`、默认设置、schema normalization。
 - 实现 `TokenStore` 和 secrets schema。
 - 明确 job 不保存 history；持久 task history 只属于主应用 BackgroundTaskService。
-- 删除旧手动 access token 设置入口。
+- 删除旧设置入口。
+- 不设旧版本兼容层；旧数据一律作废。
 
 验收：
 
 - 新 settings schema 初次启动可创建默认值。
-- 旧 `accessToken` 不再被 API client 使用。
+- 旧数据不会影响新实现。
 - `context.secrets` 中只出现新 keys。
 
 ## Phase 2: OAuth 与 BangumiClient
@@ -158,7 +159,7 @@ pnpm --filter kisaki typecheck
 - DB event 无 source：防循环使用 fingerprint、debounce 和 suppressor。
 - `updated_at` 不可靠：导入不得依赖它判断是否改写本地用户态字段。
 - Bangumi 用户收藏 tag 与 Kisaki tag 语义不完全等价：默认不导入 tag，用户显式启用后才创建/关联 Kisaki tag。
-- 旧 token storage：新 client 不读取旧 key；提供清理提示。
+- 旧实现数据：一律作废。
 
 ## 最小完成标准
 

@@ -52,7 +52,7 @@ Out:
 - 不删除 Bangumi 远端收藏。
 - 不创建、编辑或删除 Bangumi 条目、目录或目录条目。
 - 不把 Bangumi 做成所有媒体类型的统一同步源；第一版只面向游戏。
-- 不兼容旧 Bangumi storage key、旧手动 access token 输入、旧内部模块边界。
+- 不兼容旧实现；旧数据一律作废。
 - 不在主应用新增 Bangumi 专用 OAuth service。
 
 ## Bangumi API 能力表

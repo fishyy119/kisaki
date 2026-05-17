@@ -2,7 +2,11 @@
 
 本文档集定义 `extensions/bangumi` 的目标形态和实施路线。当前扩展系统已经完成重构，Bangumi 所需的宿主能力已经进入公共 extension API；Kisaki OAuth Relay 也已完成部署。因此本文不再描述“宿主能力待补齐”的旧方案，而是基于当前仓库中的 extension runtime、capability、contribution、command、background task、DB event projector 和 built-in extension 打包流程，重新设计 Bangumi 内置扩展本身。
 
-旧实现只保留需求价值：它说明用户希望 Bangumi 从 metadata scraper 升级为完整的账号、同步、导入和自动化集成。旧 storage key、旧手动 access token 设置、旧模块边界、旧文档中的 relay 部署草案和宿主待办项都不作为新设计约束。
+旧实现只保留需求价值，不作为新设计约束。
+
+兼容性决策：重写版本不设兼容层，旧数据一律作废。
+
+无须考虑任何向后兼容，要求干净清晰彻底。
 
 ## 文档结构
 
@@ -28,7 +32,7 @@
 - 设置 UI 使用当前 structured settings panel，复杂操作通过 dialog、tab、table、status、button 和后台 command 组织，不引入第二套 UI 框架。
 - 长流程统一注册为 extension command；settings panel 手动触发的是一次 job，避免在 settings callback 中执行长时间导入或同步。
 - background task 是主应用持久自动化配置；Bangumi 只提供推荐 task 创建入口，task 的运行、取消、历史和后续面板展示都归主应用。
-- 不迁移旧 Bangumi 扩展 storage。新版本第一次启动时按新 schema 初始化；如发现旧 `accessToken`，仅可在设置页给出一次性清理提示，不自动使用。
+- 重写版本不设兼容层，旧数据一律作废。
 
 ## 当前项目事实
 
@@ -39,7 +43,7 @@
 - 命令注册是 contribution：`context.contributions.commands.register(...)`。命令执行是 capability：`kisaki.commands.start/execute/wait/cancel(...)`。
 - Deeplink contribution 返回 `urlPattern`，扩展局部 path 会被宿主归一化为 `kisaki://ext/<extensionId>/<path>`。
 - DB event projector 已基于 SQLite trigger 的 OLD/NEW row snapshot 投影 `library.game.updated` 等 typed host event。
-- 当前 `extensions/bangumi` 仍是旧 scraper 形态，使用 `context.storage.get('accessToken')` 和硬编码限速；实施阶段要替换为本文档的完整设计。
+- 当前 `extensions/bangumi` 仍是旧 scraper 形态；实施阶段要替换为本文档的完整设计。
 
 ## 参考资料
 
