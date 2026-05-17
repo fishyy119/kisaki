@@ -37,7 +37,7 @@ export class ExtensionNetworkCapabilityProvider {
       const url = buildRequestUrl(input.url, input.query)
       const headers = normalizeHeaders(input.headers) ?? {}
       const body = normalizeRequestBody(input.body, headers)
-      const response = await this.options.network.fetch(url, {
+      const response = await this.options.network.request.fetch(url, {
         method: input.method,
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         body,
@@ -66,7 +66,7 @@ export class ExtensionNetworkCapabilityProvider {
     const destinationPath = resolveDownloadDestination(metadata, input)
 
     try {
-      await this.options.network.downloadToFile(input.url, destinationPath, {
+      await this.options.network.download.toFile(input.url, destinationPath, {
         headers: normalizeHeaders(input.headers),
         timeout: input.timeoutMs,
         signal

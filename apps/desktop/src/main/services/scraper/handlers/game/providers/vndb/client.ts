@@ -47,7 +47,7 @@ export class VndbClient {
 
   private ensureRateLimitRegistered(): void {
     if (!this.rateLimitRegistered) {
-      this.network.registerRateLimit(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
+      this.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
       this.rateLimitRegistered = true
     }
   }
@@ -72,7 +72,7 @@ export class VndbClient {
   private async request<T>(method: 'GET' | 'POST', pathname: string, body?: unknown): Promise<T> {
     this.ensureRateLimitRegistered()
 
-    const response = await this.network.fetch(`${this.baseUrl}${pathname}`, {
+    const response = await this.network.request.fetch(`${this.baseUrl}${pathname}`, {
       method,
       headers: this.buildHeaders(method),
       body: body ? JSON.stringify(body) : undefined,

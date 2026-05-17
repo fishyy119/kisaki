@@ -123,7 +123,7 @@ export class ExtensionIconManager {
     await fse.remove(tempPath).catch(() => undefined)
 
     try {
-      await this.networkService.downloadToFile(icon.url, tempPath, {
+      await this.networkService.download.toFile(icon.url, tempPath, {
         retries: 0,
         timeout: 10000,
         maxBytes: MAX_EXTENSION_ICON_BYTES

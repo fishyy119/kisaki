@@ -65,7 +65,7 @@ export class YmgalClient {
 
   private ensureRateLimitRegistered(): void {
     if (!this.rateLimitRegistered) {
-      this.network.registerRateLimit(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
+      this.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
       this.rateLimitRegistered = true
     }
   }
@@ -119,7 +119,7 @@ export class YmgalClient {
   }
 
   private async fetchAccessToken(): Promise<string> {
-    const response = await this.network.fetch(
+    const response = await this.network.request.fetch(
       this.buildUrl('/oauth/token', {
         grant_type: 'client_credentials',
         client_id: this.resolveClientId(),
@@ -161,7 +161,7 @@ export class YmgalClient {
     this.ensureRateLimitRegistered()
     const token = await this.getAccessToken()
 
-    const response = await this.network.fetch(this.buildUrl(pathname, query), {
+    const response = await this.network.request.fetch(this.buildUrl(pathname, query), {
       method: 'GET',
       headers: this.buildApiHeaders(token),
       rateLimitKey: RATE_LIMIT_KEY

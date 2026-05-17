@@ -51,7 +51,7 @@ export class IgdbClient {
 
   private ensureRateLimitRegistered(): void {
     if (!this.rateLimitRegistered) {
-      this.network.registerRateLimit(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
+      this.network.rateLimits.register(RATE_LIMIT_KEY, RATE_LIMIT_CONFIG)
       this.rateLimitRegistered = true
     }
   }
@@ -86,7 +86,7 @@ export class IgdbClient {
     const url = `${this.oauthUrl}?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`
 
     const response = await this.withConcurrencyLimit(() =>
-      this.network.fetch(url, {
+      this.network.request.fetch(url, {
         method: 'POST',
         rateLimitKey: RATE_LIMIT_KEY
       })
@@ -109,7 +109,7 @@ export class IgdbClient {
     const execute = async (retryOnUnauthorized: boolean): Promise<T[]> => {
       const token = await this.getAccessToken()
       const response = await this.withConcurrencyLimit(() =>
-        this.network.fetch(`${this.baseUrl}/${endpoint}`, {
+        this.network.request.fetch(`${this.baseUrl}/${endpoint}`, {
           method: 'POST',
           headers: {
             Accept: 'application/json',

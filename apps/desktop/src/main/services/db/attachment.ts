@@ -506,7 +506,7 @@ export class AttachmentStore {
 
         try {
           throwIfAborted(signal)
-          await this.network.downloadToFile(input.url, tempPath, { signal })
+          await this.network.download.toFile(input.url, tempPath, { signal })
           throwIfAborted(signal)
           const header = await this.readFileHeader(tempPath)
           const fileName = await this.createFileNameWithId(fileId, header, this.getExtHint(input))

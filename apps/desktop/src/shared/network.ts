@@ -16,7 +16,7 @@ export interface FetchOptions {
   timeout?: number
   /** Retry count (overrides global setting) */
   retries?: number
-  /** Rate limit key (must be registered via registerRateLimit first) */
+  /** Rate limit key (must be registered via NetworkService.rateLimits.register first) */
   rateLimitKey?: string
   /** Maximum number of bytes allowed while streaming a download */
   maxBytes?: number

@@ -44,7 +44,7 @@ export class ExtensionPackageDownloader {
 
       await fse.ensureDir(path.dirname(operationPaths.downloadPath))
       await fse.remove(operationPaths.downloadPath).catch(() => undefined)
-      await this.networkService.downloadToFile(input.url, operationPaths.downloadPath, {
+      await this.networkService.download.toFile(input.url, operationPaths.downloadPath, {
         signal: input.signal,
         maxBytes: resolvePackageDownloadBudget(input.expectedSize)
       })

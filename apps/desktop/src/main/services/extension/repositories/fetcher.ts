@@ -68,7 +68,7 @@ export class ExtensionRepositoryFetcher {
       headers['If-Modified-Since'] = options.lastModified
     }
 
-    const response = await this.networkService.fetch(manifestUrl, {
+    const response = await this.networkService.request.fetch(manifestUrl, {
       headers,
       timeout: 15000,
       retries: 1,

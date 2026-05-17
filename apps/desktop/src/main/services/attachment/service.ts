@@ -30,7 +30,7 @@ export class AttachmentService implements IMediaService {
 
     this.cropper = new AttachmentCropper({
       tempDir: path.join(app.getPath('temp'), 'kisaki', 'crop'),
-      downloadBuffer: async (url) => await networkService.downloadBuffer(url)
+      downloadBuffer: (url) => networkService.download.buffer(url)
     })
     this.game = new GameAttachmentHandler(dbService)
     registerAttachmentIpc(this, ipcService)

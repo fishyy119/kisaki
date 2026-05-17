@@ -419,7 +419,7 @@ export class UpdaterService implements IService {
     const url = this.buildChangelogUrl(version, locale)
 
     try {
-      const response = await this.networkService.fetch(url, {
+      const response = await this.networkService.request.fetch(url, {
         retries: 1,
         timeout: 10000
       })
