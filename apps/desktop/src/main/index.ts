@@ -144,8 +144,8 @@ async function onAppReady(): Promise<void> {
 
   // Create main window first (so renderer IPC listeners are ready)
   const windowService = container.get<WindowService>('window')
-  windowService.createMainWindow()
-  windowService.createTrayMenuWindow()
+  windowService.mainWindow.create()
+  windowService.trayMenuWindow.create()
 
   eventService.bus.emit('app:ready')
 
@@ -179,9 +179,9 @@ async function onAppReady(): Promise<void> {
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (windowService.getAllWindows().length === 0) {
-      windowService.createMainWindow()
-      windowService.createTrayMenuWindow()
+    if (windowService.windows.getAll().length === 0) {
+      windowService.mainWindow.create()
+      windowService.trayMenuWindow.create()
     }
   })
 }

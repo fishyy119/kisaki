@@ -10,7 +10,7 @@ export class NativeDialogs {
   }
 
   async showOpenDialog(options?: OpenDialogOptions): Promise<OpenDialogReturnValue> {
-    const mainWindow = this.windowService.getMainWindow()
+    const mainWindow = this.windowService.mainWindow.get()
     if (!mainWindow) {
       throw new Error('No main window found')
     }

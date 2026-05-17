@@ -67,11 +67,7 @@ export class NavigateHandler implements DeeplinkRouteHandler<typeof NAVIGATE_DEE
 
   private focusMainWindow(): void {
     try {
-      const mainWindow = this.windowService.getMainWindow()
-      if (mainWindow) {
-        if (mainWindow.isMinimized()) mainWindow.restore()
-        mainWindow.focus()
-      }
+      this.windowService.mainWindow.focus()
     } catch (error) {
       log.error('Error focusing main window:', error)
     }

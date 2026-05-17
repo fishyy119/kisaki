@@ -4,16 +4,16 @@ import type { WindowService } from './service'
 
 export function registerWindowIpc(service: WindowService, ipc: IpcService): void {
   ipc.on('window:set-main-window-close-action', (_e, action) => {
-    service.setMainWindowCloseAction(action)
+    service.mainWindow.setCloseAction(action)
   })
 
-  ipc.handle('window:minimize-main-window', () => wrapIpcVoid(() => service.minimizeMainWindow()))
+  ipc.handle('window:minimize-main-window', () => wrapIpcVoid(() => service.mainWindow.minimize()))
 
   ipc.handle('window:toggle-main-window-maximize', () =>
-    wrapIpcVoid(() => service.toggleMainWindowMaximize())
+    wrapIpcVoid(() => service.mainWindow.toggleMaximize())
   )
 
   ipc.handle('window:close-main-window', () =>
-    wrapIpcVoid(() => service.closeMainWindowByConfiguredAction())
+    wrapIpcVoid(() => service.mainWindow.closeByConfiguredAction())
   )
 }

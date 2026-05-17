@@ -32,7 +32,7 @@ export class NativeTray {
 
     this.tray.on('click', () => {
       try {
-        this.windowService.focusMainWindow()
+        this.windowService.mainWindow.focus()
       } catch (error) {
         log.error('Tray click failed:', error)
       }
@@ -96,7 +96,7 @@ export class NativeTray {
   }
 
   private openTrayMenuWindow(anchorPoint: Electron.Point): void {
-    const win = this.windowService.getTrayMenuWindow()
+    const win = this.windowService.trayMenuWindow.get()
     if (!win) {
       log.warn('Tray menu window not available')
       return
@@ -110,7 +110,7 @@ export class NativeTray {
   }
 
   updateMenuHeight(height: number): void {
-    const win = this.windowService.getTrayMenuWindow()
+    const win = this.windowService.trayMenuWindow.get()
     if (!win) return
     if (!Number.isFinite(height) || height <= 0) return
 

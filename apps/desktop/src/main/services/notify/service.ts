@@ -62,7 +62,7 @@ export class NotifyService implements IService {
   }
 
   showAuto(options: NotifyOptions, toastId?: string): string | undefined {
-    const isFocused = this.windowService.isMainWindowFocused()
+    const isFocused = this.windowService.mainWindow.isFocused()
     if (isFocused) {
       return this.forwardToRenderer(options, toastId)
     } else {

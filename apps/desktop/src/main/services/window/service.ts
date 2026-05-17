@@ -5,322 +5,49 @@
  */
 
 import { app, BrowserWindow } from 'electron'
-import { join } from 'path'
-import { is, platform } from '@electron-toolkit/utils'
-import windowStateKeeper from 'electron-window-state'
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { DbService } from '@main/services/db'
-import type { IpcService } from '@main/services/ipc'
-import { settings } from '@shared/db'
-import type { MainWindowCloseAction } from '@shared/db/enums'
-import { openExternalLink } from '@main/utils'
 import { registerWindowIpc } from './ipc'
+import { MainWindowController } from './controllers/main'
+import { TrayMenuWindowController } from './controllers/tray-menu'
 
 const log = createLogger('Window')
+
+export interface WindowsApi {
+  getAll(): BrowserWindow[]
+}
 
 export class WindowService implements IService {
   readonly id = 'window'
   readonly deps = ['ipc', 'db'] as const satisfies readonly ServiceName[]
 
-  private mainWindow: BrowserWindow | null = null
-  private trayMenuWindow: BrowserWindow | null = null
-  private ipcService!: IpcService
-  private dbService!: DbService
-  private isQuitting = false
-  private mainWindowCloseAction: MainWindowCloseAction = 'exit'
+  readonly mainWindow = new MainWindowController()
+  readonly trayMenuWindow = new TrayMenuWindowController()
+  readonly windows: WindowsApi = {
+    getAll: () => BrowserWindow.getAllWindows()
+  }
+
+  private readonly onBeforeQuit = (): void => {
+    this.mainWindow.markQuitting()
+  }
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
-    this.ipcService = container.get('ipc')
-    this.dbService = container.get('db')
-    this.mainWindowCloseAction = this.loadMainWindowCloseActionFromDb()
-    registerWindowIpc(this, this.ipcService)
+    const ipcService = container.get('ipc')
+    const dbService = container.get('db')
 
-    app.on('before-quit', () => {
-      this.isQuitting = true
-    })
+    this.mainWindow.init({ ipcService, dbService })
+    registerWindowIpc(this, ipcService)
+    app.on('before-quit', this.onBeforeQuit)
 
     log.info('Initialized')
   }
 
-  private loadMainWindowCloseActionFromDb(): MainWindowCloseAction {
-    try {
-      const row = this.dbService.client
-        .select({ action: settings.mainWindowCloseAction })
-        .from(settings)
-        .get()
-
-      return row?.action ?? 'exit'
-    } catch (error) {
-      log.warn('Failed to read mainWindowCloseAction from settings, fallback to exit:', error)
-      return 'exit'
-    }
-  }
-
-  setMainWindowCloseAction(action: MainWindowCloseAction): void {
-    if (action !== 'exit' && action !== 'tray') {
-      log.warn('Ignored invalid main window close action:', action)
-      return
-    }
-
-    if (this.mainWindowCloseAction === action) return
-    this.mainWindowCloseAction = action
-    log.info('Updated main window close action:', action)
-  }
-
-  minimizeMainWindow(): void {
-    const mainWindow = this.requireMainWindow()
-    mainWindow.minimize()
-  }
-
-  toggleMainWindowMaximize(): void {
-    const mainWindow = this.requireMainWindow()
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize()
-    } else {
-      mainWindow.maximize()
-    }
-  }
-
-  closeMainWindowByConfiguredAction(): void {
-    this.requireMainWindow()
-    this.applyMainWindowCloseAction(this.mainWindowCloseAction)
-  }
-
-  private applyMainWindowCloseAction(action: MainWindowCloseAction, event?: Electron.Event): void {
-    const mainWindow = this.getMainWindow()
-    if (!mainWindow || mainWindow.isDestroyed()) return
-
-    if (this.isQuitting) return
-
-    if (action === 'tray') {
-      event?.preventDefault()
-      mainWindow.hide()
-      return
-    }
-
-    // action === 'exit'
-    event?.preventDefault()
-    setImmediate(() => app.quit())
-  }
-
   async dispose(): Promise<void> {
-    this.isQuitting = true
+    app.off('before-quit', this.onBeforeQuit)
 
-    if (this.trayMenuWindow && !this.trayMenuWindow.isDestroyed()) {
-      try {
-        this.trayMenuWindow.destroy()
-      } catch {
-        // ignore
-      }
-    }
-    this.trayMenuWindow = null
+    this.trayMenuWindow.dispose()
+    this.mainWindow.dispose()
 
-    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      try {
-        this.mainWindow.destroy()
-      } catch {
-        // ignore
-      }
-    }
-    this.mainWindow = null
     log.info('Disposed')
-  }
-
-  /**
-   * Create the main application window
-   */
-  createMainWindow(): BrowserWindow {
-    // Load the previous state with fallback to defaults
-    const mainWindowState = windowStateKeeper({
-      defaultWidth: 1400,
-      defaultHeight: 850,
-      maximize: false,
-      fullScreen: false
-    })
-
-    const icon =
-      platform.isLinux || is.dev ? join(__dirname, '../../resources/icon.png') : undefined
-
-    // Create the browser window
-    this.mainWindow = new BrowserWindow({
-      x: mainWindowState.x,
-      y: mainWindowState.y,
-      width: mainWindowState.width,
-      height: mainWindowState.height,
-      show: false,
-      frame: false,
-      autoHideMenuBar: true,
-      ...(platform.isLinux || is.dev ? { icon } : {}),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
-        sandbox: false,
-        webSecurity: false
-      }
-    })
-
-    // Let electron-window-state manage this window
-    mainWindowState.manage(this.mainWindow)
-
-    this.mainWindow.on('close', (event) => {
-      this.applyMainWindowCloseAction(this.mainWindowCloseAction, event)
-    })
-
-    this.mainWindow.on('ready-to-show', () => {
-      this.mainWindow?.show()
-    })
-
-    this.mainWindow.webContents.setWindowOpenHandler((details) => {
-      void openExternalLink(details.url).catch((error) => {
-        log.warn('Blocked external navigation:', error)
-      })
-      return { action: 'deny' }
-    })
-
-    // Setup window event listeners
-    this.mainWindow.on('maximize', () => {
-      this.ipcService.send('native:main-window-maximized')
-    })
-
-    this.mainWindow.on('unmaximize', () => {
-      this.ipcService.send('native:main-window-unmaximized')
-    })
-
-    // Clear reference when window is closed
-    this.mainWindow.on('closed', () => {
-      this.mainWindow = null
-    })
-
-    // HMR for renderer base on electron-vite cli
-    // Load the remote URL for development or the local html file for production
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      const base = process.env['ELECTRON_RENDERER_URL']
-      const mainUrl = new URL('main.html', base.endsWith('/') ? base : `${base}/`).toString()
-      this.mainWindow.loadURL(mainUrl)
-    } else {
-      this.mainWindow.loadFile(join(__dirname, '../renderer/main.html'))
-    }
-
-    log.info('Main window created')
-    return this.mainWindow
-  }
-
-  createTrayMenuWindow(): BrowserWindow {
-    if (this.trayMenuWindow && !this.trayMenuWindow.isDestroyed()) {
-      this.trayMenuWindow.destroy()
-      this.trayMenuWindow = null
-    }
-
-    this.trayMenuWindow = new BrowserWindow({
-      width: 180,
-      // https://github.com/electron/electron/issues/32171
-      height: 39,
-      show: false,
-      frame: false,
-      resizable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      skipTaskbar: true,
-      alwaysOnTop: true,
-      autoHideMenuBar: true,
-      transparent: false,
-
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
-        sandbox: false,
-        webSecurity: false
-      }
-    })
-
-    this.trayMenuWindow.on('blur', () => {
-      if (!this.trayMenuWindow?.isDestroyed()) this.trayMenuWindow?.hide()
-    })
-
-    this.trayMenuWindow.on('closed', () => {
-      this.trayMenuWindow = null
-    })
-
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      const base = process.env['ELECTRON_RENDERER_URL']
-      const trayMenuUrl = new URL(
-        'tray-menu.html',
-        base.endsWith('/') ? base : `${base}/`
-      ).toString()
-      this.trayMenuWindow.loadURL(trayMenuUrl).catch((error) => {
-        log.error('Failed to load tray menu window URL:', error)
-      })
-    } else {
-      this.trayMenuWindow.loadFile(join(__dirname, '../renderer/tray-menu.html')).catch((error) => {
-        log.error('Failed to load tray menu window file:', error)
-      })
-    }
-
-    log.info('Tray menu window created')
-    return this.trayMenuWindow
-  }
-
-  /**
-   * Get the main window instance
-   */
-  getMainWindow(): BrowserWindow | null {
-    return this.mainWindow
-  }
-
-  getTrayMenuWindow(): BrowserWindow | null {
-    return this.trayMenuWindow
-  }
-
-  /**
-   * Get all browser windows
-   */
-  getAllWindows(): BrowserWindow[] {
-    return BrowserWindow.getAllWindows()
-  }
-
-  /**
-   * Check if main window exists and is not destroyed
-   */
-  hasMainWindow(): boolean {
-    return this.mainWindow !== null && !this.mainWindow.isDestroyed()
-  }
-
-  /**
-   * Focus the main window
-   */
-  focusMainWindow(): void {
-    if (this.hasMainWindow()) {
-      if (this.mainWindow!.isMinimized()) {
-        this.mainWindow!.restore()
-      }
-      if (!this.mainWindow!.isVisible()) {
-        this.mainWindow!.show()
-      }
-      this.mainWindow!.focus()
-    }
-  }
-
-  /**
-   * Close the main window
-   */
-  closeMainWindow(): void {
-    if (this.hasMainWindow()) {
-      this.mainWindow!.close()
-    }
-  }
-
-  /**
-   * Check if main window is focused
-   */
-  isMainWindowFocused(): boolean {
-    return this.mainWindow !== null && !this.mainWindow.isDestroyed() && this.mainWindow.isFocused()
-  }
-
-  private requireMainWindow(): BrowserWindow {
-    const mainWindow = this.getMainWindow()
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      throw new Error('Window not available')
-    }
-    return mainWindow
   }
 }

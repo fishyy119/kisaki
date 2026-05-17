@@ -175,7 +175,7 @@ export class DeeplinkService implements IService {
 
   private focusMainWindow(): void {
     try {
-      this.windowService.focusMainWindow()
+      this.windowService.mainWindow.focus()
     } catch (error) {
       log.error('Error focusing main window:', error)
     }
