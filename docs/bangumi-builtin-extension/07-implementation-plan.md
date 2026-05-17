@@ -26,7 +26,7 @@
 
 - 实现 `OAuthRelayClient`。
 - 实现 deeplink callback 注册与 `OAuthFlow`。
-- 实现 `TokenService` refresh 和 401 retry。
+- 实现 `TokenService` refresh、token status 验证和 401 retry；token status 走 relay，不进入 `BangumiClient`。
 - 实现 `BangumiClient`、limiter、retry、pagination、error normalization。
 - 实现 `AccountService`。
 - Account settings tab 支持登录、检查登录结果、验证、刷新、退出。
@@ -58,7 +58,7 @@
 - 注册 `bangumi.sync.full`。
 - 注册 `bangumi.import.my-collections`。
 - 注册 `bangumi.import.index`。
-- 实现 args normalization、progress、summary、cancel。
+- 实现 args normalization、progress、summary、cancel 和内存级 `ActiveJobRegistry`。
 - settings panel 长流程按钮全部改为启动 job command。
 
 验收：
@@ -66,6 +66,7 @@
 - settings callback 不执行超过 15 秒的任务。
 - command 可被 `kisaki.commands.start/wait/cancel` 控制。
 - 运行中的 command 会通过 CommandService progress 展示当前阶段和计数。
+- settings panel 刷新后可通过 `ActiveJobRegistry` 找到当前手动 job 的 execution id，并继续展示 progress 或取消该 job。
 - job 不写 history；需要持久历史时由主应用 task 触发并在主应用 task 面板查看。
 
 ## Phase 5: 同步引擎
@@ -83,21 +84,23 @@
 - 关闭状态同步但保留评分同步时只写 rate。
 - 空评分默认不清除远端评分。
 - 重复事件不会重复写相同 payload。
+- 导入期间由 ingest 或新建游戏用户态字段写入产生的事件不会立刻回写 Bangumi。
 
 ## Phase 6: 收藏导入
 
 - 实现用户收藏分页拉取。
 - 实现 collection import planner。
 - 实现按 scraper profile ingest。
-- 实现 status/score/tag/collection mapping。
+- 实现 status/score/tag/collection mapping，并确保导入永远不修改已有游戏。
 - 实现 dry run 和 execute。
 
 验收：
 
 - 用户选择“在玩”和“玩过”时只导入对应 Bangumi type。
 - 已有 Bangumi external id 的本地游戏不重复创建。
-- 导入评分可 patch 到 Kisaki score。
+- 已有 Bangumi external id 的本地游戏不会被导入命令修改；单次导入 args 显式启用 `fields.score` 后，本次新建游戏可写入 Kisaki score。
 - target collection 可正确建立 membership。
+- 导入新建游戏时，即使自动同步开启，也不会立即把导入产生的本地状态/评分写回 Bangumi。
 
 ## Phase 7: 目录导入
 
@@ -153,8 +156,8 @@ pnpm --filter kisaki typecheck
 - Bangumi API 限速未知：默认保守限速，用户可调整；429 必须 backoff。
 - 长任务 settings callback 超时：settings 只启动 job command；需要持久历史时通过主应用 task。
 - DB event 无 source：防循环使用 fingerprint、debounce 和 suppressor。
-- `updated_at` 不可靠：导入冲突只依赖用户策略和当前字段快照。
-- tag/comment/private 字段语义不完全等价：默认只导入 status/score，tag 可选，comment/private 默认不写核心字段。
+- `updated_at` 不可靠：导入不得依赖它判断是否改写本地用户态字段。
+- Bangumi 用户收藏 tag 与 Kisaki tag 语义不完全等价：默认不导入 tag，用户显式启用后才创建/关联 Kisaki tag。
 - 旧 token storage：新 client 不读取旧 key；提供清理提示。
 
 ## 最小完成标准

@@ -68,6 +68,17 @@ kisaki://ext/builtin.bangumi/oauth-callback
 - 普通 API 请求遇到 401 时允许强制 refresh 一次，然后重试原请求一次。
 - 第二次 401 视为认证失效，要求用户重新登录。
 
+## Token Status
+
+token status 不属于 `BangumiClient`。
+
+规则：
+
+- `OAuthRelayClient` 负责调用 relay `POST /token-status`。
+- `TokenService` 暴露验证当前 token 的业务方法，用于 settings panel 的“验证账号”和 `bangumi.auth.refresh` job。
+- 扩展不得直接调用 `https://bgm.tv/oauth/token_status`，也不得把该 endpoint 放进 `BangumiClient`。
+- `BangumiClient` 只访问 `https://api.bgm.tv/v0/**`。
+
 ## BangumiClient
 
 `BangumiClient` 是唯一 Bangumi API 出口：
@@ -94,8 +105,9 @@ BangumiClient
 禁止：
 
 - 任何模块绕过 `BangumiClient` 直接请求 `api.bgm.tv`。
+- 任何模块绕过 `OAuthRelayClient` 直接请求 relay 或 `bgm.tv/oauth/*`。
 - scraper provider 创建自己的 limiter。
-- settings panel 或 jobs 直接拼 OAuth/Bangumi HTTP 请求。
+- settings panel 或 jobs 直接拼 OAuth、relay 或 Bangumi HTTP 请求。
 
 ## User-Agent
 
@@ -150,7 +162,6 @@ User-Agent 中不得包含用户 token、username 或本机路径。
 - `patchMyCollection(subjectId, payload)`
 - `getIndex(indexId)`
 - `getIndexSubjects(indexId, query)`
-- `getTokenStatus()`
 
 分页统一返回：
 
@@ -173,8 +184,6 @@ interface BangumiCollectionPatch {
   type?: 1 | 2 | 3 | 4 | 5
   rate?: number
   tags?: readonly string[]
-  comment?: string
-  private?: boolean
 }
 ```
 

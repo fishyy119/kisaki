@@ -40,7 +40,7 @@ In:
 - OAuth 登录、退出、验证、refresh token、账号摘要。
 - 自动同步本地游戏状态和评分到 Bangumi。
 - 手动全量同步，支持 dry run、过滤、冲突策略、结果摘要。
-- 用户 Bangumi 游戏收藏导入，支持收藏类型过滤、scraper profile、目标合集、字段映射、dry run 和结果摘要。
+- 用户 Bangumi 游戏收藏导入，支持收藏类型过滤、scraper profile、目标合集、可选用户态字段写入、dry run 和结果摘要。
 - Bangumi 目录导入，支持目录 ID/URL、预览、scraper profile、目标合集、dry run 和结果摘要。
 - 可配置 Bangumi API 限速、burst、超时、重试和 backoff。
 - extension command job 与主应用 task 集成。
@@ -64,6 +64,7 @@ OAuth:
 - `POST https://bgm.tv/oauth/token_status`
 - 授权码有效期短，桌面端必须把授权、relay complete 和错误提示做成可恢复流程。
 - refresh token 也需要官方 app secret，因此生产 refresh 同样走 Kisaki OAuth Relay。
+- 扩展不直接调用 `bgm.tv/oauth/token_status`；账号验证和 token status 通过 Kisaki OAuth Relay 的 `/token-status` 完成。
 
 账号:
 
@@ -79,7 +80,7 @@ OAuth:
 - 游戏条目类型为 `SubjectType = 4`。
 - Bangumi 收藏类型：`1=想看`、`2=看过`、`3=在看`、`4=搁置`、`5=抛弃`；在游戏文案中显示为想玩、玩过、在玩、搁置、抛弃。
 - `rate` 为 0 到 10 的整数，`0` 表示删除评分。
-- `UserSubjectCollection.updated_at` 不作为冲突判断依据。
+- `UserSubjectCollection.updated_at` 不作为增量或是否改写本地字段的依据。
 
 目录导入:
 

@@ -13,7 +13,7 @@ Root 使用 tabs，复杂流程使用 dialogs：
 
 - Account: 登录状态、账号摘要、relay 状态、登录/验证/刷新/退出。
 - Sync: 自动同步开关、状态/评分开关、mapping 表、手动全量同步入口。
-- Import: 我的收藏导入、目录导入、任务入口。
+- Import: 我的收藏导入、目录导入，以及一次性目标合集和新建游戏的可选用户态字段写入参数。
 - Automation: 常用 task 创建入口和已创建状态摘要。
 - Advanced: rate limit、retry、诊断、清理 storage/secrets。
 
@@ -66,6 +66,7 @@ Command args 必须是 JSON serializable record。每个 command 在 `jobs/comma
 - command id 使用 `bangumi.<domain>.<verb-or-object>`。
 - settings node id 与 command id 不强行一致。
 - command 自身不定义 history key；持久历史只来自主应用 task 执行记录。
+- 导入命令的 profile、目标合集和字段写入选项都是 command args，不保存到 `settings.v1`。用户创建导入类 background task 时，这些值只作为 task args 持久化。导入命令不提供修改已有游戏的参数。
 
 ## Command Output
 
@@ -98,16 +99,27 @@ interface BangumiJobSummary {
 
 ## Execution State
 
-CommandService 提供运行期 progress snapshot。Bangumi 长任务通过 `event.reportProgress()` 上报当前阶段、文案和计数；settings UI 可以读取 `kisaki.commands.getProgress()` 或订阅 `kisaki.events.on('command.progress')` 展示实时状态，但不把 extension storage 当作进度事件总线。
+CommandService 提供运行期 progress snapshot。Bangumi 长任务通过 `event.reportProgress()` 上报当前阶段、文案和计数；settings UI 通过扩展内存级 `ActiveJobRegistry` 找到当前手动 job 的 execution id，再读取 `kisaki.commands.getProgress(executionId)`、订阅 `kisaki.events.on('command.progress')` 或调用 `kisaki.commands.wait(executionId)` 展示实时状态和完成结果，但不把 extension storage 当作进度事件总线。
 
 边界：
 
 - CommandService 负责单次 command execution、取消和临时 progress；结果只作为本次调用的返回值。
 - BackgroundTaskService 负责持久任务、来自主应用的手动/启动/定时触发和运行历史。
-- Bangumi extension storage 不保存 `jobs.active`、`jobs.history`、通用 `lastResult` 或 `lastSummary`。
-- settings panel 手动触发只启动 job command，读取 progress/result，不读取 task history。
+- `ActiveJobRegistry` 只记录 settings panel 手动启动的 active execution，不记录 background task execution。
+- Bangumi extension storage 不保存 `jobs.active`、`jobs.history`、execution id、通用 `lastResult` 或 `lastSummary`。
+- settings panel 手动触发只启动 job command，登记 active execution，读取 progress/result，不读取 task history。
 - task 的运行、取消、重试和历史展示由主应用 task 面板负责。
 - 临时预览或轻量操作可以直接执行 job command；结果只反馈给当前 UI，不落 storage。
+- 不新增 public command API 来列出所有 execution；如未来需要命令中心或全局运行监控，再单独设计受权限约束的查询能力。
+
+Active job registry 规则：
+
+- key 使用稳定 UI scope，例如 `account.refresh`、`sync.full`、`import.myCollections`、`import.index`。
+- value 只保存 `commandId`、`executionId`、`startedAt`、`cancelable` 和轻量 args 摘要；不得保存 token、完整导入条目、HTTP body 或用户私密文本。
+- settings button 调用 `kisaki.commands.start(...)` 后立即登记 active execution，并返回刷新 root/dialog 的 callback result。
+- settings resolve 读取 registry，按 execution id 调用 `getProgress`，必要时调用 `wait` 获取完成结果；发现 completed/cancelled/failed 后从 registry 移除。
+- 用户点击取消时通过 registry 找到 execution id，调用 `kisaki.commands.cancel(executionId)`，随后刷新 UI。
+- extension runtime 重启、扩展 disable/enable 或 host crash 后 registry 清空；settings panel 显示“没有当前运行的手动任务”，不尝试恢复 active job。
 
 progress 规则：
 
@@ -162,7 +174,7 @@ BackgroundTaskService 当前已经持久化 `history`，每个 task 保留最近
 
 - “清除凭据”删除 secrets 和 `auth.account`。
 - “清除同步状态”删除 `sync.state` 和 `sync.queue`，不删除主应用 tasks。
-- “恢复默认设置”重置 `settings.v1`，不删除 token。
+- “恢复默认设置”重置 `settings.v1`，不删除 token，也不影响导入 dialog 当前草稿或 background task args。
 - “清除全部 Bangumi 扩展数据”应明确说明会删除 settings、sync state 和 secrets，但不卸载扩展，也不删除主应用 tasks 或 task history。
 
 ## Settings Data Loading
@@ -174,6 +186,8 @@ settings resolve 应尽量并行读取：
 - scraper profiles。
 - owned task summaries，用于判断推荐 task 是否已创建。
 - relay health cache。
+
+导入 dialog 的草稿值只存在当前 settings panel session；关闭 dialog 或重新打开时回到命令默认值，除非用户是在创建 background task，此时以 task args 为准。
 
 实时网络检查只在用户点击“检查 relay”或“验证账号”时执行，不在每次 resolve 中自动请求网络。
 

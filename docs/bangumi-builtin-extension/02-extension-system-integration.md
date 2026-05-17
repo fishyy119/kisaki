@@ -4,22 +4,22 @@
 
 Bangumi 第一版需要的宿主能力已经存在，不再作为本设计的前置重构项：
 
-| 需求              | 当前入口                                               | 用法                                                   |
-| ----------------- | ------------------------------------------------------ | ------------------------------------------------------ |
-| 持久设置          | `context.storage`                                      | 保存非敏感 settings、sync fingerprint                  |
-| 敏感凭据          | `context.secrets`                                      | 保存用户 access token、refresh token、expiresAt        |
-| 网络请求          | `kisaki.network.request`                               | 调用 Bangumi API 和 OAuth Relay                        |
-| 打开浏览器        | `kisaki.runtime.openExternal`                          | 打开 relay 返回的授权 URL                              |
-| Deeplink callback | `context.contributions.deeplinkRoutes.register`        | 注册 `/oauth-callback`                                 |
-| 设置 UI           | `context.contributions.settingsPanels.register`        | 渲染 Bangumi settings panel                            |
-| Scraper provider  | `context.contributions.scraperProviders.game.register` | 注册 Bangumi game provider                             |
-| Host event        | `kisaki.events.on`                                     | 订阅 `library.game.created` / `library.game.updated`   |
-| Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | 导入时选择 game profile                                |
-| Ingest            | `kisaki.ingest.games.addFromScraper`                   | 按 profile 创建或定位游戏                              |
-| Library write     | `kisaki.library.*`                                     | patch status/score、创建 tag/collection、建立 relation |
-| Command 注册      | `context.contributions.commands.register`              | 注册同步、导入、刷新等长任务                           |
-| Command 执行      | `kisaki.commands.start/wait/cancel/getProgress`        | settings panel 启动和控制一次 job                      |
-| Background task   | `kisaki.backgroundTasks`                               | 创建本扩展推荐 task 配置                               |
+| 需求              | 当前入口                                               | 用法                                                              |
+| ----------------- | ------------------------------------------------------ | ----------------------------------------------------------------- |
+| 持久设置          | `context.storage`                                      | 保存非敏感 settings、sync fingerprint                             |
+| 敏感凭据          | `context.secrets`                                      | 保存用户 access token、refresh token、expiresAt                   |
+| 网络请求          | `kisaki.network.request`                               | 调用 Bangumi API 和 OAuth Relay                                   |
+| 打开浏览器        | `kisaki.runtime.openExternal`                          | 打开 relay 返回的授权 URL                                         |
+| Deeplink callback | `context.contributions.deeplinkRoutes.register`        | 注册 `/oauth-callback`                                            |
+| 设置 UI           | `context.contributions.settingsPanels.register`        | 渲染 Bangumi settings panel                                       |
+| Scraper provider  | `context.contributions.scraperProviders.game.register` | 注册 Bangumi game provider                                        |
+| Host event        | `kisaki.events.on`                                     | 订阅 `library.game.created` / `library.game.updated`              |
+| Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | 导入时选择 game profile                                           |
+| Ingest            | `kisaki.ingest.games.addFromScraper`                   | 按 profile 创建或定位游戏                                         |
+| Library write     | `kisaki.library.*`                                     | 为本次新建游戏写 status/score、创建 tag/collection、建立 relation |
+| Command 注册      | `context.contributions.commands.register`              | 注册同步、导入、刷新等长任务                                      |
+| Command 执行      | `kisaki.commands.start/wait/cancel/getProgress`        | settings panel 启动和控制一次 job                                 |
+| Background task   | `kisaki.backgroundTasks`                               | 创建本扩展推荐 task 配置                                          |
 
 ## 运行时边界
 
@@ -96,7 +96,7 @@ Bangumi 自动同步只订阅：
 
 - 基于同步 payload 计算 fingerprint。
 - 记录最近成功 fingerprint。
-- 本扩展主动 patch 本地字段后维护短期 suppress set。
+- 本扩展主动写入本地 status/score 后维护 fingerprint suppress；导入流程对 ingest 返回的 gameId 维护短期 import suppress，避免导入事件立刻回写 Bangumi。
 - 对同一 `gameId` debounce/coalesce。
 - source 不作为跳过同步的必要条件。
 
@@ -147,6 +147,6 @@ Background task 只能绑定本扩展拥有的 command。宿主会校验：
 规则：
 
 - 创建游戏优先走 ingest。
-- 导入字段映射只 patch 用户显式启用的字段。
+- 导入不得修改已有游戏。status、score、tag 和 collection membership 属于用户态字段，只有在单次导入 command args 显式启用对应字段且游戏由本次导入新建时才写入。
 - tag 和 collection membership 通过 relation capability 建立。
 - 扩展不直接写 DB、不推断内部表结构、不持久化主应用内部 id 以外的不可序列化对象。
