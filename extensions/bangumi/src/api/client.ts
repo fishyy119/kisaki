@@ -114,29 +114,11 @@ export class BangumiClient {
     return toPage(response, query)
   }
 
-  async searchSubjects(
-    payload: BangumiSearchSubjectPayload,
-    limit = 25,
-    offset = 0
-  ): Promise<BangumiPaged<BangumiSubject>> {
-    const page = await this.searchGameSubjects(payload, { limit, offset })
-    return {
-      total: page.total ?? page.items.length,
-      limit: page.limit,
-      offset: page.offset,
-      data: [...page.items]
-    }
-  }
-
   async getSubject(subjectId: number, options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiSubject> {
     return this.request<BangumiSubject>('GET', `/v0/subjects/${subjectId}`, {
       auth: 'optional',
       signal: options.signal
     })
-  }
-
-  async getSubjectById(subjectId: number): Promise<BangumiSubject> {
-    return this.getSubject(subjectId)
   }
 
   async getSubjectPersons(subjectId: number): Promise<BangumiRelatedPerson[]> {
@@ -319,7 +301,6 @@ export class BangumiClient {
     const settings = await this.getClientSettings()
     const retryCount = normalizeRetryCount(settings.retryCount)
     let refreshedAfter401 = false
-    let lastError: unknown
 
     for (let attempt = 0; attempt <= retryCount; attempt += 1) {
       throwIfAborted(options.signal)
@@ -361,7 +342,6 @@ export class BangumiClient {
           throw error
         }
 
-        lastError = error
         if (attempt < retryCount) {
           await delay(resolveRetryDelayMs(attempt), options.signal)
           continue
