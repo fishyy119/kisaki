@@ -121,6 +121,19 @@ const selectedFallbackProvider = computed(() => {
   )
 })
 
+const selectedProviderLabel = computed(() => {
+  if (!model.value) {
+    return null
+  }
+
+  const selectedProvider = filteredProviders.value.find((provider) => provider.id === model.value)
+  if (selectedProvider) {
+    return selectedProvider.name
+  }
+
+  return selectedFallbackProvider.value?.label ?? null
+})
+
 const triggerVariants = cva('w-full', {
   variants: {
     size: {
@@ -176,7 +189,16 @@ watch(model, (providerId) => {
       :class="cn(triggerVariants({ size: props.size }), props.class)"
       :auto-focus="autoFocus"
     >
-      <SelectValue :placeholder="placeholder" />
+      <SelectValue
+        v-if="selectedProviderLabel"
+        :placeholder="placeholder"
+      >
+        {{ selectedProviderLabel }}
+      </SelectValue>
+      <SelectValue
+        v-else
+        :placeholder="placeholder"
+      />
     </SelectTrigger>
     <SelectContent>
       <SelectItem
