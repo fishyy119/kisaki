@@ -747,9 +747,9 @@ function validateSettingsPanelValueNodeBase(
 ): ValidationIssue[] {
   const issues = [
     ...validateSettingsPanelNodeBase(value, path, state),
-    ...validateOptionalFunction(value.onCommit, `${path}.onCommit`).map((issue) => ({
+    ...validateOptionalFunction(value.onChange, `${path}.onChange`).map((issue) => ({
       ...issue,
-      message: 'onCommit must be a function when provided.'
+      message: 'onChange must be a function when provided.'
     }))
   ]
 

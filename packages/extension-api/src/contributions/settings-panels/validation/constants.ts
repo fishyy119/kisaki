@@ -114,7 +114,7 @@ export const FIELD_KEYS = new Set<string>([
 ])
 export const TAB_KEYS = new Set<string>(['id', 'label', 'description', 'icon', 'fields'])
 export const NODE_BASE_KEYS = ['kind', 'id', 'hidden', 'disabled', 'grow', 'width'] as const
-export const VALUE_NODE_BASE_KEYS = [...NODE_BASE_KEYS, 'initialValue', 'onCommit'] as const
+export const VALUE_NODE_BASE_KEYS = [...NODE_BASE_KEYS, 'initialValue', 'onChange'] as const
 export const SELECT_OPTION_KEYS = new Set<string>(['value', 'label', 'description', 'disabled'])
 export const BUTTON_CONFIRM_KEYS = new Set<string>([
   'title',

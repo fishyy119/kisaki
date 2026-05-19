@@ -32,18 +32,18 @@ const disabled = computed(
 function updateItem(index: number, value: string): void {
   const nextValues = [...values.value]
   nextValues[index] = value
-  commit(nextValues)
+  applyValues(nextValues)
 }
 
 function addItem(): void {
-  commit([...values.value, ''])
+  applyValues([...values.value, ''])
 }
 
 function removeItem(index: number): void {
-  commit(values.value.filter((_, itemIndex) => itemIndex !== index))
+  applyValues(values.value.filter((_, itemIndex) => itemIndex !== index))
 }
 
-function commit(nextValues: string[]): void {
+function applyValues(nextValues: string[]): void {
   props.controller.updateValue(props.state, props.node.id, nextValues)
   void props.controller.invokeNode({
     surface: props.state,

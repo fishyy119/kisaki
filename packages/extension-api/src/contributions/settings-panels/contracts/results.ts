@@ -44,7 +44,7 @@ export type SettingsPanelResult<
       closePopover?: boolean
     }
 
-export type SettingsPanelRootCommitResult = SettingsPanelResult<
+export type SettingsPanelRootChangeResult = SettingsPanelResult<
   {
     refresh?: 'self' | 'root' | 'all'
     closePopover?: boolean
@@ -52,7 +52,7 @@ export type SettingsPanelRootCommitResult = SettingsPanelResult<
   'self' | 'root' | 'all'
 >
 
-export type SettingsPanelDialogCommitResult = SettingsPanelResult<
+export type SettingsPanelDialogChangeResult = SettingsPanelResult<
   {
     refresh?: 'self' | 'dialog' | 'root' | 'all'
     closePopover?: boolean
@@ -125,7 +125,7 @@ export type SettingsPanelPopoverActionResult = SettingsPanelResult<
   'self' | 'popover' | 'dialog' | 'root' | 'all'
 >
 
-export type SettingsPanelPopoverCommitResult = SettingsPanelPopoverActionResult
+export type SettingsPanelPopoverChangeResult = SettingsPanelPopoverActionResult
 
 export type SettingsPanelRootButtonResult<
   TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap,
@@ -209,21 +209,21 @@ export interface SettingsPanelRootButtonHelpers<
   ): SettingsPanelRootButtonResult<TPopovers, TDialogs>
 }
 
-export interface SettingsPanelRootCommitHelpers {
+export interface SettingsPanelRootChangeHelpers {
   success(
     options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsPanelRootCommitResult
+  ): SettingsPanelRootChangeResult
   fail(
     error: ExtensionErrorShape,
     options?: SettingsPanelFailureOptions<'self' | 'root' | 'all'>
-  ): SettingsPanelRootCommitResult
+  ): SettingsPanelRootChangeResult
   refresh(
     target?: 'self' | 'root' | 'all',
     options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsPanelRootCommitResult
+  ): SettingsPanelRootChangeResult
   closePopover(
     options?: SettingsPanelSuccessOptions<'self' | 'root' | 'all'>
-  ): SettingsPanelRootCommitResult
+  ): SettingsPanelRootChangeResult
 }
 
 export interface SettingsPanelRootSubmitHelpers {
@@ -270,21 +270,21 @@ export interface SettingsPanelDialogButtonHelpers<TPopovers extends SettingsPane
   ): SettingsPanelDialogButtonResult<TPopovers>
 }
 
-export interface SettingsPanelDialogCommitHelpers {
+export interface SettingsPanelDialogChangeHelpers {
   success(
     options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsPanelDialogCommitResult
+  ): SettingsPanelDialogChangeResult
   fail(
     error: ExtensionErrorShape,
     options?: SettingsPanelFailureOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsPanelDialogCommitResult
+  ): SettingsPanelDialogChangeResult
   refresh(
     target?: 'self' | 'dialog' | 'root' | 'all',
     options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsPanelDialogCommitResult
+  ): SettingsPanelDialogChangeResult
   closePopover(
     options?: SettingsPanelSuccessOptions<'self' | 'dialog' | 'root' | 'all'>
-  ): SettingsPanelDialogCommitResult
+  ): SettingsPanelDialogChangeResult
 }
 
 export interface SettingsPanelDialogSubmitHelpers {

@@ -76,7 +76,7 @@ export function createPopoverContext(
   }
 }
 
-export function createRootCommitHelpers() {
+export function createRootChangeHelpers() {
   return {
     success: createSuccess,
     fail: createFailure,
@@ -87,7 +87,7 @@ export function createRootCommitHelpers() {
 
 export function createRootButtonHelpers() {
   return {
-    ...createRootCommitHelpers(),
+    ...createRootChangeHelpers(),
     close: createClose,
     openDialog: createOpenDialog,
     openPopover: createOpenPopover
@@ -96,12 +96,12 @@ export function createRootButtonHelpers() {
 
 export function createRootSubmitHelpers() {
   return {
-    ...createRootCommitHelpers(),
+    ...createRootChangeHelpers(),
     close: createClose
   }
 }
 
-export function createDialogCommitHelpers() {
+export function createDialogChangeHelpers() {
   return {
     success: createSuccess,
     fail: createFailure,
@@ -112,7 +112,7 @@ export function createDialogCommitHelpers() {
 
 export function createDialogButtonHelpers() {
   return {
-    ...createDialogCommitHelpers(),
+    ...createDialogChangeHelpers(),
     close: createClose,
     openPopover: createOpenPopover
   }
@@ -120,7 +120,7 @@ export function createDialogButtonHelpers() {
 
 export function createDialogSubmitHelpers() {
   return {
-    ...createDialogCommitHelpers(),
+    ...createDialogChangeHelpers(),
     close: createClose
   }
 }

@@ -47,7 +47,7 @@ watch(
   { immediate: true }
 )
 
-function commit(): void {
+function applyJsonValue(): void {
   try {
     const parsed = JSON.parse(jsonValue.value) as unknown
     if (!Array.isArray(parsed) || !parsed.every(isRecord)) {
@@ -118,7 +118,7 @@ function isRecord(value: unknown): value is SerializableRecord {
       class="font-mono text-xs"
       :rows="5"
       :disabled="disabled"
-      @blur="commit"
+      @blur="applyJsonValue"
     />
     <p
       v-if="parseError"

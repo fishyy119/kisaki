@@ -19,7 +19,7 @@ export function createSettingsPanelError(
   }
 }
 
-export function validateCommitValue(
+export function validateChangeValue(
   kind: string | undefined,
   value: SerializableValue | undefined
 ): string | null {

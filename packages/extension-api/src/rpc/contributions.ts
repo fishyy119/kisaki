@@ -18,13 +18,13 @@ import type {
 } from '../contributions/entity-menus'
 import type {
   SettingsPanelDialogButtonResult,
-  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogChangeResult,
   SettingsPanelDialogSize,
   SettingsPanelDialogSubmitResult,
   SettingsPanelPopoverActionResult,
   SettingsPanelRefreshReason,
   SettingsPanelRootButtonResult,
-  SettingsPanelRootCommitResult,
+  SettingsPanelRootChangeResult,
   SettingsPanelRootSubmitResult
 } from '../contributions/settings-panels'
 import type {
@@ -296,8 +296,8 @@ export type SettingsPanelRefreshResponse =
     }
 
 export type SettingsPanelCallbackResult =
-  | SettingsPanelRootCommitResult
-  | SettingsPanelDialogCommitResult
+  | SettingsPanelRootChangeResult
+  | SettingsPanelDialogChangeResult
   | SettingsPanelPopoverActionResult
   | SettingsPanelRootButtonResult
   | SettingsPanelDialogButtonResult

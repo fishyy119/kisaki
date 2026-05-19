@@ -21,18 +21,16 @@ const modelValue = computed({
     return typeof value === 'string' ? value : ''
   },
   set: (value: string | number) => {
-    props.controller.updateValue(props.state, props.node.id, String(value))
+    const nextValue = String(value)
+    props.controller.updateValue(props.state, props.node.id, nextValue)
+    void props.controller.invokeNode({
+      surface: props.state,
+      fieldId: props.fieldId,
+      node: props.node,
+      value: nextValue
+    })
   }
 })
-
-function commit(): void {
-  void props.controller.invokeNode({
-    surface: props.state,
-    fieldId: props.fieldId,
-    node: props.node,
-    value: modelValue.value
-  })
-}
 </script>
 
 <template>
@@ -46,6 +44,5 @@ function commit(): void {
       props.node.disabled ||
       props.controller.isCallbackBusy(props.node.callbackId)
     "
-    @blur="commit"
   />
 </template>

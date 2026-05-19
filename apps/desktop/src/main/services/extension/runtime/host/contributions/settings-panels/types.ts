@@ -11,7 +11,7 @@ import type {
 } from '@kisaki/extension-api'
 import type { LoadedExtensionRuntime } from '../../extension-registry'
 export type SettingsPanelSurface = 'root' | 'dialog' | 'popover'
-export type SettingsPanelCallbackKind = 'commit' | 'button'
+export type SettingsPanelCallbackKind = 'change' | 'button'
 
 export interface SettingsPanelSession {
   runtimeHandle: string

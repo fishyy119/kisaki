@@ -1,6 +1,7 @@
 import { defineSettingsPanelTab } from '@kisaki/extension-sdk'
 import type { BangumiSettingsRootScope, BangumiSettingsTab } from '../contracts'
-import { SETTINGS_DIALOG_IDS } from '../ids'
+import { SETTINGS_DIALOG_IDS, SETTINGS_NODE_IDS } from '../ids'
+import { readString } from '../shared/values'
 
 export async function resolveImportTab(
   scope: BangumiSettingsRootScope
@@ -10,6 +11,8 @@ export async function resolveImportTab(
     scope.resources.runningJobs()
   ])
   const hasProfile = profiles.length > 0
+  const indexInput = readString(scope.context.values, SETTINGS_NODE_IDS.importIndexInput, '')
+  const hasIndexInput = indexInput.trim().length > 0
 
   return defineSettingsPanelTab({
     id: 'import',
@@ -34,7 +37,7 @@ export async function resolveImportTab(
             id: 'import-profile-missing',
             tone: 'warning',
             hidden: hasProfile,
-            text: '当前没有可用的游戏 scraper profile，导入命令会被阻止。'
+            text: '当前没有可用的游戏刮削配置，导入命令会被阻止。'
           })
         ]
       },
@@ -44,11 +47,21 @@ export async function resolveImportTab(
         orientation: 'horizontal',
         contentLayout: 'inline',
         content: [
+          scope.ui.textInput({
+            id: SETTINGS_NODE_IDS.importIndexInput,
+            initialValue: indexInput,
+            placeholder: 'Bangumi 目录 ID 或链接',
+            inputMode: 'url',
+            grow: true,
+            onChange(event) {
+              return event.refresh('root')
+            }
+          }),
           scope.ui.button({
-            id: 'open-import-index-dialog',
-            label: '配置导入',
+            id: 'import-index',
+            label: '导入',
             tone: 'primary',
-            disabled: !hasProfile || runningJobs.importIndex,
+            disabled: !hasProfile || !hasIndexInput || runningJobs.importIndex,
             onClick(event) {
               return event.openDialog(SETTINGS_DIALOG_IDS.importIndex)
             }

@@ -1,9 +1,12 @@
-import { defineSettingsPanelDialog, type ScraperProfileSummary } from '@kisaki/extension-sdk'
+import {
+  defineSettingsPanelDialog,
+  type ScraperProfileSummary,
+  type SerializableRecord
+} from '@kisaki/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { toSettingsError } from '../shared/errors'
 import { BANGUMI_COMMAND_IDS, maybeDialogField, startDialogManualJob } from '../shared/jobs'
 import { createDialogPreviewChangesField, runDialogPreview } from '../shared/previews'
-import { readString } from '../shared/values'
 import type {
   BangumiSettingsDialogSubmitEvent,
   BangumiSettingsDialogSubmitResult
@@ -31,39 +34,24 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
         resources.collections(),
         resources.isCommandRunning(BANGUMI_COMMAND_IDS.importIndex)
       ])
-      const targetCollectionMode = readIndexTargetCollectionMode(context.values)
+      const values = mergeIndexDialogValues(context.values, context.parentValues)
+      const targetCollectionMode = readIndexTargetCollectionMode(values)
       const hasTargetCollection =
         targetCollectionMode === 'byIndexTitle' ||
-        (targetCollectionMode === 'existing' && !!readImportTargetCollectionId(context.values))
-      const previewArgs = createIndexImportArgs(context.values, profiles[0]?.id ?? '', true)
+        (targetCollectionMode === 'existing' && !!readImportTargetCollectionId(values))
+      const previewArgs = createIndexImportArgs(values, profiles[0]?.id ?? '', true)
       const preview = runtime.previewRegistry.get(context.sessionId, 'import.index', previewArgs)
 
       return {
         fields: [
-          {
-            id: 'index-input',
-            label: 'Bangumi 目录',
-            content: [
-              ui.textInput({
-                id: SETTINGS_NODE_IDS.importIndexInput,
-                initialValue: readString(context.values, SETTINGS_NODE_IDS.importIndexInput, ''),
-                placeholder: 'Bangumi 目录 ID 或 URL',
-                inputMode: 'url',
-                grow: true,
-                onCommit(event) {
-                  return event.refresh('dialog')
-                }
-              })
-            ]
-          },
           createDialogImportProfileField({
             settings: ui,
-            values: context.values,
+            values,
             profiles
           }),
           ...createDialogIndexTargetCollectionFields({
             settings: ui,
-            values: context.values,
+            values,
             collections
           }),
           {
@@ -74,8 +62,8 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             content: [
               ui.switch({
                 id: SETTINGS_NODE_IDS.importPatchExisting,
-                initialValue: readImportPatchExisting(context.values),
-                onCommit(event) {
+                initialValue: readImportPatchExisting(values),
+                onChange(event) {
                   return event.refresh('dialog')
                 }
               })
@@ -95,7 +83,11 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
                   return runDialogPreview({
                     previewKey: 'import.index',
                     commandId: BANGUMI_COMMAND_IDS.importIndex,
-                    args: createIndexImportArgs(event.values, profiles[0]?.id ?? '', true),
+                    args: createIndexImportArgs(
+                      mergeIndexDialogValues(event.values, event.parentValues),
+                      profiles[0]?.id ?? '',
+                      true
+                    ),
                     previewRegistry: runtime.previewRegistry,
                     event
                   })
@@ -131,10 +123,24 @@ async function submitIndexDialog({
   try {
     return await startDialogManualJob({
       commandId: BANGUMI_COMMAND_IDS.importIndex,
-      args: createIndexImportArgs(event.values, profiles[0]?.id ?? '', false),
+      args: createIndexImportArgs(
+        mergeIndexDialogValues(event.values, event.parentValues),
+        profiles[0]?.id ?? '',
+        false
+      ),
       event
     })
   } catch (error) {
     return event.fail(toSettingsError(error), { refresh: 'dialog' })
+  }
+}
+
+function mergeIndexDialogValues(
+  values: SerializableRecord,
+  parentValues: SerializableRecord
+): SerializableRecord {
+  return {
+    ...parentValues,
+    ...values
   }
 }

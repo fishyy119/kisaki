@@ -46,7 +46,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
                 id: SETTINGS_NODE_IDS.fullSyncItems,
                 initialValue: selectedItems,
                 options: FULL_SYNC_ITEM_OPTIONS,
-                onCommit(event) {
+                onChange(event) {
                   return event.refresh('dialog')
                 }
               })
@@ -60,7 +60,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
               ui.switch({
                 id: SETTINGS_NODE_IDS.fullSyncUpdateExisting,
                 initialValue: updateExisting,
-                onCommit(event) {
+                onChange(event) {
                   return event.refresh('dialog')
                 }
               })

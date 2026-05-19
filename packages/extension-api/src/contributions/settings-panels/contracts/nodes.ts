@@ -1,9 +1,9 @@
 import type { MaybePromise, SerializableRecord } from '../../../shared'
 import type { SettingsPanelNodeWidth } from './shared'
 
-export interface SettingsPanelNodeEvents<TCommitEvent, TCommitResult, TButtonEvent, TButtonResult> {
-  commitEvent: TCommitEvent
-  commitResult: TCommitResult
+export interface SettingsPanelNodeEvents<TChangeEvent, TChangeResult, TButtonEvent, TButtonResult> {
+  changeEvent: TChangeEvent
+  changeResult: TChangeResult
   buttonEvent: TButtonEvent
   buttonResult: TButtonResult
 }
@@ -39,74 +39,74 @@ export interface SettingsPanelNodeBase {
 
 export interface SettingsPanelValueNodeBase<
   TValue,
-  TCommitEvent,
-  TCommitResult
+  TChangeEvent,
+  TChangeResult
 > extends SettingsPanelNodeBase {
   initialValue: TValue
-  onCommit?: (event: TCommitEvent) => MaybePromise<TCommitResult>
+  onChange?: (event: TChangeEvent) => MaybePromise<TChangeResult>
 }
 
 export interface SettingsPanelSwitchNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<boolean, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<boolean, TChangeEvent, TChangeResult> {
   kind: 'switch'
 }
 
 export interface SettingsPanelCheckboxNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<boolean, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<boolean, TChangeEvent, TChangeResult> {
   kind: 'checkbox'
 }
 
 export interface SettingsPanelSelectNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<string, TChangeEvent, TChangeResult> {
   kind: 'select'
   placeholder?: string
   options: readonly SettingsPanelSelectOption[]
 }
 
 export interface SettingsPanelRadioGroupNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<string, TChangeEvent, TChangeResult> {
   kind: 'radioGroup'
   options: readonly SettingsPanelSelectOption[]
 }
 
 export interface SettingsPanelMultiSelectNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<readonly string[], TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<readonly string[], TChangeEvent, TChangeResult> {
   kind: 'multiSelect'
   options: readonly SettingsPanelSelectOption[]
 }
 
 export interface SettingsPanelTextInputNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<string, TChangeEvent, TChangeResult> {
   kind: 'textInput'
   placeholder?: string
   inputMode?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'password'
 }
 
 export interface SettingsPanelTextareaNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<string, TChangeEvent, TChangeResult> {
   kind: 'textarea'
   placeholder?: string
   rows?: number
 }
 
 export interface SettingsPanelNumberInputNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<number, TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<number, TChangeEvent, TChangeResult> {
   kind: 'numberInput'
   placeholder?: string
   min?: number
@@ -115,18 +115,18 @@ export interface SettingsPanelNumberInputNode<
 }
 
 export interface SettingsPanelStringListNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<readonly string[], TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<readonly string[], TChangeEvent, TChangeResult> {
   kind: 'stringList'
   addPlaceholder?: string
   itemPlaceholder?: string
 }
 
 export interface SettingsPanelRecordListNode<
-  TCommitEvent,
-  TCommitResult
-> extends SettingsPanelValueNodeBase<readonly SerializableRecord[], TCommitEvent, TCommitResult> {
+  TChangeEvent,
+  TChangeResult
+> extends SettingsPanelValueNodeBase<readonly SerializableRecord[], TChangeEvent, TChangeResult> {
   kind: 'recordList'
   columns: readonly SettingsPanelRecordListColumn[]
   addLabel?: string
@@ -190,16 +190,16 @@ export interface SettingsPanelDividerNode extends SettingsPanelNodeBase {
 }
 
 export type SettingsPanelControlNode<TEvents extends SettingsPanelAnyNodeEvents> =
-  | SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelRadioGroupNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelStringListNode<TEvents['commitEvent'], TEvents['commitResult']>
-  | SettingsPanelRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelSwitchNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelCheckboxNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelSelectNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelRadioGroupNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelMultiSelectNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelTextInputNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelTextareaNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelNumberInputNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelStringListNode<TEvents['changeEvent'], TEvents['changeResult']>
+  | SettingsPanelRecordListNode<TEvents['changeEvent'], TEvents['changeResult']>
 
 export type SettingsPanelActionNode<TEvents extends SettingsPanelAnyNodeEvents> =
   SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>

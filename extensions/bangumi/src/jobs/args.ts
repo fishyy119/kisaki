@@ -88,7 +88,7 @@ export function normalizeImportMyCollectionsArgs(
 ): BangumiImportMyCollectionsArgs {
   return {
     dryRun: readBoolean(args.dryRun, true),
-    profileId: readRequiredString(args.profileId, '请选择用于创建游戏的 scraper profile。'),
+    profileId: readRequiredString(args.profileId, '请选择用于创建游戏的刮削配置。'),
     collectionTypes: normalizeCollectionTypes(args.collectionTypes),
     fields: normalizeImportWriteFields(args.fields),
     patchExisting: readBoolean(args.patchExisting, false),
@@ -98,11 +98,11 @@ export function normalizeImportMyCollectionsArgs(
 }
 
 export function normalizeImportIndexArgs(args: SerializableRecord): BangumiImportIndexArgs {
-  const indexInput = readRequiredString(args.indexInput, '请输入 Bangumi 目录 ID 或 URL。')
+  const indexInput = readRequiredString(args.indexInput, '请输入 Bangumi 目录 ID 或链接。')
 
   return {
     dryRun: readBoolean(args.dryRun, true),
-    profileId: readRequiredString(args.profileId, '请选择用于创建游戏的 scraper profile。'),
+    profileId: readRequiredString(args.profileId, '请选择用于创建游戏的刮削配置。'),
     indexInput,
     indexId: parseBangumiIndexId(indexInput),
     patchExisting: readBoolean(args.patchExisting, false),
@@ -136,7 +136,7 @@ export function parseBangumiIndexId(input: string): number {
 
   throw new BangumiExtensionError(
     'bangumi_validation',
-    'Bangumi 目录必须是数字 ID，或 https://bgm.tv/index/<id> 形式的 URL。'
+    'Bangumi 目录必须是数字 ID，或 https://bgm.tv/index/<id> 形式的链接。'
   )
 }
 

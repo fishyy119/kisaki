@@ -4,16 +4,16 @@ import type { SettingsPanelNodeEvents } from './nodes'
 import type {
   SettingsPanelDialogButtonHelpers,
   SettingsPanelDialogButtonResult,
-  SettingsPanelDialogCommitHelpers,
-  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogChangeHelpers,
+  SettingsPanelDialogChangeResult,
   SettingsPanelDialogSubmitHelpers,
   SettingsPanelPopoverActionHelpers,
   SettingsPanelPopoverButtonResult,
-  SettingsPanelPopoverCommitResult,
+  SettingsPanelPopoverChangeResult,
   SettingsPanelRootButtonHelpers,
   SettingsPanelRootButtonResult,
-  SettingsPanelRootCommitHelpers,
-  SettingsPanelRootCommitResult,
+  SettingsPanelRootChangeHelpers,
+  SettingsPanelRootChangeResult,
   SettingsPanelRootSubmitHelpers
 } from './results'
 import type { SettingsPanelRefreshReason } from './shared'
@@ -22,8 +22,8 @@ export type SettingsPanelRootNodeEvents<
   TPopovers extends SettingsPanelPopoverMap,
   TDialogs extends SettingsPanelDialogMap<TPopovers>
 > = SettingsPanelNodeEvents<
-  SettingsPanelRootCommitEvent,
-  SettingsPanelRootCommitResult,
+  SettingsPanelRootChangeEvent,
+  SettingsPanelRootChangeResult,
   SettingsPanelRootButtonClickEvent<TPopovers, TDialogs>,
   SettingsPanelRootButtonResult<TPopovers, TDialogs>
 >
@@ -32,16 +32,16 @@ export type SettingsPanelDialogNodeEvents<
   TParams extends SerializableRecord,
   TPopovers extends SettingsPanelPopoverMap
 > = SettingsPanelNodeEvents<
-  SettingsPanelDialogCommitEvent<TParams>,
-  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogChangeEvent<TParams>,
+  SettingsPanelDialogChangeResult,
   SettingsPanelDialogButtonClickEvent<TParams, TPopovers>,
   SettingsPanelDialogButtonResult<TPopovers>
 >
 
 export type SettingsPanelPopoverNodeEvents<TParams extends SerializableRecord> =
   SettingsPanelNodeEvents<
-    SettingsPanelPopoverCommitEvent<TParams>,
-    SettingsPanelPopoverCommitResult,
+    SettingsPanelPopoverChangeEvent<TParams>,
+    SettingsPanelPopoverChangeResult,
     SettingsPanelPopoverButtonClickEvent<TParams>,
     SettingsPanelPopoverButtonResult
   >
@@ -80,7 +80,7 @@ export interface SettingsPanelPopoverResolveContext<
   parentDirtyNodeIds: readonly string[]
 }
 
-export interface SettingsPanelCommitEventBase {
+export interface SettingsPanelChangeEventBase {
   fieldId: string
   nodeId: string
   value: SerializableValue
@@ -91,21 +91,21 @@ export interface SettingsPanelButtonClickEventBase {
   nodeId: string
 }
 
-export type SettingsPanelRootCommitEvent = SettingsPanelRootResolveContext &
-  SettingsPanelRootCommitHelpers &
-  SettingsPanelCommitEventBase
+export type SettingsPanelRootChangeEvent = SettingsPanelRootResolveContext &
+  SettingsPanelRootChangeHelpers &
+  SettingsPanelChangeEventBase
 
-export type SettingsPanelDialogCommitEvent<
+export type SettingsPanelDialogChangeEvent<
   TParams extends SerializableRecord = SerializableRecord
 > = SettingsPanelDialogResolveContext<TParams> &
-  SettingsPanelDialogCommitHelpers &
-  SettingsPanelCommitEventBase
+  SettingsPanelDialogChangeHelpers &
+  SettingsPanelChangeEventBase
 
-export type SettingsPanelPopoverCommitEvent<
+export type SettingsPanelPopoverChangeEvent<
   TParams extends SerializableRecord = SerializableRecord
 > = SettingsPanelPopoverResolveContext<TParams> &
   SettingsPanelPopoverActionHelpers &
-  SettingsPanelCommitEventBase
+  SettingsPanelChangeEventBase
 
 export type SettingsPanelRootButtonClickEvent<
   TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap,

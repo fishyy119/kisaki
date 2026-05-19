@@ -63,7 +63,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
                 id: SETTINGS_NODE_IDS.importCollectionTypes,
                 initialValue: readImportCollectionTypes(context.values),
                 options: BANGUMI_COLLECTION_TYPE_OPTIONS,
-                onCommit(event) {
+                onChange(event) {
                   return event.refresh('dialog')
                 }
               })
@@ -78,7 +78,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
                 id: SETTINGS_NODE_IDS.importWriteFields,
                 initialValue: readImportWriteFields(context.values),
                 options: IMPORT_WRITE_FIELD_OPTIONS,
-                onCommit(event) {
+                onChange(event) {
                   return event.refresh('dialog')
                 }
               })
@@ -92,7 +92,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
               ui.switch({
                 id: SETTINGS_NODE_IDS.importPatchExisting,
                 initialValue: readImportPatchExisting(context.values),
-                onCommit(event) {
+                onChange(event) {
                   return event.refresh('dialog')
                 }
               })

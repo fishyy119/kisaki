@@ -29,7 +29,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
           scope.ui.switch({
             id: SETTINGS_NODE_IDS.autoSyncEnabled,
             initialValue: autoSyncEnabled,
-            onCommit(event) {
+            onChange(event) {
               return event.refresh('all')
             }
           })
@@ -45,7 +45,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
             id: SETTINGS_NODE_IDS.autoSyncItems,
             initialValue: selectedItems,
             options: AUTO_SYNC_ITEM_OPTIONS,
-            onCommit(event) {
+            onChange(event) {
               return event.refresh('all')
             }
           })

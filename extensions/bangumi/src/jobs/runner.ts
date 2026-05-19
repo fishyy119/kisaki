@@ -512,7 +512,7 @@ export class JobRunner {
   private async requireGameProfile(profileId: string): Promise<void> {
     const profile = await kisaki.scrapers.profiles.get(profileId)
     if (!profile || profile.mediaType !== 'game') {
-      throw new BangumiExtensionError('profile_missing', '选择的游戏 scraper profile 不存在。')
+      throw new BangumiExtensionError('profile_missing', '选择的游戏刮削配置不存在。')
     }
   }
 

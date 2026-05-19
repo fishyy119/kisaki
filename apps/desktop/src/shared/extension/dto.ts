@@ -539,9 +539,9 @@ export type ExtensionSettingsPanelParentRef =
   | { surface: 'root' }
   | { surface: 'dialog'; dialogId: string }
 
-type ExtensionResolvedSettingsPanelCommitNode<TNode extends { onCommit?: unknown }> = Omit<
+type ExtensionResolvedSettingsPanelChangeNode<TNode extends { onChange?: unknown }> = Omit<
   TNode,
-  'onCommit'
+  'onChange'
 > & {
   callbackId?: string
 }
@@ -553,41 +553,41 @@ type ExtensionResolvedSettingsPanelButtonBase<TNode extends { onClick?: unknown 
   callbackId?: string
 }
 
-export type ExtensionResolvedSettingsPanelSwitchNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelSwitchNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelSwitchNode<unknown, unknown>
 >
 
-export type ExtensionResolvedSettingsPanelCheckboxNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelCheckboxNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelCheckboxNode<unknown, unknown>
 >
 
-export type ExtensionResolvedSettingsPanelSelectNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelSelectNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelSelectNode<unknown, unknown>
 >
 
-export type ExtensionResolvedSettingsPanelRadioGroupNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelRadioGroupNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelRadioGroupNode<unknown, unknown>
 >
 
 export type ExtensionResolvedSettingsPanelMultiSelectNode =
-  ExtensionResolvedSettingsPanelCommitNode<SettingsPanelMultiSelectNode<unknown, unknown>>
+  ExtensionResolvedSettingsPanelChangeNode<SettingsPanelMultiSelectNode<unknown, unknown>>
 
-export type ExtensionResolvedSettingsPanelTextInputNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelTextInputNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelTextInputNode<unknown, unknown>
 >
 
-export type ExtensionResolvedSettingsPanelTextareaNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelTextareaNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelTextareaNode<unknown, unknown>
 >
 
 export type ExtensionResolvedSettingsPanelNumberInputNode =
-  ExtensionResolvedSettingsPanelCommitNode<SettingsPanelNumberInputNode<unknown, unknown>>
+  ExtensionResolvedSettingsPanelChangeNode<SettingsPanelNumberInputNode<unknown, unknown>>
 
-export type ExtensionResolvedSettingsPanelStringListNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelStringListNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelStringListNode<unknown, unknown>
 >
 
-export type ExtensionResolvedSettingsPanelRecordListNode = ExtensionResolvedSettingsPanelCommitNode<
+export type ExtensionResolvedSettingsPanelRecordListNode = ExtensionResolvedSettingsPanelChangeNode<
   SettingsPanelRecordListNode<unknown, unknown>
 >
 

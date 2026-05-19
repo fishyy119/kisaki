@@ -138,10 +138,10 @@ function normalizeSettingsNode(
     case 'numberInput':
     case 'stringList':
     case 'recordList': {
-      const { onCommit, ...item } = node
+      const { onChange, ...item } = node
       const callbackId =
-        typeof onCommit === 'function'
-          ? registerSettingsPanelCallback(fieldId, node.id, 'commit', context, onCommit, node.kind)
+        typeof onChange === 'function'
+          ? registerSettingsPanelCallback(fieldId, node.id, 'change', context, onChange, node.kind)
           : undefined
       return compactRecord({ ...item, callbackId })
     }

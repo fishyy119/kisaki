@@ -17,29 +17,29 @@ export {
 } from './nodes'
 export {
   validateSettingsPanelDialogButtonResult,
-  validateSettingsPanelDialogCommitResult,
+  validateSettingsPanelDialogChangeResult,
   validateSettingsPanelDialogSubmitResult,
   validateSettingsPanelPopoverActionResult,
   validateSettingsPanelPopoverButtonResult,
-  validateSettingsPanelPopoverCommitResult,
+  validateSettingsPanelPopoverChangeResult,
   validateSettingsPanelRootButtonResult,
-  validateSettingsPanelRootCommitResult,
+  validateSettingsPanelRootChangeResult,
   validateSettingsPanelRootSubmitResult
 } from './results'
 export {
   isSettingsPanelContribution,
   isSettingsPanelDialogButtonResult,
-  isSettingsPanelDialogCommitResult,
+  isSettingsPanelDialogChangeResult,
   isSettingsPanelDialogModel,
   isSettingsPanelDialogSubmitResult,
   isSettingsPanelField,
   isSettingsPanelNode,
   isSettingsPanelPopoverActionResult,
   isSettingsPanelPopoverButtonResult,
-  isSettingsPanelPopoverCommitResult,
+  isSettingsPanelPopoverChangeResult,
   isSettingsPanelPopoverModel,
   isSettingsPanelRootButtonResult,
-  isSettingsPanelRootCommitResult,
+  isSettingsPanelRootChangeResult,
   isSettingsPanelRootModel,
   isSettingsPanelRootSubmitResult,
   isSettingsPanelTab

@@ -26,14 +26,14 @@ interface SettingsPanelResultTargetValidationContext {
   popoverIds?: SettingsPanelKnownTargetIds
 }
 
-export function validateSettingsPanelRootCommitResult(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelRootChangeResult(value: unknown): ValidationIssue[] {
   return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'root', 'all'],
     allowClosePopover: true
   })
 }
 
-export function validateSettingsPanelDialogCommitResult(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelDialogChangeResult(value: unknown): ValidationIssue[] {
   return validateSettingsPanelResultLike(value, {
     allowedRefreshTargets: ['self', 'dialog', 'root', 'all'],
     allowClosePopover: true
@@ -47,7 +47,7 @@ export function validateSettingsPanelPopoverActionResult(value: unknown): Valida
   })
 }
 
-export function validateSettingsPanelPopoverCommitResult(value: unknown): ValidationIssue[] {
+export function validateSettingsPanelPopoverChangeResult(value: unknown): ValidationIssue[] {
   return validateSettingsPanelPopoverActionResult(value)
 }
 

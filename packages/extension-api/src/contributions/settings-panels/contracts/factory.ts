@@ -22,41 +22,41 @@ import type {
 
 export interface SettingsPanelNodeFactory<TEvents extends SettingsPanelAnyNodeEvents> {
   switch(
-    node: Omit<SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelSwitchNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelSwitchNode<TEvents['changeEvent'], TEvents['changeResult']>
   checkbox(
-    node: Omit<SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelCheckboxNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelCheckboxNode<TEvents['changeEvent'], TEvents['changeResult']>
   select(
-    node: Omit<SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelSelectNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelSelectNode<TEvents['changeEvent'], TEvents['changeResult']>
   radioGroup(
-    node: Omit<SettingsPanelRadioGroupNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelRadioGroupNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelRadioGroupNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelRadioGroupNode<TEvents['changeEvent'], TEvents['changeResult']>
   multiSelect(
     node: Omit<
-      SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>,
+      SettingsPanelMultiSelectNode<TEvents['changeEvent'], TEvents['changeResult']>,
       'kind'
     >
-  ): SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+  ): SettingsPanelMultiSelectNode<TEvents['changeEvent'], TEvents['changeResult']>
   textInput(
-    node: Omit<SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelTextInputNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelTextInputNode<TEvents['changeEvent'], TEvents['changeResult']>
   textarea(
-    node: Omit<SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelTextareaNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelTextareaNode<TEvents['changeEvent'], TEvents['changeResult']>
   numberInput(
     node: Omit<
-      SettingsPanelNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>,
+      SettingsPanelNumberInputNode<TEvents['changeEvent'], TEvents['changeResult']>,
       'kind'
     >
-  ): SettingsPanelNumberInputNode<TEvents['commitEvent'], TEvents['commitResult']>
+  ): SettingsPanelNumberInputNode<TEvents['changeEvent'], TEvents['changeResult']>
   stringList(
-    node: Omit<SettingsPanelStringListNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelStringListNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelStringListNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelStringListNode<TEvents['changeEvent'], TEvents['changeResult']>
   recordList(
-    node: Omit<SettingsPanelRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
-  ): SettingsPanelRecordListNode<TEvents['commitEvent'], TEvents['commitResult']>
+    node: Omit<SettingsPanelRecordListNode<TEvents['changeEvent'], TEvents['changeResult']>, 'kind'>
+  ): SettingsPanelRecordListNode<TEvents['changeEvent'], TEvents['changeResult']>
   button(
     node: Omit<SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>, 'kind'>
   ): SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>

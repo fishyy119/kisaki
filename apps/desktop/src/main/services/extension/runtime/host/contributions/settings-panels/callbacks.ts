@@ -7,20 +7,20 @@ import {
   type SettingsPanelContribution,
   type SettingsPanelInvokeRequest,
   validateSettingsPanelDialogButtonResult,
-  validateSettingsPanelDialogCommitResult,
+  validateSettingsPanelDialogChangeResult,
   validateSettingsPanelPopoverActionResult,
   validateSettingsPanelRootButtonResult,
-  validateSettingsPanelRootCommitResult
+  validateSettingsPanelRootChangeResult
 } from '@kisaki/extension-api'
 import { formatValidationIssues } from '../shared'
 import {
   createDialogButtonHelpers,
-  createDialogCommitHelpers,
+  createDialogChangeHelpers,
   createDialogContext,
   createPopoverActionHelpers,
   createPopoverContext,
   createRootButtonHelpers,
-  createRootCommitHelpers,
+  createRootChangeHelpers,
   createRootContext
 } from './context'
 import type { NormalizeSettingsPanelContext, SettingsPanelCallbackKind } from './types'
@@ -28,7 +28,7 @@ import {
   compactRecord,
   createSettingsPanelError,
   normalizeSettingsPanelExtensionValue,
-  validateCommitValue
+  validateChangeValue
 } from './values'
 
 type SettingsPanelNodeCallback = (
@@ -49,8 +49,8 @@ export function registerSettingsPanelCallback(
     fieldId,
     nodeId,
     invoke: (request, signal) => {
-      if (kind === 'commit') {
-        const valueIssue = validateCommitValue(valueKind, request.value)
+      if (kind === 'change') {
+        const valueIssue = validateChangeValue(valueKind, request.value)
         if (valueIssue) {
           return Promise.resolve(createSettingsPanelError(valueIssue, 'validation_failure'))
         }
@@ -114,19 +114,19 @@ function invokeRootCallback(
   request: Extract<SettingsPanelInvokeRequest, { surface: 'root' }>,
   signal: AbortSignal
 ): Promise<SettingsPanelCallbackResult> {
-  if (kind === 'commit') {
+  if (kind === 'change') {
     return invokeSettingsPanelCallback(
       extensionId,
       label,
       () =>
         callback({
           ...createRootContext(request.contributionId, request.sessionId, request.draft, signal),
-          ...createRootCommitHelpers(),
+          ...createRootChangeHelpers(),
           fieldId,
           nodeId,
           value: request.value
         }),
-      validateSettingsPanelRootCommitResult
+      validateSettingsPanelRootChangeResult
     )
   }
 
@@ -170,19 +170,19 @@ function invokeDialogCallback(
     signal
   )
 
-  if (kind === 'commit') {
+  if (kind === 'change') {
     return invokeSettingsPanelCallback(
       extensionId,
       label,
       () =>
         callback({
           ...context,
-          ...createDialogCommitHelpers(),
+          ...createDialogChangeHelpers(),
           fieldId,
           nodeId,
           value: request.value
         }),
-      validateSettingsPanelDialogCommitResult
+      validateSettingsPanelDialogChangeResult
     )
   }
 
@@ -235,7 +235,7 @@ function invokePopoverCallback(
           ...createPopoverActionHelpers(),
           fieldId,
           nodeId,
-          value: kind === 'commit' ? request.value : undefined
+          value: kind === 'change' ? request.value : undefined
         })
       ),
     validateSettingsPanelPopoverActionResult

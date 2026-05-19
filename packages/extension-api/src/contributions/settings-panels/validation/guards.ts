@@ -2,17 +2,17 @@ import type {
   SettingsPanelAnyNodeEvents,
   SettingsPanelContribution,
   SettingsPanelDialogButtonResult,
-  SettingsPanelDialogCommitResult,
+  SettingsPanelDialogChangeResult,
   SettingsPanelDialogModel,
   SettingsPanelDialogSubmitResult,
   SettingsPanelField,
   SettingsPanelFieldContentNode,
   SettingsPanelPopoverActionResult,
   SettingsPanelPopoverButtonResult,
-  SettingsPanelPopoverCommitResult,
+  SettingsPanelPopoverChangeResult,
   SettingsPanelPopoverModel,
   SettingsPanelRootButtonResult,
-  SettingsPanelRootCommitResult,
+  SettingsPanelRootChangeResult,
   SettingsPanelRootModel,
   SettingsPanelRootSubmitResult,
   SettingsPanelTab
@@ -30,13 +30,13 @@ import {
 } from './nodes'
 import {
   validateSettingsPanelDialogButtonResult,
-  validateSettingsPanelDialogCommitResult,
+  validateSettingsPanelDialogChangeResult,
   validateSettingsPanelDialogSubmitResult,
   validateSettingsPanelPopoverActionResult,
   validateSettingsPanelPopoverButtonResult,
-  validateSettingsPanelPopoverCommitResult,
+  validateSettingsPanelPopoverChangeResult,
   validateSettingsPanelRootButtonResult,
-  validateSettingsPanelRootCommitResult,
+  validateSettingsPanelRootChangeResult,
   validateSettingsPanelRootSubmitResult
 } from './results'
 
@@ -74,16 +74,16 @@ export function isSettingsPanelNode(
   return validateSettingsPanelNode(value).length === 0
 }
 
-export function isSettingsPanelRootCommitResult(
+export function isSettingsPanelRootChangeResult(
   value: unknown
-): value is SettingsPanelRootCommitResult {
-  return validateSettingsPanelRootCommitResult(value).length === 0
+): value is SettingsPanelRootChangeResult {
+  return validateSettingsPanelRootChangeResult(value).length === 0
 }
 
-export function isSettingsPanelDialogCommitResult(
+export function isSettingsPanelDialogChangeResult(
   value: unknown
-): value is SettingsPanelDialogCommitResult {
-  return validateSettingsPanelDialogCommitResult(value).length === 0
+): value is SettingsPanelDialogChangeResult {
+  return validateSettingsPanelDialogChangeResult(value).length === 0
 }
 
 export function isSettingsPanelPopoverActionResult(
@@ -92,10 +92,10 @@ export function isSettingsPanelPopoverActionResult(
   return validateSettingsPanelPopoverActionResult(value).length === 0
 }
 
-export function isSettingsPanelPopoverCommitResult(
+export function isSettingsPanelPopoverChangeResult(
   value: unknown
-): value is SettingsPanelPopoverCommitResult {
-  return validateSettingsPanelPopoverCommitResult(value).length === 0
+): value is SettingsPanelPopoverChangeResult {
+  return validateSettingsPanelPopoverChangeResult(value).length === 0
 }
 
 export function isSettingsPanelPopoverButtonResult(

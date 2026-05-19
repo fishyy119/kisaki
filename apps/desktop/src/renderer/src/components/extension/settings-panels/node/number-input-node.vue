@@ -33,10 +33,16 @@ function updateModelValue(value: string | number): void {
   const numericValue = parseModelValue()
   if (numericValue !== null) {
     props.controller.updateValue(props.state, props.node.id, numericValue)
+    void props.controller.invokeNode({
+      surface: props.state,
+      fieldId: props.fieldId,
+      node: props.node,
+      value: numericValue
+    })
   }
 }
 
-function commit(): void {
+function blur(): void {
   focused.value = false
   const value = parseModelValue()
   if (value === null) {
@@ -45,12 +51,6 @@ function commit(): void {
   }
 
   props.controller.updateValue(props.state, props.node.id, value)
-  void props.controller.invokeNode({
-    surface: props.state,
-    fieldId: props.fieldId,
-    node: props.node,
-    value
-  })
 }
 
 function parseModelValue(): number | null {
@@ -89,6 +89,6 @@ function focus(): void {
     "
     @update:model-value="updateModelValue"
     @focus="focus"
-    @blur="commit"
+    @blur="blur"
   />
 </template>

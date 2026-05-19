@@ -47,15 +47,15 @@ export function createDialogImportProfileField<
 
   return {
     id: 'import-profile',
-    label: 'Scraper Profile',
+    label: '刮削配置',
     content: [
       settings.select({
         id: SETTINGS_NODE_IDS.importProfileId,
         initialValue: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
-        placeholder: '选择游戏 scraper profile',
+        placeholder: '选择游戏刮削配置',
         options: profileOptions,
         disabled: profileOptions.length === 0,
-        onCommit(event) {
+        onChange(event) {
           return event.refresh('dialog')
         }
       })
@@ -87,7 +87,7 @@ export function createDialogImportTargetCollectionField<
         id: SETTINGS_NODE_IDS.importUseTargetCollection,
         initialValue: readImportUseTargetCollection(values),
         disabled: collections.length === 0,
-        onCommit(event) {
+        onChange(event) {
           return event.refresh('dialog')
         }
       }),
@@ -97,7 +97,7 @@ export function createDialogImportTargetCollectionField<
         placeholder: collections.length > 0 ? '选择本地合集' : '没有可用的本地合集',
         options: createCollectionOptions(collections),
         disabled: !readImportUseTargetCollection(values) || collections.length === 0,
-        onCommit(event) {
+        onChange(event) {
           return event.refresh('dialog')
         }
       })
@@ -131,7 +131,7 @@ export function createDialogIndexTargetCollectionFields<
           id: SETTINGS_NODE_IDS.importTargetCollectionMode,
           initialValue: mode,
           options: INDEX_TARGET_COLLECTION_MODE_OPTIONS,
-          onCommit(event) {
+          onChange(event) {
             return event.refresh('dialog')
           }
         })
@@ -148,7 +148,7 @@ export function createDialogIndexTargetCollectionFields<
           placeholder: collections.length > 0 ? '选择本地合集' : '没有可用的本地合集',
           options: createCollectionOptions(collections),
           disabled: collections.length === 0,
-          onCommit(event) {
+          onChange(event) {
             return event.refresh('dialog')
           }
         })
