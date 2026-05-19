@@ -20,6 +20,7 @@ import type {
   SettingsPanelButtonNode,
   SettingsPanelCallbackResult,
   SettingsPanelCheckboxNode,
+  SettingsPanelComparisonListNode,
   SettingsPanelDialogSize,
   SettingsPanelDividerNode,
   SettingsPanelImageNode,
@@ -599,6 +600,7 @@ export type ExtensionResolvedSettingsPanelTextNode = SettingsPanelTextNode
 export type ExtensionResolvedSettingsPanelNoticeNode = SettingsPanelNoticeNode
 export type ExtensionResolvedSettingsPanelStatusNode = SettingsPanelStatusNode
 export type ExtensionResolvedSettingsPanelTableNode = SettingsPanelTableNode
+export type ExtensionResolvedSettingsPanelComparisonListNode = SettingsPanelComparisonListNode
 export type ExtensionResolvedSettingsPanelLinkNode = SettingsPanelLinkNode
 export type ExtensionResolvedSettingsPanelImageNode = SettingsPanelImageNode
 export type ExtensionResolvedSettingsPanelDividerNode = SettingsPanelDividerNode
@@ -619,6 +621,7 @@ export type ExtensionResolvedSettingsPanelNode =
   | ExtensionResolvedSettingsPanelNoticeNode
   | ExtensionResolvedSettingsPanelStatusNode
   | ExtensionResolvedSettingsPanelTableNode
+  | ExtensionResolvedSettingsPanelComparisonListNode
   | ExtensionResolvedSettingsPanelLinkNode
   | ExtensionResolvedSettingsPanelImageNode
   | ExtensionResolvedSettingsPanelDividerNode

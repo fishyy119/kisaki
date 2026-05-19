@@ -2,6 +2,7 @@ import type {
   SettingsPanelAnyNodeEvents,
   SettingsPanelButtonNode,
   SettingsPanelCheckboxNode,
+  SettingsPanelComparisonListNode,
   SettingsPanelDividerNode,
   SettingsPanelImageNode,
   SettingsPanelLinkNode,
@@ -64,6 +65,9 @@ export interface SettingsPanelNodeFactory<TEvents extends SettingsPanelAnyNodeEv
   notice(node: Omit<SettingsPanelNoticeNode, 'kind'>): SettingsPanelNoticeNode
   status(node: Omit<SettingsPanelStatusNode, 'kind'>): SettingsPanelStatusNode
   table(node: Omit<SettingsPanelTableNode, 'kind'>): SettingsPanelTableNode
+  comparisonList(
+    node: Omit<SettingsPanelComparisonListNode, 'kind'>
+  ): SettingsPanelComparisonListNode
   link(node: Omit<SettingsPanelLinkNode, 'kind'>): SettingsPanelLinkNode
   image(node: Omit<SettingsPanelImageNode, 'kind'>): SettingsPanelImageNode
   divider(node: Omit<SettingsPanelDividerNode, 'kind'>): SettingsPanelDividerNode

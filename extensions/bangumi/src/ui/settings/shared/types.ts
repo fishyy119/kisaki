@@ -32,10 +32,24 @@ export interface BangumiPreviewLink extends SerializableRecord {
   href: string
 }
 
-export interface BangumiPreviewChange extends SerializableRecord {
-  game: string
-  bangumi: BangumiPreviewLink
-  action: string
-  local: string
-  remote: string
+export type BangumiPreviewTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
+
+export interface BangumiPreviewBadge extends SerializableRecord {
+  label: string
+  tone: BangumiPreviewTone
+}
+
+export interface BangumiPreviewRow extends SerializableRecord {
+  label: string
+  before: string
+  after: string
+  tone: BangumiPreviewTone
+}
+
+export interface BangumiPreviewGroup extends SerializableRecord {
+  id: string
+  title: string
+  link: BangumiPreviewLink
+  badges: readonly BangumiPreviewBadge[]
+  rows: readonly BangumiPreviewRow[]
 }

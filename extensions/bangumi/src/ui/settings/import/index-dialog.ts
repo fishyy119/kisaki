@@ -6,7 +6,7 @@ import {
 import { SETTINGS_NODE_IDS } from '../ids'
 import { toSettingsError } from '../shared/errors'
 import { BANGUMI_COMMAND_IDS, maybeDialogField, startDialogManualJob } from '../shared/jobs'
-import { createDialogPreviewChangesField, runDialogPreview } from '../shared/previews'
+import { createDialogPreviewGroupsField, runDialogPreview } from '../shared/previews'
 import type {
   BangumiSettingsDialogSubmitEvent,
   BangumiSettingsDialogSubmitResult
@@ -96,7 +96,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             ]
           },
           ...maybeDialogField(
-            createDialogPreviewChangesField({
+            createDialogPreviewGroupsField({
               settings: ui,
               id: 'index-preview-changes',
               label: '将导入的游戏',

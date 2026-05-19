@@ -56,6 +56,13 @@ export const SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES = [
   'badge',
   'link'
 ] as const
+export const SETTINGS_PANEL_COMPARISON_TONE_VALUES = [
+  'neutral',
+  'info',
+  'success',
+  'warning',
+  'danger'
+] as const
 export const SETTINGS_PANEL_RECORD_LIST_COLUMN_KIND_VALUES = [
   'text',
   'select',
@@ -123,6 +130,25 @@ export const BUTTON_CONFIRM_KEYS = new Set<string>([
   'cancelLabel'
 ])
 export const TABLE_COLUMN_KEYS = new Set<string>(['key', 'label', 'kind', 'truncate', 'weight'])
+export const COMPARISON_LIST_KEYS = new Set<string>([
+  ...NODE_BASE_KEYS,
+  'title',
+  'summary',
+  'groups',
+  'emptyLabel'
+])
+export const COMPARISON_SUMMARY_ITEM_KEYS = new Set<string>(['label', 'value', 'tone'])
+export const COMPARISON_GROUP_KEYS = new Set<string>([
+  'id',
+  'title',
+  'subtitle',
+  'link',
+  'badges',
+  'rows'
+])
+export const COMPARISON_LINK_KEYS = new Set<string>(['label', 'href'])
+export const COMPARISON_BADGE_KEYS = new Set<string>(['label', 'tone'])
+export const COMPARISON_ROW_KEYS = new Set<string>(['label', 'before', 'after', 'tone'])
 export const RECORD_LIST_COLUMN_KEYS = new Set<string>(['key', 'label', 'kind', 'options'])
 export const RESULT_FAILURE_KEYS = new Set<string>(['success', 'error', 'refresh', 'closePopover'])
 export const DIALOG_TARGET_KEYS = new Set<string>(['dialogId', 'params'])

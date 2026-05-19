@@ -13,11 +13,18 @@ import {
 } from '../../../shared/validation'
 import {
   BUTTON_CONFIRM_KEYS,
+  COMPARISON_BADGE_KEYS,
+  COMPARISON_GROUP_KEYS,
+  COMPARISON_LINK_KEYS,
+  COMPARISON_LIST_KEYS,
+  COMPARISON_ROW_KEYS,
+  COMPARISON_SUMMARY_ITEM_KEYS,
   FIELD_KEYS,
   NODE_BASE_KEYS,
   RECORD_LIST_COLUMN_KEYS,
   SELECT_OPTION_KEYS,
   SETTINGS_PANEL_BUTTON_TONE_VALUES,
+  SETTINGS_PANEL_COMPARISON_TONE_VALUES,
   SETTINGS_PANEL_CONTENT_LAYOUT_VALUES,
   SETTINGS_PANEL_FIELD_ORIENTATION_VALUES,
   SETTINGS_PANEL_IMAGE_FIT_VALUES,
@@ -288,6 +295,8 @@ function validateSettingsPanelNodeLike(
       return validateSettingsPanelStatus(value, path, state)
     case 'table':
       return validateSettingsPanelTable(value, path, state)
+    case 'comparisonList':
+      return validateSettingsPanelComparisonList(value, path, state)
     case 'link':
       return validateSettingsPanelLink(value, path, state)
     case 'image':
@@ -640,6 +649,212 @@ function validateSettingsPanelTable(
     ...validateSettingsPanelTableColumns(value.columns, `${path}.columns`),
     ...validateRecordArray(value.rows, `${path}.rows`, 'rows must be an array.')
   ]
+}
+
+function validateSettingsPanelComparisonList(
+  value: Record<string, unknown>,
+  path: string,
+  state: SurfaceValidationState
+): ValidationIssue[] {
+  return [
+    ...validateUnknownKeys(value, COMPARISON_LIST_KEYS, path),
+    ...validateSettingsPanelNodeBase(value, path, state),
+    ...validateOptionalString(value.title, `${path}.title`, {
+      typeMessage: 'title must be a string when provided.'
+    }),
+    ...validateOptionalString(value.emptyLabel, `${path}.emptyLabel`, {
+      typeMessage: 'emptyLabel must be a string when provided.'
+    }),
+    ...validateSettingsPanelComparisonSummary(value.summary, `${path}.summary`),
+    ...validateSettingsPanelComparisonGroups(value.groups, `${path}.groups`)
+  ]
+}
+
+function validateSettingsPanelComparisonSummary(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  const issues = validateRequiredArray(value, path, {
+    typeMessage: 'summary must be an array when provided.'
+  })
+
+  if (!Array.isArray(value)) {
+    return issues
+  }
+
+  for (const [index, item] of value.entries()) {
+    const itemPath = `${path}[${index}]`
+    if (!isPlainObject(item)) {
+      issues.push({ path: itemPath, message: 'Comparison summary item must be an object.' })
+      continue
+    }
+
+    issues.push(
+      ...validateUnknownKeys(item, COMPARISON_SUMMARY_ITEM_KEYS, itemPath),
+      ...validateRequiredString(item.label, `${itemPath}.label`, {
+        trim: true,
+        valueMessage: 'Summary label must be a non-empty string.'
+      }),
+      ...validateRequiredString(item.value, `${itemPath}.value`, {
+        trim: true,
+        valueMessage: 'Summary value must be a non-empty string.'
+      }),
+      ...validateOptionalEnumString(
+        item.tone,
+        `${itemPath}.tone`,
+        SETTINGS_PANEL_COMPARISON_TONE_VALUES,
+        'tone must be one of the supported comparison tones.'
+      )
+    )
+  }
+
+  return issues
+}
+
+function validateSettingsPanelComparisonGroups(value: unknown, path: string): ValidationIssue[] {
+  const issues = validateRequiredArray(value, path, {
+    typeMessage: 'groups must be an array.'
+  })
+
+  if (!Array.isArray(value)) {
+    return issues
+  }
+
+  const seenGroupIds = new Set<string>()
+  for (const [index, group] of value.entries()) {
+    const groupPath = `${path}[${index}]`
+    if (!isPlainObject(group)) {
+      issues.push({ path: groupPath, message: 'Comparison group must be an object.' })
+      continue
+    }
+
+    issues.push(
+      ...validateUnknownKeys(group, COMPARISON_GROUP_KEYS, groupPath),
+      ...validateRequiredString(group.id, `${groupPath}.id`, {
+        trim: true,
+        valueMessage: 'Comparison group id must be a non-empty string.'
+      }),
+      ...validateRequiredString(group.title, `${groupPath}.title`, {
+        trim: true,
+        valueMessage: 'Comparison group title must be a non-empty string.'
+      }),
+      ...validateOptionalString(group.subtitle, `${groupPath}.subtitle`, {
+        typeMessage: 'subtitle must be a string when provided.'
+      }),
+      ...validateSettingsPanelComparisonLink(group.link, `${groupPath}.link`),
+      ...validateSettingsPanelComparisonBadges(group.badges, `${groupPath}.badges`),
+      ...validateSettingsPanelComparisonRows(group.rows, `${groupPath}.rows`)
+    )
+
+    pushUniqueKeyIssue(group.id, seenGroupIds, `${groupPath}.id`, issues, 'Comparison group')
+  }
+
+  return issues
+}
+
+function validateSettingsPanelComparisonLink(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!isPlainObject(value)) {
+    return [{ path, message: 'link must be an object when provided.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, COMPARISON_LINK_KEYS, path),
+    ...validateRequiredString(value.label, `${path}.label`, {
+      trim: true,
+      valueMessage: 'Link label must be a non-empty string.'
+    }),
+    ...validateRequiredString(value.href, `${path}.href`, {
+      trim: true,
+      valueMessage: 'Link href must be a non-empty string.'
+    })
+  ]
+}
+
+function validateSettingsPanelComparisonBadges(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  const issues = validateRequiredArray(value, path, {
+    typeMessage: 'badges must be an array when provided.'
+  })
+
+  if (!Array.isArray(value)) {
+    return issues
+  }
+
+  for (const [index, badge] of value.entries()) {
+    const badgePath = `${path}[${index}]`
+    if (!isPlainObject(badge)) {
+      issues.push({ path: badgePath, message: 'Comparison badge must be an object.' })
+      continue
+    }
+
+    issues.push(
+      ...validateUnknownKeys(badge, COMPARISON_BADGE_KEYS, badgePath),
+      ...validateRequiredString(badge.label, `${badgePath}.label`, {
+        trim: true,
+        valueMessage: 'Badge label must be a non-empty string.'
+      }),
+      ...validateOptionalEnumString(
+        badge.tone,
+        `${badgePath}.tone`,
+        SETTINGS_PANEL_COMPARISON_TONE_VALUES,
+        'tone must be one of the supported comparison tones.'
+      )
+    )
+  }
+
+  return issues
+}
+
+function validateSettingsPanelComparisonRows(value: unknown, path: string): ValidationIssue[] {
+  const issues = validateRequiredArray(value, path, {
+    minLength: 1,
+    typeMessage: 'rows must be an array.',
+    valueMessage: 'rows must contain at least one row.'
+  })
+
+  if (!Array.isArray(value)) {
+    return issues
+  }
+
+  for (const [index, row] of value.entries()) {
+    const rowPath = `${path}[${index}]`
+    if (!isPlainObject(row)) {
+      issues.push({ path: rowPath, message: 'Comparison row must be an object.' })
+      continue
+    }
+
+    issues.push(
+      ...validateUnknownKeys(row, COMPARISON_ROW_KEYS, rowPath),
+      ...validateRequiredString(row.label, `${rowPath}.label`, {
+        trim: true,
+        valueMessage: 'Row label must be a non-empty string.'
+      }),
+      ...validateRequiredString(row.before, `${rowPath}.before`, {
+        trim: true,
+        valueMessage: 'Row before value must be a non-empty string.'
+      }),
+      ...validateRequiredString(row.after, `${rowPath}.after`, {
+        trim: true,
+        valueMessage: 'Row after value must be a non-empty string.'
+      }),
+      ...validateOptionalEnumString(
+        row.tone,
+        `${rowPath}.tone`,
+        SETTINGS_PANEL_COMPARISON_TONE_VALUES,
+        'tone must be one of the supported comparison tones.'
+      )
+    )
+  }
+
+  return issues
 }
 
 function validateSettingsPanelLink(

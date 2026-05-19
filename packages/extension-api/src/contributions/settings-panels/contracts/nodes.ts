@@ -172,6 +172,48 @@ export interface SettingsPanelTableNode extends SettingsPanelNodeBase {
   emptyLabel?: string
 }
 
+export type SettingsPanelComparisonTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
+
+export interface SettingsPanelComparisonSummaryItem {
+  label: string
+  value: string
+  tone?: SettingsPanelComparisonTone
+}
+
+export interface SettingsPanelComparisonLink {
+  label: string
+  href: string
+}
+
+export interface SettingsPanelComparisonBadge {
+  label: string
+  tone?: SettingsPanelComparisonTone
+}
+
+export interface SettingsPanelComparisonRow {
+  label: string
+  before: string
+  after: string
+  tone?: SettingsPanelComparisonTone
+}
+
+export interface SettingsPanelComparisonGroup {
+  id: string
+  title: string
+  subtitle?: string
+  link?: SettingsPanelComparisonLink
+  badges?: readonly SettingsPanelComparisonBadge[]
+  rows: readonly SettingsPanelComparisonRow[]
+}
+
+export interface SettingsPanelComparisonListNode extends SettingsPanelNodeBase {
+  kind: 'comparisonList'
+  title?: string
+  summary?: readonly SettingsPanelComparisonSummaryItem[]
+  groups: readonly SettingsPanelComparisonGroup[]
+  emptyLabel?: string
+}
+
 export interface SettingsPanelLinkNode extends SettingsPanelNodeBase {
   kind: 'link'
   label: string
@@ -209,6 +251,7 @@ export type SettingsPanelDisplayNode =
   | SettingsPanelNoticeNode
   | SettingsPanelStatusNode
   | SettingsPanelTableNode
+  | SettingsPanelComparisonListNode
   | SettingsPanelLinkNode
   | SettingsPanelImageNode
   | SettingsPanelDividerNode

@@ -161,6 +161,7 @@ function normalizeSettingsNode(
     case 'notice':
     case 'status':
     case 'table':
+    case 'comparisonList':
     case 'text':
       return compactRecord(node as unknown as Record<string, unknown>)
   }

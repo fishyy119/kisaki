@@ -15,12 +15,26 @@ export interface BangumiJobPreviewLink extends SerializableRecord {
   href: string
 }
 
-export interface BangumiJobPreviewChange extends SerializableRecord {
-  game: string
-  bangumi: BangumiJobPreviewLink
-  action: string
-  local: string
-  remote: string
+export type BangumiJobPreviewTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
+
+export interface BangumiJobPreviewBadge extends SerializableRecord {
+  label: string
+  tone: BangumiJobPreviewTone
+}
+
+export interface BangumiJobPreviewRow extends SerializableRecord {
+  label: string
+  before: string
+  after: string
+  tone: BangumiJobPreviewTone
+}
+
+export interface BangumiJobPreviewGroup extends SerializableRecord {
+  id: string
+  title: string
+  link: BangumiJobPreviewLink
+  badges: readonly BangumiJobPreviewBadge[]
+  rows: readonly BangumiJobPreviewRow[]
 }
 
 export interface BangumiJobSummary extends SerializableRecord {
@@ -31,7 +45,7 @@ export interface BangumiJobSummary extends SerializableRecord {
   status: BangumiJobStatus
   dryRun: boolean
   counters: Record<string, number>
-  changes: readonly BangumiJobPreviewChange[]
+  previewGroups: readonly BangumiJobPreviewGroup[]
   errors: readonly BangumiJobError[]
 }
 
@@ -41,7 +55,7 @@ export interface BangumiJobSummaryInput {
   status: BangumiJobStatus
   dryRun: boolean
   counters?: Record<string, number>
-  changes?: readonly BangumiJobPreviewChange[]
+  previewGroups?: readonly BangumiJobPreviewGroup[]
   errors?: readonly BangumiJobError[]
 }
 
@@ -54,7 +68,7 @@ export function createBangumiJobSummary(input: BangumiJobSummaryInput): BangumiJ
     status: input.status,
     dryRun: input.dryRun,
     counters: normalizeCounters(input.counters),
-    changes: (input.changes ?? []).map(normalizePreviewChange),
+    previewGroups: (input.previewGroups ?? []).map(normalizePreviewGroup),
     errors: (input.errors ?? []).map(normalizeJobError)
   }
 }
@@ -114,16 +128,24 @@ function normalizeJobError(
   }
 }
 
-function normalizePreviewChange(change: BangumiJobPreviewChange): BangumiJobPreviewChange {
+function normalizePreviewGroup(group: BangumiJobPreviewGroup): BangumiJobPreviewGroup {
   return {
-    game: normalizeText(change.game),
-    bangumi: {
-      label: normalizeText(change.bangumi.label),
-      href: normalizeText(change.bangumi.href)
+    id: normalizeText(group.id),
+    title: normalizeText(group.title),
+    link: {
+      label: normalizeText(group.link.label),
+      href: normalizeText(group.link.href)
     },
-    action: normalizeText(change.action),
-    local: normalizeText(change.local),
-    remote: normalizeText(change.remote)
+    badges: group.badges.map((badge) => ({
+      label: normalizeText(badge.label),
+      tone: badge.tone
+    })),
+    rows: group.rows.map((row) => ({
+      label: normalizeText(row.label),
+      before: normalizeText(row.before),
+      after: normalizeText(row.after),
+      tone: row.tone
+    }))
   }
 }
 

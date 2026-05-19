@@ -35,7 +35,8 @@ import {
   createJobError,
   isCancellationError,
   type BangumiJobError,
-  type BangumiJobPreviewChange,
+  type BangumiJobPreviewGroup,
+  type BangumiJobPreviewRow,
   type BangumiJobSummary
 } from './summary'
 
@@ -56,7 +57,7 @@ interface JobState {
   startedAt: number
   dryRun: boolean
   counters: JobCounters
-  changes: BangumiJobPreviewChange[]
+  previewGroups: BangumiJobPreviewGroup[]
   errors: BangumiJobError[]
   event: CommandContributionExecuteEvent
 }
@@ -65,8 +66,7 @@ interface MyCollectionLocalUpdatePlan {
   patch: LibraryGamePatch
   tagNames: readonly string[]
   targetCollection?: ResolvedImportTargetCollection
-  localValues: readonly string[]
-  remoteValues: readonly string[]
+  rows: readonly BangumiJobPreviewRow[]
 }
 
 interface ResolvedImportTargetCollection {
@@ -203,7 +203,7 @@ export class JobRunner {
           }
 
           if (args.dryRun) {
-            job.addChange(change)
+            job.addPreviewGroup(change)
             job.increment('wouldSync')
           } else {
             job.increment('skippedPendingSyncEngine')
@@ -279,7 +279,7 @@ export class JobRunner {
             }
 
             if (args.dryRun) {
-              job.addChange(change)
+              job.addPreviewGroup(change)
               job.increment('wouldPatch')
             } else {
               await applyMyCollectionLocalUpdate({
@@ -294,7 +294,7 @@ export class JobRunner {
           }
 
           if (args.dryRun) {
-            job.addChange(
+            job.addPreviewGroup(
               createImportCollectionCreatePreviewChange(collection, args.fields, targetCollection)
             )
             job.increment('wouldImport')
@@ -405,7 +405,7 @@ export class JobRunner {
             }
 
             if (args.dryRun) {
-              job.addChange(change)
+              job.addPreviewGroup(change)
               job.increment('wouldPatch')
             } else {
               await ensureGameInTargetCollection(localGame.id, targetCollection)
@@ -415,7 +415,7 @@ export class JobRunner {
           }
 
           if (args.dryRun) {
-            job.addChange(createIndexCreatePreviewChange(subject, index.title, targetCollection))
+            job.addPreviewGroup(createIndexCreatePreviewChange(subject, targetCollection))
             job.increment('wouldImport')
             continue
           }
@@ -475,7 +475,7 @@ export class JobRunner {
       startedAt: Date.now(),
       dryRun,
       counters: {},
-      changes: [],
+      previewGroups: [],
       errors: [],
       event
     }
@@ -491,7 +491,7 @@ export class JobRunner {
         status: 'completed',
         dryRun: state.dryRun,
         counters: state.counters,
-        changes: state.changes,
+        previewGroups: state.previewGroups,
         errors: state.errors
       })
       return summary
@@ -607,16 +607,12 @@ class JobStateController {
     return this.state.counters
   }
 
-  get changes(): readonly BangumiJobPreviewChange[] {
-    return this.state.changes
-  }
-
   increment(key: string, amount = 1): void {
     this.state.counters[key] = (this.state.counters[key] ?? 0) + amount
   }
 
-  addChange(change: BangumiJobPreviewChange): void {
-    this.state.changes.push(change)
+  addPreviewGroup(group: BangumiJobPreviewGroup): void {
+    this.state.previewGroups.push(group)
   }
 
   addError(error: unknown, context: Partial<BangumiJobError> = {}): void {
@@ -684,19 +680,22 @@ function createFullSyncPreviewChange({
   scoreEnabled: boolean
   updateExisting: boolean
   clearRemoteScoreWhenEmpty: boolean
-}): BangumiJobPreviewChange | undefined {
+}): BangumiJobPreviewGroup | undefined {
   if (remote && !updateExisting) {
     return undefined
   }
 
-  const localValues: string[] = []
-  const remoteValues: string[] = []
+  const rows: BangumiJobPreviewRow[] = []
   const targetCollectionType = settings.autoSync.statusToBangumi[game.status]
 
   if (playStatusEnabled && targetCollectionType !== 'skip') {
     if (!remote || remote.type !== targetCollectionType) {
-      localValues.push(formatStatusMappingValue(targetCollectionType))
-      remoteValues.push(remote ? formatCollectionType(remote.type) : '未收藏')
+      rows.push({
+        label: '收藏状态',
+        before: remote ? formatCollectionType(remote.type) : '未收藏',
+        after: formatStatusMappingValue(targetCollectionType),
+        tone: remote ? 'info' : 'success'
+      })
     }
   }
 
@@ -704,50 +703,99 @@ function createFullSyncPreviewChange({
     const localScore = normalizeLocalScoreAsBangumiRate(game.score)
     const remoteScore = normalizeBangumiRate(remote?.rate)
     if (localScore !== undefined && localScore !== remoteScore) {
-      localValues.push(`${localScore}`)
-      remoteValues.push(remoteScore === undefined ? '未评分' : `${remoteScore}`)
+      rows.push({
+        label: '评分',
+        before: remoteScore === undefined ? '未评分' : `${remoteScore}`,
+        after: `${localScore}`,
+        tone: remote ? 'info' : 'success'
+      })
     } else if (
       localScore === undefined &&
       remoteScore !== undefined &&
       clearRemoteScoreWhenEmpty &&
       remote
     ) {
-      localValues.push('未评分')
-      remoteValues.push(`${remoteScore}`)
+      rows.push({
+        label: '评分',
+        before: `${remoteScore}`,
+        after: '未评分',
+        tone: 'warning'
+      })
     }
   }
 
-  if (localValues.length === 0) {
+  if (rows.length === 0) {
     return undefined
   }
 
-  return {
-    game: game.name,
-    bangumi: createSubjectLink(subjectId),
-    action: remote ? '更新收藏' : '创建收藏',
-    local: localValues.join('；'),
-    remote: remoteValues.join('；')
-  }
+  return createPreviewGroup({
+    title: game.name,
+    subjectId,
+    badge: {
+      label: remote ? '更新 Bangumi 收藏' : '创建 Bangumi 收藏',
+      tone: remote ? 'info' : 'success'
+    },
+    rows
+  })
 }
 
 function createImportCollectionCreatePreviewChange(
   collection: BangumiUserCollection,
   fields: BangumiImportMyCollectionsArgs['fields'],
   targetCollection: ResolvedImportTargetCollection | undefined
-): BangumiJobPreviewChange {
+): BangumiJobPreviewGroup {
   const subjectId = readCollectionSubjectId(collection)
   const subject = collection.subject
   const title = subject
     ? formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
     : `${subjectId}`
+  const rows: BangumiJobPreviewRow[] = [
+    { label: '游戏', before: '不存在', after: '创建', tone: 'success' },
+    { label: 'Bangumi ID', before: '无', after: `${subjectId}`, tone: 'success' }
+  ]
 
-  return {
-    game: title,
-    bangumi: createSubjectLink(subjectId),
-    action: '创建游戏',
-    local: '不存在',
-    remote: formatImportCollectionRemoteValue(collection, fields, targetCollection)
+  if (fields.status) {
+    rows.push({
+      label: '状态',
+      before: '未设置',
+      after: formatGameStatus(mapCollectionTypeToGameStatus(collection.type)),
+      tone: 'success'
+    })
   }
+
+  if (fields.score) {
+    rows.push({
+      label: '评分',
+      before: '未评分',
+      after: formatCollectionScore(collection.rate),
+      tone: 'success'
+    })
+  }
+
+  if (fields.tags) {
+    rows.push({
+      label: '标签',
+      before: '无',
+      after: formatCollectionTags(collection.tags),
+      tone: 'success'
+    })
+  }
+
+  if (targetCollection) {
+    rows.push({
+      label: '合集',
+      before: '未加入',
+      after: formatTargetCollectionValue(targetCollection),
+      tone: 'success'
+    })
+  }
+
+  return createPreviewGroup({
+    title,
+    subjectId,
+    badge: { label: '创建本地游戏', tone: 'success' },
+    rows
+  })
 }
 
 async function createImportCollectionPatchPreviewChange({
@@ -760,7 +808,7 @@ async function createImportCollectionPatchPreviewChange({
   collection: BangumiUserCollection
   fields: BangumiImportMyCollectionsArgs['fields']
   targetCollection: ResolvedImportTargetCollection | undefined
-}): Promise<BangumiJobPreviewChange | undefined> {
+}): Promise<BangumiJobPreviewGroup | undefined> {
   const subjectId = readCollectionSubjectId(collection)
   const plan = await buildMyCollectionLocalUpdatePlan({
     game,
@@ -773,37 +821,47 @@ async function createImportCollectionPatchPreviewChange({
     return undefined
   }
 
-  return {
-    game: game.name,
-    bangumi: createSubjectLink(subjectId),
-    action: '更新游戏',
-    local: plan.localValues.join('；'),
-    remote: plan.remoteValues.join('；')
-  }
+  return createPreviewGroup({
+    title: game.name,
+    subjectId,
+    badge: { label: '更新本地游戏', tone: 'info' },
+    rows: plan.rows
+  })
 }
 
 function createIndexCreatePreviewChange(
   subject: BangumiIndexSubject,
-  indexTitle: string,
   targetCollection: ResolvedImportTargetCollection | undefined
-): BangumiJobPreviewChange {
+): BangumiJobPreviewGroup {
   const subjectId = normalizePositiveInteger(subject.id) ?? subject.id
   const title = formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
+  const rows: BangumiJobPreviewRow[] = [
+    { label: '游戏', before: '不存在', after: '创建', tone: 'success' },
+    { label: 'Bangumi ID', before: '无', after: `${subjectId}`, tone: 'success' }
+  ]
 
-  return {
-    game: title,
-    bangumi: createSubjectLink(subjectId),
-    action: '创建游戏',
-    local: '不存在',
-    remote: targetCollection ? formatTargetCollectionAction(targetCollection) : indexTitle
+  if (targetCollection) {
+    rows.push({
+      label: '合集',
+      before: '未加入',
+      after: formatTargetCollectionValue(targetCollection),
+      tone: 'success'
+    })
   }
+
+  return createPreviewGroup({
+    title,
+    subjectId,
+    badge: { label: '创建本地游戏', tone: 'success' },
+    rows
+  })
 }
 
 async function createIndexCollectionPatchPreviewChange(
   game: LibraryGame,
   subjectId: number,
   targetCollection: ResolvedImportTargetCollection
-): Promise<BangumiJobPreviewChange | undefined> {
+): Promise<BangumiJobPreviewGroup | undefined> {
   const hasRelation = targetCollection.id
     ? await hasGameCollectionRelation(game.id, targetCollection.id)
     : false
@@ -811,13 +869,19 @@ async function createIndexCollectionPatchPreviewChange(
     return undefined
   }
 
-  return {
-    game: game.name,
-    bangumi: createSubjectLink(subjectId),
-    action: '加入合集',
-    local: '未加入合集',
-    remote: formatTargetCollectionAction(targetCollection)
-  }
+  return createPreviewGroup({
+    title: game.name,
+    subjectId,
+    badge: { label: '加入本地合集', tone: 'success' },
+    rows: [
+      {
+        label: '合集',
+        before: '未加入',
+        after: formatTargetCollectionValue(targetCollection),
+        tone: 'success'
+      }
+    ]
+  })
 }
 
 function readBangumiSubjectId(game: LibraryGame): string | undefined {
@@ -981,8 +1045,7 @@ async function buildMyCollectionLocalUpdatePlan({
   targetCollection: ResolvedImportTargetCollection | undefined
 }): Promise<MyCollectionLocalUpdatePlan> {
   const patch: LibraryGamePatch = {}
-  const localValues: string[] = []
-  const remoteValues: string[] = []
+  const rows: BangumiJobPreviewRow[] = []
   let tagNames: readonly string[] = []
   let resolvedTargetCollection: ResolvedImportTargetCollection | undefined
 
@@ -990,8 +1053,12 @@ async function buildMyCollectionLocalUpdatePlan({
     const targetStatus = mapCollectionTypeToGameStatus(collection.type)
     if (game.status !== targetStatus) {
       patch.status = targetStatus
-      localValues.push(formatGameStatus(game.status))
-      remoteValues.push(formatCollectionType(collection.type))
+      rows.push({
+        label: '状态',
+        before: formatGameStatus(game.status),
+        after: formatGameStatus(targetStatus),
+        tone: 'info'
+      })
     }
   }
 
@@ -1000,8 +1067,12 @@ async function buildMyCollectionLocalUpdatePlan({
     const targetScore = normalizeCollectionScoreForImport(collection.rate)
     if (localScore !== targetScore) {
       patch.score = targetScore
-      localValues.push(formatLocalScore(localScore))
-      remoteValues.push(formatLocalScore(targetScore))
+      rows.push({
+        label: '评分',
+        before: formatLocalScore(localScore),
+        after: formatLocalScore(targetScore),
+        tone: 'info'
+      })
     }
   }
 
@@ -1011,8 +1082,12 @@ async function buildMyCollectionLocalUpdatePlan({
     const missingTags = targetTagNames.filter((tagName) => !currentTagNames.has(tagName))
     if (missingTags.length > 0) {
       tagNames = missingTags
-      localValues.push(formatTagNames([...currentTagNames]))
-      remoteValues.push(formatTagNames(targetTagNames))
+      rows.push({
+        label: '标签',
+        before: formatTagNames([...currentTagNames]),
+        after: formatTagNames(targetTagNames),
+        tone: 'info'
+      })
     }
   }
 
@@ -1021,16 +1096,19 @@ async function buildMyCollectionLocalUpdatePlan({
     : false
   if (targetCollection && !hasTargetCollectionRelation) {
     resolvedTargetCollection = targetCollection
-    localValues.push('未加入合集')
-    remoteValues.push(formatTargetCollectionAction(targetCollection))
+    rows.push({
+      label: '合集',
+      before: '未加入',
+      after: formatTargetCollectionValue(targetCollection),
+      tone: 'success'
+    })
   }
 
   return {
     patch,
     tagNames,
     targetCollection: resolvedTargetCollection,
-    localValues,
-    remoteValues
+    rows
   }
 }
 
@@ -1038,7 +1116,8 @@ function hasMyCollectionLocalChanges(plan: MyCollectionLocalUpdatePlan): boolean
   return (
     Object.keys(plan.patch).length > 0 ||
     plan.tagNames.length > 0 ||
-    plan.targetCollection !== undefined
+    plan.targetCollection !== undefined ||
+    plan.rows.length > 0
   )
 }
 
@@ -1211,9 +1290,29 @@ function formatBangumiSubjectTitle(
   return nameCn?.trim() || name?.trim() || `Bangumi ${fallback}`
 }
 
+function createPreviewGroup({
+  title,
+  subjectId,
+  badge,
+  rows
+}: {
+  title: string
+  subjectId: string | number
+  badge: BangumiJobPreviewGroup['badges'][number]
+  rows: readonly BangumiJobPreviewRow[]
+}): BangumiJobPreviewGroup {
+  return {
+    id: `${subjectId}:${badge.label}`,
+    title,
+    link: createSubjectLink(subjectId),
+    badges: [badge],
+    rows
+  }
+}
+
 function createSubjectLink(subjectId: string | number): { label: string; href: string } {
   return {
-    label: String(subjectId),
+    label: `#${subjectId}`,
     href: `https://bgm.tv/subject/${subjectId}`
   }
 }
@@ -1252,36 +1351,6 @@ function formatGameStatus(value: LibraryGameStatus): string {
     case 'shelved':
       return '搁置'
   }
-}
-
-function formatImportCollectionRemoteValue(
-  collection: BangumiUserCollection,
-  fields: BangumiImportMyCollectionsArgs['fields'],
-  targetCollection: ResolvedImportTargetCollection | undefined
-): string {
-  const values: string[] = []
-
-  if (fields.status) {
-    values.push(formatCollectionType(collection.type))
-  }
-
-  if (fields.score) {
-    values.push(formatCollectionScore(collection.rate))
-  }
-
-  if (fields.tags) {
-    values.push(formatCollectionTags(collection.tags))
-  }
-
-  if (targetCollection) {
-    values.push(formatTargetCollectionAction(targetCollection))
-  }
-
-  return values.length > 0 ? values.join('；') : formatCollectionType(collection.type)
-}
-
-function formatTargetCollectionAction(targetCollection: ResolvedImportTargetCollection): string {
-  return `加入${formatTargetCollectionValue(targetCollection)}`
 }
 
 function formatTargetCollectionValue(targetCollection: ResolvedImportTargetCollection): string {

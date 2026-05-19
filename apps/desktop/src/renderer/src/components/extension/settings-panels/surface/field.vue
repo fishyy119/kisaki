@@ -17,6 +17,7 @@ import TextNode from '../node/text-node.vue'
 import NoticeNode from '../node/notice-node.vue'
 import StatusNode from '../node/status-node.vue'
 import TableNode from '../node/table-node.vue'
+import ComparisonListNode from '../node/comparison-list-node.vue'
 import LinkNode from '../node/link-node.vue'
 import ImageNode from '../node/image-node.vue'
 import DividerNode from '../node/divider-node.vue'
@@ -198,6 +199,10 @@ function nodeWrapperClass(node: ExtensionResolvedSettingsPanelNode): string {
         />
         <TableNode
           v-else-if="node.kind === 'table'"
+          :node="node"
+        />
+        <ComparisonListNode
+          v-else-if="node.kind === 'comparisonList'"
           :node="node"
         />
         <LinkNode

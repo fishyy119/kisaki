@@ -8,8 +8,11 @@ import {
 } from '@kisaki/extension-sdk'
 import type { BangumiCommandId } from '../../../jobs/commands'
 import type {
-  BangumiPreviewChange,
+  BangumiPreviewBadge,
+  BangumiPreviewGroup,
   BangumiPreviewKey,
+  BangumiPreviewRow,
+  BangumiPreviewTone,
   BangumiSettingsDialogButtonEvent,
   BangumiSettingsDialogButtonResult,
   BangumiSettingsPopovers,
@@ -53,7 +56,7 @@ export class PreviewResultRegistry {
   }
 }
 
-export function createDialogPreviewChangesField<
+export function createDialogPreviewGroupsField<
   TParams extends SerializableRecord = SerializableRecord
 >({
   settings,
@@ -74,22 +77,18 @@ export function createDialogPreviewChangesField<
     return undefined
   }
 
+  const groups = readPreviewGroups(preview.result)
+
   return {
     id,
     label,
     orientation: 'vertical',
     contentLayout: 'stack',
     content: [
-      settings.table({
-        id: `${id}.changes`,
-        columns: [
-          { key: 'game', label: '游戏', truncate: true, weight: 2.2 },
-          { key: 'bangumi', label: 'Bangumi', kind: 'link' },
-          { key: 'action', label: '操作', kind: 'badge', weight: 0.8 },
-          { key: 'local', label: '本地值', truncate: true, weight: 1.4 },
-          { key: 'remote', label: '远端值', truncate: true, weight: 1.4 }
-        ],
-        rows: readPreviewChanges(preview.result),
+      settings.comparisonList({
+        id: `${id}.groups`,
+        summary: summarizePreviewGroups(groups),
+        groups,
         emptyLabel: '没有将要更改的游戏'
       })
     ]
@@ -127,31 +126,81 @@ function runPreviewCommand(
   })
 }
 
-function readPreviewChanges(result: CommandExecutionResult): readonly BangumiPreviewChange[] {
+function readPreviewGroups(result: CommandExecutionResult): readonly BangumiPreviewGroup[] {
   if (result.status !== 'completed') {
     return []
   }
 
   const output = asPlainRecord(result.output)
-  const changes = output?.changes
-  if (!Array.isArray(changes)) {
+  const groups = output?.previewGroups
+  if (!Array.isArray(groups)) {
     return []
   }
 
-  return changes.filter(isPreviewChange)
+  return groups.filter(isPreviewGroup)
 }
 
-function isPreviewChange(value: unknown): value is BangumiPreviewChange {
+function summarizePreviewGroups(groups: readonly BangumiPreviewGroup[]) {
+  const counts = new Map<string, { value: number; tone?: BangumiPreviewTone }>()
+
+  for (const group of groups) {
+    const badge = group.badges[0]
+    const key = badge?.label || '变更'
+    const existing = counts.get(key)
+    if (existing) {
+      existing.value += 1
+    } else {
+      counts.set(key, { value: 1, tone: badge?.tone })
+    }
+  }
+
+  return [...counts.entries()].map(([label, count]) => ({
+    label,
+    value: String(count.value),
+    ...(count.tone ? { tone: count.tone } : {})
+  }))
+}
+
+function isPreviewGroup(value: unknown): value is BangumiPreviewGroup {
   const record = asPlainRecord(value)
-  const bangumi = asPlainRecord(record?.bangumi)
+  const link = asPlainRecord(record?.link)
+  const badges = record?.badges
+  const rows = record?.rows
 
   return (
-    typeof record?.game === 'string' &&
-    typeof record.action === 'string' &&
-    typeof record.local === 'string' &&
-    typeof record.remote === 'string' &&
-    typeof bangumi?.label === 'string' &&
-    typeof bangumi.href === 'string'
+    typeof record?.id === 'string' &&
+    typeof record.title === 'string' &&
+    typeof link?.label === 'string' &&
+    typeof link.href === 'string' &&
+    Array.isArray(badges) &&
+    badges.every(isPreviewBadge) &&
+    Array.isArray(rows) &&
+    rows.every(isPreviewRow)
+  )
+}
+
+function isPreviewBadge(value: unknown): value is BangumiPreviewBadge {
+  const record = asPlainRecord(value)
+  return typeof record?.label === 'string' && isPreviewTone(record.tone)
+}
+
+function isPreviewRow(value: unknown): value is BangumiPreviewRow {
+  const record = asPlainRecord(value)
+  return (
+    typeof record?.label === 'string' &&
+    typeof record.before === 'string' &&
+    typeof record.after === 'string' &&
+    isPreviewTone(record.tone)
+  )
+}
+
+function isPreviewTone(value: unknown): value is BangumiPreviewTone {
+  return (
+    value === 'neutral' ||
+    value === 'info' ||
+    value === 'success' ||
+    value === 'warning' ||
+    value === 'danger'
   )
 }
 

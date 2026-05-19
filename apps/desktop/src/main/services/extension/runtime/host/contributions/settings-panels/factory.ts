@@ -19,6 +19,7 @@ export function createSettingsPanelNodeFactory<
     notice: (node) => ({ ...node, kind: 'notice' }),
     status: (node) => ({ ...node, kind: 'status' }),
     table: (node) => ({ ...node, kind: 'table' }),
+    comparisonList: (node) => ({ ...node, kind: 'comparisonList' }),
     link: (node) => ({ ...node, kind: 'link' }),
     image: (node) => ({ ...node, kind: 'image' }),
     divider: (node) => ({ ...node, kind: 'divider' })
