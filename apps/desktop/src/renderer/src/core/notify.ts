@@ -8,7 +8,7 @@
 import { toast } from 'vue-sonner'
 import { nanoid } from 'nanoid'
 import { ipcManager } from './ipc'
-import type { NotifyOptions, NotifyType, NotifyFunction } from '@shared/notify'
+import type { NotifyAction, NotifyOptions, NotifyType, NotifyFunction } from '@shared/notify'
 
 function getToastFn(type?: NotifyType) {
   switch (type) {
@@ -25,15 +25,40 @@ function getToastFn(type?: NotifyType) {
   }
 }
 
+function createToastAction(
+  toastId: string | undefined,
+  action: NotifyAction | undefined
+): { label: string; onClick(event: MouseEvent): void } | undefined {
+  if (!toastId || !action) {
+    return undefined
+  }
+
+  return {
+    label: action.label,
+    onClick(event) {
+      event.preventDefault()
+      ipcManager.send('notify:action', {
+        toastId,
+        actionId: action.id
+      })
+    }
+  }
+}
+
+function createToastOptions(options: NotifyOptions, toastId?: string) {
+  return {
+    id: toastId,
+    description: options.message,
+    duration: options.duration,
+    action: createToastAction(toastId, options.action)
+  }
+}
+
 function createNotify(): NotifyFunction {
   // Initialize IPC listeners for notifications from main process
   ipcManager.on('notify:show', (_, options) => {
     const toastFn = getToastFn(options.type)
-    toastFn(options.title, {
-      id: options.toastId,
-      description: options.message,
-      duration: options.duration
-    })
+    toastFn(options.title, createToastOptions(options, options.toastId))
   })
 
   ipcManager.on('notify:loading', (_, { toastId, title, message }) => {
@@ -42,11 +67,7 @@ function createNotify(): NotifyFunction {
 
   ipcManager.on('notify:update', (_, { toastId, ...options }) => {
     const toastFn = getToastFn(options.type)
-    toastFn(options.title, {
-      id: toastId,
-      description: options.message,
-      duration: options.duration
-    })
+    toastFn(options.title, createToastOptions(options, toastId))
   })
 
   ipcManager.on('notify:dismiss', (_, { toastId }) => {

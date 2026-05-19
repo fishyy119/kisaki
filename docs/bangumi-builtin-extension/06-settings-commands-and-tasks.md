@@ -32,7 +32,7 @@ UI 规则：
 - 控件使用 structured settings nodes，不写自定义 renderer。
 - 长流程按钮只启动 job command 并返回。
 - 执行类 dialog 使用自定义 submit 按钮文案，把最终执行动作放在 dialog footer。
-- job 运行状态用 `status`、`table`、`notice` 展示。
+- job 运行状态不在 settings panel 内追加 progress/status field；按钮禁用态来自 command `running`，进度、完成和取消统一由 command notify 展示。
 - Automation 不运行、不取消、不展示 task history；task 执行与历史属于主应用 task 面板。
 - 所有 destructive 操作使用 danger tone，并要求明确按钮文案，例如“清除 Bangumi 凭据”。
 
@@ -110,27 +110,17 @@ interface BangumiJobSummary {
 
 ## Execution State
 
-CommandService 提供运行期 progress snapshot。Bangumi 长任务通过 `event.reportProgress()` 上报当前阶段、文案和计数；settings UI 通过扩展内存级 `ActiveJobRegistry` 找到当前手动 job 的 execution id，再读取 `kisaki.commands.getProgress(executionId)`、订阅 `kisaki.events.on('command.progress')` 或调用 `kisaki.commands.wait(executionId)` 展示实时状态和完成结果，但不把 extension storage 当作进度事件总线。
+CommandService 提供运行期 progress snapshot 和 command `running` 状态。Bangumi 长任务通过 `event.reportProgress()` 上报当前阶段、文案和计数；settings UI 只读取 `kisaki.commands.list()` 中对应 command 的 `running` 布尔值，用于禁用重复入口。进度、完成结果和取消入口统一由 command notify 展示，不把 extension storage 或 settings panel 当作进度事件总线。
 
 边界：
 
 - CommandService 负责单次 command execution、取消和临时 progress；结果只作为本次调用的返回值。
 - BackgroundTaskService 负责持久任务、来自主应用的手动/启动/定时触发和运行历史。
-- `ActiveJobRegistry` 只记录 settings panel 手动启动的 active execution，不记录 background task execution。
 - Bangumi extension storage 不保存 `jobs.active`、`jobs.history`、execution id、通用 `lastResult` 或 `lastSummary`。
-- settings panel 手动触发只启动 job command，登记 active execution，读取 progress/result，不读取 task history。
+- settings panel 手动触发只启动 job command，并在执行请求里传入 `presentation.notify`；不登记 active execution，不读取 progress/result，不读取 task history。
 - task 的运行、取消、重试和历史展示由主应用 task 面板负责。
 - 临时预览或轻量操作可以直接执行 job command；结果只反馈给当前 UI，不落 storage。
 - 不新增 public command API 来列出所有 execution；如未来需要命令中心或全局运行监控，再单独设计受权限约束的查询能力。
-
-Active job registry 规则：
-
-- key 使用稳定 UI scope，例如 `account.refresh`、`sync.full`、`import.myCollections`、`import.index`。
-- value 只保存 `commandId`、`executionId`、`startedAt`、`cancelable` 和轻量 args 摘要；不得保存 token、完整导入条目、HTTP body 或用户私密文本。
-- settings button 调用 `kisaki.commands.start(...)` 后立即登记 active execution，并返回刷新 root/dialog 的 callback result。
-- settings resolve 读取 registry，按 execution id 调用 `getProgress`，必要时调用 `wait` 获取完成结果；发现 completed/cancelled/failed 后从 registry 移除。
-- 用户点击取消时通过 registry 找到 execution id，调用 `kisaki.commands.cancel(executionId)`，随后刷新 UI。
-- extension runtime 重启、扩展 disable/enable 或 host crash 后 registry 清空；settings panel 显示“没有当前运行的手动任务”，不尝试恢复 active job。
 
 progress 规则：
 

@@ -1,27 +1,20 @@
 import type { SerializableRecord } from '@kisaki/extension-sdk'
 import type { BangumiSettingsV1 } from '../../config/schema'
 import { AUTO_SYNC_ITEM_OPTIONS, DIALOG_IDS, NODE_IDS } from '../common/constants'
-import { ActiveJobRegistry, createActiveJobField, maybeField } from '../common/jobs'
 import { readBoolean } from '../common/values'
-import type {
-  BangumiSettingsRootFactory,
-  BangumiSettingsRootField,
-  ResolvedActiveJob
-} from '../common/types'
+import type { BangumiSettingsRootFactory, BangumiSettingsRootField } from '../common/types'
 import { readAutoSyncItems } from './options'
 
 export function createSyncFields({
   settings,
   values,
   storedSettings,
-  activeJobRegistry,
-  activeFullSyncJob
+  isFullSyncRunning
 }: {
   settings: BangumiSettingsRootFactory
   values: SerializableRecord
   storedSettings: BangumiSettingsV1
-  activeJobRegistry: ActiveJobRegistry
-  activeFullSyncJob?: ResolvedActiveJob
+  isFullSyncRunning: boolean
 }): BangumiSettingsRootField[] {
   return [
     ...createAutoSyncFields(settings, values, storedSettings),
@@ -36,23 +29,13 @@ export function createSyncFields({
           id: 'open-full-sync-dialog',
           label: '配置全量同步',
           tone: 'primary',
-          disabled: !!activeFullSyncJob?.progress,
+          disabled: isFullSyncRunning,
           onClick(event) {
             return event.openDialog(DIALOG_IDS.fullSync)
           }
         })
       ]
-    },
-    ...maybeField(
-      createActiveJobField({
-        settings,
-        id: 'sync-full-job',
-        label: '全量同步任务',
-        scope: 'sync.full',
-        activeJob: activeFullSyncJob,
-        activeJobRegistry
-      })
-    )
+    }
   ]
 }
 

@@ -2,6 +2,7 @@ import {
   createUnavailableError,
   type CommandDescriptor,
   type CommandExecutionProgress,
+  type CommandExecutionPresentation,
   type CommandExecutionRequest,
   type CommandExecutionResult,
   type CommandExecutionSource,
@@ -15,6 +16,7 @@ import type { CommandService } from '@main/services/command'
 import type {
   CommandDescriptor as AppCommandDescriptor,
   CommandExecutionProgress as AppCommandExecutionProgress,
+  CommandExecutionPresentation as AppCommandExecutionPresentation,
   CommandExecutionResult as AppCommandExecutionResult,
   CommandExecutionSource as AppCommandExecutionSource,
   CommandListItem as AppCommandListItem
@@ -45,7 +47,8 @@ export class ExtensionCommandsCapabilityProvider {
     return this.options.command.executions.start({
       commandId: request.commandId,
       args: request.args,
-      source: { kind: 'extension', extensionId: metadata.id, commandId: request.commandId }
+      source: { kind: 'extension', extensionId: metadata.id, commandId: request.commandId },
+      presentation: toAppCommandExecutionPresentation(request.presentation)
     })
   }
 
@@ -114,7 +117,27 @@ function toPublicCommandDescriptor(command: AppCommandDescriptor): CommandDescri
     defaultArgs: toOptionalPublicSerializableRecord(command.defaultArgs),
     dangerLevel: command.dangerLevel,
     cancelable: command.cancelable,
-    ownerExtensionId: command.ownerExtensionId
+    ownerExtensionId: command.ownerExtensionId,
+    notification: command.notification
+  }
+}
+
+function toAppCommandExecutionPresentation(
+  presentation: CommandExecutionPresentation | undefined
+): AppCommandExecutionPresentation | undefined {
+  if (!presentation) {
+    return undefined
+  }
+
+  return {
+    notify: presentation.notify
+      ? {
+          enabled: presentation.notify.enabled,
+          title: presentation.notify.title,
+          message: presentation.notify.message,
+          cancelable: presentation.notify.cancelable
+        }
+      : undefined
   }
 }
 

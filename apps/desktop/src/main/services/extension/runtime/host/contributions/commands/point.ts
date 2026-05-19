@@ -139,7 +139,8 @@ function toCommandRegistrationRpcInput(command: CommandContribution) {
     argsSchema: command.argsSchema,
     defaultArgs: command.defaultArgs,
     dangerLevel: command.dangerLevel,
-    cancelable: command.cancelable
+    cancelable: command.cancelable,
+    notification: command.notification
   }
 }
 

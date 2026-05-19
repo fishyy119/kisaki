@@ -1,10 +1,8 @@
 import {
   kisaki,
   type CommandContributionExecuteEvent,
-  type CommandExecutionProgressUpdate,
   type ExtensionLogger,
-  type LibraryGame,
-  type NotificationKind
+  type LibraryGame
 } from '@kisaki/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { BangumiApiError } from '../api/errors'
@@ -56,7 +54,6 @@ interface JobState {
   changes: BangumiJobPreviewChange[]
   errors: BangumiJobError[]
   event: CommandContributionExecuteEvent
-  notifier: JobNotificationController
 }
 
 export class JobRunner {
@@ -311,14 +308,6 @@ export class JobRunner {
     dryRun: boolean,
     execute: (job: JobStateController) => Promise<void>
   ): Promise<BangumiJobSummary> {
-    const notifier = new JobNotificationController({
-      commandId: event.commandId,
-      executionId: event.executionId,
-      dryRun,
-      logger: this.deps.logger
-    })
-    await notifier.start()
-
     const state: JobState = {
       commandId: event.commandId,
       startedAt: Date.now(),
@@ -326,8 +315,7 @@ export class JobRunner {
       counters: {},
       changes: [],
       errors: [],
-      event,
-      notifier
+      event
     }
     const job = new JobStateController(state)
 
@@ -344,19 +332,16 @@ export class JobRunner {
         changes: state.changes,
         errors: state.errors
       })
-      await notifier.finish('success', '已完成', formatJobSummaryMessage(summary))
       return summary
     } catch (error) {
       if (isCancellationError(error) || event.signal.aborted) {
         job.report('cancelled', 'Bangumi job 已取消。', { indeterminate: true })
-        await notifier.finish('warning', '已取消', 'Bangumi job 已取消。')
         throw new BangumiExtensionError('job_cancelled', 'Bangumi job 已取消。')
       }
 
       state.errors.push(createJobError(error))
       const message = toUserErrorMessage(error)
       job.report('failed', message, { indeterminate: true })
-      await notifier.finish('error', '执行失败', message)
       this.deps.logger?.warn('Bangumi job failed.', toSafeErrorLog(error))
       throw error
     }
@@ -453,69 +438,6 @@ export class JobRunner {
   }
 }
 
-class JobNotificationController {
-  private id: string | undefined
-  private queue: Promise<void> = Promise.resolve()
-  private readonly title: string
-
-  constructor(
-    private readonly options: {
-      commandId: string
-      executionId: string
-      dryRun: boolean
-      logger?: ExtensionLogger
-    }
-  ) {
-    this.title = formatJobNotificationTitle(options.commandId, options.dryRun)
-  }
-
-  async start(): Promise<void> {
-    try {
-      const handle = await kisaki.notify.loading(this.title, {
-        id: `bangumi.job.${this.options.executionId}`,
-        message: this.options.dryRun ? '正在生成预览...' : '正在执行...'
-      })
-      this.id = handle.id
-    } catch (error) {
-      this.logFailure('Failed to show Bangumi job notification.', error)
-    }
-  }
-
-  report(progress: CommandExecutionProgressUpdate): void {
-    this.enqueue('loading', this.title, formatJobProgressMessage(progress))
-  }
-
-  async finish(kind: NotificationKind, titleSuffix: string, message: string): Promise<void> {
-    await this.queue.catch(() => undefined)
-    await this.update(kind, `${this.title}${titleSuffix}`, message)
-  }
-
-  private enqueue(kind: NotificationKind, title: string, message: string): void {
-    if (!this.id) {
-      return
-    }
-
-    this.queue = this.queue.catch(() => undefined).then(() => this.update(kind, title, message))
-  }
-
-  private async update(kind: NotificationKind, title: string, message: string): Promise<void> {
-    if (!this.id) {
-      return
-    }
-
-    try {
-      await kisaki.notify.update(this.id, kind, title, { message })
-    } catch (error) {
-      this.logFailure('Failed to update Bangumi job notification.', error)
-      this.id = undefined
-    }
-  }
-
-  private logFailure(message: string, error: unknown): void {
-    this.options.logger?.warn(message, toSafeErrorLog(error))
-  }
-}
-
 class JobStateController {
   constructor(private readonly state: JobState) {}
 
@@ -546,86 +468,6 @@ class JobStateController {
       ...progress
     }
     this.state.event.reportProgress(update)
-    this.state.notifier.report(update)
-  }
-}
-
-function formatJobNotificationTitle(commandId: string, dryRun: boolean): string {
-  const base = (() => {
-    switch (commandId) {
-      case 'bangumi.auth.refresh':
-        return 'Bangumi 刷新凭据'
-      case 'bangumi.sync.changed-games':
-        return 'Bangumi 同步变更'
-      case 'bangumi.sync.full':
-        return 'Bangumi 全量同步'
-      case 'bangumi.import.my-collections':
-        return 'Bangumi 导入我的收藏'
-      case 'bangumi.import.index':
-        return 'Bangumi 导入目录'
-      default:
-        return 'Bangumi job'
-    }
-  })()
-
-  return dryRun && commandId !== 'bangumi.auth.refresh' ? `${base}预览` : base
-}
-
-function formatJobProgressMessage(progress: CommandExecutionProgressUpdate): string {
-  const count = formatProgressCount(progress)
-  const message = progress.message?.trim() || progress.phase?.trim() || '运行中'
-  return count ? `${message} ${count}` : message
-}
-
-function formatProgressCount(progress: CommandExecutionProgressUpdate): string {
-  if (progress.current === undefined && progress.total === undefined) {
-    return ''
-  }
-
-  if (progress.current !== undefined && progress.total !== undefined) {
-    return `(${progress.current}/${progress.total})`
-  }
-
-  if (progress.current !== undefined) {
-    return `(${progress.current})`
-  }
-
-  return ''
-}
-
-function formatJobSummaryMessage(summary: BangumiJobSummary): string {
-  if (summary.dryRun) {
-    return summary.changes.length > 0
-      ? `预览完成：${summary.changes.length} 项变更。`
-      : '预览完成：没有发现需要变更的项目。'
-  }
-
-  const counters = Object.entries(summary.counters)
-    .filter((entry): entry is [string, number] => entry[1] > 0)
-    .slice(0, 4)
-    .map(([key, value]) => `${formatSummaryCounterLabel(key)} ${value}`)
-
-  return counters.length > 0 ? counters.join('，') : 'Bangumi job 已完成。'
-}
-
-function formatSummaryCounterLabel(key: string): string {
-  switch (key) {
-    case 'accountRefreshed':
-      return '账号摘要已刷新'
-    case 'checkedToken':
-      return '已检查凭据'
-    case 'processed':
-      return '已扫描'
-    case 'refreshed':
-      return '已刷新凭据'
-    case 'verified':
-      return '已验证账号'
-    case 'wouldImport':
-      return '将导入'
-    case 'wouldSync':
-      return '将同步'
-    default:
-      return key
   }
 }
 

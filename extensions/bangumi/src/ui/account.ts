@@ -1,20 +1,9 @@
 import type { AccountService, BangumiAccountSnapshotV1 } from '../auth/account'
 import type { OAuthFlow } from '../auth/oauth-flow'
 import type { StoredTokenState } from '../auth/token-service'
-import {
-  type ActiveJobRegistry,
-  BANGUMI_COMMAND_IDS,
-  createActiveJobField,
-  formatDateTime,
-  maybeField,
-  startRootManualJob
-} from './common/jobs'
+import { BANGUMI_COMMAND_IDS, formatDateTime, startRootManualJob } from './common/jobs'
 import { toSettingsError } from './common/errors'
-import type {
-  BangumiSettingsRootFactory,
-  BangumiSettingsRootField,
-  ResolvedActiveJob
-} from './common/types'
+import type { BangumiSettingsRootFactory, BangumiSettingsRootField } from './common/types'
 
 export function createAccountFields({
   settings,
@@ -22,16 +11,14 @@ export function createAccountFields({
   account,
   accountService,
   oauthFlow,
-  activeJobRegistry,
-  activeRefreshJob
+  isRefreshRunning
 }: {
   settings: BangumiSettingsRootFactory
   tokenState: StoredTokenState
   account: BangumiAccountSnapshotV1 | undefined
   accountService: AccountService
   oauthFlow: OAuthFlow
-  activeJobRegistry: ActiveJobRegistry
-  activeRefreshJob?: ResolvedActiveJob
+  isRefreshRunning: boolean
 }): BangumiSettingsRootField[] {
   const isLoggedIn = tokenState.hasToken && !!account
 
@@ -101,18 +88,15 @@ export function createAccountFields({
         settings.button({
           id: 'bangumi-refresh-token',
           label: '刷新凭据',
-          disabled: !tokenState.hasRefreshToken || !!activeRefreshJob?.progress,
+          disabled: !tokenState.hasRefreshToken || isRefreshRunning,
           async onClick(event) {
             try {
               return await startRootManualJob({
-                scope: 'account.refresh',
                 commandId: BANGUMI_COMMAND_IDS.authRefresh,
                 args: {
                   forceRefresh: true,
                   verifyAccount: true
                 },
-                argsSummary: '刷新并验证账号',
-                activeJobRegistry,
                 event
               })
             } catch (error) {
@@ -138,17 +122,7 @@ export function createAccountFields({
           }
         })
       ]
-    },
-    ...maybeField(
-      createActiveJobField({
-        settings,
-        id: 'account-refresh-job',
-        label: '刷新任务',
-        scope: 'account.refresh',
-        activeJob: activeRefreshJob,
-        activeJobRegistry
-      })
-    )
+    }
   ]
 }
 

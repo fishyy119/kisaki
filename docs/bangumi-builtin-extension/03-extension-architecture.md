@@ -49,7 +49,6 @@ extensions/bangumi/src/
     commands.ts
     runner.ts
     summary.ts
-    active-registry.ts
   tasks/
     templates.ts
   ui/
@@ -70,13 +69,12 @@ extensions/bangumi/src/
 
 1. 创建 `SettingsStore`、`TokenStore`、`OAuthRelayClient`、`TokenService`、`BangumiClient`。
 2. 创建 `AccountService`、`IdentityResolver`、`SyncEngine`、importers、`JobRunner`。
-3. 创建 `ActiveJobRegistry`，仅用于当前 extension runtime 内 settings panel 手动 job 的 execution 跟踪。
-4. 注册 Bangumi game scraper provider。
-5. 注册 settings panel。
-6. 注册 deeplink route `/oauth-callback`。
-7. 注册 commands。
-8. 订阅 `library.game.created` / `library.game.updated`。
-9. 在 `context.subscriptions` 中统一挂载 disposable。
+3. 注册 Bangumi game scraper provider。
+4. 注册 settings panel。
+5. 注册 deeplink route `/oauth-callback`。
+6. 注册 commands。
+7. 订阅 `library.game.created` / `library.game.updated`。
+8. 在 `context.subscriptions` 中统一挂载 disposable。
 
 `activate` 内只做装配，不塞业务流程。业务对象接收最小依赖，方便单测。
 
@@ -96,7 +94,6 @@ extensions/bangumi/src/
 - `IndexImporter`: 导入 Bangumi 目录游戏。
 - `ImportPlanner`: dry run 计划与执行计划共用，输出新增、更新、跳过和错误。
 - `JobRunner`: 管理一次 Bangumi job command execution 的取消、progress 上报和输出摘要；不管理 task 生命周期。
-- `ActiveJobRegistry`: 内存级 registry，记录 settings panel 手动启动的 active execution id、command id、startedAt 和轻量 UI scope；不写 storage，不保存历史，extension runtime 重启即清空。
 - `TaskTemplates`: 生成推荐 BackgroundTaskService task 创建输入；不运行、不取消、不读取 history。
 - `SettingsPanelController`: 组装 structured settings panel models 和 callbacks。
 
@@ -120,7 +117,7 @@ shared -> no project dependencies
 - `sync` 和 `import` 不直接调用 `kisaki.network`，只调用 `BangumiClient`。
 - `ui` 不拼业务 payload；它把用户输入转成 command args 或 settings patch。
 - `jobs` 是 command 编排和输出摘要层，不承载 Bangumi API 细节，也不持久化运行历史。
-- `ActiveJobRegistry` 只服务 settings panel 的当前 runtime 交互。它不替代 CommandService，不提供历史查询，也不参与 background task。
+- settings panel 不维护独立 job registry；运行态以 CommandService 的 command `running` 状态为唯一来源，进度显示由 command notify 负责。
 - `tasks` 只定义推荐 task 模板和创建输入，不调用 task run/cancel，不展示 task history。
 
 ## Settings Schema

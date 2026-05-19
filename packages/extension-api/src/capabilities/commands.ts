@@ -22,6 +22,7 @@ export interface CommandDescriptor {
   dangerLevel: CommandDangerLevel
   cancelable: boolean
   ownerExtensionId?: string
+  notification?: CommandNotificationTemplate
 }
 
 export interface CommandListItem extends CommandDescriptor {
@@ -31,6 +32,29 @@ export interface CommandListItem extends CommandDescriptor {
 export interface CommandExecutionRequest {
   commandId: string
   args?: SerializableRecord
+  presentation?: CommandExecutionPresentation
+}
+
+export interface CommandNotificationTemplate {
+  title?: string
+  startMessage?: string
+  successTitle?: string
+  successMessage?: string
+  cancelledTitle?: string
+  cancelledMessage?: string
+  failedTitle?: string
+  failedMessage?: string
+}
+
+export interface CommandExecutionNotifyPresentation {
+  enabled: boolean
+  title?: string
+  message?: string
+  cancelable?: boolean
+}
+
+export interface CommandExecutionPresentation {
+  notify?: CommandExecutionNotifyPresentation
 }
 
 export interface CommandExecutionProgressUpdate {

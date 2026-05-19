@@ -2,14 +2,7 @@ import type { ScraperProfileSummary, SerializableRecord } from '@kisaki/extensio
 import { BANGUMI_COMMAND_IDS } from '../../jobs/commands'
 import { DIALOG_IDS, NODE_IDS } from '../common/constants'
 import { toSettingsError } from '../common/errors'
-import {
-  ActiveJobRegistry,
-  createActiveJobField,
-  createDialogActiveJobField,
-  maybeDialogField,
-  maybeField,
-  startDialogManualJob
-} from '../common/jobs'
+import { maybeDialogField, startDialogManualJob } from '../common/jobs'
 import {
   createDialogPreviewChangesField,
   PreviewResultRegistry,
@@ -22,21 +15,18 @@ import type {
   BangumiSettingsDialogSubmitEvent,
   BangumiSettingsDialogSubmitResult,
   BangumiSettingsRootFactory,
-  BangumiSettingsRootField,
-  ResolvedActiveJob
+  BangumiSettingsRootField
 } from '../common/types'
 import { createDialogImportProfileField } from './options'
 
 export function createIndexImportFields({
   settings,
   profiles,
-  activeJobRegistry,
-  activeJob
+  isRunning
 }: {
   settings: BangumiSettingsRootFactory
   profiles: readonly ScraperProfileSummary[]
-  activeJobRegistry: ActiveJobRegistry
-  activeJob?: ResolvedActiveJob
+  isRunning: boolean
 }): BangumiSettingsRootField[] {
   const hasProfile = profiles.length > 0
 
@@ -51,23 +41,13 @@ export function createIndexImportFields({
           id: 'open-import-index-dialog',
           label: '配置导入',
           tone: 'primary',
-          disabled: !hasProfile || !!activeJob?.progress,
+          disabled: !hasProfile || isRunning,
           onClick(event) {
             return event.openDialog(DIALOG_IDS.importIndex)
           }
         })
       ]
-    },
-    ...maybeField(
-      createActiveJobField({
-        settings,
-        id: 'import-index-job',
-        label: '目录导入任务',
-        scope: 'import.index',
-        activeJob,
-        activeJobRegistry
-      })
-    )
+    }
   ]
 }
 
@@ -75,20 +55,17 @@ export function createIndexDialogFields({
   settings,
   values,
   profiles,
-  activeJobRegistry,
   previewRegistry,
   sessionId,
-  activeJob
+  isRunning
 }: {
   settings: BangumiSettingsDialogFactory
   values: SerializableRecord
   profiles: readonly ScraperProfileSummary[]
-  activeJobRegistry: ActiveJobRegistry
   previewRegistry: PreviewResultRegistry
   sessionId: string
-  activeJob?: ResolvedActiveJob
+  isRunning: boolean
 }): BangumiSettingsDialogField[] {
-  const isRunning = !!activeJob?.progress
   const previewArgs = createIndexImportArgs(values, profiles[0]?.id ?? '', true)
   const preview = previewRegistry.get(sessionId, 'import.index', previewArgs)
 
@@ -143,36 +120,21 @@ export function createIndexDialogFields({
         label: '将导入的游戏',
         preview
       })
-    ),
-    ...maybeDialogField(
-      createDialogActiveJobField({
-        settings,
-        id: 'index-job',
-        label: '导入任务',
-        scope: 'import.index',
-        activeJob,
-        activeJobRegistry
-      })
     )
   ]
 }
 
 export async function submitIndexDialog({
   event,
-  profiles,
-  activeJobRegistry
+  profiles
 }: {
   event: BangumiSettingsDialogSubmitEvent
   profiles: readonly ScraperProfileSummary[]
-  activeJobRegistry: ActiveJobRegistry
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
     return await startDialogManualJob({
-      scope: 'import.index',
       commandId: BANGUMI_COMMAND_IDS.importIndex,
       args: createIndexImportArgs(event.values, profiles[0]?.id ?? '', false),
-      argsSummary: '导入目录',
-      activeJobRegistry,
       event
     })
   } catch (error) {

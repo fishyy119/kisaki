@@ -182,6 +182,7 @@ export interface IpcMainListeners {
   'scanner:scan-all-game': []
   'notify:native': [NotifyOptions]
   'notify:auto': [NotifyOptions]
+  'notify:action': [event: { toastId: string; actionId: string }]
   'native:set-tray-menu-height': [height: number]
   'window:set-main-window-close-action': [action: MainWindowCloseAction]
 }
@@ -525,7 +526,9 @@ export interface IpcRendererEvents {
   'monitor:game-background': [string]
   'scanner:scan-progress': [ScanProgressData]
   'updater:state-changed': [state: AppUpdaterState]
+  'command:started': [started: CommandExecutionStartResult]
   'command:progress': [progress: CommandExecutionProgress]
+  'command:finished': [result: CommandExecutionResult]
 
   'notify:show': [NotifyOptions & { toastId?: string }]
   'notify:loading': [{ toastId: string; title: string; message?: string }]

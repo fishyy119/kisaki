@@ -13,7 +13,13 @@ const COMPLETED_EXECUTION_LIMIT = 100
 
 export interface CommandExecutionsOptions {
   getCommand(commandId: string): RegisteredCommand | null
+  onStart?(
+    started: CommandExecutionStartResult,
+    command: RegisteredCommand,
+    request: CommandExecutionRequest
+  ): void
   onProgress?(progress: CommandExecutionProgress): void
+  onFinish?(result: CommandExecutionResult): void
 }
 
 interface ActiveCommandExecution {
@@ -50,6 +56,8 @@ export class CommandExecutions {
       .then(() => this.runExecution(command, args, { executionId, startedAt, controller, source }))
       .then((result) => {
         this.rememberCompletedExecution(result)
+        this.activeExecutions.delete(executionId)
+        this.options.onFinish?.(result)
         return result
       })
       .finally(() => {
@@ -64,12 +72,14 @@ export class CommandExecutions {
       source
     })
 
-    return {
+    const started = {
       commandId: command.descriptor.id,
       executionId,
       startedAt,
       cancelable: command.descriptor.cancelable
     }
+    this.options.onStart?.(started, command, request)
+    return started
   }
 
   async wait(executionId: string): Promise<CommandExecutionResult> {

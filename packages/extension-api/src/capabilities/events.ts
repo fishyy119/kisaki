@@ -11,7 +11,11 @@ import type {
   SerializableRecord,
   SerializableValue
 } from '../shared'
-import type { CommandExecutionProgress } from './commands'
+import type {
+  CommandExecutionProgress,
+  CommandExecutionResult,
+  CommandExecutionStartResult
+} from './commands'
 import type { DynamicCollectionConfig, LibraryGameStatus } from './library/entities'
 
 export interface LibraryGameCoreSnapshot {
@@ -387,7 +391,9 @@ export interface HostEvents {
   'library.tag.created': LibraryTagCreatedEvent
   'library.tag.updated': LibraryTagUpdatedEvent
   'library.tag.deleted': LibraryTagDeletedEvent
+  'command.started': CommandExecutionStartResult
   'command.progress': CommandExecutionProgress
+  'command.finished': CommandExecutionResult
   'scanner.completed': { scannerId: string; stats: Record<string, number> }
   'scanner.failed': { scannerId: string; error: string }
 }

@@ -98,6 +98,11 @@ export class BackgroundTaskRunner {
             extensionId: task.ownerExtensionId,
             taskId: task.id,
             commandId: task.commandId
+          },
+          presentation: {
+            notify: {
+              enabled: false
+            }
           }
         })
         this.runningTasks.set(taskId, {

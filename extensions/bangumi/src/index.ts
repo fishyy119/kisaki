@@ -7,8 +7,7 @@ import { OAuthRelayClient } from './auth/relay-client'
 import { TokenService } from './auth/token-service'
 import { TokenStore } from './auth/token-store'
 import { SettingsStore } from './config/store'
-import { ActiveJobRegistry } from './jobs/active-registry'
-import { registerBangumiJobCommands } from './jobs/commands'
+import { isBangumiCommandId, registerBangumiJobCommands } from './jobs/commands'
 import { JobRunner } from './jobs/runner'
 import { BangumiProvider } from './scraper/provider'
 import { createBangumiSettingsPanel } from './ui/settings'
@@ -35,7 +34,6 @@ export default defineExtension({
       }
     )
     const accountService = new AccountService(context.storage, client, tokenService)
-    const activeJobRegistry = new ActiveJobRegistry()
     const jobRunner = new JobRunner({
       settingsStore,
       client,
@@ -108,12 +106,35 @@ export default defineExtension({
         settingsStore,
         accountService,
         oauthFlow,
-        tokenService,
-        activeJobRegistry
+        tokenService
       })
     )
     settingsRegistrationRef.current = settingsRegistration
     context.subscriptions.add(settingsRegistration)
+    context.subscriptions.add(
+      await kisaki.events.on('command.finished', (event) =>
+        refreshSettingsForBangumiCommand(event.commandId, 'bangumi.command.finished')
+      )
+    )
+
+    async function refreshSettingsForBangumiCommand(
+      commandId: string,
+      reason: string
+    ): Promise<void> {
+      if (!isBangumiCommandId(commandId)) {
+        return
+      }
+
+      try {
+        await settingsRegistrationRef.current?.refresh({ reason })
+      } catch (error) {
+        context.logger.warn('Bangumi settings refresh after command lifecycle failed.', {
+          commandId,
+          reason,
+          ...toSafeErrorLog(error)
+        })
+      }
+    }
   }
 })
 

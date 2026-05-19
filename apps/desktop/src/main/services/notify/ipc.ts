@@ -9,4 +9,8 @@ export function registerNotifyIpc(service: NotifyService, ipc: IpcService): void
   ipc.on('notify:auto', (_, options) => {
     service.showAuto(options)
   })
+
+  ipc.on('notify:action', (_, event) => {
+    service.handleAction(event.toastId, event.actionId)
+  })
 }

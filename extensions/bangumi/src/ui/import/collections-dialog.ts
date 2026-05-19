@@ -2,14 +2,7 @@ import type { ScraperProfileSummary, SerializableRecord } from '@kisaki/extensio
 import { BANGUMI_COMMAND_IDS } from '../../jobs/commands'
 import { BANGUMI_COLLECTION_TYPE_OPTIONS, DIALOG_IDS, NODE_IDS } from '../common/constants'
 import { toSettingsError } from '../common/errors'
-import {
-  ActiveJobRegistry,
-  createActiveJobField,
-  createDialogActiveJobField,
-  maybeDialogField,
-  maybeField,
-  startDialogManualJob
-} from '../common/jobs'
+import { maybeDialogField, startDialogManualJob } from '../common/jobs'
 import {
   createDialogPreviewChangesField,
   PreviewResultRegistry,
@@ -22,8 +15,7 @@ import type {
   BangumiSettingsDialogSubmitEvent,
   BangumiSettingsDialogSubmitResult,
   BangumiSettingsRootFactory,
-  BangumiSettingsRootField,
-  ResolvedActiveJob
+  BangumiSettingsRootField
 } from '../common/types'
 import {
   createDialogImportProfileField,
@@ -35,13 +27,11 @@ import {
 export function createMyCollectionsImportFields({
   settings,
   profiles,
-  activeJobRegistry,
-  activeJob
+  isRunning
 }: {
   settings: BangumiSettingsRootFactory
   profiles: readonly ScraperProfileSummary[]
-  activeJobRegistry: ActiveJobRegistry
-  activeJob?: ResolvedActiveJob
+  isRunning: boolean
 }): BangumiSettingsRootField[] {
   const hasProfile = profiles.length > 0
 
@@ -56,7 +46,7 @@ export function createMyCollectionsImportFields({
           id: 'open-import-my-collections-dialog',
           label: '配置导入',
           tone: 'primary',
-          disabled: !hasProfile || !!activeJob?.progress,
+          disabled: !hasProfile || isRunning,
           onClick(event) {
             return event.openDialog(DIALOG_IDS.importMyCollections)
           }
@@ -68,17 +58,7 @@ export function createMyCollectionsImportFields({
           text: '当前没有可用的游戏 scraper profile，导入命令会被阻止。'
         })
       ]
-    },
-    ...maybeField(
-      createActiveJobField({
-        settings,
-        id: 'import-my-collections-job',
-        label: '我的收藏导入任务',
-        scope: 'import.myCollections',
-        activeJob,
-        activeJobRegistry
-      })
-    )
+    }
   ]
 }
 
@@ -86,20 +66,17 @@ export function createMyCollectionsDialogFields({
   settings,
   values,
   profiles,
-  activeJobRegistry,
   previewRegistry,
   sessionId,
-  activeJob
+  isRunning
 }: {
   settings: BangumiSettingsDialogFactory
   values: SerializableRecord
   profiles: readonly ScraperProfileSummary[]
-  activeJobRegistry: ActiveJobRegistry
   previewRegistry: PreviewResultRegistry
   sessionId: string
-  activeJob?: ResolvedActiveJob
+  isRunning: boolean
 }): BangumiSettingsDialogField[] {
-  const isRunning = !!activeJob?.progress
   const previewArgs = createMyCollectionsImportArgs(values, profiles[0]?.id ?? '', true)
   const preview = previewRegistry.get(sessionId, 'import.myCollections', previewArgs)
 
@@ -155,36 +132,21 @@ export function createMyCollectionsDialogFields({
         label: '将导入的游戏',
         preview
       })
-    ),
-    ...maybeDialogField(
-      createDialogActiveJobField({
-        settings,
-        id: 'my-collections-job',
-        label: '导入任务',
-        scope: 'import.myCollections',
-        activeJob,
-        activeJobRegistry
-      })
     )
   ]
 }
 
 export async function submitMyCollectionsDialog({
   event,
-  profiles,
-  activeJobRegistry
+  profiles
 }: {
   event: BangumiSettingsDialogSubmitEvent
   profiles: readonly ScraperProfileSummary[]
-  activeJobRegistry: ActiveJobRegistry
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
     return await startDialogManualJob({
-      scope: 'import.myCollections',
       commandId: BANGUMI_COMMAND_IDS.importMyCollections,
       args: createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', false),
-      argsSummary: '导入我的收藏',
-      activeJobRegistry,
       event
     })
   } catch (error) {

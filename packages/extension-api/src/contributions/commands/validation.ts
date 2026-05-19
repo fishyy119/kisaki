@@ -20,10 +20,21 @@ const COMMAND_CONTRIBUTION_KEYS = new Set<string>([
   'defaultArgs',
   'dangerLevel',
   'cancelable',
+  'notification',
   'execute'
 ])
 
 const COMMAND_DANGER_LEVEL_VALUES = ['none', 'low', 'medium', 'high'] as const
+const COMMAND_NOTIFICATION_KEYS = new Set<string>([
+  'title',
+  'startMessage',
+  'successTitle',
+  'successMessage',
+  'cancelledTitle',
+  'cancelledMessage',
+  'failedTitle',
+  'failedMessage'
+])
 
 export function validateCommandContributionShape(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
@@ -53,6 +64,7 @@ export function validateCommandContributionShape(value: unknown): ValidationIssu
       ...issue,
       message: 'cancelable must be a boolean when provided.'
     })),
+    ...validateCommandNotificationTemplate(value.notification, '$.notification'),
     ...validateRequiredFunction(value.execute, '$.execute').map((issue) => ({
       ...issue,
       message: 'execute must be a function.'
@@ -68,6 +80,44 @@ export function validateCommandContributionShape(value: unknown): ValidationIssu
   }
 
   return issues
+}
+
+function validateCommandNotificationTemplate(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!isPlainObject(value)) {
+    return [{ path, message: 'notification must be an object when provided.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, COMMAND_NOTIFICATION_KEYS, path),
+    ...validateOptionalString(value.title, `${path}.title`, {
+      typeMessage: 'notification.title must be a string when provided.'
+    }),
+    ...validateOptionalString(value.startMessage, `${path}.startMessage`, {
+      typeMessage: 'notification.startMessage must be a string when provided.'
+    }),
+    ...validateOptionalString(value.successTitle, `${path}.successTitle`, {
+      typeMessage: 'notification.successTitle must be a string when provided.'
+    }),
+    ...validateOptionalString(value.successMessage, `${path}.successMessage`, {
+      typeMessage: 'notification.successMessage must be a string when provided.'
+    }),
+    ...validateOptionalString(value.cancelledTitle, `${path}.cancelledTitle`, {
+      typeMessage: 'notification.cancelledTitle must be a string when provided.'
+    }),
+    ...validateOptionalString(value.cancelledMessage, `${path}.cancelledMessage`, {
+      typeMessage: 'notification.cancelledMessage must be a string when provided.'
+    }),
+    ...validateOptionalString(value.failedTitle, `${path}.failedTitle`, {
+      typeMessage: 'notification.failedTitle must be a string when provided.'
+    }),
+    ...validateOptionalString(value.failedMessage, `${path}.failedMessage`, {
+      typeMessage: 'notification.failedMessage must be a string when provided.'
+    })
+  ]
 }
 
 export function validateCommandContributionExecuteResult(value: unknown): ValidationIssue[] {

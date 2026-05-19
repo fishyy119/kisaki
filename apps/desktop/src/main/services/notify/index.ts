@@ -1,1 +1,1 @@
-export { NotifyService } from './service'
+export { NotifyService, type NotifyActionHandler, type NotifyActionHandlers } from './service'

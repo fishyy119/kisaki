@@ -38,7 +38,9 @@ const themeStore = useThemeStore()
         toast:
           '!font-sans !bg-popover !text-popover-foreground !shadow-xs !rounded-lg !pointer-events-auto !border !border-border',
         closeButton:
-          '!border-0 !right-2 !top-2 !bg-transparent !text-muted-foreground !hover:text-accent-foreground'
+          '!border-0 !right-2 !top-2 !bg-transparent !text-muted-foreground !hover:text-accent-foreground',
+        actionButton:
+          '!rounded-md !bg-secondary !px-2.5 !py-1.5 !text-xs !font-medium !text-secondary-foreground hover:!bg-secondary/80'
       }
     }"
   >

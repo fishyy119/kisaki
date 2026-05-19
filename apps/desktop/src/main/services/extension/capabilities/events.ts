@@ -231,12 +231,28 @@ export class ExtensionEventsCapabilityProvider {
             occurredAt: event.occurredAt
           })
         })
+      case 'command.started':
+        return this.options.event.bus.on('command:started', (started) => {
+          this.emitSubscriptionEvent(
+            subscriptionId,
+            topic,
+            cloneHostValue(started) as HostEvents['command.started']
+          )
+        })
       case 'command.progress':
         return this.options.event.bus.on('command:progress', (progress) => {
           this.emitSubscriptionEvent(
             subscriptionId,
             topic,
             cloneHostValue(progress) as HostEvents['command.progress']
+          )
+        })
+      case 'command.finished':
+        return this.options.event.bus.on('command:finished', (result) => {
+          this.emitSubscriptionEvent(
+            subscriptionId,
+            topic,
+            cloneHostValue(result) as HostEvents['command.finished']
           )
         })
       case 'scanner.completed':

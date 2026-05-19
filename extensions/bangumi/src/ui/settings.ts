@@ -19,7 +19,7 @@ import {
 import { createFullSyncDialogFields, submitFullSyncDialog } from './sync/full-dialog'
 import { createSyncFields } from './sync/root-fields'
 import { DIALOG_IDS, NODE_IDS } from './common/constants'
-import { ActiveJobRegistry, resolveActiveJob, resolveActiveJobs } from './common/jobs'
+import { BANGUMI_COMMAND_IDS, isBangumiCommandRunning, resolveRunningJobs } from './common/jobs'
 import { PreviewResultRegistry } from './common/preview'
 import { listGameScraperProfiles } from './common/profiles'
 import { readBoolean } from './common/values'
@@ -30,15 +30,13 @@ interface BangumiSettingsPanelDependencies {
   accountService: AccountService
   oauthFlow: OAuthFlow
   tokenService: TokenService
-  activeJobRegistry: ActiveJobRegistry
 }
 
 export function createBangumiSettingsPanel({
   settingsStore,
   accountService,
   oauthFlow,
-  tokenService,
-  activeJobRegistry
+  tokenService
 }: BangumiSettingsPanelDependencies) {
   const previewRegistry = new PreviewResultRegistry()
 
@@ -52,27 +50,25 @@ export function createBangumiSettingsPanel({
         size: 'lg',
         submitLabel: '执行同步',
         async resolve(context, settings) {
-          const [storedSettings, activeJob] = await Promise.all([
+          const [storedSettings, isRunning] = await Promise.all([
             settingsStore.get(),
-            resolveActiveJob(activeJobRegistry, 'sync.full')
+            isBangumiCommandRunning(BANGUMI_COMMAND_IDS.syncFull)
           ])
           return {
             fields: createFullSyncDialogFields({
               settings,
               values: context.values,
               storedSettings,
-              activeJobRegistry,
               previewRegistry,
               sessionId: context.sessionId,
-              activeJob
+              isRunning
             })
           }
         },
         async submit(event) {
           return submitFullSyncDialog({
             event,
-            storedSettings: await settingsStore.get(),
-            activeJobRegistry
+            storedSettings: await settingsStore.get()
           })
         }
       },
@@ -81,27 +77,25 @@ export function createBangumiSettingsPanel({
         size: 'lg',
         submitLabel: '导入',
         async resolve(context, settings) {
-          const [profiles, activeJob] = await Promise.all([
+          const [profiles, isRunning] = await Promise.all([
             listGameScraperProfiles(),
-            resolveActiveJob(activeJobRegistry, 'import.myCollections')
+            isBangumiCommandRunning(BANGUMI_COMMAND_IDS.importMyCollections)
           ])
           return {
             fields: createMyCollectionsDialogFields({
               settings,
               values: context.values,
               profiles,
-              activeJobRegistry,
               previewRegistry,
               sessionId: context.sessionId,
-              activeJob
+              isRunning
             })
           }
         },
         async submit(event) {
           return submitMyCollectionsDialog({
             event,
-            profiles: await listGameScraperProfiles(),
-            activeJobRegistry
+            profiles: await listGameScraperProfiles()
           })
         }
       },
@@ -110,39 +104,37 @@ export function createBangumiSettingsPanel({
         size: 'lg',
         submitLabel: '导入',
         async resolve(context, settings) {
-          const [profiles, activeJob] = await Promise.all([
+          const [profiles, isRunning] = await Promise.all([
             listGameScraperProfiles(),
-            resolveActiveJob(activeJobRegistry, 'import.index')
+            isBangumiCommandRunning(BANGUMI_COMMAND_IDS.importIndex)
           ])
           return {
             fields: createIndexDialogFields({
               settings,
               values: context.values,
               profiles,
-              activeJobRegistry,
               previewRegistry,
               sessionId: context.sessionId,
-              activeJob
+              isRunning
             })
           }
         },
         async submit(event) {
           return submitIndexDialog({
             event,
-            profiles: await listGameScraperProfiles(),
-            activeJobRegistry
+            profiles: await listGameScraperProfiles()
           })
         }
       }
     },
     async resolve(context, settings) {
-      const [storedSettings, tokenState, account, profiles, activeJobs, automationTasks] =
+      const [storedSettings, tokenState, account, profiles, runningJobs, automationTasks] =
         await Promise.all([
           settingsStore.get(),
           tokenService.getStoredTokenState(),
           accountService.getAccountSnapshot(),
           listGameScraperProfiles(),
-          resolveActiveJobs(activeJobRegistry),
+          resolveRunningJobs(),
           listBangumiAutomationTasks()
         ])
       const autoSyncEnabled = readBoolean(
@@ -163,8 +155,7 @@ export function createBangumiSettingsPanel({
               account,
               accountService,
               oauthFlow,
-              activeJobRegistry,
-              activeRefreshJob: activeJobs.accountRefresh
+              isRefreshRunning: runningJobs.accountRefresh
             })
           },
           {
@@ -174,8 +165,7 @@ export function createBangumiSettingsPanel({
               settings,
               values: context.values,
               storedSettings,
-              activeJobRegistry,
-              activeFullSyncJob: activeJobs.syncFull
+              isFullSyncRunning: runningJobs.syncFull
             })
           },
           {
@@ -185,14 +175,12 @@ export function createBangumiSettingsPanel({
               ...createMyCollectionsImportFields({
                 settings,
                 profiles,
-                activeJobRegistry,
-                activeJob: activeJobs.importMyCollections
+                isRunning: runningJobs.importMyCollections
               }),
               ...createIndexImportFields({
                 settings,
                 profiles,
-                activeJobRegistry,
-                activeJob: activeJobs.importIndex
+                isRunning: runningJobs.importIndex
               })
             ]
           },

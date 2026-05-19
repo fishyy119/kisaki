@@ -75,6 +75,26 @@ function normalizeCommandDescriptor(command: CommandRegistrationInput): CommandD
     defaultArgs: command.defaultArgs,
     dangerLevel: command.dangerLevel ?? 'none',
     cancelable: command.cancelable ?? false,
-    ownerExtensionId: command.ownerExtensionId
+    ownerExtensionId: command.ownerExtensionId,
+    notification: normalizeCommandNotificationTemplate(command.notification)
+  }
+}
+
+function normalizeCommandNotificationTemplate(
+  notification: CommandRegistrationInput['notification']
+): CommandDescriptor['notification'] {
+  if (!notification) {
+    return undefined
+  }
+
+  return {
+    title: notification.title,
+    startMessage: notification.startMessage,
+    successTitle: notification.successTitle,
+    successMessage: notification.successMessage,
+    cancelledTitle: notification.cancelledTitle,
+    cancelledMessage: notification.cancelledMessage,
+    failedTitle: notification.failedTitle,
+    failedMessage: notification.failedMessage
   }
 }

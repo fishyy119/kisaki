@@ -1,7 +1,8 @@
 import type {
   CommandDangerLevel,
   CommandExecutionProgressUpdate,
-  CommandExecutionSource
+  CommandExecutionSource,
+  CommandNotificationTemplate
 } from '../../capabilities/commands'
 import type { Disposable, MaybePromise, SerializableRecord, SerializableValue } from '../../shared'
 
@@ -23,6 +24,7 @@ export interface CommandContribution {
   defaultArgs?: SerializableRecord
   dangerLevel?: CommandDangerLevel
   cancelable?: boolean
+  notification?: CommandNotificationTemplate
   execute(
     args: SerializableRecord,
     event: CommandContributionExecuteEvent

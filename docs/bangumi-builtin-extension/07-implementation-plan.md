@@ -59,15 +59,15 @@
 - 注册 `bangumi.sync.full`。
 - 注册 `bangumi.import.my-collections`。
 - 注册 `bangumi.import.index`。
-- 实现 args normalization、progress、summary、cancel 和内存级 `ActiveJobRegistry`。
+- 实现 args normalization、progress、summary、cancel，并由 CommandService 统一提供 notify 进度和 running 状态。
 - settings panel 长流程按钮全部改为启动 job command。
 
 验收：
 
 - settings callback 不执行超过 15 秒的任务。
 - command 可被 `kisaki.commands.start/wait/cancel` 控制。
-- 运行中的 command 会通过 CommandService progress 展示当前阶段和计数。
-- settings panel 刷新后可通过 `ActiveJobRegistry` 找到当前手动 job 的 execution id，并继续展示 progress 或取消该 job。
+- 运行中的 command 会通过 command notify 展示当前阶段和计数，并在 notify 上提供取消入口。
+- settings panel 刷新后只根据 command `running` 状态禁用重复入口，不展示额外 progress/status field。
 - job 不写 history；需要持久历史时由主应用 task 触发并在主应用 task 面板查看。
 
 ## Phase 5: 同步引擎

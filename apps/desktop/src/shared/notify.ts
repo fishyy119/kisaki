@@ -7,12 +7,18 @@
 export type NotifyType = 'info' | 'success' | 'warning' | 'error' | 'loading'
 export type NotifyTarget = 'toast' | 'native' | 'auto'
 
+export interface NotifyAction {
+  id: string
+  label: string
+}
+
 export interface NotifyOptions {
   title: string
   message?: string
   type?: NotifyType
   target?: NotifyTarget // Default: 'toast'
   duration?: number // Toast duration in ms
+  action?: NotifyAction
 }
 
 /**

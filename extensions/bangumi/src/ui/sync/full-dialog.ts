@@ -3,12 +3,7 @@ import type { BangumiSettingsV1 } from '../../config/schema'
 import { BANGUMI_COMMAND_IDS } from '../../jobs/commands'
 import { FULL_SYNC_ITEM_OPTIONS, NODE_IDS } from '../common/constants'
 import { toSettingsError } from '../common/errors'
-import {
-  ActiveJobRegistry,
-  createDialogActiveJobField,
-  maybeDialogField,
-  startDialogManualJob
-} from '../common/jobs'
+import { maybeDialogField, startDialogManualJob } from '../common/jobs'
 import {
   createDialogPreviewChangesField,
   PreviewResultRegistry,
@@ -19,8 +14,7 @@ import type {
   BangumiSettingsDialogFactory,
   BangumiSettingsDialogField,
   BangumiSettingsDialogSubmitEvent,
-  BangumiSettingsDialogSubmitResult,
-  ResolvedActiveJob
+  BangumiSettingsDialogSubmitResult
 } from '../common/types'
 import { createFullSyncFields, readFullSyncItems } from './options'
 
@@ -28,20 +22,17 @@ export function createFullSyncDialogFields({
   settings,
   values,
   storedSettings,
-  activeJobRegistry,
   previewRegistry,
   sessionId,
-  activeJob
+  isRunning
 }: {
   settings: BangumiSettingsDialogFactory
   values: SerializableRecord
   storedSettings: BangumiSettingsV1
-  activeJobRegistry: ActiveJobRegistry
   previewRegistry: PreviewResultRegistry
   sessionId: string
-  activeJob?: ResolvedActiveJob
+  isRunning: boolean
 }): BangumiSettingsDialogField[] {
-  const isRunning = !!activeJob?.progress
   const selectedItems = readFullSyncItems(values, storedSettings)
   const scoreSyncEnabled = selectedItems.includes('score')
   const updateExisting = readBoolean(values, NODE_IDS.fullSyncUpdateExisting, true)
@@ -136,36 +127,21 @@ export function createFullSyncDialogFields({
         label: '将更改的游戏',
         preview
       })
-    ),
-    ...maybeDialogField(
-      createDialogActiveJobField({
-        settings,
-        id: 'full-sync-job',
-        label: '同步任务',
-        scope: 'sync.full',
-        activeJob,
-        activeJobRegistry
-      })
     )
   ]
 }
 
 export async function submitFullSyncDialog({
   event,
-  storedSettings,
-  activeJobRegistry
+  storedSettings
 }: {
   event: BangumiSettingsDialogSubmitEvent
   storedSettings: BangumiSettingsV1
-  activeJobRegistry: ActiveJobRegistry
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
     return await startDialogManualJob({
-      scope: 'sync.full',
       commandId: BANGUMI_COMMAND_IDS.syncFull,
       args: createFullSyncArgs(event.values, storedSettings, false),
-      argsSummary: '执行全量同步',
-      activeJobRegistry,
       event
     })
   } catch (error) {

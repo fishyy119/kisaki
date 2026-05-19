@@ -1,5 +1,4 @@
 import type {
-  CommandExecutionProgress,
   CommandExecutionResult,
   EmptySettingsPanelPopoverMap,
   SerializableRecord,
@@ -11,7 +10,6 @@ import type {
   SettingsPanelNodeFactory,
   SettingsPanelRootNodeEvents
 } from '@kisaki/extension-sdk'
-import type { BangumiActiveJob } from '../../jobs/active-registry'
 
 export type BangumiSettingsDialogId = 'fullSync' | 'importMyCollections' | 'importIndex'
 export type BangumiSettingsDialogMap = Record<
@@ -36,12 +34,6 @@ export type BangumiSettingsDialogButtonEvent = BangumiSettingsDialogEvents['butt
 export type BangumiSettingsDialogButtonResult = BangumiSettingsDialogEvents['buttonResult']
 export type BangumiSettingsDialogSubmitEvent = SettingsPanelDialogSubmitEvent<SerializableRecord>
 export type BangumiSettingsDialogSubmitResult = SettingsPanelDialogSubmitResult
-
-export interface ResolvedActiveJob {
-  active: BangumiActiveJob
-  progress?: CommandExecutionProgress
-  result?: CommandExecutionResult
-}
 
 export type BangumiPreviewKey = 'sync.full' | 'import.myCollections' | 'import.index'
 
