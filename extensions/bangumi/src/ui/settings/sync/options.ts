@@ -1,7 +1,7 @@
 import type { SerializableRecord } from '@kisaki/extension-sdk'
-import type { BangumiSettingsV1 } from '../../config/schema'
-import { NODE_IDS } from '../common/constants'
-import { pickKnownValues, readStringArray } from '../common/values'
+import type { BangumiSettingsV1 } from '../../../config/schema'
+import { SETTINGS_NODE_IDS } from '../ids'
+import { pickKnownValues, readStringArray } from '../shared/values'
 
 export type AutoSyncItem = 'create' | 'status' | 'score'
 export type FullSyncItem = 'status' | 'score'
@@ -14,7 +14,7 @@ export function readAutoSyncItems(
   storedSettings: BangumiSettingsV1
 ): readonly AutoSyncItem[] {
   return pickKnownValues(
-    readStringArray(values, NODE_IDS.autoSyncItems, createAutoSyncItems(storedSettings)),
+    readStringArray(values, SETTINGS_NODE_IDS.autoSyncItems, createAutoSyncItems(storedSettings)),
     AUTO_SYNC_ITEMS
   )
 }
@@ -24,7 +24,7 @@ export function readFullSyncItems(
   storedSettings: BangumiSettingsV1
 ): readonly FullSyncItem[] {
   return pickKnownValues(
-    readStringArray(values, NODE_IDS.fullSyncItems, createFullSyncItems(storedSettings)),
+    readStringArray(values, SETTINGS_NODE_IDS.fullSyncItems, createFullSyncItems(storedSettings)),
     FULL_SYNC_ITEMS
   )
 }
@@ -41,7 +41,7 @@ export function createAutoSyncFlags(items: readonly AutoSyncItem[]): {
   }
 }
 
-export function createFullSyncFields(items: readonly FullSyncItem[]): SerializableRecord {
+export function createFullSyncItemArgs(items: readonly FullSyncItem[]): SerializableRecord {
   return {
     playStatusEnabled: items.includes('status'),
     scoreEnabled: items.includes('score')

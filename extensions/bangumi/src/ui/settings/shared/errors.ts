@@ -1,5 +1,5 @@
 import type { ExtensionErrorShape } from '@kisaki/extension-sdk'
-import { BangumiExtensionError } from '../../shared/errors'
+import { BangumiExtensionError } from '../../../shared/errors'
 
 export function toSettingsError(error: unknown): ExtensionErrorShape {
   if (error instanceof BangumiExtensionError) {

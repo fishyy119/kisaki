@@ -1,6 +1,4 @@
-import type { BangumiSettingsDialogId } from './types'
-
-export const NODE_IDS = {
+export const SETTINGS_NODE_IDS = {
   loginTimeoutMinutes: 'auth.loginTimeoutMinutes',
   autoSyncEnabled: 'autoSync.enabled',
   autoSyncItems: 'autoSync.items',
@@ -21,11 +19,13 @@ export const NODE_IDS = {
   fullSyncBatchSize: 'sync.full.batchSize'
 } as const
 
-export const DIALOG_IDS = {
+export const SETTINGS_DIALOG_IDS = {
   fullSync: 'fullSync',
   importMyCollections: 'importMyCollections',
   importIndex: 'importIndex'
-} as const satisfies Record<BangumiSettingsDialogId, BangumiSettingsDialogId>
+} as const
+
+export type BangumiSettingsDialogId = (typeof SETTINGS_DIALOG_IDS)[keyof typeof SETTINGS_DIALOG_IDS]
 
 export const BANGUMI_COLLECTION_TYPE_OPTIONS = [
   { value: '1', label: '想玩' },

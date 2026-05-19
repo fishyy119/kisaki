@@ -1,0 +1,1 @@
+export { createBangumiSettingsPanel } from './panel'

@@ -1,12 +1,18 @@
-import { kisaki, type CommandExecutionResult, type SerializableRecord } from '@kisaki/extension-sdk'
-import type { BangumiCommandId } from '../../jobs/commands'
+import {
+  kisaki,
+  type CommandExecutionResult,
+  type SerializableRecord,
+  type SettingsPanelDialogNodeEvents,
+  type SettingsPanelField,
+  type SettingsPanelNodeFactory
+} from '@kisaki/extension-sdk'
+import type { BangumiCommandId } from '../../../jobs/commands'
 import type {
   BangumiPreviewChange,
   BangumiPreviewKey,
   BangumiSettingsDialogButtonEvent,
   BangumiSettingsDialogButtonResult,
-  BangumiSettingsDialogFactory,
-  BangumiSettingsDialogField,
+  BangumiSettingsPopovers,
   ResolvedPreviewResult
 } from './types'
 import { toSettingsError } from './errors'
@@ -47,17 +53,23 @@ export class PreviewResultRegistry {
   }
 }
 
-export function createDialogPreviewChangesField({
+export function createDialogPreviewChangesField<
+  TParams extends SerializableRecord = SerializableRecord
+>({
   settings,
   id,
   label,
   preview
 }: {
-  settings: BangumiSettingsDialogFactory
+  settings: SettingsPanelNodeFactory<
+    SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
+  >
   id: string
   label: string
   preview?: ResolvedPreviewResult
-}): BangumiSettingsDialogField | undefined {
+}):
+  | SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>
+  | undefined {
   if (!preview) {
     return undefined
   }

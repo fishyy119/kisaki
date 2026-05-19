@@ -15,6 +15,7 @@ import type {
   SettingsPanelPopoverModel,
   SettingsPanelRootModel
 } from './models'
+import type { SettingsPanelAnyNodeEvents, SettingsPanelTab } from './nodes'
 import type { SettingsPanelDialogSubmitResult, SettingsPanelRootSubmitResult } from './results'
 import type {
   SettingsPanelDialogSize,
@@ -42,6 +43,27 @@ export function defineSettingsPanel<
   contribution: SettingsPanelContribution<TPopovers, TDialogs>
 ): SettingsPanelContribution<TPopovers, TDialogs> {
   return contribution
+}
+
+export function defineSettingsPanelDialog<
+  const TParams extends SerializableRecord = SerializableRecord,
+  const TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap
+>(
+  definition: SettingsPanelDialogDefinition<TParams, TPopovers>
+): SettingsPanelDialogDefinition<TParams, TPopovers> {
+  return definition
+}
+
+export function defineSettingsPanelPopover<
+  const TParams extends SerializableRecord = SerializableRecord
+>(definition: SettingsPanelPopoverDefinition<TParams>): SettingsPanelPopoverDefinition<TParams> {
+  return definition
+}
+
+export function defineSettingsPanelTab<const TEvents extends SettingsPanelAnyNodeEvents>(
+  tab: SettingsPanelTab<TEvents>
+): SettingsPanelTab<TEvents> {
+  return tab
 }
 
 export type SettingsPanelPopoverMap = Record<string, SettingsPanelPopoverDefinition>

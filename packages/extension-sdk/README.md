@@ -5,6 +5,9 @@ Authoring SDK for Kisaki extensions.
 Public entry points:
 
 - `defineExtension(...)`
+- settings panel authoring helpers such as `defineSettingsPanel(...)`,
+  `defineSettingsPanelDialog(...)`, `defineSettingsPanelPopover(...)`, and
+  `defineSettingsPanelTab(...)`
 - `kisaki`
 - all public contract types re-exported from `@kisaki/extension-api`
 

@@ -1,21 +1,21 @@
 import { kisaki, type CommandListItem, type SerializableRecord } from '@kisaki/extension-sdk'
-import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../jobs/commands'
+import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../../jobs/commands'
+import type { BangumiSettingsRootButtonEvent, BangumiSettingsRootButtonResult } from '../contracts'
 import type {
   BangumiSettingsDialogButtonEvent,
   BangumiSettingsDialogButtonResult,
-  BangumiSettingsDialogField,
   BangumiSettingsDialogSubmitEvent,
-  BangumiSettingsDialogSubmitResult,
-  BangumiSettingsRootButtonEvent,
-  BangumiSettingsRootButtonResult
+  BangumiSettingsDialogSubmitResult
 } from './types'
 
-export async function resolveRunningJobs(): Promise<{
+export interface BangumiRunningJobs {
   accountRefresh: boolean
   syncFull: boolean
   importMyCollections: boolean
   importIndex: boolean
-}> {
+}
+
+export async function resolveRunningJobs(): Promise<BangumiRunningJobs> {
   const commands = await kisaki.commands.list()
 
   return {
@@ -45,20 +45,26 @@ export async function startRootManualJob(options: {
   })
 }
 
-export function startDialogManualJob(options: {
+export function startDialogManualJob<
+  TParams extends SerializableRecord = SerializableRecord
+>(options: {
   commandId: BangumiCommandId
   args: SerializableRecord
-  event: BangumiSettingsDialogButtonEvent
+  event: BangumiSettingsDialogButtonEvent<TParams>
 }): Promise<BangumiSettingsDialogButtonResult>
-export function startDialogManualJob(options: {
+export function startDialogManualJob<
+  TParams extends SerializableRecord = SerializableRecord
+>(options: {
   commandId: BangumiCommandId
   args: SerializableRecord
-  event: BangumiSettingsDialogSubmitEvent
+  event: BangumiSettingsDialogSubmitEvent<TParams>
 }): Promise<BangumiSettingsDialogSubmitResult>
-export async function startDialogManualJob(options: {
+export async function startDialogManualJob<
+  TParams extends SerializableRecord = SerializableRecord
+>(options: {
   commandId: BangumiCommandId
   args: SerializableRecord
-  event: BangumiSettingsDialogButtonEvent | BangumiSettingsDialogSubmitEvent
+  event: BangumiSettingsDialogButtonEvent<TParams> | BangumiSettingsDialogSubmitEvent<TParams>
 }): Promise<BangumiSettingsDialogButtonResult | BangumiSettingsDialogSubmitResult> {
   if (await isBangumiCommandRunning(options.commandId)) {
     return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
@@ -70,9 +76,7 @@ export async function startDialogManualJob(options: {
   })
 }
 
-export function maybeDialogField(
-  field: BangumiSettingsDialogField | undefined
-): BangumiSettingsDialogField[] {
+export function maybeDialogField<TField>(field: TField | undefined): TField[] {
   return field ? [field] : []
 }
 

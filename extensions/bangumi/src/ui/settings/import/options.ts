@@ -1,12 +1,14 @@
-import type { ScraperProfileSummary, SerializableRecord } from '@kisaki/extension-sdk'
-import {
-  BANGUMI_COLLECTION_TYPE_OPTIONS,
-  IMPORT_WRITE_FIELD_OPTIONS,
-  NODE_IDS
-} from '../common/constants'
-import { createProfileOptions } from '../common/profiles'
-import { pickKnownValues, readString, readStringArray } from '../common/values'
-import type { BangumiSettingsDialogFactory, BangumiSettingsDialogField } from '../common/types'
+import type {
+  ScraperProfileSummary,
+  SerializableRecord,
+  SettingsPanelDialogNodeEvents,
+  SettingsPanelField,
+  SettingsPanelNodeFactory
+} from '@kisaki/extension-sdk'
+import { BANGUMI_COLLECTION_TYPE_OPTIONS, SETTINGS_NODE_IDS } from '../ids'
+import { createProfileOptions } from '../shared/profiles'
+import { pickKnownValues, readString, readStringArray } from '../shared/values'
+import type { BangumiSettingsPopovers } from '../shared/types'
 
 export type ImportWriteField = 'status' | 'score' | 'tags'
 
@@ -16,15 +18,19 @@ const IMPORT_WRITE_FIELDS = [
   'tags'
 ] as const satisfies readonly ImportWriteField[]
 
-export function createDialogImportProfileField({
+export function createDialogImportProfileField<
+  TParams extends SerializableRecord = SerializableRecord
+>({
   settings,
   values,
   profiles
 }: {
-  settings: BangumiSettingsDialogFactory
+  settings: SettingsPanelNodeFactory<
+    SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
+  >
   values: SerializableRecord
   profiles: readonly ScraperProfileSummary[]
-}): BangumiSettingsDialogField {
+}): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
   const profileOptions = createProfileOptions(profiles)
   const fallbackProfileId = profiles[0]?.id ?? ''
 
@@ -33,8 +39,8 @@ export function createDialogImportProfileField({
     label: 'Scraper Profile',
     content: [
       settings.select({
-        id: NODE_IDS.importProfileId,
-        initialValue: readString(values, NODE_IDS.importProfileId, fallbackProfileId),
+        id: SETTINGS_NODE_IDS.importProfileId,
+        initialValue: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
         placeholder: '选择游戏 scraper profile',
         options: profileOptions,
         disabled: profileOptions.length === 0,
@@ -46,30 +52,9 @@ export function createDialogImportProfileField({
   }
 }
 
-export function createImportWriteFieldsField(
-  settings: BangumiSettingsDialogFactory,
-  values: SerializableRecord
-): BangumiSettingsDialogField {
-  return {
-    id: 'import-write-fields',
-    label: '写入项',
-    description: '只对本次新建的游戏写入这些用户态数据',
-    content: [
-      settings.multiSelect({
-        id: NODE_IDS.importWriteFields,
-        initialValue: readImportWriteFields(values),
-        options: IMPORT_WRITE_FIELD_OPTIONS,
-        onCommit(event) {
-          return event.refresh('dialog')
-        }
-      })
-    ]
-  }
-}
-
 export function readImportWriteFields(values: SerializableRecord): readonly ImportWriteField[] {
   return pickKnownValues(
-    readStringArray(values, NODE_IDS.importWriteFields, []),
+    readStringArray(values, SETTINGS_NODE_IDS.importWriteFields, []),
     IMPORT_WRITE_FIELDS
   )
 }
@@ -86,7 +71,7 @@ export function createImportWriteFieldArgs(values: SerializableRecord): Serializ
 export function readImportCollectionTypes(values: SerializableRecord): readonly string[] {
   return readStringArray(
     values,
-    NODE_IDS.importCollectionTypes,
+    SETTINGS_NODE_IDS.importCollectionTypes,
     BANGUMI_COLLECTION_TYPE_OPTIONS.map((option) => option.value)
   )
 }
