@@ -41,7 +41,6 @@ import {
 } from './normalize'
 import {
   EMPTY_DRAFT,
-  SESSION_TTL_MS,
   type LoadedRuntime,
   type ResolveSettingsPanelDialogOptions,
   type ResolveSettingsPanelPopoverOptions,
@@ -92,6 +91,7 @@ export class HostSettingsPanelContributionPoint {
           id: contribution.id,
           title: contribution.title,
           description: contribution.description,
+          size: contribution.size,
           order: contribution.order
         }
       },
@@ -158,8 +158,7 @@ export class HostSettingsPanelContributionPoint {
       const session: SettingsPanelSession = {
         runtimeHandle: request.runtimeHandle,
         contributionId: request.contributionId,
-        sessionId: request.sessionId,
-        ttlTimer: null
+        sessionId: request.sessionId
       }
       const sessionKey = this.getSessionKey(request)
       this.storeSession(sessionKey, session)
@@ -188,11 +187,8 @@ export class HostSettingsPanelContributionPoint {
     }
 
     const session = this.requireSession(request)
-    this.touchSession(this.getSessionKey(request))
 
     if (request.surface === 'dialog') {
-      session.activeRootPopover = undefined
-      session.activeDialogPopover = undefined
       const dialog = await this.resolveDialog({
         runtime,
         contribution,
@@ -203,6 +199,8 @@ export class HostSettingsPanelContributionPoint {
         parentDraft: request.parentDraft,
         signal
       })
+      session.activeRootPopover = undefined
+      session.activeDialogPopover = undefined
       return { surface: 'dialog', dialog }
     }
 
@@ -229,10 +227,8 @@ export class HostSettingsPanelContributionPoint {
     const runtime = this.requireRuntimeForRequest(request.runtimeHandle)
     const contribution = this.requireContribution(runtime, request.contributionId)
     const session = this.requireSession(request)
-    this.touchSession(this.getSessionKey(request))
 
     if (request.surface === 'root') {
-      session.activeRootPopover = undefined
       const view = await this.resolveRoot({
         runtime,
         contribution,
@@ -241,12 +237,12 @@ export class HostSettingsPanelContributionPoint {
         reason: request.reason,
         signal
       })
+      session.activeRootPopover = undefined
       return { surface: 'root', sessionId: request.sessionId, view }
     }
 
     if (request.surface === 'dialog') {
       const activeDialog = this.requireActiveDialog(session, request.dialogId)
-      session.activeDialogPopover = undefined
       const dialog = await this.resolveDialog({
         runtime,
         contribution,
@@ -258,6 +254,7 @@ export class HostSettingsPanelContributionPoint {
         reason: request.reason,
         signal
       })
+      session.activeDialogPopover = undefined
       return { surface: 'dialog', dialog }
     }
 
@@ -279,8 +276,6 @@ export class HostSettingsPanelContributionPoint {
       return { surface: 'popover', popover }
     }
 
-    session.activeRootPopover = undefined
-    session.activeDialogPopover = undefined
     const view = await this.resolveRoot({
       runtime,
       contribution,
@@ -315,6 +310,9 @@ export class HostSettingsPanelContributionPoint {
       }
     }
 
+    session.activeRootPopover = undefined
+    session.activeDialogPopover = undefined
+
     return { surface: 'all', sessionId: request.sessionId, view, activeDialog }
   }
 
@@ -325,7 +323,6 @@ export class HostSettingsPanelContributionPoint {
     const runtime = this.requireRuntimeForRequest(request.runtimeHandle)
     const contribution = this.requireContribution(runtime, request.contributionId)
     const session = this.requireSession(request)
-    this.touchSession(this.getSessionKey(request))
 
     if (request.surface === 'root') {
       if (!contribution.submit) {
@@ -391,7 +388,6 @@ export class HostSettingsPanelContributionPoint {
       }
     }
 
-    this.touchSession(this.getSessionKey(request))
     const result = await this.options.runInExtensionContext(runtime, () =>
       callback.invoke(request, signal)
     )
@@ -415,7 +411,6 @@ export class HostSettingsPanelContributionPoint {
           session.activeDialog = undefined
           session.activeDialogPopover = undefined
         }
-        this.touchSession(this.getSessionKey(request))
         return
 
       case 'popover':
@@ -433,7 +428,6 @@ export class HostSettingsPanelContributionPoint {
             session.activeDialogPopover = undefined
           }
         }
-        this.touchSession(this.getSessionKey(request))
     }
   }
 
@@ -703,42 +697,11 @@ export class HostSettingsPanelContributionPoint {
 
   private storeSession(key: string, session: SettingsPanelSession): void {
     this.deleteSession(key)
-    session.ttlTimer = this.createSessionTimer(key)
     this.sessions.set(key, session)
   }
 
   private deleteSession(key: string): void {
-    const session = this.sessions.get(key)
-    if (!session) {
-      return
-    }
-
-    if (session.ttlTimer) {
-      clearTimeout(session.ttlTimer)
-    }
     this.sessions.delete(key)
-  }
-
-  private touchSession(key: string): void {
-    const session = this.sessions.get(key)
-    if (!session) {
-      return
-    }
-
-    if (session.ttlTimer) {
-      clearTimeout(session.ttlTimer)
-    }
-    session.ttlTimer = this.createSessionTimer(key)
-  }
-
-  private createSessionTimer(key: string): ReturnType<typeof setTimeout> {
-    const timer = setTimeout(() => {
-      this.sessions.delete(key)
-    }, SESSION_TTL_MS)
-    if (typeof timer === 'object' && 'unref' in timer) {
-      timer.unref()
-    }
-    return timer
   }
 
   private getSessionKey(request: {

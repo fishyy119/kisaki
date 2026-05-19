@@ -11,7 +11,11 @@ import {
   ROOT_MODEL_KEYS,
   SETTINGS_PANEL_POPOVER_WIDTH_VALUES
 } from './constants'
-import { createSurfaceValidationState, validateRootModelBase } from './helpers'
+import {
+  createSurfaceValidationState,
+  validateDialogModelBase,
+  validateRootModelBase
+} from './helpers'
 import { validateSettingsPanelFieldArray, validateSettingsPanelTabArray } from './nodes'
 
 export function validateSettingsPanelRootModel(value: unknown): ValidationIssue[] {
@@ -57,7 +61,7 @@ export function validateSettingsPanelDialogModel(value: unknown): ValidationIssu
   const state = createSurfaceValidationState()
   const issues = [
     ...validateUnknownKeys(value, DIALOG_MODEL_KEYS),
-    ...validateRootModelBase(value),
+    ...validateDialogModelBase(value),
     ...validateSettingsPanelFieldArray(value.fields, '$.fields', state, 1)
   ]
 

@@ -36,6 +36,12 @@ export function validateSettingsPanelContributionShape(value: unknown): Validati
     ...validateOptionalString(value.description, '$.description', {
       typeMessage: 'description must be a string when provided.'
     }),
+    ...validateOptionalEnumString(
+      value.size,
+      '$.size',
+      SETTINGS_PANEL_DIALOG_SIZE_VALUES,
+      'size must be one of the supported dialog sizes.'
+    ),
     ...validateOptionalFiniteNumber(
       value.order,
       '$.order',

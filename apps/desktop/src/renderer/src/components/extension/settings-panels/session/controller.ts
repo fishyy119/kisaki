@@ -229,8 +229,11 @@ export function useExtensionSettingsPanelSession(
 
     const requestId = createRequestId()
     const requestRevision = source.surface.revision
+    const trackBusy = shouldTrackCallbackBusy(source.node)
     callbackRequestIds.set(callbackId, requestId)
-    setCallbackBusy(callbackId, true)
+    if (trackBusy) {
+      setCallbackBusy(callbackId, true)
+    }
 
     try {
       const response = await invokeIpc<ExtensionSettingsPanelCallbackResponse>(
@@ -248,7 +251,9 @@ export function useExtensionSettingsPanelSession(
     } finally {
       if (callbackRequestIds.get(callbackId) === requestId) {
         callbackRequestIds.delete(callbackId)
-        setCallbackBusy(callbackId, false)
+        if (trackBusy) {
+          setCallbackBusy(callbackId, false)
+        }
       }
     }
   }
@@ -432,6 +437,7 @@ export function useExtensionSettingsPanelSession(
     }
 
     const normalizedTarget = target === 'self' ? (sourceSurface?.surface ?? 'root') : target
+
     if (normalizedTarget === 'popover' && sourceSurface?.surface === 'popover') {
       await refreshPopover(sourceSurface, reason)
       return
@@ -449,7 +455,6 @@ export function useExtensionSettingsPanelSession(
 
     if (normalizedTarget === 'all') {
       await refreshAll(reason)
-      return
     }
   }
 
@@ -460,7 +465,7 @@ export function useExtensionSettingsPanelSession(
       return
     }
 
-    await closePopover({ surface: 'root' })
+    const previousPopover = activeRootPopover.value
     const response = await invokeIpc<ExtensionSettingsPanelRefreshResponse>(
       'extension:refresh-settings-panel',
       {
@@ -474,6 +479,9 @@ export function useExtensionSettingsPanelSession(
 
     if (response.surface === 'root') {
       root.value = mergeSurfaceState(root.value, response.view)
+      if (activeRootPopover.value === previousPopover) {
+        activeRootPopover.value = null
+      }
     }
   }
 
@@ -484,7 +492,7 @@ export function useExtensionSettingsPanelSession(
       return
     }
 
-    await closePopover({ surface: 'dialog', dialogId: activeDialog.value.view.dialogId })
+    const previousPopover = activeDialogPopover.value
     const dialog = activeDialog.value
     const response = await invokeIpc<ExtensionSettingsPanelRefreshResponse>(
       'extension:refresh-settings-panel',
@@ -501,6 +509,9 @@ export function useExtensionSettingsPanelSession(
 
     if (response.surface === 'dialog') {
       activeDialog.value = mergeSurfaceState(dialog, response.dialog)
+      if (activeDialogPopover.value === previousPopover) {
+        activeDialogPopover.value = null
+      }
     }
   }
 
@@ -550,8 +561,8 @@ export function useExtensionSettingsPanelSession(
       return
     }
 
-    activeRootPopover.value = null
-    activeDialogPopover.value = null
+    const previousRootPopover = activeRootPopover.value
+    const previousDialogPopover = activeDialogPopover.value
 
     const response = await invokeIpc<ExtensionSettingsPanelRefreshResponse>(
       'extension:refresh-settings-panel',
@@ -579,6 +590,12 @@ export function useExtensionSettingsPanelSession(
       response.activeDialog && activeDialog.value
         ? mergeSurfaceState(activeDialog.value, response.activeDialog.dialog)
         : null
+    if (activeRootPopover.value === previousRootPopover) {
+      activeRootPopover.value = null
+    }
+    if (activeDialogPopover.value === previousDialogPopover) {
+      activeDialogPopover.value = null
+    }
   }
 
   function toInvokeRequest(
@@ -806,6 +823,10 @@ export function useExtensionSettingsPanelSession(
 
 function getSettingsNodeCallbackId(node: ExtensionResolvedSettingsPanelNode): string | undefined {
   return 'callbackId' in node ? node.callbackId : undefined
+}
+
+function shouldTrackCallbackBusy(node: ExtensionResolvedSettingsPanelNode): boolean {
+  return node.kind === 'button'
 }
 
 async function releaseSession(request: ExtensionSettingsPanelReleaseRequest): Promise<void> {

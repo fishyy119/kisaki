@@ -37,7 +37,6 @@ interface EntityMenuSession {
   sessionId: string
   input: EntityMenuInput
   callbacks: Map<string, EntityMenuCallbackRecord>
-  ttlTimer: ReturnType<typeof setTimeout> | null
 }
 
 interface EntityMenuCallbackRecord {
@@ -45,8 +44,6 @@ interface EntityMenuCallbackRecord {
   nodePath: readonly string[]
   invoke(value: boolean | string | undefined, signal: AbortSignal): Promise<UiCallbackResult>
 }
-
-const SESSION_TTL_MS = 10 * 60 * 1000
 
 /**
  * Host-side menu contribution domain.
@@ -211,8 +208,7 @@ export class HostEntityMenuContributionPoint {
       scope: request.scope,
       sessionId: request.sessionId,
       input: request.input,
-      callbacks: new Map(),
-      ttlTimer: null
+      callbacks: new Map()
     }
     const normalizedNodes = normalizeMenuNodes(runtime.metadata.id, registration.id, nodes, session)
     const serializableNodes = normalizedNodes.map((node, index) =>
@@ -263,7 +259,6 @@ export class HostEntityMenuContributionPoint {
       })
     }
 
-    this.touchSession(sessionKey)
     return this.options.runInExtensionContext(runtime, () => callback.invoke(request.value, signal))
   }
 
@@ -317,42 +312,11 @@ export class HostEntityMenuContributionPoint {
 
   private storeSession(sessionKey: string, session: EntityMenuSession): void {
     this.deleteSession(sessionKey)
-    session.ttlTimer = this.createSessionTimer(sessionKey)
     this.sessions.set(sessionKey, session)
   }
 
   private deleteSession(sessionKey: string): void {
-    const session = this.sessions.get(sessionKey)
-    if (!session) {
-      return
-    }
-
-    if (session.ttlTimer) {
-      clearTimeout(session.ttlTimer)
-    }
     this.sessions.delete(sessionKey)
-  }
-
-  private touchSession(sessionKey: string): void {
-    const session = this.sessions.get(sessionKey)
-    if (!session) {
-      return
-    }
-
-    if (session.ttlTimer) {
-      clearTimeout(session.ttlTimer)
-    }
-    session.ttlTimer = this.createSessionTimer(sessionKey)
-  }
-
-  private createSessionTimer(sessionKey: string): ReturnType<typeof setTimeout> {
-    const timer = setTimeout(() => {
-      this.sessions.delete(sessionKey)
-    }, SESSION_TTL_MS)
-    if (typeof timer === 'object' && 'unref' in timer) {
-      timer.unref()
-    }
-    return timer
   }
 }
 

@@ -94,6 +94,7 @@ export interface SettingsPanelContribution<
   id: string
   title: string
   description?: string
+  size?: SettingsPanelDialogSize
   order?: number
   submitLabel?: string
   popovers?: TPopovers & SettingsPanelPopoverMap

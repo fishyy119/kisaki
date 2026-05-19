@@ -35,7 +35,7 @@ const session = useExtensionSettingsPanelSession(contributionRef, open, {
 })
 const root = computed(() => session.root.value)
 const activeDialog = computed(() => session.activeDialog.value)
-const sizeClass = computed(() => getSizeClass(root.value?.view.size))
+const sizeClass = computed(() => getSizeClass(props.contribution.size))
 
 const openModel = computed({
   get: () => open.value,

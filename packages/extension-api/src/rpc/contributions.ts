@@ -19,6 +19,7 @@ import type {
 import type {
   SettingsPanelDialogButtonResult,
   SettingsPanelDialogCommitResult,
+  SettingsPanelDialogSize,
   SettingsPanelDialogSubmitResult,
   SettingsPanelPopoverActionResult,
   SettingsPanelRefreshReason,
@@ -70,6 +71,7 @@ export interface SettingsPanelRegistrationInfo {
   id: string
   title: string
   description?: string
+  size?: SettingsPanelDialogSize
   order?: number
 }
 

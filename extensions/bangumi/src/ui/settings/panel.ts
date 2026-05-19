@@ -12,11 +12,11 @@ export function createBangumiSettingsPanel(dependencies: BangumiSettingsPanelDep
   return defineSettingsPanel({
     id: 'settings',
     title: 'Bangumi',
+    size: 'lg',
     submitLabel: '保存设置',
     dialogs,
     async resolve(context, ui) {
       return {
-        size: 'lg',
         tabs: await resolveSettingsTabs({
           context,
           ui,

@@ -422,6 +422,7 @@ export interface ExtensionSettingsPanelRegistrationInfo extends ExtensionContrib
   contributionId: string
   title: string
   description?: string
+  size?: SettingsPanelDialogSize
   order: number
 }
 
@@ -641,7 +642,6 @@ export type ExtensionResolvedSettingsPanelRoot = {
   surface: 'root'
   title?: string
   description?: string
-  size?: SettingsPanelDialogSize
   submitLabel?: string
 } & (
   | {

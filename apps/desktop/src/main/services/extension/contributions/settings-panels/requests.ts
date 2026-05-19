@@ -29,6 +29,7 @@ export function toSettingsContributionInfo(
     contributionId: registration.contribution.id,
     title: registration.contribution.title,
     description: registration.contribution.description,
+    size: registration.contribution.size,
     order: registration.contribution.order ?? 0
   }
 }

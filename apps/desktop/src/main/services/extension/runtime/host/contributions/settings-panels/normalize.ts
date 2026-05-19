@@ -23,7 +23,6 @@ export function normalizeSettingsPanelRootModel(
     surface: 'root',
     title: model.title,
     description: model.description,
-    size: model.size,
     submitLabel: model.submitLabel ?? context.contribution.submitLabel
   })
 

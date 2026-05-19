@@ -21,7 +21,6 @@ export interface SettingsPanelSession {
   activeDialog?: SettingsPanelSurfaceSession
   activeRootPopover?: SettingsPanelSurfaceSession
   activeDialogPopover?: SettingsPanelSurfaceSession
-  ttlTimer: ReturnType<typeof setTimeout> | null
 }
 
 export interface SettingsPanelSurfaceSession {
@@ -95,7 +94,6 @@ export interface NormalizeSettingsPanelContext {
   }
 }
 
-export const SESSION_TTL_MS = 10 * 60 * 1000
 export const EMPTY_DRAFT: SettingsPanelDraftSnapshot = Object.freeze({
   values: Object.freeze({}),
   dirtyNodeIds: Object.freeze([])

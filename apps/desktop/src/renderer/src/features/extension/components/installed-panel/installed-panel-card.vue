@@ -214,6 +214,7 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
     contribution.extensionVersion,
     contribution.title,
     contribution.description ?? '',
+    contribution.size ?? '',
     contribution.order
   ].join('\0')
 }

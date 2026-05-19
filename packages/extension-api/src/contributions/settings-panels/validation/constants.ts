@@ -68,6 +68,7 @@ export const CONTRIBUTION_KEYS = new Set<string>([
   'id',
   'title',
   'description',
+  'size',
   'order',
   'submitLabel',
   'popovers',
@@ -86,7 +87,6 @@ export const POPOVER_DEFINITION_KEYS = new Set<string>(['title', 'width', 'resol
 export const ROOT_MODEL_KEYS = new Set<string>([
   'title',
   'description',
-  'size',
   'submitLabel',
   'fields',
   'tabs',

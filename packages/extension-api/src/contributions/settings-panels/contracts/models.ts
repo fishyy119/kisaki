@@ -33,7 +33,6 @@ export type SettingsPanelRootModel<
 export interface SettingsPanelRootModelBase {
   title?: string
   description?: string
-  size?: SettingsPanelDialogSize
   submitLabel?: string
 }
 
