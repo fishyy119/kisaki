@@ -37,7 +37,7 @@ function toggle(value: string, checked: boolean): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-row flex-wrap items-center gap-x-4 gap-y-2">
     <label
       v-for="option in props.node.options"
       :key="option.value"

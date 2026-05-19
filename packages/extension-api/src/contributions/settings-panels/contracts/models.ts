@@ -34,6 +34,7 @@ export interface SettingsPanelRootModelBase {
   title?: string
   description?: string
   size?: SettingsPanelDialogSize
+  submitLabel?: string
 }
 
 export interface SettingsPanelDialogModel<
@@ -43,6 +44,7 @@ export interface SettingsPanelDialogModel<
   title?: string
   description?: string
   size?: SettingsPanelDialogSize
+  submitLabel?: string
   fields: readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, TPopovers>>[]
 }
 

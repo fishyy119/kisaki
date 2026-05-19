@@ -41,6 +41,11 @@ export function validateSettingsPanelContributionShape(value: unknown): Validati
       '$.order',
       'order must be a finite number when provided.'
     ),
+    ...validateOptionalString(value.submitLabel, '$.submitLabel', {
+      trim: true,
+      typeMessage: 'submitLabel must be a string when provided.',
+      valueMessage: 'submitLabel must be a non-empty string when provided.'
+    }),
     ...validateRequiredFunction(value.resolve, '$.resolve').map((issue) => ({
       ...issue,
       message: 'resolve must be a function.'
@@ -75,6 +80,11 @@ export function validateSettingsPanelDialogDefinition(value: unknown): Validatio
       SETTINGS_PANEL_DIALOG_SIZE_VALUES,
       'size must be one of the supported dialog sizes.'
     ),
+    ...validateOptionalString(value.submitLabel, '$.submitLabel', {
+      trim: true,
+      typeMessage: 'submitLabel must be a string when provided.',
+      valueMessage: 'submitLabel must be a non-empty string when provided.'
+    }),
     ...validateRequiredFunction(value.resolve, '$.resolve').map((issue) => ({
       ...issue,
       message: 'resolve must be a function.'

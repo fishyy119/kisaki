@@ -12,6 +12,7 @@ import {
   validateUnknownKeys
 } from '../../../shared/validation'
 import {
+  BUTTON_CONFIRM_KEYS,
   FIELD_KEYS,
   NODE_BASE_KEYS,
   RECORD_LIST_COLUMN_KEYS,
@@ -285,6 +286,8 @@ function validateSettingsPanelNodeLike(
       return validateSettingsPanelStatus(value, path, state)
     case 'table':
       return validateSettingsPanelTable(value, path, state)
+    case 'link':
+      return validateSettingsPanelLink(value, path, state)
     case 'image':
       return validateSettingsPanelImage(value, path, state)
     case 'divider':
@@ -487,7 +490,7 @@ function validateSettingsPanelButton(
   return [
     ...validateUnknownKeys(
       value,
-      createKeySet(...NODE_BASE_KEYS, 'label', 'icon', 'tone', 'onClick'),
+      createKeySet(...NODE_BASE_KEYS, 'label', 'icon', 'tone', 'confirm', 'onClick'),
       path
     ),
     ...validateSettingsPanelNodeBase(value, path, state),
@@ -504,10 +507,38 @@ function validateSettingsPanelButton(
       SETTINGS_PANEL_BUTTON_TONE_VALUES,
       'tone must be one of the supported button tones.'
     ),
+    ...validateSettingsPanelButtonConfirmation(value.confirm, `${path}.confirm`),
     ...validateOptionalFunction(value.onClick, `${path}.onClick`).map((issue) => ({
       ...issue,
       message: 'onClick must be a function when provided.'
     }))
+  ]
+}
+
+function validateSettingsPanelButtonConfirmation(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!isPlainObject(value)) {
+    return [{ path, message: 'confirm must be an object when provided.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, BUTTON_CONFIRM_KEYS, path),
+    ...validateRequiredString(value.title, `${path}.title`, {
+      trim: true,
+      valueMessage: 'Confirm title must be a non-empty string.'
+    }),
+    ...validateOptionalString(value.description, `${path}.description`, {
+      typeMessage: 'confirm.description must be a string when provided.'
+    }),
+    ...validateOptionalString(value.confirmLabel, `${path}.confirmLabel`, {
+      typeMessage: 'confirm.confirmLabel must be a string when provided.'
+    }),
+    ...validateOptionalString(value.cancelLabel, `${path}.cancelLabel`, {
+      typeMessage: 'confirm.cancelLabel must be a string when provided.'
+    })
   ]
 }
 
@@ -594,6 +625,25 @@ function validateSettingsPanelTable(
     }),
     ...validateSettingsPanelTableColumns(value.columns, `${path}.columns`),
     ...validateRecordArray(value.rows, `${path}.rows`, 'rows must be an array.')
+  ]
+}
+
+function validateSettingsPanelLink(
+  value: Record<string, unknown>,
+  path: string,
+  state: SurfaceValidationState
+): ValidationIssue[] {
+  return [
+    ...validateUnknownKeys(value, createKeySet(...NODE_BASE_KEYS, 'label', 'href'), path),
+    ...validateSettingsPanelNodeBase(value, path, state),
+    ...validateRequiredString(value.label, `${path}.label`, {
+      trim: true,
+      valueMessage: 'label must be a non-empty string.'
+    }),
+    ...validateRequiredString(value.href, `${path}.href`, {
+      trim: true,
+      valueMessage: 'href must be a non-empty string.'
+    })
   ]
 }
 
@@ -786,9 +836,25 @@ function validateSettingsPanelTableColumns(value: unknown, path: string): Valida
         column.kind,
         `${columnPath}.kind`,
         SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES,
-        'Column kind must be text, number, boolean, or badge.'
+        'Column kind must be text, number, boolean, badge, or link.'
+      ),
+      ...validateOptionalBoolean(column.truncate, `${columnPath}.truncate`).map((issue) => ({
+        ...issue,
+        message: 'truncate must be a boolean when provided.'
+      })),
+      ...validateOptionalFiniteNumber(
+        column.weight,
+        `${columnPath}.weight`,
+        'weight must be a positive finite number when provided.'
       )
     )
+
+    if (typeof column.weight === 'number' && column.weight <= 0) {
+      issues.push({
+        path: `${columnPath}.weight`,
+        message: 'weight must be greater than zero when provided.'
+      })
+    }
 
     pushUniqueKeyIssue(column.key, seenKeys, `${columnPath}.key`, issues, 'Column')
   }

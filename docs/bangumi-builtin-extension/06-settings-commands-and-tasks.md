@@ -17,10 +17,21 @@ Root 使用 tabs，复杂流程使用 dialogs：
 - Automation: 常用 task 创建入口和已创建状态摘要。
 - Advanced: 登录超时、API 请求窗口、API timeout、retry、诊断、清理 storage/secrets。
 
+`extensions/bangumi/src/ui/` 按面板分层组织：
+
+- `settings.ts`: settings panel 注册、dialog 注册和 tabs 组装。
+- `account.ts`: Account tab。
+- `sync.ts`: Sync tab 与全量同步 dialog。
+- `import-collections.ts`: 我的收藏导入配置与预览 dialog。
+- `import-index.ts`: 目录导入配置与预览 dialog。
+- `automation.ts`: Automation tab。
+- `advanced.ts`: Advanced tab 与 settings 保存映射。
+
 UI 规则：
 
 - 控件使用 structured settings nodes，不写自定义 renderer。
 - 长流程按钮只启动 job command 并返回。
+- 执行类 dialog 使用自定义 submit 按钮文案，把最终执行动作放在 dialog footer。
 - job 运行状态用 `status`、`table`、`notice` 展示。
 - Automation 不运行、不取消、不展示 task history；task 执行与历史属于主应用 task 面板。
 - 所有 destructive 操作使用 danger tone，并要求明确按钮文案，例如“清除 Bangumi 凭据”。

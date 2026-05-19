@@ -16,11 +16,13 @@ import TextNode from '../node/text-node.vue'
 import NoticeNode from '../node/notice-node.vue'
 import StatusNode from '../node/status-node.vue'
 import TableNode from '../node/table-node.vue'
+import LinkNode from '../node/link-node.vue'
 import ImageNode from '../node/image-node.vue'
 import DividerNode from '../node/divider-node.vue'
 import type { ExtensionSettingsPanelSessionController, SettingsPanelSurfaceState } from '../session'
 import type {
   ExtensionResolvedSettingsPanelField,
+  ExtensionResolvedSettingsPanelNode,
   ExtensionSettingsPanelSurface
 } from '@shared/extension'
 
@@ -45,7 +47,7 @@ const fieldClass = computed(() =>
 const contentClass = computed(() =>
   cn(
     'gap-2',
-    props.field.contentLayout === 'inline' && 'flex flex-row flex-wrap items-center',
+    props.field.contentLayout === 'inline' && 'flex w-full flex-row flex-wrap items-center',
     props.field.contentLayout === 'grid' && 'grid',
     props.field.contentLayout === 'grid' &&
       props.field.contentColumns === 2 &&
@@ -56,6 +58,19 @@ const contentClass = computed(() =>
     (!props.field.contentLayout || props.field.contentLayout === 'stack') && 'flex flex-col'
   )
 )
+
+function nodeWrapperClass(node: ExtensionResolvedSettingsPanelNode): string {
+  return cn(
+    'min-w-0',
+    node.grow && 'min-w-48 flex-1',
+    node.width === 'auto' && 'w-auto',
+    node.width === 'sm' && 'w-32 max-w-full',
+    node.width === 'md' && 'w-56 max-w-full',
+    node.width === 'lg' && 'w-80 max-w-full',
+    node.width === 'full' && 'w-full',
+    !node.grow && !node.width && props.field.contentLayout !== 'inline' && 'w-full'
+  )
+}
 </script>
 
 <template>
@@ -75,9 +90,10 @@ const contentClass = computed(() =>
     </div>
 
     <FieldContent :class="contentClass">
-      <template
+      <div
         v-for="node in visibleNodes"
         :key="node.id"
+        :class="nodeWrapperClass(node)"
       >
         <SwitchNode
           v-if="node.kind === 'switch'"
@@ -175,6 +191,10 @@ const contentClass = computed(() =>
           v-else-if="node.kind === 'table'"
           :node="node"
         />
+        <LinkNode
+          v-else-if="node.kind === 'link'"
+          :node="node"
+        />
         <ImageNode
           v-else-if="node.kind === 'image'"
           :node="node"
@@ -183,7 +203,7 @@ const contentClass = computed(() =>
           v-else-if="node.kind === 'divider'"
           :node="node"
         />
-      </template>
+      </div>
     </FieldContent>
   </Field>
 </template>

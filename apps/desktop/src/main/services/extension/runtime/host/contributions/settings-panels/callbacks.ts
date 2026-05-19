@@ -24,7 +24,12 @@ import {
   createRootContext
 } from './context'
 import type { NormalizeSettingsPanelContext, SettingsPanelCallbackKind } from './types'
-import { compactRecord, createSettingsPanelError, validateCommitValue } from './values'
+import {
+  compactRecord,
+  createSettingsPanelError,
+  normalizeSettingsPanelExtensionValue,
+  validateCommitValue
+} from './values'
 
 type SettingsPanelNodeCallback = (
   event: Record<string, unknown>
@@ -244,7 +249,7 @@ export async function invokeSettingsPanelCallback(
   validate: (value: unknown) => readonly { path: string; message: string }[]
 ): Promise<SettingsPanelCallbackResult> {
   try {
-    const result = await callback()
+    const result = normalizeSettingsPanelExtensionValue(await callback(), label)
     const issues = validate(result)
     if (issues.length > 0) {
       console.warn(

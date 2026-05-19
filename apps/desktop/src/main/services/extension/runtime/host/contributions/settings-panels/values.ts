@@ -68,6 +68,62 @@ export function compactRecord(record: Record<string, unknown>): Record<string, u
   return compacted
 }
 
+export function normalizeSettingsPanelExtensionValue<T>(value: T, label: string): T {
+  return normalizeSettingsPanelValue(value, label, '', new Set<object>()) as T
+}
+
+function normalizeSettingsPanelValue(
+  value: unknown,
+  label: string,
+  path: string,
+  seen: Set<object>
+): unknown {
+  if (Array.isArray(value)) {
+    if (seen.has(value)) {
+      throw new Error(`${formatLocation(label, path)} must not contain circular references.`)
+    }
+
+    seen.add(value)
+    try {
+      const items: unknown[] = []
+      for (let index = 0; index < value.length; index += 1) {
+        if (!Object.hasOwn(value, index) || value[index] === undefined) {
+          items.push(null)
+          continue
+        }
+
+        items.push(normalizeSettingsPanelValue(value[index], label, `${path}[${index}]`, seen))
+      }
+      return items
+    } finally {
+      seen.delete(value)
+    }
+  }
+
+  if (isPlainRecord(value)) {
+    if (seen.has(value)) {
+      throw new Error(`${formatLocation(label, path)} must not contain circular references.`)
+    }
+
+    seen.add(value)
+    try {
+      const record: Record<string, unknown> = {}
+      for (const [key, entry] of Object.entries(value)) {
+        if (entry === undefined) {
+          continue
+        }
+
+        record[key] = normalizeSettingsPanelValue(entry, label, joinPath(path, key), seen)
+      }
+      return record
+    } finally {
+      seen.delete(value)
+    }
+  }
+
+  return value
+}
+
 export function parentsEqual(
   left: SettingsPanelParentRef | undefined,
   right: SettingsPanelParentRef
@@ -76,4 +132,22 @@ export function parentsEqual(
     return false
   }
   return left.surface === 'root' || left.dialogId === (right as { dialogId: string }).dialogId
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+function joinPath(path: string, key: string): string {
+  const segment = /^[A-Za-z_$][\w$]*$/.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`
+  return `${path}${segment}`
+}
+
+function formatLocation(label: string, path: string): string {
+  return path ? `${label}${path}` : label
 }

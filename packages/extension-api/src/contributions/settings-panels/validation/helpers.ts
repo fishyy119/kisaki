@@ -53,7 +53,12 @@ export function validateRootModelBase(value: Record<string, unknown>): Validatio
       '$.size',
       SETTINGS_PANEL_DIALOG_SIZE_VALUES,
       'size must be one of the supported dialog sizes.'
-    )
+    ),
+    ...validateOptionalString(value.submitLabel, '$.submitLabel', {
+      trim: true,
+      typeMessage: 'submitLabel must be a string when provided.',
+      valueMessage: 'submitLabel must be a non-empty string when provided.'
+    })
   ]
 }
 

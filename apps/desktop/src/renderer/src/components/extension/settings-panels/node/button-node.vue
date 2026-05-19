@@ -3,6 +3,17 @@ import { computed } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { PopoverTrigger } from '@renderer/components/ui/popover'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@renderer/components/ui/alert-dialog'
 import type { ExtensionSettingsPanelSessionController, SettingsPanelSurfaceState } from '../session'
 import type {
   ExtensionResolvedSettingsPanelButtonNode,
@@ -61,8 +72,45 @@ function invoke(): void {
 </script>
 
 <template>
+  <AlertDialog v-if="props.node.confirm">
+    <AlertDialogTrigger as-child>
+      <Button
+        type="button"
+        :variant="variant"
+        size="sm"
+        :disabled="disabled"
+      >
+        <Icon
+          v-if="props.node.icon"
+          :icon="props.node.icon"
+          class="size-4"
+        />
+        {{ props.node.label }}
+      </Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ props.node.confirm.title }}</AlertDialogTitle>
+        <AlertDialogDescription v-if="props.node.confirm.description">
+          {{ props.node.confirm.description }}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>
+          {{ props.node.confirm.cancelLabel ?? '取消' }}
+        </AlertDialogCancel>
+        <AlertDialogAction
+          :disabled="disabled"
+          @click="invoke"
+        >
+          {{ props.node.confirm.confirmLabel ?? props.node.label }}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
   <PopoverTrigger
-    v-if="isPopoverTrigger"
+    v-else-if="isPopoverTrigger"
     as-child
   >
     <Button

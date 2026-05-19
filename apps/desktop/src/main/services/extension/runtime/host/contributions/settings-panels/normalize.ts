@@ -7,7 +7,10 @@ import type {
   SettingsPanelRootModel,
   SettingsPanelTab
 } from '@kisaki/extension-api'
-import { toSerializableRecord } from '../../sdk-bridge/utils/serialization'
+import {
+  JSON_COMPATIBLE_UNDEFINED_SERIALIZATION,
+  toSerializableRecord
+} from '../../sdk-bridge/utils/serialization'
 import { registerSettingsPanelCallback } from './callbacks'
 import type { NormalizeSettingsPanelContext } from './types'
 import { compactRecord } from './values'
@@ -20,7 +23,8 @@ export function normalizeSettingsPanelRootModel(
     surface: 'root',
     title: model.title,
     description: model.description,
-    size: model.size
+    size: model.size,
+    submitLabel: model.submitLabel ?? context.contribution.submitLabel
   })
 
   const tabs = (model as { tabs?: readonly SettingsPanelTab<any>[] }).tabs
@@ -37,20 +41,21 @@ export function normalizeSettingsPanelRootModel(
         )
       }
 
-  return toSerializableRecord(payload, 'resolved settings root')
+  return toSettingsPanelSerializableRecord(payload, 'resolved settings root')
 }
 
 export function normalizeSettingsPanelDialogModel(
   model: SettingsPanelDialogModel<any, any>,
   context: NormalizeSettingsPanelContext
 ): SettingsPanelResolvedSurfacePayload {
-  return toSerializableRecord(
+  return toSettingsPanelSerializableRecord(
     compactRecord({
       surface: 'dialog',
       dialogId: context.surface.dialogId,
-      title: model.title,
+      title: model.title ?? context.surfaceDefaults?.title,
       description: model.description,
-      size: model.size,
+      size: model.size ?? context.surfaceDefaults?.size,
+      submitLabel: model.submitLabel ?? context.surfaceDefaults?.submitLabel,
       fields: (model.fields as readonly SettingsPanelField<any>[]).map((field) =>
         normalizeSettingsPanelField(field, context)
       )
@@ -63,21 +68,28 @@ export function normalizeSettingsPanelPopoverModel(
   model: SettingsPanelPopoverModel<any>,
   context: NormalizeSettingsPanelContext
 ): SettingsPanelResolvedSurfacePayload {
-  return toSerializableRecord(
+  return toSettingsPanelSerializableRecord(
     compactRecord({
       surface: 'popover',
       popoverId: context.surface.popoverId,
       parent: context.surface.parent,
       anchorNodeKey: context.anchorNodeKey,
-      title: model.title,
+      title: model.title ?? context.surfaceDefaults?.title,
       description: model.description,
-      width: model.width,
+      width: model.width ?? context.surfaceDefaults?.width,
       fields: (model.fields as readonly SettingsPanelField<any>[]).map((field) =>
         normalizeSettingsPanelField(field, context)
       )
     }),
     'resolved settings popover'
   )
+}
+
+function toSettingsPanelSerializableRecord(
+  value: unknown,
+  label: string
+): SettingsPanelResolvedSurfacePayload {
+  return toSerializableRecord(value, label, JSON_COMPATIBLE_UNDEFINED_SERIALIZATION)
 }
 
 function normalizeSettingsPanelTab(
@@ -145,6 +157,7 @@ function normalizeSettingsNode(
 
     case 'divider':
     case 'image':
+    case 'link':
     case 'notice':
     case 'status':
     case 'table':

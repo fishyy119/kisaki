@@ -91,13 +91,13 @@ bangumi.sync.full
 输入：
 
 - dry run: true/false。
-- scope: 全部、有 Bangumi ID、指定合集、指定游玩状态、评分非空。
-- conflict policy: `overwriteRemote`、`fillRemoteMissing`、`skipExistingRemote`。
+- 同步对象固定为带 Bangumi ID 的本地游戏；settings UI 不提供范围配置。
+- update existing: true/false。同步始终会为远端缺失的条目创建 Bangumi 收藏；该开关只控制是否更新远端已有收藏。
 - play status/score override: 可临时覆盖 settings 开关。
 
 流程：
 
-1. 根据 query 调用 `kisaki.library.games.list` 分批读取本地游戏。
+1. 调用 `kisaki.library.games.list` 分批读取本地游戏，并跳过没有 Bangumi external id 的条目。
 2. 为每个游戏解析 Bangumi external id。
 3. dry run 时可按需读取远端 collection 判断将新增/修改/跳过。
 4. execute 时复用 `SyncEngine`。

@@ -75,7 +75,7 @@ function handlePopoverOpenChange(open: boolean): void {
       :disabled="props.controller.busy.value"
       @click="props.controller.submit(props.state)"
     >
-      保存
+      {{ view.submitLabel ?? '保存' }}
     </Button>
   </DialogFooter>
 </template>

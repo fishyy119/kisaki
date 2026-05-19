@@ -73,6 +73,7 @@ export interface SettingsPanelContribution<
   title: string
   description?: string
   order?: number
+  submitLabel?: string
   popovers?: TPopovers & SettingsPanelPopoverMap
   dialogs?: TDialogs & SettingsPanelDialogMap<TPopovers>
   resolve(
@@ -88,6 +89,7 @@ export interface SettingsPanelDialogDefinition<
 > {
   title?: string
   size?: SettingsPanelDialogSize
+  submitLabel?: string
   resolve(
     context: SettingsPanelDialogResolveContext<TParams>,
     settings: SettingsPanelNodeFactory<SettingsPanelDialogNodeEvents<TParams, TPopovers>>

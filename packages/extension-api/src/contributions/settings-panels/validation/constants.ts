@@ -53,7 +53,8 @@ export const SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES = [
   'text',
   'number',
   'boolean',
-  'badge'
+  'badge',
+  'link'
 ] as const
 export const SETTINGS_PANEL_RECORD_LIST_COLUMN_KIND_VALUES = [
   'text',
@@ -68,22 +69,36 @@ export const CONTRIBUTION_KEYS = new Set<string>([
   'title',
   'description',
   'order',
+  'submitLabel',
   'popovers',
   'dialogs',
   'resolve',
   'submit'
 ])
-export const DIALOG_DEFINITION_KEYS = new Set<string>(['title', 'size', 'resolve', 'submit'])
+export const DIALOG_DEFINITION_KEYS = new Set<string>([
+  'title',
+  'size',
+  'submitLabel',
+  'resolve',
+  'submit'
+])
 export const POPOVER_DEFINITION_KEYS = new Set<string>(['title', 'width', 'resolve'])
 export const ROOT_MODEL_KEYS = new Set<string>([
   'title',
   'description',
   'size',
+  'submitLabel',
   'fields',
   'tabs',
   'activeTabId'
 ])
-export const DIALOG_MODEL_KEYS = new Set<string>(['title', 'description', 'size', 'fields'])
+export const DIALOG_MODEL_KEYS = new Set<string>([
+  'title',
+  'description',
+  'size',
+  'submitLabel',
+  'fields'
+])
 export const POPOVER_MODEL_KEYS = new Set<string>(['title', 'description', 'width', 'fields'])
 export const FIELD_KEYS = new Set<string>([
   'id',
@@ -101,7 +116,13 @@ export const TAB_KEYS = new Set<string>(['id', 'label', 'description', 'icon', '
 export const NODE_BASE_KEYS = ['kind', 'id', 'hidden', 'disabled', 'grow', 'width'] as const
 export const VALUE_NODE_BASE_KEYS = [...NODE_BASE_KEYS, 'initialValue', 'onCommit'] as const
 export const SELECT_OPTION_KEYS = new Set<string>(['value', 'label', 'description', 'disabled'])
-export const TABLE_COLUMN_KEYS = new Set<string>(['key', 'label', 'kind'])
+export const BUTTON_CONFIRM_KEYS = new Set<string>([
+  'title',
+  'description',
+  'confirmLabel',
+  'cancelLabel'
+])
+export const TABLE_COLUMN_KEYS = new Set<string>(['key', 'label', 'kind', 'truncate', 'weight'])
 export const RECORD_LIST_COLUMN_KEYS = new Set<string>(['key', 'label', 'kind', 'options'])
 export const RESULT_FAILURE_KEYS = new Set<string>(['success', 'error', 'refresh', 'closePopover'])
 export const DIALOG_TARGET_KEYS = new Set<string>(['dialogId', 'params'])

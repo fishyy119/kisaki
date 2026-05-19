@@ -23,6 +23,7 @@ import type {
   SettingsPanelDialogSize,
   SettingsPanelDividerNode,
   SettingsPanelImageNode,
+  SettingsPanelLinkNode,
   SettingsPanelMultiSelectNode,
   SettingsPanelNoticeNode,
   SettingsPanelNumberInputNode,
@@ -592,6 +593,7 @@ export type ExtensionResolvedSettingsPanelTextNode = SettingsPanelTextNode
 export type ExtensionResolvedSettingsPanelNoticeNode = SettingsPanelNoticeNode
 export type ExtensionResolvedSettingsPanelStatusNode = SettingsPanelStatusNode
 export type ExtensionResolvedSettingsPanelTableNode = SettingsPanelTableNode
+export type ExtensionResolvedSettingsPanelLinkNode = SettingsPanelLinkNode
 export type ExtensionResolvedSettingsPanelImageNode = SettingsPanelImageNode
 export type ExtensionResolvedSettingsPanelDividerNode = SettingsPanelDividerNode
 
@@ -610,6 +612,7 @@ export type ExtensionResolvedSettingsPanelNode =
   | ExtensionResolvedSettingsPanelNoticeNode
   | ExtensionResolvedSettingsPanelStatusNode
   | ExtensionResolvedSettingsPanelTableNode
+  | ExtensionResolvedSettingsPanelLinkNode
   | ExtensionResolvedSettingsPanelImageNode
   | ExtensionResolvedSettingsPanelDividerNode
 
@@ -639,6 +642,7 @@ export type ExtensionResolvedSettingsPanelRoot = {
   title?: string
   description?: string
   size?: SettingsPanelDialogSize
+  submitLabel?: string
 } & (
   | {
       fields: readonly ExtensionResolvedSettingsPanelField[]
@@ -658,6 +662,7 @@ export interface ExtensionResolvedSettingsPanelDialog {
   title?: string
   description?: string
   size?: SettingsPanelDialogSize
+  submitLabel?: string
   fields: readonly ExtensionResolvedSettingsPanelField[]
 }
 

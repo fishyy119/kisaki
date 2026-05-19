@@ -49,7 +49,12 @@ import {
   type SettingsPanelSession,
   type SettingsPanelSurfaceSession
 } from './types'
-import { createSettingsPanelError, parentsEqual, toParams } from './values'
+import {
+  createSettingsPanelError,
+  normalizeSettingsPanelExtensionValue,
+  parentsEqual,
+  toParams
+} from './values'
 
 /**
  * Host-side settings contribution domain.
@@ -573,9 +578,10 @@ export class HostSettingsPanelContributionPoint {
       options.signal,
       options.reason
     )
-    const model = await this.options.runInExtensionContext(options.runtime, () =>
+    const rawModel = await this.options.runInExtensionContext(options.runtime, () =>
       options.contribution.resolve(context, createSettingsPanelNodeFactory())
     )
+    const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings root')
     const modelIssues = validateSettingsPanelRootModel(model)
     if (modelIssues.length > 0) {
       throwValidationIssues('Resolved settings root', modelIssues)
@@ -611,9 +617,10 @@ export class HostSettingsPanelContributionPoint {
       options.signal,
       options.reason
     )
-    const model = await this.options.runInExtensionContext(options.runtime, () =>
+    const rawModel = await this.options.runInExtensionContext(options.runtime, () =>
       definition.resolve(context, createSettingsPanelNodeFactory())
     )
+    const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings dialog')
     const modelIssues = validateSettingsPanelDialogModel(model)
     if (modelIssues.length > 0) {
       throwValidationIssues('Resolved settings dialog', modelIssues)
@@ -623,7 +630,12 @@ export class HostSettingsPanelContributionPoint {
       extensionId: options.runtime.metadata.id,
       contribution: options.contribution,
       session: options.session,
-      surface
+      surface,
+      surfaceDefaults: {
+        title: definition.title,
+        size: definition.size,
+        submitLabel: definition.submitLabel
+      }
     })
     options.session.activeDialog = surface
     return payload
@@ -652,9 +664,10 @@ export class HostSettingsPanelContributionPoint {
       options.signal,
       options.reason
     )
-    const model = await this.options.runInExtensionContext(options.runtime, () =>
+    const rawModel = await this.options.runInExtensionContext(options.runtime, () =>
       definition.resolve(context, createSettingsPanelNodeFactory())
     )
+    const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings popover')
     const modelIssues = validateSettingsPanelPopoverModel(model)
     if (modelIssues.length > 0) {
       throwValidationIssues('Resolved settings popover', modelIssues)
@@ -665,7 +678,11 @@ export class HostSettingsPanelContributionPoint {
       contribution: options.contribution,
       session: options.session,
       surface,
-      anchorNodeKey: options.anchorNodeKey
+      anchorNodeKey: options.anchorNodeKey,
+      surfaceDefaults: {
+        title: definition.title,
+        width: definition.width
+      }
     })
 
     if (options.parent.surface === 'root') {

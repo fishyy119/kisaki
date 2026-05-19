@@ -7,6 +7,9 @@ import { OAuthRelayClient } from './auth/relay-client'
 import { TokenService } from './auth/token-service'
 import { TokenStore } from './auth/token-store'
 import { SettingsStore } from './config/store'
+import { ActiveJobRegistry } from './jobs/active-registry'
+import { registerBangumiJobCommands } from './jobs/commands'
+import { JobRunner } from './jobs/runner'
 import { BangumiProvider } from './scraper/provider'
 import { createBangumiSettingsPanel } from './ui/settings'
 import { BangumiExtensionError } from './shared/errors'
@@ -32,6 +35,14 @@ export default defineExtension({
       }
     )
     const accountService = new AccountService(context.storage, client, tokenService)
+    const activeJobRegistry = new ActiveJobRegistry()
+    const jobRunner = new JobRunner({
+      settingsStore,
+      client,
+      tokenService,
+      accountService,
+      logger: context.logger
+    })
 
     const oauthFlowRef: { current?: OAuthFlow } = {}
     const settingsRegistrationRef: {
@@ -86,12 +97,19 @@ export default defineExtension({
     context.subscriptions.add(
       context.contributions.scraperProviders.game.register(new BangumiProvider(client))
     )
+    for (const registration of registerBangumiJobCommands(
+      context.contributions.commands,
+      jobRunner
+    )) {
+      context.subscriptions.add(registration)
+    }
     const settingsRegistration = context.contributions.settingsPanels.register(
       createBangumiSettingsPanel({
         settingsStore,
         accountService,
         oauthFlow,
-        tokenService
+        tokenService,
+        activeJobRegistry
       })
     )
     settingsRegistrationRef.current = settingsRegistration

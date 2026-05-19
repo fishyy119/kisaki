@@ -133,6 +133,7 @@ export interface SettingsPanelButtonNode<
   label: string
   icon?: string
   tone?: 'default' | 'primary' | 'danger'
+  confirm?: SettingsPanelButtonConfirmation
   onClick?: (event: TButtonEvent) => MaybePromise<TButtonResult>
 }
 
@@ -161,6 +162,12 @@ export interface SettingsPanelTableNode extends SettingsPanelNodeBase {
   columns?: readonly SettingsPanelTableColumn[]
   rows: readonly SerializableRecord[]
   emptyLabel?: string
+}
+
+export interface SettingsPanelLinkNode extends SettingsPanelNodeBase {
+  kind: 'link'
+  label: string
+  href: string
 }
 
 export interface SettingsPanelImageNode extends SettingsPanelNodeBase {
@@ -193,6 +200,7 @@ export type SettingsPanelDisplayNode =
   | SettingsPanelNoticeNode
   | SettingsPanelStatusNode
   | SettingsPanelTableNode
+  | SettingsPanelLinkNode
   | SettingsPanelImageNode
   | SettingsPanelDividerNode
 
@@ -213,7 +221,9 @@ export interface SettingsPanelSelectOption {
 export interface SettingsPanelTableColumn {
   key: string
   label: string
-  kind?: 'text' | 'number' | 'boolean' | 'badge'
+  kind?: 'text' | 'number' | 'boolean' | 'badge' | 'link'
+  truncate?: boolean
+  weight?: number
 }
 
 export interface SettingsPanelRecordListColumn {
@@ -221,4 +231,11 @@ export interface SettingsPanelRecordListColumn {
   label: string
   kind?: 'text' | 'select' | 'number' | 'boolean'
   options?: readonly SettingsPanelSelectOption[]
+}
+
+export interface SettingsPanelButtonConfirmation {
+  title: string
+  description?: string
+  confirmLabel?: string
+  cancelLabel?: string
 }

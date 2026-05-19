@@ -1,5 +1,7 @@
 import type {
   SerializableRecord,
+  SettingsPanelDialogSize,
+  SettingsPanelPopoverWidth,
   SettingsPanelCallbackResult,
   SettingsPanelContribution,
   SettingsPanelDraftSnapshot,
@@ -85,6 +87,12 @@ export interface NormalizeSettingsPanelContext {
   session: SettingsPanelSession
   surface: SettingsPanelSurfaceSession
   anchorNodeKey?: string
+  surfaceDefaults?: {
+    title?: string
+    size?: SettingsPanelDialogSize
+    submitLabel?: string
+    width?: SettingsPanelPopoverWidth
+  }
 }
 
 export const SESSION_TTL_MS = 10 * 60 * 1000
