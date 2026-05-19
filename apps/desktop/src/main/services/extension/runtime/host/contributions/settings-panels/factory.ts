@@ -7,6 +7,7 @@ export function createSettingsPanelNodeFactory<
     switch: (node) => ({ ...node, kind: 'switch' }),
     checkbox: (node) => ({ ...node, kind: 'checkbox' }),
     select: (node) => ({ ...node, kind: 'select' }),
+    radioGroup: (node) => ({ ...node, kind: 'radioGroup' }),
     multiSelect: (node) => ({ ...node, kind: 'multiSelect' }),
     textInput: (node) => ({ ...node, kind: 'textInput' }),
     textarea: (node) => ({ ...node, kind: 'textarea' }),

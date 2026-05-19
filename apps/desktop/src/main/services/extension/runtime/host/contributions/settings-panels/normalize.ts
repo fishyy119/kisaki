@@ -131,6 +131,7 @@ function normalizeSettingsNode(
     case 'switch':
     case 'checkbox':
     case 'select':
+    case 'radioGroup':
     case 'multiSelect':
     case 'textInput':
     case 'textarea':

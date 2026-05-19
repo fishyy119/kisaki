@@ -8,6 +8,7 @@ import type {
   SettingsPanelMultiSelectNode,
   SettingsPanelNoticeNode,
   SettingsPanelNumberInputNode,
+  SettingsPanelRadioGroupNode,
   SettingsPanelRecordListNode,
   SettingsPanelSelectNode,
   SettingsPanelStatusNode,
@@ -29,6 +30,9 @@ export interface SettingsPanelNodeFactory<TEvents extends SettingsPanelAnyNodeEv
   select(
     node: Omit<SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
   ): SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+  radioGroup(
+    node: Omit<SettingsPanelRadioGroupNode<TEvents['commitEvent'], TEvents['commitResult']>, 'kind'>
+  ): SettingsPanelRadioGroupNode<TEvents['commitEvent'], TEvents['commitResult']>
   multiSelect(
     node: Omit<
       SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>,

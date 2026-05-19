@@ -96,6 +96,7 @@ export function registerBangumiJobCommands(
           score: false,
           tags: false
         },
+        patchExisting: false,
         targetCollection: {
           kind: 'none'
         },
@@ -106,6 +107,7 @@ export function registerBangumiJobCommands(
         profileId: 'string',
         collectionTypes: 'array',
         fields: 'object',
+        patchExisting: 'boolean',
         targetCollection: 'object',
         concurrency: 'number'
       }),
@@ -122,6 +124,7 @@ export function registerBangumiJobCommands(
         dryRun: true,
         profileId: '',
         indexInput: '',
+        patchExisting: false,
         targetCollection: {
           kind: 'none'
         },
@@ -131,6 +134,7 @@ export function registerBangumiJobCommands(
         dryRun: 'boolean',
         profileId: 'string',
         indexInput: 'string',
+        patchExisting: 'boolean',
         targetCollection: 'object',
         concurrency: 'number'
       }),

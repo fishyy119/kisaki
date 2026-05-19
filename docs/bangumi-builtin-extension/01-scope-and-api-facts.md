@@ -119,6 +119,7 @@ Scraper:
 
 - 每个 Kisaki status 都可配置为任意 Bangumi type 或 `skip`。
 - Bangumi `type=5` 抛弃导入默认映射到 `shelved`，也可配置为 `skip`。
-- Kisaki `score` 与 Bangumi `rate` 默认 1:1。
-- Bangumi `rate=0` 导入为 `score=null`。
+- Kisaki `score` 按主应用约定以 0-100 整数存储，并显示为 0-10 一位小数；Bangumi `rate` 是 1-10 整数。
+- 从 Kisaki 同步到 Bangumi 时，本地 `score` 先转换为显示分数，再写入最接近的 Bangumi `rate`。
+- 从 Bangumi 导入到 Kisaki 时，Bangumi `rate=1..10` 写为本地 `score=rate*10`；Bangumi `rate=0` 导入为 `score=null`。
 - 本地空评分默认不同步为远端 `0`，除非用户启用“清除远端评分”。

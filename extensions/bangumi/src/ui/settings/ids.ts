@@ -12,6 +12,10 @@ export const SETTINGS_NODE_IDS = {
   importProfileId: 'import.profileId',
   importCollectionTypes: 'import.collectionTypes',
   importWriteFields: 'import.writeFields',
+  importPatchExisting: 'import.patchExisting',
+  importUseTargetCollection: 'import.useTargetCollection',
+  importTargetCollectionMode: 'import.targetCollectionMode',
+  importTargetCollectionId: 'import.targetCollectionId',
   importIndexInput: 'import.indexInput',
   fullSyncUpdateExisting: 'sync.full.updateExisting',
   fullSyncItems: 'sync.full.items',
@@ -50,4 +54,14 @@ export const IMPORT_WRITE_FIELD_OPTIONS = [
   { value: 'status', label: '游玩状态' },
   { value: 'score', label: '评分' },
   { value: 'tags', label: '标签' }
+] as const
+
+export const INDEX_TARGET_COLLECTION_MODE_OPTIONS = [
+  { value: 'none', label: '不加入合集', description: '只导入缺失游戏，不写入本地合集' },
+  { value: 'existing', label: '选择现有合集', description: '将导入的游戏加入指定本地合集' },
+  {
+    value: 'byIndexTitle',
+    label: '按目录名创建合集',
+    description: '按 Bangumi 目录名创建或复用本地合集'
+  }
 ] as const

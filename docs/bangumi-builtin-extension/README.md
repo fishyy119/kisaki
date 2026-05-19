@@ -27,8 +27,8 @@
 - OAuth flow 由扩展组合 `kisaki.network.request`、`kisaki.runtime.openExternal`、`context.contributions.deeplinkRoutes` 和 `context.secrets` 完成；不新增主应用 OAuth service。
 - 所有 `https://api.bgm.tv/v0/**` 请求都必须经过扩展内唯一 `BangumiClient`，统一 User-Agent、Bearer token、refresh、限速、重试、分页和错误转换；OAuth relay、refresh 和 token status 只经过 `OAuthRelayClient` / `TokenService`。
 - 自动同步只面向游戏收藏状态和评分。不同步章节、书籍进度，也不删除 Bangumi 远端收藏。
-- 导入用户收藏和目录时，创建游戏必须走 `kisaki.ingest.games.addFromScraper` 和用户选择的 game scraper profile；扩展不得绕过 ingest 直接写完整 metadata，也不得修改已有游戏的资料元数据。
-- 导入永远不改已有游戏。profile、目标合集、status、score、tag 和 collection membership 都是单次 command args；只有本次新建的游戏才会按这些 args 写入用户态字段。
+- 导入用户收藏和目录时，创建游戏必须走 `kisaki.ingest.games.addFromScraper` 和用户选择的 game scraper profile；扩展不得绕过 ingest 直接写完整 metadata，也不得修改任何已有游戏的资料元数据。
+- 导入默认只创建缺失游戏；用户显式开启“更新已存在游戏”后，才允许通过 Bangumi subject ID 匹配本地游戏并补写用户态字段或目标本地合集。profile、目标合集、status、score、tag 和 patch existing 都是单次 command args。用户收藏导入的目标合集只来自显式选择；目录导入还可按 Bangumi 目录名自动创建或复用本地静态合集。
 - 设置 UI 使用当前 structured settings panel，复杂操作通过 dialog、tab、table、status、button 和后台 command 组织，不引入第二套 UI 框架。
 - 长流程统一注册为 extension command；settings panel 手动触发的是一次 job，避免在 settings callback 中执行长时间导入或同步。
 - background task 是主应用持久自动化配置；Bangumi 只提供推荐 task 创建入口，task 的运行、取消、历史和后续面板展示都归主应用。

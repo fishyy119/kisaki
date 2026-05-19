@@ -92,15 +92,16 @@
 - 实现用户收藏分页拉取。
 - 实现 collection import planner。
 - 实现按 scraper profile ingest。
-- 实现 play status/score/tag/collection mapping，并确保导入永远不修改已有游戏。
+- 实现 play status/score/tag/target collection 写入，并确保默认不修改已有游戏；只有 `patchExisting=true` 时补写已有游戏用户态字段。
 - 实现 dry run 和 execute。
 
 验收：
 
 - 用户选择“在玩”和“玩过”时只导入对应 Bangumi type。
 - 已有 Bangumi external id 的本地游戏不重复创建。
-- 已有 Bangumi external id 的本地游戏不会被导入命令修改；单次导入 args 显式启用 `fields.score` 后，本次新建游戏可写入 Kisaki score。
-- target collection 可正确建立 membership。
+- `patchExisting=false` 时，已有 Bangumi external id 的本地游戏不会被导入命令修改。
+- `patchExisting=true` 且单次导入 args 显式启用 `fields.score` 后，已有游戏和本次新建游戏都可写入 Kisaki score。
+- 用户选择的 target collection 可正确建立 membership，用户收藏导入不按 Bangumi 收藏类型自动派生本地合集。
 - 导入新建游戏时，即使自动同步开启，也不会立即把导入产生的本地游玩状态/评分写回 Bangumi。
 
 ## Phase 7: 目录导入
@@ -114,7 +115,7 @@
 
 - 输入 Bangumi 目录 URL 能解析 ID 并预览标题。
 - 只导入游戏条目。
-- 按目录标题创建/复用目标合集时不产生重复合集。
+- 可选择现有目标合集，或按目录标题创建/复用目标合集；`patchExisting=true` 时已存在游戏也会加入目标合集。
 
 ## Phase 8: Settings 与 Automation
 

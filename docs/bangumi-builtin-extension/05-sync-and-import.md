@@ -6,8 +6,10 @@
 - 外部身份统一使用 `{ source: "bangumi", id: String(subjectId) }`。
 - 所有 Bangumi 读取和写入经过 `BangumiClient`。
 - 所有本地游戏创建经过 `kisaki.ingest.games.addFromScraper`。
-- 导入不得修改已有游戏，包括资料元数据和用户态字段。
-- status、score、tag 和 collection membership 属于用户态字段；只在单次导入命令显式启用对应字段且游戏由本次导入新建时才写入。
+- 导入不得修改任何已有游戏的资料元数据，包括 name、originalName、description、releaseDate、assets、relatedSites 和 externalIds。
+- 导入默认只创建缺失游戏；只有单次 command args 显式开启 `patchExisting` 时，才按 Bangumi subject ID 匹配并更新已有本地游戏。
+- status、score、tag 和目标本地合集属于用户态写入；新建游戏按本次 args 写入，已有游戏只在 `patchExisting=true` 时写入。
+- 用户收藏导入不会按 Bangumi 收藏类型自动创建或选择本地合集；本地合集只来自用户显式选择的目标合集。目录导入可以选择现有合集，也可以按 Bangumi 目录名自动创建或复用本地静态合集。
 - 导入配置是单次 command args，不写入 `settings.v1`；导入类 background task 需要持久配置时由 task args 保存。
 - 所有长流程走 command + `JobRunner`，支持取消、实时 progress 和摘要；持久历史只来自主应用 task 执行记录。
 
@@ -53,8 +55,8 @@ Fingerprint 输入：
 Suppress 规则：
 
 - `SyncEngine` 写入本地游玩状态/评分前后维护 fingerprint suppress，避免本扩展触发的本地变更再次回写 Bangumi。
-- `CollectionImporter` 和 `IndexImporter` 对每个 `ingest.games.addFromScraper` 返回的 `gameId` 写入 import suppress，覆盖 command 运行期和至少一个 debounce window。
-- import suppress 适用于 created 和 updated 事件，防止导入新游戏、写入新游戏用户态字段或 ingest 创建 external id 后，被自动同步立即回写到 Bangumi。
+- `CollectionImporter` 和 `IndexImporter` 对每个 `ingest.games.addFromScraper` 或 patch existing 涉及的 `gameId` 写入 import suppress，覆盖 command 运行期和至少一个 debounce window。
+- import suppress 适用于 created 和 updated 事件，防止导入新游戏、写入用户态字段或 ingest 创建 external id 后，被自动同步立即回写到 Bangumi。
 - import suppress 只跳过短期事件；窗口结束后用户手动修改游戏状态或评分仍可按自动同步规则处理。
 
 ## 状态同步
@@ -75,10 +77,10 @@ Suppress 规则：
 同步规则：
 
 - score disabled 时不写 `rate`。
-- `score` 为 1-10 时写同值。
+- Kisaki 本地 `score` 是 0-100 整数，显示为 0-10 一位小数；写 Bangumi 前转换为 1-10 整数 `rate`。
 - `score = null` 默认不写 `rate`。
 - 用户启用 `autoSync.clearRemoteScoreWhenEmpty` 时，`score = null` 写 `rate = 0`，用于删除 Bangumi 远端评分。
-- 本地非整数分数如未来出现，写入前必须按设置定义的策略处理；第一版只接受整数 1-10。
+- 本地一位小数评分会四舍五入为 Bangumi 整数 `rate`。
 
 ## 手动全量同步
 
@@ -129,8 +131,9 @@ bangumi.import.my-collections
 - 当前登录账号，来自 `/v0/me`。
 - game scraper profile id。
 - Bangumi 收藏类型过滤：想玩、玩过、在玩、搁置、抛弃。
-- target collection strategy: 不加入合集、加入现有合集、按收藏类型创建/使用合集；默认不加入合集。
+- target collection: 不加入合集、加入用户选择的现有本地合集；默认不加入合集。
 - field mapping: status、score、tags，单次选择，默认全部关闭。
+- patch existing: true/false，默认 false；开启后按 Bangumi subject ID 补写已有本地游戏。
 - dry run。
 
 拉取：
@@ -151,17 +154,20 @@ bangumi.import.my-collections
    }
    ```
 
-2. 调用 `kisaki.ingest.games.addFromScraper(profileId, lookup)` 创建或定位游戏。为避免误改已有游戏，Bangumi importer 不把 `targetCollectionId` 直接传给 ingest。
-3. 对返回的 `gameId` 立即写入 import suppress。
-4. 如果 result 表示本地已有游戏，记录为已存在并结束该条处理，不写 status、score、tag 或 collection membership。
-5. 如果 result 表示本次新建游戏，且游玩状态/评分导入开启，根据 field mapping 写入用户态字段。
-6. 如果 result 表示本次新建游戏，且 tag 导入开启，使用 Bangumi 用户收藏上的自定义 tags，先 list/create tag，再创建 `game-tag` relation。
-7. 如果 result 表示本次新建游戏，且 target collection strategy 不是 `none`，解析目标合集并通过 `collection-game` relation 建立 membership。
-8. 导入流程不得写 name、originalName、description、releaseDate、assets、relatedSites、externalIds 等资料元数据。新增游戏的资料元数据只来自 `ingest.games.addFromScraper` 使用的 scraper profile。
+2. 导入前分页读取本地游戏，建立 Bangumi subject ID -> game 的索引。
+3. 如果本地已有同 subject ID 且 `patchExisting=false`，记录为已存在并跳过。
+4. 如果本地已有同 subject ID 且 `patchExisting=true`，只根据本次 args 补写 status、score、tags 和目标本地合集。
+5. 如果本地不存在同 subject ID，调用 `kisaki.ingest.games.addFromScraper(profileId, lookup)` 创建或定位游戏。Bangumi importer 不把 `targetCollectionId` 传给 ingest，避免 ingest 的 existing 逻辑绕过本扩展的 patchExisting 规则。
+6. 对返回的 `gameId` 立即写入 import suppress。
+7. 如果 result 表示本次新建游戏，且游玩状态/评分导入开启，根据 field mapping 写入用户态字段。
+8. 如果 result 表示本次新建游戏，且 tag 导入开启，使用 Bangumi 用户收藏上的自定义 tags，先 list/create tag，再创建 `game-tag` relation；tag 写入只追加不删除。
+9. 如果 result 表示本次新建游戏，且 target collection 不是 `none`，通过 `collection-game` relation 建立 membership。
+10. 导入流程不得写 name、originalName、description、releaseDate、assets、relatedSites、externalIds 等资料元数据。新增游戏的资料元数据只来自 `ingest.games.addFromScraper` 使用的 scraper profile。
 
 dry run 不调用 ingest，不写 library，只生成计划：
 
-- 已有游戏，且不会被修改。
+- 已有游戏，且 `patchExisting=false` 时不会被修改。
+- 已有游戏，且 `patchExisting=true` 时将补写的 status、score、tag 和目标本地合集差异。
 - 将通过 profile 创建。
 - 缺少 profile。
 - Bangumi 数据缺字段。
@@ -180,7 +186,8 @@ bangumi.import.index
 - Bangumi index ID 或 URL。
 - game scraper profile id。
 - type filter 固定游戏 `type=4`，第一版不暴露关闭。
-- target collection strategy: 不加入合集、加入现有合集、按目录标题创建合集；默认不加入合集。
+- target collection: 不加入合集、加入用户选择的现有本地合集、按 Bangumi 目录名自动创建或复用本地静态合集；默认不加入合集。
+- patch existing: true/false，默认 false；开启后已存在游戏也会加入目标本地合集。
 - dry run。
 
 解析：
@@ -193,12 +200,16 @@ bangumi.import.index
 流程：
 
 1. `GET /v0/indices/{index_id}` 读取目录标题、描述和诊断信息。
-2. `GET /v0/indices/{index_id}/subjects?type=4&limit=50&offset=<n>` 分页拉取游戏条目。
-3. 每个条目的 `id` 作为 Bangumi subject ID。
-4. 使用指定 profile 调用 ingest。
-5. 对每个 ingest 返回的 `gameId` 立即写入 import suppress。
-6. target collection strategy 不是 `none` 时，只为本次新建游戏建立 collection membership；已有游戏不写入合集关系。
-7. 目录导入不得把目录标题、描述或条目附加文本写入游戏资料元数据。
+2. 如果 target collection 是 `byIndexTitle`，用目录标题精确查找同名本地静态合集；找不到时 dry run 展示“将创建”，execute 在首次需要写入 membership 时创建。
+3. `GET /v0/indices/{index_id}/subjects?type=4&limit=50&offset=<n>` 分页拉取游戏条目。
+4. 每个条目的 `id` 作为 Bangumi subject ID。
+5. 导入前分页读取本地游戏，建立 Bangumi subject ID -> game 的索引。
+6. 如果本地已有同 subject ID 且 `patchExisting=false`，记录为已存在并跳过。
+7. 如果本地已有同 subject ID 且 `patchExisting=true` 且选择了目标本地合集，通过 `collection-game` relation 建立 membership。
+8. 如果本地不存在同 subject ID，使用指定 profile 调用 ingest。
+9. 对每个 ingest 返回的 `gameId` 立即写入 import suppress。
+10. target collection 不是 `none` 时，为本次新建游戏建立 collection membership。
+11. 目录导入不得把目录标题、描述或条目附加文本写入游戏资料元数据；目录标题只可作为 `byIndexTitle` 目标合集名称。
 
 ## Import Planner
 
@@ -207,6 +218,7 @@ bangumi.import.index
 ```ts
 type PlannedImportAction =
   | { kind: 'create'; subjectId: string; name: string; fields: string[] }
+  | { kind: 'patch'; subjectId: string; gameId: string; fields: string[] }
   | { kind: 'skip'; subjectId: string; reason: string }
   | { kind: 'error'; subjectId?: string; message: string }
 ```

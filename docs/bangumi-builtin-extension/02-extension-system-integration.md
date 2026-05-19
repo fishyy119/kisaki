@@ -147,6 +147,6 @@ Background task 只能绑定本扩展拥有的 command。宿主会校验：
 规则：
 
 - 创建游戏优先走 ingest。
-- 导入不得修改已有游戏。status、score、tag 和 collection membership 属于用户态字段，只有在单次导入 command args 显式启用对应字段且游戏由本次导入新建时才写入。
+- 导入不得修改资料元数据。默认只创建缺失游戏；用户显式开启 patch existing 后，才可按 Bangumi subject ID 补写已有游戏的 status、score、tag 和目标本地合集。
 - tag 和 collection membership 通过 relation capability 建立。
 - 扩展不直接写 DB、不推断内部表结构、不持久化主应用内部 id 以外的不可序列化对象。

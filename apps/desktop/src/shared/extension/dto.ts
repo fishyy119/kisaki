@@ -28,6 +28,7 @@ import type {
   SettingsPanelNoticeNode,
   SettingsPanelNumberInputNode,
   SettingsPanelPopoverWidth,
+  SettingsPanelRadioGroupNode,
   SettingsPanelRecordListNode,
   SettingsPanelRefreshReason,
   SettingsPanelSelectNode,
@@ -564,6 +565,10 @@ export type ExtensionResolvedSettingsPanelSelectNode = ExtensionResolvedSettings
   SettingsPanelSelectNode<unknown, unknown>
 >
 
+export type ExtensionResolvedSettingsPanelRadioGroupNode = ExtensionResolvedSettingsPanelCommitNode<
+  SettingsPanelRadioGroupNode<unknown, unknown>
+>
+
 export type ExtensionResolvedSettingsPanelMultiSelectNode =
   ExtensionResolvedSettingsPanelCommitNode<SettingsPanelMultiSelectNode<unknown, unknown>>
 
@@ -602,6 +607,7 @@ export type ExtensionResolvedSettingsPanelNode =
   | ExtensionResolvedSettingsPanelSwitchNode
   | ExtensionResolvedSettingsPanelCheckboxNode
   | ExtensionResolvedSettingsPanelSelectNode
+  | ExtensionResolvedSettingsPanelRadioGroupNode
   | ExtensionResolvedSettingsPanelMultiSelectNode
   | ExtensionResolvedSettingsPanelTextInputNode
   | ExtensionResolvedSettingsPanelTextareaNode

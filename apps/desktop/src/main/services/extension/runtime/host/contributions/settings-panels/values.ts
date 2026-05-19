@@ -28,6 +28,7 @@ export function validateCommitValue(
     case 'checkbox':
       return typeof value === 'boolean' ? null : `${kind} callback requires a boolean value.`
     case 'select':
+    case 'radioGroup':
     case 'textInput':
     case 'textarea':
       return typeof value === 'string' ? null : `${kind} callback requires a string value.`

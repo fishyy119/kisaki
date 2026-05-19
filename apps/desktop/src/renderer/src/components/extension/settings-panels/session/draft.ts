@@ -13,6 +13,7 @@ export function isSettingsValueNode(node: ExtensionResolvedSettingsPanelNode): b
     node.kind === 'switch' ||
     node.kind === 'checkbox' ||
     node.kind === 'select' ||
+    node.kind === 'radioGroup' ||
     node.kind === 'multiSelect' ||
     node.kind === 'textInput' ||
     node.kind === 'textarea' ||

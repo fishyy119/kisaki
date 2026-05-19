@@ -16,7 +16,9 @@ import { createSettingsResources } from '../resources'
 import { createMyCollectionsImportArgs } from './args'
 import {
   createDialogImportProfileField,
+  createDialogImportTargetCollectionField,
   readImportCollectionTypes,
+  readImportPatchExisting,
   readImportWriteFields
 } from './options'
 
@@ -27,8 +29,9 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
     submitLabel: '导入',
     async resolve(context, ui) {
       const resources = createSettingsResources(runtime)
-      const [profiles, isRunning] = await Promise.all([
+      const [profiles, collections, isRunning] = await Promise.all([
         resources.profiles(),
+        resources.collections(),
         resources.isCommandRunning(BANGUMI_COMMAND_IDS.importMyCollections)
       ])
       const previewArgs = createMyCollectionsImportArgs(context.values, profiles[0]?.id ?? '', true)
@@ -44,6 +47,11 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             settings: ui,
             values: context.values,
             profiles
+          }),
+          createDialogImportTargetCollectionField({
+            settings: ui,
+            values: context.values,
+            collections
           }),
           {
             id: 'my-collections-types',
@@ -64,12 +72,26 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
           {
             id: 'import-write-fields',
             label: '写入项',
-            description: '只对本次新建的游戏写入这些用户态数据',
+            description: '选择要从 Bangumi 收藏写入本地的用户态数据',
             content: [
               ui.multiSelect({
                 id: SETTINGS_NODE_IDS.importWriteFields,
                 initialValue: readImportWriteFields(context.values),
                 options: IMPORT_WRITE_FIELD_OPTIONS,
+                onCommit(event) {
+                  return event.refresh('dialog')
+                }
+              })
+            ]
+          },
+          {
+            id: 'import-patch-existing',
+            label: '更新已存在游戏',
+            description: '按 Bangumi ID 匹配本地游戏，并补写选中的用户态数据与目标合集',
+            content: [
+              ui.switch({
+                id: SETTINGS_NODE_IDS.importPatchExisting,
+                initialValue: readImportPatchExisting(context.values),
                 onCommit(event) {
                   return event.refresh('dialog')
                 }

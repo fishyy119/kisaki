@@ -1,7 +1,13 @@
 import type { SerializableRecord } from '@kisaki/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { readString } from '../shared/values'
-import { createImportWriteFieldArgs, readImportCollectionTypes } from './options'
+import {
+  createIndexTargetCollectionArg,
+  createImportTargetCollectionArg,
+  createImportWriteFieldArgs,
+  readImportCollectionTypes,
+  readImportPatchExisting
+} from './options'
 
 export function createMyCollectionsImportArgs(
   values: SerializableRecord,
@@ -13,9 +19,8 @@ export function createMyCollectionsImportArgs(
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     collectionTypes: readImportCollectionTypes(values),
     fields: createImportWriteFieldArgs(values),
-    targetCollection: {
-      kind: 'none'
-    },
+    patchExisting: readImportPatchExisting(values),
+    targetCollection: createImportTargetCollectionArg(values),
     concurrency: 4
   }
 }
@@ -29,9 +34,8 @@ export function createIndexImportArgs(
     dryRun,
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     indexInput: readString(values, SETTINGS_NODE_IDS.importIndexInput, ''),
-    targetCollection: {
-      kind: 'none'
-    },
+    patchExisting: readImportPatchExisting(values),
+    targetCollection: createIndexTargetCollectionArg(values),
     concurrency: 4
   }
 }

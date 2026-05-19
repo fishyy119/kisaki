@@ -11,7 +11,13 @@ import type {
 import type { BangumiSettingsRuntime } from '../runtime'
 import { createSettingsResources } from '../resources'
 import { createIndexImportArgs } from './args'
-import { createDialogImportProfileField } from './options'
+import {
+  createDialogIndexTargetCollectionFields,
+  createDialogImportProfileField,
+  readIndexTargetCollectionMode,
+  readImportPatchExisting,
+  readImportTargetCollectionId
+} from './options'
 
 export function createIndexDialog(runtime: BangumiSettingsRuntime) {
   return defineSettingsPanelDialog({
@@ -20,10 +26,15 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
     submitLabel: '导入',
     async resolve(context, ui) {
       const resources = createSettingsResources(runtime)
-      const [profiles, isRunning] = await Promise.all([
+      const [profiles, collections, isRunning] = await Promise.all([
         resources.profiles(),
+        resources.collections(),
         resources.isCommandRunning(BANGUMI_COMMAND_IDS.importIndex)
       ])
+      const targetCollectionMode = readIndexTargetCollectionMode(context.values)
+      const hasTargetCollection =
+        targetCollectionMode === 'byIndexTitle' ||
+        (targetCollectionMode === 'existing' && !!readImportTargetCollectionId(context.values))
       const previewArgs = createIndexImportArgs(context.values, profiles[0]?.id ?? '', true)
       const preview = runtime.previewRegistry.get(context.sessionId, 'import.index', previewArgs)
 
@@ -50,6 +61,26 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             values: context.values,
             profiles
           }),
+          ...createDialogIndexTargetCollectionFields({
+            settings: ui,
+            values: context.values,
+            collections
+          }),
+          {
+            id: 'import-index-patch-existing',
+            label: '更新已存在游戏',
+            description: '按 Bangumi ID 匹配本地游戏，并把已存在游戏也加入目标合集',
+            disabled: !hasTargetCollection,
+            content: [
+              ui.switch({
+                id: SETTINGS_NODE_IDS.importPatchExisting,
+                initialValue: readImportPatchExisting(context.values),
+                onCommit(event) {
+                  return event.refresh('dialog')
+                }
+              })
+            ]
+          },
           {
             id: 'index-preview-action',
             label: '预览',

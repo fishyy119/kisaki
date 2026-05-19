@@ -180,17 +180,24 @@ interface BangumiImportWriteFields {
   tags: boolean
 }
 
+interface BangumiImportPatchOptions {
+  patchExisting: boolean
+  targetCollection: BangumiImportTargetCollection
+}
+
 type BangumiImportTargetCollection =
   | { kind: 'none' }
   | { kind: 'existing'; collectionId: string }
-  | { kind: 'byCollectionType' }
   | { kind: 'byIndexTitle' }
 ```
 
 默认值：
 
 - `fields.status`、`fields.score`、`fields.tags`: `false`。
+- `patchExisting`: `false`。
 - `targetCollection.kind`: `none`。
+
+`byIndexTitle` 只允许用于目录导入，表示以 Bangumi 目录标题查找同名本地静态合集，找不到时自动创建；用户收藏导入不按 Bangumi 收藏类型或其他远端值自动派生本地合集。
 
 ## Secrets Schema
 

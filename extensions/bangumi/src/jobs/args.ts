@@ -5,7 +5,6 @@ import { BangumiExtensionError } from '../shared/errors'
 export type BangumiImportTargetCollection =
   | { kind: 'none' }
   | { kind: 'existing'; collectionId: string }
-  | { kind: 'byCollectionType' }
   | { kind: 'byIndexTitle' }
 
 export interface BangumiImportWriteFields {
@@ -39,6 +38,7 @@ export interface BangumiImportMyCollectionsArgs {
   profileId: string
   collectionTypes: readonly BangumiCollectionType[]
   fields: BangumiImportWriteFields
+  patchExisting: boolean
   targetCollection: BangumiImportTargetCollection
   concurrency: number
 }
@@ -48,6 +48,7 @@ export interface BangumiImportIndexArgs {
   profileId: string
   indexInput: string
   indexId: number
+  patchExisting: boolean
   targetCollection: BangumiImportTargetCollection
   concurrency: number
 }
@@ -90,7 +91,8 @@ export function normalizeImportMyCollectionsArgs(
     profileId: readRequiredString(args.profileId, '请选择用于创建游戏的 scraper profile。'),
     collectionTypes: normalizeCollectionTypes(args.collectionTypes),
     fields: normalizeImportWriteFields(args.fields),
-    targetCollection: normalizeTargetCollection(args.targetCollection, 'myCollections'),
+    patchExisting: readBoolean(args.patchExisting, false),
+    targetCollection: normalizeTargetCollection(args.targetCollection, false),
     concurrency: readInteger(args.concurrency, 4, { min: 1, max: 8 })
   }
 }
@@ -103,7 +105,8 @@ export function normalizeImportIndexArgs(args: SerializableRecord): BangumiImpor
     profileId: readRequiredString(args.profileId, '请选择用于创建游戏的 scraper profile。'),
     indexInput,
     indexId: parseBangumiIndexId(indexInput),
-    targetCollection: normalizeTargetCollection(args.targetCollection, 'index'),
+    patchExisting: readBoolean(args.patchExisting, false),
+    targetCollection: normalizeTargetCollection(args.targetCollection, true),
     concurrency: readInteger(args.concurrency, 4, { min: 1, max: 8 })
   }
 }
@@ -158,7 +161,7 @@ function normalizeImportWriteFields(value: unknown): BangumiImportWriteFields {
 
 function normalizeTargetCollection(
   value: unknown,
-  commandKind: 'myCollections' | 'index'
+  allowByIndexTitle: boolean
 ): BangumiImportTargetCollection {
   const record = asRecord(value)
   const kind = typeof record?.kind === 'string' ? record.kind : 'none'
@@ -170,11 +173,7 @@ function normalizeTargetCollection(
     }
   }
 
-  if (kind === 'byCollectionType' && commandKind === 'myCollections') {
-    return { kind }
-  }
-
-  if (kind === 'byIndexTitle' && commandKind === 'index') {
+  if (kind === 'byIndexTitle' && allowByIndexTitle) {
     return { kind }
   }
 

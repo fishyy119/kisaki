@@ -264,6 +264,8 @@ function validateSettingsPanelNodeLike(
       return validateSettingsPanelValueNode(value, path, state, 'boolean')
     case 'select':
       return validateSettingsPanelSelect(value, path, state)
+    case 'radioGroup':
+      return validateSettingsPanelRadioGroup(value, path, state)
     case 'multiSelect':
       return validateSettingsPanelMultiSelect(value, path, state)
     case 'textInput':
@@ -324,6 +326,18 @@ function validateSettingsPanelSelect(
     ...validateOptionalString(value.placeholder, `${path}.placeholder`, {
       typeMessage: 'placeholder must be a string when provided.'
     }),
+    ...validateSettingsPanelSelectOptions(value.options, `${path}.options`)
+  ]
+}
+
+function validateSettingsPanelRadioGroup(
+  value: Record<string, unknown>,
+  path: string,
+  state: SurfaceValidationState
+): ValidationIssue[] {
+  return [
+    ...validateUnknownKeys(value, createKeySet(...VALUE_NODE_BASE_KEYS, 'options'), path),
+    ...validateSettingsPanelValueNodeBase(value, path, state, 'string'),
     ...validateSettingsPanelSelectOptions(value.options, `${path}.options`)
   ]
 }

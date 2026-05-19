@@ -69,6 +69,14 @@ export interface SettingsPanelSelectNode<
   options: readonly SettingsPanelSelectOption[]
 }
 
+export interface SettingsPanelRadioGroupNode<
+  TCommitEvent,
+  TCommitResult
+> extends SettingsPanelValueNodeBase<string, TCommitEvent, TCommitResult> {
+  kind: 'radioGroup'
+  options: readonly SettingsPanelSelectOption[]
+}
+
 export interface SettingsPanelMultiSelectNode<
   TCommitEvent,
   TCommitResult
@@ -185,6 +193,7 @@ export type SettingsPanelControlNode<TEvents extends SettingsPanelAnyNodeEvents>
   | SettingsPanelSwitchNode<TEvents['commitEvent'], TEvents['commitResult']>
   | SettingsPanelCheckboxNode<TEvents['commitEvent'], TEvents['commitResult']>
   | SettingsPanelSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
+  | SettingsPanelRadioGroupNode<TEvents['commitEvent'], TEvents['commitResult']>
   | SettingsPanelMultiSelectNode<TEvents['commitEvent'], TEvents['commitResult']>
   | SettingsPanelTextInputNode<TEvents['commitEvent'], TEvents['commitResult']>
   | SettingsPanelTextareaNode<TEvents['commitEvent'], TEvents['commitResult']>

@@ -5,6 +5,7 @@ import { cn } from '@renderer/utils'
 import SwitchNode from '../node/switch-node.vue'
 import CheckboxNode from '../node/checkbox-node.vue'
 import SelectNode from '../node/select-node.vue'
+import RadioGroupNode from '../node/radio-group-node.vue'
 import MultiSelectNode from '../node/multi-select-node.vue'
 import TextInputNode from '../node/text-input-node.vue'
 import TextareaNode from '../node/textarea-node.vue'
@@ -113,6 +114,14 @@ function nodeWrapperClass(node: ExtensionResolvedSettingsPanelNode): string {
         />
         <SelectNode
           v-else-if="node.kind === 'select'"
+          :node="node"
+          :field-id="props.field.id"
+          :field-disabled="props.field.disabled"
+          :state="props.state"
+          :controller="props.controller"
+        />
+        <RadioGroupNode
+          v-else-if="node.kind === 'radioGroup'"
           :node="node"
           :field-id="props.field.id"
           :field-disabled="props.field.disabled"
