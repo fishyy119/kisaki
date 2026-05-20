@@ -23,6 +23,8 @@ import type {
   SettingsPanelComparisonListNode,
   SettingsPanelDialogSize,
   SettingsPanelDividerNode,
+  SettingsPanelFieldHelp,
+  SettingsPanelFieldLink,
   SettingsPanelImageNode,
   SettingsPanelLinkNode,
   SettingsPanelMultiSelectNode,
@@ -630,6 +632,8 @@ export interface ExtensionResolvedSettingsPanelField {
   id: string
   label?: string
   description?: string
+  help?: SettingsPanelFieldHelp
+  link?: SettingsPanelFieldLink
   hidden?: boolean
   disabled?: boolean
   orientation?: 'vertical' | 'horizontal' | 'responsive'

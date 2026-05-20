@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Field, FieldContent, FieldDescription, FieldLabel } from '@renderer/components/ui/field'
+import { Field, FieldContent } from '@renderer/components/ui/field'
+import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
+import { notify } from '@renderer/core/notify'
 import { cn } from '@renderer/utils'
 import SwitchNode from '../node/switch-node.vue'
 import CheckboxNode from '../node/checkbox-node.vue'
@@ -73,24 +75,27 @@ function nodeWrapperClass(node: ExtensionResolvedSettingsPanelNode): string {
     !node.grow && !node.width && props.field.contentLayout !== 'inline' && 'w-full'
   )
 }
+
+async function openLink(link: { href: string }): Promise<void> {
+  try {
+    unwrapIpcVoid(await ipcManager.invoke('native:open-external', link.href))
+  } catch (error) {
+    notify.error('打开链接失败', error instanceof Error ? error.message : String(error))
+  }
+}
 </script>
 
 <template>
   <Field
     v-if="!props.field.hidden"
     :orientation="orientation"
+    :label="props.field.label"
+    :description="props.field.description"
+    :help="props.field.help"
+    :link="props.field.link"
     :class="fieldClass"
+    @link-click="openLink"
   >
-    <div
-      v-if="props.field.label || props.field.description"
-      class="space-y-1"
-    >
-      <FieldLabel v-if="props.field.label">{{ props.field.label }}</FieldLabel>
-      <FieldDescription v-if="props.field.description">
-        {{ props.field.description }}
-      </FieldDescription>
-    </div>
-
     <FieldContent :class="contentClass">
       <div
         v-for="node in visibleNodes"

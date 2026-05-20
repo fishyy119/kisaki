@@ -8,10 +8,23 @@ export interface SettingsPanelNodeEvents<TChangeEvent, TChangeResult, TButtonEve
   buttonResult: TButtonResult
 }
 
+export interface SettingsPanelFieldHelp {
+  text: string
+  icon?: string
+}
+
+export interface SettingsPanelFieldLink {
+  href: string
+  label: string
+  icon?: string
+}
+
 export interface SettingsPanelField<TEvents extends SettingsPanelAnyNodeEvents> {
   id: string
   label?: string
   description?: string
+  help?: SettingsPanelFieldHelp
+  link?: SettingsPanelFieldLink
   hidden?: boolean
   disabled?: boolean
   orientation?: 'vertical' | 'horizontal' | 'responsive'

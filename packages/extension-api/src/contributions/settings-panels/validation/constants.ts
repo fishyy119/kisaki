@@ -111,6 +111,8 @@ export const FIELD_KEYS = new Set<string>([
   'id',
   'label',
   'description',
+  'help',
+  'link',
   'hidden',
   'disabled',
   'orientation',
@@ -119,6 +121,8 @@ export const FIELD_KEYS = new Set<string>([
   'contentColumns',
   'content'
 ])
+export const FIELD_HELP_KEYS = new Set<string>(['text', 'icon'])
+export const FIELD_LINK_KEYS = new Set<string>(['href', 'label', 'icon'])
 export const TAB_KEYS = new Set<string>(['id', 'label', 'description', 'icon', 'fields'])
 export const NODE_BASE_KEYS = ['kind', 'id', 'hidden', 'disabled', 'grow', 'width'] as const
 export const VALUE_NODE_BASE_KEYS = [...NODE_BASE_KEYS, 'initialValue', 'onChange'] as const

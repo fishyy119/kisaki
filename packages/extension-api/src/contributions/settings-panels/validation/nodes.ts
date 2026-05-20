@@ -19,6 +19,8 @@ import {
   COMPARISON_LIST_KEYS,
   COMPARISON_ROW_KEYS,
   COMPARISON_SUMMARY_ITEM_KEYS,
+  FIELD_HELP_KEYS,
+  FIELD_LINK_KEYS,
   FIELD_KEYS,
   NODE_BASE_KEYS,
   RECORD_LIST_COLUMN_KEYS,
@@ -151,6 +153,8 @@ function validateSettingsPanelFieldLike(
     ...validateOptionalString(value.description, `${path}.description`, {
       typeMessage: 'description must be a string when provided.'
     }),
+    ...validateSettingsPanelFieldHelp(value.help, `${path}.help`),
+    ...validateSettingsPanelFieldLink(value.link, `${path}.link`),
     ...validateOptionalBoolean(value.hidden, `${path}.hidden`).map((issue) => ({
       ...issue,
       message: 'hidden must be a boolean when provided.'
@@ -187,6 +191,60 @@ function validateSettingsPanelFieldLike(
 
   issues.push(...validateFieldContent(value.content, `${path}.content`, state))
   return issues
+}
+
+function validateSettingsPanelFieldHelp(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!isPlainObject(value)) {
+    return [{ path, message: 'help must be an object when provided.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, FIELD_HELP_KEYS, path),
+    ...validateRequiredString(value.text, `${path}.text`, {
+      trim: true,
+      valueMessage: 'Help text must be a non-empty string.'
+    }),
+    ...validateOptionalIcon(value.icon, `${path}.icon`, 'Help icon')
+  ]
+}
+
+function validateSettingsPanelFieldLink(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!isPlainObject(value)) {
+    return [{ path, message: 'link must be an object when provided.' }]
+  }
+
+  return [
+    ...validateUnknownKeys(value, FIELD_LINK_KEYS, path),
+    ...validateRequiredString(value.href, `${path}.href`, {
+      trim: true,
+      valueMessage: 'Link href must be a non-empty string.'
+    }),
+    ...validateRequiredString(value.label, `${path}.label`, {
+      trim: true,
+      valueMessage: 'Link label must be a non-empty string.'
+    }),
+    ...validateOptionalIcon(value.icon, `${path}.icon`, 'Link icon')
+  ]
+}
+
+function validateOptionalIcon(value: unknown, path: string, label: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  return validateRequiredString(value, path, {
+    trim: true,
+    typeMessage: `${label} must be a string when provided.`,
+    valueMessage: `${label} must be a non-empty string when provided.`
+  })
 }
 
 function validateSettingsPanelTabLike(

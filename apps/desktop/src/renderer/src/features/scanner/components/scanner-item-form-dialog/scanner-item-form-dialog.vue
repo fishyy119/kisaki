@@ -12,7 +12,7 @@ import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useRenderState } from '@renderer/composables'
 import { scanners, settings, type Scanner, type NameExtractionRule } from '@shared/db'
-import { ipcManager } from '@renderer/core/ipc'
+import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import {
   Dialog,
@@ -24,7 +24,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
+import { Field, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import {
   InputGroup,
@@ -39,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@renderer/components/ui/tooltip'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { CollectionSelect } from '@renderer/components/shared/collection'
 import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
@@ -71,6 +70,21 @@ const isTestDialogOpen = ref(false)
 const isRulesDialogOpen = ref(false)
 
 const typeOptions = [{ value: 'game', label: '游戏' }] as const
+const entityDepthHelp = {
+  text: '指定媒体实体在目录结构中的层级深度。0 表示扫描路径的直接子项就是实体，1 表示子目录下的项目是实体，以此类推。'
+} as const
+const scraperProfileHelp = {
+  text: '选择用于获取元数据的刮削配置。配置决定了从哪些数据源获取哪些字段的数据。'
+} as const
+const scanIntervalDescription = '设置为 0 表示不自动扫描'
+const nameExtractionRulesHelp = {
+  text: '按顺序应用正则表达式规则，从文件夹名中提取游戏名称。规则使用命名捕获组 (?<name>...) 提取名称。',
+  icon: 'icon-[mdi--regex]'
+} as const
+const nameExtractionRulesLink = {
+  href: 'https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group',
+  label: '查看命名捕获组文档'
+} as const
 
 // Form state
 interface FormData {
@@ -251,6 +265,14 @@ async function handleAddToIgnoreList(ignoreName: string) {
       .where(eq(settings.id, 0))
   }
 }
+
+async function openLink(link: { href: string }): Promise<void> {
+  try {
+    unwrapIpcVoid(await ipcManager.invoke('native:open-external', link.href))
+  } catch (error) {
+    notify.error('打开链接失败', error instanceof Error ? error.message : String(error))
+  }
+}
 </script>
 
 <template>
@@ -270,8 +292,7 @@ async function handleAddToIgnoreList(ignoreName: string) {
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
             <FieldGroup>
-              <Field>
-                <FieldLabel>名称</FieldLabel>
+              <Field label="名称">
                 <FieldContent>
                   <Input
                     v-model="formData.name"
@@ -281,8 +302,7 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel>类型</FieldLabel>
+              <Field label="类型">
                 <FieldContent>
                   <Select v-model="formData.type">
                     <SelectTrigger class="w-full">
@@ -301,8 +321,7 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel>扫描路径</FieldLabel>
+              <Field label="扫描路径">
                 <FieldContent>
                   <div class="flex gap-2">
                     <Input
@@ -326,25 +345,11 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel
-                  for="entityDepth"
-                  class="flex items-center gap-1.5"
-                >
-                  实体层级
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Icon
-                        icon="icon-[mdi--information-outline]"
-                        class="size-3.5 text-muted-foreground cursor-help"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent class="max-w-xs">
-                      指定媒体实体在目录结构中的层级深度。0 表示扫描路径的直接子项就是实体，1
-                      表示子目录下的项目是实体，以此类推。
-                    </TooltipContent>
-                  </Tooltip>
-                </FieldLabel>
+              <Field
+                for="entityDepth"
+                label="实体层级"
+                :help="entityDepthHelp"
+              >
                 <FieldContent>
                   <Input
                     id="entityDepth"
@@ -356,24 +361,10 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel
-                  for="profile"
-                  class="flex items-center gap-1.5"
-                >
-                  刮削配置
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Icon
-                        icon="icon-[mdi--information-outline]"
-                        class="size-3.5 text-muted-foreground cursor-help"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent class="max-w-xs">
-                      选择用于获取元数据的刮削配置。配置决定了从哪些数据源获取哪些字段的数据。
-                    </TooltipContent>
-                  </Tooltip>
-                </FieldLabel>
+              <Field
+                label="刮削配置"
+                :help="scraperProfileHelp"
+              >
                 <FieldContent>
                   <ScraperProfileSelect
                     v-model="formData.scraperProfileId"
@@ -382,8 +373,7 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel>目标合集</FieldLabel>
+              <Field label="目标合集">
                 <FieldContent>
                   <CollectionSelect
                     v-model="formData.targetCollectionId"
@@ -393,22 +383,11 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel
-                  for="interval"
-                  class="flex items-center gap-1.5"
-                >
-                  自动扫描间隔
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Icon
-                        icon="icon-[mdi--information-outline]"
-                        class="size-3.5 text-muted-foreground cursor-help"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>设置为 0 表示不自动扫描</TooltipContent>
-                  </Tooltip>
-                </FieldLabel>
+              <Field
+                for="interval"
+                label="自动扫描间隔"
+                :description="scanIntervalDescription"
+              >
                 <FieldContent>
                   <InputGroup>
                     <InputGroupInput
@@ -424,22 +403,12 @@ async function handleAddToIgnoreList(ignoreName: string) {
                 </FieldContent>
               </Field>
 
-              <Field>
-                <FieldLabel class="flex items-center gap-1.5">
-                  名称提取规则
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Icon
-                        icon="icon-[mdi--information-outline]"
-                        class="size-3.5 text-muted-foreground cursor-help"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent class="max-w-xs">
-                      按顺序应用正则表达式规则，从文件夹名中提取游戏名称。规则使用命名捕获组
-                      (?&lt;name&gt;...) 提取名称。
-                    </TooltipContent>
-                  </Tooltip>
-                </FieldLabel>
+              <Field
+                label="名称提取规则"
+                :help="nameExtractionRulesHelp"
+                :link="nameExtractionRulesLink"
+                @link-click="openLink"
+              >
                 <FieldContent>
                   <Button
                     type="button"

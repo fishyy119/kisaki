@@ -112,6 +112,8 @@ function normalizeSettingsPanelField(
     id: field.id,
     label: field.label,
     description: field.description,
+    help: field.help,
+    link: field.link,
     hidden: field.hidden,
     disabled: field.disabled,
     orientation: field.orientation ?? 'horizontal',
