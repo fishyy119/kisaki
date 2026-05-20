@@ -59,7 +59,7 @@ kisaki://ext/builtin.bangumi/oauth-callback
 3. 如果 `expiresAt` 距当前时间大于安全窗口，直接返回 access token。
 4. 如果将过期或已过期，调用 relay `POST /refresh`，请求体只包含用户 refresh token。
 5. 成功后原子写回 `auth.token`。
-6. 失败时保留旧 token 和错误状态，settings panel 显示可重试操作。
+6. 失败时保留既有 token 和错误状态，settings panel 显示可重试操作。
 
 安全窗口建议 `5 * 60 * 1000` ms。
 
@@ -101,6 +101,7 @@ BangumiClient
 - 统一 429、5xx、network error retry。
 - 统一分页 helper。
 - 统一把 Bangumi API error 转成内部错误 code。
+- 统一处理 `BangumiMediaScope` 到 `SubjectType` 的转换。
 
 禁止：
 
@@ -129,12 +130,12 @@ User-Agent 中不得包含用户 token、username 或本机路径。
 
 ## Rate Limiter
 
-限速是 Bangumi provider client 级别的共享限制，不是 job 并发限制：
+限速是 Bangumi client 级别的共享限制，不是 job 并发限制：
 
 - 默认每 `60` 秒最多 `120` 次请求。
 - 用户可在 Advanced 调整窗口请求数和窗口长度。
 - 设置修改影响后续进入 `BangumiClient` 队列的新请求。
-- 批量导入仍可并行执行 ingest item；只有触达 Bangumi API 的步骤排队。
+- 批量导入仍可并行执行本地 ingest item；只有触达 Bangumi API 的步骤排队。
 
 实现建议：
 
@@ -147,21 +148,44 @@ User-Agent 中不得包含用户 token、username 或本机路径。
 
 ## API Surface
 
-第一版 `BangumiClient` 暴露：
+第一版 `BangumiClient` 暴露 media-scoped 方法：
 
 - `getMe()`
-- `searchGameSubjects(payload, page)`
-- `getSubject(subjectId)`
-- `getSubjectPersons(subjectId)`
-- `getSubjectCharacters(subjectId)`
-- `getSubjectRelations(subjectId)`
-- `getSubjectImageUrl(subjectId, type)`
+- `searchSubjects(scope, payload, page)`
+- `getSubject(ref)`
+- `getSubjectPersons(ref)`
+- `getSubjectCharacters(ref)`
+- `getSubjectRelations(ref)`
+- `getSubjectImageUrl(ref, type)`
 - `getUserCollections(username, query)`
-- `getUserCollection(username, subjectId)`
-- `upsertMyCollection(subjectId, payload)`
-- `patchMyCollection(subjectId, payload)`
+- `getUserCollection(username, ref)`
+- `upsertMyCollection(ref, payload)`
+- `patchMyCollection(ref, payload)`
 - `getIndex(indexId)`
 - `getIndexSubjects(indexId, query)`
+
+其中：
+
+```ts
+interface BangumiSubjectRef {
+  scope: BangumiMediaScope
+  subjectType: 1 | 2 | 3 | 4
+  subjectId: number
+}
+
+interface BangumiUserCollectionsQuery {
+  scope: BangumiMediaScope
+  collectionTypes?: readonly BangumiCollectionType[]
+  limit?: number
+  offset?: number
+}
+
+interface BangumiIndexSubjectsQuery {
+  scope: BangumiMediaScope
+  limit?: number
+  offset?: number
+}
+```
 
 分页统一返回：
 
@@ -191,8 +215,9 @@ interface BangumiCollectionPatch {
 
 - 自动同步只写 `type` 和/或 `rate`。
 - 导入不会写远端。
-- `ep_status` / `vol_status` 不用于游戏。
+- `ep_status` / `vol_status` 不进入同步范围。
 - 空 payload 不发请求。
+- 写远端 collection 前必须持有 `BangumiSubjectRef`，不得只传裸 subject id。
 
 ## Relay Failure Handling
 

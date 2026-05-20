@@ -1,136 +1,123 @@
 # 07 Implementation Plan
 
-## Phase 0: 文档与基线
+当前 `extensions/bangumi` 已完成 Phase 5，OAuth、BangumiClient、game scraper、commands 和 sync engine 已进入可回归状态。后续实施从 Phase 5.5 开始。
 
-- 以本文档集作为新的实施入口。
-- 删除旧 `docs/bangumi-extension-redesign`。
-- 确认当前 `extensions/bangumi` 仍可 typecheck，记录旧 scraper 行为作为回归基线。
-- 确认 OAuth Relay 生产 endpoint、健康检查 URL 和 Bangumi 开发者平台 callback 配置。
+Phase 5.5 是唯一处理当前代码迁移的阶段，具体迁移清单见 [08-media-scope-refactor.md](08-media-scope-refactor.md)。Phase 6 之后默认建立在 Phase 5.5 已完成的 media scope 架构上。
 
-## Phase 1: 项目结构与状态层
+## 实施顺序
 
-- 更新 `extensions/bangumi/manifest.json` categories 和 description。
-- 重建 `src/` 目录结构。
-- 实现 `SettingsStore`、默认设置、schema normalization。
-- 实现 `TokenStore` 和 secrets schema。
-- 明确 job 不保存 history；持久 task history 只属于主应用 BackgroundTaskService。
-- 删除旧设置入口。
-- 不设旧版本兼容层；旧数据一律作废。
+| 阶段      | 目标                   |
+| --------- | ---------------------- |
+| Phase 5.5 | Media Scope Refactor   |
+| Phase 6   | Media-scoped 收藏导入  |
+| Phase 7   | Media-scoped 目录导入  |
+| Phase 8   | Settings 与 Automation |
+| Phase 9   | 验证与发布             |
 
-验收：
+## 已完成基线
 
-- 新 settings schema 初次启动可创建默认值。
-- 旧数据不会影响新实现。
-- `context.secrets` 中只出现新 keys。
+Phase 0-5 作为回归基线，不作为后续开发阶段重复执行：
 
-## Phase 2: OAuth 与 BangumiClient
-
-- 实现 `OAuthRelayClient`。
-- 实现 deeplink callback 注册与 `OAuthFlow`。
-- 实现 `TokenService` refresh、token status 验证和 401 retry；token status 走 relay，不进入 `BangumiClient`。
-- 实现 `BangumiClient`、limiter、retry、pagination、error normalization。
-- 实现 `AccountService`。
-- Account settings tab 支持登录、检查登录结果、验证、刷新、退出。
+- OAuth 登录、refresh、退出。
+- `BangumiClient`、limiter、retry、pagination、error normalization。
+- game scraper provider 的 search、resolve、openSession。
+- command 注册、args normalization、progress、summary、cancel。
+- settings callback 只启动 command job，不直接跑长任务。
+- game 自动同步 play status/score。
+- sync fingerprint、suppressor、queue、full sync dry run/execute。
 
 验收：
 
-- 用户可通过系统浏览器完成登录。
-- 登录后 settings panel 显示 `/v0/me` 账号摘要。
-- refresh token 走 relay；桌面端无 `client_secret`。
-- relay 不可用时 UI 提示清晰，未过期 token 的普通 API 请求仍可执行。
+- 运行当前验证命令，确认 Phase 5 基线仍可通过。
+- game scraper、game full sync、game auto sync 行为不得退化。
+- `rg -n "\breal\b|三次元" extensions/bangumi/src` 不应把三次元作为支持项暴露。
 
-## Phase 3: Scraper Provider
+## Phase 5.5: Media Scope Refactor
 
-- 将现有 Bangumi provider 改为使用新 `BangumiClient`。
-- 保持 `search`、`resolve`、`openSession` contract。
-- 保留或重整 format helper，移除旧 token/storage/硬编码限速。
-- 确保所有 subject/person/character/image 请求走共享 limiter。
+执行 [08-media-scope-refactor.md](08-media-scope-refactor.md)。
 
-验收：
+目标：
 
-- 搜索游戏只返回 `type=4`。
-- knownIds 中有 Bangumi subject ID 时不再搜索，直接 resolve。
-- ingest 通过 Bangumi provider 能创建带 Bangumi external id 的游戏。
-
-## Phase 4: Commands 与 JobRunner
-
-- 注册 `bangumi.auth.refresh`。
-- 注册 `bangumi.sync.changed-games`。
-- 注册 `bangumi.sync.full`。
-- 注册 `bangumi.import.my-collections`。
-- 注册 `bangumi.import.index`。
-- 实现 args normalization、progress、summary、cancel，并由 CommandService 统一提供 notify 进度和 running 状态。
-- settings panel 长流程按钮全部改为启动 job command。
+- 不修改 extension API。
+- 建立 `book`、`game`、`anime`、`music` 四类 scope。
+- `game` 成为唯一 local-capable scope。
+- `book` / `anime` / `music` 成为 remote-only descriptor，不写入 Kisaki games。
+- 当前宿主的 game library、ingest、event 和 scraper API 只能出现在 `media/game`。
+- 通用层只依赖扩展内部 adapter interface。
+- 原地复用当前 storage/secrets keys，不新增 `.v2` key。
+- 将 `game` 泛指命名收敛为 `scope`、`subjectRef`、`item`、`localId`。
 
 验收：
 
-- settings callback 不执行超过 15 秒的任务。
-- command 可被 `kisaki.commands.start/wait/cancel` 控制。
-- 运行中的 command 会通过 command notify 展示当前阶段和计数，并在 notify 上提供取消入口。
-- settings panel 刷新后只根据 command `running` 状态禁用重复入口，不展示额外 progress/status field。
-- job 不写 history；需要持久历史时由主应用 task 触发并在主应用 task 面板查看。
+- `08` 中所有验收搜索通过。
+- game scraper、game sync 与 Phase 5 行为等价。
+- `book` / `anime` / `music` 不会通过任何 command 写入本地游戏库。
 
-## Phase 5: 同步引擎
+## Phase 6: Media-scoped 收藏导入
 
-- 实现 play status/score mapping。
-- 实现 fingerprint 和 suppressor。
-- 实现 `SyncEngine.syncGame`。
-- 实现 `SyncSubscription` 订阅 `library.game.created/updated`。
-- 实现 full sync dry run 和 execute。
+在 Phase 5.5 完成后，实现四类 scope 共享的收藏导入流程。
 
-验收：
-
-- 修改本地已绑定游戏状态后，自动同步写 Bangumi type。
-- 修改本地评分后，自动同步写 Bangumi rate。
-- 同步到 `想玩(type=1)` 时会清除 Bangumi rate；其他收藏类型可保留评分。
-- 空评分默认不清除远端评分，除非同步到 `想玩(type=1)`。
-- 重复事件不会重复写相同 payload。
-- 导入期间由 ingest 或新建游戏用户态字段写入产生的事件不会立刻回写 Bangumi。
-
-## Phase 6: 收藏导入
-
-- 实现用户收藏分页拉取。
-- 实现 collection import planner。
-- 实现按 scraper profile ingest。
-- 实现 play status/score/tag/target collection 写入，并确保默认不修改已有游戏；只有 `patchExisting=true` 时补写已有游戏用户态字段。
-- 实现 dry run 和 execute。
+- 拆分 `CollectionReader`，按 scope 注入 Bangumi `subject_type` / `type`。
+- `ImportPlanner` 输出 media-scoped plan。
+- `ImportExecutor` 只通过 `MediaRegistry.requireLocalAdapter(scope)` 执行本地写入。
+- `bangumi.import.my-collections` 直接替换为 `bangumi.import.collections`。
+- `BangumiImportCollectionsArgs` 必须包含 `scope: 'book' | 'game' | 'anime' | 'music'`。
+- game scope 支持 dry run 和 execute。
+- book/anime/music 支持远端读取和 dry run summary，不展示也不执行本地写入。
 
 验收：
 
-- 用户选择“在玩”和“玩过”时只导入对应 Bangumi type。
+- 用户选择 game scope 时，收藏导入行为与 Phase 5.5 后的 game adapter 能力一致。
 - 已有 Bangumi external id 的本地游戏不重复创建。
 - `patchExisting=false` 时，已有 Bangumi external id 的本地游戏不会被导入命令修改。
 - `patchExisting=true` 且单次导入 args 显式启用 `fields.score` 后，已有游戏和本次新建游戏都可写入 Kisaki score。
 - 用户选择的 target collection 可正确建立 membership，用户收藏导入不按 Bangumi 收藏类型自动派生本地合集。
 - 导入新建游戏时，即使自动同步开启，也不会立即把导入产生的本地游玩状态/评分写回 Bangumi。
+- book/anime/music execute 返回清晰 unsupported summary，不调用 game ingest。
 
-## Phase 7: 目录导入
+## Phase 7: Media-scoped 目录导入
+
+实现四类 scope 共享的目录预览、读取和导入计划。
 
 - 实现 index ID/URL parser。
 - 实现 index 预览。
 - 实现 index subjects 分页拉取。
-- 复用 import planner、ingest 和 target collection 逻辑。
+- index subjects 进入 media-scoped planner。
+- game scope 可选择现有目标合集，或按目录标题创建/复用目标合集。
+- book/anime/music 只做远端预览和 dry run summary，不写入本地库。
 
 验收：
 
 - 输入 Bangumi 目录 URL 能解析 ID 并预览标题。
-- 只导入游戏条目。
-- 可选择现有目标合集，或按目录标题创建/复用目标合集；`patchExisting=true` 时已存在游戏也会加入目标合集。
+- game scope 只导入游戏条目。
+- 可选择现有目标合集，或按目录标题创建/复用目标合集。
+- `patchExisting=true` 时已存在游戏也会加入目标合集。
+- book/anime/music 本地写入入口不可见；直接 execute 也返回 unsupported summary。
 
 ## Phase 8: Settings 与 Automation
 
-- 完成 Account、Sync、Import、Automation、Advanced tabs。
-- 实现 relay health check。
-- 实现推荐 task 创建入口和已创建状态摘要。
-- 实现清理凭据、清理同步状态、恢复默认设置。
+设置页体现 Bangumi 是多媒体集成，但本地自动化只暴露当前 local-capable 的 game scope。
+
+- 设置页标题从“Bangumi 游戏集成”改为“Bangumi 集成”。
+- 设置页主 tabs 只包含 Account、Sync、Import、Automation、Advanced。
+- Account tab 不分 scope。
+- Sync tab 只对 local-capable scope 展示本地同步入口；当前为 game。
+- Import dialogs 带 media selector，只出现 `book`、`game`、`anime`、`music`。
+- game scope 展示 profile、target collection、field mapping。
+- book/anime/music 只展示远端预览能力，不展示本地执行写入入口。
+- Automation tab 只创建 game 本地写入类 task。
+- Advanced tab 显示四个 scope 的 subject type 和 local capability。
+- 实现 relay health check、清理凭据、清理同步状态、恢复默认设置。
 - 更新 `extensions/bangumi/README.md`。
 
 验收：
 
-- 用户可以创建每日全量同步任务。
+- 用户可以创建每日 game 全量同步任务。
 - Bangumi 设置不运行、不取消、不展示 task history。
 - 主应用 task 面板负责 task 启停、运行、取消和历史展示。
 - Advanced 不泄露 token 或本机敏感路径。
+- 导入 dialog 的 media selector 只出现书籍、游戏、动漫、音乐四类 scope。
+- settings panel 刷新后只根据 command `running` 状态禁用重复入口，不展示额外 progress/status field。
 
 ## Phase 9: 验证与发布
 
@@ -148,8 +135,10 @@ pnpm --filter kisaki typecheck
 
 - dev 模式 built-in extension 加载成功。
 - OAuth Relay 登录和 refresh 成功。
-- Bangumi scraper 搜索、resolve、openSession 成功。
-- 自动同步、全量同步、收藏导入、目录导入和推荐 task 创建流程成功。
+- Bangumi game scraper 搜索、resolve、openSession 成功。
+- game 自动同步、全量同步、收藏导入、目录导入和推荐 task 创建流程成功。
+- book/anime/music 远端收藏读取和目录预览请求使用正确 subject type。
+- book/anime/music 本地写入入口不可见；直接执行也返回 unsupported summary。
 - 未登录、token 失效、subject 404、API 400、429、5xx、网络失败、用户取消都给出可操作错误。
 
 ## 风险与处理
@@ -158,20 +147,22 @@ pnpm --filter kisaki typecheck
 - Bangumi API 限速未知：默认保守限速，用户可调整；429 必须 backoff。
 - 长任务 settings callback 超时：settings 只启动 job command；需要持久历史时通过主应用 task。
 - DB event 无 source：防循环使用 fingerprint、debounce 和 suppressor。
+- book/anime/music 无本地库 adapter：UI 不展示本地执行入口，job 层返回 unsupported，绝不写入 games。
 - `updated_at` 不可靠：导入不得依赖它判断是否改写本地用户态字段。
 - Bangumi 用户收藏 tag 与 Kisaki tag 语义不完全等价：默认不导入 tag，用户显式启用后才创建/关联 Kisaki tag。
-- 旧实现数据：一律作废。
+- 开发期历史数据一律作废。
 
 ## 最小完成标准
 
 第一版可发布必须满足：
 
 - OAuth 登录、refresh、退出。
-- Bangumi scraper provider 正常工作。
-- 自动同步 play status/score。
-- 全量同步 dry run + execute。
-- 我的收藏导入 dry run + execute。
-- 目录导入 dry run + execute。
-- settings panel 可配置核心项。
+- Bangumi game scraper provider 正常工作。
+- game 自动同步 play status/score。
+- game 全量同步 dry run + execute。
+- game 我的收藏导入 dry run + execute。
+- game 目录导入 dry run + execute。
+- settings panel 可展示 book/game/anime/music scope。
+- book/anime/music 不写本地库，但远端读取路径和 UI 空间存在。
 - job command 可执行全量同步；主应用 task 可调度同一个 command。
 - 所有验证命令通过。

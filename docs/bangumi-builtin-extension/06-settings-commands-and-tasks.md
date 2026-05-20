@@ -12,20 +12,10 @@ title: Bangumi
 Root 使用 tabs，复杂流程使用 dialogs：
 
 - Account: 登录状态、账号摘要、登录/验证/刷新/退出。
-- Sync: 自动同步开关、游玩状态/评分开关、mapping 表、手动全量同步入口。
-- Import: 我的收藏导入、目录导入，以及一次性目标合集和新建游戏的可选用户态字段写入参数。
+- Sync: 自动同步开关、游戏状态/评分开关、mapping 表、手动全量同步入口。
+- Import: 我的收藏导入、目录导入，以及一次性目标合集和新建条目的可选用户态字段写入参数。
 - Automation: 常用 task 创建入口和已创建状态摘要。
 - Advanced: 登录超时、API 请求窗口、API timeout、retry、诊断、清理 storage/secrets。
-
-`extensions/bangumi/src/ui/` 按面板分层组织：
-
-- `settings.ts`: settings panel 注册、dialog 注册和 tabs 组装。
-- `account.ts`: Account tab。
-- `sync.ts`: Sync tab 与全量同步 dialog。
-- `import-collections.ts`: 我的收藏导入配置与预览 dialog。
-- `import-index.ts`: 目录导入配置与预览 dialog。
-- `automation.ts`: Automation tab。
-- `advanced.ts`: Advanced tab 与 settings 保存映射。
 
 UI 规则：
 
@@ -55,13 +45,13 @@ Bangumi 扩展内必须明确区分 `job` 和 `task`：
 
 Bangumi 注册以下 command 作为 job 入口：
 
-| Command ID                      | 用途                     | cancelable | task template |
-| ------------------------------- | ------------------------ | ---------- | ------------- |
-| `bangumi.auth.refresh`          | 刷新 token 并验证账号    | true       | yes           |
-| `bangumi.sync.changed-games`    | 同步最近事件队列中的游戏 | true       | yes           |
-| `bangumi.sync.full`             | 手动或定时全量同步       | true       | yes           |
-| `bangumi.import.my-collections` | 导入当前用户游戏收藏     | true       | yes           |
-| `bangumi.import.index`          | 导入指定 Bangumi 目录    | true       | yes           |
+| Command ID                   | 用途                         | cancelable | task template |
+| ---------------------------- | ---------------------------- | ---------- | ------------- |
+| `bangumi.auth.refresh`       | 刷新 token 并验证当前账号    | true       | yes           |
+| `bangumi.sync.changed-items` | 同步最近事件队列中的本地条目 | true       | yes           |
+| `bangumi.sync.full`          | 手动或定时全量同步           | true       | yes           |
+| `bangumi.import.collections` | 导入当前用户 Bangumi 收藏    | true       | yes           |
+| `bangumi.import.index`       | 导入指定 Bangumi 目录        | true       | yes           |
 
 登录 flow 可由 settings panel 直接启动，不作为 task template。
 
@@ -75,9 +65,54 @@ Command args 必须是 JSON serializable record。每个 command 在 `jobs/comma
 命名规则：
 
 - command id 使用 `bangumi.<domain>.<verb-or-object>`。
+- media-scoped command 必须有 `scope` args。
 - settings node id 与 command id 不强行一致。
 - command 自身不定义 history key；持久历史只来自主应用 task 执行记录。
-- 导入命令的 profile、目标合集和字段写入选项都是 command args，不保存到 `settings.v1`。用户创建导入类 background task 时，这些值只作为 task args 持久化。导入命令不提供修改已有游戏的参数。
+- 导入命令的 profile、目标合集和字段写入选项都是 command args，不保存到 `settings.v1`。
+
+## Command Args
+
+```ts
+interface BangumiScopedArgs {
+  scope: 'book' | 'game' | 'anime' | 'music'
+}
+
+interface BangumiFullSyncArgs extends BangumiScopedArgs {
+  dryRun: boolean
+  updateExisting: boolean
+  batchSize: number
+  playStatusEnabled?: boolean
+  scoreEnabled?: boolean
+  clearRemoteScoreWhenEmpty?: boolean
+}
+
+interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
+  dryRun: boolean
+  profileId?: string
+  collectionTypes: readonly BangumiCollectionType[]
+  fields: BangumiImportWriteFields
+  patchExisting: boolean
+  targetCollection: BangumiImportTargetCollection
+  concurrency: number
+}
+
+interface BangumiImportIndexArgs extends BangumiScopedArgs {
+  dryRun: boolean
+  profileId?: string
+  indexInput: string
+  indexId: number
+  patchExisting: boolean
+  targetCollection: BangumiImportTargetCollection
+  concurrency: number
+}
+```
+
+规则：
+
+- `scope` 只允许四类固定值。
+- `profileId` 对 `game` execute 必填。
+- `book` / `anime` / `music` 的本地写入 execute 必须返回 unsupported summary。
+- `dryRun` 可对四类 scope 拉取远端并生成计划。
 
 ## Command Output
 
@@ -87,14 +122,16 @@ Command args 必须是 JSON serializable record。每个 command 在 `jobs/comma
 interface BangumiJobSummary {
   version: 1
   commandId: string
+  scope?: BangumiMediaScope
   startedAt: number
   finishedAt: number
   status: 'completed' | 'cancelled' | 'failed'
   dryRun: boolean
   counters: Record<string, number>
   errors: Array<{
+    scope?: BangumiMediaScope
     subjectId?: string
-    gameId?: string
+    localId?: string
     code: string
     message: string
   }>
@@ -110,42 +147,43 @@ interface BangumiJobSummary {
 
 ## Execution State
 
-CommandService 提供运行期 progress snapshot 和 command `running` 状态。Bangumi 长任务通过 `event.reportProgress()` 上报当前阶段、文案和计数；settings UI 只读取 `kisaki.commands.list()` 中对应 command 的 `running` 布尔值，用于禁用重复入口。进度、完成结果和取消入口统一由 command notify 展示，不把 extension storage 或 settings panel 当作进度事件总线。
+CommandService 提供运行期 progress snapshot 和 command `running` 状态。Bangumi 长任务通过 `event.reportProgress()` 上报当前阶段、文案和计数；settings UI 只读取 `kisaki.commands.list()` 中对应 command 的 `running` 布尔值，用于禁用重复入口。
 
 边界：
 
 - CommandService 负责单次 command execution、取消和临时 progress；结果只作为本次调用的返回值。
 - BackgroundTaskService 负责持久任务、来自主应用的手动/启动/定时触发和运行历史。
 - Bangumi extension storage 不保存 `jobs.active`、`jobs.history`、execution id、通用 `lastResult` 或 `lastSummary`。
-- settings panel 手动触发只启动 job command，并在执行请求里传入 `presentation.notify`；不登记 active execution，不读取 progress/result，不读取 task history。
+- settings panel 手动触发只启动 job command，并在执行请求里传入 `presentation.notify`。
 - task 的运行、取消、重试和历史展示由主应用 task 面板负责。
-- 临时预览或轻量操作可以直接执行 job command；结果只反馈给当前 UI，不落 storage。
 - 不新增 public command API 来列出所有 execution；如未来需要命令中心或全局运行监控，再单独设计受权限约束的查询能力。
 
 progress 规则：
 
 - 每次上报都是当前 execution 的完整 snapshot，不持久化到 task history。
-- `phase` 用稳定英文枚举值，例如 `fetchingCollections`、`matchingGames`、`writingLibrary`。
+- `phase` 用稳定英文枚举值，例如 `fetchingCollections`、`matchingItems`、`writingLibrary`。
 - `message` 是可展示中文短句，不包含 token、HTTP body 或用户私密评论全文。
 - 有明确总量时填写 `current` / `total`；未知总量时设置 `indeterminate: true`。
 - command 完成后以 `BangumiJobSummary` 作为最终输出，UI 不从最后一条 progress 推断结果。
 
 ## Task Templates
 
-BackgroundTaskService 当前已经持久化 `history`，每个 task 保留最近 50 条 `BackgroundTaskRunRecord`，记录 `status`、`attempt`、`trigger`、`output` 和 `error`。Bangumi settings panel 不展示这些记录，只提供常用 task 创建入口：
+BackgroundTaskService 当前已经持久化 `history`，每个 task 保留最近 50 条 `BackgroundTaskRunRecord`，记录 `status`、`attempt`、`trigger`、`output` 和 `error`。Bangumi settings panel 不展示这些记录，只提供常用 task 创建入口。
+
+当前只为 `game` 提供本地写入类 task template：
 
 - 启动时刷新 Bangumi token: `bangumi.auth.refresh` + `onStartup`。
-- 启动后同步变更队列: `bangumi.sync.changed-games` + `onStartup`。
-- 每日全量同步: `bangumi.sync.full` + `daily`。
-- 每周导入我的收藏: `bangumi.import.my-collections` + `weekly`。
-- 每周导入指定目录: `bangumi.import.index` + `weekly`。
+- 启动后同步变更队列: `bangumi.sync.changed-items` + `onStartup` + `{ scope: 'game' }`。
+- 每日全量同步: `bangumi.sync.full` + `daily` + `{ scope: 'game' }`。
+- 每周导入我的游戏收藏: `bangumi.import.collections` + `weekly` + `{ scope: 'game' }`。
+- 每周导入指定游戏目录: `bangumi.import.index` + `weekly` + `{ scope: 'game' }`。
 
 规则：
 
-- 使用 `kisaki.backgroundTasks.create` 创建，宿主自动填充 `ownerExtensionId` 和 `createdBy = "extension"`。
+- 使用 `kisaki.backgroundTasks.create` 创建，宿主自动填充 `ownerExtensionId` 和 `createdBy = 'extension'`。
 - 创建前可以 list 本扩展 task 用于去重和展示“已创建”状态，但不读取或渲染 `history`。
 - 创建后 task 的启停、运行、取消、schedule 修改、failure policy 修改和 history 查看都交给主应用 task 面板。
-- Bangumi 不自动覆盖用户在主应用 task 面板里改过的 task；需要变更时创建新的推荐 task 或提示用户去主应用 task 面板调整。
+- Bangumi 不自动覆盖用户在主应用 task 面板里改过的 task。
 - Bangumi 不调用 `kisaki.backgroundTasks.run` 或 `kisaki.backgroundTasks.cancel`。
 
 默认 failure policy:
@@ -183,10 +221,13 @@ settings resolve 应尽量并行读取：
 
 - settings。
 - account snapshot。
-- scraper profiles。
+- media descriptors。
+- game scraper profiles。
 - owned task summaries，用于判断推荐 task 是否已创建。
 
 导入 dialog 的草稿值只存在当前 settings panel session；关闭 dialog 或重新打开时回到命令默认值，除非用户是在创建 background task，此时以 task args 为准。
+
+导入 dialog 的 media selector 只出现 `book`、`game`、`anime`、`music`。没有 local adapter 的 scope 不展示“写入本地库”“创建后台同步任务”等执行入口；job 层仍要校验 scope 能力，避免绕过 UI。不在 UI 中出现三次元、全部媒体、其他等选项。
 
 实时网络检查只在用户点击“检查 relay”或“验证账号”时执行，不在每次 resolve 中自动请求网络。
 
@@ -195,8 +236,15 @@ settings resolve 应尽量并行读取：
 统一中文文案：
 
 - `Bangumi 账号`
-- `游戏收藏`
-- `想玩`、`玩过`、`在玩`、`搁置`、`抛弃`
+- `书籍`
+- `游戏`
+- `动漫`
+- `音乐`
+- `收藏`
+- `想读`、`读过`、`在读`
+- `想玩`、`玩过`、`在玩`
+- `想看`、`看过`、`在看`
+- `想听`、`听过`、`在听`
 - `全量同步`
 - `预览`
 - `导入我的收藏`

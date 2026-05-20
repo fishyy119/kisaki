@@ -1,38 +1,45 @@
 # Bangumi 内置扩展设计与实施文档
 
-本文档集定义 `extensions/bangumi` 的目标形态和实施路线。当前扩展系统已经完成重构，Bangumi 所需的宿主能力已经进入公共 extension API；Kisaki OAuth Relay 也已完成部署。因此本文不再描述“宿主能力待补齐”的旧方案，而是基于当前仓库中的 extension runtime、capability、contribution、command、background task、DB event projector 和 built-in extension 打包流程，重新设计 Bangumi 内置扩展本身。
+本文档集定义 `extensions/bangumi` 的目标形态和实施路线。Kisaki 是多媒体管理软件；Bangumi 扩展是 media scope 集成，支持 Bangumi 四类 subject，并通过现有公共 extension API 接入宿主。
 
-旧实现只保留需求价值，不作为新设计约束。
+支持范围只包含 Bangumi 四类媒体：
 
-兼容性决策：重写版本不设兼容层，旧数据一律作废。
+- `book`: Bangumi `SubjectType = 1`
+- `game`: Bangumi `SubjectType = 4`
+- `anime`: Bangumi `SubjectType = 2`
+- `music`: Bangumi `SubjectType = 3`
 
-无须考虑任何向后兼容，要求干净清晰彻底。
+不支持三次元，也不为未知媒体类型提前做抽象。现阶段 Kisaki 宿主只有游戏本地库写入、游戏 scraper provider、`library.game.*` event 和 `kisaki.ingest.games.addFromScraper`，因此 Bangumi 扩展采用以下结构：
+
+- Bangumi 扩展内部使用 media scope 架构。
+- `game` scope 拥有完整本地 adapter，继续支持 scraper、自动同步、全量同步、收藏导入和目录导入。
+- `book` / `anime` / `music` scope 进入共享模型、API client、settings UI 和命令参数体系，但不伪装成游戏写入本地库；需要本地写入时必须等宿主未来提供对应媒体能力后新增 adapter。
+- extension API 不新增、不重命名、不兼容包装。所有隔离都在 Bangumi 扩展内部完成。
+
+兼容性决策：应用未上线，不提供历史数据兼容迁移；现有 storage/secrets/sync queue key 原地承载当前格式，不新增新 key。
 
 ## 文档结构
 
-- [01-scope-and-api-facts.md](01-scope-and-api-facts.md): 功能范围、非目标、Bangumi 官方 API 事实源。
-- [02-extension-system-integration.md](02-extension-system-integration.md): 当前 Kisaki 扩展系统能力、边界和 Bangumi 接入方式。
-- [03-extension-architecture.md](03-extension-architecture.md): Bangumi 扩展内部模块、核心对象、状态模型。
-- [04-auth-and-client.md](04-auth-and-client.md): OAuth Relay 登录、token 管理、Bangumi API client、限速和错误模型。
-- [05-sync-and-import.md](05-sync-and-import.md): 自动同步、全量同步、用户收藏导入、目录导入和可选用户态字段写入。
-- [06-settings-commands-and-tasks.md](06-settings-commands-and-tasks.md): structured settings panel、job command、task 创建、storage/secrets。
-- [07-implementation-plan.md](07-implementation-plan.md): 分阶段实施、验收场景、验证命令和风险处理。
+- [01-scope-and-api-facts.md](01-scope-and-api-facts.md): 支持范围、Bangumi API 事实、四类 media scope 与非目标。
+- [02-extension-system-integration.md](02-extension-system-integration.md): 在不修改 extension API 的前提下接入现有宿主能力。
+- [03-extension-architecture.md](03-extension-architecture.md): 新的 media scope 架构、目录结构、状态模型和依赖方向。
+- [04-auth-and-client.md](04-auth-and-client.md): OAuth Relay、token 管理、BangumiClient 和通用 subject API。
+- [05-sync-and-import.md](05-sync-and-import.md): media-scoped 同步、导入、planner、game local adapter 边界。
+- [06-settings-commands-and-tasks.md](06-settings-commands-and-tasks.md): settings panel、command job、background task 与 UI 范围。
+- [07-implementation-plan.md](07-implementation-plan.md): Phase 5.5 到 Phase 9 的实施计划、验收场景和验证命令。
+- [08-media-scope-refactor.md](08-media-scope-refactor.md): Phase 5.5 的文件级方案、命名规则和验收搜索。
 
 ## 核心决策
 
 - 扩展身份保持 `builtin.bangumi`，项目位于 `extensions/bangumi`，通过现有 built-in extension pipeline 打包进桌面端。
-- manifest 目标类别应从纯 `scraper` 扩展扩展为 `scraper` + `integration`，但运行时代码仍只通过公共 extension API 接入宿主。
+- manifest categories 继续使用 `["scraper", "integration"]`。
+- extension API 保持现状。Bangumi 扩展继续使用 `context.contributions.scraperProviders.game.register`、`kisaki.ingest.games.addFromScraper`、`kisaki.library.games.*`、`kisaki.events.on('library.game.*')` 等现有入口。
+- 当前宿主的 game library、ingest、event 和 scraper API 只能出现在 `media/game` adapter 内，不允许散落在 `api`、`sync`、`import`、`jobs`、`ui` 的通用层。
 - Bangumi 官方 API、OpenAPI 和 OAuth 文档是 Bangumi 侧唯一事实源；本文在 2026-05-17 核对到 OpenAPI `info.version = 2026-05-2`。
 - 生产登录使用已部署的 Kisaki OAuth Relay。桌面端和扩展永不保存 Kisaki 官方 Bangumi 应用的 `client_secret`。
-- OAuth flow 由扩展组合 `kisaki.network.request`、`kisaki.runtime.openExternal`、`context.contributions.deeplinkRoutes` 和 `context.secrets` 完成；不新增主应用 OAuth service。
-- 所有 `https://api.bgm.tv/v0/**` 请求都必须经过扩展内唯一 `BangumiClient`，统一 User-Agent、Bearer token、refresh、限速、重试、分页和错误转换；OAuth relay、refresh 和 token status 只经过 `OAuthRelayClient` / `TokenService`。
-- 自动同步只面向游戏收藏状态和评分。不同步章节、书籍进度，也不删除 Bangumi 远端收藏。
-- 导入用户收藏和目录时，创建游戏必须走 `kisaki.ingest.games.addFromScraper` 和用户选择的 game scraper profile；扩展不得绕过 ingest 直接写完整 metadata，也不得修改任何已有游戏的资料元数据。
-- 导入默认只创建缺失游戏；用户显式开启“更新已存在游戏”后，才允许通过 Bangumi subject ID 匹配本地游戏并补写用户态字段或目标本地合集。profile、目标合集、status、score、tag 和 patch existing 都是单次 command args。用户收藏导入的目标合集只来自显式选择；目录导入还可按 Bangumi 目录名自动创建或复用本地静态合集。
-- 设置 UI 使用当前 structured settings panel，复杂操作通过 dialog、tab、table、status、button 和后台 command 组织，不引入第二套 UI 框架。
-- 长流程统一注册为 extension command；settings panel 手动触发的是一次 job，避免在 settings callback 中执行长时间导入或同步。
-- background task 是主应用持久自动化配置；Bangumi 只提供推荐 task 创建入口，task 的运行、取消、历史和后续面板展示都归主应用。
-- 重写版本不设兼容层，旧数据一律作废。
+- 所有 `https://api.bgm.tv/v0/**` 请求都必须经过扩展内唯一 `BangumiClient`。
+- 长流程统一注册为 extension command；settings panel 只启动 job，不直接执行长时间同步或导入。
+- `game` 是当前唯一 local-capable scope；`book` / `anime` / `music` 不做本地写入，不映射到游戏实体，不创建假的本地数据。
 
 ## 当前项目事实
 
@@ -43,7 +50,7 @@
 - 命令注册是 contribution：`context.contributions.commands.register(...)`。命令执行是 capability：`kisaki.commands.start/execute/wait/cancel(...)`。
 - Deeplink contribution 返回 `urlPattern`，扩展局部 path 会被宿主归一化为 `kisaki://ext/<extensionId>/<path>`。
 - DB event projector 已基于 SQLite trigger 的 OLD/NEW row snapshot 投影 `library.game.updated` 等 typed host event。
-- 当前 `extensions/bangumi` 仍是旧 scraper 形态；实施阶段要替换为本文档的完整设计。
+- 实施顺序以 [07-implementation-plan.md](07-implementation-plan.md) 为准：Phase 5.5、Phase 6、Phase 7、Phase 8、Phase 9。
 
 ## 参考资料
 

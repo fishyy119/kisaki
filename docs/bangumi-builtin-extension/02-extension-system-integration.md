@@ -2,28 +2,56 @@
 
 ## 现有宿主能力
 
-Bangumi 第一版需要的宿主能力已经存在，不再作为本设计的前置重构项：
+| 需求              | 当前入口                                               | Bangumi 内部归属                                       |
+| ----------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| 持久设置          | `context.storage`                                      | 通用层，保存 settings、sync state、queue               |
+| 敏感凭据          | `context.secrets`                                      | 通用层，保存 token、pending session                    |
+| 网络请求          | `kisaki.network.request`                               | `api/BangumiClient` 与 `auth/OAuthRelayClient`         |
+| 打开浏览器        | `kisaki.runtime.openExternal`                          | `auth/OAuthFlow`                                       |
+| Deeplink callback | `context.contributions.deeplinkRoutes.register`        | `auth/OAuthFlow`                                       |
+| 设置 UI           | `context.contributions.settingsPanels.register`        | `ui/settings`                                          |
+| Scraper provider  | `context.contributions.scraperProviders.game.register` | `media/game/scraper`                                   |
+| Host event        | `kisaki.events.on`                                     | `media/game/adapter` 订阅 `library.game.*`             |
+| Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | `media/game/adapter` 只读取 game profile               |
+| Ingest            | `kisaki.ingest.games.addFromScraper`                   | `media/game/adapter` 创建或定位游戏                    |
+| Library write     | `kisaki.library.*`                                     | `media/game/adapter` 写游戏状态、评分、tag、collection |
+| Command 注册      | `context.contributions.commands.register`              | `jobs/commands`                                        |
+| Command 执行      | `kisaki.commands.start/wait/cancel/getProgress`        | settings panel 启动和控制一次 job                      |
+| Background task   | `kisaki.backgroundTasks`                               | `tasks/templates` 与 settings automation tab           |
 
-| 需求              | 当前入口                                               | 用法                                                              |
-| ----------------- | ------------------------------------------------------ | ----------------------------------------------------------------- |
-| 持久设置          | `context.storage`                                      | 保存非敏感 settings、sync fingerprint                             |
-| 敏感凭据          | `context.secrets`                                      | 保存用户 access token、refresh token、expiresAt                   |
-| 网络请求          | `kisaki.network.request`                               | 调用 Bangumi API 和 OAuth Relay                                   |
-| 打开浏览器        | `kisaki.runtime.openExternal`                          | 打开 relay 返回的授权 URL                                         |
-| Deeplink callback | `context.contributions.deeplinkRoutes.register`        | 注册 `/oauth-callback`                                            |
-| 设置 UI           | `context.contributions.settingsPanels.register`        | 渲染 Bangumi settings panel                                       |
-| Scraper provider  | `context.contributions.scraperProviders.game.register` | 注册 Bangumi game provider                                        |
-| Host event        | `kisaki.events.on`                                     | 订阅 `library.game.created` / `library.game.updated`              |
-| Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | 导入时选择 game profile                                           |
-| Ingest            | `kisaki.ingest.games.addFromScraper`                   | 按 profile 创建或定位游戏                                         |
-| Library write     | `kisaki.library.*`                                     | 为本次新建游戏写游玩状态/评分、创建 tag/collection、建立 relation |
-| Command 注册      | `context.contributions.commands.register`              | 注册同步、导入、刷新等长任务                                      |
-| Command 执行      | `kisaki.commands.start/wait/cancel/getProgress`        | settings panel 启动和控制一次 job                                 |
-| Background task   | `kisaki.backgroundTasks`                               | 创建本扩展推荐 task 配置                                          |
+## Media Adapter Boundary
 
-## 运行时边界
+通用层只认识这个概念，不认识 `kisaki.library.games`：
 
-必须遵守当前扩展系统的边界：
+```ts
+interface LocalMediaAdapter {
+  readonly scope: BangumiMediaScope
+  readonly localMediaType: string
+  readonly supportsScraperProfile: boolean
+  readonly supportsAutoSync: boolean
+  readonly supportsImportWrite: boolean
+  registerRuntime(): Promise<Disposable>
+  listLocalItems(query: LocalMediaListQuery): Promise<readonly LocalMediaItem[]>
+  getLocalItem(id: string): Promise<LocalMediaItem | null>
+  findBySubjectIds(subjectIds: readonly string[]): Promise<ReadonlyMap<string, LocalMediaItem>>
+  addFromScraper(input: LocalMediaAddFromScraperInput): Promise<LocalMediaAddResult>
+  patchUserFields(id: string, patch: LocalMediaUserPatch): Promise<LocalMediaItem>
+  ensureTag(id: string, tagName: string): Promise<void>
+  ensureInCollection(id: string, target: LocalCollectionTarget): Promise<void>
+}
+```
+
+当前只实现：
+
+```text
+media/game/adapter.ts
+```
+
+`book` / `anime` / `music` scope 注册为 remote-only descriptor，不实现 `LocalMediaAdapter`。通用 import/sync 逻辑如果遇到没有 adapter 的 scope，必须返回稳定的 unsupported result，而不是降级写游戏表。
+
+## Runtime Boundaries
+
+必须遵守当前扩展系统边界：
 
 - 扩展运行在 shared extension host process。
 - Renderer 不 import `extensions/bangumi` 源码，也不执行扩展 entry。
@@ -39,10 +67,10 @@ Bangumi 第一版需要的宿主能力已经存在，不再作为本设计的前
 - dev: `apps/desktop/scripts/prepare-builtin-extensions.ts watch` 调用 `kisx output` 写入 `apps/desktop/out/extensions`。
 - build: `prepare-builtin-extensions.ts build --target=resources` 写入 `apps/desktop/resources/extensions`。
 - manifest entry 继续指向 `./dist/index.mjs`。
-- 目标 manifest categories 为 `["scraper", "integration"]`。
+- manifest categories 保持 `["scraper", "integration"]`。
 - package scripts 保持 `kisx build`、`kisx validate`、`kisx pack`、`tsc --noEmit`。
 
-实施时扩展项目仍要能独立通过：
+验证命令：
 
 ```powershell
 pnpm --filter @kisaki/builtin-bangumi typecheck
@@ -87,17 +115,24 @@ DB event projector 已投影以下事件：
 - `library.game.deleted`
 - 其他实体的 created/updated/deleted
 
-Bangumi 自动同步只订阅：
+Bangumi 自动同步不直接在通用层订阅这些 topic。订阅由 local adapter 暴露：
 
-- `library.game.created`
-- `library.game.updated`
+```ts
+gameAdapter.subscribeLocalChanges((event) => syncQueue.enqueue(event))
+```
+
+`media/game/adapter` 内部才可以调用：
+
+- `kisaki.events.on('library.game.created', ...)`
+- `kisaki.events.on('library.game.updated', ...)`
 
 当前 public `LibraryGameUpdatedEvent` 包含 `changes`，不包含可依赖的 source 字段。防循环策略必须由 Bangumi 扩展自己完成：
 
 - 基于同步 payload 计算 fingerprint。
 - 记录最近成功 fingerprint。
-- 本扩展主动写入本地游玩状态/评分后维护 fingerprint suppress；导入流程对 ingest 返回的 gameId 维护短期 import suppress，避免导入事件立刻回写 Bangumi。
-- 对同一 `gameId` debounce/coalesce。
+- 本扩展主动写入本地游玩状态/评分后维护 fingerprint suppress。
+- 导入流程对 ingest 返回的 local item id 维护短期 import suppress。
+- 对同一 `{ scope, localId }` debounce/coalesce。
 - source 不作为跳过同步的必要条件。
 
 ## Settings Callback 约束
@@ -132,21 +167,23 @@ Background task 只能绑定本扩展拥有的 command。宿主会校验：
 - task command 必须由 `builtin.bangumi` 注册
 - 扩展只能访问自己拥有的 task
 
-因此任务配置和运行历史不需要另存一份到 Bangumi storage。settings panel 只保存用户偏好与 Bangumi 业务状态；实际 schedule、enabled、failurePolicy、run/cancel 和 history 以主应用 task 能力为准。Bangumi 设置页只提供推荐 task 的创建入口和“已创建”状态提示，不充当 task 面板。
+因此任务配置和运行历史不需要另存一份到 Bangumi storage。settings panel 只保存用户偏好与 Bangumi 业务状态；实际 schedule、enabled、failurePolicy、run/cancel 和 history 以主应用 task 能力为准。
 
 ## Library 写入策略
 
-导入和同步可用的 public 写入口：
+通用规则：
+
+- 通用层不直接调用 `kisaki.library.games.*`。
+- 本地写入先由 `MediaRegistry.requireLocalAdapter(scope)` 判断能力。
+- 没有 adapter 的 scope 返回 unsupported result，UI 不展示执行入口。
+- 创建本地条目优先走 adapter 的 `addFromScraper`。
+- 导入不得修改资料元数据。
+- 默认只创建缺失条目；用户显式开启 patch existing 后，才可按 Bangumi subject ID 补写已有条目的用户态字段。
+
+当前 game adapter 可使用：
 
 - `kisaki.library.games.get/list/update`
 - `kisaki.library.collections.get/list/create/update`
 - `kisaki.library.tags.get/list/create/update`
 - `kisaki.library.relations.list/create/update/remove`
 - `kisaki.ingest.games.addFromScraper`
-
-规则：
-
-- 创建游戏优先走 ingest。
-- 导入不得修改资料元数据。默认只创建缺失游戏；用户显式开启 patch existing 后，才可按 Bangumi subject ID 补写已有游戏的 status、score、tag 和目标本地合集。
-- tag 和 collection membership 通过 relation capability 建立。
-- 扩展不直接写 DB、不推断内部表结构、不持久化主应用内部 id 以外的不可序列化对象。
