@@ -5,7 +5,7 @@ import type {
   BangumiSettingsV1,
   BangumiStatusMappingValue
 } from '../config/schema'
-import { BANGUMI_SOURCE_ID } from '../shared/constants'
+import { BANGUMI_SOURCE_ID, BANGUMI_WISH_COLLECTION_TYPE } from '../shared/constants'
 
 export interface SyncMappingOptions {
   playStatusEnabled: boolean
@@ -46,7 +46,10 @@ export function createSyncPayloadPlan(
 ): SyncPayloadPlan {
   const payload: BangumiCollectionPatch = {}
   const mappedType = mapGameStatusToBangumiType(game.status, options)
-  const mappedRate = mapGameScoreToBangumiRate(game.score, options)
+  const mappedRate = resolveBangumiRateForSync(
+    mappedType,
+    mapGameScoreToBangumiRate(game.score, options)
+  )
 
   if (mappedType !== undefined) {
     payload.type = mappedType
@@ -99,6 +102,17 @@ export function mapGameScoreToBangumiRate(
   }
 
   return Math.min(10, Math.max(1, Math.round(score / 10)))
+}
+
+function resolveBangumiRateForSync(
+  mappedType: BangumiCollectionType | undefined,
+  mappedRate: number | undefined
+): number | undefined {
+  if (mappedType === BANGUMI_WISH_COLLECTION_TYPE) {
+    return 0
+  }
+
+  return mappedRate
 }
 
 export function normalizeBangumiRemoteRate(value: unknown): number | undefined {

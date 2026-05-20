@@ -733,8 +733,8 @@ function createFullSyncPreviewChange(result: SyncGameResult): BangumiJobPreviewG
     })
   }
 
-  if (payload.rate !== undefined) {
-    const remoteScore = normalizeBangumiRate(remote?.rate)
+  const remoteScore = normalizeBangumiRate(remote?.rate)
+  if (payload.rate !== undefined && (payload.rate !== 0 || remoteScore !== undefined)) {
     rows.push({
       label: '评分',
       before: remoteScore === undefined ? '未评分' : `${remoteScore}`,

@@ -38,7 +38,7 @@
 7. 空 payload 跳过。
 8. 计算 fingerprint。
 9. fingerprint 与上次成功同步一致则跳过。
-10. 调用 `BangumiClient.upsertMyCollection(subjectId, payload)`。
+10. 调用 `BangumiClient.upsertMyCollection(subjectId, payload)`。当目标收藏类型为 `1=想玩` 时，payload 必须包含 `rate=0` 清除远端评分。
 11. 写入 sync state 和 command output；如果由 task 触发，运行记录由主应用 BackgroundTaskService 保存。
 
 Fingerprint 输入：
@@ -78,7 +78,8 @@ Suppress 规则：
 
 - score disabled 时不写 `rate`。
 - Kisaki 本地 `score` 是 0-100 整数，显示为 0-10 一位小数；写 Bangumi 前转换为 1-10 整数 `rate`。
-- `score = null` 默认不写 `rate`。
+- Bangumi `1=想玩` 收藏不能保留评分。目标 `type=1` 时写 `rate=0` 清除远端评分；`type=2..5` 可以正常写入正向 `rate`。
+- `score = null` 默认不写 `rate`；目标 `type=1` 时例外，必须写 `rate=0`。
 - 用户启用 `autoSync.clearRemoteScoreWhenEmpty` 时，`score = null` 写 `rate = 0`，用于删除 Bangumi 远端评分。
 - 本地一位小数评分会四舍五入为 Bangumi 整数 `rate`。
 

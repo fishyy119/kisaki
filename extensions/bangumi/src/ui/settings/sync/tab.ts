@@ -56,7 +56,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
       {
         id: 'clear-remote-score',
         label: '允许删除远端评分',
-        description: '本地评分为空时删除 Bangumi 收藏中的评分',
+        description: '本地评分为空或状态为想玩时删除 Bangumi 收藏中的评分',
         disabled: !autoSyncEnabled || !scoreSyncEnabled,
         content: [
           scope.ui.checkbox({
