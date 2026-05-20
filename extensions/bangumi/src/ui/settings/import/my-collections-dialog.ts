@@ -1,7 +1,7 @@
 import { defineSettingsPanelDialog, type ScraperProfileSummary } from '@kisaki/extension-sdk'
 import {
   BANGUMI_COLLECTION_TYPE_OPTIONS,
-  IMPORT_WRITE_FIELD_OPTIONS,
+  IMPORT_DATA_ITEM_OPTIONS,
   SETTINGS_NODE_IDS
 } from '../ids'
 import { toSettingsError } from '../shared/errors'
@@ -18,8 +18,8 @@ import {
   createDialogImportProfileField,
   createDialogImportTargetCollectionField,
   readImportCollectionTypes,
-  readImportPatchExisting,
-  readImportWriteFields
+  readImportDataItems,
+  readImportPatchExisting
 } from './options'
 
 export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
@@ -56,6 +56,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
           {
             id: 'my-collections-types',
             label: '收藏类型',
+            description: '筛选 Bangumi 收藏类型',
             orientation: 'horizontal',
             contentLayout: 'inline',
             content: [
@@ -70,14 +71,14 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             ]
           },
           {
-            id: 'import-write-fields',
-            label: '写入项',
-            description: '选择要从 Bangumi 收藏写入本地的用户态数据',
+            id: 'import-data-items',
+            label: '数据项',
+            description: '选择导入时携带的数据',
             content: [
               ui.multiSelect({
-                id: SETTINGS_NODE_IDS.importWriteFields,
-                initialValue: readImportWriteFields(context.values),
-                options: IMPORT_WRITE_FIELD_OPTIONS,
+                id: SETTINGS_NODE_IDS.importDataItems,
+                initialValue: readImportDataItems(context.values),
+                options: IMPORT_DATA_ITEM_OPTIONS,
                 onChange(event) {
                   return event.refresh('dialog')
                 }
@@ -87,7 +88,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
           {
             id: 'import-patch-existing',
             label: '更新已存在游戏',
-            description: '按 Bangumi ID 匹配本地游戏，并补写选中的用户态数据与目标合集',
+            description: '按 Bangumi ID 匹配本地游戏，更新选中的数据项并加入目标合集',
             content: [
               ui.switch({
                 id: SETTINGS_NODE_IDS.importPatchExisting,

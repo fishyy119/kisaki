@@ -3,8 +3,8 @@ import { SETTINGS_NODE_IDS } from '../ids'
 import { readString } from '../shared/values'
 import {
   createIndexTargetCollectionArg,
+  createImportDataItemArgs,
   createImportTargetCollectionArg,
-  createImportWriteFieldArgs,
   readImportCollectionTypes,
   readImportPatchExisting
 } from './options'
@@ -18,7 +18,7 @@ export function createMyCollectionsImportArgs(
     dryRun,
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     collectionTypes: readImportCollectionTypes(values),
-    fields: createImportWriteFieldArgs(values),
+    fields: createImportDataItemArgs(values),
     patchExisting: readImportPatchExisting(values),
     targetCollection: createImportTargetCollectionArg(values),
     concurrency: 4

@@ -872,7 +872,7 @@ async function createIndexCollectionPatchPreviewChange(
   return createPreviewGroup({
     title: game.name,
     subjectId,
-    badge: { label: '加入本地合集', tone: 'success' },
+    badge: { label: '加入合集', tone: 'success' },
     rows: [
       {
         label: '合集',
@@ -903,7 +903,7 @@ async function resolveTargetCollection(
 
   const collection = await kisaki.library.collections.get(targetCollection.collectionId)
   if (!collection || collection.isDynamic) {
-    throw new BangumiExtensionError('bangumi_validation', '选择的目标本地合集不存在。')
+    throw new BangumiExtensionError('bangumi_validation', '选择的目标合集不存在。')
   }
 
   return { id: collection.id, name: collection.name }
@@ -956,7 +956,7 @@ function normalizeCollectionName(name: string): string {
   if (!normalized) {
     throw new BangumiExtensionError(
       'bangumi_validation',
-      'Bangumi 目录标题为空，无法创建本地合集。'
+      'Bangumi 目录标题为空，无法创建合集。'
     )
   }
   return normalized

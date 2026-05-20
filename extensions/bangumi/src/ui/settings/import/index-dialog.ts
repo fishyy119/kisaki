@@ -57,7 +57,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
           {
             id: 'import-index-patch-existing',
             label: '更新已存在游戏',
-            description: '按 Bangumi ID 匹配本地游戏，并把已存在游戏也加入目标合集',
+            description: '按 Bangumi ID 匹配本地游戏，加入目标合集',
             disabled: !hasTargetCollection,
             content: [
               ui.switch({

@@ -15,14 +15,14 @@ import { createProfileOptions } from '../shared/profiles'
 import { pickKnownValues, readBoolean, readString, readStringArray } from '../shared/values'
 import type { BangumiSettingsPopovers } from '../shared/types'
 
-export type ImportWriteField = 'status' | 'score' | 'tags'
+export type ImportDataItem = 'status' | 'score' | 'tags'
 export type IndexTargetCollectionMode = 'none' | 'existing' | 'byIndexTitle'
 
-const IMPORT_WRITE_FIELDS = [
+const IMPORT_DATA_ITEMS = [
   'status',
   'score',
   'tags'
-] as const satisfies readonly ImportWriteField[]
+] as const satisfies readonly ImportDataItem[]
 const INDEX_TARGET_COLLECTION_MODES = [
   'none',
   'existing',
@@ -78,8 +78,8 @@ export function createDialogImportTargetCollectionField<
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
   return {
     id: 'import-target-collection',
-    label: '目标本地合集',
-    description: '可选；新建游戏会加入该合集，更新已有游戏开启后也作用于已存在游戏',
+    label: '目标合集',
+    description: '将匹配到的游戏加入该合集',
     orientation: 'horizontal',
     contentLayout: 'inline',
     content: [
@@ -94,7 +94,7 @@ export function createDialogImportTargetCollectionField<
       settings.select({
         id: SETTINGS_NODE_IDS.importTargetCollectionId,
         initialValue: readImportTargetCollectionId(values),
-        placeholder: collections.length > 0 ? '选择本地合集' : '没有可用的本地合集',
+        placeholder: collections.length > 0 ? '选择合集' : '没有可用合集',
         options: createCollectionOptions(collections),
         disabled: !readImportUseTargetCollection(values) || collections.length === 0,
         onChange(event) {
@@ -122,9 +122,9 @@ export function createDialogIndexTargetCollectionFields<
 
   return [
     {
-      id: 'index-target-collection-mode',
-      label: '目标本地合集',
-      description: '可选；选择目录导入后如何写入本地合集',
+      id: 'index-target-collection-strategy',
+      label: '目标合集策略',
+      description: '选择目录导入后如何加入合集',
       orientation: 'vertical',
       content: [
         settings.radioGroup({
@@ -139,13 +139,13 @@ export function createDialogIndexTargetCollectionFields<
     },
     {
       id: 'index-target-collection-id',
-      label: '选择本地合集',
+      label: '选择合集',
       hidden: mode !== 'existing',
       content: [
         settings.select({
           id: SETTINGS_NODE_IDS.importTargetCollectionId,
           initialValue: readImportTargetCollectionId(values),
-          placeholder: collections.length > 0 ? '选择本地合集' : '没有可用的本地合集',
+          placeholder: collections.length > 0 ? '选择合集' : '没有可用合集',
           options: createCollectionOptions(collections),
           disabled: collections.length === 0,
           onChange(event) {
@@ -157,15 +157,15 @@ export function createDialogIndexTargetCollectionFields<
   ]
 }
 
-export function readImportWriteFields(values: SerializableRecord): readonly ImportWriteField[] {
+export function readImportDataItems(values: SerializableRecord): readonly ImportDataItem[] {
   return pickKnownValues(
-    readStringArray(values, SETTINGS_NODE_IDS.importWriteFields, []),
-    IMPORT_WRITE_FIELDS
+    readStringArray(values, SETTINGS_NODE_IDS.importDataItems, []),
+    IMPORT_DATA_ITEMS
   )
 }
 
-export function createImportWriteFieldArgs(values: SerializableRecord): SerializableRecord {
-  const fields = readImportWriteFields(values)
+export function createImportDataItemArgs(values: SerializableRecord): SerializableRecord {
+  const fields = readImportDataItems(values)
   return {
     status: fields.includes('status'),
     score: fields.includes('score'),
