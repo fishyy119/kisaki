@@ -1,5 +1,5 @@
 import type { ExternalId } from '@kisaki/extension-sdk'
-import type { BangumiInfoboxItem, BangumiInfoboxValue } from '../../api/types'
+import type { BangumiInfoboxItem, BangumiInfoboxValue } from '../../../../api/types'
 import {
   dedupeRelatedSites,
   extractUrls,

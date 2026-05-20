@@ -5,8 +5,8 @@ import type {
   IdResolvedTarget,
   Locale
 } from '@kisaki/extension-sdk'
-import type { BangumiClient } from '../api/client'
-import { BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
+import type { BangumiClient } from '../../../api/client'
+import { BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
 import {
   buildGameCharacters,
   fetchCharacterDetails,

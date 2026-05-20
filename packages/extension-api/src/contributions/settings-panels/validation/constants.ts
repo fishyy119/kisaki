@@ -39,6 +39,7 @@ export const SETTINGS_PANEL_FIELD_ORIENTATION_VALUES = [
   'horizontal',
   'responsive'
 ] as const
+export const SETTINGS_PANEL_RADIO_GROUP_ORIENTATION_VALUES = ['vertical', 'horizontal'] as const
 export const SETTINGS_PANEL_FIELD_SPAN_VALUES = ['full'] as const
 export const SETTINGS_PANEL_CONTENT_LAYOUT_VALUES = ['stack', 'inline', 'grid'] as const
 export const SETTINGS_PANEL_TEXT_INPUT_MODE_VALUES = [

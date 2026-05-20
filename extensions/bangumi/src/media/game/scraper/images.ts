@@ -1,5 +1,5 @@
-import type { BangumiClient } from '../api/client'
-import type { BangumiSubject, BangumiSubjectRelation } from '../api/types'
+import type { BangumiClient } from '../../../api/client'
+import type { BangumiSubject, BangumiSubjectRelation } from '../../../api/types'
 import { extractImageUrls } from './format/images'
 import { dedupeUrls } from './format/urls'
 import type { BangumiSubjectImageVariants } from './types'

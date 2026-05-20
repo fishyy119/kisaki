@@ -1,4 +1,4 @@
-import type { BangumiInfoboxItem, BangumiInfoboxValue } from '../../api/types'
+import type { BangumiInfoboxItem, BangumiInfoboxValue } from '../../../../api/types'
 import { normalizeToken } from './text'
 
 type CharacterMeasurements = {

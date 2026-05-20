@@ -1,15 +1,17 @@
 import type { ExtensionStorage } from '@kisaki/extension-sdk'
+import type { BangumiMediaScope } from '../media/scopes'
 import { BANGUMI_STORAGE_KEYS } from '../shared/ids'
 
 export interface SyncQueueItem {
-  gameId: string
+  scope: BangumiMediaScope
+  localId: string
   queuedAt: number
   reason: 'created' | 'updated' | 'manual'
 }
 
 interface BangumiSyncQueueV1 {
   version: 1
-  games: Record<string, SyncQueueItem>
+  items: Record<string, SyncQueueItem>
 }
 
 const MAX_SYNC_QUEUE_ITEMS = 5000
@@ -17,31 +19,37 @@ const MAX_SYNC_QUEUE_ITEMS = 5000
 export class SyncQueueStore {
   constructor(private readonly storage: ExtensionStorage) {}
 
-  async enqueue(gameId: string, reason: SyncQueueItem['reason']): Promise<void> {
+  async enqueue(
+    scope: BangumiMediaScope,
+    localId: string,
+    reason: SyncQueueItem['reason']
+  ): Promise<void> {
     const queue = await this.read()
-    queue.games[gameId] = {
-      gameId,
+    queue.items[createQueueKey(scope, localId)] = {
+      scope,
+      localId,
       queuedAt: Date.now(),
       reason
     }
     await this.write(pruneQueue(queue))
   }
 
-  async list(limit: number): Promise<readonly SyncQueueItem[]> {
+  async list(limit: number, scope?: BangumiMediaScope): Promise<readonly SyncQueueItem[]> {
     const queue = await this.read()
-    return Object.values(queue.games)
+    return Object.values(queue.items)
+      .filter((item) => !scope || item.scope === scope)
       .sort((left, right) => left.queuedAt - right.queuedAt)
       .slice(0, normalizeLimit(limit))
   }
 
-  async remove(gameIds: readonly string[]): Promise<void> {
-    if (gameIds.length === 0) {
+  async remove(items: readonly Pick<SyncQueueItem, 'scope' | 'localId'>[]): Promise<void> {
+    if (items.length === 0) {
       return
     }
 
     const queue = await this.read()
-    for (const gameId of gameIds) {
-      delete queue.games[gameId]
+    for (const item of items) {
+      delete queue.items[createQueueKey(item.scope, item.localId)]
     }
     await this.write(queue)
   }
@@ -67,46 +75,48 @@ export class SyncQueueStore {
 }
 
 function normalizeQueue(value: unknown): BangumiSyncQueueV1 {
-  if (!isRecord(value) || value.version !== 1 || !isRecord(value.games)) {
+  if (!isRecord(value) || value.version !== 1 || !isRecord(value.items)) {
     return createEmptyQueue()
   }
 
-  const games: Record<string, SyncQueueItem> = {}
-  for (const [gameId, item] of Object.entries(value.games)) {
+  const items: Record<string, SyncQueueItem> = {}
+  for (const [key, item] of Object.entries(value.items)) {
     if (!isRecord(item)) {
       continue
     }
 
-    const normalizedGameId = readNonEmptyString(item.gameId) || gameId.trim()
-    if (!normalizedGameId) {
+    const scope = normalizeScope(item.scope)
+    const localId = readNonEmptyString(item.localId) || readLocalIdFromKey(key)
+    if (!scope || !localId) {
       continue
     }
 
-    games[normalizedGameId] = {
-      gameId: normalizedGameId,
+    items[createQueueKey(scope, localId)] = {
+      scope,
+      localId,
       queuedAt: readTimestamp(item.queuedAt),
       reason: normalizeReason(item.reason)
     }
   }
 
-  return pruneQueue({ version: 1, games })
+  return pruneQueue({ version: 1, items })
 }
 
 function createEmptyQueue(): BangumiSyncQueueV1 {
   return {
     version: 1,
-    games: {}
+    items: {}
   }
 }
 
 function pruneQueue(queue: BangumiSyncQueueV1): BangumiSyncQueueV1 {
-  const entries = Object.entries(queue.games).sort(
+  const entries = Object.entries(queue.items).sort(
     (left, right) => right[1].queuedAt - left[1].queuedAt
   )
 
   return {
     version: 1,
-    games: Object.fromEntries(entries.slice(0, MAX_SYNC_QUEUE_ITEMS))
+    items: Object.fromEntries(entries.slice(0, MAX_SYNC_QUEUE_ITEMS))
   }
 }
 
@@ -116,6 +126,21 @@ function normalizeLimit(value: number): number {
 
 function normalizeReason(value: unknown): SyncQueueItem['reason'] {
   return value === 'created' || value === 'updated' || value === 'manual' ? value : 'updated'
+}
+
+function normalizeScope(value: unknown): BangumiMediaScope | undefined {
+  return value === 'book' || value === 'game' || value === 'anime' || value === 'music'
+    ? value
+    : undefined
+}
+
+function createQueueKey(scope: BangumiMediaScope, localId: string): string {
+  return `${scope}:${localId}`
+}
+
+function readLocalIdFromKey(key: string): string {
+  const index = key.indexOf(':')
+  return index >= 0 ? key.slice(index + 1).trim() : key.trim()
 }
 
 function readNonEmptyString(value: unknown): string {

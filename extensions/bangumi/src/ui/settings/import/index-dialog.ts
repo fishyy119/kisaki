@@ -17,8 +17,10 @@ import { createIndexImportArgs } from './args'
 import {
   createDialogIndexTargetCollectionFields,
   createDialogImportProfileField,
+  createDialogImportScopeField,
   readIndexTargetCollectionMode,
   readImportPatchExisting,
+  readImportScope,
   readImportTargetCollectionId
 } from './options'
 
@@ -35,6 +37,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
         resources.isCommandRunning(BANGUMI_COMMAND_IDS.importIndex)
       ])
       const values = mergeIndexDialogValues(context.values, context.parentValues)
+      const selectedScope = readImportScope(values)
       const targetCollectionMode = readIndexTargetCollectionMode(values)
       const hasTargetCollection =
         targetCollectionMode === 'byIndexTitle' ||
@@ -44,6 +47,10 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
 
       return {
         fields: [
+          createDialogImportScopeField({
+            settings: ui,
+            values
+          }),
           createDialogImportProfileField({
             settings: ui,
             values,
@@ -58,6 +65,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             id: 'import-index-patch-existing',
             label: '更新已存在游戏',
             description: '按 Bangumi ID 匹配本地游戏，加入目标合集',
+            hidden: selectedScope !== 'game',
             disabled: !hasTargetCollection,
             content: [
               ui.switch({
@@ -77,7 +85,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             content: [
               ui.button({
                 id: 'index-preview',
-                label: '预览将导入的游戏',
+                label: selectedScope === 'game' ? '预览将导入的游戏' : '预览远端目录',
                 disabled: isRunning,
                 async onClick(event) {
                   return runDialogPreview({

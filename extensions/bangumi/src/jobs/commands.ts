@@ -1,18 +1,18 @@
 import type { CommandRegistrar, Disposable, SerializableRecord } from '@kisaki/extension-sdk'
 import {
   normalizeAuthRefreshArgs,
-  normalizeChangedGamesSyncArgs,
+  normalizeChangedItemsSyncArgs,
   normalizeFullSyncArgs,
   normalizeImportIndexArgs,
-  normalizeImportMyCollectionsArgs
+  normalizeImportCollectionsArgs
 } from './args'
 import type { JobRunner } from './runner'
 
 export const BANGUMI_COMMAND_IDS = {
   authRefresh: 'bangumi.auth.refresh',
-  syncChangedGames: 'bangumi.sync.changed-games',
+  syncChangedItems: 'bangumi.sync.changed-items',
   syncFull: 'bangumi.sync.full',
-  importMyCollections: 'bangumi.import.my-collections',
+  importCollections: 'bangumi.import.collections',
   importIndex: 'bangumi.import.index'
 } as const
 
@@ -41,20 +41,22 @@ export function registerBangumiJobCommands(
       }
     }),
     commands.register({
-      id: BANGUMI_COMMAND_IDS.syncChangedGames,
-      title: 'Bangumi 同步变更游戏',
-      description: '同步扩展运行期队列中的本地游戏变更',
+      id: BANGUMI_COMMAND_IDS.syncChangedItems,
+      title: 'Bangumi 同步变更条目',
+      description: '同步扩展运行期队列中的本地条目变更',
       cancelable: true,
       defaultArgs: {
+        scope: 'game',
         dryRun: false,
         limit: 500
       },
       argsSchema: createObjectArgsSchema({
+        scope: 'string',
         dryRun: 'boolean',
         limit: 'number'
       }),
       execute(args, event) {
-        return runner.runChangedGamesSync(normalizeChangedGamesSyncArgs(args), event)
+        return runner.runChangedItemsSync(normalizeChangedItemsSyncArgs(args), event)
       }
     }),
     commands.register({
@@ -63,6 +65,7 @@ export function registerBangumiJobCommands(
       description: '扫描本地游戏并同步 Bangumi 收藏状态与评分',
       cancelable: true,
       defaultArgs: {
+        scope: 'game',
         dryRun: true,
         updateExisting: true,
         playStatusEnabled: true,
@@ -71,6 +74,7 @@ export function registerBangumiJobCommands(
         batchSize: 100
       },
       argsSchema: createObjectArgsSchema({
+        scope: 'string',
         dryRun: 'boolean',
         updateExisting: 'boolean',
         batchSize: 'number',
@@ -83,11 +87,12 @@ export function registerBangumiJobCommands(
       }
     }),
     commands.register({
-      id: BANGUMI_COMMAND_IDS.importMyCollections,
+      id: BANGUMI_COMMAND_IDS.importCollections,
       title: 'Bangumi 导入我的收藏',
-      description: '导入当前 Bangumi 用户的游戏收藏',
+      description: '按媒体类型导入当前 Bangumi 用户收藏',
       cancelable: true,
       defaultArgs: {
+        scope: 'game',
         dryRun: true,
         profileId: '',
         collectionTypes: [1, 2, 3, 4, 5],
@@ -103,6 +108,7 @@ export function registerBangumiJobCommands(
         concurrency: 4
       },
       argsSchema: createObjectArgsSchema({
+        scope: 'string',
         dryRun: 'boolean',
         profileId: 'string',
         collectionTypes: 'array',
@@ -112,7 +118,7 @@ export function registerBangumiJobCommands(
         concurrency: 'number'
       }),
       execute(args, event) {
-        return runner.runImportMyCollections(normalizeImportMyCollectionsArgs(args), event)
+        return runner.runImportCollections(normalizeImportCollectionsArgs(args), event)
       }
     }),
     commands.register({
@@ -121,6 +127,7 @@ export function registerBangumiJobCommands(
       description: '导入指定 Bangumi 目录中的游戏条目',
       cancelable: true,
       defaultArgs: {
+        scope: 'game',
         dryRun: true,
         profileId: '',
         indexInput: '',
@@ -131,6 +138,7 @@ export function registerBangumiJobCommands(
         concurrency: 4
       },
       argsSchema: createObjectArgsSchema({
+        scope: 'string',
         dryRun: 'boolean',
         profileId: 'string',
         indexInput: 'string',

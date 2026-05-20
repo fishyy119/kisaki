@@ -87,6 +87,7 @@ export interface SettingsPanelRadioGroupNode<
   TChangeResult
 > extends SettingsPanelValueNodeBase<string, TChangeEvent, TChangeResult> {
   kind: 'radioGroup'
+  orientation?: 'vertical' | 'horizontal'
   options: readonly SettingsPanelSelectOption[]
 }
 

@@ -6,7 +6,7 @@ import type {
   BangumiRelatedPerson,
   BangumiSubject,
   BangumiSubjectRelation
-} from '../api/types'
+} from '../../../api/types'
 
 export interface BangumiSubjectImageVariants {
   large?: string

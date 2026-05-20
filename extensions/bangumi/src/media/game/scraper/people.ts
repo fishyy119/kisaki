@@ -1,7 +1,7 @@
 import type { Locale, ScrapedGameCompanyFact, ScrapedGamePersonFact } from '@kisaki/extension-sdk'
-import type { BangumiClient } from '../api/client'
-import type { BangumiPersonDetail, BangumiRelatedPerson } from '../api/types'
-import { BANGUMI_SOURCE_ID } from '../shared/constants'
+import type { BangumiClient } from '../../../api/client'
+import type { BangumiPersonDetail, BangumiRelatedPerson } from '../../../api/types'
+import { BANGUMI_SOURCE_ID } from '../../../shared/constants'
 import { dedupeExternalIds } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
 import {

@@ -37,6 +37,8 @@ import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
 import type { TokenService } from '../auth/token-service'
+import type { BangumiSubjectRef } from '../identity/subject-ref'
+import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
 
 type BangumiClientSettings = Pick<BangumiSettingsV1['client'], 'rateLimit' | 'timeoutMs' | 'retryCount'>
 type AuthMode = 'none' | 'optional' | 'required'
@@ -93,6 +95,15 @@ export class BangumiClient {
     page: PageQuery = {},
     options: Pick<RequestOptions, 'signal'> = {}
   ): Promise<Page<BangumiSubject>> {
+    return this.searchSubjects('game', payload, page, options)
+  }
+
+  async searchSubjects(
+    scope: BangumiMediaScope,
+    payload: BangumiSearchSubjectPayload,
+    page: PageQuery = {},
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<Page<BangumiSubject>> {
     const query = normalizePageQuery(page)
     const response = await this.request<BangumiPaged<BangumiSubject>>(
       'POST',
@@ -103,7 +114,7 @@ export class BangumiClient {
           ...payload,
           filter: {
             ...(payload.filter ?? {}),
-            type: [BANGUMI_SUBJECT_TYPE_GAME]
+            type: [getBangumiSubjectType(scope)]
           }
         },
         auth: 'optional',
@@ -114,7 +125,11 @@ export class BangumiClient {
     return toPage(response, query)
   }
 
-  async getSubject(subjectId: number, options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiSubject> {
+  async getSubject(
+    refOrSubjectId: BangumiSubjectRef | number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiSubject> {
+    const subjectId = readSubjectId(refOrSubjectId)
     return this.request<BangumiSubject>('GET', `/v0/subjects/${subjectId}`, {
       auth: 'optional',
       signal: options.signal
@@ -187,7 +202,9 @@ export class BangumiClient {
       {
         query: {
           ...pageQuery,
-          subject_type: query.subject_type ?? BANGUMI_SUBJECT_TYPE_GAME,
+          subject_type:
+            query.subject_type ??
+            (query.scope ? getBangumiSubjectType(query.scope) : BANGUMI_SUBJECT_TYPE_GAME),
           type: query.type
         },
         auth: 'required',
@@ -200,9 +217,10 @@ export class BangumiClient {
 
   async getUserCollection(
     username: string,
-    subjectId: number,
+    refOrSubjectId: BangumiSubjectRef | number,
     options: Pick<RequestOptions, 'signal'> = {}
   ): Promise<BangumiUserCollection> {
+    const subjectId = readSubjectId(refOrSubjectId)
     return this.request<BangumiUserCollection>(
       'GET',
       `/v0/users/${encodeURIComponent(username)}/collections/${subjectId}`,
@@ -214,10 +232,11 @@ export class BangumiClient {
   }
 
   async upsertMyCollection(
-    subjectId: number,
+    refOrSubjectId: BangumiSubjectRef | number,
     payload: BangumiCollectionPatch,
     options: Pick<RequestOptions, 'signal'> = {}
   ): Promise<BangumiUserCollection> {
+    const subjectId = readSubjectId(refOrSubjectId)
     return this.request<BangumiUserCollection>('POST', `/v0/users/-/collections/${subjectId}`, {
       body: payload,
       auth: 'required',
@@ -226,10 +245,11 @@ export class BangumiClient {
   }
 
   async patchMyCollection(
-    subjectId: number,
+    refOrSubjectId: BangumiSubjectRef | number,
     payload: BangumiCollectionPatch,
     options: Pick<RequestOptions, 'signal'> = {}
   ): Promise<BangumiUserCollection> {
+    const subjectId = readSubjectId(refOrSubjectId)
     return this.request<BangumiUserCollection>('PATCH', `/v0/users/-/collections/${subjectId}`, {
       body: payload,
       auth: 'required',
@@ -256,7 +276,9 @@ export class BangumiClient {
       {
         query: {
           ...pageQuery,
-          type: query.type ?? BANGUMI_SUBJECT_TYPE_GAME
+          type:
+            query.type ??
+            (query.scope ? getBangumiSubjectType(query.scope) : BANGUMI_SUBJECT_TYPE_GAME)
         },
         auth: 'optional',
         signal: options.signal
@@ -445,6 +467,10 @@ function normalizeMe(value: BangumiMe): BangumiMe {
     username: value.username.trim(),
     nickname: typeof value.nickname === 'string' && value.nickname.trim() ? value.nickname.trim() : value.username.trim()
   }
+}
+
+function readSubjectId(refOrSubjectId: BangumiSubjectRef | number): number {
+  return typeof refOrSubjectId === 'number' ? refOrSubjectId : refOrSubjectId.subjectId
 }
 
 function normalizeRetryCount(value: unknown): number {

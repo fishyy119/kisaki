@@ -9,11 +9,13 @@
  * Only fields used by Kisaki scraper are modeled here.
  */
 
+import type { BangumiMediaScope, BangumiSupportedSubjectType } from '../media/scopes'
+
 // =============================================================================
 // Shared
 // =============================================================================
 
-export type BangumiSubjectType = 1 | 2 | 3 | 4 | 6
+export type BangumiSubjectType = BangumiSupportedSubjectType | 6
 export type BangumiPersonType = 1 | 2 | 3
 export type BangumiCharacterType = 1 | 2 | 3 | 4
 export type BangumiBloodType = 1 | 2 | 3 | 4
@@ -240,6 +242,7 @@ export interface BangumiUserCollection {
 }
 
 export interface BangumiCollectionQuery extends BangumiPageQuery {
+  scope?: BangumiMediaScope
   subject_type?: BangumiSubjectType
   type?: BangumiCollectionType
 }
@@ -272,5 +275,6 @@ export interface BangumiIndexSubject {
 }
 
 export interface BangumiIndexSubjectsQuery extends BangumiPageQuery {
+  scope?: BangumiMediaScope
   type?: BangumiSubjectType
 }

@@ -5,10 +5,12 @@ export const SETTINGS_NODE_IDS = {
   clearRemoteScoreWhenEmpty: 'autoSync.clearRemoteScoreWhenEmpty',
   debounceSeconds: 'autoSync.debounceSeconds',
   autoSyncNotifyErrors: 'autoSync.notifyErrors',
+  syncScope: 'sync.scope',
   rateLimitMaxRequests: 'client.rateLimit.maxRequests',
   rateLimitWindowSeconds: 'client.rateLimit.windowSeconds',
   timeoutSeconds: 'client.timeoutSeconds',
   retryCount: 'client.retryCount',
+  importScope: 'import.scope',
   importProfileId: 'import.profileId',
   importCollectionTypes: 'import.collectionTypes',
   importDataItems: 'import.dataItems',
@@ -25,43 +27,8 @@ export const SETTINGS_NODE_IDS = {
 
 export const SETTINGS_DIALOG_IDS = {
   fullSync: 'fullSync',
-  importMyCollections: 'importMyCollections',
+  importCollections: 'importCollections',
   importIndex: 'importIndex'
 } as const
 
 export type BangumiSettingsDialogId = (typeof SETTINGS_DIALOG_IDS)[keyof typeof SETTINGS_DIALOG_IDS]
-
-export const BANGUMI_COLLECTION_TYPE_OPTIONS = [
-  { value: '1', label: '想玩' },
-  { value: '2', label: '玩过' },
-  { value: '3', label: '在玩' },
-  { value: '4', label: '搁置' },
-  { value: '5', label: '抛弃' }
-] as const
-
-export const AUTO_SYNC_ITEM_OPTIONS = [
-  { value: 'create', label: '新增游戏' },
-  { value: 'status', label: '游玩状态' },
-  { value: 'score', label: '评分' }
-] as const
-
-export const FULL_SYNC_ITEM_OPTIONS = [
-  { value: 'status', label: '游玩状态' },
-  { value: 'score', label: '评分' }
-] as const
-
-export const IMPORT_DATA_ITEM_OPTIONS = [
-  { value: 'status', label: '游玩状态' },
-  { value: 'score', label: '评分' },
-  { value: 'tags', label: '标签' }
-] as const
-
-export const INDEX_TARGET_COLLECTION_MODE_OPTIONS = [
-  { value: 'none', label: '不加入合集', description: '只导入缺失游戏' },
-  { value: 'existing', label: '选择现有合集', description: '将导入的游戏加入指定合集' },
-  {
-    value: 'byIndexTitle',
-    label: '按目录名创建合集',
-    description: '按 Bangumi 目录名创建或复用合集'
-  }
-] as const

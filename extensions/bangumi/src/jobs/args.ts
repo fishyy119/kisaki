@@ -1,5 +1,6 @@
 import type { SerializableRecord } from '@kisaki/extension-sdk'
 import type { BangumiCollectionType } from '../config/schema'
+import { requireBangumiMediaScope, type BangumiMediaScope } from '../media/scopes'
 import { BangumiExtensionError } from '../shared/errors'
 
 export type BangumiImportTargetCollection =
@@ -19,12 +20,16 @@ export interface BangumiAuthRefreshArgs {
   verifyAccount: boolean
 }
 
-export interface BangumiChangedGamesSyncArgs {
+export interface BangumiScopedArgs {
+  scope: BangumiMediaScope
+}
+
+export interface BangumiChangedItemsSyncArgs extends BangumiScopedArgs {
   dryRun: boolean
   limit: number
 }
 
-export interface BangumiFullSyncArgs {
+export interface BangumiFullSyncArgs extends BangumiScopedArgs {
   dryRun: boolean
   updateExisting: boolean
   batchSize: number
@@ -33,9 +38,9 @@ export interface BangumiFullSyncArgs {
   clearRemoteScoreWhenEmpty?: boolean
 }
 
-export interface BangumiImportMyCollectionsArgs {
+export interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
   dryRun: boolean
-  profileId: string
+  profileId?: string
   collectionTypes: readonly BangumiCollectionType[]
   fields: BangumiImportWriteFields
   patchExisting: boolean
@@ -43,9 +48,9 @@ export interface BangumiImportMyCollectionsArgs {
   concurrency: number
 }
 
-export interface BangumiImportIndexArgs {
+export interface BangumiImportIndexArgs extends BangumiScopedArgs {
   dryRun: boolean
-  profileId: string
+  profileId?: string
   indexInput: string
   indexId: number
   patchExisting: boolean
@@ -63,10 +68,11 @@ export function normalizeAuthRefreshArgs(args: SerializableRecord): BangumiAuthR
   }
 }
 
-export function normalizeChangedGamesSyncArgs(
+export function normalizeChangedItemsSyncArgs(
   args: SerializableRecord
-): BangumiChangedGamesSyncArgs {
+): BangumiChangedItemsSyncArgs {
   return {
+    scope: readScope(args.scope),
     dryRun: readBoolean(args.dryRun, false),
     limit: readInteger(args.limit, 500, { min: 1, max: 10_000 })
   }
@@ -74,6 +80,7 @@ export function normalizeChangedGamesSyncArgs(
 
 export function normalizeFullSyncArgs(args: SerializableRecord): BangumiFullSyncArgs {
   return {
+    scope: readScope(args.scope),
     dryRun: readBoolean(args.dryRun, true),
     updateExisting: readBoolean(args.updateExisting, true),
     batchSize: readInteger(args.batchSize, 100, { min: 1, max: 500 }),
@@ -83,12 +90,13 @@ export function normalizeFullSyncArgs(args: SerializableRecord): BangumiFullSync
   }
 }
 
-export function normalizeImportMyCollectionsArgs(
+export function normalizeImportCollectionsArgs(
   args: SerializableRecord
-): BangumiImportMyCollectionsArgs {
+): BangumiImportCollectionsArgs {
   return {
+    scope: readScope(args.scope),
     dryRun: readBoolean(args.dryRun, true),
-    profileId: readRequiredString(args.profileId, '请选择用于创建游戏的刮削配置。'),
+    ...readOptionalStringProp(args.profileId, 'profileId'),
     collectionTypes: normalizeCollectionTypes(args.collectionTypes),
     fields: normalizeImportWriteFields(args.fields),
     patchExisting: readBoolean(args.patchExisting, false),
@@ -101,14 +109,19 @@ export function normalizeImportIndexArgs(args: SerializableRecord): BangumiImpor
   const indexInput = readRequiredString(args.indexInput, '请输入 Bangumi 目录 ID 或链接。')
 
   return {
+    scope: readScope(args.scope),
     dryRun: readBoolean(args.dryRun, true),
-    profileId: readRequiredString(args.profileId, '请选择用于创建游戏的刮削配置。'),
+    ...readOptionalStringProp(args.profileId, 'profileId'),
     indexInput,
     indexId: parseBangumiIndexId(indexInput),
     patchExisting: readBoolean(args.patchExisting, false),
     targetCollection: normalizeTargetCollection(args.targetCollection, true),
     concurrency: readInteger(args.concurrency, 4, { min: 1, max: 8 })
   }
+}
+
+function readScope(value: unknown): BangumiMediaScope {
+  return value === undefined ? 'game' : requireBangumiMediaScope(value)
 }
 
 export function parseBangumiIndexId(input: string): number {
@@ -193,6 +206,14 @@ function readRequiredString(value: unknown, message: string): string {
     throw new BangumiExtensionError('bangumi_validation', message)
   }
   return text
+}
+
+function readOptionalStringProp(
+  value: unknown,
+  key: 'profileId'
+): Partial<Record<typeof key, string>> {
+  const text = typeof value === 'string' ? value.trim() : ''
+  return text ? { [key]: text } : {}
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {

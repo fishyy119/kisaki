@@ -5,7 +5,7 @@ import type {
   LibraryGamePersonRole,
   ScrapedTag
 } from '@kisaki/extension-sdk'
-import type { BangumiBloodType, BangumiPersonCareer } from '../../api/types'
+import type { BangumiBloodType, BangumiPersonCareer } from '../../../../api/types'
 import { dedupeTags } from './dedupe'
 import { normalizeToken } from './text'
 

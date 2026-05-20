@@ -1,12 +1,14 @@
 import type { ExtensionStorage } from '@kisaki/extension-sdk'
 import type { BangumiCollectionPatch } from '../api/types'
+import type { BangumiMediaScope } from '../media/scopes'
 import { BANGUMI_STORAGE_KEYS } from '../shared/ids'
 
 const SYNC_FINGERPRINT_VERSION = 1
 const MAX_SYNC_FINGERPRINTS = 5000
 
 export interface SyncFingerprintInput {
-  gameId: string
+  scope: BangumiMediaScope
+  localId: string
   subjectId: string
   playStatusEnabled: boolean
   mappedType?: number
@@ -17,7 +19,8 @@ export interface SyncFingerprintInput {
 }
 
 export interface SyncFingerprintRecord {
-  gameId: string
+  scope: BangumiMediaScope
+  localId: string
   subjectId: string
   fingerprint: string
   updatedAt: number
@@ -31,14 +34,18 @@ interface BangumiSyncStateV1 {
 export class SyncStateStore {
   constructor(private readonly storage: ExtensionStorage) {}
 
-  async getLastFingerprint(gameId: string): Promise<string | undefined> {
+  async getLastFingerprint(
+    scope: BangumiMediaScope,
+    localId: string
+  ): Promise<string | undefined> {
     const state = await this.read()
-    return state.fingerprints[gameId]?.fingerprint
+    return state.fingerprints[createFingerprintKey(scope, localId)]?.fingerprint
   }
 
   async recordSuccessfulSync(record: SyncFingerprintRecord): Promise<void> {
     const state = await this.read()
-    state.fingerprints[record.gameId] = normalizeFingerprintRecord(record)
+    state.fingerprints[createFingerprintKey(record.scope, record.localId)] =
+      normalizeFingerprintRecord(record)
     await this.write(pruneSyncState(state))
   }
 
@@ -65,7 +72,8 @@ export class SyncStateStore {
 export function createSyncFingerprint(input: SyncFingerprintInput): string {
   return stableStringify({
     version: SYNC_FINGERPRINT_VERSION,
-    gameId: input.gameId,
+    scope: input.scope,
+    localId: input.localId,
     subjectId: input.subjectId,
     playStatusEnabled: input.playStatusEnabled,
     mappedType: input.mappedType ?? null,
@@ -85,20 +93,27 @@ function normalizeSyncState(value: unknown): BangumiSyncStateV1 {
   }
 
   const fingerprints: Record<string, SyncFingerprintRecord> = {}
-  for (const [gameId, record] of Object.entries(value.fingerprints)) {
+  for (const [key, record] of Object.entries(value.fingerprints)) {
     if (!isRecord(record)) {
       continue
     }
 
+    const scope = normalizeScope(record.scope)
+    const localId = readNonEmptyString(record.localId) || readLocalIdFromKey(key)
+    if (!scope || !localId) {
+      continue
+    }
+
     const normalized = normalizeFingerprintRecord({
-      gameId,
+      scope,
+      localId,
       subjectId: readNonEmptyString(record.subjectId),
       fingerprint: readNonEmptyString(record.fingerprint),
       updatedAt: readTimestamp(record.updatedAt)
     })
 
     if (normalized.subjectId && normalized.fingerprint) {
-      fingerprints[gameId] = normalized
+      fingerprints[createFingerprintKey(normalized.scope, normalized.localId)] = normalized
     }
   }
 
@@ -125,11 +140,27 @@ function pruneSyncState(state: BangumiSyncStateV1): BangumiSyncStateV1 {
 
 function normalizeFingerprintRecord(record: SyncFingerprintRecord): SyncFingerprintRecord {
   return {
-    gameId: record.gameId.trim(),
+    scope: record.scope,
+    localId: record.localId.trim(),
     subjectId: record.subjectId.trim(),
     fingerprint: record.fingerprint,
     updatedAt: readTimestamp(record.updatedAt)
   }
+}
+
+function normalizeScope(value: unknown): BangumiMediaScope | undefined {
+  return value === 'book' || value === 'game' || value === 'anime' || value === 'music'
+    ? value
+    : undefined
+}
+
+function createFingerprintKey(scope: BangumiMediaScope, localId: string): string {
+  return `${scope}:${localId}`
+}
+
+function readLocalIdFromKey(key: string): string {
+  const index = key.indexOf(':')
+  return index >= 0 ? key.slice(index + 1).trim() : key.trim()
 }
 
 function stableStringify(value: unknown): string {

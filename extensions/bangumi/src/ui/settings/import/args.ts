@@ -6,7 +6,8 @@ import {
   createImportDataItemArgs,
   createImportTargetCollectionArg,
   readImportCollectionTypes,
-  readImportPatchExisting
+  readImportPatchExisting,
+  readImportScope
 } from './options'
 
 export function createMyCollectionsImportArgs(
@@ -15,6 +16,7 @@ export function createMyCollectionsImportArgs(
   dryRun: boolean
 ): SerializableRecord {
   return {
+    scope: readImportScope(values),
     dryRun,
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     collectionTypes: readImportCollectionTypes(values),
@@ -31,6 +33,7 @@ export function createIndexImportArgs(
   dryRun: boolean
 ): SerializableRecord {
   return {
+    scope: readImportScope(values),
     dryRun,
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     indexInput: readString(values, SETTINGS_NODE_IDS.importIndexInput, ''),

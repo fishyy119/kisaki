@@ -4,13 +4,13 @@ import type {
   ScrapedGameCharacterFact,
   ScrapedTag
 } from '@kisaki/extension-sdk'
-import type { BangumiClient } from '../api/client'
+import type { BangumiClient } from '../../../api/client'
 import type {
   BangumiCharacterDetail,
   BangumiCharacterPerson,
   BangumiRelatedCharacter
-} from '../api/types'
-import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
+} from '../../../api/types'
+import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
 import { dedupeTags } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
 import { extractImageUrls } from './format/images'

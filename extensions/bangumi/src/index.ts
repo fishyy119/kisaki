@@ -9,7 +9,12 @@ import { TokenStore } from './auth/token-store'
 import { SettingsStore } from './config/store'
 import { isBangumiCommandId, registerBangumiJobCommands } from './jobs/commands'
 import { JobRunner } from './jobs/runner'
-import { BangumiProvider } from './scraper/provider'
+import { createAnimeMediaDescriptor } from './media/anime/scope'
+import { createBookMediaDescriptor } from './media/book/scope'
+import { GameLocalMediaAdapter, createGameMediaDescriptor } from './media/game/adapter'
+import { BangumiProvider } from './media/game/scraper/provider'
+import { createMusicMediaDescriptor } from './media/music/scope'
+import { MediaRegistry } from './media/registry'
 import { createBangumiSettingsPanel } from './ui/settings'
 import { BangumiExtensionError } from './shared/errors'
 import { SyncEngine } from './sync/engine'
@@ -39,12 +44,20 @@ export default defineExtension({
       }
     )
     const accountService = new AccountService(context.storage, client, tokenService)
+    const gameAdapter = new GameLocalMediaAdapter()
+    const mediaRegistry = new MediaRegistry([
+      createBookMediaDescriptor(),
+      createGameMediaDescriptor(gameAdapter),
+      createAnimeMediaDescriptor(),
+      createMusicMediaDescriptor()
+    ])
     const syncStateStore = new SyncStateStore(context.storage)
     const syncQueueStore = new SyncQueueStore(context.storage)
     const syncSuppressor = new SyncSuppressor()
     const syncEngine = new SyncEngine({
       settingsStore,
       client,
+      mediaRegistry,
       stateStore: syncStateStore,
       suppressor: syncSuppressor,
       logger: context.logger
@@ -55,6 +68,7 @@ export default defineExtension({
       tokenService,
       accountService,
       syncEngine,
+      mediaRegistry,
       syncQueueStore,
       syncSuppressor,
       logger: context.logger
@@ -123,6 +137,7 @@ export default defineExtension({
       await new SyncSubscription({
         settingsStore,
         engine: syncEngine,
+        mediaRegistry,
         queueStore: syncQueueStore,
         logger: context.logger
       }).start()
@@ -132,7 +147,8 @@ export default defineExtension({
         settingsStore,
         accountService,
         oauthFlow,
-        tokenService
+        tokenService,
+        mediaRegistry
       })
     )
     settingsRegistrationRef.current = settingsRegistration

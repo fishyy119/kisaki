@@ -4,8 +4,9 @@ import { BangumiExtensionError, type BangumiErrorCode } from '../shared/errors'
 export type BangumiJobStatus = 'completed' | 'cancelled' | 'failed'
 
 export interface BangumiJobError extends SerializableRecord {
+  scope: string | null
   subjectId: string | null
-  gameId: string | null
+  localId: string | null
   code: string
   message: string
 }
@@ -121,8 +122,9 @@ function normalizeJobError(
   error: Partial<BangumiJobError> & { code: string; message: string }
 ): BangumiJobError {
   return {
+    scope: error.scope || null,
     subjectId: error.subjectId || null,
-    gameId: error.gameId || null,
+    localId: error.localId || null,
     code: error.code || 'bangumi_error',
     message: error.message || 'Bangumi job 执行失败。'
   }

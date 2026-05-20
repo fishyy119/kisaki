@@ -1,9 +1,12 @@
-import { kisaki, type ExtensionLogger, type LibraryGame } from '@kisaki/extension-sdk'
+import type { ExtensionLogger } from '@kisaki/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { BangumiApiError } from '../api/errors'
 import type { BangumiCollectionPatch, BangumiUserCollection } from '../api/types'
-import type { BangumiSettingsV1 } from '../config/schema'
+import type { BangumiMediaScope } from '../media/scopes'
+import type { LocalMediaItem } from '../media/types'
+import type { MediaRegistry } from '../media/registry'
 import type { SettingsStore } from '../config/store'
+import { createBangumiSubjectRef } from '../identity/subject-ref'
 import { BangumiExtensionError } from '../shared/errors'
 import { createSyncFingerprint, type SyncStateStore } from './fingerprint'
 import {
@@ -12,10 +15,10 @@ import {
   readBangumiSubjectId,
   syncPayloadMatchesRemote,
   type SyncMappingOverrides
-} from './mapping'
+} from '../media/game/mapping'
 import type { SyncSuppressor } from './suppressor'
 
-export type SyncGameResultStatus =
+export type SyncItemResultStatus =
   | 'synced'
   | 'wouldSync'
   | 'skippedNoBangumiId'
@@ -23,12 +26,15 @@ export type SyncGameResultStatus =
   | 'skippedNoChange'
   | 'skippedSuppressed'
   | 'skippedRemoteExisting'
-  | 'skippedMissingLocalGame'
+  | 'skippedMissingLocalItem'
+  | 'skippedUnsupportedScope'
+  | 'skippedLocalSyncDisabled'
 
-export interface SyncGameResult {
-  status: SyncGameResultStatus
-  gameId: string
-  game?: LibraryGame
+export interface SyncItemResult {
+  status: SyncItemResultStatus
+  scope: BangumiMediaScope
+  localId: string
+  item?: LocalMediaItem
   subjectId?: string
   payload?: BangumiCollectionPatch
   fingerprint?: string
@@ -36,9 +42,10 @@ export interface SyncGameResult {
   suppressReason?: string
 }
 
-export interface SyncGameOptions extends SyncMappingOverrides {
-  game?: LibraryGame
-  gameId?: string
+export interface SyncItemOptions extends SyncMappingOverrides {
+  scope: BangumiMediaScope
+  item?: LocalMediaItem
+  localId?: string
   dryRun?: boolean
   updateExisting?: boolean
   accountUsername?: string
@@ -49,6 +56,7 @@ export interface SyncGameOptions extends SyncMappingOverrides {
 export interface SyncEngineDependencies {
   settingsStore: SettingsStore
   client: BangumiClient
+  mediaRegistry: MediaRegistry
   stateStore: SyncStateStore
   suppressor: SyncSuppressor
   logger?: ExtensionLogger
@@ -57,34 +65,46 @@ export interface SyncEngineDependencies {
 export class SyncEngine {
   constructor(private readonly deps: SyncEngineDependencies) {}
 
-  async syncGame(options: SyncGameOptions): Promise<SyncGameResult> {
+  async syncItem(options: SyncItemOptions): Promise<SyncItemResult> {
     const settings = await this.deps.settingsStore.get()
-    const game = options.game ?? (await this.loadGame(options.gameId))
-    const gameId = game?.id ?? options.gameId ?? ''
+    const descriptor = this.deps.mediaRegistry.require(options.scope)
+    const adapter = descriptor.localAdapter
+    const localId = options.item?.localId ?? options.localId ?? ''
 
-    if (!game) {
-      return { status: 'skippedMissingLocalGame', gameId }
+    if (!adapter || !adapter.supportsAutoSync) {
+      return { status: 'skippedUnsupportedScope', scope: options.scope, localId }
     }
 
-    const subjectId = readBangumiSubjectId(game)
+    if (!settings.media[options.scope].localSyncEnabled) {
+      return { status: 'skippedLocalSyncDisabled', scope: options.scope, localId }
+    }
+
+    const item = options.item ?? (localId ? await adapter.getLocalItem(localId) : null)
+    if (!item) {
+      return { status: 'skippedMissingLocalItem', scope: options.scope, localId }
+    }
+
+    const subjectId = readBangumiSubjectId(item)
     if (!subjectId) {
-      return { status: 'skippedNoBangumiId', gameId: game.id, game }
+      return { status: 'skippedNoBangumiId', scope: options.scope, localId: item.localId, item }
     }
 
     const mappingOptions = createSyncMappingOptions(settings, options)
-    const payloadPlan = createSyncPayloadPlan(game, mappingOptions)
+    const payloadPlan = createSyncPayloadPlan(item, mappingOptions)
     if (payloadPlan.skippedByMapping) {
       return {
         status: 'skippedByMapping',
-        gameId: game.id,
-        game,
+        scope: options.scope,
+        localId: item.localId,
+        item,
         subjectId,
         payload: payloadPlan.payload
       }
     }
 
     const fingerprint = createSyncFingerprint({
-      gameId: game.id,
+      scope: options.scope,
+      localId: item.localId,
       subjectId,
       playStatusEnabled: mappingOptions.playStatusEnabled,
       mappedType: payloadPlan.mappedType,
@@ -94,12 +114,13 @@ export class SyncEngine {
       payload: payloadPlan.payload
     })
 
-    const suppress = this.deps.suppressor.match(game.id, fingerprint)
+    const suppress = this.deps.suppressor.match(options.scope, item.localId, fingerprint)
     if (suppress) {
       return {
         status: 'skippedSuppressed',
-        gameId: game.id,
-        game,
+        scope: options.scope,
+        localId: item.localId,
+        item,
         subjectId,
         payload: payloadPlan.payload,
         fingerprint,
@@ -107,15 +128,17 @@ export class SyncEngine {
       }
     }
 
+    const subjectRef = createBangumiSubjectRef(options.scope, subjectId)
     const remote = options.checkRemote
-      ? await this.getRemoteCollection(options.accountUsername, subjectId, options.signal)
+      ? await this.getRemoteCollection(options.accountUsername, subjectRef, options.signal)
       : undefined
 
     if (remote && options.updateExisting === false) {
       return {
         status: 'skippedRemoteExisting',
-        gameId: game.id,
-        game,
+        scope: options.scope,
+        localId: item.localId,
+        item,
         subjectId,
         payload: payloadPlan.payload,
         fingerprint,
@@ -126,7 +149,8 @@ export class SyncEngine {
     if (options.checkRemote && syncPayloadMatchesRemote(payloadPlan.payload, remote)) {
       if (!options.dryRun) {
         await this.deps.stateStore.recordSuccessfulSync({
-          gameId: game.id,
+          scope: options.scope,
+          localId: item.localId,
           subjectId,
           fingerprint,
           updatedAt: Date.now()
@@ -134,8 +158,9 @@ export class SyncEngine {
       }
       return {
         status: 'skippedNoChange',
-        gameId: game.id,
-        game,
+        scope: options.scope,
+        localId: item.localId,
+        item,
         subjectId,
         payload: payloadPlan.payload,
         fingerprint,
@@ -144,12 +169,16 @@ export class SyncEngine {
     }
 
     if (!options.checkRemote) {
-      const lastFingerprint = await this.deps.stateStore.getLastFingerprint(game.id)
+      const lastFingerprint = await this.deps.stateStore.getLastFingerprint(
+        options.scope,
+        item.localId
+      )
       if (lastFingerprint === fingerprint) {
         return {
           status: 'skippedNoChange',
-          gameId: game.id,
-          game,
+          scope: options.scope,
+          localId: item.localId,
+          item,
           subjectId,
           payload: payloadPlan.payload,
           fingerprint
@@ -160,8 +189,9 @@ export class SyncEngine {
     if (options.dryRun) {
       return {
         status: 'wouldSync',
-        gameId: game.id,
-        game,
+        scope: options.scope,
+        localId: item.localId,
+        item,
         subjectId,
         payload: payloadPlan.payload,
         fingerprint,
@@ -169,25 +199,28 @@ export class SyncEngine {
       }
     }
 
-    await this.deps.client.upsertMyCollection(Number(subjectId), payloadPlan.payload, {
+    await this.deps.client.upsertMyCollection(subjectRef, payloadPlan.payload, {
       signal: options.signal
     })
     await this.deps.stateStore.recordSuccessfulSync({
-      gameId: game.id,
+      scope: options.scope,
+      localId: item.localId,
       subjectId,
       fingerprint,
       updatedAt: Date.now()
     })
     this.deps.suppressor.suppressFingerprint(
-      game.id,
+      options.scope,
+      item.localId,
       fingerprint,
-      Math.max(30_000, settings.autoSync.debounceMs * 2)
+      Math.max(30_000, settings.game.autoSync.debounceMs * 2)
     )
 
     return {
       status: 'synced',
-      gameId: game.id,
-      game,
+      scope: options.scope,
+      localId: item.localId,
+      item,
       subjectId,
       payload: payloadPlan.payload,
       fingerprint,
@@ -195,18 +228,9 @@ export class SyncEngine {
     }
   }
 
-  private async loadGame(gameId: string | undefined): Promise<LibraryGame | undefined> {
-    if (!gameId) {
-      return undefined
-    }
-
-    const game = await kisaki.library.games.get(gameId)
-    return game ?? undefined
-  }
-
   private async getRemoteCollection(
     username: string | undefined,
-    subjectId: string,
+    subjectRef: ReturnType<typeof createBangumiSubjectRef>,
     signal?: AbortSignal
   ): Promise<BangumiUserCollection | undefined> {
     if (!username) {
@@ -214,7 +238,7 @@ export class SyncEngine {
     }
 
     try {
-      return await this.deps.client.getUserCollection(username, Number(subjectId), { signal })
+      return await this.deps.client.getUserCollection(username, subjectRef, { signal })
     } catch (error) {
       if (error instanceof BangumiApiError && error.status === 404) {
         return undefined

@@ -1,5 +1,5 @@
 import type { Locale } from '@kisaki/extension-sdk'
-import type { BangumiInfoboxItem } from '../../api/types'
+import type { BangumiInfoboxItem } from '../../../../api/types'
 import { extractChineseNameFromInfobox } from './infobox'
 
 export function isChineseLocale(locale?: Locale): boolean {

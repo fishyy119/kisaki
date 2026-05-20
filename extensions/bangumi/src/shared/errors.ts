@@ -7,6 +7,7 @@ export type BangumiErrorCode =
   | 'bangumi_validation'
   | 'bangumi_not_found'
   | 'network_failed'
+  | 'local_media_unsupported'
   | 'profile_missing'
   | 'ingest_failed'
   | 'library_update_failed'
@@ -21,4 +22,3 @@ export class BangumiExtensionError extends Error {
     this.name = 'BangumiExtensionError'
   }
 }
-

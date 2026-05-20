@@ -19,23 +19,33 @@ export function readSettingsForm(
           current.auth.loginTimeoutMs / 60_000
         ) * 60_000
     },
-    autoSync: {
-      ...current.autoSync,
-      enabled: readBoolean(values, SETTINGS_NODE_IDS.autoSyncEnabled, current.autoSync.enabled),
-      ...autoSyncFlags,
-      clearRemoteScoreWhenEmpty: readBoolean(
-        values,
-        SETTINGS_NODE_IDS.clearRemoteScoreWhenEmpty,
-        current.autoSync.clearRemoteScoreWhenEmpty
-      ),
-      debounceMs:
-        readNumber(values, SETTINGS_NODE_IDS.debounceSeconds, current.autoSync.debounceMs / 1000) *
-        1000,
-      notifyErrors: readBoolean(
-        values,
-        SETTINGS_NODE_IDS.autoSyncNotifyErrors,
-        current.autoSync.notifyErrors
-      )
+    media: current.media,
+    game: {
+      autoSync: {
+        ...current.game.autoSync,
+        enabled: readBoolean(
+          values,
+          SETTINGS_NODE_IDS.autoSyncEnabled,
+          current.game.autoSync.enabled
+        ),
+        ...autoSyncFlags,
+        clearRemoteScoreWhenEmpty: readBoolean(
+          values,
+          SETTINGS_NODE_IDS.clearRemoteScoreWhenEmpty,
+          current.game.autoSync.clearRemoteScoreWhenEmpty
+        ),
+        debounceMs:
+          readNumber(
+            values,
+            SETTINGS_NODE_IDS.debounceSeconds,
+            current.game.autoSync.debounceMs / 1000
+          ) * 1000,
+        notifyErrors: readBoolean(
+          values,
+          SETTINGS_NODE_IDS.autoSyncNotifyErrors,
+          current.game.autoSync.notifyErrors
+        )
+      }
     },
     client: {
       rateLimit: {

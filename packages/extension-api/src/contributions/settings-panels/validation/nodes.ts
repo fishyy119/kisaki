@@ -32,6 +32,7 @@ import {
   SETTINGS_PANEL_IMAGE_FIT_VALUES,
   SETTINGS_PANEL_NODE_WIDTH_VALUES,
   SETTINGS_PANEL_NOTICE_TONE_VALUES,
+  SETTINGS_PANEL_RADIO_GROUP_ORIENTATION_VALUES,
   SETTINGS_PANEL_RECORD_LIST_COLUMN_KIND_VALUES,
   SETTINGS_PANEL_STATUS_TONE_VALUES,
   SETTINGS_PANEL_TABLE_COLUMN_KIND_VALUES,
@@ -403,8 +404,18 @@ function validateSettingsPanelRadioGroup(
   state: SurfaceValidationState
 ): ValidationIssue[] {
   return [
-    ...validateUnknownKeys(value, createKeySet(...VALUE_NODE_BASE_KEYS, 'options'), path),
+    ...validateUnknownKeys(
+      value,
+      createKeySet(...VALUE_NODE_BASE_KEYS, 'orientation', 'options'),
+      path
+    ),
     ...validateSettingsPanelValueNodeBase(value, path, state, 'string'),
+    ...validateOptionalEnumString(
+      value.orientation,
+      `${path}.orientation`,
+      SETTINGS_PANEL_RADIO_GROUP_ORIENTATION_VALUES,
+      'orientation must be vertical or horizontal.'
+    ),
     ...validateSettingsPanelSelectOptions(value.options, `${path}.options`)
   ]
 }

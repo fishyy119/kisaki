@@ -6,8 +6,8 @@ import type {
   Locale,
   ScraperLookup
 } from '@kisaki/extension-sdk'
-import type { BangumiClient } from '../api/client'
-import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
+import type { BangumiClient } from '../../../api/client'
+import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
 import { parseBangumiSubjectDate } from './format/dates'
 import { parseBangumiId } from './format/ids'
 import { resolveLocalizedSubjectName } from './format/names'

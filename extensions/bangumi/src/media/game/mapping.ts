@@ -1,11 +1,12 @@
-import type { LibraryGame, LibraryGameStatus } from '@kisaki/extension-sdk'
-import type { BangumiCollectionPatch } from '../api/types'
+import type { LibraryGameStatus } from '@kisaki/extension-sdk'
+import type { BangumiCollectionPatch } from '../../api/types'
 import type {
   BangumiCollectionType,
   BangumiSettingsV1,
   BangumiStatusMappingValue
-} from '../config/schema'
-import { BANGUMI_SOURCE_ID, BANGUMI_WISH_COLLECTION_TYPE } from '../shared/constants'
+} from '../../config/schema'
+import type { LocalMediaItem } from '../types'
+import { BANGUMI_SOURCE_ID, BANGUMI_WISH_COLLECTION_TYPE } from '../../shared/constants'
 
 export interface SyncMappingOptions {
   playStatusEnabled: boolean
@@ -32,23 +33,23 @@ export function createSyncMappingOptions(
   overrides: SyncMappingOverrides = {}
 ): SyncMappingOptions {
   return {
-    playStatusEnabled: overrides.playStatusEnabled ?? settings.autoSync.playStatusEnabled,
-    scoreEnabled: overrides.scoreEnabled ?? settings.autoSync.scoreEnabled,
+    playStatusEnabled: overrides.playStatusEnabled ?? settings.game.autoSync.playStatusEnabled,
+    scoreEnabled: overrides.scoreEnabled ?? settings.game.autoSync.scoreEnabled,
     clearRemoteScoreWhenEmpty:
-      overrides.clearRemoteScoreWhenEmpty ?? settings.autoSync.clearRemoteScoreWhenEmpty,
-    statusToBangumi: settings.autoSync.statusToBangumi
+      overrides.clearRemoteScoreWhenEmpty ?? settings.game.autoSync.clearRemoteScoreWhenEmpty,
+    statusToBangumi: settings.game.autoSync.statusToBangumi
   }
 }
 
 export function createSyncPayloadPlan(
-  game: Pick<LibraryGame, 'status' | 'score'>,
+  item: Pick<LocalMediaItem, 'status' | 'score'>,
   options: SyncMappingOptions
 ): SyncPayloadPlan {
   const payload: BangumiCollectionPatch = {}
-  const mappedType = mapGameStatusToBangumiType(game.status, options)
+  const mappedType = mapGameStatusToBangumiType(item.status, options)
   const mappedRate = resolveBangumiRateForSync(
     mappedType,
-    mapGameScoreToBangumiRate(game.score, options)
+    mapGameScoreToBangumiRate(item.score, options)
   )
 
   if (mappedType !== undefined) {
@@ -67,17 +68,23 @@ export function createSyncPayloadPlan(
   }
 }
 
-export function readBangumiSubjectId(game: Pick<LibraryGame, 'externalIds'>): string | undefined {
-  const externalId = game.externalIds.find((item) => item.source === BANGUMI_SOURCE_ID)
+export function readBangumiSubjectId(
+  item: Pick<LocalMediaItem, 'externalIds'>
+): string | undefined {
+  const externalId = item.externalIds.find((candidate) => candidate.source === BANGUMI_SOURCE_ID)
   const id = externalId?.id.trim()
   return id && /^\d+$/.test(id) ? id : undefined
 }
 
 export function mapGameStatusToBangumiType(
-  status: LibraryGameStatus,
+  status: string | undefined,
   options: Pick<SyncMappingOptions, 'playStatusEnabled' | 'statusToBangumi'>
 ): BangumiCollectionType | undefined {
   if (!options.playStatusEnabled) {
+    return undefined
+  }
+
+  if (!status || !isLibraryGameStatus(status)) {
     return undefined
   }
 
@@ -102,6 +109,17 @@ export function mapGameScoreToBangumiRate(
   }
 
   return Math.min(10, Math.max(1, Math.round(score / 10)))
+}
+
+function isLibraryGameStatus(value: string): value is LibraryGameStatus {
+  return (
+    value === 'notStarted' ||
+    value === 'inProgress' ||
+    value === 'partial' ||
+    value === 'completed' ||
+    value === 'multiple' ||
+    value === 'shelved'
+  )
 }
 
 function resolveBangumiRateForSync(

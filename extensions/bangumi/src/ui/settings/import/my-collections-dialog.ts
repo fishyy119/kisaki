@@ -1,9 +1,7 @@
 import { defineSettingsPanelDialog, type ScraperProfileSummary } from '@kisaki/extension-sdk'
-import {
-  BANGUMI_COLLECTION_TYPE_OPTIONS,
-  IMPORT_DATA_ITEM_OPTIONS,
-  SETTINGS_NODE_IDS
-} from '../ids'
+import { SETTINGS_NODE_IDS } from '../ids'
+import { formatScopedCollectionType } from '../../../media/labels'
+import type { BangumiCollectionType } from '../../../api/types'
 import { toSettingsError } from '../shared/errors'
 import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'
 import { createDialogPreviewFields, runDialogPreview } from '../shared/previews'
@@ -16,10 +14,13 @@ import { createSettingsResources } from '../resources'
 import { createMyCollectionsImportArgs } from './args'
 import {
   createDialogImportProfileField,
+  createDialogImportScopeField,
   createDialogImportTargetCollectionField,
+  IMPORT_DATA_ITEM_OPTIONS,
   readImportCollectionTypes,
   readImportDataItems,
-  readImportPatchExisting
+  readImportPatchExisting,
+  readImportScope
 } from './options'
 
 export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
@@ -32,9 +33,10 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
       const [profiles, collections, isRunning] = await Promise.all([
         resources.profiles(),
         resources.collections(),
-        resources.isCommandRunning(BANGUMI_COMMAND_IDS.importMyCollections)
+        resources.isCommandRunning(BANGUMI_COMMAND_IDS.importCollections)
       ])
       const previewArgs = createMyCollectionsImportArgs(context.values, profiles[0]?.id ?? '', true)
+      const selectedScope = readImportScope(context.values)
       const preview = runtime.previewRegistry.get(
         context.sessionId,
         'import.myCollections',
@@ -43,6 +45,10 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
 
       return {
         fields: [
+          createDialogImportScopeField({
+            settings: ui,
+            values: context.values
+          }),
           createDialogImportProfileField({
             settings: ui,
             values: context.values,
@@ -63,7 +69,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
               ui.multiSelect({
                 id: SETTINGS_NODE_IDS.importCollectionTypes,
                 initialValue: readImportCollectionTypes(context.values),
-                options: BANGUMI_COLLECTION_TYPE_OPTIONS,
+                options: createCollectionTypeOptions(selectedScope),
                 onChange(event) {
                   return event.refresh('dialog')
                 }
@@ -74,6 +80,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             id: 'import-data-items',
             label: '数据项',
             description: '选择导入时携带的数据',
+            hidden: selectedScope !== 'game',
             content: [
               ui.multiSelect({
                 id: SETTINGS_NODE_IDS.importDataItems,
@@ -89,6 +96,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             id: 'import-patch-existing',
             label: '更新已存在游戏',
             description: '按 Bangumi ID 匹配本地游戏，更新选中的数据项并加入目标合集',
+            hidden: selectedScope !== 'game',
             content: [
               ui.switch({
                 id: SETTINGS_NODE_IDS.importPatchExisting,
@@ -107,12 +115,12 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             content: [
               ui.button({
                 id: 'my-collections-preview',
-                label: '预览将导入的游戏',
+                label: selectedScope === 'game' ? '预览将导入的游戏' : '预览远端收藏',
                 disabled: isRunning,
                 async onClick(event) {
                   return runDialogPreview({
                     previewKey: 'import.myCollections',
-                    commandId: BANGUMI_COMMAND_IDS.importMyCollections,
+                    commandId: BANGUMI_COMMAND_IDS.importCollections,
                     args: createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', true),
                     previewRegistry: runtime.previewRegistry,
                     event
@@ -137,6 +145,13 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
   })
 }
 
+function createCollectionTypeOptions(scope: ReturnType<typeof readImportScope>) {
+  return ([1, 2, 3, 4, 5] as const satisfies readonly BangumiCollectionType[]).map((type) => ({
+    value: String(type),
+    label: formatScopedCollectionType(scope, type)
+  }))
+}
+
 async function submitMyCollectionsDialog({
   event,
   profiles
@@ -146,7 +161,7 @@ async function submitMyCollectionsDialog({
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
     return await startDialogManualJob({
-      commandId: BANGUMI_COMMAND_IDS.importMyCollections,
+      commandId: BANGUMI_COMMAND_IDS.importCollections,
       args: createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', false),
       event
     })

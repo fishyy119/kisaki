@@ -1,16 +1,14 @@
 import type {
-  LibraryCollection,
   ScraperProfileSummary,
   SerializableRecord,
   SettingsPanelDialogNodeEvents,
   SettingsPanelField,
   SettingsPanelNodeFactory
 } from '@kisaki/extension-sdk'
-import {
-  BANGUMI_COLLECTION_TYPE_OPTIONS,
-  INDEX_TARGET_COLLECTION_MODE_OPTIONS,
-  SETTINGS_NODE_IDS
-} from '../ids'
+import { SETTINGS_NODE_IDS } from '../ids'
+import type { BangumiMediaScope } from '../../../media/scopes'
+import type { LocalCollectionSummary } from '../../../media/types'
+import { MEDIA_SCOPE_OPTIONS } from '../shared/options'
 import { createProfileOptions } from '../shared/profiles'
 import { pickKnownValues, readBoolean, readString, readStringArray } from '../shared/values'
 import type { BangumiSettingsPopovers } from '../shared/types'
@@ -18,11 +16,28 @@ import type { BangumiSettingsPopovers } from '../shared/types'
 export type ImportDataItem = 'status' | 'score' | 'tags'
 export type IndexTargetCollectionMode = 'none' | 'existing' | 'byIndexTitle'
 
+export const IMPORT_DATA_ITEM_OPTIONS = [
+  { value: 'status', label: '游玩状态' },
+  { value: 'score', label: '评分' },
+  { value: 'tags', label: '标签' }
+] as const
+
+export const INDEX_TARGET_COLLECTION_MODE_OPTIONS = [
+  { value: 'none', label: '不加入合集', description: '只导入缺失游戏' },
+  { value: 'existing', label: '选择现有合集', description: '将导入的游戏加入指定合集' },
+  {
+    value: 'byIndexTitle',
+    label: '按目录名创建合集',
+    description: '按 Bangumi 目录名创建或复用合集'
+  }
+] as const
+
 const IMPORT_DATA_ITEMS = [
   'status',
   'score',
   'tags'
 ] as const satisfies readonly ImportDataItem[]
+const BANGUMI_COLLECTION_TYPE_VALUES = ['1', '2', '3', '4', '5'] as const
 const INDEX_TARGET_COLLECTION_MODES = [
   'none',
   'existing',
@@ -42,12 +57,14 @@ export function createDialogImportProfileField<
   values: SerializableRecord
   profiles: readonly ScraperProfileSummary[]
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
+  const scope = readImportScope(values)
   const profileOptions = createProfileOptions(profiles)
   const fallbackProfileId = profiles[0]?.id ?? ''
 
   return {
     id: 'import-profile',
     label: '刮削配置',
+    hidden: scope !== 'game',
     content: [
       settings.select({
         id: SETTINGS_NODE_IDS.importProfileId,
@@ -74,12 +91,14 @@ export function createDialogImportTargetCollectionField<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
   values: SerializableRecord
-  collections: readonly LibraryCollection[]
+  collections: readonly LocalCollectionSummary[]
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
+  const scope = readImportScope(values)
   return {
     id: 'import-target-collection',
     label: '目标合集',
     description: '将匹配到的游戏加入该合集',
+    hidden: scope !== 'game',
     orientation: 'horizontal',
     contentLayout: 'inline',
     content: [
@@ -116,15 +135,17 @@ export function createDialogIndexTargetCollectionFields<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
   values: SerializableRecord
-  collections: readonly LibraryCollection[]
+  collections: readonly LocalCollectionSummary[]
 }): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   const mode = readIndexTargetCollectionMode(values)
+  const scope = readImportScope(values)
 
   return [
     {
       id: 'index-target-collection-strategy',
       label: '目标合集策略',
       description: '选择目录导入后如何加入合集',
+      hidden: scope !== 'game',
       orientation: 'vertical',
       content: [
         settings.radioGroup({
@@ -140,7 +161,7 @@ export function createDialogIndexTargetCollectionFields<
     {
       id: 'index-target-collection-id',
       label: '选择合集',
-      hidden: mode !== 'existing',
+      hidden: scope !== 'game' || mode !== 'existing',
       content: [
         settings.select({
           id: SETTINGS_NODE_IDS.importTargetCollectionId,
@@ -157,7 +178,48 @@ export function createDialogIndexTargetCollectionFields<
   ]
 }
 
+export function createDialogImportScopeField<
+  TParams extends SerializableRecord = SerializableRecord
+>({
+  settings,
+  values
+}: {
+  settings: SettingsPanelNodeFactory<
+    SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
+  >
+  values: SerializableRecord
+}): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
+  return {
+    id: 'import-scope',
+    label: '媒体类型',
+    orientation: 'horizontal',
+    contentLayout: 'inline',
+    content: [
+      settings.radioGroup({
+        id: SETTINGS_NODE_IDS.importScope,
+        initialValue: readImportScope(values),
+        orientation: 'horizontal',
+        options: MEDIA_SCOPE_OPTIONS,
+        onChange(event) {
+          return event.refresh('dialog')
+        }
+      })
+    ]
+  }
+}
+
+export function readImportScope(values: SerializableRecord): BangumiMediaScope {
+  const value = readString(values, SETTINGS_NODE_IDS.importScope, 'game')
+  return value === 'book' || value === 'anime' || value === 'music' || value === 'game'
+    ? value
+    : 'game'
+}
+
 export function readImportDataItems(values: SerializableRecord): readonly ImportDataItem[] {
+  if (readImportScope(values) !== 'game') {
+    return []
+  }
+
   return pickKnownValues(
     readStringArray(values, SETTINGS_NODE_IDS.importDataItems, []),
     IMPORT_DATA_ITEMS
@@ -174,10 +236,16 @@ export function createImportDataItemArgs(values: SerializableRecord): Serializab
 }
 
 export function readImportPatchExisting(values: SerializableRecord): boolean {
-  return readBoolean(values, SETTINGS_NODE_IDS.importPatchExisting, false)
+  return readImportScope(values) === 'game'
+    ? readBoolean(values, SETTINGS_NODE_IDS.importPatchExisting, false)
+    : false
 }
 
 export function readImportUseTargetCollection(values: SerializableRecord): boolean {
+  if (readImportScope(values) !== 'game') {
+    return false
+  }
+
   return readBoolean(
     values,
     SETTINGS_NODE_IDS.importUseTargetCollection,
@@ -201,6 +269,10 @@ export function createImportTargetCollectionArg(values: SerializableRecord): Ser
 export function readIndexTargetCollectionMode(
   values: SerializableRecord
 ): IndexTargetCollectionMode {
+  if (readImportScope(values) !== 'game') {
+    return 'none'
+  }
+
   return (
     pickKnownValues(
       [readString(values, SETTINGS_NODE_IDS.importTargetCollectionMode, 'none')],
@@ -228,11 +300,11 @@ export function readImportCollectionTypes(values: SerializableRecord): readonly 
   return readStringArray(
     values,
     SETTINGS_NODE_IDS.importCollectionTypes,
-    BANGUMI_COLLECTION_TYPE_OPTIONS.map((option) => option.value)
+    BANGUMI_COLLECTION_TYPE_VALUES
   )
 }
 
-function createCollectionOptions(collections: readonly LibraryCollection[]) {
+function createCollectionOptions(collections: readonly LocalCollectionSummary[]) {
   return collections.map((collection) => ({
     value: collection.id,
     label: collection.name,

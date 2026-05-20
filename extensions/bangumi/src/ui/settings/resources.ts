@@ -1,24 +1,19 @@
 import type { BangumiAccountSnapshotV1 } from '../../auth/account'
 import type { StoredTokenState } from '../../auth/token-service'
 import type { BangumiSettingsV1 } from '../../config/schema'
-import {
-  kisaki,
-  type BackgroundTask,
-  type LibraryCollection,
-  type ScraperProfileSummary
-} from '@kisaki/extension-sdk'
+import type { BackgroundTask, ScraperProfileSummary } from '@kisaki/extension-sdk'
 import type { BangumiCommandId } from '../../jobs/commands'
+import type { LocalCollectionSummary } from '../../media/types'
 import { listBangumiAutomationTasks } from './automation/tasks'
 import type { BangumiSettingsRuntime } from './runtime'
 import { isBangumiCommandRunning, resolveRunningJobs, type BangumiRunningJobs } from './shared/jobs'
-import { listGameScraperProfiles } from './shared/profiles'
 
 export interface BangumiSettingsResources {
   settings(): Promise<BangumiSettingsV1>
   tokenState(): Promise<StoredTokenState>
   account(): Promise<BangumiAccountSnapshotV1 | undefined>
   profiles(): Promise<readonly ScraperProfileSummary[]>
-  collections(): Promise<readonly LibraryCollection[]>
+  collections(): Promise<readonly LocalCollectionSummary[]>
   runningJobs(): Promise<BangumiRunningJobs>
   isCommandRunning(commandId: BangumiCommandId): Promise<boolean>
   automationTasks(): Promise<readonly BackgroundTask[]>
@@ -28,8 +23,8 @@ export function createSettingsResources(runtime: BangumiSettingsRuntime): Bangum
   const settings = once(() => runtime.settingsStore.get())
   const tokenState = once(() => runtime.tokenService.getStoredTokenState())
   const account = once(() => runtime.accountService.getAccountSnapshot())
-  const profiles = once(() => listGameScraperProfiles())
-  const collections = once(() => listStaticCollections())
+  const profiles = once(() => listScraperProfiles(runtime))
+  const collections = once(() => listStaticCollections(runtime))
   const runningJobs = once(() => resolveRunningJobs())
   const automationTasks = once(() => listBangumiAutomationTasks())
 
@@ -45,12 +40,21 @@ export function createSettingsResources(runtime: BangumiSettingsRuntime): Bangum
   }
 }
 
-async function listStaticCollections(): Promise<readonly LibraryCollection[]> {
+async function listScraperProfiles(
+  runtime: BangumiSettingsRuntime
+): Promise<readonly ScraperProfileSummary[]> {
   try {
-    return await kisaki.library.collections.list({
-      includeDynamic: false,
-      includeStatic: true
-    })
+    return (await runtime.mediaRegistry.getLocalAdapter('game')?.listProfiles?.()) ?? []
+  } catch {
+    return []
+  }
+}
+
+async function listStaticCollections(
+  runtime: BangumiSettingsRuntime
+): Promise<readonly LocalCollectionSummary[]> {
+  try {
+    return (await runtime.mediaRegistry.getLocalAdapter('game')?.listCollections?.()) ?? []
   } catch {
     return []
   }

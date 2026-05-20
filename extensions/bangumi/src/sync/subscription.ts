@@ -1,17 +1,16 @@
-import {
-  kisaki,
-  type Disposable,
-  type ExtensionLogger,
-  type LibraryGameUpdatedEvent
-} from '@kisaki/extension-sdk'
+import { kisaki, type Disposable, type ExtensionLogger } from '@kisaki/extension-sdk'
 import type { SettingsStore } from '../config/store'
+import type { BangumiMediaScope } from '../media/scopes'
+import type { LocalMediaChangeEvent } from '../media/types'
+import type { MediaRegistry } from '../media/registry'
 import { BangumiExtensionError } from '../shared/errors'
-import type { SyncEngine, SyncGameResult } from './engine'
+import type { SyncEngine, SyncItemResult } from './engine'
 import type { SyncQueueStore } from './queue'
 
 export interface SyncSubscriptionDependencies {
   settingsStore: SettingsStore
   engine: SyncEngine
+  mediaRegistry: MediaRegistry
   queueStore: SyncQueueStore
   logger?: ExtensionLogger
 }
@@ -29,20 +28,22 @@ export class SyncSubscription implements Disposable {
   constructor(private readonly deps: SyncSubscriptionDependencies) {}
 
   async start(): Promise<Disposable> {
-    this.registrations.push(
-      await kisaki.events.on('library.game.created', (event) =>
-        this.handleCreated(event.gameId).catch((error) =>
-          this.logError('Bangumi created-game sync subscription failed.', error)
+    for (const adapter of this.deps.mediaRegistry.listLocalAdapters()) {
+      if (!adapter.supportsAutoSync || !adapter.subscribeLocalChanges) {
+        continue
+      }
+
+      this.registrations.push(
+        await adapter.subscribeLocalChanges((event) =>
+          this.handleLocalChange(event).catch((error) =>
+            this.logError('Bangumi local media sync subscription failed.', error, {
+              scope: event.scope,
+              localId: event.localId
+            })
+          )
         )
       )
-    )
-    this.registrations.push(
-      await kisaki.events.on('library.game.updated', (event) =>
-        this.handleUpdated(event).catch((error) =>
-          this.logError('Bangumi updated-game sync subscription failed.', error)
-        )
-      )
-    )
+    }
 
     return this
   }
@@ -61,37 +62,31 @@ export class SyncSubscription implements Disposable {
     }
   }
 
-  private async handleCreated(gameId: string): Promise<void> {
+  private async handleLocalChange(event: LocalMediaChangeEvent): Promise<void> {
     const settings = await this.deps.settingsStore.get()
-    if (!settings.autoSync.syncOnCreate) {
+    const autoSync = settings.game.autoSync
+
+    if (!settings.media[event.scope].localSyncEnabled) {
       return
     }
 
-    await this.deps.queueStore.enqueue(gameId, 'created')
-    if (settings.autoSync.enabled) {
-      this.schedule(gameId, settings.autoSync.debounceMs)
-    }
-  }
-
-  private async handleUpdated(event: LibraryGameUpdatedEvent): Promise<void> {
-    if (!hasSyncRelevantGameChange(event)) {
+    if (event.reason === 'created' && !autoSync.syncOnCreate) {
       return
     }
 
-    const settings = await this.deps.settingsStore.get()
-    await this.deps.queueStore.enqueue(event.gameId, 'updated')
-
-    if (settings.autoSync.enabled) {
-      this.schedule(event.gameId, settings.autoSync.debounceMs)
+    await this.deps.queueStore.enqueue(event.scope, event.localId, event.reason)
+    if (autoSync.enabled) {
+      this.schedule(event, autoSync.debounceMs)
     }
   }
 
-  private schedule(gameId: string, debounceMs: number): void {
+  private schedule(event: LocalMediaChangeEvent, debounceMs: number): void {
     if (this.disposed) {
       return
     }
 
-    const existing = this.pending.get(gameId)
+    const key = createPendingKey(event.scope, event.localId)
+    const existing = this.pending.get(key)
     if (existing) {
       clearTimeout(existing.timer)
       existing.controller.abort()
@@ -99,50 +94,63 @@ export class SyncSubscription implements Disposable {
 
     const controller = new AbortController()
     const timer = setTimeout(() => {
-      this.pending.delete(gameId)
-      this.processGame(gameId, controller.signal).catch((error) =>
-        this.handleSyncError(gameId, error)
+      this.pending.delete(key)
+      this.processItem(event.scope, event.localId, controller.signal).catch((error) =>
+        this.handleSyncError(event.scope, event.localId, error)
       )
     }, normalizeDebounceMs(debounceMs))
 
-    this.pending.set(gameId, { timer, controller })
+    this.pending.set(key, { timer, controller })
   }
 
-  private async processGame(gameId: string, signal: AbortSignal): Promise<void> {
-    const result = await this.deps.engine.syncGame({
-      gameId,
+  private async processItem(
+    scope: BangumiMediaScope,
+    localId: string,
+    signal: AbortSignal
+  ): Promise<void> {
+    const result = await this.deps.engine.syncItem({
+      scope,
+      localId,
       signal
     })
-    await this.deps.queueStore.remove([gameId])
+    await this.deps.queueStore.remove([{ scope, localId }])
     this.logResult(result)
   }
 
-  private async handleSyncError(gameId: string, error: unknown): Promise<void> {
+  private async handleSyncError(
+    scope: BangumiMediaScope,
+    localId: string,
+    error: unknown
+  ): Promise<void> {
     if (isCancellationError(error)) {
       return
     }
 
     const settings = await this.deps.settingsStore.get()
-    this.logError('Bangumi automatic sync failed.', error, { gameId })
+    this.logError('Bangumi automatic sync failed.', error, { scope, localId })
 
-    if (!settings.autoSync.notifyErrors) {
+    if (!settings.game.autoSync.notifyErrors) {
       return
     }
 
     try {
       await kisaki.notify.error('Bangumi 自动同步失败', {
         message: toUserErrorMessage(error),
-        id: `bangumi-auto-sync:${gameId}`
+        id: `bangumi-auto-sync:${scope}:${localId}`
       })
     } catch (notifyError) {
-      this.logError('Bangumi automatic sync notification failed.', notifyError, { gameId })
+      this.logError('Bangumi automatic sync notification failed.', notifyError, {
+        scope,
+        localId
+      })
     }
   }
 
-  private logResult(result: SyncGameResult): void {
+  private logResult(result: SyncItemResult): void {
     if (result.status === 'synced') {
       this.deps.logger?.info('Bangumi automatic sync completed.', {
-        gameId: result.gameId,
+        scope: result.scope,
+        localId: result.localId,
         subjectId: result.subjectId
       })
       return
@@ -150,7 +158,8 @@ export class SyncSubscription implements Disposable {
 
     this.deps.logger?.debug('Bangumi automatic sync skipped.', {
       status: result.status,
-      gameId: result.gameId,
+      scope: result.scope,
+      localId: result.localId,
       subjectId: result.subjectId,
       suppressReason: result.suppressReason
     })
@@ -164,10 +173,8 @@ export class SyncSubscription implements Disposable {
   }
 }
 
-function hasSyncRelevantGameChange(event: LibraryGameUpdatedEvent): boolean {
-  return event.changes.some(
-    (change) => change.facet === 'status' || change.facet === 'score' || change.facet === 'identity'
-  )
+function createPendingKey(scope: BangumiMediaScope, localId: string): string {
+  return `${scope}:${localId}`
 }
 
 function normalizeDebounceMs(value: number): number {

@@ -10,9 +10,9 @@ import type {
 
 export interface BangumiRunningJobs {
   accountRefresh: boolean
-  syncChangedGames: boolean
+  syncChangedItems: boolean
   syncFull: boolean
-  importMyCollections: boolean
+  importCollections: boolean
   importIndex: boolean
 }
 
@@ -21,9 +21,9 @@ export async function resolveRunningJobs(): Promise<BangumiRunningJobs> {
 
   return {
     accountRefresh: isCommandRunning(commands, BANGUMI_COMMAND_IDS.authRefresh),
-    syncChangedGames: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncChangedGames),
+    syncChangedItems: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncChangedItems),
     syncFull: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncFull),
-    importMyCollections: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importMyCollections),
+    importCollections: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importCollections),
     importIndex: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importIndex)
   }
 }
@@ -128,11 +128,11 @@ function formatJobNotificationTitle(commandId: BangumiCommandId, args: Serializa
     switch (commandId) {
       case BANGUMI_COMMAND_IDS.authRefresh:
         return 'Bangumi 刷新凭据'
-      case BANGUMI_COMMAND_IDS.syncChangedGames:
+      case BANGUMI_COMMAND_IDS.syncChangedItems:
         return 'Bangumi 同步变更'
       case BANGUMI_COMMAND_IDS.syncFull:
         return 'Bangumi 全量同步'
-      case BANGUMI_COMMAND_IDS.importMyCollections:
+      case BANGUMI_COMMAND_IDS.importCollections:
         return 'Bangumi 导入我的收藏'
       case BANGUMI_COMMAND_IDS.importIndex:
         return 'Bangumi 导入目录'

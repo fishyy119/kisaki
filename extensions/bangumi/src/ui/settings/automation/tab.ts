@@ -47,12 +47,13 @@ export async function resolveAutomationTab(
         scope,
         id: 'task-sync-changed-startup',
         label: '启动后同步变更队列',
-        existingTask: findTask(tasks, BANGUMI_COMMAND_IDS.syncChangedGames),
+        existingTask: findTask(tasks, BANGUMI_COMMAND_IDS.syncChangedItems),
         create: () =>
           kisaki.backgroundTasks.create({
             name: 'Bangumi 启动后同步变更队列',
-            commandId: BANGUMI_COMMAND_IDS.syncChangedGames,
+            commandId: BANGUMI_COMMAND_IDS.syncChangedItems,
             args: {
+              scope: 'game',
               dryRun: false,
               limit: 500
             },
@@ -71,11 +72,12 @@ export async function resolveAutomationTab(
             name: 'Bangumi 每日全量同步',
             commandId: BANGUMI_COMMAND_IDS.syncFull,
             args: {
+              scope: 'game',
               dryRun: false,
               updateExisting: true,
-              playStatusEnabled: storedSettings.autoSync.playStatusEnabled,
-              scoreEnabled: storedSettings.autoSync.scoreEnabled,
-              clearRemoteScoreWhenEmpty: storedSettings.autoSync.clearRemoteScoreWhenEmpty,
+              playStatusEnabled: storedSettings.game.autoSync.playStatusEnabled,
+              scoreEnabled: storedSettings.game.autoSync.scoreEnabled,
+              clearRemoteScoreWhenEmpty: storedSettings.game.autoSync.clearRemoteScoreWhenEmpty,
               batchSize: 100
             },
             enabled: true,

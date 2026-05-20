@@ -1,5 +1,5 @@
 # Bangumi
 
-Built-in Bangumi metadata scraper for Kisaki.
+Built-in Bangumi integration for Kisaki.
 
-This extension registers the Bangumi game scraper provider and is bundled with the desktop app through the built-in extension pipeline.
+The extension supports Bangumi book, game, anime, and music scopes. The current Kisaki host only exposes a local game library adapter, so game supports scraper, sync, and local import writes while the other scopes stay remote-only for preview and command modeling.

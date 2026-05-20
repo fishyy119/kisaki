@@ -11,7 +11,7 @@ export async function resolveAdvancedTab(
   const autoSyncEnabled = readBoolean(
     scope.context.values,
     SETTINGS_NODE_IDS.autoSyncEnabled,
-    storedSettings.autoSync.enabled
+    storedSettings.game.autoSync.enabled
   )
 
   return defineSettingsPanelTab({
@@ -95,7 +95,7 @@ export async function resolveAdvancedTab(
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.debounceSeconds,
-            initialValue: storedSettings.autoSync.debounceMs / 1000,
+            initialValue: storedSettings.game.autoSync.debounceMs / 1000,
             min: 0.25,
             max: 60,
             step: 0.25
@@ -110,7 +110,7 @@ export async function resolveAdvancedTab(
         content: [
           scope.ui.switch({
             id: SETTINGS_NODE_IDS.autoSyncNotifyErrors,
-            initialValue: storedSettings.autoSync.notifyErrors
+            initialValue: storedSettings.game.autoSync.notifyErrors
           })
         ]
       },

@@ -28,9 +28,9 @@ export async function resolveImportTab(
             id: 'open-import-my-collections-dialog',
             label: '配置导入',
             tone: 'primary',
-            disabled: !hasProfile || runningJobs.importMyCollections,
+            disabled: runningJobs.importCollections,
             onClick(event) {
-              return event.openDialog(SETTINGS_DIALOG_IDS.importMyCollections)
+              return event.openDialog(SETTINGS_DIALOG_IDS.importCollections)
             }
           }),
           scope.ui.notice({
@@ -61,7 +61,7 @@ export async function resolveImportTab(
             id: 'import-index',
             label: '导入',
             tone: 'primary',
-            disabled: !hasProfile || !hasIndexInput || runningJobs.importIndex,
+            disabled: !hasIndexInput || runningJobs.importIndex,
             onClick(event) {
               return event.openDialog(SETTINGS_DIALOG_IDS.importIndex)
             }

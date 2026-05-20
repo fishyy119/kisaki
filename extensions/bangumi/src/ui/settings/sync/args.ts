@@ -15,6 +15,7 @@ export function createFullSyncArgs(
   const scoreEnabled = itemArgs.scoreEnabled === true
 
   return {
+    scope: 'game',
     dryRun,
     updateExisting,
     ...itemArgs,

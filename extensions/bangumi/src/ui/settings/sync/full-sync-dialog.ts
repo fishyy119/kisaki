@@ -1,6 +1,6 @@
 import { defineSettingsPanelDialog } from '@kisaki/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
-import { FULL_SYNC_ITEM_OPTIONS, SETTINGS_NODE_IDS } from '../ids'
+import { SETTINGS_NODE_IDS } from '../ids'
 import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'
 import { createDialogPreviewFields, runDialogPreview } from '../shared/previews'
 import { readBoolean, readNumber } from '../shared/values'
@@ -12,7 +12,7 @@ import type {
 import type { BangumiSettingsRuntime } from '../runtime'
 import { createSettingsResources } from '../resources'
 import { createFullSyncArgs } from './args'
-import { readFullSyncItems } from './options'
+import { FULL_SYNC_ITEM_OPTIONS, readFullSyncItems } from './options'
 
 export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
   return defineSettingsPanelDialog({
@@ -77,7 +77,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
                 initialValue: readBoolean(
                   context.values,
                   SETTINGS_NODE_IDS.fullSyncClearRemoteScoreWhenEmpty,
-                  storedSettings.autoSync.clearRemoteScoreWhenEmpty
+                  storedSettings.game.autoSync.clearRemoteScoreWhenEmpty
                 )
               })
             ]

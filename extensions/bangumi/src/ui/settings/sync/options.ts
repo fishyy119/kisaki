@@ -1,13 +1,32 @@
 import type { SerializableRecord } from '@kisaki/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
+import type { BangumiMediaScope } from '../../../media/scopes'
 import { SETTINGS_NODE_IDS } from '../ids'
-import { pickKnownValues, readStringArray } from '../shared/values'
+import { pickKnownValues, readString, readStringArray } from '../shared/values'
 
 export type AutoSyncItem = 'create' | 'status' | 'score'
 export type FullSyncItem = 'status' | 'score'
 
+export const AUTO_SYNC_ITEM_OPTIONS = [
+  { value: 'create', label: '新增游戏' },
+  { value: 'status', label: '游玩状态' },
+  { value: 'score', label: '评分' }
+] as const
+
+export const FULL_SYNC_ITEM_OPTIONS = [
+  { value: 'status', label: '游玩状态' },
+  { value: 'score', label: '评分' }
+] as const
+
 const AUTO_SYNC_ITEMS = ['create', 'status', 'score'] as const satisfies readonly AutoSyncItem[]
 const FULL_SYNC_ITEMS = ['status', 'score'] as const satisfies readonly FullSyncItem[]
+
+export function readSyncScope(values: Record<string, unknown>): BangumiMediaScope {
+  const value = readString(values, SETTINGS_NODE_IDS.syncScope, 'game')
+  return value === 'book' || value === 'anime' || value === 'music' || value === 'game'
+    ? value
+    : 'game'
+}
 
 export function readAutoSyncItems(
   values: Record<string, unknown>,
@@ -50,15 +69,15 @@ export function createFullSyncItemArgs(items: readonly FullSyncItem[]): Serializ
 
 function createAutoSyncItems(settings: BangumiSettingsV1): readonly AutoSyncItem[] {
   return [
-    settings.autoSync.syncOnCreate ? 'create' : undefined,
-    settings.autoSync.playStatusEnabled ? 'status' : undefined,
-    settings.autoSync.scoreEnabled ? 'score' : undefined
+    settings.game.autoSync.syncOnCreate ? 'create' : undefined,
+    settings.game.autoSync.playStatusEnabled ? 'status' : undefined,
+    settings.game.autoSync.scoreEnabled ? 'score' : undefined
   ].filter((item): item is AutoSyncItem => !!item)
 }
 
 function createFullSyncItems(settings: BangumiSettingsV1): readonly FullSyncItem[] {
   return [
-    settings.autoSync.playStatusEnabled ? 'status' : undefined,
-    settings.autoSync.scoreEnabled ? 'score' : undefined
+    settings.game.autoSync.playStatusEnabled ? 'status' : undefined,
+    settings.game.autoSync.scoreEnabled ? 'score' : undefined
   ].filter((item): item is FullSyncItem => !!item)
 }

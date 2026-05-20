@@ -1,31 +1,33 @@
-import {
-  kisaki,
-  type CommandContributionExecuteEvent,
-  type ExtensionLogger,
-  type LibraryCollection,
-  type LibraryGame,
-  type LibraryGamePatch,
-  type LibraryGameStatus,
-  type LibraryTag
-} from '@kisaki/extension-sdk'
+import type { CommandContributionExecuteEvent, ExtensionLogger } from '@kisaki/extension-sdk'
 import type { BangumiClient } from '../api/client'
-import { collectPages } from '../api/pagination'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { AccountService } from '../auth/account'
 import type { TokenService } from '../auth/token-service'
 import type { BangumiCollectionType } from '../config/schema'
 import type { SettingsStore } from '../config/store'
-import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
+import { CollectionReader } from '../import/collection-reader'
+import { IndexReader } from '../import/index-reader'
+import { BANGUMI_SOURCE_ID } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
-import type { SyncEngine, SyncGameResult } from '../sync/engine'
+import { formatScopedCollectionType, getMediaScopeLabel } from '../media/labels'
+import type { BangumiMediaScope } from '../media/scopes'
+import type { MediaRegistry } from '../media/registry'
+import type {
+  LocalCollectionTarget,
+  LocalMediaAdapter,
+  LocalMediaItem,
+  LocalMediaUserPatch
+} from '../media/types'
+import { readBangumiSubjectId } from '../media/game/mapping'
+import type { SyncEngine, SyncItemResult } from '../sync/engine'
 import type { SyncQueueStore } from '../sync/queue'
 import { createImportSuppressTtlMs, type SyncSuppressor } from '../sync/suppressor'
 import type {
   BangumiAuthRefreshArgs,
-  BangumiChangedGamesSyncArgs,
+  BangumiChangedItemsSyncArgs,
   BangumiFullSyncArgs,
+  BangumiImportCollectionsArgs,
   BangumiImportIndexArgs,
-  BangumiImportMyCollectionsArgs,
   BangumiImportTargetCollection
 } from './args'
 import {
@@ -44,6 +46,7 @@ export interface JobRunnerDependencies {
   tokenService: TokenService
   accountService: AccountService
   syncEngine: SyncEngine
+  mediaRegistry: MediaRegistry
   syncQueueStore: SyncQueueStore
   syncSuppressor: SyncSuppressor
   logger?: ExtensionLogger
@@ -63,21 +66,21 @@ interface JobState {
   event: CommandContributionExecuteEvent
 }
 
-interface MyCollectionLocalUpdatePlan {
-  patch: LibraryGamePatch
+interface CollectionLocalUpdatePlan {
+  patch: LocalMediaUserPatch
   tagNames: readonly string[]
-  targetCollection?: ResolvedImportTargetCollection
+  targetCollection?: LocalCollectionTarget
   rows: readonly BangumiJobPreviewRow[]
 }
 
-interface ResolvedImportTargetCollection {
-  id?: string
-  name: string
-  willCreate?: boolean
-}
-
 export class JobRunner {
-  constructor(private readonly deps: JobRunnerDependencies) {}
+  private readonly collectionReader: CollectionReader
+  private readonly indexReader: IndexReader
+
+  constructor(private readonly deps: JobRunnerDependencies) {
+    this.collectionReader = new CollectionReader(deps.client)
+    this.indexReader = new IndexReader(deps.client)
+  }
 
   async runAuthRefresh(
     args: BangumiAuthRefreshArgs,
@@ -116,48 +119,59 @@ export class JobRunner {
     })
   }
 
-  async runChangedGamesSync(
-    args: BangumiChangedGamesSyncArgs,
+  async runChangedItemsSync(
+    args: BangumiChangedItemsSyncArgs,
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      const descriptor = this.deps.mediaRegistry.require(args.scope)
       job.report('loadingQueue', '正在读取 Bangumi 变更同步队列...', { indeterminate: true })
       assertNotCancelled(event.signal)
 
-      const queueItems = await this.deps.syncQueueStore.list(args.limit)
+      const queueItems = await this.deps.syncQueueStore.list(args.limit, args.scope)
       job.increment('queued', queueItems.length)
+
+      if (!descriptor.localAdapter?.supportsAutoSync) {
+        job.increment('skippedUnsupportedScope', queueItems.length || 1)
+        job.report('completed', `${descriptor.label}暂不支持本地变更同步。`, {
+          current: queueItems.length,
+          total: queueItems.length
+        })
+        return
+      }
 
       for (const [index, item] of queueItems.entries()) {
         assertNotCancelled(event.signal)
-        job.report('syncingQueuedGames', '正在同步 Bangumi 变更队列...', {
+        job.report('syncingQueuedItems', '正在同步 Bangumi 变更队列...', {
           current: index,
           total: queueItems.length
         })
 
         try {
-          const result = await this.deps.syncEngine.syncGame({
-            gameId: item.gameId,
+          const result = await this.deps.syncEngine.syncItem({
+            scope: item.scope,
+            localId: item.localId,
             dryRun: args.dryRun,
             signal: event.signal
           })
-          recordSyncGameResult(job, result, args.dryRun)
+          recordSyncItemResult(job, result, args.dryRun)
 
           if (!args.dryRun) {
-            await this.deps.syncQueueStore.remove([item.gameId])
+            await this.deps.syncQueueStore.remove([item])
           }
         } catch (error) {
           if (isCancellationError(error) || event.signal.aborted || shouldStopSyncBatch(error)) {
             throw error
           }
 
-          job.addError(error, { gameId: item.gameId })
+          job.addError(error, { scope: item.scope, localId: item.localId })
           incrementSyncFailure(job, error)
         }
       }
 
       const message = args.dryRun
-        ? `变更队列预览完成：${job.counters.wouldSync ?? 0} 个游戏可同步。`
-        : `变更队列同步完成：${job.counters.synced ?? 0} 个游戏已同步。`
+        ? `变更队列预览完成：${job.counters.wouldSync ?? 0} 个条目可同步。`
+        : `变更队列同步完成：${job.counters.synced ?? 0} 个条目已同步。`
       job.report('completed', message, {
         current: queueItems.length,
         total: queueItems.length
@@ -170,10 +184,22 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      const descriptor = this.deps.mediaRegistry.require(args.scope)
+      const adapter = descriptor.localAdapter
+      if (!adapter?.supportsAutoSync) {
+        job.increment('skippedUnsupportedScope')
+        job.report('completed', `${descriptor.label}暂不支持本地全量同步。`, {
+          current: 1,
+          total: 1
+        })
+        return
+      }
+
       const settings = await this.deps.settingsStore.get()
       const account = await this.requireAccount()
-      const playStatusEnabled = args.playStatusEnabled ?? settings.autoSync.playStatusEnabled
-      const scoreEnabled = args.scoreEnabled ?? settings.autoSync.scoreEnabled
+      const playStatusEnabled =
+        args.playStatusEnabled ?? settings.game.autoSync.playStatusEnabled
+      const scoreEnabled = args.scoreEnabled ?? settings.game.autoSync.scoreEnabled
       let offset = 0
       let processed = 0
 
@@ -181,29 +207,30 @@ export class JobRunner {
 
       while (true) {
         assertNotCancelled(event.signal)
-        job.report('loadingGames', '正在扫描本地游戏...', {
+        job.report('loadingItems', `正在扫描本地${descriptor.label}...`, {
           current: processed,
           indeterminate: true
         })
 
-        const games = await kisaki.library.games.list({
+        const items = await adapter.listLocalItems({
           includeNsfw: true,
           limit: args.batchSize,
           offset
         })
 
-        if (games.length === 0) {
+        if (items.length === 0) {
           break
         }
 
-        for (const game of games) {
+        for (const item of items) {
           assertNotCancelled(event.signal)
           processed += 1
           job.increment('processed')
 
           try {
-            const result = await this.deps.syncEngine.syncGame({
-              game,
+            const result = await this.deps.syncEngine.syncItem({
+              scope: args.scope,
+              item,
               dryRun: args.dryRun,
               updateExisting: args.updateExisting,
               accountUsername: account.username,
@@ -213,26 +240,31 @@ export class JobRunner {
               clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
               signal: event.signal
             })
-            recordSyncGameResult(job, result, args.dryRun)
+            recordSyncItemResult(job, result, args.dryRun)
           } catch (error) {
             if (isCancellationError(error) || event.signal.aborted || shouldStopSyncBatch(error)) {
               throw error
             }
 
-            job.addError(error, { gameId: game.id, subjectId: readBangumiSubjectId(game) ?? null })
+            job.addError(error, {
+              scope: args.scope,
+              localId: item.localId,
+              subjectId: readBangumiSubjectId(item) ?? null
+            })
             incrementSyncFailure(job, error)
           }
         }
 
-        offset += games.length
-        if (games.length < args.batchSize) {
+        offset += items.length
+        if (items.length < args.batchSize) {
           break
         }
       }
 
+      const label = descriptor.label
       const message = args.dryRun
-        ? `全量同步预览完成：${job.counters.wouldSync ?? 0} 个游戏可同步。`
-        : `全量同步完成：${job.counters.synced ?? 0} 个游戏已同步。`
+        ? `全量同步预览完成：${job.counters.wouldSync ?? 0} 个${label}可同步。`
+        : `全量同步完成：${job.counters.synced ?? 0} 个${label}已同步。`
       job.report('completed', message, {
         current: processed,
         total: processed
@@ -240,27 +272,58 @@ export class JobRunner {
     })
   }
 
-  async runImportMyCollections(
-    args: BangumiImportMyCollectionsArgs,
+  async runImportCollections(
+    args: BangumiImportCollectionsArgs,
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      const descriptor = this.deps.mediaRegistry.require(args.scope)
+      const adapter = descriptor.localAdapter
       job.report('validating', '正在检查 Bangumi 导入参数...', { indeterminate: true })
-      await this.requireGameProfile(args.profileId)
-      const account = await this.requireAccount()
-      const targetCollection = await resolveTargetCollection(args.targetCollection)
 
+      if (!adapter?.supportsImportWrite && !args.dryRun) {
+        job.increment('skippedUnsupportedScope')
+        job.report('completed', `${descriptor.label}暂不支持写入本地库。`, {
+          current: 1,
+          total: 1
+        })
+        return
+      }
+
+      const account = await this.requireAccount()
+
+      if (adapter && !args.dryRun) {
+        await this.requireWritableProfile(adapter, args.profileId)
+      }
+
+      const targetCollection = adapter
+        ? await resolveTargetCollection(adapter, args.targetCollection)
+        : undefined
       job.increment('selectedCollectionTypes', args.collectionTypes.length)
       job.increment('selectedWriteFields', countEnabledFields(args.fields))
       job.increment('patchExisting', args.patchExisting ? 1 : 0)
       job.increment('selectedTargetCollections', targetCollection ? 1 : 0)
-      const localGames = await listLocalBangumiGamesBySubjectId(event.signal)
-      const collections = await this.collectUserCollections(
-        account.username,
-        args.collectionTypes,
+
+      const collections = await this.collectionReader.readUserCollections({
+        username: account.username,
+        scope: args.scope,
+        collectionTypes: args.collectionTypes,
         event,
-        job
-      )
+        report: (phase, message) => job.report(phase, message, { indeterminate: true })
+      })
+
+      if (!adapter?.supportsImportWrite) {
+        recordRemoteOnlyImportPreview({
+          job,
+          scope: args.scope,
+          collections,
+          dryRun: args.dryRun
+        })
+        return
+      }
+
+      const subjectIds = collections.map(readCollectionSubjectId).filter(Boolean).map(String)
+      const localItems = new Map(await adapter.findBySubjectIds(subjectIds))
 
       for (const collection of collections) {
         assertNotCancelled(event.signal)
@@ -273,18 +336,20 @@ export class JobRunner {
         job.increment('processed')
 
         try {
-          const localGame = localGames.get(subjectIdText)
-          if (localGame) {
+          const localItem = localItems.get(subjectIdText)
+          if (localItem) {
             if (!args.patchExisting) {
-              job.increment('skippedExistingLocalGame')
+              job.increment('skippedExistingLocalItem')
               continue
             }
 
             const change = await createImportCollectionPatchPreviewChange({
-              game: localGame,
+              adapter,
+              item: localItem,
               collection,
               fields: args.fields,
-              targetCollection
+              targetCollection,
+              scope: args.scope
             })
 
             if (!change) {
@@ -296,9 +361,10 @@ export class JobRunner {
               job.addPreviewGroup(change)
               job.increment('wouldPatch')
             } else {
-              await this.suppressImportForGame(localGame.id)
-              await applyMyCollectionLocalUpdate({
-                game: localGame,
+              await this.suppressImport(args.scope, localItem.localId)
+              await applyCollectionLocalUpdate({
+                adapter,
+                item: localItem,
                 collection,
                 fields: args.fields,
                 targetCollection
@@ -310,64 +376,74 @@ export class JobRunner {
 
           if (args.dryRun) {
             job.addPreviewGroup(
-              createImportCollectionCreatePreviewChange(collection, args.fields, targetCollection)
+              createImportCollectionCreatePreviewChange({
+                collection,
+                fields: args.fields,
+                targetCollection,
+                scope: args.scope
+              })
             )
             job.increment('wouldImport')
             continue
           }
 
-          const imported = await importGameFromCollection(args.profileId, collection)
-          await this.suppressImportForGame(imported.gameId)
-          const game = await requireLibraryGame(imported.gameId)
+          const imported = await importItemFromCollection(adapter, args.profileId, collection)
+          await this.suppressImport(args.scope, imported.localId)
+          const item = await requireLocalItem(adapter, imported.localId)
 
           if (imported.isNew) {
-            await applyMyCollectionLocalUpdate({
-              game,
+            await applyCollectionLocalUpdate({
+              adapter,
+              item,
               collection,
               fields: args.fields,
               targetCollection
             })
-            localGames.set(subjectIdText, game)
+            localItems.set(subjectIdText, item)
             job.increment('imported')
           } else if (args.patchExisting) {
             const change = await createImportCollectionPatchPreviewChange({
-              game,
+              adapter,
+              item,
               collection,
               fields: args.fields,
-              targetCollection
+              targetCollection,
+              scope: args.scope
             })
             if (!change) {
               job.increment('skippedNoChange')
               continue
             }
 
-            await this.suppressImportForGame(game.id)
-            await applyMyCollectionLocalUpdate({
-              game,
+            await this.suppressImport(args.scope, item.localId)
+            await applyCollectionLocalUpdate({
+              adapter,
+              item,
               collection,
               fields: args.fields,
               targetCollection
             })
-            localGames.set(subjectIdText, game)
+            localItems.set(subjectIdText, item)
             job.increment('patchedExisting')
           } else {
-            job.increment('skippedExistingLocalGame')
+            job.increment('skippedExistingLocalItem')
           }
         } catch (error) {
           if (isCancellationError(error) || event.signal.aborted) {
             throw error
           }
-          job.addError(error, { subjectId: subjectIdText })
+          job.addError(error, { scope: args.scope, subjectId: subjectIdText })
           job.increment('failedItems')
         }
       }
 
+      const label = descriptor.label
       const message = args.dryRun
-        ? `我的收藏导入预览完成：${job.counters.wouldImport ?? 0} 个游戏将导入，${job.counters.wouldPatch ?? 0} 个已有游戏将更新。`
-        : `我的收藏导入完成：新增 ${job.counters.imported ?? 0} 个游戏，更新 ${job.counters.patchedExisting ?? 0} 个已有游戏。`
+        ? `我的收藏导入预览完成：${job.counters.wouldImport ?? 0} 个${label}将导入，${job.counters.wouldPatch ?? 0} 个已有${label}将更新。`
+        : `我的收藏导入完成：新增 ${job.counters.imported ?? 0} 个${label}，更新 ${job.counters.patchedExisting ?? 0} 个已有${label}。`
       job.report('completed', message, {
-        current: job.counters.processed ?? 0,
-        total: job.counters.processed ?? 0
+        current: job.counters.processed ?? collections.length,
+        total: job.counters.processed ?? collections.length
       })
     })
   }
@@ -377,21 +453,52 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      const descriptor = this.deps.mediaRegistry.require(args.scope)
+      const adapter = descriptor.localAdapter
       job.report('validating', '正在检查 Bangumi 目录导入参数...', { indeterminate: true })
-      await this.requireGameProfile(args.profileId)
+
+      if (!adapter?.supportsImportWrite && !args.dryRun) {
+        job.increment('skippedUnsupportedScope')
+        job.report('completed', `${descriptor.label}暂不支持写入本地库。`, {
+          current: 1,
+          total: 1
+        })
+        return
+      }
+
+      if (adapter && !args.dryRun) {
+        await this.requireWritableProfile(adapter, args.profileId)
+      }
 
       job.increment('indices')
       job.increment('patchExisting', args.patchExisting ? 1 : 0)
-      const [index, localGames] = await Promise.all([
-        this.deps.client.getIndex(args.indexId, { signal: event.signal }),
-        listLocalBangumiGamesBySubjectId(event.signal)
-      ])
-      const targetCollection = await resolveIndexTargetCollection(
-        args.targetCollection,
-        index.title
-      )
+      const index = await this.indexReader.readIndex(args.indexId, event)
+      const targetCollection = adapter
+        ? await resolveIndexTargetCollection(adapter, args.targetCollection, index.title)
+        : undefined
       job.increment('selectedTargetCollections', targetCollection ? 1 : 0)
-      const subjects = await this.collectIndexSubjects(args.indexId, event, job)
+      const subjects = await this.indexReader.readIndexSubjects({
+        indexId: args.indexId,
+        scope: args.scope,
+        event,
+        report: (phase, message) => job.report(phase, message, { indeterminate: true })
+      })
+
+      if (!adapter?.supportsImportWrite) {
+        recordRemoteOnlyIndexPreview({
+          job,
+          scope: args.scope,
+          subjects,
+          dryRun: args.dryRun
+        })
+        return
+      }
+
+      const subjectIds = subjects
+        .map((subject) => normalizePositiveInteger(subject.id))
+        .filter((subjectId): subjectId is number => !!subjectId)
+        .map(String)
+      const localItems = new Map(await adapter.findBySubjectIds(subjectIds))
 
       for (const subject of subjects) {
         assertNotCancelled(event.signal)
@@ -404,15 +511,16 @@ export class JobRunner {
         job.increment('processed')
 
         try {
-          const localGame = localGames.get(subjectIdText)
-          if (localGame) {
+          const localItem = localItems.get(subjectIdText)
+          if (localItem) {
             if (!args.patchExisting || !targetCollection) {
-              job.increment('skippedExistingLocalGame')
+              job.increment('skippedExistingLocalItem')
               continue
             }
 
             const change = await createIndexCollectionPatchPreviewChange(
-              localGame,
+              adapter,
+              localItem,
               subjectId,
               targetCollection
             )
@@ -425,32 +533,33 @@ export class JobRunner {
               job.addPreviewGroup(change)
               job.increment('wouldPatch')
             } else {
-              await this.suppressImportForGame(localGame.id)
-              await ensureGameInTargetCollection(localGame.id, targetCollection)
+              await this.suppressImport(args.scope, localItem.localId)
+              await adapter.ensureInCollection(localItem.localId, targetCollection)
               job.increment('patchedExisting')
             }
             continue
           }
 
           if (args.dryRun) {
-            job.addPreviewGroup(createIndexCreatePreviewChange(subject, targetCollection))
+            job.addPreviewGroup(createIndexCreatePreviewChange(subject, targetCollection, args.scope))
             job.increment('wouldImport')
             continue
           }
 
-          const imported = await importGameFromIndexSubject(args.profileId, subject)
-          await this.suppressImportForGame(imported.gameId)
-          const game = await requireLibraryGame(imported.gameId)
+          const imported = await importItemFromIndexSubject(adapter, args.profileId, subject)
+          await this.suppressImport(args.scope, imported.localId)
+          const item = await requireLocalItem(adapter, imported.localId)
           if (targetCollection && imported.isNew) {
-            await ensureGameInTargetCollection(game.id, targetCollection)
+            await adapter.ensureInCollection(item.localId, targetCollection)
           }
 
           if (imported.isNew) {
-            localGames.set(subjectIdText, game)
+            localItems.set(subjectIdText, item)
             job.increment('imported')
           } else if (args.patchExisting && targetCollection) {
             const change = await createIndexCollectionPatchPreviewChange(
-              game,
+              adapter,
+              item,
               subjectId,
               targetCollection
             )
@@ -459,27 +568,28 @@ export class JobRunner {
               continue
             }
 
-            await ensureGameInTargetCollection(game.id, targetCollection)
-            localGames.set(subjectIdText, game)
+            await adapter.ensureInCollection(item.localId, targetCollection)
+            localItems.set(subjectIdText, item)
             job.increment('patchedExisting')
           } else {
-            job.increment('skippedExistingLocalGame')
+            job.increment('skippedExistingLocalItem')
           }
         } catch (error) {
           if (isCancellationError(error) || event.signal.aborted) {
             throw error
           }
-          job.addError(error, { subjectId: subjectIdText })
+          job.addError(error, { scope: args.scope, subjectId: subjectIdText })
           job.increment('failedItems')
         }
       }
 
+      const label = descriptor.label
       const message = args.dryRun
-        ? `目录导入预览完成：${job.counters.wouldImport ?? 0} 个游戏将导入，${job.counters.wouldPatch ?? 0} 个已有游戏将更新。`
-        : `目录导入完成：新增 ${job.counters.imported ?? 0} 个游戏，更新 ${job.counters.patchedExisting ?? 0} 个已有游戏。`
+        ? `目录导入预览完成：${job.counters.wouldImport ?? 0} 个${label}将导入，${job.counters.wouldPatch ?? 0} 个已有${label}将更新。`
+        : `目录导入完成：新增 ${job.counters.imported ?? 0} 个${label}，更新 ${job.counters.patchedExisting ?? 0} 个已有${label}。`
       job.report('completed', message, {
-        current: job.counters.processed ?? 0,
-        total: job.counters.processed ?? 0
+        current: job.counters.processed ?? subjects.length,
+        total: job.counters.processed ?? subjects.length
       })
     })
   }
@@ -504,7 +614,7 @@ export class JobRunner {
       assertNotCancelled(event.signal)
       await execute(job)
       assertNotCancelled(event.signal)
-      const summary = createBangumiJobSummary({
+      return createBangumiJobSummary({
         commandId: state.commandId,
         startedAt: state.startedAt,
         status: 'completed',
@@ -513,7 +623,6 @@ export class JobRunner {
         previewGroups: state.previewGroups,
         errors: state.errors
       })
-      return summary
     } catch (error) {
       if (isCancellationError(error) || event.signal.aborted) {
         job.report('cancelled', 'Bangumi job 已取消。', { indeterminate: true })
@@ -528,18 +637,27 @@ export class JobRunner {
     }
   }
 
-  private async requireGameProfile(profileId: string): Promise<void> {
-    const profile = await kisaki.scrapers.profiles.get(profileId)
-    if (!profile || profile.mediaType !== 'game') {
+  private async requireWritableProfile(
+    adapter: LocalMediaAdapter,
+    profileId: string | undefined
+  ): Promise<void> {
+    const normalizedProfileId = profileId?.trim()
+    if (!normalizedProfileId) {
+      throw new BangumiExtensionError('profile_missing', '请选择用于创建游戏的刮削配置。')
+    }
+
+    const profiles = (await adapter.listProfiles?.()) ?? []
+    if (!profiles.some((profile) => profile.id === normalizedProfileId)) {
       throw new BangumiExtensionError('profile_missing', '选择的游戏刮削配置不存在。')
     }
   }
 
-  private async suppressImportForGame(gameId: string): Promise<void> {
+  private async suppressImport(scope: BangumiMediaScope, localId: string): Promise<void> {
     const settings = await this.deps.settingsStore.get()
     this.deps.syncSuppressor.suppressImport(
-      gameId,
-      createImportSuppressTtlMs(settings.autoSync.debounceMs)
+      scope,
+      localId,
+      createImportSuppressTtlMs(settings.game.autoSync.debounceMs)
     )
   }
 
@@ -549,66 +667,6 @@ export class JobRunner {
       throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
     }
     return account
-  }
-
-  private async collectUserCollections(
-    username: string,
-    collectionTypes: readonly BangumiCollectionType[],
-    event: CommandContributionExecuteEvent,
-    job: JobStateController
-  ): Promise<readonly BangumiUserCollection[]> {
-    const collections: BangumiUserCollection[] = []
-    for (const collectionType of collectionTypes) {
-      assertNotCancelled(event.signal)
-      job.report(
-        'loadingCollections',
-        `正在读取 Bangumi ${formatCollectionType(collectionType)}收藏...`,
-        {
-          indeterminate: true
-        }
-      )
-
-      collections.push(
-        ...(await collectPages(
-          (query) =>
-            this.deps.client.getUserCollections(
-              username,
-              {
-                ...query,
-                subject_type: BANGUMI_SUBJECT_TYPE_GAME,
-                type: collectionType
-              },
-              { signal: event.signal }
-            ),
-          { limit: 50 }
-        ))
-      )
-    }
-
-    return collections
-  }
-
-  private async collectIndexSubjects(
-    indexId: number,
-    event: CommandContributionExecuteEvent,
-    job: JobStateController
-  ): Promise<readonly BangumiIndexSubject[]> {
-    job.report('loadingIndexSubjects', '正在读取 Bangumi 目录条目...', {
-      indeterminate: true
-    })
-
-    return collectPages(
-      (query) =>
-        this.deps.client.getIndexSubjects(
-          indexId,
-          {
-            ...query,
-            type: BANGUMI_SUBJECT_TYPE_GAME
-          },
-          { signal: event.signal }
-        ),
-      { limit: 50 }
-    )
   }
 }
 
@@ -636,18 +694,17 @@ class JobStateController {
     message: string,
     progress: { current?: number; total?: number; indeterminate?: boolean } = {}
   ): void {
-    const update = {
+    this.state.event.reportProgress({
       phase,
       message,
       ...progress
-    }
-    this.state.event.reportProgress(update)
+    })
   }
 }
 
-function recordSyncGameResult(
+function recordSyncItemResult(
   job: JobStateController,
-  result: SyncGameResult,
+  result: SyncItemResult,
   dryRun: boolean
 ): void {
   if (result.subjectId) {
@@ -681,44 +738,21 @@ function recordSyncGameResult(
     case 'skippedRemoteExisting':
       job.increment('skippedRemoteExisting')
       return
-    case 'skippedMissingLocalGame':
-      job.increment('skippedMissingLocalGame')
+    case 'skippedMissingLocalItem':
+      job.increment('skippedMissingLocalItem')
+      return
+    case 'skippedUnsupportedScope':
+      job.increment('skippedUnsupportedScope')
+      return
+    case 'skippedLocalSyncDisabled':
+      job.increment('skippedLocalSyncDisabled')
       return
   }
 }
 
-async function listLocalBangumiGamesBySubjectId(
-  signal: AbortSignal
-): Promise<Map<string, LibraryGame>> {
-  const gamesBySubjectId = new Map<string, LibraryGame>()
-  let offset = 0
-  const limit = 500
-
-  while (true) {
-    assertNotCancelled(signal)
-    const games = await kisaki.library.games.list({
-      includeNsfw: true,
-      limit,
-      offset
-    })
-
-    for (const game of games) {
-      const subjectId = readBangumiSubjectId(game)
-      if (subjectId && !gamesBySubjectId.has(subjectId)) {
-        gamesBySubjectId.set(subjectId, game)
-      }
-    }
-
-    offset += games.length
-    if (games.length < limit) {
-      return gamesBySubjectId
-    }
-  }
-}
-
-function createFullSyncPreviewChange(result: SyncGameResult): BangumiJobPreviewGroup | undefined {
-  const { game, subjectId, remote, payload } = result
-  if (!game || !subjectId || !payload) {
+function createFullSyncPreviewChange(result: SyncItemResult): BangumiJobPreviewGroup | undefined {
+  const { item, subjectId, remote, payload } = result
+  if (!item || !subjectId || !payload) {
     return undefined
   }
 
@@ -727,8 +761,8 @@ function createFullSyncPreviewChange(result: SyncGameResult): BangumiJobPreviewG
   if (payload.type !== undefined) {
     rows.push({
       label: '收藏状态',
-      before: remote ? formatCollectionType(remote.type) : '未收藏',
-      after: formatCollectionType(payload.type),
+      before: remote ? formatScopedCollectionType(result.scope, remote.type) : '未收藏',
+      after: formatScopedCollectionType(result.scope, payload.type),
       tone: remote ? 'info' : 'success'
     })
   }
@@ -748,7 +782,7 @@ function createFullSyncPreviewChange(result: SyncGameResult): BangumiJobPreviewG
   }
 
   return createPreviewGroup({
-    title: game.name,
+    title: item.name,
     subjectId,
     badge: {
       label: remote ? '更新 Bangumi 收藏' : '创建 Bangumi 收藏',
@@ -758,18 +792,25 @@ function createFullSyncPreviewChange(result: SyncGameResult): BangumiJobPreviewG
   })
 }
 
-function createImportCollectionCreatePreviewChange(
-  collection: BangumiUserCollection,
-  fields: BangumiImportMyCollectionsArgs['fields'],
-  targetCollection: ResolvedImportTargetCollection | undefined
-): BangumiJobPreviewGroup {
+function createImportCollectionCreatePreviewChange({
+  collection,
+  fields,
+  targetCollection,
+  scope
+}: {
+  collection: BangumiUserCollection
+  fields: BangumiImportCollectionsArgs['fields']
+  targetCollection: LocalCollectionTarget | undefined
+  scope: BangumiMediaScope
+}): BangumiJobPreviewGroup {
   const subjectId = readCollectionSubjectId(collection)
   const subject = collection.subject
   const title = subject
     ? formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
     : `${subjectId}`
+  const label = getMediaScopeLabel(scope)
   const rows: BangumiJobPreviewRow[] = [
-    { label: '游戏', before: '不存在', after: '创建', tone: 'success' },
+    { label, before: '不存在', after: '创建', tone: 'success' },
     { label: 'Bangumi ID', before: '无', after: `${subjectId}`, tone: 'success' }
   ]
 
@@ -777,7 +818,7 @@ function createImportCollectionCreatePreviewChange(
     rows.push({
       label: '状态',
       before: '未设置',
-      after: formatGameStatus(mapCollectionTypeToGameStatus(collection.type)),
+      after: formatLocalStatus(mapCollectionTypeToLocalStatus(collection.type)),
       tone: 'success'
     })
   }
@@ -812,50 +853,57 @@ function createImportCollectionCreatePreviewChange(
   return createPreviewGroup({
     title,
     subjectId,
-    badge: { label: '创建本地游戏', tone: 'success' },
+    badge: { label: `创建本地${label}`, tone: 'success' },
     rows
   })
 }
 
 async function createImportCollectionPatchPreviewChange({
-  game,
+  adapter,
+  item,
   collection,
   fields,
-  targetCollection
+  targetCollection,
+  scope
 }: {
-  game: LibraryGame
+  adapter: LocalMediaAdapter
+  item: LocalMediaItem
   collection: BangumiUserCollection
-  fields: BangumiImportMyCollectionsArgs['fields']
-  targetCollection: ResolvedImportTargetCollection | undefined
+  fields: BangumiImportCollectionsArgs['fields']
+  targetCollection: LocalCollectionTarget | undefined
+  scope: BangumiMediaScope
 }): Promise<BangumiJobPreviewGroup | undefined> {
   const subjectId = readCollectionSubjectId(collection)
-  const plan = await buildMyCollectionLocalUpdatePlan({
-    game,
+  const plan = await buildCollectionLocalUpdatePlan({
+    adapter,
+    item,
     collection,
     fields,
     targetCollection
   })
 
-  if (!hasMyCollectionLocalChanges(plan)) {
+  if (!hasCollectionLocalChanges(plan)) {
     return undefined
   }
 
   return createPreviewGroup({
-    title: game.name,
+    title: item.name,
     subjectId,
-    badge: { label: '更新本地游戏', tone: 'info' },
+    badge: { label: `更新本地${getMediaScopeLabel(scope)}`, tone: 'info' },
     rows: plan.rows
   })
 }
 
 function createIndexCreatePreviewChange(
   subject: BangumiIndexSubject,
-  targetCollection: ResolvedImportTargetCollection | undefined
+  targetCollection: LocalCollectionTarget | undefined,
+  scope: BangumiMediaScope
 ): BangumiJobPreviewGroup {
   const subjectId = normalizePositiveInteger(subject.id) ?? subject.id
   const title = formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
+  const label = getMediaScopeLabel(scope)
   const rows: BangumiJobPreviewRow[] = [
-    { label: '游戏', before: '不存在', after: '创建', tone: 'success' },
+    { label, before: '不存在', after: '创建', tone: 'success' },
     { label: 'Bangumi ID', before: '无', after: `${subjectId}`, tone: 'success' }
   ]
 
@@ -871,25 +919,25 @@ function createIndexCreatePreviewChange(
   return createPreviewGroup({
     title,
     subjectId,
-    badge: { label: '创建本地游戏', tone: 'success' },
+    badge: { label: `创建本地${label}`, tone: 'success' },
     rows
   })
 }
 
 async function createIndexCollectionPatchPreviewChange(
-  game: LibraryGame,
+  adapter: LocalMediaAdapter,
+  item: LocalMediaItem,
   subjectId: number,
-  targetCollection: ResolvedImportTargetCollection
+  targetCollection: LocalCollectionTarget
 ): Promise<BangumiJobPreviewGroup | undefined> {
-  const hasRelation = targetCollection.id
-    ? await hasGameCollectionRelation(game.id, targetCollection.id)
-    : false
+  const hasRelation =
+    (await adapter.hasCollectionMembership?.(item.localId, targetCollection)) ?? false
   if (hasRelation) {
     return undefined
   }
 
   return createPreviewGroup({
-    title: game.name,
+    title: item.name,
     subjectId,
     badge: { label: '加入合集', tone: 'success' },
     rows: [
@@ -903,186 +951,244 @@ async function createIndexCollectionPatchPreviewChange(
   })
 }
 
-function readBangumiSubjectId(game: LibraryGame): string | undefined {
-  const externalId = game.externalIds.find((item) => item.source === BANGUMI_SOURCE_ID)
-  const id = externalId?.id.trim()
-  return id && /^\d+$/.test(id) ? id : undefined
+function recordRemoteOnlyImportPreview({
+  job,
+  scope,
+  collections,
+  dryRun
+}: {
+  job: JobStateController
+  scope: BangumiMediaScope
+  collections: readonly BangumiUserCollection[]
+  dryRun: boolean
+}): void {
+  if (!dryRun) {
+    job.increment('skippedUnsupportedScope', collections.length || 1)
+    job.report('completed', `${getMediaScopeLabel(scope)}暂不支持写入本地库。`, {
+      current: collections.length,
+      total: collections.length
+    })
+    return
+  }
+
+  for (const collection of collections) {
+    const subjectId = readCollectionSubjectId(collection)
+    if (!subjectId) {
+      continue
+    }
+
+    job.increment('remoteOnly')
+    job.addPreviewGroup(
+      createRemotePreviewGroup({
+        scope,
+        subjectId,
+        title: collection.subject
+          ? formatBangumiSubjectTitle(collection.subject.name_cn, collection.subject.name, subjectId)
+          : `Bangumi ${subjectId}`,
+        rows: [
+          {
+            label: '收藏状态',
+            before: '远端',
+            after: formatScopedCollectionType(scope, collection.type),
+            tone: 'info'
+          }
+        ]
+      })
+    )
+  }
+
+  job.report('completed', `${getMediaScopeLabel(scope)}远端收藏预览完成。`, {
+    current: collections.length,
+    total: collections.length
+  })
 }
 
-function countEnabledFields(fields: { status: boolean; score: boolean; tags: boolean }): number {
-  return Number(fields.status) + Number(fields.score) + Number(fields.tags)
+function recordRemoteOnlyIndexPreview({
+  job,
+  scope,
+  subjects,
+  dryRun
+}: {
+  job: JobStateController
+  scope: BangumiMediaScope
+  subjects: readonly BangumiIndexSubject[]
+  dryRun: boolean
+}): void {
+  if (!dryRun) {
+    job.increment('skippedUnsupportedScope', subjects.length || 1)
+    job.report('completed', `${getMediaScopeLabel(scope)}暂不支持写入本地库。`, {
+      current: subjects.length,
+      total: subjects.length
+    })
+    return
+  }
+
+  for (const subject of subjects) {
+    const subjectId = normalizePositiveInteger(subject.id)
+    if (!subjectId) {
+      continue
+    }
+
+    job.increment('remoteOnly')
+    job.addPreviewGroup(
+      createRemotePreviewGroup({
+        scope,
+        subjectId,
+        title: formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId),
+        rows: [
+          {
+            label: getMediaScopeLabel(scope),
+            before: '目录条目',
+            after: '远端预览',
+            tone: 'info'
+          }
+        ]
+      })
+    )
+  }
+
+  job.report('completed', `${getMediaScopeLabel(scope)}目录远端预览完成。`, {
+    current: subjects.length,
+    total: subjects.length
+  })
 }
 
 async function resolveTargetCollection(
+  adapter: LocalMediaAdapter,
   targetCollection: BangumiImportTargetCollection
-): Promise<ResolvedImportTargetCollection | undefined> {
+): Promise<LocalCollectionTarget | undefined> {
   if (targetCollection.kind !== 'existing') {
     return undefined
   }
 
-  const collection = await kisaki.library.collections.get(targetCollection.collectionId)
-  if (!collection || collection.isDynamic) {
-    throw new BangumiExtensionError('bangumi_validation', '选择的目标合集不存在。')
-  }
-
-  return { id: collection.id, name: collection.name }
+  return adapter.resolveExistingCollection?.(targetCollection.collectionId)
 }
 
 async function resolveIndexTargetCollection(
+  adapter: LocalMediaAdapter,
   targetCollection: BangumiImportTargetCollection,
   indexTitle: string
-): Promise<ResolvedImportTargetCollection | undefined> {
-  if (targetCollection.kind !== 'byIndexTitle') {
-    return resolveTargetCollection(targetCollection)
+): Promise<LocalCollectionTarget | undefined> {
+  if (targetCollection.kind === 'byIndexTitle') {
+    return adapter.resolveCollectionByTitle?.(indexTitle)
   }
 
-  const name = normalizeCollectionName(indexTitle)
-  const existing = await findStaticCollectionByName(name)
-  if (existing) {
-    return { id: existing.id, name: existing.name }
-  }
-
-  return { name, willCreate: true }
+  return resolveTargetCollection(adapter, targetCollection)
 }
 
-async function findStaticCollectionByName(name: string): Promise<LibraryCollection | undefined> {
-  const collections = await kisaki.library.collections.list({
-    search: name,
-    includeDynamic: false,
-    includeStatic: true
-  })
-  return collections.find((collection) => collection.name === name && !collection.isDynamic)
-}
-
-async function createStaticCollectionByName(name: string): Promise<LibraryCollection> {
-  try {
-    return await kisaki.library.collections.create({
-      name,
-      isDynamic: false,
-      isNsfw: false
-    })
-  } catch (error) {
-    const retry = await findStaticCollectionByName(name)
-    if (retry) {
-      return retry
-    }
-    throw error
-  }
-}
-
-function normalizeCollectionName(name: string): string {
-  const normalized = name.trim()
-  if (!normalized) {
-    throw new BangumiExtensionError(
-      'bangumi_validation',
-      'Bangumi 目录标题为空，无法创建合集。'
-    )
-  }
-  return normalized
-}
-
-async function importGameFromCollection(
-  profileId: string,
+async function importItemFromCollection(
+  adapter: LocalMediaAdapter,
+  profileId: string | undefined,
   collection: BangumiUserCollection
-): Promise<{ gameId: string; isNew: boolean }> {
+) {
   const subjectId = readCollectionSubjectId(collection)
   const subject = collection.subject
   const title = subject
     ? formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
     : `Bangumi ${subjectId}`
 
-  return kisaki.ingest.games.addFromScraper(profileId, {
+  return adapter.addFromScraper({
+    profileId: requireProfileId(profileId),
     name: title,
     knownIds: [{ source: BANGUMI_SOURCE_ID, id: String(subjectId) }]
   })
 }
 
-async function importGameFromIndexSubject(
-  profileId: string,
+async function importItemFromIndexSubject(
+  adapter: LocalMediaAdapter,
+  profileId: string | undefined,
   subject: BangumiIndexSubject
-): Promise<{ gameId: string; isNew: boolean }> {
+) {
   const subjectId = normalizePositiveInteger(subject.id)
   if (!subjectId) {
     throw new BangumiExtensionError('bangumi_validation', 'Bangumi 目录条目缺少有效 subject ID。')
   }
 
-  return kisaki.ingest.games.addFromScraper(profileId, {
+  return adapter.addFromScraper({
+    profileId: requireProfileId(profileId),
     name: formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId),
     knownIds: [{ source: BANGUMI_SOURCE_ID, id: String(subjectId) }]
   })
 }
 
-async function requireLibraryGame(gameId: string): Promise<LibraryGame> {
-  const game = await kisaki.library.games.get(gameId)
-  if (!game) {
-    throw new BangumiExtensionError('library_update_failed', '导入后的本地游戏不存在。')
+async function requireLocalItem(
+  adapter: LocalMediaAdapter,
+  localId: string
+): Promise<LocalMediaItem> {
+  const item = await adapter.getLocalItem(localId)
+  if (!item) {
+    throw new BangumiExtensionError('library_update_failed', '导入后的本地条目不存在。')
   }
-  return game
+  return item
 }
 
-async function applyMyCollectionLocalUpdate({
-  game,
+async function applyCollectionLocalUpdate({
+  adapter,
+  item,
   collection,
   fields,
   targetCollection
 }: {
-  game: LibraryGame
+  adapter: LocalMediaAdapter
+  item: LocalMediaItem
   collection: BangumiUserCollection
-  fields: BangumiImportMyCollectionsArgs['fields']
-  targetCollection: ResolvedImportTargetCollection | undefined
+  fields: BangumiImportCollectionsArgs['fields']
+  targetCollection: LocalCollectionTarget | undefined
 }): Promise<void> {
-  const plan = await buildMyCollectionLocalUpdatePlan({
-    game,
+  const plan = await buildCollectionLocalUpdatePlan({
+    adapter,
+    item,
     collection,
     fields,
     targetCollection
   })
 
   if (Object.keys(plan.patch).length > 0) {
-    await kisaki.library.games.update(game.id, plan.patch)
+    await adapter.patchUserFields(item.localId, plan.patch)
   }
 
   for (const tagName of plan.tagNames) {
-    const tag = await ensureTag(tagName)
-    await ensureGameTag(game.id, tag.id)
+    await adapter.ensureTag(item.localId, tagName)
   }
 
   if (plan.targetCollection) {
-    await ensureGameInTargetCollection(game.id, plan.targetCollection)
+    await adapter.ensureInCollection(item.localId, plan.targetCollection)
   }
 }
 
-async function buildMyCollectionLocalUpdatePlan({
-  game,
+async function buildCollectionLocalUpdatePlan({
+  adapter,
+  item,
   collection,
   fields,
   targetCollection
 }: {
-  game: LibraryGame
+  adapter: LocalMediaAdapter
+  item: LocalMediaItem
   collection: BangumiUserCollection
-  fields: BangumiImportMyCollectionsArgs['fields']
-  targetCollection: ResolvedImportTargetCollection | undefined
-}): Promise<MyCollectionLocalUpdatePlan> {
-  const patch: LibraryGamePatch = {}
+  fields: BangumiImportCollectionsArgs['fields']
+  targetCollection: LocalCollectionTarget | undefined
+}): Promise<CollectionLocalUpdatePlan> {
+  const patch: LocalMediaUserPatch = {}
   const rows: BangumiJobPreviewRow[] = []
   let tagNames: readonly string[] = []
-  let resolvedTargetCollection: ResolvedImportTargetCollection | undefined
+  let resolvedTargetCollection: LocalCollectionTarget | undefined
 
   if (fields.status) {
-    const targetStatus = mapCollectionTypeToGameStatus(collection.type)
-    if (game.status !== targetStatus) {
+    const targetStatus = mapCollectionTypeToLocalStatus(collection.type)
+    if (item.status !== targetStatus) {
       patch.status = targetStatus
       rows.push({
         label: '状态',
-        before: formatGameStatus(game.status),
-        after: formatGameStatus(targetStatus),
+        before: formatLocalStatus(item.status),
+        after: formatLocalStatus(targetStatus),
         tone: 'info'
       })
     }
   }
 
   if (fields.score) {
-    const localScore = normalizeLocalScore(game.score)
+    const localScore = normalizeLocalScore(item.score)
     const targetScore = normalizeCollectionScoreForImport(collection.rate)
     if (localScore !== targetScore) {
       patch.score = targetScore
@@ -1097,7 +1203,7 @@ async function buildMyCollectionLocalUpdatePlan({
 
   if (fields.tags) {
     const targetTagNames = normalizeCollectionTagNames(collection.tags)
-    const currentTagNames = await listGameTagNames(game.id)
+    const currentTagNames = (await adapter.listTagNames?.(item.localId)) ?? new Set<string>()
     const missingTags = targetTagNames.filter((tagName) => !currentTagNames.has(tagName))
     if (missingTags.length > 0) {
       tagNames = missingTags
@@ -1110,8 +1216,8 @@ async function buildMyCollectionLocalUpdatePlan({
     }
   }
 
-  const hasTargetCollectionRelation = targetCollection?.id
-    ? await hasGameCollectionRelation(game.id, targetCollection.id)
+  const hasTargetCollectionRelation = targetCollection
+    ? ((await adapter.hasCollectionMembership?.(item.localId, targetCollection)) ?? false)
     : false
   if (targetCollection && !hasTargetCollectionRelation) {
     resolvedTargetCollection = targetCollection
@@ -1131,111 +1237,13 @@ async function buildMyCollectionLocalUpdatePlan({
   }
 }
 
-function hasMyCollectionLocalChanges(plan: MyCollectionLocalUpdatePlan): boolean {
+function hasCollectionLocalChanges(plan: CollectionLocalUpdatePlan): boolean {
   return (
     Object.keys(plan.patch).length > 0 ||
     plan.tagNames.length > 0 ||
     plan.targetCollection !== undefined ||
     plan.rows.length > 0
   )
-}
-
-async function listGameTagNames(gameId: string): Promise<ReadonlySet<string>> {
-  const relations = await kisaki.library.relations.list({
-    entity: { entityType: 'game', id: gameId },
-    kinds: ['game-tag']
-  })
-  const tagIds = [...new Set(relations.map((relation) => relation.to.id))]
-  if (tagIds.length === 0) {
-    return new Set()
-  }
-
-  const tags = await kisaki.library.tags.list({
-    ids: tagIds,
-    includeNsfw: true
-  })
-  return new Set(tags.map((tag) => tag.name))
-}
-
-async function ensureTag(name: string): Promise<LibraryTag> {
-  const existing = await findTagByName(name)
-  if (existing) {
-    return existing
-  }
-
-  try {
-    return await kisaki.library.tags.create({ name, isNsfw: false })
-  } catch (error) {
-    const retry = await findTagByName(name)
-    if (retry) {
-      return retry
-    }
-    throw error
-  }
-}
-
-async function findTagByName(name: string): Promise<LibraryTag | undefined> {
-  const tags = await kisaki.library.tags.list({
-    search: name,
-    includeNsfw: true
-  })
-  return tags.find((tag) => tag.name === name)
-}
-
-async function ensureGameTag(gameId: string, tagId: string): Promise<void> {
-  const relations = await kisaki.library.relations.list({
-    entity: { entityType: 'game', id: gameId },
-    relatedEntity: { entityType: 'tag', id: tagId },
-    kinds: ['game-tag']
-  })
-  if (relations.length > 0) {
-    return
-  }
-
-  await kisaki.library.relations.create({
-    kind: 'game-tag',
-    from: { entityType: 'game', id: gameId },
-    to: { entityType: 'tag', id: tagId },
-    metadata: { order: 0 }
-  })
-}
-
-async function ensureGameInTargetCollection(
-  gameId: string,
-  targetCollection: ResolvedImportTargetCollection
-): Promise<void> {
-  let collectionId = targetCollection.id
-  if (!collectionId) {
-    const collection = await createStaticCollectionByName(targetCollection.name)
-    targetCollection.id = collection.id
-    targetCollection.name = collection.name
-    targetCollection.willCreate = false
-    collectionId = collection.id
-  }
-
-  await ensureGameInCollection(gameId, collectionId)
-}
-
-async function ensureGameInCollection(gameId: string, collectionId: string): Promise<void> {
-  if (await hasGameCollectionRelation(gameId, collectionId)) {
-    return
-  }
-
-  await kisaki.library.relations.create({
-    kind: 'collection-game',
-    from: { entityType: 'collection', id: collectionId },
-    to: { entityType: 'game', id: gameId },
-    metadata: { order: 0 }
-  })
-}
-
-async function hasGameCollectionRelation(gameId: string, collectionId: string): Promise<boolean> {
-  const relations = await kisaki.library.relations.list({
-    entity: { entityType: 'game', id: gameId },
-    relatedEntity: { entityType: 'collection', id: collectionId },
-    kinds: ['collection-game']
-  })
-  return relations.length > 0
 }
 
 function readCollectionSubjectId(collection: BangumiUserCollection): number {
@@ -1282,7 +1290,7 @@ function normalizeCollectionTagNames(tags: readonly string[] | undefined): reado
   return names
 }
 
-function mapCollectionTypeToGameStatus(type: BangumiCollectionType): LibraryGameStatus {
+function mapCollectionTypeToLocalStatus(type: BangumiCollectionType): string {
   switch (type) {
     case 1:
       return 'notStarted'
@@ -1302,6 +1310,25 @@ function formatBangumiSubjectTitle(
   fallback: string | number
 ): string {
   return nameCn?.trim() || name?.trim() || `Bangumi ${fallback}`
+}
+
+function createRemotePreviewGroup({
+  scope,
+  subjectId,
+  title,
+  rows
+}: {
+  scope: BangumiMediaScope
+  subjectId: string | number
+  title: string
+  rows: readonly BangumiJobPreviewRow[]
+}): BangumiJobPreviewGroup {
+  return createPreviewGroup({
+    title,
+    subjectId,
+    badge: { label: `${getMediaScopeLabel(scope)}远端预览`, tone: 'info' },
+    rows
+  })
 }
 
 function createPreviewGroup({
@@ -1331,39 +1358,7 @@ function createSubjectLink(subjectId: string | number): { label: string; href: s
   }
 }
 
-function formatCollectionType(value: BangumiCollectionType): string {
-  switch (value) {
-    case 1:
-      return '想玩'
-    case 2:
-      return '玩过'
-    case 3:
-      return '在玩'
-    case 4:
-      return '搁置'
-    case 5:
-      return '抛弃'
-  }
-}
-
-function formatGameStatus(value: LibraryGameStatus): string {
-  switch (value) {
-    case 'notStarted':
-      return '想玩'
-    case 'inProgress':
-      return '在玩'
-    case 'partial':
-      return '部分通关'
-    case 'completed':
-      return '玩过'
-    case 'multiple':
-      return '多周目'
-    case 'shelved':
-      return '搁置'
-  }
-}
-
-function formatTargetCollectionValue(targetCollection: ResolvedImportTargetCollection): string {
+function formatTargetCollectionValue(targetCollection: LocalCollectionTarget): string {
   const creationNote = targetCollection.willCreate ? '（将创建）' : ''
   return `合集：${targetCollection.name}${creationNote}`
 }
@@ -1387,6 +1382,37 @@ function formatCollectionTags(tags: readonly string[] | undefined): string {
 
 function formatTagNames(tagNames: readonly string[]): string {
   return tagNames.length > 0 ? tagNames.join('、') : '无'
+}
+
+function formatLocalStatus(value: string | undefined): string {
+  switch (value) {
+    case 'notStarted':
+      return '想玩'
+    case 'inProgress':
+      return '在玩'
+    case 'partial':
+      return '部分通关'
+    case 'completed':
+      return '玩过'
+    case 'multiple':
+      return '多周目'
+    case 'shelved':
+      return '搁置'
+    default:
+      return '未设置'
+  }
+}
+
+function countEnabledFields(fields: { status: boolean; score: boolean; tags: boolean }): number {
+  return Number(fields.status) + Number(fields.score) + Number(fields.tags)
+}
+
+function requireProfileId(profileId: string | undefined): string {
+  const normalized = profileId?.trim()
+  if (!normalized) {
+    throw new BangumiExtensionError('profile_missing', '请选择用于创建游戏的刮削配置。')
+  }
+  return normalized
 }
 
 function assertNotCancelled(signal: AbortSignal): void {
@@ -1416,6 +1442,9 @@ function incrementSyncFailure(job: JobStateController, error: unknown): void {
       case 'bangumi_rate_limited':
       case 'network_failed':
         job.increment('failedNetwork')
+        return
+      case 'local_media_unsupported':
+        job.increment('skippedUnsupportedScope')
         return
     }
   }

@@ -1,5 +1,9 @@
 import type { LibraryGameStatus } from '@kisaki/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
+import {
+  BANGUMI_MEDIA_SCOPES,
+  type BangumiMediaScope
+} from '../media/scopes'
 
 export type BangumiCollectionType = 1 | 2 | 3 | 4 | 5
 export type BangumiStatusMappingValue = BangumiCollectionType | 'skip'
@@ -9,15 +13,24 @@ export interface BangumiSettingsV1 {
   auth: {
     loginTimeoutMs: number
   }
-  autoSync: {
-    enabled: boolean
-    syncOnCreate: boolean
-    playStatusEnabled: boolean
-    scoreEnabled: boolean
-    clearRemoteScoreWhenEmpty: boolean
-    debounceMs: number
-    notifyErrors: boolean
-    statusToBangumi: Record<LibraryGameStatus, BangumiStatusMappingValue>
+  media: Record<
+    BangumiMediaScope,
+    {
+      enabled: boolean
+      localSyncEnabled: boolean
+    }
+  >
+  game: {
+    autoSync: {
+      enabled: boolean
+      syncOnCreate: boolean
+      playStatusEnabled: boolean
+      scoreEnabled: boolean
+      clearRemoteScoreWhenEmpty: boolean
+      debounceMs: number
+      notifyErrors: boolean
+      statusToBangumi: Record<LibraryGameStatus, BangumiStatusMappingValue>
+    }
   }
   client: {
     rateLimit: {
@@ -46,7 +59,13 @@ export function normalizeBangumiSettings(value: unknown): BangumiSettingsV1 {
   return {
     version: 1,
     auth: normalizeAuthSettings(input?.auth, defaults.auth),
-    autoSync: normalizeAutoSyncSettings(input?.autoSync, defaults.autoSync),
+    media: normalizeMediaSettings(input?.media, defaults.media),
+    game: {
+      autoSync: normalizeAutoSyncSettings(
+        asRecord(input?.game)?.autoSync ?? input?.autoSync,
+        defaults.game.autoSync
+      )
+    },
     client: normalizeClientSettings(input?.client, defaults.client)
   }
 }
@@ -69,10 +88,31 @@ function normalizeAuthSettings(
   }
 }
 
+function normalizeMediaSettings(
+  value: unknown,
+  defaults: BangumiSettingsV1['media']
+): BangumiSettingsV1['media'] {
+  const input = asRecord(value)
+  const output = {} as BangumiSettingsV1['media']
+
+  for (const scope of BANGUMI_MEDIA_SCOPES) {
+    const scopeInput = asRecord(input?.[scope])
+    output[scope] = {
+      enabled: normalizeBoolean(scopeInput?.enabled, defaults[scope].enabled),
+      localSyncEnabled: normalizeBoolean(
+        scopeInput?.localSyncEnabled,
+        defaults[scope].localSyncEnabled
+      )
+    }
+  }
+
+  return output
+}
+
 function normalizeAutoSyncSettings(
   value: unknown,
-  defaults: BangumiSettingsV1['autoSync']
-): BangumiSettingsV1['autoSync'] {
+  defaults: BangumiSettingsV1['game']['autoSync']
+): BangumiSettingsV1['game']['autoSync'] {
   const input = asRecord(value)
 
   return {
@@ -133,8 +173,8 @@ function normalizeRateLimitSettings(
 
 function normalizeStatusToBangumi(
   value: unknown,
-  defaults: BangumiSettingsV1['autoSync']['statusToBangumi']
-): BangumiSettingsV1['autoSync']['statusToBangumi'] {
+  defaults: BangumiSettingsV1['game']['autoSync']['statusToBangumi']
+): BangumiSettingsV1['game']['autoSync']['statusToBangumi'] {
   const input = asRecord(value)
   const output = { ...defaults }
 
