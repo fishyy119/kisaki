@@ -76,10 +76,6 @@ export async function startDialogManualJob<
   })
 }
 
-export function maybeDialogField<TField>(field: TField | undefined): TField[] {
-  return field ? [field] : []
-}
-
 export function formatDateTime(value: number | null | undefined): string | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return undefined

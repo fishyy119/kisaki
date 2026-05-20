@@ -56,7 +56,7 @@ export class PreviewResultRegistry {
   }
 }
 
-export function createDialogPreviewGroupsField<
+export function createDialogPreviewFields<
   TParams extends SerializableRecord = SerializableRecord
 >({
   settings,
@@ -70,29 +70,29 @@ export function createDialogPreviewGroupsField<
   id: string
   label: string
   preview?: ResolvedPreviewResult
-}):
-  | SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>
-  | undefined {
+}): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   if (!preview) {
-    return undefined
+    return []
   }
 
   const groups = readPreviewGroups(preview.result)
 
-  return {
-    id,
-    label,
-    orientation: 'vertical',
-    contentLayout: 'stack',
-    content: [
-      settings.comparisonList({
-        id: `${id}.groups`,
-        summary: summarizePreviewGroups(groups),
-        groups,
-        emptyLabel: '没有将要更改的游戏'
-      })
-    ]
-  }
+  return [
+    {
+      id,
+      label,
+      orientation: 'vertical',
+      contentLayout: 'stack',
+      content: [
+        settings.comparisonList({
+          id: `${id}.groups`,
+          summary: summarizePreviewGroups(groups),
+          groups,
+          emptyLabel: '没有将要更改的游戏'
+        })
+      ]
+    }
+  ]
 }
 
 export async function runDialogPreview(options: {

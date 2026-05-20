@@ -5,8 +5,8 @@ import {
 } from '@kisaki/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { toSettingsError } from '../shared/errors'
-import { BANGUMI_COMMAND_IDS, maybeDialogField, startDialogManualJob } from '../shared/jobs'
-import { createDialogPreviewGroupsField, runDialogPreview } from '../shared/previews'
+import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'
+import { createDialogPreviewFields, runDialogPreview } from '../shared/previews'
 import type {
   BangumiSettingsDialogSubmitEvent,
   BangumiSettingsDialogSubmitResult
@@ -95,14 +95,12 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
               })
             ]
           },
-          ...maybeDialogField(
-            createDialogPreviewGroupsField({
-              settings: ui,
-              id: 'index-preview-changes',
-              label: '将导入的游戏',
-              preview
-            })
-          )
+          ...createDialogPreviewFields({
+            settings: ui,
+            id: 'index-preview-changes',
+            label: '将导入的游戏',
+            preview
+          })
         ]
       }
     },

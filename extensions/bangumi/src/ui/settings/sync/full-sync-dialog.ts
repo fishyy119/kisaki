@@ -1,8 +1,8 @@
 import { defineSettingsPanelDialog } from '@kisaki/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
 import { FULL_SYNC_ITEM_OPTIONS, SETTINGS_NODE_IDS } from '../ids'
-import { BANGUMI_COMMAND_IDS, maybeDialogField, startDialogManualJob } from '../shared/jobs'
-import { createDialogPreviewGroupsField, runDialogPreview } from '../shared/previews'
+import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'
+import { createDialogPreviewFields, runDialogPreview } from '../shared/previews'
 import { readBoolean, readNumber } from '../shared/values'
 import { toSettingsError } from '../shared/errors'
 import type {
@@ -117,14 +117,12 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
               })
             ]
           },
-          ...maybeDialogField(
-            createDialogPreviewGroupsField({
-              settings: ui,
-              id: 'full-sync-preview-changes',
-              label: '将更改的游戏',
-              preview
-            })
-          )
+          ...createDialogPreviewFields({
+            settings: ui,
+            id: 'full-sync-preview-changes',
+            label: '将更改的游戏',
+            preview
+          })
         ]
       }
     },
