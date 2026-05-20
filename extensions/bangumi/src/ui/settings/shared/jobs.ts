@@ -10,6 +10,7 @@ import type {
 
 export interface BangumiRunningJobs {
   accountRefresh: boolean
+  syncChangedGames: boolean
   syncFull: boolean
   importMyCollections: boolean
   importIndex: boolean
@@ -20,6 +21,7 @@ export async function resolveRunningJobs(): Promise<BangumiRunningJobs> {
 
   return {
     accountRefresh: isCommandRunning(commands, BANGUMI_COMMAND_IDS.authRefresh),
+    syncChangedGames: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncChangedGames),
     syncFull: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncFull),
     importMyCollections: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importMyCollections),
     importIndex: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importIndex)

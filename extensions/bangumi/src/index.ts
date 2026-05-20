@@ -12,6 +12,11 @@ import { JobRunner } from './jobs/runner'
 import { BangumiProvider } from './scraper/provider'
 import { createBangumiSettingsPanel } from './ui/settings'
 import { BangumiExtensionError } from './shared/errors'
+import { SyncEngine } from './sync/engine'
+import { SyncStateStore } from './sync/fingerprint'
+import { SyncQueueStore } from './sync/queue'
+import { SyncSubscription } from './sync/subscription'
+import { SyncSuppressor } from './sync/suppressor'
 
 export default defineExtension({
   async activate(context) {
@@ -34,11 +39,24 @@ export default defineExtension({
       }
     )
     const accountService = new AccountService(context.storage, client, tokenService)
+    const syncStateStore = new SyncStateStore(context.storage)
+    const syncQueueStore = new SyncQueueStore(context.storage)
+    const syncSuppressor = new SyncSuppressor()
+    const syncEngine = new SyncEngine({
+      settingsStore,
+      client,
+      stateStore: syncStateStore,
+      suppressor: syncSuppressor,
+      logger: context.logger
+    })
     const jobRunner = new JobRunner({
       settingsStore,
       client,
       tokenService,
       accountService,
+      syncEngine,
+      syncQueueStore,
+      syncSuppressor,
       logger: context.logger
     })
 
@@ -101,6 +119,14 @@ export default defineExtension({
     )) {
       context.subscriptions.add(registration)
     }
+    context.subscriptions.add(
+      await new SyncSubscription({
+        settingsStore,
+        engine: syncEngine,
+        queueStore: syncQueueStore,
+        logger: context.logger
+      }).start()
+    )
     const settingsRegistration = context.contributions.settingsPanels.register(
       createBangumiSettingsPanel({
         settingsStore,

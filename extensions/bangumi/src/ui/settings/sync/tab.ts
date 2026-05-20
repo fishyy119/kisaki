@@ -1,6 +1,8 @@
 import { defineSettingsPanelTab } from '@kisaki/extension-sdk'
 import type { BangumiSettingsRootScope, BangumiSettingsTab } from '../contracts'
 import { AUTO_SYNC_ITEM_OPTIONS, SETTINGS_DIALOG_IDS, SETTINGS_NODE_IDS } from '../ids'
+import { toSettingsError } from '../shared/errors'
+import { BANGUMI_COMMAND_IDS, startRootManualJob } from '../shared/jobs'
 import { readBoolean } from '../shared/values'
 import { readAutoSyncItems } from './options'
 
@@ -60,6 +62,35 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
           scope.ui.checkbox({
             id: SETTINGS_NODE_IDS.clearRemoteScoreWhenEmpty,
             initialValue: storedSettings.autoSync.clearRemoteScoreWhenEmpty
+          })
+        ]
+      },
+      {
+        id: 'changed-games-sync-entry',
+        label: '待处理变更',
+        description: '同步最近记录的本地状态、评分或 Bangumi 绑定变更',
+        orientation: 'horizontal',
+        contentLayout: 'inline',
+        content: [
+          scope.ui.button({
+            id: 'sync-changed-games',
+            label: '同步待处理变更',
+            tone: 'primary',
+            disabled: runningJobs.syncChangedGames,
+            async onClick(event) {
+              try {
+                return await startRootManualJob({
+                  commandId: BANGUMI_COMMAND_IDS.syncChangedGames,
+                  args: {
+                    dryRun: false,
+                    limit: 500
+                  },
+                  event
+                })
+              } catch (error) {
+                return event.fail(toSettingsError(error), { refresh: 'root' })
+              }
+            }
           })
         ]
       },

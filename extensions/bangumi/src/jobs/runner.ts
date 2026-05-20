@@ -9,19 +9,17 @@ import {
   type LibraryTag
 } from '@kisaki/extension-sdk'
 import type { BangumiClient } from '../api/client'
-import { BangumiApiError } from '../api/errors'
 import { collectPages } from '../api/pagination'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { AccountService } from '../auth/account'
 import type { TokenService } from '../auth/token-service'
-import type {
-  BangumiCollectionType,
-  BangumiSettingsV1,
-  BangumiStatusMappingValue
-} from '../config/schema'
+import type { BangumiCollectionType } from '../config/schema'
 import type { SettingsStore } from '../config/store'
 import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
+import type { SyncEngine, SyncGameResult } from '../sync/engine'
+import type { SyncQueueStore } from '../sync/queue'
+import { createImportSuppressTtlMs, type SyncSuppressor } from '../sync/suppressor'
 import type {
   BangumiAuthRefreshArgs,
   BangumiChangedGamesSyncArgs,
@@ -45,6 +43,9 @@ export interface JobRunnerDependencies {
   client: BangumiClient
   tokenService: TokenService
   accountService: AccountService
+  syncEngine: SyncEngine
+  syncQueueStore: SyncQueueStore
+  syncSuppressor: SyncSuppressor
   logger?: ExtensionLogger
 }
 
@@ -120,15 +121,46 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
-      await this.deps.settingsStore.get()
       job.report('loadingQueue', '正在读取 Bangumi 变更同步队列...', { indeterminate: true })
       assertNotCancelled(event.signal)
 
-      job.increment('queued', 0)
-      job.increment('skippedPendingSyncEngine', 0)
-      job.report('completed', '变更队列同步命令已完成参数检查，尚未执行远端写入。', {
-        current: 0,
-        total: 0
+      const queueItems = await this.deps.syncQueueStore.list(args.limit)
+      job.increment('queued', queueItems.length)
+
+      for (const [index, item] of queueItems.entries()) {
+        assertNotCancelled(event.signal)
+        job.report('syncingQueuedGames', '正在同步 Bangumi 变更队列...', {
+          current: index,
+          total: queueItems.length
+        })
+
+        try {
+          const result = await this.deps.syncEngine.syncGame({
+            gameId: item.gameId,
+            dryRun: args.dryRun,
+            signal: event.signal
+          })
+          recordSyncGameResult(job, result, args.dryRun)
+
+          if (!args.dryRun) {
+            await this.deps.syncQueueStore.remove([item.gameId])
+          }
+        } catch (error) {
+          if (isCancellationError(error) || event.signal.aborted || shouldStopSyncBatch(error)) {
+            throw error
+          }
+
+          job.addError(error, { gameId: item.gameId })
+          incrementSyncFailure(job, error)
+        }
+      }
+
+      const message = args.dryRun
+        ? `变更队列预览完成：${job.counters.wouldSync ?? 0} 个游戏可同步。`
+        : `变更队列同步完成：${job.counters.synced ?? 0} 个游戏已同步。`
+      job.report('completed', message, {
+        current: queueItems.length,
+        total: queueItems.length
       })
     })
   }
@@ -169,44 +201,26 @@ export class JobRunner {
           processed += 1
           job.increment('processed')
 
-          const subjectId = readBangumiSubjectId(game)
-          if (!subjectId) {
-            job.increment('skippedNoBangumiId')
-            continue
-          }
+          try {
+            const result = await this.deps.syncEngine.syncGame({
+              game,
+              dryRun: args.dryRun,
+              updateExisting: args.updateExisting,
+              accountUsername: account.username,
+              checkRemote: true,
+              playStatusEnabled: args.playStatusEnabled,
+              scoreEnabled: args.scoreEnabled,
+              clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
+              signal: event.signal
+            })
+            recordSyncGameResult(job, result, args.dryRun)
+          } catch (error) {
+            if (isCancellationError(error) || event.signal.aborted || shouldStopSyncBatch(error)) {
+              throw error
+            }
 
-          job.increment('withBangumiId')
-          if (!playStatusEnabled && !scoreEnabled) {
-            job.increment('skippedByMapping')
-            continue
-          }
-
-          const remote = await this.getRemoteCollection(
-            account.username,
-            Number(subjectId),
-            event.signal
-          )
-          const change = createFullSyncPreviewChange({
-            game,
-            subjectId,
-            remote,
-            settings,
-            playStatusEnabled,
-            scoreEnabled,
-            updateExisting: args.updateExisting,
-            clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty === true
-          })
-
-          if (!change) {
-            job.increment('skippedNoChange')
-            continue
-          }
-
-          if (args.dryRun) {
-            job.addPreviewGroup(change)
-            job.increment('wouldSync')
-          } else {
-            job.increment('skippedPendingSyncEngine')
+            job.addError(error, { gameId: game.id, subjectId: readBangumiSubjectId(game) ?? null })
+            incrementSyncFailure(job, error)
           }
         }
 
@@ -218,7 +232,7 @@ export class JobRunner {
 
       const message = args.dryRun
         ? `全量同步预览完成：${job.counters.wouldSync ?? 0} 个游戏可同步。`
-        : '全量同步命令已完成扫描，尚未执行远端写入。'
+        : `全量同步完成：${job.counters.synced ?? 0} 个游戏已同步。`
       job.report('completed', message, {
         current: processed,
         total: processed
@@ -282,6 +296,7 @@ export class JobRunner {
               job.addPreviewGroup(change)
               job.increment('wouldPatch')
             } else {
+              await this.suppressImportForGame(localGame.id)
               await applyMyCollectionLocalUpdate({
                 game: localGame,
                 collection,
@@ -302,6 +317,7 @@ export class JobRunner {
           }
 
           const imported = await importGameFromCollection(args.profileId, collection)
+          await this.suppressImportForGame(imported.gameId)
           const game = await requireLibraryGame(imported.gameId)
 
           if (imported.isNew) {
@@ -325,6 +341,7 @@ export class JobRunner {
               continue
             }
 
+            await this.suppressImportForGame(game.id)
             await applyMyCollectionLocalUpdate({
               game,
               collection,
@@ -408,6 +425,7 @@ export class JobRunner {
               job.addPreviewGroup(change)
               job.increment('wouldPatch')
             } else {
+              await this.suppressImportForGame(localGame.id)
               await ensureGameInTargetCollection(localGame.id, targetCollection)
               job.increment('patchedExisting')
             }
@@ -421,6 +439,7 @@ export class JobRunner {
           }
 
           const imported = await importGameFromIndexSubject(args.profileId, subject)
+          await this.suppressImportForGame(imported.gameId)
           const game = await requireLibraryGame(imported.gameId)
           if (targetCollection && imported.isNew) {
             await ensureGameInTargetCollection(game.id, targetCollection)
@@ -516,27 +535,20 @@ export class JobRunner {
     }
   }
 
+  private async suppressImportForGame(gameId: string): Promise<void> {
+    const settings = await this.deps.settingsStore.get()
+    this.deps.syncSuppressor.suppressImport(
+      gameId,
+      createImportSuppressTtlMs(settings.autoSync.debounceMs)
+    )
+  }
+
   private async requireAccount() {
     const account = await this.deps.accountService.getAccountSnapshot()
     if (!account) {
       throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
     }
     return account
-  }
-
-  private async getRemoteCollection(
-    username: string,
-    subjectId: number,
-    signal: AbortSignal
-  ): Promise<BangumiUserCollection | undefined> {
-    try {
-      return await this.deps.client.getUserCollection(username, subjectId, { signal })
-    } catch (error) {
-      if (error instanceof BangumiApiError && error.status === 404) {
-        return undefined
-      }
-      throw error
-    }
   }
 
   private async collectUserCollections(
@@ -633,6 +645,48 @@ class JobStateController {
   }
 }
 
+function recordSyncGameResult(
+  job: JobStateController,
+  result: SyncGameResult,
+  dryRun: boolean
+): void {
+  if (result.subjectId) {
+    job.increment('withBangumiId')
+  }
+
+  switch (result.status) {
+    case 'synced':
+      job.increment('synced')
+      return
+    case 'wouldSync': {
+      const preview = createFullSyncPreviewChange(result)
+      if (preview) {
+        job.addPreviewGroup(preview)
+      }
+      job.increment(dryRun ? 'wouldSync' : 'synced')
+      return
+    }
+    case 'skippedNoBangumiId':
+      job.increment('skippedNoBangumiId')
+      return
+    case 'skippedByMapping':
+      job.increment('skippedByMapping')
+      return
+    case 'skippedNoChange':
+      job.increment('skippedNoChange')
+      return
+    case 'skippedSuppressed':
+      job.increment('skippedSuppressed')
+      return
+    case 'skippedRemoteExisting':
+      job.increment('skippedRemoteExisting')
+      return
+    case 'skippedMissingLocalGame':
+      job.increment('skippedMissingLocalGame')
+      return
+  }
+}
+
 async function listLocalBangumiGamesBySubjectId(
   signal: AbortSignal
 ): Promise<Map<string, LibraryGame>> {
@@ -662,66 +716,31 @@ async function listLocalBangumiGamesBySubjectId(
   }
 }
 
-function createFullSyncPreviewChange({
-  game,
-  subjectId,
-  remote,
-  settings,
-  playStatusEnabled,
-  scoreEnabled,
-  updateExisting,
-  clearRemoteScoreWhenEmpty
-}: {
-  game: LibraryGame
-  subjectId: string
-  remote?: BangumiUserCollection
-  settings: BangumiSettingsV1
-  playStatusEnabled: boolean
-  scoreEnabled: boolean
-  updateExisting: boolean
-  clearRemoteScoreWhenEmpty: boolean
-}): BangumiJobPreviewGroup | undefined {
-  if (remote && !updateExisting) {
+function createFullSyncPreviewChange(result: SyncGameResult): BangumiJobPreviewGroup | undefined {
+  const { game, subjectId, remote, payload } = result
+  if (!game || !subjectId || !payload) {
     return undefined
   }
 
   const rows: BangumiJobPreviewRow[] = []
-  const targetCollectionType = settings.autoSync.statusToBangumi[game.status]
 
-  if (playStatusEnabled && targetCollectionType !== 'skip') {
-    if (!remote || remote.type !== targetCollectionType) {
-      rows.push({
-        label: '收藏状态',
-        before: remote ? formatCollectionType(remote.type) : '未收藏',
-        after: formatStatusMappingValue(targetCollectionType),
-        tone: remote ? 'info' : 'success'
-      })
-    }
+  if (payload.type !== undefined) {
+    rows.push({
+      label: '收藏状态',
+      before: remote ? formatCollectionType(remote.type) : '未收藏',
+      after: formatCollectionType(payload.type),
+      tone: remote ? 'info' : 'success'
+    })
   }
 
-  if (scoreEnabled) {
-    const localScore = normalizeLocalScoreAsBangumiRate(game.score)
+  if (payload.rate !== undefined) {
     const remoteScore = normalizeBangumiRate(remote?.rate)
-    if (localScore !== undefined && localScore !== remoteScore) {
-      rows.push({
-        label: '评分',
-        before: remoteScore === undefined ? '未评分' : `${remoteScore}`,
-        after: `${localScore}`,
-        tone: remote ? 'info' : 'success'
-      })
-    } else if (
-      localScore === undefined &&
-      remoteScore !== undefined &&
-      clearRemoteScoreWhenEmpty &&
-      remote
-    ) {
-      rows.push({
-        label: '评分',
-        before: `${remoteScore}`,
-        after: '未评分',
-        tone: 'warning'
-      })
-    }
+    rows.push({
+      label: '评分',
+      before: remoteScore === undefined ? '未评分' : `${remoteScore}`,
+      after: formatSyncPayloadRate(payload.rate),
+      tone: payload.rate === 0 ? 'warning' : remote ? 'info' : 'success'
+    })
   }
 
   if (rows.length === 0) {
@@ -1243,11 +1262,6 @@ function normalizeLocalScore(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
-function normalizeLocalScoreAsBangumiRate(value: unknown): number | undefined {
-  const score = normalizeLocalScore(value)
-  return score !== null && score > 0 ? Math.min(10, Math.max(1, Math.round(score / 10))) : undefined
-}
-
 function normalizeCollectionScoreForImport(value: unknown): number | null {
   const rate = normalizeBangumiRate(value)
   return rate === undefined ? null : rate * 10
@@ -1317,10 +1331,6 @@ function createSubjectLink(subjectId: string | number): { label: string; href: s
   }
 }
 
-function formatStatusMappingValue(value: BangumiStatusMappingValue): string {
-  return value === 'skip' ? '跳过' : formatCollectionType(value)
-}
-
 function formatCollectionType(value: BangumiCollectionType): string {
   switch (value) {
     case 1:
@@ -1362,6 +1372,10 @@ function formatCollectionScore(score: number | undefined): string {
   return formatLocalScore(normalizeCollectionScoreForImport(score))
 }
 
+function formatSyncPayloadRate(rate: number): string {
+  return rate === 0 ? '未评分' : `${rate}`
+}
+
 function formatLocalScore(score: number | null): string {
   return score === null ? '未评分' : (score / 10).toFixed(1)
 }
@@ -1379,6 +1393,34 @@ function assertNotCancelled(signal: AbortSignal): void {
   if (signal.aborted) {
     throw new BangumiExtensionError('job_cancelled', 'Bangumi job 已取消。')
   }
+}
+
+function shouldStopSyncBatch(error: unknown): boolean {
+  return (
+    error instanceof BangumiExtensionError &&
+    (error.code === 'auth_required' || error.code === 'auth_expired')
+  )
+}
+
+function incrementSyncFailure(job: JobStateController, error: unknown): void {
+  if (error instanceof BangumiExtensionError) {
+    switch (error.code) {
+      case 'auth_required':
+      case 'auth_expired':
+        job.increment('failedAuth')
+        return
+      case 'bangumi_validation':
+      case 'bangumi_not_found':
+        job.increment('failedValidation')
+        return
+      case 'bangumi_rate_limited':
+      case 'network_failed':
+        job.increment('failedNetwork')
+        return
+    }
+  }
+
+  job.increment('failedUnknown')
 }
 
 function toUserErrorMessage(error: unknown): string {
