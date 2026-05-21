@@ -1,12 +1,11 @@
 import { defineSettingsPanel } from '@kisaki/extension-sdk'
 import { createSettingsDialogs } from './dialogs'
 import { createSettingsResources } from './resources'
-import { createSettingsRuntime, type BangumiSettingsPanelDependencies } from './runtime'
+import type { BangumiSettingsRuntime } from './runtime'
 import { readSettingsForm } from './advanced/form'
 import { resolveSettingsTabs } from './tabs'
 
-export function createBangumiSettingsPanel(dependencies: BangumiSettingsPanelDependencies) {
-  const runtime = createSettingsRuntime(dependencies)
+export function createBangumiSettingsPanel(runtime: BangumiSettingsRuntime) {
   const dialogs = createSettingsDialogs(runtime)
 
   return defineSettingsPanel({

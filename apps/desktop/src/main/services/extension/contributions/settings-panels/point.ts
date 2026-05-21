@@ -3,6 +3,7 @@ import { createLogger } from '@main/log'
 import {
   readErrorCode,
   type ExtensionRuntimeHandle,
+  type SettingsPanelOpenResponse as HostSettingsPanelOpenResponse,
   type SettingsPanelRegistrationInfo
 } from '@kisaki/extension-api'
 import type {
@@ -38,6 +39,7 @@ import {
 import { SettingsSessionStore } from './sessions'
 import type { SettingsRegistration } from './types'
 import { createSettingsError, getPublicContributionKey, toErrorMessage } from './shared'
+import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
 
 const log = createLogger('Extension')
 
@@ -168,23 +170,32 @@ export class ExtensionSettingsPanelContributionPoint {
 
     if (request.surface === 'root') {
       const sessionId = randomUUID()
-      const response = await this.options.requestHost(
-        'contributions.settingsPanels.open',
-        toHostOpenRequest(request, registration, sessionId),
-        { timeoutMs: 15_000 }
-      )
-
-      if (response.surface !== 'root') {
-        throw new Error('Settings host returned an unexpected root open response.')
-      }
-
-      this.sessionStore.set({
+      const session = {
         extensionId: request.extensionId,
         contributionId: request.contributionId,
         runtimeHandle: registration.owner.runtimeHandle,
-        sessionId: response.sessionId,
+        sessionId,
+        abortController: new AbortController(),
         root: { revision: 1 }
-      })
+      }
+      this.sessionStore.set(session)
+
+      let response: HostSettingsPanelOpenResponse
+      try {
+        response = await this.options.requestHost(
+          'contributions.settingsPanels.open',
+          toHostOpenRequest(request, registration, sessionId),
+          { signal: session.abortController.signal }
+        )
+      } catch (error) {
+        this.sessionStore.clearSession(request.extensionId, request.contributionId, sessionId)
+        throw error
+      }
+
+      if (response.surface !== 'root') {
+        this.sessionStore.clearSession(request.extensionId, request.contributionId, sessionId)
+        throw new Error('Settings host returned an unexpected root open response.')
+      }
 
       return {
         surface: 'root',
@@ -206,7 +217,7 @@ export class ExtensionSettingsPanelContributionPoint {
     const response = await this.options.requestHost(
       'contributions.settingsPanels.open',
       toHostOpenRequest(request, registration),
-      { timeoutMs: 15_000 }
+      { signal: session.abortController.signal }
     )
 
     switch (response.surface) {
@@ -255,7 +266,7 @@ export class ExtensionSettingsPanelContributionPoint {
     const response = await this.options.requestHost(
       'contributions.settingsPanels.refresh',
       toHostRefreshRequest(request, registration),
-      { timeoutMs: 15_000 }
+      { signal: session.abortController.signal }
     )
 
     switch (response.surface) {
@@ -349,7 +360,7 @@ export class ExtensionSettingsPanelContributionPoint {
       return await this.options.requestHost(
         'contributions.settingsPanels.submit',
         toHostSubmitRequest(request, registration),
-        { timeoutMs: 15_000 }
+        { signal: session.abortController.signal }
       )
     } catch (error) {
       log.warn('Settings submit failed.', error, {
@@ -383,7 +394,7 @@ export class ExtensionSettingsPanelContributionPoint {
       return await this.options.requestHost(
         'contributions.settingsPanels.invoke',
         toHostInvokeRequest(request, registration),
-        { timeoutMs: 15_000 }
+        { signal: session.abortController.signal }
       )
     } catch (error) {
       log.warn('Settings callback failed.', error, {
@@ -412,7 +423,7 @@ export class ExtensionSettingsPanelContributionPoint {
       await this.options.requestHost(
         'contributions.settingsPanels.release',
         toHostReleaseRequest(request, registration),
-        { timeoutMs: 5_000 }
+        { timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS }
       )
     } catch (error) {
       log.warn('Failed to release settings session.', error, {

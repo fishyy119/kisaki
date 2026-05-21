@@ -44,6 +44,7 @@ export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType
 export interface ActiveExtensionScope {
   extensionId: string
   runtimeHandle: ExtensionRuntimeHandle
+  signal?: AbortSignal
 }
 
 /**

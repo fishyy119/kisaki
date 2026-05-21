@@ -1,6 +1,7 @@
 import type { Locale } from '@shared/locale'
 import type { ScraperLookup } from '@shared/scraper'
 import type { ExtensionContributionDomainOptions } from '../types'
+import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
 import { getScraperRpcMethod } from './descriptors'
 import type { ScraperDomain, ScraperRegistration } from './domain'
 
@@ -25,26 +26,19 @@ export function createProviderAdapter(
           providerId: registration.provider.id,
           query,
           locale
-        },
-        60_000
+        }
       )
 
       return response.results
     },
     async resolve(lookup: ScraperLookup, locale: Locale) {
-      const response = await requestScraperHost<{ target: unknown }>(
-        options,
-        domain,
-        'resolve',
-        {
-          runtimeHandle: registration.owner.runtimeHandle,
-          mediaType: domain.mediaType,
-          providerId: registration.provider.id,
-          lookup,
-          locale
-        },
-        60_000
-      )
+      const response = await requestScraperHost<{ target: unknown }>(options, domain, 'resolve', {
+        runtimeHandle: registration.owner.runtimeHandle,
+        mediaType: domain.mediaType,
+        providerId: registration.provider.id,
+        lookup,
+        locale
+      })
 
       return response.target
     },
@@ -59,8 +53,7 @@ export function createProviderAdapter(
           providerId: registration.provider.id,
           target,
           locale
-        },
-        60_000
+        }
       )
 
       return createSessionAdapter(options, registration, domain, response.sessionId)
@@ -86,8 +79,7 @@ function createSessionAdapter(
           providerId: registration.provider.id,
           sessionId,
           slots
-        },
-        60_000
+        }
       )
 
       return response.results
@@ -103,7 +95,7 @@ function createSessionAdapter(
           providerId: registration.provider.id,
           sessionId
         },
-        15_000
+        EXTENSION_CLEANUP_TIMEOUT_MS
       )
     }
   }
@@ -114,11 +106,14 @@ async function requestScraperHost<TResponse>(
   domain: ScraperDomain,
   action: 'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close',
   params: Record<string, unknown>,
-  timeoutMs: number
+  timeoutMs?: number
 ): Promise<TResponse> {
-  const response = await options.requestHost(getScraperRpcMethod(domain, action), params as never, {
-    timeoutMs
-  })
+  const requestOptions = timeoutMs === undefined ? undefined : { timeoutMs }
+  const response = await options.requestHost(
+    getScraperRpcMethod(domain, action),
+    params as never,
+    requestOptions
+  )
 
   return response as TResponse
 }

@@ -15,7 +15,7 @@ import { GameLocalMediaAdapter, createGameMediaDescriptor } from './media/game/a
 import { BangumiProvider } from './media/game/scraper/provider'
 import { createMusicMediaDescriptor } from './media/music/scope'
 import { MediaRegistry } from './media/registry'
-import { createBangumiSettingsPanel } from './ui/settings'
+import { createBangumiSettingsPanel, createSettingsRuntime } from './ui/settings'
 import { BangumiExtensionError } from './shared/errors'
 import { SyncEngine } from './sync/engine'
 import { SyncStateStore } from './sync/fingerprint'
@@ -142,23 +142,32 @@ export default defineExtension({
         logger: context.logger
       }).start()
     )
+    const settingsRuntime = createSettingsRuntime({
+      settingsStore,
+      accountService,
+      oauthFlow,
+      tokenService,
+      mediaRegistry,
+      syncStateStore,
+      syncQueueStore
+    })
     const settingsRegistration = context.contributions.settingsPanels.register(
-      createBangumiSettingsPanel({
-        settingsStore,
-        accountService,
-        oauthFlow,
-        tokenService,
-        mediaRegistry,
-        syncStateStore,
-        syncQueueStore
-      })
+      createBangumiSettingsPanel(settingsRuntime)
     )
     settingsRegistrationRef.current = settingsRegistration
     context.subscriptions.add(settingsRegistration)
     context.subscriptions.add(
-      await kisaki.events.on('command.finished', (event) =>
-        refreshSettingsForBangumiCommand(event.commandId, 'bangumi.command.finished')
-      )
+      await kisaki.events.on('command.finished', async (event) => {
+        const previewChanged = settingsRuntime.previewRegistry.complete(event)
+        if (!previewChanged && !isBangumiCommandId(event.commandId)) {
+          return
+        }
+
+        await refreshSettingsForBangumiCommand(
+          event.commandId,
+          previewChanged ? 'bangumi.preview.finished' : 'bangumi.command.finished'
+        )
+      })
     )
 
     async function refreshSettingsForBangumiCommand(

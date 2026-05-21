@@ -25,6 +25,7 @@ export interface MainSettingsSession {
   contributionId: string
   runtimeHandle: ExtensionRuntimeHandle
   sessionId: string
+  abortController: AbortController
   root: SettingsSurfaceLease
   activeDialog?: SettingsDialogLease
   activeRootPopover?: SettingsPopoverLease

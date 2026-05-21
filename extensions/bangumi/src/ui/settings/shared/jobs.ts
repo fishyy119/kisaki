@@ -1,4 +1,9 @@
-import { kisaki, type CommandListItem, type SerializableRecord } from '@kisaki/extension-sdk'
+import {
+  kisaki,
+  type CommandExecutionStartResult,
+  type CommandListItem,
+  type SerializableRecord
+} from '@kisaki/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../../jobs/commands'
 import type { BangumiSettingsRootButtonEvent, BangumiSettingsRootButtonResult } from '../contracts'
 import type {
@@ -95,7 +100,14 @@ async function startCommandJob({
   commandId: BangumiCommandId
   args: SerializableRecord
 }): Promise<void> {
-  await kisaki.commands.start({
+  await startBangumiCommandJob(commandId, args)
+}
+
+export async function startBangumiCommandJob(
+  commandId: BangumiCommandId,
+  args: SerializableRecord
+): Promise<CommandExecutionStartResult> {
+  return await kisaki.commands.start({
     commandId,
     args,
     presentation: {
@@ -109,7 +121,7 @@ async function startCommandJob({
   })
 }
 
-function createRunningJobError() {
+export function createRunningJobError() {
   return {
     code: 'bangumi_job_running',
     message: '该 Bangumi 任务正在运行，请先等待完成或取消。'

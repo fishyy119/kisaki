@@ -1,12 +1,13 @@
 import {
-  kisaki,
   type CommandExecutionResult,
+  type CommandExecutionStartResult,
   type SerializableRecord,
   type SettingsPanelDialogNodeEvents,
   type SettingsPanelField,
   type SettingsPanelNodeFactory
 } from '@kisaki/extension-sdk'
 import type { BangumiCommandId } from '../../../jobs/commands'
+import { createRunningJobError, isBangumiCommandActive, startBangumiCommandJob } from './jobs'
 import type {
   BangumiPreviewBadge,
   BangumiPreviewGroup,
@@ -22,14 +23,22 @@ import type {
 } from './types'
 import { toSettingsError } from './errors'
 
+const PREVIEW_RESULT_TTL_MS = 30 * 60 * 1000
+const PREVIEW_RESULT_LIMIT = 32
+
 export class PreviewResultRegistry {
   private readonly results = new Map<string, ResolvedPreviewResult>()
+  private readonly executionIndex = new Map<
+    string,
+    { sessionId: string; previewKey: BangumiPreviewKey; args: SerializableRecord }
+  >()
 
   get(
     sessionId: string,
     previewKey: BangumiPreviewKey,
     args: SerializableRecord
   ): ResolvedPreviewResult | undefined {
+    this.prune()
     const stored = this.results.get(this.createKey(sessionId, previewKey))
     if (!stored || serializePreviewArgs(stored.args) !== serializePreviewArgs(args)) {
       return undefined
@@ -37,24 +46,90 @@ export class PreviewResultRegistry {
     return stored
   }
 
-  set(
+  start(
     sessionId: string,
     previewKey: BangumiPreviewKey,
     args: SerializableRecord,
-    result: CommandExecutionResult
+    started: CommandExecutionStartResult
   ): void {
+    this.prune()
+    const previous = this.results.get(this.createKey(sessionId, previewKey))
+    if (previous?.state === 'running') {
+      this.executionIndex.delete(previous.executionId)
+    }
+
+    this.executionIndex.set(started.executionId, { sessionId, previewKey, args })
     this.results.set(this.createKey(sessionId, previewKey), {
+      state: 'running',
       args,
+      commandId: started.commandId,
+      executionId: started.executionId,
+      startedAt: started.startedAt
+    })
+    this.enforceLimit()
+  }
+
+  complete(result: CommandExecutionResult): boolean {
+    const indexed = this.executionIndex.get(result.executionId)
+    if (!indexed) {
+      return false
+    }
+
+    this.executionIndex.delete(result.executionId)
+    const key = this.createKey(indexed.sessionId, indexed.previewKey)
+    const current = this.results.get(key)
+    if (current?.state !== 'running' || current.executionId !== result.executionId) {
+      return false
+    }
+
+    this.results.set(key, {
+      state: 'completed',
+      args: indexed.args,
       result
     })
+    return true
   }
 
   delete(sessionId: string, previewKey: BangumiPreviewKey): void {
-    this.results.delete(this.createKey(sessionId, previewKey))
+    const key = this.createKey(sessionId, previewKey)
+    const current = this.results.get(key)
+    if (current?.state === 'running') {
+      this.executionIndex.delete(current.executionId)
+    }
+    this.results.delete(key)
   }
 
   private createKey(sessionId: string, previewKey: BangumiPreviewKey): string {
     return `${sessionId}:${previewKey}`
+  }
+
+  private prune(now = Date.now()): void {
+    for (const [key, result] of [...this.results]) {
+      const createdAt = result.state === 'running' ? result.startedAt : result.result.finishedAt
+      if (now - createdAt <= PREVIEW_RESULT_TTL_MS) {
+        continue
+      }
+
+      if (result.state === 'running') {
+        this.executionIndex.delete(result.executionId)
+      }
+      this.results.delete(key)
+    }
+  }
+
+  private enforceLimit(): void {
+    while (this.results.size > PREVIEW_RESULT_LIMIT) {
+      const oldestKey = this.results.keys().next().value
+      if (!oldestKey) {
+        break
+      }
+
+      const result = this.results.get(oldestKey)
+      if (result?.state === 'running') {
+        this.executionIndex.delete(result.executionId)
+      }
+      this.results.delete(oldestKey)
+    }
   }
 }
 
@@ -75,6 +150,46 @@ export function createDialogPreviewFields<TParams extends SerializableRecord = S
 }): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   if (!preview) {
     return []
+  }
+
+  if (preview.state === 'running') {
+    return [
+      {
+        id,
+        label,
+        orientation: 'vertical',
+        contentLayout: 'stack',
+        content: [
+          settings.status({
+            id: `${id}.running`,
+            label: '状态',
+            value: '正在生成预览',
+            tone: 'warning'
+          })
+        ]
+      }
+    ]
+  }
+
+  if (preview.result.status !== 'completed') {
+    return [
+      {
+        id,
+        label,
+        orientation: 'vertical',
+        contentLayout: 'stack',
+        content: [
+          settings.notice({
+            id: `${id}.failed`,
+            tone: preview.result.status === 'cancelled' ? 'warning' : 'error',
+            text:
+              preview.result.status === 'cancelled'
+                ? '预览已取消。'
+                : (preview.result.error ?? '预览生成失败。')
+          })
+        ]
+      }
+    ]
   }
 
   const groups = readPreviewGroups(preview.result)
@@ -105,12 +220,17 @@ export async function runDialogPreview(options: {
   event: BangumiSettingsDialogButtonEvent
 }): Promise<BangumiSettingsDialogButtonResult> {
   try {
-    const result = await runPreviewCommand(options.commandId, options.args)
-    options.previewRegistry.set(options.event.sessionId, options.previewKey, options.args, result)
-
-    if (result.status !== 'completed') {
-      return options.event.fail(toPreviewResultError(result), { refresh: 'dialog' })
+    if (await isBangumiCommandActive(options.commandId)) {
+      return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
     }
+
+    const started = await startPreviewCommand(options.commandId, options.args)
+    options.previewRegistry.start(
+      options.event.sessionId,
+      options.previewKey,
+      options.args,
+      started
+    )
 
     return options.event.success({ refresh: 'dialog' })
   } catch (error) {
@@ -126,12 +246,17 @@ export async function runDialogSubmitPreview(options: {
   event: BangumiSettingsDialogSubmitEvent
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
-    const result = await runPreviewCommand(options.commandId, options.args)
-    options.previewRegistry.set(options.event.sessionId, options.previewKey, options.args, result)
-
-    if (result.status !== 'completed') {
-      return options.event.fail(toPreviewResultError(result), { refresh: 'dialog' })
+    if (await isBangumiCommandActive(options.commandId)) {
+      return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
     }
+
+    const started = await startPreviewCommand(options.commandId, options.args)
+    options.previewRegistry.start(
+      options.event.sessionId,
+      options.previewKey,
+      options.args,
+      started
+    )
 
     return options.event.success({ refresh: 'dialog' })
   } catch (error) {
@@ -139,14 +264,11 @@ export async function runDialogSubmitPreview(options: {
   }
 }
 
-function runPreviewCommand(
+function startPreviewCommand(
   commandId: BangumiCommandId,
   args: SerializableRecord
-): Promise<CommandExecutionResult> {
-  return kisaki.commands.execute({
-    commandId,
-    args
-  })
+): Promise<CommandExecutionStartResult> {
+  return startBangumiCommandJob(commandId, args)
 }
 
 function readPreviewGroups(result: CommandExecutionResult): readonly BangumiPreviewGroup[] {
@@ -253,18 +375,4 @@ function asPlainRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined
-}
-
-function toPreviewResultError(result: CommandExecutionResult) {
-  if (result.status === 'cancelled') {
-    return {
-      code: 'bangumi_preview_cancelled',
-      message: 'Bangumi 预览已取消。'
-    }
-  }
-
-  return {
-    code: 'bangumi_preview_failed',
-    message: result.error ?? 'Bangumi 预览失败，请稍后重试。'
-  }
 }

@@ -65,6 +65,10 @@ import { toSerializableRecord } from './utils/serialization'
 import { createExtensionStorage } from './storage'
 import { createExtensionSecrets } from './secrets'
 import { configureExtensionSdkBridge, resetExtensionSdkBridge } from './store'
+import {
+  EXTENSION_CLEANUP_TIMEOUT_MS,
+  EXTENSION_CONTRIBUTION_SYNC_TIMEOUT_MS
+} from '../../../shared/rpc-timeouts'
 import type {
   ActiveExtensionScope,
   ExtensionEventListenerRecord,
@@ -74,8 +78,9 @@ import type {
 } from './types'
 import type { ExtensionContextOptions } from './types'
 
-const CONTRIBUTION_SYNC_REQUEST_TIMEOUT_MS = 10_000
-const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({ timeoutMs: 5_000 })
+const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({
+  timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS
+})
 
 type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
   RpcParams<HostToMainRpcRequestMap, K>,
@@ -117,8 +122,9 @@ export class ExtensionHostSdkBridge {
       getCleanupRequestOptions: () => CONTRIBUTION_CLEANUP_REQUEST_OPTIONS,
       runInExtensionContext: <T>(
         runtimeOrScope: LoadedExtensionRuntime | HostContributionScope,
-        callback: () => Promise<T> | T
-      ) => this.runInExtensionContext(runtimeOrScope, callback),
+        callback: () => Promise<T> | T,
+        signal?: AbortSignal
+      ) => this.runInExtensionContext(runtimeOrScope, callback, signal),
       trackMainRequest: (scope: HostContributionScope, request: Promise<unknown>) => {
         this.trackMainRequest(scope, request)
       },
@@ -186,8 +192,8 @@ export class ExtensionHostSdkBridge {
       this.settingsPanels.release(params)
       return {}
     })
-    this.rpc.handle('contributions.deeplinkRoutes.handle', (params) =>
-      this.deeplinkRoutes.handle(params)
+    this.rpc.handle('contributions.deeplinkRoutes.handle', (params, context) =>
+      this.deeplinkRoutes.handle(params, context.signal)
     )
     this.rpc.handle('contributions.commands.execute', (params, context) =>
       this.commands.execute(params, context.signal)
@@ -196,17 +202,17 @@ export class ExtensionHostSdkBridge {
   }
 
   private registerScraperRpcHandlers(): void {
-    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.search, (params) =>
-      this.scraperProviders.search(params)
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.search, (params, context) =>
+      this.scraperProviders.search(params, context.signal)
     )
-    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.resolve, (params) =>
-      this.scraperProviders.resolve(params)
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.resolve, (params, context) =>
+      this.scraperProviders.resolve(params, context.signal)
     )
-    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.open, (params) =>
-      this.scraperProviders.openSession(params)
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.open, (params, context) =>
+      this.scraperProviders.openSession(params, context.signal)
     )
-    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.get, (params) =>
-      this.scraperProviders.getSession(params)
+    this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.get, (params, context) =>
+      this.scraperProviders.getSession(params, context.signal)
     )
     this.rpc.handle(MAIN_TO_HOST_SCRAPER_RPC.close, async (params) => {
       await this.scraperProviders.closeSession(params)
@@ -273,9 +279,10 @@ export class ExtensionHostSdkBridge {
 
   runInExtensionContext<T>(
     runtimeOrScope: LoadedExtensionRuntime | ActiveExtensionScope,
-    callback: () => Promise<T> | T
+    callback: () => Promise<T> | T,
+    signal?: AbortSignal
   ): Promise<T> | T {
-    return this.executionScope.run(toScope(runtimeOrScope), callback)
+    return this.executionScope.run(toScope(runtimeOrScope, signal), callback)
   }
 
   private createBridge(): ExtensionSdkBridge {
@@ -459,7 +466,7 @@ export class ExtensionHostSdkBridge {
         subscriptionId,
         topic: record.topic
       },
-      { timeoutMs: 5_000 }
+      { timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS }
     )
   }
 
@@ -618,7 +625,9 @@ export class ExtensionHostSdkBridge {
   }
 
   private getRequestOptions(scope: ActiveExtensionScope): { signal?: AbortSignal } | undefined {
-    const signal = this.registry.getByRuntimeHandle(scope.runtimeHandle)?.abortController.signal
+    const runtimeSignal = this.registry.getByRuntimeHandle(scope.runtimeHandle)?.abortController
+      .signal
+    const signal = combineAbortSignals(runtimeSignal, scope.signal)
     return signal ? { signal } : undefined
   }
 
@@ -628,8 +637,8 @@ export class ExtensionHostSdkBridge {
   } {
     const signal = this.registry.getByRuntimeHandle(scope.runtimeHandle)?.abortController.signal
     return signal
-      ? { timeoutMs: CONTRIBUTION_SYNC_REQUEST_TIMEOUT_MS, signal }
-      : { timeoutMs: CONTRIBUTION_SYNC_REQUEST_TIMEOUT_MS }
+      ? { timeoutMs: EXTENSION_CONTRIBUTION_SYNC_TIMEOUT_MS, signal }
+      : { timeoutMs: EXTENSION_CONTRIBUTION_SYNC_TIMEOUT_MS }
   }
 
   private trackMainRequest(scope: HostContributionScope, request: Promise<unknown>): void {
@@ -683,14 +692,50 @@ export class ExtensionHostSdkBridge {
 }
 
 function toScope(
-  runtimeOrScope: LoadedExtensionRuntime | ActiveExtensionScope
+  runtimeOrScope: LoadedExtensionRuntime | ActiveExtensionScope,
+  signal?: AbortSignal
 ): ActiveExtensionScope {
   if ('metadata' in runtimeOrScope) {
     return {
       extensionId: runtimeOrScope.metadata.id,
-      runtimeHandle: runtimeOrScope.runtimeHandle
+      runtimeHandle: runtimeOrScope.runtimeHandle,
+      signal
     }
   }
 
-  return runtimeOrScope
+  return signal ? { ...runtimeOrScope, signal } : runtimeOrScope
+}
+
+function combineAbortSignals(
+  left: AbortSignal | undefined,
+  right: AbortSignal | undefined
+): AbortSignal | undefined {
+  if (!left) {
+    return right
+  }
+
+  if (!right || left === right) {
+    return left
+  }
+
+  if (left.aborted) {
+    return left
+  }
+
+  if (right.aborted) {
+    return right
+  }
+
+  const anySignal = AbortSignal as typeof AbortSignal & {
+    any?: (signals: AbortSignal[]) => AbortSignal
+  }
+  if (typeof anySignal.any === 'function') {
+    return anySignal.any([left, right])
+  }
+
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  left.addEventListener('abort', abort, { once: true })
+  right.addEventListener('abort', abort, { once: true })
+  return controller.signal
 }

@@ -333,13 +333,16 @@ export class HostSettingsPanelContributionPoint {
         ...createRootContext(request.contributionId, request.sessionId, request.draft, signal),
         ...createRootSubmitHelpers()
       } as SettingsPanelRootSubmitEvent
-      const result = await this.options.runInExtensionContext(runtime, () =>
-        invokeSettingsPanelCallback(
-          runtime.metadata.id,
-          `Settings submit "${contribution.id}:root"`,
-          () => contribution.submit!(event),
-          validateSettingsPanelRootSubmitResult
-        )
+      const result = await this.options.runInExtensionContext(
+        runtime,
+        () =>
+          invokeSettingsPanelCallback(
+            runtime.metadata.id,
+            `Settings submit "${contribution.id}:root"`,
+            () => contribution.submit!(event),
+            validateSettingsPanelRootSubmitResult
+          ),
+        signal
       )
       return { result }
     }
@@ -362,13 +365,16 @@ export class HostSettingsPanelContributionPoint {
       ),
       ...createDialogSubmitHelpers()
     } as SettingsPanelDialogSubmitEvent
-    const result = await this.options.runInExtensionContext(runtime, () =>
-      invokeSettingsPanelCallback(
-        runtime.metadata.id,
-        `Settings submit "${contribution.id}:${request.dialogId}"`,
-        () => definition.submit!(event),
-        validateSettingsPanelDialogSubmitResult
-      )
+    const result = await this.options.runInExtensionContext(
+      runtime,
+      () =>
+        invokeSettingsPanelCallback(
+          runtime.metadata.id,
+          `Settings submit "${contribution.id}:${request.dialogId}"`,
+          () => definition.submit!(event),
+          validateSettingsPanelDialogSubmitResult
+        ),
+      signal
     )
     return { result }
   }
@@ -388,8 +394,10 @@ export class HostSettingsPanelContributionPoint {
       }
     }
 
-    const result = await this.options.runInExtensionContext(runtime, () =>
-      callback.invoke(request, signal)
+    const result = await this.options.runInExtensionContext(
+      runtime,
+      () => callback.invoke(request, signal),
+      signal
     )
     return { result }
   }
@@ -572,8 +580,10 @@ export class HostSettingsPanelContributionPoint {
       options.signal,
       options.reason
     )
-    const rawModel = await this.options.runInExtensionContext(options.runtime, () =>
-      options.contribution.resolve(context, createSettingsPanelNodeFactory())
+    const rawModel = await this.options.runInExtensionContext(
+      options.runtime,
+      () => options.contribution.resolve(context, createSettingsPanelNodeFactory()),
+      options.signal
     )
     const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings root')
     const modelIssues = validateSettingsPanelRootModel(model)
@@ -611,8 +621,10 @@ export class HostSettingsPanelContributionPoint {
       options.signal,
       options.reason
     )
-    const rawModel = await this.options.runInExtensionContext(options.runtime, () =>
-      definition.resolve(context, createSettingsPanelNodeFactory())
+    const rawModel = await this.options.runInExtensionContext(
+      options.runtime,
+      () => definition.resolve(context, createSettingsPanelNodeFactory()),
+      options.signal
     )
     const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings dialog')
     const modelIssues = validateSettingsPanelDialogModel(model)
@@ -658,8 +670,10 @@ export class HostSettingsPanelContributionPoint {
       options.signal,
       options.reason
     )
-    const rawModel = await this.options.runInExtensionContext(options.runtime, () =>
-      definition.resolve(context, createSettingsPanelNodeFactory())
+    const rawModel = await this.options.runInExtensionContext(
+      options.runtime,
+      () => definition.resolve(context, createSettingsPanelNodeFactory()),
+      options.signal
     )
     const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings popover')
     const modelIssues = validateSettingsPanelPopoverModel(model)

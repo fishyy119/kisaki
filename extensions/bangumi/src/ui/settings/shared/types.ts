@@ -22,7 +22,18 @@ export type BangumiSettingsDialogSubmitResult = SettingsPanelDialogSubmitResult
 
 export type BangumiPreviewKey = 'sync.full' | 'import.myCollections' | 'import.index'
 
-export interface ResolvedPreviewResult {
+export type ResolvedPreviewResult = RunningPreviewResult | CompletedPreviewResult
+
+export interface RunningPreviewResult {
+  state: 'running'
+  args: SerializableRecord
+  commandId: string
+  executionId: string
+  startedAt: number
+}
+
+export interface CompletedPreviewResult {
+  state: 'completed'
   args: SerializableRecord
   result: CommandExecutionResult
 }

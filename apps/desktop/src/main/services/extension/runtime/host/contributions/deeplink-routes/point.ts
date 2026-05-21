@@ -91,7 +91,10 @@ export class HostDeeplinkRouteContributionPoint {
     }
   }
 
-  async handle(request: DeeplinkRouteHandleRequest): Promise<DeeplinkRouteHandleResponse> {
+  async handle(
+    request: DeeplinkRouteHandleRequest,
+    signal: AbortSignal
+  ): Promise<DeeplinkRouteHandleResponse> {
     const runtime = this.options.registry.getByRuntimeHandle(request.runtimeHandle)
     if (!runtime) {
       throw new Error(`Extension runtime "${request.runtimeHandle}" is not active.`)
@@ -109,8 +112,10 @@ export class HostDeeplinkRouteContributionPoint {
       throwValidationIssues('Deeplink route handle event', requestIssues)
     }
 
-    const response = await this.options.runInExtensionContext(runtime, () =>
-      contribution.handle(request.event)
+    const response = await this.options.runInExtensionContext(
+      runtime,
+      () => contribution.handle(request.event),
+      signal
     )
     const responseIssues = validateDeeplinkRouteHandleResult(response)
     if (responseIssues.length > 0) {

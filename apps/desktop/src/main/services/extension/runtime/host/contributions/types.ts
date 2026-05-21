@@ -8,6 +8,7 @@ export type HostContributionDiagnosticInput = Omit<ExtensionRuntimeDiagnostic, '
 export interface HostContributionScope {
   extensionId: string
   runtimeHandle: ExtensionRuntimeHandle
+  signal?: AbortSignal
 }
 
 export interface HostContributionDomainOptions {
@@ -17,7 +18,8 @@ export interface HostContributionDomainOptions {
   getCleanupRequestOptions(scope: HostContributionScope): RpcRequestOptions | undefined
   runInExtensionContext<T>(
     runtimeOrScope: LoadedExtensionRuntime | HostContributionScope,
-    callback: () => Promise<T> | T
+    callback: () => Promise<T> | T,
+    signal?: AbortSignal
   ): Promise<T> | T
   trackMainRequest(scope: HostContributionScope, request: Promise<unknown>): void
   reportDiagnostic(scope: HostContributionScope, diagnostic: HostContributionDiagnosticInput): void

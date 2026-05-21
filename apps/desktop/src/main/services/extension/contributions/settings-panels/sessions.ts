@@ -21,14 +21,26 @@ export class SettingsSessionStore {
   private readonly sessions = new Map<string, MainSettingsSession>()
 
   set(session: MainSettingsSession): void {
-    this.sessions.set(
-      getSettingsSessionKey(session.extensionId, session.contributionId, session.sessionId),
-      session
+    const key = getSettingsSessionKey(
+      session.extensionId,
+      session.contributionId,
+      session.sessionId
     )
+    this.abortSession(this.sessions.get(key))
+    this.sessions.set(key, session)
   }
 
   clear(): void {
+    for (const session of this.sessions.values()) {
+      this.abortSession(session)
+    }
     this.sessions.clear()
+  }
+
+  clearSession(extensionId: string, contributionId: string, sessionId: string): void {
+    const key = getSettingsSessionKey(extensionId, contributionId, sessionId)
+    this.abortSession(this.sessions.get(key))
+    this.sessions.delete(key)
   }
 
   getReleaseDiagnostics(extensionId: string): readonly ExtensionContributionReleaseDiagnostic[] {
@@ -51,7 +63,15 @@ export class SettingsSessionStore {
       throw new Error(`Settings session "${request.sessionId}" is no longer active.`)
     }
 
+    if (session.abortController.signal.aborted) {
+      this.sessions.delete(
+        getSettingsSessionKey(request.extensionId, request.contributionId, request.sessionId)
+      )
+      throw new Error(`Settings session "${request.sessionId}" is no longer active.`)
+    }
+
     if (session.runtimeHandle !== registration.owner.runtimeHandle) {
+      this.abortSession(session)
       this.sessions.delete(
         getSettingsSessionKey(request.extensionId, request.contributionId, request.sessionId)
       )
@@ -212,6 +232,7 @@ export class SettingsSessionStore {
     switch (request.surface) {
       case 'root':
       case 'all':
+        this.abortSession(session)
         this.sessions.delete(key)
         return
 
@@ -243,6 +264,7 @@ export class SettingsSessionStore {
   clearContributionSessions(extensionId: string, contributionId: string): void {
     for (const [key, session] of [...this.sessions]) {
       if (session.extensionId === extensionId && session.contributionId === contributionId) {
+        this.abortSession(session)
         this.sessions.delete(key)
       }
     }
@@ -251,9 +273,18 @@ export class SettingsSessionStore {
   clearRuntimeSessions(runtimeHandle: ExtensionRuntimeHandle): void {
     for (const [key, session] of [...this.sessions]) {
       if (session.runtimeHandle === runtimeHandle) {
+        this.abortSession(session)
         this.sessions.delete(key)
       }
     }
+  }
+
+  private abortSession(session: MainSettingsSession | undefined): void {
+    if (!session || session.abortController.signal.aborted) {
+      return
+    }
+
+    session.abortController.abort()
   }
 
   private findActivePopover(

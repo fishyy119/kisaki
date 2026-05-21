@@ -83,32 +83,36 @@ export class HostCommandContributionPoint {
       )
     }
 
-    const output = await this.options.runInExtensionContext(runtime, () =>
-      command.execute(request.args, {
-        commandId: request.commandId,
-        executionId: request.executionId,
-        source: request.source,
-        signal,
-        reportProgress: (progress) => {
-          void this.options.rpc
-            .requestMain(
-              'contributions.commands.reportProgress',
-              {
-                runtimeHandle: request.runtimeHandle,
-                commandId: request.commandId,
-                executionId: request.executionId,
-                progress: normalizeCommandProgressUpdate(progress)
-              },
-              this.options.getRequestOptions({
-                extensionId: runtime.metadata.id,
-                runtimeHandle: request.runtimeHandle
+    const output = await this.options.runInExtensionContext(
+      runtime,
+      () =>
+        command.execute(request.args, {
+          commandId: request.commandId,
+          executionId: request.executionId,
+          source: request.source,
+          signal,
+          reportProgress: (progress) => {
+            void this.options.rpc
+              .requestMain(
+                'contributions.commands.reportProgress',
+                {
+                  runtimeHandle: request.runtimeHandle,
+                  commandId: request.commandId,
+                  executionId: request.executionId,
+                  progress: normalizeCommandProgressUpdate(progress)
+                },
+                this.options.getRequestOptions({
+                  extensionId: runtime.metadata.id,
+                  runtimeHandle: request.runtimeHandle,
+                  signal
+                })
+              )
+              .catch((error) => {
+                runtime.context.logger.warn('Failed to report command progress.', error)
               })
-            )
-            .catch((error) => {
-              runtime.context.logger.warn('Failed to report command progress.', error)
-            })
-        }
-      })
+          }
+        }),
+      signal
     )
 
     if (output === undefined) {

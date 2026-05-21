@@ -193,8 +193,10 @@ export class HostEntityMenuContributionPoint {
       )
     }
 
-    const nodes = await this.options.runInExtensionContext(runtime, () =>
-      resolveRegisteredMenuContribution(registration, request.input)
+    const nodes = await this.options.runInExtensionContext(
+      runtime,
+      () => resolveRegisteredMenuContribution(registration, request.input),
+      signal
     )
     const nodeIssues = validateEntityMenuNodes(nodes)
     if (nodeIssues.length > 0) {
@@ -259,7 +261,11 @@ export class HostEntityMenuContributionPoint {
       })
     }
 
-    return this.options.runInExtensionContext(runtime, () => callback.invoke(request.value, signal))
+    return this.options.runInExtensionContext(
+      runtime,
+      () => callback.invoke(request.value, signal),
+      signal
+    )
   }
 
   release(request: EntityMenuReleaseRequest): void {

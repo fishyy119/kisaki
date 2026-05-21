@@ -42,6 +42,11 @@ import {
 import { ExtensionRuntimeStorage } from './storage'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions'
+import {
+  EXTENSION_HOST_HANDSHAKE_TIMEOUT_MS,
+  EXTENSION_HOST_LIFECYCLE_TIMEOUT_MS,
+  EXTENSION_HOST_SHUTDOWN_TIMEOUT_MS
+} from '../shared/rpc-timeouts'
 
 const log = createLogger('Extension')
 
@@ -262,7 +267,7 @@ export class RuntimeManager {
         { extension, runtimeHandle, generation, cause },
         extension.id,
         cause,
-        15_000
+        EXTENSION_HOST_LIFECYCLE_TIMEOUT_MS
       )
     } catch (error) {
       this.runtimeHandles.delete(runtimeHandle)
@@ -303,7 +308,7 @@ export class RuntimeManager {
         { extensionId, runtimeHandle: loaded.runtimeHandle, reason },
         extensionId,
         toChangeCause(reason),
-        15_000
+        EXTENSION_HOST_LIFECYCLE_TIMEOUT_MS
       )
       logUnloadResult(extensionId, result)
     } catch (error) {
@@ -381,7 +386,7 @@ export class RuntimeManager {
           arch: runtimeInfo.arch
         }
       },
-      { timeoutMs: 10_000 }
+      { timeoutMs: EXTENSION_HOST_HANDSHAKE_TIMEOUT_MS }
     )
 
     if (!response.accepted) {
@@ -502,7 +507,7 @@ export class RuntimeManager {
           const result = await rpc.requestHost(
             'extensions.unload',
             { extensionId, runtimeHandle: state.runtimeHandle, reason: unloadReason },
-            { timeoutMs: 10_000 }
+            { timeoutMs: EXTENSION_HOST_SHUTDOWN_TIMEOUT_MS }
           )
           logUnloadResult(extensionId, result)
         } catch (error) {

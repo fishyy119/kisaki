@@ -157,20 +157,16 @@ export class ExtensionDeeplinkRouteContributionPoint {
       return null
     }
 
-    return this.options.requestHost(
-      'contributions.deeplinkRoutes.handle',
-      {
-        runtimeHandle: matched.registration.owner.runtimeHandle,
-        contributionId: matched.registration.contribution.id,
-        event: {
-          ...event,
-          path: routePath,
-          pattern: matched.registration.contribution.path,
-          params: matched.params
-        }
-      },
-      { timeoutMs: 15_000 }
-    )
+    return this.options.requestHost('contributions.deeplinkRoutes.handle', {
+      runtimeHandle: matched.registration.owner.runtimeHandle,
+      contributionId: matched.registration.contribution.id,
+      event: {
+        ...event,
+        path: routePath,
+        pattern: matched.registration.contribution.path,
+        params: matched.params
+      }
+    })
   }
 
   private addExtensionRegistration(

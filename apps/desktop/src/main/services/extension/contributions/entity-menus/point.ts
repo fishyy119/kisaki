@@ -25,6 +25,7 @@ import {
   type ExtensionContributionDomainOptions,
   type RuntimeContributionOwner
 } from '../types'
+import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
 
 const log = createLogger('Extension')
 
@@ -35,6 +36,7 @@ interface MenuRegistration {
 
 interface MainMenuSession {
   sessionId: string
+  abortController: AbortController
   input: ExtensionEntityMenuResolveRequest['input']
   contributionKeys: Set<string>
   runtimeHandles: Set<ExtensionRuntimeHandle>
@@ -116,6 +118,9 @@ export class ExtensionEntityMenuContributionPoint {
   releaseAll(): void {
     this.registrations.clear()
     this.byPublicId.clear()
+    for (const session of this.sessions.values()) {
+      session.abortController.abort()
+    }
     this.sessions.clear()
   }
 
@@ -254,7 +259,7 @@ export class ExtensionEntityMenuContributionPoint {
           input: request.input,
           value: request.value
         },
-        { timeoutMs: 15_000 }
+        { signal: session.abortController.signal }
       )
 
       return { result }
@@ -283,11 +288,12 @@ export class ExtensionEntityMenuContributionPoint {
         {
           sessionId: request.sessionId
         },
-        { timeoutMs: 5_000 }
+        { timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS }
       )
     } catch (error) {
       log.warn('Failed to release menu session.', error, { requestSessionId: request.sessionId })
     } finally {
+      this.sessions.get(request.sessionId)?.abortController.abort()
       this.sessions.delete(request.sessionId)
     }
   }
@@ -296,6 +302,7 @@ export class ExtensionEntityMenuContributionPoint {
     sessionId: string,
     request: ExtensionEntityMenuResolveRequest
   ): Promise<ExtensionResolvedEntityMenu> {
+    const abortController = new AbortController()
     const errors: ExtensionContributionError[] = []
     const registrations = [...this.registrations.values()]
       .filter(
@@ -322,7 +329,7 @@ export class ExtensionEntityMenuContributionPoint {
             sessionId,
             input: request.input
           },
-          { timeoutMs: 15_000 }
+          { signal: abortController.signal }
         )
       }))
     )
@@ -361,6 +368,7 @@ export class ExtensionEntityMenuContributionPoint {
 
     this.sessions.set(sessionId, {
       sessionId,
+      abortController,
       input: request.input,
       contributionKeys,
       runtimeHandles
@@ -383,6 +391,7 @@ export class ExtensionEntityMenuContributionPoint {
     const contributionKey = getPublicContributionKey(extensionId, domain, scope, contributionId)
     for (const [sessionId, session] of [...this.sessions]) {
       if (session.contributionKeys.has(contributionKey)) {
+        session.abortController.abort()
         this.sessions.delete(sessionId)
       }
     }
@@ -391,6 +400,7 @@ export class ExtensionEntityMenuContributionPoint {
   private clearRuntimeSessions(runtimeHandle: ExtensionRuntimeHandle): void {
     for (const [sessionId, session] of [...this.sessions]) {
       if (session.runtimeHandles.has(runtimeHandle)) {
+        session.abortController.abort()
         this.sessions.delete(sessionId)
       }
     }

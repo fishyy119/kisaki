@@ -255,59 +255,67 @@ export class HostScraperProviderContributionPoint {
     }
   }
 
-  async search(request: ScraperProviderSearchRequest): Promise<ScraperProviderSearchResponse> {
+  async search(
+    request: ScraperProviderSearchRequest,
+    signal: AbortSignal
+  ): Promise<ScraperProviderSearchResponse> {
     switch (request.mediaType) {
       case 'game':
-        return this.searchProvider(this.gameDomain, request)
+        return this.searchProvider(this.gameDomain, request, signal)
       case 'person':
-        return this.searchProvider(this.personDomain, request)
+        return this.searchProvider(this.personDomain, request, signal)
       case 'company':
-        return this.searchProvider(this.companyDomain, request)
+        return this.searchProvider(this.companyDomain, request, signal)
       case 'character':
-        return this.searchProvider(this.characterDomain, request)
+        return this.searchProvider(this.characterDomain, request, signal)
     }
   }
 
-  async resolve(request: ScraperProviderResolveRequest): Promise<ScraperProviderResolveResponse> {
+  async resolve(
+    request: ScraperProviderResolveRequest,
+    signal: AbortSignal
+  ): Promise<ScraperProviderResolveResponse> {
     switch (request.mediaType) {
       case 'game':
-        return this.resolveProvider(this.gameDomain, request)
+        return this.resolveProvider(this.gameDomain, request, signal)
       case 'person':
-        return this.resolveProvider(this.personDomain, request)
+        return this.resolveProvider(this.personDomain, request, signal)
       case 'company':
-        return this.resolveProvider(this.companyDomain, request)
+        return this.resolveProvider(this.companyDomain, request, signal)
       case 'character':
-        return this.resolveProvider(this.characterDomain, request)
+        return this.resolveProvider(this.characterDomain, request, signal)
     }
   }
 
   async openSession(
-    request: ScraperProviderSessionOpenRequest
+    request: ScraperProviderSessionOpenRequest,
+    signal: AbortSignal
   ): Promise<ScraperProviderSessionOpenResponse> {
     switch (request.mediaType) {
       case 'game':
-        return this.openProviderSession(this.gameDomain, request)
+        return this.openProviderSession(this.gameDomain, request, signal)
       case 'person':
-        return this.openProviderSession(this.personDomain, request)
+        return this.openProviderSession(this.personDomain, request, signal)
       case 'company':
-        return this.openProviderSession(this.companyDomain, request)
+        return this.openProviderSession(this.companyDomain, request, signal)
       case 'character':
-        return this.openProviderSession(this.characterDomain, request)
+        return this.openProviderSession(this.characterDomain, request, signal)
     }
   }
 
   async getSession(
-    request: ScraperProviderSessionGetRequest
+    request: ScraperProviderSessionGetRequest,
+    signal: AbortSignal
   ): Promise<ScraperProviderSessionGetResponse> {
     switch (request.mediaType) {
       case 'game':
-        return this.getProviderSession(this.gameDomain, request)
+        return this.getProviderSession(this.gameDomain, request, signal)
       case 'person':
-        return this.getProviderSession(this.personDomain, request)
+        return this.getProviderSession(this.personDomain, request, signal)
       case 'company':
-        return this.getProviderSession(this.companyDomain, request)
+        return this.getProviderSession(this.companyDomain, request, signal)
       case 'character':
-        return this.getProviderSession(this.characterDomain, request)
+        return this.getProviderSession(this.characterDomain, request, signal)
     }
   }
 
@@ -416,15 +424,18 @@ export class HostScraperProviderContributionPoint {
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
     domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSearchRequest, { mediaType: TMediaType }>
+    request: Extract<ScraperProviderSearchRequest, { mediaType: TMediaType }>,
+    signal: AbortSignal
   ): Promise<Extract<ScraperProviderSearchResponse, { mediaType: TMediaType }>> {
     const { runtime, provider } = this.requireProvider(
       domain,
       request.runtimeHandle,
       request.providerId
     )
-    const results = await this.options.runInExtensionContext(runtime, () =>
-      provider.search(request.query, request.locale)
+    const results = await this.options.runInExtensionContext(
+      runtime,
+      () => provider.search(request.query, request.locale),
+      signal
     )
     this.assertValidProviderOutput(
       domain,
@@ -447,15 +458,18 @@ export class HostScraperProviderContributionPoint {
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
     domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderResolveRequest, { mediaType: TMediaType }>
+    request: Extract<ScraperProviderResolveRequest, { mediaType: TMediaType }>,
+    signal: AbortSignal
   ): Promise<Extract<ScraperProviderResolveResponse, { mediaType: TMediaType }>> {
     const { runtime, provider } = this.requireProvider(
       domain,
       request.runtimeHandle,
       request.providerId
     )
-    const target = await this.options.runInExtensionContext(runtime, () =>
-      provider.resolve(request.lookup, request.locale)
+    const target = await this.options.runInExtensionContext(
+      runtime,
+      () => provider.resolve(request.lookup, request.locale),
+      signal
     )
     this.assertValidProviderOutput(
       domain,
@@ -478,15 +492,18 @@ export class HostScraperProviderContributionPoint {
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
     domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSessionOpenRequest, { mediaType: TMediaType }>
+    request: Extract<ScraperProviderSessionOpenRequest, { mediaType: TMediaType }>,
+    signal: AbortSignal
   ): Promise<Extract<ScraperProviderSessionOpenResponse, { mediaType: TMediaType }>> {
     const { runtime, provider } = this.requireProvider(
       domain,
       request.runtimeHandle,
       request.providerId
     )
-    const session = await this.options.runInExtensionContext(runtime, () =>
-      provider.openSession(request.target, request.locale)
+    const session = await this.options.runInExtensionContext(
+      runtime,
+      () => provider.openSession(request.target, request.locale),
+      signal
     )
     this.assertValidProviderOutput(
       domain,
@@ -515,12 +532,15 @@ export class HostScraperProviderContributionPoint {
     TProvider extends ScraperProviderLike<TSlot, TSession>
   >(
     domain: ScraperDomain<TMediaType, TSlot, TSession, TProvider>,
-    request: Extract<ScraperProviderSessionGetRequest, { mediaType: TMediaType }>
+    request: Extract<ScraperProviderSessionGetRequest, { mediaType: TMediaType }>,
+    signal: AbortSignal
   ): Promise<Extract<ScraperProviderSessionGetResponse, { mediaType: TMediaType }>> {
     const record = this.requireSession(domain.sessions, request)
     const runtime = this.requireRuntime(record.runtimeHandle)
-    const results = await this.options.runInExtensionContext(runtime, () =>
-      record.session.get(request.slots as readonly TSlot[])
+    const results = await this.options.runInExtensionContext(
+      runtime,
+      () => record.session.get(request.slots as readonly TSlot[]),
+      signal
     )
     this.assertValidProviderOutput(
       domain,
