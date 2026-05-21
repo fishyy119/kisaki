@@ -52,17 +52,6 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
         ]
       },
       {
-        id: 'sync-remote-only',
-        hidden: localSyncAvailable,
-        content: [
-          scope.ui.notice({
-            id: 'sync-remote-only-notice',
-            tone: 'info',
-            text: `${selectedDescriptor.label}目前只支持远端预览，不支持本地自动同步。`
-          })
-        ]
-      },
-      {
         id: 'auto-sync',
         label: '自动同步',
         description: `本地${selectedDescriptor.label}变化后自动写入 Bangumi 收藏`,

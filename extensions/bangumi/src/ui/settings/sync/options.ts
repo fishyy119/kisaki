@@ -23,9 +23,7 @@ const FULL_SYNC_ITEMS = ['status', 'score'] as const satisfies readonly FullSync
 
 export function readSyncScope(values: Record<string, unknown>): BangumiMediaScope {
   const value = readString(values, SETTINGS_NODE_IDS.syncScope, 'game')
-  return value === 'book' || value === 'anime' || value === 'music' || value === 'game'
-    ? value
-    : 'game'
+  return value === 'game' ? value : 'game'
 }
 
 export function readAutoSyncItems(

@@ -11,7 +11,7 @@ export function createBangumiSettingsPanel(dependencies: BangumiSettingsPanelDep
 
   return defineSettingsPanel({
     id: 'settings',
-    title: 'Bangumi',
+    title: 'Bangumi 集成',
     size: 'lg',
     submitLabel: '保存设置',
     dialogs,

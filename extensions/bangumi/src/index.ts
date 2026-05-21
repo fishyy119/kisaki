@@ -148,7 +148,9 @@ export default defineExtension({
         accountService,
         oauthFlow,
         tokenService,
-        mediaRegistry
+        mediaRegistry,
+        syncStateStore,
+        syncQueueStore
       })
     )
     settingsRegistrationRef.current = settingsRegistration

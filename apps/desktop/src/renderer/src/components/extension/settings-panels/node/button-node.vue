@@ -91,10 +91,10 @@ function invoke(): void {
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>{{ props.node.confirm.title }}</AlertDialogTitle>
-        <AlertDialogDescription v-if="props.node.confirm.description">
-          {{ props.node.confirm.description }}
-        </AlertDialogDescription>
       </AlertDialogHeader>
+      <AlertDialogDescription v-if="props.node.confirm.description">
+        {{ props.node.confirm.description }}
+      </AlertDialogDescription>
       <AlertDialogFooter>
         <AlertDialogCancel>
           {{ props.node.confirm.cancelLabel ?? '取消' }}

@@ -115,8 +115,70 @@ export async function resolveAdvancedTab(
         ]
       },
       {
+        id: 'clear-credentials',
+        label: '清除凭据',
+        description: '删除 Bangumi token、登录会话和账号摘要，不影响设置、同步状态或后台任务',
+        content: [
+          scope.ui.button({
+            id: 'clear-credentials',
+            label: '清除 Bangumi 凭据',
+            tone: 'danger',
+            confirm: {
+              title: '清除 Bangumi 凭据',
+              description: '这会退出当前 Bangumi 登录，并删除本机保存的 Bangumi 凭据。',
+              confirmLabel: '清除 Bangumi 凭据',
+              cancelLabel: '取消'
+            },
+            async onClick(event) {
+              try {
+                await scope.runtime.accountService.logout()
+                return event.success({
+                  message: 'Bangumi 凭据已清除。',
+                  refresh: 'root'
+                })
+              } catch (error) {
+                return event.fail(toSettingsError(error), { refresh: 'root' })
+              }
+            }
+          })
+        ]
+      },
+      {
+        id: 'clear-sync-state',
+        label: '清除同步状态',
+        description: '删除同步 fingerprint 和待同步队列，不删除主应用后台任务或历史记录',
+        content: [
+          scope.ui.button({
+            id: 'clear-sync-state',
+            label: '清除同步状态',
+            tone: 'danger',
+            confirm: {
+              title: '清除同步状态',
+              description: '这会清空 Bangumi 自动同步状态和待同步变更队列。',
+              confirmLabel: '清除同步状态',
+              cancelLabel: '取消'
+            },
+            async onClick(event) {
+              try {
+                await Promise.all([
+                  scope.runtime.syncStateStore.clear(),
+                  scope.runtime.syncQueueStore.clear()
+                ])
+                return event.success({
+                  message: 'Bangumi 同步状态已清除。',
+                  refresh: 'root'
+                })
+              } catch (error) {
+                return event.fail(toSettingsError(error), { refresh: 'root' })
+              }
+            }
+          })
+        ]
+      },
+      {
         id: 'restore-defaults',
         label: '恢复默认设置',
+        description: '只重置设置，不删除 token、同步状态或后台任务',
         content: [
           scope.ui.button({
             id: 'restore-defaults',
