@@ -295,7 +295,8 @@ export class ExtensionHostSdkBridge {
           scope,
           extension,
           rpc: this.rpc,
-          getRequestOptions: (requestScope) => this.getRequestOptions(requestScope)
+          getRequestOptions: (requestScope) => this.getRequestOptions(requestScope),
+          trackRequest: (request) => this.trackPendingMainRequest(scope.runtimeHandle, request)
         }),
       createStorage: (scope) =>
         createExtensionStorage({
@@ -642,24 +643,33 @@ export class ExtensionHostSdkBridge {
   }
 
   private trackMainRequest(scope: HostContributionScope, request: Promise<unknown>): void {
-    let pending = this.pendingMainRequests.get(scope.runtimeHandle)
+    const reported = Promise.resolve(request).catch((error) => {
+      console.warn(
+        `[ExtensionHost][${scope.extensionId}] Failed to synchronize contribution registry:`,
+        error
+      )
+    })
+
+    this.trackPendingMainRequest(scope.runtimeHandle, reported)
+  }
+
+  private trackPendingMainRequest(
+    runtimeHandle: ExtensionRuntimeHandle,
+    request: Promise<unknown>
+  ): void {
+    let pending = this.pendingMainRequests.get(runtimeHandle)
     if (!pending) {
       pending = new Set()
-      this.pendingMainRequests.set(scope.runtimeHandle, pending)
+      this.pendingMainRequests.set(runtimeHandle, pending)
     }
 
     const tracked = Promise.resolve(request)
       .then(() => undefined)
-      .catch((error) => {
-        console.warn(
-          `[ExtensionHost][${scope.extensionId}] Failed to synchronize contribution registry:`,
-          error
-        )
-      })
+      .catch(() => undefined)
       .finally(() => {
         pending?.delete(tracked)
         if (pending?.size === 0) {
-          this.pendingMainRequests.delete(scope.runtimeHandle)
+          this.pendingMainRequests.delete(runtimeHandle)
         }
       })
 

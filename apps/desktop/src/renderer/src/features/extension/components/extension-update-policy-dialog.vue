@@ -47,9 +47,8 @@ const POLICY_OPTIONS: {
   description: string
 }[] = [
   { value: 'manual', label: '手动', description: '仅在确认后更新' },
-  { value: 'notify', label: '通知', description: '检查更新时提醒' },
   { value: 'auto', label: '自动', description: '使用已信任签名更新' },
-  { value: 'pinned', label: '固定', description: '停留在当前版本' }
+  { value: 'pinned', label: '锁定', description: '停留在当前版本' }
 ]
 
 const selectedPolicy = computed(
@@ -146,7 +145,7 @@ function currentPolicy(): ExtensionInstallUpdatePolicy {
                 icon="icon-[mdi--pin-outline]"
                 class="size-4"
               />
-              <span>固定：v{{ pinnedVersion }}</span>
+              <span>锁定：v{{ pinnedVersion }}</span>
             </div>
           </div>
         </div>

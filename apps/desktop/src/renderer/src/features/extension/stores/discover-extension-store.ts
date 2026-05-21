@@ -36,7 +36,7 @@ export const useDiscoverExtensionStore = defineStore(
     const selectedCategory = ref<ExtensionCategory | null>(null)
 
     // Channel filter (null = all channels)
-    const selectedChannel = ref<string | null>('stable')
+    const selectedChannel = ref<string | null>(null)
 
     // Only show installable releases by default.
     const compatibleOnly = ref(true)
@@ -96,7 +96,7 @@ export const useDiscoverExtensionStore = defineStore(
       searchTrigger.value++
       selectedCategory.value = null
       selectedRepositoryId.value = null
-      selectedChannel.value = 'stable'
+      selectedChannel.value = null
       compatibleOnly.value = true
       sortField.value = 'relevance'
       sortDirection.value = 'desc'
@@ -129,13 +129,7 @@ export const useDiscoverExtensionStore = defineStore(
   },
   {
     persist: {
-      pick: [
-        'selectedRepositoryId',
-        'selectedChannel',
-        'compatibleOnly',
-        'sortField',
-        'sortDirection'
-      ]
+      pick: ['selectedRepositoryId', 'compatibleOnly', 'sortField', 'sortDirection']
     }
   }
 )

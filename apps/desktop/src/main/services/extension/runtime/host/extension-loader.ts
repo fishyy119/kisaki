@@ -111,7 +111,6 @@ export class ExtensionLoader {
 
     let deactivateError: ExtensionUnloadResult['deactivateError']
     let cleanupError: ExtensionUnloadResult['cleanupError']
-    runtime.abortController.abort()
 
     try {
       if (runtime.definition.deactivate) {
@@ -122,6 +121,9 @@ export class ExtensionLoader {
     } catch (error) {
       deactivateError = toRpcErrorPayload(error)
     }
+
+    await this.sdkBridge.flushRuntime(runtime.runtimeHandle)
+    runtime.abortController.abort()
 
     try {
       await runtime.subscriptions.clear()

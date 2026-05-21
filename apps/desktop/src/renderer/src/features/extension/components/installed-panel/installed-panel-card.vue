@@ -54,9 +54,8 @@ const settingsRegistrationRevision = ref(0)
 
 const UPDATE_POLICY_LABELS: Record<ExtensionInstallUpdatePolicy, string> = {
   manual: '手动',
-  notify: '通知',
   auto: '自动',
-  pinned: '固定'
+  pinned: '锁定'
 }
 
 const settingsContribution = computed(
@@ -296,7 +295,7 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
       >
         <span>更新策略：{{ updatePolicyLabel }}</span>
         <span>频道：{{ channelLabel }}</span>
-        <span v-if="props.extension.pinnedVersion">固定：v{{ props.extension.pinnedVersion }}</span>
+        <span v-if="props.extension.pinnedVersion">锁定：v{{ props.extension.pinnedVersion }}</span>
       </div>
     </div>
 

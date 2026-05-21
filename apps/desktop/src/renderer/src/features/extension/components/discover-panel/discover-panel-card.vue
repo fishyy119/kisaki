@@ -151,7 +151,7 @@ function handleInstall() {
           class="flex items-center gap-1"
         >
           <Icon
-            icon="icon-[mdi--source-repository]"
+            icon="icon-[mdi--source-branch]"
             class="size-3.5"
           />
           {{ latestRelease.repositoryName }}

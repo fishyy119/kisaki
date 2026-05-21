@@ -422,7 +422,7 @@ export const extensionInstallReason = createEnumType<ExtensionInstallReason>(
   'extensionInstallReason'
 )
 
-export const EXTENSION_UPDATE_POLICY_VALUES = ['manual', 'notify', 'auto', 'pinned'] as const
+export const EXTENSION_UPDATE_POLICY_VALUES = ['manual', 'auto', 'pinned'] as const
 export type ExtensionUpdatePolicy = (typeof EXTENSION_UPDATE_POLICY_VALUES)[number]
 export const extensionUpdatePolicy = createEnumType<ExtensionUpdatePolicy>(
   EXTENSION_UPDATE_POLICY_VALUES,

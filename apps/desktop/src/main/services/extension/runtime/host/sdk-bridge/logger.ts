@@ -8,6 +8,7 @@ interface ExtensionLoggerOptions {
   extension: ExtensionRuntimeMetadata
   rpc: ExtensionHostRpcServer
   getRequestOptions(scope: ActiveExtensionScope): { signal?: AbortSignal } | undefined
+  trackRequest(request: Promise<unknown>): void
 }
 
 /**
@@ -19,23 +20,24 @@ export function createExtensionLogger(options: ExtensionLoggerOptions): Extensio
     message: string,
     args: unknown[]
   ) => {
-    void options.rpc
-      .requestMain(
-        'runtime.logger.log',
-        {
-          runtimeHandle: options.scope.runtimeHandle,
-          level,
-          message,
-          args: args.map((value) => toRpcValue(value))
-        },
-        options.getRequestOptions(options.scope)
+    const request = options.rpc.requestMain(
+      'runtime.logger.log',
+      {
+        runtimeHandle: options.scope.runtimeHandle,
+        level,
+        message,
+        args: args.map((value) => toRpcValue(value))
+      },
+      options.getRequestOptions(options.scope)
+    )
+
+    options.trackRequest(request)
+    void request.catch((error) => {
+      console.warn(
+        `[ExtensionHost][${options.extension.id}] Failed to forward ${level} log:`,
+        error
       )
-      .catch((error) => {
-        console.warn(
-          `[ExtensionHost][${options.extension.id}] Failed to forward ${level} log:`,
-          error
-        )
-      })
+    })
   }
 
   return {

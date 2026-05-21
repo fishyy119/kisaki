@@ -195,6 +195,7 @@ export interface ExtensionCatalogSearchRequest {
 
 export interface ExtensionCatalogSearchResult {
   packages: readonly ExtensionCatalogPackageInfo[]
+  channels: readonly string[]
   total: number
   hasMore: boolean
 }
@@ -268,7 +269,7 @@ export interface ExtensionCatalogArtifactSignatureInfo {
   fingerprint: string
 }
 
-export type ExtensionInstallUpdatePolicy = 'manual' | 'notify' | 'auto' | 'pinned'
+export type ExtensionInstallUpdatePolicy = 'manual' | 'auto' | 'pinned'
 
 export interface ExtensionUpdatePolicyRequest {
   extensionId: string

@@ -21,7 +21,11 @@ import {
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
-import type { ExtensionRepositoryInfo } from '@shared/extension'
+import {
+  OFFICIAL_EXTENSION_REPOSITORY_NAME,
+  OFFICIAL_EXTENSION_REPOSITORY_URL,
+  type ExtensionRepositoryInfo
+} from '@shared/extension'
 
 interface FormData {
   url: string
@@ -35,6 +39,7 @@ const formData = ref<FormData>({
 })
 const submitting = ref(false)
 const refreshingAll = ref(false)
+const addingOfficialRepository = ref(false)
 const busyRepositoryIds = ref(new Set<string>())
 
 const {
@@ -49,6 +54,9 @@ const {
 const state = useRenderState(isLoading, error, repositories, { preset: 'network' })
 const repositoryList = computed(() =>
   [...(repositories.value ?? [])].sort((left, right) => left.priority - right.priority)
+)
+const hasOfficialRepository = computed(() =>
+  repositoryList.value.some((repository) => repository.url === OFFICIAL_EXTENSION_REPOSITORY_URL)
 )
 
 let unsubscribeRepositoriesChanged: (() => void) | null = null
@@ -104,6 +112,25 @@ async function handleRefreshAll() {
     notify.error('刷新仓库失败', err instanceof Error ? err.message : String(err))
   } finally {
     refreshingAll.value = false
+  }
+}
+
+async function handleAddOfficialRepository() {
+  addingOfficialRepository.value = true
+  try {
+    await ipcManager
+      .invoke('extension:add-repository', {
+        url: OFFICIAL_EXTENSION_REPOSITORY_URL,
+        name: OFFICIAL_EXTENSION_REPOSITORY_NAME
+      })
+      .then(unwrapIpcData)
+
+    notify.success('官方仓库已添加')
+    refetch()
+  } catch (err) {
+    notify.error('添加官方仓库失败', err instanceof Error ? err.message : String(err))
+  } finally {
+    addingOfficialRepository.value = false
   }
 }
 
@@ -215,10 +242,6 @@ function formatDate(value: string | null): string {
 
   return date.toLocaleString()
 }
-
-function shortDigest(value: string | null): string {
-  return value ? value.slice(0, 12) : '无'
-}
 </script>
 
 <template>
@@ -249,6 +272,25 @@ function shortDigest(value: string | null): string {
         刷新全部
       </Button>
       <Button
+        v-if="!hasOfficialRepository"
+        variant="outline"
+        size="sm"
+        :disabled="addingOfficialRepository"
+        @click="handleAddOfficialRepository"
+      >
+        <Spinner
+          v-if="addingOfficialRepository"
+          class="size-4"
+        />
+        <Icon
+          v-else
+          icon="icon-[mdi--shield-plus-outline]"
+          class="size-4"
+        />
+        添加官方仓库
+      </Button>
+      <Button
+        variant="outline"
         size="sm"
         @click="addDialogOpen = true"
       >
@@ -270,7 +312,7 @@ function shortDigest(value: string | null): string {
       <template v-else-if="repositoryList.length === 0">
         <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <Icon
-            icon="icon-[mdi--source-repository]"
+            icon="icon-[mdi--source-branch]"
             class="size-16 mb-3 opacity-30"
           />
           <p class="font-medium">暂无扩展仓库</p>
@@ -287,7 +329,7 @@ function shortDigest(value: string | null): string {
             <div class="min-w-0 space-y-2">
               <div class="flex items-center gap-2 min-w-0">
                 <Icon
-                  icon="icon-[mdi--source-repository]"
+                  icon="icon-[mdi--source-branch]"
                   class="size-4 text-muted-foreground shrink-0"
                 />
                 <div class="text-sm font-medium truncate">{{ repository.name }}</div>
@@ -305,13 +347,9 @@ function shortDigest(value: string | null): string {
                 class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1 text-xs text-muted-foreground"
               >
                 <div>优先级：{{ repository.priority }}</div>
-                <div>包数量：{{ repository.packageCount }}</div>
-                <div>清单摘要：{{ shortDigest(repository.manifestDigest) }}</div>
-                <div>更新时间：{{ formatDate(repository.manifestUpdatedAt) }}</div>
-                <div>上次刷新：{{ formatDate(repository.lastRefreshAt) }}</div>
-                <div>上次成功：{{ formatDate(repository.lastSuccessAt) }}</div>
-                <div>ETag：{{ repository.etag ?? '无' }}</div>
-                <div>Last-Modified：{{ repository.lastModified ?? '无' }}</div>
+                <div>扩展包：{{ repository.packageCount }}</div>
+                <div>清单更新：{{ formatDate(repository.manifestUpdatedAt) }}</div>
+                <div>上次检查：{{ formatDate(repository.lastRefreshAt) }}</div>
               </div>
 
               <div

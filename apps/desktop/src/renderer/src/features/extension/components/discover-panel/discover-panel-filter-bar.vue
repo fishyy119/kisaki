@@ -42,6 +42,10 @@ const SORT_OPTIONS: { value: DiscoverExtensionSortField; label: string }[] = [
 ]
 
 const store = useDiscoverExtensionStore()
+const props = defineProps<{
+  channelOptions: readonly string[]
+  channelOptionsLoaded: boolean
+}>()
 
 const { data: repositories } = useAsyncData(
   async () => {
@@ -90,6 +94,21 @@ const channelModel = computed({
   set: (value: string) => store.setSelectedChannel(value === 'all' ? null : value)
 })
 
+watch(
+  () => [props.channelOptions, props.channelOptionsLoaded] as const,
+  ([channelOptions, channelOptionsLoaded]) => {
+    if (
+      channelOptionsLoaded &&
+      channelOptions.length > 0 &&
+      store.selectedChannel &&
+      !channelOptions.includes(store.selectedChannel)
+    ) {
+      store.setSelectedChannel(null)
+    }
+  },
+  { immediate: true }
+)
+
 function handleToggleSortDirection() {
   store.setSortDirection(store.sortDirection === 'desc' ? 'asc' : 'desc')
 }
@@ -137,7 +156,7 @@ function handleToggleSortDirection() {
           class="min-w-40"
         >
           <Icon
-            icon="icon-[mdi--source-repository]"
+            icon="icon-[mdi--source-branch]"
             class="size-4 text-muted-foreground"
           />
           <SelectValue class="leading-none" />
@@ -158,15 +177,19 @@ function handleToggleSortDirection() {
       <Select v-model="channelModel">
         <SelectTrigger
           size="sm"
-          class="w-24"
+          class="min-w-28 max-w-40"
         >
-          <SelectValue class="leading-none" />
+          <SelectValue class="leading-none truncate" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="stable">stable</SelectItem>
-          <SelectItem value="beta">beta</SelectItem>
-          <SelectItem value="nightly">nightly</SelectItem>
           <SelectItem value="all">全部频道</SelectItem>
+          <SelectItem
+            v-for="channel in props.channelOptions"
+            :key="channel"
+            :value="channel"
+          >
+            {{ channel }}
+          </SelectItem>
         </SelectContent>
       </Select>
 

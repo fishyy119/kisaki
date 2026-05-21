@@ -1,5 +1,6 @@
 import semver from 'semver'
 import {
+  EXTENSION_REGISTRY_KNOWN_RELEASE_CHANNELS,
   selectExtensionRegistryArtifact,
   type ExtensionRegistryArtifact,
   type ExtensionRegistryManifest,
@@ -115,14 +116,11 @@ export class ExtensionRepositoryAggregator {
     const query = normalizeQuery(request.query)
     const page = normalizePositiveInteger(request.page, 1)
     const limit = Math.min(normalizePositiveInteger(request.limit, 50), 200)
-    const filtered = catalog.packages
-      .map((item) => filterPackage(item, request, context))
-      .filter((item): item is ExtensionRepositoryCatalogPackage => item !== null)
-      .map((item) => ({
-        item,
-        score: query ? calculateRelevanceScore(item, query) : 0
-      }))
-      .filter(({ score }) => !query || score > 0)
+    const { channel: _channel, ...channelOptionsRequest } = request
+    const channelOptionItems = filterSearchItems(catalog, channelOptionsRequest, context, query)
+    const filtered = request.channel
+      ? filterSearchItems(catalog, request, context, query)
+      : channelOptionItems
 
     filtered.sort((left, right) => compareSearchItems(left, right, request))
 
@@ -133,6 +131,7 @@ export class ExtensionRepositoryAggregator {
 
     return {
       packages: pageItems,
+      channels: collectChannels(channelOptionItems.map(({ item }) => item)),
       total: filtered.length,
       hasMore: offset + pageItems.length < filtered.length
     }
@@ -355,6 +354,28 @@ function filterPackage(
   }
 }
 
+function filterSearchItems(
+  catalog: ExtensionRepositoryCatalog,
+  request: ExtensionCatalogSearchRequest,
+  context: ExtensionRepositorySearchContext,
+  query: string
+): Array<{ item: ExtensionRepositoryCatalogPackage; score: number }> {
+  return catalog.packages
+    .map((item) => filterPackage(item, request, context))
+    .filter((item): item is ExtensionRepositoryCatalogPackage => item !== null)
+    .map((item) => ({
+      item,
+      score: query ? calculateRelevanceScore(item, query) : 0
+    }))
+    .filter(({ score }) => !query || score > 0)
+}
+
+function collectChannels(items: readonly ExtensionRepositoryCatalogPackage[]): string[] {
+  return [
+    ...new Set(items.flatMap((item) => item.releases.map((release) => release.channel)))
+  ].sort(compareChannels)
+}
+
 function toPublicPackage(item: ExtensionRepositoryCatalogPackage): ExtensionCatalogPackageInfo {
   const { remoteIcon: _remoteIcon, searchText: _searchText, ...publicInfo } = item
   return publicInfo
@@ -440,6 +461,24 @@ function compareReleaseSources(
     compareNumbers(left.repositoryPriority, right.repositoryPriority) ||
     compareStrings(left.repositoryId, right.repositoryId)
   )
+}
+
+function compareChannels(left: string, right: string): number {
+  const knownChannels: readonly string[] = EXTENSION_REGISTRY_KNOWN_RELEASE_CHANNELS
+  const leftKnownIndex = knownChannels.indexOf(left)
+  const rightKnownIndex = knownChannels.indexOf(right)
+  const leftKnown = leftKnownIndex >= 0
+  const rightKnown = rightKnownIndex >= 0
+
+  if (leftKnown || rightKnown) {
+    if (leftKnown && rightKnown) {
+      return compareNumbers(leftKnownIndex, rightKnownIndex)
+    }
+
+    return leftKnown ? -1 : 1
+  }
+
+  return compareStrings(left, right)
 }
 
 function compareRepositoryRows(

@@ -26,7 +26,11 @@ const store = useDiscoverExtensionStore()
 
 async function searchExtensionPage(
   page: number
-): Promise<{ results: ExtensionCatalogPackageInfo[]; hasMore: boolean }> {
+): Promise<{
+  results: ExtensionCatalogPackageInfo[]
+  channels: readonly string[]
+  hasMore: boolean
+}> {
   const data = unwrapIpcData(
     await ipcManager.invoke('extension:search-catalog', {
       query: store.searchQuery,
@@ -41,7 +45,7 @@ async function searchExtensionPage(
     })
   )
 
-  return { results: [...data.packages], hasMore: data.hasMore }
+  return { results: [...data.packages], channels: data.channels, hasMore: data.hasMore }
 }
 
 const additionalResults = ref<ExtensionCatalogPackageInfo[]>([])
@@ -184,7 +188,10 @@ watch(detailsOpen, (open) => {
 
 <template>
   <div class="flex flex-col h-full">
-    <ExtensionDiscoverPanelFilterBar />
+    <ExtensionDiscoverPanelFilterBar
+      :channel-options="searchData?.channels ?? []"
+      :channel-options-loaded="Boolean(searchData)"
+    />
 
     <div class="flex-1 overflow-auto scrollbar-thin">
       <template v-if="loading && displayedResults.length === 0">

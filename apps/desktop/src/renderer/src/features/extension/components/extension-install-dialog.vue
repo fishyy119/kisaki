@@ -58,9 +58,7 @@ const trustSignerFingerprint = ref(false)
 const isRepositoryInstall = computed(() => props.request !== null)
 const title = computed(() => (isRepositoryInstall.value ? '安装扩展' : '导入本地扩展'))
 const description = computed(() =>
-  isRepositoryInstall.value
-    ? '检查版本、仓库来源和签名后继续安装'
-    : '选择本地 .kisx 文件并确认导入'
+  isRepositoryInstall.value ? '检查版本、仓库来源和签名后继续安装' : '选择本地 .kisx 文件并确认导入'
 )
 const canTrustSigner = computed(
   () =>
@@ -98,9 +96,8 @@ async function createRepositoryPlan() {
 
   loadingPlan.value = true
   try {
-    plan.value = unwrapIpcData(
-      await ipcManager.invoke('extension:create-install-plan', props.request)
-    )
+    const request = toRepositoryInstallRequest(props.request)
+    plan.value = unwrapIpcData(await ipcManager.invoke('extension:create-install-plan', request))
     enabled.value = plan.value.defaultEnabled
     updatePolicy.value = plan.value.updatePolicy
     trustSignerFingerprint.value = false
@@ -156,12 +153,14 @@ async function handleInstall() {
   installing.value = true
   try {
     if (currentPlan.sourceKind === 'repository') {
-      const request = props.request ?? {
-        sourceKind: 'repository' as const,
-        extensionId: currentPlan.package.id,
-        releaseId: currentPlan.release?.releaseDigest,
-        repositoryId: currentPlan.release?.repositoryId
-      }
+      const request = toRepositoryInstallRequest(
+        props.request ?? {
+          sourceKind: 'repository',
+          extensionId: currentPlan.package.id,
+          releaseId: currentPlan.release?.releaseDigest,
+          repositoryId: currentPlan.release?.repositoryId
+        }
+      )
       unwrapIpcVoid(
         await ipcManager.invoke('extension:install-release', {
           ...request,
@@ -212,6 +211,17 @@ function resetState() {
 
 function createOperationId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function toRepositoryInstallRequest(
+  request: ExtensionCreateRepositoryInstallPlanRequest
+): ExtensionCreateRepositoryInstallPlanRequest {
+  return {
+    sourceKind: 'repository',
+    extensionId: request.extensionId,
+    releaseId: request.releaseId,
+    repositoryId: request.repositoryId
+  }
 }
 
 function signerLabel(value: ExtensionInstallPlan['signer']['status']): string {
@@ -362,9 +372,8 @@ function formatBytes(value: number | undefined): string {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="manual">手动</SelectItem>
-                  <SelectItem value="notify">提醒</SelectItem>
                   <SelectItem value="auto">自动</SelectItem>
-                  <SelectItem value="pinned">固定</SelectItem>
+                  <SelectItem value="pinned">锁定</SelectItem>
                 </SelectContent>
               </Select>
             </div>

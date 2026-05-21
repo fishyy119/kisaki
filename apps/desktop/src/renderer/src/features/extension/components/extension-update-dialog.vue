@@ -139,7 +139,7 @@ function isCancelledUpdateError(error: unknown): boolean {
         <div class="rounded-md border border-border p-3 text-xs text-muted-foreground space-y-2">
           <div class="flex items-center gap-2">
             <Icon
-              icon="icon-[mdi--source-repository]"
+              icon="icon-[mdi--source-branch]"
               class="size-4"
             />
             <span>来源仓库：{{ repositoryLabel }}</span>
