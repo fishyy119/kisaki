@@ -8,7 +8,7 @@ import type {
   BangumiSettingsDialogSubmitResult
 } from './types'
 
-export interface BangumiRunningJobs {
+export interface BangumiActiveJobs {
   accountRefresh: boolean
   syncChangedItems: boolean
   syncFull: boolean
@@ -16,20 +16,20 @@ export interface BangumiRunningJobs {
   importIndex: boolean
 }
 
-export async function resolveRunningJobs(): Promise<BangumiRunningJobs> {
+export async function resolveActiveJobs(): Promise<BangumiActiveJobs> {
   const commands = await kisaki.commands.list()
 
   return {
-    accountRefresh: isCommandRunning(commands, BANGUMI_COMMAND_IDS.authRefresh),
-    syncChangedItems: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncChangedItems),
-    syncFull: isCommandRunning(commands, BANGUMI_COMMAND_IDS.syncFull),
-    importCollections: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importCollections),
-    importIndex: isCommandRunning(commands, BANGUMI_COMMAND_IDS.importIndex)
+    accountRefresh: isCommandActive(commands, BANGUMI_COMMAND_IDS.authRefresh),
+    syncChangedItems: isCommandActive(commands, BANGUMI_COMMAND_IDS.syncChangedItems),
+    syncFull: isCommandActive(commands, BANGUMI_COMMAND_IDS.syncFull),
+    importCollections: isCommandActive(commands, BANGUMI_COMMAND_IDS.importCollections),
+    importIndex: isCommandActive(commands, BANGUMI_COMMAND_IDS.importIndex)
   }
 }
 
-export async function isBangumiCommandRunning(commandId: BangumiCommandId): Promise<boolean> {
-  return isCommandRunning(await kisaki.commands.list(), commandId)
+export async function isBangumiCommandActive(commandId: BangumiCommandId): Promise<boolean> {
+  return isCommandActive(await kisaki.commands.list(), commandId)
 }
 
 export async function startRootManualJob(options: {
@@ -37,7 +37,7 @@ export async function startRootManualJob(options: {
   args: SerializableRecord
   event: BangumiSettingsRootButtonEvent
 }): Promise<BangumiSettingsRootButtonResult> {
-  if (await isBangumiCommandRunning(options.commandId)) {
+  if (await isBangumiCommandActive(options.commandId)) {
     return options.event.fail(createRunningJobError(), { refresh: 'root' })
   }
 
@@ -68,7 +68,7 @@ export async function startDialogManualJob<
   args: SerializableRecord
   event: BangumiSettingsDialogButtonEvent<TParams> | BangumiSettingsDialogSubmitEvent<TParams>
 }): Promise<BangumiSettingsDialogButtonResult | BangumiSettingsDialogSubmitResult> {
-  if (await isBangumiCommandRunning(options.commandId)) {
+  if (await isBangumiCommandActive(options.commandId)) {
     return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
   }
 
@@ -116,11 +116,11 @@ function createRunningJobError() {
   }
 }
 
-function isCommandRunning(
+function isCommandActive(
   commands: readonly CommandListItem[],
   commandId: BangumiCommandId
 ): boolean {
-  return commands.some((command) => command.id === commandId && command.running)
+  return commands.some((command) => command.id === commandId && command.state !== 'idle')
 }
 
 function formatJobNotificationTitle(commandId: BangumiCommandId, args: SerializableRecord): string {

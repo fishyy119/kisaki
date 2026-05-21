@@ -22,8 +22,7 @@ export function createMyCollectionsImportArgs(
     collectionTypes: readImportCollectionTypes(values),
     fields: createImportDataItemArgs(values),
     patchExisting: readImportPatchExisting(values),
-    targetCollection: createImportTargetCollectionArg(values),
-    concurrency: 4
+    targetCollection: createImportTargetCollectionArg(values)
   }
 }
 
@@ -38,7 +37,6 @@ export function createIndexImportArgs(
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     indexInput: readString(values, SETTINGS_NODE_IDS.importIndexInput, ''),
     patchExisting: readImportPatchExisting(values),
-    targetCollection: createIndexTargetCollectionArg(values),
-    concurrency: 4
+    targetCollection: createIndexTargetCollectionArg(values)
   }
 }

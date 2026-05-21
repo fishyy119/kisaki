@@ -104,7 +104,7 @@ export class ExtensionCommandsCapabilityProvider {
 function toPublicCommandListItem(command: AppCommandListItem): CommandListItem {
   return {
     ...toPublicCommandDescriptor(command),
-    running: command.running
+    state: command.state
   }
 }
 
@@ -162,6 +162,7 @@ function toPublicCommandExecutionProgress(
   return {
     commandId: progress.commandId,
     executionId: progress.executionId,
+    state: progress.state,
     source: toPublicCommandExecutionSource(progress.source),
     updatedAt: progress.updatedAt,
     phase: progress.phase,

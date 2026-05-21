@@ -104,8 +104,7 @@ export function registerBangumiJobCommands(
         patchExisting: false,
         targetCollection: {
           kind: 'none'
-        },
-        concurrency: 4
+        }
       },
       argsSchema: createObjectArgsSchema({
         scope: 'string',
@@ -114,8 +113,7 @@ export function registerBangumiJobCommands(
         collectionTypes: 'array',
         fields: 'object',
         patchExisting: 'boolean',
-        targetCollection: 'object',
-        concurrency: 'number'
+        targetCollection: 'object'
       }),
       execute(args, event) {
         return runner.runImportCollections(normalizeImportCollectionsArgs(args), event)
@@ -124,7 +122,7 @@ export function registerBangumiJobCommands(
     commands.register({
       id: BANGUMI_COMMAND_IDS.importIndex,
       title: 'Bangumi 导入目录',
-      description: '导入指定 Bangumi 目录中的游戏条目',
+      description: '按媒体类型导入或预览指定 Bangumi 目录条目',
       cancelable: true,
       defaultArgs: {
         scope: 'game',
@@ -134,8 +132,7 @@ export function registerBangumiJobCommands(
         patchExisting: false,
         targetCollection: {
           kind: 'none'
-        },
-        concurrency: 4
+        }
       },
       argsSchema: createObjectArgsSchema({
         scope: 'string',
@@ -143,8 +140,7 @@ export function registerBangumiJobCommands(
         profileId: 'string',
         indexInput: 'string',
         patchExisting: 'boolean',
-        targetCollection: 'object',
-        concurrency: 'number'
+        targetCollection: 'object'
       }),
       execute(args, event) {
         return runner.runImportIndex(normalizeImportIndexArgs(args), event)

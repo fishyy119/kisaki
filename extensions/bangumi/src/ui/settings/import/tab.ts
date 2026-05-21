@@ -6,9 +6,9 @@ import { readString } from '../shared/values'
 export async function resolveImportTab(
   scope: BangumiSettingsRootScope
 ): Promise<BangumiSettingsTab> {
-  const [profiles, runningJobs] = await Promise.all([
+  const [profiles, activeJobs] = await Promise.all([
     scope.resources.profiles(),
-    scope.resources.runningJobs()
+    scope.resources.activeJobs()
   ])
   const hasProfile = profiles.length > 0
   const indexInput = readString(scope.context.values, SETTINGS_NODE_IDS.importIndexInput, '')
@@ -28,7 +28,7 @@ export async function resolveImportTab(
             id: 'open-import-my-collections-dialog',
             label: '配置导入',
             tone: 'primary',
-            disabled: runningJobs.importCollections,
+            disabled: activeJobs.importCollections,
             onClick(event) {
               return event.openDialog(SETTINGS_DIALOG_IDS.importCollections)
             }
@@ -61,7 +61,7 @@ export async function resolveImportTab(
             id: 'import-index',
             label: '导入',
             tone: 'primary',
-            disabled: !hasIndexInput || runningJobs.importIndex,
+            disabled: !hasIndexInput || activeJobs.importIndex,
             onClick(event) {
               return event.openDialog(SETTINGS_DIALOG_IDS.importIndex)
             }

@@ -5,6 +5,7 @@ import type {
   CommandExecutionRequest,
   CommandExecutionResult,
   CommandExecutionSource,
+  CommandExecutionState,
   CommandExecutionStartResult
 } from '@shared/command'
 import type { RegisteredCommand } from './registry'
@@ -29,6 +30,7 @@ interface ActiveCommandExecution {
   promise: Promise<CommandExecutionResult>
   progress?: CommandExecutionProgress
   source: CommandExecutionSource
+  state: CommandExecutionState
 }
 
 export class CommandExecutions {
@@ -69,14 +71,16 @@ export class CommandExecutions {
       cancelable: command.descriptor.cancelable,
       controller,
       promise,
-      source
+      source,
+      state: 'running'
     })
 
     const started = {
       commandId: command.descriptor.id,
       executionId,
       startedAt,
-      cancelable: command.descriptor.cancelable
+      cancelable: command.descriptor.cancelable,
+      state: 'running' as const
     }
     this.options.onStart?.(started, command, request)
     return started
@@ -111,7 +115,17 @@ export class CommandExecutions {
       return false
     }
 
+    if (execution.state === 'cancelling') {
+      return true
+    }
+
+    execution.state = 'cancelling'
     execution.controller.abort()
+    this.emitProgress(executionId, {
+      phase: 'cancelling',
+      message: '正在取消...',
+      indeterminate: true
+    })
     return true
   }
 
@@ -135,25 +149,23 @@ export class CommandExecutions {
       )
     }
 
-    const progress: CommandExecutionProgress = {
-      ...normalizeProgressUpdate(update),
-      commandId,
-      executionId,
-      source: cloneExecutionSource(execution.source),
-      updatedAt: Date.now()
-    }
-    execution.progress = progress
-    this.options.onProgress?.(progress)
-    return progress
+    return this.emitProgress(executionId, update)
   }
 
-  isRunning(commandId: string): boolean {
+  getCommandState(commandId: string): 'idle' | CommandExecutionState {
+    let hasCancelling = false
     for (const execution of this.activeExecutions.values()) {
-      if (execution.commandId === commandId) {
-        return true
+      if (execution.commandId !== commandId) {
+        continue
       }
+
+      if (execution.state === 'running') {
+        return 'running'
+      }
+
+      hasCancelling = true
     }
-    return false
+    return hasCancelling ? 'cancelling' : 'idle'
   }
 
   dispose(): void {
@@ -213,6 +225,28 @@ export class CommandExecutions {
         error: toErrorMessage(error)
       }
     }
+  }
+
+  private emitProgress(
+    executionId: string,
+    update: CommandExecutionProgressUpdate
+  ): CommandExecutionProgress | null {
+    const execution = this.activeExecutions.get(executionId)
+    if (!execution) {
+      return null
+    }
+
+    const progress: CommandExecutionProgress = {
+      ...normalizeProgressUpdate(update),
+      commandId: execution.commandId,
+      executionId,
+      state: execution.state,
+      source: cloneExecutionSource(execution.source),
+      updatedAt: Date.now()
+    }
+    execution.progress = progress
+    this.options.onProgress?.(progress)
+    return progress
   }
 
   private rememberCompletedExecution(result: CommandExecutionResult): void {

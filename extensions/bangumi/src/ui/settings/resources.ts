@@ -6,7 +6,7 @@ import type { BangumiCommandId } from '../../jobs/commands'
 import type { LocalCollectionSummary } from '../../media/types'
 import { listBangumiAutomationTasks } from './automation/tasks'
 import type { BangumiSettingsRuntime } from './runtime'
-import { isBangumiCommandRunning, resolveRunningJobs, type BangumiRunningJobs } from './shared/jobs'
+import { isBangumiCommandActive, resolveActiveJobs, type BangumiActiveJobs } from './shared/jobs'
 
 export interface BangumiSettingsResources {
   settings(): Promise<BangumiSettingsV1>
@@ -14,8 +14,8 @@ export interface BangumiSettingsResources {
   account(): Promise<BangumiAccountSnapshotV1 | undefined>
   profiles(): Promise<readonly ScraperProfileSummary[]>
   collections(): Promise<readonly LocalCollectionSummary[]>
-  runningJobs(): Promise<BangumiRunningJobs>
-  isCommandRunning(commandId: BangumiCommandId): Promise<boolean>
+  activeJobs(): Promise<BangumiActiveJobs>
+  isCommandActive(commandId: BangumiCommandId): Promise<boolean>
   automationTasks(): Promise<readonly BackgroundTask[]>
 }
 
@@ -25,7 +25,7 @@ export function createSettingsResources(runtime: BangumiSettingsRuntime): Bangum
   const account = once(() => runtime.accountService.getAccountSnapshot())
   const profiles = once(() => listScraperProfiles(runtime))
   const collections = once(() => listStaticCollections(runtime))
-  const runningJobs = once(() => resolveRunningJobs())
+  const activeJobs = once(() => resolveActiveJobs())
   const automationTasks = once(() => listBangumiAutomationTasks())
 
   return {
@@ -34,8 +34,8 @@ export function createSettingsResources(runtime: BangumiSettingsRuntime): Bangum
     account,
     profiles,
     collections,
-    runningJobs,
-    isCommandRunning: isBangumiCommandRunning,
+    activeJobs,
+    isCommandActive: isBangumiCommandActive,
     automationTasks
   }
 }

@@ -1,4 +1,4 @@
-import type { CommandDescriptor, CommandListItem } from '@shared/command'
+import type { CommandDescriptor, CommandListItem, CommandListItemState } from '@shared/command'
 import type { CommandRegistrationInput } from './types'
 
 export interface RegisteredCommand {
@@ -7,7 +7,7 @@ export interface RegisteredCommand {
 }
 
 export interface CommandRegistryOptions {
-  isRunning(commandId: string): boolean
+  getState(commandId: string): CommandListItemState
 }
 
 export class CommandRegistry {
@@ -38,7 +38,7 @@ export class CommandRegistry {
     return [...this.commands.values()]
       .map(({ descriptor }) => ({
         ...descriptor,
-        running: this.options.isRunning(descriptor.id)
+        state: this.options.getState(descriptor.id)
       }))
       .sort((left, right) => left.id.localeCompare(right.id))
   }

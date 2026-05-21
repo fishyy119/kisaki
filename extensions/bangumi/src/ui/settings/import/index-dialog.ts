@@ -20,7 +20,6 @@ import {
   createDialogImportScopeField,
   readIndexTargetCollectionMode,
   readImportPatchExisting,
-  readImportScope,
   readImportTargetCollectionId
 } from './options'
 
@@ -31,13 +30,12 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
     submitLabel: '导入',
     async resolve(context, ui) {
       const resources = createSettingsResources(runtime)
-      const [profiles, collections, isRunning] = await Promise.all([
+      const [profiles, collections, isActive] = await Promise.all([
         resources.profiles(),
         resources.collections(),
-        resources.isCommandRunning(BANGUMI_COMMAND_IDS.importIndex)
+        resources.isCommandActive(BANGUMI_COMMAND_IDS.importIndex)
       ])
       const values = mergeIndexDialogValues(context.values, context.parentValues)
-      const selectedScope = readImportScope(values)
       const targetCollectionMode = readIndexTargetCollectionMode(values)
       const hasTargetCollection =
         targetCollectionMode === 'byIndexTitle' ||
@@ -49,7 +47,8 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
         fields: [
           createDialogImportScopeField({
             settings: ui,
-            values
+            values,
+            mediaRegistry: runtime.mediaRegistry
           }),
           createDialogImportProfileField({
             settings: ui,
@@ -65,7 +64,6 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             id: 'import-index-patch-existing',
             label: '更新已存在游戏',
             description: '按 Bangumi ID 匹配本地游戏，加入目标合集',
-            hidden: selectedScope !== 'game',
             disabled: !hasTargetCollection,
             content: [
               ui.switch({
@@ -85,8 +83,8 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             content: [
               ui.button({
                 id: 'index-preview',
-                label: selectedScope === 'game' ? '预览将导入的游戏' : '预览远端目录',
-                disabled: isRunning,
+                label: '预览将导入的游戏',
+                disabled: isActive,
                 async onClick(event) {
                   return runDialogPreview({
                     previewKey: 'import.index',
@@ -106,7 +104,8 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
           ...createDialogPreviewFields({
             settings: ui,
             id: 'index-preview-changes',
-            label: '将导入的游戏',
+            label: '目录导入预览',
+            emptyLabel: '没有将要导入的游戏',
             preview
           })
         ]
@@ -127,13 +126,12 @@ async function submitIndexDialog({
   profiles: readonly ScraperProfileSummary[]
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
+    const values = mergeIndexDialogValues(event.values, event.parentValues)
+    const args = createIndexImportArgs(values, profiles[0]?.id ?? '', false)
+
     return await startDialogManualJob({
       commandId: BANGUMI_COMMAND_IDS.importIndex,
-      args: createIndexImportArgs(
-        mergeIndexDialogValues(event.values, event.parentValues),
-        profiles[0]?.id ?? '',
-        false
-      ),
+      args,
       event
     })
   } catch (error) {

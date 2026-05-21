@@ -21,9 +21,9 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
     submitLabel: '执行同步',
     async resolve(context, ui) {
       const resources = createSettingsResources(runtime)
-      const [storedSettings, isRunning] = await Promise.all([
+      const [storedSettings, isActive] = await Promise.all([
         resources.settings(),
-        resources.isCommandRunning(BANGUMI_COMMAND_IDS.syncFull)
+        resources.isCommandActive(BANGUMI_COMMAND_IDS.syncFull)
       ])
       const selectedItems = readFullSyncItems(context.values, storedSettings)
       const scoreSyncEnabled = selectedItems.includes('score')
@@ -104,7 +104,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
               ui.button({
                 id: 'full-sync-preview',
                 label: '预览将更改的游戏',
-                disabled: isRunning,
+                disabled: isActive,
                 async onClick(event) {
                   return runDialogPreview({
                     previewKey: 'sync.full',

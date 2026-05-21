@@ -2,7 +2,7 @@ import type { CommandContributionExecuteEvent } from '@kisaki/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiIndex, BangumiIndexSubject } from '../api/types'
-import type { BangumiMediaScope } from '../media/scopes'
+import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
 
 export interface IndexReaderOptions {
   indexId: number
@@ -21,7 +21,7 @@ export class IndexReader {
   async readIndexSubjects(options: IndexReaderOptions): Promise<readonly BangumiIndexSubject[]> {
     options.report?.('loadingIndexSubjects', '正在读取 Bangumi 目录条目...')
 
-    return collectPages(
+    const subjects = await collectPages(
       (query) =>
         this.client.getIndexSubjects(
           options.indexId,
@@ -33,5 +33,7 @@ export class IndexReader {
         ),
       { limit: 50 }
     )
+    const subjectType = getBangumiSubjectType(options.scope)
+    return subjects.filter((subject) => subject.type === subjectType)
   }
 }

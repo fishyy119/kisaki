@@ -30,10 +30,10 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
     submitLabel: '导入',
     async resolve(context, ui) {
       const resources = createSettingsResources(runtime)
-      const [profiles, collections, isRunning] = await Promise.all([
+      const [profiles, collections, isActive] = await Promise.all([
         resources.profiles(),
         resources.collections(),
-        resources.isCommandRunning(BANGUMI_COMMAND_IDS.importCollections)
+        resources.isCommandActive(BANGUMI_COMMAND_IDS.importCollections)
       ])
       const previewArgs = createMyCollectionsImportArgs(context.values, profiles[0]?.id ?? '', true)
       const selectedScope = readImportScope(context.values)
@@ -47,7 +47,8 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
         fields: [
           createDialogImportScopeField({
             settings: ui,
-            values: context.values
+            values: context.values,
+            mediaRegistry: runtime.mediaRegistry
           }),
           createDialogImportProfileField({
             settings: ui,
@@ -115,8 +116,8 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             content: [
               ui.button({
                 id: 'my-collections-preview',
-                label: selectedScope === 'game' ? '预览将导入的游戏' : '预览远端收藏',
-                disabled: isRunning,
+                label: '预览将导入的游戏',
+                disabled: isActive,
                 async onClick(event) {
                   return runDialogPreview({
                     previewKey: 'import.myCollections',
@@ -133,6 +134,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             settings: ui,
             id: 'my-collections-preview-changes',
             label: '将导入的游戏',
+            emptyLabel: '没有将要导入的游戏',
             preview
           })
         ]
@@ -160,9 +162,11 @@ async function submitMyCollectionsDialog({
   profiles: readonly ScraperProfileSummary[]
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
+    const args = createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', false)
+
     return await startDialogManualJob({
       commandId: BANGUMI_COMMAND_IDS.importCollections,
-      args: createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', false),
+      args,
       event
     })
   } catch (error) {

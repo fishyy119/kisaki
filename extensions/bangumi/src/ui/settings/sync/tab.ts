@@ -8,9 +8,9 @@ import { readBoolean } from '../shared/values'
 import { AUTO_SYNC_ITEM_OPTIONS, readAutoSyncItems, readSyncScope } from './options'
 
 export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<BangumiSettingsTab> {
-  const [storedSettings, runningJobs] = await Promise.all([
+  const [storedSettings, activeJobs] = await Promise.all([
     scope.resources.settings(),
-    scope.resources.runningJobs()
+    scope.resources.activeJobs()
   ])
   const selectedScope = readSyncScope(scope.context.values)
   const selectedDescriptor = scope.runtime.mediaRegistry.require(selectedScope)
@@ -119,7 +119,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
             id: 'sync-changed-items',
             label: '立即同步',
             tone: 'primary',
-            disabled: runningJobs.syncChangedItems,
+            disabled: activeJobs.syncChangedItems,
             async onClick(event) {
               try {
                 return await startRootManualJob({
@@ -150,7 +150,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
             id: 'open-full-sync-dialog',
             label: '配置全量同步',
             tone: 'primary',
-            disabled: runningJobs.syncFull,
+            disabled: activeJobs.syncFull,
             onClick(event) {
               return event.openDialog(SETTINGS_DIALOG_IDS.fullSync)
             }

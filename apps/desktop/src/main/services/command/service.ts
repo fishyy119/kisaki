@@ -27,7 +27,7 @@ export class CommandService implements IService {
 
   constructor() {
     this.registry = new CommandRegistry({
-      isRunning: (commandId) => this.executions.isRunning(commandId)
+      getState: (commandId) => this.executions.getCommandState(commandId)
     })
     this.executions = new CommandExecutions({
       getCommand: (commandId) => this.registry.getRegisteredCommand(commandId),

@@ -45,7 +45,6 @@ export interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
   fields: BangumiImportWriteFields
   patchExisting: boolean
   targetCollection: BangumiImportTargetCollection
-  concurrency: number
 }
 
 export interface BangumiImportIndexArgs extends BangumiScopedArgs {
@@ -55,7 +54,6 @@ export interface BangumiImportIndexArgs extends BangumiScopedArgs {
   indexId: number
   patchExisting: boolean
   targetCollection: BangumiImportTargetCollection
-  concurrency: number
 }
 
 const BANGUMI_COLLECTION_TYPES = [1, 2, 3, 4, 5] as const satisfies readonly BangumiCollectionType[]
@@ -100,8 +98,7 @@ export function normalizeImportCollectionsArgs(
     collectionTypes: normalizeCollectionTypes(args.collectionTypes),
     fields: normalizeImportWriteFields(args.fields),
     patchExisting: readBoolean(args.patchExisting, false),
-    targetCollection: normalizeTargetCollection(args.targetCollection, false),
-    concurrency: readInteger(args.concurrency, 4, { min: 1, max: 8 })
+    targetCollection: normalizeTargetCollection(args.targetCollection, false)
   }
 }
 
@@ -115,8 +112,7 @@ export function normalizeImportIndexArgs(args: SerializableRecord): BangumiImpor
     indexInput,
     indexId: parseBangumiIndexId(indexInput),
     patchExisting: readBoolean(args.patchExisting, false),
-    targetCollection: normalizeTargetCollection(args.targetCollection, true),
-    concurrency: readInteger(args.concurrency, 4, { min: 1, max: 8 })
+    targetCollection: normalizeTargetCollection(args.targetCollection, true)
   }
 }
 
@@ -149,7 +145,7 @@ export function parseBangumiIndexId(input: string): number {
 
   throw new BangumiExtensionError(
     'bangumi_validation',
-    'Bangumi 目录必须是数字 ID，或 https://bgm.tv/index/<id> 形式的链接。'
+    'Bangumi 目录必须是数字 ID，或 https://bgm.tv/index/<id>、https://bangumi.tv/index/<id> 形式的链接。'
   )
 }
 

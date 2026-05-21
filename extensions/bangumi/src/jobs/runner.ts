@@ -8,7 +8,11 @@ import type { SettingsStore } from '../config/store'
 import { CollectionReader } from '../import/collection-reader'
 import { ImportExecutor } from '../import/executor'
 import { IndexReader } from '../import/index-reader'
-import { ImportPlanner, type CollectionImportPlanItem } from '../import/planner'
+import {
+  ImportPlanner,
+  type CollectionImportPlanItem,
+  type IndexImportPlanItem
+} from '../import/planner'
 import { BANGUMI_SOURCE_ID } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
 import { formatScopedCollectionType, getMediaScopeLabel } from '../media/labels'
@@ -561,12 +565,20 @@ export class JobRunner {
         event,
         report: (phase, message) => job.report(phase, message, { indeterminate: true })
       })
+      job.increment('indexSubjects', subjects.length)
 
       if (!adapter?.supportsImportWrite) {
+        const plan = this.importPlanner.planIndexSubjects({
+          scope: args.scope,
+          subjects,
+          localWritable: false,
+          patchExisting: args.patchExisting,
+          targetCollection
+        })
         recordRemoteOnlyIndexPreview({
           job,
           scope: args.scope,
-          subjects,
+          planItems: plan.items,
           dryRun: args.dryRun
         })
         return
@@ -581,34 +593,63 @@ export class JobRunner {
         .filter((subjectId): subjectId is number => !!subjectId)
         .map(String)
       const localItems = new Map(await adapter.findBySubjectIds(subjectIds))
+      const plan = this.importPlanner.planIndexSubjects({
+        scope: args.scope,
+        subjects,
+        localItems,
+        localWritable: true,
+        patchExisting: args.patchExisting,
+        targetCollection
+      })
 
-      for (const subject of subjects) {
+      for (const planItem of plan.items) {
         assertNotCancelled(event.signal)
-        const subjectId = normalizePositiveInteger(subject.id)
-        if (!subjectId) {
+        const { action, subject, subjectId: subjectIdText } = planItem
+        if (action.kind === 'error') {
+          job.addError(new BangumiExtensionError('bangumi_validation', action.message), {
+            scope: args.scope,
+            subjectId: action.subjectId
+          })
+          job.increment('failedItems')
           continue
         }
 
-        const subjectIdText = String(subjectId)
+        if (!subjectIdText) {
+          continue
+        }
+
+        const subjectId = Number(subjectIdText)
         job.increment('processed')
         reportIndexImportItemProgress({
           job,
+          actionKind: action.kind,
           dryRun: args.dryRun,
           label: descriptor.label,
           current: job.counters.processed ?? 0,
-          total: subjects.length,
-          hasLocalItem: localItems.has(subjectIdText),
-          willPatchExisting: localItems.has(subjectIdText) && args.patchExisting && !!targetCollection
+          total: plan.items.length
         })
 
         try {
-          const localItem = localItems.get(subjectIdText)
-          if (localItem) {
-            if (!args.patchExisting || !targetCollection) {
-              job.increment('skippedExistingLocalItem')
-              continue
-            }
+          if (action.kind === 'skip') {
+            job.increment(
+              action.reason === 'existingLocalItem' ? 'skippedExistingLocalItem' : 'skippedItems'
+            )
+            continue
+          }
 
+          if (action.kind === 'unsupported') {
+            job.increment('skippedUnsupportedScope')
+            continue
+          }
+
+          if (action.kind === 'patch') {
+            const localItem = planItem.localItem
+            if (!localItem) {
+              throw new BangumiExtensionError('library_update_failed', '本地条目不存在。')
+            }
+            if (!targetCollection) {
+              throw new BangumiExtensionError('bangumi_validation', '请选择目标合集。')
+            }
             const change = await createIndexCollectionPatchPreviewChange(
               adapter,
               localItem,
@@ -635,11 +676,16 @@ export class JobRunner {
             continue
           }
 
-          if (args.dryRun) {
+          if (action.kind === 'create' && args.dryRun) {
             job.addPreviewGroup(
               createIndexCreatePreviewChange(subject, targetCollection, args.scope)
             )
             job.increment('wouldImport')
+            continue
+          }
+
+          if (action.kind !== 'create') {
+            job.increment('skippedItems')
             continue
           }
 
@@ -1041,7 +1087,7 @@ async function createIndexCollectionPatchPreviewChange(
   return createPreviewGroup({
     title: item.name,
     subjectId,
-    badge: { label: '加入合集', tone: 'success' },
+    badge: { label: '更新本地游戏', tone: 'info' },
     rows: [
       {
         label: '合集',
@@ -1116,31 +1162,40 @@ function recordRemoteOnlyImportPreview({
 function recordRemoteOnlyIndexPreview({
   job,
   scope,
-  subjects,
+  planItems,
   dryRun
 }: {
   job: JobStateController
   scope: BangumiMediaScope
-  subjects: readonly BangumiIndexSubject[]
+  planItems: readonly IndexImportPlanItem[]
   dryRun: boolean
 }): void {
   if (!dryRun) {
-    job.increment('skippedUnsupportedScope', subjects.length || 1)
+    job.increment('skippedUnsupportedScope', planItems.length || 1)
     job.report('completed', `${getMediaScopeLabel(scope)}暂不支持写入本地库。`, {
-      current: subjects.length,
-      total: subjects.length
+      current: planItems.length,
+      total: planItems.length
     })
     return
   }
 
-  for (const [index, subject] of subjects.entries()) {
-    const subjectId = normalizePositiveInteger(subject.id)
+  for (const [index, planItem] of planItems.entries()) {
+    const { action, subject, subjectId } = planItem
+    if (action.kind === 'error') {
+      job.addError(new BangumiExtensionError('bangumi_validation', action.message), {
+        scope,
+        subjectId: action.subjectId
+      })
+      job.increment('failedItems')
+      continue
+    }
+
     if (!subjectId) {
       continue
     }
     job.report('buildingRemoteIndexPreview', '正在生成远端目录预览...', {
       current: index + 1,
-      total: subjects.length
+      total: planItems.length
     })
 
     job.increment('remoteOnly')
@@ -1162,8 +1217,8 @@ function recordRemoteOnlyIndexPreview({
   }
 
   job.report('completed', `${getMediaScopeLabel(scope)}目录远端预览完成。`, {
-    current: subjects.length,
-    total: subjects.length
+    current: planItems.length,
+    total: planItems.length
   })
 }
 
@@ -1202,32 +1257,30 @@ function reportCollectionImportItemProgress({
 
 function reportIndexImportItemProgress({
   job,
+  actionKind,
   dryRun,
   label,
   current,
-  total,
-  hasLocalItem,
-  willPatchExisting
+  total
 }: {
   job: JobStateController
+  actionKind: IndexImportPlanItem['action']['kind']
   dryRun: boolean
   label: string
   current: number
   total: number
-  hasLocalItem: boolean
-  willPatchExisting: boolean
 }): void {
   if (dryRun) {
     job.report('planningIndexImport', '正在生成目录导入预览...', { current, total })
     return
   }
 
-  if (willPatchExisting) {
+  if (actionKind === 'patch') {
     job.report('patchingLocalItems', `正在更新${label}...`, { current, total })
     return
   }
 
-  if (hasLocalItem) {
+  if (actionKind === 'skip') {
     job.report('processingIndexImport', `正在检查${label}...`, { current, total })
     return
   }
@@ -1547,8 +1600,7 @@ function createSubjectLink(subjectId: string | number): { label: string; href: s
 }
 
 function formatTargetCollectionValue(targetCollection: LocalCollectionTarget): string {
-  const creationNote = targetCollection.willCreate ? '（将创建）' : ''
-  return `${targetCollection.name}${creationNote}`
+  return targetCollection.name
 }
 
 function formatCollectionScore(score: number | undefined): string {

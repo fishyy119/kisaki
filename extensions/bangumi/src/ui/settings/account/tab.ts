@@ -8,10 +8,10 @@ import { BANGUMI_COMMAND_IDS, formatDateTime, startRootManualJob } from '../shar
 export async function resolveAccountTab(
   scope: BangumiSettingsRootScope
 ): Promise<BangumiSettingsTab> {
-  const [tokenState, account, runningJobs] = await Promise.all([
+  const [tokenState, account, activeJobs] = await Promise.all([
     scope.resources.tokenState(),
     scope.resources.account(),
-    scope.resources.runningJobs()
+    scope.resources.activeJobs()
   ])
   const { ui, runtime } = scope
   const isLoggedIn = tokenState.hasToken && !!account
@@ -85,7 +85,7 @@ export async function resolveAccountTab(
           ui.button({
             id: 'bangumi-refresh-token',
             label: '刷新凭据',
-            disabled: !tokenState.hasRefreshToken || runningJobs.accountRefresh,
+            disabled: !tokenState.hasRefreshToken || activeJobs.accountRefresh,
             async onClick(event) {
               try {
                 return await startRootManualJob({

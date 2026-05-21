@@ -1,5 +1,5 @@
 import type { BangumiMediaScope } from '../media/scopes'
-import type { BangumiUserCollection } from '../api/types'
+import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { LocalCollectionTarget, LocalMediaItem } from '../media/types'
 
 export type PlannedImportAction =
@@ -40,6 +40,19 @@ export interface CollectionImportPlan {
   items: readonly CollectionImportPlanItem[]
 }
 
+export interface IndexImportPlanItem {
+  scope: BangumiMediaScope
+  subjectId: string
+  subject: BangumiIndexSubject
+  localItem?: LocalMediaItem
+  action: PlannedImportAction
+}
+
+export interface IndexImportPlan {
+  scope: BangumiMediaScope
+  items: readonly IndexImportPlanItem[]
+}
+
 export interface PlanCollectionsOptions {
   scope: BangumiMediaScope
   collections: readonly BangumiUserCollection[]
@@ -47,6 +60,15 @@ export interface PlanCollectionsOptions {
   localWritable: boolean
   patchExisting: boolean
   fields: ImportPlannerWriteFields
+  targetCollection?: LocalCollectionTarget
+}
+
+export interface PlanIndexSubjectsOptions {
+  scope: BangumiMediaScope
+  subjects: readonly BangumiIndexSubject[]
+  localItems?: ReadonlyMap<string, LocalMediaItem>
+  localWritable: boolean
+  patchExisting: boolean
   targetCollection?: LocalCollectionTarget
 }
 
@@ -92,6 +114,49 @@ export class ImportPlanner {
           localWritable: options.localWritable,
           patchExisting: options.patchExisting,
           fields: options.fields,
+          targetCollection: options.targetCollection
+        })
+      })
+    }
+
+    return {
+      scope: options.scope,
+      items
+    }
+  }
+
+  planIndexSubjects(options: PlanIndexSubjectsOptions): IndexImportPlan {
+    const items: IndexImportPlanItem[] = []
+
+    for (const subject of options.subjects) {
+      const subjectId = readIndexSubjectId(subject)
+      if (!subjectId) {
+        items.push({
+          scope: options.scope,
+          subjectId: '',
+          subject,
+          action: {
+            kind: 'error',
+            scope: options.scope,
+            message: 'Bangumi 目录条目缺少有效 subject ID。'
+          }
+        })
+        continue
+      }
+
+      const localItem = options.localItems?.get(subjectId)
+      items.push({
+        scope: options.scope,
+        subjectId,
+        subject,
+        ...(localItem ? { localItem } : {}),
+        action: this.planIndexSubjectItem({
+          scope: options.scope,
+          subjectId,
+          subject,
+          localItem,
+          localWritable: options.localWritable,
+          patchExisting: options.patchExisting,
           targetCollection: options.targetCollection
         })
       })
@@ -158,6 +223,60 @@ export class ImportPlanner {
       fields: describeCollectionFields(fields, targetCollection)
     }
   }
+
+  private planIndexSubjectItem({
+    scope,
+    subjectId,
+    subject,
+    localItem,
+    localWritable,
+    patchExisting,
+    targetCollection
+  }: {
+    scope: BangumiMediaScope
+    subjectId: string
+    subject: BangumiIndexSubject
+    localItem: LocalMediaItem | undefined
+    localWritable: boolean
+    patchExisting: boolean
+    targetCollection: LocalCollectionTarget | undefined
+  }): PlannedImportAction {
+    if (!localWritable) {
+      return {
+        kind: 'unsupported',
+        scope,
+        subjectId,
+        reason: 'local_media_unsupported'
+      }
+    }
+
+    if (localItem) {
+      if (!patchExisting || !targetCollection) {
+        return {
+          kind: 'skip',
+          scope,
+          subjectId,
+          reason: 'existingLocalItem'
+        }
+      }
+
+      return {
+        kind: 'patch',
+        scope,
+        subjectId,
+        localId: localItem.localId,
+        fields: describeIndexFields(targetCollection)
+      }
+    }
+
+    return {
+      kind: 'create',
+      scope,
+      subjectId,
+      name: readIndexSubjectTitle(subject, subjectId),
+      fields: describeIndexFields(targetCollection)
+    }
+  }
 }
 
 function readCollectionSubjectId(collection: BangumiUserCollection): string {
@@ -173,6 +292,15 @@ function readCollectionTitle(collection: BangumiUserCollection, subjectId: strin
     collection.subject?.name?.trim() ||
     `Bangumi ${subjectId}`
   )
+}
+
+function readIndexSubjectId(subject: BangumiIndexSubject): string {
+  const subjectId = normalizePositiveInteger(subject.id)
+  return subjectId ? String(subjectId) : ''
+}
+
+function readIndexSubjectTitle(subject: BangumiIndexSubject, subjectId: string): string {
+  return subject.name_cn?.trim() || subject.name?.trim() || `Bangumi ${subjectId}`
 }
 
 function describeCollectionFields(
@@ -198,6 +326,12 @@ function describeCollectionFields(
   }
 
   return names
+}
+
+function describeIndexFields(
+  targetCollection: LocalCollectionTarget | undefined
+): readonly string[] {
+  return targetCollection ? ['collection'] : []
 }
 
 function normalizePositiveInteger(value: unknown): number | undefined {

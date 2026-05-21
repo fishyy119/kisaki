@@ -6,6 +6,7 @@ import type {
   SettingsPanelNodeFactory
 } from '@kisaki/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
+import type { MediaRegistry } from '../../../media/registry'
 import type { BangumiMediaScope } from '../../../media/scopes'
 import type { LocalCollectionSummary } from '../../../media/types'
 import { MEDIA_SCOPE_OPTIONS } from '../shared/options'
@@ -32,12 +33,9 @@ export const INDEX_TARGET_COLLECTION_MODE_OPTIONS = [
   }
 ] as const
 
-const IMPORT_DATA_ITEMS = [
-  'status',
-  'score',
-  'tags'
-] as const satisfies readonly ImportDataItem[]
+const IMPORT_DATA_ITEMS = ['status', 'score', 'tags'] as const satisfies readonly ImportDataItem[]
 const BANGUMI_COLLECTION_TYPE_VALUES = ['1', '2', '3', '4', '5'] as const
+const LOCAL_IMPORT_SCOPES = ['game'] as const satisfies readonly BangumiMediaScope[]
 const INDEX_TARGET_COLLECTION_MODES = [
   'none',
   'existing',
@@ -182,16 +180,19 @@ export function createDialogImportScopeField<
   TParams extends SerializableRecord = SerializableRecord
 >({
   settings,
-  values
+  values,
+  mediaRegistry
 }: {
   settings: SettingsPanelNodeFactory<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
   values: SerializableRecord
+  mediaRegistry: MediaRegistry
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
   return {
     id: 'import-scope',
     label: '媒体类型',
+    description: '当前仅支持游戏本地导入',
     orientation: 'horizontal',
     contentLayout: 'inline',
     content: [
@@ -199,7 +200,7 @@ export function createDialogImportScopeField<
         id: SETTINGS_NODE_IDS.importScope,
         initialValue: readImportScope(values),
         orientation: 'horizontal',
-        options: MEDIA_SCOPE_OPTIONS,
+        options: createImportScopeOptions(mediaRegistry),
         onChange(event) {
           return event.refresh('dialog')
         }
@@ -210,9 +211,7 @@ export function createDialogImportScopeField<
 
 export function readImportScope(values: SerializableRecord): BangumiMediaScope {
   const value = readString(values, SETTINGS_NODE_IDS.importScope, 'game')
-  return value === 'book' || value === 'anime' || value === 'music' || value === 'game'
-    ? value
-    : 'game'
+  return value === LOCAL_IMPORT_SCOPES[0] ? value : 'game'
 }
 
 export function readImportDataItems(values: SerializableRecord): readonly ImportDataItem[] {
@@ -309,5 +308,12 @@ function createCollectionOptions(collections: readonly LocalCollectionSummary[])
     value: collection.id,
     label: collection.name,
     ...(collection.description ? { description: collection.description } : {})
+  }))
+}
+
+function createImportScopeOptions(mediaRegistry: MediaRegistry) {
+  return MEDIA_SCOPE_OPTIONS.map((option) => ({
+    ...option,
+    disabled: !mediaRegistry.require(option.value).localAdapter?.supportsImportWrite
   }))
 }

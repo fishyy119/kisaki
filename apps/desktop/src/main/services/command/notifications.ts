@@ -74,10 +74,11 @@ export class CommandNotificationCoordinator {
       return
     }
 
-    if (active.cancelling && progress.phase !== 'cancelled') {
+    if (active.cancelling && progress.state !== 'cancelling') {
       return
     }
 
+    active.cancelling = progress.state === 'cancelling'
     active.lastMessage = formatProgressMessage(progress)
     active.hasProgress = true
     this.options.notify.update(

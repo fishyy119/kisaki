@@ -3,6 +3,8 @@ import type { SerializableRecord, SerializableValue } from '../shared'
 export type CommandDangerLevel = 'none' | 'low' | 'medium' | 'high'
 
 export type CommandExecutionStatus = 'completed' | 'cancelled' | 'failed'
+export type CommandExecutionState = 'running' | 'cancelling'
+export type CommandListItemState = 'idle' | CommandExecutionState
 
 export type CommandExecutionSourceKind = 'user' | 'extension' | 'background-task' | 'system'
 
@@ -26,7 +28,7 @@ export interface CommandDescriptor {
 }
 
 export interface CommandListItem extends CommandDescriptor {
-  running: boolean
+  state: CommandListItemState
 }
 
 export interface CommandExecutionRequest {
@@ -68,6 +70,7 @@ export interface CommandExecutionProgressUpdate {
 export interface CommandExecutionProgress extends CommandExecutionProgressUpdate {
   commandId: string
   executionId: string
+  state: CommandExecutionState
   source: CommandExecutionSource
   updatedAt: number
 }
@@ -77,6 +80,7 @@ export interface CommandExecutionStartResult {
   executionId: string
   startedAt: number
   cancelable: boolean
+  state: CommandExecutionState
 }
 
 export interface CommandExecutionResult {

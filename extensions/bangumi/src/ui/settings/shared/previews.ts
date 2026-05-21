@@ -15,6 +15,8 @@ import type {
   BangumiPreviewTone,
   BangumiSettingsDialogButtonEvent,
   BangumiSettingsDialogButtonResult,
+  BangumiSettingsDialogSubmitEvent,
+  BangumiSettingsDialogSubmitResult,
   BangumiSettingsPopovers,
   ResolvedPreviewResult
 } from './types'
@@ -56,12 +58,11 @@ export class PreviewResultRegistry {
   }
 }
 
-export function createDialogPreviewFields<
-  TParams extends SerializableRecord = SerializableRecord
->({
+export function createDialogPreviewFields<TParams extends SerializableRecord = SerializableRecord>({
   settings,
   id,
   label,
+  emptyLabel,
   preview
 }: {
   settings: SettingsPanelNodeFactory<
@@ -69,6 +70,7 @@ export function createDialogPreviewFields<
   >
   id: string
   label: string
+  emptyLabel?: string
   preview?: ResolvedPreviewResult
 }): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   if (!preview) {
@@ -88,7 +90,7 @@ export function createDialogPreviewFields<
           id: `${id}.groups`,
           summary: summarizePreviewGroups(groups),
           groups,
-          emptyLabel: '没有将要更改的游戏'
+          emptyLabel: emptyLabel ?? '没有将要更改的条目'
         })
       ]
     }
@@ -102,6 +104,27 @@ export async function runDialogPreview(options: {
   previewRegistry: PreviewResultRegistry
   event: BangumiSettingsDialogButtonEvent
 }): Promise<BangumiSettingsDialogButtonResult> {
+  try {
+    const result = await runPreviewCommand(options.commandId, options.args)
+    options.previewRegistry.set(options.event.sessionId, options.previewKey, options.args, result)
+
+    if (result.status !== 'completed') {
+      return options.event.fail(toPreviewResultError(result), { refresh: 'dialog' })
+    }
+
+    return options.event.success({ refresh: 'dialog' })
+  } catch (error) {
+    return options.event.fail(toSettingsError(error), { refresh: 'dialog' })
+  }
+}
+
+export async function runDialogSubmitPreview(options: {
+  previewKey: BangumiPreviewKey
+  commandId: BangumiCommandId
+  args: SerializableRecord
+  previewRegistry: PreviewResultRegistry
+  event: BangumiSettingsDialogSubmitEvent
+}): Promise<BangumiSettingsDialogSubmitResult> {
   try {
     const result = await runPreviewCommand(options.commandId, options.args)
     options.previewRegistry.set(options.event.sessionId, options.previewKey, options.args, result)
@@ -137,7 +160,7 @@ function readPreviewGroups(result: CommandExecutionResult): readonly BangumiPrev
     return []
   }
 
-  return groups.filter(isPreviewGroup)
+  return groups.filter(isPreviewGroup).sort(comparePreviewGroups)
 }
 
 function summarizePreviewGroups(groups: readonly BangumiPreviewGroup[]) {
@@ -202,6 +225,24 @@ function isPreviewTone(value: unknown): value is BangumiPreviewTone {
     value === 'warning' ||
     value === 'danger'
   )
+}
+
+function comparePreviewGroups(a: BangumiPreviewGroup, b: BangumiPreviewGroup): number {
+  const order = getPreviewGroupOrder(a) - getPreviewGroupOrder(b)
+  return order !== 0 ? order : a.title.localeCompare(b.title, 'zh-CN')
+}
+
+function getPreviewGroupOrder(group: BangumiPreviewGroup): number {
+  const label = group.badges[0]?.label ?? ''
+  if (label.includes('更新')) {
+    return 10
+  }
+
+  if (label.includes('创建')) {
+    return 20
+  }
+
+  return 30
 }
 
 function serializePreviewArgs(args: SerializableRecord): string {
