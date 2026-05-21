@@ -79,10 +79,6 @@ const versionLabel = computed(() =>
 const isBuiltin = computed(() => props.extension.builtin)
 const canToggle = computed(() => props.extension.status === 'ready' && !isBuiltin.value)
 const updatePolicyLabel = computed(() => {
-  if (isBuiltin.value) {
-    return '内置'
-  }
-
   const policy = props.extension.updatePolicy ?? 'manual'
   return UPDATE_POLICY_LABELS[policy]
 })
@@ -294,9 +290,12 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
     <!-- Meta -->
     <div class="text-xs text-muted-foreground mb-2 space-y-1">
       <div>{{ props.extension.author || '未知' }}</div>
-      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span>策略：{{ updatePolicyLabel }}</span>
-        <span v-if="!isBuiltin">频道：{{ channelLabel }}</span>
+      <div
+        v-if="!isBuiltin"
+        class="flex flex-wrap items-center gap-x-2 gap-y-1"
+      >
+        <span>更新策略：{{ updatePolicyLabel }}</span>
+        <span>频道：{{ channelLabel }}</span>
         <span v-if="props.extension.pinnedVersion">固定：v{{ props.extension.pinnedVersion }}</span>
       </div>
     </div>
