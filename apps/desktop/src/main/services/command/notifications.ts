@@ -74,6 +74,10 @@ export class CommandNotificationCoordinator {
       return
     }
 
+    if (active.cancelling && progress.phase !== 'cancelled') {
+      return
+    }
+
     active.lastMessage = formatProgressMessage(progress)
     active.hasProgress = true
     this.options.notify.update(
@@ -173,10 +177,7 @@ function resolveFinishStatus(
   if (result.status === 'cancelled') {
     return {
       title: active.template?.cancelledTitle ?? `${active.title}已取消`,
-      message:
-        active.template?.cancelledMessage ??
-        (active.cancelling || active.hasProgress ? active.lastMessage : undefined) ??
-        '命令已取消。',
+      message: active.template?.cancelledMessage ?? '命令已取消。',
       type: 'warning'
     }
   }
