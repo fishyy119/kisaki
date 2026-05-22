@@ -22,7 +22,6 @@ import {
 } from '@renderer/core/extensions'
 import type {
   ExtensionInstalledPackageInfo,
-  ExtensionInstallUpdatePolicy,
   ExtensionSettingsPanelRegistrationInfo,
   ExtensionUpdateInfo
 } from '@shared/extension'
@@ -52,12 +51,6 @@ const activeSettingsContribution = ref<ExtensionSettingsPanelRegistrationInfo | 
 const settingsContributionMissingWhileOpen = ref(false)
 const settingsRegistrationRevision = ref(0)
 
-const UPDATE_POLICY_LABELS: Record<ExtensionInstallUpdatePolicy, string> = {
-  manual: '手动',
-  auto: '自动',
-  pinned: '锁定'
-}
-
 const settingsContribution = computed(
   () =>
     extensionContributionStore.settingsPanels.value.find(
@@ -77,13 +70,6 @@ const versionLabel = computed(() =>
 )
 const isBuiltin = computed(() => props.extension.builtin)
 const canToggle = computed(() => props.extension.status === 'ready' && !isBuiltin.value)
-const updatePolicyLabel = computed(() => {
-  const policy = props.extension.updatePolicy ?? 'manual'
-  return UPDATE_POLICY_LABELS[policy]
-})
-const includePreviewUpdatesLabel = computed(() =>
-  props.extension.includePreviewUpdates ? '是' : '否'
-)
 const statusLabel = computed(() => {
   switch (props.extension.status) {
     case 'ready':
@@ -291,14 +277,6 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
     <!-- Meta -->
     <div class="text-xs text-muted-foreground mb-2 space-y-1">
       <div>{{ props.extension.author || '未知' }}</div>
-      <div
-        v-if="!isBuiltin"
-        class="flex flex-wrap items-center gap-x-2 gap-y-1"
-      >
-        <span>更新策略：{{ updatePolicyLabel }}</span>
-        <span>接收预览版更新：{{ includePreviewUpdatesLabel }}</span>
-        <span v-if="props.extension.pinnedVersion">锁定：v{{ props.extension.pinnedVersion }}</span>
-      </div>
     </div>
 
     <!-- Description -->
@@ -371,7 +349,7 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
               />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>更新策略</TooltipContent>
+          <TooltipContent>更新配置</TooltipContent>
         </Tooltip>
         <Tooltip v-if="!isBuiltin">
           <TooltipTrigger as-child>

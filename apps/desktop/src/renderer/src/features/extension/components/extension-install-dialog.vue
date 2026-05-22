@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import type {
@@ -291,7 +292,7 @@ function formatBytes(value: number | undefined): string {
         </div>
 
         <template v-else-if="plan">
-          <div class="rounded-md border border-border p-3 space-y-3">
+          <section class="space-y-3">
             <div class="flex items-start gap-3">
               <Icon
                 icon="icon-[mdi--package-variant-closed]"
@@ -322,17 +323,37 @@ function formatBytes(value: number | undefined): string {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <div>当前版本：{{ plan.package.currentVersion ?? '未安装' }}</div>
-              <div>版本类型：{{ releaseKindLabel(plan.package.releaseKind) }}</div>
-              <div>
-                安装包 SHA256：{{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+              <div class="min-w-0">
+                <dt class="text-muted-foreground">当前版本</dt>
+                <dd class="truncate">{{ plan.package.currentVersion ?? '未安装' }}</dd>
               </div>
-              <div>清单摘要：{{ shortDigest(plan.repository?.manifestDigest) }}</div>
-              <div>签名指纹：{{ plan.signer.fingerprint ?? '无' }}</div>
-              <div>安装包大小：{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</div>
-            </div>
-          </div>
+              <div class="min-w-0">
+                <dt class="text-muted-foreground">版本类型</dt>
+                <dd>{{ releaseKindLabel(plan.package.releaseKind) }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-muted-foreground">安装包 SHA256</dt>
+                <dd class="font-mono truncate">
+                  {{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
+                </dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-muted-foreground">清单摘要</dt>
+                <dd class="font-mono truncate">
+                  {{ shortDigest(plan.repository?.manifestDigest) }}
+                </dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-muted-foreground">签名指纹</dt>
+                <dd class="font-mono truncate">{{ plan.signer.fingerprint ?? '无' }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-muted-foreground">安装包大小</dt>
+                <dd>{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</dd>
+              </div>
+            </dl>
+          </section>
 
           <div
             v-if="plan.risks.length > 0"
@@ -354,50 +375,49 @@ function formatBytes(value: number | undefined): string {
             </ul>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <label
-              class="flex items-center justify-between rounded-md border border-border px-3 py-2"
-            >
-              <span class="text-sm">安装后启用</span>
-              <Switch v-model="enabled" />
-            </label>
+          <FieldGroup>
+            <Field orientation="horizontal">
+              <FieldLabel>安装后启用</FieldLabel>
+              <FieldContent>
+                <Switch v-model="enabled" />
+              </FieldContent>
+            </Field>
 
-            <div
-              v-if="isRepositoryInstall"
-              class="flex items-center gap-2 rounded-md border border-border px-3 py-2"
-            >
-              <span class="text-sm shrink-0">更新策略</span>
-              <Select v-model="updatePolicy">
-                <SelectTrigger
-                  size="sm"
-                  class="flex-1"
+            <Field orientation="horizontal">
+              <FieldLabel>更新策略</FieldLabel>
+              <FieldContent>
+                <Select
+                  v-if="isRepositoryInstall"
+                  v-model="updatePolicy"
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="manual">手动</SelectItem>
-                  <SelectItem value="auto">自动</SelectItem>
-                  <SelectItem value="pinned">锁定</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectTrigger class="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">手动</SelectItem>
+                    <SelectItem value="auto">自动</SelectItem>
+                    <SelectItem value="pinned">锁定</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Badge
+                  v-else
+                  variant="secondary"
+                >
+                  手动
+                </Badge>
+              </FieldContent>
+            </Field>
 
-            <div
-              v-else
-              class="flex items-center justify-between rounded-md border border-border px-3 py-2"
-            >
-              <span class="text-sm">更新策略</span>
-              <Badge variant="secondary">手动</Badge>
-            </div>
-
-            <label
+            <Field
               v-if="canTrustSigner"
-              class="col-span-2 flex items-center justify-between rounded-md border border-border px-3 py-2"
+              orientation="horizontal"
             >
-              <span class="text-sm">信任此扩展的签名指纹</span>
-              <Switch v-model="trustSignerFingerprint" />
-            </label>
-          </div>
+              <FieldLabel>信任此扩展的签名指纹</FieldLabel>
+              <FieldContent>
+                <Switch v-model="trustSignerFingerprint" />
+              </FieldContent>
+            </Field>
+          </FieldGroup>
         </template>
 
         <div

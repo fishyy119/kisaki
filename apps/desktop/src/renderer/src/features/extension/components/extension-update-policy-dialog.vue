@@ -1,10 +1,9 @@
 <!--
-Extension Update Policy Dialog edits one installed extension update policy.
+Extension Update Policy Dialog edits one installed extension update configuration.
 Boundary: calls set-update-policy IPC and leaves catalog refresh to the parent.
 -->
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
+import { ref, watch } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import {
@@ -24,6 +23,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import type { ExtensionInstalledPackageInfo, ExtensionInstallUpdatePolicy } from '@shared/extension'
@@ -46,18 +46,11 @@ const includePreviewUpdates = ref(currentIncludePreviewUpdates())
 const POLICY_OPTIONS: {
   value: ExtensionInstallUpdatePolicy
   label: string
-  description: string
 }[] = [
-  { value: 'manual', label: '手动', description: '仅在确认后更新' },
-  { value: 'auto', label: '自动', description: '使用已信任签名更新' },
-  { value: 'pinned', label: '锁定', description: '停留在当前版本' }
+  { value: 'manual', label: '手动' },
+  { value: 'auto', label: '自动' },
+  { value: 'pinned', label: '锁定' }
 ]
-
-const selectedPolicy = computed(
-  () => POLICY_OPTIONS.find((option) => option.value === updatePolicy.value) ?? POLICY_OPTIONS[0]
-)
-const pinnedVersion = computed(() => props.extension.pinnedVersion ?? props.extension.version)
-const includePreviewUpdatesLabel = computed(() => (includePreviewUpdates.value ? '是' : '否'))
 
 watch(open, (value) => {
   if (value) {
@@ -80,11 +73,11 @@ async function handleSave() {
         includePreviewUpdates: includePreviewUpdates.value
       })
     )
-    notify.success('更新策略已保存')
+    notify.success('更新配置已保存')
     open.value = false
     emit('updated')
   } catch (error) {
-    notify.error('保存更新策略失败', error instanceof Error ? error.message : String(error))
+    notify.error('保存更新配置失败', error instanceof Error ? error.message : String(error))
   } finally {
     saving.value = false
   }
@@ -103,67 +96,39 @@ function currentIncludePreviewUpdates(): boolean {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>更新策略</DialogTitle>
+        <DialogTitle>更新配置</DialogTitle>
         <DialogDescription>{{ props.extension.name }}</DialogDescription>
       </DialogHeader>
 
       <DialogBody>
-        <div class="space-y-3">
-          <label class="space-y-1.5 text-sm">
-            <span class="text-xs font-medium text-muted-foreground">策略</span>
-            <Select v-model="updatePolicy">
-              <SelectTrigger class="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="option in POLICY_OPTIONS"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  <div class="flex flex-col">
-                    <span>{{ option.label }}</span>
-                    <span class="text-xs text-muted-foreground">{{ option.description }}</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
+        <FieldGroup>
+          <Field orientation="horizontal">
+            <FieldLabel>更新策略</FieldLabel>
+            <FieldContent>
+              <Select v-model="updatePolicy">
+                <SelectTrigger class="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in POLICY_OPTIONS"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldContent>
+          </Field>
 
-          <label
-            class="flex items-center justify-between rounded-md border border-border px-3 py-2"
-          >
-            <span class="text-sm">接收预览版更新</span>
-            <Switch v-model="includePreviewUpdates" />
-          </label>
-
-          <div class="rounded-md border border-border p-3 text-xs text-muted-foreground space-y-2">
-            <div class="flex items-center gap-2">
-              <Icon
-                icon="icon-[mdi--source-branch]"
-                class="size-4"
-              />
-              <span>接收预览版更新：{{ includePreviewUpdatesLabel }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <Icon
-                icon="icon-[mdi--update]"
-                class="size-4"
-              />
-              <span>当前：{{ selectedPolicy.label }}</span>
-            </div>
-            <div
-              v-if="updatePolicy === 'pinned' && pinnedVersion"
-              class="flex items-center gap-2"
-            >
-              <Icon
-                icon="icon-[mdi--pin-outline]"
-                class="size-4"
-              />
-              <span>锁定：v{{ pinnedVersion }}</span>
-            </div>
-          </div>
-        </div>
+          <Field orientation="horizontal">
+            <FieldLabel>接收预览版更新</FieldLabel>
+            <FieldContent>
+              <Switch v-model="includePreviewUpdates" />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
       </DialogBody>
 
       <DialogFooter>
