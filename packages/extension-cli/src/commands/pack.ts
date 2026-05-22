@@ -13,7 +13,6 @@ export interface PackCommandOptions {
   build: boolean
   sign?: boolean
   key?: string
-  channel: string
   target: ExtensionRegistryArtifactTarget
   signatureOut?: string
 }
@@ -48,7 +47,6 @@ export async function packCommand(options: PackCommandOptions): Promise<void> {
       size: digest.size,
       sha256: digest.sha256,
       keyPath: options.key,
-      channel: options.channel,
       target: options.target,
       outFile: options.signatureOut
     })

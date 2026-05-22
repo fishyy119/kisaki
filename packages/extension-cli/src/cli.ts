@@ -53,7 +53,6 @@ export async function runCli(argv = process.argv): Promise<void> {
     .option('--no-build', 'Skip the build step before packaging')
     .option('--sign', 'Write an artifact signature file after packaging', false)
     .option('--key <key-file>', 'Signing key file from kisx key generate')
-    .option('--channel <channel>', 'Release channel for the signature payload', 'stable')
     .option('--target <target>', 'Artifact target for the signature payload', 'any')
     .option('--signature-out <sig-file>', 'Signature file path')
     .action(packCommand)
@@ -99,7 +98,6 @@ export async function runCli(argv = process.argv): Promise<void> {
     .requiredOption('--manifest <manifest>', 'Registry manifest path')
     .requiredOption('--url <artifact-url>', 'Published artifact URL')
     .option('--signature <sig-file>', 'Artifact signature JSON file from kisx pack --sign')
-    .option('--channel <channel>', 'Release channel', 'stable')
     .option('--target <target>', 'Artifact target', 'any')
     .option('--published-at <iso-date>', 'Release publication timestamp')
     .option('--changelog <text>', 'Release changelog text')
@@ -128,7 +126,6 @@ export async function runCli(argv = process.argv): Promise<void> {
     .argument('<package>', '.kisx package path')
     .requiredOption('--key <key-file>', 'Signing key file from kisx key generate')
     .option('--out <sig-file>', 'Signature file path')
-    .option('--channel <channel>', 'Release channel', 'stable')
     .option('--target <target>', 'Artifact target', 'any')
     .action(registrySignCommand)
 

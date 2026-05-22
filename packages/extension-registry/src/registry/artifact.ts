@@ -1,6 +1,5 @@
 import type {
   ExtensionRegistryRelease,
-  ExtensionRegistryReleaseChannel,
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySchemaVersion,
   ExtensionRegistrySigningAlgorithm
@@ -30,7 +29,6 @@ export interface ExtensionRegistryArtifactSignaturePayload {
   readonly schemaVersion: ExtensionRegistrySchemaVersion
   readonly extensionId: string
   readonly version: string
-  readonly channel: ExtensionRegistryReleaseChannel
   readonly engines: ExtensionRegistryReleaseEngines
   readonly target: ExtensionRegistryArtifactTarget
   readonly size: number
@@ -66,7 +64,7 @@ export function selectExtensionRegistryArtifact(
 
 export function createExtensionRegistryArtifactSignaturePayload(
   extensionId: string,
-  release: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines'>,
+  release: Pick<ExtensionRegistryRelease, 'version' | 'engines'>,
   artifact: Pick<ExtensionRegistryArtifact, 'target' | 'size' | 'sha256'>
 ): ExtensionRegistryArtifactSignaturePayload {
   return {
@@ -74,7 +72,6 @@ export function createExtensionRegistryArtifactSignaturePayload(
     schemaVersion: EXTENSION_REGISTRY_SCHEMA_VERSION,
     extensionId,
     version: release.version,
-    channel: release.channel,
     engines: {
       kisaki: release.engines.kisaki.trim()
     },

@@ -35,23 +35,24 @@ kisx pack
 kisx pack --out-dir artifacts --no-build
 ```
 
-To create an author signature for a registry release, pass the release channel and artifact
-target that should be covered by the signature payload:
+To create an author signature for a registry release, pass the artifact target that should
+be covered by the signature payload:
 
 ```bash
 kisx key generate --out .keys/author.ed25519.json
-kisx pack --out-dir artifacts --sign --key .keys/author.ed25519.json --channel stable --target any
+kisx pack --out-dir artifacts --sign --key .keys/author.ed25519.json --target any
 ```
 
 `kisx pack --sign` writes a `.sig` JSON file beside the package unless
 `--signature-out <sig-file>` is supplied. The signature file signs the artifact identity
-envelope: extension id, version, channel, `engines.kisaki`, artifact target, size, and
-sha256 digest. The artifact URL is intentionally not signed so mirrors can change without
+envelope: extension id, version, `engines.kisaki`, artifact target, size, and sha256
+digest. The artifact URL is intentionally not signed so mirrors can change without
 changing author identity.
 
 Use semver prerelease versions for non-stable releases, such as `1.2.0-beta.1`. The
-registry keeps one release per package version; `channel` is an update track label, and
-platform builds are added as artifact targets under that release.
+registry derives the release kind from the version itself; stable versions have no
+prerelease suffix, and preview versions use `alpha`, `beta`, `rc`, or `nightly`.
+Platform builds are added as artifact targets under the same release version.
 
 ## Registry Manifests
 
@@ -83,8 +84,8 @@ kisx registry add-release artifacts/example-0.0.1.kisx --manifest registry/manif
 ```
 
 When `--signature` is supplied, the CLI verifies the `.sig` envelope against the package
-metadata, artifact size, sha256, channel, and target. The public key is added to
-`signingKeys`, and the artifact signature is written into the release.
+metadata, artifact size, sha256, and target. The public key is added to `signingKeys`,
+and the artifact signature is written into the release.
 
 Useful release options:
 
@@ -92,15 +93,14 @@ Useful release options:
 kisx registry add-release artifacts/example-0.0.1.kisx \
   --manifest registry/manifest.json \
   --url https://example.com/extensions/example-0.0.1.kisx \
-  --channel beta \
   --target win32-x64 \
   --changelog "Improve matching." \
   --changelog-url https://example.com/releases/example-0.0.1
 ```
 
-If the same package version already exists, the CLI requires the same channel and
-`engines.kisaki` range. A second artifact target can be added to that release. Replacing
-an existing target requires `--replace`.
+If the same package version already exists, the CLI requires the same `engines.kisaki`
+range. A second artifact target can be added to that release. Replacing an existing
+target requires `--replace`.
 
 Useful helpers:
 

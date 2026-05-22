@@ -241,6 +241,7 @@ export class ExtensionInstallerManager {
     const existing = command.reason === 'update' ? this.installations.require(extensionId) : null
     const enabled = existing?.enabled ?? command.enabled ?? plan.defaultEnabled
     const updatePolicy = existing?.updatePolicy ?? command.updatePolicy ?? plan.updatePolicy
+    const includePreviewUpdates = existing?.includePreviewUpdates ?? plan.includePreviewUpdates
     const pinnedVersion =
       command.reason === 'update'
         ? (existing?.pinnedVersion ?? null)
@@ -285,7 +286,7 @@ export class ExtensionInstallerManager {
           installReason: command.reason === 'update' ? 'update' : 'manual',
           updatePolicy,
           pinnedVersion,
-          channel: candidate.release.channel
+          includePreviewUpdates
         },
         expectedPrevious: command.reason === 'update' ? 'present' : 'none'
       })
@@ -335,7 +336,7 @@ export class ExtensionInstallerManager {
           installReason: 'local-file',
           updatePolicy: 'manual',
           pinnedVersion: null,
-          channel: 'stable'
+          includePreviewUpdates: false
         },
         expectedPrevious: this.installations.store.get(extensionId) ? 'any' : 'none'
       })

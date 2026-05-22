@@ -249,6 +249,10 @@ function signerVariant(
   return 'warning'
 }
 
+function releaseKindLabel(value: ExtensionInstallPlan['package']['releaseKind']): string {
+  return value === 'stable' ? '稳定版' : '预览版'
+}
+
 function shortDigest(value: string | null | undefined): string {
   return value ? value.slice(0, 12) : '无'
 }
@@ -320,7 +324,7 @@ function formatBytes(value: number | undefined): string {
 
             <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <div>当前版本：{{ plan.package.currentVersion ?? '未安装' }}</div>
-              <div>目标频道：{{ plan.package.channel }}</div>
+              <div>版本类型：{{ releaseKindLabel(plan.package.releaseKind) }}</div>
               <div>
                 安装包 SHA256：{{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
               </div>

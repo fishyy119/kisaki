@@ -81,7 +81,9 @@ const updatePolicyLabel = computed(() => {
   const policy = props.extension.updatePolicy ?? 'manual'
   return UPDATE_POLICY_LABELS[policy]
 })
-const channelLabel = computed(() => props.extension.channel ?? 'stable')
+const includePreviewUpdatesLabel = computed(() =>
+  props.extension.includePreviewUpdates ? '是' : '否'
+)
 const statusLabel = computed(() => {
   switch (props.extension.status) {
     case 'ready':
@@ -294,7 +296,7 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
         class="flex flex-wrap items-center gap-x-2 gap-y-1"
       >
         <span>更新策略：{{ updatePolicyLabel }}</span>
-        <span>频道：{{ channelLabel }}</span>
+        <span>接收预览版更新：{{ includePreviewUpdatesLabel }}</span>
         <span v-if="props.extension.pinnedVersion">锁定：v{{ props.extension.pinnedVersion }}</span>
       </div>
     </div>

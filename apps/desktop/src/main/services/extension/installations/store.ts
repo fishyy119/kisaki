@@ -16,7 +16,7 @@ export interface CreateOrUpdateExtensionInstallationInput {
   installReason?: ExtensionInstallReason
   updatePolicy?: ExtensionUpdatePolicy
   pinnedVersion?: string | null
-  channel?: string
+  includePreviewUpdates?: boolean
   installedAt?: Date
 }
 
@@ -27,7 +27,7 @@ export interface UpdateExtensionInstallationInput {
   installReason?: ExtensionInstallReason
   updatePolicy?: ExtensionUpdatePolicy
   pinnedVersion?: string | null
-  channel?: string
+  includePreviewUpdates?: boolean
 }
 
 export class ExtensionInstallationStore {
@@ -72,7 +72,7 @@ export class ExtensionInstallationStore {
         installReason: input.installReason ?? 'manual',
         updatePolicy: input.updatePolicy ?? 'manual',
         pinnedVersion: input.pinnedVersion ?? null,
-        channel: input.channel ?? 'stable',
+        includePreviewUpdates: input.includePreviewUpdates ?? false,
         installedAt: input.installedAt ?? now,
         updatedAt: now
       })
@@ -94,7 +94,7 @@ export class ExtensionInstallationStore {
       installReason: input.installReason,
       updatePolicy: input.updatePolicy,
       pinnedVersion: input.pinnedVersion,
-      channel: input.channel
+      includePreviewUpdates: input.includePreviewUpdates
     })
   }
 
@@ -118,9 +118,10 @@ export class ExtensionInstallationStore {
   setUpdatePolicy(
     extensionId: string,
     updatePolicy: ExtensionUpdatePolicy,
-    pinnedVersion: string | null = null
+    pinnedVersion: string | null = null,
+    includePreviewUpdates?: boolean
   ): ExtensionInstallationRow {
-    return this.update(extensionId, { updatePolicy, pinnedVersion })
+    return this.update(extensionId, { updatePolicy, pinnedVersion, includePreviewUpdates })
   }
 
   remove(extensionId: string): boolean {

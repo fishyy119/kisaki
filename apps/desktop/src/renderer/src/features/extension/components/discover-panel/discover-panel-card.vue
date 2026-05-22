@@ -9,6 +9,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils/cn'
 import type {
+  ExtensionCatalogReleaseInfo,
   ExtensionCatalogPackageInfo,
   ExtensionCreateRepositoryInstallPlanRequest
 } from '@shared/extension'
@@ -82,6 +83,10 @@ function handleInstall() {
     repositoryId: release.repositoryId
   })
 }
+
+function releaseKindLabel(release: ExtensionCatalogReleaseInfo): string {
+  return release.releaseKind === 'stable' ? '稳定版' : '预览版'
+}
 </script>
 
 <template>
@@ -139,7 +144,7 @@ function handleInstall() {
         variant="secondary"
         class="text-[10px] h-5"
       >
-        {{ latestRelease.channel }}
+        {{ releaseKindLabel(latestRelease) }}
       </Badge>
     </div>
 

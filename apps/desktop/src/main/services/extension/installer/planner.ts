@@ -5,6 +5,7 @@ import type {
   ExtensionRegistryManifest,
   ExtensionRegistrySigningAlgorithm
 } from '@kisaki/extension-registry'
+import { getExtensionRegistryReleaseKind } from '@kisaki/extension-registry'
 import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
@@ -56,7 +57,17 @@ export class ExtensionInstallPlanner {
     const signer = this.createSignerInfo(candidate, existing)
     const artifact = toArtifactInfo(candidate.manifest, candidate.artifact)
     const release = toReleaseInfo(candidate, artifact)
-    const risks = createRepositoryRisks(candidate, existing, signer, artifact)
+    const includePreviewUpdates = getDefaultIncludePreviewUpdates(
+      existing,
+      candidate.release.version
+    )
+    const risks = createRepositoryRisks(
+      candidate,
+      existing,
+      signer,
+      artifact,
+      includePreviewUpdates
+    )
 
     return createInstallPlan({
       id: `${candidate.registryPackage.id}:${candidate.releaseDigest}`,
@@ -67,7 +78,7 @@ export class ExtensionInstallPlanner {
         summary: candidate.registryPackage.summary,
         currentVersion: existing?.version ?? null,
         targetVersion: candidate.release.version,
-        channel: candidate.release.channel
+        releaseKind: release.releaseKind
       },
       repository: {
         id: candidate.repository.id,
@@ -81,7 +92,8 @@ export class ExtensionInstallPlanner {
       signer,
       risks,
       defaultEnabled: existing?.enabled ?? true,
-      updatePolicy: existing?.updatePolicy ?? 'manual'
+      updatePolicy: existing?.updatePolicy ?? 'manual',
+      includePreviewUpdates
     })
   }
 
@@ -121,7 +133,7 @@ export class ExtensionInstallPlanner {
         name: input.name,
         currentVersion: existing?.version ?? null,
         targetVersion: input.version,
-        channel: 'stable'
+        releaseKind: getExtensionRegistryReleaseKind(input.version)
       },
       repository: null,
       release: null,
@@ -137,7 +149,8 @@ export class ExtensionInstallPlanner {
       },
       risks,
       defaultEnabled: existing?.enabled ?? true,
-      updatePolicy: 'manual'
+      updatePolicy: 'manual',
+      includePreviewUpdates: false
     })
   }
 
@@ -181,9 +194,11 @@ function createRepositoryRisks(
   candidate: ExtensionRepositoryInstallCandidate,
   existing: ExtensionInstallationRow | null,
   signer: ExtensionInstallPlanSignerInfo,
-  artifact: ExtensionCatalogArtifactInfo
+  artifact: ExtensionCatalogArtifactInfo,
+  includePreviewUpdates: boolean
 ): ExtensionInstallRiskInfo[] {
   const risks: ExtensionInstallRiskInfo[] = []
+  const releaseKind = getExtensionRegistryReleaseKind(candidate.release.version)
 
   if (getUrlHost(candidate.repository.url) !== artifact.host) {
     risks.push(
@@ -200,6 +215,16 @@ function createRepositoryRisks(
   if (candidate.release.yanked === true) {
     risks.push(
       createRisk('yanked-release', 'danger', 'This release has been withdrawn by the repository.')
+    )
+  }
+
+  if (releaseKind === 'preview') {
+    risks.push(
+      createRisk(
+        'preview-release',
+        'warning',
+        'This installs a preview release identified by a semver prerelease version.'
+      )
     )
   }
 
@@ -221,12 +246,14 @@ function createRepositoryRisks(
     )
   }
 
-  if (existing && existing.channel !== candidate.release.channel) {
+  if (existing && existing.includePreviewUpdates !== includePreviewUpdates) {
     risks.push(
       createRisk(
-        'channel-change',
+        'preview-updates-change',
         'warning',
-        `This changes the update channel from ${existing.channel} to ${candidate.release.channel}.`
+        includePreviewUpdates
+          ? 'This enables preview updates for this extension.'
+          : 'This disables preview updates for this extension.'
       )
     )
   }
@@ -260,6 +287,17 @@ function createRepositoryRisks(
   return risks
 }
 
+function getDefaultIncludePreviewUpdates(
+  existing: ExtensionInstallationRow | null,
+  version: string
+): boolean {
+  if (existing?.includePreviewUpdates === true) {
+    return true
+  }
+
+  return getExtensionRegistryReleaseKind(version) === 'preview'
+}
+
 function toReleaseInfo(
   candidate: ExtensionRepositoryInstallCandidate,
   artifact: ExtensionCatalogArtifactInfo
@@ -276,7 +314,7 @@ function toReleaseInfo(
     id: candidate.releaseDigest,
     releaseDigest: candidate.releaseDigest,
     version: candidate.release.version,
-    channel: candidate.release.channel,
+    releaseKind: getExtensionRegistryReleaseKind(candidate.release.version),
     publishedAt: candidate.release.publishedAt,
     engines: candidate.release.engines,
     changelog: candidate.release.changelog,
@@ -369,7 +407,7 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
       summary: plan.package.summary ?? null,
       currentVersion: plan.package.currentVersion,
       targetVersion: plan.package.targetVersion,
-      channel: plan.package.channel
+      releaseKind: plan.package.releaseKind
     },
     repository: plan.repository
       ? {
@@ -384,7 +422,7 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
           id: plan.release.id,
           releaseDigest: plan.release.releaseDigest,
           version: plan.release.version,
-          channel: plan.release.channel,
+          releaseKind: plan.release.releaseKind,
           publishedAt: plan.release.publishedAt,
           engines: {
             kisaki: plan.release.engines.kisaki
@@ -428,7 +466,8 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
       message: risk.message
     })),
     defaultEnabled: plan.defaultEnabled,
-    updatePolicy: plan.updatePolicy
+    updatePolicy: plan.updatePolicy,
+    includePreviewUpdates: plan.includePreviewUpdates
   }
 
   return createHash('sha256').update(stringifyExtensionRegistryCanonicalJson(payload)).digest('hex')

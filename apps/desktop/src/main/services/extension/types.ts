@@ -41,7 +41,7 @@ export interface ExtensionInstalledEntry {
   source: ExtensionInstallationSource | null
   updatePolicy: ExtensionInstallUpdatePolicy | null
   pinnedVersion: string | null
-  channel: string | null
+  includePreviewUpdates: boolean | null
   installedAt: string | null
   updatedAt: string | null
   packagePath: string

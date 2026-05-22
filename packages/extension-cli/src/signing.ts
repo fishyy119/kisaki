@@ -14,7 +14,6 @@ import {
   EXTENSION_REGISTRY_ARTIFACT_SIGNATURE_KIND,
   EXTENSION_REGISTRY_SCHEMA_VERSION,
   matchesExtensionRegistryArtifactTargetFormat,
-  matchesExtensionRegistryReleaseChannelFormat,
   type ExtensionRegistryArtifact,
   type ExtensionRegistryArtifactSignature,
   type ExtensionRegistryArtifactSignaturePayload,
@@ -70,7 +69,6 @@ export interface SignKisxArtifactInput {
   size: number
   sha256: string
   keyPath: string
-  channel: string
   target: ExtensionRegistryArtifactTarget
   outFile?: string
 }
@@ -167,7 +165,6 @@ export function verifyArtifactSignatureForPackage(input: {
   manifest: ExtensionManifest
   size: number
   sha256: string
-  channel: string
   target: ExtensionRegistryArtifactTarget
 }): VerifiedArtifactSignature {
   const expectedPayload = createArtifactSignaturePayload(input)
@@ -190,7 +187,7 @@ export function verifyArtifactSignatureForPackage(input: {
 
 export function verifyRegistryArtifactSignature(input: {
   packageId: string
-  release: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines'>
+  release: Pick<ExtensionRegistryRelease, 'version' | 'engines'>
   artifact: Pick<ExtensionRegistryArtifact, 'target' | 'size' | 'sha256' | 'signature'>
   signingKey: ExtensionRegistrySigningKey
 }): void {
@@ -219,19 +216,12 @@ function createArtifactSignaturePayload(input: {
   manifest: ExtensionManifest
   size: number
   sha256: string
-  channel: string
   target: ExtensionRegistryArtifactTarget
 }): ExtensionRegistryArtifactSignaturePayload {
   const kisakiRange = input.manifest.engines?.kisaki?.trim()
   if (!kisakiRange) {
     throw new CliError(
       'manifest.json must include engines.kisaki before the package can be signed or published.'
-    )
-  }
-
-  if (!matchesExtensionRegistryReleaseChannelFormat(input.channel)) {
-    throw new CliError(
-      'Release channel must use lowercase letters, numbers, dots, underscores or hyphens, and must start and end with a letter or number.'
     )
   }
 
@@ -245,7 +235,6 @@ function createArtifactSignaturePayload(input: {
     input.manifest.id,
     {
       version: input.manifest.version,
-      channel: input.channel,
       engines: {
         kisaki: kisakiRange
       }
@@ -331,7 +320,6 @@ function parseArtifactSignaturePayload(
     schemaVersion: requireSchemaVersion(record, `${filePath}: payload`),
     extensionId: requireString(record, 'extensionId', `${filePath}: payload`),
     version: requireString(record, 'version', `${filePath}: payload`),
-    channel: requireString(record, 'channel', `${filePath}: payload`),
     engines: {
       kisaki: requireString(engines, 'kisaki', `${filePath}: payload.engines`)
     },

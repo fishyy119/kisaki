@@ -208,7 +208,12 @@ export class ExtensionInstallationManager {
       const pinnedVersion =
         request.updatePolicy === 'pinned' ? (request.pinnedVersion ?? installation.version) : null
 
-      this.store.setUpdatePolicy(safeExtensionId, request.updatePolicy, pinnedVersion)
+      this.store.setUpdatePolicy(
+        safeExtensionId,
+        request.updatePolicy,
+        pinnedVersion,
+        request.includePreviewUpdates
+      )
       await this.refresh()
       this.emitInstallationsChanged()
       return this.require(safeExtensionId)
@@ -405,7 +410,7 @@ export class ExtensionInstallationManager {
         source: null,
         updatePolicy: null,
         pinnedVersion: null,
-        channel: null,
+        includePreviewUpdates: null,
         installedAt: null,
         updatedAt: null,
         packagePath: extensionPath,
@@ -572,7 +577,7 @@ function toExtensionInstalledPackageInfo(
     installationSource: entry.source,
     updatePolicy: entry.updatePolicy ?? undefined,
     pinnedVersion: entry.pinnedVersion,
-    channel: entry.channel,
+    includePreviewUpdates: entry.includePreviewUpdates,
     directory: entry.packagePath,
     issues: entry.issues
   }

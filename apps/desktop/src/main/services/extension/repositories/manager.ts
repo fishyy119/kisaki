@@ -14,10 +14,12 @@ import type {
 } from '@shared/extension'
 import type { ExtensionRepositoryRow } from '@shared/db'
 import {
+  getExtensionRegistryReleaseKind,
   selectExtensionRegistryArtifact,
   type ExtensionRegistryManifest,
   type ExtensionRegistryPackageIcon,
-  type ExtensionRegistryRelease
+  type ExtensionRegistryRelease,
+  type ExtensionRegistryReleaseKind
 } from '@kisaki/extension-registry'
 import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
 import type { ExtensionIconManager } from '../packages'
@@ -255,6 +257,7 @@ export class ExtensionRepositoryManager {
     options: {
       repositoryId?: string
       releaseId?: string
+      releaseKind?: ExtensionRegistryReleaseKind
       includeYanked?: boolean
       compatibleOnly?: boolean
     } = {}
@@ -271,6 +274,7 @@ export class ExtensionRepositoryManager {
     const result = this.collectInstallCandidates(request.extensionId, {
       repositoryId: request.repositoryId,
       releaseId: request.releaseId,
+      releaseKind: request.releaseId ? undefined : 'stable',
       includeYanked: Boolean(request.releaseId),
       compatibleOnly: true
     })
@@ -300,6 +304,7 @@ export class ExtensionRepositoryManager {
     options: {
       repositoryId?: string
       releaseId?: string
+      releaseKind?: ExtensionRegistryReleaseKind
       includeYanked?: boolean
       compatibleOnly?: boolean
     } = {}
@@ -350,6 +355,12 @@ export class ExtensionRepositoryManager {
           continue
         }
         releaseFound = true
+        if (
+          options.releaseKind &&
+          getExtensionRegistryReleaseKind(release.version) !== options.releaseKind
+        ) {
+          continue
+        }
         if (options.compatibleOnly !== false && !isReleaseCompatible(release, this.appVersion)) {
           continue
         }
@@ -567,7 +578,10 @@ function compareInstallCandidates(
       isReleaseCompatible(right.release, appVersion)
     ) ||
     compareBooleans(left.release.yanked !== true, right.release.yanked !== true) ||
-    compareBooleans(left.release.channel === 'stable', right.release.channel === 'stable') ||
+    compareBooleans(
+      getExtensionRegistryReleaseKind(left.release.version) === 'stable',
+      getExtensionRegistryReleaseKind(right.release.version) === 'stable'
+    ) ||
     semver.rcompare(left.release.version, right.release.version) ||
     compareNullableTime(right.release.publishedAt, left.release.publishedAt) ||
     compareNumbers(left.repository.priority, right.repository.priority) ||

@@ -1,4 +1,5 @@
 import semver from 'semver'
+import { getExtensionRegistryReleaseKind } from '@kisaki/extension-registry'
 import type { ExtensionInstallationRow } from '@shared/db'
 import type {
   ExtensionInstallPlan,
@@ -180,21 +181,24 @@ export class ExtensionUpdatePlanner {
       }
     }
 
-    const sameChannelCandidates = newerCandidates.filter(
-      (candidate) => candidate.release.channel === installation.channel
+    const allowedCandidates = newerCandidates.filter((candidate) =>
+      isReleaseAllowedByPreviewSetting(
+        candidate.release.version,
+        installation.includePreviewUpdates
+      )
     )
-    if (sameChannelCandidates.length === 0) {
+    if (allowedCandidates.length === 0) {
       return {
         plan: null,
         unavailable: createUnavailable(
           installation,
-          'channel-mismatch',
-          `No newer release was found on the "${installation.channel}" channel.`
+          'preview-updates-disabled',
+          'Only preview releases are newer than the installed version. Enable preview updates to receive them.'
         )
       }
     }
 
-    const plans = sameChannelCandidates.map((candidate) => this.createPlan(installation, candidate))
+    const plans = allowedCandidates.map((candidate) => this.createPlan(installation, candidate))
     const eligiblePlans = mode === 'automatic' ? plans.filter((plan) => plan.automatic) : plans
 
     if (eligiblePlans.length === 0) {
@@ -236,7 +240,7 @@ export class ExtensionUpdatePlanner {
         artifact: installPlan.artifact,
         signer: installPlan.signer,
         updatePolicy: installation.updatePolicy,
-        channel: installation.channel,
+        includePreviewUpdates: installation.includePreviewUpdates,
         automatic,
         risks: installPlan.risks
       }
@@ -275,6 +279,13 @@ function isVersionUpgrade(
     semver.valid(candidate.release.version) &&
     semver.gt(candidate.release.version, installation.version)
   )
+}
+
+function isReleaseAllowedByPreviewSetting(
+  version: string,
+  includePreviewUpdates: boolean
+): boolean {
+  return includePreviewUpdates || getExtensionRegistryReleaseKind(version) === 'stable'
 }
 
 function compareUpdatePlans(left: ExtensionUpdatePlan, right: ExtensionUpdatePlan): number {
@@ -318,7 +329,7 @@ function createUnavailable(
     extensionId: installation.id,
     currentVersion: installation.version,
     updatePolicy: installation.updatePolicy,
-    channel: installation.channel,
+    includePreviewUpdates: installation.includePreviewUpdates,
     reason,
     message
   }

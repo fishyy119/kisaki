@@ -6,14 +6,20 @@ export const EXTENSION_REGISTRY_SCHEMA_URL =
 export const EXTENSION_REGISTRY_SCHEMA_VERSION = 1
 
 export const EXTENSION_REGISTRY_SIGNING_ALGORITHMS = ['ed25519'] as const
-export const EXTENSION_REGISTRY_KNOWN_RELEASE_CHANNELS = ['stable', 'beta', 'nightly'] as const
+export const EXTENSION_REGISTRY_RELEASE_KINDS = ['stable', 'preview'] as const
+export const EXTENSION_REGISTRY_PREVIEW_RELEASE_PREFIXES = [
+  'alpha',
+  'beta',
+  'rc',
+  'nightly'
+] as const
 
 export type ExtensionRegistrySchemaVersion = typeof EXTENSION_REGISTRY_SCHEMA_VERSION
 export type ExtensionRegistrySigningAlgorithm =
   (typeof EXTENSION_REGISTRY_SIGNING_ALGORITHMS)[number]
-export type ExtensionRegistryKnownReleaseChannel =
-  (typeof EXTENSION_REGISTRY_KNOWN_RELEASE_CHANNELS)[number]
-export type ExtensionRegistryReleaseChannel = ExtensionRegistryKnownReleaseChannel | (string & {})
+export type ExtensionRegistryReleaseKind = (typeof EXTENSION_REGISTRY_RELEASE_KINDS)[number]
+export type ExtensionRegistryPreviewReleasePrefix =
+  (typeof EXTENSION_REGISTRY_PREVIEW_RELEASE_PREFIXES)[number]
 
 export interface ExtensionRegistryManifest {
   readonly $schema?: string
@@ -69,7 +75,6 @@ export interface ExtensionRegistryReleaseChangelog {
 
 export interface ExtensionRegistryRelease {
   readonly version: string
-  readonly channel: ExtensionRegistryReleaseChannel
   readonly publishedAt: string
   readonly engines: ExtensionRegistryReleaseEngines
   readonly changelog?: ExtensionRegistryReleaseChangelog

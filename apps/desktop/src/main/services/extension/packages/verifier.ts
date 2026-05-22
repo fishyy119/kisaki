@@ -70,7 +70,7 @@ export interface VerifyExtensionPackageArchiveInput {
   expectedArtifact?: Pick<ExtensionRegistryArtifact, 'size' | 'sha256' | 'signature' | 'target'>
   expectedIdentity?: ExtensionPackageExpectedIdentity
   registryPackage?: Pick<ExtensionRegistryPackage, 'id' | 'categories'>
-  registryRelease?: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines'>
+  registryRelease?: Pick<ExtensionRegistryRelease, 'version' | 'engines'>
   signingKeys?: readonly ExtensionRegistrySigningKey[]
   allowIncompatibleKisaki?: boolean
   signal?: AbortSignal
@@ -214,7 +214,7 @@ function assertNotAborted(signal?: AbortSignal): void {
 
 export function verifyArtifactSignature(input: {
   extensionId: string
-  release?: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines'>
+  release?: Pick<ExtensionRegistryRelease, 'version' | 'engines'>
   artifact: Pick<ExtensionRegistryArtifact, 'target' | 'size' | 'sha256' | 'signature'>
   signingKeys: readonly ExtensionRegistrySigningKey[]
 }): ExtensionPackageSignatureVerificationResult {

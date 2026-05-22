@@ -30,7 +30,7 @@ Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，�
 - `ExtensionInstaller` 直接从 source provider 解析最新版并下载，没有独立的远程仓库快照、signer trust 记录和安装来源审计。
 - 发现 UI 以“选 provider 搜索”为中心，而不是以“管理仓库、浏览聚合目录、查看仓库健康状态”为中心。
 - 卸载当前直接删除包、数据和临时目录，缺少“卸载包但保留数据”与“彻底清除数据”的清晰产品语义。
-- 更新只问原 source 的 latest version，无法处理多仓库合并、channel、pin、yanked release、兼容范围、signing key 变化和离线缓存。
+- 更新只问原 source 的 latest version，无法处理多仓库合并、是否接收预览版更新、pin、yanked release、兼容范围、signing key 变化和离线缓存。
 
 本文目标是把扩展管理重建为一个可长期维护的分布式注册表系统。
 
@@ -42,7 +42,7 @@ Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，�
 - 安装和更新始终基于一个明确 release，且 release 的来源、manifest digest、artifact digest、签名状态和安装时间可追溯。
 - 远程 `.kisx` 必须通过 `sha256` 完整性校验；签名允许扩展作者自签，是否为该 extension 信任 signer fingerprint 由用户决定。
 - 安装、更新、卸载都是事务化操作：失败时包目录、数据库状态、运行时状态和缓存不会留下半完成结果。
-- 更新支持自动检查、手动更新、pin 版本、channel 策略、yanked release 过滤和兼容范围过滤。
+- 更新支持自动检查、手动更新、pin 版本、预览版更新开关、yanked release 过滤和兼容范围过滤。
 - 卸载拆分为“卸载”和“清除数据”：卸载移除运行时代码，清除数据才删除 `data/<extension-id>`。
 - 仓库配置和安装状态进入 SQLite；文件系统只保存包内容、缓存和扩展数据。
 - 主进程保持唯一可信边界；renderer 只消费 DTO 和调用 `extension:*` IPC；扩展代码仍只在 extension host 运行。
@@ -57,17 +57,17 @@ Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，�
 
 ## 术语
 
-| 术语              | 含义                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------- |
-| Extension         | Kisaki 扩展包。用户文案可称“插件”，代码和公共类型统一使用 `Extension`。                         |
-| Repository        | 用户配置的扩展仓库，一个仓库对应一个 manifest URL。                                             |
-| Registry manifest | 仓库 URL 返回的 JSON 文档，描述仓库元信息、扩展包和 release 列表。                              |
-| Package           | 一个扩展身份，例如 `bangumi`。同一 package 可以有多个 release，但 `version` 必须唯一。          |
-| Release           | 一个 package 的某个版本，包含 channel、兼容范围、artifact、校验和、签名、发布时间和 changelog。 |
-| Artifact          | 可下载的 `.kisx` 文件。一个 release 可以有多个 artifact，用于不同平台或架构。                   |
-| Catalog           | Main 进程聚合并规范化后的可发现扩展目录。                                                       |
-| Installation      | 本机某个扩展的安装记录，指向当前 active release。                                               |
-| Signer trust      | 用户对某个扩展 signing key fingerprint 的本地信任选择。                                         |
+| 术语              | 含义                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| Extension         | Kisaki 扩展包。用户文案可称“插件”，代码和公共类型统一使用 `Extension`。                |
+| Repository        | 用户配置的扩展仓库，一个仓库对应一个 manifest URL。                                    |
+| Registry manifest | 仓库 URL 返回的 JSON 文档，描述仓库元信息、扩展包和 release 列表。                     |
+| Package           | 一个扩展身份，例如 `bangumi`。同一 package 可以有多个 release，但 `version` 必须唯一。 |
+| Release           | 一个 package 的某个版本，包含兼容范围、artifact、校验和、签名、发布时间和 changelog。  |
+| Artifact          | 可下载的 `.kisx` 文件。一个 release 可以有多个 artifact，用于不同平台或架构。          |
+| Catalog           | Main 进程聚合并规范化后的可发现扩展目录。                                              |
+| Installation      | 本机某个扩展的安装记录，指向当前 active release。                                      |
+| Signer trust      | 用户对某个扩展 signing key fingerprint 的本地信任选择。                                |
 
 ## 核心结论
 
@@ -152,7 +152,6 @@ packages/extension-registry/src/registry/integrity.ts
       "releases": [
         {
           "version": "1.2.0",
-          "channel": "stable",
           "publishedAt": "2026-05-10T00:00:00.000Z",
           "engines": {
             "kisaki": ">=0.0.3 <0.1.0"
@@ -205,13 +204,14 @@ Package：
 Release：
 
 - `version` 必须是 semver，并且在同一 package 的 release 列表中唯一。`version` 是发布身份；beta、nightly、rc 等非稳定版本必须使用 semver prerelease 后缀，例如 `1.3.0-beta.1`、`1.3.0-nightly.4`。
-- `channel` 为 `stable`、`beta`、`nightly` 或自定义字符串；它只是更新轨道标签，不参与同一 package 内的 release 唯一性判断。UI 默认只显示 `stable`。
+- release kind 不写入 manifest，而是由 `version` 派生：没有 prerelease 后缀的是 `stable`；带 prerelease 后缀的是 `preview`。
+- preview release 的 prerelease 前缀只允许 `alpha`、`beta`、`rc`、`nightly`。需要发布测试版、候选版或 nightly 时，必须发布新的 semver prerelease version。
 - `engines.kisaki` 必须是 semver range。
 - `publishedAt` 必须是 ISO 8601 UTC 时间。
 - `yanked: true` 表示不再用于新安装和自动更新，但已安装版本仍可显示来源。
 - `artifacts` 至少包含一个 artifact；同一 release 内每个 `target` 只能出现一次。
 - release 在 manifest 中不需要人工维护 id；客户端使用规范化 release identity 的 `sha256` 作为 `releaseDigest`，并把它作为本地 `releaseId`。
-- `releaseDigest` 只标识可安装内容和安装策略相关身份，不标识仓库展示元数据。参与 digest 的字段固定为：`schemaVersion`、`packageId`、`version`、`channel`、`engines.kisaki`、每个 artifact 的 `target`、`size`、`sha256`、签名算法、signer fingerprint 和 signature value。`repositoryId`、`repositoryUrl`、artifact `url`、`publishedAt`、`changelog`、`yanked`、package 展示字段不参与 digest。
+- `releaseDigest` 只标识可安装内容和安装策略相关身份，不标识仓库展示元数据。参与 digest 的字段固定为：`schemaVersion`、`packageId`、`version`、`engines.kisaki`、每个 artifact 的 `target`、`size`、`sha256`、签名算法、signer fingerprint 和 signature value。`repositoryId`、`repositoryUrl`、artifact `url`、`publishedAt`、`changelog`、`yanked`、package 展示字段不参与 digest。
 - 规范化 JSON 使用稳定规则：对象 key 按字典序排序，数组按协议语义排序；artifact 数组按 `target`、`sha256`、signer fingerprint 排序；所有字符串保留原值但去除协议明确要求去除的首尾空白；缺省可选字段不写入 canonical payload。
 
 Artifact：
@@ -221,7 +221,7 @@ Artifact：
 - `size` 必须大于 0，并用于下载预算和 UI 展示。
 - `sha256` 必填。
 - `signature` 可选但推荐。若提供签名，Kisaki 必须验证；若没有签名，安装计划必须标记为 unsigned 并要求用户确认。
-- 签名覆盖 artifact identity envelope，而不是只覆盖下载 URL，也不是只覆盖裸 `sha256` 字符串。artifact URL 可以因镜像变化而不同；签名必须绑定扩展身份、版本、兼容范围、channel、target、size 和 artifact bytes digest。
+- 签名覆盖 artifact identity envelope，而不是只覆盖下载 URL，也不是只覆盖裸 `sha256` 字符串。artifact URL 可以因镜像变化而不同；签名必须绑定扩展身份、版本、兼容范围、target、size 和 artifact bytes digest。
 
 签名 payload 使用 canonical JSON：
 
@@ -231,7 +231,6 @@ Artifact：
   "schemaVersion": 1,
   "extensionId": "bangumi",
   "version": "1.2.0",
-  "channel": "stable",
   "engines": {
     "kisaki": ">=0.0.3 <0.1.0"
   },
@@ -256,14 +255,14 @@ Artifact：
 
 默认更新候选：
 
-1. 与当前安装 channel 相同。
+1. 符合当前安装的预览版更新开关：关闭时只允许 stable release；开启时允许 stable 和 preview release。
 2. 版本号大于当前版本。
 3. 兼容当前 Kisaki。
 4. 非 yanked。
 5. 优先选择 signer 已被当前 extension 信任的 release。
 6. 仓库优先级最高；同优先级时版本最高；同版本时发布时间最新；仍相同则 repository id 字典序稳定排序。
 
-用户可以在详情页切换 channel、固定版本或手动选择旧版本。自动更新永远不跨 channel，除非用户明确修改策略。
+安装 stable release 时默认关闭预览版更新；安装 preview release 时默认开启，因为用户已经明确选择了预览版本。用户可以在详情页切换是否接收预览版更新、固定版本或手动选择旧版本。自动更新永远遵守该开关，除非用户明确修改策略。
 
 ## 信任与安全模型
 
@@ -286,7 +285,7 @@ Artifact：
 ### 默认策略
 
 - 仓库配置只决定是否参与刷新和 discover/catalog 展示：`enabled`、`disabled`。
-- 所有仓库同级；添加后默认可浏览、可安装，不存在仓库级信任或内置免确认通道。
+- 所有仓库同级；添加后默认可浏览、可安装，不存在仓库级信任或内置免确认机制。
 - 安装未信任 signer、unsigned release 或 signer changed 时必须展示确认。
 - 所有远程 artifact 必须校验 `sha256`。
 - 签名可选。若存在签名，验证失败必须拒绝安装；若没有签名，安装计划标记为 unsigned。
@@ -394,18 +393,18 @@ Catalog 查询规则：
 
 #### `extension_installations`
 
-| 字段             | 类型              | 说明                                                             |
-| ---------------- | ----------------- | ---------------------------------------------------------------- |
-| `id`             | text primary key  | 扩展 id。DB 层统一使用 `id`，服务和 DTO 层映射为 `extensionId`。 |
-| `enabled`        | integer boolean   | 是否期望运行。                                                   |
-| `version`        | text              | 当前安装版本。                                                   |
-| `source`         | json text         | 安装来源，使用 `ExtensionInstallationSource` custom type。       |
-| `install_reason` | text              | `manual`、`update`、`local-file`。                               |
-| `update_policy`  | text              | `manual`、`notify`、`auto`、`pinned`。                           |
-| `pinned_version` | text nullable     | 固定版本。                                                       |
-| `channel`        | text              | 更新 channel。                                                   |
-| `installed_at`   | integer timestamp | 首次安装时间。                                                   |
-| `updated_at`     | integer timestamp | 最近状态更新时间。                                               |
+| 字段                      | 类型              | 说明                                                             |
+| ------------------------- | ----------------- | ---------------------------------------------------------------- |
+| `id`                      | text primary key  | 扩展 id。DB 层统一使用 `id`，服务和 DTO 层映射为 `extensionId`。 |
+| `enabled`                 | integer boolean   | 是否期望运行。                                                   |
+| `version`                 | text              | 当前安装版本。                                                   |
+| `source`                  | json text         | 安装来源，使用 `ExtensionInstallationSource` custom type。       |
+| `install_reason`          | text              | `manual`、`update`、`local-file`。                               |
+| `update_policy`           | text              | `manual`、`notify`、`auto`、`pinned`。                           |
+| `pinned_version`          | text nullable     | 固定版本。                                                       |
+| `include_preview_updates` | integer boolean   | 是否接收预览版更新。                                             |
+| `installed_at`            | integer timestamp | 首次安装时间。                                                   |
+| `updated_at`              | integer timestamp | 最近状态更新时间。                                               |
 
 `extension_installations` 只记录本机 active package 的持久事实和用户策略，不记录内存性质或启动时可重新计算的临时状态。因此不新增 `status`、`last_error`、`integrity_state` 这类字段。缺包、manifest 无效、runtime failed 等状态由 `ExtensionInstallationView` 启动或刷新时动态计算，作为 installed DTO 的 `status`、`issues`、`runtimeStatus`、`runtimeError` 返回 renderer。
 
@@ -635,7 +634,7 @@ registry/
 
 `@kisaki/extension-registry` 导出 browser-safe 的 registry manifest、artifact 类型、validation 和 artifact target 选择。`@kisaki/extension-registry/node` 导出依赖 `node:crypto` / `node:buffer` 的 digest、canonical JSON 和 signer fingerprint helper。`@kisaki/extension-api` 不再导出 registry 协议，避免 extension runtime API 与分发仓库工具耦合。
 
-`artifact.ts` 只处理 artifact 层职责：artifact target 类型、当前平台 target、精确 target 与 `any` 的优先级选择，以及 artifact signature payload 生成。artifact URL、size、sha256、signature 结构校验放在 `validation.ts`；release `engines.kisaki`、channel、yanked、pin、signer trust 和更新候选排序不放在这里。
+`artifact.ts` 只处理 artifact 层职责：artifact target 类型、当前平台 target、精确 target 与 `any` 的优先级选择，以及 artifact signature payload 生成。artifact URL、size、sha256、signature 结构校验放在 `validation.ts`；release `engines.kisaki`、release kind 派生、yanked、pin、signer trust 和更新候选排序不放在这里。
 
 `integrity.ts` 只处理协议级完整性标识：canonical JSON、release digest payload、release digest 和 signer fingerprint。它不负责下载校验、签名验签、signer trust 判断或安装安全决策。
 
@@ -809,7 +808,7 @@ Package recovery 规则：
 搜索 catalog：
 
 - 查询内存聚合 catalog，必要时回退读取 `extension_repositories.manifest_snapshot` 重建。
-- 支持 query、category、channel、repository、compatibleOnly、installedOnly、hasUpdateOnly。
+- 支持 query、category、repository、compatibleOnly、installedOnly、hasUpdateOnly。发现页不提供 release kind 过滤；release kind 只在卡片和详情中作为版本属性展示。
 - 排序支持 relevance、name、updatedAt、publishedAt、repositoryPriority。
 - 搜索不访问网络。
 
@@ -820,11 +819,13 @@ Package recovery 规则：
 1. 输入 `extensionId`、可选 `releaseId`、可选 `repositoryId`。
 2. 从 catalog 查找候选 release。
 3. 选择兼容 artifact。
-4. 检查是否已安装、是否版本相同、是否降级、是否跨 channel。
+4. 检查是否已安装、是否版本相同、是否降级、是否将改变预览版更新开关。
 5. 检查 sha256、签名状态和 extension-scoped signer trust。
 6. 返回计划和需要用户确认的风险：
    - artifact host 与 repository host 不同。
    - 降级。
+   - preview release。
+   - 预览版更新开关变更。
    - yanked release。
    - unsigned remote release。
    - signer 未被当前 extension 信任。
@@ -906,13 +907,13 @@ Package recovery 规则：
 
 1. 选择更新候选；自动更新只允许当前 extension 已信任 signer 签名的 release。
 2. 创建 operation record，获取 extension mutation mutex；mutex 持有期间 extension 仍保持运行。
-3. 重新读取安装记录和 catalog release，确认 update policy、channel、pin、release digest、artifact sha256 和 signer trust 仍满足计划。
+3. 重新读取安装记录和 catalog release，确认 update policy、预览版更新开关、pin、release digest、artifact sha256 和 signer trust 仍满足计划。
 4. 下载、校验、解压新 release 到 staging；下载阶段可通过 `extension:cancel-operation` 中断。
 5. 进入不可取消提交阶段，调用 `ExtensionPackageCommitter.putActivePackage`，要求当前 active package 存在。
 6. 卸载当前 runtime，但不删除旧 package。
 7. 将旧 package 移动到 `temp/operations/backups/<operation-id>`。
 8. 将 staging package 移动到 `packages/<extension-id>`。
-9. 更新 `extension_installations.version`、source 字段、channel 和 `updated_at`。
+9. 更新 `extension_installations.version`、source 字段、include preview updates 和 `updated_at`。
 10. 重新加载 runtime。
 11. Runtime failed 时更新仍视为已提交，通过 installed view 暴露 runtime failed。
 12. 成功提交后删除 backup；清理失败由启动 recovery 兜底。
@@ -1029,7 +1030,7 @@ Discover：
 
 - 默认展示本地 catalog。
 - 顶部有 repository 状态入口，不再是 provider 选择器。
-- 支持分类、channel、兼容、已安装、已信任 signer 过滤。
+- 支持分类、仓库、兼容、已安装、已信任 signer 过滤，不提供 release kind 过滤。
 - package card 显示来源数量、最新兼容版本、签名状态、更新日期。
 - 详情页展示 releases、artifact host、signer fingerprint、changelog。
 
@@ -1042,7 +1043,7 @@ Repositories：
 
 Installed：
 
-- 显示 active version、source repository、signer fingerprint、update policy、channel、runtime status。
+- 显示 active version、source repository、signer fingerprint、update policy、是否接收预览版更新、runtime status。
 - 安装确认使用 renderer `install-dialog`，展示 install plan、风险项和信任选择。
 - 更新按钮打开 update dialog，展示将要安装的 release、changelog、签名和风险。
 - 卸载按钮打开 renderer `uninstall-dialog`，默认保留数据。
@@ -1101,9 +1102,9 @@ kisx registry validate registry/manifest.json
 - 读取可选 signature，并把 public key 信息写入 `signingKeys`。
 - 如果 manifest 中没有该 package，则创建 package。
 - 如果 package 已存在且没有相同 version，则追加 release。
-- 如果同一 package 已存在相同 version，要求 channel 和 `engines.kisaki` 与既有 release 完全一致；不同平台 artifact 可以追加到同一 release。
+- 如果同一 package 已存在相同 version，要求 `engines.kisaki` 与既有 release 完全一致；不同平台 artifact 可以追加到同一 release。
 - 如果同一 release 已存在相同 artifact target，默认拒绝，除非传 `--replace` 替换该 target 的 artifact。
-- 如果想发布 beta、nightly 或新的兼容范围，必须发布新的 semver version，而不是复用既有 version 更换 channel 或 `engines.kisaki`。
+- 如果想发布 beta、nightly 或新的兼容范围，必须发布新的 semver version，而不是复用既有 version 更换 release kind 或 `engines.kisaki`。
 - 输出可部署的静态 `manifest.json`。
 
 CLI 输出：
@@ -1324,7 +1325,7 @@ rg -n "extension_repositories|extension_installations|extension_signer_trusts" a
 - DB 不保存可直接执行加载的绝对 package path；runtime path 必须由 installation id 经 layout 派生。
 - 安装、更新、卸载确认 UI 全部由 renderer dialog 承担；main 不使用 Electron 原生确认 dialog。
 - 安装、更新、卸载都有事务回滚和错误诊断。
-- 更新候选选择遵守 channel、pin、兼容性、yanked 和 signer trust。
+- 更新候选选择遵守预览版更新开关、pin、兼容性、yanked 和 signer trust。
 - 卸载默认保留扩展数据；清除数据是独立显式操作。
 - 安装和更新失败不会留下 active package 指向不存在目录或 staging 目录。
 - Runtime 只加载由 DB installation id 派生并经过 path confinement 校验的 active package。

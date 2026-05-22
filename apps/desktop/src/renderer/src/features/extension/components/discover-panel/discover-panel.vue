@@ -24,11 +24,8 @@ const PAGE_SIZE = 20
 
 const store = useDiscoverExtensionStore()
 
-async function searchExtensionPage(
-  page: number
-): Promise<{
+async function searchExtensionPage(page: number): Promise<{
   results: ExtensionCatalogPackageInfo[]
-  channels: readonly string[]
   hasMore: boolean
 }> {
   const data = unwrapIpcData(
@@ -37,7 +34,6 @@ async function searchExtensionPage(
       page,
       limit: PAGE_SIZE,
       category: store.selectedCategory ?? undefined,
-      channel: store.selectedChannel ?? undefined,
       repositoryId: store.selectedRepositoryId ?? undefined,
       compatibleOnly: store.compatibleOnly,
       sortBy: store.sortField,
@@ -45,7 +41,7 @@ async function searchExtensionPage(
     })
   )
 
-  return { results: [...data.packages], channels: data.channels, hasMore: data.hasMore }
+  return { results: [...data.packages], hasMore: data.hasMore }
 }
 
 const additionalResults = ref<ExtensionCatalogPackageInfo[]>([])
@@ -61,7 +57,6 @@ const queryKey = computed(() =>
     store.searchTrigger,
     store.selectedRepositoryId ?? 'all',
     store.selectedCategory ?? 'all',
-    store.selectedChannel ?? 'all',
     store.compatibleOnly ? 'compatible' : 'any',
     store.sortField,
     store.sortDirection
@@ -188,10 +183,7 @@ watch(detailsOpen, (open) => {
 
 <template>
   <div class="flex flex-col h-full">
-    <ExtensionDiscoverPanelFilterBar
-      :channel-options="searchData?.channels ?? []"
-      :channel-options-loaded="Boolean(searchData)"
-    />
+    <ExtensionDiscoverPanelFilterBar />
 
     <div class="flex-1 overflow-auto scrollbar-thin">
       <template v-if="loading && displayedResults.length === 0">

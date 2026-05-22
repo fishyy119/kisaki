@@ -58,7 +58,7 @@
     "semver": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^[vV]?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+      "pattern": "^[vV]?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:alpha|beta|rc|nightly)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
     },
     "semverRange": {
       "type": "string",
@@ -79,12 +79,6 @@
       "type": "string",
       "format": "uri",
       "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
-    },
-    "releaseChannel": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 64,
-      "pattern": "^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$"
     },
     "artifactTarget": {
       "type": "string",
@@ -201,13 +195,10 @@
     "release": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["version", "channel", "publishedAt", "engines", "artifacts"],
+      "required": ["version", "publishedAt", "engines", "artifacts"],
       "properties": {
         "version": {
           "$ref": "#/$defs/semver"
-        },
-        "channel": {
-          "$ref": "#/$defs/releaseChannel"
         },
         "publishedAt": {
           "$ref": "#/$defs/isoUtcDateTime"

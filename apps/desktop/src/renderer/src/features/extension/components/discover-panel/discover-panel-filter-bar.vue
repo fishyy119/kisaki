@@ -3,7 +3,7 @@ Browse Extension Filter Bar controls catalog search and repository filters.
 Boundary: owns filter inputs, while results are fetched by the panel.
 -->
 <script setup lang="ts">
-import { watch, computed } from 'vue'
+import { computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/components/ui/input-group'
 import { Button } from '@renderer/components/ui/button'
@@ -42,10 +42,6 @@ const SORT_OPTIONS: { value: DiscoverExtensionSortField; label: string }[] = [
 ]
 
 const store = useDiscoverExtensionStore()
-const props = defineProps<{
-  channelOptions: readonly string[]
-  channelOptionsLoaded: boolean
-}>()
 
 const { data: repositories } = useAsyncData(
   async () => {
@@ -88,26 +84,6 @@ const repositoryModel = computed({
   get: () => store.selectedRepositoryId ?? 'all',
   set: (value: string) => store.setSelectedRepositoryId(value === 'all' ? null : value)
 })
-
-const channelModel = computed({
-  get: () => store.selectedChannel ?? 'all',
-  set: (value: string) => store.setSelectedChannel(value === 'all' ? null : value)
-})
-
-watch(
-  () => [props.channelOptions, props.channelOptionsLoaded] as const,
-  ([channelOptions, channelOptionsLoaded]) => {
-    if (
-      channelOptionsLoaded &&
-      channelOptions.length > 0 &&
-      store.selectedChannel &&
-      !channelOptions.includes(store.selectedChannel)
-    ) {
-      store.setSelectedChannel(null)
-    }
-  },
-  { immediate: true }
-)
 
 function handleToggleSortDirection() {
   store.setSortDirection(store.sortDirection === 'desc' ? 'asc' : 'desc')
@@ -169,26 +145,6 @@ function handleToggleSortDirection() {
             :value="repository.id"
           >
             {{ repository.name }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <!-- Channel selector -->
-      <Select v-model="channelModel">
-        <SelectTrigger
-          size="sm"
-          class="min-w-28 max-w-40"
-        >
-          <SelectValue class="leading-none truncate" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">全部频道</SelectItem>
-          <SelectItem
-            v-for="channel in props.channelOptions"
-            :key="channel"
-            :value="channel"
-          >
-            {{ channel }}
           </SelectItem>
         </SelectContent>
       </Select>

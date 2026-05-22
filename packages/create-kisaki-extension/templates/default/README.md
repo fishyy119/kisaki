@@ -20,8 +20,8 @@ kisx registry add-release artifacts/{{EXTENSION_ID}}-0.0.1.kisx --manifest regis
 kisx registry validate registry/manifest.json
 ```
 
-Use semver prerelease versions for beta or nightly releases, such as `0.0.2-beta.1`.
-`channel` is only an update track label; the registry keeps one release per package version.
+Use semver prerelease versions for preview releases, such as `0.0.2-beta.1` or
+`0.0.2-nightly.1`. Stable releases use plain semver versions without a prerelease suffix.
 
 For signed releases:
 

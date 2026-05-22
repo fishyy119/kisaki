@@ -11,11 +11,13 @@ import {
   validateUnknownKeys
 } from '../shared/validation'
 import type { ExtensionRegistryArtifactTarget } from './artifact'
-import type { ExtensionRegistryManifest, ExtensionRegistryReleaseChannel } from './manifest'
+import type { ExtensionRegistryManifest } from './manifest'
 import {
+  EXTENSION_REGISTRY_PREVIEW_RELEASE_PREFIXES,
   EXTENSION_REGISTRY_SCHEMA_VERSION,
   EXTENSION_REGISTRY_SIGNING_ALGORITHMS
 } from './manifest'
+import { getExtensionRegistryPreviewReleasePrefix } from './release'
 
 export interface ExtensionRegistryManifestValidationOptions {
   allowInsecureLocalUrls?: boolean
@@ -56,7 +58,6 @@ const OWNER_KEYS = new Set(['name', 'url'])
 const ICON_KEYS = new Set(['url', 'sha256'])
 const RELEASE_KEYS = new Set([
   'version',
-  'channel',
   'publishedAt',
   'engines',
   'changelog',
@@ -70,7 +71,6 @@ const SIGNATURE_KEYS = new Set(['keyId', 'algorithm', 'value'])
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 const ARTIFACT_TARGET_PATTERN = /^(?:any|[a-z][a-z0-9]*-[a-z0-9][a-z0-9_-]*)$/
-const RELEASE_CHANNEL_PATTERN = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 const ISO_UTC_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
 
@@ -78,12 +78,6 @@ export function matchesExtensionRegistryArtifactTargetFormat(
   value: string
 ): value is ExtensionRegistryArtifactTarget {
   return ARTIFACT_TARGET_PATTERN.test(value)
-}
-
-export function matchesExtensionRegistryReleaseChannelFormat(
-  value: string
-): value is ExtensionRegistryReleaseChannel {
-  return RELEASE_CHANNEL_PATTERN.test(value)
 }
 
 export function validateExtensionRegistryManifestShape(
@@ -178,10 +172,21 @@ export function validateExtensionRegistryManifestSemver(
     for (const [releaseIndex, release] of registryPackage.releases.entries()) {
       const releasePath = `$.packages[${packageIndex}].releases[${releaseIndex}]`
 
-      if (!semver.valid(release.version)) {
+      const validVersion = semver.valid(release.version)
+      if (!validVersion) {
         issues.push({
           path: `${releasePath}.version`,
           message: 'version must be a valid semver string.'
+        })
+      } else if (
+        semver.prerelease(validVersion) &&
+        !getExtensionRegistryPreviewReleasePrefix(validVersion)
+      ) {
+        issues.push({
+          path: `${releasePath}.version`,
+          message: `preview version must start with one of: ${EXTENSION_REGISTRY_PREVIEW_RELEASE_PREFIXES.join(
+            ', '
+          )}.`
         })
       }
 
@@ -410,7 +415,6 @@ function validateRelease(
       trim: true,
       valueMessage: 'Release version must be a non-empty string.'
     }),
-    ...validateRequiredChannel(value.channel, `${path}.channel`),
     ...validateRequiredIsoUtcString(value.publishedAt, `${path}.publishedAt`),
     ...validateOptionalBoolean(value.yanked, `${path}.yanked`)
   )
@@ -628,24 +632,6 @@ function validateRegistrySchemaVersion(value: unknown, path: string): Validation
   }
 
   return []
-}
-
-function validateRequiredChannel(value: unknown, path: string): ValidationIssue[] {
-  const issues = validateRequiredString(value, path, {
-    minLength: 1,
-    trim: true,
-    valueMessage: 'channel must be a non-empty string.'
-  })
-
-  if (typeof value === 'string' && !matchesExtensionRegistryReleaseChannelFormat(value)) {
-    issues.push({
-      path,
-      message:
-        'channel must use lowercase letters, numbers, dots, underscores or hyphens, and must start and end with a letter or number.'
-    })
-  }
-
-  return issues
 }
 
 function validateRequiredArtifactTarget(value: unknown, path: string): ValidationIssue[] {

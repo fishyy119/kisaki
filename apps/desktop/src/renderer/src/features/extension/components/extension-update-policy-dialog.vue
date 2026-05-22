@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { Switch } from '@renderer/components/ui/switch'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import type { ExtensionInstalledPackageInfo, ExtensionInstallUpdatePolicy } from '@shared/extension'
@@ -40,6 +41,7 @@ const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 const saving = ref(false)
 const updatePolicy = ref<ExtensionInstallUpdatePolicy>(currentPolicy())
+const includePreviewUpdates = ref(currentIncludePreviewUpdates())
 
 const POLICY_OPTIONS: {
   value: ExtensionInstallUpdatePolicy
@@ -55,11 +57,12 @@ const selectedPolicy = computed(
   () => POLICY_OPTIONS.find((option) => option.value === updatePolicy.value) ?? POLICY_OPTIONS[0]
 )
 const pinnedVersion = computed(() => props.extension.pinnedVersion ?? props.extension.version)
-const channelLabel = computed(() => props.extension.channel ?? 'stable')
+const includePreviewUpdatesLabel = computed(() => (includePreviewUpdates.value ? '是' : '否'))
 
 watch(open, (value) => {
   if (value) {
     updatePolicy.value = currentPolicy()
+    includePreviewUpdates.value = currentIncludePreviewUpdates()
   }
 })
 
@@ -73,7 +76,8 @@ async function handleSave() {
         pinnedVersion:
           updatePolicy.value === 'pinned'
             ? (props.extension.version ?? props.extension.pinnedVersion ?? null)
-            : null
+            : null,
+        includePreviewUpdates: includePreviewUpdates.value
       })
     )
     notify.success('更新策略已保存')
@@ -89,6 +93,10 @@ async function handleSave() {
 function currentPolicy(): ExtensionInstallUpdatePolicy {
   return props.extension.updatePolicy ?? 'manual'
 }
+
+function currentIncludePreviewUpdates(): boolean {
+  return props.extension.includePreviewUpdates ?? false
+}
 </script>
 
 <template>
@@ -96,7 +104,7 @@ function currentPolicy(): ExtensionInstallUpdatePolicy {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <DialogTitle>更新策略</DialogTitle>
-        <DialogDescription>{{ props.extension.name }} · {{ channelLabel }}</DialogDescription>
+        <DialogDescription>{{ props.extension.name }}</DialogDescription>
       </DialogHeader>
 
       <DialogBody>
@@ -122,13 +130,20 @@ function currentPolicy(): ExtensionInstallUpdatePolicy {
             </Select>
           </label>
 
+          <label
+            class="flex items-center justify-between rounded-md border border-border px-3 py-2"
+          >
+            <span class="text-sm">接收预览版更新</span>
+            <Switch v-model="includePreviewUpdates" />
+          </label>
+
           <div class="rounded-md border border-border p-3 text-xs text-muted-foreground space-y-2">
             <div class="flex items-center gap-2">
               <Icon
                 icon="icon-[mdi--source-branch]"
                 class="size-4"
               />
-              <span>频道：{{ channelLabel }}</span>
+              <span>接收预览版更新：{{ includePreviewUpdatesLabel }}</span>
             </div>
             <div class="flex items-center gap-2">
               <Icon

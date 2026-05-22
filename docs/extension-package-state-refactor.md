@@ -117,7 +117,7 @@ apps/desktop/src/main/services/extension/packages/transaction/
 - 创建 install plan。
 - 校验用户确认。
 - 决定首次安装、更新、本地覆盖安装的语义。
-- 决定 enabled、installReason、updatePolicy、pinnedVersion、channel。
+- 决定 enabled、installReason、updatePolicy、pinnedVersion、includePreviewUpdates。
 - 决定是否写入 signer trust。
 - 调用 package preparer 下载或复制 archive。
 - 调用 package committer 提交 active package 和 installation row。
@@ -575,7 +575,7 @@ runMutatingOperation:
       installReason: 'local-file',
       updatePolicy: 'manual',
       pinnedVersion: null,
-      channel: 'stable'
+      includePreviewUpdates: false
     },
     expectedPrevious: installations.store.get(extensionId) ? 'any' : 'none'
   })
@@ -729,7 +729,7 @@ export interface CreateOrUpdateExtensionInstallationInput {
   installReason?: ExtensionInstallReason
   updatePolicy?: ExtensionUpdatePolicy
   pinnedVersion?: string | null
-  channel?: string
+  includePreviewUpdates?: boolean
   installedAt?: Date
 }
 ```

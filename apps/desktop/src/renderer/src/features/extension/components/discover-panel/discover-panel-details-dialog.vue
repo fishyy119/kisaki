@@ -87,6 +87,10 @@ function signatureLabel(release: ExtensionCatalogReleaseInfo): string {
   return release.artifact.signature ? '已签名' : '未签名'
 }
 
+function releaseKindLabel(release: ExtensionCatalogReleaseInfo): string {
+  return release.releaseKind === 'stable' ? '稳定版' : '预览版'
+}
+
 function formatDate(value: string | null | undefined): string {
   if (!value) {
     return '未知时间'
@@ -211,7 +215,7 @@ function shortDigest(value: string | null | undefined): string {
                     variant="secondary"
                     class="text-[10px] h-5"
                   >
-                    {{ release.channel }}
+                    {{ releaseKindLabel(release) }}
                   </Badge>
                   <Badge
                     :variant="releaseVariant(release)"

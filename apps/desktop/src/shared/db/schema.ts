@@ -693,7 +693,9 @@ export const extensionInstallations = sqliteTable(
     installReason: extensionInstallReason('install_reason').notNull().default('manual'),
     updatePolicy: extensionUpdatePolicy('update_policy').notNull().default('manual'),
     pinnedVersion: text('pinned_version'),
-    channel: text('channel').notNull().default('stable'),
+    includePreviewUpdates: integer('include_preview_updates', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     installedAt: integer('installed_at', { mode: 'timestamp_ms' })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -704,8 +706,7 @@ export const extensionInstallations = sqliteTable(
   },
   (t) => [
     index('idx_extension_installations_enabled').on(t.enabled),
-    index('idx_extension_installations_update_policy').on(t.updatePolicy),
-    index('idx_extension_installations_channel').on(t.channel)
+    index('idx_extension_installations_update_policy').on(t.updatePolicy)
   ]
 )
 

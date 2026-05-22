@@ -191,7 +191,6 @@ function parseSnapshotPackage(
 function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistryRelease | null {
   if (
     !isNonEmptyString(value.version) ||
-    !isNonEmptyString(value.channel) ||
     !isNonEmptyString(value.publishedAt) ||
     !isPlainRecord(value.engines) ||
     !Array.isArray(value.artifacts)
@@ -218,7 +217,6 @@ function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistry
 
   return {
     version: value.version,
-    channel: value.channel,
     publishedAt: value.publishedAt,
     engines,
     ...(changelog ? { changelog } : {}),

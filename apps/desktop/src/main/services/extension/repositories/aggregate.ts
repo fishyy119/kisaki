@@ -1,6 +1,6 @@
 import semver from 'semver'
 import {
-  EXTENSION_REGISTRY_KNOWN_RELEASE_CHANNELS,
+  getExtensionRegistryReleaseKind,
   selectExtensionRegistryArtifact,
   type ExtensionRegistryArtifact,
   type ExtensionRegistryManifest,
@@ -116,11 +116,7 @@ export class ExtensionRepositoryAggregator {
     const query = normalizeQuery(request.query)
     const page = normalizePositiveInteger(request.page, 1)
     const limit = Math.min(normalizePositiveInteger(request.limit, 50), 200)
-    const { channel: _channel, ...channelOptionsRequest } = request
-    const channelOptionItems = filterSearchItems(catalog, channelOptionsRequest, context, query)
-    const filtered = request.channel
-      ? filterSearchItems(catalog, request, context, query)
-      : channelOptionItems
+    const filtered = filterSearchItems(catalog, request, context, query)
 
     filtered.sort((left, right) => compareSearchItems(left, right, request))
 
@@ -131,7 +127,6 @@ export class ExtensionRepositoryAggregator {
 
     return {
       packages: pageItems,
-      channels: collectChannels(channelOptionItems.map(({ item }) => item)),
       total: filtered.length,
       hasMore: offset + pageItems.length < filtered.length
     }
@@ -212,7 +207,7 @@ function toReleaseInfo(input: {
     id: input.releaseDigest,
     releaseDigest: input.releaseDigest,
     version: input.release.version,
-    channel: input.release.channel,
+    releaseKind: getExtensionRegistryReleaseKind(input.release.version),
     publishedAt: input.release.publishedAt,
     engines: input.release.engines,
     changelog: input.release.changelog,
@@ -274,7 +269,7 @@ function selectLatestRelease(
 ): ExtensionCatalogReleaseInfo | null {
   return (
     releases.find(
-      (release) => release.compatible && !release.yanked && release.channel === 'stable'
+      (release) => release.compatible && !release.yanked && release.releaseKind === 'stable'
     ) ??
     releases.find((release) => release.compatible && !release.yanked) ??
     releases[0] ??
@@ -312,9 +307,6 @@ function filterPackage(
   }
 
   const releases = item.releases.filter((release) => {
-    if (request.channel && release.channel !== request.channel) {
-      return false
-    }
     if (
       request.repositoryId &&
       !release.sources.some((source) => source.repositoryId === request.repositoryId)
@@ -341,7 +333,7 @@ function filterPackage(
   }
 
   if (
-    (request.channel || request.compatibleOnly || request.repositoryId || request.hasUpdateOnly) &&
+    (request.compatibleOnly || request.repositoryId || request.hasUpdateOnly) &&
     releases.length === 0
   ) {
     return null
@@ -368,12 +360,6 @@ function filterSearchItems(
       score: query ? calculateRelevanceScore(item, query) : 0
     }))
     .filter(({ score }) => !query || score > 0)
-}
-
-function collectChannels(items: readonly ExtensionRepositoryCatalogPackage[]): string[] {
-  return [
-    ...new Set(items.flatMap((item) => item.releases.map((release) => release.channel)))
-  ].sort(compareChannels)
 }
 
 function toPublicPackage(item: ExtensionRepositoryCatalogPackage): ExtensionCatalogPackageInfo {
@@ -445,7 +431,7 @@ function compareReleases(
   return (
     compareBooleans(left.compatible, right.compatible) ||
     compareBooleans(!left.yanked, !right.yanked) ||
-    compareBooleans(left.channel === 'stable', right.channel === 'stable') ||
+    compareBooleans(left.releaseKind === 'stable', right.releaseKind === 'stable') ||
     semver.rcompare(left.version, right.version) ||
     compareNullableTime(right.publishedAt, left.publishedAt) ||
     compareReleaseSources(left, right) ||
@@ -461,24 +447,6 @@ function compareReleaseSources(
     compareNumbers(left.repositoryPriority, right.repositoryPriority) ||
     compareStrings(left.repositoryId, right.repositoryId)
   )
-}
-
-function compareChannels(left: string, right: string): number {
-  const knownChannels: readonly string[] = EXTENSION_REGISTRY_KNOWN_RELEASE_CHANNELS
-  const leftKnownIndex = knownChannels.indexOf(left)
-  const rightKnownIndex = knownChannels.indexOf(right)
-  const leftKnown = leftKnownIndex >= 0
-  const rightKnown = rightKnownIndex >= 0
-
-  if (leftKnown || rightKnown) {
-    if (leftKnown && rightKnown) {
-      return compareNumbers(leftKnownIndex, rightKnownIndex)
-    }
-
-    return leftKnown ? -1 : 1
-  }
-
-  return compareStrings(left, right)
 }
 
 function compareRepositoryRows(

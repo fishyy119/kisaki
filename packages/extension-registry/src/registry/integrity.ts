@@ -5,7 +5,6 @@ import type {
   ExtensionRegistryManifest,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease,
-  ExtensionRegistryReleaseChannel,
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySchemaVersion,
   ExtensionRegistrySigningAlgorithm,
@@ -25,7 +24,6 @@ export interface ExtensionRegistryReleaseDigestPayload {
   readonly schemaVersion: ExtensionRegistrySchemaVersion
   readonly packageId: string
   readonly version: string
-  readonly channel: ExtensionRegistryReleaseChannel
   readonly engines: ExtensionRegistryReleaseEngines
   readonly artifacts: readonly ExtensionRegistryReleaseDigestArtifact[]
 }
@@ -46,7 +44,7 @@ export interface ExtensionRegistryReleaseDigestArtifactSignature {
 export function createExtensionRegistryReleaseDigestPayload(
   manifest: Pick<ExtensionRegistryManifest, 'schemaVersion' | 'signingKeys'>,
   registryPackage: Pick<ExtensionRegistryPackage, 'id'>,
-  release: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines' | 'artifacts'>
+  release: Pick<ExtensionRegistryRelease, 'version' | 'engines' | 'artifacts'>
 ): ExtensionRegistryReleaseDigestPayload {
   const artifacts = release.artifacts.map((artifact) =>
     createReleaseDigestArtifact(artifact, manifest.signingKeys)
@@ -57,7 +55,6 @@ export function createExtensionRegistryReleaseDigestPayload(
     schemaVersion: manifest.schemaVersion,
     packageId: registryPackage.id,
     version: release.version,
-    channel: release.channel,
     engines: {
       kisaki: release.engines.kisaki.trim()
     },
@@ -68,7 +65,7 @@ export function createExtensionRegistryReleaseDigestPayload(
 export function createExtensionRegistryReleaseDigest(
   manifest: Pick<ExtensionRegistryManifest, 'schemaVersion' | 'signingKeys'>,
   registryPackage: Pick<ExtensionRegistryPackage, 'id'>,
-  release: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines' | 'artifacts'>
+  release: Pick<ExtensionRegistryRelease, 'version' | 'engines' | 'artifacts'>
 ): string {
   const payload = createExtensionRegistryReleaseDigestPayload(manifest, registryPackage, release)
   return createHash('sha256').update(stringifyExtensionRegistryCanonicalJson(payload)).digest('hex')

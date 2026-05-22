@@ -18,7 +18,7 @@ export interface PrepareRepositoryExtensionPackageInput {
   operationId: string
   manifest: Pick<ExtensionRegistryManifest, 'signingKeys'>
   registryPackage: Pick<ExtensionRegistryPackage, 'id' | 'categories'>
-  release: Pick<ExtensionRegistryRelease, 'version' | 'channel' | 'engines'>
+  release: Pick<ExtensionRegistryRelease, 'version' | 'engines'>
   artifact: ExtensionRegistryArtifact
   signal?: AbortSignal
 }

@@ -83,7 +83,7 @@ routed through typed RPC.
 
 The `.kisx` package uses `@kisaki/extension-api` for its internal runtime manifest and
 extension code contracts. A distributed repository uses `@kisaki/extension-registry` to
-describe installable releases, artifact URLs, sha256 digests, artifact targets, channels,
+describe installable releases, artifact URLs, sha256 digests, artifact targets,
 changelogs, and optional Ed25519 signatures.
 
 Kisaki verifies a downloaded `.kisx` by comparing the registry release to the package

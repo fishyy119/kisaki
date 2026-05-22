@@ -42,7 +42,6 @@ export interface RegistryAddReleaseCommandOptions {
   manifest?: string
   url?: string
   signature?: string
-  channel: string
   target: ExtensionRegistryArtifactTarget
   publishedAt?: string
   changelog?: string
@@ -54,7 +53,6 @@ export interface RegistryAddReleaseCommandOptions {
 export interface RegistrySignCommandOptions {
   key?: string
   out?: string
-  channel: string
   target: ExtensionRegistryArtifactTarget
 }
 
@@ -121,7 +119,6 @@ export async function registryAddReleaseCommand(
   const verifiedSignature = await readVerifiedSignature({
     signaturePath: options.signature,
     manifest: packageInfo.manifest,
-    channel: options.channel,
     target: options.target,
     size: packageInfo.size,
     sha256: packageInfo.sha256
@@ -153,7 +150,7 @@ export async function registryAddReleaseCommand(
 
   await writeJsonDocument(path.resolve(options.manifest), updatedManifest, { overwrite: true })
   logger.success(
-    `Added ${packageInfo.manifest.id}@${packageInfo.manifest.version} (${options.channel}, ${options.target}) to ${path.resolve(options.manifest)}`
+    `Added ${packageInfo.manifest.id}@${packageInfo.manifest.version} (${options.target}) to ${path.resolve(options.manifest)}`
   )
   logger.detail(`Artifact size: ${packageInfo.size}`)
   logger.detail(`Artifact sha256: ${packageInfo.sha256}`)
@@ -189,7 +186,6 @@ export async function registrySignCommand(
     size: packageInfo.size,
     sha256: packageInfo.sha256,
     keyPath: options.key,
-    channel: options.channel,
     target: options.target,
     outFile: options.out
   })
@@ -202,7 +198,6 @@ export async function registrySignCommand(
 async function readVerifiedSignature(input: {
   signaturePath?: string
   manifest: ExtensionManifest
-  channel: string
   target: ExtensionRegistryArtifactTarget
   size: number
   sha256: string
@@ -217,7 +212,6 @@ async function readVerifiedSignature(input: {
     manifest: input.manifest,
     size: input.size,
     sha256: input.sha256,
-    channel: input.channel,
     target: input.target
   })
 
@@ -237,7 +231,6 @@ function createRegistryRelease(
 
   return compactRegistryRelease({
     version: manifest.version,
-    channel: options.channel,
     publishedAt: options.publishedAt ?? new Date().toISOString(),
     engines: {
       kisaki: kisakiRange
@@ -339,12 +332,6 @@ function mergeRegistryRelease(input: {
 }): ExtensionRegistryRelease {
   const existingEngine = input.existing.engines.kisaki.trim()
   const incomingEngine = input.incoming.engines.kisaki.trim()
-  if (input.existing.channel !== input.incoming.channel) {
-    throw new CliError(
-      `${input.packageId}@${input.incoming.version} already exists on channel "${input.existing.channel}". Publish a new semver version for channel "${input.incoming.channel}".`
-    )
-  }
-
   if (existingEngine !== incomingEngine) {
     throw new CliError(
       `${input.packageId}@${input.incoming.version} already exists with a different engines.kisaki range. Publish a new semver version.`
@@ -358,7 +345,7 @@ function mergeRegistryRelease(input: {
 
   if (artifactIndex >= 0 && !input.replace) {
     throw new CliError(
-      `${input.packageId}@${input.incoming.version} (${input.incoming.channel}) already has artifact target "${incomingArtifact.target}". Use --replace to overwrite it.`
+      `${input.packageId}@${input.incoming.version} already has artifact target "${incomingArtifact.target}". Use --replace to overwrite it.`
     )
   }
 

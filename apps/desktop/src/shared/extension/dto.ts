@@ -47,7 +47,7 @@ import type {
 } from '@kisaki/extension-api'
 import type {
   ExtensionRegistryArtifactTarget,
-  ExtensionRegistryReleaseChannel,
+  ExtensionRegistryReleaseKind,
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySigningAlgorithm
 } from '@kisaki/extension-registry'
@@ -75,7 +75,7 @@ export interface ExtensionInstalledPackageInfo {
   installationSource: ExtensionInstallationSource | null
   updatePolicy?: ExtensionInstallUpdatePolicy
   pinnedVersion?: string | null
-  channel?: string | null
+  includePreviewUpdates?: boolean | null
   directory: string
   issues: readonly string[]
 }
@@ -91,7 +91,7 @@ export interface ExtensionUpdateInfo {
   artifact?: ExtensionCatalogArtifactInfo | null
   signer?: ExtensionInstallPlanSignerInfo
   updatePolicy?: ExtensionInstallUpdatePolicy
-  channel?: string
+  includePreviewUpdates?: boolean
   automatic?: boolean
   risks?: readonly ExtensionInstallRiskInfo[]
 }
@@ -105,13 +105,13 @@ export type ExtensionUpdateUnavailableReason =
   | 'pinned-policy'
   | 'repository-source-missing'
   | 'requires-manual-confirmation'
-  | 'channel-mismatch'
+  | 'preview-updates-disabled'
 
 export interface ExtensionUpdateUnavailableInfo {
   extensionId: string
   currentVersion: string | null
   updatePolicy?: ExtensionInstallUpdatePolicy | null
-  channel?: string | null
+  includePreviewUpdates?: boolean | null
   reason: ExtensionUpdateUnavailableReason
   message: string
 }
@@ -182,7 +182,6 @@ export interface ExtensionTrustedSignerInfo {
 export interface ExtensionCatalogSearchRequest {
   query?: string
   category?: ExtensionCategory
-  channel?: string
   repositoryId?: string
   compatibleOnly?: boolean
   installedOnly?: boolean
@@ -195,7 +194,6 @@ export interface ExtensionCatalogSearchRequest {
 
 export interface ExtensionCatalogSearchResult {
   packages: readonly ExtensionCatalogPackageInfo[]
-  channels: readonly string[]
   total: number
   hasMore: boolean
 }
@@ -234,7 +232,7 @@ export interface ExtensionCatalogReleaseInfo {
   id: string
   releaseDigest: string
   version: string
-  channel: ExtensionRegistryReleaseChannel
+  releaseKind: ExtensionRegistryReleaseKind
   publishedAt: string
   engines: ExtensionRegistryReleaseEngines
   changelog?: {
@@ -275,6 +273,7 @@ export interface ExtensionUpdatePolicyRequest {
   extensionId: string
   updatePolicy: ExtensionInstallUpdatePolicy
   pinnedVersion?: string | null
+  includePreviewUpdates?: boolean
 }
 
 export interface ExtensionUpdateRequest {
@@ -339,7 +338,8 @@ export type ExtensionInstallRiskCode =
   | 'artifact-host-mismatch'
   | 'downgrade'
   | 'same-version'
-  | 'channel-change'
+  | 'preview-release'
+  | 'preview-updates-change'
   | 'yanked-release'
   | 'unsigned-release'
   | 'signer-untrusted'
@@ -378,7 +378,7 @@ export interface ExtensionInstallPlanPackageInfo {
   summary?: string
   currentVersion: string | null
   targetVersion: string
-  channel: string
+  releaseKind: ExtensionRegistryReleaseKind
 }
 
 export interface ExtensionInstallPlan {
@@ -394,6 +394,7 @@ export interface ExtensionInstallPlan {
   risks: readonly ExtensionInstallRiskInfo[]
   defaultEnabled: boolean
   updatePolicy: ExtensionInstallUpdatePolicy
+  includePreviewUpdates: boolean
 }
 
 export interface ExtensionInstallPlanLocalFileInfo {
