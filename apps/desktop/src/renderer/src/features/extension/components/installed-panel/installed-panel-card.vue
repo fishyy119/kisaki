@@ -10,6 +10,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ExtensionSettingsPanelDialog } from '@renderer/components/extension/settings-panels'
+import ExtensionInstalledDetailsDialog from './installed-panel-details-dialog.vue'
 import ExtensionUninstallDialog from '../extension-uninstall-dialog.vue'
 import ExtensionUpdateDialog from '../extension-update-dialog.vue'
 import ExtensionUpdatePolicyDialog from '../extension-update-policy-dialog.vue'
@@ -44,6 +45,7 @@ const emit = defineEmits<Emits>()
 const toggling = ref(false)
 const iconError = ref(false)
 const settingsOpen = ref(false)
+const detailsDialogOpen = ref(false)
 const updateDialogOpen = ref(false)
 const updatePolicyDialogOpen = ref(false)
 const uninstallDialogOpen = ref(false)
@@ -228,9 +230,12 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
         class="size-5 text-primary shrink-0"
       />
       <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
-      <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
+      <Badge
+        variant="outline"
+        class="text-[10px] px-1.5 py-0 h-4 text-muted-foreground font-mono"
+      >
         {{ versionLabel }}
-      </span>
+      </Badge>
       <Badge
         v-if="isBuiltin"
         variant="secondary"
@@ -336,6 +341,21 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
           </TooltipTrigger>
           <TooltipContent>设置</TooltipContent>
         </Tooltip>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              @click="detailsDialogOpen = true"
+            >
+              <Icon
+                icon="icon-[mdi--information-outline]"
+                class="size-4"
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>详情</TooltipContent>
+        </Tooltip>
         <Tooltip v-if="!isBuiltin">
           <TooltipTrigger as-child>
             <Button
@@ -377,6 +397,12 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
       :contribution="activeSettingsContribution"
       :available="settingsContributionAvailable"
       :registration-revision="settingsRegistrationRevision"
+    />
+
+    <ExtensionInstalledDetailsDialog
+      v-if="detailsDialogOpen"
+      v-model:open="detailsDialogOpen"
+      :extension="props.extension"
     />
 
     <ExtensionUpdateDialog

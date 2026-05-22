@@ -162,11 +162,17 @@ async function handleToggleRepository(repository: ExtensionRepositoryInfo, enabl
 }
 
 async function handleMovePriority(repository: ExtensionRepositoryInfo, delta: number) {
+  const currentIndex = getRepositoryIndex(repository)
+  const nextIndex = currentIndex + delta
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= repositoryList.value.length) {
+    return
+  }
+
   await withRepositoryBusy(repository.id, async () => {
     await ipcManager
       .invoke('extension:update-repository', {
         id: repository.id,
-        priority: repository.priority + delta
+        priority: nextIndex
       })
       .then(unwrapIpcData)
     refetch()
@@ -204,17 +210,14 @@ function setRepositoryBusy(repositoryId: string, busy: boolean) {
 
 function healthVariant(
   repository: ExtensionRepositoryInfo
-): 'success' | 'warning' | 'destructive' | 'secondary' {
+): 'warning' | 'destructive' | 'secondary' {
   if (repository.state === 'disabled') {
     return 'secondary'
   }
   if (repository.lastError) {
     return 'destructive'
   }
-  if (!repository.lastSuccessAt) {
-    return 'warning'
-  }
-  return 'success'
+  return 'warning'
 }
 
 function healthLabel(repository: ExtensionRepositoryInfo): string {
@@ -227,7 +230,23 @@ function healthLabel(repository: ExtensionRepositoryInfo): string {
   if (!repository.lastSuccessAt) {
     return '未刷新'
   }
-  return '正常'
+  return ''
+}
+
+function shouldShowHealthBadge(repository: ExtensionRepositoryInfo): boolean {
+  return (
+    repository.state === 'disabled' || Boolean(repository.lastError) || !repository.lastSuccessAt
+  )
+}
+
+function getRepositoryIndex(repository: ExtensionRepositoryInfo): number {
+  return repositoryList.value.findIndex((item) => item.id === repository.id)
+}
+
+function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): boolean {
+  const currentIndex = getRepositoryIndex(repository)
+  const nextIndex = currentIndex + delta
+  return currentIndex >= 0 && nextIndex >= 0 && nextIndex < repositoryList.value.length
 }
 
 function formatDate(value: string | null): string {
@@ -322,7 +341,7 @@ function formatDate(value: string | null): string {
       <template v-else>
         <div class="divide-y divide-border">
           <div
-            v-for="repository in repositoryList"
+            v-for="(repository, index) in repositoryList"
             :key="repository.id"
             class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-3 hover:bg-accent/40 transition-colors"
           >
@@ -334,6 +353,7 @@ function formatDate(value: string | null): string {
                 />
                 <div class="text-sm font-medium truncate">{{ repository.name }}</div>
                 <Badge
+                  v-if="shouldShowHealthBadge(repository)"
                   :variant="healthVariant(repository)"
                   class="text-[10px] h-5"
                 >
@@ -346,7 +366,7 @@ function formatDate(value: string | null): string {
               <div
                 class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1 text-xs text-muted-foreground"
               >
-                <div>优先级：{{ repository.priority }}</div>
+                <div>优先级：{{ index + 1 }}</div>
                 <div>扩展包：{{ repository.packageCount }}</div>
                 <div>清单更新：{{ formatDate(repository.manifestUpdatedAt) }}</div>
                 <div>上次检查：{{ formatDate(repository.lastRefreshAt) }}</div>
@@ -387,7 +407,9 @@ function formatDate(value: string | null): string {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                :disabled="busyRepositoryIds.has(repository.id)"
+                :disabled="
+                  busyRepositoryIds.has(repository.id) || !canMoveRepository(repository, -1)
+                "
                 @click="handleMovePriority(repository, -1)"
               >
                 <Icon
@@ -398,7 +420,9 @@ function formatDate(value: string | null): string {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                :disabled="busyRepositoryIds.has(repository.id)"
+                :disabled="
+                  busyRepositoryIds.has(repository.id) || !canMoveRepository(repository, 1)
+                "
                 @click="handleMovePriority(repository, 1)"
               >
                 <Icon

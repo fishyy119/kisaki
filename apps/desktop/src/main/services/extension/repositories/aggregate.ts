@@ -233,12 +233,10 @@ function toArtifactInfo(
   const signingKey = signature
     ? manifest.signingKeys.find((key) => key.id === signature.keyId)
     : undefined
-  const parsedUrl = new URL(artifact.url)
 
   return {
     target: artifact.target,
     url: artifact.url,
-    host: parsedUrl.host || parsedUrl.protocol.replace(':', ''),
     size: artifact.size,
     sha256: artifact.sha256,
     signature:

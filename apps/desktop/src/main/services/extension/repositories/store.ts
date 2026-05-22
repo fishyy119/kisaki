@@ -135,6 +135,25 @@ export class ExtensionRepositoryStore {
     return this.require(id)
   }
 
+  reorder(id: string, targetIndex: number): ExtensionRepositoryRow {
+    const rows = this.list()
+    const currentIndex = rows.findIndex((row) => row.id === id)
+    if (currentIndex < 0) {
+      throw new Error(`Extension repository "${id}" not found.`)
+    }
+
+    const nextIndex = Math.max(0, Math.min(targetIndex, rows.length - 1))
+    const [moved] = rows.splice(currentIndex, 1)
+    rows.splice(nextIndex, 0, moved)
+    this.writePriorityOrder(rows)
+
+    return this.require(id)
+  }
+
+  normalizePriorities(): void {
+    this.writePriorityOrder(this.list())
+  }
+
   recordRefreshSuccess(
     id: string,
     input: ExtensionRepositoryRefreshSuccessInput
@@ -213,6 +232,24 @@ export class ExtensionRepositoryStore {
     const rows = this.db.select().from(extensionRepositories).all()
     const highest = rows.reduce((value, row) => Math.max(value, row.priority), -1)
     return highest + 1
+  }
+
+  private writePriorityOrder(rows: readonly ExtensionRepositoryRow[]): void {
+    const updatedAt = new Date()
+    for (const [priority, row] of rows.entries()) {
+      if (row.priority === priority) {
+        continue
+      }
+
+      this.db
+        .update(extensionRepositories)
+        .set({
+          priority,
+          updatedAt
+        })
+        .where(eq(extensionRepositories.id, row.id))
+        .run()
+    }
   }
 }
 

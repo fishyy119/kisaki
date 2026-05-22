@@ -78,6 +78,7 @@ export class ExtensionRepositoryManager {
   }
 
   async init(): Promise<void> {
+    this.store.normalizePriorities()
     this.rebuildCatalog()
   }
 
@@ -122,6 +123,8 @@ export class ExtensionRepositoryManager {
     const id = requireNonEmptyString(request.id, 'repository id')
     const existing = this.store.require(id)
     const patch: Parameters<ExtensionRepositoryStore['update']>[1] = {}
+    const requestedPriority =
+      request.priority === undefined ? undefined : normalizePriority(request.priority)
 
     if (request.url !== undefined) {
       const url = this.normalizeManifestUrl(request.url)
@@ -140,11 +143,10 @@ export class ExtensionRepositoryManager {
     if (request.state !== undefined) {
       patch.state = normalizeRepositoryState(request.state) ?? existing.state
     }
-    if (request.priority !== undefined) {
-      patch.priority = normalizePriority(request.priority) ?? existing.priority
+    let row = Object.keys(patch).length > 0 ? this.store.update(id, patch) : existing
+    if (requestedPriority !== undefined) {
+      row = this.store.reorder(id, requestedPriority)
     }
-
-    const row = this.store.update(id, patch)
     this.rebuildCatalogAndEmit()
 
     if (patch.url && row.state === 'enabled') {
@@ -158,6 +160,7 @@ export class ExtensionRepositoryManager {
   removeRepository(repositoryId: string): void {
     const row = this.store.require(requireNonEmptyString(repositoryId, 'repository id'))
     this.store.remove(row.id)
+    this.store.normalizePriorities()
     this.rebuildCatalogAndEmit()
   }
 

@@ -105,9 +105,7 @@ function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
     <div class="shrink-0 flex items-center gap-3 border-b border-border bg-background/50 px-4 py-3">
       <div class="flex-1">
         <div class="text-sm font-medium">签名信任</div>
-        <div class="text-xs text-muted-foreground">
-          {{ signerList.length }} 个扩展级签名指纹
-        </div>
+        <div class="text-xs text-muted-foreground">{{ signerList.length }} 个扩展级签名指纹</div>
       </div>
 
       <Button
@@ -174,10 +172,11 @@ function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
                 {{ shortFingerprint(signer.fingerprint) }}
               </div>
 
-              <div class="grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-3">
+              <div
+                class="grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-2"
+              >
                 <div class="truncate">来源：{{ repositoryLabel(signer) }}</div>
                 <div>信任时间：{{ formatDate(signer.trustedAt) }}</div>
-                <div>更新时间：{{ formatDate(signer.updatedAt) }}</div>
               </div>
             </div>
 

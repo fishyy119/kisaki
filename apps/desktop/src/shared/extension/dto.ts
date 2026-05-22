@@ -76,6 +76,7 @@ export interface ExtensionInstalledPackageInfo {
   updatePolicy?: ExtensionInstallUpdatePolicy
   pinnedVersion?: string | null
   includePreviewUpdates?: boolean | null
+  installedAt?: string | null
   directory: string
   issues: readonly string[]
 }
@@ -255,7 +256,6 @@ export interface ExtensionCatalogReleaseInfo {
 export interface ExtensionCatalogArtifactInfo {
   target: ExtensionRegistryArtifactTarget
   url: string
-  host: string
   size: number
   sha256: string
   signature: ExtensionCatalogArtifactSignatureInfo | null
@@ -335,7 +335,6 @@ export interface ExtensionPurgeDataRequest {
 export type ExtensionInstallSourceKind = 'repository' | 'local-file'
 
 export type ExtensionInstallRiskCode =
-  | 'artifact-host-mismatch'
   | 'downgrade'
   | 'same-version'
   | 'preview-release'

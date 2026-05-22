@@ -254,10 +254,6 @@ function releaseKindLabel(value: ExtensionInstallPlan['package']['releaseKind'])
   return value === 'stable' ? '稳定版' : '预览版'
 }
 
-function shortDigest(value: string | null | undefined): string {
-  return value ? value.slice(0, 12) : '无'
-}
-
 function formatBytes(value: number | undefined): string {
   if (!value || value <= 0) {
     return '未知大小'
@@ -277,7 +273,10 @@ function formatBytes(value: number | undefined): string {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent
+      class="max-w-2xl"
+      :stack-level="1"
+    >
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
         <DialogDescription>{{ description }}</DialogDescription>
@@ -315,9 +314,7 @@ function formatBytes(value: number | undefined): string {
                   </Badge>
                 </div>
                 <div class="mt-1 text-xs text-muted-foreground">
-                  <template v-if="plan.repository">
-                    仓库：{{ plan.repository.name }} · 下载主机：{{ plan.artifact?.host ?? '无' }}
-                  </template>
+                  <template v-if="plan.repository"> 仓库：{{ plan.repository.name }} </template>
                   <template v-else> 本地文件 · {{ formatBytes(plan.localFile?.size) }} </template>
                 </div>
               </div>
@@ -331,18 +328,6 @@ function formatBytes(value: number | undefined): string {
               <div class="min-w-0">
                 <dt class="text-muted-foreground">版本类型</dt>
                 <dd>{{ releaseKindLabel(plan.package.releaseKind) }}</dd>
-              </div>
-              <div class="min-w-0">
-                <dt class="text-muted-foreground">安装包 SHA256</dt>
-                <dd class="font-mono truncate">
-                  {{ shortDigest(plan.artifact?.sha256 ?? plan.localFile?.sha256) }}
-                </dd>
-              </div>
-              <div class="min-w-0">
-                <dt class="text-muted-foreground">清单摘要</dt>
-                <dd class="font-mono truncate">
-                  {{ shortDigest(plan.repository?.manifestDigest) }}
-                </dd>
               </div>
               <div class="min-w-0">
                 <dt class="text-muted-foreground">签名指纹</dt>

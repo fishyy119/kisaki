@@ -578,6 +578,7 @@ function toExtensionInstalledPackageInfo(
     updatePolicy: entry.updatePolicy ?? undefined,
     pinnedVersion: entry.pinnedVersion,
     includePreviewUpdates: entry.includePreviewUpdates,
+    installedAt: entry.installedAt,
     directory: entry.packagePath,
     issues: entry.issues
   }

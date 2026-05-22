@@ -9,7 +9,6 @@ import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils/cn'
 import type {
-  ExtensionCatalogReleaseInfo,
   ExtensionCatalogPackageInfo,
   ExtensionCreateRepositoryInstallPlanRequest
 } from '@shared/extension'
@@ -38,37 +37,6 @@ const canInstall = computed(
     Boolean(latestRelease.value?.artifact)
 )
 const ownerLabel = computed(() => props.extension.owner?.name ?? '未知作者')
-const signerLabel = computed(() => {
-  const signature = latestRelease.value?.artifact?.signature
-  if (!latestRelease.value?.artifact) {
-    return '无可用包'
-  }
-
-  return signature ? '已签名' : '未签名'
-})
-const signerVariant = computed(() =>
-  latestRelease.value?.artifact?.signature ? 'success' : 'warning'
-)
-const compatibilityLabel = computed(() => {
-  const release = latestRelease.value
-  if (!release) {
-    return '无版本'
-  }
-  if (release.yanked) {
-    return '已撤回'
-  }
-  return release.compatible ? '兼容' : '不兼容'
-})
-const compatibilityVariant = computed(() => {
-  const release = latestRelease.value
-  if (!release) {
-    return 'secondary'
-  }
-  if (release.yanked) {
-    return 'destructive'
-  }
-  return release.compatible ? 'success' : 'warning'
-})
 
 function handleInstall() {
   const release = latestRelease.value
@@ -82,10 +50,6 @@ function handleInstall() {
     releaseId: release.releaseDigest,
     repositoryId: release.repositoryId
   })
-}
-
-function releaseKindLabel(release: ExtensionCatalogReleaseInfo): string {
-  return release.releaseKind === 'stable' ? '稳定版' : '预览版'
 }
 </script>
 
@@ -106,47 +70,24 @@ function releaseKindLabel(release: ExtensionCatalogReleaseInfo): string {
         class="size-5 text-muted-foreground shrink-0"
       />
       <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
-      <span class="text-[10px] text-muted-foreground/70 px-1.5 py-0.5 bg-muted/30 rounded">
+      <Badge
+        variant="outline"
+        class="text-[10px] px-1.5 py-0 h-4 text-muted-foreground font-mono"
+      >
         <template v-if="latestRelease">v{{ latestRelease.version }}</template>
         <template v-else>无版本</template>
-      </span>
+      </Badge>
     </div>
 
     <!-- Meta -->
-    <div class="flex items-center gap-1.5 mb-2 min-w-0">
+    <div class="mb-2 min-w-0">
       <span class="text-xs text-muted-foreground truncate">{{ ownerLabel }}</span>
-      <span class="text-xs text-muted-foreground/50">·</span>
-      <span class="text-xs text-muted-foreground shrink-0">
-        {{ props.extension.repositoryCount }} 个仓库
-      </span>
     </div>
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
       {{ props.extension.summary || props.extension.description || '无描述' }}
     </p>
-
-    <div class="flex items-center gap-1.5 mb-3">
-      <Badge
-        :variant="compatibilityVariant"
-        class="text-[10px] h-5"
-      >
-        {{ compatibilityLabel }}
-      </Badge>
-      <Badge
-        :variant="signerVariant"
-        class="text-[10px] h-5"
-      >
-        {{ signerLabel }}
-      </Badge>
-      <Badge
-        v-if="latestRelease"
-        variant="secondary"
-        class="text-[10px] h-5"
-      >
-        {{ releaseKindLabel(latestRelease) }}
-      </Badge>
-    </div>
 
     <!-- Footer -->
     <div class="flex items-center justify-between">

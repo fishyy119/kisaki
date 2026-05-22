@@ -61,13 +61,7 @@ export class ExtensionInstallPlanner {
       existing,
       candidate.release.version
     )
-    const risks = createRepositoryRisks(
-      candidate,
-      existing,
-      signer,
-      artifact,
-      includePreviewUpdates
-    )
+    const risks = createRepositoryRisks(candidate, existing, signer, includePreviewUpdates)
 
     return createInstallPlan({
       id: `${candidate.registryPackage.id}:${candidate.releaseDigest}`,
@@ -194,23 +188,10 @@ function createRepositoryRisks(
   candidate: ExtensionRepositoryInstallCandidate,
   existing: ExtensionInstallationRow | null,
   signer: ExtensionInstallPlanSignerInfo,
-  artifact: ExtensionCatalogArtifactInfo,
   includePreviewUpdates: boolean
 ): ExtensionInstallRiskInfo[] {
   const risks: ExtensionInstallRiskInfo[] = []
   const releaseKind = getExtensionRegistryReleaseKind(candidate.release.version)
-
-  if (getUrlHost(candidate.repository.url) !== artifact.host) {
-    risks.push(
-      createRisk(
-        'artifact-host-mismatch',
-        'info',
-        `Artifact host ${artifact.host} differs from repository host ${getUrlHost(
-          candidate.repository.url
-        )}.`
-      )
-    )
-  }
 
   if (candidate.release.yanked === true) {
     risks.push(
@@ -344,7 +325,6 @@ function toArtifactInfo(
   return {
     target: artifact.target,
     url: artifact.url,
-    host: getUrlHost(artifact.url),
     size: artifact.size,
     sha256: artifact.sha256,
     signature:
@@ -368,14 +348,6 @@ function createRisk(
     code,
     severity,
     message
-  }
-}
-
-function getUrlHost(value: string): string {
-  try {
-    return new URL(value).host
-  } catch {
-    return ''
   }
 }
 
@@ -476,7 +448,6 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
 function normalizeArtifactForFingerprint(artifact: ExtensionCatalogArtifactInfo | null): {
   target: string
   url: string
-  host: string
   size: number
   sha256: string
   signature: {
@@ -492,7 +463,6 @@ function normalizeArtifactForFingerprint(artifact: ExtensionCatalogArtifactInfo 
   return {
     target: artifact.target,
     url: artifact.url,
-    host: artifact.host,
     size: artifact.size,
     sha256: artifact.sha256,
     signature: artifact.signature

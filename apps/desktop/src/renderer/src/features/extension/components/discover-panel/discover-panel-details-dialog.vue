@@ -56,39 +56,20 @@ function installRelease(release: ExtensionCatalogReleaseInfo) {
     releaseId: release.releaseDigest,
     repositoryId: release.repositoryId
   })
-  open.value = false
 }
 
 function canInstallRelease(release: ExtensionCatalogReleaseInfo): boolean {
   return !props.installed && release.compatible && !release.yanked && release.artifact !== null
 }
 
-function releaseVariant(
-  release: ExtensionCatalogReleaseInfo
-): 'success' | 'warning' | 'destructive' {
-  if (release.yanked) {
-    return 'destructive'
-  }
-  return release.compatible ? 'success' : 'warning'
-}
-
-function releaseLabel(release: ExtensionCatalogReleaseInfo): string {
-  if (release.yanked) {
-    return '已撤回'
-  }
-  return release.compatible ? '兼容' : '不兼容'
-}
-
-function signatureLabel(release: ExtensionCatalogReleaseInfo): string {
-  if (!release.artifact) {
-    return '无可用包'
-  }
-
-  return release.artifact.signature ? '已签名' : '未签名'
-}
-
-function releaseKindLabel(release: ExtensionCatalogReleaseInfo): string {
-  return release.releaseKind === 'stable' ? '稳定版' : '预览版'
+function isLatestStableRelease(release: ExtensionCatalogReleaseInfo): boolean {
+  return (
+    release.releaseDigest === props.extension.latestRelease?.releaseDigest &&
+    release.releaseKind === 'stable' &&
+    release.compatible &&
+    !release.yanked &&
+    release.artifact !== null
+  )
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -118,10 +99,6 @@ function formatBytes(value: number | undefined): string {
   }
 
   return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
-}
-
-function shortDigest(value: string | null | undefined): string {
-  return value ? value.slice(0, 12) : '无'
 }
 </script>
 
@@ -156,10 +133,6 @@ function shortDigest(value: string | null | undefined): string {
           <div>
             <span class="text-muted-foreground">扩展 ID</span>
             <div class="font-mono">{{ props.extension.id }}</div>
-          </div>
-          <div>
-            <span class="text-muted-foreground">来源仓库</span>
-            <div>{{ props.extension.repositoryCount }} 个</div>
           </div>
           <div v-if="props.extension.owner">
             <span class="text-muted-foreground">作者</span>
@@ -209,25 +182,49 @@ function shortDigest(value: string | null | undefined): string {
               class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 p-3 border-b border-border last:border-b-0"
             >
               <div class="min-w-0 space-y-2">
-                <div class="flex items-center gap-2 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 min-w-0">
                   <span class="text-sm font-medium">v{{ release.version }}</span>
                   <Badge
+                    v-if="isLatestStableRelease(release)"
+                    variant="success"
+                    class="text-[10px] h-5"
+                  >
+                    最新版
+                  </Badge>
+                  <Badge
+                    v-if="release.releaseKind === 'preview'"
                     variant="secondary"
                     class="text-[10px] h-5"
                   >
-                    {{ releaseKindLabel(release) }}
+                    预览版
                   </Badge>
                   <Badge
-                    :variant="releaseVariant(release)"
+                    v-if="release.yanked"
+                    variant="destructive"
                     class="text-[10px] h-5"
                   >
-                    {{ releaseLabel(release) }}
+                    已撤回
                   </Badge>
                   <Badge
-                    :variant="release.artifact?.signature ? 'success' : 'warning'"
+                    v-if="!release.compatible"
+                    variant="warning"
                     class="text-[10px] h-5"
                   >
-                    {{ signatureLabel(release) }}
+                    不兼容
+                  </Badge>
+                  <Badge
+                    v-if="!release.artifact"
+                    variant="warning"
+                    class="text-[10px] h-5"
+                  >
+                    无可用包
+                  </Badge>
+                  <Badge
+                    v-else-if="!release.artifact.signature"
+                    variant="warning"
+                    class="text-[10px] h-5"
+                  >
+                    未签名
                   </Badge>
                 </div>
 
@@ -236,10 +233,6 @@ function shortDigest(value: string | null | undefined): string {
                   <div>发布时间：{{ formatDate(release.publishedAt) }}</div>
                   <div>Kisaki：{{ release.engines.kisaki }}</div>
                   <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
-                  <div>下载主机：{{ release.artifact?.host ?? '无' }}</div>
-                  <div>安装包 SHA256：{{ shortDigest(release.artifact?.sha256) }}</div>
-                  <div>签名指纹：{{ release.artifact?.signature?.fingerprint ?? '无' }}</div>
-                  <div>版本摘要：{{ shortDigest(release.releaseDigest) }}</div>
                 </div>
 
                 <p
