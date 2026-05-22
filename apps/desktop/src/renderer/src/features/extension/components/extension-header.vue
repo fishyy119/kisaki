@@ -6,27 +6,11 @@ Boundary: emits commands and does not fetch extension data.
 import { RouterLink, useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/utils'
-
-interface Props {
-  checkingUpdates?: boolean
-  updatingAll?: boolean
-  updateCount?: number
-  automaticUpdateCount?: number
-}
 
 interface Emits {
-  (e: 'checkUpdates'): void
-  (e: 'updateAll'): void
   (e: 'openInstallDialog'): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  checkingUpdates: false,
-  updatingAll: false,
-  updateCount: 0,
-  automaticUpdateCount: 0
-})
 const emit = defineEmits<Emits>()
 
 const route = useRoute()
@@ -93,18 +77,12 @@ function isRouteActive(routeName: string): boolean {
             :class="{ 'bg-accent': isRouteActive(item.routeName) }"
             @click="navigate"
           >
-            <span class="flex items-center gap-1.5 relative">
+            <span class="flex items-center gap-1.5">
               <Icon
                 :icon="item.icon"
                 class="size-3.5"
               />
               <span>{{ item.label }}</span>
-              <span
-                v-if="item.routeName === 'extension-installed' && props.updateCount > 0"
-                class="absolute -top-1 -right-3 size-4 flex items-center justify-center text-[10px] font-medium bg-primary text-primary-foreground rounded-full"
-              >
-                {{ props.updateCount }}
-              </span>
             </span>
           </Button>
         </RouterLink>
@@ -116,41 +94,6 @@ function isRouteActive(routeName: string): boolean {
 
     <!-- Right: Actions -->
     <div class="flex items-center gap-2 shrink-0">
-      <!-- Check updates - only show on installed page -->
-      <Button
-        v-if="isRouteActive('extension-installed')"
-        variant="ghost"
-        size="sm"
-        :disabled="props.checkingUpdates || props.updatingAll"
-        @click="emit('checkUpdates')"
-      >
-        <Icon
-          icon="icon-[mdi--refresh]"
-          :class="cn('size-4', props.checkingUpdates && 'animate-spin')"
-        />
-        检查更新
-      </Button>
-
-      <Button
-        v-if="isRouteActive('extension-installed') && props.updateCount > 0"
-        variant="secondary"
-        size="sm"
-        :disabled="props.updatingAll || props.automaticUpdateCount === 0"
-        @click="emit('updateAll')"
-      >
-        <Icon
-          icon="icon-[mdi--update]"
-          :class="cn('size-4', props.updatingAll && 'animate-spin')"
-        />
-        自动更新
-        <span
-          v-if="props.automaticUpdateCount > 0"
-          class="ml-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] text-primary-foreground"
-        >
-          {{ props.automaticUpdateCount }}
-        </span>
-      </Button>
-
       <!-- Install extension button -->
       <Button
         variant="default"

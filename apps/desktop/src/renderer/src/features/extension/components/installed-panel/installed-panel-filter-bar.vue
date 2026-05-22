@@ -1,6 +1,6 @@
 <!--
 Installed Extension Filter Bar controls installed extension filters.
-Boundary: updates store state and does not fetch catalog data.
+Boundary: updates store state, emits installed panel actions, and does not fetch catalog data.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -28,11 +28,23 @@ import type { ExtensionCategory } from '@kisaki/extension-api'
 
 interface Props {
   updateCount?: number
+  checkingUpdates?: boolean
+  updatingAll?: boolean
+  automaticUpdateCount?: number
+}
+
+interface Emits {
+  (e: 'checkUpdates'): void
+  (e: 'updateAll'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  updateCount: 0
+  updateCount: 0,
+  checkingUpdates: false,
+  updatingAll: false,
+  automaticUpdateCount: 0
 })
+const emit = defineEmits<Emits>()
 
 // Status filter configuration
 const STATUS_OPTIONS: { value: InstalledExtensionStatusFilter; label: string; icon: string }[] = [
@@ -115,6 +127,42 @@ function handleToggleSortDirection() {
 
       <!-- Spacer -->
       <div class="flex-1" />
+
+      <!-- Update actions -->
+      <div class="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="props.checkingUpdates || props.updatingAll"
+          @click="emit('checkUpdates')"
+        >
+          <Icon
+            icon="icon-[mdi--refresh]"
+            :class="cn('size-4', props.checkingUpdates && 'animate-spin')"
+          />
+          检查更新
+        </Button>
+
+        <Button
+          v-if="props.updateCount > 0"
+          variant="secondary"
+          size="sm"
+          :disabled="props.updatingAll || props.automaticUpdateCount === 0"
+          @click="emit('updateAll')"
+        >
+          <Icon
+            icon="icon-[mdi--update]"
+            :class="cn('size-4', props.updatingAll && 'animate-spin')"
+          />
+          自动更新
+          <span
+            v-if="props.automaticUpdateCount > 0"
+            class="ml-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] text-primary-foreground"
+          >
+            {{ props.automaticUpdateCount }}
+          </span>
+        </Button>
+      </div>
 
       <!-- Status filter as button group -->
       <ButtonGroup>
