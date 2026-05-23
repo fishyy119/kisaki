@@ -1,4 +1,4 @@
-import type { Disposable, DisposableStore } from '@kisaki/extension-api'
+import type { Disposable, DisposableStore } from '@kisaki3/extension-api'
 
 class DisposableStoreImpl implements DisposableStore {
   private readonly disposables = new Set<Disposable>()

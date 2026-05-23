@@ -1,4 +1,4 @@
-import { kisaki, type Disposable, type ExtensionLogger } from '@kisaki/extension-sdk'
+import { kisaki, type Disposable, type ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { SettingsStore } from '../config/store'
 import type { BangumiMediaScope } from '../media/scopes'
 import type { LocalMediaChangeEvent } from '../media/types'

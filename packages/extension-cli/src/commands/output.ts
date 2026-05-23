@@ -2,7 +2,7 @@ import path from 'node:path'
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { watch, type FSWatcher } from 'chokidar'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest } from '@kisaki3/extension-api'
 import { CliError, logger } from '../logger'
 import { readValidManifest } from '../manifest'
 import {

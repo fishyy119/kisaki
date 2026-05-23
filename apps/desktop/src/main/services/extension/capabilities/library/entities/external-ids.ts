@@ -1,4 +1,4 @@
-import type { ExternalId } from '@kisaki/extension-api'
+import type { ExternalId } from '@kisaki3/extension-api'
 import { eq, inArray } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { DbContext } from '@main/services/db'

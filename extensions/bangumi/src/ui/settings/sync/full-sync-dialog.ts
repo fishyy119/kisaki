@@ -1,4 +1,4 @@
-import { defineSettingsPanelDialog } from '@kisaki/extension-sdk'
+import { defineSettingsPanelDialog } from '@kisaki3/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'

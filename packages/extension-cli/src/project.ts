@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { access, readFile } from 'node:fs/promises'
-import { normalizeExtensionPackagePath, type ExtensionManifest } from '@kisaki/extension-api'
+import { normalizeExtensionPackagePath, type ExtensionManifest } from '@kisaki3/extension-api'
 
 export interface ExtensionProject {
   rootDir: string

@@ -35,26 +35,26 @@ interface RunOptions {
 const repoRoot = findRepoRoot(process.cwd())
 
 const toolingPackages: readonly ToolingPackage[] = [
-  { name: '@kisaki/extension-api', dir: 'packages/extension-api' },
-  { name: '@kisaki/extension-registry', dir: 'packages/extension-registry' },
-  { name: '@kisaki/extension-sdk', dir: 'packages/extension-sdk' },
-  { name: '@kisaki/extension-cli', dir: 'packages/extension-cli' },
+  { name: '@kisaki3/extension-api', dir: 'packages/extension-api' },
+  { name: '@kisaki3/extension-registry', dir: 'packages/extension-registry' },
+  { name: '@kisaki3/extension-sdk', dir: 'packages/extension-sdk' },
+  { name: '@kisaki3/extension-cli', dir: 'packages/extension-cli' },
   { name: 'create-kisaki-extension', dir: 'packages/create-kisaki-extension' }
 ]
 
 const internalDependencies = new Map<string, readonly string[]>([
-  ['@kisaki/extension-registry', ['@kisaki/extension-api']],
-  ['@kisaki/extension-sdk', ['@kisaki/extension-api']],
-  ['@kisaki/extension-cli', ['@kisaki/extension-api', '@kisaki/extension-registry']],
-  ['create-kisaki-extension', ['@kisaki/extension-api']]
+  ['@kisaki3/extension-registry', ['@kisaki3/extension-api']],
+  ['@kisaki3/extension-sdk', ['@kisaki3/extension-api']],
+  ['@kisaki3/extension-cli', ['@kisaki3/extension-api', '@kisaki3/extension-registry']],
+  ['create-kisaki-extension', ['@kisaki3/extension-api']]
 ])
 
 const templatePackagePath = 'packages/create-kisaki-extension/templates/default/package.json'
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
 const templateDependencyNames = [
-  '@kisaki/extension-api',
-  '@kisaki/extension-sdk',
-  '@kisaki/extension-cli'
+  '@kisaki3/extension-api',
+  '@kisaki3/extension-sdk',
+  '@kisaki3/extension-cli'
 ] as const
 const semverPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/

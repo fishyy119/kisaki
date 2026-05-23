@@ -2,7 +2,7 @@ import path from 'node:path'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import archiver from 'archiver'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type { ExtensionProject } from './project'
 import { pathExists, resolvePackageFile } from './project'
 

@@ -9,7 +9,7 @@ import {
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
   type SerializableValue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
 const log = createLogger('Extension')

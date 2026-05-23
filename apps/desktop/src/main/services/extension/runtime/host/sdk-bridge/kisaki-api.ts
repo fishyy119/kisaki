@@ -19,7 +19,7 @@ import type {
   NetworkResponse,
   RpcParams,
   RpcResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { ActiveExtensionScope } from './types'
 
 type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<

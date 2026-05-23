@@ -7,7 +7,7 @@ import {
   type LibraryGameStatus,
   type LibraryGameUpdatedEvent,
   type LibraryTag
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import { BANGUMI_COLLECTION_LABELS_BY_SCOPE, BANGUMI_SCOPE_LABELS } from '../labels'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../scopes'
 import type {

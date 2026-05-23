@@ -1,4 +1,4 @@
-import type { SettingsPanelAnyNodeEvents, SettingsPanelNodeFactory } from '@kisaki/extension-api'
+import type { SettingsPanelAnyNodeEvents, SettingsPanelNodeFactory } from '@kisaki3/extension-api'
 
 export function createSettingsPanelNodeFactory<
   TEvents extends SettingsPanelAnyNodeEvents

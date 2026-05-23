@@ -5,7 +5,7 @@ import type {
   NetworkResponse,
   NetworkResponseType,
   SerializableValue
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import {
   BangumiApiError,
   normalizeBangumiApiError,

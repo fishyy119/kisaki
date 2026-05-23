@@ -1,6 +1,6 @@
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
-import type { ValidationIssue } from '@kisaki/extension-api'
+import type { ValidationIssue } from '@kisaki3/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
 import {
   type ExtensionPackageLayout,

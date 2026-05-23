@@ -1,4 +1,4 @@
-import { defineSettingsPanelTab, kisaki, type BackgroundTask } from '@kisaki/extension-sdk'
+import { defineSettingsPanelTab, kisaki, type BackgroundTask } from '@kisaki3/extension-sdk'
 import type {
   BangumiSettingsRootField,
   BangumiSettingsRootScope,

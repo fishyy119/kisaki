@@ -8,7 +8,7 @@ import SelectNode from './node/select-node.vue'
 import SubmenuNode from './node/submenu-node.vue'
 import SeparatorNode from './node/separator-node.vue'
 import { useExtensionEntityMenuSession } from './entity-menu-session'
-import type { EntityMenuInput } from '@kisaki/extension-api'
+import type { EntityMenuInput } from '@kisaki3/extension-api'
 import type { MenuComponents } from '@renderer/types'
 
 defineOptions({

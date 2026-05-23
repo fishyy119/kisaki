@@ -5,7 +5,7 @@ import type {
   SettingsPanelReleaseRequest as HostSettingsReleaseRequest,
   SettingsPanelResolvedSurfacePayload,
   SettingsPanelSubmitRequest as HostSettingsSubmitRequest
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   ExtensionResolvedSettingsPanelDialog,
   ExtensionResolvedSettingsPanelPopover,

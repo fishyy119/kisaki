@@ -1,11 +1,11 @@
-import type { ExtensionCategory } from '@kisaki/extension-api'
+import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease,
   ExtensionRegistrySchemaVersion,
   ExtensionRegistrySigningKey
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 
 export type ExtensionInstallationSource =
   | ExtensionRepositoryInstallationSource

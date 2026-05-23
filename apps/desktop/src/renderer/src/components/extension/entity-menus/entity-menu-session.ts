@@ -1,7 +1,7 @@
 import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import type { EntityMenuInput } from '@kisaki/extension-api'
+import type { EntityMenuInput } from '@kisaki3/extension-api'
 import type {
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,

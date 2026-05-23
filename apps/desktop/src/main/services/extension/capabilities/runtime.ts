@@ -4,7 +4,7 @@ import {
   createUnavailableError,
   type ExtensionRuntimeMetadata,
   type RuntimeInfo
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { openExternalLink } from '@main/utils'
 
 export interface ExtensionRuntimeCapabilityProviderOptions {

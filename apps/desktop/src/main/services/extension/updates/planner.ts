@@ -1,5 +1,5 @@
 import semver from 'semver'
-import { getExtensionRegistryReleaseKind } from '@kisaki/extension-registry'
+import { getExtensionRegistryReleaseKind } from '@kisaki3/extension-registry'
 import type { ExtensionInstallationRow } from '@shared/db'
 import type {
   ExtensionInstallPlan,

@@ -1,4 +1,4 @@
-import { defineSettingsPanel } from '@kisaki/extension-sdk'
+import { defineSettingsPanel } from '@kisaki3/extension-sdk'
 import { createSettingsDialogs } from './dialogs'
 import { createSettingsResources } from './resources'
 import type { BangumiSettingsRuntime } from './runtime'

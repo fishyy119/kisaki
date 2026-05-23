@@ -3,7 +3,7 @@ import type {
   ScrapedCharacterPersonFact,
   ScrapedGameCharacterFact,
   ScrapedTag
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import type {
   BangumiCharacterDetail,

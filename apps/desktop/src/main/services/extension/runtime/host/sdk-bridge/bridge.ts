@@ -31,8 +31,8 @@ import type {
   SettingsPanelRegistration,
   ThemeContribution,
   ThemeRegistration
-} from '@kisaki/extension-api'
-import { isExtensionEventTopic } from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
+import { isExtensionEventTopic } from '@kisaki3/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostCommandContributionPoint } from '../contributions/commands'

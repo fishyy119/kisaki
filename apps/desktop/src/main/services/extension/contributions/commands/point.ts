@@ -4,7 +4,7 @@ import type {
   ExtensionRuntimeHandle,
   SerializableRecord,
   SerializableValue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { CommandRegistrationInput, CommandService } from '@main/services/command'
 import {
   requireContributionOwner,

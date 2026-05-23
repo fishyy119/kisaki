@@ -4,7 +4,7 @@ import type {
   SettingsPanelRootNodeEvents,
   SettingsPanelRootResolveContext,
   SettingsPanelTab
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import type { BangumiSettingsDialogs } from './dialogs'
 import type { BangumiSettingsResources } from './resources'
 import type { BangumiSettingsRuntime } from './runtime'

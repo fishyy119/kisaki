@@ -1,7 +1,12 @@
 {
-  "name": "@kisaki/extension-registry",
+  "name": "@kisaki3/extension-registry",
   "version": "0.0.1",
   "description": "Distributed registry contracts and tooling for Kisaki extensions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ximu3/kisaki.git",
+    "directory": "packages/extension-registry"
+  },
   "type": "module",
   "exports": {
     ".": {
@@ -41,7 +46,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@kisaki/extension-api": "workspace:*",
+    "@kisaki3/extension-api": "workspace:*",
     "semver": "^7.7.3"
   },
   "devDependencies": {

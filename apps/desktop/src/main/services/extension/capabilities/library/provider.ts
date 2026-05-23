@@ -52,7 +52,7 @@ import {
   type LibraryTagCreateInput,
   type LibraryTagPatch,
   type LibraryTagQuery
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { ExtensionHostRpcClient } from '../../runtime'
 import { ExtensionLibraryAttachmentStore } from './attachments'

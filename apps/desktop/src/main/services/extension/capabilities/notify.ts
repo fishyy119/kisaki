@@ -4,13 +4,13 @@ import type {
   NotificationHandle,
   NotificationKind,
   NotifyOptions
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   createConflictError,
   createNotFoundError,
   createUnavailableError,
   normalizeCapabilityError
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { NotifyService } from '@main/services/notify'
 import type { NotifyOptions as SharedNotifyOptions } from '@shared/notify'
 

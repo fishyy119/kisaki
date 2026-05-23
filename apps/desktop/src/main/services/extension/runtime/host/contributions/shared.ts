@@ -1,5 +1,5 @@
-import type { ValidationIssue } from '@kisaki/extension-api'
-import { createValidationError } from '@kisaki/extension-api'
+import type { ValidationIssue } from '@kisaki3/extension-api'
+import { createValidationError } from '@kisaki3/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { HostContributionScope } from './types'
 

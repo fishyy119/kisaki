@@ -1,4 +1,4 @@
-import type { KisakiApi } from '@kisaki/extension-api'
+import type { KisakiApi } from '@kisaki3/extension-api'
 import type { ExtensionSdkBridgeStore } from './types'
 
 const EXTENSION_SDK_BRIDGE_KEY = Symbol.for('kisaki.extensionSdkBridge')

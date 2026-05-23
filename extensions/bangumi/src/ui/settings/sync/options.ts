@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '@kisaki/extension-sdk'
+import type { SerializableRecord } from '@kisaki3/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
 import type { BangumiMediaScope } from '../../../media/scopes'
 import { SETTINGS_NODE_IDS } from '../ids'

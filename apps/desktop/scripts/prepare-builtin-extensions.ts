@@ -162,7 +162,7 @@ async function prepareExtensionDebugPackages(
 
 async function buildExtensionPackages(): Promise<void> {
   for (const packageName of extensionBuildPackageNames) {
-    await runProcess(pnpmCommand, ['--filter', `@kisaki/${packageName}`, 'build'], repoRoot)
+    await runProcess(pnpmCommand, ['--filter', `@kisaki3/${packageName}`, 'build'], repoRoot)
   }
 }
 

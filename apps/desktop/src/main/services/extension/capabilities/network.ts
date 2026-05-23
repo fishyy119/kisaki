@@ -8,12 +8,12 @@ import type {
   NetworkResponse,
   RpcValue,
   SerializableValue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   createUnavailableError,
   createValidationError,
   normalizeCapabilityError
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { NetworkService } from '@main/services/network'
 import type { FetchOptions } from '@shared/network'
 import { assertInsideAnyRoot, resolveInsideRoot } from '../shared/path-confinement'

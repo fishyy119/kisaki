@@ -28,7 +28,7 @@ import type {
   SettingsPanelRegistration,
   ThemeRegistration,
   ThemeContribution
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 
 export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
   ? GameScraperProvider

@@ -5,7 +5,7 @@ import type {
   SerializableRecord,
   SerializableValue,
   SettingsPanelCallbackResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   ExtensionResolvedSettingsPanelNode,
   ExtensionSettingsPanelCallbackResponse,

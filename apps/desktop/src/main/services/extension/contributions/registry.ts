@@ -1,4 +1,4 @@
-import type { ExtensionRuntimeHandle } from '@kisaki/extension-api'
+import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
 import type {
   ExtensionContributionSnapshot,
   ExtensionEntityMenuInvokeRequest,

@@ -3,8 +3,8 @@ import type {
   ExtensionManifest,
   ParsedExtensionManifest,
   ValidationIssue
-} from '@kisaki/extension-api'
-import { parseExtensionManifest as parseSharedExtensionManifest } from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
+import { parseExtensionManifest as parseSharedExtensionManifest } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
 export function parseExtensionManifest(value: unknown): ParsedExtensionManifest {

@@ -11,7 +11,7 @@ import {
   type ExtensionRuntimeMetadata,
   type SerializableRecord,
   type SerializableValue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { CommandService } from '@main/services/command'
 import type {
   CommandDescriptor as AppCommandDescriptor,

@@ -4,7 +4,7 @@ import type {
   GameSessionResultMap,
   IdResolvedTarget,
   Locale
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import { BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
 import {

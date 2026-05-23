@@ -1,7 +1,12 @@
 {
-  "name": "@kisaki/extension-api",
+  "name": "@kisaki3/extension-api",
   "version": "0.0.1",
   "description": "Public contracts for the Kisaki extension system",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ximu3/kisaki.git",
+    "directory": "packages/extension-api"
+  },
   "type": "module",
   "exports": {
     ".": {

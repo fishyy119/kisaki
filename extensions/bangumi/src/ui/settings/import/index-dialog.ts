@@ -2,7 +2,7 @@ import {
   defineSettingsPanelDialog,
   type ScraperProfileSummary,
   type SerializableRecord
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { toSettingsError } from '../shared/errors'
 import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'

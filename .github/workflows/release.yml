@@ -144,6 +144,9 @@ jobs:
     needs: [detect, validate-release]
     if: needs.detect.outputs.target == 'extension-tooling'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
 
@@ -183,6 +186,7 @@ jobs:
         run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
 
   publish-github-release:
     name: Publish GitHub Release

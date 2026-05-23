@@ -3,7 +3,7 @@ import type {
   DeeplinkRouteHandleResult,
   DeeplinkRouteRegistrationInfo,
   ExtensionRuntimeHandle
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import type { ExtensionDeeplinkRouteRegistrationInfo } from '@shared/extension'
 import {

@@ -4,8 +4,8 @@ import type {
   ExtensionRuntimeHandle,
   ExtensionUnloadResult,
   ExtensionRuntimeMetadata
-} from '@kisaki/extension-api'
-import { toRpcErrorPayload } from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
+import { toRpcErrorPayload } from '@kisaki3/extension-api'
 import { readExtensionManifestFile, resolveExtensionFilePath } from '../../packages'
 import {
   createEntityMenuRegistrationMaps,

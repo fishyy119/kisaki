@@ -1,4 +1,4 @@
-import type { ExtensionRuntimeHandle, ThemeContribution } from '@kisaki/extension-api'
+import type { ExtensionRuntimeHandle, ThemeContribution } from '@kisaki3/extension-api'
 import type { ExtensionThemeRegistrationInfo } from '@shared/extension'
 import {
   getRuntimeContributionKey,

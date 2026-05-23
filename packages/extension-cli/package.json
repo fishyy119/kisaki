@@ -1,7 +1,12 @@
 {
-  "name": "@kisaki/extension-cli",
+  "name": "@kisaki3/extension-cli",
   "version": "0.0.1",
   "description": "CLI tools for Kisaki extension development",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ximu3/kisaki.git",
+    "directory": "packages/extension-cli"
+  },
   "type": "module",
   "bin": {
     "kisx": "./dist/index.mjs"
@@ -20,8 +25,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@kisaki/extension-api": "workspace:*",
-    "@kisaki/extension-registry": "workspace:*",
+    "@kisaki3/extension-api": "workspace:*",
+    "@kisaki3/extension-registry": "workspace:*",
     "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",
     "chokidar": "^5.0.0",

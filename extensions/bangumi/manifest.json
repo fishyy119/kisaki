@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/@kisaki/extension-api/schemas/extension-manifest.schema.json",
+  "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
   "id": "builtin.bangumi",
   "name": "Bangumi",
   "version": "0.0.1",

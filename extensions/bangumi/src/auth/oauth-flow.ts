@@ -1,4 +1,4 @@
-import type { DeeplinkRouteHandleEvent, ExtensionLogger } from '@kisaki/extension-sdk'
+import type { DeeplinkRouteHandleEvent, ExtensionLogger } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError } from '../shared/errors'
 import type { OAuthRelayClient, OAuthRelayToken } from './relay-client'
 import type { BangumiPendingSessionSecretV1 } from './token-store'

@@ -1,4 +1,4 @@
-import type { RpcValue, SerializableValue } from '@kisaki/extension-api'
+import type { RpcValue, SerializableValue } from '@kisaki3/extension-api'
 
 export interface SerializationOptions {
   undefinedObjectProperties?: 'error' | 'omit'

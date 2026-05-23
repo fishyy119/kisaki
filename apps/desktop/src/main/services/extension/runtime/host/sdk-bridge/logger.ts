@@ -1,4 +1,4 @@
-import type { ExtensionLogger, ExtensionRuntimeMetadata } from '@kisaki/extension-api'
+import type { ExtensionLogger, ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
 import { toRpcValue } from './utils/serialization'

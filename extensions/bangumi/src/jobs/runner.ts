@@ -1,4 +1,4 @@
-import type { CommandContributionExecuteEvent, ExtensionLogger } from '@kisaki/extension-sdk'
+import type { CommandContributionExecuteEvent, ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { AccountService } from '../auth/account'

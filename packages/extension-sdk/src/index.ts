@@ -1,7 +1,7 @@
-import type { ExtensionDefinition, KisakiApi } from '@kisaki/extension-api'
+import type { ExtensionDefinition, KisakiApi } from '@kisaki3/extension-api'
 import { getExtensionSdkBridge } from './bridge'
 
-export * from '@kisaki/extension-api'
+export * from '@kisaki3/extension-api'
 
 export function defineExtension(definition: ExtensionDefinition): ExtensionDefinition {
   return definition

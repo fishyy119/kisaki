@@ -3,7 +3,7 @@ import {
   normalizeCapabilityError,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions'
 import type { ExtensionHostRpcClient } from './rpc-client'

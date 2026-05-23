@@ -1,6 +1,6 @@
 import path from 'node:path'
 import fse from 'fs-extra'
-import { createValidationError } from '@kisaki/extension-api'
+import { createValidationError } from '@kisaki3/extension-api'
 import type { ExtensionServicePaths } from '../types'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
 

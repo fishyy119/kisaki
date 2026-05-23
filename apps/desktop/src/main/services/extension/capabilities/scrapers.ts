@@ -3,7 +3,7 @@ import {
   type ExtensionRuntimeMetadata,
   type ScraperProfileListQuery,
   type ScraperProfileSummary
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { ScraperService } from '@main/services/scraper'
 import type { ScraperProfileSummary as AppScraperProfileSummary } from '@shared/scraper'
 

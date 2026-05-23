@@ -6,7 +6,7 @@ import { createLogger } from '@main/log'
 import { net, protocol } from 'electron'
 import { EXTENSION_ICON_SCHEME } from '@main/bootstrap/protocol'
 import type { NetworkService } from '@main/services/network'
-import type { ExtensionRegistryPackageIcon } from '@kisaki/extension-registry'
+import type { ExtensionRegistryPackageIcon } from '@kisaki3/extension-registry'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import { hashFile } from './verifier'
 

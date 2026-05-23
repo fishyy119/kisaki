@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import type { SettingsPanelTableColumn } from '@kisaki/extension-api'
+import type { SettingsPanelTableColumn } from '@kisaki3/extension-api'
 import type { ExtensionResolvedSettingsPanelTableNode } from '@shared/extension'
 
 interface SettingsPanelTableLinkCell {

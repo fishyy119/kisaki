@@ -6,11 +6,11 @@ import {
   type ExtensionRegistryManifest,
   type ExtensionRegistryPackage,
   type ExtensionRegistryRelease
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 import {
   createExtensionRegistryReleaseDigest,
   createExtensionRegistrySignerFingerprint
-} from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry/node'
 import type {
   ExtensionCatalogArtifactInfo,
   ExtensionCatalogPackageInfo,

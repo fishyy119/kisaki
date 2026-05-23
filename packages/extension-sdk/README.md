@@ -1,9 +1,9 @@
-# @kisaki/extension-sdk
+# @kisaki3/extension-sdk
 
 Authoring SDK for Kisaki extensions.
 
 Use this package from extension code. It re-exports the public contracts from
-`@kisaki/extension-api` and adds the small authoring surface that extension entry
+`@kisaki3/extension-api` and adds the small authoring surface that extension entry
 points use directly.
 
 ## Exports
@@ -14,12 +14,12 @@ points use directly.
 - Settings panel helpers such as `defineSettingsPanel(...)`,
   `defineSettingsPanelDialog(...)`, `defineSettingsPanelPopover(...)`, and
   `defineSettingsPanelTab(...)`.
-- All public types and validation helpers exported by `@kisaki/extension-api`.
+- All public types and validation helpers exported by `@kisaki3/extension-api`.
 
 ## Example
 
 ```ts
-import { defineExtension, defineSettingsPanel, kisaki } from '@kisaki/extension-sdk'
+import { defineExtension, defineSettingsPanel, kisaki } from '@kisaki3/extension-sdk'
 
 export default defineExtension({
   activate(context) {

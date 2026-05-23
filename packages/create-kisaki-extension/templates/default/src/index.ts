@@ -1,4 +1,4 @@
-import { defineExtension, defineSettingsPanel, kisaki } from '@kisaki/extension-sdk'
+import { defineExtension, defineSettingsPanel, kisaki } from '@kisaki3/extension-sdk'
 
 const extensionName = `__EXTENSION_NAME__`
 

@@ -1,4 +1,4 @@
-import type { LibraryGameStatus } from '@kisaki/extension-sdk'
+import type { LibraryGameStatus } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionPatch } from '../../api/types'
 import type {
   BangumiCollectionType,

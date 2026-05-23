@@ -4,7 +4,7 @@ import type {
   SettingsPanelDialogNodeEvents,
   SettingsPanelField,
   SettingsPanelNodeFactory
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import type { MediaRegistry } from '../../../media/registry'
 import type { BangumiMediaScope } from '../../../media/scopes'

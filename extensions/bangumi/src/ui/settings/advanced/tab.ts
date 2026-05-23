@@ -1,4 +1,4 @@
-import { defineSettingsPanelTab } from '@kisaki/extension-sdk'
+import { defineSettingsPanelTab } from '@kisaki3/extension-sdk'
 import type { BangumiSettingsRootScope, BangumiSettingsTab } from '../contracts'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { toSettingsError } from '../shared/errors'

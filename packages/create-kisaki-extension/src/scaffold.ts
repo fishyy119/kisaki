@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { isExtensionIdentifier, type ExtensionCategory } from '@kisaki/extension-api'
+import { isExtensionIdentifier, type ExtensionCategory } from '@kisaki3/extension-api'
 
 export interface ExtensionScaffoldConfig {
   projectName: string

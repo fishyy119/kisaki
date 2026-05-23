@@ -1,4 +1,4 @@
-import type { ExtensionLogger } from '@kisaki/extension-sdk'
+import type { ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { BangumiApiError } from '../api/errors'
 import type { BangumiCollectionPatch, BangumiUserCollection } from '../api/types'

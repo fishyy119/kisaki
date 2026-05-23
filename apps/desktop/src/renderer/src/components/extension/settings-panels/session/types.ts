@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import type { SerializableValue } from '@kisaki/extension-api'
+import type { SerializableValue } from '@kisaki3/extension-api'
 import type {
   ExtensionResolvedSettingsPanelDialog,
   ExtensionResolvedSettingsPanelNode,

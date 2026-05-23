@@ -1,4 +1,4 @@
-import type { PartialDate } from '@kisaki/extension-sdk'
+import type { PartialDate } from '@kisaki3/extension-sdk'
 
 const PARTIAL_DATE_KEYS = new Set(['year', 'month', 'day'])
 

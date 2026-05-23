@@ -5,7 +5,7 @@ import {
   type ExtensionRuntimeHandle,
   type SettingsPanelOpenResponse as HostSettingsPanelOpenResponse,
   type SettingsPanelRegistrationInfo
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   ExtensionSettingsPanelCallbackResponse,
   ExtensionSettingsPanelRegistrationInfo,

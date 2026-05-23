@@ -1,5 +1,5 @@
 import semver from 'semver'
-import { isExtensionCategory, validateExtensionIdentifier } from '@kisaki/extension-api'
+import { isExtensionCategory, validateExtensionIdentifier } from '@kisaki3/extension-api'
 import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,

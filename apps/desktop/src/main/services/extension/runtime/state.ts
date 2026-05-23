@@ -4,7 +4,7 @@ import type {
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   ExtensionUnloadReason
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 
 export type ExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
 const MAX_RUNTIME_DIAGNOSTICS = 50

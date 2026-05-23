@@ -1,7 +1,7 @@
 import type { BangumiAccountSnapshotV1 } from '../../auth/account'
 import type { StoredTokenState } from '../../auth/token-service'
 import type { BangumiSettingsV1 } from '../../config/schema'
-import type { BackgroundTask, ScraperProfileSummary } from '@kisaki/extension-sdk'
+import type { BackgroundTask, ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import type { BangumiCommandId } from '../../jobs/commands'
 import type { LocalCollectionSummary } from '../../media/types'
 import { listBangumiAutomationTasks } from './automation/tasks'

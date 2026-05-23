@@ -4,7 +4,7 @@ import type {
   SettingsPanelDraftSnapshot,
   SettingsPanelParentRef,
   SettingsPanelRefreshReason
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { compactRecord } from './values'
 export function createRootContext(
   contributionId: string,

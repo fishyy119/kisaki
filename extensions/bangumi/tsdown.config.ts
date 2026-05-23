@@ -6,7 +6,7 @@ export default defineConfig({
   },
   format: 'esm',
   dts: true,
-  noExternal: ['@kisaki/extension-sdk', '@kisaki/extension-api'],
+  noExternal: ['@kisaki3/extension-sdk', '@kisaki3/extension-api'],
   outDir: 'dist',
   clean: true,
   sourcemap: true

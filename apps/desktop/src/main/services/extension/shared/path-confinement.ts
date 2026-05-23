@@ -3,7 +3,7 @@ import {
   createValidationError,
   isExtensionIdentifier,
   validateExtensionIdentifier
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 
 export function requireSafeExtensionId(value: unknown, label = 'extensionId'): string {
   if (isExtensionIdentifier(value)) {

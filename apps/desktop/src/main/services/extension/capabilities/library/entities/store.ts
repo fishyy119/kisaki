@@ -24,12 +24,12 @@ import type {
   LibraryTagPatch,
   LibraryTagQuery,
   ExternalId
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   createNotFoundError,
   ensureNonEmptyString,
   normalizeCapabilityError
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { and, eq, inArray, type SQL } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'

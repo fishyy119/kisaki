@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
-import type { ExtensionRuntimeMetadata } from '@kisaki/extension-api'
+import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type { EventService } from '@main/services/event'
 import type {
   ExtensionInstalledPackageInfo,

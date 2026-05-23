@@ -44,13 +44,13 @@ import type {
   SettingsPanelTextareaNode,
   ThemeContribution,
   UiCallbackResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifactTarget,
   ExtensionRegistryReleaseKind,
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySigningAlgorithm
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 import type { ExtensionInstallationSource } from './installation-source'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package'

@@ -1,4 +1,4 @@
-import type { CommandContributionExecuteEvent } from '@kisaki/extension-sdk'
+import type { CommandContributionExecuteEvent } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiIndex, BangumiIndexSubject } from '../api/types'

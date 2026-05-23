@@ -6,7 +6,7 @@ import {
   type HostToMainRpcMethod,
   type MainToHostRpcMethod,
   type ScraperMediaType
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 
 export type ScraperProviderRpcMediaType = ScraperMediaType
 

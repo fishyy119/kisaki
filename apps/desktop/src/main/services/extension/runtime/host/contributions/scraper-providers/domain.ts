@@ -6,7 +6,7 @@ import type {
   ScraperProviderSearchRequest,
   ScraperProviderSessionOpenRequest,
   ValidationIssue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { HostContributionScope } from '../types'
 import type { LoadedExtensionRuntime } from '../../extension-registry'
 import type { HostToMainScraperProviderRpcDescriptor } from './descriptors'

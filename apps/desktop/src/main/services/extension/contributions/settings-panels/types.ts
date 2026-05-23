@@ -1,4 +1,4 @@
-import type { ExtensionRuntimeHandle, SettingsPanelRegistrationInfo } from '@kisaki/extension-api'
+import type { ExtensionRuntimeHandle, SettingsPanelRegistrationInfo } from '@kisaki3/extension-api'
 import type { ExtensionSettingsPanelParentRef } from '@shared/extension'
 import type { RuntimeContributionOwner } from '../types'
 

@@ -1,4 +1,4 @@
-import type { CommandRegistrar, Disposable, SerializableRecord } from '@kisaki/extension-sdk'
+import type { CommandRegistrar, Disposable, SerializableRecord } from '@kisaki3/extension-sdk'
 import {
   normalizeAuthRefreshArgs,
   normalizeChangedItemsSyncArgs,

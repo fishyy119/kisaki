@@ -37,7 +37,7 @@ import {
   validatePersonScraperSessionResults,
   validateScraperResolvedTarget,
   validateScraperSessionShape
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'

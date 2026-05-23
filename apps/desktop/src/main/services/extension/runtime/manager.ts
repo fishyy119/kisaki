@@ -19,7 +19,7 @@ import {
   type RpcParams,
   type RpcResult,
   type RuntimeInfo
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { ExtensionHostCrashPolicy } from './crash-policy'
 import { delay, toRuntimeErrorMessage } from './errors'
 import { registerHostRequests } from './host-request'
@@ -50,7 +50,7 @@ import {
 
 const log = createLogger('Extension')
 
-export type { ExtensionRuntimeChangeCause } from '@kisaki/extension-api'
+export type { ExtensionRuntimeChangeCause } from '@kisaki3/extension-api'
 export type { ExtensionRuntimeState, ExtensionRuntimeStatus } from './state'
 
 export interface RuntimeManagerOptions {

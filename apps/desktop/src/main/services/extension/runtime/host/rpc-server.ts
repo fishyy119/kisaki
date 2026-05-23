@@ -13,7 +13,7 @@ import {
   type RpcMessage,
   type RpcParams,
   type RpcResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { RpcMessageChannel, type RpcRequestContext, type RpcRequestOptions } from '../rpc-core'
 
 export class ExtensionHostRpcServer {

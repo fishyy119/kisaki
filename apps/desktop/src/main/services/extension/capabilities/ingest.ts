@@ -4,7 +4,7 @@ import {
   type IngestAddGameFromScraperOptions,
   type IngestAddGameFromScraperResult,
   type ScraperLookup
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
 import type { ScraperLookup as AppScraperLookup } from '@shared/scraper'
 import type { IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult } from '@shared/ingest/add'

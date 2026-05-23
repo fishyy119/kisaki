@@ -5,12 +5,12 @@ import type {
   LibraryRelationPatch,
   LibraryRelationQuery,
   LibraryRelationSelector
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   createNotFoundError,
   createValidationError,
   normalizeCapabilityError
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { and, eq, or, type SQL } from 'drizzle-orm'
 import {
   characterPersonLinks,

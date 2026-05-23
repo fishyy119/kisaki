@@ -1,4 +1,4 @@
-import type { Locale } from '@kisaki/extension-sdk'
+import type { Locale } from '@kisaki3/extension-sdk'
 import type { BangumiInfoboxItem } from '../../../../api/types'
 import { extractChineseNameFromInfobox } from './infobox'
 

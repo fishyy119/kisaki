@@ -1,4 +1,4 @@
-import type { ExtensionStorage } from '@kisaki/extension-sdk'
+import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 import { createDefaultBangumiSettings } from './defaults'
 import {
   isBangumiSettingsV1,

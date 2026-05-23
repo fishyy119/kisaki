@@ -1,6 +1,6 @@
 import semver from 'semver'
-import type { ExtensionManifest, ValidationIssue } from '@kisaki/extension-api'
-import { normalizeExtensionPackagePath, parseExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest, ValidationIssue } from '@kisaki3/extension-api'
+import { normalizeExtensionPackagePath, parseExtensionManifest } from '@kisaki3/extension-api'
 import type { ExtensionProject } from './project'
 import { pathExists, readJsonFile, resolvePackageFile } from './project'
 

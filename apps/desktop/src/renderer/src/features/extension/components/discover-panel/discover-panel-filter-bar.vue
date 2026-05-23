@@ -23,7 +23,7 @@ import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
 import { EXTENSION_CATEGORIES } from '../../types'
-import type { ExtensionCategory } from '@kisaki/extension-api'
+import type { ExtensionCategory } from '@kisaki3/extension-api'
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {

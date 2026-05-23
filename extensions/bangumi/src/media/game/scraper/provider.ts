@@ -5,7 +5,7 @@ import type {
   IdResolvedTarget,
   Locale,
   ScraperLookup
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
 import { parseBangumiSubjectDate } from './format/dates'

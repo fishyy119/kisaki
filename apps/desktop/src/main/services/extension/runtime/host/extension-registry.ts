@@ -18,7 +18,7 @@ import type {
   ScraperMediaType,
   ThemeContribution,
   DisposableStore
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 
 export interface RegisteredEntityMenuContributionFor<
   TDomain extends EntityMenuDomain,

@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm'
-import type { ExtensionRegistryManifest } from '@kisaki/extension-registry'
+import type { ExtensionRegistryManifest } from '@kisaki3/extension-registry'
 import {
   extensionRepositories,
   type ExtensionRepositoryRow,

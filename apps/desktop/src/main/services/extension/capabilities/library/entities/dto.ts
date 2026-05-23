@@ -1,4 +1,4 @@
-import type { ExternalId, LibraryRankedEntityBase, RelatedSite } from '@kisaki/extension-api'
+import type { ExternalId, LibraryRankedEntityBase, RelatedSite } from '@kisaki3/extension-api'
 import type { Character, Company, Game, Person } from '@shared/db'
 import { optionalArray, optionalValue, toTimestampMs } from './utils'
 

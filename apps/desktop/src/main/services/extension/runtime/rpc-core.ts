@@ -7,7 +7,7 @@ import {
   fromRpcErrorPayload,
   toRpcErrorPayload,
   type RpcMessage
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 
 export interface RpcRequestOptions {
   timeoutMs?: number

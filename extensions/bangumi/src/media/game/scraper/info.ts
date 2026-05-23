@@ -1,4 +1,4 @@
-import type { Locale, ScrapedGameInfo, ScrapedTag } from '@kisaki/extension-sdk'
+import type { Locale, ScrapedGameInfo, ScrapedTag } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../../shared/constants'
 import { dedupeExternalIds, dedupeTags } from './format/dedupe'

@@ -3,7 +3,7 @@ import type {
   CompanyScraperProviderRegistrationInfo,
   GameScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { ScraperService } from '@main/services/scraper'
 import type { ScraperMediaType } from '@shared/scraper'
 import type { RuntimeContributionOwner } from '../types'

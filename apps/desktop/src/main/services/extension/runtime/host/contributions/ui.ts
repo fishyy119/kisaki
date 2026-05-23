@@ -5,7 +5,7 @@ import {
   validateUiCallbackResult,
   type SerializableRecord,
   type UiCallbackResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { formatValidationIssues } from './shared'
 
 export async function invokeUiCallback(

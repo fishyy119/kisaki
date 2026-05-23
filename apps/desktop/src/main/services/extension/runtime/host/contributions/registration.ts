@@ -1,4 +1,4 @@
-import type { Disposable } from '@kisaki/extension-api'
+import type { Disposable } from '@kisaki3/extension-api'
 import type { HostContributionDiagnosticInput, HostContributionScope } from './types'
 
 type ContributionRegistrationStatus = 'active' | 'invalidated' | 'disposed'

@@ -1,4 +1,4 @@
-import type { ScraperProfileSummary } from '@kisaki/extension-sdk'
+import type { ScraperProfileSummary } from '@kisaki3/extension-sdk'
 
 export function createProfileOptions(profiles: readonly ScraperProfileSummary[]) {
   return profiles.map((profile) => ({

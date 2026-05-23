@@ -2,7 +2,7 @@ import {
   EXTENSION_RPC_PROTOCOL_VERSION,
   createExtensionError,
   toRpcErrorPayload
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { ExtensionLoader } from './extension-loader'
 import { ExtensionRegistry } from './extension-registry'
 import { ExtensionHostRpcServer } from './rpc-server'

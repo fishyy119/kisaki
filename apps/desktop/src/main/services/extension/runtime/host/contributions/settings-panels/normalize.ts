@@ -6,7 +6,7 @@ import type {
   SettingsPanelResolvedSurfacePayload,
   SettingsPanelRootModel,
   SettingsPanelTab
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   JSON_COMPATIBLE_UNDEFINED_SERIALIZATION,
   toSerializableRecord

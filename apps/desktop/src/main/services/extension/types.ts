@@ -4,7 +4,7 @@ import type {
   ExtensionMode,
   ExtensionRuntimeMetadata,
   ValidationIssue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { ExtensionInstallUpdatePolicy } from '@shared/extension'
 import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
 

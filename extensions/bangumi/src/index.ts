@@ -1,4 +1,4 @@
-import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki/extension-sdk'
+import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
 import { BangumiClient } from './api/client'
 import { createBangumiUserAgent } from './api/user-agent'
 import { AccountService } from './auth/account'

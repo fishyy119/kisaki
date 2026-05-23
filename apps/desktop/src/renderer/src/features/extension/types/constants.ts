@@ -4,7 +4,7 @@
  * Runtime constants for extension system.
  */
 
-import type { ExtensionCategory } from '@kisaki/extension-api'
+import type { ExtensionCategory } from '@kisaki3/extension-api'
 
 /**
  * All available extension categories with display metadata.

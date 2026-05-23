@@ -1,4 +1,4 @@
-import type { LibraryGameStatus } from '@kisaki/extension-sdk'
+import type { LibraryGameStatus } from '@kisaki3/extension-sdk'
 import { DEFAULT_BANGUMI_SETTINGS } from './defaults'
 import {
   BANGUMI_MEDIA_SCOPES,

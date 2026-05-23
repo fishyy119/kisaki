@@ -1,4 +1,4 @@
-import { defineSettingsPanelDialog, type ScraperProfileSummary } from '@kisaki/extension-sdk'
+import { defineSettingsPanelDialog, type ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { formatScopedCollectionType } from '../../../media/labels'
 import type { BangumiCollectionType } from '../../../api/types'

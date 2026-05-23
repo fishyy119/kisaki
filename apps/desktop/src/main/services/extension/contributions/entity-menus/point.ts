@@ -5,7 +5,7 @@ import {
   readErrorCode,
   type EntityMenuRegistrationInfo,
   type ExtensionRuntimeHandle
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   ExtensionContributionError,
   ExtensionEntityMenuRegistrationInfo,

@@ -1,7 +1,7 @@
 import {
   parseExtensionRegistryManifest,
   type ExtensionRegistryManifest
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 
 export interface ExtensionRegistryUrlPolicy {
   allowInsecureLocalUrls: boolean

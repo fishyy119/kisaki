@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import semver from 'semver'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest } from '@kisaki3/extension-api'
 import {
   EXTENSION_REGISTRY_SCHEMA_URL,
   EXTENSION_REGISTRY_SCHEMA_VERSION,
@@ -12,8 +12,8 @@ import {
   type ExtensionRegistryPackage,
   type ExtensionRegistryRelease,
   type ExtensionRegistrySigningKey
-} from '@kisaki/extension-registry'
-import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry'
+import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
 import { CliError, logger } from '../logger'
 import { inspectKisxPackage } from '../package-info'
 import { readJsonFile } from '../project'

@@ -1,4 +1,4 @@
-import { defineSettingsPanelTab } from '@kisaki/extension-sdk'
+import { defineSettingsPanelTab } from '@kisaki3/extension-sdk'
 import type { BangumiAccountSnapshotV1 } from '../../../auth/account'
 import type { StoredTokenState } from '../../../auth/token-service'
 import type { BangumiSettingsRootScope, BangumiSettingsTab } from '../contracts'

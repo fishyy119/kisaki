@@ -1,4 +1,4 @@
-import type { ExternalId } from '@kisaki/extension-api'
+import type { ExternalId } from '@kisaki3/extension-api'
 import type { SQL } from 'drizzle-orm'
 import type {
   AnySQLiteColumn,

@@ -1,4 +1,4 @@
-import type { ExtensionStorage } from '@kisaki/extension-sdk'
+import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 import type { BangumiMediaScope } from '../media/scopes'
 import { BANGUMI_STORAGE_KEYS } from '../shared/ids'
 

@@ -20,7 +20,7 @@ import type {
   SettingsPanelRegistrar,
   ThemeRegistrar,
   ThemeContribution
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { ActiveExtensionScope, ExtensionSdkBridge } from './types'
 
 /**

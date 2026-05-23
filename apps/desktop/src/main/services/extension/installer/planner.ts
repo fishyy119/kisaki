@@ -4,12 +4,12 @@ import type {
   ExtensionRegistryArtifact,
   ExtensionRegistryManifest,
   ExtensionRegistrySigningAlgorithm
-} from '@kisaki/extension-registry'
-import { getExtensionRegistryReleaseKind } from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
+import { getExtensionRegistryReleaseKind } from '@kisaki3/extension-registry'
 import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
-} from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry/node'
 import type {
   ExtensionCatalogArtifactInfo,
   ExtensionCatalogReleaseInfo,

@@ -1,4 +1,4 @@
-import { createUnavailableError, type ExtensionRuntimeMetadata } from '@kisaki/extension-api'
+import { createUnavailableError, type ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type { BackgroundTaskService } from '@main/services/background-task'
 import type { CommandService } from '@main/services/command'
 import type { DbService } from '@main/services/db'

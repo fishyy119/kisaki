@@ -1,4 +1,4 @@
-import type { ExtensionCategory } from '@kisaki/extension-api'
+import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type { ExtensionRegistryArtifact } from './artifact'
 
 export const EXTENSION_REGISTRY_SCHEMA_URL =

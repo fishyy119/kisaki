@@ -1,4 +1,4 @@
-import type { KisakiApi } from '@kisaki/extension-api'
+import type { KisakiApi } from '@kisaki3/extension-api'
 
 interface ExtensionSdkBridge {
   readonly api: KisakiApi

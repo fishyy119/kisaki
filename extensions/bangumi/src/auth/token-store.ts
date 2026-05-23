@@ -1,4 +1,4 @@
-import type { ExtensionSecrets } from '@kisaki/extension-sdk'
+import type { ExtensionSecrets } from '@kisaki3/extension-sdk'
 import { BANGUMI_SECRET_KEYS } from '../shared/ids'
 
 export interface BangumiTokenSecretV1 {

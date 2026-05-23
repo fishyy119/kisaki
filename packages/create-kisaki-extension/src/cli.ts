@@ -3,7 +3,7 @@ import {
   EXTENSION_CATEGORIES,
   isExtensionIdentifier,
   type ExtensionCategory
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import prompts from 'prompts'
 import { bold, cyan, dim, green, red } from 'kolorist'
 import {

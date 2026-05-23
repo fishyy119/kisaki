@@ -1,10 +1,10 @@
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
   ExtensionRegistryManifest,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 import type { ExtensionPackageDownloader } from './downloader'
 import type { ExtensionPackageExtractor } from './extractor'
 import type { ExtensionPackageOperationRecord } from './operations'

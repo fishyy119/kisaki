@@ -5,7 +5,7 @@ import type {
   MainToHostRpcRequestMap,
   RpcParams,
   RpcResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   ExtensionEntityMenuRefreshRequestedEvent,
   ExtensionSettingsPanelRefreshRequestedEvent

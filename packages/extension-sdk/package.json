@@ -1,7 +1,12 @@
 {
-  "name": "@kisaki/extension-sdk",
+  "name": "@kisaki3/extension-sdk",
   "version": "0.0.1",
   "description": "Authoring SDK for the Kisaki extension system",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ximu3/kisaki.git",
+    "directory": "packages/extension-sdk"
+  },
   "type": "module",
   "exports": {
     ".": {
@@ -29,7 +34,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@kisaki/extension-api": "workspace:*"
+    "@kisaki3/extension-api": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.19.1",

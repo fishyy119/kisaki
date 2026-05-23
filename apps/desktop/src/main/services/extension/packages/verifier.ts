@@ -11,18 +11,18 @@ import {
   normalizeExtensionPackagePath,
   type ExtensionCategory,
   type ExtensionManifest
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   createExtensionRegistryArtifactSignaturePayload,
   type ExtensionRegistryArtifact,
   type ExtensionRegistryPackage,
   type ExtensionRegistryRelease,
   type ExtensionRegistrySigningKey
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
-} from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry/node'
 import {
   parseExtensionManifest,
   readExtensionManifestFile,

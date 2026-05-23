@@ -6,7 +6,7 @@ import type {
   SettingsPanelDialogButtonResult,
   SettingsPanelDialogSubmitEvent,
   SettingsPanelDialogSubmitResult
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 
 export type BangumiSettingsPopovers = EmptySettingsPanelPopoverMap
 

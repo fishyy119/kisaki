@@ -1,4 +1,4 @@
-import type { SettingsPanelCallbackResult } from '@kisaki/extension-api'
+import type { SettingsPanelCallbackResult } from '@kisaki3/extension-api'
 
 export function createSettingsError(message: string, code?: string): SettingsPanelCallbackResult {
   return {

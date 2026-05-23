@@ -1,4 +1,4 @@
-import { kisaki, type BackgroundTask } from '@kisaki/extension-sdk'
+import { kisaki, type BackgroundTask } from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS } from '../shared/jobs'
 
 export async function listBangumiAutomationTasks(): Promise<readonly BackgroundTask[]> {

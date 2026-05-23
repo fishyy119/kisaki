@@ -47,10 +47,10 @@ importers:
       '@electron-toolkit/utils':
         specifier: ^4.0.0
         version: 4.0.0(electron@39.6.1)
-      '@kisaki/extension-api':
+      '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../../packages/extension-api
-      '@kisaki/extension-registry':
+      '@kisaki3/extension-registry':
         specifier: workspace:*
         version: link:../../packages/extension-registry
       '@ximu3/process-list':
@@ -288,14 +288,14 @@ importers:
 
   extensions/bangumi:
     dependencies:
-      '@kisaki/extension-sdk':
+      '@kisaki3/extension-sdk':
         specifier: workspace:*
         version: link:../../packages/extension-sdk
     devDependencies:
-      '@kisaki/extension-api':
+      '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../../packages/extension-api
-      '@kisaki/extension-cli':
+      '@kisaki3/extension-cli':
         specifier: workspace:*
         version: link:../../packages/extension-cli
       '@types/node':
@@ -310,7 +310,7 @@ importers:
 
   packages/create-kisaki-extension:
     dependencies:
-      '@kisaki/extension-api':
+      '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../extension-api
       kolorist:
@@ -348,10 +348,10 @@ importers:
 
   packages/extension-cli:
     dependencies:
-      '@kisaki/extension-api':
+      '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../extension-api
-      '@kisaki/extension-registry':
+      '@kisaki3/extension-registry':
         specifier: workspace:*
         version: link:../extension-registry
       adm-zip:
@@ -391,7 +391,7 @@ importers:
 
   packages/extension-registry:
     dependencies:
-      '@kisaki/extension-api':
+      '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../extension-api
       semver:
@@ -410,7 +410,7 @@ importers:
 
   packages/extension-sdk:
     dependencies:
-      '@kisaki/extension-api':
+      '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../extension-api
     devDependencies:

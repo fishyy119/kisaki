@@ -1,6 +1,6 @@
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { themeManager, type ThemeDefinition } from '@renderer/core/theme'
-import { isSafeThemeColorToken, type ThemeContribution } from '@kisaki/extension-api'
+import { isSafeThemeColorToken, type ThemeContribution } from '@kisaki3/extension-api'
 import type { ExtensionThemeRegistrationInfo } from '@shared/extension'
 import { createLogger } from '@renderer/core/log'
 

@@ -7,7 +7,7 @@
 
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { ExtensionCategory } from '@kisaki/extension-api'
+import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type { SortDirection } from '@shared/common'
 
 export type InstalledExtensionSortField = 'name' | 'status' | 'hasUpdate'

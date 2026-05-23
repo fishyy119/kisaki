@@ -11,7 +11,7 @@ import {
   validateSettingsPanelPopoverActionResult,
   validateSettingsPanelRootButtonResult,
   validateSettingsPanelRootChangeResult
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { formatValidationIssues } from '../shared'
 import {
   createDialogButtonHelpers,

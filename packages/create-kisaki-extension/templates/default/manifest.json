@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/@kisaki/extension-api/schemas/extension-manifest.schema.json",
+  "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
   "id": "__EXTENSION_ID__",
   "name": "__EXTENSION_NAME__",
   "version": "0.0.1",

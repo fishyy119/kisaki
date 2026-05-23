@@ -3,7 +3,7 @@ import {
   type CommandExecutionStartResult,
   type CommandListItem,
   type SerializableRecord
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../../jobs/commands'
 import type { BangumiSettingsRootButtonEvent, BangumiSettingsRootButtonResult } from '../contracts'
 import type {

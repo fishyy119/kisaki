@@ -3,7 +3,7 @@ import type {
   SerializableValue,
   SettingsPanelCallbackResult,
   SettingsPanelParentRef
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 export function createSettingsPanelError(
   message: string,
   code?: string,

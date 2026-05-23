@@ -8,13 +8,13 @@ import type {
   LibraryAttachmentRemoveInput,
   LibraryAttachmentSource,
   LibraryAttachmentWriteInput
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import {
   createNotFoundError,
   createUnavailableError,
   createValidationError,
   normalizeCapabilityError
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { characters, collections, companies, games, persons } from '@shared/db'

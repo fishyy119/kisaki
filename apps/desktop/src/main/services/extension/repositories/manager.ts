@@ -20,8 +20,8 @@ import {
   type ExtensionRegistryPackageIcon,
   type ExtensionRegistryRelease,
   type ExtensionRegistryReleaseKind
-} from '@kisaki/extension-registry'
-import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry'
+import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
 import type { ExtensionIconManager } from '../packages'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'

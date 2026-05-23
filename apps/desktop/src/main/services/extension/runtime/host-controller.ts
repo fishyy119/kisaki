@@ -2,7 +2,7 @@ import { once } from 'node:events'
 import { utilityProcess, type ForkOptions, type UtilityProcess } from 'electron'
 import { createLogger } from '@main/log'
 import type { ExtensionHostInspectOptions } from '@shared/bootstrap'
-import type { RpcMessage } from '@kisaki/extension-api'
+import type { RpcMessage } from '@kisaki3/extension-api'
 
 const log = createLogger('Extension')
 

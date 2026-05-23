@@ -1,4 +1,4 @@
-import type { ExternalId, ScrapedTag } from '@kisaki/extension-sdk'
+import type { ExternalId, ScrapedTag } from '@kisaki3/extension-sdk'
 
 export function dedupeExternalIds(ids: ExternalId[]): ExternalId[] {
   const seen = new Set<string>()

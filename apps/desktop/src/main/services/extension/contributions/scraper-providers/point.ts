@@ -1,4 +1,4 @@
-import type { ExtensionRuntimeHandle } from '@kisaki/extension-api'
+import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import type { ExtensionScraperProviderRegistrationInfo } from '@shared/extension'
 import type {

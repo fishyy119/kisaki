@@ -4,7 +4,7 @@ import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 import AdmZip from 'adm-zip'
-import { parseExtensionManifest, type ExtensionManifest } from '@kisaki/extension-api'
+import { parseExtensionManifest, type ExtensionManifest } from '@kisaki3/extension-api'
 import { CliError } from './logger'
 
 export interface KisxPackageInfo {

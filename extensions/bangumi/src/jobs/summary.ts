@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '@kisaki/extension-sdk'
+import type { SerializableRecord } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError, type BangumiErrorCode } from '../shared/errors'
 
 export type BangumiJobStatus = 'completed' | 'cancelled' | 'failed'

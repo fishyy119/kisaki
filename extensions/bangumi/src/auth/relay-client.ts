@@ -1,4 +1,4 @@
-import type { NetworkCapability, SerializableRecord } from '@kisaki/extension-sdk'
+import type { NetworkCapability, SerializableRecord } from '@kisaki3/extension-sdk'
 import { BANGUMI_OAUTH_RELAY_BASE_URL } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
 

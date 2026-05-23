@@ -5,7 +5,7 @@ import {
   type SettingsPanelDialogNodeEvents,
   type SettingsPanelField,
   type SettingsPanelNodeFactory
-} from '@kisaki/extension-sdk'
+} from '@kisaki3/extension-sdk'
 import type { BangumiCommandId } from '../../../jobs/commands'
 import { createRunningJobError, isBangumiCommandActive, startBangumiCommandJob } from './jobs'
 import type {

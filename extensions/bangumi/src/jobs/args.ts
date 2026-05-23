@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '@kisaki/extension-sdk'
+import type { SerializableRecord } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionType } from '../config/schema'
 import { requireBangumiMediaScope, type BangumiMediaScope } from '../media/scopes'
 import { BangumiExtensionError } from '../shared/errors'

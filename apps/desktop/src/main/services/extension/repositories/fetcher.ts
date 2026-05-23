@@ -6,8 +6,8 @@ import type { NetworkService } from '@main/services/network'
 import {
   parseExtensionRegistryManifest,
   type ExtensionRegistryManifest
-} from '@kisaki/extension-registry'
-import { stringifyExtensionRegistryCanonicalJson } from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry'
+import { stringifyExtensionRegistryCanonicalJson } from '@kisaki3/extension-registry/node'
 
 const MAX_REGISTRY_MANIFEST_BYTES = 2 * 1024 * 1024
 

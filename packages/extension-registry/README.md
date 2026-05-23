@@ -1,10 +1,10 @@
-# @kisaki/extension-registry
+# @kisaki3/extension-registry
 
 Distributed registry contracts and validation helpers for Kisaki extension
 repositories.
 
 Use the package root for browser-safe registry types and helpers. Use
-`@kisaki/extension-registry/node` for helpers that require Node built-ins.
+`@kisaki3/extension-registry/node` for helpers that require Node built-ins.
 
 ## Root Export
 
@@ -24,6 +24,6 @@ The registry schema is exported at:
 
 ## Node Export
 
-`@kisaki/extension-registry/node` exports sha256 release digest helpers, canonical
+`@kisaki3/extension-registry/node` exports sha256 release digest helpers, canonical
 JSON stringification, and signer fingerprint helpers used by the CLI and desktop
 installer.

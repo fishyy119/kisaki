@@ -1,4 +1,4 @@
-# @kisaki/extension-cli
+# @kisaki3/extension-cli
 
 `kisx` command line tools for Kisaki extension development.
 

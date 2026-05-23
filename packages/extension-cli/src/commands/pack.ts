@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { ExtensionRegistryArtifactTarget } from '@kisaki/extension-registry'
+import type { ExtensionRegistryArtifactTarget } from '@kisaki3/extension-registry'
 import { createKisxArchive } from '../archive'
 import { CliError, logger } from '../logger'
 import { readValidManifest } from '../manifest'

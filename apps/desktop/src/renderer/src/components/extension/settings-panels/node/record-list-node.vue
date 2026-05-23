@@ -14,7 +14,7 @@ import type {
   ExtensionResolvedSettingsPanelRecordListNode,
   ExtensionSettingsPanelSurface
 } from '@shared/extension'
-import type { SerializableRecord } from '@kisaki/extension-api'
+import type { SerializableRecord } from '@kisaki3/extension-api'
 
 const props = defineProps<{
   node: ExtensionResolvedSettingsPanelRecordListNode

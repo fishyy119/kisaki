@@ -1,5 +1,5 @@
-import type { HostEventTopic, HostEvents, SerializableValue } from '@kisaki/extension-api'
-import { createValidationError, normalizeCapabilityError } from '@kisaki/extension-api'
+import type { HostEventTopic, HostEvents, SerializableValue } from '@kisaki3/extension-api'
+import { createValidationError, normalizeCapabilityError } from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
 import type { AppEvents } from '@shared/events'

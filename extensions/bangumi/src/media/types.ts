@@ -1,4 +1,4 @@
-import type { Disposable, ScraperProfileSummary } from '@kisaki/extension-sdk'
+import type { Disposable, ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionType } from '../api/types'
 import type { BangumiMediaScope, BangumiSupportedSubjectType } from './scopes'
 

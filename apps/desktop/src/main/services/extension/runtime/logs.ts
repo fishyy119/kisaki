@@ -5,7 +5,7 @@ import {
   createUnavailableError,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
 type ExtensionLogLevel = 'debug' | 'info' | 'warn' | 'error'

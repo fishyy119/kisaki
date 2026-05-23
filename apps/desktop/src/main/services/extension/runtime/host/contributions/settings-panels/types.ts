@@ -8,7 +8,7 @@ import type {
   SettingsPanelInvokeRequest,
   SettingsPanelParentRef,
   SettingsPanelRefreshReason
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type { LoadedExtensionRuntime } from '../../extension-registry'
 export type SettingsPanelSurface = 'root' | 'dialog' | 'popover'
 export type SettingsPanelCallbackKind = 'change' | 'button'

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionPackageArchiveStore } from './archive'
 import type { ExtensionPackageLayout } from './layout'

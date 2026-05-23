@@ -1,4 +1,4 @@
-import type { ExtensionRuntimeDiagnostic, ExtensionRuntimeHandle } from '@kisaki/extension-api'
+import type { ExtensionRuntimeDiagnostic, ExtensionRuntimeHandle } from '@kisaki3/extension-api'
 import type { RpcRequestOptions } from '../../rpc-core'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'

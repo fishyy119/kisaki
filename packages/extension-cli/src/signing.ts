@@ -8,7 +8,7 @@ import {
 } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import type { ExtensionManifest } from '@kisaki/extension-api'
+import type { ExtensionManifest } from '@kisaki3/extension-api'
 import {
   createExtensionRegistryArtifactSignaturePayload,
   EXTENSION_REGISTRY_ARTIFACT_SIGNATURE_KIND,
@@ -20,11 +20,11 @@ import {
   type ExtensionRegistryArtifactTarget,
   type ExtensionRegistryRelease,
   type ExtensionRegistrySigningKey
-} from '@kisaki/extension-registry'
+} from '@kisaki3/extension-registry'
 import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
-} from '@kisaki/extension-registry/node'
+} from '@kisaki3/extension-registry/node'
 import { CliError } from './logger'
 
 export const EXTENSION_SIGNING_KEY_FILE_KIND = 'kisaki-extension-signing-key'

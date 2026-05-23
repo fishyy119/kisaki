@@ -3,7 +3,7 @@ import type {
   DynamicEntityConfig as ApiDynamicEntityConfig,
   SerializableRecord,
   SerializableValue
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import type {
   DynamicCollectionConfig as DbDynamicCollectionConfig,
   DynamicEntityConfig as DbDynamicEntityConfig,

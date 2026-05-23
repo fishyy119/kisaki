@@ -23,7 +23,7 @@ import type {
   LibraryTagCreateInput,
   LibraryTagPatch,
   LibraryTagQuery
-} from '@kisaki/extension-api'
+} from '@kisaki3/extension-api'
 import { eq, inArray, sql, type SQL } from 'drizzle-orm'
 import {
   characterExternalIds,

@@ -7,8 +7,8 @@ import type {
   ExtensionInstallationSource,
   ExtensionRepositoryInstallationSource
 } from '@shared/extension/installation-source'
-import type { ExtensionRegistryArtifact } from '@kisaki/extension-registry'
-import { createExtensionRegistryReleaseDigest } from '@kisaki/extension-registry/node'
+import type { ExtensionRegistryArtifact } from '@kisaki3/extension-registry'
+import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionPackageArchiveStore } from './archive'
 import { readExtensionManifestFile, validateInstalledExtensionPackage } from './manifest'
