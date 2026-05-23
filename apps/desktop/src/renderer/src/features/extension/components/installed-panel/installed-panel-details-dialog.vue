@@ -69,6 +69,8 @@ const packageStatusLabel = computed(() => {
     case 'missing-package':
       return '包缺失'
   }
+
+  return '未知'
 })
 const runtimeStatusLabel = computed(() => {
   if (!props.extension.enabled || props.extension.status !== 'ready') {
@@ -83,6 +85,8 @@ const runtimeStatusLabel = computed(() => {
     case 'stopped':
       return '未运行'
   }
+
+  return '未知'
 })
 const updatePolicyLabel = computed(() => {
   switch (props.extension.updatePolicy ?? 'manual') {
@@ -93,6 +97,8 @@ const updatePolicyLabel = computed(() => {
     case 'pinned':
       return '锁定'
   }
+
+  return '未知'
 })
 
 watch(iconUrl, () => {
@@ -251,8 +257,12 @@ function diagnosticSeverityClass(severity: string): string {
               <dd>{{ sourceKindLabel }}</dd>
             </div>
             <template v-if="repositorySource">
-              <div class="min-w-0 sm:col-span-2">
+              <div class="min-w-0">
                 <dt class="text-muted-foreground">仓库</dt>
+                <dd class="font-mono break-all select-text">{{ repositorySource.repositoryId }}</dd>
+              </div>
+              <div class="min-w-0 sm:col-span-2">
+                <dt class="text-muted-foreground">仓库地址</dt>
                 <dd>
                   <a
                     :href="repositorySource.repositoryUrl"

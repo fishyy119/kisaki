@@ -235,12 +235,6 @@ export class ExtensionRepositoryManager {
     return results
   }
 
-  refreshRepositoriesInBackground(): void {
-    this.refreshRepositories().catch((error) => {
-      log.warn('Background repository refresh failed:', error)
-    })
-  }
-
   searchCatalog(
     request: ExtensionCatalogSearchRequest = {},
     context: ExtensionRepositorySearchContext = {}

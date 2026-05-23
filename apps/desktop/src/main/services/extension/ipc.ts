@@ -44,7 +44,9 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpcVoid(() => service.updates.update(request))
   )
 
-  ipc.handle('extension:update-all', async () => wrapIpc(() => service.updates.updateAll()))
+  ipc.handle('extension:get-automatic-update-run', () =>
+    wrapIpc(() => service.updates.getAutomaticUpdateRun())
+  )
 
   ipc.handle('extension:set-update-policy', async (_, request) =>
     wrapIpcVoid(() => service.installations.setUpdatePolicy(request))

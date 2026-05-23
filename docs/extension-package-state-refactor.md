@@ -636,7 +636,7 @@ init repositories
 init capabilities/contributions/runtime/reloadWatcher/installations/installer/updates
 register IPC
 await installations.init()
-repositories.refreshRepositoriesInBackground()
+updates.runStartupAutomaticUpdates()
 ```
 
 `recoverPackages()` 只调用 package recovery，不再提 transaction。

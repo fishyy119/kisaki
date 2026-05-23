@@ -197,16 +197,19 @@ export class ExtensionService implements IService {
     })
     this.updates = new ExtensionUpdateManager({
       installer: this.installer,
+      repositories: this.repositories,
       updatePlanner: new ExtensionUpdatePlanner({
         repositories: this.repositories,
         installations: installationStore,
         createInstallPlan: (candidate) => this.installer.createRepositoryInstallPlan(candidate)
-      })
+      }),
+      onAutomaticUpdateRunChanged: (state) =>
+        this.ipc.send('extension:automatic-update-run-changed', state)
     })
 
     registerExtensionIpc(this, this.ipc)
     await this.installations.init()
-    this.repositories.refreshRepositoriesInBackground()
+    this.runStartupAutomaticUpdatesInBackground()
     log.info('Initialized')
   }
 
@@ -242,6 +245,14 @@ export class ExtensionService implements IService {
 
   private emitTrustedSignersChanged(): void {
     this.ipc.send('extension:trusted-signers-changed')
+  }
+
+  private runStartupAutomaticUpdatesInBackground(): void {
+    queueMicrotask(() => {
+      this.updates.runStartupAutomaticUpdates().catch((error) => {
+        log.warn('Startup automatic extension updates failed.', error)
+      })
+    })
   }
 
   private async recoverPackages(): Promise<void> {

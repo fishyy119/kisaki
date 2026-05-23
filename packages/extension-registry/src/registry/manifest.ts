@@ -2,7 +2,7 @@ import type { ExtensionCategory } from '@kisaki/extension-api'
 import type { ExtensionRegistryArtifact } from './artifact'
 
 export const EXTENSION_REGISTRY_SCHEMA_URL =
-  'https://kisaki.dev/schemas/extension-registry.schema.json'
+  'https://kisaki.me/schemas/extension-registry.schema.json'
 export const EXTENSION_REGISTRY_SCHEMA_VERSION = 1
 
 export const EXTENSION_REGISTRY_SIGNING_ALGORITHMS = ['ed25519'] as const

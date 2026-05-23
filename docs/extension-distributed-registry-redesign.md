@@ -42,7 +42,7 @@ Kisaki 不照搬 Jellyfin 的实现细节。Kisaki 是 Electron 桌面应用，�
 - 安装和更新始终基于一个明确 release，且 release 的来源、manifest digest、artifact digest、签名状态和安装时间可追溯。
 - 远程 `.kisx` 必须通过 `sha256` 完整性校验；签名允许扩展作者自签，是否为该 extension 信任 signer fingerprint 由用户决定。
 - 安装、更新、卸载都是事务化操作：失败时包目录、数据库状态、运行时状态和缓存不会留下半完成结果。
-- 更新支持自动检查、手动更新、pin 版本、预览版更新开关、yanked release 过滤和兼容范围过滤。
+- 更新支持启动时自动更新、手动检查和确认更新、pin 版本、预览版更新开关、yanked release 过滤和兼容范围过滤。
 - 卸载拆分为“卸载”和“清除数据”：卸载移除运行时代码，清除数据才删除 `data/<extension-id>`。
 - 仓库配置和安装状态进入 SQLite；文件系统只保存包内容、缓存和扩展数据。
 - 主进程保持唯一可信边界；renderer 只消费 DTO 和调用 `extension:*` IPC；扩展代码仍只在 extension host 运行。
@@ -116,12 +116,12 @@ packages/extension-registry/src/registry/integrity.ts
 
 ```json
 {
-  "$schema": "https://kisaki.dev/schemas/extension-registry.schema.json",
+  "$schema": "https://kisaki.me/schemas/extension-registry.schema.json",
   "schemaVersion": 1,
   "id": "kisaki.extensions",
   "name": "Kisaki Extensions",
   "description": "Kisaki extension catalog.",
-  "homepage": "https://kisaki.dev/extensions",
+  "homepage": "https://kisaki.me/extensions",
   "updatedAt": "2026-05-10T00:00:00.000Z",
   "signingKeys": [
     {
@@ -140,7 +140,7 @@ packages/extension-registry/src/registry/integrity.ts
       "keywords": ["bangumi", "metadata", "sync"],
       "owner": {
         "name": "Kisaki",
-        "url": "https://kisaki.dev"
+        "url": "https://kisaki.me"
       },
       "homepage": "https://github.com/kisaki-dev/kisaki",
       "repository": "https://github.com/kisaki-dev/kisaki",
@@ -737,7 +737,7 @@ extension:uninstall
 extension:purge-data
 extension:check-updates
 extension:update
-extension:update-all
+extension:get-automatic-update-run
 extension:set-update-policy
 extension:cancel-operation
 
@@ -750,6 +750,7 @@ Main to renderer events：
 extension:repositories-changed
 extension:catalog-changed
 extension:installations-changed
+extension:automatic-update-run-changed
 extension:trusted-signers-changed
 ```
 
@@ -891,9 +892,9 @@ Package recovery 规则：
 
 `extension:check-updates`：
 
-1. 确保 catalog 已从 manifest snapshot 可用。
+1. 先刷新所有 enabled repositories，再用可用 manifest snapshot 构建 catalog。
 2. 对每个 installed extension 读取 update policy。
-3. 跳过 builtin、local dev、`pinned` 和 disabled auto update。
+3. 跳过 builtin、local dev、`pinned`、本地文件来源和无仓库来源。
 4. 使用 `ExtensionUpdatePlanner` 选择候选 release。
 5. 返回：
    - 可更新版本。
@@ -903,9 +904,9 @@ Package recovery 规则：
    - signer trust status。
    - 不可更新原因。
 
-`extension:update(extensionId)`：
+`extension:update(request)`：
 
-1. 选择更新候选；自动更新只允许当前 extension 已信任 signer 签名的 release。
+1. 使用 renderer 已确认的 plan id 和 fingerprint 重新选择手动更新候选。
 2. 创建 operation record，获取 extension mutation mutex；mutex 持有期间 extension 仍保持运行。
 3. 重新读取安装记录和 catalog release，确认 update policy、预览版更新开关、pin、release digest、artifact sha256 和 signer trust 仍满足计划。
 4. 下载、校验、解压新 release 到 staging；下载阶段可通过 `extension:cancel-operation` 中断。
@@ -918,11 +919,15 @@ Package recovery 规则：
 11. Runtime failed 时更新仍视为已提交，通过 installed view 暴露 runtime failed。
 12. 成功提交后删除 backup；清理失败由启动 recovery 兜底。
 
-`extension:update-all`：
+启动自动更新：
 
-- 顺序执行，不并发改动多个扩展 runtime。
-- 单个扩展失败不阻塞后续扩展，但最终返回失败列表。
-- UI 展示每个扩展的成功或失败结果；v1 不持久化 update task。
+1. `ExtensionService.init()` 完成 package recovery、repositories init 和 installations init 后，后台启动一次 automatic update run。
+2. automatic update run 先刷新所有 enabled repositories；刷新失败时记录状态，并尽量使用已有 snapshot 继续选择候选。
+3. `ExtensionUpdatePlanner` 只选择 `updatePolicy === 'auto'`、未锁定、允许当前 release kind、兼容当前 Kisaki、非 yanked 且 signer 已被当前 extension 信任的候选。
+4. 每个扩展安装前重新读取当前 installation 和 catalog，避免启动期间手动操作导致旧计划继续执行。
+5. 顺序执行，不并发改动多个扩展 runtime；单个扩展失败不阻塞后续扩展。
+6. 自动更新状态仅保存在本次进程内，通过 `extension:get-automatic-update-run` 读取，并通过 `extension:automatic-update-run-changed` 推送给 renderer。
+7. Renderer 不提供“自动更新全部”按钮；自动更新是启动生命周期能力，手动更新仍必须由用户检查并确认单个扩展。
 
 ## 卸载与清除数据
 
@@ -1231,9 +1236,10 @@ Renderer 显示：
 
 1. 实现 `ExtensionUpdatePlanner`。
 2. 新增 update policy 字段和 IPC。
-3. 改造 `checkUpdates`。
-4. 改造 `update` 和 `updateAll`，共用 Phase 3 的 package commit。
-5. 实现失败回滚 active version。
+3. 改造 `checkUpdates` 为手动检查入口：刷新仓库后返回可手动确认的候选。
+4. 改造 `update` 为单扩展手动确认更新，共用 Phase 3 的 package commit。
+5. 新增启动 automatic update run，删除 renderer 触发的 `updateAll` 语义。
+6. Runtime failed 通过 installed view 暴露，不自动回滚 active version。
 
 ### Phase 8：卸载与清除数据
 

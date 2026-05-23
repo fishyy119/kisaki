@@ -100,6 +100,11 @@ function formatBytes(value: number | undefined): string {
 
   return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
 }
+
+function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string {
+  const count = release.sources.length || release.repositoryCount
+  return `${count} 个来源`
+}
 </script>
 
 <template>
@@ -229,7 +234,7 @@ function formatBytes(value: number | undefined): string {
                 </div>
 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <div>仓库：{{ release.repositoryName }}</div>
+                  <div>来源：{{ formatReleaseSourceCount(release) }}</div>
                   <div>发布时间：{{ formatDate(release.publishedAt) }}</div>
                   <div>Kisaki：{{ release.engines.kisaki }}</div>
                   <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>

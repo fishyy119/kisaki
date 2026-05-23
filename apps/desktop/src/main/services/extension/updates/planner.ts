@@ -21,7 +21,7 @@ export interface ExtensionUpdatePlan {
   info: ExtensionUpdateInfo
   installPlan: ExtensionInstallPlan
   trustedSigner: boolean
-  automatic: boolean
+  automaticEligible: boolean
 }
 
 export interface SelectExtensionUpdatePlanOptions {
@@ -53,7 +53,7 @@ export class ExtensionUpdatePlanner {
     return { updates, unavailable }
   }
 
-  listAutomaticUpdatePlans(): readonly ExtensionUpdatePlan[] {
+  listStartupAutomaticUpdatePlans(): readonly ExtensionUpdatePlan[] {
     return this.listUpdatePlans({ mode: 'automatic' })
   }
 
@@ -199,7 +199,8 @@ export class ExtensionUpdatePlanner {
     }
 
     const plans = allowedCandidates.map((candidate) => this.createPlan(installation, candidate))
-    const eligiblePlans = mode === 'automatic' ? plans.filter((plan) => plan.automatic) : plans
+    const eligiblePlans =
+      mode === 'automatic' ? plans.filter((plan) => plan.automaticEligible) : plans
 
     if (eligiblePlans.length === 0) {
       return {
@@ -221,14 +222,14 @@ export class ExtensionUpdatePlanner {
   ): ExtensionUpdatePlan {
     const installPlan = this.options.createInstallPlan(candidate)
     const trustedSigner = installPlan.signer.status === 'trusted' && installPlan.signer.trusted
-    const automatic = installation.updatePolicy === 'auto' && trustedSigner
+    const automaticEligible = installation.updatePolicy === 'auto' && trustedSigner
 
     return {
       installation,
       candidate,
       installPlan,
       trustedSigner,
-      automatic,
+      automaticEligible,
       info: {
         planId: installPlan.id,
         planFingerprint: installPlan.fingerprint,
@@ -241,7 +242,7 @@ export class ExtensionUpdatePlanner {
         signer: installPlan.signer,
         updatePolicy: installation.updatePolicy,
         includePreviewUpdates: installation.includePreviewUpdates,
-        automatic,
+        automaticEligible,
         risks: installPlan.risks
       }
     }

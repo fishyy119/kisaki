@@ -6,17 +6,6 @@ Boundary: owns installed extension list, update checks, and update actions.
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { Button } from '@renderer/components/ui/button'
-import { Badge } from '@renderer/components/ui/badge'
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@renderer/components/ui/dialog'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
@@ -25,16 +14,17 @@ import { useAsyncData, useRenderState } from '@renderer/composables'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
-import type { ExtensionUpdateAllResult, ExtensionUpdateCheckResult } from '@shared/extension'
+import type {
+  ExtensionAutomaticUpdateRunState,
+  ExtensionUpdateCheckResult
+} from '@shared/extension'
 
 const log = createLogger('Extension')
 
 const store = useInstalledExtensionStore()
 const updateCheck = ref<ExtensionUpdateCheckResult>({ updates: [], unavailable: [] })
+const automaticUpdateRun = ref<ExtensionAutomaticUpdateRunState>(createIdleAutomaticUpdateRun())
 const checkingUpdates = ref(false)
-const updatingAll = ref(false)
-const updateAllResultDialogOpen = ref(false)
-const updateAllResults = ref<readonly ExtensionUpdateAllResult[]>([])
 
 const {
   data: extensions,
@@ -55,25 +45,26 @@ const state = useRenderState(isLoading, error, extensions, { preset: 'network' }
 
 const extensionsList = computed(() => extensions.value ?? [])
 const updates = computed(() => updateCheck.value.updates)
-const automaticUpdateCount = computed(() =>
-  updates.value.filter((update) => update.automatic).length
-)
-const updateAllResultSummary = computed(() => {
-  const successes = updateAllResults.value.filter((result) => result.success)
-  const failures = updateAllResults.value.filter((result) => !result.success)
-  return createUpdateAllSummary(successes, failures)
-})
 
 let unsubscribeInstallationsChanged: (() => void) | null = null
+let unsubscribeAutomaticUpdateRunChanged: (() => void) | null = null
 
 onMounted(() => {
   unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
     void refreshInstalledCatalog()
   })
+  unsubscribeAutomaticUpdateRunChanged = ipcManager.on(
+    'extension:automatic-update-run-changed',
+    (_event, state) => {
+      automaticUpdateRun.value = state
+    }
+  )
+  void refreshAutomaticUpdateRun()
 })
 
 onUnmounted(() => {
   unsubscribeInstallationsChanged?.()
+  unsubscribeAutomaticUpdateRunChanged?.()
 })
 
 function getUpdateInfo(extensionId: string) {
@@ -92,75 +83,33 @@ async function handleRefresh() {
 async function handleCheckUpdates() {
   checkingUpdates.value = true
   try {
-    updateCheck.value = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
+    const result = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
+    updateCheck.value = result
+    if (result.updates.length > 0) {
+      notify.info('发现可用更新', `${result.updates.length} 个扩展可以更新`)
+    } else {
+      notify.info('暂无可用更新')
+    }
   } catch (error) {
     log.error('Failed to check updates:', error)
+    notify.error('检查更新失败', error instanceof Error ? error.message : String(error))
   } finally {
     checkingUpdates.value = false
   }
 }
 
-async function handleUpdateAll() {
-  updatingAll.value = true
+async function refreshAutomaticUpdateRun() {
   try {
-    const results = unwrapIpcData(await ipcManager.invoke('extension:update-all'))
-    await refreshExtensionContributionSnapshot()
-    await refetch()
-    updateCheck.value = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
-    updateAllResults.value = results
-    updateAllResultDialogOpen.value = results.length > 0
-    showUpdateAllResult(results)
+    automaticUpdateRun.value = unwrapIpcData(
+      await ipcManager.invoke('extension:get-automatic-update-run')
+    )
   } catch (error) {
-    notify.error('批量更新失败', error instanceof Error ? error.message : String(error))
-  } finally {
-    updatingAll.value = false
+    log.error('Failed to load automatic update state:', error)
   }
 }
 
 function resetUpdateCheck() {
   updateCheck.value = { updates: [], unavailable: [] }
-}
-
-function showUpdateAllResult(results: readonly ExtensionUpdateAllResult[]): void {
-  if (results.length === 0) {
-    notify.info('没有可自动更新的扩展')
-    return
-  }
-
-  const successes = results.filter((result) => result.success)
-  const failures = results.filter((result) => !result.success)
-  const summary = createUpdateAllSummary(successes, failures)
-
-  if (failures.length === 0) {
-    notify.success('批量更新完成', summary)
-    return
-  }
-
-  if (successes.length > 0) {
-    notify.error('部分更新失败', summary)
-    return
-  }
-
-  notify.error('批量更新失败', summary)
-}
-
-function createUpdateAllSummary(
-  successes: readonly ExtensionUpdateAllResult[],
-  failures: readonly ExtensionUpdateAllResult[]
-): string {
-  const parts: string[] = []
-  if (successes.length > 0) {
-    parts.push(`${successes.length} 个成功`)
-  }
-  if (failures.length > 0) {
-    const failedNames = failures
-      .slice(0, 2)
-      .map((result) => `${result.extensionId}: ${result.error ?? '未知错误'}`)
-      .join('；')
-    parts.push(`${failures.length} 个失败${failedNames ? `：${failedNames}` : ''}`)
-  }
-
-  return parts.join('，')
 }
 
 // Filter and sort extensions
@@ -217,6 +166,16 @@ const filteredExtensions = computed(() => {
 
   return result
 })
+
+function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
+  return {
+    status: 'idle',
+    trigger: 'startup',
+    startedAt: null,
+    finishedAt: null,
+    results: []
+  }
+}
 </script>
 
 <template>
@@ -225,10 +184,8 @@ const filteredExtensions = computed(() => {
     <ExtensionInstalledPanelFilterBar
       :update-count="updates.length"
       :checking-updates="checkingUpdates"
-      :updating-all="updatingAll"
-      :automatic-update-count="automaticUpdateCount"
+      :automatic-update-run="automaticUpdateRun"
       @check-updates="handleCheckUpdates"
-      @update-all="handleUpdateAll"
     />
 
     <!-- Extension Grid -->
@@ -273,54 +230,5 @@ const filteredExtensions = computed(() => {
         </div>
       </template>
     </div>
-
-    <Dialog v-model:open="updateAllResultDialogOpen">
-      <DialogContent class="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>批量更新结果</DialogTitle>
-          <DialogDescription>{{ updateAllResultSummary }}</DialogDescription>
-        </DialogHeader>
-
-        <DialogBody>
-          <div class="max-h-80 overflow-auto rounded-md border border-border">
-            <div
-              v-for="result in updateAllResults"
-              :key="result.extensionId"
-              class="flex items-start gap-3 border-b border-border px-3 py-2 last:border-b-0"
-            >
-              <Icon
-                :icon="
-                  result.success
-                    ? 'icon-[mdi--check-circle-outline]'
-                    : 'icon-[mdi--alert-circle-outline]'
-                "
-                :class="result.success ? 'size-4 text-success' : 'size-4 text-destructive'"
-              />
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="truncate text-sm font-medium">{{ result.extensionId }}</span>
-                  <Badge :variant="result.success ? 'success' : 'destructive'">
-                    {{ result.success ? '成功' : '失败' }}
-                  </Badge>
-                </div>
-                <div class="mt-1 text-xs text-muted-foreground">
-                  v{{ result.currentVersion }} -> v{{ result.targetVersion }}
-                </div>
-                <div
-                  v-if="result.error"
-                  class="mt-1 break-words text-xs text-destructive"
-                >
-                  {{ result.error }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogBody>
-
-        <DialogFooter>
-          <Button @click="updateAllResultDialogOpen = false">完成</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </div>
 </template>

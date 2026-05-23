@@ -273,10 +273,7 @@ function formatBytes(value: number | undefined): string {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent
-      class="max-w-2xl"
-      :stack-level="1"
-    >
+    <DialogContent class="max-w-2xl">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
         <DialogDescription>{{ description }}</DialogDescription>

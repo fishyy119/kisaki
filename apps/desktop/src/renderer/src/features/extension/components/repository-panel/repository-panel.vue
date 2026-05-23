@@ -18,11 +18,12 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import RepositoryDetailsDialog from './repository-details-dialog.vue'
 import {
-  OFFICIAL_EXTENSION_REPOSITORY_NAME,
   OFFICIAL_EXTENSION_REPOSITORY_URL,
   type ExtensionRepositoryInfo
 } from '@shared/extension'
@@ -39,8 +40,9 @@ const formData = ref<FormData>({
 })
 const submitting = ref(false)
 const refreshingAll = ref(false)
-const addingOfficialRepository = ref(false)
 const busyRepositoryIds = ref(new Set<string>())
+const detailsDialogOpen = ref(false)
+const selectedRepositoryId = ref<string | null>(null)
 
 const {
   data: repositories,
@@ -57,6 +59,13 @@ const repositoryList = computed(() =>
 )
 const hasOfficialRepository = computed(() =>
   repositoryList.value.some((repository) => repository.url === OFFICIAL_EXTENSION_REPOSITORY_URL)
+)
+const selectedRepository = computed(
+  () =>
+    repositoryList.value.find((repository) => repository.id === selectedRepositoryId.value) ?? null
+)
+const selectedRepositoryPriority = computed(() =>
+  selectedRepository.value ? getRepositoryIndex(selectedRepository.value) + 1 : 0
 )
 
 let unsubscribeRepositoriesChanged: (() => void) | null = null
@@ -115,25 +124,6 @@ async function handleRefreshAll() {
   }
 }
 
-async function handleAddOfficialRepository() {
-  addingOfficialRepository.value = true
-  try {
-    await ipcManager
-      .invoke('extension:add-repository', {
-        url: OFFICIAL_EXTENSION_REPOSITORY_URL,
-        name: OFFICIAL_EXTENSION_REPOSITORY_NAME
-      })
-      .then(unwrapIpcData)
-
-    notify.success('官方仓库已添加')
-    refetch()
-  } catch (err) {
-    notify.error('添加官方仓库失败', err instanceof Error ? err.message : String(err))
-  } finally {
-    addingOfficialRepository.value = false
-  }
-}
-
 async function handleRefreshRepository(repository: ExtensionRepositoryInfo) {
   await withRepositoryBusy(repository.id, async () => {
     const result = unwrapIpcData(
@@ -185,6 +175,11 @@ async function handleRemoveRepository(repository: ExtensionRepositoryInfo) {
     notify.success('仓库已删除')
     refetch()
   })
+}
+
+function handleOpenDetails(repository: ExtensionRepositoryInfo) {
+  selectedRepositoryId.value = repository.id
+  detailsDialogOpen.value = true
 }
 
 async function withRepositoryBusy(repositoryId: string, run: () => Promise<void>) {
@@ -290,19 +285,14 @@ function formatDate(value: string | null): string {
         />
         刷新全部
       </Button>
+      <!-- Official repository publishing is not available yet. Keep this visible but inactive. -->
       <Button
         v-if="!hasOfficialRepository"
         variant="outline"
         size="sm"
-        :disabled="addingOfficialRepository"
-        @click="handleAddOfficialRepository"
+        disabled
       >
-        <Spinner
-          v-if="addingOfficialRepository"
-          class="size-4"
-        />
         <Icon
-          v-else
           icon="icon-[mdi--shield-plus-outline]"
           class="size-4"
         />
@@ -381,6 +371,21 @@ function formatDate(value: string | null): string {
             </div>
 
             <div class="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    @click="handleOpenDetails(repository)"
+                  >
+                    <Icon
+                      icon="icon-[mdi--information-outline]"
+                      class="size-4"
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>详情</TooltipContent>
+              </Tooltip>
               <Switch
                 :model-value="repository.state === 'enabled'"
                 :disabled="busyRepositoryIds.has(repository.id)"
@@ -492,5 +497,12 @@ function formatDate(value: string | null): string {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <RepositoryDetailsDialog
+      v-if="detailsDialogOpen && selectedRepository"
+      v-model:open="detailsDialogOpen"
+      :repository="selectedRepository"
+      :priority-label="selectedRepositoryPriority"
+    />
   </div>
 </template>

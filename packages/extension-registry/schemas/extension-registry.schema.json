@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://kisaki.dev/schemas/extension-registry.schema.json",
+  "$id": "https://kisaki.me/schemas/extension-registry.schema.json",
   "title": "Kisaki Extension Registry Manifest",
   "type": "object",
   "additionalProperties": false,

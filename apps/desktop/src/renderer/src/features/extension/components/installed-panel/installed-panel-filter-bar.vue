@@ -25,24 +25,22 @@ import {
 } from '../../stores'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki/extension-api'
+import type { ExtensionAutomaticUpdateRunState } from '@shared/extension'
 
 interface Props {
   updateCount?: number
   checkingUpdates?: boolean
-  updatingAll?: boolean
-  automaticUpdateCount?: number
+  automaticUpdateRun?: ExtensionAutomaticUpdateRunState | null
 }
 
 interface Emits {
   (e: 'checkUpdates'): void
-  (e: 'updateAll'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   updateCount: 0,
   checkingUpdates: false,
-  updatingAll: false,
-  automaticUpdateCount: 0
+  automaticUpdateRun: null
 })
 const emit = defineEmits<Emits>()
 
@@ -84,6 +82,39 @@ const categoryModel = computed({
   get: () => store.selectedCategory ?? 'all',
   set: (value: string) =>
     store.setSelectedCategory(value === 'all' ? null : (value as ExtensionCategory))
+})
+
+const automaticUpdateSummary = computed(() => {
+  const run = props.automaticUpdateRun
+  if (!run || run.status === 'idle') {
+    return null
+  }
+
+  if (run.status === 'running') {
+    return '启动更新中'
+  }
+
+  const updated = run.results.filter((result) => result.status === 'updated').length
+  const failed = run.results.filter((result) => result.status === 'failed').length
+  if (updated === 0 && failed === 0) {
+    return run.repositoryRefreshError ? '仓库刷新失败' : null
+  }
+  if (failed > 0) {
+    return `${failed} 个自动更新失败`
+  }
+
+  return null
+})
+
+const automaticUpdateIcon = computed(() => {
+  if (props.automaticUpdateRun?.status === 'running') {
+    return 'icon-[mdi--refresh]'
+  }
+
+  return props.automaticUpdateRun?.results.some((result) => result.status === 'failed') ||
+    props.automaticUpdateRun?.repositoryRefreshError
+    ? 'icon-[mdi--alert-circle-outline]'
+    : 'icon-[mdi--check-circle-outline]'
 })
 
 function handleClearSearch() {
@@ -133,7 +164,7 @@ function handleToggleSortDirection() {
         <Button
           variant="outline"
           size="sm"
-          :disabled="props.checkingUpdates || props.updatingAll"
+          :disabled="props.checkingUpdates"
           @click="emit('checkUpdates')"
         >
           <Icon
@@ -143,25 +174,24 @@ function handleToggleSortDirection() {
           检查更新
         </Button>
 
-        <Button
-          v-if="props.updateCount > 0"
-          variant="secondary"
-          size="sm"
-          :disabled="props.updatingAll || props.automaticUpdateCount === 0"
-          @click="emit('updateAll')"
+        <div
+          v-if="automaticUpdateSummary"
+          class="flex items-center gap-1.5 text-xs text-muted-foreground"
         >
           <Icon
-            icon="icon-[mdi--update]"
-            :class="cn('size-4', props.updatingAll && 'animate-spin')"
+            :icon="automaticUpdateIcon"
+            :class="
+              cn(
+                'size-3.5',
+                props.automaticUpdateRun?.status === 'running' && 'animate-spin',
+                props.automaticUpdateRun?.results.some((result) => result.status === 'failed') &&
+                  'text-destructive',
+                props.automaticUpdateRun?.repositoryRefreshError && 'text-destructive'
+              )
+            "
           />
-          自动更新
-          <span
-            v-if="props.automaticUpdateCount > 0"
-            class="ml-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] text-primary-foreground"
-          >
-            {{ props.automaticUpdateCount }}
-          </span>
-        </Button>
+          <span>{{ automaticUpdateSummary }}</span>
+        </div>
       </div>
 
       <!-- Status filter as button group -->

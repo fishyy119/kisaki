@@ -90,7 +90,7 @@ import type {
   ExtensionSettingsPanelSubmitRequest,
   ExtensionThemeRegistrationInfo,
   ExtensionTrustedSignerInfo,
-  ExtensionUpdateAllResult,
+  ExtensionAutomaticUpdateRunState,
   ExtensionUpdateCheckResult,
   ExtensionUpdatePolicyRequest,
   ExtensionUpdateRequest
@@ -443,7 +443,7 @@ export interface IpcMainHandlers {
   'extension:purge-data': (request: ExtensionPurgeDataRequest) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateCheckResult>
   'extension:update': (request: ExtensionUpdateRequest) => IpcVoidResult
-  'extension:update-all': () => IpcResult<ExtensionUpdateAllResult[]>
+  'extension:get-automatic-update-run': () => IpcResult<ExtensionAutomaticUpdateRunState>
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
@@ -539,6 +539,7 @@ export interface IpcRendererEvents {
   'extension:repositories-changed': []
   'extension:catalog-changed': []
   'extension:installations-changed': []
+  'extension:automatic-update-run-changed': [state: ExtensionAutomaticUpdateRunState]
   'extension:trusted-signers-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
   'extension:settings-panels-refresh-requested': [

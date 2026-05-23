@@ -93,7 +93,7 @@ export interface ExtensionUpdateInfo {
   signer?: ExtensionInstallPlanSignerInfo
   updatePolicy?: ExtensionInstallUpdatePolicy
   includePreviewUpdates?: boolean
-  automatic?: boolean
+  automaticEligible?: boolean
   risks?: readonly ExtensionInstallRiskInfo[]
 }
 
@@ -284,12 +284,25 @@ export interface ExtensionUpdateRequest {
   trustSignerFingerprint?: boolean
 }
 
-export interface ExtensionUpdateAllResult {
+export type ExtensionAutomaticUpdateRunStatus = 'idle' | 'running' | 'completed'
+
+export type ExtensionAutomaticUpdateResultStatus = 'updated' | 'failed'
+
+export interface ExtensionAutomaticUpdateResult {
   extensionId: string
-  success: boolean
+  status: ExtensionAutomaticUpdateResultStatus
   currentVersion: string
   targetVersion: string
   error?: string
+}
+
+export interface ExtensionAutomaticUpdateRunState {
+  status: ExtensionAutomaticUpdateRunStatus
+  trigger: 'startup'
+  startedAt: string | null
+  finishedAt: string | null
+  results: readonly ExtensionAutomaticUpdateResult[]
+  repositoryRefreshError?: string
 }
 
 export type ExtensionCreateInstallPlanRequest =

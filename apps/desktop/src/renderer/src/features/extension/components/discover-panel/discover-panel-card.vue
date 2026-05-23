@@ -37,6 +37,7 @@ const canInstall = computed(
     Boolean(latestRelease.value?.artifact)
 )
 const ownerLabel = computed(() => props.extension.owner?.name ?? '未知作者')
+const sourceLabel = computed(() => `${props.extension.repositoryCount} 个来源`)
 
 function handleInstall() {
   const release = latestRelease.value
@@ -92,15 +93,12 @@ function handleInstall() {
     <!-- Footer -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3 text-xs text-muted-foreground">
-        <span
-          v-if="latestRelease"
-          class="flex items-center gap-1"
-        >
+        <span class="flex items-center gap-1">
           <Icon
             icon="icon-[mdi--source-branch]"
             class="size-3.5"
           />
-          {{ latestRelease.repositoryName }}
+          {{ sourceLabel }}
         </span>
         <a
           v-if="props.extension.homepage"
