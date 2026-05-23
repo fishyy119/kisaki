@@ -4,10 +4,10 @@ Boundary: calls update IPC after showing the available update summary.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Switch } from '@renderer/components/ui/switch'
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import {
   Dialog,
   DialogBody,
@@ -56,7 +56,6 @@ const signerTone = computed(() =>
   props.updateInfo.signer?.status === 'trusted' ? 'text-emerald-600' : 'text-amber-600'
 )
 const repositoryLabel = computed(() => props.updateInfo.repository?.name ?? '未知仓库')
-const releaseLabel = computed(() => props.updateInfo.release?.releaseDigest ?? '未知')
 const canTrustSigner = computed(() => {
   const signer = props.updateInfo.signer
   return Boolean(signer?.fingerprint && signer.status !== 'trusted' && signer.status !== 'unsigned')
@@ -135,26 +134,26 @@ function isCancelledUpdateError(error: unknown): boolean {
         </DialogDescription>
       </DialogHeader>
 
-      <DialogBody>
+      <DialogBody class="space-y-4">
         <div class="rounded-md border border-border p-3 text-xs text-muted-foreground space-y-2">
-          <div class="flex items-center gap-2">
-            <Icon
-              icon="icon-[mdi--source-branch]"
-              class="size-4"
-            />
-            <span>来源仓库：{{ repositoryLabel }}</span>
-          </div>
-          <div class="break-all">版本摘要：{{ releaseLabel }}</div>
-          <div
-            class="flex items-center gap-2"
-            :class="signerTone"
-          >
-            <Icon
-              icon="icon-[mdi--signature-freehand]"
-              class="size-4"
-            />
-            <span>{{ signerLabel }}</span>
-          </div>
+          <FieldGroup class="gap-2">
+            <Field orientation="horizontal">
+              <FieldLabel class="text-xs text-muted-foreground">来源仓库</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span>{{ repositoryLabel }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel class="text-xs text-muted-foreground">签名状态</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span :class="signerTone">
+                  {{ signerLabel }}
+                </span>
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+
           <div
             v-if="props.updateInfo.release?.changelog?.text"
             class="text-foreground"
@@ -176,13 +175,14 @@ function isCancelledUpdateError(error: unknown): boolean {
           </div>
         </div>
 
-        <label
-          v-if="canTrustSigner"
-          class="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
-        >
-          <span>信任此扩展的签名指纹</span>
-          <Switch v-model="trustSignerFingerprint" />
-        </label>
+        <FieldGroup v-if="canTrustSigner">
+          <Field orientation="horizontal">
+            <FieldLabel>信任此扩展的签名指纹</FieldLabel>
+            <FieldContent>
+              <Switch v-model="trustSignerFingerprint" />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
       </DialogBody>
 
       <DialogFooter>

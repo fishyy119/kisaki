@@ -6,9 +6,9 @@ Boundary: calls signer trust IPC only; trust remains scoped by extension id.
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { Badge } from '@renderer/components/ui/badge'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import {
   Dialog,
   DialogBody,
@@ -24,7 +24,9 @@ import { useAsyncData, useRenderState } from '@renderer/composables'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 
 const removing = ref(false)
+const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
+const signerToView = ref<ExtensionTrustedSignerInfo | null>(null)
 const signerToRemove = ref<ExtensionTrustedSignerInfo | null>(null)
 
 const {
@@ -56,6 +58,11 @@ onMounted(() => {
 onUnmounted(() => {
   unsubscribeTrustedSignersChanged?.()
 })
+
+function openDetailsDialog(signer: ExtensionTrustedSignerInfo): void {
+  signerToView.value = signer
+  detailsDialogOpen.value = true
+}
 
 function openRemoveDialog(signer: ExtensionTrustedSignerInfo): void {
   signerToRemove.value = signer
@@ -97,6 +104,10 @@ function formatDate(value: string): string {
 
 function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
   return signer.trustedFromRepositoryUrl ?? signer.trustedFromRepositoryId ?? '本地确认'
+}
+
+function optionalValue(value: string | null): string {
+  return value ?? '无'
 }
 </script>
 
@@ -153,19 +164,6 @@ function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
                   class="size-4 shrink-0 text-muted-foreground"
                 />
                 <span class="truncate text-sm font-medium">{{ signer.extensionId }}</span>
-                <Badge
-                  variant="secondary"
-                  class="h-5 text-[10px]"
-                >
-                  {{ signer.algorithm }}
-                </Badge>
-                <Badge
-                  v-if="signer.label"
-                  variant="outline"
-                  class="h-5 max-w-44 truncate text-[10px]"
-                >
-                  {{ signer.label }}
-                </Badge>
               </div>
 
               <div class="font-mono text-xs text-muted-foreground">
@@ -180,7 +178,23 @@ function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
               </div>
             </div>
 
-            <div class="flex items-center">
+            <div class="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    @click="openDetailsDialog(signer)"
+                  >
+                    <Icon
+                      icon="icon-[mdi--information-outline]"
+                      class="size-4"
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>查看详情</TooltipContent>
+              </Tooltip>
+
               <Tooltip>
                 <TooltipTrigger as-child>
                   <Button
@@ -202,6 +216,107 @@ function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
         </div>
       </template>
     </div>
+
+    <Dialog v-model:open="detailsDialogOpen">
+      <DialogContent class="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>签名详情</DialogTitle>
+          <DialogDescription>
+            {{ signerToView?.extensionId }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogBody
+          v-if="signerToView"
+          class="max-h-[70vh] overflow-auto scrollbar-thin"
+        >
+          <FieldGroup class="gap-4">
+            <Field orientation="horizontal">
+              <FieldLabel>扩展 ID</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span class="font-mono text-xs">{{ signerToView.extensionId }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel>算法</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span class="font-mono text-xs">{{ signerToView.algorithm }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel>密钥 ID</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span class="font-mono text-xs">{{ optionalValue(signerToView.label) }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>签名指纹</FieldLabel>
+              <FieldContent>
+                <span class="break-all font-mono text-xs">{{ signerToView.fingerprint }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>公钥</FieldLabel>
+              <FieldContent>
+                <span class="break-all font-mono text-xs">{{ signerToView.publicKey }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>信任记录 ID</FieldLabel>
+              <FieldContent>
+                <span class="break-all font-mono text-xs">{{ signerToView.id }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>来源仓库 ID</FieldLabel>
+              <FieldContent>
+                <span class="break-all font-mono text-xs">
+                  {{ optionalValue(signerToView.trustedFromRepositoryId) }}
+                </span>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>来源仓库 URL</FieldLabel>
+              <FieldContent>
+                <span class="break-all font-mono text-xs">
+                  {{ optionalValue(signerToView.trustedFromRepositoryUrl) }}
+                </span>
+              </FieldContent>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel>信任时间</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span class="text-xs">{{ formatDate(signerToView.trustedAt) }}</span>
+              </FieldContent>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel>创建时间</FieldLabel>
+              <FieldContent class="justify-self-start">
+                <span class="text-xs">{{ formatDate(signerToView.createdAt) }}</span>
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        </DialogBody>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            @click="detailsDialogOpen = false"
+          >
+            关闭
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <Dialog v-model:open="removeDialogOpen">
       <DialogContent class="max-w-md">
