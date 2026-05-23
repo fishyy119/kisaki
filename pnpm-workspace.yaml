@@ -3,3 +3,13 @@ packages:
   - 'extensions/*'
   - 'packages/*'
   - '!**/templates/**'
+allowBuilds:
+  better-sqlite3: true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  lefthook: true
+  maplibre-gl: true
+  sharp: true
+  vue-demi: true
+shamefullyHoist: true
