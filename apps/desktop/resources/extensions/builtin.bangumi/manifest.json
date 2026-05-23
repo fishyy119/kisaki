@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/@kisaki/extension-api/schemas/extension-manifest.schema.json",
+  "id": "builtin.bangumi",
+  "name": "Bangumi",
+  "version": "0.0.1",
+  "categories": ["scraper", "integration"],
+  "entry": "./dist/index.mjs",
+  "description": "Built-in Bangumi media integration and game metadata scraper for Kisaki.",
+  "author": "Kisaki",
+  "homepage": "https://bgm.tv",
+  "keywords": ["bangumi", "scraper", "game", "anime", "book", "music"],
+  "engines": {
+    "kisaki": ">=0.0.3"
+  }
+}

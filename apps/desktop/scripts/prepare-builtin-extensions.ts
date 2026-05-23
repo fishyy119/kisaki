@@ -10,6 +10,7 @@ const desktopRoot = path.resolve(scriptDir, '..')
 const repoRoot = path.resolve(desktopRoot, '..', '..')
 const builtinExtensionsRoot = path.join(repoRoot, 'extensions')
 const extensionCliEntry = path.join(repoRoot, 'packages', 'extension-cli', 'src', 'index.ts')
+const extensionBuildPackageNames = ['extension-api', 'extension-registry', 'extension-sdk'] as const
 const extensionDebugPackageNames = ['extension-api', 'extension-sdk'] as const
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const shouldUseShell = process.platform === 'win32'
@@ -155,12 +156,12 @@ async function prepareExtensionDebugPackages(
   outputRoot: string,
   debugSources: boolean
 ): Promise<void> {
-  await buildExtensionDebugPackages()
+  await buildExtensionPackages()
   await copyExtensionDebugPackages(resolveDebugPackagesRoot(outputRoot), debugSources)
 }
 
-async function buildExtensionDebugPackages(): Promise<void> {
-  for (const packageName of extensionDebugPackageNames) {
+async function buildExtensionPackages(): Promise<void> {
+  for (const packageName of extensionBuildPackageNames) {
     await runProcess(pnpmCommand, ['--filter', `@kisaki/${packageName}`, 'build'], repoRoot)
   }
 }
