@@ -3,24 +3,16 @@ Extension Signer Panel manages extension-scoped signer trust.
 Boundary: calls signer trust IPC only; trust remains scoped by extension id.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@renderer/components/ui/dialog'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import SignerDetailsDialog from './signer-details-dialog.vue'
+import SignerPanelRow from './signer-panel-row.vue'
+import SignerRemoveDialog from './signer-remove-dialog.vue'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 
 const removing = ref(false)
@@ -59,6 +51,18 @@ onUnmounted(() => {
   unsubscribeTrustedSignersChanged?.()
 })
 
+watch(detailsDialogOpen, (open) => {
+  if (!open) {
+    signerToView.value = null
+  }
+})
+
+watch(removeDialogOpen, (open) => {
+  if (!open) {
+    signerToRemove.value = null
+  }
+})
+
 function openDetailsDialog(signer: ExtensionTrustedSignerInfo): void {
   signerToView.value = signer
   detailsDialogOpen.value = true
@@ -87,27 +91,6 @@ async function handleRemoveSigner(): Promise<void> {
   } finally {
     removing.value = false
   }
-}
-
-function shortFingerprint(value: string): string {
-  return `${value.slice(0, 12)}...${value.slice(-8)}`
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) {
-    return value
-  }
-
-  return date.toLocaleString()
-}
-
-function repositoryLabel(signer: ExtensionTrustedSignerInfo): string {
-  return signer.trustedFromRepositoryUrl ?? signer.trustedFromRepositoryId ?? '本地确认'
-}
-
-function optionalValue(value: string | null): string {
-  return value ?? '无'
 }
 </script>
 
@@ -152,215 +135,29 @@ function optionalValue(value: string | null): string {
 
       <template v-else>
         <div class="divide-y divide-border">
-          <div
+          <SignerPanelRow
             v-for="signer in signerList"
             :key="signer.id"
-            class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-3 transition-colors hover:bg-accent/40"
-          >
-            <div class="min-w-0 space-y-2">
-              <div class="flex min-w-0 items-center gap-2">
-                <Icon
-                  icon="icon-[mdi--shield-key-outline]"
-                  class="size-4 shrink-0 text-muted-foreground"
-                />
-                <span class="truncate text-sm font-medium">{{ signer.extensionId }}</span>
-              </div>
-
-              <div class="font-mono text-xs text-muted-foreground">
-                {{ shortFingerprint(signer.fingerprint) }}
-              </div>
-
-              <div
-                class="grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-2"
-              >
-                <div class="truncate">来源：{{ repositoryLabel(signer) }}</div>
-                <div>信任时间：{{ formatDate(signer.trustedAt) }}</div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    @click="openDetailsDialog(signer)"
-                  >
-                    <Icon
-                      icon="icon-[mdi--information-outline]"
-                      class="size-4"
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>查看详情</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    class="hover:text-destructive"
-                    @click="openRemoveDialog(signer)"
-                  >
-                    <Icon
-                      icon="icon-[mdi--delete-outline]"
-                      class="size-4"
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>撤销信任</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
+            :signer="signer"
+            @details="openDetailsDialog"
+            @remove="openRemoveDialog"
+          />
         </div>
       </template>
     </div>
 
-    <Dialog v-model:open="detailsDialogOpen">
-      <DialogContent class="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>签名详情</DialogTitle>
-          <DialogDescription>
-            {{ signerToView?.extensionId }}
-          </DialogDescription>
-        </DialogHeader>
+    <SignerDetailsDialog
+      v-if="detailsDialogOpen && signerToView"
+      v-model:open="detailsDialogOpen"
+      :signer="signerToView"
+    />
 
-        <DialogBody
-          v-if="signerToView"
-          class="max-h-[70vh] overflow-auto scrollbar-thin"
-        >
-          <FieldGroup class="gap-4">
-            <Field orientation="horizontal">
-              <FieldLabel>扩展 ID</FieldLabel>
-              <FieldContent class="justify-self-start">
-                <span class="font-mono text-xs">{{ signerToView.extensionId }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field orientation="horizontal">
-              <FieldLabel>算法</FieldLabel>
-              <FieldContent class="justify-self-start">
-                <span class="font-mono text-xs">{{ signerToView.algorithm }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field orientation="horizontal">
-              <FieldLabel>密钥 ID</FieldLabel>
-              <FieldContent class="justify-self-start">
-                <span class="font-mono text-xs">{{ optionalValue(signerToView.label) }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>签名指纹</FieldLabel>
-              <FieldContent>
-                <span class="break-all font-mono text-xs">{{ signerToView.fingerprint }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>公钥</FieldLabel>
-              <FieldContent>
-                <span class="break-all font-mono text-xs">{{ signerToView.publicKey }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>信任记录 ID</FieldLabel>
-              <FieldContent>
-                <span class="break-all font-mono text-xs">{{ signerToView.id }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>来源仓库 ID</FieldLabel>
-              <FieldContent>
-                <span class="break-all font-mono text-xs">
-                  {{ optionalValue(signerToView.trustedFromRepositoryId) }}
-                </span>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>来源仓库 URL</FieldLabel>
-              <FieldContent>
-                <span class="break-all font-mono text-xs">
-                  {{ optionalValue(signerToView.trustedFromRepositoryUrl) }}
-                </span>
-              </FieldContent>
-            </Field>
-
-            <Field orientation="horizontal">
-              <FieldLabel>信任时间</FieldLabel>
-              <FieldContent class="justify-self-start">
-                <span class="text-xs">{{ formatDate(signerToView.trustedAt) }}</span>
-              </FieldContent>
-            </Field>
-
-            <Field orientation="horizontal">
-              <FieldLabel>创建时间</FieldLabel>
-              <FieldContent class="justify-self-start">
-                <span class="text-xs">{{ formatDate(signerToView.createdAt) }}</span>
-              </FieldContent>
-            </Field>
-          </FieldGroup>
-        </DialogBody>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            @click="detailsDialogOpen = false"
-          >
-            关闭
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog v-model:open="removeDialogOpen">
-      <DialogContent class="max-w-md">
-        <DialogHeader>
-          <DialogTitle>撤销签名信任</DialogTitle>
-          <DialogDescription>
-            {{ signerToRemove?.extensionId }}
-          </DialogDescription>
-        </DialogHeader>
-
-        <DialogBody
-          v-if="signerToRemove"
-          class="space-y-3 text-sm"
-        >
-          <div class="rounded-md border border-border px-3 py-2">
-            <div class="text-xs text-muted-foreground">签名指纹</div>
-            <div class="break-all font-mono text-xs">{{ signerToRemove.fingerprint }}</div>
-          </div>
-          <div class="text-xs text-muted-foreground">
-            撤销后，使用该指纹的新版本将需要重新确认。
-          </div>
-        </DialogBody>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            :disabled="removing"
-            @click="removeDialogOpen = false"
-          >
-            取消
-          </Button>
-          <Button
-            variant="destructive"
-            :disabled="removing"
-            @click="handleRemoveSigner"
-          >
-            <Spinner
-              v-if="removing"
-              class="size-4"
-            />
-            撤销
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SignerRemoveDialog
+      v-if="removeDialogOpen && signerToRemove"
+      v-model:open="removeDialogOpen"
+      :signer="signerToRemove"
+      :removing="removing"
+      @confirm="handleRemoveSigner"
+    />
   </div>
 </template>

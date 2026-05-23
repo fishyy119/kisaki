@@ -16,6 +16,14 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
+import {
+  formatRepositoryDate,
+  formatRepositoryNullable,
+  getRepositoryHealthLabel,
+  getRepositoryHealthVariant,
+  getRepositoryStateLabel,
+  getRepositoryStateVariant
+} from './display'
 
 interface Props {
   repository: ExtensionRepositoryInfo
@@ -25,49 +33,10 @@ interface Props {
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
-const stateLabel = computed(() => (props.repository.state === 'enabled' ? '已启用' : '已禁用'))
-const stateVariant = computed(() => (props.repository.state === 'enabled' ? 'success' : 'secondary'))
-const healthLabel = computed(() => {
-  if (props.repository.state === 'disabled') {
-    return '已禁用'
-  }
-  if (props.repository.lastError) {
-    return '异常'
-  }
-  if (!props.repository.lastSuccessAt) {
-    return '未刷新'
-  }
-  return '正常'
-})
-const healthVariant = computed(() => {
-  if (props.repository.state === 'disabled') {
-    return 'secondary'
-  }
-  if (props.repository.lastError) {
-    return 'destructive'
-  }
-  if (!props.repository.lastSuccessAt) {
-    return 'warning'
-  }
-  return 'success'
-})
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '无'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) {
-    return value
-  }
-
-  return date.toLocaleString()
-}
-
-function formatNullable(value: string | null): string {
-  return value || '无'
-}
+const stateLabel = computed(() => getRepositoryStateLabel(props.repository))
+const stateVariant = computed(() => getRepositoryStateVariant(props.repository))
+const healthLabel = computed(() => getRepositoryHealthLabel(props.repository))
+const healthVariant = computed(() => getRepositoryHealthVariant(props.repository))
 </script>
 
 <template>
@@ -131,20 +100,24 @@ function formatNullable(value: string | null): string {
             <div class="min-w-0 sm:col-span-2">
               <dt class="text-muted-foreground">清单摘要</dt>
               <dd class="font-mono break-all select-text">
-                {{ formatNullable(props.repository.manifestDigest) }}
+                {{ formatRepositoryNullable(props.repository.manifestDigest) }}
               </dd>
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">清单更新时间</dt>
-              <dd>{{ formatDate(props.repository.manifestUpdatedAt) }}</dd>
+              <dd>{{ formatRepositoryDate(props.repository.manifestUpdatedAt) }}</dd>
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">Last-Modified</dt>
-              <dd class="break-all select-text">{{ formatNullable(props.repository.lastModified) }}</dd>
+              <dd class="break-all select-text">
+                {{ formatRepositoryNullable(props.repository.lastModified) }}
+              </dd>
             </div>
             <div class="min-w-0 sm:col-span-2">
               <dt class="text-muted-foreground">ETag</dt>
-              <dd class="font-mono break-all select-text">{{ formatNullable(props.repository.etag) }}</dd>
+              <dd class="font-mono break-all select-text">
+                {{ formatRepositoryNullable(props.repository.etag) }}
+              </dd>
             </div>
           </dl>
         </section>
@@ -154,11 +127,11 @@ function formatNullable(value: string | null): string {
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
               <dt class="text-muted-foreground">上次检查</dt>
-              <dd>{{ formatDate(props.repository.lastRefreshAt) }}</dd>
+              <dd>{{ formatRepositoryDate(props.repository.lastRefreshAt) }}</dd>
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">上次成功</dt>
-              <dd>{{ formatDate(props.repository.lastSuccessAt) }}</dd>
+              <dd>{{ formatRepositoryDate(props.repository.lastSuccessAt) }}</dd>
             </div>
             <div
               v-if="props.repository.lastError"
@@ -175,11 +148,11 @@ function formatNullable(value: string | null): string {
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
               <dt class="text-muted-foreground">创建时间</dt>
-              <dd>{{ formatDate(props.repository.createdAt) }}</dd>
+              <dd>{{ formatRepositoryDate(props.repository.createdAt) }}</dd>
             </div>
             <div class="min-w-0">
               <dt class="text-muted-foreground">更新时间</dt>
-              <dd>{{ formatDate(props.repository.updatedAt) }}</dd>
+              <dd>{{ formatRepositoryDate(props.repository.updatedAt) }}</dd>
             </div>
           </dl>
         </section>

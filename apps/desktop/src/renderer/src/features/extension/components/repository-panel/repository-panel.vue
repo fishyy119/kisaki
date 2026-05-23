@@ -3,46 +3,28 @@ Extension Repository Panel manages distributed extension repositories.
 Boundary: calls repository IPC only; renderer never fetches manifests directly.
 -->
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { Badge } from '@renderer/components/ui/badge'
-import { Input } from '@renderer/components/ui/input'
-import { Switch } from '@renderer/components/ui/switch'
 import { Spinner } from '@renderer/components/ui/spinner'
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@renderer/components/ui/dialog'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import RepositoryAddDialog from './repository-add-dialog.vue'
 import RepositoryDetailsDialog from './repository-details-dialog.vue'
-import {
-  OFFICIAL_EXTENSION_REPOSITORY_URL,
-  type ExtensionRepositoryInfo
-} from '@shared/extension'
-
-interface FormData {
-  url: string
-  name: string
-}
+import RepositoryPanelRow from './repository-panel-row.vue'
+import RepositoryRemoveDialog from './repository-remove-dialog.vue'
+import type { RepositoryAddRequest } from './types'
+import { OFFICIAL_EXTENSION_REPOSITORY_URL, type ExtensionRepositoryInfo } from '@shared/extension'
 
 const addDialogOpen = ref(false)
-const formData = ref<FormData>({
-  url: '',
-  name: ''
-})
 const submitting = ref(false)
 const refreshingAll = ref(false)
 const busyRepositoryIds = ref(new Set<string>())
 const detailsDialogOpen = ref(false)
+const removeDialogOpen = ref(false)
 const selectedRepositoryId = ref<string | null>(null)
+const repositoryToRemove = ref<ExtensionRepositoryInfo | null>(null)
 
 const {
   data: repositories,
@@ -80,24 +62,30 @@ onUnmounted(() => {
   unsubscribeRepositoriesChanged?.()
 })
 
-async function handleAddRepository() {
-  if (!formData.value.url.trim()) {
-    notify.error('请输入仓库清单 URL')
-    return
+watch(detailsDialogOpen, (open) => {
+  if (!open) {
+    selectedRepositoryId.value = null
   }
+})
 
+watch(removeDialogOpen, (open) => {
+  if (!open) {
+    repositoryToRemove.value = null
+  }
+})
+
+async function handleAddRepository(request: RepositoryAddRequest) {
   submitting.value = true
   try {
     await ipcManager
       .invoke('extension:add-repository', {
-        url: formData.value.url.trim(),
-        name: formData.value.name.trim() || undefined
+        url: request.url,
+        name: request.name
       })
       .then(unwrapIpcData)
 
     notify.success('仓库已添加')
     addDialogOpen.value = false
-    formData.value = { url: '', name: '' }
     refetch()
   } catch (err) {
     notify.error('添加仓库失败', err instanceof Error ? err.message : String(err))
@@ -169,12 +157,29 @@ async function handleMovePriority(repository: ExtensionRepositoryInfo, delta: nu
   })
 }
 
-async function handleRemoveRepository(repository: ExtensionRepositoryInfo) {
-  await withRepositoryBusy(repository.id, async () => {
+function openRemoveDialog(repository: ExtensionRepositoryInfo) {
+  repositoryToRemove.value = repository
+  removeDialogOpen.value = true
+}
+
+async function handleConfirmRemoveRepository() {
+  const repository = repositoryToRemove.value
+  if (!repository) {
+    return
+  }
+
+  setRepositoryBusy(repository.id, true)
+  try {
     unwrapIpcVoid(await ipcManager.invoke('extension:remove-repository', repository.id))
     notify.success('仓库已删除')
+    removeDialogOpen.value = false
+    repositoryToRemove.value = null
     refetch()
-  })
+  } catch (err) {
+    notify.error('仓库操作失败', err instanceof Error ? err.message : String(err))
+  } finally {
+    setRepositoryBusy(repository.id, false)
+  }
 }
 
 function handleOpenDetails(repository: ExtensionRepositoryInfo) {
@@ -203,37 +208,6 @@ function setRepositoryBusy(repositoryId: string, busy: boolean) {
   busyRepositoryIds.value = next
 }
 
-function healthVariant(
-  repository: ExtensionRepositoryInfo
-): 'warning' | 'destructive' | 'secondary' {
-  if (repository.state === 'disabled') {
-    return 'secondary'
-  }
-  if (repository.lastError) {
-    return 'destructive'
-  }
-  return 'warning'
-}
-
-function healthLabel(repository: ExtensionRepositoryInfo): string {
-  if (repository.state === 'disabled') {
-    return '已禁用'
-  }
-  if (repository.lastError) {
-    return '异常'
-  }
-  if (!repository.lastSuccessAt) {
-    return '未刷新'
-  }
-  return ''
-}
-
-function shouldShowHealthBadge(repository: ExtensionRepositoryInfo): boolean {
-  return (
-    repository.state === 'disabled' || Boolean(repository.lastError) || !repository.lastSuccessAt
-  )
-}
-
 function getRepositoryIndex(repository: ExtensionRepositoryInfo): number {
   return repositoryList.value.findIndex((item) => item.id === repository.id)
 }
@@ -242,19 +216,6 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
   const currentIndex = getRepositoryIndex(repository)
   const nextIndex = currentIndex + delta
   return currentIndex >= 0 && nextIndex >= 0 && nextIndex < repositoryList.value.length
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '无'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) {
-    return value
-  }
-
-  return date.toLocaleString()
 }
 </script>
 
@@ -330,179 +291,43 @@ function formatDate(value: string | null): string {
 
       <template v-else>
         <div class="divide-y divide-border">
-          <div
+          <RepositoryPanelRow
             v-for="(repository, index) in repositoryList"
             :key="repository.id"
-            class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-3 hover:bg-accent/40 transition-colors"
-          >
-            <div class="min-w-0 space-y-2">
-              <div class="flex items-center gap-2 min-w-0">
-                <Icon
-                  icon="icon-[mdi--source-branch]"
-                  class="size-4 text-muted-foreground shrink-0"
-                />
-                <div class="text-sm font-medium truncate">{{ repository.name }}</div>
-                <Badge
-                  v-if="shouldShowHealthBadge(repository)"
-                  :variant="healthVariant(repository)"
-                  class="text-[10px] h-5"
-                >
-                  {{ healthLabel(repository) }}
-                </Badge>
-              </div>
-
-              <div class="text-xs text-muted-foreground truncate">{{ repository.url }}</div>
-
-              <div
-                class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1 text-xs text-muted-foreground"
-              >
-                <div>优先级：{{ index + 1 }}</div>
-                <div>扩展包：{{ repository.packageCount }}</div>
-                <div>清单更新：{{ formatDate(repository.manifestUpdatedAt) }}</div>
-                <div>上次检查：{{ formatDate(repository.lastRefreshAt) }}</div>
-              </div>
-
-              <div
-                v-if="repository.lastError"
-                class="text-xs text-destructive"
-              >
-                {{ repository.lastError }}
-              </div>
-            </div>
-
-            <div class="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    @click="handleOpenDetails(repository)"
-                  >
-                    <Icon
-                      icon="icon-[mdi--information-outline]"
-                      class="size-4"
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>详情</TooltipContent>
-              </Tooltip>
-              <Switch
-                :model-value="repository.state === 'enabled'"
-                :disabled="busyRepositoryIds.has(repository.id)"
-                @update:model-value="
-                  (enabled) => handleToggleRepository(repository, Boolean(enabled))
-                "
-              />
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                :disabled="busyRepositoryIds.has(repository.id)"
-                @click="handleRefreshRepository(repository)"
-              >
-                <Spinner
-                  v-if="busyRepositoryIds.has(repository.id)"
-                  class="size-3"
-                />
-                <Icon
-                  v-else
-                  icon="icon-[mdi--refresh]"
-                  class="size-4"
-                />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                :disabled="
-                  busyRepositoryIds.has(repository.id) || !canMoveRepository(repository, -1)
-                "
-                @click="handleMovePriority(repository, -1)"
-              >
-                <Icon
-                  icon="icon-[mdi--arrow-up]"
-                  class="size-4"
-                />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                :disabled="
-                  busyRepositoryIds.has(repository.id) || !canMoveRepository(repository, 1)
-                "
-                @click="handleMovePriority(repository, 1)"
-              >
-                <Icon
-                  icon="icon-[mdi--arrow-down]"
-                  class="size-4"
-                />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                :disabled="busyRepositoryIds.has(repository.id)"
-                class="hover:text-destructive"
-                @click="handleRemoveRepository(repository)"
-              >
-                <Icon
-                  icon="icon-[mdi--delete-outline]"
-                  class="size-4"
-                />
-              </Button>
-            </div>
-          </div>
+            :repository="repository"
+            :priority-label="index + 1"
+            :busy="busyRepositoryIds.has(repository.id)"
+            :can-move-up="canMoveRepository(repository, -1)"
+            :can-move-down="canMoveRepository(repository, 1)"
+            @details="handleOpenDetails"
+            @toggle="handleToggleRepository"
+            @refresh="handleRefreshRepository"
+            @move="handleMovePriority"
+            @remove="openRemoveDialog"
+          />
         </div>
       </template>
     </div>
 
-    <Dialog v-model:open="addDialogOpen">
-      <DialogContent class="max-w-md">
-        <DialogHeader>
-          <DialogTitle>添加扩展仓库</DialogTitle>
-        </DialogHeader>
-        <DialogBody class="space-y-3">
-          <div class="space-y-1.5">
-            <label class="text-xs text-muted-foreground">仓库清单 URL</label>
-            <Input
-              v-model="formData.url"
-              placeholder="https://example.com/extensions/manifest.json"
-              @keydown.enter="handleAddRepository"
-            />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-xs text-muted-foreground">显示名称</label>
-            <Input
-              v-model="formData.name"
-              placeholder="留空使用仓库清单名称"
-              @keydown.enter="handleAddRepository"
-            />
-          </div>
-        </DialogBody>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            :disabled="submitting"
-            @click="addDialogOpen = false"
-          >
-            取消
-          </Button>
-          <Button
-            :disabled="submitting || !formData.url.trim()"
-            @click="handleAddRepository"
-          >
-            <Spinner
-              v-if="submitting"
-              class="size-4"
-            />
-            添加
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <RepositoryAddDialog
+      v-model:open="addDialogOpen"
+      :submitting="submitting"
+      @submit="handleAddRepository"
+    />
 
     <RepositoryDetailsDialog
       v-if="detailsDialogOpen && selectedRepository"
       v-model:open="detailsDialogOpen"
       :repository="selectedRepository"
       :priority-label="selectedRepositoryPriority"
+    />
+
+    <RepositoryRemoveDialog
+      v-if="removeDialogOpen && repositoryToRemove"
+      v-model:open="removeDialogOpen"
+      :repository="repositoryToRemove"
+      :removing="busyRepositoryIds.has(repositoryToRemove.id)"
+      @confirm="handleConfirmRemoveRepository"
     />
   </div>
 </template>
