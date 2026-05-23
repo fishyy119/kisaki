@@ -1,7 +1,8 @@
 #!/usr/bin/env tsx
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 interface ToolingPackage {
@@ -19,7 +20,12 @@ interface PackageJson {
 
 interface PublishOptions {
   dryRun: boolean
+  dir?: string
   tag?: string
+}
+
+interface PackOptions {
+  outDir?: string
 }
 
 interface RunOptions {
@@ -65,6 +71,9 @@ try {
       break
     case 'build':
       buildTooling()
+      break
+    case 'pack':
+      packTooling(args)
       break
     case 'publish':
       publishTooling(args)
@@ -117,19 +126,22 @@ function publishTooling(args: readonly string[]): void {
   checkTooling(version)
 
   const tag = options.tag ?? getDefaultDistTag(version)
+  const outDir = resolveReleaseOutputDir(version, options.dir)
+  const tarballs = collectToolingTarballs(version, outDir)
+
   console.log(
-    `[extension-tooling] Publishing ${version} with npm dist-tag "${tag}"${options.dryRun ? ' (dry run)' : ''}.`
+    `[extension-tooling] Publishing ${version} from ${path.relative(repoRoot, outDir)} with npm dist-tag "${tag}"${options.dryRun ? ' (dry run)' : ''}.`
   )
 
-  for (const toolingPackage of toolingPackages) {
-    console.log(`[extension-tooling] Publishing ${toolingPackage.name}...`)
-    const publishArgs = ['publish', '--access', 'public', '--no-git-checks', '--tag', tag]
+  for (const tarball of tarballs) {
+    console.log(`[extension-tooling] Publishing ${tarball.packageName}...`)
+    const publishArgs = ['publish', tarball.filePath, '--access', 'public', '--tag', tag]
 
     if (options.dryRun) {
       publishArgs.push('--dry-run')
     }
 
-    run('pnpm', publishArgs, { cwd: packageDir(toolingPackage.dir) })
+    run('npm', publishArgs)
   }
 }
 
@@ -140,6 +152,30 @@ function buildTooling(): void {
     console.log(`[extension-tooling] Building ${toolingPackage.name}...`)
     run('pnpm', ['run', 'build'], { cwd: packageDir(toolingPackage.dir) })
   }
+}
+
+function packTooling(args: readonly string[]): void {
+  const options = parsePackOptions(args)
+  const version = getToolingVersion()
+  checkTooling(version)
+
+  const outDir = resolveReleaseOutputDir(version, options.outDir)
+  rmSync(outDir, { recursive: true, force: true })
+  mkdirSync(outDir, { recursive: true })
+
+  console.log(`[extension-tooling] Packing ${version} into ${path.relative(repoRoot, outDir)}.`)
+
+  for (const toolingPackage of toolingPackages) {
+    console.log(`[extension-tooling] Packing ${toolingPackage.name}...`)
+    run('pnpm', ['pack', '--pack-destination', outDir], {
+      cwd: packageDir(toolingPackage.dir)
+    })
+  }
+
+  const tarballs = collectToolingTarballs(version, outDir)
+  writeChecksums(outDir, tarballs)
+  writePackageList(outDir, version)
+  console.log(`[extension-tooling] Packed ${tarballs.length} package tarballs.`)
 }
 
 function listToolingPackages(): void {
@@ -249,7 +285,39 @@ function parsePublishOptions(args: readonly string[]): PublishOptions {
       continue
     }
 
+    if (arg === '--dir') {
+      const dir = args[index + 1]
+      if (!dir) {
+        throw new Error('--dir requires a value.')
+      }
+      options.dir = dir
+      index += 1
+      continue
+    }
+
     throw new Error(`Unknown publish option: ${arg}`)
+  }
+
+  return options
+}
+
+function parsePackOptions(args: readonly string[]): PackOptions {
+  const options: PackOptions = {}
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+
+    if (arg === '--out-dir') {
+      const outDir = args[index + 1]
+      if (!outDir) {
+        throw new Error('--out-dir requires a value.')
+      }
+      options.outDir = outDir
+      index += 1
+      continue
+    }
+
+    throw new Error(`Unknown pack option: ${arg}`)
   }
 
   return options
@@ -279,6 +347,72 @@ function packagePath(packageRelativeDir: string): string {
 
 function packageDir(packageRelativeDir: string): string {
   return resolveRepo(packageRelativeDir)
+}
+
+function resolveReleaseOutputDir(version: string, customDir?: string): string {
+  const outputDir = customDir ?? path.join('.release', 'extension-tooling', `v${version}`)
+  const fullPath = path.resolve(repoRoot, outputDir)
+  const relativePath = path.relative(repoRoot, fullPath)
+
+  if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error(`Release output directory must stay inside the repository: ${outputDir}`)
+  }
+
+  return fullPath
+}
+
+interface ToolingTarball {
+  readonly packageName: string
+  readonly fileName: string
+  readonly filePath: string
+}
+
+function collectToolingTarballs(version: string, outDir: string): ToolingTarball[] {
+  return toolingPackages.map((toolingPackage) => {
+    const fileName = getTarballFileName(toolingPackage.name, version)
+    const filePath = path.join(outDir, fileName)
+
+    if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+      throw new Error(`Missing package tarball: ${path.relative(repoRoot, filePath)}`)
+    }
+
+    return {
+      packageName: toolingPackage.name,
+      fileName,
+      filePath
+    }
+  })
+}
+
+function getTarballFileName(packageName: string, version: string): string {
+  return `${packageName.replace(/^@/, '').replace(/\//g, '-')}-${version}.tgz`
+}
+
+function writeChecksums(outDir: string, tarballs: readonly ToolingTarball[]): void {
+  const checksumLines = tarballs
+    .map((tarball) => `${sha256File(tarball.filePath)}  ${tarball.fileName}`)
+    .join('\n')
+
+  writeFileSync(path.join(outDir, 'SHA256SUMS'), `${checksumLines}\n`, 'utf-8')
+}
+
+function writePackageList(outDir: string, version: string): void {
+  const packageLines = toolingPackages
+    .map((toolingPackage) => {
+      const packageUrl = `https://www.npmjs.com/package/${toolingPackage.name}/v/${version}`
+      return `- [${toolingPackage.name}@${version}](${packageUrl})`
+    })
+    .join('\n')
+
+  writeFileSync(
+    path.join(outDir, 'PACKAGES.md'),
+    `## Published Packages\n\n${packageLines}\n`,
+    'utf-8'
+  )
+}
+
+function sha256File(filePath: string): string {
+  return createHash('sha256').update(readFileSync(filePath)).digest('hex')
 }
 
 function readJson(relativePath: string): PackageJson {
@@ -374,6 +508,7 @@ function printUsage(receivedCommand: string | undefined): void {
   tsx scripts/extension-tooling.ts check [version]
   tsx scripts/extension-tooling.ts set-version <version>
   tsx scripts/extension-tooling.ts build
-  tsx scripts/extension-tooling.ts publish [--dry-run] [--tag <tag>]
+  tsx scripts/extension-tooling.ts pack [--out-dir <dir>]
+  tsx scripts/extension-tooling.ts publish [--dir <dir>] [--dry-run] [--tag <tag>]
   tsx scripts/extension-tooling.ts list`)
 }

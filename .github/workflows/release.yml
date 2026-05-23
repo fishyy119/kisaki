@@ -14,9 +14,6 @@ env:
   VITE_IGDB_API_CLIENT_SECRET: ${{ secrets.VITE_IGDB_API_CLIENT_SECRET }}
 
 jobs:
-  # =============================================================================
-  # Detect: Parse commit message for release intent
-  # =============================================================================
   detect:
     name: Detect Release
     runs-on: ubuntu-latest
@@ -24,6 +21,9 @@ jobs:
       should_release: ${{ steps.parse.outputs.should_release }}
       target: ${{ steps.parse.outputs.target }}
       version: ${{ steps.parse.outputs.version }}
+      tag: ${{ steps.parse.outputs.tag }}
+      tag_prefix: ${{ steps.parse.outputs.tag_prefix }}
+      release_name: ${{ steps.parse.outputs.release_name }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -31,56 +31,85 @@ jobs:
 
       - name: Parse commit message
         id: parse
+        shell: bash
         run: |
-          # Get commit message
           COMMIT_MSG=$(git log -1 --pretty=%B)
           FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
 
-          # Check for release pattern: release(target): vX.Y.Z
-          # Targets: desktop, extension-tooling
           if [[ "$FIRST_LINE" =~ ^release\((desktop|extension-tooling)\):\ v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]]; then
             TARGET="${BASH_REMATCH[1]}"
             VERSION="${BASH_REMATCH[2]}"
 
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "target=$TARGET" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            case "$TARGET" in
+              desktop)
+                TAG_PREFIX="desktop-v"
+                RELEASE_NAME="Kisaki v$VERSION"
+                ;;
+              extension-tooling)
+                TAG_PREFIX="extension-tooling-v"
+                RELEASE_NAME="Kisaki Extension Tooling v$VERSION"
+                ;;
+            esac
 
-            # Validate desktop changelog files strictly
-            if [[ "$TARGET" == "desktop" ]]; then
-              CHANGELOG_DIR="changelog/desktop/v$VERSION"
-              REQUIRED_LOCALES=("zh-Hans" "en" "ja")
-              MISSING_FILES=()
+            TAG="$TAG_PREFIX$VERSION"
 
-              for locale in "${REQUIRED_LOCALES[@]}"; do
-                file="$CHANGELOG_DIR/$locale.md"
-                if [[ ! -f "$file" ]]; then
-                  MISSING_FILES+=("$file")
-                fi
-              done
-
-              if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
-                echo "❌ Missing required changelog files for desktop release v$VERSION:"
-                printf '  - %s\n' "${MISSING_FILES[@]}"
-                exit 1
-              fi
-
-              echo "✅ Verified desktop changelog files for v$VERSION"
-            fi
-
-            echo "🚀 Detected release: $TARGET v$VERSION"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "tag_prefix=$TAG_PREFIX" >> "$GITHUB_OUTPUT"
+            echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+            echo "Detected release: $TARGET v$VERSION"
           else
-            echo "should_release=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No release commit detected"
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "No release commit detected"
           fi
 
-  # =============================================================================
-  # Release Desktop: Build Electron application artifacts
-  # =============================================================================
-  release-desktop:
-    name: Release Desktop
+  validate-release:
+    name: Validate Release Metadata
     needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'desktop'
+    if: needs.detect.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate changelog files
+        shell: bash
+        run: |
+          TARGET="${{ needs.detect.outputs.target }}"
+          VERSION="${{ needs.detect.outputs.version }}"
+          CHANGELOG_DIR="changelog/$TARGET/v$VERSION"
+          REQUIRED_LOCALES=("zh-Hans" "en" "ja")
+          MISSING_FILES=()
+          EMPTY_FILES=()
+
+          for locale in "${REQUIRED_LOCALES[@]}"; do
+            file="$CHANGELOG_DIR/$locale.md"
+            if [[ ! -f "$file" ]]; then
+              MISSING_FILES+=("$file")
+            elif [[ ! -s "$file" ]]; then
+              EMPTY_FILES+=("$file")
+            fi
+          done
+
+          if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
+            echo "Missing required changelog files for $TARGET v$VERSION:"
+            printf '  - %s\n' "${MISSING_FILES[@]}"
+            exit 1
+          fi
+
+          if [[ ${#EMPTY_FILES[@]} -gt 0 ]]; then
+            echo "Empty changelog files are not allowed for $TARGET v$VERSION:"
+            printf '  - %s\n' "${EMPTY_FILES[@]}"
+            exit 1
+          fi
+
+          echo "Verified changelog files for $TARGET v$VERSION."
+
+  release-desktop:
+    name: Build Desktop Release Artifacts
+    needs: [detect, validate-release]
+    if: needs.detect.outputs.target == 'desktop'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -100,106 +129,21 @@ jobs:
       - name: Build application
         run: pnpm build:win
 
-      - name: Upload artifacts
+      - name: Upload desktop artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: release-windows
+          name: release-desktop-windows
           path: |
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.blockmap
             apps/desktop/dist/latest.yml
           if-no-files-found: error
 
-  # =============================================================================
-  # Publish Desktop: Create GitHub Release after all builds complete
-  # =============================================================================
-  publish-desktop:
-    name: Publish Desktop Release
-    needs: [detect, release-desktop]
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'desktop'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-          pattern: release-*
-          merge-multiple: true
-
-      - name: Find previous desktop tag
-        id: previous_tag
-        shell: bash
-        run: |
-          PREVIOUS_TAG=$(git tag --list 'desktop-v*' --sort=-v:refname | head -n 1)
-          echo "tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
-
-          if [ -n "$PREVIOUS_TAG" ]; then
-            echo "Found previous desktop tag: $PREVIOUS_TAG"
-          else
-            echo "No previous desktop tag found"
-          fi
-
-      - name: Build release body
-        shell: bash
-        env:
-          PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
-          RELEASE_VERSION: ${{ needs.detect.outputs.version }}
-        run: |
-          VERSION="$RELEASE_VERSION"
-          TAG="desktop-v$VERSION"
-          REPO_URL="https://github.com/${{ github.repository }}"
-          CHANGELOG_BASE="$REPO_URL/blob/$TAG/changelog/desktop/v$VERSION"
-
-          {
-            echo "## Changelog"
-            echo
-            echo "- [简体中文]($CHANGELOG_BASE/zh-Hans.md)"
-            echo "- [English]($CHANGELOG_BASE/en.md)"
-            echo "- [日本語]($CHANGELOG_BASE/ja.md)"
-            echo
-
-            if [ -n "$PREVIOUS_TAG" ]; then
-              printf '**Full Changelog**: [`%s...%s`](%s/compare/%s...%s)\n' \
-                "$PREVIOUS_TAG" "$TAG" "$REPO_URL" "$PREVIOUS_TAG" "$TAG"
-            else
-              printf '**Full Changelog**: [`View commits for %s`](%s/commits/%s)\n' \
-                "$TAG" "$REPO_URL" "$TAG"
-            fi
-          } > release-body.md
-
-      - name: Create Git tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "desktop-v${{ needs.detect.outputs.version }}"
-          git push origin "desktop-v${{ needs.detect.outputs.version }}"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: desktop-v${{ needs.detect.outputs.version }}
-          name: Kisaki v${{ needs.detect.outputs.version }}
-          body_path: release-body.md
-          files: artifacts/*
-          draft: false
-          prerelease: false
-
-  # =============================================================================
-  # Release Extension Tooling: Publish all extension packages as one versioned unit
-  # =============================================================================
   release-extension-tooling:
-    name: Release Extension Tooling
-    needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'extension-tooling'
+    name: Build And Publish Extension Tooling
+    needs: [detect, validate-release]
+    if: needs.detect.outputs.target == 'extension-tooling'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v6
 
@@ -222,14 +166,120 @@ jobs:
       - name: Build extension tooling
         run: pnpm build:extension-tooling
 
+      - name: Pack extension tooling packages
+        run: pnpm pack:extension-tooling --out-dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
+
+      - name: Upload extension tooling artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-extension-tooling-packages
+          path: |
+            .release/extension-tooling/v${{ needs.detect.outputs.version }}/*.tgz
+            .release/extension-tooling/v${{ needs.detect.outputs.version }}/SHA256SUMS
+            .release/extension-tooling/v${{ needs.detect.outputs.version }}/PACKAGES.md
+          if-no-files-found: error
+
       - name: Publish extension tooling packages
-        run: pnpm publish:extension-tooling
+        run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+  publish-github-release:
+    name: Publish GitHub Release
+    needs: [detect, validate-release, release-desktop, release-extension-tooling]
+    if: >-
+      always() &&
+      needs.detect.outputs.should_release == 'true' &&
+      needs.validate-release.result == 'success' &&
+      (needs.release-desktop.result == 'success' || needs.release-extension-tooling.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          pattern: release-${{ needs.detect.outputs.target }}-*
+          merge-multiple: true
+
+      - name: Find previous release tag
+        id: previous_tag
+        shell: bash
+        run: |
+          TAG="${{ needs.detect.outputs.tag }}"
+          TAG_PREFIX="${{ needs.detect.outputs.tag_prefix }}"
+          PREVIOUS_TAG=$(git tag --list "$TAG_PREFIX*" --sort=-v:refname | grep -F -x -v "$TAG" | head -n 1 || true)
+          echo "tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "Found previous release tag: $PREVIOUS_TAG"
+          else
+            echo "No previous release tag found"
+          fi
+
+      - name: Build release body
+        shell: bash
+        env:
+          PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
+          RELEASE_TARGET: ${{ needs.detect.outputs.target }}
+          RELEASE_VERSION: ${{ needs.detect.outputs.version }}
+          RELEASE_TAG: ${{ needs.detect.outputs.tag }}
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          CHANGELOG_BASE="$REPO_URL/blob/$RELEASE_TAG/changelog/$RELEASE_TARGET/v$RELEASE_VERSION"
+
+          {
+            echo "## Changelog"
+            echo
+            echo "- [简体中文]($CHANGELOG_BASE/zh-Hans.md)"
+            echo "- [English]($CHANGELOG_BASE/en.md)"
+            echo "- [日本語]($CHANGELOG_BASE/ja.md)"
+            echo
+
+            if [ "$RELEASE_TARGET" = "extension-tooling" ]; then
+              cat artifacts/PACKAGES.md
+              echo
+              echo "## Assets"
+              echo
+              echo "- npm package tarballs are attached to this release."
+              echo '- SHA256 checksums are available in `SHA256SUMS`.'
+              echo
+            fi
+
+            if [ -n "$PREVIOUS_TAG" ]; then
+              printf '**Full Changelog**: [`%s...%s`](%s/compare/%s...%s)\n' \
+                "$PREVIOUS_TAG" "$RELEASE_TAG" "$REPO_URL" "$PREVIOUS_TAG" "$RELEASE_TAG"
+            else
+              printf '**Full Changelog**: [`View commits for %s`](%s/commits/%s)\n' \
+                "$RELEASE_TAG" "$REPO_URL" "$RELEASE_TAG"
+            fi
+          } > release-body.md
+
       - name: Create Git tag
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "extension-tooling-v${{ needs.detect.outputs.version }}"
-          git push origin "extension-tooling-v${{ needs.detect.outputs.version }}"
+          git tag "${{ needs.detect.outputs.tag }}"
+          git push origin "${{ needs.detect.outputs.tag }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.detect.outputs.tag }}
+          name: ${{ needs.detect.outputs.release_name }}
+          body_path: release-body.md
+          files: |
+            artifacts/*.exe
+            artifacts/*.blockmap
+            artifacts/latest.yml
+            artifacts/*.tgz
+            artifacts/SHA256SUMS
+          fail_on_unmatched_files: false
+          draft: false
+          prerelease: ${{ contains(needs.detect.outputs.version, '-') }}
