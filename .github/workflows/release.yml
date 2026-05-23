@@ -184,9 +184,6 @@ jobs:
 
       - name: Publish extension tooling packages
         run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
 
   publish-github-release:
     name: Publish GitHub Release
