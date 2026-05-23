@@ -37,8 +37,8 @@ jobs:
           FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
 
           # Check for release pattern: release(target): vX.Y.Z
-          # Targets: desktop, plugin-sdk, plugin-cli, create-kisaki-plugin
-          if [[ "$FIRST_LINE" =~ ^release\((desktop|plugin-sdk|plugin-cli|create-kisaki-plugin)\):\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          # Targets: desktop, extension-sdk, extension-cli, create-kisaki-extension
+          if [[ "$FIRST_LINE" =~ ^release\((desktop|extension-sdk|extension-cli|create-kisaki-extension)\):\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             TARGET="${BASH_REMATCH[1]}"
             VERSION="${BASH_REMATCH[2]}"
 
@@ -190,12 +190,12 @@ jobs:
           prerelease: false
 
   # =============================================================================
-  # Release SDK: Publish @kisaki/plugin-sdk to npm
+  # Release SDK: Publish @kisaki/extension-sdk to npm
   # =============================================================================
-  release-plugin-sdk:
-    name: Release Plugin SDK
+  release-extension-sdk:
+    name: Release Extension SDK
     needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'plugin-sdk'
+    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'extension-sdk'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -215,12 +215,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build plugin toolkit
-        run: pnpm build:plugin-toolkit
+      - name: Build extension tooling
+        run: pnpm build:extension-tooling
 
       - name: Verify version matches
         run: |
-          PKG_VERSION=$(node -p "require('./packages/plugin-sdk/package.json').version")
+          PKG_VERSION=$(node -p "require('./packages/extension-sdk/package.json').version")
           if [ "$PKG_VERSION" != "${{ needs.detect.outputs.version }}" ]; then
             echo "❌ Version mismatch: package.json has $PKG_VERSION, commit says ${{ needs.detect.outputs.version }}"
             exit 1
@@ -229,7 +229,7 @@ jobs:
 
       - name: Publish to npm
         run: pnpm publish --access public --no-git-checks
-        working-directory: packages/plugin-sdk
+        working-directory: packages/extension-sdk
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -237,16 +237,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "plugin-sdk-v${{ needs.detect.outputs.version }}"
-          git push origin "plugin-sdk-v${{ needs.detect.outputs.version }}"
+          git tag "extension-sdk-v${{ needs.detect.outputs.version }}"
+          git push origin "extension-sdk-v${{ needs.detect.outputs.version }}"
 
   # =============================================================================
-  # Release CLI: Publish @kisaki/plugin-cli to npm
+  # Release CLI: Publish @kisaki/extension-cli to npm
   # =============================================================================
-  release-plugin-cli:
-    name: Release Plugin CLI
+  release-extension-cli:
+    name: Release Extension CLI
     needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'plugin-cli'
+    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'extension-cli'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -266,12 +266,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build CLI
-        run: pnpm --filter @kisaki/plugin-cli build
+      - name: Build extension tooling
+        run: pnpm build:extension-tooling
 
       - name: Verify version matches
         run: |
-          PKG_VERSION=$(node -p "require('./packages/plugin-cli/package.json').version")
+          PKG_VERSION=$(node -p "require('./packages/extension-cli/package.json').version")
           if [ "$PKG_VERSION" != "${{ needs.detect.outputs.version }}" ]; then
             echo "❌ Version mismatch: package.json has $PKG_VERSION, commit says ${{ needs.detect.outputs.version }}"
             exit 1
@@ -280,7 +280,7 @@ jobs:
 
       - name: Publish to npm
         run: pnpm publish --access public --no-git-checks
-        working-directory: packages/plugin-cli
+        working-directory: packages/extension-cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -288,16 +288,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "plugin-cli-v${{ needs.detect.outputs.version }}"
-          git push origin "plugin-cli-v${{ needs.detect.outputs.version }}"
+          git tag "extension-cli-v${{ needs.detect.outputs.version }}"
+          git push origin "extension-cli-v${{ needs.detect.outputs.version }}"
 
   # =============================================================================
-  # Release Create: Publish create-kisaki-plugin to npm
+  # Release Create: Publish create-kisaki-extension to npm
   # =============================================================================
-  release-create-kisaki-plugin:
-    name: Release Create Kisaki Plugin
+  release-create-kisaki-extension:
+    name: Release Create Kisaki Extension
     needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'create-kisaki-plugin'
+    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'create-kisaki-extension'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -317,12 +317,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build create-kisaki-plugin
-        run: pnpm --filter create-kisaki-plugin build
+      - name: Build extension tooling
+        run: pnpm build:extension-tooling
 
       - name: Verify version matches
         run: |
-          PKG_VERSION=$(node -p "require('./packages/create-kisaki-plugin/package.json').version")
+          PKG_VERSION=$(node -p "require('./packages/create-kisaki-extension/package.json').version")
           if [ "$PKG_VERSION" != "${{ needs.detect.outputs.version }}" ]; then
             echo "❌ Version mismatch: package.json has $PKG_VERSION, commit says ${{ needs.detect.outputs.version }}"
             exit 1
@@ -331,7 +331,7 @@ jobs:
 
       - name: Publish to npm
         run: pnpm publish --access public --no-git-checks
-        working-directory: packages/create-kisaki-plugin
+        working-directory: packages/create-kisaki-extension
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -339,5 +339,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "create-kisaki-plugin-v${{ needs.detect.outputs.version }}"
-          git push origin "create-kisaki-plugin-v${{ needs.detect.outputs.version }}"
+          git tag "create-kisaki-extension-v${{ needs.detect.outputs.version }}"
+          git push origin "create-kisaki-extension-v${{ needs.detect.outputs.version }}"
