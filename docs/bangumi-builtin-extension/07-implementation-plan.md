@@ -124,7 +124,7 @@ Phase 0-5 作为回归基线，不作为后续开发阶段重复执行：
 运行：
 
 ```powershell
-pnpm build:extension-contracts
+pnpm build:extension-tooling
 pnpm --filter @kisaki/builtin-bangumi typecheck
 pnpm --filter @kisaki/builtin-bangumi build
 pnpm --filter @kisaki/builtin-bangumi validate

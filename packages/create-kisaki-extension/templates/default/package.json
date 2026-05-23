@@ -11,11 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kisaki/extension-sdk": "^0.0.1"
+    "@kisaki/extension-sdk": "^__TOOLING_VERSION__"
   },
   "devDependencies": {
-    "@kisaki/extension-api": "^0.0.1",
-    "@kisaki/extension-cli": "^0.0.1",
+    "@kisaki/extension-api": "^__TOOLING_VERSION__",
+    "@kisaki/extension-cli": "^__TOOLING_VERSION__",
     "@types/node": "^22.19.1",
     "tsdown": "^0.19.0",
     "typescript": "^5.9.3"

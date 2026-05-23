@@ -1338,7 +1338,7 @@ rg -n "extension_repositories|extension_installations|extension_signer_trusts" a
 - Renderer 不直接访问远程 manifest 或 `.kisx` 文件。
 - Renderer 不直接访问远程 extension icon；图标通过 main 代理或本地缓存提供。
 - 旧 `sources/`、`state.json`、`ExtensionSourceProvider`、`ExtensionRegistryEntry`、`extension:search` 全部删除。
-- `pnpm build:extension-contracts` 通过。
+- `pnpm build:extension-tooling` 通过。
 - `pnpm --filter kisaki typecheck` 通过。
 - `pnpm --filter @kisaki/extension-api lint` 通过。
 - `pnpm --filter @kisaki/extension-cli lint` 通过。

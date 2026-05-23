@@ -1,7 +1,8 @@
 import { runCli } from './cli'
 import { CliError, logger } from './logger'
+import { readPackageVersion } from './package-version'
 
-void runCli().catch((error: unknown) => {
+void runCli(process.argv, { version: readPackageVersion() }).catch((error: unknown) => {
   if (error instanceof CliError) {
     if (error.message) {
       logger.error(error.message)

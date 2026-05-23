@@ -58,7 +58,7 @@ Renderer-facing shared DTO 继续保留在 `apps/desktop/src/shared/extension.ts
 修改 contribution API 后运行：
 
 ```powershell
-pnpm build:extension-contracts
+pnpm build:extension-tooling
 pnpm --filter kisaki typecheck
 pnpm --filter @kisaki/extension-api lint
 pnpm --filter @kisaki/extension-sdk lint

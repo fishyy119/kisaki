@@ -17,6 +17,7 @@ import {
 
 interface CliOptions {
   templateDir: string
+  toolingVersion: string
 }
 
 interface ParsedArgs {
@@ -115,7 +116,8 @@ export async function runCreateExtensionCli(
     extensionName: response.extensionName,
     description: response.description || 'A Kisaki extension.',
     author: response.author || '',
-    category: response.category || DEFAULT_EXTENSION_CATEGORY
+    category: response.category || DEFAULT_EXTENSION_CATEGORY,
+    toolingVersion: options.toolingVersion
   }
 
   if (!isExtensionIdentifier(config.extensionId)) {

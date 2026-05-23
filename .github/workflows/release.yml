@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   PNPM_VERSION: '10.25.0'
   VITE_BANGUMI_API_ACCESS_TOKEN: ${{ secrets.VITE_BANGUMI_API_ACCESS_TOKEN }}
   VITE_YMGAL_API_CLIENT_ID: ${{ secrets.VITE_YMGAL_API_CLIENT_ID }}
@@ -25,7 +25,7 @@ jobs:
       target: ${{ steps.parse.outputs.target }}
       version: ${{ steps.parse.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
@@ -37,8 +37,8 @@ jobs:
           FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
 
           # Check for release pattern: release(target): vX.Y.Z
-          # Targets: desktop, extension-sdk, extension-cli, create-kisaki-extension
-          if [[ "$FIRST_LINE" =~ ^release\((desktop|extension-sdk|extension-cli|create-kisaki-extension)\):\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          # Targets: desktop, extension-tooling
+          if [[ "$FIRST_LINE" =~ ^release\((desktop|extension-tooling)\):\ v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]]; then
             TARGET="${BASH_REMATCH[1]}"
             VERSION="${BASH_REMATCH[2]}"
 
@@ -83,13 +83,13 @@ jobs:
     if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'desktop'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -101,14 +101,14 @@ jobs:
         run: pnpm build:win
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-windows
           path: |
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.blockmap
             apps/desktop/dist/latest.yml
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   # =============================================================================
   # Publish Desktop: Create GitHub Release after all builds complete
@@ -116,16 +116,17 @@ jobs:
   publish-desktop:
     name: Publish Desktop Release
     needs: [detect, release-desktop]
+    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'desktop'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           pattern: release-*
@@ -180,7 +181,7 @@ jobs:
           git push origin "desktop-v${{ needs.detect.outputs.version }}"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: desktop-v${{ needs.detect.outputs.version }}
           name: Kisaki v${{ needs.detect.outputs.version }}
@@ -190,23 +191,23 @@ jobs:
           prerelease: false
 
   # =============================================================================
-  # Release SDK: Publish @kisaki/extension-sdk to npm
+  # Release Extension Tooling: Publish all extension packages as one versioned unit
   # =============================================================================
-  release-extension-sdk:
-    name: Release Extension SDK
+  release-extension-tooling:
+    name: Release Extension Tooling
     needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'extension-sdk'
+    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'extension-tooling'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -215,21 +216,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify extension tooling version
+        run: pnpm check:extension-tooling ${{ needs.detect.outputs.version }}
+
       - name: Build extension tooling
         run: pnpm build:extension-tooling
 
-      - name: Verify version matches
-        run: |
-          PKG_VERSION=$(node -p "require('./packages/extension-sdk/package.json').version")
-          if [ "$PKG_VERSION" != "${{ needs.detect.outputs.version }}" ]; then
-            echo "❌ Version mismatch: package.json has $PKG_VERSION, commit says ${{ needs.detect.outputs.version }}"
-            exit 1
-          fi
-          echo "✅ Version verified: $PKG_VERSION"
-
-      - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
-        working-directory: packages/extension-sdk
+      - name: Publish extension tooling packages
+        run: pnpm publish:extension-tooling
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -237,107 +231,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "extension-sdk-v${{ needs.detect.outputs.version }}"
-          git push origin "extension-sdk-v${{ needs.detect.outputs.version }}"
-
-  # =============================================================================
-  # Release CLI: Publish @kisaki/extension-cli to npm
-  # =============================================================================
-  release-extension-cli:
-    name: Release Extension CLI
-    needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'extension-cli'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build extension tooling
-        run: pnpm build:extension-tooling
-
-      - name: Verify version matches
-        run: |
-          PKG_VERSION=$(node -p "require('./packages/extension-cli/package.json').version")
-          if [ "$PKG_VERSION" != "${{ needs.detect.outputs.version }}" ]; then
-            echo "❌ Version mismatch: package.json has $PKG_VERSION, commit says ${{ needs.detect.outputs.version }}"
-            exit 1
-          fi
-          echo "✅ Version verified: $PKG_VERSION"
-
-      - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
-        working-directory: packages/extension-cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create Git tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "extension-cli-v${{ needs.detect.outputs.version }}"
-          git push origin "extension-cli-v${{ needs.detect.outputs.version }}"
-
-  # =============================================================================
-  # Release Create: Publish create-kisaki-extension to npm
-  # =============================================================================
-  release-create-kisaki-extension:
-    name: Release Create Kisaki Extension
-    needs: detect
-    if: needs.detect.outputs.should_release == 'true' && needs.detect.outputs.target == 'create-kisaki-extension'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build extension tooling
-        run: pnpm build:extension-tooling
-
-      - name: Verify version matches
-        run: |
-          PKG_VERSION=$(node -p "require('./packages/create-kisaki-extension/package.json').version")
-          if [ "$PKG_VERSION" != "${{ needs.detect.outputs.version }}" ]; then
-            echo "❌ Version mismatch: package.json has $PKG_VERSION, commit says ${{ needs.detect.outputs.version }}"
-            exit 1
-          fi
-          echo "✅ Version verified: $PKG_VERSION"
-
-      - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
-        working-directory: packages/create-kisaki-extension
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create Git tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "create-kisaki-extension-v${{ needs.detect.outputs.version }}"
-          git push origin "create-kisaki-extension-v${{ needs.detect.outputs.version }}"
+          git tag "extension-tooling-v${{ needs.detect.outputs.version }}"
+          git push origin "extension-tooling-v${{ needs.detect.outputs.version }}"

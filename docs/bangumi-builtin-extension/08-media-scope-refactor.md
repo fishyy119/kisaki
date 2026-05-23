@@ -225,7 +225,7 @@ rg -n "book|game|anime|music" extensions/bangumi/src/media docs/bangumi-builtin-
 ## 验证命令
 
 ```powershell
-pnpm build:extension-contracts
+pnpm build:extension-tooling
 pnpm --filter @kisaki/builtin-bangumi typecheck
 pnpm --filter @kisaki/builtin-bangumi build
 pnpm --filter @kisaki/builtin-bangumi validate

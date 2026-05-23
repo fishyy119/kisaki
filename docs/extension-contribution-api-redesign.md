@@ -1067,7 +1067,7 @@ rg -n "extension:(resolve|invoke|release)-entity-menu|extension:(open|refresh|su
 - Main、host、renderer contribution 文件夹使用同一套 kebab-case 名称。
 - 内置扩展和脚手架只展示新 API。
 - Public API、extension contribution RPC、renderer IPC 边界内无旧 API、旧 RPC 和旧类型残留；主应用内部 `ScraperService` 等非 public contribution API 命名不纳入本次验收。
-- `pnpm build:extension-contracts` 通过。
+- `pnpm build:extension-tooling` 通过。
 - `pnpm --filter kisaki typecheck` 通过。
 - `pnpm --filter @kisaki/extension-api lint` 通过。
 - `pnpm --filter @kisaki/extension-sdk lint` 通过。

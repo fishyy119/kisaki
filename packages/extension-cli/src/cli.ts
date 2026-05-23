@@ -14,13 +14,20 @@ import {
 } from './commands/registry'
 import { validateCommand } from './commands/validate'
 
+export interface RunCliOptions {
+  version: string
+}
+
 /**
  * Runs the kisx command line interface.
  */
-export async function runCli(argv = process.argv): Promise<void> {
+export async function runCli(argv = process.argv, options: RunCliOptions): Promise<void> {
   const program = new Command()
 
-  program.name('kisx').description('CLI tools for Kisaki extension development').version('0.0.1')
+  program
+    .name('kisx')
+    .description('CLI tools for Kisaki extension development')
+    .version(options.version)
 
   program
     .command('build')
