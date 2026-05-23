@@ -17,6 +17,7 @@ import type { Locale } from '@shared/locale'
 
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { notify } from '@renderer/core/notify'
 import {
   createEmptySlotConfig,
   getScraperSlotsForMediaType,
@@ -199,6 +200,19 @@ const mediaTypeModel = computed({
 function getSlotStrategyLabel(slot: ScraperSlot): string {
   return STRATEGY_LABELS[formData.value.slotConfigs[slot]?.strategy ?? 'first']
 }
+
+async function handleCopyProfileId() {
+  if (!props.profile) {
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(props.profile.id)
+    notify.success('配置 ID 已复制')
+  } catch (error) {
+    notify.error('复制失败', error instanceof Error ? error.message : String(error))
+  }
+}
 </script>
 
 <template>
@@ -219,6 +233,35 @@ function getSlotStrategyLabel(slot: ScraperSlot): string {
                   required
                   placeholder="例如: 视觉小说"
                 />
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>配置 ID</FieldLabel>
+              <FieldContent>
+                <div class="flex gap-1.5">
+                  <Input
+                    :model-value="props.profile?.id ?? ''"
+                    readonly
+                    class="font-mono text-xs"
+                  />
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        @click="handleCopyProfileId"
+                      >
+                        <Icon
+                          icon="icon-[mdi--content-copy]"
+                          class="size-4"
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>复制配置 ID</TooltipContent>
+                  </Tooltip>
+                </div>
               </FieldContent>
             </Field>
 

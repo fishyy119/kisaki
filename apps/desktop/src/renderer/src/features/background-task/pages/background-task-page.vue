@@ -103,7 +103,7 @@ const filteredTasks = computed(() => {
       case 'running':
         return runningTaskIds.value.has(task.id)
       case 'failed':
-        return task.history[0]?.status === 'failed'
+        return !runningTaskIds.value.has(task.id) && task.history[0]?.status === 'failed'
       case 'all':
         return true
     }

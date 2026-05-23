@@ -82,17 +82,6 @@ const enabledModel = computed({
       <div class="min-w-0">
         <div class="flex min-w-0 items-center gap-2">
           <div class="truncate text-sm font-medium">{{ props.task.name }}</div>
-          <Badge
-            v-if="props.running"
-            variant="default"
-            class="h-5"
-          >
-            <Icon
-              icon="icon-[mdi--progress-clock]"
-              class="size-3"
-            />
-            运行中
-          </Badge>
         </div>
         <div class="truncate text-xs text-muted-foreground">{{ props.task.commandId }}</div>
       </div>
@@ -117,7 +106,18 @@ const enabledModel = computed({
 
     <div class="flex min-w-0 flex-col items-start gap-1">
       <Badge
-        v-if="latestRun"
+        v-if="props.running"
+        variant="default"
+        class="h-5"
+      >
+        <Icon
+          icon="icon-[mdi--progress-clock]"
+          class="size-3"
+        />
+        运行中
+      </Badge>
+      <Badge
+        v-else-if="latestRun"
         :variant="getRunStatusVariant(latestRun.status)"
         class="h-5"
       >

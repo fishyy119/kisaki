@@ -110,7 +110,7 @@ function openRunResult(record: BackgroundTaskRunRecord) {
             运行中
           </Badge>
           <Badge
-            v-if="latestRun"
+            v-if="!props.running && latestRun"
             :variant="getRunStatusVariant(latestRun.status)"
             class="h-5"
           >
