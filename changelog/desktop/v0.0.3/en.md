@@ -1,12 +1,16 @@
-# Kisaki v0.0.3 Changelog
+# Kisaki v0.0.3
 
-## New Features
+## Features
 
-- Refactored the adder for improved stability
-- Refactored the scraper for significantly improved speed and accuracy, with added support for parallel scraping and abort/pause capabilities
-- Refactored the updater to support updating associated entities
+- Added support for parallel scraping, pausing, and aborting scraping tasks
+- Added support for updating associated media entities
 - Added support for deleting associated entities of media
 
-## Bug Fixes
+## Fixes
 
 - Fixed an issue where dynamic collections could be created when creating a collection via the media context menu
+
+## Improvements
+
+- Refactored the adder to improve add-flow stability
+- Refactored the scraper to improve speed and matching accuracy
