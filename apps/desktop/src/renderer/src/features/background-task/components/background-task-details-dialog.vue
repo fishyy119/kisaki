@@ -2,8 +2,9 @@
 Background Task Details Dialog renders task metadata and run history.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import {
   Dialog,
@@ -12,7 +13,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import type { BackgroundTask } from '@shared/background-task'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import type { BackgroundTask, BackgroundTaskRunRecord } from '@shared/background-task'
 import type { CommandListItem } from '@shared/command'
 import {
   formatCronTimezone,
@@ -46,6 +48,48 @@ const sourceLabel = computed(() =>
 )
 const latestRun = computed(() => props.task.history[0] ?? null)
 const argsJson = computed(() => formatJson(props.task.args || {}))
+const runResultDialogOpen = ref(false)
+const selectedRunRecord = ref<BackgroundTaskRunRecord | null>(null)
+const selectedRunResultTitle = computed(() =>
+  selectedRunRecord.value
+    ? `#${selectedRunRecord.value.attempt} ${formatTaskTimestamp(selectedRunRecord.value.startedAt)}`
+    : '运行结果'
+)
+const selectedRunResultLabel = computed(() =>
+  selectedRunRecord.value?.error ? '错误' : '输出'
+)
+const selectedRunResultText = computed(() =>
+  selectedRunRecord.value ? formatRunResult(selectedRunRecord.value) : ''
+)
+
+function hasRunResult(record: BackgroundTaskRunRecord): boolean {
+  return Boolean(record.error) || record.output !== undefined
+}
+
+function formatRunResultPreview(record: BackgroundTaskRunRecord): string {
+  if (!hasRunResult(record)) {
+    return '无输出'
+  }
+
+  return formatRunResult(record)
+}
+
+function formatRunResult(record: BackgroundTaskRunRecord): string {
+  if (record.error) {
+    return record.error
+  }
+
+  if (record.output !== undefined) {
+    return formatJson(record.output)
+  }
+
+  return '无输出'
+}
+
+function openRunResult(record: BackgroundTaskRunRecord) {
+  selectedRunRecord.value = record
+  runResultDialogOpen.value = true
+}
 </script>
 
 <template>
@@ -173,12 +217,93 @@ const argsJson = computed(() => formatJson(props.task.args || {}))
                 <div class="text-muted-foreground">{{ getTriggerLabel(record.trigger) }}</div>
                 <div class="text-muted-foreground">{{ formatTaskTimestamp(record.startedAt) }}</div>
                 <div class="text-muted-foreground">{{ formatRunDuration(record) }}</div>
-                <div class="min-w-0 truncate text-muted-foreground">
-                  {{ record.error ?? formatJson(record.output) }}
+                <div class="flex min-w-0 items-center gap-1.5">
+                  <div class="min-w-0 flex-1 truncate text-muted-foreground">
+                    {{ formatRunResultPreview(record) }}
+                  </div>
+                  <Tooltip v-if="hasRunResult(record)">
+                    <TooltipTrigger as-child>
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        class="shrink-0"
+                        @click="openRunResult(record)"
+                      >
+                        <Icon
+                          icon="icon-[mdi--text-box-search-outline]"
+                          class="size-3.5"
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>查看完整结果</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </div>
           </div>
+        </section>
+      </DialogBody>
+    </DialogContent>
+  </Dialog>
+
+  <Dialog v-model:open="runResultDialogOpen">
+    <DialogContent class="max-w-3xl">
+      <DialogHeader>
+        <DialogTitle class="flex min-w-0 items-center gap-2 pr-8">
+          <Icon
+            icon="icon-[mdi--text-box-search-outline]"
+            class="size-5 shrink-0"
+          />
+          <span class="truncate">运行结果 {{ selectedRunResultTitle }}</span>
+          <Badge
+            v-if="selectedRunRecord"
+            :variant="getRunStatusVariant(selectedRunRecord.status)"
+            class="h-5"
+          >
+            {{ getRunStatusLabel(selectedRunRecord.status) }}
+          </Badge>
+        </DialogTitle>
+      </DialogHeader>
+
+      <DialogBody
+        v-if="selectedRunRecord"
+        class="max-h-[72vh] space-y-4 overflow-auto scrollbar-thin"
+      >
+        <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+          <div class="min-w-0">
+            <div class="text-xs text-muted-foreground">触发</div>
+            <div class="truncate">{{ getTriggerLabel(selectedRunRecord.trigger) }}</div>
+          </div>
+          <div class="min-w-0">
+            <div class="text-xs text-muted-foreground">尝试</div>
+            <div class="truncate">#{{ selectedRunRecord.attempt }}</div>
+          </div>
+          <div class="min-w-0">
+            <div class="text-xs text-muted-foreground">开始</div>
+            <div class="truncate">{{ formatFullTimestamp(selectedRunRecord.startedAt) }}</div>
+          </div>
+          <div class="min-w-0">
+            <div class="text-xs text-muted-foreground">结束</div>
+            <div class="truncate">{{ formatFullTimestamp(selectedRunRecord.finishedAt) }}</div>
+          </div>
+          <div class="min-w-0">
+            <div class="text-xs text-muted-foreground">耗时</div>
+            <div class="truncate">{{ formatRunDuration(selectedRunRecord) }}</div>
+          </div>
+          <div class="min-w-0">
+            <div class="text-xs text-muted-foreground">命令</div>
+            <div class="truncate">{{ selectedRunRecord.commandId }}</div>
+          </div>
+        </section>
+
+        <section class="space-y-2">
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ selectedRunResultLabel }}
+          </div>
+          <pre
+            class="max-h-[52vh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground scrollbar-thin"
+            >{{ selectedRunResultText }}</pre
+          >
         </section>
       </DialogBody>
     </DialogContent>

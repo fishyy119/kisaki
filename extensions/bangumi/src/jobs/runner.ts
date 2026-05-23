@@ -134,6 +134,7 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      requireNonPreviewBackgroundJob(args, event)
       const descriptor = this.deps.mediaRegistry.require(args.scope)
       job.report('loadingQueue', '正在读取 Bangumi 变更同步队列...', { indeterminate: true })
       assertNotCancelled(event.signal)
@@ -194,6 +195,7 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      requireNonPreviewBackgroundJob(args, event)
       const descriptor = this.deps.mediaRegistry.require(args.scope)
       const adapter = descriptor.localAdapter
       if (!adapter?.supportsAutoSync) {
@@ -294,6 +296,7 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      requireNonPreviewBackgroundJob(args, event)
       const descriptor = this.deps.mediaRegistry.require(args.scope)
       const localAdapter = this.importExecutor.getLocalAdapter(args.scope)
       job.report('validating', '正在检查 Bangumi 导入参数...', { indeterminate: true })
@@ -531,6 +534,7 @@ export class JobRunner {
     event: CommandContributionExecuteEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
+      requireNonPreviewBackgroundJob(args, event)
       const descriptor = this.deps.mediaRegistry.require(args.scope)
       const localAdapter = this.importExecutor.getLocalAdapter(args.scope)
       job.report('validating', '正在检查 Bangumi 目录导入参数...', { indeterminate: true })
@@ -1653,6 +1657,18 @@ function requireProfileId(profileId: string | undefined): string {
     throw new BangumiExtensionError('profile_missing', '请选择用于创建游戏的刮削配置。')
   }
   return normalized
+}
+
+function requireNonPreviewBackgroundJob(
+  args: { dryRun: boolean },
+  event: CommandContributionExecuteEvent
+): void {
+  if (event.source.kind === 'background-task' && args.dryRun) {
+    throw new BangumiExtensionError(
+      'bangumi_validation',
+      '后台任务不能运行 Bangumi 预览，请将 dryRun 设为 false。'
+    )
+  }
 }
 
 function assertNotCancelled(signal: AbortSignal): void {
