@@ -5,6 +5,10 @@ import type { BackgroundTaskService } from './service'
 export function registerBackgroundTaskIpc(service: BackgroundTaskService, ipc: IpcService): void {
   ipc.handle('background-task:list', async () => wrapIpc(() => service.store.list()))
 
+  ipc.handle('background-task:list-running', async () =>
+    wrapIpc(() => service.runner.listRunningTaskIds())
+  )
+
   ipc.handle('background-task:get', async (_, taskId) => wrapIpc(() => service.store.get(taskId)))
 
   ipc.handle('background-task:create', async (_, input) =>

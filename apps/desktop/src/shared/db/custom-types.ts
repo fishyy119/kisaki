@@ -50,7 +50,7 @@ import type {
   BackgroundTaskCreatedBy,
   BackgroundTaskFailurePolicy,
   BackgroundTaskRunRecord,
-  BackgroundTaskSchedule
+  BackgroundTaskTriggers
 } from '../background-task'
 
 import type {
@@ -754,22 +754,22 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-function isBackgroundTaskSchedule(value: unknown): value is BackgroundTaskSchedule {
-  if (!isPlainObject(value) || typeof value.type !== 'string') return false
+function isBackgroundTaskTriggers(value: unknown): value is BackgroundTaskTriggers {
+  if (!isPlainObject(value) || typeof value.onStartup !== 'boolean') return false
 
-  switch (value.type) {
-    case 'manual':
-    case 'onStartup':
-      return true
-    case 'interval':
-      return typeof value.everyMs === 'number' && Number.isFinite(value.everyMs)
-    case 'daily':
-      return typeof value.timeOfDay === 'string'
-    case 'weekly':
-      return typeof value.dayOfWeek === 'number' && typeof value.timeOfDay === 'string'
-    default:
-      return false
+  if (value.cron === undefined) {
+    return true
   }
+
+  if (!isPlainObject(value.cron) || typeof value.cron.expression !== 'string') {
+    return false
+  }
+
+  if (value.cron.expression.trim().length === 0) {
+    return false
+  }
+
+  return value.cron.timezone === undefined || typeof value.cron.timezone === 'string'
 }
 
 function isBackgroundTaskFailurePolicy(value: unknown): value is BackgroundTaskFailurePolicy {
@@ -788,7 +788,7 @@ function isBackgroundTaskFailurePolicy(value: unknown): value is BackgroundTaskF
 }
 
 const BACKGROUND_TASK_RUN_STATUSES = new Set(['success', 'failed', 'cancelled', 'skipped'])
-const BACKGROUND_TASK_RUN_TRIGGERS = new Set(['manual', 'startup', 'schedule'])
+const BACKGROUND_TASK_RUN_TRIGGERS = new Set(['manual', 'startup', 'cron'])
 
 function isBackgroundTaskRunRecord(value: unknown): value is BackgroundTaskRunRecord {
   if (!isPlainObject(value)) return false
@@ -839,26 +839,26 @@ export const backgroundTaskArgs = customType<{
   }
 })
 
-export const backgroundTaskSchedule = customType<{
-  data: BackgroundTaskSchedule
+export const backgroundTaskTriggers = customType<{
+  data: BackgroundTaskTriggers
   driverData: string
 }>({
   dataType() {
     return 'text'
   },
 
-  fromDriver(value: string): BackgroundTaskSchedule {
+  fromDriver(value: string): BackgroundTaskTriggers {
     try {
       const parsed = parseJsonValue(value)
-      return isBackgroundTaskSchedule(parsed) ? parsed : { type: 'manual' }
+      return isBackgroundTaskTriggers(parsed) ? parsed : { onStartup: false }
     } catch {
-      return { type: 'manual' }
+      return { onStartup: false }
     }
   },
 
-  toDriver(value: BackgroundTaskSchedule): string {
-    if (!isBackgroundTaskSchedule(value)) {
-      throw new Error('backgroundTaskSchedule must be a valid schedule')
+  toDriver(value: BackgroundTaskTriggers): string {
+    if (!isBackgroundTaskTriggers(value)) {
+      throw new Error('backgroundTaskTriggers must be valid triggers')
     }
     return JSON.stringify(value)
   }

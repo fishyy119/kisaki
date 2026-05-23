@@ -7,6 +7,7 @@
  */
 
 import type { AppLocale } from '../locale'
+import type { BackgroundTaskRunRecord } from '../background-task'
 import type {
   CommandExecutionProgress,
   CommandExecutionResult,
@@ -118,6 +119,19 @@ export interface AppEvents {
   'command:started': [CommandExecutionStartResult]
   'command:progress': [CommandExecutionProgress]
   'command:finished': [CommandExecutionResult]
+
+  // Background task events
+  'background-task:changed': [{ taskId: string }]
+  'background-task:deleted': [{ taskId: string }]
+  'background-task:run-started': [
+    {
+      taskId: string
+      commandId: string
+      trigger: BackgroundTaskRunRecord['trigger']
+      startedAt: number
+    }
+  ]
+  'background-task:run-finished': [BackgroundTaskRunRecord]
 
   // Monitor events
   'monitor:status-changed': [{ gameId: string; isRunning: boolean; isForeground: boolean }]

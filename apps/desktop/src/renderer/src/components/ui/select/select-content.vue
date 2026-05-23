@@ -4,6 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { SelectContent, SelectPortal, SelectViewport, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@renderer/utils'
+import { UI_LAYER } from '../layers'
 import SelectScrollUpButton from './select-scroll-up-button.vue'
 import SelectScrollDownButton from './select-scroll-down-button.vue'
 
@@ -32,12 +33,13 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="select-content"
       v-bind="{ ...$attrs, ...forwarded }"
       :style="{
+        zIndex: UI_LAYER.floating,
         minWidth: 'var(--reka-select-trigger-width)',
         maxHeight: 'var(--reka-select-content-available-height)'
       }"
       :class="
         cn(
-          'bg-popover text-popover-foreground border border-border rounded-md z-[60] shadow-md',
+          'bg-popover text-popover-foreground border border-border rounded-md shadow-md',
           'overflow-x-hidden overflow-y-auto',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

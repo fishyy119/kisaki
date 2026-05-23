@@ -51,7 +51,7 @@ import {
   backgroundTaskCreatedBy,
   backgroundTaskFailurePolicy,
   backgroundTaskHistory,
-  backgroundTaskSchedule,
+  backgroundTaskTriggers,
   extensionRepositoryState,
   extensionRegistryManifestSnapshot,
   extensionInstallationSource,
@@ -605,7 +605,7 @@ export const backgroundTasks = sqliteTable(
     commandId: text('command_id').notNull(),
     args: backgroundTaskArgs('args').notNull().default({}),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
-    schedule: backgroundTaskSchedule('schedule').notNull().default({ type: 'manual' }),
+    triggers: backgroundTaskTriggers('triggers').notNull().default({ onStartup: false }),
     failurePolicy: backgroundTaskFailurePolicy('failure_policy')
       .notNull()
       .default({ type: 'none' }),

@@ -49,6 +49,12 @@ const navItems: NavItem[] = [
   { id: 'library', label: '媒体库', icon: 'icon-[mdi--bookshelf]', path: '/library' },
   { id: 'statistics', label: '统计', icon: 'icon-[mdi--chart-box-outline]', path: '/statistics' },
   { id: 'scanner', label: '扫描器', icon: 'icon-[mdi--folder-search-outline]', path: '/scanner' },
+  {
+    id: 'background-task',
+    label: '后台任务',
+    icon: 'icon-[mdi--timer-outline]',
+    path: '/background-task'
+  },
   { id: 'extension', label: '扩展', icon: 'icon-[mdi--puzzle-outline]', path: '/extension' }
 ]
 

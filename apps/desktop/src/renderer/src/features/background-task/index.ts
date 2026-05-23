@@ -1,0 +1,1 @@
+export { BackgroundTaskPage } from './pages'

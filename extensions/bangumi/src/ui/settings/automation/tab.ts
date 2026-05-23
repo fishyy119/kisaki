@@ -39,7 +39,7 @@ export async function resolveAutomationTab(
               verifyAccount: true
             },
             enabled: true,
-            schedule: { type: 'onStartup' },
+            triggers: { onStartup: true },
             failurePolicy: TASK_FAILURE_POLICY
           })
       }),
@@ -58,7 +58,7 @@ export async function resolveAutomationTab(
               limit: 500
             },
             enabled: true,
-            schedule: { type: 'onStartup' },
+            triggers: { onStartup: true },
             failurePolicy: TASK_FAILURE_POLICY
           })
       }),
@@ -81,7 +81,10 @@ export async function resolveAutomationTab(
               batchSize: 100
             },
             enabled: true,
-            schedule: { type: 'daily', timeOfDay: '04:00' },
+            triggers: {
+              onStartup: false,
+              cron: { expression: '0 4 * * *' }
+            },
             failurePolicy: TASK_FAILURE_POLICY
           })
       })

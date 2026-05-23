@@ -215,6 +215,7 @@ export interface IpcMainHandlers {
 
   // Background tasks
   'background-task:list': () => IpcResult<BackgroundTask[]>
+  'background-task:list-running': () => IpcResult<string[]>
   'background-task:get': (taskId: string) => IpcResult<BackgroundTask | null>
   'background-task:create': (input: BackgroundTaskCreateInput) => IpcResult<BackgroundTask>
   'background-task:update': (

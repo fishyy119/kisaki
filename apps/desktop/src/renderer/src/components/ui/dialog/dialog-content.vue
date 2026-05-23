@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { Icon } from '@renderer/components/ui/icon'
 import { DialogClose, DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@renderer/utils'
+import { UI_LAYER } from '../layers'
 import DialogOverlay from './dialog-overlay.vue'
 
 defineOptions({
@@ -17,21 +17,17 @@ const props = withDefaults(
     DialogContentProps & {
       class?: HTMLAttributes['class']
       showCloseButton?: boolean
-      stackLevel?: number
     }
   >(),
   {
-    showCloseButton: true,
-    stackLevel: 0
+    showCloseButton: true
   }
 )
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class', 'showCloseButton', 'stackLevel')
+const delegatedProps = reactiveOmit(props, 'class', 'showCloseButton')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
-const overlayZIndex = computed(() => 50 + props.stackLevel * 10)
-const contentZIndex = computed(() => overlayZIndex.value + 1)
 
 function handleInteractOutside(event: Event) {
   event.preventDefault()
@@ -45,14 +41,14 @@ function handleCloseAutoFocus(event: Event) {
 
 <template>
   <DialogPortal data-slot="dialog-portal">
-    <DialogOverlay :style="{ zIndex: overlayZIndex }" />
+    <DialogOverlay :style="{ zIndex: UI_LAYER.dialogOverlay }" />
     <DialogContent
       data-slot="dialog-content"
       v-bind="{ ...$attrs, ...forwarded }"
-      :style="{ zIndex: contentZIndex }"
+      :style="{ zIndex: UI_LAYER.dialogContent }"
       :class="
         cn(
-          'fixed top-[50%] left-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%]',
+          'fixed top-[50%] left-[50%] w-full max-w-lg translate-x-[-50%] translate-y-[-50%]',
           'bg-dialog text-dialog-foreground border border-border rounded-md shadow-lg',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

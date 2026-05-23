@@ -5,10 +5,11 @@ import type {
   BackgroundTask,
   BackgroundTaskCreateInput,
   BackgroundTaskRunRecord,
-  BackgroundTaskSchedule,
+  BackgroundTaskTriggers,
   BackgroundTaskUpdateInput
 } from '@shared/background-task'
 import { backgroundTasks, type BackgroundTaskRow, type NewBackgroundTaskRow } from '@shared/db'
+import { assertValidCronTrigger, computeNextCronRunAt } from './cron'
 
 const HISTORY_LIMIT = 50
 
@@ -57,7 +58,7 @@ export class BackgroundTaskStore {
       commandId: input.commandId,
       args: input.args ?? {},
       enabled: input.enabled ?? true,
-      schedule: input.schedule ?? { type: 'manual' },
+      triggers: normalizeTriggers(input.triggers),
       failurePolicy: input.failurePolicy ?? { type: 'none' },
       createdAt: now,
       updatedAt: now,
@@ -78,7 +79,7 @@ export class BackgroundTaskStore {
       ...patch,
       name: patch.name?.trim() || task.name,
       args: patch.args ?? task.args,
-      schedule: patch.schedule ?? task.schedule,
+      triggers: patch.triggers === undefined ? task.triggers : normalizeTriggers(patch.triggers),
       failurePolicy: patch.failurePolicy ?? task.failurePolicy,
       enabled: patch.enabled === undefined ? task.enabled : patch.enabled,
       updatedAt: Date.now()
@@ -107,7 +108,7 @@ export class BackgroundTaskStore {
 
   listStartupTaskIds(): string[] {
     return [...this.taskCache.values()]
-      .filter((task) => task.enabled && task.schedule.type === 'onStartup')
+      .filter((task) => task.enabled && task.triggers.onStartup)
       .map((task) => task.id)
   }
 
@@ -117,12 +118,7 @@ export class BackgroundTaskStore {
 
   getScheduledTask(taskId: string): BackgroundTask | null {
     const task = this.taskCache.get(taskId)
-    if (
-      !task ||
-      !task.enabled ||
-      task.schedule.type === 'manual' ||
-      task.schedule.type === 'onStartup'
-    ) {
+    if (!task || !task.enabled || !task.triggers.cron) {
       return null
     }
     return cloneTask(task)
@@ -139,6 +135,7 @@ export class BackgroundTaskStore {
 
     this.taskCache.set(taskId, nextTask)
     this.persistTask(nextTask)
+    this.options.onTaskChanged(taskId)
   }
 
   pauseAfterFailure(taskId: string): void {
@@ -146,6 +143,7 @@ export class BackgroundTaskStore {
     const paused = this.withNextRun({ ...latest, enabled: false, updatedAt: Date.now() })
     this.taskCache.set(taskId, paused)
     this.persistTask(paused)
+    this.options.onTaskChanged(taskId)
   }
 
   private requireCachedTask(taskId: string): BackgroundTask {
@@ -170,7 +168,7 @@ export class BackgroundTaskStore {
           commandId: values.commandId,
           args: values.args,
           enabled: values.enabled,
-          schedule: values.schedule,
+          triggers: values.triggers,
           failurePolicy: values.failurePolicy,
           updatedAt: values.updatedAt,
           lastRunAt: values.lastRunAt,
@@ -183,8 +181,8 @@ export class BackgroundTaskStore {
 
   private withNextRun(task: BackgroundTask): BackgroundTask {
     const nextRunAt =
-      task.enabled && task.schedule.type !== 'manual' && task.schedule.type !== 'onStartup'
-        ? computeNextRunAt(task.schedule, Date.now())
+      task.enabled && task.triggers.cron
+        ? computeNextCronRunAt(task.triggers.cron, Date.now())
         : undefined
 
     if (nextRunAt === undefined) {
@@ -202,7 +200,7 @@ function normalizeStoredTask(task: BackgroundTask): BackgroundTask {
     ...task,
     args: task.args ?? {},
     enabled: task.enabled ?? true,
-    schedule: task.schedule ?? { type: 'manual' },
+    triggers: normalizeTriggers(task.triggers, { validateCron: false }),
     failurePolicy: task.failurePolicy ?? { type: 'none' },
     history: task.history ?? []
   }
@@ -217,7 +215,7 @@ function fromTaskRow(row: BackgroundTaskRow): BackgroundTask {
     commandId: row.commandId,
     args: row.args,
     enabled: row.enabled,
-    schedule: row.schedule,
+    triggers: row.triggers,
     failurePolicy: row.failurePolicy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -236,7 +234,7 @@ function toTaskRow(task: BackgroundTask): NewBackgroundTaskRow {
     commandId: task.commandId,
     args: task.args,
     enabled: task.enabled,
-    schedule: task.schedule,
+    triggers: task.triggers,
     failurePolicy: task.failurePolicy,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
@@ -250,51 +248,30 @@ function cloneTask(task: BackgroundTask): BackgroundTask {
   return JSON.parse(JSON.stringify(task)) as BackgroundTask
 }
 
-function computeNextRunAt(schedule: BackgroundTaskSchedule, from: number): number | undefined {
-  switch (schedule.type) {
-    case 'manual':
-    case 'onStartup':
-      return undefined
-    case 'interval':
-      return from + Math.max(1_000, schedule.everyMs)
-    case 'daily':
-      return computeNextTimeOfDay(schedule.timeOfDay, from)
-    case 'weekly':
-      return computeNextWeeklyTime(schedule.dayOfWeek, schedule.timeOfDay, from)
-  }
-}
-
-function computeNextTimeOfDay(timeOfDay: string, from: number): number {
-  const { hours, minutes } = parseTimeOfDay(timeOfDay)
-  const candidate = new Date(from)
-  candidate.setHours(hours, minutes, 0, 0)
-  if (candidate.getTime() <= from) {
-    candidate.setDate(candidate.getDate() + 1)
-  }
-  return candidate.getTime()
-}
-
-function computeNextWeeklyTime(dayOfWeek: number, timeOfDay: string, from: number): number {
-  const { hours, minutes } = parseTimeOfDay(timeOfDay)
-  const candidate = new Date(from)
-  const normalizedDay = Math.max(0, Math.min(6, Math.trunc(dayOfWeek)))
-  candidate.setHours(hours, minutes, 0, 0)
-  const dayDelta = (normalizedDay - candidate.getDay() + 7) % 7
-  candidate.setDate(candidate.getDate() + dayDelta)
-  if (candidate.getTime() <= from) {
-    candidate.setDate(candidate.getDate() + 7)
-  }
-  return candidate.getTime()
-}
-
-function parseTimeOfDay(value: string): { hours: number; minutes: number } {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(value)
-  if (!match) {
-    return { hours: 0, minutes: 0 }
+function normalizeTriggers(
+  triggers: BackgroundTaskTriggers | undefined,
+  options: { validateCron?: boolean } = {}
+): BackgroundTaskTriggers {
+  const normalized: BackgroundTaskTriggers = {
+    onStartup: triggers?.onStartup ?? false
   }
 
-  return {
-    hours: Math.max(0, Math.min(23, Number(match[1]))),
-    minutes: Math.max(0, Math.min(59, Number(match[2])))
+  const cron = triggers?.cron
+  if (!cron) {
+    return normalized
   }
+
+  const expression = cron.expression.trim()
+  if (!expression) {
+    return normalized
+  }
+
+  const timezone = cron.timezone?.trim()
+  normalized.cron = timezone ? { expression, timezone } : { expression }
+  if (options.validateCron !== false) {
+    assertValidCronTrigger(normalized.cron)
+  } else if (computeNextCronRunAt(normalized.cron, Date.now()) === undefined) {
+    delete normalized.cron
+  }
+  return normalized
 }

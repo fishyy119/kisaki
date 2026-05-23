@@ -51,7 +51,7 @@ export class ExtensionBackgroundTasksCapabilityProvider {
       commandId: input.commandId,
       args: input.args,
       enabled: input.enabled,
-      schedule: input.schedule,
+      triggers: input.triggers,
       failurePolicy: input.failurePolicy
     })
     return toPublicBackgroundTask(task)
@@ -143,7 +143,7 @@ function toPublicBackgroundTask(task: AppBackgroundTask): BackgroundTask {
     commandId: task.commandId,
     args: toPublicSerializableRecord(task.args, 'background task args'),
     enabled: task.enabled,
-    schedule: task.schedule,
+    triggers: task.triggers,
     failurePolicy: task.failurePolicy,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,

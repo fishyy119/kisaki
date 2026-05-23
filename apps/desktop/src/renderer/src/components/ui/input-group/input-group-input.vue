@@ -7,6 +7,9 @@ import { cn } from '@renderer/utils'
 interface Props {
   type?: string
   placeholder?: string
+  min?: string | number
+  max?: string | number
+  step?: string | number
   disabled?: boolean
   readonly?: boolean
   class?: HTMLAttributes['class']
@@ -25,6 +28,9 @@ const model = defineModel<string | number>()
     data-slot="input-group-control"
     :type="props.type"
     :placeholder="props.placeholder"
+    :min="props.min"
+    :max="props.max"
+    :step="props.step"
     :disabled="props.disabled"
     :readonly="props.readonly"
     :class="

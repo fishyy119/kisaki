@@ -20,14 +20,24 @@ export class BackgroundTaskService implements IService {
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.store = new BackgroundTaskStore({
       db: container.get('db'),
-      onTaskChanged: (taskId) => this.scheduler.refresh(taskId),
-      onTaskDeleted: (taskId) => this.scheduler.clear(taskId)
+      onTaskChanged: (taskId) => {
+        this.scheduler.refresh(taskId)
+        container.get('event').bus.emit('background-task:changed', { taskId })
+      },
+      onTaskDeleted: (taskId) => {
+        this.scheduler.clear(taskId)
+        container.get('event').bus.emit('background-task:deleted', { taskId })
+      }
     })
     this.runner = new BackgroundTaskRunner({
       command: container.get('command'),
       store: this.store,
       clearTaskTimer: (taskId) => this.scheduler.clear(taskId),
-      refreshTaskTimer: (taskId) => this.scheduler.refresh(taskId)
+      refreshTaskTimer: (taskId) => this.scheduler.refresh(taskId),
+      onRunStarted: (event) =>
+        container.get('event').bus.emit('background-task:run-started', event),
+      onRunFinished: (record) =>
+        container.get('event').bus.emit('background-task:run-finished', record)
     })
     this.scheduler = new BackgroundTaskScheduler({
       store: this.store,

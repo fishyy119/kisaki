@@ -37,7 +37,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
     :spellcheck="false"
     :class="
       cn(
-        'flex w-full min-w-0 rounded-md bg-input border border-border px-2 py-1.5 text-sm transition-colors resize-none',
+        'flex w-full min-w-0 rounded-md bg-input scrollbar-thin border border-border px-2 py-1.5 text-sm transition-colors resize-none',
         'placeholder:text-muted-foreground',
         'focus:border-primary focus:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted',

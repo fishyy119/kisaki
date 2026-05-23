@@ -2,12 +2,15 @@ import type { SerializableRecord, SerializableValue } from '../shared'
 
 export type BackgroundTaskCreatedBy = 'user' | 'extension'
 
-export type BackgroundTaskSchedule =
-  | { type: 'manual' }
-  | { type: 'onStartup' }
-  | { type: 'interval'; everyMs: number }
-  | { type: 'daily'; timeOfDay: string }
-  | { type: 'weekly'; dayOfWeek: number; timeOfDay: string }
+export interface BackgroundTaskCronTrigger {
+  expression: string
+  timezone?: string
+}
+
+export interface BackgroundTaskTriggers {
+  onStartup: boolean
+  cron?: BackgroundTaskCronTrigger
+}
 
 export type BackgroundTaskFailurePolicy =
   | { type: 'none' }
@@ -15,6 +18,7 @@ export type BackgroundTaskFailurePolicy =
   | { type: 'pauseTask'; retryCount?: number; retryDelayMs?: number }
 
 export type BackgroundTaskRunStatus = 'success' | 'failed' | 'cancelled' | 'skipped'
+export type BackgroundTaskRunTrigger = 'manual' | 'startup' | 'cron'
 
 export interface BackgroundTaskRunRecord {
   id: string
@@ -24,7 +28,7 @@ export interface BackgroundTaskRunRecord {
   finishedAt: number
   status: BackgroundTaskRunStatus
   attempt: number
-  trigger: 'manual' | 'startup' | 'schedule'
+  trigger: BackgroundTaskRunTrigger
   output?: SerializableValue
   error?: string
 }
@@ -37,7 +41,7 @@ export interface BackgroundTask {
   commandId: string
   args: SerializableRecord
   enabled: boolean
-  schedule: BackgroundTaskSchedule
+  triggers: BackgroundTaskTriggers
   failurePolicy: BackgroundTaskFailurePolicy
   createdAt: number
   updatedAt: number
@@ -51,12 +55,12 @@ export interface BackgroundTaskCreateInput {
   commandId: string
   args?: SerializableRecord
   enabled?: boolean
-  schedule?: BackgroundTaskSchedule
+  triggers?: BackgroundTaskTriggers
   failurePolicy?: BackgroundTaskFailurePolicy
 }
 
 export type BackgroundTaskUpdateInput = Partial<
-  Pick<BackgroundTask, 'name' | 'commandId' | 'args' | 'enabled' | 'schedule' | 'failurePolicy'>
+  Pick<BackgroundTask, 'name' | 'commandId' | 'args' | 'enabled' | 'triggers' | 'failurePolicy'>
 >
 
 export interface BackgroundTasksCapability {

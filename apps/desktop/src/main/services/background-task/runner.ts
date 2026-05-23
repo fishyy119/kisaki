@@ -14,6 +14,13 @@ export interface BackgroundTaskRunnerOptions {
   store: BackgroundTaskStore
   clearTaskTimer(taskId: string): void
   refreshTaskTimer(taskId: string): void
+  onRunStarted(event: {
+    taskId: string
+    commandId: string
+    trigger: BackgroundTaskRunRecord['trigger']
+    startedAt: number
+  }): void
+  onRunFinished(record: BackgroundTaskRunRecord): void
 }
 
 export class BackgroundTaskRunner {
@@ -32,8 +39,12 @@ export class BackgroundTaskRunner {
     return this.runTask(taskId, 'startup')
   }
 
-  runScheduled(taskId: string): Promise<BackgroundTaskRunRecord> {
-    return this.runTask(taskId, 'schedule')
+  listRunningTaskIds(): string[] {
+    return [...this.runningTasks.keys()]
+  }
+
+  runCron(taskId: string): Promise<BackgroundTaskRunRecord> {
+    return this.runTask(taskId, 'cron')
   }
 
   cancel(taskId: string): boolean {
@@ -78,6 +89,12 @@ export class BackgroundTaskRunner {
     const taskController = new AbortController()
     this.runningTasks.set(taskId, { controller: taskController })
     this.options.clearTaskTimer(taskId)
+    this.options.onRunStarted({
+      taskId: task.id,
+      commandId: task.commandId,
+      trigger,
+      startedAt: Date.now()
+    })
 
     try {
       const attempts = getAttemptCount(task.failurePolicy)
@@ -155,6 +172,7 @@ export class BackgroundTaskRunner {
 
       const record = lastRecord ?? createSkippedRecord(task, trigger, 'No attempts ran.')
       await this.options.store.recordRun(taskId, record)
+      this.options.onRunFinished(record)
 
       if (record.status === 'failed' && task.failurePolicy.type === 'pauseTask') {
         this.options.store.pauseAfterFailure(taskId)
@@ -164,6 +182,7 @@ export class BackgroundTaskRunner {
     } catch (error) {
       const record = createFailureRecord(task, trigger, error)
       await this.options.store.recordRun(taskId, record)
+      this.options.onRunFinished(record)
       return record
     } finally {
       this.runningTasks.delete(taskId)

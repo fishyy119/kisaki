@@ -32,8 +32,8 @@ export class BackgroundTaskScheduler {
 
     const delayMs = Math.max(0, Math.min(task.nextRunAt - Date.now(), MAX_TIMEOUT_MS))
     const timer = setTimeout(() => {
-      void this.options.runner.runScheduled(taskId).catch((error) => {
-        log.error('Scheduled task failed.', error, { taskId: taskId })
+      void this.options.runner.runCron(taskId).catch((error) => {
+        log.error('Cron task failed.', error, { taskId: taskId })
       })
     }, delayMs)
     this.timers.set(taskId, timer)
