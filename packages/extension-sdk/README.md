@@ -1,33 +1,41 @@
-# `@kisaki/extension-sdk`
+# @kisaki/extension-sdk
 
 Authoring SDK for Kisaki extensions.
 
-Public entry points:
+Use this package from extension code. It re-exports the public contracts from
+`@kisaki/extension-api` and adds the small authoring surface that extension entry
+points use directly.
 
-- `defineExtension(...)`
-- settings panel authoring helpers such as `defineSettingsPanel(...)`,
+## Exports
+
+- `defineExtension(definition)`.
+- `kisaki`, a lazy bridge to host capabilities such as library, network, notify,
+  events, runtime, scrapers, ingest, commands, and background tasks.
+- Settings panel helpers such as `defineSettingsPanel(...)`,
   `defineSettingsPanelDialog(...)`, `defineSettingsPanelPopover(...)`, and
-  `defineSettingsPanelTab(...)`
-- `kisaki`
-- all public contract types re-exported from `@kisaki/extension-api`
+  `defineSettingsPanelTab(...)`.
+- All public types and validation helpers exported by `@kisaki/extension-api`.
 
-## Contribution API
-
-Contribution registrars live on `context.contributions`. Top-level keys name the registered
-contribution type, and every registrar uses `register(...)`.
+## Example
 
 ```ts
-import { defineExtension, defineSettingsPanel } from '@kisaki/extension-sdk'
+import { defineExtension, defineSettingsPanel, kisaki } from '@kisaki/extension-sdk'
 
 export default defineExtension({
   activate(context) {
-    context.contributions.scraperProviders.game.register(new BangumiProvider(context))
+    context.contributions.commands.register({
+      id: 'show-status',
+      title: 'Show Status',
+      async execute() {
+        await kisaki.notify.info('Extension is active')
+      }
+    })
 
     context.contributions.settingsPanels.register(
       defineSettingsPanel({
         id: 'general',
-        title: 'Bangumi',
-        async resolve(_context, settings) {
+        title: 'General',
+        resolve(_context, settings) {
           return {
             fields: [
               {
@@ -46,43 +54,12 @@ export default defineExtension({
         }
       })
     )
-
-    context.contributions.deeplinkRoutes.register({
-      id: 'oauth-callback',
-      path: '/oauth/callback/:provider',
-      handle(event) {
-        context.logger.info(`OAuth callback for ${event.params.provider}`)
-        return { success: true, status: 'handled' }
-      }
-    })
-
-    context.contributions.entityMenus.game.single.register({
-      id: 'open-source',
-      async resolve(input, menu) {
-        return [
-          menu.action({
-            id: 'open',
-            label: `Open ${input.entityId}`,
-            onClick() {
-              return { success: true }
-            }
-          })
-        ]
-      }
-    })
   }
 })
 ```
 
-## Architecture
+## Boundary
 
-`kisaki` is a thin view over the host-provided `KisakiApi`.
-Capability access stays direct and lazy: each property getter reads from the configured runtime bridge when the extension actually uses it.
-
-The runtime bridge store lives in the SDK internals and is configured only by the shared extension host.
-The SDK does not assemble `ExtensionContext`, register contributions, or own lifecycle helpers like disposable stores; those runtime responsibilities stay entirely in the host.
-The SDK does not add a second abstraction layer for capabilities like `network` or `notify`; those are exposed directly from the runtime bridge.
-
-Host-runtime bootstrap is intentionally not a public package entry point. The host owns bridge
-configuration and extension context creation so extension code cannot forge another extension's
-identity or bypass runtime lifecycle cleanup.
+The SDK does not assemble `ExtensionContext`, configure runtime bridges, or own
+extension lifecycle cleanup. The shared extension host owns those runtime
+responsibilities so extension code cannot forge another extension's identity.
