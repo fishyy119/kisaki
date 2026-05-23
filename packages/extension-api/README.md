@@ -37,7 +37,7 @@ A minimal runtime manifest:
   "entry": "./dist/index.mjs",
   "description": "Adds an example command.",
   "engines": {
-    "kisaki": ">=0.0.3"
+    "kisaki": ">=0.0.4"
   }
 }
 ```
