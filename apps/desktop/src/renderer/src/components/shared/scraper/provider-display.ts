@@ -1,4 +1,5 @@
 import type { ContentEntityType } from '@shared/common'
+import { parseExtensionScraperProviderId } from '@shared/scraper'
 import type {
   CharacterScraperProviderInfo,
   CompanyScraperProviderInfo,
@@ -26,14 +27,6 @@ export interface ScraperProviderDisplay {
   provider: ScraperProviderInfo | null
 }
 
-function decodeProviderPart(value: string): string {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
-}
-
 function toProviderTitle(value: string): string {
   return value
     .replace(/[_-]+/g, ' ')
@@ -45,12 +38,8 @@ function toProviderTitle(value: string): string {
  * Builds a readable fallback name for a stored provider id.
  */
 export function formatScraperProviderFallbackName(providerId: string): string {
-  const extensionMatch = /^ext:([^/]+)\/(.+)$/.exec(providerId)
-  if (!extensionMatch) {
-    return providerId
-  }
-
-  return toProviderTitle(decodeProviderPart(extensionMatch[2]))
+  const extensionProvider = parseExtensionScraperProviderId(providerId)
+  return extensionProvider ? toProviderTitle(extensionProvider.providerId) : providerId
 }
 
 /**

@@ -132,6 +132,8 @@ export interface ExtensionContributionRegistrars {
 | `themes`           | theme contribution          | 无                        | `ThemeContribution`              | `ThemeRegistration`           |
 | `commands`         | command contribution        | 无                        | `CommandContribution`            | `CommandRegistration`         |
 
+Scraper provider 的 `providerId` 是 media-scoped：它只需要在对应 `scraperProviders.game/person/company/character` registrar 内唯一。宿主把 extension provider 注册进主应用 scraper registry 时只添加 extension namespace，例如 `ext:builtin.bangumi/bangumi`；`mediaType` 由 profile、RPC payload 或 registry domain 提供，不编码进 provider id。
+
 ## Entity Menus
 
 `menus` 改名为 `entityMenus`，因为该贡献点只面向实体上下文菜单，不代表应用菜单、窗口菜单或命令面板。
@@ -452,7 +454,7 @@ Main 到 host：
 - `contributions.scraperProviders.session.get`
 - `contributions.scraperProviders.session.close`
 
-这些 request 都包含 `mediaType` 和 `providerId`。调用端根据 `mediaType` 使用对应的结果类型。
+这些 request 都包含 `mediaType` 和 `providerId`。`providerId` 在该 `mediaType` 内解释，调用端根据 `mediaType` 使用对应的结果类型。
 
 统一 method string 后，类型安全必须由 payload 的 discriminated union 保留，不能退化成 `mediaType: ScraperMediaType` 搭配宽泛 `unknown` 结果。RPC request/response 按 `mediaType` 分支：
 

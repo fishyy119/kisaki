@@ -286,6 +286,7 @@ export type CharacterScraperSession = BaseScraperSession<
 >
 
 export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
+  /** Unique within the media-specific registrar used to register this provider. */
   readonly id: string
   readonly name: string
   readonly externalIdSource: string

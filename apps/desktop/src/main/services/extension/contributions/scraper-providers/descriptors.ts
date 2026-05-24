@@ -10,14 +10,6 @@ export function getScraperKey(
   return `${getRuntimeContributionKey(runtimeHandle, providerId)}:${mediaType}`
 }
 
-export function getHostScraperProviderId(
-  extensionId: string,
-  mediaType: ScraperMediaType,
-  providerId: string
-): string {
-  return `ext:${encodeURIComponent(extensionId)}/${encodeURIComponent(mediaType)}/${encodeURIComponent(providerId)}`
-}
-
 export function getScraperRpcMethod(
   _domain: ScraperDomain,
   action: ScraperRpcAction

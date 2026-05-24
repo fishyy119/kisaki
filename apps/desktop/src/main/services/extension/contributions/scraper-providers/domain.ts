@@ -27,12 +27,12 @@ export interface ScraperRegistration {
   owner: RuntimeContributionOwner
   mediaType: ScraperMediaType
   provider: ScraperProviderRegistration
-  hostProviderId: string
+  registryProviderId: string
 }
 
 export interface ScraperDomain {
   kind: ScraperKind
   mediaType: ScraperMediaType
   registerWithScraper(scraper: ScraperService, provider: unknown): void
-  unregisterFromScraper(scraper: ScraperService, hostProviderId: string): void | Promise<void>
+  unregisterFromScraper(scraper: ScraperService, registryProviderId: string): void | Promise<void>
 }

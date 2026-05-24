@@ -8,9 +8,13 @@
 import type { ContentEntityType } from '@shared/common'
 import type { Locale } from '@shared/locale'
 import type { ScraperSlotConfigs } from '@shared/db'
-import { createSlotConfig, createEmptySlotConfig } from '@shared/scraper'
+import {
+  createExtensionScraperProviderId,
+  createSlotConfig,
+  createEmptySlotConfig
+} from '@shared/scraper'
 
-const BANGUMI_PROVIDER_ID = 'ext:builtin.bangumi/bangumi'
+const BANGUMI_PROVIDER_ID = createExtensionScraperProviderId('builtin.bangumi', 'bangumi')
 
 // =============================================================================
 // Preset Types

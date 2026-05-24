@@ -11,7 +11,7 @@ export function createProviderAdapter(
   domain: ScraperDomain
 ): unknown {
   return {
-    id: registration.hostProviderId,
+    id: registration.registryProviderId,
     name: registration.provider.name,
     externalIdSource: registration.provider.externalIdSource,
     capabilities: [...registration.provider.capabilities],

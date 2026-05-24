@@ -174,7 +174,7 @@ export type SlotStrategy = 'first' | 'enrich'
 /** Policy for unmatched entities in relation-collection slots. */
 export type UnmatchedEntityPolicy = 'ignore' | 'append'
 
-/** Configuration for a provider within a slot */
+/** Configuration for a provider within a slot. providerId is scoped by the profile mediaType. */
 export interface ScraperProviderEntry {
   providerId: string
   enabled: boolean

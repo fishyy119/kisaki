@@ -1,6 +1,7 @@
 import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import type { ExtensionScraperProviderRegistrationInfo } from '@shared/extension'
+import { createExtensionScraperProviderId } from '@shared/scraper'
 import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
@@ -13,7 +14,7 @@ import {
   type ExtensionContributionReleaseDiagnostic,
   type ExtensionContributionDomainOptions
 } from '../types'
-import { getHostScraperProviderId, getScraperKey } from './descriptors'
+import { getScraperKey } from './descriptors'
 import type {
   ScraperDomain,
   ScraperMediaType,
@@ -32,32 +33,32 @@ export class ExtensionScraperProviderContributionPoint {
     mediaType: 'game',
     registerWithScraper: (scraper, provider) =>
       scraper.game.registerProvider(provider as GameScraperProvider),
-    unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.game.unregisterProvider(hostProviderId)
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.game.unregisterProvider(registryProviderId)
   }
   private readonly personDomain: ScraperDomain = {
     kind: 'persons',
     mediaType: 'person',
     registerWithScraper: (scraper, provider) =>
       scraper.person.registerProvider(provider as PersonScraperProvider),
-    unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.person.unregisterProvider(hostProviderId)
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.person.unregisterProvider(registryProviderId)
   }
   private readonly companyDomain: ScraperDomain = {
     kind: 'companies',
     mediaType: 'company',
     registerWithScraper: (scraper, provider) =>
       scraper.company.registerProvider(provider as CompanyScraperProvider),
-    unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.company.unregisterProvider(hostProviderId)
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.company.unregisterProvider(registryProviderId)
   }
   private readonly characterDomain: ScraperDomain = {
     kind: 'characters',
     mediaType: 'character',
     registerWithScraper: (scraper, provider) =>
       scraper.character.registerProvider(provider as CharacterScraperProvider),
-    unregisterFromScraper: (scraper, hostProviderId) =>
-      scraper.character.unregisterProvider(hostProviderId)
+    unregisterFromScraper: (scraper, registryProviderId) =>
+      scraper.character.unregisterProvider(registryProviderId)
   }
 
   constructor(private readonly options: ExtensionContributionDomainOptions) {
@@ -142,7 +143,7 @@ export class ExtensionScraperProviderContributionPoint {
       owner,
       mediaType: domain.mediaType,
       provider,
-      hostProviderId: getHostScraperProviderId(owner.extension.id, domain.mediaType, provider.id)
+      registryProviderId: createExtensionScraperProviderId(owner.extension.id, provider.id)
     }
     const key = getScraperKey(runtimeHandle, domain.mediaType, provider.id)
     const previous = this.registrations.get(key)
@@ -193,11 +194,11 @@ export class ExtensionScraperProviderContributionPoint {
     try {
       await this.requireDomain(registration.mediaType).unregisterFromScraper(
         scraper,
-        registration.hostProviderId
+        registration.registryProviderId
       )
     } catch (error) {
       log.warn('Failed to unregister provider.', error, {
-        registrationHostProviderId: registration.hostProviderId
+        registryProviderId: registration.registryProviderId
       })
     }
   }

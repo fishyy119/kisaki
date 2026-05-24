@@ -40,6 +40,11 @@ export type {
   ScraperProfileSummary
 } from './profile'
 export {
+  createExtensionScraperProviderId,
+  parseExtensionScraperProviderId,
+  type ExtensionScraperProviderIdParts
+} from './provider-id'
+export {
   type ScrapedEntityIdentity,
   type ScrapedIdentityCarrier,
   type ScraperSessionResult,

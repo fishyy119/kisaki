@@ -3,6 +3,7 @@ import type { Locale } from '@shared/locale'
 
 export interface ScraperProfileProviderSlot {
   slot: string
+  /** Provider ids are interpreted within the parent profile mediaType. */
   providerIds: string[]
 }
 
@@ -11,6 +12,7 @@ export interface ScraperProfileSummary {
   name: string
   description: string | null
   mediaType: ContentEntityType
+  /** Provider id interpreted within this profile's mediaType. */
   searchProviderId: string
   defaultLocale: Locale | null
   providerSlots: ScraperProfileProviderSlot[]
