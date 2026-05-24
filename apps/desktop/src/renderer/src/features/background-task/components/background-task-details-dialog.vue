@@ -47,17 +47,24 @@ const sourceLabel = computed(() =>
   props.task.createdBy === 'extension' ? (props.task.ownerExtensionId ?? '扩展') : '用户'
 )
 const latestRun = computed(() => props.task.history[0] ?? null)
+const historyRows = computed(() =>
+  props.task.history.map((record, index) => ({
+    record,
+    sequence: props.task.history.length - index
+  }))
+)
 const argsJson = computed(() => formatJson(props.task.args || {}))
 const runResultDialogOpen = ref(false)
 const selectedRunRecord = ref<BackgroundTaskRunRecord | null>(null)
+const selectedRunSequence = computed(() =>
+  selectedRunRecord.value ? getRunSequence(selectedRunRecord.value) : undefined
+)
 const selectedRunResultTitle = computed(() =>
   selectedRunRecord.value
-    ? `#${selectedRunRecord.value.attempt} ${formatTaskTimestamp(selectedRunRecord.value.startedAt)}`
+    ? `#${selectedRunSequence.value ?? '?'} ${formatTaskTimestamp(selectedRunRecord.value.startedAt)}`
     : '运行结果'
 )
-const selectedRunResultLabel = computed(() =>
-  selectedRunRecord.value?.error ? '错误' : '输出'
-)
+const selectedRunResultLabel = computed(() => (selectedRunRecord.value?.error ? '错误' : '输出'))
 const selectedRunResultText = computed(() =>
   selectedRunRecord.value ? formatRunResult(selectedRunRecord.value) : ''
 )
@@ -84,6 +91,11 @@ function formatRunResult(record: BackgroundTaskRunRecord): string {
   }
 
   return '无输出'
+}
+
+function getRunSequence(record: BackgroundTaskRunRecord): number | undefined {
+  const index = props.task.history.findIndex((item) => item.id === record.id)
+  return index === -1 ? undefined : props.task.history.length - index
 }
 
 function openRunResult(record: BackgroundTaskRunRecord) {
@@ -193,7 +205,7 @@ function openRunResult(record: BackgroundTaskRunRecord) {
             <div
               class="grid h-8 grid-cols-[116px_96px_132px_80px_minmax(160px,1fr)] items-center gap-3 border-b border-border bg-muted/40 px-3 text-xs font-medium text-muted-foreground"
             >
-              <div>状态</div>
+              <div>运行</div>
               <div>触发</div>
               <div>开始时间</div>
               <div>耗时</div>
@@ -201,33 +213,37 @@ function openRunResult(record: BackgroundTaskRunRecord) {
             </div>
             <div class="max-h-80 divide-y divide-border/60 overflow-auto scrollbar-thin">
               <div
-                v-for="record in props.task.history"
-                :key="record.id"
+                v-for="row in historyRows"
+                :key="row.record.id"
                 class="grid min-h-10 grid-cols-[116px_96px_132px_80px_minmax(160px,1fr)] items-center gap-3 px-3 py-2 text-xs"
               >
                 <div class="flex min-w-0 items-center gap-2">
+                  <span class="w-8 shrink-0 tabular-nums text-muted-foreground"
+                    >#{{ row.sequence }}</span
+                  >
                   <Badge
-                    :variant="getRunStatusVariant(record.status)"
+                    :variant="getRunStatusVariant(row.record.status)"
                     class="h-5"
                   >
-                    {{ getRunStatusLabel(record.status) }}
+                    {{ getRunStatusLabel(row.record.status) }}
                   </Badge>
-                  <span class="text-muted-foreground">#{{ record.attempt }}</span>
                 </div>
-                <div class="text-muted-foreground">{{ getTriggerLabel(record.trigger) }}</div>
-                <div class="text-muted-foreground">{{ formatTaskTimestamp(record.startedAt) }}</div>
-                <div class="text-muted-foreground">{{ formatRunDuration(record) }}</div>
+                <div class="text-muted-foreground">{{ getTriggerLabel(row.record.trigger) }}</div>
+                <div class="text-muted-foreground">
+                  {{ formatTaskTimestamp(row.record.startedAt) }}
+                </div>
+                <div class="text-muted-foreground">{{ formatRunDuration(row.record) }}</div>
                 <div class="flex min-w-0 items-center gap-1.5">
                   <div class="min-w-0 flex-1 truncate text-muted-foreground">
-                    {{ formatRunResultPreview(record) }}
+                    {{ formatRunResultPreview(row.record) }}
                   </div>
-                  <Tooltip v-if="hasRunResult(record)">
+                  <Tooltip v-if="hasRunResult(row.record)">
                     <TooltipTrigger as-child>
                       <Button
                         size="icon-xs"
                         variant="ghost"
                         class="shrink-0"
-                        @click="openRunResult(record)"
+                        @click="openRunResult(row.record)"
                       >
                         <Icon
                           icon="icon-[mdi--text-box-search-outline]"
