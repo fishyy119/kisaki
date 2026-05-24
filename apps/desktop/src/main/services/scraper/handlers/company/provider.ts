@@ -3,15 +3,20 @@
  */
 
 import type { CompanyScraperSlot } from '@shared/db'
-import type { CompanyInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type { Locale } from '@shared/locale'
-import type { CompanySearchResult, ScraperCapability, ScraperLookup } from '@shared/scraper'
+import type {
+  CompanySearchResult,
+  ScrapedCompanyInfo,
+  ScraperCapability,
+  ScraperLookup
+} from '@shared/scraper'
 import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
 
 export type CompanyResolvedTarget = IdResolvedTarget
 
 export interface CompanySessionResultMap {
-  info: CompanyInfo
+  info: ScrapedCompanyInfo
   tags: Tag[]
   logos: string[]
 }

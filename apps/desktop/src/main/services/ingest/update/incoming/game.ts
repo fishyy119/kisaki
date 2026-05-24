@@ -32,7 +32,7 @@ function buildGameCore(
   if (relatedSites) core.relatedSites = relatedSites
 
   const externalIds = normalizeExternalIds([
-    ...(bundleCore?.externalIds ?? []),
+    ...(bundle?.identity.externalIds ?? []),
     ...(lookup.knownIds ?? [])
   ])
   if (externalIds.length > 0) core.externalIds = externalIds

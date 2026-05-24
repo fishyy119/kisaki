@@ -4,9 +4,18 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
-import type { ScrapedCompanyMetadata, ScrapedCompanyBundle } from '@shared/scraper'
-import { applyImageStrategy, applyStrategy, filterBySlot, sortByRank } from '../../shared'
+import type {
+  ScrapedCompanyMetadata,
+  ScrapedCompanyBundle,
+  ScrapedEntityIdentity
+} from '@shared/scraper'
+import {
+  applyImageStrategy,
+  applyStrategy,
+  filterBySlot,
+  mergeScrapedIdentities,
+  sortByRank
+} from '../../shared'
 import type {
   CompanyScraperImageResult,
   CompanyScraperInfoResult,
@@ -20,9 +29,10 @@ import type {
  */
 export function mergeCompanyScraperBundle(
   results: CompanyScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedCompanyBundle | null {
-  const metadata = mergeCompanyScraperMetadata(results, profile)
+  const metadata = mergeCompanyScraperMetadata(results, profile, identities)
   if (!metadata) return null
   return toScrapedCompanyBundle(metadata)
 }
@@ -33,9 +43,12 @@ export function mergeCompanyScraperBundle(
  */
 export function mergeCompanyScraperMetadata(
   results: CompanyScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedCompanyMetadata | null {
-  const metadata: Partial<ScrapedCompanyMetadata> = {}
+  const metadata: Partial<ScrapedCompanyMetadata> = {
+    identity: mergeScrapedIdentities(...identities)
+  }
   const slotConfigs = profile.slotConfigs as CompanyScraperSlotConfigs
 
   for (const slot of COMPANY_SCRAPER_SLOTS) {
@@ -105,12 +118,6 @@ function mergeInfo(
       )
     }
 
-    if (info.externalIds?.length) {
-      metadata.externalIds = normalizeExternalIds(
-        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
-      )
-    }
-
     if (strategy === 'first') break
   }
 }
@@ -147,12 +154,12 @@ function finalize(partial: Partial<ScrapedCompanyMetadata>): ScrapedCompanyMetad
   if (!partial.name) return null
 
   return {
+    identity: partial.identity ?? mergeScrapedIdentities(),
     name: partial.name,
     originalName: partial.originalName,
     foundedDate: partial.foundedDate,
     description: partial.description ?? '',
     relatedSites: partial.relatedSites ?? [],
-    externalIds: partial.externalIds ?? [],
     tags: partial.tags,
     logos: partial.logos
   }
@@ -163,13 +170,13 @@ function finalize(partial: Partial<ScrapedCompanyMetadata>): ScrapedCompanyMetad
  */
 export function toScrapedCompanyBundle(metadata: ScrapedCompanyMetadata): ScrapedCompanyBundle {
   return {
+    identity: metadata.identity,
     core: {
       name: metadata.name,
       originalName: metadata.originalName,
       foundedDate: metadata.foundedDate,
       description: metadata.description,
       relatedSites: metadata.relatedSites,
-      externalIds: metadata.externalIds,
       tags: metadata.tags
     },
     mediaCandidates: metadata.logos?.length

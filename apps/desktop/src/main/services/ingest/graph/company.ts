@@ -11,7 +11,7 @@ function toCompanyRootCore(
   const normalized = normalizeCompanyCore({
     ...(bundle.core ?? {}),
     name: firstNonEmpty(bundle.core?.name, lookup.name),
-    externalIds: mergeExternalIds(bundle.core?.externalIds, lookup.knownIds)
+    externalIds: mergeExternalIds(bundle.identity.externalIds, lookup.knownIds)
   })
 
   if (!normalized) {

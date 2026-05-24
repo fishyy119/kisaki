@@ -69,7 +69,7 @@ function createSessionAdapter(
 ): unknown {
   return {
     async get(slots: readonly string[]) {
-      const response = await requestScraperHost<{ results: unknown }>(
+      const response = await requestScraperHost<{ result: unknown }>(
         options,
         domain,
         'session.get',
@@ -82,7 +82,7 @@ function createSessionAdapter(
         }
       )
 
-      return response.results
+      return response.result
     },
     async dispose() {
       await requestScraperHost<Record<string, never>>(

@@ -43,7 +43,8 @@ import type {
   PersonSearchResult,
   ScraperCapability,
   ScraperLookup,
-  ScraperMediaType
+  ScraperMediaType,
+  ScraperSessionResult
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
 import type { Locale, SerializableRecord, SerializableValue, UiCallbackResult } from '../shared'
@@ -459,10 +460,10 @@ export type ScraperProviderSessionGetRequest =
     })
 
 export type ScraperProviderSessionGetResponse =
-  | { mediaType: 'game'; results: Partial<GameSessionResultMap> }
-  | { mediaType: 'person'; results: Partial<PersonSessionResultMap> }
-  | { mediaType: 'company'; results: Partial<CompanySessionResultMap> }
-  | { mediaType: 'character'; results: Partial<CharacterSessionResultMap> }
+  | { mediaType: 'game'; result: ScraperSessionResult<GameSessionResultMap> }
+  | { mediaType: 'person'; result: ScraperSessionResult<PersonSessionResultMap> }
+  | { mediaType: 'company'; result: ScraperSessionResult<CompanySessionResultMap> }
+  | { mediaType: 'character'; result: ScraperSessionResult<CharacterSessionResultMap> }
 
 export type ScraperProviderSessionCloseRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & { sessionId: string })

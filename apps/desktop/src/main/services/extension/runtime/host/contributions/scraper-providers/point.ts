@@ -546,13 +546,13 @@ export class HostScraperProviderContributionPoint {
       domain,
       runtime,
       request.providerId,
-      'session results',
+      'session result',
       domain.validateSessionResults(results)
     )
 
     return {
       mediaType: domain.mediaType,
-      results: results as Awaited<ReturnType<TSession['get']>>
+      result: results as Awaited<ReturnType<TSession['get']>>
     } as unknown as Extract<ScraperProviderSessionGetResponse, { mediaType: TMediaType }>
   }
 

@@ -5,7 +5,7 @@
 import type { NetworkService } from '@main/services/network'
 import type { Logger } from '@main/log'
 import type { PartialDate } from '@shared/db'
-import type { ScraperLookup } from '@shared/scraper'
+import type { ScrapedEntityIdentity, ScraperLookup, ScraperSessionResult } from '@shared/scraper'
 
 type ScraperLogger = Logger
 
@@ -17,6 +17,8 @@ export interface BaseResolvedTarget {
   cacheKey: string
   /** Optional canonical name discovered during resolve. */
   resolveName?: string
+  /** Optional identity evidence discovered while resolving the provider target. */
+  identity?: ScrapedEntityIdentity
 }
 
 /**
@@ -36,7 +38,7 @@ export interface BaseScraperSession<
   /**
    * Fetch one or more slots using the provider's preferred resource topology.
    */
-  get(slots: readonly TSlot[]): Promise<Partial<TResultMap>>
+  get(slots: readonly TSlot[]): Promise<ScraperSessionResult<TResultMap>>
 
   /**
    * Release invocation-scoped resources when the host finishes the session.
@@ -69,7 +71,11 @@ export interface ScraperProviderTextHelpers {
  * Resolved-target helpers shared across built-in scraper providers.
  */
 export interface ScraperProviderTargetHelpers {
-  createResolvedTarget(id: string, resolveName?: string): IdResolvedTarget
+  createResolvedTarget(
+    id: string,
+    resolveName?: string,
+    identity?: ScrapedEntityIdentity
+  ): IdResolvedTarget
 }
 
 /**

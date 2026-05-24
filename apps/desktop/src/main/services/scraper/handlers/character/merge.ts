@@ -4,13 +4,17 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
-import type { ScrapedCharacterMetadata, ScrapedCharacterBundle } from '@shared/scraper'
+import type {
+  ScrapedCharacterMetadata,
+  ScrapedCharacterBundle,
+  ScrapedEntityIdentity
+} from '@shared/scraper'
 import {
   applyImageStrategy,
   applyStrategy,
   filterBySlot,
   mergeCharacterPersons,
+  mergeScrapedIdentities,
   sortByRank,
   type RelationCollectionMergeOptions
 } from '../../shared'
@@ -28,9 +32,10 @@ import type {
  */
 export function mergeCharacterScraperBundle(
   results: CharacterScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedCharacterBundle | null {
-  const metadata = mergeCharacterScraperMetadata(results, profile)
+  const metadata = mergeCharacterScraperMetadata(results, profile, identities)
   if (!metadata) return null
   return toScrapedCharacterBundle(metadata)
 }
@@ -41,9 +46,12 @@ export function mergeCharacterScraperBundle(
  */
 export function mergeCharacterScraperMetadata(
   results: CharacterScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedCharacterMetadata | null {
-  const metadata: Partial<ScrapedCharacterMetadata> = {}
+  const metadata: Partial<ScrapedCharacterMetadata> = {
+    identity: mergeScrapedIdentities(...identities)
+  }
   const slotConfigs = profile.slotConfigs as CharacterScraperSlotConfigs
 
   for (const slot of CHARACTER_SCRAPER_SLOTS) {
@@ -125,12 +133,6 @@ function mergeInfo(
       )
     }
 
-    if (info.externalIds?.length) {
-      metadata.externalIds = normalizeExternalIds(
-        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
-      )
-    }
-
     if (strategy === 'first') break
   }
 }
@@ -181,6 +183,7 @@ function finalize(partial: Partial<ScrapedCharacterMetadata>): ScrapedCharacterM
   if (!partial.name) return null
 
   return {
+    identity: partial.identity ?? mergeScrapedIdentities(),
     name: partial.name,
     originalName: partial.originalName,
     birthDate: partial.birthDate,
@@ -195,7 +198,6 @@ function finalize(partial: Partial<ScrapedCharacterMetadata>): ScrapedCharacterM
     cup: partial.cup,
     description: partial.description ?? '',
     relatedSites: partial.relatedSites ?? [],
-    externalIds: partial.externalIds ?? [],
     tags: partial.tags,
     persons: partial.persons,
     photos: partial.photos
@@ -209,6 +211,7 @@ export function toScrapedCharacterBundle(
   metadata: ScrapedCharacterMetadata
 ): ScrapedCharacterBundle {
   return {
+    identity: metadata.identity,
     core: {
       name: metadata.name,
       originalName: metadata.originalName,
@@ -224,7 +227,6 @@ export function toScrapedCharacterBundle(
       cup: metadata.cup,
       description: metadata.description,
       relatedSites: metadata.relatedSites,
-      externalIds: metadata.externalIds,
       tags: metadata.tags
     },
     relationFacts: metadata.persons?.length

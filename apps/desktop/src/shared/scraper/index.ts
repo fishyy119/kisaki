@@ -40,6 +40,17 @@ export type {
   ScraperProfileSummary
 } from './profile'
 export {
+  type ScrapedEntityIdentity,
+  type ScrapedIdentityCarrier,
+  type ScraperSessionResult,
+  type ScrapedGameInfo,
+  type ScrapedPersonInfo,
+  type ScrapedCompanyInfo,
+  type ScrapedCharacterInfo,
+  type ScrapedGameCore,
+  type ScrapedPersonCore,
+  type ScrapedCompanyCore,
+  type ScrapedCharacterCore,
   type ScrapedGameBundle,
   type ScrapedPersonBundle,
   type ScrapedCompanyBundle,

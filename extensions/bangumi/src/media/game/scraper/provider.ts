@@ -4,6 +4,7 @@ import type {
   GameSearchResult,
   IdResolvedTarget,
   Locale,
+  ScrapedEntityIdentity,
   ScraperLookup
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
@@ -73,7 +74,9 @@ export class BangumiProvider implements GameScraperProvider {
     }
 
     const first = (await this.search(lookup.name, locale))[0]
-    return first ? this.createResolvedTarget(first.id, first.originalName) : null
+    return first
+      ? this.createResolvedTarget(first.id, first.originalName, { externalIds: first.externalIds })
+      : null
   }
 
   async openSession(target: IdResolvedTarget, locale: Locale): Promise<GameScraperSession> {
@@ -89,13 +92,18 @@ export class BangumiProvider implements GameScraperProvider {
     return knownId ? this.createResolvedTarget(knownId, lookup.name) : null
   }
 
-  private createResolvedTarget(id: string, resolveName?: string): IdResolvedTarget {
+  private createResolvedTarget(
+    id: string,
+    resolveName?: string,
+    identity?: ScrapedEntityIdentity
+  ): IdResolvedTarget {
     const normalizedId = id.trim()
 
     return {
       id: normalizedId,
       cacheKey: normalizedId,
-      resolveName: resolveName?.trim() || undefined
+      resolveName: resolveName?.trim() || undefined,
+      identity
     }
   }
 

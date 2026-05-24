@@ -3,10 +3,11 @@
  */
 
 import type { CharacterScraperSlot } from '@shared/db'
-import type { CharacterInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type { Locale } from '@shared/locale'
 import type {
   CharacterSearchResult,
+  ScrapedCharacterInfo,
   ScrapedCharacterPersonFact,
   ScraperCapability,
   ScraperLookup
@@ -16,7 +17,7 @@ import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
 export type CharacterResolvedTarget = IdResolvedTarget
 
 export interface CharacterSessionResultMap {
-  info: CharacterInfo
+  info: ScrapedCharacterInfo
   tags: Tag[]
   persons: ScrapedCharacterPersonFact[]
   photos: string[]

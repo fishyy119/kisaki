@@ -10,9 +10,11 @@
 
 import type { GameCompanyType, GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
-import type { GameInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
+  ScrapedEntityIdentity,
+  ScrapedGameInfo,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScraperLookup
@@ -166,7 +168,11 @@ export class IGDBProvider implements GameScraperProvider {
     }
 
     const first = (await this.search(lookup.name, locale))[0]
-    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+    return first
+      ? this.helper.target.createResolvedTarget(first.id, first.originalName, {
+          externalIds: first.externalIds
+        })
+      : null
   }
 
   public async openSession(
@@ -209,6 +215,18 @@ export class IGDBProvider implements GameScraperProvider {
         externalGames.map((gameRef) => gameRef.external_game_source ?? 0),
         'id,name'
       )
+    })
+    const getIdentity = this.memoizeTask(async () => {
+      const [game, externalGames, externalSources] = await Promise.all([
+        getGameCore(),
+        getExternalGames(),
+        getExternalSources()
+      ])
+      if (!game) {
+        throw new Error('IGDB game not found.')
+      }
+
+      return this.buildIdentity(game, externalGames, externalSources)
     })
     const getVideos = this.memoizeTask(async () => {
       const game = await getGameCore()
@@ -444,7 +462,10 @@ export class IGDBProvider implements GameScraperProvider {
           })
         )
 
-        return output
+        return {
+          identity: await getIdentity(),
+          slots: output
+        }
       }
     }
   }
@@ -461,7 +482,7 @@ export class IGDBProvider implements GameScraperProvider {
     getExternalSources: () => Promise<IgdbExternalGameSource[]>,
     getVideos: () => Promise<IgdbGameVideo[]>,
     getReleaseDates: () => Promise<IgdbReleaseDate[]>
-  ): Promise<GameInfo> {
+  ): Promise<ScrapedGameInfo> {
     const [game, websites, websiteTypes, externalGames, externalSources, videos, releaseDates] =
       await Promise.all([
         getGameCore(),
@@ -504,17 +525,8 @@ export class IGDBProvider implements GameScraperProvider {
       })
     }
 
-    const externalIds = [{ source: this.externalIdSource, id: String(game.id) }]
     for (const ext of externalGames) {
       const sourceName = externalSourceMap.get(ext.external_game_source ?? -1)
-      const resolvedSource = resolveAllowedExternalIdSource(sourceName)
-      if (ext.uid?.trim() && resolvedSource) {
-        externalIds.push({
-          source: resolvedSource,
-          id: ext.uid.trim()
-        })
-      }
-
       if (ext.url?.trim()) {
         relatedSites.push({
           label: sourceName ?? 'External',
@@ -554,7 +566,34 @@ export class IGDBProvider implements GameScraperProvider {
       name: game.name,
       releaseDate,
       description,
-      relatedSites: this.dedupeRelatedSites(relatedSites),
+      relatedSites: this.dedupeRelatedSites(relatedSites)
+    }
+  }
+
+  private buildIdentity(
+    game: IgdbGame,
+    externalGames: IgdbExternalGame[],
+    externalSources: IgdbExternalGameSource[]
+  ): ScrapedEntityIdentity {
+    const externalSourceMap = new Map<number, string>()
+    for (const item of externalSources) {
+      if (!item.name?.trim()) continue
+      externalSourceMap.set(item.id, item.name.trim())
+    }
+
+    const externalIds = [{ source: this.externalIdSource, id: String(game.id) }]
+    for (const ext of externalGames) {
+      const sourceName = externalSourceMap.get(ext.external_game_source ?? -1)
+      const resolvedSource = resolveAllowedExternalIdSource(sourceName)
+      if (ext.uid?.trim() && resolvedSource) {
+        externalIds.push({
+          source: resolvedSource,
+          id: ext.uid.trim()
+        })
+      }
+    }
+
+    return {
       externalIds: this.dedupeExternalIds(externalIds)
     }
   }
@@ -730,7 +769,7 @@ export class IGDBProvider implements GameScraperProvider {
             url: character.url?.trim() || `https://www.igdb.com/characters/${character.id}`
           }
         ]),
-        externalIds: [{ source: this.externalIdSource, id: String(character.id) }],
+        identity: { externalIds: [{ source: this.externalIdSource, id: String(character.id) }] },
         photos: photo ? [photo] : undefined,
         gender: mapIgdbGender(genderMap.get(character.character_gender ?? -1)),
         tags: tags.length > 0 ? this.dedupeTags(tags) : undefined,
@@ -802,7 +841,7 @@ export class IGDBProvider implements GameScraperProvider {
         name: company.name.trim(),
         description: this.normalizeDescription(company.description),
         relatedSites: this.dedupeRelatedSites(relatedSites),
-        externalIds: [{ source: this.externalIdSource, id: String(company.id) }],
+        identity: { externalIds: [{ source: this.externalIdSource, id: String(company.id) }] },
         logos: logo ? [logo] : undefined
       }
 

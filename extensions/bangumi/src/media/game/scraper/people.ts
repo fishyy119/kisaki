@@ -4,10 +4,7 @@ import type { BangumiPersonDetail, BangumiRelatedPerson } from '../../../api/typ
 import { BANGUMI_SOURCE_ID } from '../../../shared/constants'
 import { dedupeExternalIds } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
-import {
-  extractExternalIdsFromSites,
-  extractRelatedSitesFromInfobox
-} from './format/infobox'
+import { extractExternalIdsFromSites, extractRelatedSitesFromInfobox } from './format/infobox'
 import { extractImageUrls } from './format/images'
 import { resolveLocalizedEntityName } from './format/names'
 import {
@@ -111,7 +108,7 @@ function mapGamePerson(
     originalName,
     description: normalizeDescription(detail?.summary),
     relatedSites,
-    externalIds,
+    identity: { externalIds },
     photos: photos.length > 0 ? photos : undefined,
     tags: tags.length > 0 ? tags : undefined,
     gender: mapBangumiGender(detail?.gender),
@@ -150,7 +147,7 @@ function mapGameCompany(
     originalName,
     description: normalizeDescription(detail?.summary),
     relatedSites,
-    externalIds,
+    identity: { externalIds },
     logos: logos.length > 0 ? logos : undefined,
     tags: tags.length > 0 ? tags : undefined,
     type: mapBangumiCompanyRole(relatedCompany.relation),

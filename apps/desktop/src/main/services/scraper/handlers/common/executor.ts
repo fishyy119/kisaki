@@ -30,6 +30,7 @@ export interface ExecuteScraperPlanOptions<
   plan: ScraperExecutionPlan<TSlot>
   getProvider(providerId: string): TProvider | undefined
   resolveProviderTarget(providerId: string, locale: Locale): Promise<TTarget | null>
+  collectResolvedIdentity?(context: { providerId: string; target: TTarget }): void
   buildResult(context: {
     providerId: string
     target: TTarget
@@ -128,6 +129,11 @@ async function runProviderTask<
     if (!target) {
       return pendingEntries
     }
+
+    options.collectResolvedIdentity?.({
+      providerId: task.providerId,
+      target
+    })
 
     const payloadMap = await loadSessionSlots({
       state: options.state,
@@ -461,7 +467,11 @@ export async function loadSessionSlots<
 
     const fetchTask = (async () => {
       const session = await sessionTask
-      return session.get(missingSlots)
+      const result = await session.get(missingSlots)
+      if (result.identity) {
+        options.state.collectIdentity(result.identity)
+      }
+      return result.slots
     })()
 
     for (const slot of missingSlots) {

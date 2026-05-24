@@ -3,10 +3,11 @@
  */
 
 import type { GameScraperSlot } from '@shared/db'
-import type { GameInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type { Locale } from '@shared/locale'
 import type {
   GameSearchResult,
+  ScrapedGameInfo,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
@@ -18,7 +19,7 @@ import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
 export type GameResolvedTarget = IdResolvedTarget
 
 export interface GameSessionResultMap {
-  info: GameInfo
+  info: ScrapedGameInfo
   tags: Tag[]
   characters: ScrapedGameCharacterFact[]
   persons: ScrapedGamePersonFact[]

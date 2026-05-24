@@ -53,6 +53,19 @@ export interface ScraperLookup {
   knownIds?: readonly ExternalId[]
 }
 
+export interface ScrapedEntityIdentity {
+  externalIds: readonly ExternalId[]
+}
+
+export interface ScrapedIdentityCarrier {
+  identity: ScrapedEntityIdentity
+}
+
+export type ScraperSessionResult<TResultMap extends object> = {
+  identity?: ScrapedEntityIdentity
+  slots: Partial<TResultMap>
+}
+
 export interface ScrapedTag {
   name: string
   isSpoiler?: boolean
@@ -66,7 +79,6 @@ export interface ScrapedGameInfo {
   releaseDate?: PartialDate
   description?: string
   relatedSites?: readonly RelatedSite[]
-  externalIds: readonly ExternalId[]
 }
 
 export interface ScrapedPersonInfo {
@@ -77,7 +89,6 @@ export interface ScrapedPersonInfo {
   gender?: LibraryGender
   description?: string
   relatedSites?: readonly RelatedSite[]
-  externalIds: readonly ExternalId[]
 }
 
 export interface ScrapedCompanyInfo {
@@ -86,7 +97,6 @@ export interface ScrapedCompanyInfo {
   foundedDate?: PartialDate
   description?: string
   relatedSites?: readonly RelatedSite[]
-  externalIds: readonly ExternalId[]
 }
 
 export interface ScrapedCharacterInfo {
@@ -104,20 +114,19 @@ export interface ScrapedCharacterInfo {
   cup?: LibraryCupSize
   description?: string
   relatedSites?: readonly RelatedSite[]
-  externalIds: readonly ExternalId[]
 }
 
-export interface ScrapedPersonMetadata extends ScrapedPersonInfo {
+export interface ScrapedPersonMetadata extends ScrapedPersonInfo, ScrapedIdentityCarrier {
   tags?: readonly ScrapedTag[]
   photos?: readonly string[]
 }
 
-export interface ScrapedCompanyMetadata extends ScrapedCompanyInfo {
+export interface ScrapedCompanyMetadata extends ScrapedCompanyInfo, ScrapedIdentityCarrier {
   tags?: readonly ScrapedTag[]
   logos?: readonly string[]
 }
 
-export interface ScrapedCharacterMetadata extends ScrapedCharacterInfo {
+export interface ScrapedCharacterMetadata extends ScrapedCharacterInfo, ScrapedIdentityCarrier {
   tags?: readonly ScrapedTag[]
   persons?: readonly ScrapedCharacterPersonFact[]
   photos?: readonly string[]
@@ -136,7 +145,7 @@ export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
 }
 
 export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
-  character?: ScrapedCharacterInfo
+  character?: ScrapedCharacterInfo & ScrapedIdentityCarrier
   type: LibraryCharacterPersonRole
   isSpoiler?: boolean
   note?: string
@@ -149,6 +158,7 @@ export interface ScrapedGameCharacterFact extends ScrapedCharacterMetadata {
 }
 
 export interface ScrapedGameBundle {
+  identity: ScrapedEntityIdentity
   core?: ScrapedGameInfo
   tags?: readonly ScrapedTag[]
   persons?: readonly ScrapedGamePersonFact[]
@@ -161,18 +171,21 @@ export interface ScrapedGameBundle {
 }
 
 export interface ScrapedPersonBundle {
+  identity: ScrapedEntityIdentity
   core?: ScrapedPersonInfo
   tags?: readonly ScrapedTag[]
   photos?: readonly string[]
 }
 
 export interface ScrapedCompanyBundle {
+  identity: ScrapedEntityIdentity
   core?: ScrapedCompanyInfo
   tags?: readonly ScrapedTag[]
   logos?: readonly string[]
 }
 
 export interface ScrapedCharacterBundle {
+  identity: ScrapedEntityIdentity
   core?: ScrapedCharacterInfo
   tags?: readonly ScrapedTag[]
   persons?: readonly ScrapedCharacterPersonFact[]
@@ -182,6 +195,7 @@ export interface ScrapedCharacterBundle {
 export interface BaseResolvedTarget {
   cacheKey: string
   resolveName?: string
+  identity?: ScrapedEntityIdentity
 }
 
 export interface IdResolvedTarget extends BaseResolvedTarget {
@@ -192,7 +206,7 @@ export interface BaseScraperSession<
   TSlot extends string,
   TResultMap extends Partial<Record<TSlot, unknown>>
 > {
-  get(slots: readonly TSlot[]): Promise<Partial<TResultMap>>
+  get(slots: readonly TSlot[]): Promise<ScraperSessionResult<TResultMap>>
   dispose?(): Promise<void>
 }
 

@@ -289,7 +289,7 @@ function toGameRootCore(bundle: ScrapedGameBundle | null, lookup: ScraperLookup)
   const normalized = normalizeGameCore({
     ...(bundle?.core ?? {}),
     name: firstNonEmpty(bundle?.core?.name, lookup.name),
-    externalIds: mergeExternalIds(bundle?.core?.externalIds, lookup.knownIds)
+    externalIds: mergeExternalIds(bundle?.identity.externalIds, lookup.knownIds)
   })
 
   if (!normalized) {
@@ -300,23 +300,35 @@ function toGameRootCore(bundle: ScrapedGameBundle | null, lookup: ScraperLookup)
 }
 
 function normalizeGamePersonFactCore(fact: ScrapedGamePersonFact): CorePersonMetadata | null {
-  return normalizePersonCore(fact)
+  return normalizePersonCore({
+    ...fact,
+    externalIds: fact.identity.externalIds
+  })
 }
 
 function normalizeGameCompanyFactCore(fact: ScrapedGameCompanyFact): CoreCompanyMetadata | null {
-  return normalizeCompanyCore(fact)
+  return normalizeCompanyCore({
+    ...fact,
+    externalIds: fact.identity.externalIds
+  })
 }
 
 function normalizeGameCharacterFactCore(
   fact: ScrapedGameCharacterFact
 ): CoreCharacterMetadata | null {
-  return normalizeCharacterCore(fact)
+  return normalizeCharacterCore({
+    ...fact,
+    externalIds: fact.identity.externalIds
+  })
 }
 
 function normalizeCharacterPersonFactCore(
   fact: ScrapedCharacterPersonFact
 ): CorePersonMetadata | null {
-  return normalizePersonCore(fact)
+  return normalizePersonCore({
+    ...fact,
+    externalIds: fact.identity.externalIds
+  })
 }
 
 function buildGameGraphInternal(
@@ -428,7 +440,12 @@ function buildGameGraphInternal(
       fact.photos
     )
 
-    const characterCore = fact.character ? normalizeCharacterCore(fact.character) : null
+    const characterCore = fact.character
+      ? normalizeCharacterCore({
+          ...fact.character,
+          externalIds: fact.character.identity.externalIds
+        })
+      : null
     if (!characterCore) continue
 
     const characterIdentityKey = upsertCharacterNode(

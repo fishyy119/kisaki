@@ -31,8 +31,10 @@ import {
   validateUnknownKeys
 } from '../../shared/validation'
 
-const RESOLVED_TARGET_KEYS = new Set<string>(['cacheKey', 'resolveName', 'id'])
+const RESOLVED_TARGET_KEYS = new Set<string>(['cacheKey', 'resolveName', 'id', 'identity'])
+const SESSION_RESULT_KEYS = new Set<string>(['identity', 'slots'])
 const EXTERNAL_ID_KEYS = new Set<string>(['source', 'id'])
+const SCRAPED_IDENTITY_KEYS = new Set<string>(['externalIds'])
 const RELATED_SITE_KEYS = new Set<string>(['label', 'url'])
 const PARTIAL_DATE_KEYS = new Set<string>(['year', 'month', 'day'])
 const SCRAPED_TAG_KEYS = new Set<string>(['name', 'isSpoiler', 'note', 'isNsfw'])
@@ -70,8 +72,7 @@ const GAME_INFO_KEYS = new Set<string>([
   'originalName',
   'releaseDate',
   'description',
-  'relatedSites',
-  'externalIds'
+  'relatedSites'
 ])
 const PERSON_INFO_KEYS = new Set<string>([
   'name',
@@ -80,19 +81,17 @@ const PERSON_INFO_KEYS = new Set<string>([
   'deathDate',
   'gender',
   'description',
-  'relatedSites',
-  'externalIds'
+  'relatedSites'
 ])
-const PERSON_METADATA_KEYS = new Set<string>([...PERSON_INFO_KEYS, 'tags', 'photos'])
+const PERSON_METADATA_KEYS = new Set<string>([...PERSON_INFO_KEYS, 'identity', 'tags', 'photos'])
 const COMPANY_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
   'foundedDate',
   'description',
-  'relatedSites',
-  'externalIds'
+  'relatedSites'
 ])
-const COMPANY_METADATA_KEYS = new Set<string>([...COMPANY_INFO_KEYS, 'tags', 'logos'])
+const COMPANY_METADATA_KEYS = new Set<string>([...COMPANY_INFO_KEYS, 'identity', 'tags', 'logos'])
 const CHARACTER_INFO_KEYS = new Set<string>([
   'name',
   'originalName',
@@ -107,11 +106,12 @@ const CHARACTER_INFO_KEYS = new Set<string>([
   'hips',
   'cup',
   'description',
-  'relatedSites',
-  'externalIds'
+  'relatedSites'
 ])
+const CHARACTER_REFERENCE_KEYS = new Set<string>([...CHARACTER_INFO_KEYS, 'identity'])
 const CHARACTER_METADATA_KEYS = new Set<string>([
   ...CHARACTER_INFO_KEYS,
+  'identity',
   'tags',
   'persons',
   'photos'
@@ -296,7 +296,8 @@ export function validateScraperResolvedTarget(value: unknown): ValidationIssue[]
       trim: true,
       valueMessage: 'id must be a non-empty string.'
     }),
-    ...validateOptionalString(value.resolveName, '$.resolveName')
+    ...validateOptionalString(value.resolveName, '$.resolveName'),
+    ...validateOptionalIdentity(value.identity, '$.identity')
   ]
 }
 
@@ -508,6 +509,7 @@ function validatePersonMetadataFields(
 ): ValidationIssue[] {
   return [
     ...validatePersonInfoFields(info, path),
+    ...validateRequiredIdentity(info.identity, `${path}.identity`),
     ...validateOptionalTags(info.tags, `${path}.tags`),
     ...validateOptionalStringArray(info.photos, `${path}.photos`, 'photos must be an array.')
   ]
@@ -519,6 +521,7 @@ function validateCompanyMetadataFields(
 ): ValidationIssue[] {
   return [
     ...validateCompanyInfoFields(info, path),
+    ...validateRequiredIdentity(info.identity, `${path}.identity`),
     ...validateOptionalTags(info.tags, `${path}.tags`),
     ...validateOptionalStringArray(info.logos, `${path}.logos`, 'logos must be an array.')
   ]
@@ -530,6 +533,7 @@ function validateCharacterMetadataFields(
 ): ValidationIssue[] {
   return [
     ...validateCharacterInfoFields(info, path),
+    ...validateRequiredIdentity(info.identity, `${path}.identity`),
     ...validateOptionalTags(info.tags, `${path}.tags`),
     ...validateOptionalStringArray(info.photos, `${path}.photos`, 'photos must be an array.'),
     ...validateOptionalArrayOf(
@@ -549,8 +553,7 @@ function validateNamedInfoFields(info: Record<string, unknown>, path: string): V
     }),
     ...validateOptionalString(info.originalName, `${path}.originalName`),
     ...validateOptionalString(info.description, `${path}.description`),
-    ...validateOptionalRelatedSites(info.relatedSites, `${path}.relatedSites`),
-    ...validateRequiredExternalIds(info.externalIds, `${path}.externalIds`)
+    ...validateOptionalRelatedSites(info.relatedSites, `${path}.relatedSites`)
   ]
 }
 
@@ -625,7 +628,21 @@ function validateOptionalCharacterInfo(value: unknown, path: string): Validation
     return []
   }
 
-  return validateCharacterInfo(value.character, `${path}.character`)
+  const issues = validateRecord(
+    value.character,
+    `${path}.character`,
+    'Character info must be an object.'
+  )
+  if (issues) {
+    return issues
+  }
+
+  const character = value.character as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(character, CHARACTER_REFERENCE_KEYS, `${path}.character`),
+    ...validateCharacterInfoFields(character, `${path}.character`),
+    ...validateRequiredIdentity(character.identity, `${path}.character.identity`)
+  ]
 }
 
 function validateRequiredFactType<TValue extends string>(
@@ -715,16 +732,29 @@ function validateSessionResults<TSlot extends string>(
   validateSlot: (slot: TSlot, value: unknown, path: string) => ValidationIssue[]
 ): ValidationIssue[] {
   if (!isPlainObject(value)) {
-    return [{ path: '$', message: 'Session results must be an object.' }]
+    return [{ path: '$', message: 'Session result must be an object.' }]
   }
 
-  const issues = validateUnknownKeys(value, allowedSlots as ReadonlySet<string>)
-  for (const key of Object.keys(value)) {
+  const issues = [
+    ...validateUnknownKeys(value, SESSION_RESULT_KEYS),
+    ...validateOptionalIdentity(value.identity, '$.identity')
+  ]
+
+  const slotsIssues = validateRecord(value.slots, '$.slots', 'slots must be an object.')
+  if (slotsIssues) {
+    issues.push(...slotsIssues)
+    return issues
+  }
+
+  const slots = value.slots as Record<string, unknown>
+  issues.push(...validateUnknownKeys(slots, allowedSlots as ReadonlySet<string>, '$.slots'))
+
+  for (const key of Object.keys(slots)) {
     if (!allowedSlots.has(key as TSlot)) {
       continue
     }
 
-    issues.push(...validateSlot(key as TSlot, value[key], `$.${key}`))
+    issues.push(...validateSlot(key as TSlot, slots[key], `$.slots.${key}`))
   }
   return issues
 }
@@ -750,6 +780,27 @@ function validateScrapedTag(value: unknown, path: string): ValidationIssue[] {
 
 function validateRequiredExternalIds(value: unknown, path: string): ValidationIssue[] {
   return validateArrayOf(value, path, 'externalIds must be an array.', validateExternalId)
+}
+
+function validateRequiredIdentity(value: unknown, path: string): ValidationIssue[] {
+  const recordIssues = validateRecord(value, path, 'identity must be an object.')
+  if (recordIssues) {
+    return recordIssues
+  }
+
+  const identity = value as Record<string, unknown>
+  return [
+    ...validateUnknownKeys(identity, SCRAPED_IDENTITY_KEYS, path),
+    ...validateRequiredExternalIds(identity.externalIds, `${path}.externalIds`)
+  ]
+}
+
+function validateOptionalIdentity(value: unknown, path: string): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  return validateRequiredIdentity(value, path)
 }
 
 function validateExternalId(value: unknown, path: string): ValidationIssue[] {

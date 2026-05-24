@@ -9,7 +9,7 @@ import {
   type ExternalId
 } from '@shared/identity'
 import type { Locale } from '@shared/locale'
-import type { ScraperLookup } from '@shared/scraper'
+import type { ScrapedEntityIdentity, ScraperLookup } from '@shared/scraper'
 import type { BaseResolvedTarget, BaseScraperSession } from '../../types'
 
 export interface ScraperInvocationState<
@@ -44,6 +44,8 @@ export interface ScraperInvocationState<
     locale: Locale,
     task: Promise<TValue | null>
   ): Promise<TValue | null>
+  collectIdentity(identity: ScrapedEntityIdentity): void
+  getCollectedIdentities(): readonly ScrapedEntityIdentity[]
   collect(result: TResult): void
   getCollectedResults(): readonly TResult[]
   dispose(): Promise<void>
@@ -95,6 +97,7 @@ export function createScraperInvocationState<
   const resolveCache = new Map<string, Promise<TTarget | null>>()
   const sessionCache = new Map<string, Promise<TSession>>()
   const payloadCache = new Map<string, Promise<unknown | null>>()
+  const collectedIdentities: ScrapedEntityIdentity[] = []
   const collectedResults: TResult[] = []
 
   return {
@@ -142,6 +145,14 @@ export function createScraperInvocationState<
 
       payloadCache.set(cacheKey, task as Promise<unknown | null>)
       return task
+    },
+
+    collectIdentity(identity) {
+      collectedIdentities.push(identity)
+    },
+
+    getCollectedIdentities() {
+      return [...collectedIdentities]
     },
 
     collect(result) {

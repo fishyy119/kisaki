@@ -11,10 +11,12 @@
 
 import type { GameCompanyType, GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
-import type { GameInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
+  ScrapedEntityIdentity,
   ScrapedCharacterPersonFact,
+  ScrapedGameInfo,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
@@ -143,7 +145,11 @@ export class VNDBProvider implements GameScraperProvider {
     }
 
     const first = (await this.search(lookup.name, locale))[0]
-    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+    return first
+      ? this.helper.target.createResolvedTarget(first.id, first.originalName, {
+          externalIds: first.externalIds
+        })
+      : null
   }
 
   public async openSession(
@@ -152,6 +158,14 @@ export class VNDBProvider implements GameScraperProvider {
   ): Promise<GameScraperSession> {
     const vnId = normalizeVndbId(target.id, 'v')
     const getVnCore = this.memoizeTask(() => this.client.getVnById(vnId, VN_CORE_FIELDS))
+    const getIdentity = this.memoizeTask(async () => {
+      const vn = await getVnCore()
+      if (!vn) {
+        throw new Error('VNDB visual novel not found.')
+      }
+
+      return this.buildIdentity(vn)
+    })
     const getVnRelations = this.memoizeTask(() => this.client.getVnById(vnId, VN_RELATION_FIELDS))
     const getSchema = this.memoizeTask(() => this.client.getSchema())
     const getCharacters = this.memoizeTask(() =>
@@ -249,7 +263,10 @@ export class VNDBProvider implements GameScraperProvider {
           })
         )
 
-        return output
+        return {
+          identity: await getIdentity(),
+          slots: output
+        }
       }
     }
   }
@@ -261,7 +278,7 @@ export class VNDBProvider implements GameScraperProvider {
   private async buildInfo(
     getVnCore: () => Promise<VndbVn | null>,
     locale?: Locale
-  ): Promise<GameInfo> {
+  ): Promise<ScrapedGameInfo> {
     const vn = await getVnCore()
     if (!vn) {
       throw new Error('VNDB visual novel not found.')
@@ -272,18 +289,21 @@ export class VNDBProvider implements GameScraperProvider {
       { label: 'VNDB', url: buildVndbVnUrl(vn.id) },
       ...extractRelatedSitesFromExtlinks(vn.extlinks)
     ])
-    const externalIds = dedupeExternalIds([
-      { source: this.externalIdSource, id: vn.id },
-      ...extractExternalIdsFromExtlinks(vn.extlinks)
-    ])
-
     return {
       name,
       originalName,
       releaseDate: this.parsePartialDate(vn.released),
       description: this.normalizeDescription(sanitizeVndbText(vn.description)),
-      relatedSites,
-      externalIds
+      relatedSites
+    }
+  }
+
+  private buildIdentity(vn: VndbVn): ScrapedEntityIdentity {
+    return {
+      externalIds: dedupeExternalIds([
+        { source: this.externalIdSource, id: vn.id },
+        ...extractExternalIdsFromExtlinks(vn.extlinks)
+      ])
     }
   }
 
@@ -547,7 +567,7 @@ export class VNDBProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(character.description)),
       relatedSites: [{ label: 'VNDB', url: buildVndbCharacterUrl(character.id) }],
-      externalIds: [{ source: this.externalIdSource, id: character.id }],
+      identity: { externalIds: [{ source: this.externalIdSource, id: character.id }] },
       photos: photos.length > 0 ? photos : undefined,
       gender: mapVndbGender(character.sex ?? character.gender),
       birthDate: toPartialDateFromMonthDay(character.birthday),
@@ -612,7 +632,7 @@ export class VNDBProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(staff?.description)),
       relatedSites,
-      externalIds,
+      identity: { externalIds },
       gender: mapVndbGender(staff?.gender),
       type: 'actor',
       note
@@ -643,7 +663,7 @@ export class VNDBProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(staff?.description)),
       relatedSites,
-      externalIds,
+      identity: { externalIds },
       gender: mapVndbGender(staff?.gender)
     }
   }
@@ -698,7 +718,7 @@ export class VNDBProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(sanitizeVndbText(producer?.description)),
       relatedSites,
-      externalIds,
+      identity: { externalIds },
       tags: tags.length > 0 ? dedupeTags(tags) : undefined
     }
   }

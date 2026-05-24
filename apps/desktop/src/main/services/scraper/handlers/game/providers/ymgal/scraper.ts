@@ -9,10 +9,12 @@
 
 import type { GameScraperSlot } from '@shared/db'
 import type { Locale } from '@shared/locale'
-import type { GameInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
+  ScrapedEntityIdentity,
   ScrapedCharacterPersonFact,
+  ScrapedGameInfo,
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGamePersonFact,
@@ -130,7 +132,11 @@ export class YmgalProvider implements GameScraperProvider {
     }
 
     const first = (await this.search(lookup.name, locale))[0]
-    return first ? this.helper.target.createResolvedTarget(first.id, first.originalName) : null
+    return first
+      ? this.helper.target.createResolvedTarget(first.id, first.originalName, {
+          externalIds: first.externalIds
+        })
+      : null
   }
 
   public async openSession(
@@ -139,6 +145,10 @@ export class YmgalProvider implements GameScraperProvider {
   ): Promise<GameScraperSession> {
     const gameId = normalizeYmgalId(target.id, 'YMGal game id')
     const getArchive = this.memoizeTask(() => this.client.getGameArchive(gameId))
+    const getIdentity = this.memoizeTask(async () => {
+      const archive = await getArchive()
+      return this.buildIdentity(archive.game)
+    })
     const getCharacterDetails = this.memoizeTask(async () => {
       const archive = await getArchive()
       const characterIds = this.collectIds(
@@ -219,7 +229,10 @@ export class YmgalProvider implements GameScraperProvider {
           })
         )
 
-        return output
+        return {
+          identity: await getIdentity(),
+          slots: output
+        }
       }
     }
   }
@@ -231,25 +244,31 @@ export class YmgalProvider implements GameScraperProvider {
   private async buildInfo(
     getArchive: () => Promise<YmgalGameArchiveData>,
     locale?: Locale
-  ): Promise<GameInfo> {
+  ): Promise<ScrapedGameInfo> {
     const archive = await getArchive()
     const game = archive.game
-    const gameId = normalizeYmgalId(toYmgalId(game.gid) || game.gid || '', 'YMGal game id')
 
     const { name, originalName } = resolveLocalizedName(game.name, game.chineseName, locale)
     const relatedSites = this.buildGameRelatedSites(game)
-    const externalIds = dedupeExternalIds([
-      { source: this.externalIdSource, id: gameId },
-      ...extractExternalIdsFromSites(relatedSites)
-    ])
 
     return {
       name,
       originalName,
       releaseDate: this.parsePartialDate(game.releaseDate),
       description: this.normalizeDescription(game.introduction),
-      relatedSites,
-      externalIds
+      relatedSites
+    }
+  }
+
+  private buildIdentity(game: YmgalGame): ScrapedEntityIdentity {
+    const gameId = normalizeYmgalId(toYmgalId(game.gid) || game.gid || '', 'YMGal game id')
+    const relatedSites = this.buildGameRelatedSites(game)
+
+    return {
+      externalIds: dedupeExternalIds([
+        { source: this.externalIdSource, id: gameId },
+        ...extractExternalIdsFromSites(relatedSites)
+      ])
     }
   }
 
@@ -302,7 +321,7 @@ export class YmgalProvider implements GameScraperProvider {
         originalName,
         description: this.normalizeDescription(detail?.introduction),
         relatedSites,
-        externalIds,
+        identity: { externalIds },
         photos: photos.length > 0 ? photos : undefined,
         gender: mapYmgalGender(detail?.gender),
         birthDate: this.parsePartialDate(detail?.birthday),
@@ -391,7 +410,7 @@ export class YmgalProvider implements GameScraperProvider {
         originalName,
         description: this.normalizeDescription(organization?.introduction),
         relatedSites,
-        externalIds,
+        identity: { externalIds },
         logos: logos.length > 0 ? logos : undefined,
         tags: tags.length > 0 ? dedupeTags(tags) : undefined,
         type: 'developer',
@@ -503,7 +522,7 @@ export class YmgalProvider implements GameScraperProvider {
         originalName,
         description: this.normalizeDescription(detail?.introduction),
         relatedSites,
-        externalIds,
+        identity: { externalIds },
         photos: photos.length > 0 ? photos : undefined,
         gender: mapYmgalGender(detail?.gender),
         birthDate: this.parsePartialDate(detail?.birthday),
@@ -562,7 +581,7 @@ export class YmgalProvider implements GameScraperProvider {
       originalName,
       description: this.normalizeDescription(detail?.introduction),
       relatedSites,
-      externalIds,
+      identity: { externalIds },
       photos: photos.length > 0 ? photos : undefined,
       gender: mapYmgalGender(detail?.gender),
       birthDate: this.parsePartialDate(detail?.birthday),

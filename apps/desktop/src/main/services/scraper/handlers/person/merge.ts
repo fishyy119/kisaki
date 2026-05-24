@@ -4,9 +4,18 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import { normalizeExternalIds, toExternalIdKey } from '@shared/identity'
-import type { ScrapedPersonMetadata, ScrapedPersonBundle } from '@shared/scraper'
-import { applyImageStrategy, applyStrategy, filterBySlot, sortByRank } from '../../shared'
+import type {
+  ScrapedEntityIdentity,
+  ScrapedPersonMetadata,
+  ScrapedPersonBundle
+} from '@shared/scraper'
+import {
+  applyImageStrategy,
+  applyStrategy,
+  filterBySlot,
+  mergeScrapedIdentities,
+  sortByRank
+} from '../../shared'
 import type {
   PersonScraperImageResult,
   PersonScraperPhotosResult,
@@ -20,9 +29,10 @@ import type {
  */
 export function mergePersonScraperBundle(
   results: PersonScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedPersonBundle | null {
-  const metadata = mergePersonScraperMetadata(results, profile)
+  const metadata = mergePersonScraperMetadata(results, profile, identities)
   if (!metadata) return null
   return toScrapedPersonBundle(metadata)
 }
@@ -33,9 +43,12 @@ export function mergePersonScraperBundle(
  */
 export function mergePersonScraperMetadata(
   results: PersonScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedPersonMetadata | null {
-  const metadata: Partial<ScrapedPersonMetadata> = {}
+  const metadata: Partial<ScrapedPersonMetadata> = {
+    identity: mergeScrapedIdentities(...identities)
+  }
   const slotConfigs = profile.slotConfigs as PersonScraperSlotConfigs
 
   for (const slot of PERSON_SCRAPER_SLOTS) {
@@ -107,12 +120,6 @@ function mergeInfo(
       )
     }
 
-    if (info.externalIds?.length) {
-      metadata.externalIds = normalizeExternalIds(
-        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
-      )
-    }
-
     if (strategy === 'first') break
   }
 }
@@ -149,6 +156,7 @@ function finalize(partial: Partial<ScrapedPersonMetadata>): ScrapedPersonMetadat
   if (!partial.name) return null
 
   return {
+    identity: partial.identity ?? mergeScrapedIdentities(),
     name: partial.name,
     originalName: partial.originalName,
     birthDate: partial.birthDate,
@@ -156,7 +164,6 @@ function finalize(partial: Partial<ScrapedPersonMetadata>): ScrapedPersonMetadat
     gender: partial.gender,
     description: partial.description ?? '',
     relatedSites: partial.relatedSites ?? [],
-    externalIds: partial.externalIds ?? [],
     tags: partial.tags,
     photos: partial.photos
   }
@@ -167,6 +174,7 @@ function finalize(partial: Partial<ScrapedPersonMetadata>): ScrapedPersonMetadat
  */
 export function toScrapedPersonBundle(metadata: ScrapedPersonMetadata): ScrapedPersonBundle {
   return {
+    identity: metadata.identity,
     core: {
       name: metadata.name,
       originalName: metadata.originalName,
@@ -175,7 +183,6 @@ export function toScrapedPersonBundle(metadata: ScrapedPersonMetadata): ScrapedP
       gender: metadata.gender,
       description: metadata.description,
       relatedSites: metadata.relatedSites,
-      externalIds: metadata.externalIds,
       tags: metadata.tags
     },
     mediaCandidates: metadata.photos?.length

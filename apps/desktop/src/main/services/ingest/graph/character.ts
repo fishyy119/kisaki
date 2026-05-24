@@ -86,7 +86,7 @@ function toCharacterRootCore(
   const normalized = normalizeCharacterCore({
     ...(bundle.core ?? {}),
     name: firstNonEmpty(bundle.core?.name, lookup.name),
-    externalIds: mergeExternalIds(bundle.core?.externalIds, lookup.knownIds)
+    externalIds: mergeExternalIds(bundle.identity.externalIds, lookup.knownIds)
   })
 
   if (!normalized) {
@@ -99,7 +99,10 @@ function toCharacterRootCore(
 function normalizeCharacterPersonFactCore(
   fact: ScrapedCharacterPersonFact
 ): CorePersonMetadata | null {
-  return normalizePersonCore(fact)
+  return normalizePersonCore({
+    ...fact,
+    externalIds: fact.identity.externalIds
+  })
 }
 
 export function buildCharacterGraph(

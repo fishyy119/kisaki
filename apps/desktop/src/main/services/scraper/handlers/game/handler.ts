@@ -23,7 +23,7 @@ import type {
 } from '@shared/scraper'
 import type { Locale } from '@shared/locale'
 import type { I18nService } from '@main/services/i18n'
-import { ensureProviderExternalId } from '../../shared'
+import { ensureProviderExternalId, ensureProviderIdentity } from '../../shared'
 import { executeScraperPlan } from '../common/executor'
 import {
   buildExecutionPlan,
@@ -144,6 +144,10 @@ export class GameScraperHandler {
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })
 
+      if (searchTarget) {
+        state.collectIdentity(this.createTargetIdentity(searchProvider.id, searchTarget))
+      }
+
       const resolveProviderId = async (
         providerId: string,
         locale: Locale
@@ -174,12 +178,14 @@ export class GameScraperHandler {
         plan,
         getProvider: (providerId) => this.providers.get(providerId),
         resolveProviderTarget: resolveProviderId,
+        collectResolvedIdentity: ({ providerId, target }) =>
+          state.collectIdentity(this.createTargetIdentity(providerId, target)),
         buildResult: ({ providerId, target, entry, data }) =>
           this.createGameResult(providerId, target, entry, data),
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly GameScraperResult[]
 
-      return mergeGameScraperBundle([...results], runtimeProfile)
+      return mergeGameScraperBundle([...results], runtimeProfile, state.getCollectedIdentities())
     } finally {
       await state.dispose()
     }
@@ -256,12 +262,10 @@ export class GameScraperHandler {
     entry: PlannedSlotEntry<S>,
     data: GameSessionResultMap[S]
   ): SlotResult<S, GameSessionResultMap[S]> | null {
+    void target
+
     if (entry.slot === 'info') {
-      const normalized = ensureProviderExternalId(
-        data as GameSessionResultMap['info'],
-        this.requireProviderExternalIdSource(providerId),
-        target.id
-      )
+      const normalized = data as GameSessionResultMap['info']
 
       return hasValidGameInfoData(normalized, entry.strategy)
         ? ({
@@ -283,6 +287,14 @@ export class GameScraperHandler {
       rank: entry.rank,
       data
     }
+  }
+
+  private createTargetIdentity(providerId: string, target: GameResolvedTarget) {
+    return ensureProviderIdentity(
+      target.identity,
+      this.requireProviderExternalIdSource(providerId),
+      target.id
+    )
   }
 
   private loadProfile(profileId: string): ScraperProfile {

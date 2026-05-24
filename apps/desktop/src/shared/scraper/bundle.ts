@@ -4,24 +4,63 @@ import type {
   GameCompanyType,
   GamePersonType
 } from '@shared/db'
+import type { ExternalId } from '@shared/identity'
 import type {
   CoreCharacterMetadata,
   CoreCompanyMetadata,
   CoreGameMetadata,
-  CorePersonMetadata
+  CorePersonMetadata,
+  Tag
 } from '@shared/metadata'
+
+export interface ScrapedEntityIdentity {
+  externalIds: ExternalId[]
+}
+
+export interface ScrapedIdentityCarrier {
+  identity: ScrapedEntityIdentity
+}
+
+export type ScraperSessionResult<TResultMap extends object> = {
+  identity?: ScrapedEntityIdentity
+  slots: Partial<TResultMap>
+}
+
+export type ScrapedGameInfo = Omit<CoreGameMetadata, 'externalIds' | 'tags'>
+
+export type ScrapedPersonInfo = Omit<CorePersonMetadata, 'externalIds' | 'tags'>
+
+export type ScrapedCompanyInfo = Omit<CoreCompanyMetadata, 'externalIds' | 'tags'>
+
+export type ScrapedCharacterInfo = Omit<CoreCharacterMetadata, 'externalIds' | 'tags'>
+
+export interface ScrapedGameCore extends ScrapedGameInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedPersonCore extends ScrapedPersonInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedCompanyCore extends ScrapedCompanyInfo {
+  tags?: Tag[]
+}
+
+export interface ScrapedCharacterCore extends ScrapedCharacterInfo {
+  tags?: Tag[]
+}
 
 /**
  * Scraped person metadata with media candidates kept at scraper layer.
  */
-export interface ScrapedPersonMetadata extends CorePersonMetadata {
+export interface ScrapedPersonMetadata extends ScrapedPersonCore, ScrapedIdentityCarrier {
   photos?: string[]
 }
 
 /**
  * Scraped company metadata with media candidates kept at scraper layer.
  */
-export interface ScrapedCompanyMetadata extends CoreCompanyMetadata {
+export interface ScrapedCompanyMetadata extends ScrapedCompanyCore, ScrapedIdentityCarrier {
   logos?: string[]
 }
 
@@ -33,7 +72,7 @@ export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
    * Character reference for game-level character-person facts.
    * Character flow may omit this because the root character is implicit.
    */
-  character?: CoreCharacterMetadata
+  character?: ScrapedCharacterCore & ScrapedIdentityCarrier
   type: CharacterPersonType
   isSpoiler?: boolean
   note?: string
@@ -42,7 +81,7 @@ export interface ScrapedCharacterPersonFact extends ScrapedPersonMetadata {
 /**
  * Scraped character metadata with relation/media facts.
  */
-export interface ScrapedCharacterMetadata extends CoreCharacterMetadata {
+export interface ScrapedCharacterMetadata extends ScrapedCharacterCore, ScrapedIdentityCarrier {
   persons?: ScrapedCharacterPersonFact[]
   photos?: string[]
 }
@@ -77,7 +116,7 @@ export interface ScrapedGameCompanyFact extends ScrapedCompanyMetadata {
 /**
  * Scraped game metadata with relation/media facts.
  */
-export interface ScrapedGameMetadata extends CoreGameMetadata {
+export interface ScrapedGameMetadata extends ScrapedGameCore, ScrapedIdentityCarrier {
   persons?: ScrapedGamePersonFact[]
   characters?: ScrapedGameCharacterFact[]
   companies?: ScrapedGameCompanyFact[]
@@ -88,7 +127,8 @@ export interface ScrapedGameMetadata extends CoreGameMetadata {
 }
 
 export interface ScrapedGameBundle {
-  core?: CoreGameMetadata
+  identity: ScrapedEntityIdentity
+  core?: ScrapedGameCore
   relationFacts?: {
     gamePerson?: ScrapedGamePersonFact[]
     gameCompany?: ScrapedGameCompanyFact[]
@@ -104,21 +144,24 @@ export interface ScrapedGameBundle {
 }
 
 export interface ScrapedPersonBundle {
-  core?: CorePersonMetadata
+  identity: ScrapedEntityIdentity
+  core?: ScrapedPersonCore
   mediaCandidates?: {
     photoUrls?: string[]
   }
 }
 
 export interface ScrapedCompanyBundle {
-  core?: CoreCompanyMetadata
+  identity: ScrapedEntityIdentity
+  core?: ScrapedCompanyCore
   mediaCandidates?: {
     logoUrls?: string[]
   }
 }
 
 export interface ScrapedCharacterBundle {
-  core?: CoreCharacterMetadata
+  identity: ScrapedEntityIdentity
+  core?: ScrapedCharacterCore
   relationFacts?: {
     characterPerson?: ScrapedCharacterPersonFact[]
   }

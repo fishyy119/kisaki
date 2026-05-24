@@ -141,7 +141,7 @@ function mapGameCharacter({
     originalName,
     description: normalizeDescription(detail?.summary || relatedCharacter.summary),
     relatedSites: [{ label: 'Bangumi', url: buildBangumiCharacterUrl(relatedCharacter.id) }],
-    externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(relatedCharacter.id) }],
+    identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(relatedCharacter.id) }] },
     photos: photos.length > 0 ? photos : undefined,
     gender: mapBangumiGender(detail?.gender),
     birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
@@ -170,7 +170,7 @@ function buildCharacterPersons(
       originalName: actor.name,
       description: normalizeDescription(actor.short_summary),
       relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
-      externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(actor.id) }],
+      identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(actor.id) }] },
       photos: dedupeUrls(extractImageUrls(actor.images)),
       tags: mapBangumiCareersToTags(actor.career),
       type: 'actor'
@@ -189,7 +189,7 @@ function buildCharacterPersons(
       name: personRef.name,
       originalName: personRef.name,
       relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
-      externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(personRef.id) }],
+      identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(personRef.id) }] },
       photos: dedupeUrls(extractImageUrls(personRef.images)),
       type: 'actor',
       note: personRef.staff?.trim() || undefined

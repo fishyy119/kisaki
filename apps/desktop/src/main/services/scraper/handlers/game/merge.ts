@@ -4,22 +4,24 @@ import {
   type ScraperProfile,
   type SlotStrategy
 } from '@shared/db'
-import { buildEntityAliasKeys, normalizeExternalIds, toExternalIdKey } from '@shared/identity'
 import type {
   ScrapedGameCharacterFact,
   ScrapedGameCompanyFact,
   ScrapedGameMetadata,
   ScrapedGamePersonFact,
-  ScrapedGameBundle
+  ScrapedGameBundle,
+  ScrapedEntityIdentity
 } from '@shared/scraper'
 import {
   applyEntityCollectionStrategy,
   applyImageStrategy,
   applyStrategy,
+  buildScrapedEntityAliasKeys,
   filterBySlot,
   mergeCharacterMetadataFields,
   mergeCompanyMetadataFields,
   mergePersonMetadataFields,
+  mergeScrapedIdentities,
   sortByRank,
   type RelationCollectionMergeOptions
 } from '../../shared'
@@ -38,9 +40,10 @@ import type {
  */
 export function mergeGameScraperBundle(
   results: GameScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedGameBundle | null {
-  const metadata = mergeGameScraperMetadata(results, profile)
+  const metadata = mergeGameScraperMetadata(results, profile, identities)
   if (!metadata) return null
   return toScrapedGameBundle(metadata)
 }
@@ -88,9 +91,12 @@ function mergeGameCompany(
  */
 export function mergeGameScraperMetadata(
   results: GameScraperResult[],
-  profile: ScraperProfile
+  profile: ScraperProfile,
+  identities: readonly ScrapedEntityIdentity[] = []
 ): ScrapedGameMetadata | null {
-  const metadata: Partial<ScrapedGameMetadata> = {}
+  const metadata: Partial<ScrapedGameMetadata> = {
+    identity: mergeScrapedIdentities(...identities)
+  }
   const slotConfigs = profile.slotConfigs as GameScraperSlotConfigs
 
   for (const slot of GAME_SCRAPER_SLOTS) {
@@ -197,12 +203,6 @@ function mergeInfo(
       )
     }
 
-    if (info.externalIds?.length) {
-      metadata.externalIds = normalizeExternalIds(
-        applyStrategy(metadata.externalIds, info.externalIds, strategy, toExternalIdKey)
-      )
-    }
-
     if (strategy === 'first') break
   }
 }
@@ -237,7 +237,7 @@ function mergeCharacters(
       metadata.characters,
       result.data,
       options,
-      (character) => buildEntityAliasKeys(character, { includeCompactFallbackKeys: true }),
+      (character) => buildScrapedEntityAliasKeys(character, { includeCompactFallbackKeys: true }),
       (existing, incoming) => mergeGameCharacter(existing, incoming, options)
     )
 
@@ -260,7 +260,7 @@ function mergePersons(
       result.data,
       options,
       (person) =>
-        buildEntityAliasKeys(person, {
+        buildScrapedEntityAliasKeys(person, {
           includeCompactFallbackKeys: true,
           type: person.type
         }),
@@ -286,7 +286,7 @@ function mergeCompanies(
       result.data,
       options,
       (company) =>
-        buildEntityAliasKeys(company, {
+        buildScrapedEntityAliasKeys(company, {
           includeCompactFallbackKeys: true,
           type: company.type
         }),
@@ -320,12 +320,12 @@ function finalize(partial: Partial<ScrapedGameMetadata>): ScrapedGameMetadata | 
   if (!partial.name) return null
 
   return {
+    identity: partial.identity ?? mergeScrapedIdentities(),
     name: partial.name,
     originalName: partial.originalName,
     releaseDate: partial.releaseDate,
     description: partial.description ?? '',
     relatedSites: partial.relatedSites ?? [],
-    externalIds: partial.externalIds ?? [],
     tags: partial.tags,
     persons: partial.persons,
     characters: partial.characters,
@@ -364,7 +364,7 @@ export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameB
         cup: character.cup,
         description: character.description,
         relatedSites: character.relatedSites,
-        externalIds: character.externalIds,
+        identity: character.identity,
         tags: character.tags
       }
     }))
@@ -380,13 +380,13 @@ export function toScrapedGameBundle(metadata: ScrapedGameMetadata): ScrapedGameB
   if (metadata.icons?.length) mediaCandidates.iconUrls = metadata.icons
 
   return {
+    identity: metadata.identity,
     core: {
       name: metadata.name,
       originalName: metadata.originalName,
       releaseDate: metadata.releaseDate,
       description: metadata.description,
       relatedSites: metadata.relatedSites,
-      externalIds: metadata.externalIds,
       tags: metadata.tags
     },
     relationFacts: Object.keys(relationFacts).length > 0 ? relationFacts : undefined,

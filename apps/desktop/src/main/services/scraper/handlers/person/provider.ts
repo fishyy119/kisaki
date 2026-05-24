@@ -3,15 +3,20 @@
  */
 
 import type { PersonScraperSlot } from '@shared/db'
-import type { PersonInfo, Tag } from '@shared/metadata'
+import type { Tag } from '@shared/metadata'
 import type { Locale } from '@shared/locale'
-import type { PersonSearchResult, ScraperCapability, ScraperLookup } from '@shared/scraper'
+import type {
+  PersonSearchResult,
+  ScrapedPersonInfo,
+  ScraperCapability,
+  ScraperLookup
+} from '@shared/scraper'
 import { type BaseScraperSession, type IdResolvedTarget } from '../../types'
 
 export type PersonResolvedTarget = IdResolvedTarget
 
 export interface PersonSessionResultMap {
-  info: PersonInfo
+  info: ScrapedPersonInfo
   tags: Tag[]
   photos: string[]
 }

@@ -7,14 +7,15 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import { BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
-import {
-  buildGameCharacters,
-  fetchCharacterDetails,
-  fetchCharacterPersons
-} from './characters'
+import { buildGameCharacters, fetchCharacterDetails, fetchCharacterPersons } from './characters'
 import { parseBangumiId } from './format/ids'
-import { buildGameBackdrops, buildGameCovers, buildGameIcons, fetchSubjectImageVariants } from './images'
-import { buildGameInfo, buildGameTags } from './info'
+import {
+  buildGameBackdrops,
+  buildGameCovers,
+  buildGameIcons,
+  fetchSubjectImageVariants
+} from './images'
+import { buildGameIdentity, buildGameInfo, buildGameTags } from './info'
 import { buildGameCompanies, buildGamePersons, fetchPersonDetails } from './people'
 import type { BangumiGameSessionLoaders } from './types'
 
@@ -31,6 +32,7 @@ export function createBangumiGameSession({
 }: BangumiGameSessionOptions): GameScraperSession {
   const subjectId = parseBangumiId(target.id)
   const loaders = createSessionLoaders(client, subjectId)
+  const getIdentity = memoizeTask(() => buildGameIdentity(loaders.getSubject))
   const slotTasks = new Map<GameScraperSlot, Promise<unknown>>()
 
   return {
@@ -50,7 +52,10 @@ export function createBangumiGameSession({
         })
       )
 
-      return output
+      return {
+        identity: await getIdentity(),
+        slots: output
+      }
     }
   }
 }
