@@ -45,7 +45,7 @@ the remaining sections in this order:
 
 | Order | en               | zh-Hans    | ja             | Use for                                                                                   |
 | ----- | ---------------- | ---------- | -------------- | ----------------------------------------------------------------------------------------- |
-| 1     | Highlights       | 重点更新   | ハイライト     | The 1-3 most important user-facing changes in a larger release.                           |
+| 1     | Highlights       | 重点       | ハイライト     | The 1-3 most important user-facing changes in a larger release.                           |
 | 2     | Breaking Changes | 破坏性变更 | 破壊的変更     | Changes that break existing behavior, data, configuration, APIs, or extensions.           |
 | 3     | Migration Notes  | 迁移说明   | 移行メモ       | Required manual steps for users or extension authors.                                     |
 | 4     | Features         | 新功能     | 新機能         | New capabilities users or extension authors can use.                                      |
