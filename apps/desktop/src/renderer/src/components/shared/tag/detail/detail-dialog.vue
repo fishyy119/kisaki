@@ -10,7 +10,7 @@ import { GameDetailDialog } from '@renderer/components/shared/game'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
-import { useTagProvider, useRenderState } from '@renderer/composables'
+import { useTagProvider, useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -47,6 +47,12 @@ const ENTITY_CONFIG: Record<ContentEntityType, { label: string; unitLabel: strin
 // Use TagProvider
 const { tag, entityType, setEntityType, isLoading, error } = useTagProvider(() => props.tagId)
 const state = useRenderState(isLoading, error, tag)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'tags' && id === props.tagId) {
+    open.value = false
+  }
+})
 
 // Edit dialog state
 const editDialogOpen = ref(false)

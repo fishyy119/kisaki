@@ -18,6 +18,7 @@ import type {
   EntityDeleteRequest,
   EntityDeleteResult
 } from './entity-delete'
+import type { EntityMergeRequest, EntityMergeResult } from './entity-merge'
 import type {
   ScraperLookup,
   GameSearchResult,
@@ -247,6 +248,7 @@ export interface IpcMainHandlers {
   'db:rebuild-all-fts': () => IpcVoidResult
   'db:preview-entity-delete': (params: EntityDeletePreviewRequest) => IpcResult<EntityDeletePreview>
   'db:delete-entities': (params: EntityDeleteRequest) => IpcResult<EntityDeleteResult>
+  'db:merge-entities': (params: EntityMergeRequest) => IpcResult<EntityMergeResult>
 
   // DB attachment (DbService.attachment)
   /**

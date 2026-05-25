@@ -19,7 +19,7 @@ import {
   CollectionDynamicConfigFormDialog,
   CollectionConvertToStaticFormDialog
 } from '@renderer/components/shared/collection'
-import { useCollectionProvider, useRenderState } from '@renderer/composables'
+import { useCollectionProvider, useEvent, useRenderState } from '@renderer/composables'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 // =============================================================================
@@ -67,6 +67,18 @@ const {
   error
 } = useCollectionProvider(() => collectionId.value ?? '')
 const state = useRenderState(isLoading, error, collection)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'collections' && id === collectionId.value) {
+    router.push('/library/collections')
+  }
+})
+
+useEvent('library.entity.merged', (event) => {
+  if (event.entityType === 'collection' && event.sourceId === collectionId.value) {
+    router.replace({ path: `/library/collection/${event.targetId}`, query: route.query })
+  }
+})
 
 // =============================================================================
 // State

@@ -23,6 +23,7 @@ import type {
   LibraryCompanyCreatedEvent,
   LibraryCompanyDeletedEvent,
   LibraryCompanyUpdatedEvent,
+  LibraryEntityMergedEvent,
   LibraryGameCreatedEvent,
   LibraryGameDeletedEvent,
   LibraryGameUpdatedEvent,
@@ -74,6 +75,7 @@ export interface AppEvents {
   'library.tag.created': [LibraryTagCreatedEvent]
   'library.tag.updated': [LibraryTagUpdatedEvent]
   'library.tag.deleted': [LibraryTagDeletedEvent]
+  'library.entity.merged': [LibraryEntityMergedEvent]
 
   // =========================================================================
   // Entity Events

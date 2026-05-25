@@ -21,6 +21,10 @@ export function registerDbIpc(service: DbService, ipc: IpcService): void {
     wrapIpc(() => service.entityDelete.delete(params))
   )
 
+  ipc.handle('db:merge-entities', async (_, params) =>
+    wrapIpc(() => service.entityMerge.merge(params))
+  )
+
   ipc.handle('db:attachment-set-file', async (_, tableName, rowId, field, input) =>
     wrapIpc(() => service.attachment.setFileByTableName(tableName, rowId, field, input))
   )

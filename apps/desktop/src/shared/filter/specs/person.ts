@@ -26,6 +26,15 @@ export const personFilterQuerySpec = defineQuerySpec({
       }
     },
     {
+      key: 'characters',
+      kind: 'relation',
+      link: {
+        linkTableName: 'character_person_links',
+        mainIdColumn: 'person_id',
+        relatedIdColumn: 'character_id'
+      }
+    },
+    {
       key: 'tags',
       kind: 'relation',
       link: {

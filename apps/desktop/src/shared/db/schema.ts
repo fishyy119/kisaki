@@ -52,6 +52,7 @@ import {
   backgroundTaskFailurePolicy,
   backgroundTaskHistory,
   backgroundTaskTriggers,
+  externalIdentityText,
   extensionRepositoryState,
   extensionRegistryManifestSnapshot,
   extensionInstallationSource,
@@ -250,8 +251,8 @@ export const gameExternalIds = sqliteTable(
     gameId: text('game_id')
       .notNull()
       .references(() => games.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: text('source').notNull(),
-    externalId: text('external_id').notNull(),
+    source: externalIdentityText('source').notNull(),
+    externalId: externalIdentityText('external_id').notNull(),
     orderInGame: integer('order_in_game').notNull().default(0)
   },
   (t) => [
@@ -268,8 +269,8 @@ export const personExternalIds = sqliteTable(
     personId: text('person_id')
       .notNull()
       .references(() => persons.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: text('source').notNull(),
-    externalId: text('external_id').notNull(),
+    source: externalIdentityText('source').notNull(),
+    externalId: externalIdentityText('external_id').notNull(),
     orderInPerson: integer('order_in_person').notNull().default(0)
   },
   (t) => [
@@ -286,8 +287,8 @@ export const companyExternalIds = sqliteTable(
     companyId: text('company_id')
       .notNull()
       .references(() => companies.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: text('source').notNull(),
-    externalId: text('external_id').notNull(),
+    source: externalIdentityText('source').notNull(),
+    externalId: externalIdentityText('external_id').notNull(),
     orderInCompany: integer('order_in_company').notNull().default(0)
   },
   (t) => [
@@ -304,8 +305,8 @@ export const characterExternalIds = sqliteTable(
     characterId: text('character_id')
       .notNull()
       .references(() => characters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-    source: text('source').notNull(),
-    externalId: text('external_id').notNull(),
+    source: externalIdentityText('source').notNull(),
+    externalId: externalIdentityText('external_id').notNull(),
     orderInCharacter: integer('order_in_character').notNull().default(0)
   },
   (t) => [

@@ -8,3 +8,4 @@
 export { db } from './proxy'
 export { attachment } from './attachment'
 export { previewEntityDelete, deleteEntities } from './entity-delete'
+export { mergeEntities } from './entity-merge'

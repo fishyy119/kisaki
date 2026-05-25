@@ -30,6 +30,14 @@ export const personFilterUiSpec: FilterUiSpec = {
       multiple: true
     },
     {
+      key: 'characters',
+      label: '相关角色',
+      category: 'relation',
+      control: 'relation',
+      targetEntity: 'character',
+      multiple: true
+    },
+    {
       key: 'tags',
       label: '标签',
       category: 'relation',

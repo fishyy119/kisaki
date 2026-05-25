@@ -312,6 +312,45 @@ export class AttachmentStore {
     return this.clearFiles(table, rowId, this.requireFilesField(table, field))
   }
 
+  async copyFileBetweenRows(
+    tableName: string,
+    fromRowId: string,
+    toRowId: string,
+    fileName: string
+  ): Promise<string> {
+    this.assertSafeFileName(fileName)
+
+    const lockKey = this.getRowLockKey(tableName, String(toRowId))
+    const mutex = this.getMutex(lockKey)
+
+    return await mutex.runExclusive(async () => {
+      const fromPath = this.getPath(tableName, String(fromRowId), fileName)
+      if (!(await fse.pathExists(fromPath))) {
+        throw new Error('Attachment file not found.')
+      }
+
+      const toDir = path.join(this.storageDir, tableName, String(toRowId))
+      await fse.ensureDir(toDir)
+
+      const copiedFileName = await this.createCopiedFileName(toDir, fileName)
+      const toPath = path.join(toDir, copiedFileName)
+      await fse.copy(fromPath, toPath, { overwrite: false })
+      return copiedFileName
+    })
+  }
+
+  async cleanupRowFiles(tableName: string, rowId: string, fileNames: string[]): Promise<void> {
+    const lockKey = this.getRowLockKey(tableName, String(rowId))
+    const mutex = this.getMutex(lockKey)
+
+    return await mutex.runExclusive(async () => {
+      const fileDir = path.join(this.storageDir, tableName, String(rowId))
+      for (const fileName of fileNames) {
+        await this.deleteFile(fileDir, fileName, { bestEffort: true })
+      }
+    })
+  }
+
   /**
    * Cleanup storage directory for a deleted row.
    * Intended to be called from db:deleted event listeners.
@@ -561,6 +600,20 @@ export class AttachmentStore {
   ): Promise<string> {
     const ext = await this.detectExt(fileHeader, extHint)
     return `${fileId}${ext}`
+  }
+
+  private async createCopiedFileName(fileDir: string, sourceFileName: string): Promise<string> {
+    const ext = path.extname(sourceFileName)
+    const safeExt = /^\.[a-z0-9]{1,10}$/i.test(ext) ? ext : ''
+
+    for (let i = 0; i < 5; i++) {
+      const fileName = `${nanoid()}${safeExt}`
+      if (!(await fse.pathExists(path.join(fileDir, fileName)))) {
+        return fileName
+      }
+    }
+
+    throw new Error('Failed to allocate copied attachment file name.')
   }
 
   private async detectExt(fileHeader: Buffer, extHint?: string): Promise<string> {

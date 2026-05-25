@@ -11,7 +11,7 @@ import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { characters } from '@shared/db'
 import { useCharacterProvider } from '@renderer/composables/use-character'
-import { useRenderState } from '@renderer/composables'
+import { useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,12 @@ const { character, isLoading, error } = useCharacterProvider(
   spoilersRevealed
 )
 const state = useRenderState(isLoading, error, character)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'characters' && id === props.characterId) {
+    open.value = false
+  }
+})
 
 const isScoreOpen = ref(false)
 const isPendingFavorite = ref(false)

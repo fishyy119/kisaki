@@ -19,6 +19,7 @@ import {
   ContextMenuRadioItem
 } from '@renderer/components/ui/context-menu'
 import { TagDeleteFormDialog, TagInfoFormDialog } from '../forms'
+import { EntityMergeDialog } from '@renderer/components/shared/entity-merge'
 import TagMenuItems from './menu-items.vue'
 import type { MenuComponents } from '@renderer/types'
 
@@ -46,6 +47,7 @@ const menuOpen = ref(false)
 // Dialog states managed by parent to survive menu close
 const deleteDialogOpen = ref(false)
 const editDialogOpen = ref(false)
+const mergeDialogOpen = ref(false)
 </script>
 
 <template>
@@ -59,6 +61,7 @@ const editDialogOpen = ref(false)
         :components="contextMenuComponents"
         :enabled="menuOpen"
         @open-edit-dialog="editDialogOpen = true"
+        @open-merge-dialog="mergeDialogOpen = true"
         @open-delete-dialog="deleteDialogOpen = true"
       />
     </ContextMenuContent>
@@ -75,5 +78,12 @@ const editDialogOpen = ref(false)
     v-if="editDialogOpen"
     v-model:open="editDialogOpen"
     :tag-id="props.tagId"
+  />
+
+  <EntityMergeDialog
+    v-if="mergeDialogOpen"
+    v-model:open="mergeDialogOpen"
+    entity-type="tag"
+    :target-id="props.tagId"
   />
 </template>

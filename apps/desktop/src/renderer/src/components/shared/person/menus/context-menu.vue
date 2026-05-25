@@ -26,6 +26,7 @@ import {
   PersonExternalIdsFormDialog
 } from '../forms'
 import { CollectionInfoFormDialog } from '@renderer/components/shared/collection'
+import { EntityMergeDialog } from '@renderer/components/shared/entity-merge'
 import PersonMenuItems from './menu-items.vue'
 import type { MenuComponents } from '@renderer/types'
 
@@ -61,6 +62,7 @@ const scoreDialogOpen = ref(false)
 const metadataUpdateDialogOpen = ref(false)
 const collectionDialogOpen = ref(false)
 const externalIdsDialogOpen = ref(false)
+const mergeDialogOpen = ref(false)
 </script>
 
 <template>
@@ -77,6 +79,7 @@ const externalIdsDialogOpen = ref(false)
         @open-media-dialog="mediaDialogOpen = true"
         @open-metadata-update-dialog="metadataUpdateDialogOpen = true"
         @open-external-ids-dialog="externalIdsDialogOpen = true"
+        @open-merge-dialog="mergeDialogOpen = true"
         @open-delete-dialog="deleteDialogOpen = true"
         @open-new-collection-dialog="collectionDialogOpen = true"
       />
@@ -113,6 +116,13 @@ const externalIdsDialogOpen = ref(false)
     v-if="externalIdsDialogOpen"
     v-model:open="externalIdsDialogOpen"
     :person-id="props.personId"
+  />
+
+  <EntityMergeDialog
+    v-if="mergeDialogOpen"
+    v-model:open="mergeDialogOpen"
+    entity-type="person"
+    :target-id="props.personId"
   />
 
   <CollectionInfoFormDialog

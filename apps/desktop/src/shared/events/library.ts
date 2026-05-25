@@ -2,6 +2,7 @@ import type { BloodType, CupSize, Gender, Status } from '../db/enums'
 import type { DynamicCollectionConfig, PartialDate, RelatedSite } from '../db/json-types'
 import type { TableName } from '../db/table-names'
 import type { ExternalId } from '../identity'
+import type { AllEntityType } from '../common'
 
 export type RawDbChangeOperation = 'inserted' | 'updated' | 'deleted'
 
@@ -11,6 +12,13 @@ export interface RawDbChangeEvent {
   id: string
   old?: Record<string, unknown>
   next?: Record<string, unknown>
+  occurredAt: number
+}
+
+export interface LibraryEntityMergedEvent {
+  entityType: AllEntityType
+  targetId: string
+  sourceId: string
   occurredAt: number
 }
 

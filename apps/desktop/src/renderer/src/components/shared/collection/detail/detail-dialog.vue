@@ -22,7 +22,7 @@ import {
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import { useCollectionProvider, useRenderState } from '@renderer/composables'
+import { useCollectionProvider, useEvent, useRenderState } from '@renderer/composables'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import CollectionDetailContent from './detail-content.vue'
 import { CollectionDropdownMenu } from '../menus'
@@ -51,6 +51,12 @@ const open = defineModel<boolean>('open', { required: true })
 const { collection, entityType, entityCounts, setEntityType, isLoading, error } =
   useCollectionProvider(() => props.collectionId)
 const state = useRenderState(isLoading, error, collection)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'collections' && id === props.collectionId) {
+    open.value = false
+  }
+})
 
 // Edit entities dialog state
 const editEntitiesOpen = ref(false)

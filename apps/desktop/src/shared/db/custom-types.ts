@@ -16,6 +16,7 @@ import {
   type ContentEntityType,
   type AllEntityType
 } from '../common'
+import { normalizeKeyText } from '../identity'
 import { LOCALES, APP_LOCALES, type Locale, type AppLocale } from '../locale'
 import {
   parseExtensionInstallationSource,
@@ -370,6 +371,23 @@ export const allEntityType = createEnumType<AllEntityType>(
   'game',
   'allEntityType'
 )
+
+export const externalIdentityText = customType<{
+  data: string
+  driverData: string
+}>({
+  dataType() {
+    return 'text'
+  },
+
+  fromDriver(value: string): string {
+    return value
+  },
+
+  toDriver(value: string): string {
+    return normalizeKeyText(value)
+  }
+})
 
 const SECTION_LAYOUT_VALUES = ['horizontal', 'grid'] as const
 export const sectionLayout = createEnumType<SectionLayout>(

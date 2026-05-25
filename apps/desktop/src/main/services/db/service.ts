@@ -21,7 +21,7 @@ import { settings } from '@shared/db'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import { AttachmentStore } from './attachment'
 import { ThumbnailStore } from './thumbnail'
-import { DbEntityDeleteHelper, DbEntityFinderHelper } from './helper'
+import { DbEntityDeleteHelper, DbEntityFinderHelper, DbEntityMergeCoordinator } from './helper'
 import { FtsStore } from './fts'
 import { TriggerStore } from './trigger'
 import { DbEventProjector } from './projector'
@@ -60,6 +60,7 @@ export class DbService implements IService {
   private thumbnail!: ThumbnailStore
   entityFinder!: DbEntityFinderHelper
   entityDelete!: DbEntityDeleteHelper
+  entityMerge!: DbEntityMergeCoordinator
   fts!: FtsStore
   sql!: SqlExecutor
   private trigger!: TriggerStore
@@ -100,6 +101,7 @@ export class DbService implements IService {
     this.attachment = new AttachmentStore(this.client, this.storageDir, this.thumbnail, network)
     this.entityFinder = new DbEntityFinderHelper(this.client)
     this.entityDelete = new DbEntityDeleteHelper(this.client)
+    this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, event)
     this.fts = new FtsStore(this.sqlite)
     this.sql = new SqlExecutor(this.sqlite)
 

@@ -11,7 +11,7 @@ import { db } from '@renderer/core/db'
 import { persons } from '@shared/db'
 import { eq } from 'drizzle-orm'
 import { usePersonProvider } from '@renderer/composables/use-person'
-import { useRenderState } from '@renderer/composables'
+import { useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -58,6 +58,12 @@ watch(open, (isOpen) => {
 const personId = computed(() => props.personId)
 const { person, isLoading, error } = usePersonProvider(personId, spoilersRevealed)
 const state = useRenderState(isLoading, error, person)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'persons' && id === props.personId) {
+    open.value = false
+  }
+})
 
 // =============================================================================
 // Local State

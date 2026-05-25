@@ -21,7 +21,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
-import { useCompanyProvider, useRenderState } from '@renderer/composables'
+import { useCompanyProvider, useEvent, useRenderState } from '@renderer/composables'
 import CompanyDetailContent from './detail-content.vue'
 import { CompanyScoreFormDialog } from '../forms'
 import { CompanyDropdownMenu } from '../menus'
@@ -49,6 +49,12 @@ watch(open, (isOpen) => {
 
 const { company, isLoading, error } = useCompanyProvider(() => props.companyId, spoilersRevealed)
 const state = useRenderState(isLoading, error, company)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'companies' && id === props.companyId) {
+    open.value = false
+  }
+})
 
 const isScoreOpen = ref(false)
 const isPendingFavorite = ref(false)

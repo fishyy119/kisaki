@@ -39,6 +39,7 @@ const emit = defineEmits<{
   openMediaDialog: []
   openMetadataUpdateDialog: []
   openExternalIdsDialog: []
+  openMergeDialog: []
   openDeleteDialog: []
   openNewCollectionDialog: []
 }>()
@@ -343,6 +344,17 @@ const displayScore = computed(() =>
         class="size-4"
       />
       管理外部ID
+    </component>
+
+    <component
+      :is="props.components.Item"
+      @select="emit('openMergeDialog')"
+    >
+      <Icon
+        icon="icon-[mdi--source-merge]"
+        class="size-4"
+      />
+      合并重复实体
     </component>
 
     <ExtensionEntityMenuItems

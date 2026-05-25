@@ -27,6 +27,7 @@ import {
   CollectionConvertToStaticFormDialog,
   CollectionDeleteFormDialog
 } from '../forms'
+import { EntityMergeDialog } from '@renderer/components/shared/entity-merge'
 import type { MenuComponents } from '@renderer/types'
 
 interface Props {
@@ -56,6 +57,7 @@ const editMetadataDialogOpen = ref(false)
 const editEntitiesDialogOpen = ref(false)
 const editFilterDialogOpen = ref(false)
 const convertDialogOpen = ref(false)
+const mergeDialogOpen = ref(false)
 </script>
 
 <template>
@@ -72,6 +74,7 @@ const convertDialogOpen = ref(false)
         @open-edit-entities-dialog="editEntitiesDialogOpen = true"
         @open-edit-filter-dialog="editFilterDialogOpen = true"
         @open-convert-dialog="convertDialogOpen = true"
+        @open-merge-dialog="mergeDialogOpen = true"
         @open-delete-dialog="deleteDialogOpen = true"
       />
     </ContextMenuContent>
@@ -88,6 +91,13 @@ const convertDialogOpen = ref(false)
     v-if="editMetadataDialogOpen"
     v-model:open="editMetadataDialogOpen"
     :collection-id="props.collectionId"
+  />
+
+  <EntityMergeDialog
+    v-if="mergeDialogOpen"
+    v-model:open="mergeDialogOpen"
+    entity-type="collection"
+    :target-id="props.collectionId"
   />
 
   <CollectionEntitiesFormDialog

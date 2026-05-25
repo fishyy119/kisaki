@@ -66,6 +66,12 @@ useEvent('db:deleted', ({ table, id }) => {
   }
 })
 
+useEvent('library.entity.merged', (event) => {
+  if (event.entityType === 'company' && event.sourceId === companyId.value) {
+    router.replace({ path: `/library/company/${event.targetId}`, query: route.query })
+  }
+})
+
 // =============================================================================
 // State
 // =============================================================================

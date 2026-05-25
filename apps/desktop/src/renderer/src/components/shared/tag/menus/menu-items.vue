@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   openEditDialog: []
+  openMergeDialog: []
   openDeleteDialog: []
 }>()
 
@@ -79,6 +80,17 @@ async function handleToggleNsfw() {
         class="size-4"
       />
       编辑
+    </component>
+
+    <component
+      :is="props.components.Item"
+      @select="emit('openMergeDialog')"
+    >
+      <Icon
+        icon="icon-[mdi--source-merge]"
+        class="size-4"
+      />
+      合并重复实体
     </component>
 
     <component :is="props.components.Separator" />

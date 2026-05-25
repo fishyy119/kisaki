@@ -15,7 +15,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
 import { useGameProvider } from '@renderer/composables/use-game'
-import { useRenderState } from '@renderer/composables'
+import { useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -63,6 +63,12 @@ watch(open, (isOpen) => {
 const gameId = computed(() => props.gameId)
 const { game, isLoading, error } = useGameProvider(gameId, spoilersRevealed)
 const state = useRenderState(isLoading, error, game)
+
+useEvent('db:deleted', ({ table, id }) => {
+  if (table === 'games' && id === props.gameId) {
+    open.value = false
+  }
+})
 
 // =============================================================================
 // Local State

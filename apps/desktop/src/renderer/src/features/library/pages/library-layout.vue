@@ -15,13 +15,25 @@ import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { ResizableHandle, ResizableLayout, ResizablePanel } from '@renderer/components/ui/resizable'
+import { useEvent } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
+import { parseExplorerSelectionKey } from '../utils/explorer-selection'
 import { LibraryExplorer, LibrarySearchDialog } from '../components'
 
 const store = useLibraryExplorerStore()
 const { explorerWidth } = storeToRefs(store)
 
 const isSearchOpen = ref(false)
+
+useEvent('library.entity.merged', (event) => {
+  const sourceKeys = store.selectedKeys.filter((key) => {
+    const selection = parseExplorerSelectionKey(key)
+    return selection.id === event.sourceId
+  })
+  if (sourceKeys.length > 0) {
+    store.removeFromSelection(sourceKeys)
+  }
+})
 
 function handleKeyDown(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
@@ -96,4 +108,3 @@ onUnmounted(() => {
     <LibrarySearchDialog v-model:open="isSearchOpen" />
   </div>
 </template>
-
