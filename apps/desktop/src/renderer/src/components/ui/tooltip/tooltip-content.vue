@@ -4,7 +4,6 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { TooltipContent, TooltipPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@renderer/utils'
-import { UI_LAYER } from '../layers'
 
 defineOptions({
   inheritAttrs: false
@@ -29,10 +28,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     <TooltipContent
       data-slot="tooltip-content"
       v-bind="{ ...forwarded, ...$attrs }"
-      :style="{ zIndex: UI_LAYER.floating }"
       :class="
         cn(
-          'rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground',
+          'z-50 rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground',
           'animate-in fade-in-0 zoom-in-95 duration-100',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
           props.class
