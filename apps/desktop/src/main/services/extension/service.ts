@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
+import { EXTENSION_API_VERSION } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import { Mutex } from 'async-mutex'
 import { getBootstrapArgs } from '@main/bootstrap/args'
@@ -124,7 +125,7 @@ export class ExtensionService implements IService {
         allowInsecureLocalUrls: !app.isPackaged
       }),
       iconManager,
-      appVersion: app.getVersion(),
+      apiVersion: EXTENSION_API_VERSION,
       allowInsecureLocalUrls: !app.isPackaged,
       getInstalledVersions: () => this.installations?.getInstalledVersionMap() ?? new Map(),
       onRepositoriesChanged: () => this.ipc.send('extension:repositories-changed'),

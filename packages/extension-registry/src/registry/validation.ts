@@ -193,7 +193,7 @@ export function validateExtensionRegistryManifestSemver(
       if (!semver.validRange(release.engines.kisaki)) {
         issues.push({
           path: `${releasePath}.engines.kisaki`,
-          message: 'engines.kisaki must be a valid semver range.'
+          message: 'engines.kisaki must be a valid Extension API semver range.'
         })
       }
     }

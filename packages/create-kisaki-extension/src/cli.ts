@@ -1,6 +1,8 @@
 import path from 'node:path'
 import {
   EXTENSION_CATEGORIES,
+  EXTENSION_API_VERSION,
+  getRecommendedExtensionApiRange,
   isExtensionIdentifier,
   type ExtensionCategory
 } from '@kisaki3/extension-api'
@@ -117,7 +119,8 @@ export async function runCreateExtensionCli(
     description: response.description || 'A Kisaki extension.',
     author: response.author || '',
     category: response.category || DEFAULT_EXTENSION_CATEGORY,
-    toolingVersion: options.toolingVersion
+    toolingVersion: options.toolingVersion,
+    extensionApiRange: getRecommendedExtensionApiRange(EXTENSION_API_VERSION)
   }
 
   if (!isExtensionIdentifier(config.extensionId)) {

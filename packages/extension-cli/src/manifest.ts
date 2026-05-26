@@ -1,6 +1,11 @@
 import semver from 'semver'
 import type { ExtensionManifest, ValidationIssue } from '@kisaki3/extension-api'
-import { normalizeExtensionPackagePath, parseExtensionManifest } from '@kisaki3/extension-api'
+import {
+  EXTENSION_API_VERSION,
+  getRecommendedExtensionApiRange,
+  normalizeExtensionPackagePath,
+  parseExtensionManifest
+} from '@kisaki3/extension-api'
 import type { ExtensionProject } from './project'
 import { pathExists, readJsonFile, resolvePackageFile } from './project'
 
@@ -46,11 +51,18 @@ export async function validateManifest(
 
   const manifest = parsed.manifest
 
-  if (manifest.engines?.kisaki) {
-    if (semver.valid(manifest.engines.kisaki)) {
+  const kisakiApiRange = manifest.engines.kisaki.trim()
+  if (!kisakiApiRange) {
+    errors.push({
+      path: '$.engines.kisaki',
+      message: 'engines.kisaki is required and must declare an Extension API version range.'
+    })
+  } else {
+    const recommendedRange = getRecommendedExtensionApiRange(EXTENSION_API_VERSION)
+    if (!semver.subset(kisakiApiRange, recommendedRange, { includePrerelease: true })) {
       warnings.push({
         path: '$.engines.kisaki',
-        message: 'Prefer a range such as >=0.1.0 instead of a single version.'
+        message: `Range extends beyond the official Extension API compatibility recommendation for ${EXTENSION_API_VERSION}; recommended range is ${recommendedRange}.`
       })
     }
   }

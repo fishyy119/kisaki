@@ -308,7 +308,7 @@ function diagnosticSeverityClass(severity: string): string {
                 <dd>{{ formatDate(repositorySource.snapshot.release.publishedAt) }}</dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">Kisaki</dt>
+                <dt class="text-muted-foreground">扩展 API</dt>
                 <dd>{{ repositorySource.snapshot.release.engines.kisaki }}</dd>
               </div>
             </template>

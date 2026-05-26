@@ -32,6 +32,8 @@ npm publish order. It verifies:
 - internal workspace dependencies use `workspace:*`
 - `EXTENSION_API_VERSION` matches the tooling version
 - extension scaffold dependencies are injected with `__TOOLING_VERSION__`
+- extension scaffold manifests derive their `engines.kisaki` default from the
+  current Extension API version
 
 ## Release Commit
 
@@ -46,5 +48,6 @@ them in dependency order, and creates one tag:
 extension-tooling-v0.0.2
 ```
 
-For prerelease versions, the publish script uses the `next` npm dist-tag by default.
-Stable versions use `latest`.
+The publish script derives the npm dist-tag from the Extension API version stage:
+`0.y.z` uses `experimental`, prereleases use `alpha`, `beta`, or `rc`, and stable
+versions use `latest`.

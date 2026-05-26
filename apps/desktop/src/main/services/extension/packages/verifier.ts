@@ -3,11 +3,11 @@ import { Buffer } from 'node:buffer'
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { Writable } from 'node:stream'
-import { app } from 'electron'
 import AdmZip from 'adm-zip'
 import fse from 'fs-extra'
 import semver from 'semver'
 import {
+  EXTENSION_API_VERSION,
   normalizeExtensionPackagePath,
   type ExtensionCategory,
   type ExtensionManifest
@@ -124,7 +124,7 @@ export class ExtensionPackageVerifier {
       })
 
       if (!input.allowIncompatibleKisaki) {
-        verifyKisakiCompatibility(archiveInfo.manifest.engines?.kisaki)
+        verifyKisakiCompatibility(archiveInfo.manifest.engines.kisaki)
         verifyKisakiCompatibility(input.registryRelease?.engines.kisaki)
       }
 
@@ -164,7 +164,7 @@ export class ExtensionPackageVerifier {
       }
 
       verifyManifestIdentity(parsed.manifest, input.expectedIdentity)
-      verifyKisakiCompatibility(parsed.manifest.engines?.kisaki)
+      verifyKisakiCompatibility(parsed.manifest.engines.kisaki)
 
       const issues = await validateInstalledExtensionPackage(input.packageDir, parsed.manifest)
       if (issues.length > 0) {
@@ -376,7 +376,7 @@ function verifyManifestIdentity(
 
   if (
     expected.enginesKisaki !== undefined &&
-    (manifest.engines?.kisaki ?? '').trim() !== expected.enginesKisaki.trim()
+    manifest.engines.kisaki.trim() !== expected.enginesKisaki.trim()
   ) {
     throw new Error('Package engines.kisaki does not match the registry release.')
   }
@@ -387,8 +387,10 @@ function verifyKisakiCompatibility(range: string | undefined): void {
     return
   }
 
-  if (!semver.satisfies(app.getVersion(), range)) {
-    throw new Error(`Extension requires Kisaki ${range}, current version is ${app.getVersion()}.`)
+  if (!semver.satisfies(EXTENSION_API_VERSION, range)) {
+    throw new Error(
+      `Extension requires Extension API ${range}, current Extension API is ${EXTENSION_API_VERSION}.`
+    )
   }
 }
 

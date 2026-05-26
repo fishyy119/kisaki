@@ -247,7 +247,7 @@ Artifact：
 候选 release 必须同时满足：
 
 - `release.yanked !== true`，除非用户明确选择安装已撤回版本。
-- `semver.satisfies(app.getVersion(), release.engines.kisaki)`。
+- `semver.satisfies(EXTENSION_API_VERSION, release.engines.kisaki)`。
 - 存在与当前平台匹配的 artifact；优先精确平台，后退到 `any`。
 - artifact 完整性字段齐全。
 - release 所在仓库状态为 `enabled`。

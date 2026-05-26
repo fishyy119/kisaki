@@ -324,7 +324,25 @@ function parsePackOptions(args: readonly string[]): PackOptions {
 }
 
 function getDefaultDistTag(version: string): string {
-  return version.includes('-') ? 'next' : 'latest'
+  const [core, prerelease] = version.split('-', 2)
+  if (core.startsWith('0.')) {
+    return 'experimental'
+  }
+
+  if (!prerelease) {
+    return 'latest'
+  }
+
+  const prereleaseStage = prerelease.split('.')[0]
+  if (
+    prereleaseStage === 'alpha' ||
+    prereleaseStage === 'beta' ||
+    prereleaseStage === 'rc'
+  ) {
+    return prereleaseStage
+  }
+
+  return 'experimental'
 }
 
 function requireVersionArgument(version: string | undefined): string {

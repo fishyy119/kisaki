@@ -215,7 +215,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                     variant="warning"
                     class="text-[10px] h-5"
                   >
-                    不兼容
+                    API 不兼容
                   </Badge>
                   <Badge
                     v-if="!release.artifact"
@@ -236,7 +236,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <div>来源：{{ formatReleaseSourceCount(release) }}</div>
                   <div>发布时间：{{ formatDate(release.publishedAt) }}</div>
-                  <div>Kisaki：{{ release.engines.kisaki }}</div>
+                  <div>扩展 API：{{ release.engines.kisaki }}</div>
                   <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
                 </div>
 

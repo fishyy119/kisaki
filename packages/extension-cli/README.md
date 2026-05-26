@@ -22,7 +22,8 @@ kisx registry validate registry/manifest.json
 kisx dev
 ```
 
-- `kisx validate` checks the manifest and required project files.
+- `kisx validate` checks the manifest, required project files, and
+  `engines.kisaki` Extension API compatibility range.
 - `kisx build` validates, runs tsdown, and verifies the built entry.
 - `kisx output` writes an unpacked package to `out/extensions/<extension-id>`.
   Use `--watch` for synchronized output; `dev-output` is an alias.
@@ -49,6 +50,7 @@ kisx pack --out-dir artifacts --sign --key .keys/author.ed25519.json --target an
 
 The signature covers extension id, version, `engines.kisaki`, artifact target,
 size, and sha256. Artifact URLs are not signed so mirrors can change.
+`engines.kisaki` is an Extension API version range, not a desktop app version.
 
 ## Registry Flow
 
@@ -68,6 +70,8 @@ Use `--signature <sig-file>` to attach a signature created by `kisx pack --sign`
 Stable releases use plain semver versions. Preview releases use semver prerelease
 prefixes such as `alpha`, `beta`, `rc`, or `nightly`. Platform builds are separate
 artifact targets under the same release version.
+The registry release `engines.kisaki` range is copied from the packaged
+manifest and must match it exactly.
 
 For local testing only, `registry validate` and `registry add-release` accept
 `--allow-insecure-local-urls` for `file:` and localhost artifact URLs.

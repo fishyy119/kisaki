@@ -224,9 +224,11 @@ function createRegistryRelease(
   artifact: ExtensionRegistryArtifact,
   options: RegistryAddReleaseCommandOptions
 ): ExtensionRegistryRelease {
-  const kisakiRange = manifest.engines?.kisaki?.trim()
+  const kisakiRange = manifest.engines.kisaki.trim()
   if (!kisakiRange) {
-    throw new CliError('manifest.json must include engines.kisaki before publishing a release.')
+    throw new CliError(
+      'manifest.json must include engines.kisaki Extension API range before publishing a release.'
+    )
   }
 
   return compactRegistryRelease({

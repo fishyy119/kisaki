@@ -14,7 +14,7 @@ export const EXTENSION_CATEGORIES = ['scraper', 'tool', 'theme', 'integration'] 
 export type ExtensionCategory = (typeof EXTENSION_CATEGORIES)[number]
 
 export interface ExtensionManifestEngines {
-  kisaki?: string
+  kisaki: string
 }
 
 export interface ExtensionManifest {
@@ -29,7 +29,7 @@ export interface ExtensionManifest {
   homepage?: string
   icon?: string
   keywords?: readonly string[]
-  engines?: ExtensionManifestEngines
+  engines: ExtensionManifestEngines
 }
 
 export interface ParsedExtensionManifest {
@@ -174,30 +174,33 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
   }
 
   const engines = value.engines
-  if (engines !== undefined) {
-    if (!isPlainObject(engines)) {
-      issues.push({
-        path: '$.engines',
-        message: 'Engines must be an object.'
-      })
-    } else {
-      for (const key of Object.keys(engines)) {
-        if (key !== 'kisaki') {
-          issues.push({
-            path: `$.engines.${key}`,
-            message: 'Unknown engines field.'
-          })
-        }
-      }
-
-      issues.push(
-        ...validateOptionalString(engines.kisaki, '$.engines.kisaki', {
-          minLength: 1,
-          typeMessage: 'engines.kisaki must be a string when provided.',
-          valueMessage: 'engines.kisaki must be a non-empty string when provided.'
+  if (engines === undefined) {
+    issues.push({
+      path: '$.engines.kisaki',
+      message: 'engines.kisaki is required and must declare an Extension API version range.'
+    })
+  } else if (!isPlainObject(engines)) {
+    issues.push({
+      path: '$.engines',
+      message: 'engines must declare the extension API compatibility range.'
+    })
+  } else {
+    for (const key of Object.keys(engines)) {
+      if (key !== 'kisaki') {
+        issues.push({
+          path: `$.engines.${key}`,
+          message: 'Unknown engines field.'
         })
-      )
+      }
     }
+
+    issues.push(
+      ...validateRequiredString(engines.kisaki, '$.engines.kisaki', {
+        minLength: 1,
+        typeMessage: 'engines.kisaki must be a string.',
+        valueMessage: 'engines.kisaki must be a non-empty Extension API range.'
+      })
+    )
   }
 
   return issues
@@ -260,10 +263,10 @@ export function validateExtensionManifestSemver(
     })
   }
 
-  if (manifest.engines?.kisaki && !semver.validRange(manifest.engines.kisaki)) {
+  if (!semver.validRange(manifest.engines.kisaki)) {
     issues.push({
       path: '$.engines.kisaki',
-      message: 'engines.kisaki must be a valid semver range.'
+      message: 'engines.kisaki must be a valid Extension API semver range.'
     })
   }
 

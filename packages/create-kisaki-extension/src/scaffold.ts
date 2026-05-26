@@ -12,6 +12,7 @@ export interface ExtensionScaffoldConfig {
   author: string
   category: ExtensionCategory
   toolingVersion: string
+  extensionApiRange: string
 }
 
 export interface ScaffoldExtensionOptions {
@@ -98,7 +99,7 @@ function copyTemplate(src: string, dest: string, config: ExtensionScaffoldConfig
 }
 
 const TEMPLATE_TOKEN_PATTERN =
-  /__(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY|TOOLING_VERSION)__|\{\{(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY|TOOLING_VERSION)\}\}/g
+  /__(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY|TOOLING_VERSION|EXTENSION_API_RANGE)__|\{\{(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY|TOOLING_VERSION|EXTENSION_API_RANGE)\}\}/g
 
 type TemplateRenderMode = 'raw' | 'jsonStringContent' | 'templateStringContent'
 
@@ -124,7 +125,8 @@ function createTemplateReplacements(
     DESCRIPTION: config.description,
     AUTHOR: config.author,
     CATEGORY: config.category,
-    TOOLING_VERSION: config.toolingVersion
+    TOOLING_VERSION: config.toolingVersion,
+    EXTENSION_API_RANGE: config.extensionApiRange
   }
   const replacements = new Map<string, string>()
 

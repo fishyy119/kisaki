@@ -39,7 +39,7 @@ export interface ExtensionRepositoryManagerOptions {
   store: ExtensionRepositoryStore
   fetcher: ExtensionRepositoryFetcher
   iconManager: ExtensionIconManager
-  appVersion: string
+  apiVersion: string
   allowInsecureLocalUrls?: boolean
   getInstalledVersions?: () => ReadonlyMap<string, string>
   onRepositoriesChanged?: () => void
@@ -51,7 +51,7 @@ export class ExtensionRepositoryManager {
   private readonly fetcher: ExtensionRepositoryFetcher
   private readonly iconManager: ExtensionIconManager
   private readonly aggregator: ExtensionRepositoryAggregator
-  private readonly appVersion: string
+  private readonly apiVersion: string
   private readonly allowInsecureLocalUrls: boolean
   private readonly getInstalledVersions?: () => ReadonlyMap<string, string>
   private readonly warnedDisallowedSnapshots = new Set<string>()
@@ -66,13 +66,13 @@ export class ExtensionRepositoryManager {
     this.store = options.store
     this.fetcher = options.fetcher
     this.iconManager = options.iconManager
-    this.appVersion = options.appVersion
+    this.apiVersion = options.apiVersion
     this.allowInsecureLocalUrls = options.allowInsecureLocalUrls ?? false
     this.getInstalledVersions = options.getInstalledVersions
     this.onRepositoriesChanged = options.onRepositoriesChanged
     this.onCatalogChanged = options.onCatalogChanged
     this.aggregator = new ExtensionRepositoryAggregator({
-      appVersion: options.appVersion,
+      apiVersion: options.apiVersion,
       resolveIconUrl: (icon) => this.iconManager.getIconUrl(icon)
     })
   }
@@ -261,7 +261,7 @@ export class ExtensionRepositoryManager {
   ): readonly ExtensionRepositoryInstallCandidate[] {
     const result = this.collectInstallCandidates(extensionId, options)
     return result.candidates.toSorted((left, right) =>
-      compareInstallCandidates(left, right, this.appVersion)
+      compareInstallCandidates(left, right, this.apiVersion)
     )
   }
 
@@ -279,7 +279,7 @@ export class ExtensionRepositoryManager {
 
     if (candidates.length > 0) {
       return candidates.toSorted((left, right) =>
-        compareInstallCandidates(left, right, this.appVersion)
+        compareInstallCandidates(left, right, this.apiVersion)
       )[0]
     }
 
@@ -358,7 +358,7 @@ export class ExtensionRepositoryManager {
         ) {
           continue
         }
-        if (options.compatibleOnly !== false && !isReleaseCompatible(release, this.appVersion)) {
+        if (options.compatibleOnly !== false && !isReleaseCompatible(release, this.apiVersion)) {
           continue
         }
         if (!options.includeYanked && release.yanked === true) {
@@ -567,12 +567,12 @@ function isLocalDevelopmentUrl(url: URL): boolean {
 function compareInstallCandidates(
   left: ExtensionRepositoryInstallCandidate,
   right: ExtensionRepositoryInstallCandidate,
-  appVersion: string
+  apiVersion: string
 ): number {
   return (
     compareBooleans(
-      isReleaseCompatible(left.release, appVersion),
-      isReleaseCompatible(right.release, appVersion)
+      isReleaseCompatible(left.release, apiVersion),
+      isReleaseCompatible(right.release, apiVersion)
     ) ||
     compareBooleans(left.release.yanked !== true, right.release.yanked !== true) ||
     compareBooleans(
@@ -589,9 +589,9 @@ function compareInstallCandidates(
 
 function isReleaseCompatible(
   release: Pick<ExtensionRegistryRelease, 'engines'>,
-  appVersion: string
+  apiVersion: string
 ): boolean {
-  return semver.satisfies(appVersion, release.engines.kisaki)
+  return semver.satisfies(apiVersion, release.engines.kisaki)
 }
 
 function compareBooleans(left: boolean, right: boolean): number {

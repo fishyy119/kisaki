@@ -64,7 +64,7 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^(?=.*\\S)[0-9A-Za-zvVxX*~^<>=|.\\-+\\s]+$",
-      "description": "Runtime validation uses semver.validRange; this schema restricts the string to semver range syntax characters."
+      "description": "Kisaki Extension API version range. Runtime validation uses semver.validRange; this schema restricts the string to semver range syntax characters."
     },
     "sha256": {
       "type": "string",

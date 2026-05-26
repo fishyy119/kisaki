@@ -20,3 +20,6 @@ npm run build
 npm run pack
 npm run dev
 ```
+
+The generated `engines.kisaki` value is the recommended Kisaki Extension API
+range for the scaffolded tooling version.

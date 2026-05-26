@@ -4,7 +4,7 @@
   "title": "Kisaki Extension Manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "name", "version", "categories", "entry"],
+  "required": ["id", "name", "version", "categories", "entry", "engines"],
   "properties": {
     "$schema": {
       "type": "string"
@@ -64,12 +64,13 @@
     "engines": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["kisaki"],
       "properties": {
         "kisaki": {
           "type": "string",
           "minLength": 1,
           "pattern": "^(?=.*\\S)[0-9A-Za-zvVxX*~^<>=|.\\-+\\s]+$",
-          "description": "Runtime validation uses semver.validRange; this schema restricts the string to semver range syntax characters."
+          "description": "Kisaki Extension API version range. Runtime validation uses semver.validRange; this schema restricts the string to semver range syntax characters."
         }
       }
     }

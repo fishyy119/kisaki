@@ -1,5 +1,6 @@
 export * from './shared'
 export * from './version'
+export * from './compatibility'
 export * from './manifest'
 export * from './context'
 export * from './kisaki'

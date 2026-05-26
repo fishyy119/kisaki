@@ -43,7 +43,7 @@ interface ReleaseAccumulator {
 }
 
 export interface ExtensionRepositoryAggregatorOptions {
-  appVersion: string
+  apiVersion: string
   resolveIconUrl(icon: ExtensionRegistryPackage['icon'] | undefined): string | null
 }
 
@@ -83,7 +83,7 @@ export class ExtensionRepositoryAggregator {
             registryPackage,
             release,
             releaseDigest,
-            appVersion: this.options.appVersion
+            apiVersion: this.options.apiVersion
           })
           const existing = accumulator.releasesByDigest.get(releaseDigest)
           if (!existing) {
@@ -195,7 +195,7 @@ function toReleaseInfo(input: {
   registryPackage: ExtensionRegistryPackage
   release: ExtensionRegistryRelease
   releaseDigest: string
-  appVersion: string
+  apiVersion: string
 }): ExtensionCatalogReleaseInfo {
   const artifacts = input.release.artifacts.map((artifact) =>
     toArtifactInfo(input.manifest, artifact)
@@ -212,7 +212,7 @@ function toReleaseInfo(input: {
     engines: input.release.engines,
     changelog: input.release.changelog,
     yanked: input.release.yanked === true,
-    compatible: semver.satisfies(input.appVersion, input.release.engines.kisaki),
+    compatible: semver.satisfies(input.apiVersion, input.release.engines.kisaki),
     repositoryCount: 1,
     repositoryId: source.repositoryId,
     repositoryName: source.repositoryName,

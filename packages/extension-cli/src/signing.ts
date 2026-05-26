@@ -218,10 +218,10 @@ function createArtifactSignaturePayload(input: {
   sha256: string
   target: ExtensionRegistryArtifactTarget
 }): ExtensionRegistryArtifactSignaturePayload {
-  const kisakiRange = input.manifest.engines?.kisaki?.trim()
+  const kisakiRange = input.manifest.engines.kisaki.trim()
   if (!kisakiRange) {
     throw new CliError(
-      'manifest.json must include engines.kisaki before the package can be signed or published.'
+      'manifest.json must include engines.kisaki Extension API range before the package can be signed or published.'
     )
   }
 
