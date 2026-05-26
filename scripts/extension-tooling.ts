@@ -49,7 +49,7 @@ const internalDependencies = new Map<string, readonly string[]>([
   ['create-kisaki-extension', ['@kisaki3/extension-api']]
 ])
 
-const templatePackagePath = 'packages/create-kisaki-extension/templates/default/package.json'
+const templatePackagePath = 'packages/create-kisaki-extension/templates/extension/base/package.json'
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
 const templateDependencyNames = [
   '@kisaki3/extension-api',
@@ -212,17 +212,19 @@ function collectToolingProblems(expectedVersion: string): string[] {
     }
   }
 
-  const templatePackage = readJson(templatePackagePath)
-  for (const dependencyName of templateDependencyNames) {
-    const actual =
-      templatePackage.dependencies?.[dependencyName] ??
-      templatePackage.devDependencies?.[dependencyName]
-    if (actual !== '^__TOOLING_VERSION__') {
-      problems.push(
-        `${templatePackagePath} must use "^__TOOLING_VERSION__" for ${dependencyName}, found ${String(
-          actual
-        )}.`
-      )
+  if (existsSync(resolveRepo(templatePackagePath))) {
+    const templatePackage = readJson(templatePackagePath)
+    for (const dependencyName of templateDependencyNames) {
+      const actual =
+        templatePackage.dependencies?.[dependencyName] ??
+        templatePackage.devDependencies?.[dependencyName]
+      if (actual !== '^__TOOLING_VERSION__') {
+        problems.push(
+          `${templatePackagePath} must use "^__TOOLING_VERSION__" for ${dependencyName}, found ${String(
+            actual
+          )}.`
+        )
+      }
     }
   }
 
@@ -334,11 +336,7 @@ function getDefaultDistTag(version: string): string {
   }
 
   const prereleaseStage = prerelease.split('.')[0]
-  if (
-    prereleaseStage === 'alpha' ||
-    prereleaseStage === 'beta' ||
-    prereleaseStage === 'rc'
-  ) {
+  if (prereleaseStage === 'alpha' || prereleaseStage === 'beta' || prereleaseStage === 'rc') {
     return prereleaseStage
   }
 
@@ -433,8 +431,8 @@ function sha256File(filePath: string): string {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex')
 }
 
-function readJson(relativePath: string): PackageJson {
-  return JSON.parse(readText(relativePath)) as PackageJson
+function readJson<T = PackageJson>(relativePath: string): T {
+  return JSON.parse(readText(relativePath)) as T
 }
 
 function writeJson(relativePath: string, value: PackageJson): void {

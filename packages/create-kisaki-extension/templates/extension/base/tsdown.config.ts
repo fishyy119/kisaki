@@ -5,9 +5,11 @@ export default defineConfig({
     index: 'src/index.ts'
   },
   format: 'esm',
-  dts: true,
+  platform: 'node',
+  target: 'node22',
   noExternal: ['@kisaki3/extension-sdk', '@kisaki3/extension-api'],
+  dts: false,
   outDir: 'dist',
-  clean: true,
-  sourcemap: true
+  sourcemap: true,
+  clean: true
 })

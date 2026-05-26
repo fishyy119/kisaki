@@ -1,0 +1,264 @@
+name: Publish Extension
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: publish-extension-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '24'
+  # prettier-ignore
+  REGISTRY_ID: "__REGISTRY_ID__"
+  # prettier-ignore
+  REGISTRY_NAME: "__REGISTRY_NAME__"
+
+jobs:
+  publish:
+    name: Publish Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect release commit
+        id: detect
+        shell: bash
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          FIRST_LINE=$(printf '%s\n' "$COMMIT_MSG" | head -n 1)
+
+          if [[ "$FIRST_LINE" =~ ^release:\ v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            TAG="v$VERSION"
+
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "Detected extension release $TAG"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "No extension release commit detected."
+          fi
+
+      - name: Set up Node.js
+        if: steps.detect.outputs.should_release == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        if: steps.detect.outputs.should_release == 'true'
+        run: npm install
+
+      - name: Validate release metadata
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          VERSION="${{ steps.detect.outputs.version }}"
+          TAG="${{ steps.detect.outputs.tag }}"
+          MANIFEST_ID=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')).id)")
+          MANIFEST_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')).version)")
+
+          if [ "$MANIFEST_VERSION" != "$VERSION" ]; then
+            echo "manifest.json version ($MANIFEST_VERSION) must match release commit version ($VERSION)."
+            exit 1
+          fi
+
+          git fetch --tags --force
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            TAG_SHA=$(git rev-list -n 1 "$TAG")
+            if [ "$TAG_SHA" != "$GITHUB_SHA" ]; then
+              echo "Release tag $TAG already points to $TAG_SHA, not this release commit $GITHUB_SHA."
+              exit 1
+            fi
+            echo "Release tag already exists for $MANIFEST_ID@$VERSION."
+          fi
+
+      - name: Build extension
+        if: steps.detect.outputs.should_release == 'true'
+        run: npm run build
+
+      - name: Validate extension
+        if: steps.detect.outputs.should_release == 'true'
+        run: npm run validate
+
+      - name: Package extension
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        env:
+          SIGNING_KEY_JSON: ${{ secrets.KISAKI_EXTENSION_SIGNING_KEY }}
+        run: |
+          mkdir -p artifacts
+
+          if [ -n "$SIGNING_KEY_JSON" ]; then
+            mkdir -p .keys
+            printf '%s' "$SIGNING_KEY_JSON" > .keys/author.ed25519.json
+            chmod 600 .keys/author.ed25519.json
+            npx --no-install kisx pack --out-dir artifacts --no-build --sign --key .keys/author.ed25519.json
+          else
+            npx --no-install kisx pack --out-dir artifacts --no-build
+          fi
+
+      - name: Collect package artifact
+        if: steps.detect.outputs.should_release == 'true'
+        id: artifact
+        shell: bash
+        run: |
+          VERSION="${{ steps.detect.outputs.version }}"
+          EXTENSION_ID=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')).id)")
+          ARCHIVE_NAME="$EXTENSION_ID-$VERSION.kisx"
+          ARCHIVE_PATH="artifacts/$ARCHIVE_NAME"
+          SIGNATURE_PATH="artifacts/$EXTENSION_ID-$VERSION.sig"
+
+          if [ ! -f "$ARCHIVE_PATH" ]; then
+            echo "Missing package archive: $ARCHIVE_PATH"
+            exit 1
+          fi
+
+          echo "extension_id=$EXTENSION_ID" >> "$GITHUB_OUTPUT"
+          echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
+
+          if [ -f "$SIGNATURE_PATH" ]; then
+            echo "signature_path=$SIGNATURE_PATH" >> "$GITHUB_OUTPUT"
+          else
+            echo "signature_path=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ensure release tag
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          TAG="${{ steps.detect.outputs.tag }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            TAG_SHA=$(git rev-list -n 1 "$TAG")
+            if [ "$TAG_SHA" != "$GITHUB_SHA" ]; then
+              echo "Release tag $TAG already points to $TAG_SHA, not this release commit $GITHUB_SHA."
+              exit 1
+            fi
+            echo "Release tag already exists: $TAG"
+          else
+            git tag "$TAG" "$GITHUB_SHA"
+            git push origin "$TAG"
+          fi
+
+      - name: Publish GitHub Release
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.detect.outputs.tag }}"
+          VERSION="${{ steps.detect.outputs.version }}"
+          EXTENSION_ID="${{ steps.artifact.outputs.extension_id }}"
+          ARCHIVE_PATH="${{ steps.artifact.outputs.archive_path }}"
+          SIGNATURE_PATH="${{ steps.artifact.outputs.signature_path }}"
+          RELEASE_NAME="$EXTENSION_ID v$VERSION"
+          RELEASE_NOTES=$(cat <<EOF
+          Kisaki extension release \`$EXTENSION_ID@$VERSION\`.
+
+          Registry manifest:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/registry/manifest.json
+          EOF
+          )
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub Release already exists: $TAG"
+          else
+            RELEASE_ARGS=(
+              release
+              create
+              "$TAG"
+              --target
+              "$GITHUB_SHA"
+              --title
+              "$RELEASE_NAME"
+              --notes
+              "$RELEASE_NOTES"
+            )
+
+            if [[ "$VERSION" == *-* ]]; then
+              RELEASE_ARGS+=(--prerelease)
+            fi
+
+            gh "${RELEASE_ARGS[@]}"
+          fi
+
+          gh release upload "$TAG" "$ARCHIVE_PATH" --clobber
+
+          if [ -n "$SIGNATURE_PATH" ]; then
+            gh release upload "$TAG" "$SIGNATURE_PATH" --clobber
+          fi
+
+      - name: Prepare registry branch
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          git fetch origin main
+          git checkout -B publish-registry origin/main
+
+      - name: Update registry manifest
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          VERSION="${{ steps.detect.outputs.version }}"
+          TAG="${{ steps.detect.outputs.tag }}"
+          EXTENSION_ID="${{ steps.artifact.outputs.extension_id }}"
+          ARCHIVE_PATH="${{ steps.artifact.outputs.archive_path }}"
+          SIGNATURE_PATH="${{ steps.artifact.outputs.signature_path }}"
+          ARCHIVE_NAME="$EXTENSION_ID-$VERSION.kisx"
+          ARTIFACT_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ARCHIVE_NAME}"
+          PUBLISHED_AT=$(git show -s --format=%cI "$GITHUB_SHA")
+
+          if [ ! -f registry/manifest.json ]; then
+            npx --no-install kisx registry init \
+              --out registry/manifest.json \
+              --id "$REGISTRY_ID" \
+              --name "$REGISTRY_NAME"
+          fi
+
+          ADD_RELEASE_ARGS=(
+            registry
+            add-release
+            "$ARCHIVE_PATH"
+            --manifest
+            registry/manifest.json
+            --url
+            "$ARTIFACT_URL"
+            --published-at
+            "$PUBLISHED_AT"
+          )
+
+          if [ -n "$SIGNATURE_PATH" ]; then
+            ADD_RELEASE_ARGS+=(--signature "$SIGNATURE_PATH")
+          fi
+
+          npx --no-install kisx "${ADD_RELEASE_ARGS[@]}"
+          npx --no-install kisx registry validate registry/manifest.json
+
+      - name: Commit registry manifest
+        if: steps.detect.outputs.should_release == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add registry/manifest.json
+
+          if git diff --cached --quiet; then
+            echo "Registry manifest is already up to date."
+            exit 0
+          fi
+
+          git commit -m "chore(registry): publish ${{ steps.artifact.outputs.extension_id }} v${{ steps.detect.outputs.version }} [skip ci]"
+          git push origin HEAD:main

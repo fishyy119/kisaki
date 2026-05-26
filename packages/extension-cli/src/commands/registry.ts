@@ -300,12 +300,21 @@ function upsertRegistryRelease(input: {
     packages.push(updatedPackage)
   }
 
-  return sortRegistryManifest({
+  const candidateManifest = sortRegistryManifest({
     ...input.manifest,
-    updatedAt: new Date().toISOString(),
+    updatedAt: input.manifest.updatedAt,
     signingKeys,
     packages
   })
+
+  if (areRegistryManifestsEquivalent(input.manifest, candidateManifest)) {
+    return input.manifest
+  }
+
+  return {
+    ...candidateManifest,
+    updatedAt: new Date().toISOString()
+  }
 }
 
 function createRegistryPackage(manifest: ExtensionManifest): ExtensionRegistryPackage {
@@ -345,10 +354,21 @@ function mergeRegistryRelease(input: {
     return artifact.target === incomingArtifact.target
   })
 
-  if (artifactIndex >= 0 && !input.replace) {
-    throw new CliError(
-      `${input.packageId}@${input.incoming.version} already has artifact target "${incomingArtifact.target}". Use --replace to overwrite it.`
-    )
+  if (artifactIndex >= 0) {
+    const existingArtifact = input.existing.artifacts[artifactIndex]
+    const changelogChanged =
+      input.incoming.changelog !== undefined &&
+      JSON.stringify(input.incoming.changelog) !== JSON.stringify(input.existing.changelog)
+
+    if (areRegistryArtifactsEqual(existingArtifact, incomingArtifact) && !changelogChanged) {
+      return input.existing
+    }
+
+    if (!input.replace) {
+      throw new CliError(
+        `${input.packageId}@${input.incoming.version} already has artifact target "${incomingArtifact.target}". Use --replace to overwrite it.`
+      )
+    }
   }
 
   const artifacts =
@@ -626,6 +646,29 @@ function compareStrings(left: string, right: string): number {
 
 function areCategorySetsEqual(left: readonly string[], right: readonly string[]): boolean {
   return [...new Set(left)].toSorted().join('\0') === [...new Set(right)].toSorted().join('\0')
+}
+
+function areRegistryArtifactsEqual(
+  left: ExtensionRegistryArtifact,
+  right: ExtensionRegistryArtifact
+): boolean {
+  return (
+    left.target === right.target &&
+    left.url === right.url &&
+    left.size === right.size &&
+    left.sha256 === right.sha256 &&
+    JSON.stringify(left.signature) === JSON.stringify(right.signature)
+  )
+}
+
+function areRegistryManifestsEquivalent(
+  left: ExtensionRegistryManifest,
+  right: ExtensionRegistryManifest
+): boolean {
+  const comparableLeft = sortRegistryManifest({ ...left, updatedAt: '' })
+  const comparableRight = sortRegistryManifest({ ...right, updatedAt: '' })
+
+  return JSON.stringify(comparableLeft) === JSON.stringify(comparableRight)
 }
 
 function isSameReleaseVersion(

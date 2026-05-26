@@ -3,6 +3,10 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from 'node:path'
 import { isExtensionIdentifier, type ExtensionCategory } from '@kisaki3/extension-api'
 
+export const EXTENSION_PUBLISH_WORKFLOWS = ['manual', 'github-single', 'github-monorepo'] as const
+
+export type ExtensionPublishWorkflow = (typeof EXTENSION_PUBLISH_WORKFLOWS)[number]
+
 export interface ExtensionScaffoldConfig {
   projectName: string
   packageName: string
@@ -13,6 +17,9 @@ export interface ExtensionScaffoldConfig {
   category: ExtensionCategory
   toolingVersion: string
   extensionApiRange: string
+  publishWorkflow: ExtensionPublishWorkflow
+  registryId: string
+  registryName: string
 }
 
 export interface ScaffoldExtensionOptions {
@@ -28,6 +35,33 @@ export interface ScaffoldExtensionResult {
   gitRequested: boolean
 }
 
+interface TemplateLayer {
+  sourceDir: string
+  targetDir: string
+  optional?: boolean
+}
+
+const TEMPLATE_KEYS = [
+  'PROJECT_NAME',
+  'PACKAGE_NAME',
+  'EXTENSION_ID',
+  'EXTENSION_NAME',
+  'DESCRIPTION',
+  'AUTHOR',
+  'CATEGORY',
+  'TOOLING_VERSION',
+  'EXTENSION_API_RANGE',
+  'REGISTRY_ID',
+  'REGISTRY_NAME',
+  'PUBLISH_SECTION'
+] as const
+
+type TemplateKey = (typeof TEMPLATE_KEYS)[number]
+
+const TEMPLATE_TOKEN_PATTERN = createTemplateTokenPattern()
+
+type TemplateRenderMode = 'raw' | 'jsonStringContent' | 'templateStringContent'
+
 export function scaffoldExtension(options: ScaffoldExtensionOptions): ScaffoldExtensionResult {
   if (!existsSync(options.templateDir)) {
     throw new Error(`Template directory not found: ${options.templateDir}`)
@@ -37,8 +71,16 @@ export function scaffoldExtension(options: ScaffoldExtensionOptions): ScaffoldEx
     throw new Error(`Directory already exists: ${options.config.projectName}`)
   }
 
+  const templateContext = createTemplateContext(options.templateDir, options.config)
   mkdirSync(options.targetDir, { recursive: true })
-  copyTemplate(options.templateDir, options.targetDir, options.config)
+
+  for (const layer of createTemplateLayers(
+    options.templateDir,
+    options.targetDir,
+    options.config
+  )) {
+    copyTemplateLayer(layer, templateContext)
+  }
 
   const gitResult = options.git
     ? initGit(options.targetDir, options.config.extensionName)
@@ -81,43 +123,84 @@ export function toDisplayName(value: string): string {
   return value.replace(/[._-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
-function copyTemplate(src: string, dest: string, config: ExtensionScaffoldConfig): void {
-  mkdirSync(dest, { recursive: true })
+function createTemplateLayers(
+  templateDir: string,
+  targetDir: string,
+  config: ExtensionScaffoldConfig
+): TemplateLayer[] {
+  const extensionTargetDir =
+    config.publishWorkflow === 'github-monorepo'
+      ? path.join(targetDir, 'extensions', config.extensionId)
+      : targetDir
 
-  for (const entry of readdirSync(src)) {
-    const sourcePath = path.join(src, entry)
-    const targetPath = path.join(dest, entry)
-
-    if (statSync(sourcePath).isDirectory()) {
-      copyTemplate(sourcePath, targetPath, config)
-      continue
+  return [
+    {
+      sourceDir: path.join(templateDir, 'workspace', 'base'),
+      targetDir
+    },
+    {
+      sourceDir: path.join(templateDir, 'workspace', 'publish', config.publishWorkflow),
+      targetDir,
+      optional: true
+    },
+    {
+      sourceDir: path.join(templateDir, 'extension', 'base'),
+      targetDir: extensionTargetDir
+    },
+    {
+      sourceDir: path.join(templateDir, 'extension', 'categories', config.category),
+      targetDir: extensionTargetDir
+    }
+  ].filter((layer) => {
+    if (existsSync(layer.sourceDir)) {
+      return true
     }
 
-    const content = applyTemplate(readFileSync(sourcePath, 'utf-8'), config, targetPath)
-    writeFileSync(targetPath, content)
+    if (layer.optional) {
+      return false
+    }
+
+    throw new Error(`Template layer not found: ${layer.sourceDir}`)
+  })
+}
+
+function copyTemplateLayer(layer: TemplateLayer, context: Map<string, string>): void {
+  mkdirSync(layer.targetDir, { recursive: true })
+
+  for (const entry of readdirSync(layer.sourceDir)) {
+    copyTemplateEntry(path.join(layer.sourceDir, entry), path.join(layer.targetDir, entry), context)
   }
 }
 
-const TEMPLATE_TOKEN_PATTERN =
-  /__(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY|TOOLING_VERSION|EXTENSION_API_RANGE)__|\{\{(?:PROJECT_NAME|PACKAGE_NAME|EXTENSION_ID|EXTENSION_NAME|DESCRIPTION|AUTHOR|CATEGORY|TOOLING_VERSION|EXTENSION_API_RANGE)\}\}/g
+function copyTemplateEntry(
+  sourcePath: string,
+  targetPath: string,
+  context: Map<string, string>
+): void {
+  const entryStats = statSync(sourcePath)
+  const targetEntryPath = path.join(
+    path.dirname(targetPath),
+    path.basename(targetPath) === '_gitignore' ? '.gitignore' : path.basename(targetPath)
+  )
 
-type TemplateRenderMode = 'raw' | 'jsonStringContent' | 'templateStringContent'
+  if (entryStats.isDirectory()) {
+    mkdirSync(targetEntryPath, { recursive: true })
+    for (const entry of readdirSync(sourcePath)) {
+      copyTemplateEntry(path.join(sourcePath, entry), path.join(targetEntryPath, entry), context)
+    }
+    return
+  }
 
-function applyTemplate(
-  content: string,
-  config: ExtensionScaffoldConfig,
-  targetPath: string
-): string {
-  const replacements = createTemplateReplacements(config, getTemplateRenderMode(targetPath))
-
-  return content.replace(TEMPLATE_TOKEN_PATTERN, (token) => replacements.get(token) ?? token)
+  mkdirSync(path.dirname(targetEntryPath), { recursive: true })
+  const content = applyTemplate(readFileSync(sourcePath, 'utf-8'), context, targetEntryPath)
+  writeFileSync(targetEntryPath, content)
 }
 
-function createTemplateReplacements(
-  config: ExtensionScaffoldConfig,
-  mode: TemplateRenderMode
+function createTemplateContext(
+  templateDir: string,
+  config: ExtensionScaffoldConfig
 ): Map<string, string> {
-  const values = {
+  const values: Record<TemplateKey, string> = {
     PROJECT_NAME: config.projectName,
     PACKAGE_NAME: config.packageName,
     EXTENSION_ID: config.extensionId,
@@ -126,14 +209,64 @@ function createTemplateReplacements(
     AUTHOR: config.author,
     CATEGORY: config.category,
     TOOLING_VERSION: config.toolingVersion,
-    EXTENSION_API_RANGE: config.extensionApiRange
+    EXTENSION_API_RANGE: config.extensionApiRange,
+    REGISTRY_ID: config.registryId,
+    REGISTRY_NAME: config.registryName,
+    PUBLISH_SECTION: ''
   }
-  const replacements = new Map<string, string>()
+  const context = new Map<string, string>()
 
   for (const [key, value] of Object.entries(values)) {
-    const replacement = formatTemplateValue(value, mode)
-    replacements.set(`__${key}__`, replacement)
-    replacements.set(`{{${key}}}`, replacement)
+    context.set(`__${key}__`, value)
+    context.set(`{{${key}}}`, value)
+  }
+
+  const publishSection = readPublishSection(templateDir, config, context)
+  context.set('__PUBLISH_SECTION__', publishSection)
+  context.set('{{PUBLISH_SECTION}}', publishSection)
+
+  return context
+}
+
+function readPublishSection(
+  templateDir: string,
+  config: ExtensionScaffoldConfig,
+  context: Map<string, string>
+): string {
+  const sectionPath = path.join(
+    templateDir,
+    'extension',
+    'publish',
+    config.publishWorkflow,
+    'PUBLISH.md'
+  )
+
+  if (!existsSync(sectionPath)) {
+    return ''
+  }
+
+  return applyTemplate(readFileSync(sectionPath, 'utf-8').trimEnd(), context, sectionPath)
+}
+
+function createTemplateTokenPattern(): RegExp {
+  const keys = TEMPLATE_KEYS.join('|')
+  return new RegExp(`__(?:${keys})__|\\{\\{(?:${keys})\\}\\}`, 'g')
+}
+
+function applyTemplate(content: string, context: Map<string, string>, targetPath: string): string {
+  const replacements = formatTemplateReplacements(context, getTemplateRenderMode(targetPath))
+
+  return content.replace(TEMPLATE_TOKEN_PATTERN, (token) => replacements.get(token) ?? token)
+}
+
+function formatTemplateReplacements(
+  context: Map<string, string>,
+  mode: TemplateRenderMode
+): Map<string, string> {
+  const replacements = new Map<string, string>()
+
+  for (const [token, value] of context) {
+    replacements.set(token, formatTemplateValue(value, mode))
   }
 
   return replacements
@@ -142,7 +275,7 @@ function createTemplateReplacements(
 function getTemplateRenderMode(targetPath: string): TemplateRenderMode {
   const extension = path.extname(targetPath)
 
-  if (extension === '.json') {
+  if (extension === '.json' || extension === '.yml' || extension === '.yaml') {
     return 'jsonStringContent'
   }
 
@@ -178,7 +311,7 @@ function initGit(
   extensionName: string
 ): Pick<ScaffoldExtensionResult, 'gitInitialized' | 'initialCommitCreated'> {
   try {
-    execFileSync('git', ['init'], { cwd: targetDir, stdio: 'ignore' })
+    initGitMainBranch(targetDir)
   } catch {
     return { gitInitialized: false, initialCommitCreated: false }
   }
@@ -193,4 +326,15 @@ function initGit(
   } catch {
     return { gitInitialized: true, initialCommitCreated: false }
   }
+}
+
+function initGitMainBranch(targetDir: string): void {
+  try {
+    execFileSync('git', ['init', '-b', 'main'], { cwd: targetDir, stdio: 'ignore' })
+    return
+  } catch {
+    execFileSync('git', ['init'], { cwd: targetDir, stdio: 'ignore' })
+  }
+
+  execFileSync('git', ['branch', '-M', 'main'], { cwd: targetDir, stdio: 'ignore' })
 }

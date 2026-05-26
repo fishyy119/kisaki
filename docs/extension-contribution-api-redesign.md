@@ -958,8 +958,8 @@ Renderer 规则：
 必须更新：
 
 - `extensions/bangumi/src/index.ts`
-- `packages/create-kisaki-extension/templates/default/src/index.ts`
-- `packages/create-kisaki-extension/templates/default/README.md`
+- `packages/create-kisaki-extension/templates/extension/categories/*/src/index.ts`
+- `packages/create-kisaki-extension/templates/extension/categories/*/README.md`
 - `extensions/bangumi/README.md`
 - `packages/extension-api/README.md`
 - `packages/extension-sdk/README.md`

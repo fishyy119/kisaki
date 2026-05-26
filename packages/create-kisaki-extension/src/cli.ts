@@ -10,6 +10,7 @@ import prompts from 'prompts'
 import { bold, cyan, dim, green, red } from 'kolorist'
 import {
   type ExtensionScaffoldConfig,
+  type ExtensionPublishWorkflow,
   scaffoldExtension,
   isProjectName,
   toDisplayName,
@@ -26,10 +27,14 @@ interface ParsedArgs {
   projectName?: string
   options: {
     git: boolean | null
+    publishWorkflow: ExtensionPublishWorkflow | null
   }
 }
 
+type PromptQuestion = prompts.PromptObject
+
 const DEFAULT_EXTENSION_CATEGORY: ExtensionCategory = 'tool'
+const DEFAULT_PUBLISH_WORKFLOW: ExtensionPublishWorkflow = 'github-single'
 
 export async function runCreateExtensionCli(
   argv: readonly string[],
@@ -42,68 +47,12 @@ export async function runCreateExtensionCli(
   console.log(dim('  Scaffolding a new Kisaki extension project.'))
   console.log()
 
-  const response = await prompts(
-    [
-      {
-        type: parsed.projectName ? null : 'text',
-        name: 'projectName',
-        message: 'Project name:',
-        initial: 'my-kisaki-extension',
-        validate: (value: string) =>
-          isProjectName(value)
-            ? true
-            : 'Use letters or numbers at both ends; dots, underscores, and hyphens may appear inside.'
-      },
-      {
-        type: 'text',
-        name: 'extensionId',
-        message: 'Extension ID:',
-        initial: (previous: string) =>
-          toExtensionId(parsed.projectName || previous || 'my-kisaki-extension'),
-        validate: (value: string) =>
-          isExtensionIdentifier(value)
-            ? true
-            : 'Use lowercase alphanumeric segments separated by dots; hyphens may appear inside a segment.'
-      },
-      {
-        type: 'text',
-        name: 'extensionName',
-        message: 'Display name:',
-        initial: (_previous: string, values: { extensionId?: string }) =>
-          toDisplayName(parsed.projectName || values.extensionId || 'my-kisaki-extension')
-      },
-      {
-        type: 'select',
-        name: 'category',
-        message: 'Category:',
-        initial: EXTENSION_CATEGORIES.indexOf(DEFAULT_EXTENSION_CATEGORY),
-        choices: EXTENSION_CATEGORIES.map((category) => ({ title: category, value: category }))
-      },
-      {
-        type: 'text',
-        name: 'description',
-        message: 'Description:',
-        initial: 'A Kisaki extension.'
-      },
-      {
-        type: 'text',
-        name: 'author',
-        message: 'Author:'
-      },
-      {
-        type: parsed.options.git === null ? 'confirm' : null,
-        name: 'git',
-        message: 'Initialize git repository?',
-        initial: true
-      }
-    ],
-    {
-      onCancel: () => {
-        console.log(red('[error]') + ' Operation cancelled.')
-        process.exit(1)
-      }
+  const response = await prompts(createPromptQuestions(parsed), {
+    onCancel: () => {
+      console.log(red('[error]') + ' Operation cancelled.')
+      process.exit(1)
     }
-  )
+  })
 
   const projectName = parsed.projectName || response.projectName
   if (!isProjectName(projectName)) {
@@ -111,20 +60,34 @@ export async function runCreateExtensionCli(
     process.exit(1)
   }
 
+  const extensionName =
+    typeof response.extensionName === 'string' && response.extensionName.trim().length > 0
+      ? response.extensionName.trim()
+      : toDisplayName(projectName)
+
   const config: ExtensionScaffoldConfig = {
     projectName,
     packageName: toPackageName(projectName),
     extensionId: response.extensionId,
-    extensionName: response.extensionName,
+    extensionName,
     description: response.description || 'A Kisaki extension.',
     author: response.author || '',
     category: response.category || DEFAULT_EXTENSION_CATEGORY,
     toolingVersion: options.toolingVersion,
-    extensionApiRange: getRecommendedExtensionApiRange(EXTENSION_API_VERSION)
+    extensionApiRange: getRecommendedExtensionApiRange(EXTENSION_API_VERSION),
+    publishWorkflow:
+      parsed.options.publishWorkflow ?? response.publishWorkflow ?? DEFAULT_PUBLISH_WORKFLOW,
+    registryId: response.registryId || toExtensionId(`${response.extensionId}.registry`),
+    registryName: response.registryName || `${extensionName} Extensions`
   }
 
   if (!isExtensionIdentifier(config.extensionId)) {
     console.log(red('[error]') + ' Invalid extension ID.')
+    process.exit(1)
+  }
+
+  if (!isExtensionIdentifier(config.registryId)) {
+    console.log(red('[error]') + ' Invalid registry ID.')
     process.exit(1)
   }
 
@@ -149,14 +112,148 @@ export async function runCreateExtensionCli(
   console.log()
   console.log('  Next steps:')
   console.log(`  ${dim('$')} cd ${config.projectName}`)
-  console.log(`  ${dim('$')} npm install`)
-  console.log(`  ${dim('$')} npm run pack`)
+  if (config.publishWorkflow === 'github-monorepo') {
+    console.log(`  ${dim('$')} cd extensions/${config.extensionId}`)
+    console.log(`  ${dim('$')} npm install`)
+    console.log(`  ${dim('$')} cd ../..`)
+    console.log(`  ${dim('$')} git remote add origin <your-github-repo>`)
+    console.log(`  ${dim('$')} git push -u origin main`)
+    console.log(
+      `  ${dim('$')} git commit --allow-empty -m "release(${config.extensionId}): v0.0.1"`
+    )
+    console.log(`  ${dim('$')} git push`)
+  } else if (config.publishWorkflow === 'github-single') {
+    console.log(`  ${dim('$')} npm install`)
+    console.log(`  ${dim('$')} git remote add origin <your-github-repo>`)
+    console.log(`  ${dim('$')} git push -u origin main`)
+    console.log(`  ${dim('$')} git commit --allow-empty -m "release: v0.0.1"`)
+    console.log(`  ${dim('$')} git push`)
+  } else {
+    console.log(`  ${dim('$')} npm install`)
+    console.log(`  ${dim('$')} npm run pack`)
+  }
   console.log()
+}
+
+function createPromptQuestions(parsed: ParsedArgs): PromptQuestion[] {
+  const questions: PromptQuestion[] = []
+
+  if (!parsed.projectName) {
+    questions.push({
+      type: 'text',
+      name: 'projectName',
+      message: 'Project name:',
+      initial: 'my-kisaki-extension',
+      validate: (value: string) =>
+        isProjectName(value)
+          ? true
+          : 'Use letters or numbers at both ends; dots, underscores, and hyphens may appear inside.'
+    })
+  }
+
+  questions.push(
+    {
+      type: 'text',
+      name: 'extensionId',
+      message: 'Extension ID:',
+      initial: (previous: string) =>
+        toExtensionId(parsed.projectName || previous || 'my-kisaki-extension'),
+      validate: (value: string) =>
+        isExtensionIdentifier(value)
+          ? true
+          : 'Use lowercase alphanumeric segments separated by dots; hyphens may appear inside a segment.'
+    },
+    {
+      type: 'text',
+      name: 'extensionName',
+      message: 'Display name:',
+      initial: (_previous: string, values: { extensionId?: string }) =>
+        toDisplayName(parsed.projectName || values.extensionId || 'my-kisaki-extension'),
+      validate: (value: string) => (value.trim().length > 0 ? true : 'Display name is required.')
+    },
+    {
+      type: 'select',
+      name: 'category',
+      message: 'Category:',
+      initial: EXTENSION_CATEGORIES.indexOf(DEFAULT_EXTENSION_CATEGORY),
+      choices: EXTENSION_CATEGORIES.map((category) => ({ title: category, value: category }))
+    },
+    {
+      type: 'text',
+      name: 'description',
+      message: 'Description:',
+      initial: 'A Kisaki extension.'
+    },
+    {
+      type: 'text',
+      name: 'author',
+      message: 'Author:'
+    }
+  )
+
+  if (parsed.options.publishWorkflow === null) {
+    questions.push({
+      type: 'select',
+      name: 'publishWorkflow',
+      message: 'Publish workflow:',
+      initial: 0,
+      choices: [
+        {
+          title: 'GitHub single extension',
+          value: 'github-single',
+          description: 'Root manifest; release commits create GitHub Releases and registry updates.'
+        },
+        {
+          title: 'GitHub extension monorepo',
+          value: 'github-monorepo',
+          description: 'extensions/<id>; scoped release commits update one shared registry.'
+        },
+        {
+          title: 'Manual or custom hosting',
+          value: 'manual',
+          description: 'Keep only local packaging and registry commands.'
+        }
+      ]
+    })
+  }
+
+  questions.push(
+    {
+      type: 'text',
+      name: 'registryId',
+      message: 'Registry ID:',
+      initial: (_previous: string, values: { extensionId?: string }) =>
+        toExtensionId(`${values.extensionId || 'my-kisaki-extension'}.registry`),
+      validate: (value: string) =>
+        isExtensionIdentifier(value)
+          ? true
+          : 'Use lowercase alphanumeric segments separated by dots; hyphens may appear inside a segment.'
+    },
+    {
+      type: 'text',
+      name: 'registryName',
+      message: 'Registry name:',
+      initial: (_previous: string, values: { extensionName?: string }) =>
+        `${values.extensionName || 'Kisaki'} Extensions`
+    }
+  )
+
+  if (parsed.options.git === null) {
+    questions.push({
+      type: 'confirm',
+      name: 'git',
+      message: 'Initialize git repository?',
+      initial: true
+    })
+  }
+
+  return questions
 }
 
 function parseArgs(args: readonly string[]): ParsedArgs {
   let projectName: string | undefined
   let git: boolean | null = null
+  let publishWorkflow: ExtensionPublishWorkflow | null = null
 
   for (const arg of args) {
     if (arg === '--git') {
@@ -169,10 +266,25 @@ function parseArgs(args: readonly string[]): ParsedArgs {
       continue
     }
 
+    if (arg === '--github-single') {
+      publishWorkflow = 'github-single'
+      continue
+    }
+
+    if (arg === '--github-monorepo') {
+      publishWorkflow = 'github-monorepo'
+      continue
+    }
+
+    if (arg === '--manual') {
+      publishWorkflow = 'manual'
+      continue
+    }
+
     if (!projectName) {
       projectName = arg
     }
   }
 
-  return { projectName, options: { git } }
+  return { projectName, options: { git, publishWorkflow } }
 }
