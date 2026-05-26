@@ -1,27 +1,22 @@
 <script setup lang="ts">
-import type { AlertDialogActionProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { reactiveOmit } from '@vueuse/core'
-import { AlertDialogAction } from 'reka-ui'
-import { buttonVariants } from '@renderer/components/ui/button'
+import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils'
 
-const props = defineProps<
-  AlertDialogActionProps & {
-    class?: HTMLAttributes['class']
-    disabled?: boolean
-  }
->()
-
-const delegatedProps = reactiveOmit(props, 'class')
+const props = defineProps<{
+  class?: HTMLAttributes['class']
+  disabled?: boolean
+}>()
 </script>
 
 <template>
-  <AlertDialogAction
-    v-bind="delegatedProps"
-    :class="cn(buttonVariants({ variant: 'destructive' }), props.class)"
+  <Button
+    type="button"
+    variant="destructive"
+    :disabled="props.disabled"
+    :class="cn(props.class)"
     data-slot="alert-dialog-action"
   >
     <slot />
-  </AlertDialogAction>
+  </Button>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { PopoverTrigger } from '@renderer/components/ui/popover'
@@ -42,6 +42,7 @@ const disabled = computed(
     !props.node.callbackId ||
     props.controller.isCallbackBusy(props.node.callbackId)
 )
+const confirmOpen = ref(false)
 const nodeKey = computed(() =>
   props.controller.getNodeKey(props.state, props.fieldId, props.node.id)
 )
@@ -69,10 +70,18 @@ function invoke(): void {
     node: props.node
   })
 }
+
+function handleConfirmInvoke(): void {
+  invoke()
+  confirmOpen.value = false
+}
 </script>
 
 <template>
-  <AlertDialog v-if="props.node.confirm">
+  <AlertDialog
+    v-if="props.node.confirm"
+    v-model:open="confirmOpen"
+  >
     <AlertDialogTrigger as-child>
       <Button
         type="button"
@@ -101,7 +110,7 @@ function invoke(): void {
         </AlertDialogCancel>
         <AlertDialogAction
           :disabled="disabled"
-          @click="invoke"
+          @click="handleConfirmInvoke"
         >
           {{ props.node.confirm.confirmLabel ?? props.node.label }}
         </AlertDialogAction>

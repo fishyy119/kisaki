@@ -1,10 +1,10 @@
-// Portaled floating surfaces must sit above ordinary dialog content and below
-// blocking alert dialogs, otherwise comboboxes and menus opened inside dialogs
-// render behind their parent dialog.
+// Non-blocking portaled surfaces share the dialog content layer so the most
+// recently opened portal wins by DOM order, matching the original overlay
+// behavior. Blocking alert dialogs live above that shared layer.
 export const UI_LAYER = {
   dialogOverlay: 50,
   dialogContent: 51,
-  floating: 60,
+  floating: 51,
   alertDialogOverlay: 70,
   alertDialogContent: 71
 } as const

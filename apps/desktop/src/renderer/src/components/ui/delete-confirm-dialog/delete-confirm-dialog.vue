@@ -3,6 +3,7 @@
 import { ref, computed, nextTick } from 'vue'
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -11,7 +12,6 @@ import {
   AlertDialogCancel
 } from '@renderer/components/ui/alert-dialog'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { Button } from '@renderer/components/ui/button'
 
 interface Props {
   entityLabel: string
@@ -109,14 +109,12 @@ async function handleConfirm() {
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel :disabled="isDeleting">取消</AlertDialogCancel>
-          <Button
-            type="button"
-            variant="destructive"
+          <AlertDialogAction
             :disabled="isDeleting"
             @click="handleConfirm"
           >
             {{ actionText }}
-          </Button>
+          </AlertDialogAction>
         </AlertDialogFooter>
       </template>
     </AlertDialogContent>
