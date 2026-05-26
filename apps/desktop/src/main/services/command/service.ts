@@ -60,18 +60,18 @@ export class CommandService implements IService {
 
   private emitProgress(progress: CommandExecutionProgress): void {
     this.ipc?.send('command:progress', progress)
-    this.event?.bus.emit('command:progress', { local: true }, progress)
+    this.event?.bus.emit('command.progressed', { local: true }, progress)
     this.notifications?.reportProgress(progress)
   }
 
   private emitStarted(started: CommandExecutionStartResult): void {
     this.ipc?.send('command:started', started)
-    this.event?.bus.emit('command:started', { local: true }, started)
+    this.event?.bus.emit('command.started', { local: true }, started)
   }
 
   private emitFinished(result: CommandExecutionResult): void {
     this.ipc?.send('command:finished', result)
-    this.event?.bus.emit('command:finished', { local: true }, result)
+    this.event?.bus.emit('command.finished', { local: true }, result)
     this.notifications?.finish(result)
   }
 

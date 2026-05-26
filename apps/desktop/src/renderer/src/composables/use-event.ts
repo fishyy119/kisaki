@@ -16,7 +16,7 @@ import type { AppEvents, AppEventListener } from '@shared/events'
  *
  * @example
  * ```ts
- * useEvent('db:updated', ({ table, id }) => {
+ * useEvent('db.updated', ({ table, id }) => {
  *   if (table === 'games' && id === gameId.value) {
  *     refetch()
  *   }

@@ -25,13 +25,13 @@ export function useShowcaseSections() {
   const { data, isLoading, isFetching, refetch } = useAsyncData(fetchSections)
 
   // Listen for DB events
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     if (table === 'showcase_sections') refetch()
   })
-  useEvent('db:updated', ({ table }) => {
+  useEvent('db.updated', ({ table }) => {
     if (table === 'showcase_sections') refetch()
   })
-  useEvent('db:deleted', ({ table }) => {
+  useEvent('db.deleted', ({ table }) => {
     if (table === 'showcase_sections') refetch()
   })
 

@@ -3,6 +3,7 @@ import { characterEntityProjection } from './character'
 import { collectionEntityProjection } from './collection'
 import { companyEntityProjection } from './company'
 import { personEntityProjection } from './person'
+import { scannerEntityProjection } from './scanner'
 import { tagEntityProjection } from './tag'
 
 export { projectEntityChanges } from './common'
@@ -13,7 +14,8 @@ export const ENTITY_PROJECTIONS: Record<string, EntityProjection> = {
   companies: companyEntityProjection,
   characters: characterEntityProjection,
   collections: collectionEntityProjection,
-  tags: tagEntityProjection
+  tags: tagEntityProjection,
+  scanners: scannerEntityProjection
 }
 
 export function getEntityProjectionForTopic(

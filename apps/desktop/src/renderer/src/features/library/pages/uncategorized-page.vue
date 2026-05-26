@@ -174,7 +174,7 @@ const state = useRenderState(isLoading, error, entities)
 // Event Listeners
 // =============================================================================
 
-useEvent('db:inserted', ({ table }) => {
+useEvent('db.inserted', ({ table }) => {
   if (
     table === 'games' ||
     table === 'characters' ||
@@ -185,7 +185,7 @@ useEvent('db:inserted', ({ table }) => {
     refetch()
   }
 })
-useEvent('db:updated', ({ table }) => {
+useEvent('db.updated', ({ table }) => {
   if (
     table === 'games' ||
     table === 'characters' ||
@@ -196,7 +196,7 @@ useEvent('db:updated', ({ table }) => {
     refetch()
   }
 })
-useEvent('db:deleted', ({ table }) => {
+useEvent('db.deleted', ({ table }) => {
   if (
     table === 'games' ||
     table === 'characters' ||

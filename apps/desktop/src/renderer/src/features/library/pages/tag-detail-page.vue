@@ -12,7 +12,11 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import { TagDetailContent, TagDropdownMenu, TagInfoFormDialog } from '@renderer/components/shared/tag'
+import {
+  TagDetailContent,
+  TagDropdownMenu,
+  TagInfoFormDialog
+} from '@renderer/components/shared/tag'
 import { useEvent, useRenderState, useTagProvider } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
@@ -57,7 +61,7 @@ const { tag, entityType, entityCounts, setEntityType, isLoading, error } = useTa
 )
 const state = useRenderState(isLoading, error, tag)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'tags' && id === tagId.value) {
     router.push(backTo.value)
   }

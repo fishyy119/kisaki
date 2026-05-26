@@ -77,13 +77,13 @@ const {
 const state = useRenderState(isLoading, error, profiles)
 
 // Listen for profile changes
-useEvent('db:inserted', (payload) => {
+useEvent('db.inserted', (payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
-useEvent('db:updated', (payload) => {
+useEvent('db.updated', (payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
-useEvent('db:deleted', (payload) => {
+useEvent('db.deleted', (payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
 

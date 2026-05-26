@@ -35,8 +35,8 @@
 
 game adapter 订阅事件：
 
-- `library.game.created`
-- `library.game.updated`
+- `game.created`
+- `game.updated`
 
 处理条件：
 

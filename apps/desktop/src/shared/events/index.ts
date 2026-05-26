@@ -33,7 +33,11 @@ import type {
   LibraryTagCreatedEvent,
   LibraryTagDeletedEvent,
   LibraryTagUpdatedEvent,
-  RawDbChangeEvent
+  RawDbChangeEvent,
+  ScannerCreatedEvent,
+  ScannerDeletedEvent,
+  ScannerFinishedEvent,
+  ScannerUpdatedEvent
 } from './library'
 
 // =============================================================================
@@ -51,81 +55,53 @@ export interface AppEvents {
   // Database Events
   // =========================================================================
 
-  'db:ready': [boolean]
-  'db:inserted': [RawDbChangeEvent]
-  'db:updated': [RawDbChangeEvent]
-  'db:deleted': [RawDbChangeEvent]
+  'db.ready': [boolean]
+  'db.inserted': [RawDbChangeEvent]
+  'db.updated': [RawDbChangeEvent]
+  'db.deleted': [RawDbChangeEvent]
 
-  // Typed library domain events
-  'library.game.created': [LibraryGameCreatedEvent]
-  'library.game.updated': [LibraryGameUpdatedEvent]
-  'library.game.deleted': [LibraryGameDeletedEvent]
-  'library.person.created': [LibraryPersonCreatedEvent]
-  'library.person.updated': [LibraryPersonUpdatedEvent]
-  'library.person.deleted': [LibraryPersonDeletedEvent]
-  'library.company.created': [LibraryCompanyCreatedEvent]
-  'library.company.updated': [LibraryCompanyUpdatedEvent]
-  'library.company.deleted': [LibraryCompanyDeletedEvent]
-  'library.character.created': [LibraryCharacterCreatedEvent]
-  'library.character.updated': [LibraryCharacterUpdatedEvent]
-  'library.character.deleted': [LibraryCharacterDeletedEvent]
-  'library.collection.created': [LibraryCollectionCreatedEvent]
-  'library.collection.updated': [LibraryCollectionUpdatedEvent]
-  'library.collection.deleted': [LibraryCollectionDeletedEvent]
-  'library.tag.created': [LibraryTagCreatedEvent]
-  'library.tag.updated': [LibraryTagUpdatedEvent]
-  'library.tag.deleted': [LibraryTagDeletedEvent]
-  'library.entity.merged': [LibraryEntityMergedEvent]
+  // Typed domain entity events
+  'game.created': [LibraryGameCreatedEvent]
+  'game.updated': [LibraryGameUpdatedEvent]
+  'game.deleted': [LibraryGameDeletedEvent]
+  'game.started': [{ gameId: string; pid?: number }]
+  'game.stopped': [{ gameId: string; playTime?: number }]
+  'person.created': [LibraryPersonCreatedEvent]
+  'person.updated': [LibraryPersonUpdatedEvent]
+  'person.deleted': [LibraryPersonDeletedEvent]
+  'company.created': [LibraryCompanyCreatedEvent]
+  'company.updated': [LibraryCompanyUpdatedEvent]
+  'company.deleted': [LibraryCompanyDeletedEvent]
+  'character.created': [LibraryCharacterCreatedEvent]
+  'character.updated': [LibraryCharacterUpdatedEvent]
+  'character.deleted': [LibraryCharacterDeletedEvent]
+  'collection.created': [LibraryCollectionCreatedEvent]
+  'collection.updated': [LibraryCollectionUpdatedEvent]
+  'collection.deleted': [LibraryCollectionDeletedEvent]
+  'tag.created': [LibraryTagCreatedEvent]
+  'tag.updated': [LibraryTagUpdatedEvent]
+  'tag.deleted': [LibraryTagDeletedEvent]
+  'scanner.created': [ScannerCreatedEvent]
+  'scanner.updated': [ScannerUpdatedEvent]
+  'scanner.deleted': [ScannerDeletedEvent]
+  'entity.merged': [LibraryEntityMergedEvent]
 
   // =========================================================================
-  // Entity Events
+  // Runtime Events
   // =========================================================================
 
-  // Game events
-  'game:added': [{ gameId: string; name: string }]
-  'game:removed': [{ gameId: string }]
-  'game:updated': [{ gameId: string; fields: string[] }]
-  'game:launched': [{ gameId: string; pid?: number }]
-  'game:closed': [{ gameId: string; playTime?: number }]
-
-  // Collection events
-  'collection:added': [{ collectionId: string; name: string }]
-  'collection:removed': [{ collectionId: string }]
-  'collection:updated': [{ collectionId: string; fields: string[] }]
-
-  // Character events
-  'character:added': [{ characterId: string; name: string }]
-  'character:removed': [{ characterId: string }]
-  'character:updated': [{ characterId: string; fields: string[] }]
-
-  // Person events
-  'person:added': [{ personId: string; name: string }]
-  'person:removed': [{ personId: string }]
-  'person:updated': [{ personId: string; fields: string[] }]
-
-  // Company events
-  'company:added': [{ companyId: string; name: string }]
-  'company:removed': [{ companyId: string }]
-  'company:updated': [{ companyId: string; fields: string[] }]
-
-  // Scanner events
-  'scanner:added': [{ scannerId: string; name: string }]
-  'scanner:removed': [{ scannerId: string }]
-  'scanner:updated': [{ scannerId: string; fields: string[] }]
-  'scanner:started': [{ scannerId: string; scannerName: string }]
-  'scanner:progress': [{ scannerId: string; current: number; total: number }]
-  'scanner:completed': [{ scannerId: string; stats: Record<string, number> }]
-  'scanner:error': [{ scannerId: string; error: string }]
+  'scanner.started': [{ scannerId: string; scannerName: string }]
+  'scanner.finished': [ScannerFinishedEvent]
 
   // Command events
-  'command:started': [CommandExecutionStartResult]
-  'command:progress': [CommandExecutionProgress]
-  'command:finished': [CommandExecutionResult]
+  'command.started': [CommandExecutionStartResult]
+  'command.progressed': [CommandExecutionProgress]
+  'command.finished': [CommandExecutionResult]
 
   // Background task events
-  'background-task:changed': [{ taskId: string }]
-  'background-task:deleted': [{ taskId: string }]
-  'background-task:run-started': [
+  'backgroundTask.changed': [{ taskId: string }]
+  'backgroundTask.deleted': [{ taskId: string }]
+  'backgroundTask.started': [
     {
       taskId: string
       commandId: string
@@ -133,30 +109,17 @@ export interface AppEvents {
       startedAt: number
     }
   ]
-  'background-task:run-finished': [BackgroundTaskRunRecord]
-
-  // Monitor events
-  'monitor:status-changed': [{ gameId: string; isRunning: boolean; isForeground: boolean }]
-  'monitor:process-started': [{ gameId: string; pid: number; processName: string }]
-  'monitor:process-stopped': [{ gameId: string; exitCode?: number }]
-  'monitor:foreground-changed': [{ gameId: string; isForeground: boolean }]
-
-  // Scraper profile events
-  'scraper:fetch-started': [{ profileId: string; identifier: string }]
-  'scraper:fetch-completed': [{ profileId: string; identifier: string; success: boolean }]
-  'scraper:fetch-error': [{ profileId: string; identifier: string; error: string }]
+  'backgroundTask.finished': [BackgroundTaskRunRecord]
 
   // Application events
-  'app:ready': []
-  'app:theme-changed': [{ theme: 'light' | 'dark' | 'system' }]
-  'app:locale-changed': [{ locale: AppLocale | null }]
-  'app:settings-changed': [{ setting: string; value: unknown }]
-  'app:portable-mode-change-pending': [{ targetMode: 'portable' | 'normal' }]
-  'app:portable-mode-change-cancelled': []
+  'app.ready': []
+  'app.theme.changed': [{ theme: 'light' | 'dark' | 'system' }]
+  'app.locale.changed': [{ locale: AppLocale | null }]
+  'app.settings.changed': [{ setting: string; value: unknown }]
 
   // Extension lifecycle events
-  'extension:enabled': [{ extensionId: string }]
-  'extension:disabled': [{ extensionId: string }]
+  'extension.enabled': [{ extensionId: string }]
+  'extension.disabled': [{ extensionId: string }]
 }
 
 // =============================================================================

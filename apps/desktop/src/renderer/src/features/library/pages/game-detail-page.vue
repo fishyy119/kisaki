@@ -80,13 +80,13 @@ watch(gameId, () => {
 const { game, isLoading, error } = useGameProvider(() => gameId.value ?? '', spoilersRevealed)
 const state = useRenderState(isLoading, error, game)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'games' && id === gameId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('library.entity.merged', (event) => {
+useEvent('entity.merged', (event) => {
   if (event.entityType === 'game' && event.sourceId === gameId.value) {
     router.replace({ path: `/library/game/${event.targetId}`, query: route.query })
   }

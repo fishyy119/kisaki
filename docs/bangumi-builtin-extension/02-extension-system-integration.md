@@ -11,7 +11,7 @@
 | Deeplink callback | `context.contributions.deeplinkRoutes.register`        | `auth/OAuthFlow`                                       |
 | 设置 UI           | `context.contributions.settingsPanels.register`        | `ui/settings`                                          |
 | Scraper provider  | `context.contributions.scraperProviders.game.register` | `media/game/scraper`                                   |
-| Host event        | `kisaki.events.on`                                     | `media/game/adapter` 订阅 `library.game.*`             |
+| Host event        | `kisaki.events.on`                                     | `media/game/adapter` 订阅 `game.*`                     |
 | Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | `media/game/adapter` 只读取 game profile               |
 | Ingest            | `kisaki.ingest.games.addFromScraper`                   | `media/game/adapter` 创建或定位游戏                    |
 | Library write     | `kisaki.library.*`                                     | `media/game/adapter` 写游戏状态、评分、tag、collection |
@@ -110,9 +110,9 @@ kisaki://ext/builtin.bangumi/oauth-callback
 
 DB event projector 已投影以下事件：
 
-- `library.game.created`
-- `library.game.updated`
-- `library.game.deleted`
+- `game.created`
+- `game.updated`
+- `game.deleted`
 - 其他实体的 created/updated/deleted
 
 Bangumi 自动同步不直接在通用层订阅这些 topic。订阅由 local adapter 暴露：
@@ -123,8 +123,8 @@ gameAdapter.subscribeLocalChanges((event) => syncQueue.enqueue(event))
 
 `media/game/adapter` 内部才可以调用：
 
-- `kisaki.events.on('library.game.created', ...)`
-- `kisaki.events.on('library.game.updated', ...)`
+- `kisaki.events.on('game.created', ...)`
+- `kisaki.events.on('game.updated', ...)`
 
 当前 public `LibraryGameUpdatedEvent` 包含 `changes`，不包含可依赖的 source 字段。防循环策略必须由 Bangumi 扩展自己完成：
 

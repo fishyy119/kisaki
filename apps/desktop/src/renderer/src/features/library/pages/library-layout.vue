@@ -25,7 +25,7 @@ const { explorerWidth } = storeToRefs(store)
 
 const isSearchOpen = ref(false)
 
-useEvent('library.entity.merged', (event) => {
+useEvent('entity.merged', (event) => {
   const sourceKeys = store.selectedKeys.filter((key) => {
     const selection = parseExplorerSelectionKey(key)
     return selection.id === event.sourceId
@@ -53,7 +53,9 @@ onUnmounted(() => {
 
 <template>
   <div class="h-full flex flex-col">
-    <header class="shrink-0 flex items-center justify-between px-4 h-12 border-b border-border bg-surface">
+    <header
+      class="shrink-0 flex items-center justify-between px-4 h-12 border-b border-border bg-surface"
+    >
       <div class="flex items-center gap-3">
         <Icon
           icon="icon-[mdi--bookshelf]"

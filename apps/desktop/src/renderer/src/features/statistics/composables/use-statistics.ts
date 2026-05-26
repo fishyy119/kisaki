@@ -425,21 +425,21 @@ export function useStatisticsProvider(): StatisticsContext {
   const allTimeStats = computed(() => computeStats(allTimeSessions.value, games.value))
 
   // Event listeners for auto-refresh
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     if (table === 'game_sessions') {
       refetch()
       if (reportType.value === 'overview') refetchAllTime()
     }
   })
 
-  useEvent('db:updated', ({ table }) => {
+  useEvent('db.updated', ({ table }) => {
     if (table === 'game_sessions' || table === 'games') {
       refetch()
       if (reportType.value === 'overview') refetchAllTime()
     }
   })
 
-  useEvent('db:deleted', ({ table }) => {
+  useEvent('db.deleted', ({ table }) => {
     if (table === 'game_sessions') {
       refetch()
       if (reportType.value === 'overview') refetchAllTime()

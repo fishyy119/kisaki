@@ -49,7 +49,7 @@ const { data: game, refetch } = useAsyncData(fetchGame, {
   watch: [() => props.skipped.existingGameId, showNsfw]
 })
 
-useEvent('db:updated', (payload) => {
+useEvent('db.updated', (payload) => {
   if (payload.table === 'games') {
     refetch()
   }

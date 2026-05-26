@@ -242,7 +242,7 @@ this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, ev
 成功后发送：
 
 ```ts
-event.bus.emit('library.entity.merged', {
+event.bus.emit('entity.merged', {
   entityType,
   targetId,
   sourceId,
@@ -250,7 +250,7 @@ event.bus.emit('library.entity.merged', {
 })
 ```
 
-DB triggers 仍会正常产生 `db:updated`、`db:inserted`、`db:deleted` 与现有 library projection 事件。
+DB triggers 仍会正常产生 `db.updated`、`db.inserted`、`db.deleted` 与现有 library projection 事件。
 
 ## 请求校验
 
@@ -635,7 +635,7 @@ Renderer 不需要依赖 error string 或 DB deleted event 反推目标。
 12. 重写 filters。
 13. 删除 source entity。
 14. 提交 transaction。
-15. 发出 `library.entity.merged`。
+15. 发出 `entity.merged`。
 16. 返回 result。
 
 transaction 内不允许 `await`。

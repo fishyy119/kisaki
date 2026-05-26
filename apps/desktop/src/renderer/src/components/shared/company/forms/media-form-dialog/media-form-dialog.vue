@@ -83,7 +83,7 @@ watch(fetchedCompany, (data) => {
   company.value = data ?? null
 })
 
-useEvent('db:updated', ({ table, id }) => {
+useEvent('db.updated', ({ table, id }) => {
   if (table === 'companies' && id === props.companyId) {
     refetch()
   }
@@ -101,10 +101,7 @@ async function handleImportFile() {
   isImportingFile.value = true
 
   try {
-    const dialogResult = await ipcManager.invoke(
-      'native:open-dialog',
-      getOpenImageDialogOptions()
-    )
+    const dialogResult = await ipcManager.invoke('native:open-dialog', getOpenImageDialogOptions())
     if (!dialogResult.success) {
       notify.error(dialogResult.error || '选择文件失败')
       return

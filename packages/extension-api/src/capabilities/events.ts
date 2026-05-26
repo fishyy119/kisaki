@@ -281,6 +281,46 @@ export type LibraryCollectionChange =
 
 export type LibraryTagChange = LibraryCoreChange<LibraryTagCoreSnapshot>
 
+export interface ScannerCoreSnapshot {
+  name?: string
+  path?: string
+  type?: string
+  scraperProfileId?: string
+  targetCollectionId?: string | null
+  scanIntervalMinutes?: number | null
+  entityDepth?: number | null
+  nameExtractionRules?: unknown
+}
+
+export type ScannerChange = LibraryCoreChange<ScannerCoreSnapshot>
+
+export interface ScannerCreatedEvent {
+  scannerId: string
+  name?: string
+  occurredAt: number
+}
+
+export interface ScannerUpdatedEvent {
+  scannerId: string
+  changes: readonly ScannerChange[]
+  occurredAt: number
+}
+
+export interface ScannerDeletedEvent {
+  scannerId: string
+  occurredAt: number
+}
+
+export type ScannerFinishedStatus = 'completed' | 'failed' | 'aborted'
+
+export interface ScannerFinishedEvent {
+  scannerId: string
+  scannerName: string
+  status: ScannerFinishedStatus
+  stats: Record<string, number>
+  error?: string
+}
+
 export interface LibraryPersonCreatedEvent {
   personId: string
   name?: string
@@ -370,32 +410,37 @@ export interface HostEvents {
   'app.ready': Record<string, never>
   'app.locale.changed': { locale: AppLocale | null }
   'app.settings.changed': { key: string; value: SerializableValue | undefined }
-  'theme.changed': { themeId: string; mode: 'light' | 'dark' | 'system' }
+  'app.theme.changed': { themeId: string; mode: 'light' | 'dark' | 'system' }
   'extension.enabled': { extensionId: string }
   'extension.disabled': { extensionId: string }
-  'library.game.created': LibraryGameCreatedEvent
-  'library.game.updated': LibraryGameUpdatedEvent
-  'library.game.deleted': LibraryGameDeletedEvent
-  'library.person.created': LibraryPersonCreatedEvent
-  'library.person.updated': LibraryPersonUpdatedEvent
-  'library.person.deleted': LibraryPersonDeletedEvent
-  'library.character.created': LibraryCharacterCreatedEvent
-  'library.character.updated': LibraryCharacterUpdatedEvent
-  'library.character.deleted': LibraryCharacterDeletedEvent
-  'library.company.created': LibraryCompanyCreatedEvent
-  'library.company.updated': LibraryCompanyUpdatedEvent
-  'library.company.deleted': LibraryCompanyDeletedEvent
-  'library.collection.created': LibraryCollectionCreatedEvent
-  'library.collection.updated': LibraryCollectionUpdatedEvent
-  'library.collection.deleted': LibraryCollectionDeletedEvent
-  'library.tag.created': LibraryTagCreatedEvent
-  'library.tag.updated': LibraryTagUpdatedEvent
-  'library.tag.deleted': LibraryTagDeletedEvent
+  'game.created': LibraryGameCreatedEvent
+  'game.updated': LibraryGameUpdatedEvent
+  'game.deleted': LibraryGameDeletedEvent
+  'person.created': LibraryPersonCreatedEvent
+  'person.updated': LibraryPersonUpdatedEvent
+  'person.deleted': LibraryPersonDeletedEvent
+  'character.created': LibraryCharacterCreatedEvent
+  'character.updated': LibraryCharacterUpdatedEvent
+  'character.deleted': LibraryCharacterDeletedEvent
+  'company.created': LibraryCompanyCreatedEvent
+  'company.updated': LibraryCompanyUpdatedEvent
+  'company.deleted': LibraryCompanyDeletedEvent
+  'collection.created': LibraryCollectionCreatedEvent
+  'collection.updated': LibraryCollectionUpdatedEvent
+  'collection.deleted': LibraryCollectionDeletedEvent
+  'tag.created': LibraryTagCreatedEvent
+  'tag.updated': LibraryTagUpdatedEvent
+  'tag.deleted': LibraryTagDeletedEvent
+  'scanner.created': ScannerCreatedEvent
+  'scanner.updated': ScannerUpdatedEvent
+  'scanner.deleted': ScannerDeletedEvent
+  'game.started': { gameId: string; pid?: number }
+  'game.stopped': { gameId: string; playTime?: number }
   'command.started': CommandExecutionStartResult
-  'command.progress': CommandExecutionProgress
+  'command.progressed': CommandExecutionProgress
   'command.finished': CommandExecutionResult
-  'scanner.completed': { scannerId: string; stats: Record<string, number> }
-  'scanner.failed': { scannerId: string; error: string }
+  'scanner.started': { scannerId: string; scannerName: string }
+  'scanner.finished': ScannerFinishedEvent
 }
 
 export type HostEventTopic = keyof HostEvents

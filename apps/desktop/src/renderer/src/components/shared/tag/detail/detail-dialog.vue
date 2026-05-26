@@ -48,7 +48,7 @@ const ENTITY_CONFIG: Record<ContentEntityType, { label: string; unitLabel: strin
 const { tag, entityType, setEntityType, isLoading, error } = useTagProvider(() => props.tagId)
 const state = useRenderState(isLoading, error, tag)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'tags' && id === props.tagId) {
     open.value = false
   }

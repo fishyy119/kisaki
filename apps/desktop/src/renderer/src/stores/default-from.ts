@@ -412,17 +412,17 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
     }
 
     // Static collection listeners
-    eventManager.on('db:inserted', ({ table }) => handleStaticChange(table))
-    eventManager.on('db:updated', ({ table }) => {
+    eventManager.on('db.inserted', ({ table }) => handleStaticChange(table))
+    eventManager.on('db.updated', ({ table }) => {
       // Static: only collections table (order changes)
       if (table === 'collections') handleStaticChange(table)
     })
-    eventManager.on('db:deleted', ({ table }) => handleStaticChange(table))
+    eventManager.on('db.deleted', ({ table }) => handleStaticChange(table))
 
     // Dynamic collection listeners
-    eventManager.on('db:inserted', ({ table }) => handleDynamicChange(table))
-    eventManager.on('db:updated', ({ table }) => handleDynamicChange(table))
-    eventManager.on('db:deleted', ({ table }) => handleDynamicChange(table))
+    eventManager.on('db.inserted', ({ table }) => handleDynamicChange(table))
+    eventManager.on('db.updated', ({ table }) => handleDynamicChange(table))
+    eventManager.on('db.deleted', ({ table }) => handleDynamicChange(table))
   }
 
   return {

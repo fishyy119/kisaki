@@ -68,13 +68,13 @@ const {
 } = useCollectionProvider(() => collectionId.value ?? '')
 const state = useRenderState(isLoading, error, collection)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'collections' && id === collectionId.value) {
     router.push('/library/collections')
   }
 })
 
-useEvent('library.entity.merged', (event) => {
+useEvent('entity.merged', (event) => {
   if (event.entityType === 'collection' && event.sourceId === collectionId.value) {
     router.replace({ path: `/library/collection/${event.targetId}`, query: route.query })
   }

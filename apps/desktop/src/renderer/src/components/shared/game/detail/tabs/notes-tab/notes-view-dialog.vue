@@ -43,7 +43,7 @@ const coverUrl = computed(() => {
   return getAttachmentUrl('game_notes', note.value.id, note.value.coverFile)
 })
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'game_notes' && id === props.noteId) {
     open.value = false
   }

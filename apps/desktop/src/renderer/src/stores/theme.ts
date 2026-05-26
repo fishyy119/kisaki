@@ -11,6 +11,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { themeManager } from '@renderer/core/theme'
 import { refreshExtensionThemes, setupExtensionThemeSync } from '@renderer/core/extensions'
+import { eventManager } from '@renderer/core/event'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -83,6 +84,13 @@ export const useThemeStore = defineStore(
 
     // Watch preference changes and apply
     watch([activeThemeId, mode], applyTheme, { immediate: true })
+    watch(mode, (theme, previousTheme) => {
+      if (theme === previousTheme) {
+        return
+      }
+
+      eventManager.emit('app.theme.changed', { theme })
+    })
 
     // Listen for system theme changes
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {

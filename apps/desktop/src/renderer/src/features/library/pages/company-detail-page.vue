@@ -60,13 +60,13 @@ const { company, isLoading, error } = useCompanyProvider(
 )
 const state = useRenderState(isLoading, error, company)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'companies' && id === companyId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('library.entity.merged', (event) => {
+useEvent('entity.merged', (event) => {
   if (event.entityType === 'company' && event.sourceId === companyId.value) {
     router.replace({ path: `/library/company/${event.targetId}`, query: route.query })
   }

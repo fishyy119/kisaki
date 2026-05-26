@@ -117,7 +117,7 @@ export class DbEntityMergeCoordinator {
 
     changedCounts.attachments = stagedFiles.length
 
-    this.event.bus.emit('library.entity.merged', {
+    this.event.bus.emit('entity.merged', {
       entityType,
       targetId,
       sourceId,

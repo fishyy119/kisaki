@@ -151,7 +151,7 @@ export function useCharacterProvider(
   const games = computed(() => data.value?.games ?? [])
   const persons = computed(() => data.value?.persons ?? [])
 
-  useEvent('db:updated', ({ table, id: entityId }) => {
+  useEvent('db.updated', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'characters' && entityId === currentId) {
       refetch()
@@ -165,7 +165,7 @@ export function useCharacterProvider(
     }
   })
 
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     if (
       table === 'character_tag_links' ||
       table === 'game_character_links' ||
@@ -175,7 +175,7 @@ export function useCharacterProvider(
     }
   })
 
-  useEvent('db:deleted', ({ table, id: entityId }) => {
+  useEvent('db.deleted', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'characters' && entityId === currentId) {
       refetch()

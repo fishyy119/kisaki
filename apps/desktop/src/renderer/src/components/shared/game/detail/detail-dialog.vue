@@ -64,7 +64,7 @@ const gameId = computed(() => props.gameId)
 const { game, isLoading, error } = useGameProvider(gameId, spoilersRevealed)
 const state = useRenderState(isLoading, error, game)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'games' && id === props.gameId) {
     open.value = false
   }

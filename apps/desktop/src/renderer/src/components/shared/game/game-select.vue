@@ -53,13 +53,13 @@ const { data: allGames, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useEvent('db:inserted', ({ table }) => {
+useEvent('db.inserted', ({ table }) => {
   if (table === 'games') refetch()
 })
-useEvent('db:updated', ({ table }) => {
+useEvent('db.updated', ({ table }) => {
   if (table === 'games') refetch()
 })
-useEvent('db:deleted', ({ table }) => {
+useEvent('db.deleted', ({ table }) => {
   if (table === 'games') refetch()
 })
 

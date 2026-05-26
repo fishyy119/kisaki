@@ -47,7 +47,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
 
   async subscribeLocalChanges(listener: LocalMediaChangeListener): Promise<Disposable> {
     const registrations = await Promise.all([
-      kisaki.events.on('library.game.created', (event) => {
+      kisaki.events.on('game.created', (event) => {
         void Promise.resolve(
           listener({
             scope: this.scope,
@@ -56,7 +56,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
           })
         )
       }),
-      kisaki.events.on('library.game.updated', (event) => {
+      kisaki.events.on('game.updated', (event) => {
         if (!hasSyncRelevantGameChange(event)) {
           return
         }
@@ -210,10 +210,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
     return { name, willCreate: true }
   }
 
-  async hasCollectionMembership(
-    localId: string,
-    target: LocalCollectionTarget
-  ): Promise<boolean> {
+  async hasCollectionMembership(localId: string, target: LocalCollectionTarget): Promise<boolean> {
     return target.id ? hasGameCollectionRelation(localId, target.id) : false
   }
 
@@ -231,9 +228,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
   }
 }
 
-export function createGameMediaDescriptor(
-  adapter: LocalMediaAdapter
-): BangumiMediaDescriptor {
+export function createGameMediaDescriptor(adapter: LocalMediaAdapter): BangumiMediaDescriptor {
   return {
     scope: 'game',
     subjectType: BANGUMI_SUBJECT_TYPE_BY_SCOPE.game,
@@ -309,10 +304,7 @@ async function createStaticCollectionByName(name: string): Promise<LibraryCollec
 function normalizeCollectionName(name: string): string {
   const normalized = name.trim()
   if (!normalized) {
-    throw new BangumiExtensionError(
-      'bangumi_validation',
-      'Bangumi 目录标题为空，无法创建合集。'
-    )
+    throw new BangumiExtensionError('bangumi_validation', 'Bangumi 目录标题为空，无法创建合集。')
   }
   return normalized
 }

@@ -14,6 +14,7 @@ import { createLogger } from '@main/log'
 import { promises as fs } from 'fs'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
+import type { EventService } from '@main/services/event'
 import type { IngestService } from '@main/services/ingest'
 import type { IpcService } from '@main/services/ipc'
 import { scanners, scraperProfiles, type ScraperProfile } from '@shared/db'
@@ -65,10 +66,12 @@ export class GameScannerHandler {
     private readonly phash: ScannerPhash,
     private readonly dbService: DbService,
     ipcService: IpcService,
+    eventService: EventService,
     private readonly ingestService: IngestService
   ) {
     this.runner = new ScannerHandlerCoordinator<Scanner>({
       ipcService,
+      eventService,
       loadScanner: async (scannerId) => this.loadGameScanner(scannerId),
       runScan: async (scanner, session) => this.runScannerScan(scanner, session)
     })

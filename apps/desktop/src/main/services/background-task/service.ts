@@ -22,11 +22,11 @@ export class BackgroundTaskService implements IService {
       db: container.get('db'),
       onTaskChanged: (taskId) => {
         this.scheduler.refresh(taskId)
-        container.get('event').bus.emit('background-task:changed', { taskId })
+        container.get('event').bus.emit('backgroundTask.changed', { taskId })
       },
       onTaskDeleted: (taskId) => {
         this.scheduler.clear(taskId)
-        container.get('event').bus.emit('background-task:deleted', { taskId })
+        container.get('event').bus.emit('backgroundTask.deleted', { taskId })
       }
     })
     this.runner = new BackgroundTaskRunner({
@@ -34,10 +34,8 @@ export class BackgroundTaskService implements IService {
       store: this.store,
       clearTaskTimer: (taskId) => this.scheduler.clear(taskId),
       refreshTaskTimer: (taskId) => this.scheduler.refresh(taskId),
-      onRunStarted: (event) =>
-        container.get('event').bus.emit('background-task:run-started', event),
-      onRunFinished: (record) =>
-        container.get('event').bus.emit('background-task:run-finished', record)
+      onRunStarted: (event) => container.get('event').bus.emit('backgroundTask.started', event),
+      onRunFinished: (record) => container.get('event').bus.emit('backgroundTask.finished', record)
     })
     this.scheduler = new BackgroundTaskScheduler({
       store: this.store,
@@ -46,7 +44,7 @@ export class BackgroundTaskService implements IService {
 
     this.store.load()
     registerBackgroundTaskIpc(this, container.get('ipc'))
-    this.unsubscribeAppReady = container.get('event').bus.on('app:ready', () => {
+    this.unsubscribeAppReady = container.get('event').bus.on('app.ready', () => {
       void this.runStartupTasks().catch((error) => {
         log.error('Startup tasks failed:', error)
       })

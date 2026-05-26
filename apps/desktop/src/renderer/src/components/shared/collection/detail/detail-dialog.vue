@@ -52,7 +52,7 @@ const { collection, entityType, entityCounts, setEntityType, isLoading, error } 
   useCollectionProvider(() => props.collectionId)
 const state = useRenderState(isLoading, error, collection)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'collections' && id === props.collectionId) {
     open.value = false
   }

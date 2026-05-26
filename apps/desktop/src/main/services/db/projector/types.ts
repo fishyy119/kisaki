@@ -5,10 +5,12 @@ export const PROJECTOR_DEBOUNCE_MS = 25
 
 export type LibraryEntityTopic = 'game' | 'person' | 'company' | 'character' | 'collection' | 'tag'
 
-export type ConfiguredEntityTopic = Exclude<LibraryEntityTopic, 'game'>
+export type ProjectedEntityTopic = LibraryEntityTopic | 'scanner'
+
+export type ConfiguredEntityTopic = Exclude<ProjectedEntityTopic, 'game'>
 
 export interface EntityGroup {
-  entity: LibraryEntityTopic
+  entity: ProjectedEntityTopic
   id: string
   changes: RawDbChangeEvent[]
 }

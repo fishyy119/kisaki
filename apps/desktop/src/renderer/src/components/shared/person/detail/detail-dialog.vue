@@ -59,7 +59,7 @@ const personId = computed(() => props.personId)
 const { person, isLoading, error } = usePersonProvider(personId, spoilersRevealed)
 const state = useRenderState(isLoading, error, person)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'persons' && id === props.personId) {
     open.value = false
   }

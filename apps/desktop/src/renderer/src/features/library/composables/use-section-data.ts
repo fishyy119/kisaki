@@ -66,13 +66,13 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
   })
 
   // Listen for entity changes
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     if (isRelevantTable(table, sectionEntityType.value)) refetch()
   })
-  useEvent('db:updated', ({ table }) => {
+  useEvent('db.updated', ({ table }) => {
     if (isRelevantTable(table, sectionEntityType.value)) refetch()
   })
-  useEvent('db:deleted', ({ table }) => {
+  useEvent('db.deleted', ({ table }) => {
     if (isRelevantTable(table, sectionEntityType.value)) refetch()
   })
 

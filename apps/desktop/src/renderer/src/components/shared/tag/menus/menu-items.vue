@@ -43,7 +43,7 @@ const { data: tag, refetch } = useAsyncData(fetchTag, {
   enabled: () => props.enabled
 })
 
-useEvent('db:updated', ({ table, id }) => {
+useEvent('db.updated', ({ table, id }) => {
   if (table === 'tags' && id === props.tagId) refetch()
 })
 

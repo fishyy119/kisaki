@@ -1,7 +1,7 @@
 /**
  * SQLite Trigger Store
  *
- * Automatically emits db:inserted/updated/deleted events via SQLite triggers.
+ * Automatically emits db.inserted/updated/deleted events via SQLite triggers.
  * Uses better-sqlite3's custom function registration to bridge SQL triggers
  * with the JavaScript event system.
  *
@@ -59,7 +59,7 @@ export class TriggerStore {
       { deterministic: false },
       (operation, table, id, oldJson, nextJson) => {
         const change = this.createRawChangeEvent(operation, table, id, oldJson, nextJson)
-        const eventName = `db:${change.operation}` as 'db:inserted' | 'db:updated' | 'db:deleted'
+        const eventName = `db.${change.operation}` as 'db.inserted' | 'db.updated' | 'db.deleted'
 
         // Defer event emission until the current SQL statement completes.
         // This prevents "connection is busy" errors when listeners try to access the DB.

@@ -127,7 +127,7 @@ export function useCompanyProvider(
   const tags = computed(() => data.value?.tags ?? [])
   const games = computed(() => data.value?.games ?? [])
 
-  useEvent('db:updated', ({ table, id: entityId }) => {
+  useEvent('db.updated', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'companies' && entityId === currentId) {
       refetch()
@@ -137,13 +137,13 @@ export function useCompanyProvider(
     }
   })
 
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     if (table === 'company_tag_links' || table === 'game_company_links') {
       refetch()
     }
   })
 
-  useEvent('db:deleted', ({ table, id: entityId }) => {
+  useEvent('db.deleted', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'companies' && entityId === currentId) {
       refetch()

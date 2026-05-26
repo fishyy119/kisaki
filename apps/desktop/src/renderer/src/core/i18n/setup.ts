@@ -64,7 +64,7 @@ export async function initI18n(): Promise<typeof i18n> {
   log.info('Renderer process initialized with locale.', { initialLocale: initialLocale })
 
   // Listen for locale changes from main process
-  eventManager.on('app:locale-changed', ({ locale }: { locale: AppLocale | null }) => {
+  eventManager.on('app.locale.changed', ({ locale }: { locale: AppLocale | null }) => {
     const targetLocale = locale ?? (navigator.language as AppLocale)
     if (APP_LOCALES.includes(targetLocale) && i18n.language !== targetLocale) {
       i18n.changeLanguage(targetLocale)
@@ -98,7 +98,7 @@ export async function setLocale(locale: AppLocale | null): Promise<void> {
   await db.update(settings).set({ locale }).where(eq(settings.id, 0))
 
   // Notify other processes
-  eventManager.emit('app:locale-changed', { locale })
+  eventManager.emit('app.locale.changed', { locale })
 
   log.info('Locale changed and persisted.', {
     value0: locale ?? 'system',

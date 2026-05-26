@@ -60,13 +60,13 @@ const { character, isLoading, error } = useCharacterProvider(
 )
 const state = useRenderState(isLoading, error, character)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'characters' && id === characterId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('library.entity.merged', (event) => {
+useEvent('entity.merged', (event) => {
   if (event.entityType === 'character' && event.sourceId === characterId.value) {
     router.replace({ path: `/library/character/${event.targetId}`, query: route.query })
   }

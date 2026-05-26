@@ -513,7 +513,7 @@ export function useCollectionProvider(
   // Listen for database changes
   const isDynamic = computed(() => collection.value?.isDynamic ?? false)
 
-  useEvent('db:updated', ({ table, id: entityId }) => {
+  useEvent('db.updated', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'collections' && entityId === currentId) {
       collectionQuery.refetch()
@@ -529,7 +529,7 @@ export function useCollectionProvider(
     }
   })
 
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     const linkTableName = getLinkTableName(entityType.value)
     if (table === linkTableName || table === 'collections') {
       collectionQuery.refetch()
@@ -544,7 +544,7 @@ export function useCollectionProvider(
     }
   })
 
-  useEvent('db:deleted', ({ table }) => {
+  useEvent('db.deleted', ({ table }) => {
     const linkTableName = getLinkTableName(entityType.value)
     if (table === linkTableName) {
       collectionQuery.refetch()

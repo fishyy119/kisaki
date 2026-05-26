@@ -106,7 +106,7 @@ watch(fetchedGame, (data) => {
 })
 
 // Listen for game updates
-useEvent('db:updated', ({ table, id }) => {
+useEvent('db.updated', ({ table, id }) => {
   if (table === 'games' && id === props.gameId) {
     refetch()
   }
@@ -126,10 +126,7 @@ async function handleImportFile() {
   isImportingFile.value = true
 
   try {
-    const dialogResult = await ipcManager.invoke(
-      'native:open-dialog',
-      getOpenImageDialogOptions()
-    )
+    const dialogResult = await ipcManager.invoke('native:open-dialog', getOpenImageDialogOptions())
     if (!dialogResult.success) {
       notify.error(dialogResult.error || '选择文件失败')
       return

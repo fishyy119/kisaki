@@ -1,6 +1,6 @@
 # 08 Media Scope Refactor
 
-本文是 Phase 5.5 的执行清单。目标是把当前 phase5 的 game-centered 代码清理为 media-scoped 结构，同时保持 extension API 不变。
+本文是 Phase 5.5 的执行清单。目标是把当前 phase5 的 game-centered 代码清理为 media-scoped 结构，同时不扩展 Bangumi 所需的宿主能力集合。
 
 完成本文并通过验收搜索后，后续实施从 `07 Implementation Plan` 的 `Phase 6: 收藏导入` 继续。
 
@@ -14,7 +14,7 @@
 - SDK bridge、RPC method string、host contribution registry
 - scraper provider contribution point；不新增 `book` / `anime` / `music` scraper contribution point
 - library/ingest/background task public capability
-- `kisaki.ingest.media.*`、`kisaki.library.media.*` 或 `library.media.*` event
+- `kisaki.ingest.media.*`、`kisaki.library.media.*` 或 `media.*` event
 
 Bangumi 扩展继续使用现有 API，不在扩展内 import 主程序私有模块。代码整洁性通过内部 adapter 达成，不通过修改宿主 contract 达成。所有 game-only 宿主 API 必须通过 `media/game` adapter 包装，通用层只能依赖扩展内部的 adapter interface。
 
@@ -89,7 +89,7 @@ game adapter 内允许使用：
 - `LibraryGame`
 - `game-tag`
 - `collection-game`
-- `library.game.*`
+- `game.*`
 
 禁止在通用层使用 game 泛指所有媒体：
 
@@ -201,7 +201,7 @@ UI 不展示：
 这些命中必须只出现在 `media/game/**` 或文档说明中：
 
 ```powershell
-rg -n "kisaki\.library\.games|kisaki\.ingest\.games|library\.game\.|game-tag|collection-game" extensions/bangumi/src
+rg -n "kisaki\.library\.games|kisaki\.ingest\.games|kisaki\.events\.on\('game\.|game-tag|collection-game" extensions/bangumi/src
 ```
 
 这些旧名字在代码中应无命中：
@@ -236,7 +236,7 @@ pnpm --filter kisaki typecheck
 
 重构完成时应满足：
 
-- extension API 未变。
+- Bangumi 不依赖额外 extension API 能力。
 - game 功能不退化。
 - game-only 宿主 API 被关进 `media/game`。
 - book/anime/music 进入 scope、client、UI、args、summary 模型。

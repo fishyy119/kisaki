@@ -290,6 +290,19 @@ export type LibraryCollectionChange =
 
 export type LibraryTagChange = LibraryCoreChange<LibraryTagCoreSnapshot>
 
+export interface ScannerCoreSnapshot {
+  name?: string
+  path?: string
+  type?: string
+  scraperProfileId?: string
+  targetCollectionId?: string | null
+  scanIntervalMinutes?: number | null
+  entityDepth?: number | null
+  nameExtractionRules?: unknown
+}
+
+export type ScannerChange = LibraryCoreChange<ScannerCoreSnapshot>
+
 export type LibraryEntityChange =
   | LibraryPersonChange
   | LibraryCompanyChange
@@ -380,4 +393,31 @@ export interface LibraryTagUpdatedEvent {
 export interface LibraryTagDeletedEvent {
   tagId: string
   occurredAt: number
+}
+
+export interface ScannerCreatedEvent {
+  scannerId: string
+  name?: string
+  occurredAt: number
+}
+
+export interface ScannerUpdatedEvent {
+  scannerId: string
+  changes: ScannerChange[]
+  occurredAt: number
+}
+
+export interface ScannerDeletedEvent {
+  scannerId: string
+  occurredAt: number
+}
+
+export type ScannerFinishedStatus = 'completed' | 'failed' | 'aborted'
+
+export interface ScannerFinishedEvent {
+  scannerId: string
+  scannerName: string
+  status: ScannerFinishedStatus
+  stats: Record<string, number>
+  error?: string
 }

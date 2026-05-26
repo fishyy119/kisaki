@@ -137,7 +137,7 @@ async function onAppReady(): Promise<void> {
   const ipcService = container.get<IpcService>('ipc')
   const eventService = container.get<EventService>('event')
   setupBootstrapArgsIpc(ipcService)
-  setupPortableIpc(ipcService, eventService)
+  setupPortableIpc(ipcService)
 
   ipcService.handle('app:get-version', () => {
     return wrapIpc(() => app.getVersion())
@@ -154,7 +154,7 @@ async function onAppReady(): Promise<void> {
   windowService.mainWindow.create()
   windowService.trayMenuWindow.create()
 
-  eventService.bus.emit('app:ready')
+  eventService.bus.emit('app.ready')
 
   // Mark deeplink service as ready and process any pending deeplinks
   const deeplinkService = container.get<DeeplinkService>('deeplink')

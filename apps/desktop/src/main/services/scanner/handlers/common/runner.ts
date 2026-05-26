@@ -1,4 +1,5 @@
 import type { IpcService } from '@main/services/ipc'
+import type { EventService } from '@main/services/event'
 import type { ScanCompletedData, ScanProgressData } from '@shared/scanner'
 import type {
   ScanController,
@@ -11,6 +12,7 @@ type Awaitable<T> = T | Promise<T>
 
 export interface ScannerHandlerCoordinatorOptions<TScanner extends ScannerRunMetadata> {
   ipcService: IpcService
+  eventService: EventService
   loadScanner: (scannerId: string) => Awaitable<TScanner>
   runScan: (scanner: TScanner, session: ScannerRunSession<TScanner>) => Awaitable<void>
 }
@@ -74,6 +76,22 @@ function buildScanResult<TScanner extends ScannerRunMetadata>(
     failedCount: progressState.failedCount,
     skippedScans: [...progressState.skippedScans],
     failedScans: [...progressState.failedScans]
+  }
+}
+
+function buildScannerStats(result: {
+  total: number
+  processedCount: number
+  newCount: number
+  skippedCount: number
+  failedCount: number
+}): Record<string, number> {
+  return {
+    total: result.total,
+    processedCount: result.processedCount,
+    newCount: result.newCount,
+    skippedCount: result.skippedCount,
+    failedCount: result.failedCount
   }
 }
 
@@ -347,7 +365,18 @@ export class ScannerHandlerCoordinator<TScanner extends ScannerRunMetadata> {
         this.activeScanProgress.get(scannerId) ?? createProgressState(scannerId, 'queued')
       progressState.status = 'aborted'
       this.publishScanProgress(progressState)
-      item.resolve(buildScanResult(item.scanner, 'aborted', progressState))
+      const result = buildScanResult(item.scanner, 'aborted', progressState)
+      this.options.eventService.bus.emit(
+        'scanner.finished',
+        { local: true },
+        {
+          scannerId,
+          scannerName: item.scanner.name,
+          status: 'aborted',
+          stats: buildScannerStats(result)
+        }
+      )
+      item.resolve(result)
       return
     }
 
@@ -416,19 +445,59 @@ export class ScannerHandlerCoordinator<TScanner extends ScannerRunMetadata> {
       (nextProgressState) => this.publishScanProgress(nextProgressState)
     )
 
+    let scanner = item.scanner
+
     try {
-      const scanner = await this.options.loadScanner(scannerId)
+      scanner = await this.options.loadScanner(scannerId)
       session.setScanner(scanner)
+      this.options.eventService.bus.emit(
+        'scanner.started',
+        { local: true },
+        { scannerId, scannerName: scanner.name }
+      )
       session.start()
       await this.options.runScan(scanner, session)
       session.complete()
-      return session.buildResult('completed')
+      const result = session.buildResult('completed')
+      this.options.eventService.bus.emit(
+        'scanner.finished',
+        { local: true },
+        {
+          scannerId,
+          scannerName: scanner.name,
+          status: 'completed',
+          stats: buildScannerStats(result)
+        }
+      )
+      return result
     } catch (error) {
       if (error instanceof ScanAbortError || controller.abortRequested) {
         session.abort()
-        return session.buildResult('aborted')
+        const result = session.buildResult('aborted')
+        this.options.eventService.bus.emit(
+          'scanner.finished',
+          { local: true },
+          {
+            scannerId,
+            scannerName: scanner.name,
+            status: 'aborted',
+            stats: buildScannerStats(result)
+          }
+        )
+        return result
       }
 
+      this.options.eventService.bus.emit(
+        'scanner.finished',
+        { local: true },
+        {
+          scannerId,
+          scannerName: scanner.name,
+          status: 'failed',
+          stats: buildScannerStats(session.progress),
+          error: error instanceof Error ? error.message : String(error)
+        }
+      )
       throw error
     } finally {
       this.scannersInProgress.delete(scannerId)

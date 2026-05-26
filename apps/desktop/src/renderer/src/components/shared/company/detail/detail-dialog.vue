@@ -50,7 +50,7 @@ watch(open, (isOpen) => {
 const { company, isLoading, error } = useCompanyProvider(() => props.companyId, spoilersRevealed)
 const state = useRenderState(isLoading, error, company)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'companies' && id === props.companyId) {
     open.value = false
   }

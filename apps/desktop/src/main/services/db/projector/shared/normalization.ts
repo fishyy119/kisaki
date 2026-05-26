@@ -14,11 +14,32 @@ export function normalizeEntityValue(value: unknown, field: string): unknown {
     return normalizeBoolean(value)
   }
 
-  if (['age', 'bust', 'height', 'hips', 'order', 'waist', 'weight'].includes(field)) {
+  if (
+    [
+      'age',
+      'bust',
+      'entityDepth',
+      'height',
+      'hips',
+      'order',
+      'scanIntervalMinutes',
+      'waist',
+      'weight'
+    ].includes(field)
+  ) {
     return nullableNumber(value)
   }
 
-  if (['birthDate', 'deathDate', 'dynamicConfig', 'foundedDate', 'relatedSites'].includes(field)) {
+  if (
+    [
+      'birthDate',
+      'deathDate',
+      'dynamicConfig',
+      'foundedDate',
+      'nameExtractionRules',
+      'relatedSites'
+    ].includes(field)
+  ) {
     return parseJsonValue(value)
   }
 

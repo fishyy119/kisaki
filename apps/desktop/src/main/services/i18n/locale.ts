@@ -41,7 +41,7 @@ export class I18nLocaleManager {
       }
     })
 
-    this.unsubscribeLocaleChanged = this.eventService.bus.on('app:locale-changed', ({ locale }) => {
+    this.unsubscribeLocaleChanged = this.eventService.bus.on('app.locale.changed', ({ locale }) => {
       void this.applyPreference(locale)
         .then((targetLocale) => {
           log.info('Locale changed.', { targetLocale: targetLocale })
@@ -71,7 +71,7 @@ export class I18nLocaleManager {
     const targetLocale = await this.applyPreference(locale)
 
     this.dbService.client.update(settings).set({ locale }).run()
-    this.eventService.bus.emit('app:locale-changed', { locale })
+    this.eventService.bus.emit('app.locale.changed', { locale })
 
     log.info('Locale changed and persisted.', {
       value0: locale ?? 'system',

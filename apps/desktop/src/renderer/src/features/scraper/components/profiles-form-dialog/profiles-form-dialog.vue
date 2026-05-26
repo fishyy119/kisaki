@@ -77,10 +77,10 @@ const { data, isLoading, refetch } = useAsyncData(
 )
 
 // Listen for external changes
-useEvent('db:inserted', (payload) => {
+useEvent('db.inserted', (payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
-useEvent('db:deleted', (payload) => {
+useEvent('db.deleted', (payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
 

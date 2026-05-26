@@ -131,21 +131,21 @@ async function fetchTasks(): Promise<BackgroundTask[]> {
   return items
 }
 
-useEvent('background-task:changed', () => {
+useEvent('backgroundTask.changed', () => {
   void refreshAll()
 })
 
-useEvent('background-task:deleted', ({ taskId }) => {
+useEvent('backgroundTask.deleted', ({ taskId }) => {
   removeFromSet(runningTaskIds, taskId)
   void refreshAll()
 })
 
-useEvent('background-task:run-started', ({ taskId }) => {
+useEvent('backgroundTask.started', ({ taskId }) => {
   addToSet(runningTaskIds, taskId)
   void refetchTasks()
 })
 
-useEvent('background-task:run-finished', (record) => {
+useEvent('backgroundTask.finished', (record) => {
   removeFromSet(runningTaskIds, record.taskId)
   void refetchTasks()
 })

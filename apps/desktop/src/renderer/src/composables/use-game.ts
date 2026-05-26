@@ -221,7 +221,7 @@ export function useGameProvider(
   const sessions = computed(() => data.value?.sessions ?? [])
 
   // Listen for DB updates
-  useEvent('db:updated', ({ table, id: entityId }) => {
+  useEvent('db.updated', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'games' && entityId === currentId) {
       refetch()
@@ -238,7 +238,7 @@ export function useGameProvider(
     }
   })
 
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     if (
       table === 'game_notes' ||
       table === 'game_tag_links' ||
@@ -251,7 +251,7 @@ export function useGameProvider(
     }
   })
 
-  useEvent('db:deleted', ({ table, id: entityId }) => {
+  useEvent('db.deleted', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     if (table === 'games' && entityId === currentId) {
       refetch()

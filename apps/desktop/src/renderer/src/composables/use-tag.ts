@@ -273,7 +273,7 @@ export function useTagProvider(
   const entities = computed(() => entitiesQuery.data.value ?? [])
 
   // Listen for database changes
-  useEvent('db:updated', ({ table, id: entityId }) => {
+  useEvent('db.updated', ({ table, id: entityId }) => {
     const currentId = toValue(id)
     const linkTableName = getLinkTableName(entityType.value)
     if (table === 'tags' && entityId === currentId) {
@@ -286,7 +286,7 @@ export function useTagProvider(
     }
   })
 
-  useEvent('db:inserted', ({ table }) => {
+  useEvent('db.inserted', ({ table }) => {
     const linkTableName = getLinkTableName(entityType.value)
     if (table === linkTableName) {
       tagQuery.refetch()
@@ -294,7 +294,7 @@ export function useTagProvider(
     }
   })
 
-  useEvent('db:deleted', ({ table }) => {
+  useEvent('db.deleted', ({ table }) => {
     const linkTableName = getLinkTableName(entityType.value)
     if (table === linkTableName) {
       tagQuery.refetch()

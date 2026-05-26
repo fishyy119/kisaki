@@ -113,7 +113,7 @@ function sanitizeForwardedEventArgs<K extends keyof AppEvents>(
   event: K,
   args: AppEvents[K]
 ): unknown[] {
-  if (event !== 'db:inserted' && event !== 'db:updated' && event !== 'db:deleted') {
+  if (event !== 'db.inserted' && event !== 'db.updated' && event !== 'db.deleted') {
     return args
   }
 

@@ -353,7 +353,7 @@ export class AttachmentStore {
 
   /**
    * Cleanup storage directory for a deleted row.
-   * Intended to be called from db:deleted event listeners.
+   * Intended to be called from db.deleted event listeners.
    */
   async cleanupRow(tableName: string, rowId: string): Promise<void> {
     const lockKey = this.getRowLockKey(tableName, String(rowId))

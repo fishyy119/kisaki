@@ -84,184 +84,202 @@ export class ExtensionEventsCapabilityProvider {
   private createHostSubscription(topic: HostEventTopic, subscriptionId: string): EventUnsubscribe {
     switch (topic) {
       case 'app.ready':
-        return this.options.event.bus.on('app:ready', () => {
+        return this.options.event.bus.on('app.ready', () => {
           this.emitSubscriptionEvent(subscriptionId, topic, {})
         })
       case 'extension.enabled':
-        return this.options.event.bus.on('extension:enabled', ({ extensionId }) => {
+        return this.options.event.bus.on('extension.enabled', ({ extensionId }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
         })
       case 'extension.disabled':
-        return this.options.event.bus.on('extension:disabled', ({ extensionId }) => {
+        return this.options.event.bus.on('extension.disabled', ({ extensionId }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
         })
       case 'app.locale.changed':
-        return this.options.event.bus.on('app:locale-changed', ({ locale }) => {
+        return this.options.event.bus.on('app.locale.changed', ({ locale }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { locale })
         })
       case 'app.settings.changed':
-        return this.options.event.bus.on('app:settings-changed', ({ setting, value }) => {
+        return this.options.event.bus.on('app.settings.changed', ({ setting, value }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             key: setting,
             value: toSerializableValue(value)
           })
         })
-      case 'theme.changed':
-        return this.options.event.bus.on('app:theme-changed', ({ theme }) => {
+      case 'app.theme.changed':
+        return this.options.event.bus.on('app.theme.changed', ({ theme }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             themeId: 'active',
             mode: theme
           })
         })
-      case 'library.game.created':
-        return this.options.event.bus.on('library.game.created', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameCreatedEvent(event))
+      case 'game.created':
+        return this.options.event.bus.on('game.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostGameCreatedEvent(event))
         })
-      case 'library.game.updated':
-        return this.options.event.bus.on('library.game.updated', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameUpdatedEvent(event))
+      case 'game.updated':
+        return this.options.event.bus.on('game.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostGameUpdatedEvent(event))
         })
-      case 'library.game.deleted':
-        return this.options.event.bus.on('library.game.deleted', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryGameDeletedEvent(event))
+      case 'game.deleted':
+        return this.options.event.bus.on('game.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostGameDeletedEvent(event))
         })
-      case 'library.person.created':
-        return this.options.event.bus.on('library.person.created', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonCreatedEvent(event))
+      case 'game.started':
+        return this.options.event.bus.on('game.started', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
         })
-      case 'library.person.updated':
-        return this.options.event.bus.on('library.person.updated', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonUpdatedEvent(event))
+      case 'game.stopped':
+        return this.options.event.bus.on('game.stopped', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
         })
-      case 'library.person.deleted':
-        return this.options.event.bus.on('library.person.deleted', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, toHostLibraryPersonDeletedEvent(event))
+      case 'person.created':
+        return this.options.event.bus.on('person.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostPersonCreatedEvent(event))
         })
-      case 'library.character.created':
-        return this.options.event.bus.on('library.character.created', (event) => {
+      case 'person.updated':
+        return this.options.event.bus.on('person.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostPersonUpdatedEvent(event))
+        })
+      case 'person.deleted':
+        return this.options.event.bus.on('person.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, toHostPersonDeletedEvent(event))
+        })
+      case 'character.created':
+        return this.options.event.bus.on('character.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
             name: event.name,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.character.updated':
-        return this.options.event.bus.on('library.character.updated', (event) => {
+      case 'character.updated':
+        return this.options.event.bus.on('character.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
             changes: cloneHostValue(event.changes),
             occurredAt: event.occurredAt
           })
         })
-      case 'library.character.deleted':
-        return this.options.event.bus.on('library.character.deleted', (event) => {
+      case 'character.deleted':
+        return this.options.event.bus.on('character.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.company.created':
-        return this.options.event.bus.on('library.company.created', (event) => {
+      case 'company.created':
+        return this.options.event.bus.on('company.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
             name: event.name,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.company.updated':
-        return this.options.event.bus.on('library.company.updated', (event) => {
+      case 'company.updated':
+        return this.options.event.bus.on('company.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
             changes: cloneHostValue(event.changes),
             occurredAt: event.occurredAt
           })
         })
-      case 'library.company.deleted':
-        return this.options.event.bus.on('library.company.deleted', (event) => {
+      case 'company.deleted':
+        return this.options.event.bus.on('company.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.collection.created':
-        return this.options.event.bus.on('library.collection.created', (event) => {
+      case 'collection.created':
+        return this.options.event.bus.on('collection.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
             name: event.name,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.collection.updated':
-        return this.options.event.bus.on('library.collection.updated', (event) => {
+      case 'collection.updated':
+        return this.options.event.bus.on('collection.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
-            changes: cloneHostValue(
-              event.changes
-            ) as HostEvents['library.collection.updated']['changes'],
+            changes: cloneHostValue(event.changes) as HostEvents['collection.updated']['changes'],
             occurredAt: event.occurredAt
           })
         })
-      case 'library.collection.deleted':
-        return this.options.event.bus.on('library.collection.deleted', (event) => {
+      case 'collection.deleted':
+        return this.options.event.bus.on('collection.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.tag.created':
-        return this.options.event.bus.on('library.tag.created', (event) => {
+      case 'tag.created':
+        return this.options.event.bus.on('tag.created', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
             name: event.name,
             occurredAt: event.occurredAt
           })
         })
-      case 'library.tag.updated':
-        return this.options.event.bus.on('library.tag.updated', (event) => {
+      case 'tag.updated':
+        return this.options.event.bus.on('tag.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
             changes: cloneHostValue(event.changes),
             occurredAt: event.occurredAt
           })
         })
-      case 'library.tag.deleted':
-        return this.options.event.bus.on('library.tag.deleted', (event) => {
+      case 'tag.deleted':
+        return this.options.event.bus.on('tag.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
             occurredAt: event.occurredAt
           })
+        })
+      case 'scanner.created':
+        return this.options.event.bus.on('scanner.created', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+        })
+      case 'scanner.updated':
+        return this.options.event.bus.on('scanner.updated', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+        })
+      case 'scanner.deleted':
+        return this.options.event.bus.on('scanner.deleted', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
         })
       case 'command.started':
-        return this.options.event.bus.on('command:started', (started) => {
+        return this.options.event.bus.on('command.started', (started) => {
           this.emitSubscriptionEvent(
             subscriptionId,
             topic,
             cloneHostValue(started) as HostEvents['command.started']
           )
         })
-      case 'command.progress':
-        return this.options.event.bus.on('command:progress', (progress) => {
+      case 'command.progressed':
+        return this.options.event.bus.on('command.progressed', (progress) => {
           this.emitSubscriptionEvent(
             subscriptionId,
             topic,
-            cloneHostValue(progress) as HostEvents['command.progress']
+            cloneHostValue(progress) as HostEvents['command.progressed']
           )
         })
       case 'command.finished':
-        return this.options.event.bus.on('command:finished', (result) => {
+        return this.options.event.bus.on('command.finished', (result) => {
           this.emitSubscriptionEvent(
             subscriptionId,
             topic,
             cloneHostValue(result) as HostEvents['command.finished']
           )
         })
-      case 'scanner.completed':
-        return this.options.event.bus.on('scanner:completed', ({ scannerId, stats }) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, { scannerId, stats })
+      case 'scanner.started':
+        return this.options.event.bus.on('scanner.started', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
         })
-      case 'scanner.failed':
-        return this.options.event.bus.on('scanner:error', ({ scannerId, error }) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, { scannerId, error })
+      case 'scanner.finished':
+        return this.options.event.bus.on('scanner.finished', (event) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
         })
       default:
         throw createValidationError(`Unsupported host event topic "${topic}".`)
@@ -325,9 +343,7 @@ function toSerializableValue(value: unknown): SerializableValue | undefined {
   return String(value)
 }
 
-function toHostLibraryGameCreatedEvent(
-  event: AppEvents['library.game.created'][0]
-): HostEvents['library.game.created'] {
+function toHostGameCreatedEvent(event: AppEvents['game.created'][0]): HostEvents['game.created'] {
   return {
     gameId: event.gameId,
     name: event.name,
@@ -335,9 +351,7 @@ function toHostLibraryGameCreatedEvent(
   }
 }
 
-function toHostLibraryGameUpdatedEvent(
-  event: AppEvents['library.game.updated'][0]
-): HostEvents['library.game.updated'] {
+function toHostGameUpdatedEvent(event: AppEvents['game.updated'][0]): HostEvents['game.updated'] {
   return {
     gameId: event.gameId,
     changes: cloneHostValue(event.changes),
@@ -345,18 +359,16 @@ function toHostLibraryGameUpdatedEvent(
   }
 }
 
-function toHostLibraryGameDeletedEvent(
-  event: AppEvents['library.game.deleted'][0]
-): HostEvents['library.game.deleted'] {
+function toHostGameDeletedEvent(event: AppEvents['game.deleted'][0]): HostEvents['game.deleted'] {
   return {
     gameId: event.gameId,
     occurredAt: event.occurredAt
   }
 }
 
-function toHostLibraryPersonCreatedEvent(
-  event: AppEvents['library.person.created'][0]
-): HostEvents['library.person.created'] {
+function toHostPersonCreatedEvent(
+  event: AppEvents['person.created'][0]
+): HostEvents['person.created'] {
   return {
     personId: event.personId,
     name: event.name,
@@ -364,9 +376,9 @@ function toHostLibraryPersonCreatedEvent(
   }
 }
 
-function toHostLibraryPersonUpdatedEvent(
-  event: AppEvents['library.person.updated'][0]
-): HostEvents['library.person.updated'] {
+function toHostPersonUpdatedEvent(
+  event: AppEvents['person.updated'][0]
+): HostEvents['person.updated'] {
   return {
     personId: event.personId,
     changes: cloneHostValue(event.changes),
@@ -374,9 +386,9 @@ function toHostLibraryPersonUpdatedEvent(
   }
 }
 
-function toHostLibraryPersonDeletedEvent(
-  event: AppEvents['library.person.deleted'][0]
-): HostEvents['library.person.deleted'] {
+function toHostPersonDeletedEvent(
+  event: AppEvents['person.deleted'][0]
+): HostEvents['person.deleted'] {
   return {
     personId: event.personId,
     occurredAt: event.occurredAt

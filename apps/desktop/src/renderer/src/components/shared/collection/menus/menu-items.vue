@@ -48,7 +48,7 @@ const { data: collection, refetch } = useAsyncData(fetchCollection, {
   enabled: () => props.enabled
 })
 
-useEvent('db:updated', ({ table, id }) => {
+useEvent('db.updated', ({ table, id }) => {
   if (table === 'collections' && id === props.collectionId) refetch()
 })
 

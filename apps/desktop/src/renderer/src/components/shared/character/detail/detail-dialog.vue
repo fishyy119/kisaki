@@ -63,7 +63,7 @@ const { character, isLoading, error } = useCharacterProvider(
 )
 const state = useRenderState(isLoading, error, character)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'characters' && id === props.characterId) {
     open.value = false
   }

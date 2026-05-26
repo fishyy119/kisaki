@@ -64,13 +64,13 @@ const showCreateDialog = ref(false)
 // Event Listeners
 // =============================================================================
 
-useEvent('db:inserted', ({ table }) => {
+useEvent('db.inserted', ({ table }) => {
   if (table === 'collections') refetch()
 })
-useEvent('db:updated', ({ table }) => {
+useEvent('db.updated', ({ table }) => {
   if (table === 'collections') refetch()
 })
-useEvent('db:deleted', ({ table }) => {
+useEvent('db.deleted', ({ table }) => {
   if (table === 'collections') refetch()
 })
 
@@ -119,7 +119,7 @@ function handleCollectionClick(collectionId: string) {
             />
           </Button>
         </RouterLink>
-          <Icon
+        <Icon
           :icon="getEntityIcon('collection')"
           class="size-5"
         />

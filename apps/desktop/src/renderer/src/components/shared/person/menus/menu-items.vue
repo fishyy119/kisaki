@@ -97,17 +97,17 @@ const extensionMenuInput = computed(
     }) as const
 )
 
-useEvent('db:updated', ({ table, id }) => {
+useEvent('db.updated', ({ table, id }) => {
   if (table === 'persons' && id === props.personId) refetch()
   if (table === 'collection_person_links') refetch()
   if (table === 'collections') refetch()
 })
 
-useEvent('db:inserted', ({ table }) => {
+useEvent('db.inserted', ({ table }) => {
   if (table === 'collection_person_links' || table === 'collections') refetch()
 })
 
-useEvent('db:deleted', ({ table }) => {
+useEvent('db.deleted', ({ table }) => {
   if (table === 'collection_person_links' || table === 'collections') refetch()
 })
 

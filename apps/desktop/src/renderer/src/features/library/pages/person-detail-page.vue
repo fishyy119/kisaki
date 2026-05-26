@@ -57,13 +57,13 @@ watch(personId, () => {
 const { person, isLoading, error } = usePersonProvider(() => personId.value ?? '', spoilersRevealed)
 const state = useRenderState(isLoading, error, person)
 
-useEvent('db:deleted', ({ table, id }) => {
+useEvent('db.deleted', ({ table, id }) => {
   if (table === 'persons' && id === personId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('library.entity.merged', (event) => {
+useEvent('entity.merged', (event) => {
   if (event.entityType === 'person' && event.sourceId === personId.value) {
     router.replace({ path: `/library/person/${event.targetId}`, query: route.query })
   }

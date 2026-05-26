@@ -19,6 +19,7 @@ import { createLogger } from '@main/log'
 import * as schema from '@shared/db'
 import { settings } from '@shared/db'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import type { EventService } from '@main/services/event'
 import { AttachmentStore } from './attachment'
 import { ThumbnailStore } from './thumbnail'
 import { DbEntityDeleteHelper, DbEntityFinderHelper, DbEntityMergeCoordinator } from './helper'
@@ -65,6 +66,7 @@ export class DbService implements IService {
   sql!: SqlExecutor
   private trigger!: TriggerStore
   private projector!: DbEventProjector
+  private event!: EventService
 
   // ==================== Lifecycle ====================
 
@@ -85,10 +87,10 @@ export class DbService implements IService {
     // Initialize SQLite triggers for automatic event emission
     // IMPORTANT: Must register emit_db_change function BEFORE any DB writes
     // because triggers persist in SQLite and may already exist from previous runs
-    const event = container.get('event')
-    this.trigger = new TriggerStore(this.sqlite, event)
+    this.event = container.get('event')
+    this.trigger = new TriggerStore(this.sqlite, this.event)
     this.trigger.init()
-    this.projector = new DbEventProjector(this.sqlite, event)
+    this.projector = new DbEventProjector(this.sqlite, this.event)
     this.projector.init()
 
     // Initialize settings singleton table (after triggers are set up)
@@ -101,7 +103,7 @@ export class DbService implements IService {
     this.attachment = new AttachmentStore(this.client, this.storageDir, this.thumbnail, network)
     this.entityFinder = new DbEntityFinderHelper(this.client)
     this.entityDelete = new DbEntityDeleteHelper(this.client)
-    this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, event)
+    this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, this.event)
     this.fts = new FtsStore(this.sqlite)
     this.sql = new SqlExecutor(this.sqlite)
 
@@ -109,7 +111,7 @@ export class DbService implements IService {
     this.fts.init()
 
     // Cleanup attachment storage on row deletion (applies to all tables)
-    event.bus.on('db:deleted', ({ table, id }) => {
+    this.event.bus.on('db.deleted', ({ table, id }) => {
       this.attachment.cleanupRow(table, id).catch((error) => {
         log.warn('Failed to cleanup attachment storage.', error, { table: table, id: id })
       })
@@ -123,6 +125,7 @@ export class DbService implements IService {
     registerDbIpc(this, ipc)
 
     log.info('Database initialized.', { dbPath: this.dbPath })
+    this.event.bus.emit('db.ready', true)
   }
 
   private setupAttachmentProtocol(): void {
@@ -182,6 +185,7 @@ export class DbService implements IService {
     this.attachment?.dispose()
     this.thumbnail?.dispose()
     if (this.sqlite) {
+      this.event?.bus.emit('db.ready', false)
       this.sqlite.close()
       log.info('Database connection closed')
     }

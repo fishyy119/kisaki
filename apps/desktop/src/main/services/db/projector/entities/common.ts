@@ -3,7 +3,8 @@ import type {
   LibraryCollectionDynamicConfigSnapshot,
   LibraryCoreChange,
   LibraryEntityChange,
-  LibraryScoreChange
+  LibraryScoreChange,
+  ScannerChange
 } from '@shared/events/library'
 import type { EntityProjection } from '../types'
 import {
@@ -17,8 +18,8 @@ export function projectEntityChanges(
   projection: EntityProjection,
   firstOld: Record<string, unknown>,
   lastNext: Record<string, unknown>
-): LibraryEntityChange[] {
-  const projected: LibraryEntityChange[] = []
+): Array<LibraryEntityChange | ScannerChange> {
+  const projected: Array<LibraryEntityChange | ScannerChange> = []
 
   if (projection.scoreField) {
     const before = nullableNumber(firstOld[projection.scoreField])

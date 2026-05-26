@@ -3,7 +3,6 @@ import path from 'path'
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
 import { is } from '@electron-toolkit/utils'
-import type { EventService } from '@main/services/event'
 import { wrapIpc, wrapIpcVoid, type IpcService } from '@main/services/ipc'
 
 const log = createLogger('Portable')
@@ -202,32 +201,29 @@ export function isPortableMode(): boolean {
  * Requests a switch to portable mode.
  * The actual migration will happen on next app restart.
  */
-export async function requestSwitchToPortable(eventService: EventService): Promise<void> {
+export async function requestSwitchToPortable(): Promise<void> {
   if (portableStatus?.isPortable) {
     throw new Error('Already in portable mode')
   }
   await setMigrationPending('portable')
-  eventService.bus.emit('app:portable-mode-change-pending', { targetMode: 'portable' })
 }
 
 /**
  * Requests a switch to normal mode.
  * The actual migration will happen on next app restart.
  */
-export async function requestSwitchToNormal(eventService: EventService): Promise<void> {
+export async function requestSwitchToNormal(): Promise<void> {
   if (!portableStatus?.isPortable) {
     throw new Error('Already in normal mode')
   }
   await setMigrationPending('normal')
-  eventService.bus.emit('app:portable-mode-change-pending', { targetMode: 'normal' })
 }
 
 /**
  * Cancels a pending mode switch.
  */
-export async function cancelPendingSwitch(eventService: EventService): Promise<void> {
+export async function cancelPendingSwitch(): Promise<void> {
   await clearMigrationPending()
-  eventService.bus.emit('app:portable-mode-change-cancelled')
 }
 
 /**
@@ -242,7 +238,7 @@ export async function getPendingSwitch(): Promise<'portable' | 'normal' | null> 
  * Setup IPC handlers for portable mode.
  * Should be called after app.whenReady() with initialized services.
  */
-export function setupPortableIpc(ipc: IpcService, event: EventService): void {
+export function setupPortableIpc(ipc: IpcService): void {
   ipc.handle('portable:get-status', async () => {
     return wrapIpc(() => getPortableStatus())
   })
@@ -252,15 +248,15 @@ export function setupPortableIpc(ipc: IpcService, event: EventService): void {
   })
 
   ipc.handle('portable:switch-to-portable', async () => {
-    return wrapIpcVoid(() => requestSwitchToPortable(event))
+    return wrapIpcVoid(() => requestSwitchToPortable())
   })
 
   ipc.handle('portable:switch-to-normal', async () => {
-    return wrapIpcVoid(() => requestSwitchToNormal(event))
+    return wrapIpcVoid(() => requestSwitchToNormal())
   })
 
   ipc.handle('portable:cancel-pending-switch', async () => {
-    return wrapIpcVoid(() => cancelPendingSwitch(event))
+    return wrapIpcVoid(() => cancelPendingSwitch())
   })
 
   log.info('IPC handlers registered')

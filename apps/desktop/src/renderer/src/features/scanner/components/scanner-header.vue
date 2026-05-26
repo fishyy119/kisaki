@@ -41,15 +41,15 @@ async function fetchScannerCount(): Promise<number> {
 const { data: totalScanners, refetch } = useAsyncData(fetchScannerCount)
 
 // Listen for scanner changes
-useEvent('db:inserted', (payload) => {
+useEvent('db.inserted', (payload) => {
   if (payload.table === 'scanners') refetch()
 })
 
-useEvent('db:updated', (payload) => {
+useEvent('db.updated', (payload) => {
   if (payload.table === 'scanners') refetch()
 })
 
-useEvent('db:deleted', (payload) => {
+useEvent('db.deleted', (payload) => {
   if (payload.table === 'scanners') refetch()
 })
 
