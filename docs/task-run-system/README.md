@@ -9,8 +9,9 @@
 ```text
 Command 是可执行动作定义。
 Automation 是持久自动化配置。
-TaskRun 是一次正在运行或已经完成的长时执行实例。
+TaskRun 是一次正在运行或已经完成的长时执行实例，也是进度、结果和完成历史的唯一事实源。
 Task Center 只展示 TaskRun。
+Notify 是 TaskRun 的可选展示层，不是状态源。
 ```
 
 ## 文档结构
@@ -50,14 +51,14 @@ Task Center 只展示 TaskRun。
 
 目标命名：
 
-| 当前概念                | 目标概念             | 说明                           |
-| ----------------------- | -------------------- | ------------------------------ |
-| `CommandService`        | `CommandService`     | 保留，定义和执行命令。         |
-| `BackgroundTaskService` | `AutomationService`  | 持久自动化配置和调度。         |
-| command execution       | `TaskRun` backed run | 命令执行是一类 task run。      |
-| scanner active progress | `TaskRun`            | 扫描运行态进入 task run。      |
-| extension package op    | `TaskRun`            | 安装/更新/导入包操作进入中心。 |
-| renderer notify loading | `TaskRun`            | 长时流程状态不再散落在 toast。 |
+| 当前概念                | 目标概念               | 说明                           |
+| ----------------------- | ---------------------- | ------------------------------ |
+| `CommandService`        | `CommandService`       | 保留，定义和执行命令。         |
+| `BackgroundTaskService` | `AutomationService`    | 持久自动化配置和调度。         |
+| command execution       | `TaskRun` backed run   | 命令执行是一类 task run。      |
+| scanner active progress | `TaskRun`              | 扫描运行态进入 task run。      |
+| extension package op    | `TaskRun`              | 安装/更新/导入包操作进入中心。 |
+| renderer notify loading | `TaskRun` presentation | 长时流程状态不再散落在 toast。 |
 
 UI 文案：
 
@@ -75,7 +76,7 @@ Automation
   描述“什么时候自动做某个 Command”
 
 TaskRun
-  描述“这一次做得怎么样”
+  描述“这一次做什么、谁触发、关联什么对象、做得怎么样”
 
 Task Center
   展示“现在正在做什么、刚才做完了什么、结果是什么”
@@ -85,4 +86,13 @@ Task Center
 
 ```text
 统一运行态，不统一业务所有权；统一展示，不把所有长流程伪装成命令。
+```
+
+TaskRun 内部使用：
+
+```text
+category: UI 分组
+operation: 具体操作
+initiator: 启动来源
+subject: 关联业务对象
 ```

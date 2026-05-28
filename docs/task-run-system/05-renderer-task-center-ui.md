@@ -74,6 +74,7 @@ export const useTaskRunStore = defineStore('task-run', () => {
 - 初始化时调用 `task-run:list { status: 'all', limit }`。
 - 订阅 `task-run:changed` 和 `task-run:deleted`。
 - store 只保存 UI 需要的 snapshot，不直接查询 DB。
+- 自动化页面、scanner 页面可以从同一 store 派生运行态，不各自维护第二份 progress。
 
 在 `main.ts` idle init 中初始化：
 
@@ -93,7 +94,7 @@ DialogHeader
   summary: n 个进行中 / m 个已完成
 DialogBody
   Tabs: 进行中 / 已完成
-  Toolbar: search, kind filter, clear completed
+  Toolbar: search, category filter, status filter, clear completed
   List
   Details pane or nested details dialog
 DialogFooter optional
@@ -142,16 +143,15 @@ cancelling
 completed
 failed
 cancelled
-skipped
 ```
-
-默认隐藏 dismissed。提供“显示已忽略”选项可选，不作为首版必需。
 
 排序：
 
 ```text
 finishedAt desc
 ```
+
+任务中心不提供 per-run dismissed 状态。用户需要清理历史时使用清理动作，清理策略由 main process 的 `TaskRunStore` 统一执行。
 
 ## Row
 
@@ -160,8 +160,8 @@ finishedAt desc
 建议字段：
 
 ```text
-icon/kind
-title + target label
+icon/category
+title + subject.labelSnapshot
 phase/message
 progress bar + count
 rate/eta/duration
@@ -175,7 +175,6 @@ actions
 - resume: `icon-[mdi--play]`
 - cancel: `icon-[mdi--stop]`
 - details: `icon-[mdi--information-outline]`
-- dismiss: `icon-[mdi--close]`
 
 按钮必须有 tooltip。
 
@@ -212,7 +211,7 @@ features/task-center/utils/display.ts
 详情展示：
 
 - 标题和状态。
-- kind、origin、target。
+- category、operation、initiator、subject。
 - startedAt、finishedAt、duration。
 - 当前 progress。
 - result summary。
@@ -220,7 +219,6 @@ features/task-center/utils/display.ts
 - warnings。
 - error。
 - output JSON 预览。
-- event timeline。
 
 输出区域：
 
@@ -228,6 +226,8 @@ features/task-center/utils/display.ts
 - 最大高度和滚动。
 - 长文本 `whitespace-pre-wrap break-words`。
 - 不默认展开非常大的 output。
+
+首版不展示 event timeline，因为核心合同不建立 `task_run_events`。若后续新增低频 timeline，再作为详情增强。
 
 ## Empty states
 
@@ -249,9 +249,10 @@ features/task-center/utils/display.ts
 
 首版建议：
 
-- search by title/target/origin。
-- kind filter。
+- search by title/subject/initiator。
+- category filter。
 - status filter for completed。
+- operation filter 作为后续增强。
 
 不建议首版做复杂日期筛选；后续可加。
 
@@ -281,15 +282,15 @@ features/task-center/utils/display.ts
 1. 调用 `task-run:resume`。
 2. 成功后等待状态回到 `running`。
 
-### Dismiss
+### Clear completed
 
-只对 final task 显示。
+点击清理历史：
 
-点击忽略：
+1. 调用 `task-run:clear-completed`。
+2. main process 按统一 retention policy 删除可清理 run。
+3. store 通过 `task-run:deleted` 移除对应 snapshot。
 
-1. 调用 `task-run:dismiss`。
-2. store 收到 changed 或本地更新 dismissedAt。
-3. 默认列表隐藏。
+清理不是 dismissed。被删除的 task run 就不再作为自动化历史、命令历史或任务中心历史存在。
 
 ## Sidebar badge
 
@@ -300,7 +301,7 @@ badge 显示 active count。
 - 0 时隐藏。
 - 1-9 显示数字。
 - 10+ 显示 `9+`。
-- 有 failed completed 且未 dismissed 时，可以在按钮上使用 warning dot，但不抢占 active count。
+- failed completed 的红点可以基于 renderer 本地 `lastViewedTaskRunFinishedAt` 推导，不写入 TaskRun。
 
 ## Design system
 
@@ -325,7 +326,10 @@ badge 显示 active count。
 
 任务中心和 toast 是并行 presentation：
 
-- toast 适合短暂提醒。
+- toast 适合短暂提醒和轻量进度。
 - task center 适合查看详情、结果和历史。
+- loading toast 应可关闭。
+- 关闭 toast 不取消 task。
+- toast 上的取消必须是明确 action。
 
 用户点击 task toast 可打开 task center 并选中对应 run。此能力可作为后续增强，但 task run id 必须在 toast action handler 中可用。

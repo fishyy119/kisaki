@@ -23,7 +23,6 @@ apps/desktop/src/shared/db/custom-types.ts
 
 ```text
 task_runs
-task_run_events
 ```
 
 生成 migration：
@@ -34,9 +33,13 @@ pnpm --filter kisaki drizzle-kit generate
 
 验收：
 
-- `TaskRun`、`TaskRunProgress`、`TaskRunResult`、`TaskRunEvent` 类型位于 shared。
+- `TaskRun`、`TaskRunProgress`、`TaskRunResult` 类型位于 shared。
+- 合同使用 `category`、`operation`、`initiator`、`subject`。
+- `TaskRunStatus` 不包含 `skipped`。
+- `TaskRun` 不包含 `dismissedAt`。
+- DB 不包含 `task_run_events`。
 - IPC contracts 包含 `task-run:*`。
-- DB custom JSON types 有 shape validation。
+- DB custom JSON types 支持序列化和反序列化。
 - Migration 可运行。
 
 ## Phase 2: TaskRunService
@@ -46,13 +49,16 @@ pnpm --filter kisaki drizzle-kit generate
 ```text
 apps/desktop/src/main/services/task-run/service.ts
 apps/desktop/src/main/services/task-run/ipc.ts
+apps/desktop/src/main/services/task-run/runs/index.ts
 apps/desktop/src/main/services/task-run/runs/manager.ts
+apps/desktop/src/main/services/task-run/runs/context.ts
+apps/desktop/src/main/services/task-run/runs/controls.ts
+apps/desktop/src/main/services/task-run/runs/transitions.ts
+apps/desktop/src/main/services/task-run/runs/types.ts
 apps/desktop/src/main/services/task-run/history/store.ts
 apps/desktop/src/main/services/task-run/history/retention.ts
 apps/desktop/src/main/services/task-run/notifications.ts
 apps/desktop/src/main/services/task-run/rate.ts
-apps/desktop/src/main/services/task-run/context.ts
-apps/desktop/src/main/services/task-run/validation.ts
 apps/desktop/src/main/services/task-run/index.ts
 ```
 
@@ -67,8 +73,11 @@ apps/desktop/src/main/index.ts
 
 - service id 为 `task-run`。
 - IPC registration 在 `task-run/ipc.ts`。
+- active run 状态机在 `task-run/runs/`。
 - `TaskRunService` 初始化早于 command/scanner/extension。
-- 可以通过 IPC list/get/cancel/pause/resume/dismiss。
+- 可以通过 IPC list/get/wait/cancel/pause/resume/clear-completed。
+- 不提供 `task-run:list-events`。
+- 不提供 `task-run:dismiss`。
 - `task-run:changed` 发送完整 snapshot。
 - dispose 会取消 active runs 并 flush。
 
@@ -96,6 +105,8 @@ apps/desktop/src/renderer/src/components/layout/sidebar.vue
 - dialog 能打开并显示 active/completed tabs。
 - store 初始化读取已有 runs，并订阅 IPC。
 - Map 更新 reassign。
+- UI 使用 category、operation、subject 文案和筛选。
+- 没有 dismissed UI 状态。
 
 ## Phase 4: CommandService rewrite
 
@@ -126,6 +137,7 @@ apps/desktop/src/main/services/command/notifications.ts
 验收：
 
 - command execution id 等于 task run id。
+- command run 创建 `category: 'command'`、`operation: 'command.execute'`。
 - command progress 从 TaskRunService 读取。
 - command cancel 委托 task-run cancel。
 - extension command event 暴露 `checkpoint()`。
@@ -156,12 +168,15 @@ DB：
 
 - `background_tasks` 可直接替换为 `automations`。
 - 无需兼容旧数据。
+- 不新增 automation run result table。
 
 验收：
 
 - UI 文案为“自动化”，不再叫“后台任务”。
-- automation run record 保存 `runId`。
-- automation cancel 根据 `runId` 取消 task run。
+- automation run 创建 command-backed TaskRun。
+- task run `initiator` 写入 automation id、nameSnapshot、trigger、attempt。
+- automation history 从 `task_runs` 查询，不复制 output/result/error。
+- automation cancel 根据 active `runId` 取消 task run。
 - extension API 使用 `kisaki.automations`。
 - Bangumi automation tab 改用新 API。
 
@@ -189,13 +204,13 @@ scanner:get-active-scans
 
 验收：
 
-- scanner run 创建 TaskRun。
+- scanner run 创建 `category: 'scanner'`、`operation: 'scanner.scan'`。
 - pause/resume/abort 通过 task-run controls 或 scanner IPC 委托到 run。
 - scanner 页面从 task-run store 派生 active state。
 - scanner.finished 仍作为低频 domain event。
 - 任务中心能显示扫描进度、暂停、继续、取消和结果。
 
-## Phase 7: Ingest batch use cases
+## Phase 7: Ingest use cases
 
 新增 main use case：
 
@@ -213,6 +228,8 @@ apps/desktop/src/main/services/ingest/batch/
 ```text
 apps/desktop/src/main/services/ingest/service.ts
 apps/desktop/src/main/services/ingest/ipc.ts
+apps/desktop/src/main/services/ingest/handlers/*
+apps/desktop/src/main/services/ingest/use-cases/*
 apps/desktop/src/shared/ingest/update/*
 apps/desktop/src/renderer/src/components/shared/*/forms/metadata-update-form-dialog/batch-*.vue
 apps/desktop/src/renderer/src/features/adder/components/*-adder-dialog.vue
@@ -222,9 +239,15 @@ apps/desktop/src/renderer/src/features/adder/components/*-adder-dialog.vue
 
 - renderer 不再循环执行批量 search/update。
 - batch IPC 返回 `runId`。
+- 现有单项 ingest 添加/更新能力只要涉及抓取、下载、解析、图片处理或多阶段写入，也创建 task run。
+- 单项 ingest 操作支持 `{ taskRun: false }`，用于批量流程复用单项逻辑。
+- 批量流程调用单项 ingest 操作时只传入 `{ taskRun: false }`，不为每个 item 创建子 task run。
+- 单项操作在 `taskRun: false` 时不调用 TaskRunService、不 report task progress、不接收父 run runtime。
+- 批量流程只在 item 边界调用父 run checkpoint，取消粒度是 item 级。
+- 父批量 use case 独占 aggregate progress 和 result 汇总。
+- 单项添加完成时 `result.output` 包含新实体 id。
 - 任务中心显示批量进度和失败摘要。
 - 失败列表有上限。
-- 单项添加若耗时明显，也可以创建 task run；很短流程可继续使用 local submit state。
 
 ## Phase 8: Extension package operations
 
@@ -244,6 +267,7 @@ apps/desktop/src/renderer/src/features/extension/components/extension-update-dia
 
 - renderer 不再生成 package operation id。
 - install/update IPC 返回 `runId` 或可在当前 dialog 中跟踪 run。
+- run 创建 `category: 'extension'` 和对应 package operation。
 - download/verify/extract/commit phase 显示在任务中心。
 - commit 阶段取消按钮不可用。
 - 扩展安装完成后结果进入 task run history。
@@ -261,6 +285,8 @@ rg -n "notify\\.loading|notify\\.update" apps/desktop/src/renderer/src apps/desk
 - 短流程保留 notify。
 - 长流程迁移到 task run。
 - main-initiated 长流程可启用 task notify presentation。
+- loading toast 应可关闭。
+- 关闭 toast 不取消 task run。
 - renderer 组件不把 toast id 当作运行状态。
 
 验收：
@@ -280,12 +306,15 @@ rg -n "notify\\.loading|notify\\.update" apps/desktop/src/renderer/src apps/desk
 docs/bangumi-builtin-extension/06-settings-commands-and-tasks.md
 ```
 
-替换旧语义：
+目标语义：
 
-- `BackgroundTaskService` -> `AutomationService`
-- `background task panel` -> `automation page`
-- `command notify progress` -> `task run notification presentation`
-- `scanner progress store` -> `task run store`
+- `AutomationService` 是持久自动化配置和调度服务。
+- `TaskRunService` 是长时执行实例的唯一运行态和历史事实源。
+- command execution 由 task run backed。
+- scanner active progress 从 task run store 派生。
+- notify loading 是 task run notification presentation，不是状态源。
+- TaskRun 使用 `category`、`operation`、`initiator`、`subject`。
+- `subject` 不包含 renderer route；导航由 renderer 根据 `subject.type + subject.id` 推导。
 
 ## Negative search checklist
 
@@ -306,6 +335,7 @@ rg -n "notify\\.loading" apps/desktop/src/renderer/src/components/shared/*/forms
 
 ```powershell
 rg -n "TaskRunService|task-run" apps/desktop/src/main apps/desktop/src/shared apps/desktop/src/renderer/src
+rg -n "TaskRunCategory|TaskRunOperation|TaskRunInitiator|TaskRunSubject" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer/src
 rg -n "AutomationService|automations" apps/desktop/src packages/extension-api packages/extension-sdk extensions
 rg -n "checkpoint\\(" apps/desktop/src/main extensions
 rg -n "task-run:changed" apps/desktop/src
@@ -343,9 +373,9 @@ pnpm -r --parallel lint
 
 1. 创建一个 startup 或 cron automation。
 2. 手动运行。
-3. automation 页面显示 linked run。
+3. automation 页面从 `task_runs` 显示历史。
 4. 任务中心显示实际执行状态。
-5. automation history 不复制大 output。
+5. automation history 不复制 output。
 
 ### Scanner
 
@@ -355,12 +385,20 @@ pnpm -r --parallel lint
 4. 暂停、继续、取消都能生效。
 5. 完成后可查看新增/跳过/失败摘要。
 
+### Single ingest
+
+1. 从 scraper 添加一个游戏。
+2. main 创建 `ingest.game.add` run。
+3. 任务中心显示抓取、写入和完成状态。
+4. 完成后 result output 包含 `gameId`。
+
 ### Batch metadata update
 
 1. 选择多个实体批量更新。
 2. dialog 提交后 main 创建 run。
 3. 任务中心展示进度、速度和失败数。
-4. 关闭原 dialog 后仍可查看结果。
+4. 每个 item 调用单项 ingest 操作并传入 `{ taskRun: false }`，不创建子 task run。
+5. 关闭原 dialog 后仍可查看结果。
 
 ### Extension install/update
 
@@ -376,10 +414,11 @@ pnpm -r --parallel lint
 1. `TaskRunService` 是应用长时执行实例唯一运行时读模型。
 2. 任务中心通过 `task-run:*` IPC 和 store 展示状态。
 3. 高频进度不走 AppEvents。
-4. notify 不再作为长流程状态源。
+4. notify 不再作为长流程状态源，但仍可作为可关闭 presentation。
 5. command execution 由 task run backed。
-6. automation 与 task run 语义分离。
+6. automation 与 task run 语义分离，automation history 从 task runs 投影。
 7. scanner 进度进入 task run。
 8. 批量 renderer 循环迁到 main use case。
-9. extension package operation 进入 task run。
-10. 所有新增服务、IPC、renderer 组件符合 Kisaki 命名和边界规范。
+9. 单个耗时 ingest 操作进入 task run。
+10. extension package operation 进入 task run。
+11. 所有新增服务、IPC、renderer 组件符合 Kisaki 命名和边界规范。

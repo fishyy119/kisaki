@@ -107,12 +107,12 @@ Scanner 已经有比较完整的运行态：
 规则：
 
 1. 任何需要进入任务中心的长时流程必须创建 `TaskRun`。
-2. `TaskRunService` 只拥有运行实例，不拥有业务流程。
+2. `TaskRunService` 是进度、结果和完成历史的唯一事实源。
 3. 业务服务通过 `TaskRunContext` 上报进度、检查取消/暂停、提交结果。
 4. 命令执行由 `TaskRunService` 承载运行态，但 command 仍保留“动作定义”的语义。
-5. 自动化配置由 `AutomationService` 承载，自动化触发后产生 `TaskRun`。
+5. 自动化配置由 `AutomationService` 承载，自动化触发后产生 `TaskRun`，自动化历史从 `task_runs` 投影。
 6. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 AppEvents。
-7. notify 只订阅 task run 变化生成 toast，不作为业务状态源。
+7. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
 
 ## 目标
 
@@ -146,7 +146,7 @@ CommandService
 
 AutomationService
   owns persistent schedules and failure policy
-  starts commands and records automation-level attempts through TaskRun linkage
+  starts commands and reads automation history from TaskRun initiator
 
 ScannerService
   owns scanner discovery, queue and scanner-specific rules
@@ -174,6 +174,8 @@ TaskRunService
 
 每次 IPC 推送都是完整 task run snapshot，renderer store 直接替换。组件不根据增量事件拼状态。
 
+TaskRun 使用 `category` 做 UI 分组，使用 `operation` 描述具体操作，使用 `initiator` 描述启动来源，使用 `subject` 描述关联业务对象。自动化是 initiator，不是 task run category。
+
 ### Progress 是瞬时状态，Result 是完成事实
 
 进度可以频繁变化；结果只在结束时产生。UI 不从最后一条 progress 推断完成结果。
@@ -184,8 +186,8 @@ TaskRunService
 
 ### Notification 是派生视图
 
-toast 可以显示任务开始、进度和完成，但任务中心和 task run store 才是运行状态源。
+toast 可以显示任务开始、进度和完成，但任务中心和 task run store 才是运行状态源。loading toast 应该可关闭，关闭 toast 不取消任务。
 
 ### 历史持久化受限
 
-持久化结果摘要、错误、计数和有限事件，不持久化无限日志、高频 progress 或敏感数据。
+持久化结果摘要、错误和计数，不持久化无限日志、高频 progress 或敏感数据。自动化历史、命令历史、扫描历史都从 task runs 查询；需要更长保留周期时调整 TaskRun retention policy，而不是复制第二份结果。
