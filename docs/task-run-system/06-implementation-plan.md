@@ -41,6 +41,7 @@ pnpm --filter kisaki drizzle-kit generate
 - `TaskRunOperation` 不包含通用 `command.execute`；command 入口触发的任务使用真实业务 operation，并通过 `subject.type === 'command'` 关联入口。
 - `TaskRunOperation` 覆盖 ingest 单项/批量 add/update/delete、scanner、extension-owned `extension.task.<extensionId>.<operation>`、extension package、extension repository、updater 和 system maintenance。
 - `TaskRunStatus` 不包含 `skipped`。
+- `TaskRunControls` 只包含 `cancelable` 和 `pausable`；首版不提供 TaskRun 级别重跑控制。
 - `TaskRun` 不包含 `dismissedAt`。
 - `TaskRunStartResult` 返回 `runId` 和 `createdAt`，不返回误导性的 `startedAt`。
 - `TaskRunProgressUpdate` 支持 bounded `counters` 和 `warnings` live summary，且每次 report 是完整 progress snapshot replacement。
@@ -93,6 +94,7 @@ apps/desktop/src/main/index.ts
 - `TaskRunService` 初始化早于需要创建 task run 的服务和 handler。
 - init 时创建空 active map；DB 不保存 active rows，因此不需要 `history.markStaleActiveRuns()`。
 - 可以通过 IPC list/get/wait/cancel/pause/resume/clear-completed。
+- `service.runs.onCancelRequested(listener)` 作为 main 内部订阅点存在，供 extension task-run provider 转发取消请求；它不是 AppEvents 或 renderer IPC。
 - `task-run:list-active` 调用 `service.runs.list(query)`，只返回 active runs。
 - `task-run:list-history` 调用 `service.history.list(query)`，只返回 persisted final rows。
 - 任务中心 store 分别初始化 active/history 两个 tab，不依赖 main 合并 list，也不直接访问 DB。
@@ -262,12 +264,13 @@ extensions/bangumi/src/automations/templates.ts
 - `packages/extension-api` 不 import `apps/desktop/src/shared/task-run.ts`，使用 public `ExtensionTaskRun*` DTO。
 - `ExtensionTaskRunHandle` 暴露 `report`、`checkpoint`、`complete`、`fail`、`cancel`。
 - `ExtensionTaskRunHandle` 不暴露 `finish(result)` 或 `finishFromError()`。
+- `ExtensionTaskRunControls` 只包含 `cancelable` 和 `pausable`。
 - extension SDK 暴露 `isExtensionTaskRunCancellation(error)`，供扩展 catch 边界显式映射取消。
 - extension task-run provider 从 runtime metadata 派生 TaskRun owner，扩展不能伪造。
 - extension task-run provider 校验 owner scope、extension-local operation name format、subject ownership、payload 大小和 runtime handle；校验常量放在 provider validation module 附近。
 - extension task-run provider 将 public operation name 映射成内部 `extension.task.<extensionId>.<operation>`，返回给扩展时再映射回 public operation name。
 - extension task-run provider 根据 command source 派生 user/automation/extension initiator，扩展不能伪造。
-- main 通过 `capabilities.taskRuns.cancelRequested` 通知 host abort 对应 local handle signal。
+- main task-run provider 通过 `service.runs.onCancelRequested(...)` 订阅被接受的取消请求，并通过 `capabilities.taskRuns.cancelRequested` 通知 host abort 对应 local handle signal。
 - extension handle 的 cancel/abort 由 task run cancel 和 extension host dispose 驱动。
 - Bangumi 长时 command handler 通过 `kisaki.taskRuns.create({ operation: '<extensionLocalOperation>' })` 创建 extension-owned run 并返回 `runId`。
 - Bangumi job runner 不再接收 command event，不调用 `event.reportProgress()` 或 `event.checkpoint()`。

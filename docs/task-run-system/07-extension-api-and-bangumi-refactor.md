@@ -115,7 +115,6 @@ export interface ExtensionTaskRunSubject {
 export interface ExtensionTaskRunControls {
   cancelable?: boolean
   pausable?: boolean
-  retryable?: boolean
 }
 
 export interface ExtensionTaskRunPresentation {
@@ -288,7 +287,7 @@ apps/desktop/src/main/services/extension/capabilities/task-runs.ts
 - `waitOwn(runId)` 只等待 active run 的 final snapshot；如果 run 已经不在 active set，扩展应读取 `getHistoryOwn(runId)`。
 - 所有返回给扩展的 snapshot 都把内部 operation 还原为 public operation name。
 - 将 `presentation.notify` 映射为 TaskRun presentation。
-- 监听 TaskRun cancel，向 extension host 发送 `capabilities.taskRuns.cancelRequested`。
+- 通过 `service.runs.onCancelRequested(...)` 监听被 TaskRun active 状态机接受的 cancel request，并向 extension host 发送 `capabilities.taskRuns.cancelRequested`。
 - extension host dispose 时取消该 runtime owner 的 active runs。
 
 Operation mapper：
@@ -386,7 +385,7 @@ context.contributions.commands.register({
       operation: 'fullSync',
       title: 'Bangumi 全量同步',
       subject: { type: 'command', id: 'bangumi.sync.full', labelSnapshot: 'Bangumi 全量同步' },
-      controls: { cancelable: true, retryable: true },
+      controls: { cancelable: true },
       presentation: {
         notify: { enabled: true, showProgress: true, showResult: true, closable: true }
       }

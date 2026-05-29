@@ -12,7 +12,7 @@
 | `Subject`      | 任务主要关联的业务对象，用于展示、过滤和跳转。                 |
 | `Progress`     | 当前阶段和度量快照。                                           |
 | `Result`       | 完成后的输出、摘要、错误和计数。                               |
-| `Control`      | 取消、暂停、继续、重试等用户可操作能力。                       |
+| `Control`      | 取消、暂停和继续等用户可操作能力。                             |
 | `Checkpoint`   | 任务代码可安全响应取消或暂停的协作式边界。                     |
 | `Presentation` | 由 TaskRun 派生出的可选展示，例如 toast，不拥有任务状态。      |
 
@@ -321,7 +321,6 @@ TaskRun shared contract 不导出全局 limits 常量。长度、条数和 JSON 
 export interface TaskRunControls {
   cancelable: boolean
   pausable: boolean
-  retryable: boolean
 }
 ```
 
@@ -330,7 +329,7 @@ export interface TaskRunControls {
 - `cancelable && active` 显示取消。
 - `pausable && status === 'running'` 显示暂停。
 - `pausable && status === 'paused'` 显示继续。
-- `retryable && final` 可以显示重跑，但重跑由生产者 adapter 决定。
+- 首版不提供 TaskRun 级别的重跑控制。需要再次执行时，用户回到原业务入口重新启动新的 TaskRun。
 
 语义规则：
 

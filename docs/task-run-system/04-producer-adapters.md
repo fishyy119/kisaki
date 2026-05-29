@@ -396,7 +396,7 @@ scanner.finished
   owner: { type: 'app' },
   initiator: { type: 'user' }, // or { type: 'system', reason: 'maintenance' }
   subject: { type: 'scanner', id: scanner.id, labelSnapshot: scanner.name },
-  controls: { cancelable: true, pausable: true, retryable: true }
+  controls: { cancelable: true, pausable: true }
 }
 ```
 
@@ -460,7 +460,7 @@ renderer 改为：
   owner: { type: 'app' },
   initiator: { type: 'user' },
   subject: { type: 'game', labelSnapshot: request.title },
-  controls: { cancelable: true, pausable: false, retryable: true }
+  controls: { cancelable: true, pausable: false }
 }
 ```
 
@@ -628,7 +628,7 @@ interface IngestBatchResult {
   owner: { type: 'app' },
   initiator: { type: 'user' },
   subject: { type: 'extension', id: manifest.id, labelSnapshot: manifest.displayName },
-  controls: { cancelable: true, pausable: false, retryable: true }
+  controls: { cancelable: true, pausable: false }
 }
 ```
 
@@ -677,7 +677,7 @@ task center shows progress
   owner: { type: 'app' },
   initiator: { type: 'user' },
   subject: { type: 'repository', id: repository.id, labelSnapshot: repository.name },
-  controls: { cancelable: true, pausable: false, retryable: true }
+  controls: { cancelable: true, pausable: false }
 }
 ```
 
@@ -691,7 +691,7 @@ task center shows progress
   owner: { type: 'app' },
   initiator: { type: 'user' },
   subject: { type: 'repository', labelSnapshot: '全部扩展仓库' },
-  controls: { cancelable: true, pausable: false, retryable: true }
+  controls: { cancelable: true, pausable: false }
 }
 ```
 

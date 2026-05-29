@@ -71,6 +71,7 @@ service.runs.wait(runId)
 service.runs.cancel(runId)
 service.runs.pause(runId)
 service.runs.resume(runId)
+service.runs.onCancelRequested(listener)
 
 service.history.get(runId)
 service.history.list(query)
@@ -89,6 +90,25 @@ service.history.prune()
 `service.runs.get(runId)` 只读取 active run。`service.history.get(runId)` 只读取 completed/final history。服务层不提供跨 active/history 的 `snapshots` facade。
 
 `service.runs.wait(runId)` 只等待 active run 的 final snapshot。若 run 已经不在 active map，调用方应读取 `service.history.get(runId)`。未知 run 抛出稳定英文错误。
+
+`service.runs.onCancelRequested(listener)` 是 main process 内部订阅点，不是 AppEvents，也不是 renderer IPC。它只在 cancel request 被 active run 状态机接受时触发，用于 extension task-run provider 将取消请求转发给 extension host：
+
+```ts
+interface TaskRunCancelRequest {
+  runId: string
+  run: TaskRun
+  requestedAt: number
+}
+```
+
+规则：
+
+- 只在 `service.runs.cancel(runId)` 接受一个 active、cancelable run 时触发一次。
+- 不在 producer 调用 `run.cancel()` 写入 final `cancelled` snapshot 时触发。
+- 不为已经 final、未知、不可取消或已经 cancelling 的 run 重复触发。
+- listener 只能把取消请求转发给拥有该 run 的运行时，例如 extension host 的 local `AbortController`，不能直接完成或失败该 run。
+- extension task-run provider 必须仍然按 `owner.type === 'extension'` 和 `owner.extension.id` 过滤授权，不从 `operation` 解析 owner。
+- 订阅返回 `unsubscribe`，provider 或 service dispose 时必须释放。
 
 `TaskRunService` 不提供 `run(input, executor)` 作为公共 API。它不接收业务 executor，不调度业务流程，也不替生产者包 try/catch。业务函数显式创建 run、上报进度、调用 checkpoint 并提交最终结果。
 
@@ -386,7 +406,7 @@ const log = createLogger('TaskRun')
 1. 标记 service disposing。
 2. 对所有 active runs 调用 cancel。
 3. 等待短时间 best-effort settle。
-4. 将仍未结束的 active runs 标记为 cancelled，error 为 `Application is shutting down.`。
+4. 将仍未结束的 active runs 标记为 cancelled，summary 为 `Application is shutting down.`，不写 `result.error`。
 5. flush store。
 6. 关闭 active notifications。
 
