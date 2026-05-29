@@ -1,6 +1,6 @@
 # 08 Media Scope Refactor
 
-本文是 Phase 5.5 的执行清单。目标是把当前 phase5 的 game-centered 代码清理为 media-scoped 结构，同时不扩展 Bangumi 所需的宿主能力集合。
+本文是 Phase 5.5 的执行清单。目标是把当前 phase5 的 game-centered 代码清理为 media-scoped 结构，同时不新增 media-specific 宿主能力。
 
 完成本文并通过验收搜索后，后续实施从 `07 Implementation Plan` 的 `Phase 6: 收藏导入` 继续。
 
@@ -8,15 +8,13 @@
 
 这些模块和公共 contract 不在本轮修改范围：
 
-- `packages/extension-api`
-- `packages/extension-sdk`
-- `apps/desktop/src/main/services/extension`
-- SDK bridge、RPC method string、host contribution registry
+- task-run-system 已定义的 `kisaki.taskRuns` / `kisaki.automations` 之外的 extension API
+- media-specific SDK bridge、RPC method string、host contribution registry
 - scraper provider contribution point；不新增 `book` / `anime` / `music` scraper contribution point
-- library/ingest/background task public capability
+- library/ingest/task-run/automation public capability
 - `kisaki.ingest.media.*`、`kisaki.library.media.*` 或 `media.*` event
 
-Bangumi 扩展继续使用现有 API，不在扩展内 import 主程序私有模块。代码整洁性通过内部 adapter 达成，不通过修改宿主 contract 达成。所有 game-only 宿主 API 必须通过 `media/game` adapter 包装，通用层只能依赖扩展内部的 adapter interface。
+Bangumi 扩展继续只使用 public extension API，不在扩展内 import 主程序私有模块。代码整洁性通过内部 adapter 达成，不通过新增 media-specific 宿主 contract 达成。所有 game-only 宿主 API 必须通过 `media/game` adapter 包装，通用层只能依赖扩展内部的 adapter interface。
 
 ## 支持范围
 
@@ -187,7 +185,7 @@ queue key 建议：
 - Account tab 不分 scope。
 - Sync tab 默认选中 game，只有 local-capable scope 显示同步配置。
 - Import tab 的 dialog 带 scope selector。
-- Automation tab 只展示 game 本地写入类 task。
+- Automation tab 只展示 game 本地写入类 automation。
 - Advanced tab 显示四个 scope 的 subject type 和 local capability。
 
 UI 不展示：
@@ -236,7 +234,7 @@ pnpm --filter kisaki typecheck
 
 重构完成时应满足：
 
-- Bangumi 不依赖额外 extension API 能力。
+- Bangumi 不依赖额外 media-specific extension API 能力。
 - game 功能不退化。
 - game-only 宿主 API 被关进 `media/game`。
 - book/anime/music 进入 scope、client、UI、args、summary 模型。

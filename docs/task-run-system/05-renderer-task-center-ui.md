@@ -163,7 +163,7 @@ finishedAt desc
 icon/category
 title + subject.labelSnapshot
 phase/message
-progress bar + count
+progress bar + count + live counters
 rate/eta/duration
 status badge
 actions
@@ -197,6 +197,20 @@ spinner or animated compact bar
 当前 message
 已运行 1 分 20 秒
 ```
+
+Live summary：
+
+```text
+succeeded / failed / skipped / warnings
+最近 warning 摘要
+```
+
+规则：
+
+- active row 可以展示 `progress.counters` 的有限摘要，例如成功、失败、跳过、警告数。
+- active row 最多展示 1 条 `progress.warnings` 摘要，完整列表放详情。
+- completed row 使用 `result.counters` 和 `result.warnings`，不从最后一条 progress 推断结果。
+- counters key 的展示文案由 `features/task-center/utils/display.ts` 统一映射。
 
 格式化逻辑放在：
 
@@ -331,5 +345,7 @@ badge 显示 active count。
 - loading toast 应可关闭。
 - 关闭 toast 不取消 task。
 - toast 上的取消必须是明确 action。
+- renderer 关闭 toast 时必须通知 main 的 notify close callback；TaskRunNotificationCoordinator 记录该 run 已关闭，后续 progress 不重新创建 loading toast。
+- 关闭 loading toast 不影响 final result toast；是否显示 final toast 由 `presentation.notify.showResult` 决定。
 
 用户点击 task toast 可打开 task center 并选中对应 run。此能力可作为后续增强，但 task run id 必须在 toast action handler 中可用。

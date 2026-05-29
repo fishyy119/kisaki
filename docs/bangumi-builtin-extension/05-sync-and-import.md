@@ -11,8 +11,8 @@
 - 导入不得修改任何已有条目的资料元数据，包括 name、originalName、description、releaseDate、assets、relatedSites 和 externalIds。
 - 导入默认只创建缺失条目；只有单次 command args 显式开启 `patchExisting` 时，才按 Bangumi subject ID 匹配并更新已有本地条目的用户态字段。
 - status、score、tag 和目标本地合集属于用户态写入；新建条目按本次 args 写入，已有条目只在 `patchExisting=true` 时写入。
-- 导入配置是单次 command args，不写入 `settings.v1`；导入类 background task 需要持久配置时由 task args 保存。
-- 所有长流程走 command + `JobRunner`，支持取消、实时 progress 和摘要；持久历史只来自主应用 task 执行记录。
+- 导入配置是单次 command args，不写入 `settings.v1`；导入类 automation 需要持久配置时由 automation args 保存。
+- 所有长流程走 command + scoped TaskRun wrapper，支持取消、实时 progress 和摘要；持久历史只来自主应用 TaskRun。
 
 ## Local Adapter 能力矩阵
 
@@ -59,7 +59,7 @@ game adapter 订阅事件：
 9. 计算 fingerprint。
 10. fingerprint 与上次成功同步一致则跳过。
 11. 调用 `BangumiClient.upsertMyCollection(ref, payload)`。当目标收藏类型为 `1` 时，payload 必须包含 `rate=0` 清除远端评分。
-12. 写入 sync state 和 command output；如果由 task 触发，运行记录由主应用 BackgroundTaskService 保存。
+12. 写入 sync state 和 TaskRun output；如果由 automation 触发，运行记录由主应用 TaskRunService 保存。
 
 Fingerprint 输入：
 
@@ -248,6 +248,6 @@ planner 不执行写入，只产出可展示、可测试、可复用的计划。
 
 - Bangumi API 请求受 `BangumiClient` limiter 控制。
 - 本地 ingest item 可以并行，但默认并发不超过 4。
-- command `event.signal` 贯穿 importer、client、limiter、sleep 和 retry。
-- 用户取消后停止新 item，正在执行的网络/ingest 尽量中断；summary 标记 `cancelled`。
+- `ExtensionTaskRunHandle.signal` 贯穿 importer、client、limiter、sleep 和 retry。
+- 用户取消后停止新 item，正在执行的网络/ingest 尽量中断；TaskRun final status 标记 `cancelled`。
 - 单条失败不影响整批；认证失败、profile 缺失、unsupported scope、用户取消属于批次级停止条件。

@@ -40,7 +40,7 @@ apps/desktop/src/shared/task-run.ts
 
 - `TaskRunHandle`
 - `TaskRunContext`
-- `TaskRunCancelledError`
+- `TaskRunCancellation`
 - active run、pause controller、waiter 等 main 内部运行态类型
 
 ## Category and operation
@@ -51,22 +51,25 @@ apps/desktop/src/shared/task-run.ts
 export type TaskRunCategory = 'command' | 'scanner' | 'ingest' | 'extension' | 'updater' | 'system'
 ```
 
-`operation` 是稳定的点分操作标识，描述这次任务具体做什么。
+`operation` 是稳定的点分操作标识，描述这次任务具体做什么。它必须覆盖所有进入任务中心的长流程，避免不同 producer 私造相近字符串。
 
 ```ts
+export type TaskRunContentEntity = 'game' | 'person' | 'company' | 'character'
+
 export type TaskRunOperation =
   | 'command.execute'
   | 'scanner.scan'
-  | 'ingest.game.add'
-  | 'ingest.game.batchAdd'
-  | 'ingest.game.batchUpdate'
-  | 'ingest.person.batchUpdate'
-  | 'ingest.company.batchUpdate'
-  | 'ingest.character.batchUpdate'
+  | `ingest.${TaskRunContentEntity}.add`
+  | `ingest.${TaskRunContentEntity}.update`
+  | `ingest.${TaskRunContentEntity}.batchAdd`
+  | `ingest.${TaskRunContentEntity}.batchUpdate`
+  | `ingest.${TaskRunContentEntity}.batchDelete`
   | 'extension.package.install'
   | 'extension.package.update'
   | 'extension.package.import'
   | 'extension.package.uninstall'
+  | 'extension.repository.refresh'
+  | 'extension.repository.refreshAll'
   | 'updater.check'
   | 'updater.download'
   | 'system.maintenance'
@@ -79,6 +82,8 @@ export type TaskRunOperation =
 - 业务结果解释优先使用 `operation`。
 - 新 use case 增加新的 operation，不复用模糊字符串。
 - operation 使用稳定英文标识，不使用展示文案。
+- ingest operation 使用实体维度和动作维度组合；单项、批量添加、批量更新、批量删除都必须能被明确区分。
+- 扩展仓库刷新和扩展包安装更新不是同一个 operation。
 
 ## Status
 
@@ -183,6 +188,11 @@ export interface TaskRunSubject {
 ## Progress
 
 ```ts
+export interface TaskRunWarning {
+  code?: string
+  message: string
+}
+
 export type TaskRunProgressUnit =
   | 'item'
   | 'file'
@@ -199,6 +209,8 @@ export interface TaskRunProgressUpdate {
   total?: number
   unit?: TaskRunProgressUnit
   indeterminate?: boolean
+  counters?: Record<string, number>
+  warnings?: readonly TaskRunWarning[]
 }
 
 export interface TaskRunProgress extends TaskRunProgressUpdate {
@@ -219,6 +231,11 @@ export interface TaskRunProgress extends TaskRunProgressUpdate {
 - `rate`、`etaMs`、`percent` 由 `TaskRunService` 计算，生产者不直接写。
 - 不知道总量时设置 `indeterminate: true`。
 - `unit` 用于 UI 显示速度，例如 `12 items/s`、`3.4 MB/s`。
+- `counters` 是 active run 的有限汇总，例如 `succeeded`、`failed`、`skipped`、`warnings`，用于 scanner、batch ingest、extension install 等 live summary。
+- `warnings` 是 active run 的有限展示摘要，不是完整错误明细；service 必须按条数和序列化大小限制。
+- 完成后的权威摘要仍然写入 `result.counters` 和 `result.warnings`。最后一条 progress 不能被当作 result。
+- 不把逐项明细、大失败列表或完整业务对象放进 progress；这些内容只进入 result 的有限摘要或 main logger。
+- 当 `phase` 或 `unit` 改变、`current` 回退、`total` 明显变化时，rate calculator 必须重置窗口，避免跨阶段速度污染。
 
 ## Result
 
@@ -232,15 +249,12 @@ export interface TaskRunResult {
   counters?: Record<string, number>
   warnings?: readonly TaskRunWarning[]
 }
-
-export interface TaskRunWarning {
-  code?: string
-  message: string
-}
 ```
 
 规则：
 
+- 对 final snapshot，`TaskRun.status` 与 `TaskRun.result.status` 必须一致。
+- producer 不通过 lifecycle API 传入 result status；最终 status 由 `complete()`、`fail()` 或 `cancel()` 写入，避免 status 双写冲突。
 - `error` 必须是安全、适合展示的摘要。
 - 详细错误对象只写 main logger。
 - `output` 必须 JSON serializable。
@@ -269,7 +283,7 @@ export interface TaskRunControls {
 
 - `cancelable` 表示 run 接受取消请求，不表示当前代码能被立即抢占。
 - cancel 请求会让 run 进入 `cancelling` 并触发 abort signal。
-- 业务代码在下一个安全 checkpoint 抛出取消错误，最终进入 `cancelled`。
+- 业务代码在下一个安全 checkpoint 收到取消信号，最终进入 `cancelled`。
 - 暂停/继续是能力声明，不是强制保证。任务代码必须在 checkpoint 响应暂停。
 
 ## Producer contracts
@@ -282,6 +296,7 @@ updater、command handler 等业务代码使用。
 
 ```text
 apps/desktop/src/main/services/task-run/runs/context.ts
+apps/desktop/src/main/services/task-run/runs/errors.ts
 apps/desktop/src/main/services/task-run/runs/types.ts
 apps/desktop/src/main/services/task-run/runs/index.ts
 ```
@@ -295,26 +310,39 @@ export interface TaskRunContext {
   throwIfCancelled(): void
 }
 
+export class TaskRunCancellation extends Error {
+  readonly name = 'TaskRunCancellation'
+}
+
+export function isTaskRunCancellation(error: unknown): error is TaskRunCancellation
+
 export interface TaskRunHandle {
   readonly id: string
+  readonly createdAt: number
   readonly context: TaskRunContext
   start(): void
   updateControls(controls: Partial<TaskRunControls>): void
-  complete(result: TaskRunResult): void
-  fail(error: unknown): void
-  finishFromError(error: unknown): void
+  complete(result?: Omit<TaskRunResult, 'status' | 'error'>): void
+  fail(error: unknown, result?: Omit<TaskRunResult, 'status' | 'error'>): void
+  cancel(result?: Omit<TaskRunResult, 'status'>): void
 }
 ```
 
 规则：
 
-- `TaskRunHandle` 是创建者持有的生命周期 owner，用于 start、controls、complete、fail 和 error mapping。
+- `TaskRunHandle` 是创建者持有的生命周期 owner，用于 start、controls、complete、fail 和 cancel。
 - `TaskRunService` 不接收业务 executor，因此不会把 handle 注入回调；生产者通过 `runs.create(input)` 显式取得 handle。
 - `TaskRunContext` 是执行期 capability，用于 report、checkpoint、abort signal 和取消检查。
 - 下游业务函数优先只接收 `TaskRunContext`，避免获得 complete/fail run 的能力。
 - `report` 只存在于 `TaskRunContext`，不在 `TaskRunHandle` 顶层重复暴露。
-- renderer、extension public API 和 IPC 不暴露 `TaskRunHandle`。
-- `finishFromError` 只负责把已捕获错误映射为最终状态；业务错误的捕获边界仍在生产者代码。
+- renderer 和 IPC 不暴露 `TaskRunHandle`。
+- extension public API 不暴露 main 内部 `TaskRunHandle`，只暴露受作用域限制的 facade，见 Extension API Policy。
+- `complete()` 只能产生 `completed`，不能接收 `failed` 或 `cancelled` result。
+- `fail()` 只能产生 `failed`，并由 service 把 `error` 规范化为安全摘要。
+- `cancel()` 只能产生 `cancelled`，用于 producer 已确认取消后的显式收尾。
+- 不提供 generic `finish(result)`。如果 adapter 已经拥有 final status，必须显式 switch 到 `complete()`、`fail()` 或 `cancel()`。
+- 不提供 `finishFromError()`。producer 的 catch 边界必须显式判断 `isTaskRunCancellation(error)`，取消信号调用 `cancel()`，真正错误调用 `fail()`。
+- `TaskRunCancellation` 是协作式取消的控制流 sentinel，不是业务错误，不写入 `result.error`，也不按 failure 记录日志。
 
 ## Presentation
 
@@ -369,6 +397,8 @@ export interface TaskRun {
 - `description` 用于任务详情，不用于每帧变化。
 - 不提供 `dismissedAt`。忽略、已读、红点等 UI 状态不进入核心运行模型。
 - `updatedAt` 每次 snapshot 更新都变化。
+- final snapshot 必须同时拥有 `finishedAt` 和 `result`。
+- final snapshot 的 `status` 必须等于 `result.status`。
 
 ## Start result
 
@@ -377,11 +407,16 @@ export interface TaskRun {
 ```ts
 export interface TaskRunStartResult {
   runId: string
-  startedAt: number
+  createdAt: number
 }
 ```
 
 如果调用方确实需要等待完成，应使用 `task-run:wait`。普通 UI workflow 优先使用 task center 观察状态。
+
+规则：
+
+- `TaskRunStartResult` 不返回 `startedAt`，因为 run 可能刚创建仍处于 `queued`。
+- 需要展示开始时间时，renderer 从 `task-run:changed` 或 `task-run:get` 的 snapshot 读取 `startedAt`。
 
 ## History model
 
@@ -516,6 +551,8 @@ export interface TaskRunListQuery {
 - command invocation id 不等于 task run id。
 - `kisaki.automations` 只管理本扩展拥有的自动化配置。
 - 扩展不能 list 所有 app task runs。
-- 若未来需要扩展创建或读取自己拥有的 task run，单独设计 scoped task-run API。
+- 扩展可以通过 scoped task-run API 创建和维护自己拥有的长时 run。
 
-无向后兼容时，公共 extension API 可以把 `backgroundTasks` 重命名为 `automations`。
+无向后兼容时，公共 extension API 必须把 `backgroundTasks` 重命名为 `automations`，不保留 alias。
+
+public API、RPC、host provider、SDK bridge 和现有 Bangumi 扩展重构的完整设计见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。本文件只定义 TaskRun 共享模型和主进程内部 producer 合同。

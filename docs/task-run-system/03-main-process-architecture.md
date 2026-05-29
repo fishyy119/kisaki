@@ -94,9 +94,13 @@ try {
 
   await doBusinessWork(context)
 
-  run.complete(result)
+  run.complete({ summary: 'Done' })
 } catch (error) {
-  run.finishFromError(error)
+  if (isTaskRunCancellation(error)) {
+    run.cancel()
+  } else {
+    run.fail(error)
+  }
 }
 ```
 
@@ -126,6 +130,7 @@ interface ActiveTaskRunRecord {
 - 推送 IPC。
 - 响应 cancel/pause/resume。
 - dispose 时取消所有 active runs。
+- 初始化时接收 history store 标记出来的 stale active runs，不把上一进程遗留的 active 状态重新挂回内存。
 
 不负责：
 
@@ -141,17 +146,17 @@ interface ActiveTaskRunRecord {
 
 `checkpoint()` 语义：
 
-1. 如果 `signal.aborted`，抛出 `TaskRunCancelledError`。
+1. 如果 `signal.aborted`，抛出 `TaskRunCancellation`。
 2. 如果 run 处于 pause requested，状态变为 `paused`，等待 resume 或 cancel。
 3. resume 后状态回到 `running`。
-4. cancel 时从等待中释放并抛出取消错误。
+4. cancel 时从等待中释放并抛出取消信号。
 
 使用规则：
 
 - 长循环每次迭代或每批处理后调用。
 - 文件写入、DB transaction、package commit 这种不可安全暂停的阶段不要调用 pause checkpoint。
 - 不可中断阶段不等于不可取消。cancel 请求应把 run 标记为 `cancelling` 并触发 abort signal。
-- 业务代码继续完成当前不可中断阶段，然后在下一个安全 checkpoint 抛出取消错误。
+- 业务代码继续完成当前不可中断阶段，然后在下一个安全 checkpoint 收到取消信号。
 - 不要在 commit、DB transaction、文件替换等关键阶段假装已经停止。UI 可以显示“正在取消”，但真正结束必须发生在安全边界。
 - `cancelable: false` 只用于完全不接受取消请求的 run 或 point-of-no-return 阶段，不作为普通不可抢占阶段的默认做法。
 
@@ -192,12 +197,23 @@ paused -> cancelling -> cancelled
 - `percent = current / total * 100`，无 total 时 undefined。
 - `etaMs = (total - current) / rate * 1000`，无 total 或 rate <= 0 时 undefined。
 - byte unit 的显示格式由 renderer utils 负责，main 只提供数值。
+- 当 `phase` 或 `unit` 改变、`current` 回退、`total` 明显变化时重置窗口。
+- `counters` 和 `warnings` 只随 snapshot 传递，不参与速度、百分比和 ETA 计算。
 
 不要在业务服务里手写速度和 ETA。
 
 ## History store
 
 `TaskRunHistoryStore` 负责 SQLite 读写。
+
+初始化恢复：
+
+- `TaskRunService.init()` 必须先调用 `history.markStaleActiveRuns()`，再开放 IPC 和 producer 创建入口。
+- `markStaleActiveRuns()` 查询 DB 中所有非 final 状态的 run。
+- 上一进程异常退出留下的 `queued`、`running`、`pausing`、`paused`、`cancelling` 一律写成 `failed`。
+- stale run 的 `result.status` 必须为 `failed`，`result.error` 使用安全摘要 `Application exited before task finished.`。
+- stale run 写入 `finishedAt` 和新的 `updatedAt`，并通过首轮 `task-run:list` 被 renderer 看到。
+- graceful shutdown 中仍在内存的 active runs 由 `dispose()` 标记为 `cancelled`，不要与 crash recovery 混用。
 
 写入策略：
 
@@ -247,6 +263,7 @@ IPC 中不做 runtime shape parsing、业务分支或通知。
 - 根据 final result 更新为 success/warning/error/info。
 - 为 cancelable task 提供明确取消 action。
 - 用户关闭 toast 时只关闭展示，不修改 task run。
+- 记录用户关闭过的 run id，后续 progress update 不重新创建 loading toast。
 - dispose 时关闭 active toast。
 
 presentation 由创建 task run 时指定：
@@ -272,6 +289,9 @@ interface TaskRunPresentation {
 - 关闭 toast 不取消任务。
 - cancel 必须是单独 action。
 - notify 文案从 task run snapshot 派生，不能反向更新 task run。
+- 如果 `showResult === true`，final result 可以在用户关闭 loading toast 后再次展示一次结果 toast；否则尊重关闭状态。
+- NotifyService contract 需要支持 `closable` 和 close callback，renderer close 后通过 notify close event 回到 main。
+- close callback 必须只更新 notification coordinator 的 presentation 状态，不触发 task cancel。
 
 旧 `CommandNotificationCoordinator` 的职责迁移到这里，并删除 command 专属通知协调。
 
@@ -279,10 +299,27 @@ interface TaskRunPresentation {
 
 `TaskRunService` 不捕获业务 executor 抛出的错误，因为它不执行业务 executor。
 
-生产者 catch 错误后调用 `run.finishFromError(error)` 或显式 `run.fail(error)`：
+生产者 catch 错误后必须显式区分取消和失败：
 
-- `TaskRunCancelledError` -> `cancelled`。
+- `TaskRunCancellation` -> `cancelled`。
 - 其他 error -> `failed`。
+
+`TaskRunCancellation` 是运行时控制流 sentinel，不是 task run error。它只用于从深层业务调用栈退出；最终 snapshot 写 `status: 'cancelled'`，不写 `result.error`，也不作为失败日志记录。
+
+推荐形态：
+
+```ts
+try {
+  await doBusinessWork(context)
+  run.complete(result)
+} catch (error) {
+  if (isTaskRunCancellation(error)) {
+    run.cancel()
+  } else {
+    run.fail(error)
+  }
+}
+```
 
 no-op、互斥跳过、自动化禁用、没有待处理项等情况不使用 `skipped` 状态。生产者应在创建 TaskRun 前完成判断；如果已经进入批量执行，则用 `completed` 加 `counters.skipped` 或 `warnings` 表达部分跳过。
 
@@ -327,6 +364,8 @@ const log = createLogger('TaskRun')
 
 不要让 app quit 被长任务无限阻塞。
 
+异常退出恢复不在 `dispose()` 中完成。下一次启动由 `history.markStaleActiveRuns()` 统一把遗留 active rows 变为 failed，避免 DB 中长期保留 running/paused 假状态。
+
 ## Bootstrap
 
 主进程注册顺序目标：
@@ -358,5 +397,6 @@ TaskRunService 面向主应用内部业务服务，输入默认是 trusted input
 - IPC handler 保持 thin adapter，不做 runtime shape parsing。
 - `runs/` 内只保留维护状态机正确性所必需的断言，例如非法状态流转、final run 再写入 progress、非 pausable run 进入 paused。
 - `history/store.ts` 负责持久化边界的大小限制，例如 result output 过大时摘要化或拒绝写入。
-- 如果未来把 TaskRun 创建能力开放给扩展，应在 extension capability/provider 边界解析和校验扩展输入，再调用 TaskRunService。
+- 扩展通过 `kisaki.taskRuns` scoped capability 创建自己的 task run；extension capability/provider 边界解析和校验扩展输入，再调用 TaskRunService。
+- extension task-run provider 的文件、RPC、SDK bridge、owner scoping、operation allowlist、initiator 派生和 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
 - subject 不包含 renderer route；跳转由 renderer 根据 `subject.type + subject.id` 推导。

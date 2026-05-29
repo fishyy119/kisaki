@@ -21,7 +21,7 @@ Phase 0-5 作为回归基线，不作为后续开发阶段重复执行：
 - OAuth 登录、refresh、退出。
 - `BangumiClient`、limiter、retry、pagination、error normalization。
 - game scraper provider 的 search、resolve、openSession。
-- command 注册、args normalization、progress、summary、cancel。
+- command 注册、args normalization、scoped TaskRun wrapper、summary、cancel。
 - settings callback 只启动 command job，不直接跑长任务。
 - game 自动同步 play status/score。
 - sync fingerprint、suppressor、queue、full sync dry run/execute。
@@ -38,7 +38,7 @@ Phase 0-5 作为回归基线，不作为后续开发阶段重复执行：
 
 目标：
 
-- 不修改 extension API。
+- 不新增 media-specific extension API；长流程使用目标 `kisaki.taskRuns`，自动化使用目标 `kisaki.automations`。
 - 建立 `book`、`game`、`anime`、`music` 四类 scope。
 - `game` 成为唯一 local-capable scope。
 - `book` / `anime` / `music` 成为 remote-only descriptor，不写入 Kisaki games。
@@ -105,19 +105,19 @@ Phase 0-5 作为回归基线，不作为后续开发阶段重复执行：
 - Import dialogs 带 media selector，只出现 `book`、`game`、`anime`、`music`。
 - game scope 展示 profile、target collection、field mapping。
 - book/anime/music 只展示远端预览能力，不展示本地执行写入入口。
-- Automation tab 只创建 game 本地写入类 task。
+- Automation tab 只创建 game 本地写入类 automation。
 - Advanced tab 显示四个 scope 的 subject type 和 local capability。
 - 实现 relay health check、清理凭据、清理同步状态、恢复默认设置。
 - 更新 `extensions/bangumi/README.md`。
 
 验收：
 
-- 用户可以创建每日 game 全量同步任务。
-- Bangumi 设置不运行、不取消、不展示 task history。
-- 主应用 task 面板负责 task 启停、运行、取消和历史展示。
+- 用户可以创建每日 game 全量同步自动化。
+- Bangumi 设置不运行、不取消、不展示 task run history。
+- 主应用自动化页面和任务中心负责启停、运行、取消和历史展示。
 - Advanced 不泄露 token 或本机敏感路径。
 - 导入 dialog 的 media selector 只出现书籍、游戏、动漫、音乐四类 scope。
-- settings panel 刷新后只根据 command `running` 状态禁用重复入口，不展示额外 progress/status field。
+- settings panel 刷新后根据 `kisaki.taskRuns.listOwn({ status: 'active' })` 禁用重复入口，不展示额外 progress/status field。
 
 ## Phase 9: 验证与发布
 
@@ -136,7 +136,7 @@ pnpm --filter kisaki typecheck
 - dev 模式 built-in extension 加载成功。
 - OAuth Relay 登录和 refresh 成功。
 - Bangumi game scraper 搜索、resolve、openSession 成功。
-- game 自动同步、全量同步、收藏导入、目录导入和推荐 task 创建流程成功。
+- game 自动同步、全量同步、收藏导入、目录导入和推荐 automation 创建流程成功。
 - book/anime/music 远端收藏读取和目录预览请求使用正确 subject type。
 - book/anime/music 本地写入入口不可见；直接执行也返回 unsupported summary。
 - 未登录、token 失效、subject 404、API 400、429、5xx、网络失败、用户取消都给出可操作错误。
@@ -145,7 +145,7 @@ pnpm --filter kisaki typecheck
 
 - Relay 不可用：登录和 refresh 失败，但未过期 token 的普通 API 请求可继续；UI 提供 health check 和重试。
 - Bangumi API 限速未知：默认保守限速，用户可调整；429 必须 backoff。
-- 长任务 settings callback 超时：settings 只启动 job command；需要持久历史时通过主应用 task。
+- 长任务 settings callback 超时：settings 只启动 job command；持久运行状态和历史通过主应用 TaskRun。
 - DB event 无 source：防循环使用 fingerprint、debounce 和 suppressor。
 - book/anime/music 无本地库 adapter：UI 不展示本地执行入口，job 层返回 unsupported，绝不写入 games。
 - `updated_at` 不可靠：导入不得依赖它判断是否改写本地用户态字段。
@@ -164,5 +164,5 @@ pnpm --filter kisaki typecheck
 - game 目录导入 dry run + execute。
 - settings panel 可展示 book/game/anime/music scope。
 - book/anime/music 不写本地库，但远端读取路径和 UI 空间存在。
-- job command 可执行全量同步；主应用 task 可调度同一个 command。
+- job command 可执行全量同步；主应用 automation 可调度同一个 command。
 - 所有验证命令通过。

@@ -10,7 +10,7 @@
 - `game` scope 提供游戏状态和评分同步，并由 game local adapter 承载。
 - 支持按 media scope 拉取、预览和规划 Bangumi 收藏与目录条目。
 - 对本地库写入保持严格能力检查：当前只有 `game` 能执行本地创建、补写、同步和合集关系写入。
-- 提供 settings panel、extension command job 和主应用 task 创建入口。
+- 提供 settings panel、extension command job、scoped TaskRun 和主应用 automation 创建入口。
 
 ## Media Scope
 
@@ -62,11 +62,11 @@ In:
 - `game` scope 的自动同步、全量同步、用户收藏导入、目录导入和 game scraper provider。
 - `book` / `anime` / `music` scope 的账号收藏读取、目录预览、任务参数建模和 UI 空间预留。
 - 可配置 Bangumi API 请求窗口、超时和重试。
-- extension command job 与主应用 task 集成。
+- extension command job 与主应用 TaskRun / Automation 集成。
 
 Out:
 
-- 不修改 `packages/extension-api`、extension host、SDK bridge 或桌面端公共 extension contract。
+- 不新增 Bangumi 专用 extension API、extension host、SDK bridge 或桌面端公共 extension contract；长流程使用通用 `kisaki.taskRuns`，自动化使用通用 `kisaki.automations`。
 - 不支持 Bangumi 三次元或其他 subject type。
 - 不把书籍、动漫、音乐映射成 Kisaki 游戏实体。
 - 不同步 Bangumi 章节、卷册、曲目或游戏游玩时长进度到 `ep_status` / `vol_status`。

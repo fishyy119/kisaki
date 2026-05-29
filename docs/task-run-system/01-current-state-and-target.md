@@ -112,8 +112,9 @@ Scanner 已经有比较完整的运行态：
 4. `TaskRunService` 不接收业务 executor，不调度业务流程。
 5. `CommandService` 不自动创建或转发 TaskRun；长时 command handler 自己创建 TaskRun。
 6. 自动化配置由 `AutomationService` 承载，自动化触发 command；若实际 handler 创建 TaskRun，自动化历史从 `task_runs` 投影。
-7. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 AppEvents。
-8. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
+7. 扩展长时 command 通过 scoped `kisaki.taskRuns` 创建、上报和结束自己拥有的 TaskRun，不通过 command progress。
+8. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 AppEvents。
+9. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
 
 ## 目标
 
@@ -161,6 +162,7 @@ IngestService
 ExtensionService
   owns package install/update/uninstall operations
   reports operation phase through TaskRunContext
+  exposes scoped kisaki.taskRuns for extension-owned long runs
 
 TaskRunService
   owns run snapshots, progress, history, controls, IPC and task center presentation

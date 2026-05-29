@@ -16,8 +16,9 @@
 | Ingest            | `kisaki.ingest.games.addFromScraper`                   | `media/game/adapter` 创建或定位游戏                    |
 | Library write     | `kisaki.library.*`                                     | `media/game/adapter` 写游戏状态、评分、tag、collection |
 | Command 注册      | `context.contributions.commands.register`              | `jobs/commands`                                        |
-| Command 执行      | `kisaki.commands.start/wait/cancel/getProgress`        | settings panel 启动和控制一次 job                      |
-| Background task   | `kisaki.backgroundTasks`                               | `tasks/templates` 与 settings automation tab           |
+| Command 执行      | `kisaki.commands.start/wait`                           | settings panel 启动一次 job                            |
+| TaskRun           | `kisaki.taskRuns`                                      | command handler 创建、上报、等待本扩展 run             |
+| Automation        | `kisaki.automations`                                   | `automations/templates` 与 settings automation tab     |
 
 ## Media Adapter Boundary
 
@@ -141,33 +142,34 @@ settings panel 的 resolve、submit、button、commit 回调走 main/host RPC，
 
 - 登录发起可以在按钮回调中创建 relay session 并打开浏览器，但不得等待用户完成授权。
 - 全量同步、收藏导入、目录导入必须启动 command 后立即返回。
-- settings panel 的手动执行只对应 job；取消动作只调用 `kisaki.commands.cancel(executionId)`。
-- task 创建只写入 BackgroundTaskService；settings panel 不调用 task run/cancel，也不展示 task history。
+- settings panel 的手动执行只对应 job；取消、进度和完成结果由 command handler 创建的 TaskRun 与主应用任务中心承载。
+- automation 创建只写入 AutomationService；settings panel 不调用 automation run/cancel，也不展示 execution history。
 
-## Job 与 Task 关系
+## Job 与 Automation 关系
 
-Bangumi 的 `job` 是一次业务执行，宿主形态是 command execution。Bangumi 扩展通过 contribution 注册 job command：
+Bangumi 的 `job` 是一次业务执行。宿主调用 command handler，handler 创建 scoped TaskRun 后立即返回 `runId`：
 
 ```ts
 context.contributions.commands.register({
   id: 'bangumi.sync.full',
   title: 'Bangumi Full Sync',
-  cancelable: true,
-  async execute(args, event) {
-    return jobs.runFullSync(args, event)
+  async execute(args) {
+    return jobs.runFullSync(args)
   }
 })
 ```
 
-Bangumi 的 `task` 是主应用 BackgroundTaskService 中的持久自动化配置。task 只保存要调用的 command、参数、schedule、failurePolicy 和运行历史；真正运行时仍由主应用触发对应 job command。
+`jobs.runFullSync()` 通过 `kisaki.taskRuns.create()` 创建 run，通过 returned handle 上报 progress/checkpoint/complete/fail。CommandService 不提供 command progress，也不负责取消 TaskRun。
 
-Background task 只能绑定本扩展拥有的 command。宿主会校验：
+Bangumi 的 `automation` 是主应用 AutomationService 中的持久自动化配置。automation 只保存要调用的 command、参数、trigger、failurePolicy 和 enabled 状态；真正运行时由主应用触发对应 job command，执行历史从 `task_runs` 投影。
+
+Automation 只能绑定本扩展拥有的 command。宿主会校验：
 
 - `ownerExtensionId === builtin.bangumi`
-- task command 必须由 `builtin.bangumi` 注册
-- 扩展只能访问自己拥有的 task
+- automation command 必须由 `builtin.bangumi` 注册
+- 扩展只能访问自己拥有的 automation
 
-因此任务配置和运行历史不需要另存一份到 Bangumi storage。settings panel 只保存用户偏好与 Bangumi 业务状态；实际 schedule、enabled、failurePolicy、run/cancel 和 history 以主应用 task 能力为准。
+因此 automation 配置和 TaskRun 历史不需要另存一份到 Bangumi storage。settings panel 只保存用户偏好与 Bangumi 业务状态；实际 trigger、enabled、failurePolicy、run/cancel 和 history 以主应用 AutomationService 与 TaskRunService 为准。
 
 ## Library 写入策略
 

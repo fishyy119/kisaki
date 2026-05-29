@@ -14,9 +14,13 @@ try {
 
   await doBusinessWork(context)
 
-  run.complete(result)
+  run.complete({ summary: 'Done' })
 } catch (error) {
-  run.finishFromError(error)
+  if (isTaskRunCancellation(error)) {
+    run.cancel()
+  } else {
+    run.fail(error)
+  }
 }
 ```
 
@@ -24,11 +28,17 @@ try {
 
 ```ts
 const run = taskRun.runs.create(input)
-void executeBusinessRun(run, request)
-return { runId: run.id, startedAt: Date.now() }
+void executeBusinessRun(run, request).catch((error) => {
+  if (isTaskRunCancellation(error)) {
+    run.cancel()
+  } else {
+    run.fail(error)
+  }
+})
+return { runId: run.id, createdAt: run.createdAt }
 ```
 
-`executeBusinessRun` 由业务模块自己实现 try/catch，并在内部调用 `run.start()`、`run.context.report()`、`run.complete()` 或 `run.finishFromError()`。
+`executeBusinessRun` 由业务模块自己实现 try/catch，并在内部调用 `run.start()`、`run.context.report()`、`run.complete()`、`run.cancel()` 或 `run.fail()`。
 
 生产者只负责：
 
@@ -98,35 +108,47 @@ export interface CommandInvocationContext {
 如果某个 command 需要取消、暂停、进度和任务中心结果，它的 handler 自己创建 TaskRun：
 
 ```ts
-async function syncBangumiCommand(args, context, services) {
+async function runLongCommand(args, context, services) {
   const run = services.taskRun.runs.create({
     category: 'command',
     operation: 'command.execute',
-    title: '同步 Bangumi',
+    title: '同步数据',
     initiator: commandSourceToInitiator(context.source),
-    subject: { type: 'command', id: context.commandId, labelSnapshot: '同步 Bangumi' },
+    subject: { type: 'command', id: context.commandId, labelSnapshot: '同步数据' },
     controls: { cancelable: true, pausable: false, retryable: true }
   })
 
-  void syncBangumiWithTaskRun(args, run)
+  void executeLongCommandRun(args, run).catch((error) => {
+    if (isTaskRunCancellation(error)) {
+      run.cancel()
+    } else {
+      run.fail(error)
+    }
+  })
 
   return { runId: run.id }
 }
 
-async function syncBangumiWithTaskRun(args, run) {
+async function executeLongCommandRun(args, run) {
   const context = run.context
 
   try {
     run.start()
-    await syncBangumi(args, context)
-    run.complete({ status: 'completed', summary: '同步完成' })
+    await doLongCommandWork(args, context)
+    run.complete({ summary: '完成' })
   } catch (error) {
-    run.finishFromError(error)
+    if (isTaskRunCancellation(error)) {
+      run.cancel()
+    } else {
+      run.fail(error)
+    }
   }
 }
 ```
 
 删除旧 `CommandNotificationCoordinator`。命令本身不再有 notify progress；长时 command 创建的 TaskRun 可以启用 task run notification presentation。
+
+扩展贡献的长时 command 不通过 invocation context 上报 progress。新增 scoped extension task-run API 和现有 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
 
 ## AutomationService
 
@@ -218,7 +240,7 @@ automation:cancel -> taskRun.runs.cancel(runId)
 - 每次 retry 都重新调用 command。
 - 若 command handler 创建 task run，每次 retry 都应创建新的 task run。
 - `initiator.automation.attempt` 从 1 递增。
-- automation 页面按 startedAt 聚合显示即可，不需要独立 attempt row。
+- automation 页面按 `startedAt ?? createdAt` 聚合显示即可，不需要独立 attempt row。
 
 ## ScannerService
 
@@ -269,7 +291,7 @@ scanner.finished
 `ScannerRunSession` 使用 `TaskRunContext`：
 
 - `setTotal()` -> `context.report({ current, total, unit: 'entity' })`
-- `recordEntityResult()` -> 更新 counters 并 report。
+- `recordEntityResult()` -> 更新 bounded counters/warnings 并 report 到 `progress.counters` / `progress.warnings`。
 - `processItemsWithConcurrency()` 在调度边界调用 `await context.checkpoint()`。
 
 Scanner-specific result 进入 `TaskRunResult.counters` 和 `TaskRunResult.output` 的摘要。
@@ -384,7 +406,9 @@ for (const [index, item] of items.entries()) {
     phase: 'updating',
     current: index + 1,
     total: items.length,
-    unit: 'entity'
+    unit: 'entity',
+    counters: getAggregateCounters(),
+    warnings: getBoundedWarnings()
   })
 }
 ```
@@ -510,25 +534,6 @@ task center shows progress
 - `updater:check-for-updates` 若可能耗时，创建 `category: 'updater'`、`operation: 'updater.check'` task run。
 - `updater:download-update` 必须创建 `category: 'updater'`、`operation: 'updater.download'` task run，并用 byte progress。
 - `quit-and-install` 不作为普通 task run，因为它会结束进程。
-
-## Extension commands
-
-扩展 command contribution 不再通过 command invocation context 转发 task progress。
-
-删除 command-specific progress API：
-
-```ts
-event.reportProgress(...)
-event.checkpoint(...)
-```
-
-原因：
-
-- command 只负责触发 action，不负责运行态事实源。
-- TaskRun 不能通过 CommandService 间接创建或更新。
-- 扩展不应获得全局 task run 读写权限。
-
-如果未来需要扩展创建自己的长时 task run，应设计 scoped extension task-run capability，例如只允许扩展创建、更新和读取自己拥有的 run。这个能力独立于 command invocation context。
 
 ## TaskRun notification presentation
 

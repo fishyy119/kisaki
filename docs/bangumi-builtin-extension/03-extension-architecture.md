@@ -70,7 +70,7 @@ extensions/bangumi/src/
     commands.ts
     runner.ts
     summary.ts
-  tasks/
+  automations/
     templates.ts
   ui/
     settings/
@@ -151,8 +151,8 @@ interface BangumiMediaDescriptor {
 - `IndexReader`: 按 scope 拉取 Bangumi 目录条目。
 - `ImportPlanner`: dry run 计划与执行计划共用，输出新增、更新、跳过和错误。
 - `ImportExecutor`: 对有 local adapter 的 scope 执行本地写入。
-- `JobRunner`: 管理一次 Bangumi job command execution 的取消、progress 上报和输出摘要。
-- `TaskTemplates`: 生成推荐 BackgroundTaskService task 创建输入；不运行、不取消、不读取 history。
+- `JobRunner`: 管理一次 Bangumi job 的 scoped TaskRun wrapper、取消 checkpoint、progress 上报和输出摘要。
+- `AutomationTemplates`: 生成推荐 AutomationService 创建输入；不运行、不取消、不读取 history。
 - `SettingsPanelController`: 组装 structured settings panel models 和 callbacks。
 
 ## 依赖方向
@@ -177,8 +177,8 @@ shared -> no project dependencies
 - `sync` 和 `import` 不直接调用 `kisaki.network`，只调用 `BangumiClient`。
 - `sync` 和 `import` 不直接调用 `kisaki.library.*`，只调用 local adapter。
 - `ui` 不拼业务 payload；它把用户输入转成 command args 或 settings patch。
-- `jobs` 是 command 编排和输出摘要层，不承载 Bangumi API 细节，也不持久化运行历史。
-- `tasks` 只定义推荐 task 模板和创建输入，不调用 task run/cancel，不展示 task history。
+- `jobs` 是 command 编排、TaskRun wrapper 和输出摘要层，不承载 Bangumi API 细节，也不持久化运行历史。
+- `automations` 只定义推荐 automation 模板和创建输入，不调用 run/cancel，不展示 task run history。
 
 ## Settings Schema
 
@@ -232,7 +232,7 @@ interface BangumiSettingsV1 {
 - `media.music.localSyncEnabled`: `false`。
 - game auto sync 默认关闭，其余默认使用当前稳定默认值。
 
-导入相关 profile、字段写入和目标合集不进入 `settings.v1`。它们是单次 command args；如果用户创建导入类 background task，则这些值作为 task args 由主应用 BackgroundTaskService 持久化。
+导入相关 profile、字段写入和目标合集不进入 `settings.v1`。它们是单次 command args；如果用户创建导入类 automation，则这些值作为 automation args 由主应用 AutomationService 持久化。
 
 ## Command Args Model
 
@@ -294,7 +294,7 @@ keys:
 - `sync.state`
 - `sync.queue`
 
-task schedule、运行记录、输出和错误历史属于主应用 BackgroundTaskService。Bangumi extension storage 不保存 `jobs.history`、通用 `lastResult`、active execution id 或导入/同步命令结果副本。
+automation trigger、运行记录、输出和错误历史属于主应用 AutomationService 与 TaskRunService。Bangumi extension storage 不保存 `jobs.history`、通用 `lastResult`、active run id 或导入/同步命令结果副本。
 
 ## Error Model
 

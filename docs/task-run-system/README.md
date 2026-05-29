@@ -22,6 +22,7 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 - [04-producer-adapters.md](04-producer-adapters.md): Command、Automation、Scanner、Ingest、Extension package 和 Updater 的接入方式。
 - [05-renderer-task-center-ui.md](05-renderer-task-center-ui.md): 任务中心 Dialog、侧边栏入口、Pinia store、列表和详情交互。
 - [06-implementation-plan.md](06-implementation-plan.md): 文件级实施顺序、迁移策略、验证命令和完成标准。
+- [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md): `kisaki.taskRuns` public extension API、RPC/SDK/host provider 和现有 Bangumi 扩展重构。
 
 ## 总体目标
 
@@ -43,6 +44,7 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 - 业务服务显式创建 task run，通过 `TaskRunHandle` 结束生命周期，并通过 `TaskRunContext` 上报执行期进度。
 - `TaskRunService` 不接收业务 executor，不调度业务流程。
 - `CommandService` 不自动创建或转发 task run；长时 command handler 自己创建 task run。
+- 扩展长时 command 通过 scoped `kisaki.taskRuns` 创建自己的 run，不再使用 command progress。
 - 高频进度不走 AppEvents，只走 IPC/store 状态。
 - notify 是任务状态的一种 presentation，不是任务状态源。
 - 暂停/继续是协作式能力，不试图强行暂停任意 Promise。
