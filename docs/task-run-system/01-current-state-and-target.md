@@ -107,14 +107,15 @@ Scanner 已经有比较完整的运行态：
 规则：
 
 1. 任何需要进入任务中心的长时流程必须创建 `TaskRun`。
-2. `TaskRunService` 是进度、结果和完成历史的唯一事实源。
+2. `TaskRunService` 是长任务进度、结果和完成历史的唯一事实源。
 3. 创建者通过 `TaskRunHandle` 控制生命周期，通过 `TaskRunContext` 上报进度并检查取消/暂停。
 4. `TaskRunService` 不接收业务 executor，不调度业务流程。
-5. `CommandService` 不自动创建或转发 TaskRun；长时 command handler 自己创建 TaskRun。
-6. 自动化配置由 `AutomationService` 承载，自动化触发 command；若实际 handler 创建 TaskRun，自动化历史从 `task_runs` 投影。
-7. 扩展长时 command 通过 scoped `kisaki.taskRuns` 创建、上报和结束自己拥有的 TaskRun，不通过 command progress。
-8. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 AppEvents。
-9. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
+5. `CommandService` 只维护 command registry 和薄调用路由，不拥有 execution id、进度、取消、结果或历史。
+6. 长时 command handler 只能调用实际业务 use case 或 scoped task-run API 创建 TaskRun，并返回 `runId`。
+7. 自动化配置和触发历史由 `AutomationService` 承载，自动化 invoke command，并为每次实际 command invocation 写入独立 `automation_run_history`；即使 handler 创建 TaskRun，自动化历史也不保存 run id 或任何 TaskRun 引用。
+8. 扩展长时 command 通过 scoped `kisaki.taskRuns` 创建、上报和结束自己拥有的 TaskRun，不通过 command progress。
+9. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 TaskRun AppEvents。
+10. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
 
 ## 目标
 
@@ -125,7 +126,7 @@ Scanner 已经有比较完整的运行态：
 - 持久化完成历史，避免完成后只能看 toast。
 - 清理 renderer 中的长时循环和散落 loading toast。
 - 将旧 `BackgroundTaskService` 重命名并重塑为自动化配置服务。
-- 让长时命令 handler、扫描器、扩展安装、批量更新都接入同一运行时。
+- 让被 command 入口触发的真实 producer、扫描器、扩展安装、批量更新都接入同一运行时。
 - 保持服务边界清晰，不引入一个 import 所有业务服务的中央协调器。
 
 ## 非目标
@@ -134,7 +135,7 @@ Scanner 已经有比较完整的运行态：
 - 不让 `TaskRunService` 调度所有业务流程。
 - 不把所有业务流程注册成 command。
 - 不为旧 IPC、旧 extension API、旧 DB 表名保留兼容层。
-- 不把每一次高频 progress 都写入 AppEvents 或 DB event log。
+- 不把每一次高频 progress 都写入 TaskRun AppEvents、DB row 或 DB event log。
 - 不在 renderer 直接访问 SQLite task run 表。
 - 不在低层 handler 中调用 notify。
 - 不把用户私密内容、完整 HTTP body、完整 DB row 或大数组写入 task result。
@@ -143,13 +144,13 @@ Scanner 已经有比较完整的运行态：
 
 ```text
 CommandService
-  owns command registry and invocation semantics
-  does not create or forward TaskRun
-  long-running handlers create TaskRun themselves
+  owns command registry and thin invocation routing
+  does not own execution ids, progress, cancellation, results or history
+  long-running handlers return the runId created by the real producer
 
 AutomationService
-  owns persistent schedules and failure policy
-  starts commands and reads automation history from TaskRun initiator
+  owns persistent schedules, failure policy and automation_run_history
+  invokes commands without storing TaskRun references in automation history
 
 ScannerService
   owns scanner discovery, queue and scanner-specific rules
@@ -176,7 +177,9 @@ TaskRunService
 
 ### 快照是事实源
 
-每次 IPC 推送都是完整 task run snapshot，renderer store 直接替换。组件不根据增量事件拼状态。
+每次 `task-run:changed` 推送都是完整 task run snapshot，renderer store 直接替换。组件不根据增量事件拼状态。
+
+高频 progress update 可以在 main process 内合并和节流，但每次对 renderer 可见的推送仍然必须是完整 snapshot。生命周期、控制状态和 final snapshot 必须立即 flush。
 
 TaskRun 使用 `category` 做 UI 分组，使用 `operation` 描述具体操作，使用 `owner` 描述归属和权限范围，使用 `initiator` 描述启动来源，使用 `subject` 描述关联业务对象。自动化是 initiator，不是 task run category；扩展权限看 owner，不看 initiator。
 
@@ -194,4 +197,4 @@ toast 可以显示任务开始、进度和完成，但任务中心和 task run s
 
 ### 历史持久化受限
 
-持久化结果摘要、错误和计数，不持久化无限日志、高频 progress 或敏感数据。自动化历史、命令历史、扫描历史都从 task runs 查询；需要更长保留周期时调整 TaskRun retention policy，而不是复制第二份结果。
+TaskRun history 持久化长任务 final snapshot、结果摘要、错误和计数，不持久化无限日志、高频 progress 或敏感数据。自动化历史由 AutomationService 持久化 command invocation 结果，保存触发来源、命令和错误；它不从 TaskRun history 派生，不保存 run id，也不复制 TaskRun progress/result。CommandService 不保存命令历史；需要历史的业务域应拥有自己的记录。

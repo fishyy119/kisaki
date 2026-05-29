@@ -7,9 +7,9 @@
 核心结论：
 
 ```text
-Command 是可执行动作定义。
-Automation 是持久自动化配置。
-TaskRun 是一次正在运行或已经完成的长时执行实例，也是进度、结果和完成历史的唯一事实源。
+Command 是可调用动作注册项和入口索引，不拥有运行实例。
+Automation 是持久自动化配置和 command invocation 历史 owner。
+TaskRun 是一次正在运行或已经完成的长时执行实例，也是长任务进度、结果和完成历史的唯一事实源。
 Task Center 只展示 TaskRun。
 Notify 是 TaskRun 的可选展示层，不是状态源。
 ```
@@ -31,7 +31,7 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 目标架构：
 
 ```text
-长时业务函数/扫描/导入/扩展包操作/长时命令 handler
+长时业务函数/扫描/导入/扩展包操作/被 command handler 调用的真实 producer
   -> TaskRunService create 运行实例
   -> task-run:* IPC 推送和查询快照
   -> renderer task-run store
@@ -43,9 +43,13 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 - `TaskRunService` 不 import scanner、ingest、extension、command 等业务服务。
 - 业务服务显式创建 task run，通过 `TaskRunHandle` 结束生命周期，并通过 `TaskRunContext` 上报执行期进度。
 - `TaskRunService` 不接收业务 executor，不调度业务流程。
-- `CommandService` 不自动创建或转发 task run；长时 command handler 自己创建 task run。
-- 扩展长时 command 通过 scoped `kisaki.taskRuns` 创建自己的 run，不再使用 command progress。
-- 高频进度不走 AppEvents，只走 IPC/store 状态。
+- `CommandService` 只维护 command registry 和薄调用路由，不拥有 execution id、进度、取消、结果或历史。
+- 长时 command handler 只能调用实际业务 use case 或 scoped task-run API 创建 run，并返回 `runId`。
+- `AutomationService` 独立保存 `automation_run_history`；command handler 可以不创建 TaskRun，automation history 不依赖、不引用 TaskRun history 或 run id。
+- 扩展长时 command 通过 scoped `kisaki.taskRuns` 创建 extension-owned run，不再使用 command progress。
+- 高频进度不走 TaskRun AppEvents，只走 `task-run:*` IPC/store 状态。
+- active runs 与 completed history 分开读取：`task-run:list-active` 只读 main 内存运行态，`task-run:list-history` 只读 persisted final rows，任务中心 UI 负责组合两个 tab。
+- `task_run_history` 可以参与现有 SQLite `db.*` trigger events；这些通用 DB events 不是任务中心状态源。
 - notify 是任务状态的一种 presentation，不是任务状态源。
 - 暂停/继续是协作式能力，不试图强行暂停任意 Promise。
 
@@ -55,14 +59,14 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 
 目标命名：
 
-| 当前概念                | 目标概念               | 说明                             |
-| ----------------------- | ---------------------- | -------------------------------- |
-| `CommandService`        | `CommandService`       | 保留，定义和调用命令。           |
-| `BackgroundTaskService` | `AutomationService`    | 持久自动化配置和调度。           |
-| long command handler    | `TaskRun` producer     | 长时命令的实际函数自行创建 run。 |
-| scanner active progress | `TaskRun`              | 扫描运行态进入 task run。        |
-| extension package op    | `TaskRun`              | 安装/更新/导入包操作进入中心。   |
-| renderer notify loading | `TaskRun` presentation | 长时流程状态不再散落在 toast。   |
+| 当前概念                   | 目标概念               | 说明                                                |
+| -------------------------- | ---------------------- | --------------------------------------------------- |
+| `CommandService`           | `CommandService`       | 保留，注册和调用命令入口。                          |
+| `BackgroundTaskService`    | `AutomationService`    | 持久自动化配置、调度和 invocation history。         |
+| command-triggered producer | `TaskRun`              | command handler 只返回真实 producer 创建的 run id。 |
+| scanner active progress    | `TaskRun`              | 扫描运行态进入 task run。                           |
+| extension package op       | `TaskRun`              | 安装/更新/导入包操作进入中心。                      |
+| renderer notify loading    | `TaskRun` presentation | 长时流程状态不再散落在 toast。                      |
 
 UI 文案：
 
@@ -80,10 +84,10 @@ UI 文案：
 
 ```text
 Command
-  描述“可以做什么”
+  描述“有哪些可调用入口”
 
 Automation
-  描述“什么时候自动做某个 Command”
+  描述“什么时候自动做某个 Command，以及这次调用是否发生/成功”
 
 TaskRun
   描述“这一次做什么、谁拥有、谁触发、关联什么对象、做得怎么样”

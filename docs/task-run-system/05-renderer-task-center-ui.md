@@ -71,9 +71,10 @@ export const useTaskRunStore = defineStore('task-run', () => {
 规则：
 
 - `Map` 更新时必须 reassign 新 Map。
-- 初始化时调用 `task-run:list { status: 'all', limit }`。
+- 初始化时分别调用 `task-run:list-active` 和 `task-run:list-history`。active 列表来自 main 内存中的 runs manager，history 列表来自 persisted final rows。
 - 订阅 `task-run:changed` 和 `task-run:deleted`。
-- store 只保存 UI 需要的 snapshot，不直接查询 DB。
+- `task-run:changed` 可能已经在 main process 节流合并，但每条事件仍然是完整 snapshot，store 只按 `run.id` 替换。
+- store 可以把 active/history 两条 IPC 结果组合成进行中和已完成两个 tab；这是 UI 状态组合，不是 renderer 直接查询 DB，也不是把 history 当作 active run 来源。
 - 自动化页面、scanner 页面可以从同一 store 派生运行态，不各自维护第二份 progress。
 
 在 `main.ts` idle init 中初始化：
@@ -94,7 +95,7 @@ DialogHeader
   summary: n 个进行中 / m 个已完成
 DialogBody
   Tabs: 进行中 / 已完成
-  Toolbar: search, category filter, status filter, clear completed
+  Toolbar: search, category filter, clear completed
   List
   Details pane or nested details dialog
 DialogFooter optional
@@ -151,7 +152,7 @@ cancelled
 finishedAt desc
 ```
 
-任务中心不提供 per-run dismissed 状态。用户需要清理历史时使用清理动作，清理策略由 main process 的 `TaskRunStore` 统一执行。
+任务中心不提供 per-run dismissed 状态。用户需要清理历史时使用清理动作，清理策略由 main process 的 `TaskRunHistoryStore` 统一执行。
 
 ## Row
 
@@ -265,7 +266,7 @@ features/task-center/utils/display.ts
 
 - search by title/subject/owner/initiator。
 - category filter。
-- status filter for completed。
+- status filter for completed 使用 `TaskRunHistoryListQuery.statuses`，只筛选 final statuses。
 - operation filter 作为后续增强。
 
 不建议首版做复杂日期筛选；后续可加。
@@ -304,7 +305,7 @@ features/task-center/utils/display.ts
 2. main process 按统一 retention policy 删除可清理 run。
 3. store 通过 `task-run:deleted` 移除对应 snapshot。
 
-清理不是 dismissed。被删除的 task run 就不再作为自动化历史、命令历史或任务中心历史存在。
+清理不是 dismissed。被删除的 task run 不再作为任务中心历史存在；automation history 不引用 run id，因此是否保留 automation invocation record 只由 AutomationService retention 决定。
 
 ## Sidebar badge
 

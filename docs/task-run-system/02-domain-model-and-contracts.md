@@ -2,19 +2,19 @@
 
 ## 术语
 
-| 术语           | 含义                                                      |
-| -------------- | --------------------------------------------------------- |
-| `TaskRun`      | 一次长时执行实例，也是进度、结果和完成历史的唯一事实源。  |
-| `Category`     | 任务所属的大类，用于 UI 分组、筛选和图标。                |
-| `Operation`    | 稳定的操作标识，描述这次任务具体在做什么。                |
-| `Initiator`    | 谁启动了任务，例如 user、automation、extension、system。  |
-| `Owner`        | 谁拥有这条运行记录和读取权限，例如 app 或 extension。     |
-| `Subject`      | 任务主要关联的业务对象，用于展示、过滤和跳转。            |
-| `Progress`     | 当前阶段和度量快照。                                      |
-| `Result`       | 完成后的输出、摘要、错误和计数。                          |
-| `Control`      | 取消、暂停、继续、重试等用户可操作能力。                  |
-| `Checkpoint`   | 任务代码可安全响应取消或暂停的协作式边界。                |
-| `Presentation` | 由 TaskRun 派生出的可选展示，例如 toast，不拥有任务状态。 |
+| 术语           | 含义                                                           |
+| -------------- | -------------------------------------------------------------- |
+| `TaskRun`      | 一次长时执行实例，也是长任务进度、结果和完成历史的唯一事实源。 |
+| `Category`     | 任务所属的大类，用于 UI 分组、筛选和图标。                     |
+| `Operation`    | 稳定的操作标识，描述这次任务具体在做什么。                     |
+| `Initiator`    | 谁启动了任务，例如 user、automation、extension、system。       |
+| `Owner`        | 谁拥有这条运行记录和读取权限，例如 app 或 extension。          |
+| `Subject`      | 任务主要关联的业务对象，用于展示、过滤和跳转。                 |
+| `Progress`     | 当前阶段和度量快照。                                           |
+| `Result`       | 完成后的输出、摘要、错误和计数。                               |
+| `Control`      | 取消、暂停、继续、重试等用户可操作能力。                       |
+| `Checkpoint`   | 任务代码可安全响应取消或暂停的协作式边界。                     |
+| `Presentation` | 由 TaskRun 派生出的可选展示，例如 toast，不拥有任务状态。      |
 
 ## Shared contract 文件
 
@@ -36,7 +36,8 @@ apps/desktop/src/shared/task-run.ts
 - `TaskRunControls`
 - `TaskRunPresentation`
 - `TaskRunStartResult`
-- `TaskRunListQuery`
+- `TaskRunActiveListQuery`
+- `TaskRunHistoryListQuery`
 
 不放入 shared：
 
@@ -47,10 +48,10 @@ apps/desktop/src/shared/task-run.ts
 
 ## Category and operation
 
-`category` 只表达任务所属大类。它不是执行语义，不承载自动化来源，也不区分具体 use case。
+`category` 只表达任务所属大类。它不是执行语义，不承载自动化来源，也不区分具体 use case。Command 只是可调用入口注册项，不是 TaskRun category。
 
 ```ts
-export type TaskRunCategory = 'command' | 'scanner' | 'ingest' | 'extension' | 'updater' | 'system'
+export type TaskRunCategory = 'scanner' | 'ingest' | 'extension' | 'updater' | 'system'
 ```
 
 `operation` 是稳定的点分操作标识，描述这次任务具体做什么。它必须覆盖所有进入任务中心的长流程，避免不同 producer 私造相近字符串。
@@ -59,13 +60,13 @@ export type TaskRunCategory = 'command' | 'scanner' | 'ingest' | 'extension' | '
 export type TaskRunContentEntity = 'game' | 'person' | 'company' | 'character'
 
 export type TaskRunOperation =
-  | 'command.execute'
   | 'scanner.scan'
   | `ingest.${TaskRunContentEntity}.add`
   | `ingest.${TaskRunContentEntity}.update`
   | `ingest.${TaskRunContentEntity}.batchAdd`
   | `ingest.${TaskRunContentEntity}.batchUpdate`
   | `ingest.${TaskRunContentEntity}.batchDelete`
+  | `extension.task.${string}.${string}`
   | 'extension.package.install'
   | 'extension.package.update'
   | 'extension.package.import'
@@ -80,11 +81,14 @@ export type TaskRunOperation =
 规则：
 
 - `automation` 不是 category，也不是 operation。自动化是启动来源，写入 `initiator`。
+- `command` 不是 category，也不提供通用 `command.execute` operation。Command 只作为 registry entry；由 command 触发的长时任务必须使用真实业务 operation，并可用 `subject.type === 'command'` 记录入口。
 - UI 图标、分组和过滤优先使用 `category`。
 - 业务结果解释优先使用 `operation`。
 - 新 use case 增加新的 operation，不复用模糊字符串。
 - operation 使用稳定英文标识，不使用展示文案。
 - ingest operation 使用实体维度和动作维度组合；单项、批量添加、批量更新、批量删除都必须能被明确区分。
+- `extension.task.<extensionId>.<operation>` 只用于 extension-owned task run。扩展通过 public API 提供 extension-local operation name，例如 `fullSync` 或 `import.collections`；host 根据 runtime extension id 映射成内部 operation。
+- extension-owned TaskRun 的权限不从 operation 解析，仍然只看 `owner`。operation 内包含 extension id 是为了主应用任务中心、筛选和历史查询有稳定全局命名空间。
 - 扩展仓库刷新和扩展包安装更新不是同一个 operation。
 
 ## Status
@@ -100,11 +104,14 @@ export type TaskRunStatus =
   | 'failed'
   | 'cancelled'
 
-export type TaskRunFinalStatus = 'completed' | 'failed' | 'cancelled'
+export type TaskRunFinalStatus = Extract<TaskRunStatus, 'completed' | 'failed' | 'cancelled'>
 ```
 
 规则：
 
+- `TaskRunFinalStatus` 只是 `TaskRunStatus` 的类型级子集，不是第二套状态模型。
+- shared contract 保留 `TaskRunFinalStatus`，用于 `TaskRunResult.status`、final history row 和持久化边界，避免 active status 写入 result 或 history。
+- DB custom type 只需要 `taskRunFinalStatus`；除非未来真的持久化 active status，否则不需要 `taskRunStatus` column type。
 - 不提供 `skipped` 作为 TaskRun 状态。
 - 调度器发现自动化禁用、互斥、条件不满足时，不创建 TaskRun。
 - 批量任务内部跳过项目时，用 `result.counters.skipped` 或 `warnings` 表达。
@@ -112,7 +119,7 @@ export type TaskRunFinalStatus = 'completed' | 'failed' | 'cancelled'
 
 ## Initiator
 
-`initiator` 描述谁启动了任务。它是自动化历史和启动来源展示的来源。
+`initiator` 描述谁启动了 TaskRun。它用于任务中心来源展示和过滤，不是自动化历史的事实源。
 
 ```ts
 export type TaskRunAutomationTrigger = 'manual' | 'startup' | 'cron'
@@ -148,10 +155,10 @@ export type TaskRunInitiator =
 规则：
 
 - 使用 discriminated union，不把 automation、extension、command 相关字段平铺在顶层。
-- 自动化运行历史不使用独立结果表；它是 `task_runs` 中 `initiator.type === 'automation'` 的查询视图。
+- 自动化运行历史由 `AutomationService` 的 `automation_run_history` 持久化；`initiator.automation` 只描述某个 TaskRun 是由哪个 automation 触发。
 - `automation.nameSnapshot` 是展示快照，自动化改名后旧 run 不回写。
 - `automation.attempt` 只用于同一次自动化触发的重试序号。
-- `commandId` 不属于 initiator。执行哪个 command 由 `operation: 'command.execute'` 和 `subject` 表达。
+- `commandId` 不属于 initiator。若任务由 command 入口触发，使用 `subject.type === 'command'` 和 `subject.id` 表达入口；`operation` 必须仍然是真实业务操作。
 - 用户点击扩展贡献的 command 时，initiator 仍然是 `user`；只有扩展运行时主动启动的任务才使用 `type: 'extension'`。
 
 ## Owner
@@ -179,7 +186,7 @@ export type TaskRunOwner =
 - `owner` 和 `initiator` 不能互相推断。用户点击扩展 command 时 `owner.type === 'extension'` 且 `initiator.type === 'user'`。
 - AutomationService 调度扩展 command 时 `owner.type === 'extension'` 且 `initiator.type === 'automation'`。
 - extension runtime 自发创建的 run 使用同一个 extension owner，同时 `initiator.type === 'extension'`。
-- 扩展 `listOwn/getOwn/waitOwn` 只按 `owner.type === 'extension'` 和 `owner.extension.id` 授权，不按 `initiator` 授权。
+- 扩展 `listActiveOwn/listHistoryOwn/getActiveOwn/getHistoryOwn/waitOwn` 只按 `owner.type === 'extension'` 和 `owner.extension.id` 授权，不按 `initiator` 授权。
 - 扩展输入不能提供或覆盖 `owner`。host provider 必须从 runtime metadata 派生 owner。
 
 ## Subject
@@ -300,11 +307,11 @@ TaskRun shared contract 不导出全局 limits 常量。长度、条数和 JSON 
 
 规则：
 
-- extension task-run capability provider 是 `kisaki.taskRuns` 的权威未知边界，负责校验 public DTO shape、字符串长度、warnings/result/progress 大小、operation allowlist、subject ownership 和 runtime handle。
-- renderer IPC query 是未知边界，IPC handler 或 service query parser 负责校验 `status`、filters 和 `limit`。
+- extension task-run capability provider 是 `kisaki.taskRuns` 的权威未知边界，负责校验 public DTO shape、字符串长度、warnings/result/progress 大小、extension-local operation name format、subject ownership 和 runtime handle，并把 public operation 映射到内部 `extension.task.<extensionId>.<operation>`。
+- renderer IPC query 是未知边界，IPC handler 或 service query parser 负责校验 `statuses`、filters 和 `limit`。
 - `fail(error)` 接收 unknown error，TaskRunService 在 lifecycle boundary 将其序列化为安全 `result.error`。
 - main 内部 producer 是 trusted caller。TaskRunService 可以用断言保护领域不变量，但不把它当作 public DTO validator。
-- TaskRunStore 是最后一道持久化保护，必须拒绝无法安全序列化或明显超限的 result output。
+- TaskRunHistoryStore 是最后一道持久化保护，必须拒绝无法安全序列化或明显超限的 result output。
 - SDK 和 renderer 不做 task-run payload 预检；renderer 只展示已通过 main 边界的 snapshot。
 - 若多个 main 边界确实需要同一组数值，可以在 main task-run 模块内共享私有 validation constants，但不放入 `apps/desktop/src/shared` 或 `packages/extension-api`。
 
@@ -459,27 +466,27 @@ export interface TaskRunStartResult {
 }
 ```
 
-如果调用方确实需要等待完成，应使用 `task-run:wait`。普通 UI workflow 优先使用 task center 观察状态。
+如果调用方确实需要等待 active run 结束，应使用 `task-run:wait`。普通 UI workflow 优先使用 task center 观察状态。
 
 规则：
 
 - `TaskRunStartResult` 不返回 `startedAt`，因为 run 可能刚创建仍处于 `queued`。
-- 需要展示开始时间时，renderer 从 `task-run:changed` 或 `task-run:get` 的 snapshot 读取 `startedAt`。
+- 需要展示开始时间时，renderer 从 `task-run:changed`、`task-run:get-active` 或 `task-run:get-history` 的 snapshot 读取 `startedAt`。
 
 ## History model
 
-`task_runs` 是唯一持久历史表。
+`task_run_history` 是唯一持久 completed TaskRun history 表，只保存 final snapshot。active TaskRun snapshot 的唯一事实源是 `TaskRunService` 内存运行态，并通过 `task-run:*` IPC 推送到 renderer store。
 
-自动化历史、命令历史、扫描完成记录和扩展包操作历史都应该从 `task_runs` 查询或投影，不复制完整 output 到各自模块。
+它不是所有上层业务历史的唯一表。AutomationService 拥有独立 `automation_run_history`，记录 automation 触发 command invocation 的事实；CommandService 不保存历史；scanner、extension package operation 等真实长任务完成记录可以从 `task_run_history` 查询。
 
 规则：
 
-- 自动化历史查询 `initiator.type === 'automation'` 和 `initiator.automation.id`。
+- 自动化历史查询 `automation_run_history.automationId`，不通过 TaskRun initiator 查询，也不保存或查询 run id。
 - 扩展拥有的运行记录查询 `owner.type === 'extension'` 和 `owner.extension.id`。
-- 命令历史查询 `category === 'command'` 或 `subject.type === 'command'`。
+- 命令入口触发的任务查询 `subject.type === 'command'`。CommandService 不保存独立执行历史。
 - 扫描历史查询 `operation === 'scanner.scan'` 和 `subject.type === 'scanner'`。
-- task run 被 retention 删除后，对应历史记录也不再存在；不会出现 automation history 指向已删除 result 的悬空状态。
-- 如果某类历史需要更长保留周期，通过 `TaskRunStore` retention policy 配置，不新增第二份结果事实源。
+- task run final history 被 retention 删除后，只影响任务中心历史；automation invocation record 是否保留由 AutomationService retention 决定。
+- 不把 TaskRun id、output、result 或 progress 复制到 automation、command 或 scanner 模块。Automation history 只保存 command invocation 级别的有界信息。
 
 首版不建立 `task_run_events` 表。完成详情展示当前 snapshot、result、counters、warnings 和 error。若后续需要时间线，再单独设计低频 timeline 表，但 timeline 不能成为状态事实源。
 
@@ -488,19 +495,19 @@ export interface TaskRunStartResult {
 新增表：
 
 ```text
-task_runs
+task_run_history
 ```
 
 建议字段：
 
 ```ts
-export const taskRuns = sqliteTable('task_runs', {
+export const taskRunHistory = sqliteTable('task_run_history', {
   id: text('id').primaryKey(),
   category: taskRunCategory('category').notNull(),
   operation: taskRunOperation('operation').notNull(),
   title: text('title').notNull(),
   description: text('description'),
-  status: taskRunStatus('status').notNull(),
+  status: taskRunFinalStatus('status').notNull(),
   owner: taskRunOwner('owner').notNull(),
   ownerExtensionId: text('owner_extension_id'),
   initiator: taskRunInitiator('initiator').notNull(),
@@ -518,24 +525,30 @@ export const taskRuns = sqliteTable('task_runs', {
 Indexes:
 
 ```text
-idx_task_runs_status_updated_at
-idx_task_runs_owner_extension_updated_at
-idx_task_runs_category_updated_at
-idx_task_runs_operation_updated_at
-idx_task_runs_finished_at
+idx_task_run_history_owner_extension_finished_at
+idx_task_run_history_category_finished_at
+idx_task_run_history_operation_finished_at
+idx_task_run_history_finished_at
 ```
 
 `ownerExtensionId` 是从 `owner` 派生的查询投影：`owner.type === 'extension'` 时等于 `owner.extension.id`，否则为 null。shared `TaskRun` contract 不单独暴露这个投影字段。其他 JSON 字段索引按实际查询成本再加，不在首版预设复杂 expression index。
 
+表语义：
+
+- active run 不插入 `task_run_history`。
+- start、pause、resume、cancel request 和 progress report 不写 `task_run_history`。
+- `complete()`、`fail()` 或 `cancel()` 生成 final snapshot 时插入 `task_run_history`。
+- `TaskRunHistoryStore` 必须拒绝非 final status。
+- 如果进程异常退出，内存中的 active run 消失，不生成 synthetic failed history row。
+- graceful shutdown 可以 best-effort 取消 active run 并写入 final `cancelled` history；如果进程在 flush 前退出，不补写历史。
+
 Retention:
 
-- active runs 永不裁剪。
 - 默认 completed runs 保留最近 500 条或 30 天，取较宽者。
-- automation-initiated runs 可以配置更长策略，例如每个 automation 最近 50 条或 90 天。
-- 清理历史必须走 `TaskRunStore` retention，不允许各业务模块自行删除 task run。
+- 清理历史必须走 `TaskRunHistoryStore` retention，不允许各业务模块自行删除 task run。
 - 删除 task run 就是删除对应历史事实，不保留孤立 history row。
 
-不需要 SQLite trigger 投影 AppEvents；任务中心 store 使用专用 IPC 初始化和订阅。
+允许 `task_run_history` 参与现有 SQLite `db.*` trigger 事件；这些是通用 DB row change events，不是 TaskRun lifecycle/progress API。任务中心 store 不使用 DB events 作为状态源，只使用专用 `task-run:*` IPC 初始化和订阅。
 
 ## IPC Contracts
 
@@ -543,8 +556,10 @@ Retention:
 
 ```ts
 interface IpcMainHandlers {
-  'task-run:list': (query?: TaskRunListQuery) => IpcResult<TaskRun[]>
-  'task-run:get': (runId: string) => IpcResult<TaskRun | null>
+  'task-run:list-active': (query?: TaskRunActiveListQuery) => IpcResult<TaskRun[]>
+  'task-run:list-history': (query?: TaskRunHistoryListQuery) => IpcResult<TaskRun[]>
+  'task-run:get-active': (runId: string) => IpcResult<TaskRun | null>
+  'task-run:get-history': (runId: string) => IpcResult<TaskRun | null>
   'task-run:wait': (runId: string) => IpcResult<TaskRun>
   'task-run:cancel': (runId: string) => IpcResult<boolean>
   'task-run:pause': (runId: string) => IpcResult<boolean>
@@ -560,11 +575,39 @@ interface IpcRendererEvents {
 
 `task-run:changed` 每次发送完整 snapshot。renderer store 用 `run.id` 替换。
 
-List query:
+`task-run:list-active` 只返回 active runs，由 main 内存中的 runs manager 提供，不查询 completed history。active run 的最新 progress 以内存 snapshot 为准。
+
+`task-run:list-history` 只返回 persisted final history，由 `TaskRunHistoryStore` 查询 `task_run_history` 中的记录，不返回 active runs。
+
+任务中心初始化时分别调用这两个 IPC，并在 renderer store 中分别放入 active/completed tab。renderer 可以组合两个列表形成 UI 状态，但不直接访问 SQLite，也不把 history 当作 active run 的来源。
+
+`task-run:get-active` 只读取 active run。`task-run:get-history` 只读取 final history record。没有跨 active/history 的通用 get facade。
+
+`task-run:wait` 只等待 active run，并在该 run 进入 final status 时返回最终 snapshot。若调用时 run 已经不在 active map，调用方应读取 `task-run:get-history`。
+
+Active list query:
 
 ```ts
-export interface TaskRunListQuery {
-  status?: 'active' | 'completed' | 'all'
+export interface TaskRunActiveListQuery {
+  categories?: TaskRunCategory[]
+  operations?: TaskRunOperation[]
+  ownerTypes?: TaskRunOwner['type'][]
+  initiatorTypes?: TaskRunInitiator['type'][]
+  automationId?: string
+  extensionId?: string
+  subject?: {
+    type: TaskRunSubjectType
+    id?: string
+  }
+  limit?: number
+}
+```
+
+History list query:
+
+```ts
+export interface TaskRunHistoryListQuery {
+  statuses?: TaskRunFinalStatus[]
   categories?: TaskRunCategory[]
   operations?: TaskRunOperation[]
   ownerTypes?: TaskRunOwner['type'][]
@@ -583,7 +626,7 @@ export interface TaskRunListQuery {
 
 ## AppEvents Policy
 
-不为高频进度增加 AppEvents。
+不为高频进度增加 TaskRun AppEvents。
 
 可以选择增加低频 lifecycle event：
 
@@ -601,7 +644,7 @@ export interface TaskRunListQuery {
 目标：
 
 - command invocation context 不再转发 task progress。
-- command invocation id 不等于 task run id。
+- command invocation 没有持久 execution id，也不等于 task run id。
 - `kisaki.automations` 只管理本扩展拥有的自动化配置。
 - 扩展不能 list 所有 app task runs。
 - 扩展可以通过 scoped task-run API 创建和维护 `owner.type === 'extension'` 且 `owner.extension.id` 等于自身 id 的长时 run。

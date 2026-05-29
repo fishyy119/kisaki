@@ -57,7 +57,7 @@ export class TaskRunService implements IService {
 'task-run': TaskRunService
 ```
 
-注册顺序上，`TaskRunService` 应在 `CommandService`、`AutomationService`、`ScannerService`、`ExtensionService` 之前可用。
+注册顺序上，`TaskRunService` 应在所有会创建 task run 的 handler、use case 和 service 启动前可用。`CommandService` 本体不依赖 `TaskRunService`；只有被 command handler 调用的真实 producer 或 scoped extension task-run API 需要它。
 
 ## Public service API
 
@@ -65,6 +65,7 @@ export class TaskRunService implements IService {
 
 ```ts
 service.runs.create(input)
+service.runs.list(query)
 service.runs.get(runId)
 service.runs.wait(runId)
 service.runs.cancel(runId)
@@ -79,9 +80,15 @@ service.history.prune()
 
 避免把所有方法平铺在 `service.ts` 上。`service.ts` 只负责 init、dispose、IPC wiring 和子模块组合。
 
-`service.runs` 是 runs 子模块 public API。取消、暂停、继续和 `updateControls` 都属于 active run 状态机，不暴露为 service 根级方法。
+`service.runs` 是 runs 子模块 public API。取消、暂停、继续、list/get/wait 和 `updateControls` 都属于 active run 状态机的读写入口，不暴露为 service 根级方法。
 
-`service.runs.get(runId)` 先读 active run，再回落到 `history.get(runId)`。`service.runs.wait(runId)` 对 active run 等待 final snapshot；若 run 已经是 history 中的 final snapshot，则立即返回；未知 run 抛出稳定英文错误。renderer 的 `task-run:get` 和 `task-run:wait` 不会因为 active run 从内存移除而丢失 completed 结果。
+`service.runs.list(query)` 只读取 active map，并按 query 过滤、排序和 limit。它是 `task-run:list-active`、任务中心进行中 tab 和 scanner 页面 active 状态投影的读取入口，不读取 `task_run_history`。
+
+`service.history.list(query)` 只返回 persisted final rows，并按 query 过滤、排序和 limit。它是 `task-run:list-history`、任务中心已完成 tab 和 scanner 历史的读取入口，不返回 active runs。
+
+`service.runs.get(runId)` 只读取 active run。`service.history.get(runId)` 只读取 completed/final history。服务层不提供跨 active/history 的 `snapshots` facade。
+
+`service.runs.wait(runId)` 只等待 active run 的 final snapshot。若 run 已经不在 active map，调用方应读取 `service.history.get(runId)`。未知 run 抛出稳定英文错误。
 
 `TaskRunService` 不提供 `run(input, executor)` 作为公共 API。它不接收业务 executor，不调度业务流程，也不替生产者包 try/catch。业务函数显式创建 run、上报进度、调用 checkpoint 并提交最终结果。
 
@@ -129,12 +136,11 @@ interface ActiveTaskRunRecord {
 - 保存 active snapshot。
 - 执行 status transition。
 - 调用 rate calculator。
-- 调用 history store 写入关键快照。
-- 推送 IPC。
+- final snapshot 写入 history store。
+- 合并和推送 IPC snapshot。
 - 响应 cancel/pause/resume。
-- `get` 和 `wait` 在 active map 与 history store 之间提供统一读入口。
+- `get`、`wait` 和 `list` 读取 active map。
 - dispose 时取消所有 active runs。
-- 初始化时接收 history store 标记出来的 stale active runs，不把上一进程遗留的 active 状态重新挂回内存。
 
 不负责：
 
@@ -190,6 +196,19 @@ paused -> cancelling -> cancelled
 
 状态变更违反规则时，service 抛出稳定英文错误。
 
+## IPC snapshot coalescing
+
+`task-run:changed` 每次对 renderer 可见的 payload 都是完整 snapshot，但 high-frequency progress report 必须在 main process 内合并和节流。
+
+规则：
+
+- `queued`、`running` start、pause/resume/cancel request、controls change、final snapshot 必须立即 flush。
+- progress-only updates 使用每个 run 独立的 latest-snapshot buffer，默认每 100ms flush 一次。
+- 如果 progress update 距上次 flush 超过 250ms，立即 flush，避免长时间没有 UI 反馈。
+- final snapshot flush 前必须先清空该 run 的 pending progress buffer，保证 renderer 不会在 final 之后收到旧 progress。
+- `task-run:wait` 和 `task-run:get-active` 读取当前内存 snapshot，不等待 IPC 节流。
+- DB 写入策略不受 IPC 节流影响；只有 final snapshot 进入 history store。
+
 ## Rate calculator
 
 新增 `rate.ts`。
@@ -208,31 +227,29 @@ paused -> cancelling -> cancelled
 
 ## History store
 
-`TaskRunHistoryStore` 负责 SQLite 读写。
+`TaskRunHistoryStore` 负责 SQLite completed history 读写。active TaskRun 不写入 DB，active snapshot 的唯一事实源是 `runs/manager.ts` 内存状态。
 
-初始化恢复：
+初始化：
 
-- `TaskRunService.init()` 必须先调用 `history.markStaleActiveRuns()`，再开放 IPC 和 producer 创建入口。
-- `markStaleActiveRuns()` 查询 DB 中所有非 final 状态的 run。
-- 上一进程异常退出留下的 `queued`、`running`、`pausing`、`paused`、`cancelling` 一律写成 `failed`。
-- stale run 的 `result.status` 必须为 `failed`，`result.error` 使用安全摘要 `Application exited before task finished.`。
-- stale run 写入 `finishedAt` 和新的 `updatedAt`，并通过首轮 `task-run:list` 被 renderer 看到。
-- graceful shutdown 中仍在内存的 active runs 由 `dispose()` 标记为 `cancelled`，不要与 crash recovery 混用。
+- `TaskRunService.init()` 初始化空 active map，再开放 IPC 和 producer 创建入口。
+- 不做 `markStaleActiveRuns()`，因为 DB 不保存 active rows。
+- 上一进程异常退出时，未完成的 in-memory active runs 直接消失，不生成 synthetic failed history。
+- 因为 DB 只保存 final rows，重启后不会从 DB 恢复出 `queued`、`running`、`pausing`、`paused` 或 `cancelling` 假状态。
 
 写入策略：
 
-- 创建 run 时插入 `task_runs`。
-- active progress 高频变化不每次写 DB。
-- status、phase、pause/resume/cancel、finish 时写 DB。
-- finish 时写最终 snapshot 和 result。
-- 应用退出时 best-effort flush active snapshot。
+- 创建、start、pause/resume/cancel request 和 progress report 不写 DB。
+- finish 时写入最终 snapshot 和 result。
+- graceful shutdown 时可以 best-effort 取消 active runs 并写入 final `cancelled` history；如果进程异常退出或 flush 失败，不补写历史。
 
 原因：
 
-- 任务中心 active 状态由 main 内存 + IPC 保证。
-- DB 是完成历史和恢复后的已知事实，不是高频 progress pipeline。
+- 任务中心 active 状态由 `runs.list/get/wait`、main 内存和 IPC 保证。
+- DB 是完成历史，不是运行态恢复日志，也不是高频 progress pipeline。
+- 若未来需要 crash audit，应单独设计 process/session diagnostic，不把 active TaskRun 写入 `task_run_history`。
+- 允许 `task_run_history` 参与现有 SQLite `db.*` trigger 事件。这些通用 DB 事件不是 TaskRun lifecycle/progress contract，任务中心和 task-run store 不订阅它们作为状态源。
 
-自动化历史、命令历史、扫描历史都从 `task_runs` 查询，不在各自模块复制完整结果。需要更长保留周期时，在 `history/retention.ts` 中按 `initiator`、`category` 或 `operation` 定义策略。
+`TaskRunHistoryStore` 只保存 TaskRun final history。自动化历史由 AutomationService 的 `automation_run_history` 保存 command invocation 级别记录，不保存 run id，也不链接 TaskRun；CommandService 不保存历史；scanner 等真实长任务历史仍从 `task_run_history` 查询。需要更长保留周期时，在各自 owner 的 retention policy 中配置。
 
 首版不提供 `task_run_events`。状态和完成详情以最新 snapshot 和 result 为准。
 
@@ -242,8 +259,12 @@ paused -> cancelling -> cancelled
 
 ```ts
 export function registerTaskRunIpc(service: TaskRunService, ipc: IpcService): void {
-  ipc.handle('task-run:list', async (_, query) => wrapIpc(() => service.history.list(query)))
-  ipc.handle('task-run:get', async (_, runId) => wrapIpc(() => service.runs.get(runId)))
+  ipc.handle('task-run:list-active', async (_, query) => wrapIpc(() => service.runs.list(query)))
+  ipc.handle('task-run:list-history', async (_, query) =>
+    wrapIpc(() => service.history.list(query))
+  )
+  ipc.handle('task-run:get-active', async (_, runId) => wrapIpc(() => service.runs.get(runId)))
+  ipc.handle('task-run:get-history', async (_, runId) => wrapIpc(() => service.history.get(runId)))
   ipc.handle('task-run:wait', async (_, runId) => wrapIpc(() => service.runs.wait(runId)))
   ipc.handle('task-run:cancel', async (_, runId) => wrapIpc(() => service.runs.cancel(runId)))
   ipc.handle('task-run:pause', async (_, runId) => wrapIpc(() => service.runs.pause(runId)))
@@ -254,7 +275,7 @@ export function registerTaskRunIpc(service: TaskRunService, ipc: IpcService): vo
 }
 ```
 
-IPC 中不做 runtime shape parsing、业务分支或通知。
+IPC 中不做 runtime shape parsing、业务分支、跨 active/history 合并查询或通知。
 
 ## Notifications
 
@@ -371,7 +392,7 @@ const log = createLogger('TaskRun')
 
 不要让 app quit 被长任务无限阻塞。
 
-异常退出恢复不在 `dispose()` 中完成。下一次启动由 `history.markStaleActiveRuns()` 统一把遗留 active rows 变为 failed，避免 DB 中长期保留 running/paused 假状态。
+异常退出恢复不在 `dispose()` 中完成。DB 不保存 active rows，因此下一次启动不会从 DB 恢复 running/paused 假状态；未完成的内存任务没有 final history。
 
 ## Bootstrap
 
@@ -383,9 +404,9 @@ EventService
 WindowService
 NotifyService
 DbService
+NetworkService
 TaskRunService
 UpdaterService
-NetworkService
 CommandService
 AutomationService
 ...
@@ -405,5 +426,5 @@ TaskRunService 面向主应用内部业务服务，输入默认是 trusted input
 - `runs/` 内只保留维护状态机正确性所必需的断言，例如非法状态流转、final run 再写入 progress、非 pausable run 进入 paused。
 - `history/store.ts` 负责持久化边界保护，例如拒绝写入无法安全序列化或明显超限的 result output；具体上限是 store/serializer 私有实现常量，不进入 shared contract。
 - 扩展通过 `kisaki.taskRuns` scoped capability 创建自己的 task run；extension capability/provider 边界解析和校验扩展输入，再调用 TaskRunService。
-- extension task-run provider 的文件、RPC、SDK bridge、owner scoping、operation allowlist、initiator 派生和 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
+- extension task-run provider 的文件、RPC、SDK bridge、owner scoping、extension-local operation name 校验、内部 operation 映射、initiator 派生和 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
 - subject 不包含 renderer route；跳转由 renderer 根据 `subject.type + subject.id` 推导。

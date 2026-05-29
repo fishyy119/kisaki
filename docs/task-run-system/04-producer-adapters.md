@@ -61,7 +61,7 @@ return { runId: run.id, createdAt: run.createdAt }
 
 ### 目标
 
-CommandService 不创建、不包装、不转发 TaskRun。
+CommandService 在新设计中只相当于 command registry 加薄调用路由。
 
 命令仍然负责：
 
@@ -70,25 +70,46 @@ CommandService 不创建、不包装、不转发 TaskRun。
 - args merge。
 - command source。
 - extension-owned command access control。
-- 调用已注册 command handler。
+- 调用已注册 command handler，并把 handler 返回值包装成 command invocation result。
 
 CommandService 不负责：
 
+- 创建 execution id。
+- 保存 running/cancelling state。
 - 判断一个 command 是否长时任务。
 - 自动创建 task run。
+- 提供 command progress。
+- 提供 command cancel/pause/resume。
+- 保存 command result/history。
 - 将 command progress 转发到 task run。
-- 将 command cancel 转发到 task run。
 - 将 command result 复制到 task run result。
+- 拥有 notify loading presentation。
 
-长时 command 的实际 handler 或 handler 调用的业务 use case 自己创建 TaskRun，并直接 report/checkpoint/complete。
+长时 command handler 只能调用实际业务 use case 或 scoped task-run API 创建 TaskRun，并返回 `runId`。TaskRun 的 `category` 和 `operation` 必须描述真实业务，不使用通用 command category 或 `command.execute` operation。Command 入口可以写入 `subject.type === 'command'`。
 
 ### Contract 调整
 
-无向后兼容时，Command invocation 合同不再携带 progress/cancel 状态。
+无向后兼容时，Command invocation 合同不再携带 execution id、progress、wait、cancel 或 command history 状态。
+
+Command IPC 目标：
+
+```ts
+interface IpcMainHandlers {
+  'command:list': () => IpcResult<CommandListItem[]>
+  'command:get': (commandId: string) => IpcResult<CommandDescriptor | null>
+  'command:invoke': (request: CommandInvocationRequest) => IpcResult<CommandInvocationResult>
+}
+```
 
 command handler 可以返回普通业务结果，也可以返回自己创建的 task run id：
 
 ```ts
+export interface CommandInvocationRequest {
+  commandId: string
+  args?: Record<string, unknown>
+  source?: CommandInvocationSource
+}
+
 export interface CommandInvocationResult {
   commandId: string
   output?: unknown
@@ -132,37 +153,33 @@ export interface CommandInvocationContext {
 
 `CommandInvocationSource` 只表达谁启动了这次 command invocation。它不表达 command 的拥有者，也不表达 TaskRun owner。扩展 command 的 owner 由 command registration runtime metadata 派生。
 
-如果某个 command 需要取消、暂停、进度和任务中心结果，它的 handler 自己创建 TaskRun：
+如果某个 app command 需要取消、暂停、进度和任务中心结果，它的 handler 调用真实业务 use case，由该 use case 创建 TaskRun：
 
 ```ts
 async function runLongCommand(args, context, services) {
-  const run = services.taskRun.runs.create({
-    category: 'command',
-    operation: 'command.execute',
-    title: '同步数据',
-    owner: commandOwnerToTaskRunOwner(context.commandId),
+  const start = services.domainUseCases.startLongRun({
+    args,
     initiator: commandSourceToInitiator(context.source),
-    subject: { type: 'command', id: context.commandId, labelSnapshot: '同步数据' },
-    controls: { cancelable: true, pausable: false, retryable: true }
-  })
-
-  void executeLongCommandRun(args, run).catch((error) => {
-    if (isTaskRunCancellation(error)) {
-      run.cancel()
-    } else {
-      run.fail(error)
+    subject: {
+      type: 'command',
+      id: context.commandId,
+      labelSnapshot: '同步数据'
     }
   })
 
-  return { runId: run.id }
+  return { runId: start.runId }
 }
+```
 
-async function executeLongCommandRun(args, run) {
-  const context = run.context
+真实业务 use case 仍然使用 TaskRun producer 模式：
 
+```ts
+async function executeDomainRun(run, args) {
   try {
     run.start()
-    await doLongCommandWork(args, context)
+    const context = run.context
+
+    await doDomainWork(args, context)
     run.complete({ summary: '完成' })
   } catch (error) {
     if (isTaskRunCancellation(error)) {
@@ -174,7 +191,7 @@ async function executeLongCommandRun(args, run) {
 }
 ```
 
-删除旧 `CommandNotificationCoordinator`。命令本身不再有 notify progress；长时 command 创建的 TaskRun 可以启用 task run notification presentation。
+删除旧 `CommandExecutions` 和 `CommandNotificationCoordinator`。命令本身不再有 notify progress；长时 command handler 返回的 TaskRun 可以启用 task run notification presentation。
 
 扩展贡献的长时 command 不通过 invocation context 上报 progress。新增 scoped extension task-run API 和现有 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
 
@@ -203,14 +220,13 @@ kisaki.automations.list()
 kisaki.automations.create()
 kisaki.automations.update()
 kisaki.automations.run()
-kisaki.automations.cancel()
 ```
 
 不保留 `backgroundTasks` alias。
 
 ### Role
 
-Automation 是持久配置，不是运行实例，也不是 task run category。
+Automation 是持久配置和触发历史 owner，不是 TaskRun 运行实例，也不是 task run category。
 
 它保存：
 
@@ -224,53 +240,126 @@ Automation 是持久配置，不是运行实例，也不是 task run category。
 
 运行时：
 
-- 手动、startup、cron 都启动 command。
+- 手动、startup、cron 都 invoke command。
 - AutomationRunner 调用 command 时必须传入 `CommandInvocationSource.type === 'automation'`，包含 automation id、nameSnapshot、trigger 和 attempt。
-- command handler 若是长时流程，自行创建 task run。
+- command handler 若是长时流程，调用真实 producer 或 scoped task-run API 创建 task run，并返回 `runId`。
 - 自动化触发的 task run 由实际 handler 写入 `initiator`，记录 automation id、nameSnapshot、trigger 和 attempt。
 - 如果 automation 触发的是扩展 command，TaskRun `owner` 仍是该 extension，`initiator` 是 automation。
-- automation 页面从 `task_runs` 查询历史。
+- automation 页面只从 `automation_run_history` 查询触发历史，不读取 TaskRun API。
 
 ### History
 
-不建立独立 `AutomationRunRecord` 结果表。
+建立独立 `automation_run_history`。它记录 automation 触发一次 command invocation 的事实，不记录 TaskRun progress，也不复制 TaskRun result。
 
-自动化历史查询：
+建议 contract：
 
 ```ts
-taskRun.history.list({
-  initiatorTypes: ['automation'],
+export type AutomationCommandInvocationStatus = 'completed' | 'failed'
+
+export interface AutomationRunHistoryRecord {
+  id: string
+  automationId: string
+  automationNameSnapshot: string
+  owner: AutomationOwner
+  trigger: AutomationTrigger
+  attempt: number
+  commandId: string
+  commandTitleSnapshot?: string
+  startedAt: number
+  finishedAt: number
+  invocationStatus: AutomationCommandInvocationStatus
+  error?: {
+    message: string
+    code?: string
+  }
+}
+
+export interface AutomationRunHistoryListQuery {
+  automationId?: string
+  ownerTypes?: AutomationOwner['type'][]
+  extensionId?: string
+  commandIds?: string[]
+  triggers?: AutomationTrigger[]
+  invocationStatuses?: AutomationCommandInvocationStatus[]
+  limit?: number
+}
+```
+
+建议表：
+
+```text
+automation_run_history
+```
+
+建议字段：
+
+```ts
+export const automationRunHistory = sqliteTable('automation_run_history', {
+  id: text('id').primaryKey(),
+  automationId: text('automation_id').notNull(),
+  automationNameSnapshot: text('automation_name_snapshot').notNull(),
+  owner: automationOwner('owner').notNull(),
+  ownerExtensionId: text('owner_extension_id'),
+  trigger: automationTrigger('trigger').notNull(),
+  attempt: integer('attempt').notNull(),
+  commandId: text('command_id').notNull(),
+  commandTitleSnapshot: text('command_title_snapshot'),
+  startedAt: integer('started_at').notNull(),
+  finishedAt: integer('finished_at').notNull(),
+  invocationStatus: automationCommandInvocationStatus('invocation_status').notNull(),
+  error: automationInvocationError('error')
+})
+```
+
+Indexes:
+
+```text
+idx_automation_run_history_automation_finished_at
+idx_automation_run_history_command_finished_at
+idx_automation_run_history_owner_extension_finished_at
+idx_automation_run_history_finished_at
+```
+
+表内不增加 `task_run_id`、`run_id`、foreign key 或 TaskRun JSON snapshot。
+
+写入规则：
+
+- 每次实际 command invocation 完成或失败后写入一条 `AutomationRunHistoryRecord`。
+- `invocationStatus` 只表达 command handler 调用边界的完成/失败。
+- 若 command handler 返回 `{ runId }`，`invocationStatus` 是 `completed`，但 `automation_run_history` 不保存该 run id。
+- handler 创建的 TaskRun 可以随后独立进入 `completed`、`failed` 或 `cancelled`，这些状态只属于任务中心和 TaskRun history。
+- command handler 不创建 TaskRun 时，automation history 仍然完整存在。
+- 不保存完整 command args、完整 command output、run id、TaskRun result、progress 或大对象。需要展示参数时只保存有界、脱敏后的 summary。
+- disabled、互斥、条件不满足、调度层 no-op 不属于 command invocation history；必要时写 main log 或 automation scheduler diagnostics。
+- `automation_run_history` 使用自己的 retention policy；清理 automation history 只删除 invocation record，不影响 TaskRun history。
+
+automation 页面读取：
+
+```ts
+automation.history.list({
   automationId
 })
 ```
 
-这样自动化历史和 task center 使用同一个事实源：
+这样职责边界清晰：
 
-- 不复制 command output。
-- 不复制 error/result/counters。
-- 不会出现 automation history 指向已清理 task result 的悬空记录。
-- 如果自动化历史需要保留更久，在 `TaskRunStore` retention 中配置 automation-initiated 策略。
-
-调度器遇到 disabled、互斥、条件不满足、no-op 时，不创建 task run。必要时写 main log 或 automation 调度诊断，不写 `skipped` task run。
+- AutomationService 负责“规则被触发并调用了哪个 command，调用是否成功”。
+- TaskRunService 负责“某个 handler 自愿创建的长时运行实例如何进展和结束”。
+- CommandService 只负责 registry 和薄 invocation，不保存 execution/history。
+- TaskRun 被 retention 清理后不影响 automation history，因为两者没有引用关系。
 
 ### Runner
 
-`AutomationRunner` 不维护自己的 progress。若 command handler 返回 `runId`，它记录 automationId -> runId 的 active 映射，用于显示和取消已经产生的 task run。
+`AutomationRunner` 不维护自己的 progress，不保存 command 返回的 `runId`，也不维护 automationId -> runId 映射。若 command handler 创建 TaskRun，TaskRun 只进入任务中心自己的 active/history 流。
 
-取消：
-
-```text
-automation:cancel -> taskRun.runs.cancel(runId)
-```
-
-如果 command handler 没有创建 task run，automation 只能等待 command 调用返回，不能提供 task center 级别的进度和取消。
+Automation 不提供 task center 级别的进度和取消。若用户要取消 handler 创建的长任务，只能在任务中心或 TaskRun API 中取消该 TaskRun。
 
 重试：
 
 - 每次 retry 都重新调用 command。
 - 若 command handler 创建 task run，每次 retry 都应创建新的 task run。
-- `initiator.automation.attempt` 从 1 递增。
-- automation 页面按 `startedAt ?? createdAt` 聚合显示即可，不需要独立 attempt row。
+- 每次 retry 都写入自己的 `automation_run_history` row。
+- `AutomationRunHistoryRecord.attempt` 从 1 递增；若创建 TaskRun，`initiator.automation.attempt` 使用同一个 attempt。
 
 ## ScannerService
 
@@ -395,8 +484,9 @@ result.output = {
 - 用户触发批量 ingest 时，只创建一个 batch TaskRun。
 - batch 内部调用同一个单项 ingest 操作，但传入 `{ taskRun: false }`。
 - `taskRun: false` 表示单项操作不创建 run、不调用 TaskRunService、不 report task progress。
-- batch 不把父 run runtime 传给单项操作。
+- batch 不把父 run runtime 传给单项操作，但可以传入父 run 的 `AbortSignal` 作为取消信号。
 - batch 只在每个 item 开始前或结束后调用自己的 `checkpoint()`；取消粒度是 item 级。
+- 当前 item 内部的网络、下载、图片处理和资产写入应尽量接收 `signal`，在安全边界提前停止。
 - 父 batch use case 独占父 run 的 aggregate progress，也就是 `current`、`total`、`unit`、counters、warnings 和 result output。
 
 推荐函数签名：
@@ -404,7 +494,7 @@ result.output = {
 ```ts
 function ingestGame(
   request: IngestGameRequest,
-  options?: { taskRun?: boolean }
+  options?: { taskRun?: boolean; signal?: AbortSignal }
 ): Promise<IngestGameResult>
 ```
 
@@ -431,7 +521,8 @@ for (const [index, item] of items.entries()) {
   })
 
   const result = await ingestGame(item, {
-    taskRun: false
+    taskRun: false,
+    signal: context.signal
   })
 
   recordItemResult(result)
@@ -451,9 +542,10 @@ for (const [index, item] of items.entries()) {
 
 - 单项操作在 `taskRun: false` 时不创建 run。
 - 单项操作在 `taskRun: false` 时不 report task progress。
-- 单项操作在 `taskRun: false` 时不感知父 batch run。
+- 单项操作在 `taskRun: false` 时不感知父 batch run，不接收父 `TaskRunContext`、父 progress API 或父 lifecycle handle。
+- 单项操作可以接收 `AbortSignal`，但这个 signal 只能用于取消网络、下载、文件处理和安全边界检查，不能用于上报 progress 或结束父 run。
 - 父批量循环负责每个 item 完成后的计数推进。
-- 父批量循环负责在 item 边界响应取消；当前 item 执行中不会被父 run checkpoint 打断。
+- 父批量循环负责在 item 边界调用 `checkpoint()`；当前 item 内部可以通过传入的 `AbortSignal` 尽早停止可取消子步骤。
 - 失败、跳过、警告由父批量循环收集并写入最终 result。
 
 不推荐传入完整 TaskRunContext：
@@ -566,9 +658,50 @@ task center shows progress
 
 建议：
 
-- `updater:check-for-updates` 若可能耗时，创建 `category: 'updater'`、`operation: 'updater.check'` task run。
-- `updater:download-update` 必须创建 `category: 'updater'`、`operation: 'updater.download'` task run，并用 byte progress。
+- `updater:check-for-updates` 若可能耗时，创建 `category: 'updater'`、`operation: 'updater.check'` task run，并返回 `TaskRunStartResult`。
+- `updater:download-update` 必须创建 `category: 'updater'`、`operation: 'updater.download'` task run，返回 `TaskRunStartResult`，并用 byte progress。
 - `quit-and-install` 不作为普通 task run，因为它会结束进程。
+- updater store 可以继续保存当前可安装版本、下载完成状态和 changelog cache，但下载运行态、速度和结果以 TaskRun 为准。
+
+## Extension repository refresh
+
+扩展仓库刷新也进入 TaskRun，避免 repository panel、startup refresh 和 automatic update refresh 维护另一套 running state。
+
+单个仓库刷新：
+
+```ts
+{
+  category: 'extension',
+  operation: 'extension.repository.refresh',
+  title: `刷新仓库 ${repository.name}`,
+  owner: { type: 'app' },
+  initiator: { type: 'user' },
+  subject: { type: 'repository', id: repository.id, labelSnapshot: repository.name },
+  controls: { cancelable: true, pausable: false, retryable: true }
+}
+```
+
+全部仓库刷新：
+
+```ts
+{
+  category: 'extension',
+  operation: 'extension.repository.refreshAll',
+  title: '刷新全部扩展仓库',
+  owner: { type: 'app' },
+  initiator: { type: 'user' },
+  subject: { type: 'repository', labelSnapshot: '全部扩展仓库' },
+  controls: { cancelable: true, pausable: false, retryable: true }
+}
+```
+
+规则：
+
+- `extension:refresh-repository` 和 `extension:refresh-repositories` 返回 `TaskRunStartResult`。
+- repository manager 仍然拥有 fetch、snapshot persistence、catalog rebuild 和 URL policy。
+- TaskRun 只承载刷新运行态、progress、结果摘要和取消信号。
+- automatic update 触发的 repository refresh 使用 `initiator.type === 'system'` 或对应 automatic update run 的 producer policy，不伪装成 user。
+- 结果摘要保存成功、not-modified、failed 数量和有限失败列表；完整错误写 main log。
 
 ## TaskRun notification presentation
 
@@ -586,7 +719,7 @@ task center shows progress
 - 扫描进度。
 - 扩展安装/更新 loading 状态。
 - 自动化运行中状态。
-- 长时命令 handler 创建的 task run 进度。
+- 长时 command handler 返回的 task run 进度。
 
 规则：
 
