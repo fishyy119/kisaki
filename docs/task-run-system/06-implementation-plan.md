@@ -35,13 +35,16 @@ pnpm --filter kisaki drizzle-kit generate
 
 - `TaskRun`、`TaskRunProgress`、`TaskRunResult` 类型位于 shared。
 - `TaskRunHandle`、`TaskRunContext` 不位于 shared，只由 main process `task-run/runs/` 导出给内部生产者。
-- 合同使用 `category`、`operation`、`initiator`、`subject`。
+- 合同使用 `category`、`operation`、`owner`、`initiator`、`subject`。
+- `owner` 与 `initiator` 分离；扩展拥有的 run 通过 `owner.type === 'extension'` 授权，不通过 `initiator` 授权。
 - `TaskRunOperation` 覆盖 ingest 单项/批量 add/update/delete、scanner、command、extension package、extension repository、updater 和 system maintenance。
 - `TaskRunStatus` 不包含 `skipped`。
 - `TaskRun` 不包含 `dismissedAt`。
 - `TaskRunStartResult` 返回 `runId` 和 `createdAt`，不返回误导性的 `startedAt`。
-- `TaskRunProgressUpdate` 支持 bounded `counters` 和 `warnings` live summary。
+- `TaskRunProgressUpdate` 支持 bounded `counters` 和 `warnings` live summary，且每次 report 是完整 progress snapshot replacement。
+- task-run payload/length/query limits 不作为 shared 或 extension-api 公共常量导出；未知边界在各自 validation module 本地校验。
 - final snapshot 的 `TaskRun.status` 必须等于 `TaskRun.result.status`。
+- `TaskRunHandle.cancel()` 和 `ExtensionTaskRunHandle.cancel()` 不接收 `error`。
 - DB 不包含 `task_run_events`。
 - IPC contracts 包含 `task-run:*`。
 - DB custom JSON types 支持序列化和反序列化。
@@ -86,11 +89,12 @@ apps/desktop/src/main/index.ts
 - `TaskRunService` 初始化早于需要创建 task run 的服务和 handler。
 - init 时调用 `history.markStaleActiveRuns()`，把上一进程遗留的 active rows 标记为 failed。
 - 可以通过 IPC list/get/wait/cancel/pause/resume/clear-completed。
+- `task-run:get` 和 `task-run:wait` 能读取 active run，也能读取已经进入 history 的 final run。
 - 不提供 `task-run:list-events`。
 - 不提供 `task-run:dismiss`。
 - `task-run:changed` 发送完整 snapshot。
 - rate calculator 在 phase/unit 改变、current 回退或 total 明显变化时重置窗口。
-- NotifyService 支持 `closable` 和 close callback；TaskRunNotificationCoordinator 不会在用户关闭后因 progress update 重建 loading toast。
+- NotifyService 支持 `closable`、`notify:closed` 和 close callback；TaskRunNotificationCoordinator 不会在用户关闭后因 progress update 重建 loading toast。
 - dispose 会取消 active runs 并 flush。
 
 ## Phase 3: Renderer store and task center shell
@@ -117,7 +121,7 @@ apps/desktop/src/renderer/src/components/layout/sidebar.vue
 - dialog 能打开并显示 active/completed tabs。
 - store 初始化读取已有 runs，并订阅 IPC。
 - Map 更新 reassign。
-- UI 使用 category、operation、subject 文案和筛选。
+- UI 使用 category、operation、owner、initiator、subject 文案和筛选。
 - 没有 dismissed UI 状态。
 
 ## Phase 4: CommandService rewrite
@@ -243,8 +247,10 @@ extensions/bangumi/src/automations/templates.ts
 - `ExtensionTaskRunHandle` 暴露 `report`、`checkpoint`、`complete`、`fail`、`cancel`。
 - `ExtensionTaskRunHandle` 不暴露 `finish(result)` 或 `finishFromError()`。
 - extension SDK 暴露 `isExtensionTaskRunCancellation(error)`，供扩展 catch 边界显式映射取消。
-- extension task-run provider 校验 owner、operation allowlist、subject ownership、payload 大小和 runtime handle。
+- extension task-run provider 从 runtime metadata 派生 TaskRun owner，扩展不能伪造。
+- extension task-run provider 校验 owner scope、operation allowlist、subject ownership、payload 大小和 runtime handle；校验常量放在 provider validation module 附近。
 - extension task-run provider 根据 command source 派生 user/automation/extension initiator，扩展不能伪造。
+- main 通过 `capabilities.taskRuns.cancelRequested` 通知 host abort 对应 local handle signal。
 - extension handle 的 cancel/abort 由 task run cancel、automation cancel 和 extension host dispose 统一驱动。
 - Bangumi 长时 command handler 通过 `kisaki.taskRuns.create()` 创建 run 并返回 `runId`。
 - Bangumi job runner 不再接收 command event，不调用 `event.reportProgress()` 或 `event.checkpoint()`。
@@ -387,7 +393,7 @@ docs/task-run-system/07-extension-api-and-bangumi-refactor.md
 - 扩展长时 command 使用 `kisaki.taskRuns` scoped capability，而不是 command progress。
 - scanner active progress 从 task run store 派生。
 - notify loading 是 task run notification presentation，不是状态源。
-- TaskRun 使用 `category`、`operation`、`initiator`、`subject`。
+- TaskRun 使用 `category`、`operation`、`owner`、`initiator`、`subject`。
 - `subject` 不包含 renderer route；导航由 renderer 根据 `subject.type + subject.id` 推导。
 
 ## Negative search checklist
@@ -411,11 +417,11 @@ rg -n "startedAt" apps/desktop/src packages extensions | rg "TaskRunStartResult|
 
 ```powershell
 rg -n "TaskRunService|task-run" apps/desktop/src/main apps/desktop/src/shared apps/desktop/src/renderer/src
-rg -n "TaskRunCategory|TaskRunOperation|TaskRunInitiator|TaskRunSubject" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer/src
+rg -n "TaskRunCategory|TaskRunOperation|TaskRunOwner|TaskRunInitiator|TaskRunSubject" apps/desktop/src/shared apps/desktop/src/main apps/desktop/src/renderer/src
 rg -n "AutomationService|automations" apps/desktop/src packages/extension-api packages/extension-sdk extensions
 rg -n "checkpoint\\(" apps/desktop/src/main extensions
 rg -n "task-run:changed" apps/desktop/src
-rg -n "kisaki\\.taskRuns|capabilities\\.taskRuns|ExtensionTaskRun" packages/extension-api packages/extension-sdk apps/desktop/src/main extensions
+rg -n "kisaki\\.taskRuns|capabilities\\.taskRuns|ExtensionTaskRun|cancelRequested" packages/extension-api packages/extension-sdk apps/desktop/src/main extensions
 rg -n "progress\\.counters|markStaleActiveRuns|Application exited before task finished" apps/desktop/src
 ```
 

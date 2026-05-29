@@ -15,7 +15,7 @@
 ## 非目标
 
 - 不开放全局 task center list/read 权限给扩展。
-- 不允许扩展伪造 `initiator`、`category`、`ownerExtensionId` 或 app 内部 run id。
+- 不允许扩展伪造 `initiator`、`owner`、`category` 或 app 内部 run id。
 - 不把 desktop app 内部 `TaskRunHandle` 暴露给 extension API。
 - 不在 `packages/extension-api` 中 import `apps/desktop/src/shared/task-run.ts`。
 - 不为旧 `backgroundTasks`、command progress、`reportProgress` 保留 alias。
@@ -180,7 +180,7 @@ export interface ExtensionTaskRunHandle {
   checkpoint(): Promise<void>
   complete(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
   fail(error: unknown, result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
-  cancel(result?: Omit<ExtensionTaskRunResult, 'status'>): Promise<void>
+  cancel(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
 }
 ```
 
@@ -191,7 +191,9 @@ export interface ExtensionTaskRunHandle {
 - `ExtensionTaskRunCancellation` 是 SDK 控制流 sentinel，不是 task run error，不写入 `result.error`。
 - `complete()` 不接收 `status` 或 `error`。
 - `fail()` 接收 unknown error，由 SDK bridge 和 host provider 规范化为安全展示摘要。
-- `cancel()` 只用于扩展代码已确认取消后的显式收尾。
+- `cancel()` 只用于扩展代码已确认取消后的显式收尾，不接收 `error`。
+- 每次 `report(update)` 是 progress 字段完整快照替换，不做深度 merge。扩展若要保留 `current/total/counters/warnings` 等字段，必须在下一次 report 中继续发送。
+- extension API 不导出 task-run limits 常量，SDK 不做 payload 预检。host provider 是权威未知边界，负责校验 title、description、subject label、progress、warnings、result 和 list limit。
 
 Capability：
 
@@ -224,6 +226,21 @@ capabilities.taskRuns.getOwn
 capabilities.taskRuns.waitOwn
 ```
 
+新增 main -> host RPC event：
+
+```text
+capabilities.taskRuns.cancelRequested
+```
+
+事件 payload：
+
+```ts
+export interface ExtensionTaskRunCancelRequestedEvent {
+  runtimeHandle: string
+  runId: string
+}
+```
+
 Host provider：
 
 ```text
@@ -233,19 +250,21 @@ apps/desktop/src/main/services/extension/capabilities/task-runs.ts
 职责：
 
 - 校验 runtime handle 和 extension owner。
-- 校验 public DTO shape、字符串长度、result/output/progress 大小上限。
+- 校验 public DTO shape、字符串长度、result/output/progress 大小上限；上限定义在 provider validation module，不从 extension-api 导出。
 - 将 `ExtensionTaskRun*` DTO 映射到 app 内部 `TaskRun*` contract。
 - 强制 `category: 'command'`，首版只允许 `operation: 'command.execute'`。
-- 从 extension command source 派生 `initiator`，扩展输入不能覆盖。
+- 从 runtime metadata 派生 `owner: { type: 'extension', extension: { id, nameSnapshot } }`，扩展输入不能覆盖。
+- 从 execution-local command source 派生 `initiator`，扩展输入不能覆盖。
 - 校验 `subject.type === 'command'` 时 `subject.id` 属于当前 extension 注册的 command。
+- `listOwn/getOwn/waitOwn` 只返回 `owner.type === 'extension' && owner.extension.id === runtime extension id` 的 run。
 - 将 `presentation.notify` 映射为 TaskRun presentation。
-- 监听 TaskRun cancel 和 extension host dispose，abort SDK bridge 内的 local signal。
-- extension host dispose 时取消该 runtime 拥有的 active runs。
+- 监听 TaskRun cancel，向 extension host 发送 `capabilities.taskRuns.cancelRequested`。
+- extension host dispose 时取消该 runtime owner 的 active runs。
 
 SDK bridge：
 
 - `create()` 返回 local handle，handle 内部保存 `runId` 和 local `AbortController`。
-- main 观察到 run cancel 时，通过 extension host notification abort 对应 local signal。
+- host 收到 `capabilities.taskRuns.cancelRequested` 时，根据 `runId` abort 对应 local signal。
 - `checkpoint()` 先检查 local signal，再请求 main checkpoint；任一侧取消都抛出 SDK cancellation error。
 - `fail()` 必须序列化 unknown error，不透传 Error object、stack 或 raw library message。
 
@@ -267,6 +286,31 @@ contributions.commands.reportProgress
 `CommandInvocationContext` 只保留 command 语义：
 
 ```ts
+export type CommandInvocationSource =
+  | {
+      type: 'user'
+    }
+  | {
+      type: 'automation'
+      automation: {
+        id: string
+        nameSnapshot: string
+        trigger: 'manual' | 'startup' | 'cron'
+        attempt: number
+      }
+    }
+  | {
+      type: 'extension'
+      extension: {
+        id: string
+        nameSnapshot?: string
+      }
+    }
+  | {
+      type: 'system'
+      reason?: 'startup' | 'maintenance' | 'update' | 'shutdown'
+    }
+
 export interface CommandInvocationContext {
   commandId: string
   source: CommandInvocationSource
@@ -305,13 +349,13 @@ context.contributions.commands.register({
 
 ## Initiator Mapping
 
-扩展不能提供 initiator。host 根据 command source 和 runtime context 派生：
+扩展不能提供 owner 或 initiator。host 根据 runtime metadata 派生 owner，根据 command source 和 runtime context 派生 initiator：
 
-| Source                         | TaskRun initiator                                       |
-| ------------------------------ | ------------------------------------------------------- |
-| 用户点击 extension command     | `{ type: 'user' }`                                      |
-| AutomationService 调度 command | `{ type: 'automation', automation: { ...snapshot } }`   |
-| extension runtime 自发创建     | `{ type: 'extension', extension: { id, nameSnapshot }}` |
+| Source                         | TaskRun owner                                            | TaskRun initiator                                       |
+| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------- |
+| 用户点击 extension command     | `{ type: 'extension', extension: { id, nameSnapshot } }` | `{ type: 'user' }`                                      |
+| AutomationService 调度 command | `{ type: 'extension', extension: { id, nameSnapshot } }` | `{ type: 'automation', automation: { ...snapshot } }`   |
+| extension runtime 自发创建     | `{ type: 'extension', extension: { id, nameSnapshot } }` | `{ type: 'extension', extension: { id, nameSnapshot }}` |
 
 实现上，extension capability gateway 在调用 extension command handler 时建立 execution-local source context；`kisaki.taskRuns.create()` 读取该 context。离开 command handler 后，runtime 自发创建的 run 使用 extension initiator。
 

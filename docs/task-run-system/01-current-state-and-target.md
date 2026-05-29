@@ -178,7 +178,7 @@ TaskRunService
 
 每次 IPC 推送都是完整 task run snapshot，renderer store 直接替换。组件不根据增量事件拼状态。
 
-TaskRun 使用 `category` 做 UI 分组，使用 `operation` 描述具体操作，使用 `initiator` 描述启动来源，使用 `subject` 描述关联业务对象。自动化是 initiator，不是 task run category。
+TaskRun 使用 `category` 做 UI 分组，使用 `operation` 描述具体操作，使用 `owner` 描述归属和权限范围，使用 `initiator` 描述启动来源，使用 `subject` 描述关联业务对象。自动化是 initiator，不是 task run category；扩展权限看 owner，不看 initiator。
 
 ### Progress 是瞬时状态，Result 是完成事实
 

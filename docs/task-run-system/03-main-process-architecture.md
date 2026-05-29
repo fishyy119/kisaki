@@ -71,6 +71,7 @@ service.runs.cancel(runId)
 service.runs.pause(runId)
 service.runs.resume(runId)
 
+service.history.get(runId)
 service.history.list(query)
 service.history.clearCompleted()
 service.history.prune()
@@ -79,6 +80,8 @@ service.history.prune()
 避免把所有方法平铺在 `service.ts` 上。`service.ts` 只负责 init、dispose、IPC wiring 和子模块组合。
 
 `service.runs` 是 runs 子模块 public API。取消、暂停、继续和 `updateControls` 都属于 active run 状态机，不暴露为 service 根级方法。
+
+`service.runs.get(runId)` 先读 active run，再回落到 `history.get(runId)`。`service.runs.wait(runId)` 对 active run 等待 final snapshot；若 run 已经是 history 中的 final snapshot，则立即返回；未知 run 抛出稳定英文错误。renderer 的 `task-run:get` 和 `task-run:wait` 不会因为 active run 从内存移除而丢失 completed 结果。
 
 `TaskRunService` 不提供 `run(input, executor)` 作为公共 API。它不接收业务 executor，不调度业务流程，也不替生产者包 try/catch。业务函数显式创建 run、上报进度、调用 checkpoint 并提交最终结果。
 
@@ -129,6 +132,7 @@ interface ActiveTaskRunRecord {
 - 调用 history store 写入关键快照。
 - 推送 IPC。
 - 响应 cancel/pause/resume。
+- `get` 和 `wait` 在 active map 与 history store 之间提供统一读入口。
 - dispose 时取消所有 active runs。
 - 初始化时接收 history store 标记出来的 stale active runs，不把上一进程遗留的 active 状态重新挂回内存。
 
@@ -290,7 +294,10 @@ interface TaskRunPresentation {
 - cancel 必须是单独 action。
 - notify 文案从 task run snapshot 派生，不能反向更新 task run。
 - 如果 `showResult === true`，final result 可以在用户关闭 loading toast 后再次展示一次结果 toast；否则尊重关闭状态。
-- NotifyService contract 需要支持 `closable` 和 close callback，renderer close 后通过 notify close event 回到 main。
+- Notify contract 增加 `NotifyOptions.closable?: boolean`，loading toast 默认 `closable: true`。
+- NotifyService `show/update` 接收 callback bag：`{ actions?: NotifyActionHandlers; onClose?: () => void }`。
+- renderer 在用户点击 close button 或手动 dismiss toast 时发送 `notify:closed`，payload 为 `{ toastId, reason: 'user' }`。main 调用对应 `onClose`。
+- main 通过 `notify:dismiss` 程序化关闭 toast 时不回发 `notify:closed`，避免 close callback 被 dispose/final update 误触发。
 - close callback 必须只更新 notification coordinator 的 presentation 状态，不触发 task cancel。
 
 旧 `CommandNotificationCoordinator` 的职责迁移到这里，并删除 command 专属通知协调。
@@ -396,7 +403,7 @@ TaskRunService 面向主应用内部业务服务，输入默认是 trusted input
 
 - IPC handler 保持 thin adapter，不做 runtime shape parsing。
 - `runs/` 内只保留维护状态机正确性所必需的断言，例如非法状态流转、final run 再写入 progress、非 pausable run 进入 paused。
-- `history/store.ts` 负责持久化边界的大小限制，例如 result output 过大时摘要化或拒绝写入。
+- `history/store.ts` 负责持久化边界保护，例如拒绝写入无法安全序列化或明显超限的 result output；具体上限是 store/serializer 私有实现常量，不进入 shared contract。
 - 扩展通过 `kisaki.taskRuns` scoped capability 创建自己的 task run；extension capability/provider 边界解析和校验扩展输入，再调用 TaskRunService。
 - extension task-run provider 的文件、RPC、SDK bridge、owner scoping、operation allowlist、initiator 派生和 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
 - subject 不包含 renderer route；跳转由 renderer 根据 `subject.type + subject.id` 推导。

@@ -86,7 +86,7 @@ Automation
   描述“什么时候自动做某个 Command”
 
 TaskRun
-  描述“这一次做什么、谁触发、关联什么对象、做得怎么样”
+  描述“这一次做什么、谁拥有、谁触发、关联什么对象、做得怎么样”
 
 Task Center
   展示“现在正在做什么、刚才做完了什么、结果是什么”
@@ -103,6 +103,7 @@ TaskRun 内部使用：
 ```text
 category: UI 分组
 operation: 具体操作
+owner: 归属和权限范围
 initiator: 启动来源
 subject: 关联业务对象
 ```

@@ -8,6 +8,7 @@
 | `Category`     | 任务所属的大类，用于 UI 分组、筛选和图标。                |
 | `Operation`    | 稳定的操作标识，描述这次任务具体在做什么。                |
 | `Initiator`    | 谁启动了任务，例如 user、automation、extension、system。  |
+| `Owner`        | 谁拥有这条运行记录和读取权限，例如 app 或 extension。     |
 | `Subject`      | 任务主要关联的业务对象，用于展示、过滤和跳转。            |
 | `Progress`     | 当前阶段和度量快照。                                      |
 | `Result`       | 完成后的输出、摘要、错误和计数。                          |
@@ -31,6 +32,7 @@ apps/desktop/src/shared/task-run.ts
 - `TaskRunProgress`
 - `TaskRunProgressUpdate`
 - `TaskRunResult`
+- `TaskRunOwner`
 - `TaskRunControls`
 - `TaskRunPresentation`
 - `TaskRunStartResult`
@@ -110,7 +112,7 @@ export type TaskRunFinalStatus = 'completed' | 'failed' | 'cancelled'
 
 ## Initiator
 
-`initiator` 描述谁启动了任务。它是自动化历史、扩展归属和权限边界的来源。
+`initiator` 描述谁启动了任务。它是自动化历史和启动来源展示的来源。
 
 ```ts
 export type TaskRunAutomationTrigger = 'manual' | 'startup' | 'cron'
@@ -151,6 +153,34 @@ export type TaskRunInitiator =
 - `automation.attempt` 只用于同一次自动化触发的重试序号。
 - `commandId` 不属于 initiator。执行哪个 command 由 `operation: 'command.execute'` 和 `subject` 表达。
 - 用户点击扩展贡献的 command 时，initiator 仍然是 `user`；只有扩展运行时主动启动的任务才使用 `type: 'extension'`。
+
+## Owner
+
+`owner` 描述谁拥有这条 TaskRun 记录。它是扩展作用域读取、取消权限和 host dispose 清理的唯一依据，不表达启动来源。
+
+```ts
+export type TaskRunOwner =
+  | {
+      type: 'app'
+    }
+  | {
+      type: 'extension'
+      extension: {
+        id: string
+        nameSnapshot?: string
+      }
+    }
+```
+
+规则：
+
+- app 内部长流程、扩展包安装/更新、scanner、ingest、updater 和 system maintenance 使用 `{ type: 'app' }`。
+- 扩展通过 `kisaki.taskRuns` 创建的 run 必须使用 `{ type: 'extension' }`，即使它是由用户点击扩展 command 或 automation 触发。
+- `owner` 和 `initiator` 不能互相推断。用户点击扩展 command 时 `owner.type === 'extension'` 且 `initiator.type === 'user'`。
+- AutomationService 调度扩展 command 时 `owner.type === 'extension'` 且 `initiator.type === 'automation'`。
+- extension runtime 自发创建的 run 使用同一个 extension owner，同时 `initiator.type === 'extension'`。
+- 扩展 `listOwn/getOwn/waitOwn` 只按 `owner.type === 'extension'` 和 `owner.extension.id` 授权，不按 `initiator` 授权。
+- 扩展输入不能提供或覆盖 `owner`。host provider 必须从 runtime metadata 派生 owner。
 
 ## Subject
 
@@ -233,6 +263,8 @@ export interface TaskRunProgress extends TaskRunProgressUpdate {
 - `unit` 用于 UI 显示速度，例如 `12 items/s`、`3.4 MB/s`。
 - `counters` 是 active run 的有限汇总，例如 `succeeded`、`failed`、`skipped`、`warnings`，用于 scanner、batch ingest、extension install 等 live summary。
 - `warnings` 是 active run 的有限展示摘要，不是完整错误明细；service 必须按条数和序列化大小限制。
+- 每次 `report(update)` 都是 producer-writable progress 字段的完整快照替换，不是深度 merge。未出现在 update 中的 `phase`、`message`、`current`、`total`、`unit`、`indeterminate`、`counters` 和 `warnings` 会被清空。
+- `counters` 和 `warnings` 由 producer 发送当前 bounded snapshot。Service 只做大小限制和序列化保护，不替 producer 累加。
 - 完成后的权威摘要仍然写入 `result.counters` 和 `result.warnings`。最后一条 progress 不能被当作 result。
 - 不把逐项明细、大失败列表或完整业务对象放进 progress；这些内容只进入 result 的有限摘要或 main logger。
 - 当 `phase` 或 `unit` 改变、`current` 回退、`total` 明显变化时，rate calculator 必须重置窗口，避免跨阶段速度污染。
@@ -258,9 +290,23 @@ export interface TaskRunResult {
 - `error` 必须是安全、适合展示的摘要。
 - 详细错误对象只写 main logger。
 - `output` 必须 JSON serializable。
-- 大输出需要摘要化；默认存储大小上限由 `TaskRunStore` 控制。
+- 大输出需要摘要化；默认存储大小上限由持久化边界控制。
 - `warnings` 用于部分成功、跳过、降级等情况。
 - `counters.skipped` 可以表达批量任务内部跳过数量，但不改变 run final status。
+
+## Boundary validation
+
+TaskRun shared contract 不导出全局 limits 常量。长度、条数和 JSON 大小上限是边界 validator 的实现细节，放在执行校验的模块附近，避免把内部存储策略变成 public API。
+
+规则：
+
+- extension task-run capability provider 是 `kisaki.taskRuns` 的权威未知边界，负责校验 public DTO shape、字符串长度、warnings/result/progress 大小、operation allowlist、subject ownership 和 runtime handle。
+- renderer IPC query 是未知边界，IPC handler 或 service query parser 负责校验 `status`、filters 和 `limit`。
+- `fail(error)` 接收 unknown error，TaskRunService 在 lifecycle boundary 将其序列化为安全 `result.error`。
+- main 内部 producer 是 trusted caller。TaskRunService 可以用断言保护领域不变量，但不把它当作 public DTO validator。
+- TaskRunStore 是最后一道持久化保护，必须拒绝无法安全序列化或明显超限的 result output。
+- SDK 和 renderer 不做 task-run payload 预检；renderer 只展示已通过 main 边界的 snapshot。
+- 若多个 main 边界确实需要同一组数值，可以在 main task-run 模块内共享私有 validation constants，但不放入 `apps/desktop/src/shared` 或 `packages/extension-api`。
 
 ## Controls
 
@@ -324,7 +370,7 @@ export interface TaskRunHandle {
   updateControls(controls: Partial<TaskRunControls>): void
   complete(result?: Omit<TaskRunResult, 'status' | 'error'>): void
   fail(error: unknown, result?: Omit<TaskRunResult, 'status' | 'error'>): void
-  cancel(result?: Omit<TaskRunResult, 'status'>): void
+  cancel(result?: Omit<TaskRunResult, 'status' | 'error'>): void
 }
 ```
 
@@ -339,7 +385,7 @@ export interface TaskRunHandle {
 - extension public API 不暴露 main 内部 `TaskRunHandle`，只暴露受作用域限制的 facade，见 Extension API Policy。
 - `complete()` 只能产生 `completed`，不能接收 `failed` 或 `cancelled` result。
 - `fail()` 只能产生 `failed`，并由 service 把 `error` 规范化为安全摘要。
-- `cancel()` 只能产生 `cancelled`，用于 producer 已确认取消后的显式收尾。
+- `cancel()` 只能产生 `cancelled`，用于 producer 已确认取消后的显式收尾，不接收 `error`。
 - 不提供 generic `finish(result)`。如果 adapter 已经拥有 final status，必须显式 switch 到 `complete()`、`fail()` 或 `cancel()`。
 - 不提供 `finishFromError()`。producer 的 catch 边界必须显式判断 `isTaskRunCancellation(error)`，取消信号调用 `cancel()`，真正错误调用 `fail()`。
 - `TaskRunCancellation` 是协作式取消的控制流 sentinel，不是业务错误，不写入 `result.error`，也不按 failure 记录日志。
@@ -378,6 +424,7 @@ export interface TaskRun {
   title: string
   description?: string
   status: TaskRunStatus
+  owner: TaskRunOwner
   initiator: TaskRunInitiator
   subject?: TaskRunSubject
   controls: TaskRunControls
@@ -395,6 +442,7 @@ export interface TaskRun {
 - `id` 由 main 生成，renderer 不生成 task run id。
 - `title` 是短文本，不含动态大段内容。
 - `description` 用于任务详情，不用于每帧变化。
+- `owner` 是权限和归属字段，必须在创建时确定，创建后不可变。
 - 不提供 `dismissedAt`。忽略、已读、红点等 UI 状态不进入核心运行模型。
 - `updatedAt` 每次 snapshot 更新都变化。
 - final snapshot 必须同时拥有 `finishedAt` 和 `result`。
@@ -427,6 +475,7 @@ export interface TaskRunStartResult {
 规则：
 
 - 自动化历史查询 `initiator.type === 'automation'` 和 `initiator.automation.id`。
+- 扩展拥有的运行记录查询 `owner.type === 'extension'` 和 `owner.extension.id`。
 - 命令历史查询 `category === 'command'` 或 `subject.type === 'command'`。
 - 扫描历史查询 `operation === 'scanner.scan'` 和 `subject.type === 'scanner'`。
 - task run 被 retention 删除后，对应历史记录也不再存在；不会出现 automation history 指向已删除 result 的悬空状态。
@@ -452,6 +501,8 @@ export const taskRuns = sqliteTable('task_runs', {
   title: text('title').notNull(),
   description: text('description'),
   status: taskRunStatus('status').notNull(),
+  owner: taskRunOwner('owner').notNull(),
+  ownerExtensionId: text('owner_extension_id'),
   initiator: taskRunInitiator('initiator').notNull(),
   subject: taskRunSubject('subject'),
   controls: taskRunControls('controls').notNull(),
@@ -468,12 +519,13 @@ Indexes:
 
 ```text
 idx_task_runs_status_updated_at
+idx_task_runs_owner_extension_updated_at
 idx_task_runs_category_updated_at
 idx_task_runs_operation_updated_at
 idx_task_runs_finished_at
 ```
 
-JSON 字段索引按实际查询成本再加，不在首版预设复杂 expression index。
+`ownerExtensionId` 是从 `owner` 派生的查询投影：`owner.type === 'extension'` 时等于 `owner.extension.id`，否则为 null。shared `TaskRun` contract 不单独暴露这个投影字段。其他 JSON 字段索引按实际查询成本再加，不在首版预设复杂 expression index。
 
 Retention:
 
@@ -515,6 +567,7 @@ export interface TaskRunListQuery {
   status?: 'active' | 'completed' | 'all'
   categories?: TaskRunCategory[]
   operations?: TaskRunOperation[]
+  ownerTypes?: TaskRunOwner['type'][]
   initiatorTypes?: TaskRunInitiator['type'][]
   automationId?: string
   extensionId?: string
@@ -526,7 +579,7 @@ export interface TaskRunListQuery {
 }
 ```
 
-`automationId` 只匹配 `initiator.type === 'automation'`，`extensionId` 只匹配 `initiator.type === 'extension'`。
+`automationId` 只匹配 `initiator.type === 'automation'`。`extensionId` 只匹配 `owner.type === 'extension'`，不匹配 `initiator.type === 'extension'`。
 
 ## AppEvents Policy
 
@@ -551,7 +604,7 @@ export interface TaskRunListQuery {
 - command invocation id 不等于 task run id。
 - `kisaki.automations` 只管理本扩展拥有的自动化配置。
 - 扩展不能 list 所有 app task runs。
-- 扩展可以通过 scoped task-run API 创建和维护自己拥有的长时 run。
+- 扩展可以通过 scoped task-run API 创建和维护 `owner.type === 'extension'` 且 `owner.extension.id` 等于自身 id 的长时 run。
 
 无向后兼容时，公共 extension API 必须把 `backgroundTasks` 重命名为 `automations`，不保留 alias。
 

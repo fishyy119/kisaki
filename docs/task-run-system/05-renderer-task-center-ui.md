@@ -225,7 +225,7 @@ features/task-center/utils/display.ts
 详情展示：
 
 - 标题和状态。
-- category、operation、initiator、subject。
+- category、operation、owner、initiator、subject。
 - startedAt、finishedAt、duration。
 - 当前 progress。
 - result summary。
@@ -263,7 +263,7 @@ features/task-center/utils/display.ts
 
 首版建议：
 
-- search by title/subject/initiator。
+- search by title/subject/owner/initiator。
 - category filter。
 - status filter for completed。
 - operation filter 作为后续增强。
@@ -345,7 +345,7 @@ badge 显示 active count。
 - loading toast 应可关闭。
 - 关闭 toast 不取消 task。
 - toast 上的取消必须是明确 action。
-- renderer 关闭 toast 时必须通知 main 的 notify close callback；TaskRunNotificationCoordinator 记录该 run 已关闭，后续 progress 不重新创建 loading toast。
+- renderer 用户关闭 toast 时必须发送 `notify:closed`，触发 main 的 notify close callback；TaskRunNotificationCoordinator 记录该 run 已关闭，后续 progress 不重新创建 loading toast。
 - 关闭 loading toast 不影响 final result toast；是否显示 final toast 由 `presentation.notify.showResult` 决定。
 
 用户点击 task toast 可打开 task center 并选中对应 run。此能力可作为后续增强，但 task run id 必须在 toast action handler 中可用。

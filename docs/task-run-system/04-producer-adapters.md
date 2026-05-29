@@ -42,7 +42,7 @@ return { runId: run.id, createdAt: run.createdAt }
 
 生产者只负责：
 
-- 提供 title、category、operation、initiator、subject、controls。
+- 提供 title、category、operation、owner、initiator、subject、controls。
 - 在安全边界通过 `TaskRunContext` report/checkpoint。
 - 生成业务结果。
 - catch 业务错误并结束 run。
@@ -99,11 +99,38 @@ export interface CommandInvocationResult {
 `CommandInvocationContext` 只保留 command 语义：
 
 ```ts
+export type CommandInvocationSource =
+  | {
+      type: 'user'
+    }
+  | {
+      type: 'automation'
+      automation: {
+        id: string
+        nameSnapshot: string
+        trigger: 'manual' | 'startup' | 'cron'
+        attempt: number
+      }
+    }
+  | {
+      type: 'extension'
+      extension: {
+        id: string
+        nameSnapshot?: string
+      }
+    }
+  | {
+      type: 'system'
+      reason?: 'startup' | 'maintenance' | 'update' | 'shutdown'
+    }
+
 export interface CommandInvocationContext {
   commandId: string
   source: CommandInvocationSource
 }
 ```
+
+`CommandInvocationSource` 只表达谁启动了这次 command invocation。它不表达 command 的拥有者，也不表达 TaskRun owner。扩展 command 的 owner 由 command registration runtime metadata 派生。
 
 如果某个 command 需要取消、暂停、进度和任务中心结果，它的 handler 自己创建 TaskRun：
 
@@ -113,6 +140,7 @@ async function runLongCommand(args, context, services) {
     category: 'command',
     operation: 'command.execute',
     title: '同步数据',
+    owner: commandOwnerToTaskRunOwner(context.commandId),
     initiator: commandSourceToInitiator(context.source),
     subject: { type: 'command', id: context.commandId, labelSnapshot: '同步数据' },
     controls: { cancelable: true, pausable: false, retryable: true }
@@ -192,13 +220,15 @@ Automation 是持久配置，不是运行实例，也不是 task run category。
 - enabled。
 - triggers。
 - failurePolicy。
-- ownerExtensionId。
+- owner。app 创建的 automation 为 `{ type: 'app' }`，扩展通过 `kisaki.automations` 创建的 automation 为 `{ type: 'extension', extension: { id, nameSnapshot? } }`。
 
 运行时：
 
 - 手动、startup、cron 都启动 command。
+- AutomationRunner 调用 command 时必须传入 `CommandInvocationSource.type === 'automation'`，包含 automation id、nameSnapshot、trigger 和 attempt。
 - command handler 若是长时流程，自行创建 task run。
 - 自动化触发的 task run 由实际 handler 写入 `initiator`，记录 automation id、nameSnapshot、trigger 和 attempt。
+- 如果 automation 触发的是扩展 command，TaskRun `owner` 仍是该 extension，`initiator` 是 automation。
 - automation 页面从 `task_runs` 查询历史。
 
 ### History
@@ -274,6 +304,7 @@ scanner.finished
   category: 'scanner',
   operation: 'scanner.scan',
   title: `扫描 ${scanner.name}`,
+  owner: { type: 'app' },
   initiator: { type: 'user' }, // or { type: 'system', reason: 'maintenance' }
   subject: { type: 'scanner', id: scanner.id, labelSnapshot: scanner.name },
   controls: { cancelable: true, pausable: true, retryable: true }
@@ -288,10 +319,10 @@ scanner.finished
 - controller map。
 - scannerId -> runId map。
 
-`ScannerRunSession` 使用 `TaskRunContext`：
+`ScannerRunSession` 使用 `TaskRunContext`。因为 `report(update)` 是完整快照替换，每次 report 都必须携带需要继续显示的 phase、current、total、unit、counters 和 warnings：
 
-- `setTotal()` -> `context.report({ current, total, unit: 'entity' })`
-- `recordEntityResult()` -> 更新 bounded counters/warnings 并 report 到 `progress.counters` / `progress.warnings`。
+- `setTotal()` -> `context.report({ phase, current, total, unit: 'entity', counters, warnings })`
+- `recordEntityResult()` -> 更新 bounded counters/warnings，并随同 current/total/unit 一起 report。
 - `processItemsWithConcurrency()` 在调度边界调用 `await context.checkpoint()`。
 
 Scanner-specific result 进入 `TaskRunResult.counters` 和 `TaskRunResult.output` 的摘要。
@@ -337,6 +368,7 @@ renderer 改为：
   category: 'ingest',
   operation: 'ingest.game.add',
   title: '添加游戏',
+  owner: { type: 'app' },
   initiator: { type: 'user' },
   subject: { type: 'game', labelSnapshot: request.title },
   controls: { cancelable: true, pausable: false, retryable: true }
@@ -393,7 +425,9 @@ for (const [index, item] of items.entries()) {
     message: item.name,
     current: index,
     total: items.length,
-    unit: 'entity'
+    unit: 'entity',
+    counters: getAggregateCounters(),
+    warnings: getBoundedWarnings()
   })
 
   const result = await ingestGame(item, {
@@ -499,6 +533,7 @@ interface IngestBatchResult {
   category: 'extension',
   operation: 'extension.package.install',
   title: `安装扩展 ${manifest.displayName}`,
+  owner: { type: 'app' },
   initiator: { type: 'user' },
   subject: { type: 'extension', id: manifest.id, labelSnapshot: manifest.displayName },
   controls: { cancelable: true, pausable: false, retryable: true }
