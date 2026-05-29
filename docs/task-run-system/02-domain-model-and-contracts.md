@@ -23,7 +23,25 @@
 apps/desktop/src/shared/task-run.ts
 ```
 
-此文件只包含纯类型、常量和小型纯 helper。不要 import main、renderer、Electron、Drizzle 或 logger。
+此文件只包含跨进程共享的纯类型、常量和小型纯 helper。不要 import main、renderer、Electron、Drizzle 或 logger。
+
+放入 shared：
+
+- `TaskRun`
+- `TaskRunProgress`
+- `TaskRunProgressUpdate`
+- `TaskRunResult`
+- `TaskRunControls`
+- `TaskRunPresentation`
+- `TaskRunStartResult`
+- `TaskRunListQuery`
+
+不放入 shared：
+
+- `TaskRunHandle`
+- `TaskRunContext`
+- `TaskRunCancelledError`
+- active run、pause controller、waiter 等 main 内部运行态类型
 
 ## Category and operation
 
@@ -254,6 +272,50 @@ export interface TaskRunControls {
 - 业务代码在下一个安全 checkpoint 抛出取消错误，最终进入 `cancelled`。
 - 暂停/继续是能力声明，不是强制保证。任务代码必须在 checkpoint 响应暂停。
 
+## Producer contracts
+
+以下类型是主进程内部生产者契约，不属于 renderer IPC contract。它们由
+`apps/desktop/src/main/services/task-run/runs/` 实现，供 scanner、ingest、extension package、
+updater、command handler 等业务代码使用。
+
+目标文件：
+
+```text
+apps/desktop/src/main/services/task-run/runs/context.ts
+apps/desktop/src/main/services/task-run/runs/types.ts
+apps/desktop/src/main/services/task-run/runs/index.ts
+```
+
+```ts
+export interface TaskRunContext {
+  readonly runId: string
+  readonly signal: AbortSignal
+  report(update: TaskRunProgressUpdate): void
+  checkpoint(): Promise<void>
+  throwIfCancelled(): void
+}
+
+export interface TaskRunHandle {
+  readonly id: string
+  readonly context: TaskRunContext
+  start(): void
+  updateControls(controls: Partial<TaskRunControls>): void
+  complete(result: TaskRunResult): void
+  fail(error: unknown): void
+  finishFromError(error: unknown): void
+}
+```
+
+规则：
+
+- `TaskRunHandle` 是创建者持有的生命周期 owner，用于 start、controls、complete、fail 和 error mapping。
+- `TaskRunService` 不接收业务 executor，因此不会把 handle 注入回调；生产者通过 `runs.create(input)` 显式取得 handle。
+- `TaskRunContext` 是执行期 capability，用于 report、checkpoint、abort signal 和取消检查。
+- 下游业务函数优先只接收 `TaskRunContext`，避免获得 complete/fail run 的能力。
+- `report` 只存在于 `TaskRunContext`，不在 `TaskRunHandle` 顶层重复暴露。
+- renderer、extension public API 和 IPC 不暴露 `TaskRunHandle`。
+- `finishFromError` 只负责把已捕获错误映射为最终状态；业务错误的捕获边界仍在生产者代码。
+
 ## Presentation
 
 notify 是 TaskRun 的可选展示层，不是状态源。
@@ -450,10 +512,10 @@ export interface TaskRunListQuery {
 
 目标：
 
-- extension command 仍通过 command execution context 上报进度。
-- command execution id 等于 task run id。
+- command invocation context 不再转发 task progress。
+- command invocation id 不等于 task run id。
 - `kisaki.automations` 只管理本扩展拥有的自动化配置。
 - 扩展不能 list 所有 app task runs。
-- 若未来需要扩展读取自己命令的 run history，单独设计 scoped API。
+- 若未来需要扩展创建或读取自己拥有的 task run，单独设计 scoped task-run API。
 
 无向后兼容时，公共 extension API 可以把 `backgroundTasks` 重命名为 `automations`。

@@ -26,11 +26,11 @@ apps/desktop/src/main/services/task-run/
 
 `runs/` 是真实子模块，因为它内部有多种强耦合职责：
 
-- `manager.ts`: active run 生命周期、snapshot 更新、executor 包装。
+- `manager.ts`: active run 生命周期和 snapshot 更新。
 - `context.ts`: `TaskRunContext`、checkpoint、取消/暂停等待。
 - `controls.ts`: cancel/pause/resume 请求和控制能力变更。
 - `transitions.ts`: 状态流转规则。
-- `types.ts`: runs 子模块内部类型。
+- `types.ts`: `TaskRunHandle` 和 runs 子模块内部类型。
 - `index.ts`: runs 子模块公共入口。
 
 外部模块只通过 `service.runs` 使用 runs 子模块，不 import runs 内部文件。
@@ -65,13 +65,8 @@ export class TaskRunService implements IService {
 
 ```ts
 service.runs.create(input)
-service.runs.run(input, executor)
 service.runs.get(runId)
 service.runs.wait(runId)
-service.runs.report(runId, update)
-service.runs.updateControls(runId, controls)
-service.runs.complete(runId, result)
-service.runs.fail(runId, error)
 service.runs.cancel(runId)
 service.runs.pause(runId)
 service.runs.resume(runId)
@@ -85,6 +80,28 @@ service.history.prune()
 
 `service.runs` 是 runs 子模块 public API。取消、暂停、继续和 `updateControls` 都属于 active run 状态机，不暴露为 service 根级方法。
 
+`TaskRunService` 不提供 `run(input, executor)` 作为公共 API。它不接收业务 executor，不调度业务流程，也不替生产者包 try/catch。业务函数显式创建 run、上报进度、调用 checkpoint 并提交最终结果。
+
+推荐调用形态：
+
+```ts
+const run = taskRun.runs.create(input)
+const context = run.context
+
+try {
+  run.start()
+  context.report({ phase: 'searching', indeterminate: true })
+
+  await doBusinessWork(context)
+
+  run.complete(result)
+} catch (error) {
+  run.finishFromError(error)
+}
+```
+
+`create()` 返回的 `TaskRunHandle` 是创建者持有的生命周期 owner；`run.context` 是传给业务执行代码的执行期 capability。契约定义见 `02-domain-model-and-contracts.md`，本文件只描述主进程实现结构。
+
 ## Runs
 
 `runs/manager.ts` 拥有 active runs，并通过 `context.ts`、`controls.ts` 和 `transitions.ts` 维护运行态。
@@ -94,7 +111,7 @@ interface ActiveTaskRunRecord {
   run: TaskRun
   controller: AbortController
   pause: TaskPauseController
-  promise?: Promise<TaskRunResult>
+  waiters: TaskRunWaiter[]
   notify?: TaskRunNotifyState
 }
 ```
@@ -116,20 +133,11 @@ interface ActiveTaskRunRecord {
 - 解释 output 的业务含义。
 - 读取 command registry。
 - 清理各业务模块自己的队列或锁。
+- 包装业务 executor。
 
 ## Context
 
-业务代码拿到的上下文：
-
-```ts
-export interface TaskRunContext {
-  readonly runId: string
-  readonly signal: AbortSignal
-  report(update: TaskRunProgressUpdate): void
-  checkpoint(): Promise<void>
-  throwIfCancelled(): void
-}
-```
+业务代码拿到的上下文是 `TaskRunContext`，契约定义见 `02-domain-model-and-contracts.md`。`TaskRunContext` 暴露 report、checkpoint 和 cancel signal，不暴露 complete/fail。
 
 `checkpoint()` 语义：
 
@@ -267,9 +275,11 @@ interface TaskRunPresentation {
 
 旧 `CommandNotificationCoordinator` 的职责迁移到这里，并删除 command 专属通知协调。
 
-## Error boundary
+## Error mapping
 
-`TaskRunService` 捕获 executor 抛出的错误时：
+`TaskRunService` 不捕获业务 executor 抛出的错误，因为它不执行业务 executor。
+
+生产者 catch 错误后调用 `run.finishFromError(error)` 或显式 `run.fail(error)`：
 
 - `TaskRunCancelledError` -> `cancelled`。
 - 其他 error -> `failed`。

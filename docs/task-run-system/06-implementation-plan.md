@@ -34,6 +34,7 @@ pnpm --filter kisaki drizzle-kit generate
 验收：
 
 - `TaskRun`、`TaskRunProgress`、`TaskRunResult` 类型位于 shared。
+- `TaskRunHandle`、`TaskRunContext` 不位于 shared，只由 main process `task-run/runs/` 导出给内部生产者。
 - 合同使用 `category`、`operation`、`initiator`、`subject`。
 - `TaskRunStatus` 不包含 `skipped`。
 - `TaskRun` 不包含 `dismissedAt`。
@@ -74,7 +75,8 @@ apps/desktop/src/main/index.ts
 - service id 为 `task-run`。
 - IPC registration 在 `task-run/ipc.ts`。
 - active run 状态机在 `task-run/runs/`。
-- `TaskRunService` 初始化早于 command/scanner/extension。
+- `TaskRunHandle` 只暴露生命周期方法，`report` 只暴露在 `TaskRunContext`。
+- `TaskRunService` 初始化早于需要创建 task run 的服务和 handler。
 - 可以通过 IPC list/get/wait/cancel/pause/resume/clear-completed。
 - 不提供 `task-run:list-events`。
 - 不提供 `task-run:dismiss`。
@@ -136,13 +138,14 @@ apps/desktop/src/main/services/command/notifications.ts
 
 验收：
 
-- command execution id 等于 task run id。
-- command run 创建 `category: 'command'`、`operation: 'command.execute'`。
-- command progress 从 TaskRunService 读取。
-- command cancel 委托 task-run cancel。
-- extension command event 暴露 `checkpoint()`。
+- `CommandService` 不依赖 `TaskRunService`。
+- command invocation id 不等于 task run id。
+- command invocation contract 不包含 progress、checkpoint 或 cancel。
+- 删除 command progress/cancel IPC。
+- 长时 command handler 自己创建 `category: 'command'`、`operation: 'command.execute'` 的 TaskRun。
+- 长时 command handler 返回 `runId`，调用方通过任务中心查看进度和结果。
 - 旧 command notify coordinator 不存在。
-- Bangumi command 仍可 report progress 和响应 cancel。
+- Bangumi 等长时 command 的实际业务函数自己 report progress 和响应 task run cancel。
 
 ## Phase 5: Automation rename
 
@@ -173,8 +176,8 @@ DB：
 验收：
 
 - UI 文案为“自动化”，不再叫“后台任务”。
-- automation run 创建 command-backed TaskRun。
-- task run `initiator` 写入 automation id、nameSnapshot、trigger、attempt。
+- automation 触发 command，不直接创建 TaskRun。
+- 若 command handler 创建 TaskRun，`initiator` 写入 automation id、nameSnapshot、trigger、attempt。
 - automation history 从 `task_runs` 查询，不复制 output/result/error。
 - automation cancel 根据 active `runId` 取消 task run。
 - extension API 使用 `kisaki.automations`。
@@ -291,7 +294,7 @@ rg -n "notify\\.loading|notify\\.update" apps/desktop/src/renderer/src apps/desk
 
 验收：
 
-- 批量、扫描、命令、自动化、扩展安装更新不再以 notify loading 作为唯一反馈。
+- 批量、扫描、长时命令、自动化、扩展安装更新不再以 notify loading 作为唯一反馈。
 - notify 仍用于保存成功、错误提示等短反馈。
 
 ## Phase 10: Documentation and skill references
@@ -310,7 +313,7 @@ docs/bangumi-builtin-extension/06-settings-commands-and-tasks.md
 
 - `AutomationService` 是持久自动化配置和调度服务。
 - `TaskRunService` 是长时执行实例的唯一运行态和历史事实源。
-- command execution 由 task run backed。
+- CommandService 不创建或转发 TaskRun；长时 command handler 自己创建 TaskRun。
 - scanner active progress 从 task run store 派生。
 - notify loading 是 task run notification presentation，不是状态源。
 - TaskRun 使用 `category`、`operation`、`initiator`、`subject`。
@@ -364,10 +367,11 @@ pnpm -r --parallel lint
 ### Command
 
 1. 运行一个 Bangumi command。
-2. 任务中心出现 run。
-3. progress 更新。
-4. 点击取消后 command 收到 AbortSignal。
-5. 完成后已完成 tab 能看到 result。
+2. `CommandService` 只调用 command handler。
+3. Bangumi handler 创建 task run 并返回 `runId`。
+4. 任务中心出现 run 并更新 progress。
+5. 点击取消后 task run signal 在 handler checkpoint 生效。
+6. 完成后已完成 tab 能看到 result。
 
 ### Automation
 
@@ -415,7 +419,7 @@ pnpm -r --parallel lint
 2. 任务中心通过 `task-run:*` IPC 和 store 展示状态。
 3. 高频进度不走 AppEvents。
 4. notify 不再作为长流程状态源，但仍可作为可关闭 presentation。
-5. command execution 由 task run backed。
+5. CommandService 不创建或转发 TaskRun，长时 command handler 自己创建 TaskRun。
 6. automation 与 task run 语义分离，automation history 从 task runs 投影。
 7. scanner 进度进入 task run。
 8. 批量 renderer 循环迁到 main use case。

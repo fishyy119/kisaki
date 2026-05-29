@@ -5,29 +5,37 @@
 接入任务中心的模块都遵循同一模式：
 
 ```ts
-await taskRun.runs.run(input, async (context) => {
-  await doBusinessWork(context)
-  return result
-})
-```
-
-或者在需要更精细控制时：
-
-```ts
 const run = taskRun.runs.create(input)
+const context = run.context
+
 try {
-  await doBusinessWork(run.context)
+  run.start()
+  context.report({ phase: 'preparing', indeterminate: true })
+
+  await doBusinessWork(context)
+
   run.complete(result)
 } catch (error) {
   run.finishFromError(error)
 }
 ```
 
+如果入口 IPC 的语义是“启动长时任务并立即返回 runId”，则入口只创建 run 并启动本地后台函数：
+
+```ts
+const run = taskRun.runs.create(input)
+void executeBusinessRun(run, request)
+return { runId: run.id, startedAt: Date.now() }
+```
+
+`executeBusinessRun` 由业务模块自己实现 try/catch，并在内部调用 `run.start()`、`run.context.report()`、`run.complete()` 或 `run.finishFromError()`。
+
 生产者只负责：
 
 - 提供 title、category、operation、initiator、subject、controls。
-- 在安全边界 report/checkpoint。
+- 在安全边界通过 `TaskRunContext` report/checkpoint。
 - 生成业务结果。
+- catch 业务错误并结束 run。
 
 生产者不负责：
 
@@ -37,12 +45,13 @@ try {
 - 管理 task center UI。
 - 直接更新 toast。
 - 为自己的历史复制完整 task result。
+- 把业务 executor 交给 TaskRunService 调度。
 
 ## CommandService
 
 ### 目标
 
-Command execution 由 `TaskRunService` 承载运行态。
+CommandService 不创建、不包装、不转发 TaskRun。
 
 命令仍然负责：
 
@@ -51,65 +60,73 @@ Command execution 由 `TaskRunService` 承载运行态。
 - args merge。
 - command source。
 - extension-owned command access control。
+- 调用已注册 command handler。
 
-TaskRun 负责：
+CommandService 不负责：
 
-- execution id。
-- progress。
-- cancel/pause state。
-- result。
-- notify presentation。
-- history。
+- 判断一个 command 是否长时任务。
+- 自动创建 task run。
+- 将 command progress 转发到 task run。
+- 将 command cancel 转发到 task run。
+- 将 command result 复制到 task run result。
+
+长时 command 的实际 handler 或 handler 调用的业务 use case 自己创建 TaskRun，并直接 report/checkpoint/complete。
 
 ### Contract 调整
 
-无向后兼容时可以把 command execution types 收敛为 task run backed shape：
+无向后兼容时，Command invocation 合同不再携带 progress/cancel 状态。
+
+command handler 可以返回普通业务结果，也可以返回自己创建的 task run id：
 
 ```ts
-export interface CommandExecutionStartResult {
+export interface CommandInvocationResult {
   commandId: string
-  executionId: string // equals TaskRun.id
-  runId: string
-  startedAt: number
-  cancelable: boolean
-  state: TaskRunStatus
+  output?: unknown
+  runId?: string
 }
 ```
 
-`CommandExecutionContext` 变为：
+`CommandInvocationContext` 只保留 command 语义：
 
 ```ts
-export interface CommandExecutionContext {
+export interface CommandInvocationContext {
   commandId: string
-  executionId: string
-  source: CommandExecutionSource
-  signal: AbortSignal
-  reportProgress(progress: TaskRunProgressUpdate): void
-  checkpoint(): Promise<void>
+  source: CommandInvocationSource
 }
 ```
 
-### Implementation
+如果某个 command 需要取消、暂停、进度和任务中心结果，它的 handler 自己创建 TaskRun：
 
-`CommandExecutions.start()`：
+```ts
+async function syncBangumiCommand(args, context, services) {
+  const run = services.taskRun.runs.create({
+    category: 'command',
+    operation: 'command.execute',
+    title: '同步 Bangumi',
+    initiator: commandSourceToInitiator(context.source),
+    subject: { type: 'command', id: context.commandId, labelSnapshot: '同步 Bangumi' },
+    controls: { cancelable: true, pausable: false, retryable: true }
+  })
 
-1. require command。
-2. merge default args。
-3. create task run:
-   - `category: 'command'`
-   - `operation: 'command.execute'`
-   - `title: command.descriptor.title`
-   - `initiator` from request source。
-   - `subject: { type: 'command', id: command.id, labelSnapshot: command.title }`
-   - controls from descriptor。
-4. execute command with task run context。
-5. map output to command result and task run result。
+  void syncBangumiWithTaskRun(args, run)
 
-`CommandExecutions.cancel(executionId)` delegates to `taskRun.runs.cancel(executionId)`。
+  return { runId: run.id }
+}
 
-`getProgress(executionId)` reads task run progress。
+async function syncBangumiWithTaskRun(args, run) {
+  const context = run.context
 
-旧 `CommandNotificationCoordinator` 删除，由 `TaskRunNotificationCoordinator` 处理 `presentation.notify`。
+  try {
+    run.start()
+    await syncBangumi(args, context)
+    run.complete({ status: 'completed', summary: '同步完成' })
+  } catch (error) {
+    run.finishFromError(error)
+  }
+}
+```
+
+删除旧 `CommandNotificationCoordinator`。命令本身不再有 notify progress；长时 command 创建的 TaskRun 可以启用 task run notification presentation。
 
 ## AutomationService
 
@@ -158,8 +175,8 @@ Automation 是持久配置，不是运行实例，也不是 task run category。
 运行时：
 
 - 手动、startup、cron 都启动 command。
-- command execution 产生 task run。
-- task run 的 `initiator` 记录 automation id、nameSnapshot、trigger 和 attempt。
+- command handler 若是长时流程，自行创建 task run。
+- 自动化触发的 task run 由实际 handler 写入 `initiator`，记录 automation id、nameSnapshot、trigger 和 attempt。
 - automation 页面从 `task_runs` 查询历史。
 
 ### History
@@ -186,7 +203,7 @@ taskRun.history.list({
 
 ### Runner
 
-`AutomationRunner` 不维护自己的 progress。它只维护 automationId -> runId，用于 active cancellation。
+`AutomationRunner` 不维护自己的 progress。若 command handler 返回 `runId`，它记录 automationId -> runId 的 active 映射，用于显示和取消已经产生的 task run。
 
 取消：
 
@@ -194,9 +211,12 @@ taskRun.history.list({
 automation:cancel -> taskRun.runs.cancel(runId)
 ```
 
+如果 command handler 没有创建 task run，automation 只能等待 command 调用返回，不能提供 task center 级别的进度和取消。
+
 重试：
 
-- 每次 retry 都创建新的 task run。
+- 每次 retry 都重新调用 command。
+- 若 command handler 创建 task run，每次 retry 都应创建新的 task run。
 - `initiator.automation.attempt` 从 1 递增。
 - automation 页面按 startedAt 聚合显示即可，不需要独立 attempt row。
 
@@ -493,22 +513,22 @@ task center shows progress
 
 ## Extension commands
 
-扩展 command contribution 继续使用 `event.reportProgress()`。
+扩展 command contribution 不再通过 command invocation context 转发 task progress。
 
-增加：
-
-```ts
-event.checkpoint(): Promise<void>
-```
-
-扩展作者长循环应调用：
+删除 command-specific progress API：
 
 ```ts
-await event.checkpoint()
-event.reportProgress({ phase: 'syncing', current, total })
+event.reportProgress(...)
+event.checkpoint(...)
 ```
 
-如果 command 没有 checkpoint，它仍可取消 signal，但不应声明 `pausable`。
+原因：
+
+- command 只负责触发 action，不负责运行态事实源。
+- TaskRun 不能通过 CommandService 间接创建或更新。
+- 扩展不应获得全局 task run 读写权限。
+
+如果未来需要扩展创建自己的长时 task run，应设计 scoped extension task-run capability，例如只允许扩展创建、更新和读取自己拥有的 run。这个能力独立于 command invocation context。
 
 ## TaskRun notification presentation
 
@@ -526,7 +546,7 @@ event.reportProgress({ phase: 'syncing', current, total })
 - 扫描进度。
 - 扩展安装/更新 loading 状态。
 - 自动化运行中状态。
-- 命令执行进度。
+- 长时命令 handler 创建的 task run 进度。
 
 规则：
 

@@ -108,11 +108,12 @@ Scanner 已经有比较完整的运行态：
 
 1. 任何需要进入任务中心的长时流程必须创建 `TaskRun`。
 2. `TaskRunService` 是进度、结果和完成历史的唯一事实源。
-3. 业务服务通过 `TaskRunContext` 上报进度、检查取消/暂停、提交结果。
-4. 命令执行由 `TaskRunService` 承载运行态，但 command 仍保留“动作定义”的语义。
-5. 自动化配置由 `AutomationService` 承载，自动化触发后产生 `TaskRun`，自动化历史从 `task_runs` 投影。
-6. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 AppEvents。
-7. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
+3. 创建者通过 `TaskRunHandle` 控制生命周期，通过 `TaskRunContext` 上报进度并检查取消/暂停。
+4. `TaskRunService` 不接收业务 executor，不调度业务流程。
+5. `CommandService` 不自动创建或转发 TaskRun；长时 command handler 自己创建 TaskRun。
+6. 自动化配置由 `AutomationService` 承载，自动化触发 command；若实际 handler 创建 TaskRun，自动化历史从 `task_runs` 投影。
+7. 高频进度流使用 `task-run:*` IPC 和 renderer store，不使用 AppEvents。
+8. notify 只订阅 task run 变化生成可关闭 toast，不作为业务状态源。
 
 ## 目标
 
@@ -123,7 +124,7 @@ Scanner 已经有比较完整的运行态：
 - 持久化完成历史，避免完成后只能看 toast。
 - 清理 renderer 中的长时循环和散落 loading toast。
 - 将旧 `BackgroundTaskService` 重命名并重塑为自动化配置服务。
-- 让命令系统、扫描器、扩展安装、批量更新都接入同一运行时。
+- 让长时命令 handler、扫描器、扩展安装、批量更新都接入同一运行时。
 - 保持服务边界清晰，不引入一个 import 所有业务服务的中央协调器。
 
 ## 非目标
@@ -141,8 +142,9 @@ Scanner 已经有比较完整的运行态：
 
 ```text
 CommandService
-  owns command registry and command execution semantics
-  uses TaskRunService for run state
+  owns command registry and invocation semantics
+  does not create or forward TaskRun
+  long-running handlers create TaskRun themselves
 
 AutomationService
   owns persistent schedules and failure policy

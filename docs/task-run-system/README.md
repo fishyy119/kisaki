@@ -30,8 +30,8 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 目标架构：
 
 ```text
-业务服务/命令/自动化/扩展操作
-  -> TaskRunService 创建和更新运行实例
+长时业务函数/扫描/导入/扩展包操作/长时命令 handler
+  -> TaskRunService create 运行实例
   -> task-run:* IPC 推送和查询快照
   -> renderer task-run store
   -> 任务中心 Dialog 展示进行中和已完成
@@ -40,7 +40,9 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 重要边界：
 
 - `TaskRunService` 不 import scanner、ingest、extension、command 等业务服务。
-- 业务服务显式创建 task run，并通过 `TaskRunContext` 上报进度。
+- 业务服务显式创建 task run，通过 `TaskRunHandle` 结束生命周期，并通过 `TaskRunContext` 上报执行期进度。
+- `TaskRunService` 不接收业务 executor，不调度业务流程。
+- `CommandService` 不自动创建或转发 task run；长时 command handler 自己创建 task run。
 - 高频进度不走 AppEvents，只走 IPC/store 状态。
 - notify 是任务状态的一种 presentation，不是任务状态源。
 - 暂停/继续是协作式能力，不试图强行暂停任意 Promise。
@@ -51,20 +53,26 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 
 目标命名：
 
-| 当前概念                | 目标概念               | 说明                           |
-| ----------------------- | ---------------------- | ------------------------------ |
-| `CommandService`        | `CommandService`       | 保留，定义和执行命令。         |
-| `BackgroundTaskService` | `AutomationService`    | 持久自动化配置和调度。         |
-| command execution       | `TaskRun` backed run   | 命令执行是一类 task run。      |
-| scanner active progress | `TaskRun`              | 扫描运行态进入 task run。      |
-| extension package op    | `TaskRun`              | 安装/更新/导入包操作进入中心。 |
-| renderer notify loading | `TaskRun` presentation | 长时流程状态不再散落在 toast。 |
+| 当前概念                | 目标概念               | 说明                             |
+| ----------------------- | ---------------------- | -------------------------------- |
+| `CommandService`        | `CommandService`       | 保留，定义和调用命令。           |
+| `BackgroundTaskService` | `AutomationService`    | 持久自动化配置和调度。           |
+| long command handler    | `TaskRun` producer     | 长时命令的实际函数自行创建 run。 |
+| scanner active progress | `TaskRun`              | 扫描运行态进入 task run。        |
+| extension package op    | `TaskRun`              | 安装/更新/导入包操作进入中心。   |
+| renderer notify loading | `TaskRun` presentation | 长时流程状态不再散落在 toast。   |
 
 UI 文案：
 
 - `任务中心`: 显示所有正在运行和已完成的长时执行实例。
 - `自动化`: 管理定时、启动时、手动触发的持久规则。
 - `命令`: 可被用户、扩展或自动化调用的动作。
+
+不使用 `Activity` 命名：
+
+- `Activity` 更像通用活动流，容易吸纳普通日志、审计、最近操作和通知。
+- 当前边界是长时执行实例，`TaskRun` 更准确。
+- UI 叫“任务中心”时，`TaskRun` 和产品语义一致。
 
 ## 最终心智模型
 
