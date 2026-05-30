@@ -117,7 +117,7 @@ export async function resolveAdvancedTab(
       {
         id: 'clear-credentials',
         label: '清除凭据',
-        description: '删除 Bangumi token、登录会话和账号摘要，不影响设置、同步状态或后台任务',
+        description: '删除 Bangumi token、登录会话和账号摘要，不影响设置、同步状态或自动化',
         content: [
           scope.ui.button({
             id: 'clear-credentials',
@@ -146,7 +146,7 @@ export async function resolveAdvancedTab(
       {
         id: 'clear-sync-state',
         label: '清除同步状态',
-        description: '删除同步 fingerprint 和待同步队列，不删除主应用后台任务或历史记录',
+        description: '删除同步 fingerprint 和待同步队列，不删除主应用自动化或历史记录',
         content: [
           scope.ui.button({
             id: 'clear-sync-state',
@@ -178,7 +178,7 @@ export async function resolveAdvancedTab(
       {
         id: 'restore-defaults',
         label: '恢复默认设置',
-        description: '只重置设置，不删除 token、同步状态或后台任务',
+        description: '只重置设置，不删除 token、同步状态或自动化',
         content: [
           scope.ui.button({
             id: 'restore-defaults',

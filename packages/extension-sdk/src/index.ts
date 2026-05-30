@@ -32,7 +32,7 @@ export const kisaki: KisakiApi = {
   get commands() {
     return getExtensionSdkBridge().api.commands
   },
-  get backgroundTasks() {
-    return getExtensionSdkBridge().api.backgroundTasks
+  get automations() {
+    return getExtensionSdkBridge().api.automations
   }
 }

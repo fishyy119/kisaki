@@ -356,49 +356,43 @@ export function createKisakiApi(
           })
         ).result
     },
-    backgroundTasks: {
-      list: async () => (await requestMain('capabilities.backgroundTasks.list', {})).items,
-      get: async (taskId) =>
+    automations: {
+      list: async () => (await requestMain('capabilities.automations.list', {})).items,
+      get: async (automationId) =>
         (
-          await requestMain('capabilities.backgroundTasks.get', {
-            taskId
+          await requestMain('capabilities.automations.get', {
+            automationId
           })
-        ).task,
+        ).automation,
       create: async (input) =>
         (
-          await requestMain('capabilities.backgroundTasks.create', {
+          await requestMain('capabilities.automations.create', {
             input
           })
-        ).task,
-      update: async (taskId, patch) =>
+        ).automation,
+      update: async (automationId, patch) =>
         (
-          await requestMain('capabilities.backgroundTasks.update', {
-            taskId,
+          await requestMain('capabilities.automations.update', {
+            automationId,
             patch
           })
-        ).task,
-      setEnabled: async (taskId, enabled) =>
+        ).automation,
+      setEnabled: async (automationId, enabled) =>
         (
-          await requestMain('capabilities.backgroundTasks.setEnabled', {
-            taskId,
+          await requestMain('capabilities.automations.setEnabled', {
+            automationId,
             enabled
           })
-        ).task,
-      delete: async (taskId) => {
-        await requestMain('capabilities.backgroundTasks.delete', { taskId })
+        ).automation,
+      delete: async (automationId) => {
+        await requestMain('capabilities.automations.delete', { automationId })
       },
-      run: async (taskId) =>
+      run: async (automationId) =>
         (
-          await requestMain('capabilities.backgroundTasks.run', {
-            taskId
+          await requestMain('capabilities.automations.run', {
+            automationId
           })
-        ).record,
-      cancel: async (taskId) =>
-        (
-          await requestMain('capabilities.backgroundTasks.cancel', {
-            taskId
-          })
-        ).cancelled
+        ).record
     }
   }
 }
@@ -434,8 +428,8 @@ export function createScopeCapturingKisakiApi(
     get commands() {
       return getApi().commands
     },
-    get backgroundTasks() {
-      return getApi().backgroundTasks
+    get automations() {
+      return getApi().automations
     }
   }
 }

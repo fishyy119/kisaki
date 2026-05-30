@@ -7,7 +7,7 @@
  */
 
 import type { AppLocale } from '../locale'
-import type { BackgroundTaskRunRecord } from '../background-task'
+import type { AutomationRunHistoryRecord } from '../automation'
 import type {
   LibraryCharacterCreatedEvent,
   LibraryCharacterDeletedEvent,
@@ -88,18 +88,18 @@ export interface AppEvents {
   'scanner.started': [{ scannerId: string; scannerName: string }]
   'scanner.finished': [ScannerFinishedEvent]
 
-  // Background task events
-  'backgroundTask.changed': [{ taskId: string }]
-  'backgroundTask.deleted': [{ taskId: string }]
-  'backgroundTask.started': [
+  // Automation events
+  'automation.changed': [{ automationId: string }]
+  'automation.deleted': [{ automationId: string }]
+  'automation.started': [
     {
-      taskId: string
+      automationId: string
       commandId: string
-      trigger: BackgroundTaskRunRecord['trigger']
+      trigger: AutomationRunHistoryRecord['trigger']
       startedAt: number
     }
   ]
-  'backgroundTask.finished': [BackgroundTaskRunRecord]
+  'automation.finished': [AutomationRunHistoryRecord]
 
   // Application events
   'app.ready': []

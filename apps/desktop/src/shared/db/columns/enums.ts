@@ -13,6 +13,7 @@ import {
   SCANNER_PARALLEL_COUNT_MAX,
   SCANNER_PARALLEL_COUNT_MIN
 } from '../contracts/constants'
+import type { AutomationCommandInvocationStatus } from '../../automation'
 import {
   EXTENSION_INSTALL_REASON_VALUES,
   EXTENSION_REPOSITORY_STATE_VALUES,
@@ -170,11 +171,11 @@ export const sectionOpenMode = createEnumType(SECTION_OPEN_MODE_VALUES, 'page', 
 const SORT_DIRECTION_VALUES = ['asc', 'desc'] as const
 export const sortDirection = createEnumType(SORT_DIRECTION_VALUES, 'asc', 'sortDirection')
 
-const BACKGROUND_TASK_CREATED_BY_VALUES = ['user', 'extension'] as const
-export const backgroundTaskCreatedBy = createEnumType(
-  BACKGROUND_TASK_CREATED_BY_VALUES,
-  'user',
-  'backgroundTaskCreatedBy'
+const AUTOMATION_COMMAND_INVOCATION_STATUS_VALUES = ['completed', 'failed'] as const
+export const automationCommandInvocationStatus = createEnumType<AutomationCommandInvocationStatus>(
+  AUTOMATION_COMMAND_INVOCATION_STATUS_VALUES,
+  'completed',
+  'automationCommandInvocationStatus'
 )
 
 export const extensionRepositoryState = createEnumType<ExtensionRepositoryState>(

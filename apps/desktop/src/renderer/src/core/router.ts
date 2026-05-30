@@ -27,8 +27,8 @@ import {
 // Scanner page
 import { ScannerPage } from '@renderer/features/scanner'
 
-// Background task page
-import { BackgroundTaskPage } from '@renderer/features/background-task'
+// Automation page
+import { AutomationPage } from '@renderer/features/automation'
 
 // Extension page
 import {
@@ -171,11 +171,11 @@ const routes: RouteRecordRaw[] = [
     name: 'scanner',
     component: ScannerPage
   },
-  // Background tasks
+  // automations
   {
-    path: '/background-task',
-    name: 'background-task',
-    component: BackgroundTaskPage
+    path: '/automation',
+    name: 'automation',
+    component: AutomationPage
   },
   // Extension
   {

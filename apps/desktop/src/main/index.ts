@@ -23,7 +23,7 @@ import { NotifyService } from './services/notify'
 import { DeeplinkService } from './services/deeplink'
 import { UpdaterService } from './services/updater'
 import { CommandService } from './services/command'
-import { BackgroundTaskService } from './services/background-task'
+import { AutomationService } from './services/automation'
 import { TaskRunService } from './services/task-run'
 
 // Bootstrap (pre-ready modules)
@@ -120,7 +120,7 @@ async function onAppReady(): Promise<void> {
   await container.register(new TaskRunService())
   await container.register(new UpdaterService())
   await container.register(new CommandService())
-  await container.register(new BackgroundTaskService())
+  await container.register(new AutomationService())
   await container.register(new NativeService())
   await container.register(new I18nService())
   await container.register(new ScraperService())

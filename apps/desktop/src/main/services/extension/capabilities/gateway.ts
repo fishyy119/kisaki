@@ -1,5 +1,5 @@
 import { createUnavailableError, type ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
-import type { BackgroundTaskService } from '@main/services/background-task'
+import type { AutomationService } from '@main/services/automation'
 import type { CommandService } from '@main/services/command'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
@@ -8,7 +8,7 @@ import type { NetworkService } from '@main/services/network'
 import type { NotifyService } from '@main/services/notify'
 import type { ScraperService } from '@main/services/scraper'
 import type { ExtensionHostRpcClient } from '../runtime'
-import { ExtensionBackgroundTasksCapabilityProvider } from './background-tasks'
+import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
 import { ExtensionEventsCapabilityProvider } from './events'
 import { ExtensionIngestCapabilityProvider } from './ingest'
@@ -19,7 +19,7 @@ import { ExtensionRuntimeCapabilityProvider } from './runtime'
 import { ExtensionScrapersCapabilityProvider } from './scrapers'
 
 export interface ExtensionCapabilityGatewayOptions {
-  backgroundTask: BackgroundTaskService
+  automation: AutomationService
   command: CommandService
   db: DbService
   event: EventService
@@ -39,7 +39,7 @@ export class ExtensionCapabilityGateway {
   readonly scrapers: ExtensionScrapersCapabilityProvider
   readonly ingest: ExtensionIngestCapabilityProvider
   readonly commands: ExtensionCommandsCapabilityProvider
-  readonly backgroundTasks: ExtensionBackgroundTasksCapabilityProvider
+  readonly automations: ExtensionAutomationsCapabilityProvider
 
   constructor(options: ExtensionCapabilityGatewayOptions) {
     this.library = new ExtensionLibraryCapabilityProvider({
@@ -73,8 +73,8 @@ export class ExtensionCapabilityGateway {
       command: options.command,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
-    this.backgroundTasks = new ExtensionBackgroundTasksCapabilityProvider({
-      backgroundTask: options.backgroundTask,
+    this.automations = new ExtensionAutomationsCapabilityProvider({
+      automation: options.automation,
       command: options.command,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
@@ -171,50 +171,41 @@ export class ExtensionCapabilityGateway {
       result: await this.commands.invoke(runtimeHandle, request)
     }))
 
-    rpc.handleHostRequest('capabilities.backgroundTasks.list', async ({ runtimeHandle }) => ({
-      items: this.backgroundTasks.list(runtimeHandle)
+    rpc.handleHostRequest('capabilities.automations.list', async ({ runtimeHandle }) => ({
+      items: this.automations.list(runtimeHandle)
     }))
     rpc.handleHostRequest(
-      'capabilities.backgroundTasks.get',
-      async ({ runtimeHandle, taskId }) => ({
-        task: this.backgroundTasks.get(runtimeHandle, taskId)
+      'capabilities.automations.get',
+      async ({ runtimeHandle, automationId }) => ({
+        automation: this.automations.get(runtimeHandle, automationId)
+      })
+    )
+    rpc.handleHostRequest('capabilities.automations.create', async ({ runtimeHandle, input }) => ({
+      automation: await this.automations.create(runtimeHandle, input)
+    }))
+    rpc.handleHostRequest(
+      'capabilities.automations.update',
+      async ({ runtimeHandle, automationId, patch }) => ({
+        automation: await this.automations.update(runtimeHandle, automationId, patch)
       })
     )
     rpc.handleHostRequest(
-      'capabilities.backgroundTasks.create',
-      async ({ runtimeHandle, input }) => ({
-        task: await this.backgroundTasks.create(runtimeHandle, input)
+      'capabilities.automations.setEnabled',
+      async ({ runtimeHandle, automationId, enabled }) => ({
+        automation: await this.automations.setEnabled(runtimeHandle, automationId, enabled)
       })
     )
     rpc.handleHostRequest(
-      'capabilities.backgroundTasks.update',
-      async ({ runtimeHandle, taskId, patch }) => ({
-        task: await this.backgroundTasks.update(runtimeHandle, taskId, patch)
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.backgroundTasks.setEnabled',
-      async ({ runtimeHandle, taskId, enabled }) => ({
-        task: await this.backgroundTasks.setEnabled(runtimeHandle, taskId, enabled)
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.backgroundTasks.delete',
-      async ({ runtimeHandle, taskId }) => {
-        await this.backgroundTasks.delete(runtimeHandle, taskId)
+      'capabilities.automations.delete',
+      async ({ runtimeHandle, automationId }) => {
+        await this.automations.delete(runtimeHandle, automationId)
         return {}
       }
     )
     rpc.handleHostRequest(
-      'capabilities.backgroundTasks.run',
-      async ({ runtimeHandle, taskId }) => ({
-        record: await this.backgroundTasks.run(runtimeHandle, taskId)
-      })
-    )
-    rpc.handleHostRequest(
-      'capabilities.backgroundTasks.cancel',
-      async ({ runtimeHandle, taskId }) => ({
-        cancelled: this.backgroundTasks.cancel(runtimeHandle, taskId)
+      'capabilities.automations.run',
+      async ({ runtimeHandle, automationId }) => ({
+        record: await this.automations.run(runtimeHandle, automationId)
       })
     )
   }

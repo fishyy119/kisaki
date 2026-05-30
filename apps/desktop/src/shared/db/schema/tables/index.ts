@@ -1,4 +1,5 @@
-export * from './background-task'
+export * from './automation-run-history'
+export * from './automations'
 export * from './collections'
 export * from './content'
 export * from './extension'

@@ -54,7 +54,7 @@ export class ExtensionService implements IService {
     'scraper',
     'ingest',
     'command',
-    'background-task',
+    'automation',
     'deeplink'
   ] as const satisfies readonly ServiceName[]
 
@@ -134,7 +134,7 @@ export class ExtensionService implements IService {
     await this.repositories.init()
 
     this.capabilities = new ExtensionCapabilityGateway({
-      backgroundTask: container.get('background-task'),
+      automation: container.get('automation'),
       command: container.get('command'),
       db: container.get('db'),
       event: container.get('event'),

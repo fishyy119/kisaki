@@ -1,4 +1,4 @@
-export * from './background-task'
+export * from './automation'
 export * from './collection'
 export * from './extension'
 export * from './filter'

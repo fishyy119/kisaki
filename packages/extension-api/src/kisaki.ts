@@ -1,4 +1,4 @@
-import type { BackgroundTasksCapability } from './capabilities/background-tasks'
+import type { AutomationsCapability } from './capabilities/automations'
 import type { CommandsCapability } from './capabilities/commands'
 import type { EventsCapability } from './capabilities/events'
 import type { IngestCapability } from './capabilities/ingest'
@@ -17,5 +17,5 @@ export interface KisakiApi {
   readonly scrapers: ScrapersCapability
   readonly ingest: IngestCapability
   readonly commands: CommandsCapability
-  readonly backgroundTasks: BackgroundTasksCapability
+  readonly automations: AutomationsCapability
 }

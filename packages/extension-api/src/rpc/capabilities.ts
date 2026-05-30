@@ -1,10 +1,10 @@
 import type { HostEventTopic, HostEvents } from '../capabilities/events'
 import type {
-  BackgroundTask,
-  BackgroundTaskCreateInput,
-  BackgroundTaskRunRecord,
-  BackgroundTaskUpdateInput
-} from '../capabilities/background-tasks'
+  Automation,
+  AutomationCreateInput,
+  AutomationRunHistoryRecord,
+  AutomationUpdateInput
+} from '../capabilities/automations'
 import type {
   CommandDescriptor,
   CommandInvocationResult,
@@ -118,34 +118,30 @@ export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParam
   options?: IngestAddGameFromScraperOptions
 }
 
-export interface BackgroundTaskCreateRequest extends ExtensionScopedRpcParams {
-  input: BackgroundTaskCreateInput
+export interface AutomationCreateRequest extends ExtensionScopedRpcParams {
+  input: AutomationCreateInput
 }
 
-export interface BackgroundTaskGetRequest extends ExtensionScopedRpcParams {
-  taskId: string
+export interface AutomationGetRequest extends ExtensionScopedRpcParams {
+  automationId: string
 }
 
-export interface BackgroundTaskUpdateRequest extends ExtensionScopedRpcParams {
-  taskId: string
-  patch: BackgroundTaskUpdateInput
+export interface AutomationUpdateRequest extends ExtensionScopedRpcParams {
+  automationId: string
+  patch: AutomationUpdateInput
 }
 
-export interface BackgroundTaskSetEnabledRequest extends ExtensionScopedRpcParams {
-  taskId: string
+export interface AutomationSetEnabledRequest extends ExtensionScopedRpcParams {
+  automationId: string
   enabled: boolean
 }
 
-export interface BackgroundTaskDeleteRequest extends ExtensionScopedRpcParams {
-  taskId: string
+export interface AutomationDeleteRequest extends ExtensionScopedRpcParams {
+  automationId: string
 }
 
-export interface BackgroundTaskRunRequest extends ExtensionScopedRpcParams {
-  taskId: string
-}
-
-export interface BackgroundTaskCancelRequest extends ExtensionScopedRpcParams {
-  taskId: string
+export interface AutomationRunRequest extends ExtensionScopedRpcParams {
+  automationId: string
 }
 
 export type LibraryEntityRpcRequestMap<TPrefix extends string, TEntity, TCreate, TPatch, TQuery> = {
@@ -241,37 +237,30 @@ export type HostToMainCapabilityRpcRequestMap = {
     CommandInvocationRpcRequest,
     { result: CommandInvocationResult }
   >
-  'capabilities.backgroundTasks.list': RpcMethodDefinition<
+  'capabilities.automations.list': RpcMethodDefinition<
     ExtensionScopedRpcParams,
-    { items: readonly BackgroundTask[] }
+    { items: readonly Automation[] }
   >
-  'capabilities.backgroundTasks.get': RpcMethodDefinition<
-    BackgroundTaskGetRequest,
-    { task: BackgroundTask | null }
+  'capabilities.automations.get': RpcMethodDefinition<
+    AutomationGetRequest,
+    { automation: Automation | null }
   >
-  'capabilities.backgroundTasks.create': RpcMethodDefinition<
-    BackgroundTaskCreateRequest,
-    { task: BackgroundTask }
+  'capabilities.automations.create': RpcMethodDefinition<
+    AutomationCreateRequest,
+    { automation: Automation }
   >
-  'capabilities.backgroundTasks.update': RpcMethodDefinition<
-    BackgroundTaskUpdateRequest,
-    { task: BackgroundTask }
+  'capabilities.automations.update': RpcMethodDefinition<
+    AutomationUpdateRequest,
+    { automation: Automation }
   >
-  'capabilities.backgroundTasks.setEnabled': RpcMethodDefinition<
-    BackgroundTaskSetEnabledRequest,
-    { task: BackgroundTask }
+  'capabilities.automations.setEnabled': RpcMethodDefinition<
+    AutomationSetEnabledRequest,
+    { automation: Automation }
   >
-  'capabilities.backgroundTasks.delete': RpcMethodDefinition<
-    BackgroundTaskDeleteRequest,
-    RpcNoPayload
-  >
-  'capabilities.backgroundTasks.run': RpcMethodDefinition<
-    BackgroundTaskRunRequest,
-    { record: BackgroundTaskRunRecord }
-  >
-  'capabilities.backgroundTasks.cancel': RpcMethodDefinition<
-    BackgroundTaskCancelRequest,
-    { cancelled: boolean }
+  'capabilities.automations.delete': RpcMethodDefinition<AutomationDeleteRequest, RpcNoPayload>
+  'capabilities.automations.run': RpcMethodDefinition<
+    AutomationRunRequest,
+    { record: AutomationRunHistoryRecord | null }
   >
   'capabilities.events.subscribeHost': RpcMethodDefinition<
     HostEventSubscriptionRequest,

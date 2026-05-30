@@ -107,11 +107,11 @@ import type {
   CommandListItem
 } from './command'
 import type {
-  BackgroundTask,
-  BackgroundTaskCreateInput,
-  BackgroundTaskRunRecord,
-  BackgroundTaskUpdateInput
-} from './background-task'
+  Automation,
+  AutomationCreateInput,
+  AutomationRunHistoryRecord,
+  AutomationUpdateInput
+} from './automation'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import type {
   DeeplinkResult,
@@ -223,19 +223,16 @@ export interface IpcMainHandlers {
   'command:get': (commandId: string) => IpcResult<CommandDescriptor | null>
   'command:invoke': (request: CommandInvocationRequest) => IpcResult<CommandInvocationResult>
 
-  // Background tasks
-  'background-task:list': () => IpcResult<BackgroundTask[]>
-  'background-task:list-running': () => IpcResult<string[]>
-  'background-task:get': (taskId: string) => IpcResult<BackgroundTask | null>
-  'background-task:create': (input: BackgroundTaskCreateInput) => IpcResult<BackgroundTask>
-  'background-task:update': (
-    taskId: string,
-    patch: BackgroundTaskUpdateInput
-  ) => IpcResult<BackgroundTask>
-  'background-task:set-enabled': (taskId: string, enabled: boolean) => IpcResult<BackgroundTask>
-  'background-task:delete': (taskId: string) => IpcVoidResult
-  'background-task:run': (taskId: string) => IpcResult<BackgroundTaskRunRecord>
-  'background-task:cancel': (taskId: string) => IpcResult<boolean>
+  // automations
+  'automation:list': () => IpcResult<Automation[]>
+  'automation:list-running': () => IpcResult<string[]>
+  'automation:get': (automationId: string) => IpcResult<Automation | null>
+  'automation:create': (input: AutomationCreateInput) => IpcResult<Automation>
+  'automation:update': (automationId: string, patch: AutomationUpdateInput) => IpcResult<Automation>
+  'automation:set-enabled': (automationId: string, enabled: boolean) => IpcResult<Automation>
+  'automation:delete': (automationId: string) => IpcVoidResult
+  'automation:run': (automationId: string) => IpcResult<AutomationRunHistoryRecord | null>
+  'automation:cancel': (automationId: string) => IpcResult<boolean>
 
   // Debug mode
   'debug:get-mode': () => IpcResult<boolean>
