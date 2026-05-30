@@ -1,12 +1,8 @@
 import {
   createUnavailableError,
   type CommandDescriptor,
-  type CommandExecutionProgress,
-  type CommandExecutionPresentation,
-  type CommandExecutionRequest,
-  type CommandExecutionResult,
-  type CommandExecutionSource,
-  type CommandExecutionStartResult,
+  type CommandInvocationRequest,
+  type CommandInvocationResult,
   type CommandListItem,
   type ExtensionRuntimeMetadata,
   type SerializableRecord,
@@ -15,10 +11,7 @@ import {
 import type { CommandService } from '@main/services/command'
 import type {
   CommandDescriptor as AppCommandDescriptor,
-  CommandExecutionProgress as AppCommandExecutionProgress,
-  CommandExecutionPresentation as AppCommandExecutionPresentation,
-  CommandExecutionResult as AppCommandExecutionResult,
-  CommandExecutionSource as AppCommandExecutionSource,
+  CommandInvocationResult as AppCommandInvocationResult,
   CommandListItem as AppCommandListItem
 } from '@shared/command'
 
@@ -41,39 +34,25 @@ export class ExtensionCommandsCapabilityProvider {
     return command ? toPublicCommandDescriptor(command) : null
   }
 
-  start(runtimeHandle: string, request: CommandExecutionRequest): CommandExecutionStartResult {
+  async invoke(
+    runtimeHandle: string,
+    request: CommandInvocationRequest
+  ): Promise<CommandInvocationResult> {
     const metadata = this.requireRuntime(runtimeHandle)
     this.assertCommandCallable(metadata, request.commandId)
-    return this.options.command.executions.start({
-      commandId: request.commandId,
-      args: request.args,
-      source: { kind: 'extension', extensionId: metadata.id, commandId: request.commandId },
-      presentation: toAppCommandExecutionPresentation(request.presentation)
-    })
-  }
-
-  async wait(runtimeHandle: string, executionId: string): Promise<CommandExecutionResult> {
-    this.requireRuntime(runtimeHandle)
-    return toPublicCommandExecutionResult(await this.options.command.executions.wait(executionId))
-  }
-
-  getProgress(runtimeHandle: string, executionId: string): CommandExecutionProgress | null {
-    this.requireRuntime(runtimeHandle)
-    const progress = this.options.command.executions.getProgress(executionId)
-    return progress ? toPublicCommandExecutionProgress(progress) : null
-  }
-
-  async execute(
-    runtimeHandle: string,
-    request: CommandExecutionRequest
-  ): Promise<CommandExecutionResult> {
-    const started = this.start(runtimeHandle, request)
-    return this.wait(runtimeHandle, started.executionId)
-  }
-
-  cancel(runtimeHandle: string, executionId: string): boolean {
-    this.requireRuntime(runtimeHandle)
-    return this.options.command.executions.cancel(executionId)
+    return toPublicCommandInvocationResult(
+      await this.options.command.invoke({
+        commandId: request.commandId,
+        args: request.args,
+        source: {
+          type: 'extension',
+          extension: {
+            id: metadata.id,
+            nameSnapshot: metadata.name
+          }
+        }
+      })
+    )
   }
 
   releaseRuntime(_runtimeHandle: string): void {}
@@ -102,10 +81,7 @@ export class ExtensionCommandsCapabilityProvider {
 }
 
 function toPublicCommandListItem(command: AppCommandListItem): CommandListItem {
-  return {
-    ...toPublicCommandDescriptor(command),
-    state: command.state
-  }
+  return toPublicCommandDescriptor(command)
 }
 
 function toPublicCommandDescriptor(command: AppCommandDescriptor): CommandDescriptor {
@@ -116,69 +92,19 @@ function toPublicCommandDescriptor(command: AppCommandDescriptor): CommandDescri
     argsSchema: toOptionalPublicSerializableRecord(command.argsSchema),
     defaultArgs: toOptionalPublicSerializableRecord(command.defaultArgs),
     dangerLevel: command.dangerLevel,
-    cancelable: command.cancelable,
-    ownerExtensionId: command.ownerExtensionId,
-    notification: command.notification
+    ownerExtensionId: command.ownerExtensionId
   }
 }
 
-function toAppCommandExecutionPresentation(
-  presentation: CommandExecutionPresentation | undefined
-): AppCommandExecutionPresentation | undefined {
-  if (!presentation) {
-    return undefined
-  }
-
-  return {
-    notify: presentation.notify
-      ? {
-          enabled: presentation.notify.enabled,
-          title: presentation.notify.title,
-          message: presentation.notify.message,
-          cancelable: presentation.notify.cancelable
-        }
-      : undefined
-  }
-}
-
-function toPublicCommandExecutionResult(result: AppCommandExecutionResult): CommandExecutionResult {
+function toPublicCommandInvocationResult(
+  result: AppCommandInvocationResult
+): CommandInvocationResult {
   return {
     commandId: result.commandId,
-    executionId: result.executionId,
-    startedAt: result.startedAt,
-    finishedAt: result.finishedAt,
-    status: result.status,
     output:
       result.output === undefined
         ? undefined
-        : toPublicSerializableValue(result.output, 'command output'),
-    error: result.error
-  }
-}
-
-function toPublicCommandExecutionProgress(
-  progress: AppCommandExecutionProgress
-): CommandExecutionProgress {
-  return {
-    commandId: progress.commandId,
-    executionId: progress.executionId,
-    state: progress.state,
-    source: toPublicCommandExecutionSource(progress.source),
-    updatedAt: progress.updatedAt,
-    phase: progress.phase,
-    message: progress.message,
-    current: progress.current,
-    total: progress.total,
-    indeterminate: progress.indeterminate
-  }
-}
-
-function toPublicCommandExecutionSource(source: AppCommandExecutionSource): CommandExecutionSource {
-  return {
-    kind: source.kind,
-    extensionId: source.extensionId,
-    commandId: source.commandId,
-    taskId: source.taskId
+        : toPublicSerializableValue(result.output, 'command output')
   }
 }
 

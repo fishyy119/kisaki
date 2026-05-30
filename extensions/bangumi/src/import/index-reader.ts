@@ -1,4 +1,3 @@
-import type { CommandContributionExecuteEvent } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiIndex, BangumiIndexSubject } from '../api/types'
@@ -7,14 +6,14 @@ import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
 export interface IndexReaderOptions {
   indexId: number
   scope: BangumiMediaScope
-  event: CommandContributionExecuteEvent
+  event: { signal: AbortSignal }
   report?: (phase: string, message: string) => void
 }
 
 export class IndexReader {
   constructor(private readonly client: BangumiClient) {}
 
-  readIndex(indexId: number, event: CommandContributionExecuteEvent): Promise<BangumiIndex> {
+  readIndex(indexId: number, event: { signal: AbortSignal }): Promise<BangumiIndex> {
     return this.client.getIndex(indexId, { signal: event.signal })
   }
 

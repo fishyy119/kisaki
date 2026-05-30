@@ -1,5 +1,5 @@
 <!--
-Background Task Form Dialog creates and edits triggered command executions.
+Background Task Form Dialog creates and edits triggered command invocations.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'

@@ -1,4 +1,3 @@
-import type { CommandContributionExecuteEvent } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiCollectionType, BangumiUserCollection } from '../api/types'
@@ -10,7 +9,7 @@ export interface CollectionReaderOptions {
   username: string
   scope: BangumiMediaScope
   collectionTypes: readonly BangumiCollectionType[]
-  event: CommandContributionExecuteEvent
+  event: { signal: AbortSignal }
   report?: (phase: string, message: string) => void
 }
 

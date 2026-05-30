@@ -1,5 +1,5 @@
 import type {
-  CommandExecutionResult,
+  CommandInvocationResult,
   EmptySettingsPanelPopoverMap,
   SerializableRecord,
   SettingsPanelDialogButtonClickEvent,
@@ -22,20 +22,12 @@ export type BangumiSettingsDialogSubmitResult = SettingsPanelDialogSubmitResult
 
 export type BangumiPreviewKey = 'sync.full' | 'import.myCollections' | 'import.index'
 
-export type ResolvedPreviewResult = RunningPreviewResult | CompletedPreviewResult
-
-export interface RunningPreviewResult {
-  state: 'running'
-  args: SerializableRecord
-  commandId: string
-  executionId: string
-  startedAt: number
-}
+export type ResolvedPreviewResult = CompletedPreviewResult
 
 export interface CompletedPreviewResult {
   state: 'completed'
   args: SerializableRecord
-  result: CommandExecutionResult
+  result: CommandInvocationResult
 }
 
 export interface BangumiPreviewLink extends SerializableRecord {

@@ -101,10 +101,9 @@ import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type { TaskRun, TaskRunActiveListQuery, TaskRunHistoryListQuery } from './task-run'
 import type {
-  CommandExecutionProgress,
-  CommandExecutionRequest,
-  CommandExecutionResult,
-  CommandExecutionStartResult,
+  CommandDescriptor,
+  CommandInvocationRequest,
+  CommandInvocationResult,
   CommandListItem
 } from './command'
 import type {
@@ -221,11 +220,8 @@ export interface IpcMainHandlers {
 
   // Commands
   'command:list': () => IpcResult<CommandListItem[]>
-  'command:start': (request: CommandExecutionRequest) => IpcResult<CommandExecutionStartResult>
-  'command:wait': (executionId: string) => IpcResult<CommandExecutionResult>
-  'command:get-progress': (executionId: string) => IpcResult<CommandExecutionProgress | null>
-  'command:execute': (request: CommandExecutionRequest) => IpcResult<CommandExecutionResult>
-  'command:cancel': (executionId: string) => IpcResult<boolean>
+  'command:get': (commandId: string) => IpcResult<CommandDescriptor | null>
+  'command:invoke': (request: CommandInvocationRequest) => IpcResult<CommandInvocationResult>
 
   // Background tasks
   'background-task:list': () => IpcResult<BackgroundTask[]>
@@ -542,9 +538,6 @@ export interface IpcRendererEvents {
   'monitor:game-background': [string]
   'scanner:scan-progress': [ScanProgressData]
   'updater:state-changed': [state: AppUpdaterState]
-  'command:started': [started: CommandExecutionStartResult]
-  'command:progress': [progress: CommandExecutionProgress]
-  'command:finished': [result: CommandExecutionResult]
   'task-run:changed': [run: TaskRun]
   'task-run:deleted': [payload: { runId: string }]
 

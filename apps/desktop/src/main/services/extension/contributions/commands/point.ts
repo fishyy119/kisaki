@@ -1,5 +1,4 @@
 import type {
-  CommandExecutionProgressUpdate,
   CommandContributionRegistrationInfo,
   ExtensionRuntimeHandle,
   SerializableRecord,
@@ -53,22 +52,12 @@ export class ExtensionCommandContributionPoint {
       ...toCommandRegistrationInput(command),
       ownerExtensionId: owner.extension.id,
       execute: async (args, context) => {
-        const result = await this.options.requestHost(
-          'contributions.commands.execute',
-          {
-            runtimeHandle,
-            commandId: command.id,
-            executionId: context.executionId,
-            args: toPublicSerializableRecord(args, 'command args'),
-            source: {
-              kind: context.source.kind,
-              extensionId: context.source.extensionId,
-              commandId: context.source.commandId,
-              taskId: context.source.taskId
-            }
-          },
-          { signal: context.signal }
-        )
+        const result = await this.options.requestHost('contributions.commands.execute', {
+          runtimeHandle,
+          commandId: command.id,
+          args: toPublicSerializableRecord(args, 'command args'),
+          source: context.source
+        })
         return result.output
       }
     })
@@ -96,23 +85,6 @@ export class ExtensionCommandContributionPoint {
     if (scopedRegistrations.size === 0) {
       this.registrations.delete(runtimeHandle)
     }
-  }
-
-  reportProgress(
-    runtimeHandle: ExtensionRuntimeHandle,
-    commandId: string,
-    executionId: string,
-    progress: CommandExecutionProgressUpdate
-  ): void {
-    const owner = requireContributionOwner(this.options, runtimeHandle)
-    const registration = this.registrations.get(runtimeHandle)?.get(commandId)
-    if (!registration || registration.owner.extension.id !== owner.extension.id) {
-      throw new Error(
-        `Extension "${owner.extension.id}" has not registered command contribution "${commandId}".`
-      )
-    }
-
-    this.requireCommandService().executions.reportProgress(commandId, executionId, progress)
   }
 
   releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
@@ -167,9 +139,7 @@ function toCommandRegistrationInput(
     description: command.description,
     argsSchema: command.argsSchema,
     defaultArgs: command.defaultArgs,
-    dangerLevel: command.dangerLevel,
-    cancelable: command.cancelable,
-    notification: command.notification
+    dangerLevel: command.dangerLevel
   }
 }
 

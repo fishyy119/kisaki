@@ -167,27 +167,9 @@ export class ExtensionCapabilityGateway {
     rpc.handleHostRequest('capabilities.commands.get', async ({ runtimeHandle, commandId }) => ({
       command: this.commands.get(runtimeHandle, commandId)
     }))
-    rpc.handleHostRequest('capabilities.commands.start', async ({ runtimeHandle, request }) => ({
-      result: this.commands.start(runtimeHandle, request)
+    rpc.handleHostRequest('capabilities.commands.invoke', async ({ runtimeHandle, request }) => ({
+      result: await this.commands.invoke(runtimeHandle, request)
     }))
-    rpc.handleHostRequest('capabilities.commands.wait', async ({ runtimeHandle, executionId }) => ({
-      result: await this.commands.wait(runtimeHandle, executionId)
-    }))
-    rpc.handleHostRequest(
-      'capabilities.commands.getProgress',
-      async ({ runtimeHandle, executionId }) => ({
-        progress: this.commands.getProgress(runtimeHandle, executionId)
-      })
-    )
-    rpc.handleHostRequest('capabilities.commands.execute', async ({ runtimeHandle, request }) => ({
-      result: await this.commands.execute(runtimeHandle, request)
-    }))
-    rpc.handleHostRequest(
-      'capabilities.commands.cancel',
-      async ({ runtimeHandle, executionId }) => ({
-        cancelled: this.commands.cancel(runtimeHandle, executionId)
-      })
-    )
 
     rpc.handleHostRequest('capabilities.backgroundTasks.list', async ({ runtimeHandle }) => ({
       items: this.backgroundTasks.list(runtimeHandle)

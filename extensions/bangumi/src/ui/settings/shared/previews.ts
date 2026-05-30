@@ -1,6 +1,5 @@
 import {
-  type CommandExecutionResult,
-  type CommandExecutionStartResult,
+  type CommandInvocationResult,
   type SerializableRecord,
   type SettingsPanelDialogNodeEvents,
   type SettingsPanelField,
@@ -28,10 +27,6 @@ const PREVIEW_RESULT_LIMIT = 32
 
 export class PreviewResultRegistry {
   private readonly results = new Map<string, ResolvedPreviewResult>()
-  private readonly executionIndex = new Map<
-    string,
-    { sessionId: string; previewKey: BangumiPreviewKey; args: SerializableRecord }
-  >()
 
   get(
     sessionId: string,
@@ -46,57 +41,23 @@ export class PreviewResultRegistry {
     return stored
   }
 
-  start(
+  setCompleted(
     sessionId: string,
     previewKey: BangumiPreviewKey,
     args: SerializableRecord,
-    started: CommandExecutionStartResult
+    result: CommandInvocationResult
   ): void {
     this.prune()
-    const previous = this.results.get(this.createKey(sessionId, previewKey))
-    if (previous?.state === 'running') {
-      this.executionIndex.delete(previous.executionId)
-    }
-
-    this.executionIndex.set(started.executionId, { sessionId, previewKey, args })
     this.results.set(this.createKey(sessionId, previewKey), {
-      state: 'running',
+      state: 'completed',
       args,
-      commandId: started.commandId,
-      executionId: started.executionId,
-      startedAt: started.startedAt
+      result
     })
     this.enforceLimit()
   }
 
-  complete(result: CommandExecutionResult): boolean {
-    const indexed = this.executionIndex.get(result.executionId)
-    if (!indexed) {
-      return false
-    }
-
-    this.executionIndex.delete(result.executionId)
-    const key = this.createKey(indexed.sessionId, indexed.previewKey)
-    const current = this.results.get(key)
-    if (current?.state !== 'running' || current.executionId !== result.executionId) {
-      return false
-    }
-
-    this.results.set(key, {
-      state: 'completed',
-      args: indexed.args,
-      result
-    })
-    return true
-  }
-
   delete(sessionId: string, previewKey: BangumiPreviewKey): void {
-    const key = this.createKey(sessionId, previewKey)
-    const current = this.results.get(key)
-    if (current?.state === 'running') {
-      this.executionIndex.delete(current.executionId)
-    }
-    this.results.delete(key)
+    this.results.delete(this.createKey(sessionId, previewKey))
   }
 
   private createKey(sessionId: string, previewKey: BangumiPreviewKey): string {
@@ -105,14 +66,11 @@ export class PreviewResultRegistry {
 
   private prune(now = Date.now()): void {
     for (const [key, result] of [...this.results]) {
-      const createdAt = result.state === 'running' ? result.startedAt : result.result.finishedAt
+      const createdAt = readPreviewResultCreatedAt(result.result)
       if (now - createdAt <= PREVIEW_RESULT_TTL_MS) {
         continue
       }
 
-      if (result.state === 'running') {
-        this.executionIndex.delete(result.executionId)
-      }
       this.results.delete(key)
     }
   }
@@ -124,10 +82,6 @@ export class PreviewResultRegistry {
         break
       }
 
-      const result = this.results.get(oldestKey)
-      if (result?.state === 'running') {
-        this.executionIndex.delete(result.executionId)
-      }
       this.results.delete(oldestKey)
     }
   }
@@ -150,46 +104,6 @@ export function createDialogPreviewFields<TParams extends SerializableRecord = S
 }): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   if (!preview) {
     return []
-  }
-
-  if (preview.state === 'running') {
-    return [
-      {
-        id,
-        label,
-        orientation: 'vertical',
-        contentLayout: 'stack',
-        content: [
-          settings.status({
-            id: `${id}.running`,
-            label: '状态',
-            value: '正在生成预览',
-            tone: 'warning'
-          })
-        ]
-      }
-    ]
-  }
-
-  if (preview.result.status !== 'completed') {
-    return [
-      {
-        id,
-        label,
-        orientation: 'vertical',
-        contentLayout: 'stack',
-        content: [
-          settings.notice({
-            id: `${id}.failed`,
-            tone: preview.result.status === 'cancelled' ? 'warning' : 'error',
-            text:
-              preview.result.status === 'cancelled'
-                ? '预览已取消。'
-                : (preview.result.error ?? '预览生成失败。')
-          })
-        ]
-      }
-    ]
   }
 
   const groups = readPreviewGroups(preview.result)
@@ -224,12 +138,12 @@ export async function runDialogPreview(options: {
       return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
     }
 
-    const started = await startPreviewCommand(options.commandId, options.args)
-    options.previewRegistry.start(
+    const result = await startPreviewCommand(options.commandId, options.args)
+    options.previewRegistry.setCompleted(
       options.event.sessionId,
       options.previewKey,
       options.args,
-      started
+      result
     )
 
     return options.event.success({ refresh: 'dialog' })
@@ -250,12 +164,12 @@ export async function runDialogSubmitPreview(options: {
       return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
     }
 
-    const started = await startPreviewCommand(options.commandId, options.args)
-    options.previewRegistry.start(
+    const result = await startPreviewCommand(options.commandId, options.args)
+    options.previewRegistry.setCompleted(
       options.event.sessionId,
       options.previewKey,
       options.args,
-      started
+      result
     )
 
     return options.event.success({ refresh: 'dialog' })
@@ -267,15 +181,11 @@ export async function runDialogSubmitPreview(options: {
 function startPreviewCommand(
   commandId: BangumiCommandId,
   args: SerializableRecord
-): Promise<CommandExecutionStartResult> {
+): Promise<CommandInvocationResult> {
   return startBangumiCommandJob(commandId, args)
 }
 
-function readPreviewGroups(result: CommandExecutionResult): readonly BangumiPreviewGroup[] {
-  if (result.status !== 'completed') {
-    return []
-  }
-
+function readPreviewGroups(result: CommandInvocationResult): readonly BangumiPreviewGroup[] {
   const output = asPlainRecord(result.output)
   const groups = output?.previewGroups
   if (!Array.isArray(groups)) {
@@ -283,6 +193,11 @@ function readPreviewGroups(result: CommandExecutionResult): readonly BangumiPrev
   }
 
   return groups.filter(isPreviewGroup).sort(comparePreviewGroups)
+}
+
+function readPreviewResultCreatedAt(result: CommandInvocationResult): number {
+  const output = asPlainRecord(result.output)
+  return typeof output?.finishedAt === 'number' ? output.finishedAt : Date.now()
 }
 
 function summarizePreviewGroups(groups: readonly BangumiPreviewGroup[]) {

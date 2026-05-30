@@ -249,30 +249,6 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('scanner.deleted', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
         })
-      case 'command.started':
-        return this.options.event.bus.on('command.started', (started) => {
-          this.emitSubscriptionEvent(
-            subscriptionId,
-            topic,
-            cloneHostValue(started) as HostEvents['command.started']
-          )
-        })
-      case 'command.progressed':
-        return this.options.event.bus.on('command.progressed', (progress) => {
-          this.emitSubscriptionEvent(
-            subscriptionId,
-            topic,
-            cloneHostValue(progress) as HostEvents['command.progressed']
-          )
-        })
-      case 'command.finished':
-        return this.options.event.bus.on('command.finished', (result) => {
-          this.emitSubscriptionEvent(
-            subscriptionId,
-            topic,
-            cloneHostValue(result) as HostEvents['command.finished']
-          )
-        })
       case 'scanner.started':
         return this.options.event.bus.on('scanner.started', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))

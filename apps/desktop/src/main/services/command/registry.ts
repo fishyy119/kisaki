@@ -1,4 +1,4 @@
-import type { CommandDescriptor, CommandListItem, CommandListItemState } from '@shared/command'
+import type { CommandDescriptor, CommandListItem } from '@shared/command'
 import type { CommandRegistrationInput } from './types'
 
 export interface RegisteredCommand {
@@ -6,14 +6,8 @@ export interface RegisteredCommand {
   execute: CommandRegistrationInput['execute']
 }
 
-export interface CommandRegistryOptions {
-  getState(commandId: string): CommandListItemState
-}
-
 export class CommandRegistry {
   private readonly commands = new Map<string, RegisteredCommand>()
-
-  constructor(private readonly options: CommandRegistryOptions) {}
 
   register(command: CommandRegistrationInput): () => void {
     const descriptor = normalizeCommandDescriptor(command)
@@ -36,10 +30,7 @@ export class CommandRegistry {
 
   list(): CommandListItem[] {
     return [...this.commands.values()]
-      .map(({ descriptor }) => ({
-        ...descriptor,
-        state: this.options.getState(descriptor.id)
-      }))
+      .map(({ descriptor }) => descriptor)
       .sort((left, right) => left.id.localeCompare(right.id))
   }
 
@@ -74,27 +65,6 @@ function normalizeCommandDescriptor(command: CommandRegistrationInput): CommandD
     argsSchema: command.argsSchema,
     defaultArgs: command.defaultArgs,
     dangerLevel: command.dangerLevel ?? 'none',
-    cancelable: command.cancelable ?? false,
-    ownerExtensionId: command.ownerExtensionId,
-    notification: normalizeCommandNotificationTemplate(command.notification)
-  }
-}
-
-function normalizeCommandNotificationTemplate(
-  notification: CommandRegistrationInput['notification']
-): CommandDescriptor['notification'] {
-  if (!notification) {
-    return undefined
-  }
-
-  return {
-    title: notification.title,
-    startMessage: notification.startMessage,
-    successTitle: notification.successTitle,
-    successMessage: notification.successMessage,
-    cancelledTitle: notification.cancelledTitle,
-    cancelledMessage: notification.cancelledMessage,
-    failedTitle: notification.failedTitle,
-    failedMessage: notification.failedMessage
+    ownerExtensionId: command.ownerExtensionId
   }
 }

@@ -1,16 +1,4 @@
-import type {
-  CommandDescriptor,
-  CommandExecutionProgressUpdate,
-  CommandExecutionSource
-} from '@shared/command'
-
-export interface CommandExecutionContext {
-  commandId: string
-  executionId: string
-  source: CommandExecutionSource
-  signal: AbortSignal
-  reportProgress(progress: CommandExecutionProgressUpdate): void
-}
+import type { CommandDescriptor, CommandInvocationContext } from '@shared/command'
 
 export interface CommandRegistrationInput
   extends
@@ -18,6 +6,6 @@ export interface CommandRegistrationInput
     Pick<CommandDescriptor, 'id' | 'title'> {
   execute(
     args: Record<string, unknown>,
-    context: CommandExecutionContext
+    context: CommandInvocationContext
   ): Promise<unknown> | unknown
 }

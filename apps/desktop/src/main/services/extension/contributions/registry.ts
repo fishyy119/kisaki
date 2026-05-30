@@ -150,13 +150,6 @@ export class ExtensionContributionRegistry {
         return {}
       }
     )
-    rpc.handleHostRequest(
-      'contributions.commands.reportProgress',
-      async ({ runtimeHandle, commandId, executionId, progress }) => {
-        this.commands.reportProgress(runtimeHandle, commandId, executionId, progress)
-        return {}
-      }
-    )
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {

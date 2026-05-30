@@ -7,11 +7,9 @@ import type {
 } from '../capabilities/background-tasks'
 import type {
   CommandDescriptor,
-  CommandExecutionProgress,
-  CommandExecutionResult,
-  CommandExecutionStartResult,
+  CommandInvocationResult,
   CommandListItem,
-  CommandExecutionRequest
+  CommandInvocationRequest
 } from '../capabilities/commands'
 import type {
   IngestAddGameFromScraperOptions,
@@ -102,20 +100,8 @@ export interface CommandGetRequest extends ExtensionScopedRpcParams {
   commandId: string
 }
 
-export interface CommandExecutionRpcRequest extends ExtensionScopedRpcParams {
-  request: CommandExecutionRequest
-}
-
-export interface CommandWaitRequest extends ExtensionScopedRpcParams {
-  executionId: string
-}
-
-export interface CommandProgressRequest extends ExtensionScopedRpcParams {
-  executionId: string
-}
-
-export interface CommandCancelRequest extends ExtensionScopedRpcParams {
-  executionId: string
+export interface CommandInvocationRpcRequest extends ExtensionScopedRpcParams {
+  request: CommandInvocationRequest
 }
 
 export interface ScraperProfilesListRequest extends ExtensionScopedRpcParams {
@@ -251,23 +237,10 @@ export type HostToMainCapabilityRpcRequestMap = {
     CommandGetRequest,
     { command: CommandDescriptor | null }
   >
-  'capabilities.commands.start': RpcMethodDefinition<
-    CommandExecutionRpcRequest,
-    { result: CommandExecutionStartResult }
+  'capabilities.commands.invoke': RpcMethodDefinition<
+    CommandInvocationRpcRequest,
+    { result: CommandInvocationResult }
   >
-  'capabilities.commands.wait': RpcMethodDefinition<
-    CommandWaitRequest,
-    { result: CommandExecutionResult }
-  >
-  'capabilities.commands.getProgress': RpcMethodDefinition<
-    CommandProgressRequest,
-    { progress: CommandExecutionProgress | null }
-  >
-  'capabilities.commands.execute': RpcMethodDefinition<
-    CommandExecutionRpcRequest,
-    { result: CommandExecutionResult }
-  >
-  'capabilities.commands.cancel': RpcMethodDefinition<CommandCancelRequest, { cancelled: boolean }>
   'capabilities.backgroundTasks.list': RpcMethodDefinition<
     ExtensionScopedRpcParams,
     { items: readonly BackgroundTask[] }

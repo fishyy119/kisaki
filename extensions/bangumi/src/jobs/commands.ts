@@ -1,4 +1,9 @@
-import type { CommandRegistrar, Disposable, SerializableRecord } from '@kisaki3/extension-sdk'
+import type {
+  CommandContributionExecuteEvent,
+  CommandRegistrar,
+  Disposable,
+  SerializableRecord
+} from '@kisaki3/extension-sdk'
 import {
   normalizeAuthRefreshArgs,
   normalizeChangedItemsSyncArgs,
@@ -6,7 +11,7 @@ import {
   normalizeImportIndexArgs,
   normalizeImportCollectionsArgs
 } from './args'
-import type { JobRunner } from './runner'
+import type { BangumiJobEvent, JobRunner } from './runner'
 
 export const BANGUMI_COMMAND_IDS = {
   authRefresh: 'bangumi.auth.refresh',
@@ -20,14 +25,14 @@ export type BangumiCommandId = (typeof BANGUMI_COMMAND_IDS)[keyof typeof BANGUMI
 
 export function registerBangumiJobCommands(
   commands: CommandRegistrar,
-  runner: JobRunner
+  runner: JobRunner,
+  signal: AbortSignal
 ): readonly Disposable[] {
   const registrations = [
     commands.register({
       id: BANGUMI_COMMAND_IDS.authRefresh,
       title: 'Bangumi 刷新凭据',
       description: '刷新 Bangumi token 并验证当前账号',
-      cancelable: true,
       defaultArgs: {
         forceRefresh: true,
         verifyAccount: true
@@ -37,14 +42,16 @@ export function registerBangumiJobCommands(
         verifyAccount: 'boolean'
       }),
       execute(args, event) {
-        return runner.runAuthRefresh(normalizeAuthRefreshArgs(args), event)
+        return runner.runAuthRefresh(
+          normalizeAuthRefreshArgs(args),
+          toBangumiJobEvent(event, signal)
+        )
       }
     }),
     commands.register({
       id: BANGUMI_COMMAND_IDS.syncChangedItems,
       title: 'Bangumi 同步变更条目',
       description: '同步扩展运行期队列中的本地条目变更',
-      cancelable: true,
       defaultArgs: {
         scope: 'game',
         dryRun: false,
@@ -56,14 +63,16 @@ export function registerBangumiJobCommands(
         limit: 'number'
       }),
       execute(args, event) {
-        return runner.runChangedItemsSync(normalizeChangedItemsSyncArgs(args), event)
+        return runner.runChangedItemsSync(
+          normalizeChangedItemsSyncArgs(args),
+          toBangumiJobEvent(event, signal)
+        )
       }
     }),
     commands.register({
       id: BANGUMI_COMMAND_IDS.syncFull,
       title: 'Bangumi 全量同步',
       description: '扫描本地游戏并同步 Bangumi 收藏状态与评分',
-      cancelable: true,
       defaultArgs: {
         scope: 'game',
         dryRun: true,
@@ -83,14 +92,13 @@ export function registerBangumiJobCommands(
         clearRemoteScoreWhenEmpty: 'boolean'
       }),
       execute(args, event) {
-        return runner.runFullSync(normalizeFullSyncArgs(args), event)
+        return runner.runFullSync(normalizeFullSyncArgs(args), toBangumiJobEvent(event, signal))
       }
     }),
     commands.register({
       id: BANGUMI_COMMAND_IDS.importCollections,
       title: 'Bangumi 导入我的收藏',
       description: '按媒体类型导入当前 Bangumi 用户收藏',
-      cancelable: true,
       defaultArgs: {
         scope: 'game',
         dryRun: true,
@@ -116,14 +124,16 @@ export function registerBangumiJobCommands(
         targetCollection: 'object'
       }),
       execute(args, event) {
-        return runner.runImportCollections(normalizeImportCollectionsArgs(args), event)
+        return runner.runImportCollections(
+          normalizeImportCollectionsArgs(args),
+          toBangumiJobEvent(event, signal)
+        )
       }
     }),
     commands.register({
       id: BANGUMI_COMMAND_IDS.importIndex,
       title: 'Bangumi 导入目录',
       description: '按媒体类型导入或预览指定 Bangumi 目录条目',
-      cancelable: true,
       defaultArgs: {
         scope: 'game',
         dryRun: true,
@@ -143,12 +153,26 @@ export function registerBangumiJobCommands(
         targetCollection: 'object'
       }),
       execute(args, event) {
-        return runner.runImportIndex(normalizeImportIndexArgs(args), event)
+        return runner.runImportIndex(
+          normalizeImportIndexArgs(args),
+          toBangumiJobEvent(event, signal)
+        )
       }
     })
   ] satisfies readonly Disposable[]
 
   return registrations
+}
+
+function toBangumiJobEvent(
+  event: CommandContributionExecuteEvent,
+  signal: AbortSignal
+): BangumiJobEvent {
+  return {
+    commandId: event.commandId,
+    source: event.source,
+    signal
+  }
 }
 
 function createObjectArgsSchema(properties: Record<string, string>): SerializableRecord {

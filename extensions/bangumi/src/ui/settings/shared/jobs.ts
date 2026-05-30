@@ -1,7 +1,6 @@
 import {
   kisaki,
-  type CommandExecutionStartResult,
-  type CommandListItem,
+  type CommandInvocationResult,
   type SerializableRecord
 } from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../../jobs/commands'
@@ -22,19 +21,18 @@ export interface BangumiActiveJobs {
 }
 
 export async function resolveActiveJobs(): Promise<BangumiActiveJobs> {
-  const commands = await kisaki.commands.list()
-
   return {
-    accountRefresh: isCommandActive(commands, BANGUMI_COMMAND_IDS.authRefresh),
-    syncChangedItems: isCommandActive(commands, BANGUMI_COMMAND_IDS.syncChangedItems),
-    syncFull: isCommandActive(commands, BANGUMI_COMMAND_IDS.syncFull),
-    importCollections: isCommandActive(commands, BANGUMI_COMMAND_IDS.importCollections),
-    importIndex: isCommandActive(commands, BANGUMI_COMMAND_IDS.importIndex)
+    accountRefresh: false,
+    syncChangedItems: false,
+    syncFull: false,
+    importCollections: false,
+    importIndex: false
   }
 }
 
 export async function isBangumiCommandActive(commandId: BangumiCommandId): Promise<boolean> {
-  return isCommandActive(await kisaki.commands.list(), commandId)
+  void commandId
+  return false
 }
 
 export async function startRootManualJob(options: {
@@ -106,18 +104,10 @@ async function startCommandJob({
 export async function startBangumiCommandJob(
   commandId: BangumiCommandId,
   args: SerializableRecord
-): Promise<CommandExecutionStartResult> {
-  return await kisaki.commands.start({
+): Promise<CommandInvocationResult> {
+  return await kisaki.commands.invoke({
     commandId,
-    args,
-    presentation: {
-      notify: {
-        enabled: true,
-        title: formatJobNotificationTitle(commandId, args),
-        message: isDryRunJob(args) ? '正在生成预览...' : '正在执行...',
-        cancelable: true
-      }
-    }
+    args
   })
 }
 
@@ -126,38 +116,6 @@ export function createRunningJobError() {
     code: 'bangumi_job_running',
     message: '该 Bangumi 任务正在运行，请先等待完成或取消。'
   }
-}
-
-function isCommandActive(
-  commands: readonly CommandListItem[],
-  commandId: BangumiCommandId
-): boolean {
-  return commands.some((command) => command.id === commandId && command.state !== 'idle')
-}
-
-function formatJobNotificationTitle(commandId: BangumiCommandId, args: SerializableRecord): string {
-  const base = (() => {
-    switch (commandId) {
-      case BANGUMI_COMMAND_IDS.authRefresh:
-        return 'Bangumi 刷新凭据'
-      case BANGUMI_COMMAND_IDS.syncChangedItems:
-        return 'Bangumi 同步变更'
-      case BANGUMI_COMMAND_IDS.syncFull:
-        return 'Bangumi 全量同步'
-      case BANGUMI_COMMAND_IDS.importCollections:
-        return 'Bangumi 导入我的收藏'
-      case BANGUMI_COMMAND_IDS.importIndex:
-        return 'Bangumi 导入目录'
-      default:
-        return 'Bangumi job'
-    }
-  })()
-
-  return isDryRunJob(args) && commandId !== BANGUMI_COMMAND_IDS.authRefresh ? `${base}预览` : base
-}
-
-function isDryRunJob(args: SerializableRecord): boolean {
-  return args.dryRun === true
 }
 
 export { BANGUMI_COMMAND_IDS }

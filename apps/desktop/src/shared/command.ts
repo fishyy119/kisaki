@@ -1,17 +1,33 @@
 export type CommandDangerLevel = 'none' | 'low' | 'medium' | 'high'
 
-export type CommandExecutionStatus = 'completed' | 'cancelled' | 'failed'
-export type CommandExecutionState = 'running' | 'cancelling'
-export type CommandListItemState = 'idle' | CommandExecutionState
+export type CommandAutomationTrigger = 'manual' | 'startup' | 'cron'
 
-export type CommandExecutionSourceKind = 'user' | 'extension' | 'background-task' | 'system'
+export type CommandSystemReason = 'startup' | 'maintenance' | 'update' | 'shutdown'
 
-export interface CommandExecutionSource {
-  kind: CommandExecutionSourceKind
-  extensionId?: string
-  commandId?: string
-  taskId?: string
-}
+export type CommandInvocationSource =
+  | {
+      type: 'user'
+    }
+  | {
+      type: 'automation'
+      automation: {
+        id: string
+        nameSnapshot: string
+        trigger: CommandAutomationTrigger
+        attempt: number
+      }
+    }
+  | {
+      type: 'extension'
+      extension: {
+        id: string
+        nameSnapshot?: string
+      }
+    }
+  | {
+      type: 'system'
+      reason?: CommandSystemReason
+    }
 
 export interface CommandDescriptor {
   id: string
@@ -20,74 +36,23 @@ export interface CommandDescriptor {
   argsSchema?: Record<string, unknown>
   defaultArgs?: Record<string, unknown>
   dangerLevel: CommandDangerLevel
-  cancelable: boolean
   ownerExtensionId?: string
-  notification?: CommandNotificationTemplate
 }
 
-export interface CommandListItem extends CommandDescriptor {
-  state: CommandListItemState
-}
+export type CommandListItem = CommandDescriptor
 
-export interface CommandExecutionRequest {
+export interface CommandInvocationRequest {
   commandId: string
   args?: Record<string, unknown>
-  source?: CommandExecutionSource
-  presentation?: CommandExecutionPresentation
+  source?: CommandInvocationSource
 }
 
-export interface CommandNotificationTemplate {
-  title?: string
-  startMessage?: string
-  successTitle?: string
-  successMessage?: string
-  cancelledTitle?: string
-  cancelledMessage?: string
-  failedTitle?: string
-  failedMessage?: string
-}
-
-export interface CommandExecutionNotifyPresentation {
-  enabled: boolean
-  title?: string
-  message?: string
-  cancelable?: boolean
-}
-
-export interface CommandExecutionPresentation {
-  notify?: CommandExecutionNotifyPresentation
-}
-
-export interface CommandExecutionProgressUpdate {
-  phase?: string
-  message?: string
-  current?: number
-  total?: number
-  indeterminate?: boolean
-}
-
-export interface CommandExecutionProgress extends CommandExecutionProgressUpdate {
+export interface CommandInvocationContext {
   commandId: string
-  executionId: string
-  state: CommandExecutionState
-  source: CommandExecutionSource
-  updatedAt: number
+  source: CommandInvocationSource
 }
 
-export interface CommandExecutionStartResult {
+export interface CommandInvocationResult {
   commandId: string
-  executionId: string
-  startedAt: number
-  cancelable: boolean
-  state: CommandExecutionState
-}
-
-export interface CommandExecutionResult {
-  commandId: string
-  executionId: string
-  startedAt: number
-  finishedAt: number
-  status: CommandExecutionStatus
   output?: unknown
-  error?: string
 }

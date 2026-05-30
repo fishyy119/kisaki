@@ -24,10 +24,7 @@ export interface BackgroundTaskRunnerOptions {
 }
 
 export class BackgroundTaskRunner {
-  private readonly runningTasks = new Map<
-    string,
-    { controller: AbortController; commandExecutionId?: string }
-  >()
+  private readonly runningTasks = new Map<string, { controller: AbortController }>()
 
   constructor(private readonly options: BackgroundTaskRunnerOptions) {}
 
@@ -54,17 +51,12 @@ export class BackgroundTaskRunner {
     }
 
     running.controller.abort()
-    return running.commandExecutionId
-      ? this.options.command.executions.cancel(running.commandExecutionId)
-      : true
+    return true
   }
 
   dispose(): void {
     for (const running of this.runningTasks.values()) {
       running.controller.abort()
-      if (running.commandExecutionId) {
-        this.options.command.executions.cancel(running.commandExecutionId)
-      }
     }
     this.runningTasks.clear()
   }
@@ -107,43 +99,46 @@ export class BackgroundTaskRunner {
         }
 
         const startedAt = Date.now()
-        const execution = this.options.command.executions.start({
-          commandId: task.commandId,
-          args: task.args,
-          source: {
-            kind: 'background-task',
-            extensionId: task.ownerExtensionId,
-            taskId: task.id,
-            commandId: task.commandId
-          },
-          presentation: {
-            notify: {
-              enabled: false
+        try {
+          const result = await this.options.command.invoke({
+            commandId: task.commandId,
+            args: task.args,
+            source: {
+              type: 'automation',
+              automation: {
+                id: task.id,
+                nameSnapshot: task.name,
+                trigger,
+                attempt
+              }
             }
-          }
-        })
-        this.runningTasks.set(taskId, {
-          controller: taskController,
-          commandExecutionId: execution.executionId
-        })
-        const result = await this.options.command.executions.wait(execution.executionId)
+          })
 
-        lastRecord = {
-          id: randomUUID(),
-          taskId: task.id,
-          commandId: task.commandId,
-          startedAt,
-          finishedAt: Date.now(),
-          status:
-            result.status === 'completed'
-              ? 'success'
-              : result.status === 'cancelled'
-                ? 'cancelled'
-                : 'failed',
-          attempt,
-          trigger,
-          output: toStoredValue(result.output),
-          error: result.error
+          lastRecord = {
+            id: randomUUID(),
+            taskId: task.id,
+            commandId: task.commandId,
+            startedAt,
+            finishedAt: Date.now(),
+            status: 'success',
+            attempt,
+            trigger,
+            output: toStoredValue(result.output)
+          }
+        } catch (error) {
+          lastRecord = taskController.signal.aborted
+            ? createCancelledRecord(task, trigger)
+            : {
+                id: randomUUID(),
+                taskId: task.id,
+                commandId: task.commandId,
+                startedAt,
+                finishedAt: Date.now(),
+                status: 'failed',
+                attempt,
+                trigger,
+                error: toErrorMessage(error)
+              }
         }
 
         if (taskController.signal.aborted && lastRecord.status !== 'cancelled') {

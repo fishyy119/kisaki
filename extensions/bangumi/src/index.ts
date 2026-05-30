@@ -7,7 +7,7 @@ import { OAuthRelayClient } from './auth/relay-client'
 import { TokenService } from './auth/token-service'
 import { TokenStore } from './auth/token-store'
 import { SettingsStore } from './config/store'
-import { isBangumiCommandId, registerBangumiJobCommands } from './jobs/commands'
+import { registerBangumiJobCommands } from './jobs/commands'
 import { JobRunner } from './jobs/runner'
 import { createAnimeMediaDescriptor } from './media/anime/scope'
 import { createBookMediaDescriptor } from './media/book/scope'
@@ -129,7 +129,8 @@ export default defineExtension({
     )
     for (const registration of registerBangumiJobCommands(
       context.contributions.commands,
-      jobRunner
+      jobRunner,
+      context.abortSignal
     )) {
       context.subscriptions.add(registration)
     }
@@ -156,38 +157,6 @@ export default defineExtension({
     )
     settingsRegistrationRef.current = settingsRegistration
     context.subscriptions.add(settingsRegistration)
-    context.subscriptions.add(
-      await kisaki.events.on('command.finished', async (event) => {
-        const previewChanged = settingsRuntime.previewRegistry.complete(event)
-        if (!previewChanged && !isBangumiCommandId(event.commandId)) {
-          return
-        }
-
-        await refreshSettingsForBangumiCommand(
-          event.commandId,
-          previewChanged ? 'bangumi.preview.finished' : 'bangumi.command.finished'
-        )
-      })
-    )
-
-    async function refreshSettingsForBangumiCommand(
-      commandId: string,
-      reason: string
-    ): Promise<void> {
-      if (!isBangumiCommandId(commandId)) {
-        return
-      }
-
-      try {
-        await settingsRegistrationRef.current?.refresh({ reason })
-      } catch (error) {
-        context.logger.warn('Bangumi settings refresh after command lifecycle failed.', {
-          commandId,
-          reason,
-          ...toSafeErrorLog(error)
-        })
-      }
-    }
   }
 })
 

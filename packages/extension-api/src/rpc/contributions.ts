@@ -1,7 +1,4 @@
-import type {
-  CommandExecutionProgressUpdate,
-  CommandExecutionSource
-} from '../capabilities/commands'
+import type { CommandInvocationSource } from '../capabilities/commands'
 import type {
   CommandContribution,
   CommandContributionExecuteResult
@@ -322,19 +319,12 @@ export type DeeplinkRouteHandleResponse = DeeplinkRouteHandleResult
 
 export interface CommandExecuteRequest extends ExtensionScopedRpcParams {
   commandId: string
-  executionId: string
   args: SerializableRecord
-  source: CommandExecutionSource
+  source: CommandInvocationSource
 }
 
 export interface CommandExecuteResponse {
   output?: Exclude<CommandContributionExecuteResult, void>
-}
-
-export interface CommandProgressReportRequest extends ExtensionScopedRpcParams {
-  commandId: string
-  executionId: string
-  progress: CommandExecutionProgressUpdate
 }
 
 type ScraperProviderScopedRpcParamsFor<TMediaType extends ScraperMediaType> =
@@ -579,8 +569,4 @@ export type HostToMainContributionRpcRequestMap = {
   >
   'contributions.commands.register': RpcMethodDefinition<CommandRegisterRequest, RpcNoPayload>
   'contributions.commands.unregister': RpcMethodDefinition<CommandUnregisterRequest, RpcNoPayload>
-  'contributions.commands.reportProgress': RpcMethodDefinition<
-    CommandProgressReportRequest,
-    RpcNoPayload
-  >
 }

@@ -9,11 +9,6 @@
 import type { AppLocale } from '../locale'
 import type { BackgroundTaskRunRecord } from '../background-task'
 import type {
-  CommandExecutionProgress,
-  CommandExecutionResult,
-  CommandExecutionStartResult
-} from '../command'
-import type {
   LibraryCharacterCreatedEvent,
   LibraryCharacterDeletedEvent,
   LibraryCharacterUpdatedEvent,
@@ -92,11 +87,6 @@ export interface AppEvents {
 
   'scanner.started': [{ scannerId: string; scannerName: string }]
   'scanner.finished': [ScannerFinishedEvent]
-
-  // Command events
-  'command.started': [CommandExecutionStartResult]
-  'command.progressed': [CommandExecutionProgress]
-  'command.finished': [CommandExecutionResult]
 
   // Background task events
   'backgroundTask.changed': [{ taskId: string }]

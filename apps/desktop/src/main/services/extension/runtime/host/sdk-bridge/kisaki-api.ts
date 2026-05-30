@@ -349,36 +349,12 @@ export function createKisakiApi(
             commandId
           })
         ).command,
-      start: async (request) =>
+      invoke: async (request) =>
         (
-          await requestMain('capabilities.commands.start', {
+          await requestMain('capabilities.commands.invoke', {
             request
           })
-        ).result,
-      wait: async (executionId) =>
-        (
-          await requestMain('capabilities.commands.wait', {
-            executionId
-          })
-        ).result,
-      getProgress: async (executionId) =>
-        (
-          await requestMain('capabilities.commands.getProgress', {
-            executionId
-          })
-        ).progress,
-      execute: async (request) =>
-        (
-          await requestMain('capabilities.commands.execute', {
-            request
-          })
-        ).result,
-      cancel: async (executionId) =>
-        (
-          await requestMain('capabilities.commands.cancel', {
-            executionId
-          })
-        ).cancelled
+        ).result
     },
     backgroundTasks: {
       list: async () => (await requestMain('capabilities.backgroundTasks.list', {})).items,

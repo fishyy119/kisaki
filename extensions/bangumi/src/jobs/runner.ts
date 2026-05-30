@@ -1,4 +1,4 @@
-import type { CommandContributionExecuteEvent, ExtensionLogger } from '@kisaki3/extension-sdk'
+import type { CommandInvocationSource, ExtensionLogger } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { AccountService } from '../auth/account'
@@ -69,7 +69,12 @@ interface JobState {
   counters: JobCounters
   previewGroups: BangumiJobPreviewGroup[]
   errors: BangumiJobError[]
-  event: CommandContributionExecuteEvent
+}
+
+export interface BangumiJobEvent {
+  commandId: string
+  source: CommandInvocationSource
+  signal: AbortSignal
 }
 
 interface CollectionLocalUpdatePlan {
@@ -94,7 +99,7 @@ export class JobRunner {
 
   async runAuthRefresh(
     args: BangumiAuthRefreshArgs,
-    event: CommandContributionExecuteEvent
+    event: BangumiJobEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
       job.report('refreshingToken', '正在刷新 Bangumi 凭据...', { indeterminate: true })
@@ -131,7 +136,7 @@ export class JobRunner {
 
   async runChangedItemsSync(
     args: BangumiChangedItemsSyncArgs,
-    event: CommandContributionExecuteEvent
+    event: BangumiJobEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
       requireNonPreviewBackgroundJob(args, event)
@@ -190,10 +195,7 @@ export class JobRunner {
     })
   }
 
-  async runFullSync(
-    args: BangumiFullSyncArgs,
-    event: CommandContributionExecuteEvent
-  ): Promise<BangumiJobSummary> {
+  async runFullSync(args: BangumiFullSyncArgs, event: BangumiJobEvent): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
       requireNonPreviewBackgroundJob(args, event)
       const descriptor = this.deps.mediaRegistry.require(args.scope)
@@ -293,7 +295,7 @@ export class JobRunner {
 
   async runImportCollections(
     args: BangumiImportCollectionsArgs,
-    event: CommandContributionExecuteEvent
+    event: BangumiJobEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
       requireNonPreviewBackgroundJob(args, event)
@@ -531,7 +533,7 @@ export class JobRunner {
 
   async runImportIndex(
     args: BangumiImportIndexArgs,
-    event: CommandContributionExecuteEvent
+    event: BangumiJobEvent
   ): Promise<BangumiJobSummary> {
     return this.runJob(event, args.dryRun, async (job) => {
       requireNonPreviewBackgroundJob(args, event)
@@ -747,7 +749,7 @@ export class JobRunner {
   }
 
   private async runJob(
-    event: CommandContributionExecuteEvent,
+    event: BangumiJobEvent,
     dryRun: boolean,
     execute: (job: JobStateController) => Promise<void>
   ): Promise<BangumiJobSummary> {
@@ -757,8 +759,7 @@ export class JobRunner {
       dryRun,
       counters: {},
       previewGroups: [],
-      errors: [],
-      event
+      errors: []
     }
     const job = new JobStateController(state)
 
@@ -846,11 +847,9 @@ class JobStateController {
     message: string,
     progress: { current?: number; total?: number; indeterminate?: boolean } = {}
   ): void {
-    this.state.event.reportProgress({
-      phase,
-      message,
-      ...progress
-    })
+    void phase
+    void message
+    void progress
   }
 }
 
@@ -1659,14 +1658,11 @@ function requireProfileId(profileId: string | undefined): string {
   return normalized
 }
 
-function requireNonPreviewBackgroundJob(
-  args: { dryRun: boolean },
-  event: CommandContributionExecuteEvent
-): void {
-  if (event.source.kind === 'background-task' && args.dryRun) {
+function requireNonPreviewBackgroundJob(args: { dryRun: boolean }, event: BangumiJobEvent): void {
+  if (event.source.type === 'automation' && args.dryRun) {
     throw new BangumiExtensionError(
       'bangumi_validation',
-      '后台任务不能运行 Bangumi 预览，请将 dryRun 设为 false。'
+      '自动化不能运行 Bangumi 预览，请将 dryRun 设为 false。'
     )
   }
 }
