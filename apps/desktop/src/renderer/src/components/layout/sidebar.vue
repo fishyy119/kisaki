@@ -37,6 +37,7 @@ import { AdderTrigger } from '@renderer/features/adder'
 import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
 import { SettingsFormDialog } from '@renderer/features/settings'
 import { AboutDialog } from '@renderer/features/about'
+import { TaskCenterTrigger } from '@renderer/features/task-center'
 
 interface NavItem {
   id: string
@@ -110,6 +111,7 @@ const showNsfwModel = computed({
     <!-- Bottom navigation -->
     <nav class="flex flex-col items-center py-2 gap-1">
       <AdderTrigger />
+      <TaskCenterTrigger />
 
       <!-- Settings Dropdown -->
       <Tooltip>

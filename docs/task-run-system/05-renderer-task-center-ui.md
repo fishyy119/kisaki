@@ -29,18 +29,22 @@ apps/desktop/src/renderer/src/features/task-center/
   components/
     task-center-trigger.vue
     task-center-dialog.vue
-    task-run-row.vue
-    task-run-details.vue
-    task-run-progress.vue
-    task-run-result.vue
-    task-run-toolbar.vue
-    index.ts
-  stores/
-    task-run-store.ts
+    tabs/
+      active/
+        details-dialog.vue
+        progress.vue
+        row.vue
+        toolbar.vue
+        index.ts
+      completed/
+        details-dialog.vue
+        row.vue
+        toolbar.vue
+        index.ts
+      index.ts
     index.ts
   utils/
     display.ts
-    layout.ts
     index.ts
   types.ts
 ```
@@ -92,25 +96,25 @@ await useTaskRunStore().init()
 ```text
 DialogHeader
   title: 任务中心
-  summary: n 个进行中 / m 个已完成
 DialogBody
-  Tabs: 进行中 / 已完成
-  Toolbar: search, category filter, clear completed
-  List
-  Details pane or nested details dialog
+  Tabs: 进行中 (n) / 已完成 (m)
+  Active toolbar/list/detail dialog or completed toolbar/list/detail dialog
 DialogFooter optional
 ```
 
 建议 desktop 尺寸：
 
-- `DialogContent class="max-w-5xl"`
-- body height `min(76vh, 720px)`
-- 左右分栏：左列表，右详情。
+- 宽弹窗，例如 `w-[min(calc(100vw-2rem),980px)] max-w-none`。
+- body height `min(72vh, 660px)`。
+- 不使用左右分栏，主视图只保留单列表。
+- header 只显示“任务中心”，数量放在 tab label 中。
+- tab 和 toolbar 分两行，每个 tab 有自己的 toolbar、row 和 details dialog。
+- 搜索结果数量只在搜索框有内容时显示。
 
 移动/窄窗口：
 
 - 单列列表。
-- 点击 row 打开详情内层 dialog。
+- 详情入口仍使用信息图标按钮，不改成整行点击。
 
 ## Tabs
 
@@ -162,13 +166,16 @@ finishedAt desc
 
 ```text
 icon/category
-title + subject.labelSnapshot
-phase/message
-progress bar + count + live counters
-rate/eta/duration
+title + category/operation
+phase/message + progress bar
+count/rate/eta or duration/counters under the progress/result column
 status badge
-actions
+active controls + details action
 ```
+
+`owner`、`initiator`、`subject`、operation id、完整 warnings 和 output 只放详情中。列表里的 warning 仅作为带数量的图标提示，并通过 tooltip 展示少量摘要。不单开指标列，进度/结果列承担进度条和轻量指标摘要。
+
+row 不整体点击打开详情；详情入口只放在信息图标按钮中。active row 的操作列展示一排 pause/resume/cancel/details 图标按钮，completed row 只保留 details。controls 不放在详情 dialog 中，详情只承担元数据、警告和结果展示。
 
 动作按钮：
 
@@ -177,7 +184,7 @@ actions
 - cancel: `icon-[mdi--stop]`
 - details: `icon-[mdi--information-outline]`
 
-按钮必须有 tooltip。
+按钮必须有 tooltip 和 aria label。
 
 ## Progress display
 
@@ -208,9 +215,10 @@ succeeded / failed / skipped / warnings
 
 规则：
 
-- active row 可以展示 `progress.counters` 的有限摘要，例如成功、失败、跳过、警告数。
-- active row 最多展示 1 条 `progress.warnings` 摘要，完整列表放详情。
+- active row 可以展示计数、速度、剩余时间等紧凑指标，但指标必须有清晰标签，不混在一段文本里。
+- active row 不直接展开 warning 文本，只显示 warning 图标和 tooltip 摘要，完整列表放详情。
 - completed row 使用 `result.counters` 和 `result.warnings`，不从最后一条 progress 推断结果。
+- row 不按状态染底色，状态颜色只由 badge 表达；只有 failed 使用 destructive 状态色，cancelling 不使用 destructive。
 - counters key 的展示文案由 `features/task-center/utils/display.ts` 统一映射。
 
 格式化逻辑放在：
@@ -228,16 +236,17 @@ features/task-center/utils/display.ts
 - 标题和状态。
 - category、operation、owner、initiator、subject。
 - startedAt、finishedAt、duration。
-- 当前 progress。
-- result summary。
-- counters。
+- detail 不展示运行状态 section。
+- final detail 不展示 updatedAt。
+- final detail 使用一个结果区展示 result summary、counters、error 和 output。
+- 结果区不使用 badge，不单独展示“计数”标题。
+- 结果区里 title 是主文案，summary/error 使用更小字号；summary 用 muted，error 保留 destructive 但弱化强度。
 - warnings。
-- error。
-- output JSON 预览。
 
-输出区域：
+结果区中的 output：
 
 - 使用 `pre`。
+- 不与结果分成两个独立 section。
 - 最大高度和滚动。
 - 长文本 `whitespace-pre-wrap break-words`。
 - 不默认展开非常大的 output。
@@ -266,36 +275,23 @@ features/task-center/utils/display.ts
 
 - search by title/subject/owner/initiator。
 - category filter。
-- status filter for completed 使用 `TaskRunHistoryListQuery.statuses`，只筛选 final statuses。
+- active tab 使用 active statuses 的 status filter。
+- completed tab 使用 final statuses 的 status filter。
 - operation filter 作为后续增强。
 
 不建议首版做复杂日期筛选；后续可加。
 
 ## Interaction rules
 
-### Cancel
+### Active controls
 
-点击取消：
+active row 的控制按钮：
 
-1. 若 task `cancelable`，调用 `task-run:cancel`。
-2. 按钮进入 disabled/loading。
-3. store 等待 `task-run:changed` 更新为 `cancelling`。
-4. 如果返回 false，提示任务已结束或不可取消。
-
-### Pause
-
-点击暂停：
-
-1. 调用 `task-run:pause`。
-2. 成功后等待状态变 `pausing` 或 `paused`。
-3. 不直接在 renderer 伪造 paused。
-
-### Resume
-
-点击继续：
-
-1. 调用 `task-run:resume`。
-2. 成功后等待状态回到 `running`。
+1. pause 调用 `task-run:pause`，成功后等待状态变 `pausing` 或 `paused`。
+2. resume 调用 `task-run:resume`，成功后等待状态回到 `running`。
+3. cancel 调用 `task-run:cancel`，成功后等待 `task-run:changed` 更新为 `cancelling` 或 final 状态。
+4. 控制请求 pending 时禁用该 row 的控制按钮，不在 renderer 伪造最终状态。
+5. 如果返回 false，显示轻量 notify 提示。
 
 ### Clear completed
 

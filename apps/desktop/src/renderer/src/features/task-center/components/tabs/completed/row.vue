@@ -1,0 +1,147 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { TaskRun, TaskRunWarning } from '@shared/task-run'
+import { Icon } from '@renderer/components/ui/icon'
+import { Badge } from '@renderer/components/ui/badge'
+import { Button } from '@renderer/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import {
+  formatProgressCount,
+  formatTaskRunCategory,
+  formatTaskRunCounterSummary,
+  formatTaskRunDuration,
+  formatTaskRunOperation,
+  formatTaskRunResultSummary,
+  formatTaskRunStatus,
+  getTaskRunCategoryIcon,
+  getTaskRunStatusVariant
+} from '../../../utils'
+
+interface Props {
+  run: TaskRun
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  details: [run: TaskRun]
+}>()
+
+const operationText = computed(
+  () =>
+    `${formatTaskRunCategory(props.run.category)} · ${formatTaskRunOperation(props.run.operation)}`
+)
+const resultText = computed(() => formatTaskRunResultSummary(props.run))
+const progressText = computed(() => formatProgressCount(props.run))
+const counterText = computed(() => formatTaskRunCounterSummary(props.run, props.run.result?.counters, 3))
+const secondaryMetric = computed(() => progressText.value ?? counterText.value)
+const secondaryMetricLabel = computed(() => (progressText.value ? '进度' : '计数'))
+const warnings = computed<readonly TaskRunWarning[]>(() => props.run.result?.warnings ?? [])
+const warningPreview = computed(() => warnings.value.slice(0, 3))
+</script>
+
+<template>
+  <div
+    class="group grid min-h-16 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_32px] items-center gap-5 overflow-hidden px-4 py-2 transition-colors hover:bg-accent/30"
+  >
+    <div class="flex min-w-0 items-center gap-3">
+      <div class="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
+        <Icon
+          :icon="getTaskRunCategoryIcon(props.run.category)"
+          class="size-4 text-muted-foreground"
+        />
+      </div>
+      <div class="min-w-0">
+        <div class="flex min-w-0 items-center gap-1.5">
+          <div class="truncate text-sm font-medium">{{ props.run.title }}</div>
+          <Tooltip v-if="warnings.length">
+            <TooltipTrigger as-child>
+              <button
+                type="button"
+                class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-[11px] leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
+                :aria-label="`${warnings.length} 条警告`"
+              >
+                <Icon
+                  icon="icon-[mdi--alert-outline]"
+                  class="size-3.5"
+                />
+                <span>{{ warnings.length }}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="bottom"
+              class="max-w-72"
+            >
+              <div class="space-y-1">
+                <div
+                  v-for="(warning, index) in warningPreview"
+                  :key="`${warning.code ?? 'warning'}-${index}`"
+                  class="text-xs"
+                >
+                  {{ warning.message }}
+                </div>
+                <div
+                  v-if="warnings.length > warningPreview.length"
+                  class="text-xs text-muted-foreground"
+                >
+                  还有 {{ warnings.length - warningPreview.length }} 条警告
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <div class="truncate text-xs text-muted-foreground">{{ operationText }}</div>
+      </div>
+    </div>
+
+    <div class="min-w-0 space-y-1">
+      <div
+        class="truncate text-xs"
+        :class="props.run.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'"
+      >
+        {{ resultText }}
+      </div>
+      <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground">
+        <span>
+          <span>耗时</span>
+          <span class="ml-1 text-foreground">{{ formatTaskRunDuration(props.run) }}</span>
+        </span>
+        <span
+          v-if="secondaryMetric"
+          class="min-w-0"
+        >
+          <span>{{ secondaryMetricLabel }}</span>
+          <span class="ml-1 text-foreground">{{ secondaryMetric }}</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="flex min-w-0 items-center">
+      <Badge
+        :variant="getTaskRunStatusVariant(props.run.status)"
+        class="h-5"
+      >
+        {{ formatTaskRunStatus(props.run.status) }}
+      </Badge>
+    </div>
+
+    <div class="flex items-center justify-end">
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="查看详情"
+            @click="emit('details', props.run)"
+          >
+            <Icon
+              icon="icon-[mdi--information-outline]"
+              class="size-4"
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>详情</TooltipContent>
+      </Tooltip>
+    </div>
+  </div>
+</template>

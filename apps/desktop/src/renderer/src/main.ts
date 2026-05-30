@@ -16,7 +16,8 @@ import {
   useGameMonitorStore,
   useScannerStore,
   useDefaultFromStore,
-  useUpdaterStore
+  useUpdaterStore,
+  useTaskRunStore
 } from './stores'
 import { createLogger } from '@renderer/core/log'
 
@@ -68,6 +69,7 @@ async function initMainWindowRenderer() {
     await useScannerStore().init()
     await useDefaultFromStore().init()
     await useUpdaterStore().init()
+    await useTaskRunStore().init()
   })
 }
 
