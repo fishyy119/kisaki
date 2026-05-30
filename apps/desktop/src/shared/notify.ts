@@ -19,6 +19,7 @@ export interface NotifyOptions {
   target?: NotifyTarget // Default: 'toast'
   duration?: number // Toast duration in ms
   action?: NotifyAction
+  closable?: boolean
 }
 
 /**

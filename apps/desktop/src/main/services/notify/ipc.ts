@@ -13,4 +13,8 @@ export function registerNotifyIpc(service: NotifyService, ipc: IpcService): void
   ipc.on('notify:action', (_, event) => {
     service.handleAction(event.toastId, event.actionId)
   })
+
+  ipc.on('notify:closed', (_, event) => {
+    service.handleClosed(event.toastId)
+  })
 }

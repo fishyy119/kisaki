@@ -10,6 +10,9 @@ import { nanoid } from 'nanoid'
 import { ipcManager } from './ipc'
 import type { NotifyAction, NotifyOptions, NotifyType, NotifyFunction } from '@shared/notify'
 
+const mainToastIds = new Set<string>()
+const suppressedClosedToastIds = new Set<string>()
+
 function getToastFn(type?: NotifyType) {
   switch (type) {
     case 'success':
@@ -50,27 +53,34 @@ function createToastOptions(options: NotifyOptions, toastId?: string) {
     id: toastId,
     description: options.message,
     duration: options.duration,
-    action: createToastAction(toastId, options.action)
+    action: createToastAction(toastId, options.action),
+    closeButton: options.closable === true,
+    dismissible: options.closable !== false,
+    onDismiss: toastId ? () => handleMainToastDismissed(toastId) : undefined
   }
 }
 
 function createNotify(): NotifyFunction {
   // Initialize IPC listeners for notifications from main process
   ipcManager.on('notify:show', (_, options) => {
+    rememberMainToast(options.toastId)
     const toastFn = getToastFn(options.type)
     toastFn(options.title, createToastOptions(options, options.toastId))
   })
 
   ipcManager.on('notify:loading', (_, { toastId, title, message }) => {
+    rememberMainToast(toastId)
     toast.loading(title, { id: toastId, description: message })
   })
 
   ipcManager.on('notify:update', (_, { toastId, ...options }) => {
+    rememberMainToast(toastId)
     const toastFn = getToastFn(options.type)
     toastFn(options.title, createToastOptions(options, toastId))
   })
 
   ipcManager.on('notify:dismiss', (_, { toastId }) => {
+    suppressProgrammaticDismiss(toastId)
     toast.dismiss(toastId)
   })
 
@@ -119,3 +129,37 @@ function createNotify(): NotifyFunction {
 }
 
 export const notify = createNotify()
+
+function rememberMainToast(toastId: string | undefined): void {
+  if (toastId) {
+    mainToastIds.add(toastId)
+    suppressedClosedToastIds.delete(toastId)
+  }
+}
+
+function suppressProgrammaticDismiss(toastId: string | undefined): void {
+  if (toastId) {
+    suppressedClosedToastIds.add(toastId)
+    mainToastIds.delete(toastId)
+    return
+  }
+
+  for (const id of mainToastIds) {
+    suppressedClosedToastIds.add(id)
+  }
+  mainToastIds.clear()
+}
+
+function handleMainToastDismissed(toastId: string): void {
+  if (suppressedClosedToastIds.delete(toastId)) {
+    return
+  }
+
+  if (!mainToastIds.delete(toastId)) {
+    return
+  }
+
+  ipcManager.send('notify:closed', {
+    toastId
+  })
+}

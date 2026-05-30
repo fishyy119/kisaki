@@ -64,7 +64,9 @@ export class CommandNotificationCoordinator {
         action: this.createCancelAction(active)
       },
       active.toastId,
-      this.createActionHandlers(started.executionId, active)
+      {
+        actions: this.createActionHandlers(started.executionId, active)
+      }
     )
   }
 
@@ -89,7 +91,9 @@ export class CommandNotificationCoordinator {
         type: 'loading',
         action: this.createCancelAction(active)
       },
-      this.createActionHandlers(progress.executionId, active)
+      {
+        actions: this.createActionHandlers(progress.executionId, active)
+      }
     )
   }
 

@@ -24,6 +24,7 @@ import { DeeplinkService } from './services/deeplink'
 import { UpdaterService } from './services/updater'
 import { CommandService } from './services/command'
 import { BackgroundTaskService } from './services/background-task'
+import { TaskRunService } from './services/task-run'
 
 // Bootstrap (pre-ready modules)
 import { registerAppSchemes, DEEPLINK_SCHEME } from './bootstrap/protocol'
@@ -115,8 +116,9 @@ async function onAppReady(): Promise<void> {
   await container.register(new WindowService())
   await container.register(new NotifyService())
   await container.register(new DbService())
-  await container.register(new UpdaterService())
   await container.register(new NetworkService())
+  await container.register(new TaskRunService())
+  await container.register(new UpdaterService())
   await container.register(new CommandService())
   await container.register(new BackgroundTaskService())
   await container.register(new NativeService())

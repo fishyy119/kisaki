@@ -185,6 +185,7 @@ export interface IpcMainListeners {
   'notify:native': [NotifyOptions]
   'notify:auto': [NotifyOptions]
   'notify:action': [event: { toastId: string; actionId: string }]
+  'notify:closed': [event: { toastId: string }]
   'native:set-tray-menu-height': [height: number]
   'window:set-main-window-close-action': [action: MainWindowCloseAction]
 }

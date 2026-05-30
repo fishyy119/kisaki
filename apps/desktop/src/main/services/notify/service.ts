@@ -17,6 +17,12 @@ const log = createLogger('Notify')
 
 export type NotifyActionHandler = () => void | Promise<void>
 export type NotifyActionHandlers = Record<string, NotifyActionHandler>
+export type NotifyCloseHandler = () => void | Promise<void>
+
+export interface NotifyCallbacks {
+  actions?: NotifyActionHandlers
+  onClose?: NotifyCloseHandler
+}
 
 export class NotifyService implements IService {
   readonly id = 'notify'
@@ -25,6 +31,7 @@ export class NotifyService implements IService {
   private ipcService!: IpcService
   private windowService!: WindowService
   private readonly actionHandlers = new Map<string, Map<string, NotifyActionHandler>>()
+  private readonly closeHandlers = new Map<string, NotifyCloseHandler>()
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.ipcService = container.get('ipc')
@@ -34,11 +41,7 @@ export class NotifyService implements IService {
     log.info('Initialized')
   }
 
-  show(
-    options: NotifyOptions,
-    toastId?: string,
-    actionHandlers?: NotifyActionHandlers
-  ): string | undefined {
+  show(options: NotifyOptions, toastId?: string, callbacks?: NotifyCallbacks): string | undefined {
     const target = options.target ?? 'toast'
 
     switch (target) {
@@ -46,10 +49,10 @@ export class NotifyService implements IService {
         this.showNative(options)
         return undefined
       case 'auto':
-        return this.showAuto(options, toastId, actionHandlers)
+        return this.showAuto(options, toastId, callbacks)
       case 'toast':
       default:
-        return this.forwardToRenderer(options, toastId, actionHandlers)
+        return this.forwardToRenderer(options, toastId, callbacks)
     }
   }
 
@@ -72,11 +75,11 @@ export class NotifyService implements IService {
   showAuto(
     options: NotifyOptions,
     toastId?: string,
-    actionHandlers?: NotifyActionHandlers
+    callbacks?: NotifyCallbacks
   ): string | undefined {
     const isFocused = this.windowService.mainWindow.isFocused()
     if (isFocused) {
-      return this.forwardToRenderer(options, toastId, actionHandlers)
+      return this.forwardToRenderer(options, toastId, callbacks)
     } else {
       this.showNative(options)
       return undefined
@@ -94,10 +97,10 @@ export class NotifyService implements IService {
   private forwardToRenderer(
     options: NotifyOptions,
     toastId?: string,
-    actionHandlers?: NotifyActionHandlers
+    callbacks?: NotifyCallbacks
   ): string {
     const resolvedToastId = toastId ?? nanoid()
-    this.trackActionHandlers(resolvedToastId, options, actionHandlers)
+    this.trackCallbacks(resolvedToastId, options, callbacks)
     this.ipcService.send('notify:show', { ...options, toastId: resolvedToastId })
     return resolvedToastId
   }
@@ -108,16 +111,18 @@ export class NotifyService implements IService {
     return toastId
   }
 
-  update(toastId: string, options: NotifyOptions, actionHandlers?: NotifyActionHandlers): void {
-    this.trackActionHandlers(toastId, options, actionHandlers)
+  update(toastId: string, options: NotifyOptions, callbacks?: NotifyCallbacks): void {
+    this.trackCallbacks(toastId, options, callbacks)
     this.ipcService.send('notify:update', { toastId, ...options })
   }
 
   dismiss(toastId?: string): void {
     if (toastId) {
       this.actionHandlers.delete(toastId)
+      this.closeHandlers.delete(toastId)
     } else {
       this.actionHandlers.clear()
+      this.closeHandlers.clear()
     }
     this.ipcService.send('notify:dismiss', { toastId })
   }
@@ -135,22 +140,41 @@ export class NotifyService implements IService {
       })
   }
 
-  private trackActionHandlers(
+  handleClosed(toastId: string): void {
+    const handler = this.closeHandlers.get(toastId)
+    this.actionHandlers.delete(toastId)
+    this.closeHandlers.delete(toastId)
+    if (!handler) {
+      return
+    }
+
+    void Promise.resolve()
+      .then(() => handler())
+      .catch((error) => {
+        log.warn('Notification close callback failed.', error)
+      })
+  }
+
+  private trackCallbacks(
     toastId: string,
     options: NotifyOptions,
-    actionHandlers?: NotifyActionHandlers
+    callbacks?: NotifyCallbacks
   ): void {
     if (!options.action) {
       this.actionHandlers.delete(toastId)
-      return
+    } else {
+      const handler = callbacks?.actions?.[options.action.id]
+      if (!handler) {
+        this.actionHandlers.delete(toastId)
+      } else {
+        this.actionHandlers.set(toastId, new Map([[options.action.id, handler]]))
+      }
     }
 
-    const handler = actionHandlers?.[options.action.id]
-    if (!handler) {
-      this.actionHandlers.delete(toastId)
-      return
+    if (callbacks?.onClose) {
+      this.closeHandlers.set(toastId, callbacks.onClose)
+    } else {
+      this.closeHandlers.delete(toastId)
     }
-
-    this.actionHandlers.set(toastId, new Map([[options.action.id, handler]]))
   }
 }
