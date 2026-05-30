@@ -7,7 +7,7 @@ import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
 import { openExternalLink } from '@main/utils'
 import { settings } from '@shared/db'
-import type { MainWindowCloseAction } from '@shared/db/enums'
+import type { MainWindowCloseAction } from '@shared/db/contracts/enums'
 
 const log = createLogger('Window')
 

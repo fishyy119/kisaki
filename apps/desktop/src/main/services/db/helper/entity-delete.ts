@@ -16,7 +16,7 @@ import type {
   EntityDeleteRequest,
   EntityDeleteResult
 } from '@shared/entity-delete'
-import * as schema from '@shared/db'
+import * as schema from '@shared/db/schema'
 import {
   characters,
   characterPersonLinks,
@@ -36,7 +36,7 @@ import {
   persons,
   personTagLinks,
   tags
-} from '@shared/db'
+} from '@shared/db/schema'
 import type { DbContext } from '../types'
 
 const DIRECT_RELATED_ENTITY_TYPES: Record<AllEntityType, readonly AllEntityType[]> = {

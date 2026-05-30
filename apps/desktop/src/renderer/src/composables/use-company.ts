@@ -22,8 +22,8 @@ import { db } from '@renderer/core/db'
 import { useAsyncData } from './use-async-data'
 import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
-import type { Company, GameCompanyLink, CompanyTagLink, Game, Tag } from '@shared/db'
-import * as schema from '@shared/db'
+import type { Company, GameCompanyLink, CompanyTagLink, Game, Tag } from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
 
 // =============================================================================
 // Types

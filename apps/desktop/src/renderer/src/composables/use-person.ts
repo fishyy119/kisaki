@@ -30,8 +30,8 @@ import type {
   Game,
   Character,
   Tag
-} from '@shared/db'
-import * as schema from '@shared/db'
+} from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
 
 // =============================================================================
 // Types

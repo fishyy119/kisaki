@@ -1,5 +1,5 @@
-import type { BloodType, CupSize, Gender, Status } from '../db/enums'
-import type { DynamicCollectionConfig, PartialDate, RelatedSite } from '../db/json-types'
+import type { BloodType, CupSize, Gender, Status } from '../db/contracts/enums'
+import type { DynamicCollectionConfig, PartialDate, RelatedSite } from '../db/contracts/json'
 import type { TableName } from '../db/table-names'
 import type { ExternalId } from '../identity'
 import type { AllEntityType } from '../common'

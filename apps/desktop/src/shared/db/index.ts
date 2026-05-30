@@ -4,26 +4,8 @@
  * Exports all database schema, types, and Drizzle custom types.
  */
 
-// Shared DB constants
-export * from './constants'
+// Shared DB pure contracts
+export * from './contracts'
 
-// Enum types (pure type definitions)
-export * from './enums'
-
-// JSON field types
-export * from './json-types'
-
-// Drizzle custom types and base columns
-export * from './custom-types'
-
-// Table definitions and inferred types
+// Table definitions, inferred row types, and Drizzle relations
 export * from './schema'
-
-// Drizzle relations
-export * from './schema-relations'
-
-// DB attachment shared types
-export * from './attachment'
-
-// FTS shared contracts
-export * from './fts'

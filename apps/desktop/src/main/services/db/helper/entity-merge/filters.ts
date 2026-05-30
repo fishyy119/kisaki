@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { AllEntityType, ContentEntityType } from '@shared/common'
 import { collections, showcaseSections } from '@shared/db'
-import type { DynamicCollectionConfig, FilterState, RelationValue } from '@shared/db/json-types'
+import type { DynamicCollectionConfig, FilterState, RelationValue } from '@shared/db/contracts/json'
 import type { DbContext } from '../../types'
 
 const RELATION_FILTER_TARGETS: Record<ContentEntityType, Partial<Record<string, AllEntityType>>> = {

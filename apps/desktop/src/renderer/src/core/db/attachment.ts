@@ -5,7 +5,7 @@
  */
 
 import { ipcManager } from '../ipc'
-import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
+import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
 import type { TableName } from '@shared/db/table-names'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { getTableConfig } from 'drizzle-orm/sqlite-core'

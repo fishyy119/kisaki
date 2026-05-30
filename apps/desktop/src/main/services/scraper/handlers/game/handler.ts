@@ -5,15 +5,14 @@
 import { eq } from 'drizzle-orm'
 import { createLogger } from '@main/log'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import * as schema from '@shared/db'
-import {
-  GAME_SCRAPER_SLOTS,
-  scraperProfiles,
-  type GameScraperSlot,
-  type GameScraperSlotConfigs,
-  type ScraperProfile,
-  type SlotStrategy
-} from '@shared/db'
+import * as schema from '@shared/db/schema'
+import { scraperProfiles, type ScraperProfile } from '@shared/db/schema'
+import { GAME_SCRAPER_SLOTS } from '@shared/db/contracts/constants'
+import type {
+  GameScraperSlot,
+  GameScraperSlotConfigs,
+  SlotStrategy
+} from '@shared/db/contracts/json'
 import { type GameImageSlot } from '@shared/scraper'
 import type {
   GameScraperProviderInfo,

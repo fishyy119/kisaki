@@ -2,7 +2,7 @@
  * Monitor service shared types
  */
 
-import type { GameLauncherMode, GameMonitorMode } from './db/enums'
+import type { GameLauncherMode, GameMonitorMode } from './db/contracts/enums'
 
 /** Game running status */
 export interface GameRunningStatus {

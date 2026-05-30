@@ -1,7 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import * as schema from '@shared/db'
-import { scraperProfiles, type ScraperProfile } from '@shared/db'
+import * as schema from '@shared/db/schema'
+import { scraperProfiles, type ScraperProfile } from '@shared/db/schema'
 import type { ScraperProfileListQuery, ScraperProfileSummary } from '@shared/scraper'
 
 export class ScraperProfileCatalog {

@@ -7,11 +7,11 @@
  */
 
 import type { CropRegion } from './attachment'
-import type { AttachmentInput } from './db/attachment'
+import type { AttachmentInput } from './db/contracts/attachment'
 import type { TableName } from './db/table-names'
-import type { NameExtractionRule, SaveBackup } from './db/json-types'
-import type { MainWindowCloseAction } from './db/enums'
-import type { FtsEntityType } from './db/fts'
+import type { NameExtractionRule, SaveBackup } from './db/contracts/json'
+import type { MainWindowCloseAction } from './db/contracts/enums'
+import type { FtsEntityType } from './db/contracts/fts'
 import type {
   EntityDeletePreview,
   EntityDeletePreviewRequest,
@@ -99,6 +99,7 @@ import type {
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
+import type { TaskRun, TaskRunActiveListQuery, TaskRunHistoryListQuery } from './task-run'
 import type {
   CommandExecutionProgress,
   CommandExecutionRequest,
@@ -205,6 +206,17 @@ export interface IpcMainHandlers {
   'updater:download-update': () => IpcVoidResult
   'updater:reload-settings': () => IpcVoidResult
   'updater:quit-and-install': () => IpcVoidResult
+
+  // Task runs
+  'task-run:list-active': (query?: TaskRunActiveListQuery) => IpcResult<TaskRun[]>
+  'task-run:list-history': (query?: TaskRunHistoryListQuery) => IpcResult<TaskRun[]>
+  'task-run:get-active': (runId: string) => IpcResult<TaskRun | null>
+  'task-run:get-history': (runId: string) => IpcResult<TaskRun | null>
+  'task-run:wait': (runId: string) => IpcResult<TaskRun>
+  'task-run:cancel': (runId: string) => IpcResult<boolean>
+  'task-run:pause': (runId: string) => IpcResult<boolean>
+  'task-run:resume': (runId: string) => IpcResult<boolean>
+  'task-run:clear-completed': () => IpcVoidResult
 
   // Commands
   'command:list': () => IpcResult<CommandListItem[]>
@@ -532,6 +544,8 @@ export interface IpcRendererEvents {
   'command:started': [started: CommandExecutionStartResult]
   'command:progress': [progress: CommandExecutionProgress]
   'command:finished': [result: CommandExecutionResult]
+  'task-run:changed': [run: TaskRun]
+  'task-run:deleted': [payload: { runId: string }]
 
   'notify:show': [NotifyOptions & { toastId?: string }]
   'notify:loading': [{ toastId: string; title: string; message?: string }]

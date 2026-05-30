@@ -22,8 +22,8 @@ import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useEvent } from '@renderer/composables/use-event'
-import type { Game, GameSession, Tag, Collection } from '@shared/db'
-import * as schema from '@shared/db'
+import type { Game, GameSession, Tag, Collection } from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
 import {
   computeStats,

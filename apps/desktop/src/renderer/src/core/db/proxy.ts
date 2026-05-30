@@ -6,7 +6,7 @@
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import { ipcManager } from '../ipc'
-import * as schema from '@shared/db'
+import * as schema from '@shared/db/schema'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Db')

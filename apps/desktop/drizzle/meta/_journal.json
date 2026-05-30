@@ -64,6 +64,13 @@
       "when": 1779548400000,
       "tag": "0008_background_task_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1780115355565,
+      "tag": "0009_absurd_salo",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@ import { unref, type Ref } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { attachment } from '@renderer/core/db'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
-import type { FilesColumns } from '@shared/db/attachment'
+import type { FilesColumns } from '@shared/db/contracts/attachment'
 import type { MarkdownEditorAttachmentItem } from '@renderer/components/ui/markdown'
 
 export interface UseInlineAttachmentsOptions<TTable extends SQLiteTable> {

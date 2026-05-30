@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid'
 import path from 'path'
 import sharp from 'sharp'
 import type { CropRegion } from '@shared/attachment'
-import type { AttachmentInput } from '@shared/db/attachment'
+import type { AttachmentInput } from '@shared/db/contracts/attachment'
 
 export type CropToTempFormat = 'keep' | 'png' | 'jpeg' | 'webp'
 

@@ -1,5 +1,5 @@
 import type { AllEntityType } from '@shared/common'
-import type { SaveBackup } from '@shared/db/json-types'
+import type { SaveBackup } from '@shared/db/contracts/json'
 import type { AttachmentStore } from '../../attachment'
 import { shouldUseSourceValue } from './fields'
 import type { AttachmentStageResult, MergeRow, StagedMergeFile } from './types'

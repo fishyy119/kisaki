@@ -4,7 +4,7 @@ import type { EntityMergeRequest, EntityMergeResult } from '@shared/entity-merge
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { EventService } from '@main/services/event'
 import { createLogger } from '@main/log'
-import * as schema from '@shared/db'
+import * as schema from '@shared/db/schema'
 import type { AttachmentStore } from '../../attachment'
 import { ENTITY_MERGE_CONFIGS } from './configs'
 import { cleanupStagedMergeFiles, stageEntityAttachments } from './attachments'

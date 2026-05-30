@@ -4,7 +4,7 @@ import type {
   RelationValue,
   DateRangeValue,
   NumberRangeValue
-} from '@shared/db/json-types'
+} from '@shared/db/contracts/json'
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)

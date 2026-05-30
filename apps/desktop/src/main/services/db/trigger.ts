@@ -13,7 +13,7 @@ import { getTableName, is } from 'drizzle-orm'
 import { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { createLogger } from '@main/log'
 import type { EventService } from '@main/services/event'
-import * as schema from '@shared/db'
+import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
 import type { RawDbChangeEvent, RawDbChangeOperation } from '@shared/events/library'
 

@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { Status } from '@shared/db/enums'
+import type { Status } from '@shared/db/contracts/enums'
 import type {
   LibraryGameActivitySnapshot,
   LibraryGameAssetSnapshot,

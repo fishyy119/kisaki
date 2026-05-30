@@ -1,5 +1,5 @@
 import type { AllEntityType } from '@shared/common'
-import type { RelatedSite } from '@shared/db/json-types'
+import type { RelatedSite } from '@shared/db/contracts/json'
 import { normalizeKeyText } from '@shared/identity'
 import type { MergeRow } from './types'
 

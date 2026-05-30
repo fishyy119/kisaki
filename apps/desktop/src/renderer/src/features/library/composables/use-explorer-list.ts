@@ -15,8 +15,8 @@ import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
 import { buildSearchCondition, getSearchQuerySpec } from '@shared/search'
-import type { Game, Character, Person, Company } from '@shared/db'
-import * as schema from '@shared/db'
+import type { Game, Character, Person, Company } from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
 import type { ContentEntityType } from '@shared/common'
 
 // =============================================================================

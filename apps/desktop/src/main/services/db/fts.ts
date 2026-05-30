@@ -12,7 +12,7 @@
 
 import type Database from 'better-sqlite3'
 import { createLogger } from '@main/log'
-import type { FtsEntityType } from '@shared/db/fts'
+import type { FtsEntityType } from '@shared/db/contracts/fts'
 
 const log = createLogger('Db')
 

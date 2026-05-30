@@ -21,7 +21,7 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
-import type { SaveBackup } from '@shared/db/json-types'
+import type { SaveBackup } from '@shared/db/contracts/json'
 import { GameSavesFormDialog } from '../../../forms'
 import GameDetailSavesItem from './saves-item.vue'
 

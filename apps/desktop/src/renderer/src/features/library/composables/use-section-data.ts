@@ -10,8 +10,16 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import type { ShowcaseSection, Game, Character, Person, Company, Collection, Tag } from '@shared/db'
-import * as schema from '@shared/db'
+import type {
+  ShowcaseSection,
+  Game,
+  Character,
+  Person,
+  Company,
+  Collection,
+  Tag
+} from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
 import type { AllEntityType } from '@shared/common'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'

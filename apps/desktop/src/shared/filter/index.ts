@@ -14,7 +14,7 @@ export type {
   NumberRangeValue,
   SectionLayout,
   SectionItemSize
-} from '@shared/db/json-types'
+} from '@shared/db/contracts/json'
 
 export { createEmptyFilter, hasActiveFilters, countActiveFilters } from './state'
 export { getFilterValue, setFilterValue, removeFilterValue } from './state'

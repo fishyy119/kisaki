@@ -2,7 +2,7 @@
  * Database enum types
  *
  * Database enum type definitions and shared value lists.
- * Drizzle customType implementations are in ./custom-types.ts.
+ * Drizzle customType implementations are in ../columns.
  */
 
 import { SCANNER_INGEST_MODE_VALUES } from './constants'
@@ -49,3 +49,19 @@ export type MainWindowCloseAction = 'exit' | 'tray'
 
 /** Scanner ingest mode */
 export type ScannerIngestMode = (typeof SCANNER_INGEST_MODE_VALUES)[number]
+
+/** Extension repository state */
+export const EXTENSION_REPOSITORY_STATE_VALUES = ['enabled', 'disabled'] as const
+export type ExtensionRepositoryState = (typeof EXTENSION_REPOSITORY_STATE_VALUES)[number]
+
+/** Why an extension package was installed. */
+export const EXTENSION_INSTALL_REASON_VALUES = ['manual', 'update', 'local-file'] as const
+export type ExtensionInstallReason = (typeof EXTENSION_INSTALL_REASON_VALUES)[number]
+
+/** Extension update policy persisted for an installation. */
+export const EXTENSION_UPDATE_POLICY_VALUES = ['manual', 'auto', 'pinned'] as const
+export type ExtensionUpdatePolicy = (typeof EXTENSION_UPDATE_POLICY_VALUES)[number]
+
+/** Supported extension signer algorithms. */
+export const EXTENSION_SIGNER_ALGORITHM_VALUES = ['ed25519'] as const
+export type ExtensionSignerAlgorithm = (typeof EXTENSION_SIGNER_ALGORITHM_VALUES)[number]

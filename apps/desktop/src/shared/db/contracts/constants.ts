@@ -10,7 +10,7 @@ import type {
   CompanyScraperSlot,
   GameScraperSlot,
   PersonScraperSlot
-} from './json-types'
+} from './json'
 
 export const SCANNER_INGEST_MODE_VALUES = [
   'prefer-scraper',

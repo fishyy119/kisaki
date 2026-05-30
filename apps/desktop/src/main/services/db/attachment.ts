@@ -18,9 +18,9 @@ import { pipeline } from 'node:stream/promises'
 import { createLogger } from '@main/log'
 import type { NetworkService } from '@main/services/network'
 import type { ThumbnailStore } from './thumbnail'
-import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
+import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
 import type { TableName } from '@shared/db/table-names'
-import * as schema from '@shared/db'
+import * as schema from '@shared/db/schema'
 
 const log = createLogger('Db')
 

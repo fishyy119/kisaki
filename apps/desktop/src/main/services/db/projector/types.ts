@@ -1,4 +1,4 @@
-import type { Status } from '@shared/db/enums'
+import type { Status } from '@shared/db/contracts/enums'
 import type { RawDbChangeEvent } from '@shared/events/library'
 
 export const PROJECTOR_DEBOUNCE_MS = 25

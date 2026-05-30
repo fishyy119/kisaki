@@ -16,7 +16,7 @@ import fse from 'fs-extra'
 import { createLogger } from '@main/log'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
-import type { SaveBackup } from '@shared/db/json-types'
+import type { SaveBackup } from '@shared/db/contracts/json'
 
 const log = createLogger('Attachment')
 

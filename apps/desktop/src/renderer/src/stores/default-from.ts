@@ -26,8 +26,8 @@ import { db } from '@renderer/core/db'
 import { eventManager } from '@renderer/core/event'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
 import type { ContentEntityType } from '@shared/common'
-import type { Collection } from '@shared/db'
-import * as schema from '@shared/db'
+import type { Collection } from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from './preferences'
 
 // Entry with order for comparison

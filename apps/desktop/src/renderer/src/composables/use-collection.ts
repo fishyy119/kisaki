@@ -25,16 +25,9 @@ import { useAsyncData } from './use-async-data'
 import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import type {
-  Collection,
-  Game,
-  Character,
-  Person,
-  Company,
-  DynamicCollectionConfig,
-  DynamicEntityConfig
-} from '@shared/db'
-import * as schema from '@shared/db'
+import type { Collection, Game, Character, Person, Company } from '@shared/db/schema'
+import * as schema from '@shared/db/schema'
+import type { DynamicCollectionConfig, DynamicEntityConfig } from '@shared/db/contracts/json'
 import type { ContentEntityType, SortDirection } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import type { ContentEntityData, ContentEntityCounts } from './types'

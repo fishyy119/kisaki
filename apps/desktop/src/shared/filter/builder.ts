@@ -11,7 +11,7 @@ import type {
   DateRangeValue,
   NumberRangeValue,
   RelationValue
-} from '@shared/db/json-types'
+} from '@shared/db/contracts/json'
 import type { FilterQuerySpec, FieldQueryDef } from './spec'
 
 function parseYyyyMmDd(value: string): { year: number; month: number; day: number } | null {

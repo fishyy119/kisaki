@@ -7,7 +7,7 @@
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { ExtractTablesWithRelations } from 'drizzle-orm'
 import type { SQLiteTable, SQLiteTransaction } from 'drizzle-orm/sqlite-core'
-import type * as schema from '@shared/db'
+import type * as schema from '@shared/db/schema'
 
 /** Extract column names from Drizzle table type */
 export type ExtractColumns<T> =

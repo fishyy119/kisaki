@@ -8,7 +8,7 @@
 
 import { eq, and } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import * as schema from '@shared/db'
+import * as schema from '@shared/db/schema'
 import {
   persons,
   companies,
@@ -24,7 +24,7 @@ import {
   type Character,
   type Game,
   type Tag
-} from '@shared/db'
+} from '@shared/db/schema'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
 import type { DbContext } from '../types'
 

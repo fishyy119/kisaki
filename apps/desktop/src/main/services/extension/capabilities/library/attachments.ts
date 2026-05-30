@@ -18,7 +18,7 @@ import {
 import { eq } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { characters, collections, companies, games, persons } from '@shared/db'
-import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/attachment'
+import type { AttachmentInput, FileColumns, FilesColumns } from '@shared/db/contracts/attachment'
 import type { DbService } from '@main/services/db'
 import { assertInsideAnyRoot } from '../../shared/path-confinement'
 

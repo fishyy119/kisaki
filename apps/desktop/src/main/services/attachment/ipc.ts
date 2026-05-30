@@ -1,7 +1,7 @@
 import type { IpcService } from '@main/services/ipc'
 import { wrapIpc, wrapIpcVoid } from '@main/services/ipc'
 import type { CropRegion } from '@shared/attachment'
-import type { AttachmentInput } from '@shared/db/attachment'
+import type { AttachmentInput } from '@shared/db/contracts/attachment'
 import type { AttachmentService } from './service'
 import type { CropToTempOptions } from './crop'
 

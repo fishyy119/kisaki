@@ -6,7 +6,7 @@
  */
 
 import { type Table } from 'drizzle-orm'
-import * as schema from './schema'
+import * as tables from './schema/tables'
 
 /**
  * Extract actual SQL table name from a Drizzle table object.
@@ -28,4 +28,4 @@ type ExtractTableNames<T> = {
  * @example
  * // Results in: "games" | "persons" | "game_person_links" | ...
  */
-export type TableName = ExtractTableNames<typeof schema>
+export type TableName = ExtractTableNames<typeof tables>
