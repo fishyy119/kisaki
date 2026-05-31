@@ -1,5 +1,6 @@
 import { defineSettingsPanelDialog, type ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
+import { normalizeImportCollectionsArgs } from '../../../jobs/args'
 import { formatScopedCollectionType } from '../../../media/labels'
 import type { BangumiCollectionType } from '../../../api/types'
 import { toSettingsError } from '../shared/errors'
@@ -35,7 +36,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
         resources.collections(),
         resources.isCommandActive(BANGUMI_COMMAND_IDS.importCollections)
       ])
-      const previewArgs = createMyCollectionsImportArgs(context.values, profiles[0]?.id ?? '', true)
+      const previewArgs = createMyCollectionsImportArgs(context.values, profiles[0]?.id ?? '')
       const selectedScope = readImportScope(context.values)
       const preview = runtime.previewRegistry.get(
         context.sessionId,
@@ -119,10 +120,24 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
                 label: '预览将导入的游戏',
                 disabled: isActive,
                 async onClick(event) {
+                  const args = createMyCollectionsImportArgs(
+                    event.values,
+                    profiles[0]?.id ?? ''
+                  )
                   return runDialogPreview({
                     previewKey: 'import.myCollections',
                     commandId: BANGUMI_COMMAND_IDS.importCollections,
-                    args: createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', true),
+                    title: 'Bangumi 导入我的收藏预览',
+                    args,
+                    signal: runtime.abortSignal,
+                    run: (run) =>
+                      runtime.jobRunner.previewImportCollections(
+                        normalizeImportCollectionsArgs(args),
+                        {
+                          commandId: BANGUMI_COMMAND_IDS.importCollections,
+                          run
+                        }
+                      ),
                     previewRegistry: runtime.previewRegistry,
                     event
                   })
@@ -162,7 +177,7 @@ async function submitMyCollectionsDialog({
   profiles: readonly ScraperProfileSummary[]
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
-    const args = createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '', false)
+    const args = createMyCollectionsImportArgs(event.values, profiles[0]?.id ?? '')
 
     return await startDialogManualJob({
       commandId: BANGUMI_COMMAND_IDS.importCollections,

@@ -245,6 +245,7 @@ export interface TaskRunProgressUpdate {
   current?: number
   total?: number
   unit?: TaskRunProgressUnit
+  ratePeriod?: 'second' | 'minute' | 'hour'
   indeterminate?: boolean
   counters?: Record<string, number>
   warnings?: readonly TaskRunWarning[]
@@ -253,7 +254,6 @@ export interface TaskRunProgressUpdate {
 export interface TaskRunProgress extends TaskRunProgressUpdate {
   updatedAt: number
   rate?: number
-  rateWindowMs?: number
   etaMs?: number
   percent?: number
 }
@@ -268,6 +268,7 @@ export interface TaskRunProgress extends TaskRunProgressUpdate {
 - `rate`、`etaMs`、`percent` 由 `TaskRunService` 计算，生产者不直接写。
 - 不知道总量时设置 `indeterminate: true`。
 - `unit` 用于 UI 显示速度，例如 `12 items/s`、`3.4 MB/s`。
+- `ratePeriod` 可指定速度展示周期，例如 `second`、`minute` 或 `hour`。
 - `counters` 是 active run 的有限汇总，例如 `succeeded`、`failed`、`skipped`、`warnings`，用于 scanner、batch ingest、extension install 等 live summary。
 - `warnings` 是 active run 的有限展示摘要，不是完整错误明细；service 必须按条数和序列化大小限制。
 - 每次 `report(update)` 都是 producer-writable progress 字段的完整快照替换，不是深度 merge。未出现在 update 中的 `phase`、`message`、`current`、`total`、`unit`、`indeterminate`、`counters` 和 `warnings` 会被清空。

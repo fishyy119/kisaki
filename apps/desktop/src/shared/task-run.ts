@@ -105,12 +105,15 @@ export type TaskRunProgressUnit =
   | 'package'
   | 'request'
 
+export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
+
 export interface TaskRunProgressUpdate {
   phase?: string
   message?: string
   current?: number
   total?: number
   unit?: TaskRunProgressUnit
+  ratePeriod?: TaskRunRatePeriod
   indeterminate?: boolean
   counters?: Record<string, number>
   warnings?: readonly TaskRunWarning[]
@@ -119,7 +122,6 @@ export interface TaskRunProgressUpdate {
 export interface TaskRunProgress extends TaskRunProgressUpdate {
   updatedAt: number
   rate?: number
-  rateWindowMs?: number
   etaMs?: number
   percent?: number
 }

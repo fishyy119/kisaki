@@ -176,7 +176,8 @@ function normalizeOptions(
       title,
       message: options?.message,
       type: kind,
-      target: options?.mode
+      target: options?.mode,
+      closable: options?.closable
     },
     requestedId: options?.id
   }

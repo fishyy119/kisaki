@@ -2,8 +2,10 @@ import type {
   CommandContributionExecuteEvent,
   CommandRegistrar,
   Disposable,
+  ExtensionTaskRunHandle,
   SerializableRecord
 } from '@kisaki3/extension-sdk'
+import { kisaki, isExtensionTaskRunCancellation } from '@kisaki3/extension-sdk'
 import {
   normalizeAuthRefreshArgs,
   normalizeChangedItemsSyncArgs,
@@ -11,7 +13,8 @@ import {
   normalizeImportIndexArgs,
   normalizeImportCollectionsArgs
 } from './args'
-import type { BangumiJobEvent, JobRunner } from './runner'
+import type { JobRunner } from './runner'
+import { BangumiExtensionError } from '../shared/errors'
 
 export const BANGUMI_COMMAND_IDS = {
   authRefresh: 'bangumi.auth.refresh',
@@ -42,10 +45,18 @@ export function registerBangumiJobCommands(
         verifyAccount: 'boolean'
       }),
       execute(args, event) {
-        return runner.runAuthRefresh(
-          normalizeAuthRefreshArgs(args),
-          toBangumiJobEvent(event, signal)
-        )
+        return startBangumiTaskRun({
+          event,
+          signal,
+          operation: 'authRefresh',
+          title: 'Bangumi 刷新凭据',
+          description: '刷新 Bangumi token 并验证当前账号',
+          run: (run) =>
+            runner.runAuthRefresh(normalizeAuthRefreshArgs(args), {
+              commandId: event.commandId,
+              run
+            })
+        })
       }
     }),
     commands.register({
@@ -54,19 +65,26 @@ export function registerBangumiJobCommands(
       description: '同步扩展运行期队列中的本地条目变更',
       defaultArgs: {
         scope: 'game',
-        dryRun: false,
         limit: 500
       },
       argsSchema: createObjectArgsSchema({
         scope: 'string',
-        dryRun: 'boolean',
         limit: 'number'
       }),
       execute(args, event) {
-        return runner.runChangedItemsSync(
-          normalizeChangedItemsSyncArgs(args),
-          toBangumiJobEvent(event, signal)
-        )
+        const normalized = normalizeChangedItemsSyncArgs(args)
+        return startBangumiTaskRun({
+          event,
+          signal,
+          operation: 'sync.changedItems',
+          title: 'Bangumi 同步变更条目',
+          description: '同步扩展运行期队列中的本地条目变更',
+          run: (run) =>
+            runner.runChangedItemsSync(normalized, {
+              commandId: event.commandId,
+              run
+            })
+        })
       }
     }),
     commands.register({
@@ -75,7 +93,6 @@ export function registerBangumiJobCommands(
       description: '扫描本地游戏并同步 Bangumi 收藏状态与评分',
       defaultArgs: {
         scope: 'game',
-        dryRun: true,
         updateExisting: true,
         playStatusEnabled: true,
         scoreEnabled: true,
@@ -84,7 +101,6 @@ export function registerBangumiJobCommands(
       },
       argsSchema: createObjectArgsSchema({
         scope: 'string',
-        dryRun: 'boolean',
         updateExisting: 'boolean',
         batchSize: 'number',
         playStatusEnabled: 'boolean',
@@ -92,7 +108,19 @@ export function registerBangumiJobCommands(
         clearRemoteScoreWhenEmpty: 'boolean'
       }),
       execute(args, event) {
-        return runner.runFullSync(normalizeFullSyncArgs(args), toBangumiJobEvent(event, signal))
+        const normalized = normalizeFullSyncArgs(args)
+        return startBangumiTaskRun({
+          event,
+          signal,
+          operation: 'fullSync',
+          title: 'Bangumi 全量同步',
+          description: '扫描本地游戏并同步 Bangumi 收藏状态与评分',
+          run: (run) =>
+            runner.runFullSync(normalized, {
+              commandId: event.commandId,
+              run
+            })
+        })
       }
     }),
     commands.register({
@@ -101,7 +129,6 @@ export function registerBangumiJobCommands(
       description: '按媒体类型导入当前 Bangumi 用户收藏',
       defaultArgs: {
         scope: 'game',
-        dryRun: true,
         profileId: '',
         collectionTypes: [1, 2, 3, 4, 5],
         fields: {
@@ -116,7 +143,6 @@ export function registerBangumiJobCommands(
       },
       argsSchema: createObjectArgsSchema({
         scope: 'string',
-        dryRun: 'boolean',
         profileId: 'string',
         collectionTypes: 'array',
         fields: 'object',
@@ -124,19 +150,27 @@ export function registerBangumiJobCommands(
         targetCollection: 'object'
       }),
       execute(args, event) {
-        return runner.runImportCollections(
-          normalizeImportCollectionsArgs(args),
-          toBangumiJobEvent(event, signal)
-        )
+        const normalized = normalizeImportCollectionsArgs(args)
+        return startBangumiTaskRun({
+          event,
+          signal,
+          operation: 'import.collections',
+          title: 'Bangumi 导入我的收藏',
+          description: '按媒体类型导入当前 Bangumi 用户收藏',
+          run: (run) =>
+            runner.runImportCollections(normalized, {
+              commandId: event.commandId,
+              run
+            })
+        })
       }
     }),
     commands.register({
       id: BANGUMI_COMMAND_IDS.importIndex,
       title: 'Bangumi 导入目录',
-      description: '按媒体类型导入或预览指定 Bangumi 目录条目',
+      description: '按媒体类型导入指定 Bangumi 目录条目',
       defaultArgs: {
         scope: 'game',
-        dryRun: true,
         profileId: '',
         indexInput: '',
         patchExisting: false,
@@ -146,33 +180,30 @@ export function registerBangumiJobCommands(
       },
       argsSchema: createObjectArgsSchema({
         scope: 'string',
-        dryRun: 'boolean',
         profileId: 'string',
         indexInput: 'string',
         patchExisting: 'boolean',
         targetCollection: 'object'
       }),
       execute(args, event) {
-        return runner.runImportIndex(
-          normalizeImportIndexArgs(args),
-          toBangumiJobEvent(event, signal)
-        )
+        const normalized = normalizeImportIndexArgs(args)
+        return startBangumiTaskRun({
+          event,
+          signal,
+          operation: 'import.index',
+          title: 'Bangumi 导入目录',
+          description: '按媒体类型导入指定 Bangumi 目录条目',
+          run: (run) =>
+            runner.runImportIndex(normalized, {
+              commandId: event.commandId,
+              run
+            })
+        })
       }
     })
   ] satisfies readonly Disposable[]
 
   return registrations
-}
-
-function toBangumiJobEvent(
-  event: CommandContributionExecuteEvent,
-  signal: AbortSignal
-): BangumiJobEvent {
-  return {
-    commandId: event.commandId,
-    source: event.source,
-    signal
-  }
 }
 
 function createObjectArgsSchema(properties: Record<string, string>): SerializableRecord {
@@ -186,4 +217,49 @@ function createObjectArgsSchema(properties: Record<string, string>): Serializabl
 
 export function isBangumiCommandId(value: string): value is BangumiCommandId {
   return Object.values(BANGUMI_COMMAND_IDS).includes(value as BangumiCommandId)
+}
+
+async function startBangumiTaskRun(options: {
+  event: CommandContributionExecuteEvent
+  signal: AbortSignal
+  operation: string
+  title: string
+  description: string
+  run(run: ExtensionTaskRunHandle): Promise<unknown>
+}): Promise<SerializableRecord> {
+  if (options.signal.aborted) {
+    throw new BangumiExtensionError('job_cancelled', 'Bangumi job 已取消。')
+  }
+
+  const run = await kisaki.taskRuns.create({
+    operation: options.operation,
+    title: options.title,
+    description: options.description,
+    initiator: options.event.source,
+    subject: {
+      type: 'command',
+      id: options.event.commandId,
+      labelSnapshot: options.title
+    },
+    controls: {
+      cancelable: true,
+      pausable: false
+    },
+    presentation: {
+      notify: {
+        enabled: true,
+        title: options.title,
+        showResult: true,
+        closable: true
+      }
+    }
+  })
+
+  void options.run(run).catch((error) => {
+    if (!isExtensionTaskRunCancellation(error)) {
+      void error
+    }
+  })
+
+  return { runId: run.id }
 }

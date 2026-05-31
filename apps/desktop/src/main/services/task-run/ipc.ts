@@ -21,6 +21,10 @@ export function registerTaskRunIpc(service: TaskRunService, ipc: IpcService): vo
 
   ipc.handle('task-run:resume', async (_, runId) => wrapIpc(() => service.runs.resume(runId)))
 
+  ipc.handle('task-run:delete-history', async (_, runId) =>
+    wrapIpcVoid(() => service.history.delete(runId))
+  )
+
   ipc.handle('task-run:clear-completed', async () =>
     wrapIpcVoid(() => service.history.clearCompleted())
   )

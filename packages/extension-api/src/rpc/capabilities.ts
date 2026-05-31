@@ -58,6 +58,14 @@ import type {
 import type { NotificationHandle, NotificationKind, NotifyOptions } from '../capabilities/notify'
 import type { RuntimeInfo } from '../capabilities/runtime'
 import type { ScraperProfileListQuery, ScraperProfileSummary } from '../capabilities/scrapers'
+import type {
+  ExtensionTaskRunActiveListQuery,
+  ExtensionTaskRunCreateInput,
+  ExtensionTaskRunHistoryListQuery,
+  ExtensionTaskRunProgressUpdate,
+  ExtensionTaskRunResult,
+  ExtensionTaskRunSnapshot
+} from '../capabilities/task-runs'
 import type { ScraperLookup } from '../contributions/scraper-providers'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
@@ -142,6 +150,49 @@ export interface AutomationDeleteRequest extends ExtensionScopedRpcParams {
 
 export interface AutomationRunRequest extends ExtensionScopedRpcParams {
   automationId: string
+}
+
+export interface ExtensionTaskRunFailureErrorPayload {
+  message: string
+  code?: string
+}
+
+export interface ExtensionTaskRunCreateRequest extends ExtensionScopedRpcParams {
+  input: ExtensionTaskRunCreateInput
+}
+
+export interface ExtensionTaskRunScopedRequest extends ExtensionScopedRpcParams {
+  runId: string
+}
+
+export interface ExtensionTaskRunReportRequest extends ExtensionTaskRunScopedRequest {
+  update: ExtensionTaskRunProgressUpdate
+}
+
+export interface ExtensionTaskRunCompleteRequest extends ExtensionTaskRunScopedRequest {
+  result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
+}
+
+export interface ExtensionTaskRunFailRequest extends ExtensionTaskRunScopedRequest {
+  error: ExtensionTaskRunFailureErrorPayload
+  result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
+}
+
+export interface ExtensionTaskRunCancelRequest extends ExtensionTaskRunScopedRequest {
+  result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
+}
+
+export interface ExtensionTaskRunActiveListRequest extends ExtensionScopedRpcParams {
+  query?: ExtensionTaskRunActiveListQuery
+}
+
+export interface ExtensionTaskRunHistoryListRequest extends ExtensionScopedRpcParams {
+  query?: ExtensionTaskRunHistoryListQuery
+}
+
+export interface ExtensionTaskRunCancelRequestedEvent {
+  runtimeHandle: string
+  runId: string
 }
 
 export type LibraryEntityRpcRequestMap<TPrefix extends string, TEntity, TCreate, TPatch, TQuery> = {
@@ -262,6 +313,41 @@ export type HostToMainCapabilityRpcRequestMap = {
     AutomationRunRequest,
     { record: AutomationRunHistoryRecord | null }
   >
+  'capabilities.taskRuns.create': RpcMethodDefinition<
+    ExtensionTaskRunCreateRequest,
+    { run: ExtensionTaskRunSnapshot }
+  >
+  'capabilities.taskRuns.report': RpcMethodDefinition<ExtensionTaskRunReportRequest, RpcNoPayload>
+  'capabilities.taskRuns.checkpoint': RpcMethodDefinition<
+    ExtensionTaskRunScopedRequest,
+    RpcNoPayload
+  >
+  'capabilities.taskRuns.complete': RpcMethodDefinition<
+    ExtensionTaskRunCompleteRequest,
+    RpcNoPayload
+  >
+  'capabilities.taskRuns.fail': RpcMethodDefinition<ExtensionTaskRunFailRequest, RpcNoPayload>
+  'capabilities.taskRuns.cancel': RpcMethodDefinition<ExtensionTaskRunCancelRequest, RpcNoPayload>
+  'capabilities.taskRuns.listActiveOwn': RpcMethodDefinition<
+    ExtensionTaskRunActiveListRequest,
+    { items: readonly ExtensionTaskRunSnapshot[] }
+  >
+  'capabilities.taskRuns.listHistoryOwn': RpcMethodDefinition<
+    ExtensionTaskRunHistoryListRequest,
+    { items: readonly ExtensionTaskRunSnapshot[] }
+  >
+  'capabilities.taskRuns.getActiveOwn': RpcMethodDefinition<
+    ExtensionTaskRunScopedRequest,
+    { run: ExtensionTaskRunSnapshot | null }
+  >
+  'capabilities.taskRuns.getHistoryOwn': RpcMethodDefinition<
+    ExtensionTaskRunScopedRequest,
+    { run: ExtensionTaskRunSnapshot | null }
+  >
+  'capabilities.taskRuns.waitOwn': RpcMethodDefinition<
+    ExtensionTaskRunScopedRequest,
+    { run: ExtensionTaskRunSnapshot }
+  >
   'capabilities.events.subscribeHost': RpcMethodDefinition<
     HostEventSubscriptionRequest,
     RpcNoPayload
@@ -315,4 +401,5 @@ export type HostToMainCapabilityRpcRequestMap = {
 
 export interface MainToHostCapabilityRpcEventMap {
   'capabilities.events.host': HostEventNotification
+  'capabilities.taskRuns.cancelRequested': ExtensionTaskRunCancelRequestedEvent
 }

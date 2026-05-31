@@ -55,6 +55,7 @@ export class ExtensionService implements IService {
     'ingest',
     'command',
     'automation',
+    'task-run',
     'deeplink'
   ] as const satisfies readonly ServiceName[]
 
@@ -142,6 +143,7 @@ export class ExtensionService implements IService {
       network: container.get('network'),
       notify: container.get('notify'),
       scraper: container.get('scraper'),
+      taskRun: container.get('task-run'),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null
     })

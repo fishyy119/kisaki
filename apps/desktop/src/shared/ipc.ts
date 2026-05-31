@@ -216,6 +216,7 @@ export interface IpcMainHandlers {
   'task-run:cancel': (runId: string) => IpcResult<boolean>
   'task-run:pause': (runId: string) => IpcResult<boolean>
   'task-run:resume': (runId: string) => IpcResult<boolean>
+  'task-run:delete-history': (runId: string) => IpcVoidResult
   'task-run:clear-completed': () => IpcVoidResult
 
   // Commands

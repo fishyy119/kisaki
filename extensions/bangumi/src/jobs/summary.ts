@@ -1,8 +1,6 @@
 import type { SerializableRecord } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError, type BangumiErrorCode } from '../shared/errors'
 
-export type BangumiJobStatus = 'completed' | 'cancelled' | 'failed'
-
 export interface BangumiJobError extends SerializableRecord {
   scope: string | null
   subjectId: string | null
@@ -43,8 +41,6 @@ export interface BangumiJobSummary extends SerializableRecord {
   commandId: string
   startedAt: number
   finishedAt: number
-  status: BangumiJobStatus
-  dryRun: boolean
   counters: Record<string, number>
   previewGroups: readonly BangumiJobPreviewGroup[]
   errors: readonly BangumiJobError[]
@@ -53,8 +49,6 @@ export interface BangumiJobSummary extends SerializableRecord {
 export interface BangumiJobSummaryInput {
   commandId: string
   startedAt: number
-  status: BangumiJobStatus
-  dryRun: boolean
   counters?: Record<string, number>
   previewGroups?: readonly BangumiJobPreviewGroup[]
   errors?: readonly BangumiJobError[]
@@ -66,8 +60,6 @@ export function createBangumiJobSummary(input: BangumiJobSummaryInput): BangumiJ
     commandId: input.commandId,
     startedAt: input.startedAt,
     finishedAt: Date.now(),
-    status: input.status,
-    dryRun: input.dryRun,
     counters: normalizeCounters(input.counters),
     previewGroups: (input.previewGroups ?? []).map(normalizePreviewGroup),
     errors: (input.errors ?? []).map(normalizeJobError)

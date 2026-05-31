@@ -20,7 +20,8 @@ Root 使用 tabs，复杂流程使用 dialogs：
 UI 规则：
 
 - 控件使用 structured settings nodes，不写自定义 renderer。
-- 长流程按钮只启动 command，并拿到返回的 `runId` 后立即结束 settings callback。
+- 执行类长流程按钮只启动 command，并拿到返回的 `runId` 后立即结束 settings callback。
+- 预览按钮不创建 TaskRun，不进入任务中心；settings 内部调用 runner 的 preview 模式，并只用 notify 展示临时进度。
 - job 运行状态不在 settings panel 内追加 progress/status field；进度、完成、取消和历史统一由主应用任务中心展示。
 - 重复入口禁用来自当前 settings session 的 pending 状态，或 `kisaki.taskRuns.listOwn({ status: 'active', subject })` 的本扩展 active run 查询。
 - Automation tab 只创建或展示本扩展拥有的自动化配置摘要，不运行、不取消、不展示执行历史。
@@ -79,7 +80,6 @@ interface BangumiScopedArgs {
 }
 
 interface BangumiFullSyncArgs extends BangumiScopedArgs {
-  dryRun: boolean
   updateExisting: boolean
   batchSize: number
   playStatusEnabled?: boolean
@@ -88,7 +88,6 @@ interface BangumiFullSyncArgs extends BangumiScopedArgs {
 }
 
 interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
-  dryRun: boolean
   profileId?: string
   collectionTypes: readonly BangumiCollectionType[]
   fields: BangumiImportWriteFields
@@ -98,7 +97,6 @@ interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
 }
 
 interface BangumiImportIndexArgs extends BangumiScopedArgs {
-  dryRun: boolean
   profileId?: string
   indexInput: string
   indexId: number
@@ -113,19 +111,23 @@ interface BangumiImportIndexArgs extends BangumiScopedArgs {
 - `scope` 只允许四类固定值。
 - `profileId` 对 `game` execute 必填。
 - `book` / `anime` / `music` 的本地写入 execute 必须返回 unsupported summary。
-- `dryRun` 可对四类 scope 拉取远端并生成计划。
+- 预览不是 command args；settings 预览路径调用 runner 的显式 `preview*` 方法，底层先 collect 远端/本地计划，再用 notify 展示结果。
 
 ## TaskRun Wrapper
 
 扩展 command handler 不使用 command progress，也不通过 CommandService 取消。长流程统一创建 scoped TaskRun：
 
 ```ts
-export async function runFullSync(args: BangumiFullSyncArgs): Promise<{ runId: string }> {
+export async function runFullSync(
+  args: BangumiFullSyncArgs,
+  event: CommandContributionExecuteEvent
+): Promise<{ runId: string }> {
   const run = await kisaki.taskRuns.create({
-    operation: 'command.execute',
+    operation: 'fullSync',
     title: 'Bangumi 全量同步',
+    initiator: event.source,
     subject: { type: 'command', id: 'bangumi.sync.full', labelSnapshot: 'Bangumi 全量同步' },
-    controls: { cancelable: true, retryable: true },
+    controls: { cancelable: true, pausable: false },
     presentation: {
       notify: { enabled: true, showProgress: true, showResult: true, closable: true }
     }
@@ -148,11 +150,11 @@ export async function runFullSync(args: BangumiFullSyncArgs): Promise<{ runId: s
 - 取消由 `run.signal` / `run.checkpoint()` 响应，最终进入 `cancelled`。
 - 失败时调用 `await run.fail(error, { counters, warnings, output })`。
 
-宿主根据 command source 派生 initiator：
+command handler 显式把 `event.source` 作为 TaskRun initiator：
 
 - settings panel 用户点击：`initiator.type === 'user'`。
 - AutomationService 调度：`initiator.type === 'automation'`，包含 automation id、nameSnapshot、trigger 和 attempt。
-- extension runtime 自发执行：`initiator.type === 'extension'`。
+- extension runtime 自发执行且未提供 initiator 时，host 默认写入当前 extension。
 
 ## TaskRun Output
 
@@ -162,9 +164,10 @@ export async function runFullSync(args: BangumiFullSyncArgs): Promise<{ runId: s
 interface BangumiJobSummary {
   version: 1
   commandId: string
-  scope?: BangumiMediaScope
-  dryRun: boolean
+  startedAt: number
+  finishedAt: number
   counters: Record<string, number>
+  previewGroups: BangumiJobPreviewGroup[]
   errors: Array<{
     scope?: BangumiMediaScope
     subjectId?: string
@@ -178,7 +181,7 @@ interface BangumiJobSummary {
 规则：
 
 - final status 来自 `TaskRun.result.status`，不要在 `BangumiJobSummary` 里复制 status。
-- startedAt、finishedAt、duration 来自 TaskRun snapshot，不复制到 output。
+- duration 来自 TaskRun snapshot，不复制到 output。
 - `errors` 必须有上限，例如 200 条；完整错误对象只写 extension logger。
 - `result.counters` 是任务中心显示的权威计数；`output.counters` 可以作为扩展业务摘要保留同一份有限数据。
 - settings panel 不复制或展示 history。

@@ -10,7 +10,6 @@ import {
   formatTaskRunCategory,
   formatTaskRunCounterSummary,
   formatTaskRunDuration,
-  formatTaskRunOperation,
   formatTaskRunResultSummary,
   formatTaskRunStatus,
   getTaskRunCategoryIcon,
@@ -25,12 +24,10 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   details: [run: TaskRun]
+  delete: [run: TaskRun]
 }>()
 
-const operationText = computed(
-  () =>
-    `${formatTaskRunCategory(props.run.category)} · ${formatTaskRunOperation(props.run.operation)}`
-)
+const categoryText = computed(() => formatTaskRunCategory(props.run.category))
 const resultText = computed(() => formatTaskRunResultSummary(props.run))
 const progressText = computed(() => formatProgressCount(props.run))
 const counterText = computed(() => formatTaskRunCounterSummary(props.run, props.run.result?.counters, 3))
@@ -42,7 +39,7 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
 
 <template>
   <div
-    class="group grid min-h-16 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_32px] items-center gap-5 overflow-hidden px-4 py-2 transition-colors hover:bg-accent/30"
+    class="group grid min-h-16 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_64px] items-center gap-5 overflow-hidden px-4 py-2 transition-colors hover:bg-accent/30"
   >
     <div class="flex min-w-0 items-center gap-3">
       <div class="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
@@ -90,7 +87,7 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
             </TooltipContent>
           </Tooltip>
         </div>
-        <div class="truncate text-xs text-muted-foreground">{{ operationText }}</div>
+        <div class="truncate text-xs text-muted-foreground">{{ categoryText }}</div>
       </div>
     </div>
 
@@ -125,7 +122,7 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
       </Badge>
     </div>
 
-    <div class="flex items-center justify-end">
+    <div class="flex items-center justify-end gap-1">
       <Tooltip>
         <TooltipTrigger as-child>
           <Button
@@ -141,6 +138,24 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
           </Button>
         </TooltipTrigger>
         <TooltipContent>详情</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="删除记录"
+            class="hover:text-destructive"
+            @click="emit('delete', props.run)"
+          >
+            <Icon
+              icon="icon-[mdi--trash-can-outline]"
+              class="size-4"
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>删除记录</TooltipContent>
       </Tooltip>
     </div>
   </div>

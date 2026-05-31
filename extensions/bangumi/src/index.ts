@@ -148,9 +148,11 @@ export default defineExtension({
       accountService,
       oauthFlow,
       tokenService,
+      jobRunner,
       mediaRegistry,
       syncStateStore,
-      syncQueueStore
+      syncQueueStore,
+      abortSignal: context.abortSignal
     })
     const settingsRegistration = context.contributions.settingsPanels.register(
       createBangumiSettingsPanel(settingsRuntime)

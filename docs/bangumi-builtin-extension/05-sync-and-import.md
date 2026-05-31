@@ -25,7 +25,7 @@
 
 规则：
 
-- `book` / `anime` / `music` 可以生成远端读取结果、dry run 诊断和 unsupported summary。
+- `book` / `anime` / `music` 可以生成远端读取结果、预览诊断和 unsupported summary。
 - UI 默认不展示 book/anime/music 的本地写入执行按钮。
 - job 层必须再次校验 adapter 能力，不能只依赖 UI。
 
@@ -115,7 +115,6 @@ bangumi.sync.full
 输入：
 
 - `scope`: 当前只允许 `game` execute。
-- `dryRun`: true/false。
 - 同步对象固定为带 Bangumi ID 的本地条目；settings UI 不提供范围配置。
 - `updateExisting`: 同步始终会为远端缺失的条目创建 Bangumi 收藏；该开关只控制是否更新远端已有收藏。
 - play status/score override: 可临时覆盖 settings 开关。
@@ -125,8 +124,8 @@ bangumi.sync.full
 1. 从 `MediaRegistry` 获取 local adapter；没有 adapter 时返回 `local_media_unsupported`。
 2. 调用 adapter `listLocalItems` 分批读取本地条目，并跳过没有 Bangumi external id 的条目。
 3. 为每个条目解析 `BangumiSubjectRef`。
-4. dry run 时可按需读取远端 collection 判断将新增/修改/跳过。
-5. execute 时复用 `SyncEngine`。
+4. `SyncEngine.collectItem()` 读取远端 collection，判断将新增、修改或跳过。
+5. preview 只展示 collect 结果；execute 只对 collect 出的待同步项调用 `SyncEngine.applyItem()`。
 6. 每个 subject 独立失败，不中断整批，除非认证失效或用户取消。
 7. 输出 summary。
 
@@ -160,7 +159,7 @@ bangumi.import.collections
 - target collection: 不加入合集、加入用户选择的现有本地合集；默认不加入合集。
 - field mapping: status、score、tags，单次选择，默认全部关闭。
 - patch existing: true/false，默认 false。
-- dry run。
+- settings 预览不进入 command args，不创建 TaskRun。
 
 拉取：
 
@@ -173,7 +172,7 @@ bangumi.import.collections
 
 1. `CollectionReader` 返回 media-scoped remote item。
 2. `ImportPlanner` 按 subject ID 与 local adapter 的索引匹配。
-3. 如果 scope 没有 local adapter，dry run 输出 remote-only 计划；execute 返回 unsupported summary。
+3. 如果 scope 没有 local adapter，预览输出 remote-only 计划；execute 返回 unsupported summary。
 4. 如果本地已有同 subject ID 且 `patchExisting=false`，记录为已存在并跳过。
 5. 如果本地已有同 subject ID 且 `patchExisting=true`，只根据本次 args 补写 status、score、tags 和目标本地合集。
 6. 如果本地不存在同 subject ID，调用 adapter `addFromScraper(profileId, lookup)` 创建或定位条目。
@@ -199,7 +198,7 @@ bangumi.import.index
 - type filter 来自 scope。
 - target collection: 不加入合集、加入用户选择的现有本地合集、按 Bangumi 目录名自动创建或复用本地静态合集。
 - patch existing: true/false，默认 false。
-- dry run。
+- settings 预览不进入 command args，不创建 TaskRun。
 
 解析：
 
@@ -213,8 +212,8 @@ bangumi.import.index
 1. `GET /v0/indices/{index_id}` 读取目录标题、描述和诊断信息。
 2. `GET /v0/indices/{index_id}/subjects?type=<scope.subjectType>&limit=50&offset=<n>` 分页拉取条目。
 3. 每个条目的 `id` 作为 Bangumi subject ID。
-4. 如果 scope 没有 local adapter，dry run 输出 remote-only 计划；execute 返回 unsupported summary。
-5. 如果 target collection 是 `byIndexTitle`，用目录标题精确查找同名本地静态合集；找不到时 dry run 展示“将创建”，execute 在首次需要写入 membership 时创建。
+4. 如果 scope 没有 local adapter，预览输出 remote-only 计划；execute 返回 unsupported summary。
+5. 如果 target collection 是 `byIndexTitle`，用目录标题精确查找同名本地静态合集；找不到时预览展示“将创建”，execute 在首次需要写入 membership 时创建。
 6. 导入前分页读取本地条目，建立 Bangumi subject ID -> local item 的索引。
 7. 如果本地已有同 subject ID 且 `patchExisting=false`，记录为已存在并跳过。
 8. 如果本地已有同 subject ID 且 `patchExisting=true` 且选择了目标本地合集，通过 adapter 建立 membership。
@@ -242,7 +241,7 @@ type PlannedImportAction =
   | { kind: 'error'; scope: BangumiMediaScope; subjectId?: string; message: string }
 ```
 
-planner 不执行写入，只产出可展示、可测试、可复用的计划。execute 阶段按计划逐项执行，并在执行前重新校验 adapter、profile、auth 和取消信号。
+planner 不执行写入，只产出可展示、可测试、可复用的计划。runner 的 collect 阶段读取远端、匹配本地、过滤已存在和无变化项，生成实际 operations；preview 只渲染 operations，execute 只执行 operations，并在执行前重新校验 adapter、profile、auth 和取消信号。
 
 ## 并发与取消
 

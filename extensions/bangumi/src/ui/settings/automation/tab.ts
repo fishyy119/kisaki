@@ -54,7 +54,6 @@ export async function resolveAutomationTab(
             commandId: BANGUMI_COMMAND_IDS.syncChangedItems,
             args: {
               scope: 'game',
-              dryRun: false,
               limit: 500
             },
             enabled: true,
@@ -73,7 +72,6 @@ export async function resolveAutomationTab(
             commandId: BANGUMI_COMMAND_IDS.syncFull,
             args: {
               scope: 'game',
-              dryRun: false,
               updateExisting: true,
               playStatusEnabled: storedSettings.game.autoSync.playStatusEnabled,
               scoreEnabled: storedSettings.game.autoSync.scoreEnabled,

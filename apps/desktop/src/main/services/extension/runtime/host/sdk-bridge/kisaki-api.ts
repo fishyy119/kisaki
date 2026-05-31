@@ -1,8 +1,16 @@
+import { ExtensionTaskRunCancellation, readErrorCode } from '@kisaki3/extension-api'
 import type {
   Disposable,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionEventTopic,
+  ExtensionTaskRunActiveListQuery,
+  ExtensionTaskRunCreateInput,
+  ExtensionTaskRunFailureErrorPayload,
+  ExtensionTaskRunHandle,
+  ExtensionTaskRunHistoryListQuery,
+  ExtensionTaskRunProgressUpdate,
+  ExtensionTaskRunSnapshot,
   HostEventListener,
   HostEventTopic,
   HostToMainRpcMethod,
@@ -21,6 +29,12 @@ import type {
   RpcResult
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope } from './types'
+import {
+  JSON_COMPATIBLE_UNDEFINED_SERIALIZATION,
+  toSerializableRecord
+} from './utils/serialization'
+
+const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
 
 type ScopedHostToMainRpcParams<K extends HostToMainRpcMethod> = Omit<
   RpcParams<HostToMainRpcRequestMap, K>,
@@ -84,6 +98,11 @@ export interface KisakiApiBridgeHooks {
     topic: ExtensionEventTopic,
     payload: TPayload
   ): Promise<void>
+  registerTaskRunAbortController(
+    scope: ActiveExtensionScope,
+    runId: string,
+    controller: AbortController
+  ): Disposable
 }
 
 /**
@@ -140,6 +159,87 @@ export function createKisakiApi(
         >)
       }
     } as unknown as TNamespace
+  }
+
+  const createTaskRunHandle = (run: ExtensionTaskRunSnapshot): ExtensionTaskRunHandle => {
+    const scope = requireScope()
+    const controller = new AbortController()
+    const registration = hooks.registerTaskRunAbortController(scope, run.id, controller)
+    let disposed = false
+
+    const dispose = () => {
+      if (disposed) {
+        return
+      }
+
+      disposed = true
+      registration.dispose()
+    }
+
+    const throwIfCancelled = () => {
+      if (controller.signal.aborted) {
+        throw new ExtensionTaskRunCancellation()
+      }
+    }
+
+    const mapTaskRunError = (error: unknown): never => {
+      if (controller.signal.aborted || readErrorCode(error) === TASK_RUN_CANCELLED_ERROR_CODE) {
+        throw new ExtensionTaskRunCancellation()
+      }
+
+      throw error
+    }
+
+    return {
+      id: run.id,
+      signal: controller.signal,
+      report: async (update) => {
+        throwIfCancelled()
+        try {
+          await requestMain('capabilities.taskRuns.report', {
+            runId: run.id,
+            update: toJsonCompatibleRecord<ExtensionTaskRunProgressUpdate>(
+              update,
+              'task run progress update'
+            )
+          })
+        } catch (error) {
+          mapTaskRunError(error)
+        }
+      },
+      checkpoint: async () => {
+        throwIfCancelled()
+        try {
+          await requestMain('capabilities.taskRuns.checkpoint', { runId: run.id })
+        } catch (error) {
+          mapTaskRunError(error)
+        }
+        throwIfCancelled()
+      },
+      complete: async (result) => {
+        await requestMain('capabilities.taskRuns.complete', {
+          runId: run.id,
+          result: toOptionalJsonCompatibleRecord(result, 'task run result')
+        })
+        dispose()
+      },
+      fail: async (error, result) => {
+        await requestMain('capabilities.taskRuns.fail', {
+          runId: run.id,
+          error: toTaskRunFailureErrorPayload(error),
+          result: toOptionalJsonCompatibleRecord(result, 'task run result')
+        })
+        dispose()
+      },
+      cancel: async (result) => {
+        await requestMain('capabilities.taskRuns.cancel', {
+          runId: run.id,
+          result: toOptionalJsonCompatibleRecord(result, 'task run result')
+        })
+        controller.abort()
+        dispose()
+      }
+    }
   }
 
   return {
@@ -393,6 +493,55 @@ export function createKisakiApi(
             automationId
           })
         ).record
+    },
+    taskRuns: {
+      create: async (input) =>
+        createTaskRunHandle(
+          (
+            await requestMain('capabilities.taskRuns.create', {
+              input: toJsonCompatibleRecord<ExtensionTaskRunCreateInput>(
+                input,
+                'task run create input'
+              )
+            })
+          ).run
+        ),
+      listActiveOwn: async (query) =>
+        (
+          await requestMain('capabilities.taskRuns.listActiveOwn', {
+            query: toOptionalJsonCompatibleRecord<ExtensionTaskRunActiveListQuery>(
+              query,
+              'task run active query'
+            )
+          })
+        ).items,
+      listHistoryOwn: async (query) =>
+        (
+          await requestMain('capabilities.taskRuns.listHistoryOwn', {
+            query: toOptionalJsonCompatibleRecord<ExtensionTaskRunHistoryListQuery>(
+              query,
+              'task run history query'
+            )
+          })
+        ).items,
+      getActiveOwn: async (runId) =>
+        (
+          await requestMain('capabilities.taskRuns.getActiveOwn', {
+            runId
+          })
+        ).run,
+      getHistoryOwn: async (runId) =>
+        (
+          await requestMain('capabilities.taskRuns.getHistoryOwn', {
+            runId
+          })
+        ).run,
+      waitOwn: async (runId) =>
+        (
+          await requestMain('capabilities.taskRuns.waitOwn', {
+            runId
+          })
+        ).run
     }
   }
 }
@@ -430,6 +579,45 @@ export function createScopeCapturingKisakiApi(
     },
     get automations() {
       return getApi().automations
+    },
+    get taskRuns() {
+      return getApi().taskRuns
     }
   }
+}
+
+function toTaskRunFailureErrorPayload(error: unknown): ExtensionTaskRunFailureErrorPayload {
+  if (error instanceof Error) {
+    const message = error.message.trim()
+    const code = readErrorCode(error)
+    return {
+      message: message || 'Extension task run failed.',
+      ...(code ? { code } : {})
+    }
+  }
+
+  if (typeof error === 'string' && error.trim()) {
+    return {
+      message: error.trim()
+    }
+  }
+
+  return {
+    message: 'Extension task run failed.'
+  }
+}
+
+function toOptionalJsonCompatibleRecord<TRecord extends object>(
+  value: TRecord | undefined,
+  label: string
+): TRecord | undefined {
+  return value === undefined ? undefined : toJsonCompatibleRecord(value, label)
+}
+
+function toJsonCompatibleRecord<TRecord extends object>(value: TRecord, label: string): TRecord {
+  return toSerializableRecord(
+    value,
+    label,
+    JSON_COMPATIBLE_UNDEFINED_SERIALIZATION
+  ) as unknown as TRecord
 }

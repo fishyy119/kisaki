@@ -107,7 +107,12 @@ export class ExtensionHostSdkBridge {
   >()
   private readonly scopedApis = new Map<ExtensionRuntimeHandle, KisakiApi>()
   private readonly pendingMainRequests = new Map<ExtensionRuntimeHandle, Set<Promise<void>>>()
+  private readonly taskRunAbortControllers = new Map<
+    ExtensionRuntimeHandle,
+    Map<string, AbortController>
+  >()
   private readonly mainEventCleanup: () => void
+  private readonly taskRunCancelCleanup: () => void
 
   constructor(
     private readonly registry: ExtensionRegistry,
@@ -144,6 +149,10 @@ export class ExtensionHostSdkBridge {
     this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
       this.handleHostEventNotification(payload)
     )
+    this.taskRunCancelCleanup = this.rpc.onMainEvent(
+      'capabilities.taskRuns.cancelRequested',
+      (payload) => this.handleTaskRunCancelRequested(payload)
+    )
   }
 
   configure(): void {
@@ -152,6 +161,7 @@ export class ExtensionHostSdkBridge {
 
   async dispose(): Promise<void> {
     this.mainEventCleanup()
+    this.taskRunCancelCleanup()
     this.entityMenus.releaseAll()
     this.settingsPanels.releaseAll()
     await this.scraperProviders.releaseAll()
@@ -159,6 +169,8 @@ export class ExtensionHostSdkBridge {
     this.themes.releaseAll()
     this.commands.releaseAll()
     this.pendingMainRequests.clear()
+    this.abortAllTaskRuns()
+    this.taskRunAbortControllers.clear()
     this.scopedApis.clear()
     this.hostEventSubscriptions.clear()
     this.extensionEventListeners.clear()
@@ -238,6 +250,7 @@ export class ExtensionHostSdkBridge {
     this.commands.releaseRuntime(runtimeHandle)
     await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
     this.disposeExtensionEventListenersForRuntime(runtimeHandle)
+    this.abortTaskRunsForRuntime(runtimeHandle)
     this.scopedApis.delete(runtimeHandle)
     this.pendingMainRequests.delete(runtimeHandle)
   }
@@ -333,7 +346,9 @@ export class ExtensionHostSdkBridge {
         this.subscribeHostEvent(scope, topic, listener, once),
       subscribeExtensionEvent: (scope, topic, listener) =>
         this.subscribeExtensionEvent(scope, topic, listener),
-      emitExtensionEvent: (scope, topic, payload) => this.emitExtensionEvent(scope, topic, payload)
+      emitExtensionEvent: (scope, topic, payload) => this.emitExtensionEvent(scope, topic, payload),
+      registerTaskRunAbortController: (scope, runId, controller) =>
+        this.registerTaskRunAbortController(scope, runId, controller)
     }
   }
 
@@ -611,6 +626,52 @@ export class ExtensionHostSdkBridge {
           error
         )
       }
+    }
+  }
+
+  private registerTaskRunAbortController(
+    scope: ActiveExtensionScope,
+    runId: string,
+    controller: AbortController
+  ): Disposable {
+    let scopedControllers = this.taskRunAbortControllers.get(scope.runtimeHandle)
+    if (!scopedControllers) {
+      scopedControllers = new Map()
+      this.taskRunAbortControllers.set(scope.runtimeHandle, scopedControllers)
+    }
+
+    scopedControllers.set(runId, controller)
+    return createDisposable(() => {
+      const current = this.taskRunAbortControllers.get(scope.runtimeHandle)
+      current?.delete(runId)
+      if (current?.size === 0) {
+        this.taskRunAbortControllers.delete(scope.runtimeHandle)
+      }
+    })
+  }
+
+  private handleTaskRunCancelRequested(payload: {
+    runtimeHandle: ExtensionRuntimeHandle
+    runId: string
+  }): void {
+    this.taskRunAbortControllers.get(payload.runtimeHandle)?.get(payload.runId)?.abort()
+  }
+
+  private abortTaskRunsForRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
+    const controllers = this.taskRunAbortControllers.get(runtimeHandle)
+    if (!controllers) {
+      return
+    }
+
+    for (const controller of controllers.values()) {
+      controller.abort()
+    }
+    this.taskRunAbortControllers.delete(runtimeHandle)
+  }
+
+  private abortAllTaskRuns(): void {
+    for (const runtimeHandle of [...this.taskRunAbortControllers.keys()]) {
+      this.abortTaskRunsForRuntime(runtimeHandle)
     }
   }
 

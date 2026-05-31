@@ -12,12 +12,10 @@ import {
 
 export function createMyCollectionsImportArgs(
   values: SerializableRecord,
-  fallbackProfileId: string,
-  dryRun: boolean
+  fallbackProfileId: string
 ): SerializableRecord {
   return {
     scope: readImportScope(values),
-    dryRun,
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     collectionTypes: readImportCollectionTypes(values),
     fields: createImportDataItemArgs(values),
@@ -28,12 +26,10 @@ export function createMyCollectionsImportArgs(
 
 export function createIndexImportArgs(
   values: SerializableRecord,
-  fallbackProfileId: string,
-  dryRun: boolean
+  fallbackProfileId: string
 ): SerializableRecord {
   return {
     scope: readImportScope(values),
-    dryRun,
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
     indexInput: readString(values, SETTINGS_NODE_IDS.importIndexInput, ''),
     patchExisting: readImportPatchExisting(values),

@@ -6,8 +6,7 @@ import { createFullSyncItemArgs, readFullSyncItems } from './options'
 
 export function createFullSyncArgs(
   values: SerializableRecord,
-  storedSettings: BangumiSettingsV1,
-  dryRun: boolean
+  storedSettings: BangumiSettingsV1
 ): SerializableRecord {
   const items = readFullSyncItems(values, storedSettings)
   const itemArgs = createFullSyncItemArgs(items)
@@ -16,7 +15,6 @@ export function createFullSyncArgs(
 
   return {
     scope: 'game',
-    dryRun,
     updateExisting,
     ...itemArgs,
     clearRemoteScoreWhenEmpty:

@@ -7,6 +7,7 @@ import type { NetworkCapability } from './capabilities/network'
 import type { NotifyCapability } from './capabilities/notify'
 import type { RuntimeCapability } from './capabilities/runtime'
 import type { ScrapersCapability } from './capabilities/scrapers'
+import type { ExtensionTaskRunsCapability } from './capabilities/task-runs'
 
 export interface KisakiApi {
   readonly library: LibraryCapability
@@ -18,4 +19,5 @@ export interface KisakiApi {
   readonly ingest: IngestCapability
   readonly commands: CommandsCapability
   readonly automations: AutomationsCapability
+  readonly taskRuns: ExtensionTaskRunsCapability
 }

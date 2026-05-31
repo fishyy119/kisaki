@@ -159,7 +159,7 @@ export interface CommandInvocationContext {
 async function runLongCommand(args, context, services) {
   const start = services.domainUseCases.startLongRun({
     args,
-    initiator: commandSourceToInitiator(context.source),
+    initiator: commandInvocationSourceToTaskRunInitiator(context.source),
     subject: {
       type: 'command',
       id: context.commandId,

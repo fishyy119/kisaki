@@ -7,7 +7,6 @@ import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   formatTaskRunCategory,
-  formatTaskRunOperation,
   formatTaskRunStatus,
   getTaskRunCategoryIcon,
   getTaskRunStatusVariant
@@ -30,10 +29,7 @@ const emit = defineEmits<{
   cancel: [run: TaskRun]
 }>()
 
-const operationText = computed(
-  () =>
-    `${formatTaskRunCategory(props.run.category)} · ${formatTaskRunOperation(props.run.operation)}`
-)
+const categoryText = computed(() => formatTaskRunCategory(props.run.category))
 const warnings = computed<readonly TaskRunWarning[]>(() => props.run.progress?.warnings ?? [])
 const warningPreview = computed(() => warnings.value.slice(0, 3))
 const canPause = computed(
@@ -97,7 +93,7 @@ const canCancel = computed(
             </TooltipContent>
           </Tooltip>
         </div>
-        <div class="truncate text-xs text-muted-foreground">{{ operationText }}</div>
+        <div class="truncate text-xs text-muted-foreground">{{ categoryText }}</div>
       </div>
     </div>
 

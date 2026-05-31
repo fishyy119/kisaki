@@ -1,6 +1,7 @@
 import { defineSettingsPanelDialog } from '@kisaki3/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
 import { SETTINGS_NODE_IDS } from '../ids'
+import { normalizeFullSyncArgs } from '../../../jobs/args'
 import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'
 import { createDialogPreviewFields, runDialogPreview } from '../shared/previews'
 import { readBoolean, readNumber } from '../shared/values'
@@ -32,7 +33,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
         SETTINGS_NODE_IDS.fullSyncUpdateExisting,
         true
       )
-      const previewArgs = createFullSyncArgs(context.values, storedSettings, true)
+      const previewArgs = createFullSyncArgs(context.values, storedSettings)
       const preview = runtime.previewRegistry.get(context.sessionId, 'sync.full', previewArgs)
 
       return {
@@ -106,10 +107,21 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
                 label: '预览将更改的游戏',
                 disabled: isActive,
                 async onClick(event) {
+                  const args = createFullSyncArgs(event.values, storedSettings)
                   return runDialogPreview({
                     previewKey: 'sync.full',
                     commandId: BANGUMI_COMMAND_IDS.syncFull,
-                    args: createFullSyncArgs(event.values, storedSettings, true),
+                    title: 'Bangumi 全量同步预览',
+                    args,
+                    signal: runtime.abortSignal,
+                    run: (run) =>
+                      runtime.jobRunner.previewFullSync(
+                        normalizeFullSyncArgs(args),
+                        {
+                          commandId: BANGUMI_COMMAND_IDS.syncFull,
+                          run
+                        }
+                      ),
                     previewRegistry: runtime.previewRegistry,
                     event
                   })
@@ -145,7 +157,7 @@ async function submitFullSyncDialog({
   try {
     return await startDialogManualJob({
       commandId: BANGUMI_COMMAND_IDS.syncFull,
-      args: createFullSyncArgs(event.values, storedSettings, false),
+      args: createFullSyncArgs(event.values, storedSettings),
       event
     })
   } catch (error) {

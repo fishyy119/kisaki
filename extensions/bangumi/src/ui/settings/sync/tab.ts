@@ -115,7 +115,6 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
                   commandId: BANGUMI_COMMAND_IDS.syncChangedItems,
                   args: {
                     scope: selectedScope,
-                    dryRun: false,
                     limit: 500
                   },
                   event

@@ -104,6 +104,10 @@ export const useTaskRunStore = defineStore('task-run', () => {
     unwrapIpcVoid(await ipcManager.invoke('task-run:clear-completed'))
   }
 
+  async function deleteCompleted(runId: string): Promise<void> {
+    unwrapIpcVoid(await ipcManager.invoke('task-run:delete-history', runId))
+  }
+
   async function cancelRun(runId: string): Promise<boolean> {
     return withPendingControl(runId, async () =>
       unwrapIpcData(await ipcManager.invoke('task-run:cancel', runId))
@@ -173,6 +177,7 @@ export const useTaskRunStore = defineStore('task-run', () => {
     removeRun,
     getRun,
     clearCompleted,
+    deleteCompleted,
     cancelRun,
     pauseRun,
     resumeRun,

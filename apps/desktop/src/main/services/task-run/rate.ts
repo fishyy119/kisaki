@@ -1,15 +1,12 @@
 import type { TaskRunProgress, TaskRunProgressUpdate } from '@shared/task-run'
 
-const RATE_WINDOW_MS = 10_000
-
 interface RateSample {
   at: number
   current: number
 }
 
 export class TaskRunRateCalculator {
-  private samples: RateSample[] = []
-  private phase?: string
+  private lastSample?: RateSample
   private unit?: string
   private current?: number
   private total?: number
@@ -17,54 +14,59 @@ export class TaskRunRateCalculator {
   apply(
     update: TaskRunProgressUpdate,
     now: number
-  ): Pick<TaskRunProgress, 'rate' | 'rateWindowMs' | 'etaMs' | 'percent'> {
+  ): Pick<TaskRunProgress, 'rate' | 'etaMs' | 'percent'> {
     const current = update.current
     const total = update.total
 
     if (this.shouldReset(update)) {
-      this.samples = []
+      this.lastSample = undefined
     }
 
     const percent = computePercent(current, total)
     let rate: number | undefined
-    let rateWindowMs: number | undefined
     let etaMs: number | undefined
 
     if (isNonNegativeFiniteNumber(current)) {
-      this.samples.push({ at: now, current })
-      this.samples = this.samples.filter((sample) => now - sample.at <= RATE_WINDOW_MS)
-
-      const first = this.samples[0]
-      const last = this.samples[this.samples.length - 1]
-      if (first && last && last.at > first.at && last.current > first.current) {
-        rateWindowMs = last.at - first.at
-        rate = (last.current - first.current) / (rateWindowMs / 1000)
+      const previousSample = this.lastSample
+      if (previousSample && previousSample.at < now && previousSample.current < current) {
+        const elapsedMs = now - previousSample.at
+        rate = (current - previousSample.current) / (elapsedMs / 1000)
         if (isNonNegativeFiniteNumber(total) && total > current && rate > 0) {
           etaMs = ((total - current) / rate) * 1000
         }
       }
+      this.lastSample = { at: now, current }
     } else {
-      this.samples = []
+      this.lastSample = undefined
     }
 
-    this.phase = update.phase
     this.unit = update.unit
     this.current = current
     this.total = total
 
-    return { rate, rateWindowMs, etaMs, percent }
+    const metrics: Pick<TaskRunProgress, 'rate' | 'etaMs' | 'percent'> = {}
+    if (rate !== undefined) {
+      metrics.rate = rate
+    }
+    if (etaMs !== undefined) {
+      metrics.etaMs = etaMs
+    }
+    if (percent !== undefined) {
+      metrics.percent = percent
+    }
+
+    return metrics
   }
 
   reset(): void {
-    this.samples = []
-    this.phase = undefined
+    this.lastSample = undefined
     this.unit = undefined
     this.current = undefined
     this.total = undefined
   }
 
   private shouldReset(update: TaskRunProgressUpdate): boolean {
-    if (this.phase !== update.phase || this.unit !== update.unit) {
+    if (this.unit !== update.unit) {
       return true
     }
 

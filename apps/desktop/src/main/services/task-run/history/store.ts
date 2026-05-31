@@ -74,6 +74,11 @@ export class TaskRunHistoryStore {
     this.emitDeleted(ids)
   }
 
+  delete(runId: string): void {
+    this.db.delete(taskRunHistory).where(eq(taskRunHistory.id, runId)).run()
+    this.emitDeleted([runId])
+  }
+
   prune(): void {
     const ids = selectTaskRunHistoryPruneIds(this.listAll())
     if (ids.length === 0) {

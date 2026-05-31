@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { performance } from 'node:perf_hooks'
 import { createLogger } from '@main/log'
 import type { IpcService } from '@main/services/ipc'
 import type {
@@ -7,6 +8,7 @@ import type {
   TaskRunControls,
   TaskRunFinalStatus,
   TaskRunProgressUpdate,
+  TaskRunRatePeriod,
   TaskRunResult,
   TaskRunStatus,
   TaskRunWarning
@@ -225,11 +227,12 @@ export class TaskRunManager {
 
     const now = Date.now()
     const sanitized = sanitizeProgressUpdate(update)
+    const rateMetrics = record.rate.apply(sanitized, performance.now())
     record.run = {
       ...record.run,
       progress: {
         ...sanitized,
-        ...record.rate.apply(sanitized, now),
+        ...rateMetrics,
         updatedAt: now
       },
       updatedAt: now
@@ -583,16 +586,43 @@ function isCancellingStatus(status: TaskRunStatus): boolean {
 }
 
 function sanitizeProgressUpdate(update: TaskRunProgressUpdate): TaskRunProgressUpdate {
-  return {
-    phase: truncateOptionalString(update.phase, MAX_PHASE_LENGTH),
-    message: truncateOptionalString(update.message, MAX_PROGRESS_MESSAGE_LENGTH),
-    current: assertOptionalNonNegativeNumber(update.current, 'Task run progress current'),
-    total: assertOptionalNonNegativeNumber(update.total, 'Task run progress total'),
-    unit: update.unit,
-    indeterminate: update.indeterminate,
-    counters: sanitizeCounters(update.counters),
-    warnings: sanitizeWarnings(update.warnings)
+  const sanitized: TaskRunProgressUpdate = {}
+  const phase = truncateOptionalString(update.phase, MAX_PHASE_LENGTH)
+  const message = truncateOptionalString(update.message, MAX_PROGRESS_MESSAGE_LENGTH)
+  const current = assertOptionalNonNegativeNumber(update.current, 'Task run progress current')
+  const total = assertOptionalNonNegativeNumber(update.total, 'Task run progress total')
+  const counters = sanitizeCounters(update.counters)
+  const warnings = sanitizeWarnings(update.warnings)
+
+  if (phase !== undefined) {
+    sanitized.phase = phase
   }
+  if (message !== undefined) {
+    sanitized.message = message
+  }
+  if (current !== undefined) {
+    sanitized.current = current
+  }
+  if (total !== undefined) {
+    sanitized.total = total
+  }
+  if (update.unit !== undefined) {
+    sanitized.unit = update.unit
+  }
+  if (update.ratePeriod !== undefined) {
+    sanitized.ratePeriod = assertRatePeriod(update.ratePeriod)
+  }
+  if (update.indeterminate !== undefined) {
+    sanitized.indeterminate = update.indeterminate
+  }
+  if (counters !== undefined) {
+    sanitized.counters = counters
+  }
+  if (warnings !== undefined) {
+    sanitized.warnings = warnings
+  }
+
+  return sanitized
 }
 
 function sanitizeCompletionResult(
@@ -602,13 +632,29 @@ function sanitizeCompletionResult(
     return {}
   }
 
-  return {
-    title: truncateOptionalString(result.title, MAX_RESULT_TEXT_LENGTH),
-    summary: truncateOptionalString(result.summary, MAX_RESULT_TEXT_LENGTH),
-    output: result.output,
-    counters: sanitizeCounters(result.counters),
-    warnings: sanitizeWarnings(result.warnings)
+  const sanitized: Omit<TaskRunResult, 'status' | 'error'> = {}
+  const title = truncateOptionalString(result.title, MAX_RESULT_TEXT_LENGTH)
+  const summary = truncateOptionalString(result.summary, MAX_RESULT_TEXT_LENGTH)
+  const counters = sanitizeCounters(result.counters)
+  const warnings = sanitizeWarnings(result.warnings)
+
+  if (title !== undefined) {
+    sanitized.title = title
   }
+  if (summary !== undefined) {
+    sanitized.summary = summary
+  }
+  if (result.output !== undefined) {
+    sanitized.output = result.output
+  }
+  if (counters !== undefined) {
+    sanitized.counters = counters
+  }
+  if (warnings !== undefined) {
+    sanitized.warnings = warnings
+  }
+
+  return sanitized
 }
 
 function sanitizeCounters(
@@ -637,10 +683,11 @@ function sanitizeWarnings(
     return undefined
   }
 
-  return warnings.slice(0, MAX_WARNINGS).map((warning) => ({
-    code: truncateOptionalString(warning.code, MAX_WARNING_CODE_LENGTH),
-    message: warning.message.slice(0, MAX_WARNING_MESSAGE_LENGTH)
-  }))
+  return warnings.slice(0, MAX_WARNINGS).map((warning) => {
+    const code = truncateOptionalString(warning.code, MAX_WARNING_CODE_LENGTH)
+    const message = warning.message.slice(0, MAX_WARNING_MESSAGE_LENGTH)
+    return code === undefined ? { message } : { code, message }
+  })
 }
 
 function assertOptionalNonNegativeNumber(
@@ -656,6 +703,14 @@ function assertOptionalNonNegativeNumber(
   }
 
   return value
+}
+
+function assertRatePeriod(value: TaskRunRatePeriod): TaskRunRatePeriod {
+  if (value === 'second' || value === 'minute' || value === 'hour') {
+    return value
+  }
+
+  throw new Error('Task run rate period must be "second", "minute", or "hour".')
 }
 
 function truncateOptionalString(value: string | undefined, maxLength: number): string | undefined {

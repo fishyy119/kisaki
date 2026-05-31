@@ -34,5 +34,8 @@ export const kisaki: KisakiApi = {
   },
   get automations() {
     return getExtensionSdkBridge().api.automations
+  },
+  get taskRuns() {
+    return getExtensionSdkBridge().api.taskRuns
   }
 }

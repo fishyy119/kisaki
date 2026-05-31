@@ -7,6 +7,7 @@ import type { IngestService } from '@main/services/ingest'
 import type { NetworkService } from '@main/services/network'
 import type { NotifyService } from '@main/services/notify'
 import type { ScraperService } from '@main/services/scraper'
+import type { TaskRunService } from '@main/services/task-run'
 import type { ExtensionHostRpcClient } from '../runtime'
 import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
@@ -17,6 +18,7 @@ import { ExtensionNetworkCapabilityProvider } from './network'
 import { ExtensionNotifyCapabilityProvider } from './notify'
 import { ExtensionRuntimeCapabilityProvider } from './runtime'
 import { ExtensionScrapersCapabilityProvider } from './scrapers'
+import { ExtensionTaskRunsCapabilityProvider } from './task-runs'
 
 export interface ExtensionCapabilityGatewayOptions {
   automation: AutomationService
@@ -27,6 +29,7 @@ export interface ExtensionCapabilityGatewayOptions {
   network: NetworkService
   notify: NotifyService
   scraper: ScraperService
+  taskRun: TaskRunService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
 }
 
@@ -40,6 +43,7 @@ export class ExtensionCapabilityGateway {
   readonly ingest: ExtensionIngestCapabilityProvider
   readonly commands: ExtensionCommandsCapabilityProvider
   readonly automations: ExtensionAutomationsCapabilityProvider
+  readonly taskRuns: ExtensionTaskRunsCapabilityProvider
 
   constructor(options: ExtensionCapabilityGatewayOptions) {
     this.library = new ExtensionLibraryCapabilityProvider({
@@ -78,10 +82,16 @@ export class ExtensionCapabilityGateway {
       command: options.command,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
+    this.taskRuns = new ExtensionTaskRunsCapabilityProvider({
+      taskRun: options.taskRun,
+      command: options.command,
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
     this.events.attachRpc(rpc)
+    this.taskRuns.attachRpc(rpc)
     this.library.registerRpcHandlers(rpc)
 
     rpc.handleHostRequest(
@@ -208,22 +218,88 @@ export class ExtensionCapabilityGateway {
         record: await this.automations.run(runtimeHandle, automationId)
       })
     )
+
+    rpc.handleHostRequest('capabilities.taskRuns.create', async ({ runtimeHandle, input }) => ({
+      run: this.taskRuns.create(runtimeHandle, input)
+    }))
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.report',
+      async ({ runtimeHandle, runId, update }) => {
+        this.taskRuns.report(runtimeHandle, runId, update)
+        return {}
+      }
+    )
+    rpc.handleHostRequest('capabilities.taskRuns.checkpoint', async ({ runtimeHandle, runId }) => {
+      await this.taskRuns.checkpoint(runtimeHandle, runId)
+      return {}
+    })
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.complete',
+      async ({ runtimeHandle, runId, result }) => {
+        this.taskRuns.complete(runtimeHandle, runId, result)
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.fail',
+      async ({ runtimeHandle, runId, error, result }) => {
+        this.taskRuns.fail(runtimeHandle, runId, error, result)
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.cancel',
+      async ({ runtimeHandle, runId, result }) => {
+        this.taskRuns.cancel(runtimeHandle, runId, result)
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.listActiveOwn',
+      async ({ runtimeHandle, query }) => ({
+        items: this.taskRuns.listActiveOwn(runtimeHandle, query)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.listHistoryOwn',
+      async ({ runtimeHandle, query }) => ({
+        items: this.taskRuns.listHistoryOwn(runtimeHandle, query)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.getActiveOwn',
+      async ({ runtimeHandle, runId }) => ({
+        run: this.taskRuns.getActiveOwn(runtimeHandle, runId)
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.taskRuns.getHistoryOwn',
+      async ({ runtimeHandle, runId }) => ({
+        run: this.taskRuns.getHistoryOwn(runtimeHandle, runId)
+      })
+    )
+    rpc.handleHostRequest('capabilities.taskRuns.waitOwn', async ({ runtimeHandle, runId }) => ({
+      run: await this.taskRuns.waitOwn(runtimeHandle, runId)
+    }))
   }
 
   detachRpc(): void {
     this.events.detachRpc()
+    this.taskRuns.detachRpc()
   }
 
   releaseRuntime(runtimeHandle: string): void {
     this.events.releaseRuntime(runtimeHandle)
     this.notify.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
+    this.taskRuns.releaseRuntime(runtimeHandle)
   }
 
   releaseAll(): void {
     this.events.releaseAll()
     this.notify.releaseAll()
     this.commands.releaseAll()
+    this.taskRuns.releaseAll()
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {

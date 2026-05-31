@@ -136,6 +136,17 @@ async function handleClearCompleted(): Promise<void> {
   }
 }
 
+async function handleDeleteCompleted(run: TaskRun): Promise<void> {
+  try {
+    await store.deleteCompleted(run.id)
+    if (completedDetailsRunId.value === run.id) {
+      completedDetailsDialogOpen.value = false
+    }
+  } catch (deleteError) {
+    notify.error('删除任务记录失败', deleteError instanceof Error ? deleteError.message : String(deleteError))
+  }
+}
+
 async function handlePause(run: TaskRun): Promise<void> {
   try {
     const accepted = await store.pauseRun(run.id)
@@ -280,12 +291,12 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 </div>
                 <template v-else>
                   <div
-                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_32px] items-center gap-5 border-b border-border bg-background px-4 text-xs font-medium text-muted-foreground"
+                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_64px] items-center gap-5 border-b border-border bg-background px-4 text-xs font-medium text-muted-foreground"
                   >
                     <div>任务</div>
                     <div>结果</div>
                     <div>状态</div>
-                    <div />
+                    <div class="text-right">操作</div>
                   </div>
                   <div class="divide-y divide-border/50">
                     <CompletedTaskRunRow
@@ -293,6 +304,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                       :key="run.id"
                       :run="run"
                       @details="openCompletedDetailsDialog"
+                      @delete="handleDeleteCompleted"
                     />
                   </div>
                 </template>

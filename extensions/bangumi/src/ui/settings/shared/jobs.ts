@@ -1,6 +1,7 @@
 import {
   kisaki,
   type CommandInvocationResult,
+  type ExtensionTaskRunSnapshot,
   type SerializableRecord
 } from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../../jobs/commands'
@@ -22,17 +23,23 @@ export interface BangumiActiveJobs {
 
 export async function resolveActiveJobs(): Promise<BangumiActiveJobs> {
   return {
-    accountRefresh: false,
-    syncChangedItems: false,
-    syncFull: false,
-    importCollections: false,
-    importIndex: false
+    accountRefresh: await isBangumiCommandActive(BANGUMI_COMMAND_IDS.authRefresh),
+    syncChangedItems: await isBangumiCommandActive(BANGUMI_COMMAND_IDS.syncChangedItems),
+    syncFull: await isBangumiCommandActive(BANGUMI_COMMAND_IDS.syncFull),
+    importCollections: await isBangumiCommandActive(BANGUMI_COMMAND_IDS.importCollections),
+    importIndex: await isBangumiCommandActive(BANGUMI_COMMAND_IDS.importIndex)
   }
 }
 
 export async function isBangumiCommandActive(commandId: BangumiCommandId): Promise<boolean> {
-  void commandId
-  return false
+  const runs = await kisaki.taskRuns.listActiveOwn({
+    subject: {
+      type: 'command',
+      id: commandId
+    },
+    limit: 1
+  })
+  return runs.length > 0
 }
 
 export async function startRootManualJob(options: {
@@ -103,12 +110,25 @@ async function startCommandJob({
 
 export async function startBangumiCommandJob(
   commandId: BangumiCommandId,
-  args: SerializableRecord
+  args: SerializableRecord,
+  options: { waitForResult?: boolean } = {}
 ): Promise<CommandInvocationResult> {
-  return await kisaki.commands.invoke({
+  const result = await kisaki.commands.invoke({
     commandId,
     args
   })
+
+  if (!options.waitForResult) {
+    return result
+  }
+
+  const runId = readCommandRunId(result)
+  if (!runId) {
+    return result
+  }
+
+  const run = await kisaki.taskRuns.waitOwn(runId)
+  return toCommandResultFromRun(commandId, run)
 }
 
 export function createRunningJobError() {
@@ -119,3 +139,24 @@ export function createRunningJobError() {
 }
 
 export { BANGUMI_COMMAND_IDS }
+
+function readCommandRunId(result: CommandInvocationResult): string | undefined {
+  const output = asPlainRecord(result.output)
+  return typeof output?.runId === 'string' ? output.runId : undefined
+}
+
+function toCommandResultFromRun(
+  commandId: BangumiCommandId,
+  run: ExtensionTaskRunSnapshot
+): CommandInvocationResult {
+  return {
+    commandId,
+    output: run.result?.output as CommandInvocationResult['output']
+  }
+}
+
+function asPlainRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined
+}

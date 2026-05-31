@@ -6,6 +6,7 @@ export interface NotifyOptions {
   message?: string
   mode?: NotifyMode
   id?: string
+  closable?: boolean
 }
 
 export interface NotificationHandle {

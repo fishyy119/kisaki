@@ -119,7 +119,19 @@ export class TaskRunNotificationCoordinator {
         type: 'info',
         closable: true
       })
+      return
     }
+
+    if (run.status === 'queued') {
+      return
+    }
+
+    this.options.notify.update(toastId, {
+      title: run.title,
+      message: '正在取消...',
+      type: 'loading',
+      closable: true
+    })
   }
 }
 
@@ -136,6 +148,10 @@ function createCancelAction(run: TaskRun): NotifyOptions['action'] {
 
 function formatActiveMessage(run: TaskRun, presentation: TaskRunPresentation): string | undefined {
   const notify = presentation.notify
+  if (run.status === 'cancelling') {
+    return '正在取消...'
+  }
+
   const base = notify?.message ?? run.progress?.message ?? run.progress?.phase ?? run.description
   if (notify?.showProgress === false || !run.progress) {
     return base

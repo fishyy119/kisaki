@@ -446,5 +446,5 @@ TaskRunService 面向主应用内部业务服务，输入默认是 trusted input
 - `runs/` 内只保留维护状态机正确性所必需的断言，例如非法状态流转、final run 再写入 progress、非 pausable run 进入 paused。
 - `history/store.ts` 负责持久化边界保护，例如拒绝写入无法安全序列化或明显超限的 result output；具体上限是 store/serializer 私有实现常量，不进入 shared contract。
 - 扩展通过 `kisaki.taskRuns` scoped capability 创建自己的 task run；extension capability/provider 边界解析和校验扩展输入，再调用 TaskRunService。
-- extension task-run provider 的文件、RPC、SDK bridge、owner scoping、extension-local operation name 校验、内部 operation 映射、initiator 派生和 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
+- extension task-run provider 的文件、RPC、SDK bridge、owner scoping、extension-local operation name 校验、内部 operation 映射、initiator 输入规则和 Bangumi 迁移见 [07-extension-api-and-bangumi-refactor.md](07-extension-api-and-bangumi-refactor.md)。
 - subject 不包含 renderer route；跳转由 renderer 根据 `subject.type + subject.id` 推导。

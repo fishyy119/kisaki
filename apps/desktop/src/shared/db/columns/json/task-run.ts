@@ -8,6 +8,7 @@ import type {
   TaskRunOperation,
   TaskRunOwner,
   TaskRunProgress,
+  TaskRunRatePeriod,
   TaskRunProgressUnit,
   TaskRunResult,
   TaskRunSubject,
@@ -80,6 +81,7 @@ const TASK_RUN_PROGRESS_UNIT_VALUES = new Set<TaskRunProgressUnit>([
   'package',
   'request'
 ])
+const TASK_RUN_RATE_PERIOD_VALUES = new Set<TaskRunRatePeriod>(['second', 'minute', 'hour'])
 
 function matchesPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1
@@ -214,11 +216,13 @@ function matchesTaskRunProgress(value: unknown): value is TaskRunProgress {
     (value.unit === undefined ||
       (typeof value.unit === 'string' &&
         TASK_RUN_PROGRESS_UNIT_VALUES.has(value.unit as TaskRunProgressUnit))) &&
+    (value.ratePeriod === undefined ||
+      (typeof value.ratePeriod === 'string' &&
+        TASK_RUN_RATE_PERIOD_VALUES.has(value.ratePeriod as TaskRunRatePeriod))) &&
     (value.indeterminate === undefined || typeof value.indeterminate === 'boolean') &&
     (value.counters === undefined || matchesNumberRecord(value.counters)) &&
     (value.warnings === undefined || matchesTaskRunWarnings(value.warnings)) &&
     (value.rate === undefined || matchesNonNegativeFiniteNumber(value.rate)) &&
-    (value.rateWindowMs === undefined || matchesNonNegativeFiniteNumber(value.rateWindowMs)) &&
     (value.etaMs === undefined || matchesNonNegativeFiniteNumber(value.etaMs)) &&
     (value.percent === undefined || matchesNonNegativeFiniteNumber(value.percent))
   )

@@ -67,9 +67,20 @@ extensions/bangumi/src/
     field-mapping.ts
   jobs/
     args.ts
+    auth.ts
     commands.ts
+    context.ts
+    import/
+      runner.ts
+      local.ts
+      model.ts
+      planning.ts
+      preview.ts
+      progress.ts
+    presentation.ts
     runner.ts
     summary.ts
+    sync.ts
   automations/
     templates.ts
   ui/
@@ -94,7 +105,7 @@ extensions/bangumi/src/
 1. 创建 `SettingsStore`、`TokenStore`、`OAuthRelayClient`、`TokenService`、`BangumiClient`。
 2. 创建 `MediaRegistry`，注册 `book`、`game`、`anime`、`music` scope descriptor。
 3. 为 `game` scope 创建 `GameLocalMediaAdapter` 和 `BangumiGameProvider`。
-4. 创建 `AccountService`、`SubjectIdentityResolver`、`SyncEngine`、import readers、`ImportPlanner`、`JobRunner`。
+4. 创建 `AccountService`、`SubjectIdentityResolver`、`SyncEngine` 和 `JobRunner`。
 5. 注册 Bangumi game scraper provider。
 6. 注册 settings panel。
 7. 注册 deeplink route `/oauth-callback`。
@@ -149,16 +160,18 @@ interface BangumiMediaDescriptor {
 - `SyncSubscription`: 通过 local adapter 订阅 host library event，做 debounce、过滤和 suppress。
 - `CollectionReader`: 按 scope 拉取当前用户 Bangumi 收藏。
 - `IndexReader`: 按 scope 拉取 Bangumi 目录条目。
-- `ImportPlanner`: dry run 计划与执行计划共用，输出新增、更新、跳过和错误。
+- `ImportPlanner`: 预览计划与执行计划共用，输出新增、更新、跳过和错误。
 - `ImportExecutor`: 对有 local adapter 的 scope 执行本地写入。
-- `JobRunner`: 管理一次 Bangumi job 的 scoped TaskRun wrapper、取消 checkpoint、progress 上报和输出摘要。
+- `JobRunner`: jobs 门面，分发到 auth、sync、import 三类 job runner。
+- `Job context`: 管理一次 Bangumi job 的 TaskRun 生命周期、取消 checkpoint、progress 上报和输出摘要。
+- `ImportJobRunner`: 先 collect 远端/本地计划并过滤实际 operations；preview 只渲染 operations，execute 只执行 operations。
 - `AutomationTemplates`: 生成推荐 AutomationService 创建输入；不运行、不取消、不读取 history。
 - `SettingsPanelController`: 组装 structured settings panel models 和 callbacks。
 
 ## 依赖方向
 
 ```text
-ui -> jobs -> sync/import/auth
+ui -> jobs runner -> auth/sync/import jobs
 ui -> media registry -> descriptors
 jobs -> media registry -> sync/import
 sync/import -> media registry -> local adapter
@@ -241,7 +254,6 @@ interface BangumiSettingsV1 {
 ```ts
 interface BangumiScopedJobArgs {
   scope: BangumiMediaScope
-  dryRun: boolean
 }
 ```
 
@@ -262,7 +274,7 @@ interface BangumiImportPatchOptions {
 
 规则：
 
-- `book` / `anime` / `music` command 可以 dry run 读取远端数据和生成计划。
+- `book` / `anime` / `music` 预览可以读取远端数据和生成计划；正式 command 执行仍返回 unsupported summary。
 - `book` / `anime` / `music` execute 本地写入必须返回 unsupported，UI 默认不展示执行写入入口。
 - `byIndexTitle` 只允许用于有 local adapter 的目录导入。
 

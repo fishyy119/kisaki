@@ -4,6 +4,7 @@ import {
   type SerializableRecord
 } from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
+import { normalizeImportIndexArgs } from '../../../jobs/args'
 import { toSettingsError } from '../shared/errors'
 import { BANGUMI_COMMAND_IDS, startDialogManualJob } from '../shared/jobs'
 import { createDialogPreviewFields, runDialogPreview } from '../shared/previews'
@@ -40,7 +41,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
       const hasTargetCollection =
         targetCollectionMode === 'byIndexTitle' ||
         (targetCollectionMode === 'existing' && !!readImportTargetCollectionId(values))
-      const previewArgs = createIndexImportArgs(values, profiles[0]?.id ?? '', true)
+      const previewArgs = createIndexImportArgs(values, profiles[0]?.id ?? '')
       const preview = runtime.previewRegistry.get(context.sessionId, 'import.index', previewArgs)
 
       return {
@@ -86,14 +87,24 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
                 label: '预览将导入的游戏',
                 disabled: isActive,
                 async onClick(event) {
+                  const args = createIndexImportArgs(
+                    mergeIndexDialogValues(event.values, event.parentValues),
+                    profiles[0]?.id ?? ''
+                  )
                   return runDialogPreview({
                     previewKey: 'import.index',
                     commandId: BANGUMI_COMMAND_IDS.importIndex,
-                    args: createIndexImportArgs(
-                      mergeIndexDialogValues(event.values, event.parentValues),
-                      profiles[0]?.id ?? '',
-                      true
-                    ),
+                    title: 'Bangumi 导入目录预览',
+                    args,
+                    signal: runtime.abortSignal,
+                    run: (run) =>
+                      runtime.jobRunner.previewImportIndex(
+                        normalizeImportIndexArgs(args),
+                        {
+                          commandId: BANGUMI_COMMAND_IDS.importIndex,
+                          run
+                        }
+                      ),
                     previewRegistry: runtime.previewRegistry,
                     event
                   })
@@ -127,7 +138,7 @@ async function submitIndexDialog({
 }): Promise<BangumiSettingsDialogSubmitResult> {
   try {
     const values = mergeIndexDialogValues(event.values, event.parentValues)
-    const args = createIndexImportArgs(values, profiles[0]?.id ?? '', false)
+    const args = createIndexImportArgs(values, profiles[0]?.id ?? '')
 
     return await startDialogManualJob({
       commandId: BANGUMI_COMMAND_IDS.importIndex,

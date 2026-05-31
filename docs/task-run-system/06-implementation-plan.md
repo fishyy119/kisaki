@@ -234,7 +234,7 @@ docs/task-run-system/07-extension-api-and-bangumi-refactor.md
 
 ```text
 packages/extension-api/src/capabilities/task-runs.ts
-apps/desktop/src/main/services/extension/capabilities/task-runs.ts
+apps/desktop/src/main/services/extension/capabilities/task-runs/
 ```
 
 修改：
@@ -246,7 +246,11 @@ packages/extension-sdk/src/index.ts
 apps/desktop/src/main/services/extension/capabilities/gateway.ts
 apps/desktop/src/main/services/extension/runtime/host/sdk-bridge/kisaki-api.ts
 extensions/bangumi/src/jobs/commands.ts
+extensions/bangumi/src/jobs/context.ts
+extensions/bangumi/src/jobs/auth.ts
 extensions/bangumi/src/jobs/runner.ts
+extensions/bangumi/src/jobs/sync.ts
+extensions/bangumi/src/jobs/import/**
 extensions/bangumi/src/jobs/summary.ts
 extensions/bangumi/src/ui/settings/**
 extensions/bangumi/src/tasks/**
@@ -269,10 +273,10 @@ extensions/bangumi/src/automations/templates.ts
 - extension task-run provider 从 runtime metadata 派生 TaskRun owner，扩展不能伪造。
 - extension task-run provider 校验 owner scope、extension-local operation name format、subject ownership、payload 大小和 runtime handle；校验常量放在 provider validation module 附近。
 - extension task-run provider 将 public operation name 映射成内部 `extension.task.<extensionId>.<operation>`，返回给扩展时再映射回 public operation name。
-- extension task-run provider 根据 command source 派生 user/automation/extension initiator，扩展不能伪造。
+- extension task-run provider 使用扩展在 `kisaki.taskRuns.create()` 中显式传入的 `initiator`，未传时默认当前 extension；host scope 和 taskRuns RPC 不携带 command source。
 - main task-run provider 通过 `service.runs.onCancelRequested(...)` 订阅被接受的取消请求，并通过 `capabilities.taskRuns.cancelRequested` 通知 host abort 对应 local handle signal。
 - extension handle 的 cancel/abort 由 task run cancel 和 extension host dispose 驱动。
-- Bangumi 长时 command handler 通过 `kisaki.taskRuns.create({ operation: '<extensionLocalOperation>' })` 创建 extension-owned run 并返回 `runId`。
+- Bangumi 长时 command handler 通过 `kisaki.taskRuns.create({ operation: '<extensionLocalOperation>', initiator: event.source })` 创建 extension-owned run 并返回 `runId`。
 - Bangumi job runner 不再接收 command event，不调用 `event.reportProgress()` 或 `event.checkpoint()`。
 - Bangumi job runner 使用 `isExtensionTaskRunCancellation(error)` 区分 `run.cancel()` 和 `run.fail(error)`。
 - Bangumi settings panel 通过 `kisaki.taskRuns.listActiveOwn()` 判断 active run，不保存 execution id。
@@ -501,7 +505,7 @@ pnpm -r --parallel lint
 
 1. 运行一个 Bangumi command。
 2. `CommandService` 只调用 command handler。
-3. Bangumi handler 通过 `kisaki.taskRuns.create({ operation: 'fullSync' })` 创建 task run 并返回 `runId`。
+3. Bangumi handler 通过 `kisaki.taskRuns.create({ operation: 'fullSync', initiator: event.source })` 创建 task run 并返回 `runId`。
 4. 任务中心出现 run 并更新 progress。
 5. 点击取消后 task run signal 在 handler checkpoint 生效。
 6. 完成后已完成 tab 能看到 result。

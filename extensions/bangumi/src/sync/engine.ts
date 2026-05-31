@@ -46,7 +46,6 @@ export interface SyncItemOptions extends SyncMappingOverrides {
   scope: BangumiMediaScope
   item?: LocalMediaItem
   localId?: string
-  dryRun?: boolean
   updateExisting?: boolean
   accountUsername?: string
   checkRemote?: boolean
@@ -66,6 +65,11 @@ export class SyncEngine {
   constructor(private readonly deps: SyncEngineDependencies) {}
 
   async syncItem(options: SyncItemOptions): Promise<SyncItemResult> {
+    const result = await this.collectItem(options)
+    return this.applyItem(result, { signal: options.signal })
+  }
+
+  async collectItem(options: SyncItemOptions): Promise<SyncItemResult> {
     const settings = await this.deps.settingsStore.get()
     const descriptor = this.deps.mediaRegistry.require(options.scope)
     const adapter = descriptor.localAdapter
@@ -147,15 +151,6 @@ export class SyncEngine {
     }
 
     if (options.checkRemote && syncPayloadMatchesRemote(payloadPlan.payload, remote)) {
-      if (!options.dryRun) {
-        await this.deps.stateStore.recordSuccessfulSync({
-          scope: options.scope,
-          localId: item.localId,
-          subjectId,
-          fingerprint,
-          updatedAt: Date.now()
-        })
-      }
       return {
         status: 'skippedNoChange',
         scope: options.scope,
@@ -186,38 +181,8 @@ export class SyncEngine {
       }
     }
 
-    if (options.dryRun) {
-      return {
-        status: 'wouldSync',
-        scope: options.scope,
-        localId: item.localId,
-        item,
-        subjectId,
-        payload: payloadPlan.payload,
-        fingerprint,
-        remote
-      }
-    }
-
-    await this.deps.client.upsertMyCollection(subjectRef, payloadPlan.payload, {
-      signal: options.signal
-    })
-    await this.deps.stateStore.recordSuccessfulSync({
-      scope: options.scope,
-      localId: item.localId,
-      subjectId,
-      fingerprint,
-      updatedAt: Date.now()
-    })
-    this.deps.suppressor.suppressFingerprint(
-      options.scope,
-      item.localId,
-      fingerprint,
-      Math.max(30_000, settings.game.autoSync.debounceMs * 2)
-    )
-
     return {
-      status: 'synced',
+      status: 'wouldSync',
       scope: options.scope,
       localId: item.localId,
       item,
@@ -226,6 +191,66 @@ export class SyncEngine {
       fingerprint,
       remote
     }
+  }
+
+  async applyItem(
+    result: SyncItemResult,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<SyncItemResult> {
+    if (result.status === 'skippedNoChange' && result.remote) {
+      await this.recordSuccessfulNoChange(result)
+      return result
+    }
+
+    if (
+      result.status !== 'wouldSync' ||
+      !result.subjectId ||
+      !result.payload ||
+      !result.fingerprint
+    ) {
+      return result
+    }
+
+    const settings = await this.deps.settingsStore.get()
+    await this.deps.client.upsertMyCollection(
+      createBangumiSubjectRef(result.scope, result.subjectId),
+      result.payload,
+      {
+        signal: options.signal
+      }
+    )
+    await this.deps.stateStore.recordSuccessfulSync({
+      scope: result.scope,
+      localId: result.localId,
+      subjectId: result.subjectId,
+      fingerprint: result.fingerprint,
+      updatedAt: Date.now()
+    })
+    this.deps.suppressor.suppressFingerprint(
+      result.scope,
+      result.localId,
+      result.fingerprint,
+      Math.max(30_000, settings.game.autoSync.debounceMs * 2)
+    )
+
+    return {
+      ...result,
+      status: 'synced'
+    }
+  }
+
+  private async recordSuccessfulNoChange(result: SyncItemResult): Promise<void> {
+    if (!result.subjectId || !result.fingerprint) {
+      return
+    }
+
+    await this.deps.stateStore.recordSuccessfulSync({
+      scope: result.scope,
+      localId: result.localId,
+      subjectId: result.subjectId,
+      fingerprint: result.fingerprint,
+      updatedAt: Date.now()
+    })
   }
 
   private async getRemoteCollection(

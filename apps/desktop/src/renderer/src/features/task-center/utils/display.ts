@@ -3,6 +3,7 @@ import type {
   TaskRunCategory,
   TaskRunFinalStatus,
   TaskRunOperation,
+  TaskRunRatePeriod,
   TaskRunProgressUnit,
   TaskRunStatus,
   TaskRunSubjectType
@@ -281,11 +282,15 @@ export function formatTaskRunRate(run: TaskRun): string | null {
   }
 
   if (run.progress?.unit === 'byte') {
-    return `${formatBytes(rate)}/s`
+    const period = run.progress.ratePeriod ?? selectRatePeriod(rate)
+    return `${formatBytes(rate * getRatePeriodMultiplier(period))}/${formatRatePeriod(period)}`
   }
 
   const unit = run.progress?.unit ? formatProgressUnit(run.progress.unit) : '项'
-  return `${formatNumber(rate)} ${unit}/秒`
+  const period = run.progress?.ratePeriod ?? selectRatePeriod(rate)
+  return `${formatRateNumber(rate * getRatePeriodMultiplier(period))} ${unit}/${formatRatePeriod(
+    period
+  )}`
 }
 
 export function formatTaskRunEta(run: TaskRun): string | null {
@@ -475,6 +480,56 @@ function formatNumber(value: number): string {
   }
 
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
+function formatRateNumber(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+
+  if (Math.abs(value) >= 10) {
+    return Math.round(value).toLocaleString('zh-Hans')
+  }
+
+  if (Math.abs(value) >= 1) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1)
+  }
+
+  return value.toFixed(2)
+}
+
+function selectRatePeriod(ratePerSecond: number): TaskRunRatePeriod {
+  if (ratePerSecond >= 1) {
+    return 'second'
+  }
+
+  if (ratePerSecond * 60 >= 0.1) {
+    return 'minute'
+  }
+
+  return 'hour'
+}
+
+function getRatePeriodMultiplier(period: TaskRunRatePeriod): number {
+  switch (period) {
+    case 'second':
+      return 1
+    case 'minute':
+      return 60
+    case 'hour':
+      return 3600
+  }
+}
+
+function formatRatePeriod(period: TaskRunRatePeriod): string {
+  switch (period) {
+    case 'second':
+      return '秒'
+    case 'minute':
+      return '分钟'
+    case 'hour':
+      return '小时'
+  }
 }
 
 function formatBytes(bytes: number): string {

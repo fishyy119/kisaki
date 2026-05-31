@@ -45,7 +45,7 @@ Bangumi 扩展继续只使用 public extension API，不在扩展内 import 主�
 | `sync/engine.ts`                     | `sync/engine.ts`，去掉 game-specific 类型                            |
 | `sync/subscription.ts`               | `sync/subscription.ts`，通过 adapter 订阅                            |
 | `sync/queue.ts`                      | `sync/queue.ts`，`games` 改为 `items`                                |
-| `jobs/runner.ts` 内 game import 逻辑 | `import/executor.ts` + `media/game/import.ts`                        |
+| `jobs/import/**` 内 game import 逻辑 | `import/executor.ts` + `media/game/import.ts`                        |
 | `ui/settings/shared/profiles.ts`     | `media/game` profile helper 或 `ui/settings/resources.ts` 调 adapter |
 | `ui/settings/import/*`               | 保留 UI，args 加 `scope`，game-only 控件按 adapter 能力显示          |
 

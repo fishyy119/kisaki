@@ -15,7 +15,6 @@ export interface BangumiImportWriteFields {
 }
 
 export interface BangumiAuthRefreshArgs {
-  dryRun: false
   forceRefresh: boolean
   verifyAccount: boolean
 }
@@ -25,12 +24,10 @@ export interface BangumiScopedArgs {
 }
 
 export interface BangumiChangedItemsSyncArgs extends BangumiScopedArgs {
-  dryRun: boolean
   limit: number
 }
 
 export interface BangumiFullSyncArgs extends BangumiScopedArgs {
-  dryRun: boolean
   updateExisting: boolean
   batchSize: number
   playStatusEnabled?: boolean
@@ -39,7 +36,6 @@ export interface BangumiFullSyncArgs extends BangumiScopedArgs {
 }
 
 export interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
-  dryRun: boolean
   profileId?: string
   collectionTypes: readonly BangumiCollectionType[]
   fields: BangumiImportWriteFields
@@ -48,7 +44,6 @@ export interface BangumiImportCollectionsArgs extends BangumiScopedArgs {
 }
 
 export interface BangumiImportIndexArgs extends BangumiScopedArgs {
-  dryRun: boolean
   profileId?: string
   indexInput: string
   indexId: number
@@ -60,7 +55,6 @@ const BANGUMI_COLLECTION_TYPES = [1, 2, 3, 4, 5] as const satisfies readonly Ban
 
 export function normalizeAuthRefreshArgs(args: SerializableRecord): BangumiAuthRefreshArgs {
   return {
-    dryRun: false,
     forceRefresh: readBoolean(args.forceRefresh, true),
     verifyAccount: readBoolean(args.verifyAccount, true)
   }
@@ -71,7 +65,6 @@ export function normalizeChangedItemsSyncArgs(
 ): BangumiChangedItemsSyncArgs {
   return {
     scope: readScope(args.scope),
-    dryRun: readBoolean(args.dryRun, false),
     limit: readInteger(args.limit, 500, { min: 1, max: 10_000 })
   }
 }
@@ -79,7 +72,6 @@ export function normalizeChangedItemsSyncArgs(
 export function normalizeFullSyncArgs(args: SerializableRecord): BangumiFullSyncArgs {
   return {
     scope: readScope(args.scope),
-    dryRun: readBoolean(args.dryRun, true),
     updateExisting: readBoolean(args.updateExisting, true),
     batchSize: readInteger(args.batchSize, 100, { min: 1, max: 500 }),
     ...readOptionalBooleanProp(args.playStatusEnabled, 'playStatusEnabled'),
@@ -93,7 +85,6 @@ export function normalizeImportCollectionsArgs(
 ): BangumiImportCollectionsArgs {
   return {
     scope: readScope(args.scope),
-    dryRun: readBoolean(args.dryRun, true),
     ...readOptionalStringProp(args.profileId, 'profileId'),
     collectionTypes: normalizeCollectionTypes(args.collectionTypes),
     fields: normalizeImportWriteFields(args.fields),
@@ -107,7 +98,6 @@ export function normalizeImportIndexArgs(args: SerializableRecord): BangumiImpor
 
   return {
     scope: readScope(args.scope),
-    dryRun: readBoolean(args.dryRun, true),
     ...readOptionalStringProp(args.profileId, 'profileId'),
     indexInput,
     indexId: parseBangumiIndexId(indexInput),

@@ -15,7 +15,7 @@
 ## 非目标
 
 - 不开放全局 task center list/read 权限给扩展。
-- 不允许扩展伪造 `initiator`、`owner`、`category` 或 app 内部 run id。
+- 不允许扩展伪造 `owner`、`category` 或 app 内部 run id；`initiator` 是扩展声明的归因元信息，只用于展示和筛选，不作为权限边界。
 - 不把 desktop app 内部 `TaskRunHandle` 暴露给 extension API。
 - 不在 `packages/extension-api` 中 import `apps/desktop/src/shared/task-run.ts`。
 - 不为旧 `backgroundTasks`、command progress、`reportProgress` 保留 alias。
@@ -37,7 +37,7 @@ packages/extension-api/src/kisaki.ts
 packages/extension-api/src/rpc/capabilities.ts
 packages/extension-sdk/src/index.ts
 apps/desktop/src/main/services/extension/runtime/host/sdk-bridge/kisaki-api.ts
-apps/desktop/src/main/services/extension/capabilities/task-runs.ts
+apps/desktop/src/main/services/extension/capabilities/task-runs/
 apps/desktop/src/main/services/extension/capabilities/gateway.ts
 ```
 
@@ -61,6 +61,29 @@ export type ExtensionTaskRunFinalStatus = Extract<
   'completed' | 'failed' | 'cancelled'
 >
 
+export type ExtensionTaskRunInitiator =
+  | { type: 'user' }
+  | {
+      type: 'automation'
+      automation: {
+        id: string
+        nameSnapshot: string
+        trigger: 'manual' | 'startup' | 'cron'
+        attempt: number
+      }
+    }
+  | {
+      type: 'extension'
+      extension: {
+        id: string
+        nameSnapshot?: string
+      }
+    }
+  | {
+      type: 'system'
+      reason?: 'startup' | 'maintenance' | 'update' | 'shutdown'
+    }
+
 export type ExtensionTaskRunProgressUnit =
   | 'item'
   | 'file'
@@ -81,6 +104,7 @@ export interface ExtensionTaskRunProgressUpdate {
   current?: number
   total?: number
   unit?: ExtensionTaskRunProgressUnit
+  ratePeriod?: 'second' | 'minute' | 'hour'
   indeterminate?: boolean
   counters?: Record<string, number>
   warnings?: readonly ExtensionTaskRunWarning[]
@@ -89,7 +113,6 @@ export interface ExtensionTaskRunProgressUpdate {
 export interface ExtensionTaskRunProgress extends ExtensionTaskRunProgressUpdate {
   updatedAt: number
   rate?: number
-  rateWindowMs?: number
   etaMs?: number
   percent?: number
 }
@@ -134,6 +157,7 @@ export interface ExtensionTaskRunSnapshot {
   title: string
   description?: string
   status: ExtensionTaskRunStatus
+  initiator: ExtensionTaskRunInitiator
   subject?: ExtensionTaskRunSubject
   controls: Required<ExtensionTaskRunControls>
   progress?: ExtensionTaskRunProgress
@@ -148,6 +172,7 @@ export interface ExtensionTaskRunCreateInput {
   operation: ExtensionTaskRunOperation
   title: string
   description?: string
+  initiator?: ExtensionTaskRunInitiator
   subject?: ExtensionTaskRunSubject
   controls?: ExtensionTaskRunControls
   presentation?: ExtensionTaskRunPresentation
@@ -210,6 +235,8 @@ export interface ExtensionTaskRunHandle {
 - `listActiveOwn/listHistoryOwn` 的 `operations` 使用 public operation name；host 查询时映射为内部 operation，返回 snapshot 时再映射回 public operation。
 - 映射必须使用 runtime metadata 中的完整 extension id 做精确前缀，不从 internal operation 字符串解析 owner。即使 extension id 本身包含点号，owner 权限仍然只来自 `owner.extension.id`。
 - `create()` 在 host 中创建并立即 start run；public extension API 不暴露 separate `start()`，也不暴露 queued scheduling 能力。
+- `initiator` 由扩展显式声明；未提供时 host 默认写入当前 extension initiator。
+- `initiator.type === 'extension'` 时 extension id 必须等于当前 runtime metadata id；任何 `initiator` 都不能影响 owner 授权。
 - extension API 不导出 task-run limits 常量，SDK 不做 payload 预检。host provider 是权威未知边界，负责校验 title、description、subject label、progress、warnings、result 和 list limit。
 
 Capability：
@@ -269,7 +296,7 @@ export interface ExtensionTaskRunCancelRequestedEvent {
 Host provider：
 
 ```text
-apps/desktop/src/main/services/extension/capabilities/task-runs.ts
+apps/desktop/src/main/services/extension/capabilities/task-runs/
 ```
 
 职责：
@@ -279,7 +306,7 @@ apps/desktop/src/main/services/extension/capabilities/task-runs.ts
 - 将 `ExtensionTaskRun*` DTO 映射到 app 内部 `TaskRun*` contract。
 - 强制 `category: 'extension'`，并把 public operation name 映射成内部 `extension.task.<extensionId>.<operation>`。
 - 从 runtime metadata 派生 `owner: { type: 'extension', extension: { id, nameSnapshot } }`，扩展输入不能覆盖。
-- 从 execution-local command source 派生 `initiator`，扩展输入不能覆盖。
+- 从 `ExtensionTaskRunCreateInput.initiator` 写入 `initiator`；未提供时默认当前 extension，且 `initiator` 不参与 owner 授权。
 - 校验 `subject.type === 'command'` 时 `subject.id` 属于当前 extension 注册的 command。
 - `listActiveOwn/getActiveOwn/waitOwn` 只读取当前 runtime owner 的 active runs。
 - `listHistoryOwn/getHistoryOwn` 只读取当前 runtime owner 的 final history records。
@@ -380,10 +407,11 @@ Extension command handler 如需长时运行，必须自己创建 TaskRun：
 context.contributions.commands.register({
   id: 'bangumi.sync.full',
   title: 'Bangumi Full Sync',
-  async execute(args) {
+  async execute(args, event) {
     const run = await kisaki.taskRuns.create({
       operation: 'fullSync',
       title: 'Bangumi 全量同步',
+      initiator: event.source,
       subject: { type: 'command', id: 'bangumi.sync.full', labelSnapshot: 'Bangumi 全量同步' },
       controls: { cancelable: true },
       presentation: {
@@ -406,17 +434,17 @@ context.contributions.commands.register({
 
 ## Initiator Mapping
 
-扩展不能提供 owner 或 initiator。host 根据 runtime metadata 派生 owner，根据 command source 和 runtime context 派生 initiator：
+扩展不能提供 owner。host 根据 runtime metadata 派生 owner，扩展在 `kisaki.taskRuns.create()` 中显式提供 initiator；未提供时默认当前 extension：
 
-| Source                         | TaskRun owner                                            | TaskRun initiator                                       |
-| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------- |
-| 用户点击 extension command     | `{ type: 'extension', extension: { id, nameSnapshot } }` | `{ type: 'user' }`                                      |
-| AutomationService 调度 command | `{ type: 'extension', extension: { id, nameSnapshot } }` | `{ type: 'automation', automation: { ...snapshot } }`   |
-| extension runtime 自发创建     | `{ type: 'extension', extension: { id, nameSnapshot } }` | `{ type: 'extension', extension: { id, nameSnapshot }}` |
+| Scenario                       | TaskRun owner                                            | Extension-provided initiator                    |
+| ------------------------------ | -------------------------------------------------------- | ----------------------------------------------- |
+| 用户点击 extension command     | `{ type: 'extension', extension: { id, nameSnapshot } }` | `event.source` 即 `{ type: 'user' }`            |
+| AutomationService 调度 command | `{ type: 'extension', extension: { id, nameSnapshot } }` | `event.source` 即 `{ type: 'automation', ... }` |
+| extension runtime 自发创建     | `{ type: 'extension', extension: { id, nameSnapshot } }` | 省略 initiator，host 默认当前 extension         |
 
 所有 extension-owned run 的 internal `category` 都是 `extension`，internal `operation` 都由 host 从 public operation name 映射为 `extension.task.<extensionId>.<operation>`。Command 只作为可调用入口，若 run 由 command 触发，用 `subject.type === 'command'` 关联入口。
 
-实现上，extension capability gateway 在调用 extension command handler 时建立 execution-local source context；`kisaki.taskRuns.create()` 读取该 context。离开 command handler 后，runtime 自发创建的 run 使用 extension initiator。
+实现上，`CommandInvocationContext.source` 只传给 command handler。extension host scope、RPC create payload 和 SDK bridge 都不保存 command source；TaskRun initiator 只来自 `ExtensionTaskRunCreateInput.initiator` 或 host 默认值。
 
 ## Bangumi Refactor
 
@@ -426,7 +454,11 @@ context.contributions.commands.register({
 
 ```text
 extensions/bangumi/src/jobs/commands.ts
+extensions/bangumi/src/jobs/context.ts
+extensions/bangumi/src/jobs/auth.ts
 extensions/bangumi/src/jobs/runner.ts
+extensions/bangumi/src/jobs/sync.ts
+extensions/bangumi/src/jobs/import/**
 extensions/bangumi/src/jobs/summary.ts
 extensions/bangumi/src/ui/settings/**
 extensions/bangumi/src/tasks/**
@@ -441,9 +473,9 @@ extensions/bangumi/src/automations/templates.ts
 重构规则：
 
 - command handler 创建 `kisaki.taskRuns` run，operation 使用稳定的 extension-local name，并立即返回 `{ runId }`。
-- `JobRunner` 不再接收 command event，不调用 `event.reportProgress()` 或 `event.checkpoint()`。
-- `JobRunner` 接收 `ExtensionTaskRunHandle`，通过 `run.report()`、`run.checkpoint()`、`run.complete()`、`run.cancel()` 和 `run.fail()` 完成生命周期。
-- `JobRunner` catch 边界必须使用 `isExtensionTaskRunCancellation(error)` 显式区分取消和失败。
+- `JobRunner` 不再接收 command event，不调用 `event.reportProgress()` 或 `event.checkpoint()`；它只作为门面分发到 auth、sync、import job runner。
+- `jobs/context.ts` 接收 `ExtensionTaskRunHandle`，通过 `run.report()`、`run.checkpoint()`、`run.complete()`、`run.cancel()` 和 `run.fail()` 完成生命周期。
+- `jobs/context.ts` catch 边界必须使用 `isExtensionTaskRunCancellation(error)` 显式区分取消和失败。
 - `run.signal` 贯穿 Bangumi client、limiter、sleep、import executor 和 sync engine。
 - summary status 不再复制 final status；final status 来自 TaskRun result。
 - settings panel 不展示独立 progress/status field。
@@ -460,7 +492,7 @@ settings button
   -> task center observes task-run:changed
 
 Bangumi command handler
-  -> kisaki.taskRuns.create({ operation: 'fullSync', ... })
+  -> kisaki.taskRuns.create({ operation: 'fullSync', initiator: event.source, ... })
   -> start execute job in extension runtime
   -> return { runId }
 

@@ -1,12 +1,17 @@
 import {
+  ExtensionTaskRunCancellation,
+  kisaki,
   type CommandInvocationResult,
+  type ExtensionTaskRunProgressUpdate,
+  type ExtensionTaskRunResult,
   type SerializableRecord,
   type SettingsPanelDialogNodeEvents,
   type SettingsPanelField,
   type SettingsPanelNodeFactory
 } from '@kisaki3/extension-sdk'
 import type { BangumiCommandId } from '../../../jobs/commands'
-import { createRunningJobError, isBangumiCommandActive, startBangumiCommandJob } from './jobs'
+import type { BangumiJobHandle } from '../../../jobs/runner'
+import { createRunningJobError, isBangumiCommandActive } from './jobs'
 import type {
   BangumiPreviewBadge,
   BangumiPreviewGroup,
@@ -24,6 +29,8 @@ import { toSettingsError } from './errors'
 
 const PREVIEW_RESULT_TTL_MS = 30 * 60 * 1000
 const PREVIEW_RESULT_LIMIT = 32
+
+type PreviewResult = Omit<ExtensionTaskRunResult, 'status' | 'error'>
 
 export class PreviewResultRegistry {
   private readonly results = new Map<string, ResolvedPreviewResult>()
@@ -129,7 +136,10 @@ export function createDialogPreviewFields<TParams extends SerializableRecord = S
 export async function runDialogPreview(options: {
   previewKey: BangumiPreviewKey
   commandId: BangumiCommandId
+  title: string
   args: SerializableRecord
+  signal: AbortSignal
+  run(run: BangumiJobHandle): Promise<unknown>
   previewRegistry: PreviewResultRegistry
   event: BangumiSettingsDialogButtonEvent
 }): Promise<BangumiSettingsDialogButtonResult> {
@@ -138,7 +148,7 @@ export async function runDialogPreview(options: {
       return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
     }
 
-    const result = await startPreviewCommand(options.commandId, options.args)
+    const result = await startPreviewRun(options)
     options.previewRegistry.setCompleted(
       options.event.sessionId,
       options.previewKey,
@@ -155,7 +165,10 @@ export async function runDialogPreview(options: {
 export async function runDialogSubmitPreview(options: {
   previewKey: BangumiPreviewKey
   commandId: BangumiCommandId
+  title: string
   args: SerializableRecord
+  signal: AbortSignal
+  run(run: BangumiJobHandle): Promise<unknown>
   previewRegistry: PreviewResultRegistry
   event: BangumiSettingsDialogSubmitEvent
 }): Promise<BangumiSettingsDialogSubmitResult> {
@@ -164,7 +177,7 @@ export async function runDialogSubmitPreview(options: {
       return options.event.fail(createRunningJobError(), { refresh: 'dialog' })
     }
 
-    const result = await startPreviewCommand(options.commandId, options.args)
+    const result = await startPreviewRun(options)
     options.previewRegistry.setCompleted(
       options.event.sessionId,
       options.previewKey,
@@ -178,11 +191,131 @@ export async function runDialogSubmitPreview(options: {
   }
 }
 
-function startPreviewCommand(
-  commandId: BangumiCommandId,
-  args: SerializableRecord
-): Promise<CommandInvocationResult> {
-  return startBangumiCommandJob(commandId, args)
+async function startPreviewRun(options: {
+  commandId: BangumiCommandId
+  title: string
+  signal: AbortSignal
+  run(run: BangumiJobHandle): Promise<unknown>
+}): Promise<CommandInvocationResult> {
+  const run = await createNotificationPreviewHandle({
+    commandId: options.commandId,
+    title: options.title,
+    signal: options.signal
+  })
+  const output = await options.run(run)
+  return {
+    commandId: options.commandId,
+    output: output as CommandInvocationResult['output']
+  }
+}
+
+async function createNotificationPreviewHandle(options: {
+  commandId: string
+  title: string
+  signal: AbortSignal
+}): Promise<BangumiJobHandle> {
+  const id = createPreviewNotificationId(options.commandId)
+  const handle = await kisaki.notify.loading(options.title, {
+    id,
+    message: '正在准备预览...',
+    closable: true
+  })
+
+  return new NotificationPreviewHandle({
+    id: handle.id,
+    title: options.title,
+    signal: options.signal
+  })
+}
+
+class NotificationPreviewHandle implements BangumiJobHandle {
+  constructor(
+    private readonly options: {
+      id: string
+      title: string
+      signal: AbortSignal
+    }
+  ) {}
+
+  get signal(): AbortSignal {
+    return this.options.signal
+  }
+
+  async report(update: ExtensionTaskRunProgressUpdate): Promise<void> {
+    await kisaki.notify.update(this.options.id, 'loading', this.options.title, {
+      message: formatPreviewProgress(update),
+      closable: true
+    })
+  }
+
+  async checkpoint(): Promise<void> {
+    if (this.signal.aborted) {
+      throw new ExtensionTaskRunCancellation('Bangumi preview was cancelled.')
+    }
+  }
+
+  async complete(result?: PreviewResult): Promise<void> {
+    await kisaki.notify.update(this.options.id, 'success', this.options.title, {
+      message: result?.summary ?? '预览已完成。',
+      closable: true
+    })
+  }
+
+  async fail(_error: unknown, result?: PreviewResult): Promise<void> {
+    await kisaki.notify.update(this.options.id, 'error', this.options.title, {
+      message: result?.summary ?? '预览失败。',
+      closable: true
+    })
+  }
+
+  async cancel(result?: PreviewResult): Promise<void> {
+    await kisaki.notify.update(this.options.id, 'warning', this.options.title, {
+      message: result?.summary ?? '预览已取消。',
+      closable: true
+    })
+  }
+}
+
+function formatPreviewProgress(update: ExtensionTaskRunProgressUpdate): string | undefined {
+  const base = update.message ?? update.phase
+  const count = formatProgressCount(update)
+  const percent = formatProgressPercent(update)
+  const suffix = [count, percent].filter(Boolean).join(' ')
+  return suffix ? [base, suffix].filter(Boolean).join(' ') : base
+}
+
+function formatProgressCount(update: ExtensionTaskRunProgressUpdate): string | undefined {
+  if (update.current === undefined && update.total === undefined) {
+    return undefined
+  }
+
+  if (update.current !== undefined && update.total !== undefined) {
+    return `(${update.current}/${update.total})`
+  }
+
+  if (update.current !== undefined) {
+    return `(${update.current})`
+  }
+
+  return undefined
+}
+
+function formatProgressPercent(update: ExtensionTaskRunProgressUpdate): string | undefined {
+  if (
+    typeof update.current !== 'number' ||
+    typeof update.total !== 'number' ||
+    !Number.isFinite(update.current) ||
+    !Number.isFinite(update.total) ||
+    update.total <= 0
+  ) {
+    return undefined
+  }
+
+  return `${Math.round(Math.min(100, (update.current / update.total) * 100))}%`
+}
+
+function createPreviewNotificationId(commandId: string): string {
+  return `bangumi.preview.${commandId}.${Date.now()}.${Math.random().toString(36).slice(2)}`
 }
 
 function readPreviewGroups(result: CommandInvocationResult): readonly BangumiPreviewGroup[] {

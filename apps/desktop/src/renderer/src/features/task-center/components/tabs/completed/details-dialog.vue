@@ -207,7 +207,7 @@ const metadata = computed(() => [
               class="col-span-2 min-w-0"
             >
               <div class="text-xs text-muted-foreground">描述</div>
-              <div class="break-words text-muted-foreground">{{ props.run.description }}</div>
+              <div class="break-words">{{ props.run.description }}</div>
             </div>
 
             <template

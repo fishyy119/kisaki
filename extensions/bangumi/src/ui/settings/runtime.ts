@@ -2,6 +2,7 @@ import type { AccountService } from '../../auth/account'
 import type { OAuthFlow } from '../../auth/oauth-flow'
 import type { TokenService } from '../../auth/token-service'
 import type { SettingsStore } from '../../config/store'
+import type { JobRunner } from '../../jobs/runner'
 import type { MediaRegistry } from '../../media/registry'
 import type { SyncStateStore } from '../../sync/fingerprint'
 import type { SyncQueueStore } from '../../sync/queue'
@@ -12,9 +13,11 @@ export interface BangumiSettingsPanelDependencies {
   accountService: AccountService
   oauthFlow: OAuthFlow
   tokenService: TokenService
+  jobRunner: JobRunner
   mediaRegistry: MediaRegistry
   syncStateStore: SyncStateStore
   syncQueueStore: SyncQueueStore
+  abortSignal: AbortSignal
 }
 
 export interface BangumiSettingsRuntime extends BangumiSettingsPanelDependencies {
