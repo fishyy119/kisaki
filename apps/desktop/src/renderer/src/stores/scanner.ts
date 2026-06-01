@@ -1,111 +1,138 @@
 /**
  * Scanner Store
  *
- * Tracks scanner progress states received from main process.
- * Main process is the single source of truth - we simply store the complete state.
+ * Owns the scanner page read model for active runs and the last run result in
+ * the current app lifecycle.
  */
 
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { ScanProgressData } from '@shared/scanner'
-import { ipcManager } from '@renderer/core/ipc'
+import {
+  isActiveScannerRunStatus,
+  type ScannerRunStartResult,
+  type ScannerRunState
+} from '@shared/scanner'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Scanner')
 
-const activeStatuses = new Set<ScanProgressData['status']>([
-  'queued',
-  'scanning',
-  'pausing',
-  'paused',
-  'aborting'
-])
-
 export const useScannerStore = defineStore('scanner', () => {
-  // ==========================================================================
-  // State
-  // ==========================================================================
-
-  const scannerStates = ref(new Map<string, ScanProgressData>())
+  const scannerStates = ref(new Map<string, ScannerRunState>())
   const initialized = ref(false)
+  const refreshing = ref(false)
+  const error = ref<string | null>(null)
 
-  // ==========================================================================
-  // Getters
-  // ==========================================================================
+  let listenersRegistered = false
 
-  const activeScanners = computed(() => {
-    const active: ScanProgressData[] = []
-    for (const state of scannerStates.value.values()) {
-      if (activeStatuses.has(state.status)) active.push(state)
+  const activeScannerStates = computed(() =>
+    [...scannerStates.value.values()].filter((state) => isActiveScannerRunStatus(state.status))
+  )
+
+  const hasActiveScans = computed(() => activeScannerStates.value.length > 0)
+
+  function setScannerState(state: ScannerRunState): void {
+    const next = new Map(scannerStates.value)
+    next.set(state.scannerId, state)
+    scannerStates.value = next
+  }
+
+  function replaceScannerStates(states: readonly ScannerRunState[]): void {
+    const next = new Map<string, ScannerRunState>()
+    for (const state of states) {
+      next.set(state.scannerId, state)
     }
-    return active
-  })
-
-  const hasActiveScans = computed(() => activeScanners.value.length > 0)
-
-  // ==========================================================================
-  // Actions
-  // ==========================================================================
-
-  function updateScannerState(id: string, progress: ScanProgressData) {
-    const newStates = new Map(scannerStates.value)
-    newStates.set(id, progress)
-    scannerStates.value = newStates
+    scannerStates.value = next
   }
 
-  function resetScannerState(id: string) {
-    const newStates = new Map(scannerStates.value)
-    newStates.delete(id)
-    scannerStates.value = newStates
-  }
-
-  function resetAllScannerStates() {
-    scannerStates.value = new Map()
-  }
-
-  function getScannerState(id: string): ScanProgressData | undefined {
+  function getScannerState(id: string): ScannerRunState | undefined {
     return scannerStates.value.get(id)
   }
 
-  // ==========================================================================
-  // Initialization
-  // ==========================================================================
+  async function refresh(): Promise<void> {
+    refreshing.value = true
+    error.value = null
 
-  async function init() {
+    try {
+      replaceScannerStates(await ipcManager.invoke('scanner:list-run-states').then(unwrapIpcData))
+    } catch (refreshError) {
+      const message = refreshError instanceof Error ? refreshError.message : String(refreshError)
+      error.value = message
+      log.error('Failed to refresh scanner runs:', refreshError)
+      throw refreshError
+    } finally {
+      refreshing.value = false
+    }
+  }
+
+  async function init(): Promise<void> {
     if (initialized.value) return
 
-    // Listen for scanner progress events from main process
-    ipcManager.on('scanner:scan-progress', (_e, data) => {
-      updateScannerState(data.scannerId, data)
-    })
+    setupListeners()
 
-    // Fetch initial status
     try {
-      const result = await ipcManager.invoke('scanner:get-active-scans')
-      if (result.success && result.data) {
-        for (const scan of result.data) {
-          updateScannerState(scan.scannerId, scan)
-        }
-      }
-    } catch (error) {
-      log.error('Failed to fetch initial status:', error)
+      await refresh()
+      initialized.value = true
+    } catch {
+      initialized.value = false
     }
+  }
 
-    initialized.value = true
+  async function startGameScan(scannerId: string): Promise<ScannerRunStartResult> {
+    return unwrapIpcData(await ipcManager.invoke('scanner:start-game-scan', scannerId))
+  }
+
+  async function startAllGameScans(): Promise<ScannerRunStartResult[]> {
+    return unwrapIpcData(await ipcManager.invoke('scanner:start-all-game-scans'))
+  }
+
+  async function pauseScan(scannerId: string): Promise<boolean> {
+    const state = getScannerState(scannerId)
+    if (!state || !isActiveScannerRunStatus(state.status)) {
+      return false
+    }
+    return unwrapIpcData(await ipcManager.invoke('scanner:pause-scan', scannerId))
+  }
+
+  async function resumeScan(scannerId: string): Promise<boolean> {
+    const state = getScannerState(scannerId)
+    if (!state || !isActiveScannerRunStatus(state.status)) {
+      return false
+    }
+    return unwrapIpcData(await ipcManager.invoke('scanner:resume-scan', scannerId))
+  }
+
+  async function cancelScan(scannerId: string): Promise<boolean> {
+    const state = getScannerState(scannerId)
+    if (!state || !isActiveScannerRunStatus(state.status)) {
+      return false
+    }
+    return unwrapIpcData(await ipcManager.invoke('scanner:cancel-scan', scannerId))
+  }
+
+  function setupListeners(): void {
+    if (listenersRegistered) return
+    listenersRegistered = true
+
+    ipcManager.on('scanner:run-state-changed', (_event, state) => {
+      setScannerState(state)
+    })
   }
 
   return {
-    // State
     scannerStates,
     initialized,
-    // Getters
-    activeScanners,
+    refreshing,
+    error,
+    activeScannerStates,
     hasActiveScans,
-    // Actions
-    updateScannerState,
-    resetScannerState,
-    resetAllScannerStates,
+    init,
+    refresh,
     getScannerState,
-    init
+    startGameScan,
+    startAllGameScans,
+    pauseScan,
+    resumeScan,
+    cancelScan
   }
 })

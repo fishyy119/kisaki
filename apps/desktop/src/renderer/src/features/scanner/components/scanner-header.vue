@@ -11,7 +11,6 @@ import { RouterLink } from 'vue-router'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { scanners } from '@shared/db'
-import { ipcManager } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useEvent } from '@renderer/composables/use-event'
 import { useScannerStore } from '@renderer/stores'
@@ -59,31 +58,32 @@ useEvent('db.deleted', (payload) => {
 
 const scannerStore = useScannerStore()
 
-const activeScanners = computed(() => scannerStore.activeScanners.length)
+const activeScannerStates = computed(() => scannerStore.activeScannerStates.length)
 const isScanning = computed(() => scannerStore.hasActiveScans)
-const activeScannerIds = computed(() => scannerStore.activeScanners.map((state) => state.scannerId))
+const activeScannerIds = computed(() =>
+  scannerStore.activeScannerStates.map((state) => state.scannerId)
+)
 
 // =============================================================================
 // Handlers
 // =============================================================================
 
-function handleScanAll() {
+async function handleScanAll() {
   try {
-    scannerStore.resetAllScannerStates()
-    ipcManager.send('scanner:scan-all-game')
+    await scannerStore.startAllGameScans()
   } catch (error) {
     log.error('Failed to scan all:', error)
   }
 }
 
-async function handleAbortAll() {
-  const results = await Promise.all(
-    activeScannerIds.value.map((scannerId) => ipcManager.invoke('scanner:abort-game', scannerId))
+async function handleCancelAll() {
+  const results = await Promise.allSettled(
+    activeScannerIds.value.map((scannerId) => scannerStore.cancelScan(scannerId))
   )
 
   for (const result of results) {
-    if (!result.success) {
-      log.error('Failed to abort scan:', result.error)
+    if (result.status === 'rejected') {
+      log.error('Failed to cancel scan:', result.reason)
     }
   }
 }
@@ -113,7 +113,7 @@ async function handleAbortAll() {
       <h1 class="text-base font-semibold">扫描器</h1>
       <span class="text-xs text-muted-foreground">
         {{ totalScanners ?? 0 }} 个扫描器
-        <template v-if="activeScanners > 0"> · {{ activeScanners }} 个运行中</template>
+        <template v-if="activeScannerStates > 0"> · {{ activeScannerStates }} 个运行中</template>
       </span>
     </div>
 
@@ -133,13 +133,13 @@ async function handleAbortAll() {
         variant="secondary"
         size="sm"
         :disabled="totalScanners === 0"
-        @click="isScanning ? handleAbortAll() : handleScanAll()"
+        @click="isScanning ? handleCancelAll() : handleScanAll()"
       >
         <Icon
           :icon="isScanning ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--refresh]'"
           class="size-4"
         />
-        {{ isScanning ? '中止全部' : '扫描全部' }}
+        {{ isScanning ? '取消全部' : '扫描全部' }}
       </Button>
       <Button
         variant="secondary"

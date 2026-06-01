@@ -23,7 +23,13 @@ const log = createLogger('Scanner')
 
 export class ScannerService implements IMediaService {
   readonly id = 'scanner'
-  readonly deps = ['db', 'ipc', 'ingest', 'event'] as const satisfies readonly ServiceName[]
+  readonly deps = [
+    'db',
+    'ipc',
+    'ingest',
+    'event',
+    'task-run'
+  ] as const satisfies readonly ServiceName[]
 
   game!: GameScannerHandler
   phash!: ScannerPhash
@@ -34,6 +40,7 @@ export class ScannerService implements IMediaService {
     const ipcService = container.get('ipc')
     const ingestService = container.get('ingest')
     const eventService = container.get('event')
+    const taskRunService = container.get('task-run')
 
     this.phash = new ScannerPhash()
     this.discovery = new ScannerDiscovery(dbService)
@@ -44,7 +51,8 @@ export class ScannerService implements IMediaService {
       dbService,
       ipcService,
       eventService,
-      ingestService
+      ingestService,
+      taskRunService
     )
     registerScannerIpc(this, ipcService)
     log.info('Initialized')

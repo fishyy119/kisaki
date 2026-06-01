@@ -6,7 +6,7 @@
  * - resolving entities into games
  * - handing add flows to ingest
  *
- * Queueing, progress publishing, pause/resume/abort, and concurrency control
+ * Queueing, run state publishing, controls, and concurrency control
  * are delegated to the shared scanner coordinator in `handlers/common`.
  */
 
@@ -17,14 +17,21 @@ import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
 import type { IngestService } from '@main/services/ingest'
 import type { IpcService } from '@main/services/ipc'
+import type { TaskRunService } from '@main/services/task-run'
+import type { TaskRunInitiator } from '@shared/task-run'
 import { scanners, scraperProfiles, type ScraperProfile } from '@shared/db'
 import type { Scanner, ScannerIngestMode } from '@shared/db'
-import type { EntityEntry, ScanCompletedData, ScanProgressData } from '@shared/scanner'
+import type {
+  EntityEntry,
+  ScanCompletedData,
+  ScannerRunState,
+  ScannerRunStartResult
+} from '@shared/scanner'
 import type { IngestAddGameResult } from '@shared/ingest/add'
 import type { ScannerPhash } from '../../phash'
 import type { ScannerDiscovery } from '../../discovery'
 import {
-  ScannerHandlerCoordinator,
+  ScannerRunCoordinator,
   type ScannerEntityProcessResult,
   ScannerRunSession
 } from '../common'
@@ -59,7 +66,7 @@ function assertNever(value: never): never {
 
 export class GameScannerHandler {
   private readonly scheduledScanners = new Map<string, NodeJS.Timeout>()
-  private readonly runner: ScannerHandlerCoordinator<Scanner>
+  private readonly runs: ScannerRunCoordinator<Scanner>
 
   constructor(
     private readonly discovery: ScannerDiscovery,
@@ -67,39 +74,55 @@ export class GameScannerHandler {
     private readonly dbService: DbService,
     ipcService: IpcService,
     eventService: EventService,
-    private readonly ingestService: IngestService
+    private readonly ingestService: IngestService,
+    taskRunService: TaskRunService
   ) {
-    this.runner = new ScannerHandlerCoordinator<Scanner>({
-      ipcService,
+    this.runs = new ScannerRunCoordinator<Scanner>({
+      ipc: ipcService,
+      taskRun: taskRunService,
       eventService,
       loadScanner: async (scannerId) => this.loadGameScanner(scannerId),
       runScan: async (scanner, session) => this.runScannerScan(scanner, session)
     })
   }
 
-  getActiveScans(): ScanProgressData[] {
-    return this.runner.getActiveScans()
+  async runScanner(
+    scannerId: string,
+    initiator: TaskRunInitiator = { type: 'user' }
+  ): Promise<ScanCompletedData> {
+    return this.runs.runScanner(scannerId, initiator)
   }
 
-  async scanScanner(scannerId: string): Promise<ScanCompletedData> {
-    return this.runner.scanScanner(scannerId)
+  async startScanner(
+    scannerId: string,
+    initiator: TaskRunInitiator = { type: 'user' }
+  ): Promise<ScannerRunStartResult> {
+    const { start, completed } = await this.runs.startScanner(scannerId, initiator)
+    void completed.catch((error) => {
+      log.error('Scanner run failed after start.', { scannerId, error })
+    })
+    return start
   }
 
-  pauseScanner(scannerId: string): void {
-    this.runner.pauseScanner(scannerId)
+  listRunStates(): ScannerRunState[] {
+    return this.runs.listRunStates()
   }
 
-  resumeScanner(scannerId: string): void {
-    this.runner.resumeScanner(scannerId)
+  pauseScanner(scannerId: string): boolean {
+    return this.runs.pauseScanner(scannerId)
   }
 
-  abortScanner(scannerId: string): void {
-    this.runner.abortScanner(scannerId)
+  resumeScanner(scannerId: string): boolean {
+    return this.runs.resumeScanner(scannerId)
   }
 
-  async scanAllScanners(): Promise<Map<string, ScanCompletedData>> {
-    const results = new Map<string, ScanCompletedData>()
+  cancelScanner(scannerId: string): boolean {
+    return this.runs.cancelScanner(scannerId)
+  }
 
+  async startAllScanners(
+    initiator: TaskRunInitiator = { type: 'user' }
+  ): Promise<ScannerRunStartResult[]> {
     let allScanners: Scanner[] = []
     try {
       allScanners = this.dbService.client
@@ -111,31 +134,19 @@ export class GameScannerHandler {
       log.error('Failed to get all game scanners.', { error: error })
     }
 
-    log.info('Found game scanners to scan.', { allScannersLength: allScanners.length })
-
-    const entries = await Promise.all(
-      allScanners.map(async (scanner) => {
-        try {
-          const result = await this.scanScanner(scanner.id)
-          return [scanner.id, result] as [string, ScanCompletedData]
-        } catch (error) {
-          log.error('Failed to scan games for scanner.', {
-            scannerName: scanner.name,
-            error: error
-          })
-          return [scanner.id, this.buildFailedScanResult(scanner, error)] as [
-            string,
-            ScanCompletedData
-          ]
-        }
-      })
-    )
-
-    for (const [scannerId, result] of entries) {
-      results.set(scannerId, result)
+    const starts: ScannerRunStartResult[] = []
+    for (const scanner of allScanners) {
+      try {
+        starts.push(await this.startScanner(scanner.id, initiator))
+      } catch (error) {
+        log.error('Failed to start scanner.', {
+          scannerName: scanner.name,
+          error: error
+        })
+      }
     }
 
-    return results
+    return starts
   }
 
   async scheduleScanner(scannerId: string): Promise<void> {
@@ -170,7 +181,7 @@ export class GameScannerHandler {
     const intervalId = setInterval(async () => {
       log.info('Running scheduled scan for scanner.', { scannerName: scanner.name })
       try {
-        await this.scanScanner(scannerId)
+        await this.runScanner(scannerId, { type: 'system', reason: 'maintenance' })
       } catch (error) {
         log.error('Scheduled scan failed for scanner.', { scannerName: scanner.name, error: error })
       }
@@ -225,6 +236,7 @@ export class GameScannerHandler {
 
   cleanup(): void {
     this.unscheduleAllScanners()
+    this.runs.cleanup()
   }
 
   private async runScannerScan(
@@ -263,17 +275,22 @@ export class GameScannerHandler {
       value5: profile?.name ?? 'none'
     })
 
+    session.reportPhase('discovering', '正在扫描目录', true)
+    await session.checkpoint()
+
     const entities = await this.discovery.scanForEntities(scanner.path, {
       entityDepth: scanner.entityDepth,
       ignoredNames,
       nameExtractionRules: scanner.nameExtractionRules
     })
+    await session.checkpoint()
 
     log.info('Found entities at depth.', {
       entitiesLength: entities.length,
       scannerEntityDepth: scanner.entityDepth
     })
 
+    session.reportPhase('processing', '正在处理扫描结果')
     session.setTotal(entities.length)
     await session.processItemsWithConcurrency(entities, scannerParallelCount, async (entity) => {
       const entityResult = await this.processEntity(entity, {
@@ -286,9 +303,9 @@ export class GameScannerHandler {
     })
 
     log.info('Scan completed.', {
-      sessionProgressNewCount: session.progress.newCount,
-      sessionProgressSkippedCount: session.progress.skippedCount,
-      sessionProgressFailedCount: session.progress.failedCount
+      sessionStateNewCount: session.state.newCount,
+      sessionStateSkippedCount: session.state.skippedCount,
+      sessionStateFailedCount: session.state.failedCount
     })
   }
 
@@ -494,23 +511,6 @@ export class GameScannerHandler {
     } catch (error) {
       log.error('Failed to get profile.', { profileId: profileId, error: error })
       return null
-    }
-  }
-
-  private buildFailedScanResult(scanner: Scanner, error: unknown): ScanCompletedData {
-    return {
-      scannerId: scanner.id,
-      scannerName: scanner.name,
-      mediaType: scanner.type,
-      path: scanner.path,
-      status: 'completed',
-      total: 0,
-      processedCount: 0,
-      newCount: 0,
-      skippedCount: 0,
-      failedCount: 1,
-      skippedScans: [],
-      failedScans: [{ name: scanner.name, path: scanner.path, reason: String(error) }]
     }
   }
 }

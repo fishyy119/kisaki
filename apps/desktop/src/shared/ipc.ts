@@ -37,7 +37,7 @@ import type {
   ScrapedCompanyBundle,
   ScrapedCharacterBundle
 } from './scraper'
-import type { ScanProgressData, ExtractionTestResult } from './scanner'
+import type { ExtractionTestResult, ScannerRunStartResult, ScannerRunState } from './scanner'
 import type {
   IngestAddGameDirectOptions,
   IngestAddGameDirectResult,
@@ -179,8 +179,6 @@ export type ExtractIpcData<T> = T extends IpcSuccess<infer D> ? D : never
 export interface IpcMainListeners {
   ping: [string]
   'event:forward': [event: keyof AppEvents, args: unknown[]]
-  'scanner:scan-game': [scannerId: string]
-  'scanner:scan-all-game': []
   'notify:native': [NotifyOptions]
   'notify:auto': [NotifyOptions]
   'notify:action': [event: { toastId: string; actionId: string }]
@@ -504,10 +502,12 @@ export interface IpcMainHandlers {
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeRegistrationInfo[]>
 
   // Scanner
-  'scanner:get-active-scans': () => IpcResult<ScanProgressData[]>
-  'scanner:pause-game': (scannerId: string) => IpcVoidResult
-  'scanner:resume-game': (scannerId: string) => IpcVoidResult
-  'scanner:abort-game': (scannerId: string) => IpcVoidResult
+  'scanner:start-game-scan': (scannerId: string) => IpcResult<ScannerRunStartResult>
+  'scanner:start-all-game-scans': () => IpcResult<ScannerRunStartResult[]>
+  'scanner:list-run-states': () => IpcResult<ScannerRunState[]>
+  'scanner:pause-scan': (scannerId: string) => IpcResult<boolean>
+  'scanner:resume-scan': (scannerId: string) => IpcResult<boolean>
+  'scanner:cancel-scan': (scannerId: string) => IpcResult<boolean>
   'scanner:test-extraction-rules': (
     scannerPath: string,
     entityDepth: number,
@@ -534,7 +534,7 @@ export interface IpcRendererEvents {
   'monitor:game-stopped': [string]
   'monitor:game-foreground': [string]
   'monitor:game-background': [string]
-  'scanner:scan-progress': [ScanProgressData]
+  'scanner:run-state-changed': [state: ScannerRunState]
   'updater:state-changed': [state: AppUpdaterState]
   'task-run:changed': [run: TaskRun]
   'task-run:deleted': [payload: { runId: string }]

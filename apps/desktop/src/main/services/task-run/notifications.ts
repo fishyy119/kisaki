@@ -151,6 +151,12 @@ function formatActiveMessage(run: TaskRun, presentation: TaskRunPresentation): s
   if (run.status === 'cancelling') {
     return '正在取消...'
   }
+  if (run.status === 'pausing') {
+    return '正在暂停...'
+  }
+  if (run.status === 'paused') {
+    return '已暂停'
+  }
 
   const base = notify?.message ?? run.progress?.message ?? run.progress?.phase ?? run.description
   if (notify?.showProgress === false || !run.progress) {

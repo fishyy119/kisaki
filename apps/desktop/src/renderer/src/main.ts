@@ -66,10 +66,10 @@ async function initMainWindowRenderer() {
 
     // Store initialization (registers listeners + fetches initial state)
     await useGameMonitorStore().init()
+    await useTaskRunStore().init()
     await useScannerStore().init()
     await useDefaultFromStore().init()
     await useUpdaterStore().init()
-    await useTaskRunStore().init()
   })
 }
 

@@ -1,5 +1,5 @@
 /**
- * Scanner progress and result types
+ * Scanner run and result types
  */
 
 import type { MediaType } from './common'
@@ -32,22 +32,44 @@ export interface SkippedScan {
   existingGameId: string
 }
 
-export type ScanProgressStatus =
+export type ScannerRunStatus =
   | 'queued'
-  | 'scanning'
+  | 'running'
   | 'pausing'
   | 'paused'
-  | 'aborting'
+  | 'cancelling'
   | 'completed'
-  | 'aborted'
+  | 'failed'
+  | 'cancelled'
+
+export const ACTIVE_SCANNER_RUN_STATUSES = [
+  'queued',
+  'running',
+  'pausing',
+  'paused',
+  'cancelling'
+] as const satisfies readonly ScannerRunStatus[]
+
+export type ActiveScannerRunStatus = (typeof ACTIVE_SCANNER_RUN_STATUSES)[number]
+
+export function isActiveScannerRunStatus(
+  status: ScannerRunStatus
+): status is ActiveScannerRunStatus {
+  return (ACTIVE_SCANNER_RUN_STATUSES as readonly ScannerRunStatus[]).includes(status)
+}
 
 /**
- * Scanner progress data sent from main process to renderer.
- *
- * Each event contains the COMPLETE current state, not incremental changes.
+ * Scanner-owned mutable run state for the current app lifecycle.
  */
-export interface ScanProgressData {
+export interface ScannerRunState {
+  runId: string
   scannerId: string
+  scannerName: string
+  mediaType: MediaType
+  path: string
+  status: ScannerRunStatus
+  phase?: string
+  message?: string
   total: number
   processedCount: number
   newCount: number
@@ -55,7 +77,15 @@ export interface ScanProgressData {
   failedCount: number
   skippedScans: SkippedScan[]
   failedScans: FailedScan[]
-  status: ScanProgressStatus
+  createdAt: number
+  startedAt?: number
+  updatedAt: number
+  finishedAt?: number
+}
+
+export interface ScannerRunStartResult {
+  runId: string
+  createdAt: number
 }
 
 /**
@@ -66,7 +96,7 @@ export interface ScanCompletedData {
   scannerName: string
   mediaType: MediaType
   path: string
-  status: 'completed' | 'aborted'
+  status: 'completed' | 'failed' | 'cancelled'
   total: number
   processedCount: number
   newCount: number

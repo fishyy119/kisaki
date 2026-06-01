@@ -172,18 +172,18 @@ async function onAppReady(): Promise<void> {
 
   // Setup scanners after services are ready
   const scannerService = container.get<ScannerService>('scanner')
-  // const dbService = container.get<DbService>('db')
+  const dbService = container.get<DbService>('db')
 
   // Schedule all scanners for periodic scanning
   await scannerService.game.scheduleAllScanners()
 
   // Check if we should scan all scanners on app start
-  // const settings = await dbService.entityFinder.getAppSettings()
-  // if (settings.scannerStartAtOpen) {
-  //   scannerService.game.scanAllScanners().catch((error) => {
-  //     log.error('Failed to scan all scanners on startup.', error)
-  //   })
-  // }
+  const settings = dbService.entityFinder.getAppSettings()
+  if (settings.scannerStartAtOpen) {
+    scannerService.game.startAllScanners({ type: 'system', reason: 'startup' }).catch((error) => {
+      log.error('Failed to start scanners on startup.', error)
+    })
+  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

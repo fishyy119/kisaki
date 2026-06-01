@@ -12,7 +12,7 @@ import { eq, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { scanners as scannersTable, collections, scraperProfiles, type Scanner } from '@shared/db'
-import type { ScanProgressData } from '@shared/scanner'
+import { isActiveScannerRunStatus } from '@shared/scanner'
 import { ipcManager } from '@renderer/core/ipc'
 import { usePreferencesStore, useScannerStore } from '@renderer/stores'
 import { useAsyncData } from '@renderer/composables/use-async-data'
@@ -66,14 +66,6 @@ const scannerStore = useScannerStore()
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
 
-const activeStatuses = new Set<ScanProgressData['status']>([
-  'queued',
-  'scanning',
-  'pausing',
-  'paused',
-  'aborting'
-])
-
 // =============================================================================
 // Data Fetching
 // =============================================================================
@@ -111,26 +103,26 @@ const { data: profileName } = useAsyncData(
 
 const scannerState = computed(() => scannerStore.getScannerState(props.scanner.id))
 const isBusy = computed(() =>
-  scannerState.value ? activeStatuses.has(scannerState.value.status) : false
+  scannerState.value ? isActiveScannerRunStatus(scannerState.value.status) : false
 )
 const showProgressOverlay = computed(() => {
   const status = scannerState.value?.status
-  return status === 'scanning' || status === 'pausing' || status === 'paused'
+  return status === 'running' || status === 'pausing' || status === 'paused'
 })
 const canStartScan = computed(() => {
   const status = scannerState.value?.status
-  return !status || status === 'completed' || status === 'aborted'
+  return !status || status === 'completed' || status === 'cancelled' || status === 'failed'
 })
-const canPauseScan = computed(() => scannerState.value?.status === 'scanning')
+const canPauseScan = computed(() => scannerState.value?.status === 'running')
 const canResumeScan = computed(() => {
   const status = scannerState.value?.status
   return status === 'paused' || status === 'pausing'
 })
-const canAbortScan = computed(() => {
+const canCancelScan = computed(() => {
   const status = scannerState.value?.status
-  return !!status && activeStatuses.has(status) && status !== 'aborting'
+  return !!status && isActiveScannerRunStatus(status) && status !== 'cancelling'
 })
-const isAborting = computed(() => scannerState.value?.status === 'aborting')
+const isCancelling = computed(() => scannerState.value?.status === 'cancelling')
 
 const progress = computed(() => {
   const state = scannerState.value
@@ -147,7 +139,7 @@ const statusInfo = computed(() => {
   switch (state.status) {
     case 'queued':
       return { variant: 'secondary' as const, label: '排队中', spinning: true }
-    case 'scanning':
+    case 'running':
       return {
         variant: 'default' as const,
         label: state.total > 0 ? `${progress.value}%` : '扫描中',
@@ -157,12 +149,14 @@ const statusInfo = computed(() => {
       return { variant: 'warning' as const, label: '暂停中', spinning: true }
     case 'paused':
       return { variant: 'warning' as const, label: '已暂停', spinning: false }
-    case 'aborting':
-      return { variant: 'destructive' as const, label: '中止中', spinning: true }
+    case 'cancelling':
+      return { variant: 'destructive' as const, label: '取消中', spinning: true }
     case 'completed':
       return { variant: 'success' as const, label: '完成', spinning: false }
-    case 'aborted':
-      return { variant: 'destructive' as const, label: '已中止', spinning: false }
+    case 'cancelled':
+      return { variant: 'destructive' as const, label: '已取消', spinning: false }
+    case 'failed':
+      return { variant: 'destructive' as const, label: '失败', spinning: false }
     default:
       return { variant: 'secondary' as const, label: '空闲', spinning: false }
   }
@@ -210,39 +204,40 @@ function getTypeText(type: Scanner['type']): string {
 
 async function handleDelete() {
   await db.delete(scannersTable).where(eq(scannersTable.id, props.scanner.id))
-  scannerStore.resetScannerState(props.scanner.id)
   isDeleteDialogOpen.value = false
 }
 
-function handleScan() {
+async function handleScan() {
   if (!canStartScan.value) return
 
   try {
-    scannerStore.resetScannerState(props.scanner.id)
-    ipcManager.send('scanner:scan-game', props.scanner.id)
+    await scannerStore.startGameScan(props.scanner.id)
   } catch (error) {
     log.error('Failed to start scan:', error)
   }
 }
 
 async function handlePause() {
-  const result = await ipcManager.invoke('scanner:pause-game', props.scanner.id)
-  if (!result.success) {
-    log.error('Failed to pause scan:', result.error)
+  try {
+    await scannerStore.pauseScan(props.scanner.id)
+  } catch (error) {
+    log.error('Failed to pause scan:', error)
   }
 }
 
 async function handleResume() {
-  const result = await ipcManager.invoke('scanner:resume-game', props.scanner.id)
-  if (!result.success) {
-    log.error('Failed to resume scan:', result.error)
+  try {
+    await scannerStore.resumeScan(props.scanner.id)
+  } catch (error) {
+    log.error('Failed to resume scan:', error)
   }
 }
 
-async function handleAbort() {
-  const result = await ipcManager.invoke('scanner:abort-game', props.scanner.id)
-  if (!result.success) {
-    log.error('Failed to abort scan:', result.error)
+async function handleCancel() {
+  try {
+    await scannerStore.cancelScan(props.scanner.id)
+  } catch (error) {
+    log.error('Failed to cancel scan:', error)
   }
 }
 
@@ -265,7 +260,7 @@ async function handleOpenPath() {
     "
     :style="{ gridTemplateColumns: SCANNER_LIST_GRID_TEMPLATE }"
   >
-    <!-- Progress bar overlay when scanning -->
+    <!-- Progress bar overlay while a run is active -->
     <div
       v-if="showProgressOverlay"
       class="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-300"
@@ -406,9 +401,9 @@ async function handleOpenPath() {
           <Button
             variant="ghost"
             size="icon-sm"
-            :disabled="!canAbortScan"
+            :disabled="!canCancelScan"
             class="hover:text-destructive"
-            @click="handleAbort"
+            @click="handleCancel"
           >
             <Icon
               icon="icon-[mdi--stop]"
@@ -416,7 +411,7 @@ async function handleOpenPath() {
             />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ isAborting ? '中止中' : '中止' }}</TooltipContent>
+        <TooltipContent>{{ isCancelling ? '取消中' : '取消' }}</TooltipContent>
       </Tooltip>
 
       <Tooltip>

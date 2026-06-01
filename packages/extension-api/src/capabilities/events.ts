@@ -306,7 +306,7 @@ export interface ScannerDeletedEvent {
   occurredAt: number
 }
 
-export type ScannerFinishedStatus = 'completed' | 'failed' | 'aborted'
+export type ScannerFinishedStatus = 'completed' | 'failed' | 'cancelled'
 
 export interface ScannerFinishedEvent {
   scannerId: string
