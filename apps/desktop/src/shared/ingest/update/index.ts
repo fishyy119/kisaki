@@ -1,9 +1,12 @@
 export {
+  buildIngestUpdateLookup,
   listIngestUpdateSurfaceKeys,
   listIngestUpdateSurfaceKeysByCardinality,
   listIngestUpdateSurfaceKeysByGroup
 } from './common'
 export type {
+  BuildIngestUpdateLookupOptions,
+  IngestBatchUpdateRequest,
   IngestUpdateLookup,
   IngestUpdatePolicy,
   IngestUpdateRequest,
@@ -23,6 +26,7 @@ export {
   GAME_UPDATE_SURFACE_KEYS
 } from './game'
 export type {
+  GameBatchUpdateRequest,
   GameUpdateCoreSurface,
   GameUpdateMediaSurface,
   GameUpdateRelationSurface,
@@ -38,6 +42,7 @@ export {
   PERSON_UPDATE_SURFACE_KEYS
 } from './person'
 export type {
+  PersonBatchUpdateRequest,
   PersonUpdateCoreSurface,
   PersonUpdateMediaSurface,
   PersonUpdateRelationSurface,
@@ -53,6 +58,7 @@ export {
   COMPANY_UPDATE_SURFACE_KEYS
 } from './company'
 export type {
+  CompanyBatchUpdateRequest,
   CompanyUpdateCoreSurface,
   CompanyUpdateMediaSurface,
   CompanyUpdateRelationSurface,
@@ -68,6 +74,7 @@ export {
   CHARACTER_UPDATE_SURFACE_KEYS
 } from './character'
 export type {
+  CharacterBatchUpdateRequest,
   CharacterUpdateCoreSurface,
   CharacterUpdateMediaSurface,
   CharacterUpdateRelationSurface,

@@ -188,26 +188,15 @@ async function handleSubmit() {
 
   open.value = false
   isSubmitting.value = true
-  const toastId = notify.loading('更新元数据中...')
 
   try {
     const result = await ipcManager.invoke('ingest:update-company-from-scraper', request)
     if (!result.success) {
-      notify.update(toastId, { title: '更新失败', message: result.error, type: 'error' })
+      notify.error('启动更新失败', result.error)
       return
     }
-
-    notify.update(toastId, {
-      title: '更新完成',
-      message: '公司元数据已完成更新',
-      type: 'success'
-    })
   } catch (error) {
-    notify.update(toastId, {
-      title: '更新失败',
-      message: error instanceof Error ? error.message : '未知错误',
-      type: 'error'
-    })
+    notify.error('启动更新失败', error instanceof Error ? error.message : '未知错误')
   } finally {
     isSubmitting.value = false
   }

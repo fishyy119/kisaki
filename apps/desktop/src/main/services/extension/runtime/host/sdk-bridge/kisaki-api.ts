@@ -430,15 +430,17 @@ export function createKisakiApi(
       }
     },
     ingest: {
-      games: {
-        addFromScraper: async (profileId, lookup, options) =>
-          (
-            await requestMain('capabilities.ingest.games.addFromScraper', {
-              profileId,
-              lookup,
-              options
-            })
-          ).result
+      game: {
+        add: {
+          fromScraper: async (profileId, lookup, options) =>
+            (
+              await requestMain('capabilities.ingest.game.add.fromScraper', {
+                profileId,
+                lookup,
+                options
+              })
+            ).result
+        }
       }
     },
     commands: {

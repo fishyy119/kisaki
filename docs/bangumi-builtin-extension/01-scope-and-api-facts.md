@@ -29,7 +29,7 @@ Bangumi 扩展内部只允许以下四类 scope：
 - `BangumiSubjectRef` 必须同时携带 `scope`、`subjectType`、`subjectId`。
 - Bangumi subject ID 仍是全局外部身份值；本地 external id 使用 `{ source: 'bangumi', id: String(subjectId) }`。
 - 本地写入必须先查询 scope 是否有 `LocalMediaAdapter`。
-- `book` / `anime` / `music` 不允许借用 `kisaki.library.games` 或 `kisaki.ingest.games.addFromScraper` 写成游戏。
+- `book` / `anime` / `music` 不允许借用 `kisaki.library.games` 或 `kisaki.ingest.game.add.fromScraper` 写成游戏。
 - 三次元和其他 Bangumi subject type 固定为 out of scope，不进入 settings、command args 或内部 union。
 
 ## 事实源

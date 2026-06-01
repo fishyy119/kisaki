@@ -3,6 +3,7 @@ import type { DbService } from '@main/services/db'
 import type { IngestWarning } from '@shared/ingest'
 import { characters, companies, games, persons } from '@shared/db'
 import type { PendingAssetTask } from './types'
+import { throwIfIngestAborted } from '../types'
 
 const log = createLogger('Ingest')
 
@@ -21,11 +22,14 @@ function describePendingAsset(asset: PendingAssetTask): string {
 
 export async function flushPendingAssets(
   dbService: DbService,
-  pendingAssets: PendingAssetTask[]
+  pendingAssets: PendingAssetTask[],
+  options?: { signal?: AbortSignal }
 ): Promise<IngestWarning[]> {
+  throwIfIngestAborted(options?.signal)
   const warningResults = await Promise.all(
     pendingAssets.map(async (asset): Promise<IngestWarning | undefined> => {
       try {
+        throwIfIngestAborted(options?.signal)
         switch (asset.type) {
           case 'game':
             await dbService.attachment.setFile(games, asset.gameId, asset.field, {
@@ -53,6 +57,7 @@ export async function flushPendingAssets(
             return undefined
         }
       } catch (error) {
+        throwIfIngestAborted(options?.signal)
         const message = `Asset persistence failed for ${describePendingAsset(asset)}.`
         log.warn('Asset flush warning.', error, { message: message })
         return {

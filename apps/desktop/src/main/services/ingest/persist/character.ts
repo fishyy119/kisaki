@@ -21,6 +21,10 @@ import type { IngestCharacterGraph, IngestCharacterNode, IngestCharacterPersonLi
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistCharacterGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
+import { reportIngestProgress, type IngestOperationOptions } from '../types'
+
+type CharacterPersistOptions = IngestAddCharacterFromScraperOptions &
+  Pick<IngestOperationOptions, 'signal' | 'onProgress'>
 
 function assertOrderValue(value: number, field: string): void {
   if (!Number.isInteger(value) || value < 0) {
@@ -128,16 +132,16 @@ export class CharacterIngestPersistHandler {
 
   persistCharacterGraph(
     graph: IngestCharacterGraph,
-    options?: IngestAddCharacterFromScraperOptions
+    options?: CharacterPersistOptions
   ): Promise<IngestAddCharacterFromScraperResult>
   persistCharacterGraph(
     graph: IngestCharacterGraph,
-    options: IngestAddCharacterFromScraperOptions | undefined,
+    options: CharacterPersistOptions | undefined,
     tx: DbContext
   ): Promise<PersistCharacterGraphResult>
   async persistCharacterGraph(
     graph: IngestCharacterGraph,
-    options?: IngestAddCharacterFromScraperOptions,
+    options?: CharacterPersistOptions,
     tx?: DbContext
   ): Promise<IngestAddCharacterFromScraperResult | PersistCharacterGraphResult> {
     if (tx) {
@@ -147,13 +151,21 @@ export class CharacterIngestPersistHandler {
     const result = this.dbService.client.transaction((trx) =>
       this.persistCharacterGraphInternal(graph, options, trx)
     )
-    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets)
+    if (result.pendingAssets.length > 0) {
+      reportIngestProgress(options, {
+        phase: 'assets',
+        message: '正在保存角色媒体资源'
+      })
+    }
+    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {
+      signal: options?.signal
+    })
     return this.toPublicResult(result, warnings)
   }
 
   persistCharacterGraphInternal(
     graph: IngestCharacterGraph,
-    options: IngestAddCharacterFromScraperOptions | undefined,
+    options: CharacterPersistOptions | undefined,
     tx: DbContext
   ): PersistCharacterGraphResult {
     const characterResult = this.persistCharacterNodeInternal(

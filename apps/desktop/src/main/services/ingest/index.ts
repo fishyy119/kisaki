@@ -10,8 +10,16 @@ export {
   GameUpdateHandler,
   PersonUpdateHandler
 } from './update'
+export {
+  CharacterBatchHandler,
+  CompanyBatchHandler,
+  GameBatchHandler,
+  PersonBatchHandler
+} from './batch'
 export { flushPendingAssets } from './assets'
 export type { PendingAssetTask } from './assets'
+export { throwIfIngestAborted } from './types'
+export type { IngestOperationOptions } from './types'
 export {
   buildCharacterGraph,
   buildCompanyGraph,

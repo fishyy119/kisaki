@@ -19,7 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { CompanySearcher, type CompanySearcherSelection } from '@renderer/components/shared/company'
-import { getExistingReasonText, getIngestWarningMessage } from './utils'
+import type { IngestAddCompanyFromScraperResult } from '@shared/ingest/add'
 
 interface Props {
   /** Target collection ID to add the company to */
@@ -60,8 +60,6 @@ async function handleSubmit() {
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading(`正在添加公司「${selection.value.companyName}」中...`)
-
   try {
     const result = await ipcManager.invoke(
       'ingest:add-company-from-scraper',
@@ -76,28 +74,35 @@ async function handleSubmit() {
     )
 
     if (!result.success) {
-      notify.update(toastId, { title: '添加公司失败', message: result.error, type: 'error' })
+      notify.error('添加公司失败', result.error)
       return
     }
 
-    if (result.data.isNew) {
-      const warningMessage = getIngestWarningMessage(result.data.warnings)
-      notify.update(toastId, {
-        title: warningMessage ? '公司添加完成' : '公司添加成功',
-        message: warningMessage,
-        type: warningMessage ? 'warning' : 'success'
-      })
-    } else {
-      notify.update(toastId, {
-        title: '公司已存在',
-        message: `${getExistingReasonText(result.data.existingReason)}匹配`,
-        type: 'info'
-      })
+    const waitResult = await ipcManager.invoke('task-run:wait', result.data.runId)
+    if (!waitResult.success) {
+      notify.error('添加公司失败', waitResult.error)
+      return
     }
 
-    emit('success', result.data.companyId)
+    const run = waitResult.data
+    if (run.status === 'cancelled') {
+      notify.info('添加公司已取消')
+      return
+    }
+    if (run.status !== 'completed') {
+      notify.error('添加公司失败', run.result?.error)
+      return
+    }
+
+    const output = run.result?.output as IngestAddCompanyFromScraperResult | undefined
+    if (!output?.companyId) {
+      notify.error('添加公司失败', '任务结果缺少公司 ID')
+      return
+    }
+
+    emit('success', output.companyId)
   } catch (error) {
-    notify.update(toastId, { title: '添加公司失败', message: (error as Error).message, type: 'error' })
+    notify.error('添加公司失败', (error as Error).message)
   } finally {
     isSubmitting.value = false
   }

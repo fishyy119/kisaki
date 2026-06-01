@@ -2,6 +2,7 @@ import {
   defineIngestUpdateSurfaces,
   listIngestUpdateSurfaceKeys,
   listIngestUpdateSurfaceKeysByGroup,
+  type IngestBatchUpdateRequest,
   type IngestUpdateRequest,
   type IngestUpdateSelection,
   type IngestUpdateSurfaceKey,
@@ -51,3 +52,4 @@ export type PersonUpdateMediaSurface = IngestUpdateSurfaceKeysByGroup<
 
 export type PersonUpdateSelection = IngestUpdateSelection<PersonUpdateSurface>
 export type PersonUpdateRequest = IngestUpdateRequest<PersonUpdateSurface>
+export type PersonBatchUpdateRequest = IngestBatchUpdateRequest<PersonUpdateSurface>

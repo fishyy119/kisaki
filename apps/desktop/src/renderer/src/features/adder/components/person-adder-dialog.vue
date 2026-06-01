@@ -19,7 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { PersonSearcher, type PersonSearcherSelection } from '@renderer/components/shared/person'
-import { getExistingReasonText, getIngestWarningMessage } from './utils'
+import type { IngestAddPersonFromScraperResult } from '@shared/ingest/add'
 
 interface Props {
   /** Target collection ID to add the person to */
@@ -60,8 +60,6 @@ async function handleSubmit() {
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading(`正在添加人物「${selection.value.personName}」中...`)
-
   try {
     const result = await ipcManager.invoke(
       'ingest:add-person-from-scraper',
@@ -76,28 +74,35 @@ async function handleSubmit() {
     )
 
     if (!result.success) {
-      notify.update(toastId, { title: '添加人物失败', message: result.error, type: 'error' })
+      notify.error('添加人物失败', result.error)
       return
     }
 
-    if (result.data.isNew) {
-      const warningMessage = getIngestWarningMessage(result.data.warnings)
-      notify.update(toastId, {
-        title: warningMessage ? '人物添加完成' : '人物添加成功',
-        message: warningMessage,
-        type: warningMessage ? 'warning' : 'success'
-      })
-    } else {
-      notify.update(toastId, {
-        title: '人物已存在',
-        message: `${getExistingReasonText(result.data.existingReason)}匹配`,
-        type: 'info'
-      })
+    const waitResult = await ipcManager.invoke('task-run:wait', result.data.runId)
+    if (!waitResult.success) {
+      notify.error('添加人物失败', waitResult.error)
+      return
     }
 
-    emit('success', result.data.personId)
+    const run = waitResult.data
+    if (run.status === 'cancelled') {
+      notify.info('添加人物已取消')
+      return
+    }
+    if (run.status !== 'completed') {
+      notify.error('添加人物失败', run.result?.error)
+      return
+    }
+
+    const output = run.result?.output as IngestAddPersonFromScraperResult | undefined
+    if (!output?.personId) {
+      notify.error('添加人物失败', '任务结果缺少人物 ID')
+      return
+    }
+
+    emit('success', output.personId)
   } catch (error) {
-    notify.update(toastId, { title: '添加人物失败', message: (error as Error).message, type: 'error' })
+    notify.error('添加人物失败', (error as Error).message)
   } finally {
     isSubmitting.value = false
   }

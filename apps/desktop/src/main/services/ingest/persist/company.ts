@@ -18,22 +18,26 @@ import {
 import type { IngestCompanyGraph, IngestCompanyNode } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistCompanyGraphResult } from './types'
+import { reportIngestProgress, type IngestOperationOptions } from '../types'
+
+type CompanyPersistOptions = IngestAddCompanyFromScraperOptions &
+  Pick<IngestOperationOptions, 'signal' | 'onProgress'>
 
 export class CompanyIngestPersistHandler {
   constructor(private readonly dbService: DbService) {}
 
   persistCompanyGraph(
     graph: IngestCompanyGraph,
-    options?: IngestAddCompanyFromScraperOptions
+    options?: CompanyPersistOptions
   ): Promise<IngestAddCompanyFromScraperResult>
   persistCompanyGraph(
     graph: IngestCompanyGraph,
-    options: IngestAddCompanyFromScraperOptions | undefined,
+    options: CompanyPersistOptions | undefined,
     tx: DbContext
   ): Promise<PersistCompanyGraphResult>
   async persistCompanyGraph(
     graph: IngestCompanyGraph,
-    options?: IngestAddCompanyFromScraperOptions,
+    options?: CompanyPersistOptions,
     tx?: DbContext
   ): Promise<IngestAddCompanyFromScraperResult | PersistCompanyGraphResult> {
     if (tx) {
@@ -43,13 +47,21 @@ export class CompanyIngestPersistHandler {
     const result = this.dbService.client.transaction((trx) =>
       this.persistCompanyGraphInternal(graph, options, trx)
     )
-    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets)
+    if (result.pendingAssets.length > 0) {
+      reportIngestProgress(options, {
+        phase: 'assets',
+        message: '正在保存公司媒体资源'
+      })
+    }
+    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {
+      signal: options?.signal
+    })
     return this.toPublicResult(result, warnings)
   }
 
   persistCompanyGraphInternal(
     graph: IngestCompanyGraph,
-    options: IngestAddCompanyFromScraperOptions | undefined,
+    options: CompanyPersistOptions | undefined,
     tx: DbContext
   ): PersistCompanyGraphResult {
     return this.persistCompanyNodeInternal(graph.company, tx, options?.targetCollectionId)

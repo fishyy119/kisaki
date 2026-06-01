@@ -21,6 +21,7 @@ export {
   formatTaskRunSubject,
   formatTimestamp,
   getProgressPercentValue,
+  getTaskRunCounterEntries,
   getTaskRunCategoryIcon,
   getTaskRunSearchText,
   getTaskRunStatusVariant,

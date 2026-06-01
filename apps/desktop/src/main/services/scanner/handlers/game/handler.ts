@@ -297,7 +297,8 @@ export class GameScannerHandler {
         scanner,
         profile,
         ingestMode,
-        scannerUsePhash
+        scannerUsePhash,
+        signal: session.signal
       })
       session.recordEntityResult(entityResult)
     })
@@ -313,7 +314,8 @@ export class GameScannerHandler {
     gameEntity: GameEntity,
     profile: ScraperProfile | null,
     scanner: Scanner,
-    ingestMode: ScannerIngestMode
+    ingestMode: ScannerIngestMode,
+    signal: AbortSignal
   ): Promise<IngestAddGameResult> {
     const { gameName, externalIds } = gameEntity.matchedGame
 
@@ -323,11 +325,12 @@ export class GameScannerHandler {
     }
     const options = {
       gameDirPath: gameEntity.path,
-      targetCollectionId: scanner.targetCollectionId || undefined
+      targetCollectionId: scanner.targetCollectionId || undefined,
+      signal
     }
 
     const addDirect = async (): Promise<IngestAddGameResult> => {
-      return this.ingestService.add.game.direct(seed, options)
+      return this.ingestService.add.game.addDirect(seed, options)
     }
 
     let result: IngestAddGameResult
@@ -340,7 +343,7 @@ export class GameScannerHandler {
         if (!profile) {
           throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
         }
-        result = await this.ingestService.add.game.fromScraper(profile.id, seed, options)
+        result = await this.ingestService.add.game.addFromScraper(profile.id, seed, options)
         break
       case 'prefer-scraper':
         if (!profile) {
@@ -349,7 +352,7 @@ export class GameScannerHandler {
         }
 
         try {
-          result = await this.ingestService.add.game.fromScraper(profile.id, seed, options)
+          result = await this.ingestService.add.game.addFromScraper(profile.id, seed, options)
         } catch (error) {
           if (!isRecoverableScraperFailure(error)) {
             throw error
@@ -392,6 +395,7 @@ export class GameScannerHandler {
       profile: ScraperProfile | null
       ingestMode: ScannerIngestMode
       scannerUsePhash: boolean
+      signal: AbortSignal
     }
   ): Promise<ScannerEntityProcessResult> {
     try {
@@ -436,7 +440,8 @@ export class GameScannerHandler {
         matchedEntity,
         options.profile,
         options.scanner,
-        options.ingestMode
+        options.ingestMode,
+        options.signal
       )
 
       if (addResult.isNew) {

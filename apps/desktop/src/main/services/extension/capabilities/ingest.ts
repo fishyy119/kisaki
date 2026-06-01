@@ -6,8 +6,12 @@ import {
   type ScraperLookup
 } from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
+import type { TaskRunInitiator } from '@shared/task-run'
 import type { ScraperLookup as AppScraperLookup } from '@shared/scraper'
-import type { IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult } from '@shared/ingest/add'
+import type {
+  IngestAddGameFromScraperOptions as AppIngestAddGameFromScraperOptions,
+  IngestAddGameFromScraperResult as AppIngestAddGameFromScraperResult
+} from '@shared/ingest/add'
 
 export interface ExtensionIngestCapabilityProviderOptions {
   ingest: IngestService
@@ -21,14 +25,25 @@ export class ExtensionIngestCapabilityProvider {
     runtimeHandle: string,
     profileId: string,
     lookup: ScraperLookup,
-    options?: IngestAddGameFromScraperOptions
+    options?: IngestAddGameFromScraperOptions,
+    signal?: AbortSignal
   ): Promise<IngestAddGameFromScraperResult> {
-    this.requireRuntime(runtimeHandle)
-    const result = await this.options.ingest.add.game.fromScraper(
-      profileId,
-      toAppScraperLookup(lookup),
-      options
-    )
+    const metadata = this.requireRuntime(runtimeHandle)
+    const appOptions = toAppAddGameFromScraperOptions(options)
+    const result =
+      options?.taskRun === false
+        ? await this.options.ingest.add.game.addFromScraper(profileId, toAppScraperLookup(lookup), {
+            ...appOptions,
+            signal
+          })
+        : await this.options.ingest.add.game.addFromScraperWithTaskRun(
+            profileId,
+            toAppScraperLookup(lookup),
+            {
+              ...appOptions,
+              taskRunInitiator: createExtensionTaskRunInitiator(metadata)
+            }
+          )
     return toPublicIngestAddGameFromScraperResult(result)
   }
 
@@ -39,6 +54,27 @@ export class ExtensionIngestCapabilityProvider {
     }
 
     return metadata
+  }
+}
+
+function toAppAddGameFromScraperOptions(
+  options: IngestAddGameFromScraperOptions | undefined
+): AppIngestAddGameFromScraperOptions {
+  if (!options) {
+    return {}
+  }
+
+  const { taskRun: _taskRun, ...appOptions } = options
+  return appOptions
+}
+
+function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): TaskRunInitiator {
+  return {
+    type: 'extension',
+    extension: {
+      id: metadata.id,
+      nameSnapshot: metadata.name
+    }
   }
 }
 

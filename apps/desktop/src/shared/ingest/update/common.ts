@@ -1,4 +1,4 @@
-import type { ExternalId } from '@shared/identity'
+import { normalizeExternalIds, normalizeKeyText, type ExternalId } from '@shared/identity'
 
 export type IngestUpdateSurfaceGroup = 'core' | 'media' | 'relation'
 export type IngestUpdateSurfaceCardinality = 'singular' | 'collection'
@@ -80,6 +80,37 @@ export interface IngestUpdateRequest<TSurface extends string> {
   lookup: IngestUpdateLookup
   selection: IngestUpdateSelection<TSurface>
   policy: IngestUpdatePolicy
+}
+
+export interface IngestBatchUpdateRequest<TSurface extends string> {
+  rootIds: string[]
+  profileId: string
+  selection: IngestUpdateSelection<TSurface>
+  policy: IngestUpdatePolicy
+  useCurrentExternalIdsAsKnownIds?: boolean
+}
+
+export interface BuildIngestUpdateLookupOptions {
+  name: string
+  baseKnownIds?: ExternalId[]
+  selectionKnownIds?: ExternalId[]
+}
+
+export function buildIngestUpdateLookup(
+  options: BuildIngestUpdateLookupOptions
+): IngestUpdateLookup {
+  const selectionKnownIds = normalizeExternalIds(options.selectionKnownIds ?? [])
+  const selectionSources = new Set(
+    selectionKnownIds.map((externalId) => normalizeKeyText(externalId.source))
+  )
+  const baseKnownIds = (options.baseKnownIds ?? []).filter(
+    (externalId) => !selectionSources.has(normalizeKeyText(externalId.source))
+  )
+
+  return {
+    name: options.name,
+    knownIds: normalizeExternalIds([...selectionKnownIds, ...baseKnownIds])
+  }
 }
 
 export { defineIngestUpdateSurfaces }

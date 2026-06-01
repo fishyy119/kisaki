@@ -36,6 +36,10 @@ import type { PersistGameGraphResult } from './types'
 import type { PersonIngestPersistHandler } from './person'
 import type { CompanyIngestPersistHandler } from './company'
 import type { CharacterIngestPersistHandler } from './character'
+import { reportIngestProgress, type IngestOperationOptions } from '../types'
+
+type GamePersistOptions = IngestAddGameFromScraperOptions &
+  Pick<IngestOperationOptions, 'signal' | 'onProgress'>
 
 function assertOrderValue(value: number, field: string): void {
   if (!Number.isInteger(value) || value < 0) {
@@ -349,16 +353,16 @@ export class GameIngestPersistHandler {
 
   persistGameGraph(
     graph: IngestGameGraph,
-    options?: IngestAddGameFromScraperOptions
+    options?: GamePersistOptions
   ): Promise<IngestAddGameFromScraperResult>
   persistGameGraph(
     graph: IngestGameGraph,
-    options: IngestAddGameFromScraperOptions | undefined,
+    options: GamePersistOptions | undefined,
     tx: DbContext
   ): Promise<PersistGameGraphResult>
   async persistGameGraph(
     graph: IngestGameGraph,
-    options?: IngestAddGameFromScraperOptions,
+    options?: GamePersistOptions,
     tx?: DbContext
   ): Promise<IngestAddGameFromScraperResult | PersistGameGraphResult> {
     if (tx) {
@@ -368,13 +372,21 @@ export class GameIngestPersistHandler {
     const result = this.dbService.client.transaction((trx) =>
       this.persistGameGraphInternal(graph, options, trx)
     )
-    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets)
+    if (result.pendingAssets.length > 0) {
+      reportIngestProgress(options, {
+        phase: 'assets',
+        message: '正在保存游戏媒体资源'
+      })
+    }
+    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {
+      signal: options?.signal
+    })
     return this.toPublicResult(result, warnings)
   }
 
   persistGameGraphInternal(
     graph: IngestGameGraph,
-    options: IngestAddGameFromScraperOptions | undefined,
+    options: GamePersistOptions | undefined,
     tx: DbContext
   ): PersistGameGraphResult {
     const gameResult = this.persistGameNodeInternal(graph.game, graph.media, tx, options)
@@ -496,7 +508,7 @@ export class GameIngestPersistHandler {
     node: IngestGameNode,
     media: IngestGameGraph['media'],
     tx: DbContext,
-    options?: IngestAddGameFromScraperOptions
+    options?: GamePersistOptions
   ): PersistGameGraphResult {
     const existing = this.findExistingGame(node, options, tx)
     if (existing) {
@@ -539,7 +551,7 @@ export class GameIngestPersistHandler {
 
   private findExistingGame(
     node: IngestGameNode,
-    options: IngestAddGameFromScraperOptions | undefined,
+    options: GamePersistOptions | undefined,
     tx: DbContext
   ): { gameId: string; existingReason: 'path' | 'externalId' } | undefined {
     if (options?.gameDirPath) {

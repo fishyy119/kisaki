@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { TaskRun } from '@shared/task-run'
 import { Progress } from '@renderer/components/ui/progress'
 import { Spinner } from '@renderer/components/ui/spinner'
@@ -19,12 +19,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const now = ref(Date.now())
 const percentValue = computed(() => getProgressPercentValue(props.run))
 const percentText = computed(() => formatProgressPercent(props.run))
 const countText = computed(() => formatProgressCount(props.run))
 const rateText = computed(() => formatTaskRunRate(props.run))
 const etaText = computed(() => formatTaskRunEta(props.run))
-const durationText = computed(() => formatTaskRunDuration(props.run))
+const durationText = computed(() => formatTaskRunDuration(props.run, now.value))
 const isIndeterminate = computed(
   () => props.run.progress?.indeterminate === true || percentValue.value === null
 )
@@ -36,6 +37,20 @@ const metrics = computed(() => {
   ]
 
   return items.filter((item): item is { label: string; value: string } => Boolean(item.value))
+})
+
+let durationTimer: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  durationTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (durationTimer) {
+    clearInterval(durationTimer)
+  }
 })
 </script>
 
@@ -68,7 +83,9 @@ const metrics = computed(() => {
       role="progressbar"
       aria-valuetext="进行中"
     >
-      <div class="absolute inset-y-0 left-0 w-1/3 animate-pulse rounded-full bg-primary/50" />
+      <div
+        class="task-run-progress-indicator absolute inset-y-0 left-0 w-1/3 rounded-full bg-primary"
+      />
     </div>
 
     <div
@@ -86,3 +103,19 @@ const metrics = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes task-run-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.task-run-progress-indicator {
+  animation: task-run-progress-slide 1.15s ease-in-out infinite;
+}
+</style>

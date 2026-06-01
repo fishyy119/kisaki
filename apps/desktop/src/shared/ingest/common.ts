@@ -24,3 +24,10 @@ export interface IngestAddResult {
   existingReason?: ExistingReason
   warnings?: IngestWarning[]
 }
+
+/**
+ * Result for metadata update flows.
+ */
+export interface IngestUpdateResult {
+  warnings?: IngestWarning[]
+}

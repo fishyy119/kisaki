@@ -13,6 +13,7 @@ export interface IngestAddGameFromScraperOptions {
   gameDirPath?: string
   gameFilePath?: string
   targetCollectionId?: string
+  taskRun?: boolean
 }
 
 export interface IngestAddGameFromScraperResult {
@@ -22,14 +23,18 @@ export interface IngestAddGameFromScraperResult {
   warnings?: readonly IngestWarning[]
 }
 
-export interface IngestGamesCapability {
-  addFromScraper(
+export interface IngestGameAddCapability {
+  fromScraper(
     profileId: string,
     lookup: ScraperLookup,
     options?: IngestAddGameFromScraperOptions
   ): Promise<IngestAddGameFromScraperResult>
 }
 
+export interface IngestGameCapability {
+  add: IngestGameAddCapability
+}
+
 export interface IngestCapability {
-  games: IngestGamesCapability
+  game: IngestGameCapability
 }

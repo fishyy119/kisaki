@@ -272,7 +272,7 @@ export type HostToMainCapabilityRpcRequestMap = {
     ScraperProfileGetRequest,
     { profile: ScraperProfileSummary | null }
   >
-  'capabilities.ingest.games.addFromScraper': RpcMethodDefinition<
+  'capabilities.ingest.game.add.fromScraper': RpcMethodDefinition<
     IngestGameAddFromScraperRequest,
     { result: IngestAddGameFromScraperResult }
   >

@@ -342,9 +342,9 @@ apps/desktop/src/renderer/src/features/adder/components/*-adder-dialog.vue
 - renderer 不再循环执行批量 search/update。
 - batch IPC 返回 `runId`。
 - 现有单项 ingest 添加/更新能力只要涉及抓取、下载、解析、图片处理或多阶段写入，也创建 task run。
-- 单项 ingest 操作支持 `{ taskRun: false }`，用于批量流程复用单项逻辑。
-- 批量流程调用单项 ingest 操作时传入 `{ taskRun: false, signal: context.signal }`，不为每个 item 创建子 task run。
-- 单项操作在 `taskRun: false` 时不调用 TaskRunService、不 report task progress、不接收父 run runtime。
+- 单项 ingest 操作和 TaskRun 包装分离，批量流程复用纯单项逻辑。
+- 批量流程调用纯单项 ingest 操作时传入 `{ signal: context.signal }`，不为每个 item 创建子 task run。
+- 纯单项操作不调用 TaskRunService、不 report task progress、不接收父 run runtime。
 - 单项操作可以接收 `AbortSignal`，用于取消网络、下载、文件处理和安全边界检查。
 - 批量流程在 item 边界调用父 run checkpoint；当前 item 内部通过 signal 尽早停止可取消子步骤。
 - 父批量 use case 独占 aggregate progress 和 result 汇总。
@@ -538,7 +538,7 @@ pnpm -r --parallel lint
 1. 选择多个实体批量更新。
 2. dialog 提交后 main 创建 run。
 3. 任务中心展示进度、速度和失败数。
-4. 每个 item 调用单项 ingest 操作并传入 `{ taskRun: false, signal: context.signal }`，不创建子 task run。
+4. 每个 item 调用纯单项 ingest 操作并传入 `{ signal: context.signal }`，不创建子 task run。
 5. 关闭原 dialog 后仍可查看结果。
 
 ### Extension install/update

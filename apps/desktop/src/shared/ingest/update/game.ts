@@ -2,6 +2,7 @@ import {
   defineIngestUpdateSurfaces,
   listIngestUpdateSurfaceKeys,
   listIngestUpdateSurfaceKeysByGroup,
+  type IngestBatchUpdateRequest,
   type IngestUpdateRequest,
   type IngestUpdateSelection,
   type IngestUpdateSurfaceKey,
@@ -55,3 +56,4 @@ export type GameUpdateMediaSurface = IngestUpdateSurfaceKeysByGroup<
 
 export type GameUpdateSelection = IngestUpdateSelection<GameUpdateSurface>
 export type GameUpdateRequest = IngestUpdateRequest<GameUpdateSurface>
+export type GameBatchUpdateRequest = IngestBatchUpdateRequest<GameUpdateSurface>

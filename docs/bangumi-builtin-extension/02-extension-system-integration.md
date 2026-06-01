@@ -13,7 +13,7 @@
 | Scraper provider  | `context.contributions.scraperProviders.game.register` | `media/game/scraper`                                   |
 | Host event        | `kisaki.events.on`                                     | `media/game/adapter` 订阅 `game.*`                     |
 | Scraper profile   | `kisaki.scrapers.profiles.list/get`                    | `media/game/adapter` 只读取 game profile               |
-| Ingest            | `kisaki.ingest.games.addFromScraper`                   | `media/game/adapter` 创建或定位游戏                    |
+| Ingest            | `kisaki.ingest.game.add.fromScraper`                   | `media/game/adapter` 创建或定位游戏                    |
 | Library write     | `kisaki.library.*`                                     | `media/game/adapter` 写游戏状态、评分、tag、collection |
 | Command 注册      | `context.contributions.commands.register`              | `jobs/commands`                                        |
 | Command 执行      | `kisaki.commands.start/wait`                           | settings panel 启动一次 job                            |
@@ -188,4 +188,4 @@ Automation 只能绑定本扩展拥有的 command。宿主会校验：
 - `kisaki.library.collections.get/list/create/update`
 - `kisaki.library.tags.get/list/create/update`
 - `kisaki.library.relations.list/create/update/remove`
-- `kisaki.ingest.games.addFromScraper`
+- `kisaki.ingest.game.add.fromScraper`

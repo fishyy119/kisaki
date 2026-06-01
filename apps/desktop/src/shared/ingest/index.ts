@@ -3,6 +3,7 @@
  */
 
 export type { ExistingReason, IngestAddResult, IngestWarning, IngestWarningCode } from './common'
+export type { IngestUpdateResult } from './common'
 export type {
   IngestAddCharacterFromScraperOptions,
   IngestAddCharacterFromScraperParams,
@@ -54,21 +55,25 @@ export type {
   CharacterUpdateCoreSurface,
   CharacterUpdateMediaSurface,
   CharacterUpdateRelationSurface,
+  CharacterBatchUpdateRequest,
   CharacterUpdateRequest,
   CharacterUpdateSelection,
   CharacterUpdateSurface,
+  CompanyBatchUpdateRequest,
   CompanyUpdateCoreSurface,
   CompanyUpdateMediaSurface,
   CompanyUpdateRelationSurface,
   CompanyUpdateRequest,
   CompanyUpdateSelection,
   CompanyUpdateSurface,
+  GameBatchUpdateRequest,
   GameUpdateCoreSurface,
   GameUpdateMediaSurface,
   GameUpdateRelationSurface,
   GameUpdateRequest,
   GameUpdateSelection,
   GameUpdateSurface,
+  IngestBatchUpdateRequest,
   IngestUpdateLookup,
   IngestUpdatePolicy,
   IngestUpdateRequest,
@@ -79,6 +84,7 @@ export type {
   IngestUpdateSurfaceKey,
   IngestUpdateSurfaceKeysByCardinality,
   IngestUpdateSurfaceKeysByGroup,
+  PersonBatchUpdateRequest,
   PersonUpdateCoreSurface,
   PersonUpdateMediaSurface,
   PersonUpdateRelationSurface,

@@ -40,21 +40,20 @@ import type {
 import type { ExtractionTestResult, ScannerRunStartResult, ScannerRunState } from './scanner'
 import type {
   IngestAddGameDirectOptions,
-  IngestAddGameDirectResult,
   IngestAddGameDirectSeed,
   IngestAddCharacterFromScraperOptions,
-  IngestAddCharacterFromScraperResult,
   IngestAddCompanyFromScraperOptions,
-  IngestAddCompanyFromScraperResult,
   IngestAddGameFromScraperOptions,
-  IngestAddGameFromScraperResult,
-  IngestAddPersonFromScraperOptions,
-  IngestAddPersonFromScraperResult
+  IngestAddPersonFromScraperOptions
 } from './ingest/add'
 import type {
+  CharacterBatchUpdateRequest,
   CharacterUpdateRequest,
+  CompanyBatchUpdateRequest,
   CompanyUpdateRequest,
+  GameBatchUpdateRequest,
   GameUpdateRequest,
+  PersonBatchUpdateRequest,
   PersonUpdateRequest
 } from './ingest/update'
 import type { GameMonitorPathConfig, GameRunningStatus } from './monitor'
@@ -99,7 +98,12 @@ import type {
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
-import type { TaskRun, TaskRunActiveListQuery, TaskRunHistoryListQuery } from './task-run'
+import type {
+  TaskRun,
+  TaskRunActiveListQuery,
+  TaskRunHistoryListQuery,
+  TaskRunStartResult
+} from './task-run'
 import type {
   CommandDescriptor,
   CommandInvocationRequest,
@@ -296,33 +300,51 @@ export interface IpcMainHandlers {
   'ingest:add-game-direct': (
     seed: IngestAddGameDirectSeed,
     options?: IngestAddGameDirectOptions
-  ) => IpcResult<IngestAddGameDirectResult>
+  ) => IpcResult<TaskRunStartResult>
   'ingest:add-game-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
     options?: IngestAddGameFromScraperOptions
-  ) => IpcResult<IngestAddGameFromScraperResult>
+  ) => IpcResult<TaskRunStartResult>
   'ingest:add-person-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
     options?: IngestAddPersonFromScraperOptions
-  ) => IpcResult<IngestAddPersonFromScraperResult>
+  ) => IpcResult<TaskRunStartResult>
   'ingest:add-company-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
     options?: IngestAddCompanyFromScraperOptions
-  ) => IpcResult<IngestAddCompanyFromScraperResult>
+  ) => IpcResult<TaskRunStartResult>
   'ingest:add-character-from-scraper': (
     profileId: string,
     lookup: ScraperLookup,
     options?: IngestAddCharacterFromScraperOptions
-  ) => IpcResult<IngestAddCharacterFromScraperResult>
+  ) => IpcResult<TaskRunStartResult>
 
   // Ingest update
-  'ingest:update-game-from-scraper': (request: GameUpdateRequest) => IpcVoidResult
-  'ingest:update-person-from-scraper': (request: PersonUpdateRequest) => IpcVoidResult
-  'ingest:update-company-from-scraper': (request: CompanyUpdateRequest) => IpcVoidResult
-  'ingest:update-character-from-scraper': (request: CharacterUpdateRequest) => IpcVoidResult
+  'ingest:update-game-from-scraper': (request: GameUpdateRequest) => IpcResult<TaskRunStartResult>
+  'ingest:update-person-from-scraper': (
+    request: PersonUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:update-company-from-scraper': (
+    request: CompanyUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:update-character-from-scraper': (
+    request: CharacterUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-game-from-scraper': (
+    request: GameBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-person-from-scraper': (
+    request: PersonBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-company-from-scraper': (
+    request: CompanyBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
+  'ingest:batch-update-character-from-scraper': (
+    request: CharacterBatchUpdateRequest
+  ) => IpcResult<TaskRunStartResult>
 
   // Scraper
   'scraper:list-profiles': (query?: ScraperProfileListQuery) => IpcResult<ScraperProfileSummary[]>

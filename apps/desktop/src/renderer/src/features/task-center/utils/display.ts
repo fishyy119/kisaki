@@ -43,6 +43,7 @@ const COUNTER_LABELS: Record<string, string> = {
   warning: '警告',
   added: '新增',
   new: '新增',
+  existing: '已存在',
   updated: '更新',
   deleted: '删除',
   notModified: '未变化'
@@ -302,9 +303,9 @@ export function formatTaskRunEta(run: TaskRun): string | null {
   return `约 ${formatDurationShort(etaMs)}`
 }
 
-export function formatTaskRunDuration(run: TaskRun): string {
+export function formatTaskRunDuration(run: TaskRun, now = Date.now()): string {
   const start = run.startedAt ?? run.createdAt
-  const end = run.finishedAt ?? Date.now()
+  const end = run.finishedAt ?? now
   return formatDurationShort(Math.max(0, end - start))
 }
 
@@ -327,17 +328,22 @@ export function formatCounterKey(key: string): string {
   return COUNTER_LABELS[key] ?? key
 }
 
+export function getTaskRunCounterEntries(
+  counters: Record<string, number> | undefined
+): [string, number][] {
+  if (!counters) return []
+
+  return Object.entries(counters)
+    .filter(([, value]) => Number.isFinite(value))
+    .sort(([left], [right]) => counterPriority(left) - counterPriority(right))
+}
+
 export function formatTaskRunCounterSummary(
   run: TaskRun,
   counters: Record<string, number> | undefined,
   limit = 4
 ): string | null {
-  if (!counters) return null
-
-  const entries = Object.entries(counters)
-    .filter(([, value]) => Number.isFinite(value))
-    .sort(([left], [right]) => counterPriority(left) - counterPriority(right))
-    .slice(0, limit)
+  const entries = getTaskRunCounterEntries(counters).slice(0, limit)
 
   if (entries.length === 0) return null
   return entries
@@ -580,11 +586,22 @@ function counterPriority(key: string): number {
       return 3
     case 'skipped':
       return 4
+    case 'added':
+    case 'new':
+      return 5
+    case 'existing':
+      return 6
+    case 'updated':
+      return 7
+    case 'deleted':
+      return 8
+    case 'notModified':
+      return 9
     case 'warnings':
     case 'warning':
-      return 5
-    default:
       return 10
+    default:
+      return 20
   }
 }
 

@@ -165,9 +165,15 @@ export class ExtensionCapabilityGateway {
     )
 
     rpc.handleHostRequest(
-      'capabilities.ingest.games.addFromScraper',
-      async ({ runtimeHandle, profileId, lookup, options }) => ({
-        result: await this.ingest.addGameFromScraper(runtimeHandle, profileId, lookup, options)
+      'capabilities.ingest.game.add.fromScraper',
+      async ({ runtimeHandle, profileId, lookup, options }, context) => ({
+        result: await this.ingest.addGameFromScraper(
+          runtimeHandle,
+          profileId,
+          lookup,
+          options,
+          context.signal
+        )
       })
     )
 

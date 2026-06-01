@@ -19,7 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { GameSearcher, type GameSearcherSelection } from '@renderer/components/shared/game'
-import { getIngestWarningMessage } from './utils'
+import type { IngestAddGameFromScraperResult } from '@shared/ingest/add'
 
 interface Props {
   /** Target collection ID to add the game to */
@@ -60,8 +60,6 @@ async function handleSubmit() {
   const targetCollectionId = props.targetCollectionId
 
   open.value = false
-  const toastId = notify.loading(`正在添加游戏「${selection.value.gameName}」中...`)
-
   try {
     const result = await ipcManager.invoke(
       'ingest:add-game-from-scraper',
@@ -71,29 +69,35 @@ async function handleSubmit() {
     )
 
     if (!result.success) {
-      notify.update(toastId, { title: '添加游戏失败', message: result.error, type: 'error' })
+      notify.error('添加游戏失败', result.error)
       return
     }
 
-    if (result.data.isNew) {
-      const warningMessage = getIngestWarningMessage(result.data.warnings)
-      notify.update(toastId, {
-        title: warningMessage ? '游戏添加完成' : '游戏添加成功',
-        message: warningMessage,
-        type: warningMessage ? 'warning' : 'success'
-      })
-    } else {
-      const reasonText = result.data.existingReason === 'path' ? '路径' : '外部 ID'
-      notify.update(toastId, { title: '游戏已存在', message: `${reasonText}匹配`, type: 'info' })
+    const waitResult = await ipcManager.invoke('task-run:wait', result.data.runId)
+    if (!waitResult.success) {
+      notify.error('添加游戏失败', waitResult.error)
+      return
     }
 
-    emit('success', result.data.gameId)
+    const run = waitResult.data
+    if (run.status === 'cancelled') {
+      notify.info('添加游戏已取消')
+      return
+    }
+    if (run.status !== 'completed') {
+      notify.error('添加游戏失败', run.result?.error)
+      return
+    }
+
+    const output = run.result?.output as IngestAddGameFromScraperResult | undefined
+    if (!output?.gameId) {
+      notify.error('添加游戏失败', '任务结果缺少游戏 ID')
+      return
+    }
+
+    emit('success', output.gameId)
   } catch (error) {
-    notify.update(toastId, {
-      title: '添加游戏失败',
-      message: (error as Error).message,
-      type: 'error'
-    })
+    notify.error('添加游戏失败', (error as Error).message)
   } finally {
     isSubmitting.value = false
   }

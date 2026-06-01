@@ -1,29 +1,21 @@
 <!--
   GameBatchMetadataUpdateFormDialog
-  Batch update game metadata through renderer-local lookup plus the main-process ingest service.
+  Starts a main-process batch metadata update for selected games.
 -->
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue'
-import { eq, inArray } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { computed, ref, watch } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData } from '@renderer/composables'
-import { gameExternalIds, games, scraperProfiles } from '@shared/db'
-import type { ExternalId } from '@shared/identity'
 import {
   GAME_UPDATE_SURFACE_KEYS,
-  type GameUpdateRequest,
   type GameUpdateSurface,
   type IngestUpdatePolicy
 } from '@shared/ingest/update'
-import { buildIngestUpdateLookup } from '@renderer/utils'
 import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { Form } from '@renderer/components/ui/form'
 import {
   Dialog,
@@ -50,13 +42,6 @@ import {
 
 interface Props {
   gameIds: string[]
-}
-
-interface BatchRow {
-  id: string
-  name: string
-  originalName: string | null
-  externalIds: ExternalId[]
 }
 
 const props = defineProps<Props>()
@@ -97,52 +82,6 @@ const SURFACE_LABELS: Record<GameUpdateSurface, string> = {
 }
 
 const selectedCount = computed(() => props.gameIds.length)
-
-const { data, isLoading } = useAsyncData(
-  async () => {
-    const ids = props.gameIds
-    if (ids.length === 0) return []
-
-    const rows = await db
-      .select({ id: games.id, name: games.name, originalName: games.originalName })
-      .from(games)
-      .where(inArray(games.id, ids))
-
-    const extRows = await db
-      .select({
-        gameId: gameExternalIds.gameId,
-        source: gameExternalIds.source,
-        id: gameExternalIds.externalId
-      })
-      .from(gameExternalIds)
-      .where(inArray(gameExternalIds.gameId, ids))
-
-    const byId = new Map<string, ExternalId[]>()
-    for (const ext of extRows) {
-      const list = byId.get(ext.gameId) ?? []
-      list.push({ source: ext.source, id: ext.id })
-      byId.set(ext.gameId, list)
-    }
-
-    const rowById = new Map(rows.map((row) => [row.id, row] as const))
-    const out: BatchRow[] = []
-
-    for (const id of ids) {
-      const row = rowById.get(id)
-      if (!row) continue
-
-      out.push({
-        id: row.id,
-        name: row.name,
-        originalName: row.originalName ?? null,
-        externalIds: byId.get(row.id) ?? []
-      })
-    }
-
-    return out
-  },
-  { watch: [() => props.gameIds], enabled: () => open.value }
-)
 
 const canSubmit = computed(() => {
   return (
@@ -185,105 +124,30 @@ watch(
 
 async function handleSubmit() {
   if (!profileId.value) return
-  if (!data.value || data.value.length === 0) return
+  if (props.gameIds.length === 0) return
   if (selectedSurfaces.value.length === 0) return
 
-  const currentProfileId = profileId.value
-  const entities = toRaw(data.value)
-  const currentProfile = await db.query.scraperProfiles.findFirst({
-    where: eq(scraperProfiles.id, currentProfileId)
-  })
-
-  if (!currentProfile) {
-    notify.error('批量更新失败', '刮削配置不存在')
-    return
+  const request = {
+    rootIds: [...props.gameIds],
+    profileId: profileId.value,
+    selection: { surfaces: [...selectedSurfaces.value] },
+    policy: {
+      singularUpdate: singularUpdate.value,
+      collectionUpdate: collectionUpdate.value
+    } satisfies IngestUpdatePolicy,
+    useCurrentExternalIdsAsKnownIds: useCurrentExternalIdsAsKnownIds.value
   }
-
-  const surfaces = [...selectedSurfaces.value]
-  const policy = {
-    singularUpdate: singularUpdate.value,
-    collectionUpdate: collectionUpdate.value
-  } satisfies IngestUpdatePolicy
 
   open.value = false
   isSubmitting.value = true
 
-  const toastTitle = '批量更新元数据中...'
-  const toastId = notify.loading(toastTitle, `${entities.length} 个游戏`)
-
-  let okCount = 0
-  const failed: Array<{ id: string; name: string; error: string }> = []
-  const total = entities.length
-
   try {
-    for (const [index, entity] of entities.entries()) {
-      const queryName = entity.originalName || entity.name
-      const baseKnownIds = useCurrentExternalIdsAsKnownIds.value ? entity.externalIds : []
-
-      notify.update(toastId, {
-        title: toastTitle,
-        message: `${index + 1} / ${total} · ${queryName}`,
-        type: 'loading'
-      })
-
-      try {
-        const searchResult = await ipcManager.invoke(
-          'scraper:search-game',
-          currentProfileId,
-          queryName
-        )
-        if (!searchResult.success) throw new Error('Metadata search failed.')
-
-        const first = searchResult.data?.[0]
-        if (!first) throw new Error('无搜索结果')
-
-        const request: GameUpdateRequest = {
-          rootId: entity.id,
-          profileId: currentProfileId,
-          lookup: buildIngestUpdateLookup({
-            name: first.originalName || first.name || queryName,
-            baseKnownIds,
-            selectionKnownIds: first.externalIds
-          }),
-          selection: {
-            surfaces: [...surfaces]
-          },
-          policy
-        }
-
-        const result = await ipcManager.invoke('ingest:update-game-from-scraper', request)
-        if (!result.success) throw new Error('Metadata update failed.')
-
-        okCount++
-      } catch (error) {
-        failed.push({
-          id: entity.id,
-          name: queryName,
-          error: error instanceof Error ? error.message : '未知错误'
-        })
-      }
+    const result = await ipcManager.invoke('ingest:batch-update-game-from-scraper', request)
+    if (!result.success) {
+      notify.error('启动批量更新失败', result.error)
     }
-
-    const failCount = failed.length
-    if (failCount === 0) {
-      notify.update(toastId, {
-        title: '批量更新完成',
-        message: `${okCount} / ${entities.length}`,
-        type: 'success'
-      })
-    } else if (okCount === 0) {
-      notify.update(toastId, {
-        title: '批量更新失败',
-        message: failed[0]?.error,
-        type: 'error'
-      })
-    } else {
-      notify.update(toastId, {
-        title: '批量更新完成（部分失败）',
-        message: `成功 ${okCount}，失败 ${failCount}`,
-        type: 'warning'
-      })
-    }
+  } catch (error) {
+    notify.error('启动批量更新失败', error instanceof Error ? error.message : '未知错误')
   } finally {
     isSubmitting.value = false
   }
@@ -293,25 +157,18 @@ async function handleSubmit() {
 <template>
   <Dialog v-model:open="openModel">
     <DialogContent class="max-w-3xl">
-      <template v-if="isLoading || !data">
-        <DialogBody class="flex items-center justify-center py-10">
-          <Spinner class="size-8" />
-        </DialogBody>
-      </template>
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
+          <Icon
+            icon="icon-[mdi--database-sync-outline]"
+            class="size-4"
+          />
+          批量更新元数据
+          <span class="text-xs text-muted-foreground">{{ selectedCount }} 个游戏</span>
+        </DialogTitle>
+      </DialogHeader>
 
-      <template v-else>
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Icon
-              icon="icon-[mdi--database-sync-outline]"
-              class="size-4"
-            />
-            批量更新元数据
-            <span class="text-xs text-muted-foreground">{{ selectedCount }} 个游戏</span>
-          </DialogTitle>
-        </DialogHeader>
-
-        <Form @submit="handleSubmit">
+      <Form @submit="handleSubmit">
           <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto scrollbar-thin">
             <FieldGroup>
               <Field>
@@ -466,8 +323,7 @@ async function handleSubmit() {
               </template>
             </Button>
           </DialogFooter>
-        </Form>
-      </template>
+      </Form>
     </DialogContent>
   </Dialog>
 </template>

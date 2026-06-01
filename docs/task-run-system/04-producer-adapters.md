@@ -476,14 +476,15 @@ result.output = {
 
 ### Batch and single reuse
 
-单项 ingest 操作默认创建自己的 TaskRun，但必须支持在批量流程中关闭 task run 包装。
+单项 ingest 操作和 TaskRun 包装保持分离；需要后台进度时由显式的 `WithTaskRun`
+入口创建 run。
 
 规则：
 
-- 用户直接触发单项 ingest 时，`taskRun` 默认启用，单项操作创建 `ingest.game.add` 等 TaskRun。
+- 用户直接触发单项 ingest 时，IPC 调用 `startAddFromScraper`、`startUpdateFromScraper` 等启动入口，创建 `ingest.game.add` 等 TaskRun。
 - 用户触发批量 ingest 时，只创建一个 batch TaskRun。
-- batch 内部调用同一个单项 ingest 操作，但传入 `{ taskRun: false }`。
-- `taskRun: false` 表示单项操作不创建 run、不调用 TaskRunService、不 report task progress。
+- batch 内部调用纯单项 ingest 操作，如 `addFromScraper`、`updateFromScraper`，不创建子 run。
+- 纯单项操作不调用 TaskRunService、不 report task progress。
 - batch 不把父 run runtime 传给单项操作，但可以传入父 run 的 `AbortSignal` 作为取消信号。
 - batch 只在每个 item 开始前或结束后调用自己的 `checkpoint()`；取消粒度是 item 级。
 - 当前 item 内部的网络、下载、图片处理和资产写入应尽量接收 `signal`，在安全边界提前停止。
@@ -494,14 +495,14 @@ result.output = {
 ```ts
 function ingestGame(
   request: IngestGameRequest,
-  options?: { taskRun?: boolean; signal?: AbortSignal }
+  options?: { signal?: AbortSignal }
 ): Promise<IngestGameResult>
 ```
 
 用户直接触发单项：
 
 ```ts
-await ingestGame(request)
+await startIngestGame(request)
 ```
 
 批量调用单项：
@@ -521,7 +522,6 @@ for (const [index, item] of items.entries()) {
   })
 
   const result = await ingestGame(item, {
-    taskRun: false,
     signal: context.signal
   })
 
@@ -540,9 +540,9 @@ for (const [index, item] of items.entries()) {
 
 规则重点：
 
-- 单项操作在 `taskRun: false` 时不创建 run。
-- 单项操作在 `taskRun: false` 时不 report task progress。
-- 单项操作在 `taskRun: false` 时不感知父 batch run，不接收父 `TaskRunContext`、父 progress API 或父 lifecycle handle。
+- 纯单项操作不创建 run。
+- 纯单项操作不 report task progress。
+- 纯单项操作不感知父 batch run，不接收父 `TaskRunContext`、父 progress API 或父 lifecycle handle。
 - 单项操作可以接收 `AbortSignal`，但这个 signal 只能用于取消网络、下载、文件处理和安全边界检查，不能用于上报 progress 或结束父 run。
 - 父批量循环负责每个 item 完成后的计数推进。
 - 父批量循环负责在 item 边界调用 `checkpoint()`；当前 item 内部可以通过传入的 `AbortSignal` 尽早停止可取消子步骤。

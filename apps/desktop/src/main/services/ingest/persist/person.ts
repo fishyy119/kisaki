@@ -18,22 +18,26 @@ import {
 import type { IngestPersonGraph, IngestPersonNode } from '../graph'
 import { flushPendingAssets, type PendingAssetTask } from '../assets'
 import { pickFirstAssetUrl, type PersistPersonGraphResult } from './types'
+import { reportIngestProgress, type IngestOperationOptions } from '../types'
+
+type PersonPersistOptions = IngestAddPersonFromScraperOptions &
+  Pick<IngestOperationOptions, 'signal' | 'onProgress'>
 
 export class PersonIngestPersistHandler {
   constructor(private readonly dbService: DbService) {}
 
   persistPersonGraph(
     graph: IngestPersonGraph,
-    options?: IngestAddPersonFromScraperOptions
+    options?: PersonPersistOptions
   ): Promise<IngestAddPersonFromScraperResult>
   persistPersonGraph(
     graph: IngestPersonGraph,
-    options: IngestAddPersonFromScraperOptions | undefined,
+    options: PersonPersistOptions | undefined,
     tx: DbContext
   ): Promise<PersistPersonGraphResult>
   async persistPersonGraph(
     graph: IngestPersonGraph,
-    options?: IngestAddPersonFromScraperOptions,
+    options?: PersonPersistOptions,
     tx?: DbContext
   ): Promise<IngestAddPersonFromScraperResult | PersistPersonGraphResult> {
     if (tx) {
@@ -43,13 +47,21 @@ export class PersonIngestPersistHandler {
     const result = this.dbService.client.transaction((trx) =>
       this.persistPersonGraphInternal(graph, options, trx)
     )
-    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets)
+    if (result.pendingAssets.length > 0) {
+      reportIngestProgress(options, {
+        phase: 'assets',
+        message: '正在保存人物媒体资源'
+      })
+    }
+    const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {
+      signal: options?.signal
+    })
     return this.toPublicResult(result, warnings)
   }
 
   persistPersonGraphInternal(
     graph: IngestPersonGraph,
-    options: IngestAddPersonFromScraperOptions | undefined,
+    options: PersonPersistOptions | undefined,
     tx: DbContext
   ): PersistPersonGraphResult {
     return this.persistPersonNodeInternal(graph.person, tx, options?.targetCollectionId)

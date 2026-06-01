@@ -23,6 +23,7 @@ import {
   formatTaskRunSubject,
   formatTimestamp,
   getTaskRunCategoryIcon,
+  getTaskRunCounterEntries,
   getTaskRunStatusVariant
 } from '../../../utils'
 
@@ -37,7 +38,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const result = computed(() => props.run.result)
-const counters = computed(() => Object.entries(result.value?.counters ?? {}))
+const counters = computed(() => getTaskRunCounterEntries(result.value?.counters))
 const warnings = computed<readonly TaskRunWarning[]>(() => result.value?.warnings ?? [])
 const outputPreview = computed(() => {
   if (result.value?.output === undefined) return null

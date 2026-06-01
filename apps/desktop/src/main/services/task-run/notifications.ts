@@ -91,6 +91,7 @@ export class TaskRunNotificationCoordinator {
     }
 
     const active = this.active.get(run.id)
+    const resultToastId = `task-run.result.${run.id}`
     const options: NotifyOptions = {
       title: resolveFinalTitle(run, presentation),
       message: resolveFinalMessage(run),
@@ -99,14 +100,16 @@ export class TaskRunNotificationCoordinator {
     }
 
     if (active && !active.closed) {
-      this.options.notify.update(active.toastId, options)
+      // A progress toast is persistent; the final state needs a fresh toast lifetime.
+      this.options.notify.dismiss(active.toastId)
+      this.options.notify.show(options, resultToastId)
       this.active.delete(run.id)
       return
     }
 
     this.active.delete(run.id)
     if (notify.showResult === true) {
-      this.options.notify.show(options, `task-run.result.${run.id}`)
+      this.options.notify.show(options, resultToastId)
     }
   }
 
