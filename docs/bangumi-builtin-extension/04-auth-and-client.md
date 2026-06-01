@@ -48,7 +48,7 @@ kisaki://ext/builtin.bangumi/oauth-callback
 退出登录：
 
 - 删除 `auth.token`、`auth.pendingSession`、`auth.account`。
-- 不删除 `sync.state`、主应用 automations 或 task run history；自动化管理和历史清理应走主应用 AutomationService / TaskRunService。
+- 不删除 `sync.state`、主应用 automations、automation invocation history 或 task run history；自动化管理和 automation history 清理走主应用 AutomationService，task run history 清理走 TaskRunService。
 
 ## Token Refresh
 

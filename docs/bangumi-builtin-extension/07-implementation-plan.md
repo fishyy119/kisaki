@@ -114,7 +114,7 @@ Phase 0-5 作为回归基线，不作为后续开发阶段重复执行：
 
 - 用户可以创建每日 game 全量同步自动化。
 - Bangumi 设置不运行、不取消、不展示 task run history。
-- 主应用自动化页面和任务中心负责启停、运行、取消和历史展示。
+- 主应用自动化页面负责 automation 启停、手动运行和 invocation history；任务中心负责已创建 TaskRun 的进度、取消和历史展示。
 - Advanced 不泄露 token 或本机敏感路径。
 - 导入 dialog 的 media selector 只出现书籍、游戏、动漫、音乐四类 scope。
 - settings panel 刷新后根据 `kisaki.taskRuns.listOwn({ status: 'active' })` 禁用重复入口，不展示额外 progress/status field。

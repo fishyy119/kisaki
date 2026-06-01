@@ -247,7 +247,7 @@ paused -> cancelling -> cancelled
 
 ## History store
 
-`TaskRunHistoryStore` 负责 SQLite completed history 读写。active TaskRun 不写入 DB，active snapshot 的唯一事实源是 `runs/manager.ts` 内存状态。
+`TaskRunHistoryStore` 负责 SQLite completed history 读写。active TaskRun 不写入 DB，active snapshot 的状态来源是 `runs/manager.ts` 内存状态。
 
 初始化：
 

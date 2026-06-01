@@ -306,7 +306,7 @@ keys:
 - `sync.state`
 - `sync.queue`
 
-automation trigger、运行记录、输出和错误历史属于主应用 AutomationService 与 TaskRunService。Bangumi extension storage 不保存 `jobs.history`、通用 `lastResult`、active run id 或导入/同步命令结果副本。
+automation trigger 和 command invocation 运行记录属于主应用 AutomationService。job 创建 TaskRun 后的进度、输出摘要和错误结果属于该 TaskRun。Bangumi extension storage 不保存 `jobs.history`、通用 `lastResult`、active run id 或导入/同步命令结果副本。
 
 ## Error Model
 

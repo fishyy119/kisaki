@@ -33,14 +33,14 @@ Bangumi 扩展内必须明确区分 `job` 和 `automation`：
 
 - `job`: Bangumi 扩展的一次业务执行，由 command handler 创建一个 scoped TaskRun。
 - `automation`: 主应用 AutomationService 的持久配置，保存 commandId、args、trigger、failurePolicy 和 enabled 状态。
-- `TaskRun`: 一次实际执行实例，是 progress、cancel、result 和 history 的唯一事实源。
+- `TaskRun`: command handler 显式创建的一次实际执行实例，承载该 job 的 progress、cancel signal、result 和 completed snapshot。
 
 边界：
 
 - settings panel 的“立即同步”“导入”“刷新账号”触发 command。
 - command handler 负责 args normalization，并通过 `kisaki.taskRuns.create()` 创建 TaskRun。
 - job 不持久化 history，不保存 schedule，不拥有 automation 生命周期。
-- automation 可以调度同一个 Bangumi command；运行、取消、重试和历史都归主应用 AutomationService + TaskRunService。
+- automation 可以调度同一个 Bangumi command；automation invocation、重试和历史归主应用 AutomationService，已创建 TaskRun 的进度、取消和结果归任务中心/TaskRunService。
 - Bangumi 扩展只提供推荐 automation 的创建入口；创建后不接管运行控制。
 
 ## Job Commands
@@ -209,10 +209,10 @@ interface BangumiJobSummary {
 
 - 使用 `kisaki.automations.create` 创建，宿主自动填充 owner extension id。
 - 创建前可以 `kisaki.automations.list()` 本扩展 automation，用于去重和展示“已创建”状态。
-- 创建后 automation 的启停、运行、取消、schedule 修改、failure policy 修改和 history 查看都交给主应用自动化页面和任务中心。
+- 创建后 automation 的启停、手动运行、schedule 修改、failure policy 修改和 invocation history 查看都交给主应用自动化页面；handler 创建的 TaskRun 由任务中心展示和取消。
 - Bangumi 不自动覆盖用户在主应用自动化页面里改过的配置。
 - Bangumi settings panel 不调用 `kisaki.automations.run` 或 `kisaki.automations.cancel`。
-- automation history 从 `task_runs` 投影，不在 Bangumi storage 保存。
+- automation history 从主应用 `automation_run_history` 查询；若 command handler 创建 TaskRun，该 TaskRun 不回写 automation history，也不在 Bangumi storage 保存引用。
 
 默认 failure policy:
 

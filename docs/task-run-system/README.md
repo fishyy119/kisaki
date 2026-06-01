@@ -9,8 +9,8 @@
 ```text
 Command 是可调用动作注册项和入口索引，不拥有运行实例。
 Automation 是持久自动化配置和 command invocation 历史 owner。
-TaskRun 是一次正在运行或已经完成的长时执行实例，也是长任务进度、结果和完成历史的唯一事实源。
-Task Center 只展示 TaskRun。
+TaskRun 是 producer 显式创建的一次长流程运行实例，承载该 run 的进度、控制信号、结果摘要和完成快照。
+Task Center 展示 TaskRun 的 active/completed 投影。
 Notify 是 TaskRun 的可选展示层，不是状态源。
 ```
 
@@ -26,7 +26,7 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 
 ## 总体目标
 
-新增应用级 `TaskRunService`，统一承载所有长时执行实例的运行状态、进度、速度、结果、错误、取消、暂停和完成历史。
+新增应用级 `TaskRunService`，作为可复用的长流程运行实例基础设施，管理 producer 显式创建的 run 的运行状态、进度、速度、控制信号、结果摘要和有限 completed history。
 
 目标架构：
 
@@ -70,7 +70,7 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 
 UI 文案：
 
-- `任务中心`: 显示所有正在运行和已完成的长时执行实例。
+- `任务中心`: 显示所有已创建 TaskRun 的进行中和已完成记录。
 - `自动化`: 管理定时、启动时、手动触发的持久规则。
 - `命令`: 可被用户、扩展或自动化调用的动作。
 

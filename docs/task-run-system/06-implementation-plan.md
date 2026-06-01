@@ -441,7 +441,8 @@ docs/task-run-system/07-extension-api-and-bangumi-refactor.md
 目标语义：
 
 - `AutomationService` 是持久自动化配置和调度服务。
-- `TaskRunService` 是长时执行实例的唯一运行态和历史事实源。
+- `TaskRunService` 是可复用的长流程运行实例基础设施，负责 producer 显式创建的 run 生命周期、progress snapshot、控制信号、任务中心读模型和有限 completed history。
+- `TaskRunService` 不替代业务服务、automation、updater、extension 等领域 owner；业务状态、触发记录和领域历史仍由对应 owner 持久化。
 - CommandService 只是 command registry 和薄调用路由；长时 command handler 返回真实 producer 创建的 `runId`。
 - 扩展长时 command 使用 `kisaki.taskRuns` scoped capability，而不是 command progress。
 - scanner active progress 从 task run store 派生。
@@ -566,7 +567,7 @@ pnpm -r --parallel lint
 
 必须满足：
 
-1. `TaskRunService` 是应用长时执行实例唯一运行时读模型。
+1. `TaskRunService` 是应用长流程运行实例的通用基础设施；对已创建的 active run 提供任务中心运行时读模型，并在完成后写入有限 task run history。
 2. 任务中心通过 `task-run:*` IPC 和 store 展示状态。
 3. 高频进度不走 TaskRun AppEvents；通用 SQLite `db.*` trigger events 可以存在，但不是 task center 状态源。
 4. notify 不再作为长流程状态源，但仍可作为可关闭 presentation。

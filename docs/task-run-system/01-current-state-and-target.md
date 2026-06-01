@@ -102,12 +102,12 @@ Scanner 已经有比较完整的运行态：
 
 ## 核心决策
 
-新增 `TaskRunService`，作为长时执行实例的唯一运行时读模型。
+新增 `TaskRunService`，作为 producer 显式创建的长流程 run 基础设施和任务中心读模型。
 
 规则：
 
 1. 任何需要进入任务中心的长时流程必须创建 `TaskRun`。
-2. `TaskRunService` 是长任务进度、结果和完成历史的唯一事实源。
+2. `TaskRunService` 只对已创建的 TaskRun 负责，管理该 run 的 lifecycle、progress snapshot、控制信号、result 和有限 completed history。
 3. 创建者通过 `TaskRunHandle` 控制生命周期，通过 `TaskRunContext` 上报进度并检查取消/暂停。
 4. `TaskRunService` 不接收业务 executor，不调度业务流程。
 5. `CommandService` 只维护 command registry 和薄调用路由，不拥有 execution id、进度、取消、结果或历史。
@@ -119,14 +119,14 @@ Scanner 已经有比较完整的运行态：
 
 ## 目标
 
-- 统一展示所有应用级长时任务。
+- 统一展示接入 TaskRun 的应用级长流程。
 - 支持进行中和已完成两个视图。
 - 展示阶段、进度、速度、ETA、耗时、结果、错误和关联对象。
 - 支持取消、暂停和继续，其中暂停/继续必须是协作式能力。
-- 持久化完成历史，避免完成后只能看 toast。
+- 持久化 TaskRun 完成快照，避免完成后只能看 toast。
 - 清理 renderer 中的长时循环和散落 loading toast。
 - 将旧 `BackgroundTaskService` 重命名并重塑为自动化配置服务。
-- 让被 command 入口触发的真实 producer、扫描器、扩展安装、批量更新都接入同一运行时。
+- 让被 command 入口触发的真实 producer、扫描器、扩展安装、批量更新都可以接入同一运行基础设施。
 - 保持服务边界清晰，不引入一个 import 所有业务服务的中央协调器。
 
 ## 非目标
@@ -166,7 +166,7 @@ ExtensionService
   exposes scoped kisaki.taskRuns for extension-owned long runs
 
 TaskRunService
-  owns run snapshots, progress, history, controls, IPC and task center presentation
+  owns active TaskRun snapshots, controls, IPC, notification presentation and bounded completed TaskRun history
 ```
 
 ## 设计原则
@@ -175,7 +175,7 @@ TaskRunService
 
 `TaskRunService` 不知道如何扫描、安装扩展、更新元数据或同步 Bangumi。它只知道一次运行的生命周期。
 
-### 快照是事实源
+### TaskRun 快照是状态源
 
 每次 `task-run:changed` 推送都是完整 task run snapshot，renderer store 直接替换。组件不根据增量事件拼状态。
 

@@ -161,7 +161,7 @@ context.contributions.commands.register({
 
 `jobs.runFullSync()` 通过 `kisaki.taskRuns.create()` 创建 run，通过 returned handle 上报 progress/checkpoint/complete/fail。CommandService 不提供 command progress，也不负责取消 TaskRun。
 
-Bangumi 的 `automation` 是主应用 AutomationService 中的持久自动化配置。automation 只保存要调用的 command、参数、trigger、failurePolicy 和 enabled 状态；真正运行时由主应用触发对应 job command，执行历史从 `task_runs` 投影。
+Bangumi 的 `automation` 是主应用 AutomationService 中的持久自动化配置。automation 保存要调用的 command、参数、trigger、failurePolicy 和 enabled 状态；主应用触发对应 job command，并把每次 command invocation 写入 `automation_run_history`。如果 handler 创建 TaskRun，该 run 只进入任务中心的 TaskRun active/history 流，不回写 automation history。
 
 Automation 只能绑定本扩展拥有的 command。宿主会校验：
 
@@ -169,7 +169,7 @@ Automation 只能绑定本扩展拥有的 command。宿主会校验：
 - automation command 必须由 `builtin.bangumi` 注册
 - 扩展只能访问自己拥有的 automation
 
-因此 automation 配置和 TaskRun 历史不需要另存一份到 Bangumi storage。settings panel 只保存用户偏好与 Bangumi 业务状态；实际 trigger、enabled、failurePolicy、run/cancel 和 history 以主应用 AutomationService 与 TaskRunService 为准。
+因此 automation 配置、automation invocation history 和 TaskRun completed history 都不需要另存到 Bangumi storage。settings panel 只保存用户偏好与 Bangumi 业务状态；automation 的启停、手动运行、schedule、failurePolicy 和 invocation history 归主应用 AutomationService，已创建 TaskRun 的进度、取消、结果和任务中心历史由任务中心通过 TaskRunService 展示和控制。
 
 ## Library 写入策略
 

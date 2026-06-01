@@ -59,7 +59,7 @@ game adapter 订阅事件：
 9. 计算 fingerprint。
 10. fingerprint 与上次成功同步一致则跳过。
 11. 调用 `BangumiClient.upsertMyCollection(ref, payload)`。当目标收藏类型为 `1` 时，payload 必须包含 `rate=0` 清除远端评分。
-12. 写入 sync state 和 TaskRun output；如果由 automation 触发，运行记录由主应用 TaskRunService 保存。
+12. 写入 sync state；如果本次 job 创建了 TaskRun，同步摘要写入该 TaskRun output。由 automation 触发时，command invocation 记录由主应用 AutomationService 保存，TaskRun 不回写 automation history。
 
 Fingerprint 输入：
 

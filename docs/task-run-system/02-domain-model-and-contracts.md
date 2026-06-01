@@ -2,19 +2,19 @@
 
 ## 术语
 
-| 术语           | 含义                                                           |
-| -------------- | -------------------------------------------------------------- |
-| `TaskRun`      | 一次长时执行实例，也是长任务进度、结果和完成历史的唯一事实源。 |
-| `Category`     | 任务所属的大类，用于 UI 分组、筛选和图标。                     |
-| `Operation`    | 稳定的操作标识，描述这次任务具体在做什么。                     |
-| `Initiator`    | 谁启动了任务，例如 user、automation、extension、system。       |
-| `Owner`        | 谁拥有这条运行记录和读取权限，例如 app 或 extension。          |
-| `Subject`      | 任务主要关联的业务对象，用于展示、过滤和跳转。                 |
-| `Progress`     | 当前阶段和度量快照。                                           |
-| `Result`       | 完成后的输出、摘要、错误和计数。                               |
-| `Control`      | 取消、暂停和继续等用户可操作能力。                             |
-| `Checkpoint`   | 任务代码可安全响应取消或暂停的协作式边界。                     |
-| `Presentation` | 由 TaskRun 派生出的可选展示，例如 toast，不拥有任务状态。      |
+| 术语           | 含义                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| `TaskRun`      | producer 显式创建的一次长流程运行实例，承载该 run 的进度、控制信号、结果摘要和完成快照。 |
+| `Category`     | 任务所属的大类，用于 UI 分组、筛选和图标。                                               |
+| `Operation`    | 稳定的操作标识，描述这次任务具体在做什么。                                               |
+| `Initiator`    | 谁启动了任务，例如 user、automation、extension、system。                                 |
+| `Owner`        | 谁拥有这条运行记录和读取权限，例如 app 或 extension。                                    |
+| `Subject`      | 任务主要关联的业务对象，用于展示、过滤和跳转。                                           |
+| `Progress`     | 当前阶段和度量快照。                                                                     |
+| `Result`       | 完成后的输出、摘要、错误和计数。                                                         |
+| `Control`      | 取消、暂停和继续等用户可操作能力。                                                       |
+| `Checkpoint`   | 任务代码可安全响应取消或暂停的协作式边界。                                               |
+| `Presentation` | 由 TaskRun 派生出的可选展示，例如 toast，不拥有任务状态。                                |
 
 ## Shared contract 文件
 
@@ -475,7 +475,7 @@ export interface TaskRunStartResult {
 
 ## History model
 
-`task_run_history` 是唯一持久 completed TaskRun history 表，只保存 final snapshot。active TaskRun snapshot 的唯一事实源是 `TaskRunService` 内存运行态，并通过 `task-run:*` IPC 推送到 renderer store。
+`task_run_history` 是唯一持久 completed TaskRun history 表，只保存 final snapshot。active TaskRun snapshot 的状态来源是 `TaskRunService` 的 `runs/manager.ts` 内存状态，并通过 `task-run:*` IPC 推送到 renderer store。
 
 它不是所有上层业务历史的唯一表。AutomationService 拥有独立 `automation_run_history`，记录 automation 触发 command invocation 的事实；CommandService 不保存历史；scanner、extension package operation 等真实长任务完成记录可以从 `task_run_history` 查询。
 
