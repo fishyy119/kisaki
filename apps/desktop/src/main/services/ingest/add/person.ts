@@ -82,7 +82,7 @@ export class PersonAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      message: '正在检查现有人物'
+      label: '正在检查现有人物'
     })
     if (normalized.lookup.knownIds?.length) {
       const existingByExternalId = this.dbService.entityFinder.findExistingPerson({
@@ -102,7 +102,7 @@ export class PersonAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取人物元数据'
+      label: '正在抓取人物元数据'
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.person.scrape(normalized.profileId, normalized.lookup),
@@ -111,12 +111,12 @@ export class PersonAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      message: '正在整理人物元数据'
+      label: '正在整理人物元数据'
     })
     const graph = buildPersonGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入人物'
+      label: '正在写入人物'
     })
     return this.persistHandler.persistPersonGraph(graph, options)
   }

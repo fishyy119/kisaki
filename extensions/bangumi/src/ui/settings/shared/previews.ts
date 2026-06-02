@@ -277,7 +277,7 @@ class NotificationPreviewHandle implements BangumiJobHandle {
 }
 
 function formatPreviewProgress(update: ExtensionTaskRunProgressUpdate): string | undefined {
-  const base = update.message ?? update.phase
+  const base = update.phase?.label
   const count = formatProgressCount(update)
   const percent = formatProgressPercent(update)
   const suffix = [count, percent].filter(Boolean).join(' ')
@@ -285,33 +285,38 @@ function formatPreviewProgress(update: ExtensionTaskRunProgressUpdate): string |
 }
 
 function formatProgressCount(update: ExtensionTaskRunProgressUpdate): string | undefined {
-  if (update.current === undefined && update.total === undefined) {
+  const current = update.work?.current
+  const total = update.work?.total
+
+  if (current === undefined && total === undefined) {
     return undefined
   }
 
-  if (update.current !== undefined && update.total !== undefined) {
-    return `(${update.current}/${update.total})`
+  if (current !== undefined && total !== undefined) {
+    return `(${current}/${total})`
   }
 
-  if (update.current !== undefined) {
-    return `(${update.current})`
+  if (current !== undefined) {
+    return `(${current})`
   }
 
   return undefined
 }
 
 function formatProgressPercent(update: ExtensionTaskRunProgressUpdate): string | undefined {
+  const current = update.work?.current
+  const total = update.work?.total
   if (
-    typeof update.current !== 'number' ||
-    typeof update.total !== 'number' ||
-    !Number.isFinite(update.current) ||
-    !Number.isFinite(update.total) ||
-    update.total <= 0
+    typeof current !== 'number' ||
+    typeof total !== 'number' ||
+    !Number.isFinite(current) ||
+    !Number.isFinite(total) ||
+    total <= 0
   ) {
     return undefined
   }
 
-  return `${Math.round(Math.min(100, (update.current / update.total) * 100))}%`
+  return `${Math.round(Math.min(100, (current / total) * 100))}%`
 }
 
 function createPreviewNotificationId(commandId: string): string {

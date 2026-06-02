@@ -81,7 +81,7 @@ export class CompanyUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      message: '正在准备更新公司元数据'
+      label: '正在准备更新公司元数据'
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, COMPANY_UPDATE_SURFACE_KEYS)
@@ -94,13 +94,13 @@ export class CompanyUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取公司元数据'
+      label: '正在抓取公司元数据'
     })
     const bundle = await this.scraperService.company.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      message: '正在生成公司更新计划'
+      label: '正在生成公司更新计划'
     })
     const incoming = buildCompanyIncoming(bundle, lookup)
     const current = loadCompanyCurrent(this.dbService.client, request.rootId, selection)
@@ -114,7 +114,7 @@ export class CompanyUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入公司元数据'
+      label: '正在写入公司元数据'
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyCompanyPlan(tx, request.rootId, plan)
@@ -123,7 +123,7 @@ export class CompanyUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存公司媒体资源'
+        label: '正在保存公司媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {

@@ -239,43 +239,62 @@ export type TaskRunProgressUnit =
   | 'package'
   | 'request'
 
-export interface TaskRunProgressUpdate {
-  phase?: string
-  message?: string
+export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
+
+export interface TaskRunProgressPhase {
+  key: string
+  label: string
+  current?: number
+  total?: number
+}
+
+export interface TaskRunProgressWork {
   current?: number
   total?: number
   unit?: TaskRunProgressUnit
-  ratePeriod?: 'second' | 'minute' | 'hour'
+  ratePeriod?: TaskRunRatePeriod
   indeterminate?: boolean
+}
+
+export interface TaskRunProgressWorkMetrics {
+  rate?: number
+  etaMs?: number
+  percent?: number
+}
+
+export interface TaskRunProgressUpdate {
+  phase?: TaskRunProgressPhase
+  work?: TaskRunProgressWork
   counters?: Record<string, number>
   warnings?: readonly TaskRunWarning[]
 }
 
-export interface TaskRunProgress extends TaskRunProgressUpdate {
+export interface TaskRunProgress extends Omit<TaskRunProgressUpdate, 'work'> {
+  work?: TaskRunProgressWork & TaskRunProgressWorkMetrics
   updatedAt: number
-  rate?: number
-  etaMs?: number
-  percent?: number
 }
 ```
 
 规则：
 
-- `phase` 使用稳定英文枚举值，例如 `searching`、`writing`、`download`、`commit`。
-- `message` 是短展示文案，可以是中文。
-- `current` 和 `total` 必须是非负有限数。
-- `current > total` 时 service 可以保留原值，但 `percent` 上限为 100。
-- `rate`、`etaMs`、`percent` 由 `TaskRunService` 计算，生产者不直接写。
-- 不知道总量时设置 `indeterminate: true`。
-- `unit` 用于 UI 显示速度，例如 `12 items/s`、`3.4 MB/s`。
-- `ratePeriod` 可指定速度展示周期，例如 `second`、`minute` 或 `hour`。
+- `phase` 描述当前工作流阶段；`phase.key` 使用稳定英文枚举值，例如 `searching`、`writing`、`download`、`commit`。
+- `phase.label` 是短展示文案，可以是中文；TaskRun progress 不再提供顶层 `message`。
+- `phase.current` 和 `phase.total` 表达阶段序号，例如 `4/6`；它们只用于 UI 阶段文案，不参与 work 进度条、速度或 ETA。
+- `phase.current` 和 `phase.total` 必须是正整数，且同时存在时 `current <= total`。
+- `work` 描述当前阶段的可度量工作量；`work.current` 和 `work.total` 必须是非负有限数。
+- `work.current > work.total` 时 service 可以保留原值，但派生 `work.percent` 上限为 100。
+- `work.rate`、`work.etaMs`、`work.percent` 由 `TaskRunService` 计算，生产者不直接写。
+- 不知道 work 总量时可以设置 `work.indeterminate: true`；即使 phase 有 `current/total`，UI work 进度条也必须保持 indeterminate。
+- `work.unit` 用于 UI 显示计数和速度，例如 `12 items/s`、`3.4 MB/s`。
+- `work.ratePeriod` 可指定速度展示周期，例如 `second`、`minute` 或 `hour`。
 - `counters` 是 active run 的有限汇总，例如 `succeeded`、`failed`、`skipped`、`warnings`，用于 scanner、batch ingest、extension install 等 live summary。
 - `warnings` 是 active run 的有限展示摘要，不是完整错误明细；service 必须按条数和序列化大小限制。
-- 每次 `report(update)` 都是 producer-writable progress 字段的完整快照替换，不是深度 merge。未出现在 update 中的 `phase`、`message`、`current`、`total`、`unit`、`indeterminate`、`counters` 和 `warnings` 会被清空。
+- 每次 `report(update)` 都是 producer-writable progress 字段的完整快照替换，不是深度 merge。未出现在 update 中的 `phase`、`work`、`counters` 和 `warnings` 会被清空。
 - `counters` 和 `warnings` 由 producer 发送当前 bounded snapshot。Service 只做大小限制和序列化保护，不替 producer 累加。
-- 完成后的权威摘要仍然写入 `result.counters` 和 `result.warnings`。最后一条 progress 不能被当作 result。
+- 约定上 `counters` 表达整个 run 的累计业务计数，跨 phase 持续更新；具体 key 的语义由 producer 定义。
+- 完成后的权威摘要写入 `result.counters` 和 `result.warnings`。若 producer 没有显式传 result counters/warnings，TaskRunService 可以用最后一次 progress 的 counters/warnings 作为 final fallback。
 - 不把逐项明细、大失败列表或完整业务对象放进 progress；这些内容只进入 result 的有限摘要或 main logger。
-- 当 `phase` 或 `unit` 改变、`current` 回退、`total` 明显变化时，rate calculator 必须重置窗口，避免跨阶段速度污染。
+- 当 `work.unit` 改变、`work.current` 回退、`work.total` 明显变化或 work 变为不可度量时，rate calculator 必须重置窗口，避免跨工作量语义污染。
 
 ## Result
 

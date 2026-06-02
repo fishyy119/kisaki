@@ -121,7 +121,7 @@ export class GameAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      message: '正在检查现有游戏'
+      label: '正在检查现有游戏'
     })
     const existing = this.tryResolveExistingGame(normalized.lookup.knownIds, options)
     if (existing) {
@@ -131,7 +131,7 @@ export class GameAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取游戏元数据'
+      label: '正在抓取游戏元数据'
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.game.scrape(normalized.profileId, normalized.lookup),
@@ -140,12 +140,12 @@ export class GameAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      message: '正在整理游戏元数据'
+      label: '正在整理游戏元数据'
     })
     const graph = buildGameGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入游戏'
+      label: '正在写入游戏'
     })
     return this.persistHandler.persistGameGraph(graph, options)
   }
@@ -170,7 +170,9 @@ export class GameAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      message: '正在检查现有游戏'
+      label: '正在检查现有游戏',
+      phaseCurrent: 1,
+      phaseTotal: 2
     })
     const existing = this.tryResolveExistingGame(normalizedLookup.knownIds, options)
     if (existing) {
@@ -180,7 +182,9 @@ export class GameAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入游戏'
+      label: '正在写入游戏',
+      phaseCurrent: 2,
+      phaseTotal: 2
     })
     const graph = buildDirectGameGraph(normalizedLookup)
     return this.persistHandler.persistGameGraph(graph, options)

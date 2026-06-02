@@ -167,7 +167,7 @@ finishedAt desc
 ```text
 icon/category
 title + category/operation
-phase/message + progress bar
+phase position/label + work progress bar
 count/rate/eta or duration/counters under the progress/result column
 status badge
 active controls + details action
@@ -188,10 +188,16 @@ row 不整体点击打开详情；详情入口只放在信息图标按钮中。a
 
 ## Progress display
 
+Phase label：
+
+```text
+4/6 · 正在写入游戏
+```
+
 Determinate：
 
 ```text
-progress bar
+work progress bar
 42 / 100
 42%
 12 items/s
@@ -202,7 +208,7 @@ Indeterminate：
 
 ```text
 spinner or animated compact bar
-当前 message
+当前 phase label
 已运行 1 分 20 秒
 ```
 
@@ -215,6 +221,9 @@ succeeded / failed / skipped / warnings
 
 规则：
 
+- `phase.current/phase.total` 只渲染为 phase label 前的 `x/y`，不驱动下方 progress bar。
+- 下方 progress bar 只表达 `work.percent` 或 `work.current/work.total`。
+- phase 有 total 但 work 没有 total 时，progress bar 仍然是 indeterminate。
 - active row 可以展示计数、速度、剩余时间等紧凑指标，但指标必须有清晰标签，不混在一段文本里。
 - active row 不直接展开 warning 文本，只显示 warning 图标和 tooltip 摘要，完整列表放详情。
 - completed row 使用 `result.counters` 和 `result.warnings`，不从最后一条 progress 推断结果。

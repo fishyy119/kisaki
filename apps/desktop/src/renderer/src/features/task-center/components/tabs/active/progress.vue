@@ -27,7 +27,7 @@ const rateText = computed(() => formatTaskRunRate(props.run))
 const etaText = computed(() => formatTaskRunEta(props.run))
 const durationText = computed(() => formatTaskRunDuration(props.run, now.value))
 const isIndeterminate = computed(
-  () => props.run.progress?.indeterminate === true || percentValue.value === null
+  () => props.run.progress?.work?.indeterminate === true || percentValue.value === null
 )
 const metrics = computed(() => {
   const items = [

@@ -89,7 +89,7 @@ export function createBatchTaskRunWarnings(
 export function reportBatchProgress(params: {
   context: TaskRunContext
   phase: 'searching' | 'updating'
-  message?: string
+  label?: string
   current: number
   total: number
   counters: IngestBatchCounters
@@ -97,12 +97,27 @@ export function reportBatchProgress(params: {
   itemWarnings: readonly IngestBatchItemWarning[]
 }): void {
   params.context.report({
-    phase: params.phase,
-    message: params.message,
-    current: params.current,
-    total: params.total,
-    unit: 'entity',
+    phase: {
+      key: params.phase,
+      label: params.label ?? getBatchProgressPhaseLabel(params.phase),
+      current: params.phase === 'searching' ? 1 : 2,
+      total: 2
+    },
+    work: {
+      current: params.current,
+      total: params.total,
+      unit: 'entity'
+    },
     counters: { ...params.counters },
     warnings: createBatchTaskRunWarnings(params.failures, params.itemWarnings)
   })
+}
+
+function getBatchProgressPhaseLabel(phase: 'searching' | 'updating'): string {
+  switch (phase) {
+    case 'searching':
+      return '正在匹配远端条目'
+    case 'updating':
+      return '正在更新本地元数据'
+  }
 }

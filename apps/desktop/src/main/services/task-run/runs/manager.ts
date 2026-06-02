@@ -7,17 +7,19 @@ import type {
   TaskRunActiveListQuery,
   TaskRunControls,
   TaskRunFinalStatus,
+  TaskRunProgress,
   TaskRunProgressUpdate,
-  TaskRunRatePeriod,
   TaskRunResult,
-  TaskRunStatus,
-  TaskRunWarning
+  TaskRunStatus
 } from '@shared/task-run'
 import type { TaskRunHistoryStore } from '../history/store'
 import type { TaskRunNotificationCoordinator } from '../notifications'
 import { TaskRunRateCalculator } from '../rate'
 import { createTaskPauseController, type TaskRunCancelRequestListener } from './controls'
 import { DefaultTaskRunContext, TaskRunCancellation, type TaskRunContext } from './context'
+import { sanitizeProgressUpdate, mergeWorkMetrics } from './progress'
+import { applyListLimit, cloneTaskRun, compareActiveTaskRuns, matchesTaskRunQuery } from './query'
+import { createFinalResult, sanitizeCompletionResult, toSafeErrorMessage } from './result'
 import { assertTaskRunActiveStatus, assertTaskRunTransition } from './transitions'
 import type {
   ActiveTaskRunRecord,
@@ -25,8 +27,7 @@ import type {
   TaskRunCompletionResult,
   TaskRunCreateInput,
   TaskRunFailureResult,
-  TaskRunHandle,
-  TaskRunListQuery
+  TaskRunHandle
 } from './types'
 
 const log = createLogger('TaskRun')
@@ -34,16 +35,6 @@ const log = createLogger('TaskRun')
 const PROGRESS_FLUSH_INTERVAL_MS = 100
 const PROGRESS_FLUSH_MAX_DELAY_MS = 250
 const DISPOSE_SETTLE_TIMEOUT_MS = 500
-
-const MAX_COUNTERS = 20
-const MAX_WARNINGS = 20
-const MAX_COUNTER_KEY_LENGTH = 80
-const MAX_WARNING_CODE_LENGTH = 80
-const MAX_WARNING_MESSAGE_LENGTH = 500
-const MAX_PHASE_LENGTH = 120
-const MAX_PROGRESS_MESSAGE_LENGTH = 500
-const MAX_RESULT_TEXT_LENGTH = 1000
-const MAX_LIST_LIMIT = 500
 
 export interface TaskRunManagerOptions {
   ipc: IpcService
@@ -105,7 +96,7 @@ export class TaskRunManager {
       [...this.active.values()]
         .map((record) => cloneTaskRun(record.run))
         .filter((run) => matchesTaskRunQuery(run, query))
-        .sort(compareActiveRuns),
+        .sort(compareActiveTaskRuns),
       query?.limit
     )
   }
@@ -228,13 +219,17 @@ export class TaskRunManager {
     const now = Date.now()
     const sanitized = sanitizeProgressUpdate(update)
     const rateMetrics = record.rate.apply(sanitized, performance.now())
+    const progress: TaskRunProgress = {
+      ...sanitized,
+      updatedAt: now
+    }
+    const work = mergeWorkMetrics(sanitized.work, rateMetrics)
+    if (work !== undefined) {
+      progress.work = work
+    }
     record.run = {
       ...record.run,
-      progress: {
-        ...sanitized,
-        ...rateMetrics,
-        updatedAt: now
-      },
+      progress,
       updatedAt: now
     }
     this.scheduleProgressFlush(record)
@@ -412,10 +407,7 @@ export class TaskRunManager {
     record.run = {
       ...record.run,
       status,
-      result: {
-        ...result,
-        status
-      },
+      result: createFinalResult(status, result, record.run.progress),
       updatedAt: now,
       finishedAt: now
     }
@@ -490,241 +482,8 @@ export class TaskRunManager {
   }
 }
 
-export function matchesTaskRunQuery(run: TaskRun, query?: TaskRunListQuery): boolean {
-  if (!query) {
-    return true
-  }
-
-  if (query.categories?.length && !query.categories.includes(run.category)) {
-    return false
-  }
-
-  if (query.operations?.length && !query.operations.includes(run.operation)) {
-    return false
-  }
-
-  if (query.ownerTypes?.length && !query.ownerTypes.includes(run.owner.type)) {
-    return false
-  }
-
-  if (query.initiatorTypes?.length && !query.initiatorTypes.includes(run.initiator.type)) {
-    return false
-  }
-
-  if (
-    'statuses' in query &&
-    query.statuses?.length &&
-    !query.statuses.includes(run.status as TaskRunFinalStatus)
-  ) {
-    return false
-  }
-
-  if (query.automationId) {
-    if (run.initiator.type !== 'automation' || run.initiator.automation.id !== query.automationId) {
-      return false
-    }
-  }
-
-  if (query.extensionId) {
-    if (run.owner.type !== 'extension' || run.owner.extension.id !== query.extensionId) {
-      return false
-    }
-  }
-
-  if (query.subject) {
-    if (!run.subject || run.subject.type !== query.subject.type) {
-      return false
-    }
-
-    if (query.subject.id !== undefined && run.subject.id !== query.subject.id) {
-      return false
-    }
-  }
-
-  return true
-}
-
-export function cloneTaskRun(run: TaskRun): TaskRun {
-  return JSON.parse(JSON.stringify(run)) as TaskRun
-}
-
-export function applyListLimit<T>(items: T[], limit: number | undefined): T[] {
-  if (!Number.isFinite(limit) || limit === undefined || limit <= 0) {
-    return items.slice(0, MAX_LIST_LIMIT)
-  }
-
-  return items.slice(0, Math.min(Math.floor(limit), MAX_LIST_LIMIT))
-}
-
-function compareActiveRuns(left: TaskRun, right: TaskRun): number {
-  const priority = activeStatusPriority(left.status) - activeStatusPriority(right.status)
-  if (priority !== 0) {
-    return priority
-  }
-
-  return right.updatedAt - left.updatedAt
-}
-
-function activeStatusPriority(status: TaskRunStatus): number {
-  switch (status) {
-    case 'cancelling':
-      return 0
-    case 'pausing':
-    case 'paused':
-      return 1
-    case 'running':
-      return 2
-    case 'queued':
-      return 3
-    default:
-      return 4
-  }
-}
-
 function isCancellingStatus(status: TaskRunStatus): boolean {
   return status === 'cancelling'
-}
-
-function sanitizeProgressUpdate(update: TaskRunProgressUpdate): TaskRunProgressUpdate {
-  const sanitized: TaskRunProgressUpdate = {}
-  const phase = truncateOptionalString(update.phase, MAX_PHASE_LENGTH)
-  const message = truncateOptionalString(update.message, MAX_PROGRESS_MESSAGE_LENGTH)
-  const current = assertOptionalNonNegativeNumber(update.current, 'Task run progress current')
-  const total = assertOptionalNonNegativeNumber(update.total, 'Task run progress total')
-  const counters = sanitizeCounters(update.counters)
-  const warnings = sanitizeWarnings(update.warnings)
-
-  if (phase !== undefined) {
-    sanitized.phase = phase
-  }
-  if (message !== undefined) {
-    sanitized.message = message
-  }
-  if (current !== undefined) {
-    sanitized.current = current
-  }
-  if (total !== undefined) {
-    sanitized.total = total
-  }
-  if (update.unit !== undefined) {
-    sanitized.unit = update.unit
-  }
-  if (update.ratePeriod !== undefined) {
-    sanitized.ratePeriod = assertRatePeriod(update.ratePeriod)
-  }
-  if (update.indeterminate !== undefined) {
-    sanitized.indeterminate = update.indeterminate
-  }
-  if (counters !== undefined) {
-    sanitized.counters = counters
-  }
-  if (warnings !== undefined) {
-    sanitized.warnings = warnings
-  }
-
-  return sanitized
-}
-
-function sanitizeCompletionResult(
-  result: TaskRunCompletionResult | TaskRunFailureResult | TaskRunCancellationResult | undefined
-): Omit<TaskRunResult, 'status' | 'error'> {
-  if (!result) {
-    return {}
-  }
-
-  const sanitized: Omit<TaskRunResult, 'status' | 'error'> = {}
-  const title = truncateOptionalString(result.title, MAX_RESULT_TEXT_LENGTH)
-  const summary = truncateOptionalString(result.summary, MAX_RESULT_TEXT_LENGTH)
-  const counters = sanitizeCounters(result.counters)
-  const warnings = sanitizeWarnings(result.warnings)
-
-  if (title !== undefined) {
-    sanitized.title = title
-  }
-  if (summary !== undefined) {
-    sanitized.summary = summary
-  }
-  if (result.output !== undefined) {
-    sanitized.output = result.output
-  }
-  if (counters !== undefined) {
-    sanitized.counters = counters
-  }
-  if (warnings !== undefined) {
-    sanitized.warnings = warnings
-  }
-
-  return sanitized
-}
-
-function sanitizeCounters(
-  counters: Record<string, number> | undefined
-): Record<string, number> | undefined {
-  if (counters === undefined) {
-    return undefined
-  }
-
-  const entries = Object.entries(counters).slice(0, MAX_COUNTERS)
-  const sanitized: Record<string, number> = {}
-  for (const [key, value] of entries) {
-    if (!Number.isFinite(value)) {
-      throw new Error('Task run counters must contain finite numbers.')
-    }
-    sanitized[key.slice(0, MAX_COUNTER_KEY_LENGTH)] = value
-  }
-
-  return sanitized
-}
-
-function sanitizeWarnings(
-  warnings: readonly TaskRunWarning[] | undefined
-): readonly TaskRunWarning[] | undefined {
-  if (warnings === undefined) {
-    return undefined
-  }
-
-  return warnings.slice(0, MAX_WARNINGS).map((warning) => {
-    const code = truncateOptionalString(warning.code, MAX_WARNING_CODE_LENGTH)
-    const message = warning.message.slice(0, MAX_WARNING_MESSAGE_LENGTH)
-    return code === undefined ? { message } : { code, message }
-  })
-}
-
-function assertOptionalNonNegativeNumber(
-  value: number | undefined,
-  label: string
-): number | undefined {
-  if (value === undefined) {
-    return undefined
-  }
-
-  if (!Number.isFinite(value) || value < 0) {
-    throw new Error(`${label} must be a non-negative finite number.`)
-  }
-
-  return value
-}
-
-function assertRatePeriod(value: TaskRunRatePeriod): TaskRunRatePeriod {
-  if (value === 'second' || value === 'minute' || value === 'hour') {
-    return value
-  }
-
-  throw new Error('Task run rate period must be "second", "minute", or "hour".')
-}
-
-function truncateOptionalString(value: string | undefined, maxLength: number): string | undefined {
-  if (value === undefined) {
-    return undefined
-  }
-
-  return value.slice(0, maxLength)
-}
-
-function toSafeErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error)
-  const trimmed = message.trim()
-  return (trimmed || 'Task run failed.').slice(0, MAX_RESULT_TEXT_LENGTH)
 }
 
 async function waitForResumeOrAbort(

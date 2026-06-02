@@ -70,14 +70,15 @@ export class PersonBatchHandler {
 
     try {
       run.start()
-      run.context.report({
+      reportBatchProgress({
+        context: run.context,
         phase: 'searching',
-        message: '正在准备人物列表',
+        label: '正在准备人物列表',
         current: 0,
         total,
-        unit: 'entity',
-        counters: { ...counters },
-        warnings: []
+        counters,
+        failures,
+        itemWarnings
       })
 
       const rows = this.loadRows(request.rootIds)
@@ -92,7 +93,7 @@ export class PersonBatchHandler {
         reportBatchProgress({
           context: run.context,
           phase: 'searching',
-          message: queryName,
+          label: queryName,
           current: processed,
           total,
           counters,
@@ -115,7 +116,7 @@ export class PersonBatchHandler {
           reportBatchProgress({
             context: run.context,
             phase: 'updating',
-            message: queryName,
+            label: queryName,
             current: processed,
             total,
             counters,

@@ -81,7 +81,7 @@ export class PersonUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      message: '正在准备更新人物元数据'
+      label: '正在准备更新人物元数据'
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, PERSON_UPDATE_SURFACE_KEYS)
@@ -94,13 +94,13 @@ export class PersonUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取人物元数据'
+      label: '正在抓取人物元数据'
     })
     const bundle = await this.scraperService.person.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      message: '正在生成人物更新计划'
+      label: '正在生成人物更新计划'
     })
     const incoming = buildPersonIncoming(bundle, lookup)
     const current = loadPersonCurrent(this.dbService.client, request.rootId, selection)
@@ -114,7 +114,7 @@ export class PersonUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入人物元数据'
+      label: '正在写入人物元数据'
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyPersonPlan(tx, request.rootId, plan)
@@ -123,7 +123,7 @@ export class PersonUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存人物媒体资源'
+        label: '正在保存人物媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {

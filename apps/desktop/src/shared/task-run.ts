@@ -107,23 +107,37 @@ export type TaskRunProgressUnit =
 
 export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
 
-export interface TaskRunProgressUpdate {
-  phase?: string
-  message?: string
+export interface TaskRunProgressPhase {
+  key: string
+  label: string
+  current?: number
+  total?: number
+}
+
+export interface TaskRunProgressWork {
   current?: number
   total?: number
   unit?: TaskRunProgressUnit
   ratePeriod?: TaskRunRatePeriod
   indeterminate?: boolean
+}
+
+export interface TaskRunProgressWorkMetrics {
+  rate?: number
+  etaMs?: number
+  percent?: number
+}
+
+export interface TaskRunProgressUpdate {
+  phase?: TaskRunProgressPhase
+  work?: TaskRunProgressWork
   counters?: Record<string, number>
   warnings?: readonly TaskRunWarning[]
 }
 
-export interface TaskRunProgress extends TaskRunProgressUpdate {
+export interface TaskRunProgress extends Omit<TaskRunProgressUpdate, 'work'> {
+  work?: TaskRunProgressWork & TaskRunProgressWorkMetrics
   updatedAt: number
-  rate?: number
-  etaMs?: number
-  percent?: number
 }
 
 export interface TaskRunResult {

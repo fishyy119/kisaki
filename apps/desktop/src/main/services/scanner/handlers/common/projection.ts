@@ -3,6 +3,7 @@ import type { ScanCompletedData, ScannerRunState, ScannerRunStatus } from '@shar
 import type { TaskRunProgressUpdate } from '@shared/task-run'
 
 const TASK_RUN_PROGRESS_WARNING_LIMIT = 20
+const SCANNER_PHASE_TOTAL = 3
 
 export function toScanCompletedData(state: ScannerRunState): ScanCompletedData {
   return {
@@ -84,21 +85,48 @@ export function toTaskRunProgressUpdate(
   indeterminate: boolean
 ): TaskRunProgressUpdate {
   const update: TaskRunProgressUpdate = {
-    phase: state.phase,
-    message: state.message,
+    phase: toTaskRunPhase(state.phase, state.message),
     counters: toTaskRunCounters(state),
     warnings: toTaskRunWarnings(state)
   }
 
-  if (indeterminate) {
-    update.indeterminate = true
-  } else {
-    update.current = Math.min(state.processedCount, state.total)
-    update.total = state.total
-    update.unit = 'entity'
+  if (!indeterminate) {
+    update.work = {
+      current: Math.min(state.processedCount, state.total),
+      total: state.total,
+      unit: 'entity'
+    }
   }
 
   return update
+}
+
+function toTaskRunPhase(phase: string | undefined, label: string | undefined) {
+  if (!phase) {
+    return undefined
+  }
+
+  const current = getScannerPhaseCurrent(phase)
+  return {
+    key: phase,
+    label: label ?? phase,
+    current,
+    total: current === undefined ? undefined : SCANNER_PHASE_TOTAL
+  }
+}
+
+function getScannerPhaseCurrent(phase: string): number | undefined {
+  switch (phase) {
+    case 'preparing':
+      return 1
+    case 'discovering':
+      return 2
+    case 'processing':
+    case 'finished':
+      return 3
+    default:
+      return undefined
+  }
 }
 
 function toScanCompletedStatus(status: ScannerRunStatus): ScanCompletedData['status'] {

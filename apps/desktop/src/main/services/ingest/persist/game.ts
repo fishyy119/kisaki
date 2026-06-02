@@ -375,7 +375,7 @@ export class GameIngestPersistHandler {
     if (result.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存游戏媒体资源'
+        label: '正在保存游戏媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {

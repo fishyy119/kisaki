@@ -85,7 +85,7 @@ export class CharacterUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      message: '正在准备更新角色元数据'
+      label: '正在准备更新角色元数据'
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, CHARACTER_UPDATE_SURFACE_KEYS)
@@ -99,13 +99,13 @@ export class CharacterUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取角色元数据'
+      label: '正在抓取角色元数据'
     })
     const bundle = await this.scraperService.character.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      message: '正在生成角色更新计划'
+      label: '正在生成角色更新计划'
     })
     const incoming = buildCharacterIncoming(bundle, lookup)
     const relationGraph =
@@ -124,7 +124,7 @@ export class CharacterUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入角色元数据'
+      label: '正在写入角色元数据'
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyCharacterPlan(tx, request.rootId, plan, this.persistHandlers)
@@ -133,7 +133,7 @@ export class CharacterUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存角色媒体资源'
+        label: '正在保存角色媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {

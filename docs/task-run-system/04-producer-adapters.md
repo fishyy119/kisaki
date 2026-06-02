@@ -10,7 +10,10 @@ const context = run.context
 
 try {
   run.start()
-  context.report({ phase: 'preparing', indeterminate: true })
+  context.report({
+    phase: { key: 'preparing', label: '正在准备' },
+    work: { indeterminate: true }
+  })
 
   await doBusinessWork(context)
 
@@ -408,10 +411,10 @@ scanner.finished
 - controller map。
 - scannerId -> runId map。
 
-`ScannerRunSession` 使用 `TaskRunContext`。因为 `report(update)` 是完整快照替换，每次 report 都必须携带需要继续显示的 phase、current、total、unit、counters 和 warnings：
+`ScannerRunSession` 使用 `TaskRunContext`。因为 `report(update)` 是完整快照替换，每次 report 都必须携带需要继续显示的 `phase`、`work`、`counters` 和 `warnings`：
 
-- `setTotal()` -> `context.report({ phase, current, total, unit: 'entity', counters, warnings })`
-- `recordEntityResult()` -> 更新 bounded counters/warnings，并随同 current/total/unit 一起 report。
+- `setTotal()` -> `context.report({ phase, work: { current, total, unit: 'entity' }, counters, warnings })`
+- `recordEntityResult()` -> 更新 bounded counters/warnings，并随同 `work.current/work.total/work.unit` 一起 report。
 - `processItemsWithConcurrency()` 在调度边界调用 `await context.checkpoint()`。
 
 Scanner-specific result 进入 `TaskRunResult.counters` 和 `TaskRunResult.output` 的摘要。
@@ -488,7 +491,7 @@ result.output = {
 - batch 不把父 run runtime 传给单项操作，但可以传入父 run 的 `AbortSignal` 作为取消信号。
 - batch 只在每个 item 开始前或结束后调用自己的 `checkpoint()`；取消粒度是 item 级。
 - 当前 item 内部的网络、下载、图片处理和资产写入应尽量接收 `signal`，在安全边界提前停止。
-- 父 batch use case 独占父 run 的 aggregate progress，也就是 `current`、`total`、`unit`、counters、warnings 和 result output。
+- 父 batch use case 独占父 run 的 aggregate progress，也就是 `phase`、`work.current`、`work.total`、`work.unit`、counters、warnings 和 result output。
 
 推荐函数签名：
 
@@ -512,11 +515,17 @@ for (const [index, item] of items.entries()) {
   await context.checkpoint()
 
   context.report({
-    phase: 'updating',
-    message: item.name,
-    current: index,
-    total: items.length,
-    unit: 'entity',
+    phase: {
+      key: 'updating',
+      label: item.name,
+      current: 2,
+      total: 2
+    },
+    work: {
+      current: index,
+      total: items.length,
+      unit: 'entity'
+    },
     counters: getAggregateCounters(),
     warnings: getBoundedWarnings()
   })
@@ -528,10 +537,17 @@ for (const [index, item] of items.entries()) {
   recordItemResult(result)
 
   context.report({
-    phase: 'updating',
-    current: index + 1,
-    total: items.length,
-    unit: 'entity',
+    phase: {
+      key: 'updating',
+      label: '正在更新本地元数据',
+      current: 2,
+      total: 2
+    },
+    work: {
+      current: index + 1,
+      total: items.length,
+      unit: 'entity'
+    },
     counters: getAggregateCounters(),
     warnings: getBoundedWarnings()
   })

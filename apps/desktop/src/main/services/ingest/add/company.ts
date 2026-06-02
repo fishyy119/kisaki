@@ -82,7 +82,7 @@ export class CompanyAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      message: '正在检查现有公司'
+      label: '正在检查现有公司'
     })
     if (normalized.lookup.knownIds?.length) {
       const existingByExternalId = this.dbService.entityFinder.findExistingCompany({
@@ -102,7 +102,7 @@ export class CompanyAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取公司元数据'
+      label: '正在抓取公司元数据'
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.company.scrape(normalized.profileId, normalized.lookup),
@@ -111,12 +111,12 @@ export class CompanyAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      message: '正在整理公司元数据'
+      label: '正在整理公司元数据'
     })
     const graph = buildCompanyGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入公司'
+      label: '正在写入公司'
     })
     return this.persistHandler.persistCompanyGraph(graph, options)
   }

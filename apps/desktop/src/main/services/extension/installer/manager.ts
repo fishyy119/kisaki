@@ -531,43 +531,48 @@ function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgre
   switch (phase) {
     case 'waiting-lock':
       return {
-        phase: 'waitingLock',
-        message: '等待扩展包写入锁',
-        current: 0,
-        total: 4,
-        unit: 'step'
+        phase: {
+          key: 'waitingLock',
+          label: '等待扩展包写入锁',
+          current: 1,
+          total: 5
+        }
       }
     case 'download':
       return {
-        phase: 'download',
-        message: '准备扩展安装包',
-        current: 1,
-        total: 4,
-        unit: 'step'
+        phase: {
+          key: 'download',
+          label: '准备扩展安装包',
+          current: 2,
+          total: 5
+        }
       }
     case 'verify':
       return {
-        phase: 'verify',
-        message: '校验扩展安装包',
-        current: 2,
-        total: 4,
-        unit: 'step'
+        phase: {
+          key: 'verify',
+          label: '校验扩展安装包',
+          current: 3,
+          total: 5
+        }
       }
     case 'extract':
       return {
-        phase: 'extract',
-        message: '解压扩展安装包',
-        current: 3,
-        total: 4,
-        unit: 'step'
+        phase: {
+          key: 'extract',
+          label: '解压扩展安装包',
+          current: 4,
+          total: 5
+        }
       }
     case 'commit':
       return {
-        phase: 'commit',
-        message: '提交扩展安装状态',
-        current: 4,
-        total: 4,
-        unit: 'step'
+        phase: {
+          key: 'commit',
+          label: '提交扩展安装状态',
+          current: 5,
+          total: 5
+        }
       }
   }
 }

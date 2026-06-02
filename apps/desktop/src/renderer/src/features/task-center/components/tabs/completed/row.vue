@@ -6,7 +6,6 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
-  formatProgressCount,
   formatTaskRunCategory,
   formatTaskRunCounterSummary,
   formatTaskRunDuration,
@@ -29,10 +28,9 @@ const emit = defineEmits<{
 
 const categoryText = computed(() => formatTaskRunCategory(props.run.category))
 const resultText = computed(() => formatTaskRunResultSummary(props.run))
-const progressText = computed(() => formatProgressCount(props.run))
-const counterText = computed(() => formatTaskRunCounterSummary(props.run, props.run.result?.counters, 3))
-const secondaryMetric = computed(() => progressText.value ?? counterText.value)
-const secondaryMetricLabel = computed(() => (progressText.value ? '进度' : '计数'))
+const counterText = computed(() =>
+  formatTaskRunCounterSummary(props.run, props.run.result?.counters, 3)
+)
 const warnings = computed<readonly TaskRunWarning[]>(() => props.run.result?.warnings ?? [])
 const warningPreview = computed(() => warnings.value.slice(0, 3))
 </script>
@@ -98,17 +96,19 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
       >
         {{ resultText }}
       </div>
-      <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground">
+      <div
+        class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground"
+      >
         <span>
           <span>耗时</span>
           <span class="ml-1 text-foreground">{{ formatTaskRunDuration(props.run) }}</span>
         </span>
         <span
-          v-if="secondaryMetric"
+          v-if="counterText"
           class="min-w-0"
         >
-          <span>{{ secondaryMetricLabel }}</span>
-          <span class="ml-1 text-foreground">{{ secondaryMetric }}</span>
+          <span>计数</span>
+          <span class="ml-1 text-foreground">{{ counterText }}</span>
         </span>
       </div>
     </div>

@@ -161,21 +161,23 @@ function formatActiveMessage(run: TaskRun, presentation: TaskRunPresentation): s
     return '已暂停'
   }
 
-  const base = notify?.message ?? run.progress?.message ?? run.progress?.phase ?? run.description
+  const base = notify?.message ?? run.progress?.phase?.label ?? run.description
   if (notify?.showProgress === false || !run.progress) {
     return base
   }
 
   const count = formatProgressCount(run)
   const percent =
-    run.progress.percent === undefined ? undefined : `${Math.round(run.progress.percent)}%`
+    run.progress.work?.percent === undefined
+      ? undefined
+      : `${Math.round(run.progress.work.percent)}%`
   const suffix = [count, percent].filter(Boolean).join(' ')
   return suffix ? [base, suffix].filter(Boolean).join(' ') : base
 }
 
 function formatProgressCount(run: TaskRun): string | undefined {
-  const current = run.progress?.current
-  const total = run.progress?.total
+  const current = run.progress?.work?.current
+  const total = run.progress?.work?.total
   if (current === undefined && total === undefined) {
     return undefined
   }
@@ -206,7 +208,7 @@ function resolveFinalTitle(run: TaskRun, presentation: TaskRunPresentation): str
 }
 
 function resolveFinalMessage(run: TaskRun): string | undefined {
-  return run.result?.summary ?? run.result?.error ?? run.progress?.message ?? run.description
+  return run.result?.summary ?? run.result?.error ?? run.progress?.phase?.label ?? run.description
 }
 
 function resolveFinalType(run: TaskRun): NotifyType {

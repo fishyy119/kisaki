@@ -44,7 +44,7 @@ pnpm --filter kisaki drizzle-kit generate
 - `TaskRunControls` 只包含 `cancelable` 和 `pausable`；首版不提供 TaskRun 级别重跑控制。
 - `TaskRun` 不包含 `dismissedAt`。
 - `TaskRunStartResult` 返回 `runId` 和 `createdAt`，不返回误导性的 `startedAt`。
-- `TaskRunProgressUpdate` 支持 bounded `counters` 和 `warnings` live summary，且每次 report 是完整 progress snapshot replacement。
+- `TaskRunProgressUpdate` 使用 `phase/work/counters/warnings` 分组，支持 bounded `counters` 和 `warnings` live summary，且每次 report 是完整 progress snapshot replacement。
 - task-run payload/length/query limits 不作为 shared 或 extension-api 公共常量导出；未知边界在各自 validation module 本地校验。
 - final snapshot 的 `TaskRun.status` 必须等于 `TaskRun.result.status`。
 - `TaskRunHandle.cancel()` 和 `ExtensionTaskRunHandle.cancel()` 不接收 `error`。
@@ -66,8 +66,12 @@ apps/desktop/src/main/services/task-run/runs/index.ts
 apps/desktop/src/main/services/task-run/runs/manager.ts
 apps/desktop/src/main/services/task-run/runs/context.ts
 apps/desktop/src/main/services/task-run/runs/controls.ts
+apps/desktop/src/main/services/task-run/runs/progress.ts
+apps/desktop/src/main/services/task-run/runs/query.ts
+apps/desktop/src/main/services/task-run/runs/result.ts
 apps/desktop/src/main/services/task-run/runs/transitions.ts
 apps/desktop/src/main/services/task-run/runs/types.ts
+apps/desktop/src/main/services/task-run/runs/validation.ts
 apps/desktop/src/main/services/task-run/history/store.ts
 apps/desktop/src/main/services/task-run/history/retention.ts
 apps/desktop/src/main/services/task-run/notifications.ts
@@ -104,7 +108,7 @@ apps/desktop/src/main/index.ts
 - 不提供 `task-run:dismiss`。
 - `task-run:changed` 发送完整 snapshot。
 - progress-only `task-run:changed` 在 main process 内按 run 合并和节流；start、controls、cancel/pause/resume、final snapshot 立即 flush。
-- rate calculator 在 phase/unit 改变、current 回退或 total 明显变化时重置窗口。
+- rate calculator 只读取 `progress.work`；在 work unit 改变、work current 回退、work total 明显变化或 work 变为不可度量时重置窗口。
 - NotifyService 支持 `closable`、`notify:closed` 和 close callback；TaskRunNotificationCoordinator 不会在用户关闭后因 progress update 重建 loading toast。
 - dispose 会取消 active runs 并 flush。
 

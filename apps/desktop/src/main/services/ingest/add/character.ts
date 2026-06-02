@@ -87,7 +87,7 @@ export class CharacterAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      message: '正在检查现有角色'
+      label: '正在检查现有角色'
     })
     if (normalized.lookup.knownIds?.length) {
       const existingByExternalId = this.dbService.entityFinder.findExistingCharacter({
@@ -111,7 +111,7 @@ export class CharacterAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取角色元数据'
+      label: '正在抓取角色元数据'
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.character.scrape(normalized.profileId, normalized.lookup),
@@ -120,12 +120,12 @@ export class CharacterAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      message: '正在整理角色元数据'
+      label: '正在整理角色元数据'
     })
     const graph = buildCharacterGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入角色'
+      label: '正在写入角色'
     })
     return this.persistHandler.persistCharacterGraph(graph, options)
   }

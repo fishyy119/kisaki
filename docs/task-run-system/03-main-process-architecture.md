@@ -120,7 +120,10 @@ const context = run.context
 
 try {
   run.start()
-  context.report({ phase: 'searching', indeterminate: true })
+  context.report({
+    phase: { key: 'searching', label: '正在搜索' },
+    work: { indeterminate: true }
+  })
 
   await doBusinessWork(context)
 
@@ -138,7 +141,7 @@ try {
 
 ## Runs
 
-`runs/manager.ts` 拥有 active runs，并通过 `context.ts`、`controls.ts` 和 `transitions.ts` 维护运行态。
+`runs/manager.ts` 拥有 active runs，并通过 `context.ts`、`controls.ts`、`transitions.ts`、`progress.ts`、`result.ts`、`query.ts` 和 `validation.ts` 拆分运行态、进度归一化、结果归一化和查询投影。
 
 ```ts
 interface ActiveTaskRunRecord {
@@ -155,7 +158,7 @@ interface ActiveTaskRunRecord {
 - 创建 run id。
 - 保存 active snapshot。
 - 执行 status transition。
-- 调用 rate calculator。
+- 校验 progress/result 边界并调用 rate calculator。
 - final snapshot 写入 history store。
 - 合并和推送 IPC snapshot。
 - 响应 cancel/pause/resume。
@@ -236,11 +239,13 @@ paused -> cancelling -> cancelled
 计算规则：
 
 - 只对 `current` 递增的 progress 计算速度。
+- 只读取 `progress.work`，不读取 `progress.phase`。
 - 使用滑动窗口，默认 10 秒。
-- `percent = current / total * 100`，无 total 时 undefined。
-- `etaMs = (total - current) / rate * 1000`，无 total 或 rate <= 0 时 undefined。
+- `percent = work.current / work.total * 100`，无 work total 时 undefined。
+- `etaMs = (work.total - work.current) / rate * 1000`，无 work total 或 rate <= 0 时 undefined。
 - byte unit 的显示格式由 renderer utils 负责，main 只提供数值。
-- 当 `phase` 或 `unit` 改变、`current` 回退、`total` 明显变化时重置窗口。
+- 当 `work.unit` 改变、`work.current` 回退、`work.total` 明显变化或 work 变为不可度量时重置窗口。
+- phase 的 `current/total` 只表达阶段序号，不参与百分比、速度或 ETA。
 - `counters` 和 `warnings` 只随 snapshot 传递，不参与速度、百分比和 ETA 计算。
 
 不要在业务服务里手写速度和 ETA。

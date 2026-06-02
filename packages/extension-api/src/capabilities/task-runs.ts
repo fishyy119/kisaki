@@ -60,23 +60,37 @@ export interface ExtensionTaskRunWarning {
   message: string
 }
 
-export interface ExtensionTaskRunProgressUpdate {
-  phase?: string
-  message?: string
+export interface ExtensionTaskRunProgressPhase {
+  key: string
+  label: string
+  current?: number
+  total?: number
+}
+
+export interface ExtensionTaskRunProgressWork {
   current?: number
   total?: number
   unit?: ExtensionTaskRunProgressUnit
   ratePeriod?: ExtensionTaskRunRatePeriod
   indeterminate?: boolean
+}
+
+export interface ExtensionTaskRunProgressWorkMetrics {
+  rate?: number
+  etaMs?: number
+  percent?: number
+}
+
+export interface ExtensionTaskRunProgressUpdate {
+  phase?: ExtensionTaskRunProgressPhase
+  work?: ExtensionTaskRunProgressWork
   counters?: Record<string, number>
   warnings?: readonly ExtensionTaskRunWarning[]
 }
 
-export interface ExtensionTaskRunProgress extends ExtensionTaskRunProgressUpdate {
+export interface ExtensionTaskRunProgress extends Omit<ExtensionTaskRunProgressUpdate, 'work'> {
+  work?: ExtensionTaskRunProgressWork & ExtensionTaskRunProgressWorkMetrics
   updatedAt: number
-  rate?: number
-  etaMs?: number
-  percent?: number
 }
 
 export interface ExtensionTaskRunResult {

@@ -1,4 +1,4 @@
-import type { TaskRunProgress, TaskRunProgressUpdate } from '@shared/task-run'
+import type { TaskRunProgressUpdate, TaskRunProgressWorkMetrics } from '@shared/task-run'
 
 interface RateSample {
   at: number
@@ -11,12 +11,10 @@ export class TaskRunRateCalculator {
   private current?: number
   private total?: number
 
-  apply(
-    update: TaskRunProgressUpdate,
-    now: number
-  ): Pick<TaskRunProgress, 'rate' | 'etaMs' | 'percent'> {
-    const current = update.current
-    const total = update.total
+  apply(update: TaskRunProgressUpdate, now: number): TaskRunProgressWorkMetrics {
+    const work = update.work
+    const current = work?.current
+    const total = work?.total
 
     if (this.shouldReset(update)) {
       this.lastSample = undefined
@@ -40,11 +38,11 @@ export class TaskRunRateCalculator {
       this.lastSample = undefined
     }
 
-    this.unit = update.unit
+    this.unit = work?.unit
     this.current = current
     this.total = total
 
-    const metrics: Pick<TaskRunProgress, 'rate' | 'etaMs' | 'percent'> = {}
+    const metrics: TaskRunProgressWorkMetrics = {}
     if (rate !== undefined) {
       metrics.rate = rate
     }
@@ -66,28 +64,30 @@ export class TaskRunRateCalculator {
   }
 
   private shouldReset(update: TaskRunProgressUpdate): boolean {
-    if (this.unit !== update.unit) {
+    const work = update.work
+
+    if (this.unit !== work?.unit) {
       return true
     }
 
     if (
       isNonNegativeFiniteNumber(this.current) &&
-      isNonNegativeFiniteNumber(update.current) &&
-      update.current < this.current
+      isNonNegativeFiniteNumber(work?.current) &&
+      work.current < this.current
     ) {
       return true
     }
 
-    if (this.total === undefined && update.total === undefined) {
+    if (this.total === undefined && work?.total === undefined) {
       return false
     }
 
-    if (!isNonNegativeFiniteNumber(this.total) || !isNonNegativeFiniteNumber(update.total)) {
-      return this.total !== update.total
+    if (!isNonNegativeFiniteNumber(this.total) || !isNonNegativeFiniteNumber(work?.total)) {
+      return this.total !== work?.total
     }
 
     const threshold = Math.max(1, this.total * 0.1)
-    return Math.abs(update.total - this.total) > threshold
+    return Math.abs(work.total - this.total) > threshold
   }
 }
 

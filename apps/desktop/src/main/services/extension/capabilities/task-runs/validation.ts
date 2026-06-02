@@ -5,7 +5,9 @@ import {
   type ExtensionTaskRunCreateInput,
   type ExtensionTaskRunHistoryListQuery,
   type ExtensionTaskRunInitiator,
+  type ExtensionTaskRunProgressPhase,
   type ExtensionTaskRunProgressUpdate,
+  type ExtensionTaskRunProgressWork,
   type ExtensionTaskRunResult,
   type ExtensionTaskRunWarning
 } from '@kisaki3/extension-api'
@@ -35,6 +37,9 @@ const MAX_PROGRESS_JSON_BYTES = 32 * 1024
 const MAX_RESULT_JSON_BYTES = 128 * 1024
 
 const PUBLIC_OPERATION_PATTERN = /^[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*)*$/
+const PROGRESS_UPDATE_KEYS = new Set(['phase', 'work', 'counters', 'warnings'])
+const PROGRESS_PHASE_KEYS = new Set(['key', 'label', 'current', 'total'])
+const PROGRESS_WORK_KEYS = new Set(['current', 'total', 'unit', 'ratePeriod', 'indeterminate'])
 
 type NormalizedCreateInput = {
   operation: string
@@ -97,34 +102,19 @@ export function normalizeProgressUpdate(
     throw createValidationError('Task run progress update must be an object.')
   }
 
+  assertKnownKeys(update as Record<string, unknown>, PROGRESS_UPDATE_KEYS, 'Task run progress')
+
   const normalized: TaskRunProgressUpdate = {}
-  const phase = normalizeOptionalText(update.phase, 'Task run progress phase', 120)
-  const message = normalizeOptionalText(update.message, 'Task run progress message', 500)
-  const current = normalizeOptionalNonNegativeNumber(update.current, 'Task run progress current')
-  const total = normalizeOptionalNonNegativeNumber(update.total, 'Task run progress total')
+  const phase = normalizeProgressPhase(update.phase)
+  const work = normalizeProgressWork(update.work)
   const counters = normalizeCounters(update.counters)
   const warnings = normalizeWarnings(update.warnings)
 
   if (phase !== undefined) {
     normalized.phase = phase
   }
-  if (message !== undefined) {
-    normalized.message = message
-  }
-  if (current !== undefined) {
-    normalized.current = current
-  }
-  if (total !== undefined) {
-    normalized.total = total
-  }
-  if (update.unit !== undefined) {
-    normalized.unit = update.unit
-  }
-  if (update.ratePeriod !== undefined) {
-    normalized.ratePeriod = normalizeRatePeriod(update.ratePeriod)
-  }
-  if (update.indeterminate !== undefined) {
-    normalized.indeterminate = update.indeterminate === true
+  if (work !== undefined) {
+    normalized.work = work
   }
   if (counters !== undefined) {
     normalized.counters = counters
@@ -135,6 +125,77 @@ export function normalizeProgressUpdate(
 
   assertJsonWithinLimit(normalized, MAX_PROGRESS_JSON_BYTES, 'Task run progress')
   return normalized
+}
+
+function normalizeProgressPhase(
+  phase: ExtensionTaskRunProgressPhase | undefined
+): TaskRunProgressUpdate['phase'] | undefined {
+  if (phase === undefined) {
+    return undefined
+  }
+
+  if (!isPlainObject(phase)) {
+    throw createValidationError('Task run progress phase must be an object.')
+  }
+
+  assertKnownKeys(phase, PROGRESS_PHASE_KEYS, 'Task run progress phase')
+
+  const current = normalizeOptionalPositiveInteger(phase.current, 'Task run phase current')
+  const total = normalizeOptionalPositiveInteger(phase.total, 'Task run phase total')
+  if (current !== undefined && total !== undefined && current > total) {
+    throw createValidationError('Task run phase current must not be greater than phase total.')
+  }
+
+  const normalized: NonNullable<TaskRunProgressUpdate['phase']> = {
+    key: normalizeRequiredText(phase.key, 'Task run phase key', 120),
+    label: normalizeRequiredText(phase.label, 'Task run phase label', 500)
+  }
+  if (current !== undefined) {
+    normalized.current = current
+  }
+  if (total !== undefined) {
+    normalized.total = total
+  }
+  return normalized
+}
+
+function normalizeProgressWork(
+  work: ExtensionTaskRunProgressWork | undefined
+): TaskRunProgressUpdate['work'] | undefined {
+  if (work === undefined) {
+    return undefined
+  }
+
+  if (!isPlainObject(work)) {
+    throw createValidationError('Task run progress work must be an object.')
+  }
+
+  assertKnownKeys(work, PROGRESS_WORK_KEYS, 'Task run progress work')
+
+  const normalized: NonNullable<TaskRunProgressUpdate['work']> = {}
+  const current = normalizeOptionalNonNegativeNumber(work.current, 'Task run work current')
+  const total = normalizeOptionalNonNegativeNumber(work.total, 'Task run work total')
+
+  if (current !== undefined) {
+    normalized.current = current
+  }
+  if (total !== undefined) {
+    normalized.total = total
+  }
+  if (work.unit !== undefined) {
+    normalized.unit = normalizeProgressUnit(work.unit)
+  }
+  if (work.ratePeriod !== undefined) {
+    normalized.ratePeriod = normalizeRatePeriod(work.ratePeriod)
+  }
+  if (work.indeterminate !== undefined) {
+    if (typeof work.indeterminate !== 'boolean') {
+      throw createValidationError('Task run work indeterminate must be a boolean.')
+    }
+    normalized.indeterminate = work.indeterminate
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
 export function normalizeCompletionResult(
@@ -590,6 +651,43 @@ function normalizePositiveInteger(value: unknown, label: string): number {
   }
 
   return value
+}
+
+function normalizeOptionalPositiveInteger(value: unknown, label: string): number | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  return normalizePositiveInteger(value, label)
+}
+
+function normalizeProgressUnit(
+  value: unknown
+): 'item' | 'file' | 'byte' | 'entity' | 'step' | 'package' | 'request' {
+  if (
+    value === 'item' ||
+    value === 'file' ||
+    value === 'byte' ||
+    value === 'entity' ||
+    value === 'step' ||
+    value === 'package' ||
+    value === 'request'
+  ) {
+    return value
+  }
+
+  throw createValidationError('Task run work unit is invalid.')
+}
+
+function assertKnownKeys(
+  value: Record<string, unknown>,
+  knownKeys: ReadonlySet<string>,
+  label: string
+): void {
+  const unknownKey = Object.keys(value).find((key) => !knownKeys.has(key))
+  if (unknownKey) {
+    throw createValidationError(`${label} contains unknown field "${unknownKey}".`)
+  }
 }
 
 function cloneJsonValue<T>(value: T, label: string): T {

@@ -50,7 +50,7 @@ export class CompanyIngestPersistHandler {
     if (result.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存公司媒体资源'
+        label: '正在保存公司媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {

@@ -200,12 +200,10 @@ export function formatTaskRunSubject(run: TaskRun): string {
 }
 
 export function formatTaskRunPhase(run: TaskRun): string {
-  if (run.progress?.message) {
-    return run.progress.message
-  }
-
-  if (run.progress?.phase) {
-    return run.progress.phase
+  const phase = run.progress?.phase
+  if (phase) {
+    const prefix = formatPhasePosition(phase.current, phase.total)
+    return prefix ? `${prefix} · ${phase.label}` : phase.label
   }
 
   return formatTaskRunOperation(run.operation)
@@ -229,26 +227,26 @@ export function formatTaskRunResultSummary(run: TaskRun): string {
 }
 
 export function formatProgressCount(run: TaskRun): string | null {
-  const progress = run.progress
-  if (!progress) return null
+  const work = run.progress?.work
+  if (!work) return null
 
-  if (typeof progress.current === 'number' && typeof progress.total === 'number') {
-    return `${formatProgressValue(progress.current, progress.unit)} / ${formatProgressValue(
-      progress.total,
-      progress.unit
+  if (typeof work.current === 'number' && typeof work.total === 'number') {
+    return `${formatProgressValue(work.current, work.unit)} / ${formatProgressValue(
+      work.total,
+      work.unit
     )}`
   }
 
-  if (typeof progress.current === 'number') {
-    return formatProgressValue(progress.current, progress.unit)
+  if (typeof work.current === 'number') {
+    return formatProgressValue(work.current, work.unit)
   }
 
   return null
 }
 
 export function formatProgressPercent(run: TaskRun): string | null {
-  const percent = run.progress?.percent
-  if (typeof percent !== 'number' || !Number.isFinite(percent)) {
+  const percent = getProgressPercentValue(run)
+  if (percent === null) {
     return null
   }
 
@@ -256,13 +254,13 @@ export function formatProgressPercent(run: TaskRun): string | null {
 }
 
 export function getProgressPercentValue(run: TaskRun): number | null {
-  const percent = run.progress?.percent
+  const percent = run.progress?.work?.percent
   if (typeof percent === 'number' && Number.isFinite(percent)) {
     return Math.max(0, Math.min(100, percent))
   }
 
-  const current = run.progress?.current
-  const total = run.progress?.total
+  const current = run.progress?.work?.current
+  const total = run.progress?.work?.total
   if (
     typeof current === 'number' &&
     typeof total === 'number' &&
@@ -277,25 +275,26 @@ export function getProgressPercentValue(run: TaskRun): number | null {
 }
 
 export function formatTaskRunRate(run: TaskRun): string | null {
-  const rate = run.progress?.rate
+  const work = run.progress?.work
+  const rate = work?.rate
   if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
     return null
   }
 
-  if (run.progress?.unit === 'byte') {
-    const period = run.progress.ratePeriod ?? selectRatePeriod(rate)
+  if (work?.unit === 'byte') {
+    const period = work.ratePeriod ?? selectRatePeriod(rate)
     return `${formatBytes(rate * getRatePeriodMultiplier(period))}/${formatRatePeriod(period)}`
   }
 
-  const unit = run.progress?.unit ? formatProgressUnit(run.progress.unit) : '项'
-  const period = run.progress?.ratePeriod ?? selectRatePeriod(rate)
+  const unit = work?.unit ? formatProgressUnit(work.unit) : '项'
+  const period = work?.ratePeriod ?? selectRatePeriod(rate)
   return `${formatRateNumber(rate * getRatePeriodMultiplier(period))} ${unit}/${formatRatePeriod(
     period
   )}`
 }
 
 export function formatTaskRunEta(run: TaskRun): string | null {
-  const etaMs = run.progress?.etaMs
+  const etaMs = run.progress?.work?.etaMs
   if (typeof etaMs !== 'number' || !Number.isFinite(etaMs) || etaMs <= 0) {
     return null
   }
@@ -352,7 +351,7 @@ export function formatTaskRunCounterSummary(
 }
 
 export function formatTaskRunCounterValue(run: TaskRun, key: string, value: number): string {
-  if (run.progress?.unit === 'byte' && isByteCounterKey(key)) {
+  if (run.progress?.work?.unit === 'byte' && isByteCounterKey(key)) {
     return formatBytes(value)
   }
 
@@ -383,6 +382,7 @@ export function getTaskRunSearchText(run: TaskRun): string {
     formatTaskRunCategory(run.category),
     run.operation,
     formatTaskRunOperation(run.operation),
+    run.progress?.phase?.label,
     formatTaskRunOwner(run),
     formatTaskRunInitiator(run),
     formatTaskRunSubject(run),
@@ -447,6 +447,17 @@ function formatSystemReason(reason: string): string {
     default:
       return reason
   }
+}
+
+function formatPhasePosition(
+  current: number | undefined,
+  total: number | undefined
+): string | null {
+  if (typeof current === 'number' && typeof total === 'number') {
+    return `${formatNumber(current)}/${formatNumber(total)}`
+  }
+
+  return null
 }
 
 function formatProgressValue(value: number, unit: TaskRunProgressUnit | undefined): string {

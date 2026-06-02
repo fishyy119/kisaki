@@ -2,6 +2,7 @@ import {
   isExtensionTaskRunCancellation,
   type ExtensionLogger,
   type ExtensionTaskRunProgressUpdate,
+  type ExtensionTaskRunProgressWork,
   type ExtensionTaskRunResult
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
@@ -21,6 +22,10 @@ import {
   type BangumiJobSummary
 } from './summary'
 import { BangumiExtensionError } from '../shared/errors'
+
+type JobProgressWorkInput = Partial<
+  Pick<ExtensionTaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
+>
 
 export interface JobRunnerDependencies {
   settingsStore: SettingsStore
@@ -44,10 +49,7 @@ export interface BangumiJobHandle {
   report(update: ExtensionTaskRunProgressUpdate): Promise<void>
   checkpoint(): Promise<void>
   complete(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
-  fail(
-    error: unknown,
-    result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
-  ): Promise<void>
+  fail(error: unknown, result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
   cancel(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
 }
 
@@ -93,23 +95,43 @@ export class JobStateController {
     this.state.errors.push(createJobError(error, context))
   }
 
-  report(
-    phase: string,
-    message: string,
-    progress: Pick<
-      ExtensionTaskRunProgressUpdate,
-      'current' | 'total' | 'ratePeriod' | 'indeterminate'
-    > = {}
-  ): void {
+  report(phase: string, label: string, progress: JobProgressWorkInput = {}): void {
     const update: ExtensionTaskRunProgressUpdate = {
-      phase,
-      message,
-      unit: 'item',
-      counters: this.state.counters,
-      ...progress
+      phase: {
+        key: phase,
+        label
+      },
+      counters: this.state.counters
+    }
+    const work = createProgressWork(progress)
+    if (work) {
+      update.work = work
     }
     void this.run.report(update).catch(() => undefined)
   }
+}
+
+function createProgressWork(
+  progress: JobProgressWorkInput
+): ExtensionTaskRunProgressWork | undefined {
+  const work: ExtensionTaskRunProgressWork = {}
+  if (progress.current !== undefined) {
+    work.current = progress.current
+  }
+  if (progress.total !== undefined) {
+    work.total = progress.total
+  }
+  if (progress.current !== undefined || progress.total !== undefined) {
+    work.unit = 'item'
+  }
+  if (progress.ratePeriod !== undefined) {
+    work.ratePeriod = progress.ratePeriod
+  }
+  if (progress.indeterminate !== undefined) {
+    work.indeterminate = progress.indeterminate
+  }
+
+  return Object.keys(work).length > 0 ? work : undefined
 }
 
 export async function runBangumiJob(

@@ -98,23 +98,39 @@ export interface ExtensionTaskRunWarning {
   message: string
 }
 
-export interface ExtensionTaskRunProgressUpdate {
-  phase?: string
-  message?: string
+export type ExtensionTaskRunRatePeriod = 'second' | 'minute' | 'hour'
+
+export interface ExtensionTaskRunProgressPhase {
+  key: string
+  label: string
+  current?: number
+  total?: number
+}
+
+export interface ExtensionTaskRunProgressWork {
   current?: number
   total?: number
   unit?: ExtensionTaskRunProgressUnit
-  ratePeriod?: 'second' | 'minute' | 'hour'
+  ratePeriod?: ExtensionTaskRunRatePeriod
   indeterminate?: boolean
+}
+
+export interface ExtensionTaskRunProgressWorkMetrics {
+  rate?: number
+  etaMs?: number
+  percent?: number
+}
+
+export interface ExtensionTaskRunProgressUpdate {
+  phase?: ExtensionTaskRunProgressPhase
+  work?: ExtensionTaskRunProgressWork
   counters?: Record<string, number>
   warnings?: readonly ExtensionTaskRunWarning[]
 }
 
-export interface ExtensionTaskRunProgress extends ExtensionTaskRunProgressUpdate {
+export interface ExtensionTaskRunProgress extends Omit<ExtensionTaskRunProgressUpdate, 'work'> {
+  work?: ExtensionTaskRunProgressWork & ExtensionTaskRunProgressWorkMetrics
   updatedAt: number
-  rate?: number
-  etaMs?: number
-  percent?: number
 }
 
 export interface ExtensionTaskRunResult {
@@ -229,7 +245,11 @@ export interface ExtensionTaskRunHandle {
 - `complete()` 不接收 `status` 或 `error`。
 - `fail()` 接收 unknown error，由 SDK bridge 和 host provider 规范化为安全展示摘要。
 - `cancel()` 只用于扩展代码已确认取消后的显式收尾，不接收 `error`。
-- 每次 `report(update)` 是 progress 字段完整快照替换，不做深度 merge。扩展若要保留 `current/total/counters/warnings` 等字段，必须在下一次 report 中继续发送。
+- 每次 `report(update)` 是 progress 字段完整快照替换，不做深度 merge。扩展若要保留 `phase/work/counters/warnings` 等字段，必须在下一次 report 中继续发送。
+- `phase.key` 是稳定阶段标识，`phase.label` 是展示文案；`phase.current/phase.total` 只表达阶段序号，例如 `4/6`。
+- `work.current/work.total/work.unit` 表达当前阶段可度量工作量。`work.rate/work.etaMs/work.percent` 由 host 派生，只出现在 snapshot 中，扩展不能在 report update 中传入。
+- 没有 work total 时可以传 `work.indeterminate: true`。即使 phase 有 total，任务中心进度条也只按 work 显示，不把 phase total 当作 work percent。
+- `counters` 由扩展定义 key 语义，约定为整个 run 的累计业务计数；完成时权威计数写入 result counters，未显式提供时 host 可以用最后一次 progress counters 兜底。
 - `operation` 是 extension-local stable name，例如 `fullSync`、`import.collections`。它使用 lowerCamel/dot segments，不能为空，不能包含空白、路径分隔符、展示文案、`task.` 前缀或 `extension.` 前缀。
 - 扩展作者只写本扩展内的 operation name。host 根据 runtime metadata 映射成 app 内部 `extension.task.<extensionId>.<operation>`。
 - `listActiveOwn/listHistoryOwn` 的 `operations` 使用 public operation name；host 查询时映射为内部 operation，返回 snapshot 时再映射回 public operation。

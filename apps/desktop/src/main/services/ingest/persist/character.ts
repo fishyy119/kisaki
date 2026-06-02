@@ -154,7 +154,7 @@ export class CharacterIngestPersistHandler {
     if (result.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存角色媒体资源'
+        label: '正在保存角色媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {

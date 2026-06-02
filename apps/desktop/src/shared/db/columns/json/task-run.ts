@@ -8,8 +8,10 @@ import type {
   TaskRunOperation,
   TaskRunOwner,
   TaskRunProgress,
+  TaskRunProgressPhase,
   TaskRunRatePeriod,
   TaskRunProgressUnit,
+  TaskRunProgressWork,
   TaskRunResult,
   TaskRunSubject,
   TaskRunSubjectType,
@@ -203,14 +205,32 @@ function matchesTaskRunWarnings(value: unknown): value is readonly TaskRunWarnin
   return Array.isArray(value) && value.every(matchesTaskRunWarning)
 }
 
-function matchesTaskRunProgress(value: unknown): value is TaskRunProgress {
-  if (!matchesPlainObject(value) || !matchesNonNegativeFiniteNumber(value.updatedAt)) {
+function matchesTaskRunProgressPhase(value: unknown): value is TaskRunProgressPhase {
+  if (!matchesPlainObject(value)) {
     return false
   }
 
   return (
-    matchesOptionalString(value.phase) &&
-    matchesOptionalString(value.message) &&
+    typeof value.key === 'string' &&
+    value.key.length > 0 &&
+    typeof value.label === 'string' &&
+    value.label.length > 0 &&
+    (value.current === undefined || matchesPositiveInteger(value.current)) &&
+    (value.total === undefined || matchesPositiveInteger(value.total)) &&
+    (value.current === undefined ||
+      value.total === undefined ||
+      (typeof value.current === 'number' &&
+        typeof value.total === 'number' &&
+        value.current <= value.total))
+  )
+}
+
+function matchesTaskRunProgressWork(value: unknown): value is TaskRunProgressWork {
+  if (!matchesPlainObject(value)) {
+    return false
+  }
+
+  return (
     (value.current === undefined || matchesNonNegativeFiniteNumber(value.current)) &&
     (value.total === undefined || matchesNonNegativeFiniteNumber(value.total)) &&
     (value.unit === undefined ||
@@ -220,11 +240,22 @@ function matchesTaskRunProgress(value: unknown): value is TaskRunProgress {
       (typeof value.ratePeriod === 'string' &&
         TASK_RUN_RATE_PERIOD_VALUES.has(value.ratePeriod as TaskRunRatePeriod))) &&
     (value.indeterminate === undefined || typeof value.indeterminate === 'boolean') &&
-    (value.counters === undefined || matchesNumberRecord(value.counters)) &&
-    (value.warnings === undefined || matchesTaskRunWarnings(value.warnings)) &&
     (value.rate === undefined || matchesNonNegativeFiniteNumber(value.rate)) &&
     (value.etaMs === undefined || matchesNonNegativeFiniteNumber(value.etaMs)) &&
     (value.percent === undefined || matchesNonNegativeFiniteNumber(value.percent))
+  )
+}
+
+function matchesTaskRunProgress(value: unknown): value is TaskRunProgress {
+  if (!matchesPlainObject(value) || !matchesNonNegativeFiniteNumber(value.updatedAt)) {
+    return false
+  }
+
+  return (
+    (value.phase === undefined || matchesTaskRunProgressPhase(value.phase)) &&
+    (value.work === undefined || matchesTaskRunProgressWork(value.work)) &&
+    (value.counters === undefined || matchesNumberRecord(value.counters)) &&
+    (value.warnings === undefined || matchesTaskRunWarnings(value.warnings))
   )
 }
 

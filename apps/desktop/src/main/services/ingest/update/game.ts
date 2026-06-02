@@ -85,7 +85,7 @@ export class GameUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      message: '正在准备更新游戏元数据'
+      label: '正在准备更新游戏元数据'
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, GAME_UPDATE_SURFACE_KEYS)
@@ -99,13 +99,13 @@ export class GameUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      message: '正在抓取游戏元数据'
+      label: '正在抓取游戏元数据'
     })
     const bundle = await this.scraperService.game.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      message: '正在生成游戏更新计划'
+      label: '正在生成游戏更新计划'
     })
     const incoming = buildGameIncoming(bundle, lookup)
     const relationGraph =
@@ -126,7 +126,7 @@ export class GameUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      message: '正在写入游戏元数据'
+      label: '正在写入游戏元数据'
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyGamePlan(tx, request.rootId, plan, this.persistHandlers)
@@ -135,7 +135,7 @@ export class GameUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        message: '正在保存游戏媒体资源'
+        label: '正在保存游戏媒体资源'
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
