@@ -20,6 +20,38 @@
 - 不在 `packages/extension-api` 中 import `apps/desktop/src/shared/task-run.ts`。
 - 不为旧 `backgroundTasks`、command progress、`reportProgress` 保留 alias。
 
+## 与应用级 TaskRun 语义的关系
+
+`kisaki.taskRuns` 是 `TaskRunService` 面向扩展运行时的 scoped capability，不是新的 command
+execution runtime。`TaskRunService` 只拥有 producer 显式创建的 run 生命周期、progress
+snapshot、控制信号、任务中心读模型和有限 completed history；它不拥有 Bangumi 同步业务状态、
+扩展自动化配置、command registry 或 extension package/repository 的领域历史。
+
+边界规则：
+
+- `CommandService` 仍只维护 command registry 和薄调用路由。长时 extension command handler
+  必须创建 extension-owned TaskRun，并把 `{ runId }` 作为 command invocation output 返回。
+- extension-owned TaskRun 使用 `category: 'extension'`、内部
+  `operation: 'extension.task.<extensionId>.<operation>'`、host 派生的 extension owner，以及扩展
+  显式提供或 host 默认的 initiator。
+- owner 是扩展授权边界；initiator 只用于任务中心展示和筛选，不能用于判断扩展是否可读取、等待
+  或取消 run。
+- `subject` 只描述关联业务对象，不包含 renderer route。主应用任务中心和扩展 UI 都应根据
+  `subject.type + subject.id` 自行推导导航。
+
+## 与 Automation 语义的关系
+
+`AutomationService` 拥有持久自动化配置、调度和 `automation_run_history`。自动化触发 extension
+command 时，automation history 只记录 command invocation 事实，不保存 run id，也不复制 TaskRun
+progress、result 或 output。
+
+规则：
+
+- 自动化是 TaskRun 的 initiator，不是 TaskRun category，也不是 TaskRun owner。
+- 如果 automation 调度 extension command，extension command handler 创建的 run 仍是
+  extension-owned TaskRun。
+- automation history 和 TaskRun history 独立保留、独立清理，彼此不建立引用。
+
 ## Public Extension Contract
 
 `packages/extension-api` 是独立 public contract，不能依赖 desktop app 的 shared 文件。extension API 使用自己的 DTO，host provider 负责与 app 内部 `TaskRun` 映射。
@@ -257,6 +289,8 @@ export interface ExtensionTaskRunHandle {
 - `create()` 在 host 中创建并立即 start run；public extension API 不暴露 separate `start()`，也不暴露 queued scheduling 能力。
 - `initiator` 由扩展显式声明；未提供时 host 默认写入当前 extension initiator。
 - `initiator.type === 'extension'` 时 extension id 必须等于当前 runtime metadata id；任何 `initiator` 都不能影响 owner 授权。
+- `subject` 不包含 renderer route；host 只校验 subject 所属范围，导航由 renderer 根据
+  `subject.type + subject.id` 推导。
 - extension API 不导出 task-run limits 常量，SDK 不做 payload 预检。host provider 是权威未知边界，负责校验 title、description、subject label、progress、warnings、result 和 list limit。
 
 Capability：
