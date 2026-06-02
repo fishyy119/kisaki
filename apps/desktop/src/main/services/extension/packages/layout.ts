@@ -4,11 +4,10 @@ import { createValidationError } from '@kisaki3/extension-api'
 import type { ExtensionServicePaths } from '../types'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
 
-const OPERATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
+const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 
-export interface ExtensionPackageOperationPaths {
-  operationId: string
+export interface ExtensionPackageWorkspacePaths {
   downloadPath: string
   stagingDir: string
   stagingPackageDir: string
@@ -18,7 +17,7 @@ export interface ExtensionPackageOperationPaths {
 
 /**
  * Derives every extension package/data/temp path from an extension id or
- * operation id, and confines all results to the extension storage root.
+ * package workspace id, and confines all results to the extension storage root.
  */
 export class ExtensionPackageLayout {
   readonly rootDir: string
@@ -28,7 +27,7 @@ export class ExtensionPackageLayout {
   readonly dataDir: string
   readonly tempDir: string
   readonly runtimeTempDir: string
-  readonly operationsDir: string
+  readonly workspacesDir: string
   readonly downloadsDir: string
   readonly stagingDir: string
   readonly backupsDir: string
@@ -51,12 +50,12 @@ export class ExtensionPackageLayout {
     this.dataDir = resolveInsideRoot(this.rootDir, path.relative(this.rootDir, paths.dataDir))
     this.tempDir = resolveInsideRoot(this.rootDir, path.relative(this.rootDir, paths.tempDir))
     this.runtimeTempDir = resolveInsideRoot(this.tempDir, 'runtime')
-    this.operationsDir = resolveInsideRoot(this.tempDir, 'operations')
-    this.downloadsDir = resolveInsideRoot(this.operationsDir, 'downloads')
-    this.stagingDir = resolveInsideRoot(this.operationsDir, 'staging')
-    this.backupsDir = resolveInsideRoot(this.operationsDir, 'backups')
-    this.trashDir = resolveInsideRoot(this.operationsDir, 'trash')
-    this.quarantineDir = resolveInsideRoot(this.operationsDir, 'quarantine')
+    this.workspacesDir = resolveInsideRoot(this.tempDir, 'workspaces')
+    this.downloadsDir = resolveInsideRoot(this.workspacesDir, 'downloads')
+    this.stagingDir = resolveInsideRoot(this.workspacesDir, 'staging')
+    this.backupsDir = resolveInsideRoot(this.workspacesDir, 'backups')
+    this.trashDir = resolveInsideRoot(this.workspacesDir, 'trash')
+    this.quarantineDir = resolveInsideRoot(this.workspacesDir, 'quarantine')
   }
 
   async ensureBaseDirectories(): Promise<void> {
@@ -93,17 +92,16 @@ export class ExtensionPackageLayout {
     return resolveInsideRoot(this.runtimeTempDir, requireSafeExtensionId(extensionId))
   }
 
-  operationPaths(operationId: string): ExtensionPackageOperationPaths {
-    const safeOperationId = requireSafeOperationId(operationId)
-    const stagingDir = resolveInsideRoot(this.stagingDir, safeOperationId)
+  workspacePaths(workspaceId: string): ExtensionPackageWorkspacePaths {
+    const safeWorkspaceId = requireSafePackageWorkspaceId(workspaceId)
+    const stagingDir = resolveInsideRoot(this.stagingDir, safeWorkspaceId)
 
     return {
-      operationId: safeOperationId,
-      downloadPath: resolveInsideRoot(this.downloadsDir, `${safeOperationId}.kisx`),
+      downloadPath: resolveInsideRoot(this.downloadsDir, `${safeWorkspaceId}.kisx`),
       stagingDir,
       stagingPackageDir: resolveInsideRoot(stagingDir, 'package'),
-      backupDir: resolveInsideRoot(this.backupsDir, safeOperationId),
-      trashDir: resolveInsideRoot(this.trashDir, safeOperationId)
+      backupDir: resolveInsideRoot(this.backupsDir, safeWorkspaceId),
+      trashDir: resolveInsideRoot(this.trashDir, safeWorkspaceId)
     }
   }
 }
@@ -116,10 +114,10 @@ export function requireSafeArchiveSha256(value: unknown): string {
   throw createValidationError('archive sha256 must be a lowercase SHA256 hex digest.')
 }
 
-export function requireSafeOperationId(value: unknown): string {
-  if (typeof value === 'string' && OPERATION_ID_PATTERN.test(value)) {
+export function requireSafePackageWorkspaceId(value: unknown): string {
+  if (typeof value === 'string' && WORKSPACE_ID_PATTERN.test(value)) {
     return value
   }
 
-  throw createValidationError('operationId must be a safe non-empty identifier.')
+  throw createValidationError('package workspace id must be a safe non-empty identifier.')
 }

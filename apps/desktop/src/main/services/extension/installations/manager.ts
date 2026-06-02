@@ -232,7 +232,7 @@ export class ExtensionInstallationManager {
         this.contributions.assertReleased(safeExtensionId, 'uninstall')
         await this.syncReloadWatcherTargets(this.runtime.getDesiredExtensions())
         await this.packageCommitter.removeActivePackage({
-          operationId: randomUUID(),
+          workspaceId: randomUUID(),
           extensionId: safeExtensionId
         })
         packageRemoved = true

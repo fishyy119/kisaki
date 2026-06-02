@@ -18,8 +18,9 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { notify } from '@renderer/core/notify'
-import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
+import { useTaskRunStore } from '@renderer/stores'
 import type { ExtensionInstalledPackageInfo, ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
@@ -34,9 +35,10 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+const taskRunStore = useTaskRunStore()
 const updating = ref(false)
 const cancelling = ref(false)
-const currentOperationId = ref<string | null>(null)
+const currentRunId = ref<string | null>(null)
 const trustSignerFingerprint = ref(false)
 const signerLabel = computed(() => {
   switch (props.updateInfo.signer?.status) {
@@ -60,49 +62,63 @@ const canTrustSigner = computed(() => {
   const signer = props.updateInfo.signer
   return Boolean(signer?.fingerprint && signer.status !== 'trusted' && signer.status !== 'unsigned')
 })
+const currentRun = computed(() =>
+  currentRunId.value ? taskRunStore.getRun(currentRunId.value) : undefined
+)
+const canCancelCurrentRun = computed(() => currentRun.value?.controls.cancelable !== false)
 
 async function handleUpdate() {
   updating.value = true
-  const operationId = createOperationId()
-  currentOperationId.value = operationId
   try {
-    unwrapIpcVoid(
+    const started = unwrapIpcData(
       await ipcManager.invoke('extension:update', {
-        operationId,
         extensionId: props.extension.id,
         planId: props.updateInfo.planId,
         planFingerprint: props.updateInfo.planFingerprint,
         trustSignerFingerprint: trustSignerFingerprint.value
       })
     )
+    currentRunId.value = started.runId
+    const finalRun = await taskRunStore.waitRun(started.runId)
+    if (finalRun.status === 'cancelled') {
+      notify.info('更新已取消')
+      return
+    }
+    if (finalRun.status !== 'completed') {
+      throw new Error(finalRun.result?.error ?? 'Extension update failed.')
+    }
+
     await refreshExtensionContributionSnapshot()
 
     notify.success('扩展更新成功')
     open.value = false
     emit('updated')
   } catch (error) {
-    if (isCancelledUpdateError(error)) {
-      notify.info('更新已取消')
-      return
-    }
     notify.error('更新失败', error instanceof Error ? error.message : String(error))
   } finally {
     updating.value = false
-    currentOperationId.value = null
+    currentRunId.value = null
   }
 }
 
 async function handleCancel() {
-  if (!updating.value || !currentOperationId.value) {
+  if (!updating.value) {
     open.value = false
+    return
+  }
+
+  if (!currentRunId.value) {
+    return
+  }
+
+  if (!canCancelCurrentRun.value) {
+    notify.info('更新已进入提交阶段，无法取消')
     return
   }
 
   cancelling.value = true
   try {
-    const cancelled = unwrapIpcData(
-      await ipcManager.invoke('extension:cancel-operation', currentOperationId.value)
-    )
+    const cancelled = await taskRunStore.cancelRun(currentRunId.value)
     if (!cancelled) {
       notify.info('更新已进入提交阶段，无法取消')
     }
@@ -113,13 +129,6 @@ async function handleCancel() {
   }
 }
 
-function createOperationId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-function isCancelledUpdateError(error: unknown): boolean {
-  return error instanceof Error && error.message.toLowerCase().includes('cancel')
-}
 </script>
 
 <template>
@@ -188,7 +197,7 @@ function isCancelledUpdateError(error: unknown): boolean {
       <DialogFooter>
         <Button
           variant="outline"
-          :disabled="cancelling"
+          :disabled="cancelling || (updating && !canCancelCurrentRun)"
           @click="handleCancel"
         >
           <Spinner

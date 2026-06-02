@@ -126,6 +126,22 @@ export const useTaskRunStore = defineStore('task-run', () => {
     )
   }
 
+  async function waitRun(runId: string): Promise<TaskRun> {
+    const waitResult = await ipcManager.invoke('task-run:wait', runId)
+    if (waitResult.success) {
+      updateRun(waitResult.data)
+      return waitResult.data
+    }
+
+    const history = unwrapIpcData(await ipcManager.invoke('task-run:get-history', runId))
+    if (history) {
+      updateRun(history)
+      return history
+    }
+
+    throw new Error(waitResult.error)
+  }
+
   function isControlPending(runId: string): boolean {
     return pendingControlRunIds.value.has(runId)
   }
@@ -181,6 +197,7 @@ export const useTaskRunStore = defineStore('task-run', () => {
     cancelRun,
     pauseRun,
     resumeRun,
+    waitRun,
     isControlPending
   }
 })

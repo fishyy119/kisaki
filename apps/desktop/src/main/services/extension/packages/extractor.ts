@@ -4,17 +4,17 @@ import fse from 'fs-extra'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionPackageArchiveStore } from './archive'
+import { assertPackageSignalNotAborted } from './abort'
 import type { ExtensionPackageLayout } from './layout'
-import { assertExtensionPackageOperationNotAborted } from './operations'
 import { wrapExtensionPackageError } from './types'
 import type { ExtensionPackageVerifier, VerifyExtensionPackageArchiveInput } from './verifier'
 
 export interface ExtractExtensionPackageInput extends VerifyExtensionPackageArchiveInput {
-  operationId: string
+  workspaceId: string
+  onPhase?: (phase: 'verify' | 'extract') => void
 }
 
 export interface ExtractExtensionPackageResult {
-  operationId: string
   packageDir: string
   manifest: ExtensionManifest
   archiveSha256: string
@@ -29,7 +29,8 @@ export class ExtensionPackageExtractor {
   ) {}
 
   async extract(input: ExtractExtensionPackageInput): Promise<ExtractExtensionPackageResult> {
-    const operationPaths = this.layout.operationPaths(input.operationId)
+    const workspacePaths = this.layout.workspacePaths(input.workspaceId)
+    input.onPhase?.('verify')
     const verified = await this.verifier.verifyArchive(input).catch((error: unknown) => {
       throw wrapExtensionPackageError(error, {
         stage: 'verify',
@@ -38,21 +39,22 @@ export class ExtensionPackageExtractor {
       })
     })
 
-    await fse.remove(operationPaths.stagingDir).catch(() => undefined)
-    await fse.ensureDir(operationPaths.stagingPackageDir)
+    await fse.remove(workspacePaths.stagingDir).catch(() => undefined)
+    await fse.ensureDir(workspacePaths.stagingPackageDir)
 
     try {
-      assertExtensionPackageOperationNotAborted(input.signal)
+      assertPackageSignalNotAborted(input.signal)
+      input.onPhase?.('extract')
       const zip = new AdmZip(input.archivePath)
       for (const verifiedEntry of verified.entries) {
-        assertExtensionPackageOperationNotAborted(input.signal)
+        assertPackageSignalNotAborted(input.signal)
         const entry = zip.getEntry(verifiedEntry.archiveName)
         if (!entry || entry.isDirectory) {
           throw new Error(`Verified package entry "${verifiedEntry.archiveName}" was not found.`)
         }
 
         const targetPath = resolveInsideRoot(
-          operationPaths.stagingPackageDir,
+          workspacePaths.stagingPackageDir,
           verifiedEntry.normalizedName
         )
         await fse.ensureDir(path.dirname(targetPath))
@@ -60,7 +62,7 @@ export class ExtensionPackageExtractor {
       }
 
       await this.verifier.verifyPackageDirectory({
-        packageDir: operationPaths.stagingPackageDir,
+        packageDir: workspacePaths.stagingPackageDir,
         expectedIdentity: {
           extensionId: input.expectedIdentity?.extensionId ?? input.registryPackage?.id,
           version: input.expectedIdentity?.version ?? input.registryRelease?.version,
@@ -76,18 +78,17 @@ export class ExtensionPackageExtractor {
       })
 
       return {
-        operationId: input.operationId,
-        packageDir: operationPaths.stagingPackageDir,
+        packageDir: workspacePaths.stagingPackageDir,
         manifest: verified.manifest,
         archiveSha256: verified.sha256,
         archiveSize: verified.size
       }
     } catch (error) {
-      await fse.remove(operationPaths.stagingDir).catch(() => undefined)
+      await fse.remove(workspacePaths.stagingDir).catch(() => undefined)
       throw wrapExtensionPackageError(error, {
         stage: 'extract',
         message: 'Failed to extract extension package archive',
-        path: operationPaths.stagingPackageDir
+        path: workspacePaths.stagingPackageDir
       })
     }
   }

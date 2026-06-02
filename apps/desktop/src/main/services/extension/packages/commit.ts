@@ -6,7 +6,7 @@ import type {
   ExtensionInstallationStore
 } from '../installations'
 import { assertInsideRoot } from '../shared/path-confinement'
-import { createOperationCleanupPaths, removeCleanupPaths } from './cleanup'
+import { createWorkspaceCleanupPaths, removeCleanupPaths } from './cleanup'
 import type { ExtensionPackageLayout } from './layout'
 import { wrapExtensionPackageError } from './types'
 
@@ -15,7 +15,7 @@ const log = createLogger('Extension')
 export type ExpectedPreviousActivePackage = 'none' | 'present' | 'any'
 
 export interface PutActiveExtensionPackageInput {
-  operationId: string
+  workspaceId: string
   extensionId: string
   stagedPackageDir: string
   installation: CreateOrUpdateExtensionInstallationInput
@@ -24,7 +24,7 @@ export interface PutActiveExtensionPackageInput {
 }
 
 export interface RemoveActiveExtensionPackageInput {
-  operationId: string
+  workspaceId: string
   extensionId: string
   cleanupPaths?: readonly string[]
 }
@@ -36,17 +36,17 @@ export class ExtensionPackageCommitter {
   ) {}
 
   async putActivePackage(input: PutActiveExtensionPackageInput): Promise<void> {
-    const operationPaths = this.layout.operationPaths(input.operationId)
+    const workspacePaths = this.layout.workspacePaths(input.workspaceId)
     const packagePath = this.layout.packageDir(input.extensionId)
-    const backupPath = operationPaths.backupDir
-    const operationTempCleanupPaths = createOperationCleanupPaths(this.layout, [
-      operationPaths.stagingDir,
-      operationPaths.downloadPath,
+    const backupPath = workspacePaths.backupDir
+    const workspaceTempCleanupPaths = createWorkspaceCleanupPaths(this.layout, [
+      workspacePaths.stagingDir,
+      workspacePaths.downloadPath,
       ...(input.cleanupPaths ?? [])
     ])
-    const successCleanupPaths = createOperationCleanupPaths(this.layout, [
-      operationPaths.backupDir,
-      ...operationTempCleanupPaths
+    const successCleanupPaths = createWorkspaceCleanupPaths(this.layout, [
+      workspacePaths.backupDir,
+      ...workspaceTempCleanupPaths
     ])
 
     let backupCreated = false
@@ -60,7 +60,7 @@ export class ExtensionPackageCommitter {
         )
       }
 
-      assertInsideRoot(input.stagedPackageDir, operationPaths.stagingDir)
+      assertInsideRoot(input.stagedPackageDir, workspacePaths.stagingDir)
       const existingPackage = await fse.pathExists(packagePath)
       assertExpectedPrevious(input.expectedPrevious, existingPackage, input.extensionId)
 
@@ -98,22 +98,22 @@ export class ExtensionPackageCommitter {
         path: packagePath
       })
     } finally {
-      await removeCleanupPaths(committed ? successCleanupPaths : operationTempCleanupPaths)
+      await removeCleanupPaths(committed ? successCleanupPaths : workspaceTempCleanupPaths)
     }
   }
 
   async removeActivePackage(input: RemoveActiveExtensionPackageInput): Promise<void> {
-    const operationPaths = this.layout.operationPaths(input.operationId)
+    const workspacePaths = this.layout.workspacePaths(input.workspaceId)
     const packagePath = this.layout.packageDir(input.extensionId)
-    const trashPath = operationPaths.trashDir
-    const operationTempCleanupPaths = createOperationCleanupPaths(this.layout, [
-      operationPaths.stagingDir,
-      operationPaths.downloadPath,
+    const trashPath = workspacePaths.trashDir
+    const workspaceTempCleanupPaths = createWorkspaceCleanupPaths(this.layout, [
+      workspacePaths.stagingDir,
+      workspacePaths.downloadPath,
       ...(input.cleanupPaths ?? [])
     ])
-    const successCleanupPaths = createOperationCleanupPaths(this.layout, [
-      operationPaths.trashDir,
-      ...operationTempCleanupPaths
+    const successCleanupPaths = createWorkspaceCleanupPaths(this.layout, [
+      workspacePaths.trashDir,
+      ...workspaceTempCleanupPaths
     ])
 
     let trashed = false
@@ -147,7 +147,7 @@ export class ExtensionPackageCommitter {
         path: packagePath
       })
     } finally {
-      await removeCleanupPaths(committed ? successCleanupPaths : operationTempCleanupPaths)
+      await removeCleanupPaths(committed ? successCleanupPaths : workspaceTempCleanupPaths)
     }
   }
 }

@@ -45,7 +45,7 @@ watch(
   }
 )
 
-function installRelease(release: ExtensionCatalogReleaseInfo) {
+function requestReleaseInstall(release: ExtensionCatalogReleaseInfo) {
   if (!canInstallRelease(release)) {
     return
   }
@@ -252,7 +252,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                 <Button
                   size="sm"
                   :disabled="!canInstallRelease(release)"
-                  @click="installRelease(release)"
+                  @click="requestReleaseInstall(release)"
                 >
                   <Icon
                     icon="icon-[mdi--download]"

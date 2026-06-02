@@ -17,7 +17,6 @@ export type ExtensionInstallReleaseApproval =
     }
 
 export interface ExtensionInstallReleaseCommand {
-  operationId: string
   extensionId: string
   releaseId?: string
   repositoryId?: string
@@ -31,7 +30,6 @@ export function createInstallReleaseCommandFromRequest(
   request: ExtensionInstallReleaseRequest
 ): ExtensionInstallReleaseCommand {
   return {
-    operationId: request.operationId,
     extensionId: request.extensionId,
     releaseId: request.releaseId,
     repositoryId: request.repositoryId,

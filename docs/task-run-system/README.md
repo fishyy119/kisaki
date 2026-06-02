@@ -65,7 +65,7 @@ Notify 是 TaskRun 的可选展示层，不是状态源。
 | `BackgroundTaskService`    | `AutomationService`    | 持久自动化配置、调度和 invocation history。         |
 | command-triggered producer | `TaskRun`              | command handler 只返回真实 producer 创建的 run id。 |
 | scanner active progress    | `TaskRun`              | 扫描运行态进入 task run。                           |
-| extension package op       | `TaskRun`              | 安装/更新/导入包操作进入中心。                      |
+| extension package task     | `TaskRun`              | 安装/更新/导入包任务进入中心。                      |
 | renderer notify loading    | `TaskRun` presentation | 长时流程状态不再散落在 toast。                      |
 
 UI 文案：

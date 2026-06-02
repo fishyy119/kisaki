@@ -7,7 +7,7 @@ import type {
 } from '@kisaki3/extension-registry'
 import type { ExtensionPackageDownloader } from './downloader'
 import type { ExtensionPackageExtractor } from './extractor'
-import type { ExtensionPackageOperationRecord } from './operations'
+import type { ExtensionPackagePhase } from './phases'
 
 export interface ExtensionPackagePreparerOptions {
   downloader: ExtensionPackageDownloader
@@ -15,23 +15,24 @@ export interface ExtensionPackagePreparerOptions {
 }
 
 export interface PrepareRepositoryExtensionPackageInput {
-  operationId: string
+  workspaceId: string
   manifest: Pick<ExtensionRegistryManifest, 'signingKeys'>
   registryPackage: Pick<ExtensionRegistryPackage, 'id' | 'categories'>
   release: Pick<ExtensionRegistryRelease, 'version' | 'engines'>
   artifact: ExtensionRegistryArtifact
   signal?: AbortSignal
+  onPhase?: (phase: ExtensionPackagePhase) => void
 }
 
 export interface PrepareLocalExtensionPackageInput {
-  operationId: string
+  workspaceId: string
   filePath: string
   expectedExtensionId?: string
   signal?: AbortSignal
+  onPhase?: (phase: ExtensionPackagePhase) => void
 }
 
 export interface PreparedExtensionPackage {
-  operationId: string
   archivePath: string
   packageDir: string
   manifest: ExtensionManifest
@@ -40,96 +41,68 @@ export interface PreparedExtensionPackage {
 }
 
 /**
- * Coordinates package download/copy and extraction for an existing package operation.
+ * Coordinates package download/copy and extraction for an extension package task.
  */
 export class ExtensionPackagePreparer {
   constructor(private readonly options: ExtensionPackagePreparerOptions) {}
 
   async prepareRepositoryPackage(
-    input: PrepareRepositoryExtensionPackageInput,
-    operation: ExtensionPackageOperationRecord
+    input: PrepareRepositoryExtensionPackageInput
   ): Promise<PreparedExtensionPackage> {
-    const cleanupAbort = linkAbortSignal(input.signal, () => operation.controller.abort())
-    operation.phase = 'download'
-    try {
-      const downloaded = await this.options.downloader.downloadArtifact({
-        operationId: input.operationId,
-        url: input.artifact.url,
-        expectedSize: input.artifact.size,
-        signal: operation.controller.signal
-      })
+    input.onPhase?.('download')
+    const downloaded = await this.options.downloader.downloadArtifact({
+      workspaceId: input.workspaceId,
+      url: input.artifact.url,
+      expectedSize: input.artifact.size,
+      signal: input.signal
+    })
 
-      operation.phase = 'extract'
-      const extracted = await this.options.extractor.extract({
-        operationId: input.operationId,
-        archivePath: downloaded.filePath,
-        expectedArtifact: input.artifact,
-        registryPackage: input.registryPackage,
-        registryRelease: input.release,
-        signingKeys: input.manifest.signingKeys,
-        signal: operation.controller.signal
-      })
+    const extracted = await this.options.extractor.extract({
+      workspaceId: input.workspaceId,
+      archivePath: downloaded.filePath,
+      expectedArtifact: input.artifact,
+      registryPackage: input.registryPackage,
+      registryRelease: input.release,
+      signingKeys: input.manifest.signingKeys,
+      signal: input.signal,
+      onPhase: input.onPhase
+    })
 
-      return {
-        operationId: input.operationId,
-        archivePath: downloaded.filePath,
-        packageDir: extracted.packageDir,
-        manifest: extracted.manifest,
-        archiveSha256: extracted.archiveSha256,
-        archiveSize: extracted.archiveSize
-      }
-    } finally {
-      cleanupAbort()
+    return {
+      archivePath: downloaded.filePath,
+      packageDir: extracted.packageDir,
+      manifest: extracted.manifest,
+      archiveSha256: extracted.archiveSha256,
+      archiveSize: extracted.archiveSize
     }
   }
 
   async prepareLocalPackage(
-    input: PrepareLocalExtensionPackageInput,
-    operation: ExtensionPackageOperationRecord
+    input: PrepareLocalExtensionPackageInput
   ): Promise<PreparedExtensionPackage> {
-    const cleanupAbort = linkAbortSignal(input.signal, () => operation.controller.abort())
-    operation.phase = 'download'
-    try {
-      const copied = await this.options.downloader.copyLocalArtifact({
-        operationId: input.operationId,
-        filePath: input.filePath,
-        signal: operation.controller.signal
-      })
+    input.onPhase?.('download')
+    const copied = await this.options.downloader.copyLocalArtifact({
+      workspaceId: input.workspaceId,
+      filePath: input.filePath,
+      signal: input.signal
+    })
 
-      operation.phase = 'extract'
-      const extracted = await this.options.extractor.extract({
-        operationId: input.operationId,
-        archivePath: copied.filePath,
-        expectedIdentity: {
-          extensionId: input.expectedExtensionId
-        },
-        signal: operation.controller.signal
-      })
+    const extracted = await this.options.extractor.extract({
+      workspaceId: input.workspaceId,
+      archivePath: copied.filePath,
+      expectedIdentity: {
+        extensionId: input.expectedExtensionId
+      },
+      signal: input.signal,
+      onPhase: input.onPhase
+    })
 
-      return {
-        operationId: input.operationId,
-        archivePath: copied.filePath,
-        packageDir: extracted.packageDir,
-        manifest: extracted.manifest,
-        archiveSha256: extracted.archiveSha256,
-        archiveSize: extracted.archiveSize
-      }
-    } finally {
-      cleanupAbort()
+    return {
+      archivePath: copied.filePath,
+      packageDir: extracted.packageDir,
+      manifest: extracted.manifest,
+      archiveSha256: extracted.archiveSha256,
+      archiveSize: extracted.archiveSize
     }
   }
-}
-
-function linkAbortSignal(signal: AbortSignal | undefined, onAbort: () => void): () => void {
-  if (!signal) {
-    return () => undefined
-  }
-
-  if (signal.aborted) {
-    onAbort()
-    return () => undefined
-  }
-
-  signal.addEventListener('abort', onAbort, { once: true })
-  return () => signal.removeEventListener('abort', onAbort)
 }

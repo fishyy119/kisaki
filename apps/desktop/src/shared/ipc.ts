@@ -467,15 +467,18 @@ export interface IpcMainHandlers {
   'extension:create-install-plan': (
     request: ExtensionCreateInstallPlanRequest
   ) => IpcResult<ExtensionInstallPlan>
-  'extension:install-release': (request: ExtensionInstallReleaseRequest) => IpcVoidResult
-  'extension:install-from-file': (request: ExtensionInstallFromFileRequest) => IpcVoidResult
+  'extension:install-release': (
+    request: ExtensionInstallReleaseRequest
+  ) => IpcResult<TaskRunStartResult>
+  'extension:install-from-file': (
+    request: ExtensionInstallFromFileRequest
+  ) => IpcResult<TaskRunStartResult>
   'extension:uninstall': (extensionId: string) => IpcVoidResult
   'extension:purge-data': (request: ExtensionPurgeDataRequest) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateCheckResult>
-  'extension:update': (request: ExtensionUpdateRequest) => IpcVoidResult
+  'extension:update': (request: ExtensionUpdateRequest) => IpcResult<TaskRunStartResult>
   'extension:get-automatic-update-run': () => IpcResult<ExtensionAutomaticUpdateRunState>
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
-  'extension:cancel-operation': (operationId: string) => IpcResult<boolean>
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:get-installed-packages': () => IpcResult<ExtensionInstalledPackageInfo[]>
   'extension:list-trusted-signers': () => IpcResult<readonly ExtensionTrustedSignerInfo[]>

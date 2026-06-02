@@ -1,14 +1,9 @@
 export type ExtensionPackageSourceKind = 'repository' | 'local-file'
 
-export type ExtensionPackageOperationStage =
-  | 'download'
-  | 'verify'
-  | 'extract'
-  | 'commit'
-  | 'recover'
+export type ExtensionPackageStage = 'download' | 'verify' | 'extract' | 'commit' | 'recover'
 
 export interface ExtensionPackageDiagnostic {
-  stage: ExtensionPackageOperationStage
+  stage: ExtensionPackageStage
   message: string
   path?: string
 }

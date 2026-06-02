@@ -352,13 +352,14 @@ apps/desktop/src/renderer/src/features/adder/components/*-adder-dialog.vue
 - 任务中心显示批量进度和失败摘要。
 - 失败列表有上限。
 
-## Phase 9: Extension package operations
+## Phase 9: Extension package tasks
 
 修改：
 
 ```text
 apps/desktop/src/main/services/extension/service.ts
-apps/desktop/src/main/services/extension/packages/operations.ts
+apps/desktop/src/main/services/extension/packages/abort.ts
+apps/desktop/src/main/services/extension/packages/phases.ts
 apps/desktop/src/main/services/extension/packages/preparer.ts
 apps/desktop/src/main/services/extension/installer/manager.ts
 apps/desktop/src/main/services/extension/updates/manager.ts
@@ -370,7 +371,7 @@ apps/desktop/src/renderer/src/features/extension/components/extension-update-dia
 
 - renderer 不再生成 package operation id。
 - install/update IPC 返回 `runId` 或可在当前 dialog 中跟踪 run。
-- run 创建 `category: 'extension'` 和对应 package operation。
+- run 创建 `category: 'extension'`；包处理使用 run id 作为 package workspace id，不再维护独立 package operation registry。
 - download/verify/extract/commit phase 显示在任务中心。
 - commit 阶段取消按钮不可用。
 - 扩展安装完成后结果进入 task run history。

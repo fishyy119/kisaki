@@ -15,18 +15,18 @@ import {
 
 const log = createLogger('Extension')
 
-interface PackageDirectoryInfo extends OperationPackageInfo {
+interface PackageDirectoryInfo extends WorkspacePackageInfo {
   directoryName: string
 }
 
-interface OperationPackageInfo {
+interface WorkspacePackageInfo {
   path: string
   extensionId: string | null
   version: string | null
   valid: boolean
 }
 
-interface VerifiedRecoverySource extends OperationPackageInfo {
+interface VerifiedRecoverySource extends WorkspacePackageInfo {
   actionType: 'restored-backup' | 'restored-trash'
 }
 
@@ -83,8 +83,8 @@ export class ExtensionPackageRecovery {
     const installationById = new Map(installations.map((row) => [row.id, row]))
     const installationIds = new Set(installations.map((row) => row.id))
     const activePackages = await scanPackageDirectories(this.layout.packagesDir)
-    const backupPackages = await scanOperationPackages(this.layout.backupsDir)
-    const trashPackages = await scanOperationPackages(this.layout.trashDir)
+    const backupPackages = await scanWorkspacePackages(this.layout.backupsDir)
+    const trashPackages = await scanWorkspacePackages(this.layout.trashDir)
 
     for (const activePackage of activePackages) {
       if (installationIds.has(activePackage.directoryName)) {
@@ -143,7 +143,7 @@ export class ExtensionPackageRecovery {
           extensionId: installation.id,
           path: recoverySource.path
         })
-        await removeOperationPackagesForExtension(
+        await removeWorkspacePackagesForExtension(
           backupPackages,
           trashPackages,
           installation.id,
@@ -211,7 +211,7 @@ async function pruneDirectoryChildren(
   )
 }
 
-async function scanOperationPackages(directory: string): Promise<readonly OperationPackageInfo[]> {
+async function scanWorkspacePackages(directory: string): Promise<readonly WorkspacePackageInfo[]> {
   const entries = await scanPackageDirectories(directory)
   return entries.map(({ path, extensionId, version, valid }) => ({
     path,
@@ -245,9 +245,9 @@ async function scanPackageDirectories(directory: string): Promise<readonly Packa
   return packages
 }
 
-async function removeOperationPackagesForExtension(
-  backupPackages: readonly OperationPackageInfo[],
-  trashPackages: readonly OperationPackageInfo[],
+async function removeWorkspacePackagesForExtension(
+  backupPackages: readonly WorkspacePackageInfo[],
+  trashPackages: readonly WorkspacePackageInfo[],
   extensionId: string,
   actions: ExtensionPackageRecoveryAction[]
 ): Promise<void> {
@@ -273,8 +273,8 @@ async function removeOperationPackagesForExtension(
 async function findVerifiedRecoverySource(
   archiveStore: ExtensionPackageArchiveStore,
   installation: ExtensionInstallationRow,
-  backupPackages: readonly OperationPackageInfo[],
-  trashPackages: readonly OperationPackageInfo[]
+  backupPackages: readonly WorkspacePackageInfo[],
+  trashPackages: readonly WorkspacePackageInfo[]
 ): Promise<VerifiedRecoverySource | null> {
   const candidates: VerifiedRecoverySource[] = [
     ...backupPackages

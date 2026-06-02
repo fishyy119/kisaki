@@ -22,7 +22,6 @@ import {
   ExtensionPackageDownloader,
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
-  ExtensionPackageOperationRegistry,
   ExtensionPackageRecovery,
   ExtensionPackageVerifier
 } from './packages'
@@ -75,7 +74,6 @@ export class ExtensionService implements IService {
   private packageRecovery!: ExtensionPackageRecovery
   private contributionSnapshotEmitQueued = false
   private readonly operationMutex = new Mutex()
-  private readonly packageOperations = new ExtensionPackageOperationRegistry()
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     const rootDir = resolveInsideRoot(app.getPath('userData'), 'extensions')
@@ -193,7 +191,7 @@ export class ExtensionService implements IService {
       packageExtractor,
       packageVerifier,
       packageCommitter: this.packageCommitter,
-      packageOperations: this.packageOperations,
+      taskRun: container.get('task-run'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
       onTrustedSignersChanged: () => this.emitTrustedSignersChanged()

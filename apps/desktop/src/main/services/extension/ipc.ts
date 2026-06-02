@@ -21,13 +21,13 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
   )
 
   ipc.handle('extension:install-release', async (_, request) =>
-    wrapIpcVoid(() =>
-      service.installer.installRelease(createInstallReleaseCommandFromRequest(request))
+    wrapIpc(() =>
+      service.installer.startInstallRelease(createInstallReleaseCommandFromRequest(request))
     )
   )
 
   ipc.handle('extension:install-from-file', async (_, request) =>
-    wrapIpcVoid(() => service.installer.installFromFile(request))
+    wrapIpc(() => service.installer.startLocalImport(request))
   )
 
   ipc.handle('extension:uninstall', async (_, extensionId) =>
@@ -41,7 +41,7 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
   ipc.handle('extension:check-updates', async () => wrapIpc(() => service.updates.checkUpdates()))
 
   ipc.handle('extension:update', async (_, request) =>
-    wrapIpcVoid(() => service.updates.update(request))
+    wrapIpc(() => service.updates.startUpdate(request))
   )
 
   ipc.handle('extension:get-automatic-update-run', () =>
@@ -50,10 +50,6 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
 
   ipc.handle('extension:set-update-policy', async (_, request) =>
     wrapIpcVoid(() => service.installations.setUpdatePolicy(request))
-  )
-
-  ipc.handle('extension:cancel-operation', (_, operationId) =>
-    wrapIpc(() => service.installer.cancelOperation(operationId))
   )
 
   ipc.handle('extension:reload', async (_, extensionId) =>

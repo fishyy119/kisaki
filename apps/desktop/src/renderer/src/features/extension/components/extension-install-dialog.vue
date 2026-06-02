@@ -27,7 +27,8 @@ import {
 } from '@renderer/components/ui/select'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
+import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
+import { useTaskRunStore } from '@renderer/stores'
 import type {
   ExtensionCreateRepositoryInstallPlanRequest,
   ExtensionInstallPlan,
@@ -47,6 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+const taskRunStore = useTaskRunStore()
 
 const plan = ref<ExtensionInstallPlan | null>(null)
 const localFilePath = ref<string | null>(null)
@@ -153,6 +155,7 @@ async function handleInstall() {
 
   installing.value = true
   try {
+    let runId: string
     if (currentPlan.sourceKind === 'repository') {
       const request = toRepositoryInstallRequest(
         props.request ?? {
@@ -162,11 +165,10 @@ async function handleInstall() {
           repositoryId: currentPlan.release?.repositoryId
         }
       )
-      unwrapIpcVoid(
+      const started = unwrapIpcData(
         await ipcManager.invoke('extension:install-release', {
           ...request,
           sourceKind: 'repository',
-          operationId: createOperationId(),
           planId: currentPlan.id,
           planFingerprint: currentPlan.fingerprint,
           trustSignerFingerprint: trustSignerFingerprint.value,
@@ -174,20 +176,30 @@ async function handleInstall() {
           updatePolicy: updatePolicy.value
         })
       )
+      runId = started.runId
     } else {
       if (!localFilePath.value) {
         throw new Error('Local extension file is missing.')
       }
 
-      unwrapIpcVoid(
+      const started = unwrapIpcData(
         await ipcManager.invoke('extension:install-from-file', {
-          operationId: createOperationId(),
           filePath: localFilePath.value,
           planId: currentPlan.id,
           planFingerprint: currentPlan.fingerprint,
           enabled: enabled.value
         })
       )
+      runId = started.runId
+    }
+
+    const finalRun = await taskRunStore.waitRun(runId)
+    if (finalRun.status === 'cancelled') {
+      notify.info('安装已取消')
+      return
+    }
+    if (finalRun.status !== 'completed') {
+      throw new Error(finalRun.result?.error ?? 'Extension installation failed.')
     }
 
     notify.success('扩展安装成功')
@@ -208,10 +220,6 @@ function resetState() {
   enabled.value = true
   updatePolicy.value = 'manual'
   trustSignerFingerprint.value = false
-}
-
-function createOperationId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 function toRepositoryInstallRequest(
@@ -269,6 +277,7 @@ function formatBytes(value: number | undefined): string {
 
   return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
 }
+
 </script>
 
 <template>

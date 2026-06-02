@@ -6,17 +6,28 @@ import type {
   ExtensionInstallFromFileRequest,
   ExtensionInstallPlan
 } from '@shared/extension'
+import type {
+  TaskRunInitiator,
+  TaskRunOperation,
+  TaskRunProgressUpdate,
+  TaskRunStartResult
+} from '@shared/task-run'
+import {
+  isTaskRunCancellation,
+  type TaskRunHandle,
+  type TaskRunService
+} from '@main/services/task-run'
 import type { ExtensionInstalledEntry } from '../types'
 import type { ExtensionInstallationManager } from '../installations'
 import type {
+  ExtensionPackageCommitter,
   ExtensionPackageDownloader,
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
-  ExtensionPackageOperationRegistry,
-  ExtensionPackageCommitter,
+  ExtensionPackagePhase,
   ExtensionPackageVerifier
 } from '../packages'
-import { assertExtensionPackageOperationNotAborted, ExtensionPackagePreparer } from '../packages'
+import { ExtensionPackagePreparer } from '../packages'
 import type { RuntimeManager } from '../runtime'
 import type {
   ExtensionRepositoryInstallCandidate,
@@ -38,10 +49,15 @@ export interface ExtensionInstallerManagerOptions {
   packageExtractor: ExtensionPackageExtractor
   packageVerifier: ExtensionPackageVerifier
   packageCommitter: ExtensionPackageCommitter
-  packageOperations: ExtensionPackageOperationRegistry
+  taskRun: TaskRunService
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
   onTrustedSignersChanged?: () => void
+}
+
+interface StartedPackageTaskRun<T> {
+  start: TaskRunStartResult
+  completed: Promise<T>
 }
 
 export class ExtensionInstallerManager {
@@ -54,7 +70,7 @@ export class ExtensionInstallerManager {
   private readonly packagePreparer: ExtensionPackagePreparer
   private readonly packageVerifier: ExtensionPackageVerifier
   private readonly packageCommitter: ExtensionPackageCommitter
-  private readonly packageOperations: ExtensionPackageOperationRegistry
+  private readonly taskRun: TaskRunService
 
   constructor(private readonly options: ExtensionInstallerManagerOptions) {
     this.layout = options.layout
@@ -73,7 +89,7 @@ export class ExtensionInstallerManager {
     })
     this.packageVerifier = options.packageVerifier
     this.packageCommitter = options.packageCommitter
-    this.packageOperations = options.packageOperations
+    this.taskRun = options.taskRun
   }
 
   async createInstallPlan(
@@ -92,21 +108,102 @@ export class ExtensionInstallerManager {
     return this.installPlanner.createRepositoryPlanForCandidate(candidate)
   }
 
-  async installRelease(command: ExtensionInstallReleaseCommand): Promise<ExtensionInstalledEntry> {
-    const operationId = command.operationId
-    const operation = this.packageOperations.start({
-      operationId,
-      kind: command.reason === 'update' ? 'update' : 'install',
-      extensionId: command.extensionId
+  startInstallRelease(command: ExtensionInstallReleaseCommand): TaskRunStartResult {
+    const run = this.createInstallReleaseRun(command, { type: 'user' })
+    void run.completed.catch(() => undefined)
+    return run.start
+  }
+
+  runInstallRelease(
+    command: ExtensionInstallReleaseCommand,
+    initiator: TaskRunInitiator
+  ): Promise<ExtensionInstalledEntry> {
+    return this.createInstallReleaseRun(command, initiator).completed
+  }
+
+  startLocalImport(request: ExtensionInstallFromFileRequest): TaskRunStartResult {
+    const run = this.createLocalImportRun(request, { type: 'user' })
+    void run.completed.catch(() => undefined)
+    return run.start
+  }
+
+  runLocalImport(
+    request: ExtensionInstallFromFileRequest,
+    initiator: TaskRunInitiator
+  ): Promise<ExtensionInstalledEntry> {
+    return this.createLocalImportRun(request, initiator).completed
+  }
+
+  private createInstallReleaseRun(
+    command: ExtensionInstallReleaseCommand,
+    initiator: TaskRunInitiator
+  ): StartedPackageTaskRun<ExtensionInstalledEntry> {
+    const candidate = this.repositories.resolveInstallCandidate(command)
+    const plan = this.installPlanner.createRepositoryPlanForCandidate(candidate)
+    assertInstallPlanApproved(plan, command.approval)
+
+    const operation: TaskRunOperation =
+      command.reason === 'update' ? 'extension.package.update' : 'extension.package.install'
+    const run = this.taskRun.runs.create({
+      category: 'extension',
+      operation,
+      title:
+        command.reason === 'update'
+          ? `更新扩展 ${candidate.registryPackage.name}`
+          : `安装扩展 ${candidate.registryPackage.name}`,
+      owner: { type: 'app' },
+      initiator,
+      subject: {
+        type: 'extension',
+        id: candidate.registryPackage.id,
+        labelSnapshot: candidate.registryPackage.name
+      },
+      controls: { cancelable: true, pausable: false }
     })
 
+    return {
+      start: { runId: run.id, createdAt: run.createdAt },
+      completed: this.executeInstallRelease(run, command, candidate, plan)
+    }
+  }
+
+  private createLocalImportRun(
+    request: ExtensionInstallFromFileRequest,
+    initiator: TaskRunInitiator
+  ): StartedPackageTaskRun<ExtensionInstalledEntry> {
+    const run = this.taskRun.runs.create({
+      category: 'extension',
+      operation: 'extension.package.import',
+      title: '导入本地扩展',
+      owner: { type: 'app' },
+      initiator,
+      subject: {
+        type: 'extension',
+        labelSnapshot: path.basename(request.filePath)
+      },
+      controls: { cancelable: true, pausable: false }
+    })
+
+    return {
+      start: { runId: run.id, createdAt: run.createdAt },
+      completed: this.executeLocalImport(run, request)
+    }
+  }
+
+  private async executeInstallRelease(
+    run: TaskRunHandle,
+    command: ExtensionInstallReleaseCommand,
+    candidate: ExtensionRepositoryInstallCandidate,
+    plan: ExtensionInstallPlan
+  ): Promise<ExtensionInstalledEntry> {
+    const workspaceId = run.id
+
     try {
-      operation.phase = 'waiting-lock'
-      return await this.options.runMutatingOperation(async () => {
-        assertExtensionPackageOperationNotAborted(operation.controller.signal)
-        const candidate = this.repositories.resolveInstallCandidate(command)
-        const plan = this.installPlanner.createRepositoryPlanForCandidate(candidate)
-        assertInstallPlanApproved(plan, command.approval)
+      run.start()
+      this.reportPackagePhase(run, 'waiting-lock')
+
+      const installed = await this.options.runMutatingOperation(async () => {
+        await run.context.checkpoint()
         const signerTrusts =
           command.approval.kind === 'user-confirmed' && command.approval.trustSignerFingerprint
             ? createSignerTrustInputs(candidate, plan)
@@ -119,57 +216,78 @@ export class ExtensionInstallerManager {
           this.emitTrustedSignersChanged()
         }
 
-        const prepared = await this.packagePreparer.prepareRepositoryPackage(
-          {
-            operationId,
-            manifest: candidate.manifest,
-            registryPackage: candidate.registryPackage,
-            release: candidate.release,
-            artifact: candidate.artifact,
-            signal: operation.controller.signal
-          },
-          operation
-        )
+        const prepared = await this.packagePreparer.prepareRepositoryPackage({
+          workspaceId,
+          manifest: candidate.manifest,
+          registryPackage: candidate.registryPackage,
+          release: candidate.release,
+          artifact: candidate.artifact,
+          signal: run.context.signal,
+          onPhase: (phase) => this.reportPackagePhase(run, phase)
+        })
 
-        operation.phase = 'commit'
-        return this.commitPreparedRepositoryPackage(candidate, plan, command, prepared.packageDir)
+        await run.context.checkpoint()
+        run.updateControls({ cancelable: false })
+        this.reportPackagePhase(run, 'commit')
+        return this.commitPreparedRepositoryPackage(
+          candidate,
+          plan,
+          command,
+          workspaceId,
+          prepared.packageDir
+        )
       })
+
+      run.complete({
+        title: command.reason === 'update' ? '扩展更新完成' : '扩展安装完成',
+        summary:
+          command.reason === 'update'
+            ? `已更新 ${getInstalledExtensionName(installed)} 到 v${installed.version ?? 'unknown'}`
+            : `已安装 ${getInstalledExtensionName(installed)} v${installed.version ?? 'unknown'}`,
+        output: {
+          extensionId: installed.id,
+          version: installed.version,
+          source: installed.source?.kind
+        },
+        counters: {
+          [command.reason === 'update' ? 'updated' : 'installed']: 1
+        }
+      })
+      return installed
     } catch (error) {
-      await this.cleanupPackageOperation(operationId)
+      await this.cleanupPackageWorkspace(workspaceId)
+      this.finishTaskRunFromError(run, error, {
+        cancelledSummary: command.reason === 'update' ? '扩展更新已取消' : '扩展安装已取消'
+      })
       throw error
-    } finally {
-      this.packageOperations.finish(operationId)
     }
   }
 
-  async installFromFile(
+  private async executeLocalImport(
+    run: TaskRunHandle,
     request: ExtensionInstallFromFileRequest
   ): Promise<ExtensionInstalledEntry> {
-    const operationId = request.operationId
-    const operation = this.packageOperations.start({
-      operationId,
-      kind: 'local-import'
-    })
+    const workspaceId = run.id
 
     try {
-      operation.phase = 'waiting-lock'
-      return await this.options.runMutatingOperation(async () => {
-        assertExtensionPackageOperationNotAborted(operation.controller.signal)
+      run.start()
+      this.reportPackagePhase(run, 'waiting-lock')
+
+      const installed = await this.options.runMutatingOperation(async () => {
+        await run.context.checkpoint()
         const plan = await this.createLocalInstallPlan(
           { sourceKind: 'local-file', filePath: request.filePath },
-          operation.controller.signal
+          run.context.signal
         )
         assertInstallPlanConfirmed(plan, request)
 
-        const prepared = await this.packagePreparer.prepareLocalPackage(
-          {
-            operationId,
-            filePath: request.filePath,
-            expectedExtensionId: plan.package.id,
-            signal: operation.controller.signal
-          },
-          operation
-        )
+        const prepared = await this.packagePreparer.prepareLocalPackage({
+          workspaceId,
+          filePath: request.filePath,
+          expectedExtensionId: plan.package.id,
+          signal: run.context.signal,
+          onPhase: (phase) => this.reportPackagePhase(run, phase)
+        })
         const preparedPlan = this.installPlanner.createLocalImportPlan({
           filePath: path.resolve(request.filePath),
           extensionId: prepared.manifest.id,
@@ -180,9 +298,11 @@ export class ExtensionInstallerManager {
         })
         assertInstallPlanConfirmed(preparedPlan, request)
 
-        operation.phase = 'commit'
+        await run.context.checkpoint()
+        run.updateControls({ cancelable: false })
+        this.reportPackagePhase(run, 'commit')
         return this.commitPreparedLocalPackage(
-          operationId,
+          workspaceId,
           request.filePath,
           preparedPlan,
           request.enabled,
@@ -190,16 +310,27 @@ export class ExtensionInstallerManager {
           prepared.archiveSha256
         )
       })
-    } catch (error) {
-      await this.cleanupPackageOperation(operationId)
-      throw error
-    } finally {
-      this.packageOperations.finish(operationId)
-    }
-  }
 
-  cancelOperation(operationId: string): boolean {
-    return this.packageOperations.cancel(operationId)
+      run.complete({
+        title: '扩展导入完成',
+        summary: `已导入 ${getInstalledExtensionName(installed)} v${installed.version ?? 'unknown'}`,
+        output: {
+          extensionId: installed.id,
+          version: installed.version,
+          source: installed.source?.kind
+        },
+        counters: {
+          imported: 1
+        }
+      })
+      return installed
+    } catch (error) {
+      await this.cleanupPackageWorkspace(workspaceId)
+      this.finishTaskRunFromError(run, error, {
+        cancelledSummary: '扩展导入已取消'
+      })
+      throw error
+    }
   }
 
   private async createLocalInstallPlan(
@@ -227,10 +358,31 @@ export class ExtensionInstallerManager {
     })
   }
 
+  private reportPackagePhase(run: TaskRunHandle, phase: ExtensionPackagePhase): void {
+    const progress = createPackagePhaseProgress(phase)
+    if (progress) {
+      run.context.report(progress)
+    }
+  }
+
+  private finishTaskRunFromError(
+    run: TaskRunHandle,
+    error: unknown,
+    options: { cancelledSummary: string }
+  ): void {
+    if (isTaskRunCancellation(error) || run.context.signal.aborted || isAbortError(error)) {
+      run.cancel({ summary: options.cancelledSummary })
+      return
+    }
+
+    run.fail(error)
+  }
+
   private async commitPreparedRepositoryPackage(
     candidate: ExtensionRepositoryInstallCandidate,
     plan: ExtensionInstallPlan,
     command: ExtensionInstallReleaseCommand,
+    workspaceId: string,
     stagedPackageDir: string
   ): Promise<ExtensionInstalledEntry> {
     if (!candidate.repository.manifestDigest) {
@@ -275,7 +427,7 @@ export class ExtensionInstallerManager {
       }
 
       await this.packageCommitter.putActivePackage({
-        operationId: command.operationId,
+        workspaceId,
         extensionId,
         stagedPackageDir,
         installation: {
@@ -298,7 +450,7 @@ export class ExtensionInstallerManager {
       this.emitInstallationsChanged()
       return this.installations.require(extensionId)
     } catch (error) {
-      await this.cleanupPackageOperation(command.operationId)
+      await this.cleanupPackageWorkspace(workspaceId)
       await this.installations.refresh()
       await this.installations.applyRuntimeState({
         cause: command.reason === 'update' ? 'package-update' : 'install',
@@ -309,7 +461,7 @@ export class ExtensionInstallerManager {
   }
 
   private async commitPreparedLocalPackage(
-    operationId: string,
+    workspaceId: string,
     filePath: string,
     plan: ExtensionInstallPlan,
     enabledOverride: boolean | undefined,
@@ -321,7 +473,7 @@ export class ExtensionInstallerManager {
 
     try {
       await this.packageCommitter.putActivePackage({
-        operationId,
+        workspaceId,
         extensionId,
         stagedPackageDir,
         installation: {
@@ -348,7 +500,7 @@ export class ExtensionInstallerManager {
       this.emitInstallationsChanged()
       return this.installations.require(extensionId)
     } catch (error) {
-      await this.cleanupPackageOperation(operationId)
+      await this.cleanupPackageWorkspace(workspaceId)
       await this.installations.refresh()
       await this.installations.applyRuntimeState({
         cause: 'install',
@@ -358,11 +510,11 @@ export class ExtensionInstallerManager {
     }
   }
 
-  private async cleanupPackageOperation(operationId: string): Promise<void> {
-    const operationPaths = this.layout.operationPaths(operationId)
+  private async cleanupPackageWorkspace(workspaceId: string): Promise<void> {
+    const workspacePaths = this.layout.workspacePaths(workspaceId)
     await Promise.all([
-      fse.remove(operationPaths.stagingDir).catch(() => undefined),
-      fse.remove(operationPaths.downloadPath).catch(() => undefined)
+      fse.remove(workspacePaths.stagingDir).catch(() => undefined),
+      fse.remove(workspacePaths.downloadPath).catch(() => undefined)
     ])
   }
 
@@ -373,4 +525,57 @@ export class ExtensionInstallerManager {
   private emitTrustedSignersChanged(): void {
     this.options.onTrustedSignersChanged?.()
   }
+}
+
+function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgressUpdate {
+  switch (phase) {
+    case 'waiting-lock':
+      return {
+        phase: 'waitingLock',
+        message: '等待扩展包写入锁',
+        current: 0,
+        total: 4,
+        unit: 'step'
+      }
+    case 'download':
+      return {
+        phase: 'download',
+        message: '准备扩展安装包',
+        current: 1,
+        total: 4,
+        unit: 'step'
+      }
+    case 'verify':
+      return {
+        phase: 'verify',
+        message: '校验扩展安装包',
+        current: 2,
+        total: 4,
+        unit: 'step'
+      }
+    case 'extract':
+      return {
+        phase: 'extract',
+        message: '解压扩展安装包',
+        current: 3,
+        total: 4,
+        unit: 'step'
+      }
+    case 'commit':
+      return {
+        phase: 'commit',
+        message: '提交扩展安装状态',
+        current: 4,
+        total: 4,
+        unit: 'step'
+      }
+  }
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+function getInstalledExtensionName(entry: ExtensionInstalledEntry): string {
+  return entry.manifest?.name ?? entry.id
 }

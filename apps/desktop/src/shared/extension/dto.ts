@@ -277,7 +277,6 @@ export interface ExtensionUpdatePolicyRequest {
 }
 
 export interface ExtensionUpdateRequest {
-  operationId: string
   extensionId: string
   planId: string
   planFingerprint: string
@@ -328,14 +327,12 @@ export interface ExtensionInstallPlanConfirmation {
 
 export interface ExtensionInstallReleaseRequest
   extends ExtensionCreateRepositoryInstallPlanRequest, ExtensionInstallPlanConfirmation {
-  operationId: string
   trustSignerFingerprint?: boolean
   enabled?: boolean
   updatePolicy?: ExtensionInstallUpdatePolicy
 }
 
 export interface ExtensionInstallFromFileRequest extends ExtensionInstallPlanConfirmation {
-  operationId: string
   filePath: string
   enabled?: boolean
 }
