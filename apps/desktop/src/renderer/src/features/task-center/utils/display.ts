@@ -46,6 +46,7 @@ const COUNTER_LABELS: Record<string, string> = {
   existing: '已存在',
   updated: '更新',
   deleted: '删除',
+  changed: '变化',
   notModified: '未变化'
 }
 

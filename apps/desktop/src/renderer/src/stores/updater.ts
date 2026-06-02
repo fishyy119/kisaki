@@ -6,9 +6,10 @@
 
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { ipcManager } from '@renderer/core/ipc'
+import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from '@shared/updater'
 import { createLogger } from '@renderer/core/log'
+import { useTaskRunStore } from './task-run'
 
 const log = createLogger('Updater')
 
@@ -20,6 +21,7 @@ const defaultState: AppUpdaterState = {
 }
 
 export const useUpdaterStore = defineStore('updater', () => {
+  const taskRunStore = useTaskRunStore()
   const state = ref<AppUpdaterState>(defaultState)
   const initialized = ref(false)
   const isInstalling = ref(false)
@@ -34,12 +36,44 @@ export const useUpdaterStore = defineStore('updater', () => {
     () => state.value.status === 'downloaded' && state.value.update !== null
   )
 
-  const isChecking = computed(() => state.value.status === 'checking')
-  const isDownloading = computed(() => state.value.status === 'downloading')
-  const canStartDownload = computed(
-    () => state.value.status === 'available' && state.value.update !== null
+  const activeCheckRun = computed(
+    () =>
+      taskRunStore.activeRuns.find(
+        (run) => run.category === 'updater' && run.operation === 'updater.check'
+      ) ?? null
   )
-  const downloadProgress = computed(() => state.value.downloadProgress)
+  const activeDownloadRun = computed(
+    () =>
+      taskRunStore.activeRuns.find(
+        (run) => run.category === 'updater' && run.operation === 'updater.download'
+      ) ?? null
+  )
+  const isChecking = computed(
+    () => activeCheckRun.value !== null || state.value.status === 'checking'
+  )
+  const isDownloading = computed(() => activeDownloadRun.value !== null)
+  const canStartDownload = computed(
+    () =>
+      activeDownloadRun.value === null &&
+      state.value.status === 'available' &&
+      state.value.update !== null
+  )
+  const downloadProgress = computed(() => {
+    const work = activeDownloadRun.value?.progress?.work
+    if (!work) {
+      return state.value.downloadProgress
+    }
+
+    const transferred = work.current ?? 0
+    const total = work.total ?? 0
+    return {
+      bytesPerSecond: work.rate ?? 0,
+      percent:
+        work.percent ?? (total > 0 ? Math.max(0, Math.min(100, (transferred / total) * 100)) : 0),
+      transferred,
+      total
+    }
+  })
 
   const release = computed(() => state.value.update)
   const activeReleaseVersion = computed(() => {
@@ -119,13 +153,12 @@ export const useUpdaterStore = defineStore('updater', () => {
       setChangelogError(normalizedVersion, null)
 
       try {
-        const result = await ipcManager.invoke('updater:get-changelog', normalizedVersion)
-        if (!result.success) {
-          throw new Error('Failed to fetch update changelog.')
-        }
+        const bundle = unwrapIpcData(
+          await ipcManager.invoke('updater:get-changelog', normalizedVersion)
+        )
 
-        setChangelog(result.data)
-        return result.data
+        setChangelog(bundle)
+        return bundle
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         setChangelogError(normalizedVersion, message)
@@ -179,10 +212,7 @@ export const useUpdaterStore = defineStore('updater', () => {
     isInstalling.value = true
 
     try {
-      const result = await ipcManager.invoke('updater:quit-and-install')
-      if (!result.success) {
-        throw new Error('Failed to install downloaded update.')
-      }
+      unwrapIpcVoid(await ipcManager.invoke('updater:quit-and-install'))
     } catch (error) {
       isInstalling.value = false
       throw error
@@ -194,10 +224,7 @@ export const useUpdaterStore = defineStore('updater', () => {
     isManuallyChecking.value = true
 
     try {
-      const result = await ipcManager.invoke('updater:check-for-updates')
-      if (!result.success) {
-        throw new Error('Failed to check for updates.')
-      }
+      unwrapIpcData(await ipcManager.invoke('updater:check-for-updates'))
     } finally {
       isManuallyChecking.value = false
     }
@@ -208,10 +235,7 @@ export const useUpdaterStore = defineStore('updater', () => {
     isStartingDownload.value = true
 
     try {
-      const result = await ipcManager.invoke('updater:download-update')
-      if (!result.success) {
-        throw new Error('Failed to download update.')
-      }
+      unwrapIpcData(await ipcManager.invoke('updater:download-update'))
     } finally {
       isStartingDownload.value = false
     }
@@ -226,6 +250,8 @@ export const useUpdaterStore = defineStore('updater', () => {
     hasDownloadedUpdate,
     isChecking,
     isDownloading,
+    activeCheckRun,
+    activeDownloadRun,
     canStartDownload,
     downloadProgress,
     release,

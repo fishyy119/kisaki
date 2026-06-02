@@ -98,7 +98,7 @@ export class ExtensionUpdateManager {
     })
 
     try {
-      await this.repositories.refreshRepositories()
+      await this.repositories.runRefreshRepositories({ type: 'system', reason: 'update' })
     } catch (error) {
       repositoryRefreshError =
         error instanceof Error ? error.message : 'Unknown extension repository refresh error'

@@ -85,11 +85,11 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
   )
 
   ipc.handle('extension:refresh-repository', async (_, repositoryId) =>
-    wrapIpc(() => service.repositories.refreshRepository(repositoryId))
+    wrapIpc(() => service.repositories.startRefreshRepository(repositoryId))
   )
 
   ipc.handle('extension:refresh-repositories', async () =>
-    wrapIpc(() => service.repositories.refreshRepositories())
+    wrapIpc(() => service.repositories.startRefreshRepositories())
   )
 
   ipc.handle('extension:search-catalog', (_, request) =>

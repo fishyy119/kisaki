@@ -1,7 +1,4 @@
-import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { createLogger } from '@main/log'
-import semver from 'semver'
 import type {
   ExtensionCreateRepositoryInstallPlanRequest,
   ExtensionCatalogSearchRequest,
@@ -9,19 +6,15 @@ import type {
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
   ExtensionRepositoryRefreshResult,
-  ExtensionRepositoryState,
   ExtensionRepositoryUpdateRequest
 } from '@shared/extension'
+import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
 import type { ExtensionRepositoryRow } from '@shared/db'
-import {
-  getExtensionRegistryReleaseKind,
-  selectExtensionRegistryArtifact,
-  type ExtensionRegistryManifest,
-  type ExtensionRegistryPackageIcon,
-  type ExtensionRegistryRelease,
-  type ExtensionRegistryReleaseKind
+import type { TaskRunService } from '@main/services/task-run'
+import type {
+  ExtensionRegistryManifest,
+  ExtensionRegistryReleaseKind
 } from '@kisaki3/extension-registry'
-import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
 import type { ExtensionIconManager } from '../packages'
 import { ExtensionRepositoryAggregator } from './aggregate'
 import { ExtensionRepositoryFetcher } from './fetcher'
@@ -32,6 +25,16 @@ import type {
   ExtensionRepositorySearchContext
 } from './types'
 import { getRegistryManifestUrlPolicyIssues } from './url-policy'
+import {
+  normalizeManifestUrl,
+  normalizeOptionalName,
+  normalizePriority,
+  normalizeRepositoryState,
+  requireNonEmptyString
+} from './normalization'
+import { collectCatalogIcons, toRepositoryInfo as toRepositoryInfoDto } from './projection'
+import { ExtensionRepositoryRefreshRunner, type ExtensionRepositoryRefreshOptions } from './refresh'
+import { collectInstallCandidates, compareInstallCandidates } from './selection'
 
 const log = createLogger('Extension')
 
@@ -39,6 +42,7 @@ export interface ExtensionRepositoryManagerOptions {
   store: ExtensionRepositoryStore
   fetcher: ExtensionRepositoryFetcher
   iconManager: ExtensionIconManager
+  taskRun: TaskRunService
   apiVersion: string
   allowInsecureLocalUrls?: boolean
   getInstalledVersions?: () => ReadonlyMap<string, string>
@@ -50,6 +54,7 @@ export class ExtensionRepositoryManager {
   private readonly store: ExtensionRepositoryStore
   private readonly fetcher: ExtensionRepositoryFetcher
   private readonly iconManager: ExtensionIconManager
+  private readonly refreshRunner: ExtensionRepositoryRefreshRunner
   private readonly aggregator: ExtensionRepositoryAggregator
   private readonly apiVersion: string
   private readonly allowInsecureLocalUrls: boolean
@@ -75,6 +80,12 @@ export class ExtensionRepositoryManager {
       apiVersion: options.apiVersion,
       resolveIconUrl: (icon) => this.iconManager.getIconUrl(icon)
     })
+    this.refreshRunner = new ExtensionRepositoryRefreshRunner({
+      taskRun: options.taskRun,
+      store: this.store,
+      refreshRepository: (repositoryId, refreshOptions) =>
+        this.refreshRepository(repositoryId, refreshOptions)
+    })
   }
 
   async init(): Promise<void> {
@@ -87,7 +98,9 @@ export class ExtensionRepositoryManager {
   }
 
   async addRepository(request: ExtensionRepositoryCreateRequest): Promise<ExtensionRepositoryInfo> {
-    const url = this.normalizeManifestUrl(request.url)
+    const url = normalizeManifestUrl(request.url, {
+      allowInsecureLocalUrls: this.allowInsecureLocalUrls
+    })
     const existing = this.store.getByUrl(url)
     if (existing) {
       throw new Error(`Extension repository URL is already registered as "${existing.id}".`)
@@ -127,7 +140,9 @@ export class ExtensionRepositoryManager {
       request.priority === undefined ? undefined : normalizePriority(request.priority)
 
     if (request.url !== undefined) {
-      const url = this.normalizeManifestUrl(request.url)
+      const url = normalizeManifestUrl(request.url, {
+        allowInsecureLocalUrls: this.allowInsecureLocalUrls
+      })
       const duplicate = this.store.getByUrl(url)
       if (duplicate && duplicate.id !== id) {
         throw new Error(`Extension repository URL is already registered as "${duplicate.id}".`)
@@ -164,7 +179,24 @@ export class ExtensionRepositoryManager {
     this.rebuildCatalogAndEmit()
   }
 
-  async refreshRepository(repositoryId: string): Promise<ExtensionRepositoryRefreshResult> {
+  startRefreshRepository(repositoryId: string): TaskRunStartResult {
+    return this.refreshRunner.startRefreshRepository(repositoryId)
+  }
+
+  startRefreshRepositories(): TaskRunStartResult {
+    return this.refreshRunner.startRefreshRepositories()
+  }
+
+  runRefreshRepositories(
+    initiator: TaskRunInitiator
+  ): Promise<readonly ExtensionRepositoryRefreshResult[]> {
+    return this.refreshRunner.runRefreshRepositories(initiator)
+  }
+
+  async refreshRepository(
+    repositoryId: string,
+    options: ExtensionRepositoryRefreshOptions = {}
+  ): Promise<ExtensionRepositoryRefreshResult> {
     const row = this.store.require(requireNonEmptyString(repositoryId, 'repository id'))
     if (row.state !== 'enabled') {
       const updated = this.store.recordRefreshFailure(row.id, {
@@ -182,7 +214,8 @@ export class ExtensionRepositoryManager {
     try {
       const fetched = await this.fetcher.fetch(row.url, {
         etag: row.etag,
-        lastModified: row.lastModified
+        lastModified: row.lastModified,
+        signal: options.signal
       })
 
       if (fetched.status === 'not-modified') {
@@ -214,6 +247,10 @@ export class ExtensionRepositoryManager {
         error: null
       }
     } catch (error) {
+      if (options.signal?.aborted) {
+        throw error
+      }
+
       const updated = this.store.recordRefreshFailure(row.id, {
         error: error instanceof Error ? error.message : 'Unknown repository refresh error'
       })
@@ -227,10 +264,15 @@ export class ExtensionRepositoryManager {
     }
   }
 
-  async refreshRepositories(): Promise<readonly ExtensionRepositoryRefreshResult[]> {
+  async refreshRepositories(
+    options: ExtensionRepositoryRefreshOptions = {}
+  ): Promise<readonly ExtensionRepositoryRefreshResult[]> {
     const results: ExtensionRepositoryRefreshResult[] = []
     for (const row of this.store.listEnabled()) {
-      results.push(await this.refreshRepository(row.id))
+      if (options.signal?.aborted) {
+        throw new Error('Extension repository refresh was aborted.')
+      }
+      results.push(await this.refreshRepository(row.id, options))
     }
     return results
   }
@@ -305,89 +347,12 @@ export class ExtensionRepositoryManager {
       includeYanked?: boolean
       compatibleOnly?: boolean
     } = {}
-  ): {
-    extensionId: string
-    releaseId?: string
-    packageFound: boolean
-    releaseFound: boolean
-    candidates: ExtensionRepositoryInstallCandidate[]
-  } {
-    const extensionId = requireNonEmptyString(extensionIdValue, 'extension id')
-    const repositoryId = options.repositoryId
-      ? requireNonEmptyString(options.repositoryId, 'repository id')
-      : undefined
-    const releaseId = options.releaseId
-      ? requireNonEmptyString(options.releaseId, 'release id')
-      : undefined
-    const repositories = repositoryId
-      ? [this.store.require(repositoryId)]
-      : this.store.listEnabled()
-    const candidates: ExtensionRepositoryInstallCandidate[] = []
-    let packageFound = false
-    let releaseFound = false
-
-    for (const repository of repositories) {
-      if (repository.state !== 'enabled') {
-        continue
-      }
-
-      const manifest = this.getAllowedManifestSnapshot(repository)
-      if (!manifest) {
-        continue
-      }
-
-      const registryPackage = manifest.packages.find((item) => item.id === extensionId)
-      if (!registryPackage) {
-        continue
-      }
-      packageFound = true
-
-      for (const release of registryPackage.releases) {
-        const releaseDigest = createExtensionRegistryReleaseDigest(
-          manifest,
-          registryPackage,
-          release
-        )
-        if (releaseId && releaseDigest !== releaseId) {
-          continue
-        }
-        releaseFound = true
-        if (
-          options.releaseKind &&
-          getExtensionRegistryReleaseKind(release.version) !== options.releaseKind
-        ) {
-          continue
-        }
-        if (options.compatibleOnly !== false && !isReleaseCompatible(release, this.apiVersion)) {
-          continue
-        }
-        if (!options.includeYanked && release.yanked === true) {
-          continue
-        }
-
-        const artifact = selectExtensionRegistryArtifact(release)
-        if (!artifact) {
-          continue
-        }
-
-        candidates.push({
-          repository,
-          manifest,
-          registryPackage,
-          release,
-          releaseDigest,
-          artifact
-        })
-      }
-    }
-
-    return {
-      extensionId,
-      releaseId,
-      packageFound,
-      releaseFound,
-      candidates
-    }
+  ) {
+    return collectInstallCandidates(extensionIdValue, options, {
+      store: this.store,
+      apiVersion: this.apiVersion,
+      getAllowedManifestSnapshot: (repository) => this.getAllowedManifestSnapshot(repository)
+    })
   }
 
   private rebuildCatalogAndEmit(): void {
@@ -402,24 +367,7 @@ export class ExtensionRepositoryManager {
   }
 
   private toRepositoryInfo(row: ExtensionRepositoryRow): ExtensionRepositoryInfo {
-    const manifestSnapshot = this.getAllowedManifestSnapshot(row)
-    return {
-      id: row.id,
-      url: row.url,
-      name: row.name,
-      state: row.state,
-      priority: row.priority,
-      packageCount: manifestSnapshot?.packages.length ?? 0,
-      manifestDigest: row.manifestDigest,
-      manifestUpdatedAt: manifestSnapshot?.updatedAt ?? null,
-      lastRefreshAt: toIsoString(row.lastRefreshAt),
-      lastSuccessAt: toIsoString(row.lastSuccessAt),
-      lastError: row.lastError,
-      etag: row.etag,
-      lastModified: row.lastModified,
-      createdAt: toIsoString(row.createdAt) ?? new Date(0).toISOString(),
-      updatedAt: toIsoString(row.updatedAt) ?? new Date(0).toISOString()
-    }
+    return toRepositoryInfoDto(row, this.getAllowedManifestSnapshot(row))
   }
 
   private createAvailableRepositoryId(manifestId: string): string {
@@ -469,30 +417,6 @@ export class ExtensionRepositoryManager {
     return null
   }
 
-  private normalizeManifestUrl(value: string): string {
-    const input = requireNonEmptyString(value, 'repository URL').trim()
-    let url: URL
-
-    try {
-      url = new URL(input)
-    } catch {
-      if (!this.allowInsecureLocalUrls) {
-        throw new Error('Repository URL must be a valid https URL.')
-      }
-      url = new URL(pathToFileURL(path.resolve(input)).toString())
-    }
-
-    if (url.protocol === 'https:') {
-      return url.toString()
-    }
-
-    if (this.allowInsecureLocalUrls && isLocalDevelopmentUrl(url)) {
-      return url.toString()
-    }
-
-    throw new Error('Repository URL must use https.')
-  }
-
   private emitRepositoriesChanged(): void {
     this.onRepositoriesChanged?.()
   }
@@ -500,123 +424,4 @@ export class ExtensionRepositoryManager {
   private emitCatalogChanged(): void {
     this.onCatalogChanged?.()
   }
-}
-
-function normalizeOptionalName(value: string | undefined): string | undefined {
-  const normalized = value?.trim()
-  return normalized || undefined
-}
-
-function normalizeRepositoryState(
-  value: ExtensionRepositoryState | undefined
-): ExtensionRepositoryState | undefined {
-  if (value === undefined || value === 'enabled' || value === 'disabled') {
-    return value
-  }
-
-  throw new Error('Repository state must be enabled or disabled.')
-}
-
-function normalizePriority(value: number | undefined): number | undefined {
-  if (value === undefined) {
-    return undefined
-  }
-
-  if (!Number.isSafeInteger(value)) {
-    throw new Error('Repository priority must be a safe integer.')
-  }
-
-  return value
-}
-
-function toIsoString(value: Date | number | string | null | undefined): string | null {
-  if (!value) {
-    return null
-  }
-
-  const date = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(date.valueOf()) ? null : date.toISOString()
-}
-
-function requireNonEmptyString(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`${label} must be a non-empty string.`)
-  }
-
-  return value
-}
-
-function isLocalDevelopmentUrl(url: URL): boolean {
-  if (url.protocol === 'file:') {
-    return true
-  }
-
-  if (url.protocol !== 'http:') {
-    return false
-  }
-
-  const hostname = url.hostname.toLowerCase()
-  return (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '::1' ||
-    hostname === '[::1]'
-  )
-}
-
-function compareInstallCandidates(
-  left: ExtensionRepositoryInstallCandidate,
-  right: ExtensionRepositoryInstallCandidate,
-  apiVersion: string
-): number {
-  return (
-    compareBooleans(
-      isReleaseCompatible(left.release, apiVersion),
-      isReleaseCompatible(right.release, apiVersion)
-    ) ||
-    compareBooleans(left.release.yanked !== true, right.release.yanked !== true) ||
-    compareBooleans(
-      getExtensionRegistryReleaseKind(left.release.version) === 'stable',
-      getExtensionRegistryReleaseKind(right.release.version) === 'stable'
-    ) ||
-    semver.rcompare(left.release.version, right.release.version) ||
-    compareNullableTime(right.release.publishedAt, left.release.publishedAt) ||
-    compareNumbers(left.repository.priority, right.repository.priority) ||
-    compareStrings(left.repository.id, right.repository.id) ||
-    compareStrings(left.releaseDigest, right.releaseDigest)
-  )
-}
-
-function isReleaseCompatible(
-  release: Pick<ExtensionRegistryRelease, 'engines'>,
-  apiVersion: string
-): boolean {
-  return semver.satisfies(apiVersion, release.engines.kisaki)
-}
-
-function compareBooleans(left: boolean, right: boolean): number {
-  return left === right ? 0 : left ? -1 : 1
-}
-
-function compareNumbers(left: number, right: number): number {
-  return left === right ? 0 : left < right ? -1 : 1
-}
-
-function compareStrings(left: string, right: string): number {
-  return left.localeCompare(right)
-}
-
-function compareNullableTime(left: string | null, right: string | null): number {
-  const leftTime = left ? Date.parse(left) : 0
-  const rightTime = right ? Date.parse(right) : 0
-  return compareNumbers(
-    Number.isFinite(leftTime) ? leftTime : 0,
-    Number.isFinite(rightTime) ? rightTime : 0
-  )
-}
-
-export function collectCatalogIcons(
-  catalog: ExtensionRepositoryCatalog
-): readonly ExtensionRegistryPackageIcon[] {
-  return catalog.packages.flatMap((item) => (item.remoteIcon ? [item.remoteIcon] : []))
 }

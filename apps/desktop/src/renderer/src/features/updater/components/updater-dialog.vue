@@ -85,6 +85,9 @@ const progressPercent = computed(() => {
 })
 
 const statusText = computed(() => {
+  if (isChecking.value) return '正在检查更新...'
+  if (isDownloading.value) return '正在下载更新...'
+
   switch (state.value.status) {
     case 'idle':
       return '点击「检查更新」开始'

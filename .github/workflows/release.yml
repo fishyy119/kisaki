@@ -284,3 +284,4 @@ jobs:
           fail_on_unmatched_files: false
           draft: false
           prerelease: ${{ contains(needs.detect.outputs.version, '-') }}
+          make_latest: ${{ needs.detect.outputs.target == 'desktop' && !contains(needs.detect.outputs.version, '-') }}

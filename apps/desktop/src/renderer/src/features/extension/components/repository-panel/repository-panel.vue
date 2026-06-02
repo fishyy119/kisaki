@@ -10,6 +10,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useTaskRunStore } from '@renderer/stores'
 import RepositoryAddDialog from './repository-add-dialog.vue'
 import RepositoryDetailsDialog from './repository-details-dialog.vue'
 import RepositoryPanelRow from './repository-panel-row.vue'
@@ -19,7 +20,7 @@ import { OFFICIAL_EXTENSION_REPOSITORY_URL, type ExtensionRepositoryInfo } from 
 
 const addDialogOpen = ref(false)
 const submitting = ref(false)
-const refreshingAll = ref(false)
+const startingRefreshAll = ref(false)
 const busyRepositoryIds = ref(new Set<string>())
 const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
@@ -39,6 +40,24 @@ const state = useRenderState(isLoading, error, repositories, { preset: 'network'
 const repositoryList = computed(() =>
   [...(repositories.value ?? [])].sort((left, right) => left.priority - right.priority)
 )
+const taskRunStore = useTaskRunStore()
+const activeRefreshAll = computed(() =>
+  taskRunStore.activeRuns.some((run) => run.operation === 'extension.repository.refreshAll')
+)
+const activeRefreshRepositoryIds = computed(() => {
+  const ids = new Set<string>()
+  for (const run of taskRunStore.activeRuns) {
+    if (
+      run.operation === 'extension.repository.refresh' &&
+      run.subject?.type === 'repository' &&
+      run.subject.id
+    ) {
+      ids.add(run.subject.id)
+    }
+  }
+  return ids
+})
+const refreshingAll = computed(() => startingRefreshAll.value || activeRefreshAll.value)
 const hasOfficialRepository = computed(() =>
   repositoryList.value.some((repository) => repository.url === OFFICIAL_EXTENSION_REPOSITORY_URL)
 )
@@ -95,34 +114,21 @@ async function handleAddRepository(request: RepositoryAddRequest) {
 }
 
 async function handleRefreshAll() {
-  refreshingAll.value = true
+  startingRefreshAll.value = true
   try {
-    const results = unwrapIpcData(await ipcManager.invoke('extension:refresh-repositories'))
-    const failed = results.filter((result) => result.status === 'failed')
-    if (failed.length > 0) {
-      notify.error('部分仓库刷新失败', `${failed.length} 个仓库返回错误`)
-    } else {
-      notify.success('仓库已刷新')
-    }
-    refetch()
+    unwrapIpcData(await ipcManager.invoke('extension:refresh-repositories'))
+    notify.success('已开始刷新扩展仓库')
   } catch (err) {
     notify.error('刷新仓库失败', err instanceof Error ? err.message : String(err))
   } finally {
-    refreshingAll.value = false
+    startingRefreshAll.value = false
   }
 }
 
 async function handleRefreshRepository(repository: ExtensionRepositoryInfo) {
   await withRepositoryBusy(repository.id, async () => {
-    const result = unwrapIpcData(
-      await ipcManager.invoke('extension:refresh-repository', repository.id)
-    )
-    if (result.status === 'failed') {
-      notify.error('仓库刷新失败', result.error ?? '未知错误')
-    } else {
-      notify.success(result.status === 'not-modified' ? '仓库未变化' : '仓库已刷新')
-    }
-    refetch()
+    unwrapIpcData(await ipcManager.invoke('extension:refresh-repository', repository.id))
+    notify.success('已开始刷新仓库')
   })
 }
 
@@ -206,6 +212,14 @@ function setRepositoryBusy(repositoryId: string, busy: boolean) {
     next.delete(repositoryId)
   }
   busyRepositoryIds.value = next
+}
+
+function isRepositoryBusy(repository: ExtensionRepositoryInfo): boolean {
+  return (
+    busyRepositoryIds.value.has(repository.id) ||
+    activeRefreshAll.value ||
+    activeRefreshRepositoryIds.value.has(repository.id)
+  )
 }
 
 function getRepositoryIndex(repository: ExtensionRepositoryInfo): number {
@@ -296,7 +310,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
             :key="repository.id"
             :repository="repository"
             :priority-label="index + 1"
-            :busy="busyRepositoryIds.has(repository.id)"
+            :busy="isRepositoryBusy(repository)"
             :can-move-up="canMoveRepository(repository, -1)"
             :can-move-down="canMoveRepository(repository, 1)"
             @details="handleOpenDetails"
@@ -326,7 +340,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
       v-if="removeDialogOpen && repositoryToRemove"
       v-model:open="removeDialogOpen"
       :repository="repositoryToRemove"
-      :removing="busyRepositoryIds.has(repositoryToRemove.id)"
+      :removing="isRepositoryBusy(repositoryToRemove)"
       @confirm="handleConfirmRemoveRepository"
     />
   </div>

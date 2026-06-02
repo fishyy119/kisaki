@@ -75,7 +75,6 @@ import type {
   ExtensionPurgeDataRequest,
   ExtensionRepositoryCreateRequest,
   ExtensionRepositoryInfo,
-  ExtensionRepositoryRefreshResult,
   ExtensionRepositoryUpdateRequest,
   ExtensionResolvedEntityMenu,
   ExtensionSettingsPanelRegistrationInfo,
@@ -204,8 +203,8 @@ export interface IpcMainHandlers {
   'app:quit': () => IpcVoidResult
   'updater:get-state': () => IpcResult<AppUpdaterState>
   'updater:get-changelog': (version: string) => IpcResult<AppUpdaterChangelogBundle>
-  'updater:check-for-updates': () => IpcVoidResult
-  'updater:download-update': () => IpcVoidResult
+  'updater:check-for-updates': () => IpcResult<TaskRunStartResult>
+  'updater:download-update': () => IpcResult<TaskRunStartResult>
   'updater:reload-settings': () => IpcVoidResult
   'updater:quit-and-install': () => IpcVoidResult
 
@@ -491,10 +490,8 @@ export interface IpcMainHandlers {
     request: ExtensionRepositoryUpdateRequest
   ) => IpcResult<ExtensionRepositoryInfo>
   'extension:remove-repository': (repositoryId: string) => IpcVoidResult
-  'extension:refresh-repository': (
-    repositoryId: string
-  ) => IpcResult<ExtensionRepositoryRefreshResult>
-  'extension:refresh-repositories': () => IpcResult<readonly ExtensionRepositoryRefreshResult[]>
+  'extension:refresh-repository': (repositoryId: string) => IpcResult<TaskRunStartResult>
+  'extension:refresh-repositories': () => IpcResult<TaskRunStartResult>
   'extension:search-catalog': (
     request?: ExtensionCatalogSearchRequest
   ) => IpcResult<ExtensionCatalogSearchResult>

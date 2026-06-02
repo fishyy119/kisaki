@@ -10,11 +10,11 @@ export function registerUpdaterIpc(service: UpdaterService, ipc: IpcService): vo
   )
 
   ipc.handle('updater:check-for-updates', async () =>
-    wrapIpcVoid(() => service.updates.checkForUpdates())
+    wrapIpc(() => service.updates.startCheckForUpdates())
   )
 
   ipc.handle('updater:download-update', async () =>
-    wrapIpcVoid(() => service.updates.downloadUpdate())
+    wrapIpc(() => service.updates.startDownloadUpdate())
   )
 
   ipc.handle('updater:reload-settings', async () => wrapIpcVoid(() => service.settings.reload()))

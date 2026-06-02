@@ -124,6 +124,7 @@ export class ExtensionService implements IService {
         allowInsecureLocalUrls: !app.isPackaged
       }),
       iconManager,
+      taskRun: container.get('task-run'),
       apiVersion: EXTENSION_API_VERSION,
       allowInsecureLocalUrls: !app.isPackaged,
       getInstalledVersions: () => this.installations?.getInstalledVersionMap() ?? new Map(),

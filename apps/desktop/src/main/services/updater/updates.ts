@@ -2,11 +2,17 @@ import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { createLogger } from '@main/log'
 import type { IpcService } from '@main/services/ipc'
+import {
+  isTaskRunCancellation,
+  type TaskRunHandle,
+  type TaskRunService
+} from '@main/services/task-run'
 import type {
   AppUpdaterDownloadProgress,
   AppUpdaterRelease,
   AppUpdaterState
 } from '@shared/updater'
+import type { TaskRunInitiator, TaskRunProgressUpdate, TaskRunStartResult } from '@shared/task-run'
 import { autoUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
 import type { UpdaterSettings } from './settings'
 
@@ -15,6 +21,7 @@ const log = createLogger('Updater')
 interface AppUpdateManagerOptions {
   ipc: IpcService
   settings: UpdaterSettings
+  taskRun: TaskRunService
 }
 
 export class AppUpdateManager {
@@ -26,6 +33,8 @@ export class AppUpdateManager {
   }
   private isDownloading = false
   private autoDownloadOnNextAvailable = false
+  private activeCheckRun: TaskRunHandle | null = null
+  private activeDownloadRun: TaskRunHandle | null = null
 
   constructor(private readonly options: AppUpdateManagerOptions) {}
 
@@ -34,7 +43,7 @@ export class AppUpdateManager {
     this.registerAutoUpdaterListeners()
 
     if (this.shouldCheckForUpdatesOnStartup()) {
-      void this.checkForUpdatesOnStartup()
+      this.startCheckForUpdates({ type: 'system', reason: 'startup' }, { autoDownload: true })
     }
   }
 
@@ -51,15 +60,77 @@ export class AppUpdateManager {
     return this.state
   }
 
-  async checkForUpdates(): Promise<void> {
+  startCheckForUpdates(
+    initiator: TaskRunInitiator = { type: 'user' },
+    options: { autoDownload?: boolean } = {}
+  ): TaskRunStartResult {
+    if (this.activeCheckRun) {
+      return {
+        runId: this.activeCheckRun.id,
+        createdAt: this.activeCheckRun.createdAt
+      }
+    }
+
     if (is.dev || !app.isPackaged) {
       throw new Error('Manual update check is only available in packaged builds.')
     }
 
-    await this.checkForUpdatesInternal({ autoDownload: false })
+    const run = this.options.taskRun.runs.create({
+      category: 'updater',
+      operation: 'updater.check',
+      title: '检查应用更新',
+      owner: { type: 'app' },
+      initiator,
+      subject: { type: 'app', labelSnapshot: app.getName() },
+      controls: { cancelable: false, pausable: false }
+    })
+
+    this.activeCheckRun = run
+    void this.executeCheckForUpdates(run, { autoDownload: options.autoDownload === true }).catch(
+      () => undefined
+    )
+
+    return {
+      runId: run.id,
+      createdAt: run.createdAt
+    }
   }
 
-  async downloadUpdate(): Promise<void> {
+  startDownloadUpdate(initiator: TaskRunInitiator = { type: 'user' }): TaskRunStartResult {
+    if (this.activeDownloadRun) {
+      return {
+        runId: this.activeDownloadRun.id,
+        createdAt: this.activeDownloadRun.createdAt
+      }
+    }
+
+    if (this.state.status === 'downloaded') {
+      throw new Error('Update is already downloaded.')
+    }
+    if (this.state.status !== 'available' || !this.state.update) {
+      throw new Error('No update is available for download.')
+    }
+
+    const run = this.options.taskRun.runs.create({
+      category: 'updater',
+      operation: 'updater.download',
+      title: `下载应用更新 v${this.state.update.version}`,
+      owner: { type: 'app' },
+      initiator,
+      subject: { type: 'app', labelSnapshot: app.getName() },
+      controls: { cancelable: false, pausable: false }
+    })
+
+    this.activeDownloadRun = run
+    void this.executeDownloadUpdate(run).catch(() => undefined)
+
+    return {
+      runId: run.id,
+      createdAt: run.createdAt
+    }
+  }
+
+  private async downloadUpdateInternal(): Promise<void> {
     if (this.isDownloading || this.state.status === 'downloading') return
     if (this.state.status === 'downloaded') return
     if (this.state.status !== 'available' || !this.state.update) {
@@ -154,9 +225,11 @@ export class AppUpdateManager {
 
     if (this.autoDownloadOnNextAvailable) {
       this.autoDownloadOnNextAvailable = false
-      void this.downloadUpdate().catch((error) => {
+      try {
+        this.startDownloadUpdate({ type: 'system', reason: 'update' })
+      } catch (error) {
         log.error('Failed to start auto download after update-available:', error)
-      })
+      }
     }
   }
 
@@ -173,6 +246,7 @@ export class AppUpdateManager {
 
   private readonly handleDownloadProgress = (progress: ProgressInfo) => {
     this.isDownloading = true
+    this.activeDownloadRun?.context.report(createDownloadProgress(progress))
     this.updateState({
       status: 'downloading',
       error: null,
@@ -246,16 +320,96 @@ export class AppUpdateManager {
     return true
   }
 
-  private async checkForUpdatesOnStartup(): Promise<void> {
+  private async executeCheckForUpdates(
+    run: TaskRunHandle,
+    options: { autoDownload: boolean }
+  ): Promise<void> {
     try {
-      await this.checkForUpdatesInternal({ autoDownload: true })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      log.error('Startup update check failed:', error)
-      this.updateState({
-        status: 'error',
-        error: message
+      run.start()
+      run.context.report({
+        phase: {
+          key: 'checking',
+          label: '正在检查应用更新',
+          current: 1,
+          total: 1
+        },
+        work: {
+          indeterminate: true,
+          unit: 'request'
+        }
       })
+
+      await this.checkForUpdatesInternal({ autoDownload: options.autoDownload })
+      run.context.throwIfCancelled()
+
+      const update = this.state.update
+      if (update && this.state.status !== 'not-available') {
+        run.complete({
+          title: '发现新版本',
+          summary: `发现应用更新 v${update.version}`,
+          counters: { available: 1 },
+          output: {
+            version: update.version,
+            releaseName: update.releaseName,
+            releaseDate: update.releaseDate,
+            autoDownload: options.autoDownload
+          }
+        })
+        return
+      }
+
+      run.complete({
+        title: '当前已是最新版本',
+        summary: '没有发现可用应用更新。',
+        counters: { notAvailable: 1 }
+      })
+    } catch (error) {
+      this.finishTaskRunFromError(run, error, {
+        cancelledSummary: '应用更新检查已取消'
+      })
+      throw error
+    } finally {
+      if (this.activeCheckRun?.id === run.id) {
+        this.activeCheckRun = null
+      }
+    }
+  }
+
+  private async executeDownloadUpdate(run: TaskRunHandle): Promise<void> {
+    try {
+      run.start()
+      run.context.report(
+        createDownloadProgress({
+          transferred: this.state.downloadProgress?.transferred ?? 0,
+          total: this.state.downloadProgress?.total ?? 0,
+          percent: this.state.downloadProgress?.percent ?? 0,
+          bytesPerSecond: this.state.downloadProgress?.bytesPerSecond ?? 0
+        })
+      )
+
+      await this.downloadUpdateInternal()
+      run.context.throwIfCancelled()
+
+      const update = this.state.update
+      const progress = this.state.downloadProgress
+      run.complete({
+        title: '应用更新下载完成',
+        summary: update ? `已下载应用更新 v${update.version}` : '应用更新已下载。',
+        counters: { downloaded: 1 },
+        output: {
+          version: update?.version,
+          totalBytes: progress?.total ?? progress?.transferred ?? null
+        }
+      })
+    } catch (error) {
+      this.finishTaskRunFromError(run, error, {
+        cancelledSummary: '应用更新下载已取消'
+      })
+      throw error
+    } finally {
+      if (this.activeDownloadRun?.id === run.id) {
+        this.activeDownloadRun = null
+      }
     }
   }
 
@@ -289,4 +443,46 @@ export class AppUpdateManager {
       total: progress.total ?? 0
     }
   }
+
+  private finishTaskRunFromError(
+    run: TaskRunHandle,
+    error: unknown,
+    options: { cancelledSummary: string }
+  ): void {
+    if (isTaskRunCancellation(error) || run.context.signal.aborted || isAbortError(error)) {
+      run.cancel({ summary: options.cancelledSummary })
+      return
+    }
+
+    run.fail(error)
+  }
+}
+
+function createDownloadProgress(
+  progress: Pick<ProgressInfo, 'transferred' | 'total' | 'percent' | 'bytesPerSecond'>
+): TaskRunProgressUpdate {
+  const total = Number.isFinite(progress.total) && progress.total > 0 ? progress.total : undefined
+  const current =
+    Number.isFinite(progress.transferred) && progress.transferred >= 0
+      ? progress.transferred
+      : undefined
+
+  return {
+    phase: {
+      key: 'download',
+      label: '正在下载应用更新',
+      current: 1,
+      total: 1
+    },
+    work: {
+      current,
+      total,
+      unit: 'byte',
+      indeterminate: total === undefined
+    }
+  }
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
 }
