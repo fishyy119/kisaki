@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { isExtensionIdentifier, type ExtensionCategory } from '@kisaki3/extension-api'
+import spawn from 'cross-spawn'
 
 export const EXTENSION_PUBLISH_WORKFLOWS = ['manual', 'github-single', 'github-monorepo'] as const
 
@@ -317,11 +317,8 @@ function initGit(
   }
 
   try {
-    execFileSync('git', ['add', '-A'], { cwd: targetDir, stdio: 'ignore' })
-    execFileSync('git', ['commit', '-m', `Initial commit: ${extensionName}`], {
-      cwd: targetDir,
-      stdio: 'ignore'
-    })
+    runGit(targetDir, ['add', '-A'])
+    runGit(targetDir, ['commit', '-m', `Initial commit: ${extensionName}`])
     return { gitInitialized: true, initialCommitCreated: true }
   } catch {
     return { gitInitialized: true, initialCommitCreated: false }
@@ -330,11 +327,23 @@ function initGit(
 
 function initGitMainBranch(targetDir: string): void {
   try {
-    execFileSync('git', ['init', '-b', 'main'], { cwd: targetDir, stdio: 'ignore' })
+    runGit(targetDir, ['init', '-b', 'main'])
     return
   } catch {
-    execFileSync('git', ['init'], { cwd: targetDir, stdio: 'ignore' })
+    runGit(targetDir, ['init'])
   }
 
-  execFileSync('git', ['branch', '-M', 'main'], { cwd: targetDir, stdio: 'ignore' })
+  runGit(targetDir, ['branch', '-M', 'main'])
+}
+
+function runGit(cwd: string, args: readonly string[]): void {
+  const result = spawn.sync('git', args, { cwd, stdio: 'ignore' })
+
+  if (result.error) {
+    throw result.error
+  }
+
+  if (result.status !== 0) {
+    throw new Error(`git ${args.join(' ')} failed with exit code ${String(result.status)}.`)
+  }
 }

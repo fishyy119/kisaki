@@ -1,13 +1,9 @@
-import { spawn, type ChildProcess } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import { constants } from 'node:fs'
 import { access } from 'node:fs/promises'
 import path from 'node:path'
+import spawn from 'cross-spawn'
 import { CliError } from '../logger'
-
-interface ProcessCommand {
-  bin: string
-  args: string[]
-}
 
 export async function runTsdown(cwd: string, args: readonly string[]): Promise<void> {
   const child = await spawnTsdown(cwd, args)
@@ -24,15 +20,6 @@ export async function runTsdown(cwd: string, args: readonly string[]): Promise<v
 }
 
 export async function spawnTsdown(cwd: string, args: readonly string[]): Promise<ChildProcess> {
-  const command = await createTsdownCommand(cwd, args)
-  return spawn(command.bin, command.args, {
-    cwd,
-    stdio: 'inherit',
-    shell: false
-  })
-}
-
-async function createTsdownCommand(cwd: string, args: readonly string[]): Promise<ProcessCommand> {
   const localBin = await resolveLocalTsdownBin(cwd)
   if (!localBin) {
     throw new CliError(
@@ -40,17 +27,10 @@ async function createTsdownCommand(cwd: string, args: readonly string[]): Promis
     )
   }
 
-  if (process.platform === 'win32') {
-    return {
-      bin: 'cmd.exe',
-      args: ['/d', '/s', '/c', localBin, ...args]
-    }
-  }
-
-  return {
-    bin: localBin,
-    args: [...args]
-  }
+  return spawn(localBin, args, {
+    cwd,
+    stdio: 'inherit'
+  })
 }
 
 async function resolveLocalTsdownBin(cwd: string): Promise<string | null> {

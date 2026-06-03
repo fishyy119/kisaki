@@ -1,7 +1,8 @@
-import { spawn, type ChildProcess } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import { access, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import spawn from 'cross-spawn'
 
 type BuildTarget = 'dev' | 'resources'
 
@@ -13,7 +14,6 @@ const extensionCliEntry = path.join(repoRoot, 'packages', 'extension-cli', 'src'
 const extensionBuildPackageNames = ['extension-api', 'extension-registry', 'extension-sdk'] as const
 const extensionDebugPackageNames = ['extension-api', 'extension-sdk'] as const
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const shouldUseShell = process.platform === 'win32'
 
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2)
@@ -73,8 +73,7 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
   const [appCommand, ...appArgs] = childCommand
   const appProcess = spawn(appCommand, appArgs, {
     cwd: desktopRoot,
-    stdio: 'inherit',
-    shell: shouldUseShell
+    stdio: 'inherit'
   })
 
   let stopping = false
@@ -86,14 +85,10 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
     stopping = true
 
     for (const watcher of watchers) {
-      if (!watcher.killed) {
-        watcher.kill()
-      }
+      terminateProcess(watcher)
     }
 
-    if (!appProcess.killed) {
-      appProcess.kill()
-    }
+    terminateProcess(appProcess)
 
     process.exit(code)
   }
@@ -199,8 +194,7 @@ function runKisxOutput(
 function spawnKisxOutputWatcher(projectDir: string, outputRoot: string): ChildProcess {
   return spawn(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, true, true), {
     cwd: desktopRoot,
-    stdio: 'inherit',
-    shell: shouldUseShell
+    stdio: 'inherit'
   })
 }
 
@@ -236,8 +230,7 @@ function runProcess(command: string, args: string[], cwd: string): Promise<void>
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
-      stdio: 'inherit',
-      shell: shouldUseShell
+      stdio: 'inherit'
     })
 
     child.on('error', reject)
@@ -249,6 +242,19 @@ function runProcess(command: string, args: string[], cwd: string): Promise<void>
       }
     })
   })
+}
+
+function terminateProcess(child: ChildProcess): void {
+  if (child.killed || child.exitCode !== null || child.signalCode !== null) {
+    return
+  }
+
+  if (process.platform === 'win32' && child.pid) {
+    spawn.sync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+    return
+  }
+
+  child.kill()
 }
 
 function parseTarget(args: string[]): BuildTarget {

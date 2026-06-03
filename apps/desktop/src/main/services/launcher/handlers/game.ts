@@ -6,11 +6,10 @@
 
 import { shell } from 'electron'
 import { platform } from '@electron-toolkit/utils'
-import { spawn, exec } from 'child_process'
-import { promisify } from 'util'
 import type { Game } from '@shared/db'
 import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
+import spawn from 'cross-spawn'
 import { createLogger } from '@main/log'
 import type { MonitorService } from '@main/services/monitor'
 import type { DbService } from '@main/services/db'
@@ -20,8 +19,6 @@ import { eq } from 'drizzle-orm'
 import { openExternalProtocol } from '@main/utils'
 
 const log = createLogger('Launcher')
-
-const execAsync = promisify(exec)
 
 export class GameLauncherHandler {
   constructor(
@@ -189,19 +186,19 @@ export class GameLauncherHandler {
     }
 
     // Use spawn to execute
-    const process = spawn(absolutePath, [], {
+    const child = spawn(absolutePath, [], {
       cwd: game.gameDirPath || undefined,
       detached: true, // Detach process, allow parent to exit
       stdio: 'ignore' // Ignore stdin/stdout
     })
 
     // Error handling
-    process.on('error', (error) => {
+    child.on('error', (error) => {
       log.error('Failed to launch game.', error, { gameId: game.id })
     })
 
     // Detach process to run independently
-    process.unref()
+    child.unref()
   }
 
   /**
@@ -217,7 +214,7 @@ export class GameLauncherHandler {
 
     // Windows uses taskkill command
     if (platform.isWindows) {
-      await execAsync(`taskkill /F /PID ${status.pid}`)
+      await runExternalCommand('taskkill', ['/F', '/PID', String(status.pid)])
     } else {
       // Unix-like systems use kill command
       process.kill(status.pid, 'SIGTERM')
@@ -225,4 +222,19 @@ export class GameLauncherHandler {
 
     log.info('Killed game process.', { gameId: gameId, statusPid: status.pid })
   }
+}
+
+function runExternalCommand(command: string, args: readonly string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: 'ignore' })
+
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`${command} exited with code ${code ?? 'unknown'}.`))
+      }
+    })
+  })
 }

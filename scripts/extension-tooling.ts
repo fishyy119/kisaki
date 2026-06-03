@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
 
-import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import spawn from 'cross-spawn'
 
 interface ToolingPackage {
   readonly name: string
@@ -472,26 +472,7 @@ function findRepoRoot(startDir: string): string {
 }
 
 function run(commandName: string, runArgs: readonly string[], options: RunOptions = {}): void {
-  if (process.platform === 'win32') {
-    const commandLine = [commandName, ...runArgs].map(quoteWindowsShellArg).join(' ')
-    const result = spawnSync(commandLine, {
-      cwd: options.cwd ?? repoRoot,
-      stdio: 'inherit',
-      shell: true
-    })
-
-    if (result.error) {
-      throw result.error
-    }
-
-    if (result.status !== 0) {
-      throw new Error(`${commandLine} failed with exit code ${String(result.status)}.`)
-    }
-
-    return
-  }
-
-  const result = spawnSync(commandName, runArgs, {
+  const result = spawn.sync(commandName, runArgs, {
     cwd: options.cwd ?? repoRoot,
     stdio: 'inherit'
   })
@@ -505,14 +486,6 @@ function run(commandName: string, runArgs: readonly string[], options: RunOption
       `${commandName} ${runArgs.join(' ')} failed with exit code ${String(result.status)}.`
     )
   }
-}
-
-function quoteWindowsShellArg(value: string): string {
-  if (/^[A-Za-z0-9_./:=@+-]+$/.test(value)) {
-    return value
-  }
-
-  return `"${value.replace(/"/g, '\\"')}"`
 }
 
 function printUsage(receivedCommand: string | undefined): void {

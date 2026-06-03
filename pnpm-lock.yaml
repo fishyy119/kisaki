@@ -11,9 +11,15 @@ importers:
       '@eslint/js':
         specifier: ^9.39.2
         version: 9.39.2
+      '@types/cross-spawn':
+        specifier: ^6.0.6
+        version: 6.0.6
       '@types/node':
         specifier: ^22.19.1
         version: 22.19.11
+      cross-spawn:
+        specifier: ^7.0.6
+        version: 7.0.6
       eslint:
         specifier: ^9.39.1
         version: 9.39.2(jiti@2.6.1)
@@ -74,6 +80,9 @@ importers:
       cron-parser:
         specifier: ^5.5.0
         version: 5.5.0
+      cross-spawn:
+        specifier: ^7.0.6
+        version: 7.0.6
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)
@@ -159,6 +168,9 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
+      '@types/cross-spawn':
+        specifier: ^6.0.6
+        version: 6.0.6
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
@@ -313,6 +325,9 @@ importers:
       '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../extension-api
+      cross-spawn:
+        specifier: ^7.0.6
+        version: 7.0.6
       kolorist:
         specifier: ^1.8.0
         version: 1.8.0
@@ -320,6 +335,9 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
     devDependencies:
+      '@types/cross-spawn':
+        specifier: ^6.0.6
+        version: 6.0.6
       '@types/node':
         specifier: ^22.19.1
         version: 22.19.11
@@ -366,6 +384,9 @@ importers:
       commander:
         specifier: ^13.1.0
         version: 13.1.0
+      cross-spawn:
+        specifier: ^7.0.6
+        version: 7.0.6
       kolorist:
         specifier: ^1.8.0
         version: 1.8.0
@@ -379,6 +400,9 @@ importers:
       '@types/archiver':
         specifier: ^6.0.4
         version: 6.0.4
+      '@types/cross-spawn':
+        specifier: ^6.0.6
+        version: 6.0.6
       '@types/node':
         specifier: ^22.19.1
         version: 22.19.11
@@ -1903,6 +1927,9 @@ packages:
 
   '@types/cacheable-request@6.0.3':
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
+
+  '@types/cross-spawn@6.0.6':
+    resolution: {integrity: sha512-fXRhhUkG4H3TQk5dBhQ7m/JDdSNHKwR2BBia62lhwEIq9xGiQKLxd6LymNhn47SjXhsUEPmxi+PKw2OkW4LLjA==}
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -6363,6 +6390,10 @@ snapshots:
       '@types/keyv': 3.1.4
       '@types/node': 22.19.11
       '@types/responselike': 1.0.3
+
+  '@types/cross-spawn@6.0.6':
+    dependencies:
+      '@types/node': 22.19.11
 
   '@types/d3-array@3.2.2': {}
 

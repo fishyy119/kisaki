@@ -1,4 +1,5 @@
-import { spawn, type ChildProcess } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
+import spawn from 'cross-spawn'
 
 export interface DevLaunchOptions {
   kisakiCommand: string
@@ -23,8 +24,7 @@ export function launchKisaki(extensionPath: string, options: DevLaunchOptions): 
 
   return spawn(options.kisakiCommand, args, {
     cwd: options.cwd ?? process.cwd(),
-    stdio: 'inherit',
-    shell: false
+    stdio: 'inherit'
   })
 }
 
