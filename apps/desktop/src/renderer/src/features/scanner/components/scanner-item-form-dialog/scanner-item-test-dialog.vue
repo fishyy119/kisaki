@@ -100,7 +100,7 @@ watch([open, () => props.scannerPath, () => props.entityDepth, rulesKey], () => 
 
 const resultsList = computed(() => results.value ?? [])
 const visibleResults = computed(() =>
-  resultsList.value.filter((r) => !excludedNames.value.has(r.originalName))
+  resultsList.value.filter((r) => !excludedNames.value.has(r.extractedName))
 )
 const matchedCount = computed(
   () => visibleResults.value.filter((r) => r.matchedRuleId !== null).length
@@ -271,7 +271,7 @@ function handleExclude(name: string) {
                           variant="ghost"
                           size="icon-sm"
                           class="size-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                          @click="handleExclude(result.originalName)"
+                          @click="handleExclude(result.extractedName)"
                         >
                           <Icon
                             icon="icon-[mdi--eye-off-outline]"

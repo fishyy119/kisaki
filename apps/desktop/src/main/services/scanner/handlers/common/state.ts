@@ -1,6 +1,15 @@
 import type { TaskRunHandle } from '@main/services/task-run'
-import type { ScannerRunState } from '@shared/scanner'
-import type { ScannerEntityProcessResult, ScannerRunMetadata } from './types'
+import type { ScannerRunIssue, ScannerRunState } from '@shared/scanner'
+import type {
+  ScannedEntity,
+  ScannerEntityError,
+  ScannerEntityProcessResult,
+  ScannerEntityWarning,
+  ScannerRunMetadata
+} from './types'
+
+type NewScannerEntityProcessResult = Extract<ScannerEntityProcessResult, { kind: 'new' }>
+type FailedScannerEntityProcessResult = Extract<ScannerEntityProcessResult, { kind: 'failed' }>
 
 export class ScannerRunStateStore<TScanner extends ScannerRunMetadata> {
   private readonly states = new Map<string, ScannerRunState>()
@@ -22,10 +31,11 @@ export class ScannerRunStateStore<TScanner extends ScannerRunMetadata> {
       total: 0,
       processedCount: 0,
       newCount: 0,
-      skippedCount: 0,
+      existingCount: 0,
       failedCount: 0,
-      skippedScans: [],
-      failedScans: [],
+      issueCount: 0,
+      issues: [],
+      existing: [],
       createdAt: run.createdAt,
       updatedAt: run.createdAt
     }
@@ -54,24 +64,24 @@ export class ScannerRunStateStore<TScanner extends ScannerRunMetadata> {
     }
 
     switch (result.kind) {
-      case 'processed-only':
-        break
       case 'new':
-        next = { ...next, newCount: next.newCount + 1 }
+        next = this.recordIssues(
+          { ...next, newCount: next.newCount + 1 },
+          result.warnings?.map((warning, index) => toNewIssue(warning, result, index))
+        )
         break
-      case 'skipped':
+      case 'existing':
         next = {
           ...next,
-          skippedCount: next.skippedCount + 1,
-          skippedScans: [...next.skippedScans, result.skippedScan]
+          existingCount: next.existingCount + 1,
+          existing: [...next.existing, result.existing]
         }
         break
       case 'failed':
-        next = {
-          ...next,
-          failedCount: next.failedCount + 1,
-          failedScans: [...next.failedScans, result.failedScan]
-        }
+        next = this.recordIssues(
+          { ...next, failedCount: next.failedCount + 1 },
+          result.errors.map((error, index) => toFailedIssue(error, result, index))
+        )
         break
       default:
         throw new Error(`Unknown scanner entity result kind: ${(result as { kind: string }).kind}`)
@@ -88,12 +98,75 @@ export class ScannerRunStateStore<TScanner extends ScannerRunMetadata> {
     }
     return state
   }
+
+  private recordIssues(
+    state: ScannerRunState,
+    issues: readonly ScannerRunIssue[] | undefined
+  ): ScannerRunState {
+    if (!issues?.length) {
+      return state
+    }
+
+    return {
+      ...state,
+      issueCount: state.issueCount + issues.length,
+      issues: [...state.issues, ...issues]
+    }
+  }
+}
+
+function toIssueBase(
+  problem: ScannerEntityWarning | ScannerEntityError,
+  entity: ScannedEntity,
+  index: number,
+  targetId = ''
+) {
+  return {
+    id: `${problem.type}:${entity.path}:${targetId}:${index}`,
+    type: problem.type,
+    extractedName: entity.extractedName,
+    path: entity.path,
+    reason: problem.reason,
+    fixable: isIssueFixable(problem.type)
+  }
+}
+
+function toNewIssue(
+  warning: ScannerEntityWarning,
+  result: NewScannerEntityProcessResult,
+  index: number
+): ScannerRunIssue {
+  return { ...toIssueBase(warning, result, index, result.gameId), gameId: result.gameId }
+}
+
+function toFailedIssue(
+  error: ScannerEntityError,
+  result: FailedScannerEntityProcessResult,
+  index: number
+): ScannerRunIssue {
+  const issue = toIssueBase(error, result, index, result.existingGameId)
+  if (result.existingGameId) {
+    return { ...issue, existingGameId: result.existingGameId }
+  }
+
+  return issue
+}
+
+function isIssueFixable(type: ScannerRunIssue['type']): boolean {
+  switch (type) {
+    case 'asset-persist-failed':
+    case 'path-unavailable':
+    case 'unsupported-entry':
+      return false
+    default:
+      return true
+  }
 }
 
 export function cloneScannerRunState(state: ScannerRunState): ScannerRunState {
   return {
     ...state,
-    skippedScans: [...state.skippedScans],
-    failedScans: [...state.failedScans]
+    issues: state.issues.map((issue) => ({ ...issue })),
+    existing: state.existing.map((existing) => ({ ...existing }))
   }
 }

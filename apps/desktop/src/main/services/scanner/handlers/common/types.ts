@@ -1,6 +1,6 @@
 import type { TaskRunHandle } from '@main/services/task-run'
 import type { MediaType } from '@shared/common'
-import type { FailedScan, ScannerRunState, SkippedScan } from '@shared/scanner'
+import type { ScannerRunExisting, ScannerRunState } from '@shared/scanner'
 
 export interface ScannerRunMetadata {
   id: string
@@ -9,11 +9,46 @@ export interface ScannerRunMetadata {
   path: string
 }
 
+export type ScannerEntityWarningType =
+  | 'asset-persist-failed'
+  | 'metadata-missing'
+  | 'scraper-unavailable'
+
+export type ScannerEntityErrorType =
+  | 'duplicate-external-id'
+  | 'metadata-missing'
+  | 'path-unavailable'
+  | 'scraper-unavailable'
+  | 'unexpected-error'
+  | 'unsupported-entry'
+
+export interface ScannedEntity {
+  extractedName: string
+  path: string
+}
+
+export interface ScannerEntityWarning {
+  type: ScannerEntityWarningType
+  reason: string
+}
+
+export interface ScannerEntityError {
+  type: ScannerEntityErrorType
+  reason: string
+}
+
 export type ScannerEntityProcessResult =
-  | { kind: 'processed-only' }
-  | { kind: 'new' }
-  | { kind: 'skipped'; skippedScan: SkippedScan }
-  | { kind: 'failed'; failedScan: FailedScan }
+  | (ScannedEntity & {
+      kind: 'new'
+      gameId: string
+      warnings?: ScannerEntityWarning[]
+    })
+  | { kind: 'existing'; existing: ScannerRunExisting }
+  | (ScannedEntity & {
+      kind: 'failed'
+      existingGameId?: string
+      errors: ScannerEntityError[]
+    })
 
 export interface ActiveScannerRun<TScanner extends ScannerRunMetadata> {
   scanner: TScanner

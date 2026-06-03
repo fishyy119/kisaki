@@ -307,7 +307,7 @@ async function handleSubmit() {
 
               <Field>
                 <FieldLabel>忽略名称列表</FieldLabel>
-                <FieldDescription>扫描器会跳过这些名称的文件夹</FieldDescription>
+                <FieldDescription>扫描器会跳过这些提取后的实体名称</FieldDescription>
                 <FieldContent>
                   <div class="flex gap-2">
                     <Input

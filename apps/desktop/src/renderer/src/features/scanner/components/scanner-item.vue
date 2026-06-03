@@ -31,8 +31,7 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
-import ScannerFailedScansDialog from './scanner-failed-scans-dialog.vue'
-import { ScannerSkippedScansDialog } from './scanner-skipped-scans-dialog'
+import ScannerIssuesDialog from './scanner-issues-dialog.vue'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
 import { createLogger } from '@renderer/core/log'
@@ -55,8 +54,7 @@ const props = defineProps<Props>()
 
 const isEditDialogOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
-const isFailedScansDialogOpen = ref(false)
-const isSkippedScansDialogOpen = ref(false)
+const isIssuesDialogOpen = ref(false)
 
 // =============================================================================
 // Store
@@ -129,6 +127,8 @@ const progress = computed(() => {
   if (!state || state.total === 0) return 0
   return Math.round((state.processedCount / state.total) * 100)
 })
+
+const issueCount = computed(() => scannerState.value?.issueCount ?? 0)
 
 const statusInfo = computed(() => {
   const state = scannerState.value
@@ -311,16 +311,16 @@ async function handleOpenPath() {
         <div class="flex items-center gap-2 text-xs">
           <Tooltip>
             <TooltipTrigger as-child>
-              <span class="text-muted-foreground">{{ scannerState.processedCount }} 处理</span>
+              <span class="text-success">{{ scannerState.newCount }} 新增</span>
             </TooltipTrigger>
-            <TooltipContent>已处理文件夹数</TooltipContent>
+            <TooltipContent>已添加到数据库的游戏数</TooltipContent>
           </Tooltip>
           <span class="text-muted-foreground/50">|</span>
           <Tooltip>
             <TooltipTrigger as-child>
-              <span class="text-success">{{ scannerState.newCount }} 新增</span>
+              <span class="text-muted-foreground">{{ scannerState.existingCount }} 已存</span>
             </TooltipTrigger>
-            <TooltipContent>新添加到数据库的游戏数</TooltipContent>
+            <TooltipContent>路径已存在的游戏数</TooltipContent>
           </Tooltip>
         </div>
       </template>
@@ -345,30 +345,13 @@ async function handleOpenPath() {
 
     <!-- Actions column -->
     <div class="relative flex items-center justify-end gap-0.5">
-      <Tooltip v-if="scannerState && scannerState.skippedScans.length > 0">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="text-muted-foreground hover:text-foreground"
-            @click="isSkippedScansDialogOpen = true"
-          >
-            <Icon
-              icon="icon-[mdi--skip-next-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>跳过 ({{ scannerState.skippedScans.length }})</TooltipContent>
-      </Tooltip>
-
-      <Tooltip v-if="scannerState && scannerState.failedScans.length > 0">
+      <Tooltip v-if="scannerState && issueCount > 0">
         <TooltipTrigger as-child>
           <Button
             variant="ghost"
             size="icon-sm"
             class="text-warning hover:text-warning"
-            @click="isFailedScansDialogOpen = true"
+            @click="isIssuesDialogOpen = true"
           >
             <Icon
               icon="icon-[mdi--alert-outline]"
@@ -376,7 +359,7 @@ async function handleOpenPath() {
             />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>失败 ({{ scannerState.failedScans.length }})</TooltipContent>
+        <TooltipContent>问题 {{ issueCount }}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -468,14 +451,9 @@ async function handleOpenPath() {
   </AlertDialog>
 
   <!-- Other Dialogs -->
-  <ScannerFailedScansDialog
-    v-if="isFailedScansDialogOpen"
-    v-model:open="isFailedScansDialogOpen"
-    :scanner-id="props.scanner.id"
-  />
-  <ScannerSkippedScansDialog
-    v-if="isSkippedScansDialogOpen"
-    v-model:open="isSkippedScansDialogOpen"
+  <ScannerIssuesDialog
+    v-if="isIssuesDialogOpen"
+    v-model:open="isIssuesDialogOpen"
     :scanner-id="props.scanner.id"
   />
   <ScannerItemFormDialog

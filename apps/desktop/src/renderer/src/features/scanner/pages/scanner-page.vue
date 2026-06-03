@@ -52,7 +52,7 @@ const state = useRenderState(isLoading, null, scanners)
           <div class="text-center">类型</div>
           <div class="text-center">刮削配置</div>
           <div class="text-center">目标合集</div>
-          <div class="text-center">处理 / 新增</div>
+          <div class="text-center">新增 / 已存</div>
           <div class="text-center">状态</div>
           <div class="text-right">操作</div>
         </div>

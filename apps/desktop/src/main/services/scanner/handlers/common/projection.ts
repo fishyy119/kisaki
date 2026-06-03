@@ -15,10 +15,11 @@ export function toScanCompletedData(state: ScannerRunState): ScanCompletedData {
     total: state.total,
     processedCount: state.processedCount,
     newCount: state.newCount,
-    skippedCount: state.skippedCount,
+    existingCount: state.existingCount,
     failedCount: state.failedCount,
-    skippedScans: [...state.skippedScans],
-    failedScans: [...state.failedScans]
+    issueCount: state.issueCount,
+    issues: state.issues.map((issue) => ({ ...issue })),
+    existing: state.existing.map((existing) => ({ ...existing }))
   }
 }
 
@@ -26,15 +27,17 @@ export function toScannerStats(source: {
   total: number
   processedCount: number
   newCount: number
-  skippedCount: number
+  existingCount: number
   failedCount: number
+  issueCount: number
 }): Record<string, number> {
   return {
     total: source.total,
     processedCount: source.processedCount,
     newCount: source.newCount,
-    skippedCount: source.skippedCount,
-    failedCount: source.failedCount
+    existingCount: source.existingCount,
+    failedCount: source.failedCount,
+    issueCount: source.issueCount
   }
 }
 
@@ -43,26 +46,29 @@ export function toTaskRunCounters(state: ScannerRunState): Record<string, number
     total: state.total,
     processed: state.processedCount,
     new: state.newCount,
-    skipped: state.skippedCount,
-    failed: state.failedCount
+    existing: state.existingCount,
+    failed: state.failedCount,
+    issues: state.issueCount
   }
 }
 
 export function toTaskRunWarnings(state: ScannerRunState) {
-  if (state.failedScans.length === 0) {
+  if (state.issues.length === 0) {
     return undefined
   }
 
-  return state.failedScans.slice(0, TASK_RUN_PROGRESS_WARNING_LIMIT).map((failedScan) => ({
-    code: 'scanner.failed',
-    message: `${failedScan.name}: ${failedScan.reason}`
-  }))
+  return state.issues
+    .map((issue) => ({
+      code: `scanner.issue.${issue.type}`,
+      message: `${issue.extractedName}: ${issue.reason}`
+    }))
+    .slice(0, TASK_RUN_PROGRESS_WARNING_LIMIT)
 }
 
 export function toTaskRunSummary(status: ScannerFinishedStatus, state: ScannerRunState): string {
   const prefix =
     status === 'completed' ? '扫描完成' : status === 'cancelled' ? '扫描已取消' : '扫描失败'
-  return `${prefix}：处理 ${state.processedCount}/${state.total}，新增 ${state.newCount}，跳过 ${state.skippedCount}，失败 ${state.failedCount}`
+  return `${prefix}：处理 ${state.processedCount}/${state.total}，新增 ${state.newCount}，已存在 ${state.existingCount}，失败 ${state.failedCount}，问题 ${state.issueCount}`
 }
 
 export function toTaskRunOutput(status: ScannerFinishedStatus, state: ScannerRunState) {
@@ -75,8 +81,9 @@ export function toTaskRunOutput(status: ScannerFinishedStatus, state: ScannerRun
     total: state.total,
     processedCount: state.processedCount,
     newCount: state.newCount,
-    skippedCount: state.skippedCount,
-    failedCount: state.failedCount
+    existingCount: state.existingCount,
+    failedCount: state.failedCount,
+    issueCount: state.issueCount
   }
 }
 

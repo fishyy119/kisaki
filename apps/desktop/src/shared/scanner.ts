@@ -3,20 +3,17 @@
  */
 
 import type { MediaType } from './common'
-import type { FailedScan } from './db'
-
-export type { FailedScan }
 
 /**
  * Represents a detected entity from directory scanning.
  * Used by all media types - the scanning layer is media-agnostic.
  */
 export interface EntityEntry {
-  /** Full path to the entity (file or folder) */
+  /** Full path to the entity directory */
   path: string
-  /** Original filesystem name (folder name or filename with extension, if any) */
+  /** Original filesystem directory name */
   originalName: string
-  /** Original name without extension (used as extraction input) */
+  /** Original name used as extraction input */
   originalBaseName: string
   /** Extracted entity name after applying name extraction rules */
   extractedName: string
@@ -24,12 +21,45 @@ export interface EntityEntry {
   matchedRuleId: string | null
 }
 
-/** A scan that was skipped because the game already exists */
-export interface SkippedScan {
-  name: string
+export type ScannerRunIssueType =
+  | 'asset-persist-failed'
+  | 'duplicate-external-id'
+  | 'metadata-missing'
+  | 'path-unavailable'
+  | 'scraper-unavailable'
+  | 'unexpected-error'
+  | 'unsupported-entry'
+
+/**
+ * User-visible scan result issue.
+ * Entity processing may produce warnings for successful additions or errors for
+ * failed entities. Run state exposes both as this unified issue shape.
+ */
+interface ScannerRunIssueBase {
+  id: string
+  type: ScannerRunIssueType
+  extractedName: string
   path: string
-  reason: 'path' | 'externalId'
-  existingGameId: string
+  reason: string
+  fixable: boolean
+}
+
+type ScannerRunIssueGameRef =
+  | { gameId: string; existingGameId?: never }
+  | { gameId?: never; existingGameId: string }
+  | { gameId?: never; existingGameId?: never }
+
+export type ScannerRunIssue = ScannerRunIssueBase & ScannerRunIssueGameRef
+
+/**
+ * Entity already represented by an existing library entry.
+ * Existing entries are scanner bookkeeping, not issues.
+ */
+export interface ScannerRunExisting {
+  id: string
+  extractedName: string
+  path: string
+  gameId: string
 }
 
 export type ScannerRunStatus =
@@ -73,10 +103,11 @@ export interface ScannerRunState {
   total: number
   processedCount: number
   newCount: number
-  skippedCount: number
+  existingCount: number
   failedCount: number
-  skippedScans: SkippedScan[]
-  failedScans: FailedScan[]
+  issueCount: number
+  issues: ScannerRunIssue[]
+  existing: ScannerRunExisting[]
   createdAt: number
   startedAt?: number
   updatedAt: number
@@ -100,10 +131,11 @@ export interface ScanCompletedData {
   total: number
   processedCount: number
   newCount: number
-  skippedCount: number
+  existingCount: number
   failedCount: number
-  skippedScans: SkippedScan[]
-  failedScans: FailedScan[]
+  issueCount: number
+  issues: ScannerRunIssue[]
+  existing: ScannerRunExisting[]
 }
 
 // =============================================================================

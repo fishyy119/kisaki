@@ -24,21 +24,43 @@ import type { Scanner, ScannerIngestMode } from '@shared/db'
 import type {
   EntityEntry,
   ScanCompletedData,
+  ScannerRunExisting,
   ScannerRunState,
   ScannerRunStartResult
 } from '@shared/scanner'
 import type { IngestAddGameResult } from '@shared/ingest/add'
+import type { IngestWarning } from '@shared/ingest/common'
 import type { ScannerPhash } from '../../phash'
 import type { ScannerDiscovery } from '../../discovery'
 import {
   ScannerRunCoordinator,
+  type ScannedEntity,
+  type ScannerEntityError,
+  type ScannerEntityErrorType,
   type ScannerEntityProcessResult,
+  type ScannerEntityWarning,
+  type ScannerEntityWarningType,
   ScannerRunSession
 } from '../common'
 import { matchGameEntity } from './match'
 import type { GameEntity } from './types'
 
 const log = createLogger('Scanner')
+
+type GameEntityProcessOutcome =
+  | {
+      kind: 'added'
+      result: IngestAddGameResult
+      warnings?: ScannerEntityWarning[]
+    }
+  | {
+      kind: 'failed'
+      errors: ScannerEntityError[]
+    }
+
+interface ScannerIssueOptions {
+  reason: string
+}
 
 function isRecoverableScraperFailure(error: unknown): boolean {
   if (!(error instanceof Error)) return false
@@ -58,6 +80,63 @@ function isRecoverableScraperFailure(error: unknown): boolean {
   ]
 
   return recoverableMarkers.some((marker) => message.includes(marker))
+}
+
+function isMissingMetadataScraperFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  return error.message.toLowerCase().includes('returned no game data')
+}
+
+function getScraperProblemType(
+  error: unknown
+): Extract<ScannerEntityWarningType, ScannerEntityErrorType> {
+  return isMissingMetadataScraperFailure(error) ? 'metadata-missing' : 'scraper-unavailable'
+}
+
+function createScannedEntity(entity: EntityEntry): ScannedEntity {
+  return {
+    extractedName: entity.extractedName,
+    path: entity.path
+  }
+}
+
+function createWarning(
+  type: ScannerEntityWarningType,
+  options: ScannerIssueOptions
+): ScannerEntityWarning {
+  return {
+    type,
+    reason: options.reason
+  }
+}
+
+function createError(
+  type: ScannerEntityErrorType,
+  options: ScannerIssueOptions
+): ScannerEntityError {
+  return {
+    type,
+    reason: options.reason
+  }
+}
+
+function createIngestWarnings(
+  warnings: readonly IngestWarning[] | undefined
+): ScannerEntityWarning[] {
+  return (warnings ?? []).map((warning) =>
+    createWarning('asset-persist-failed', {
+      reason: warning.message
+    })
+  )
+}
+
+function createExisting(entity: EntityEntry, existingGame: { id: string }): ScannerRunExisting {
+  return {
+    id: `existing:${entity.path}:${existingGame.id}`,
+    extractedName: entity.extractedName,
+    path: entity.path,
+    gameId: existingGame.id
+  }
 }
 
 function assertNever(value: never): never {
@@ -252,10 +331,6 @@ export class GameScannerHandler {
     } = settingsData
 
     const profile = this.getScraperProfile(scanner.scraperProfileId)
-    if (!profile && ingestMode === 'require-scraper') {
-      throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
-    }
-
     if (!profile) {
       log.warn('Scanner has no scraper profile.', {
         scannerName: scanner.name,
@@ -305,8 +380,9 @@ export class GameScannerHandler {
 
     log.info('Scan completed.', {
       sessionStateNewCount: session.state.newCount,
-      sessionStateSkippedCount: session.state.skippedCount,
-      sessionStateFailedCount: session.state.failedCount
+      sessionStateExistingCount: session.state.existingCount,
+      sessionStateFailedCount: session.state.failedCount,
+      sessionStateIssueCount: session.state.issueCount
     })
   }
 
@@ -316,7 +392,7 @@ export class GameScannerHandler {
     scanner: Scanner,
     ingestMode: ScannerIngestMode,
     signal: AbortSignal
-  ): Promise<IngestAddGameResult> {
+  ): Promise<GameEntityProcessOutcome> {
     const { gameName, externalIds } = gameEntity.matchedGame
 
     const seed = {
@@ -333,46 +409,100 @@ export class GameScannerHandler {
       return this.ingestService.add.game.addDirect(seed, options)
     }
 
-    let result: IngestAddGameResult
-
     switch (ingestMode) {
       case 'direct-only':
-        result = await addDirect()
-        break
+        return { kind: 'added', result: await addDirect() }
       case 'require-scraper':
         if (!profile) {
-          throw new Error(`Profile not found for scanner: ${scanner.scraperProfileId}`)
-        }
-        result = await this.ingestService.add.game.addFromScraper(profile.id, seed, options)
-        break
-      case 'prefer-scraper':
-        if (!profile) {
-          result = await addDirect()
-          break
+          return {
+            kind: 'failed',
+            errors: [
+              createError('scraper-unavailable', {
+                reason: '刮削配置不可用，当前模式要求刮削，未添加。'
+              })
+            ]
+          }
         }
 
         try {
-          result = await this.ingestService.add.game.addFromScraper(profile.id, seed, options)
+          return {
+            kind: 'added',
+            result: await this.ingestService.add.game.addFromScraper(profile.id, seed, options)
+          }
         } catch (error) {
           if (!isRecoverableScraperFailure(error)) {
             throw error
           }
 
           const message = error instanceof Error ? error.message : String(error)
+          const metadataMissing = isMissingMetadataScraperFailure(error)
+          log.warn('Scraper ingest failed in require-scraper mode.', {
+            gameEntityPath: gameEntity.path,
+            message
+          })
+          return {
+            kind: 'failed',
+            errors: [
+              createError(getScraperProblemType(error), {
+                reason: metadataMissing
+                  ? '未找到可用元数据，当前模式要求刮削，未添加。'
+                  : '刮削失败且当前模式要求刮削，未添加。'
+              })
+            ]
+          }
+        }
+      case 'prefer-scraper':
+        if (!profile) {
+          const result = await addDirect()
+          return {
+            kind: 'added',
+            result,
+            warnings: [
+              createWarning('scraper-unavailable', {
+                reason: '刮削配置不可用，已使用目录名直接添加。'
+              })
+            ]
+          }
+        }
+
+        try {
+          return {
+            kind: 'added',
+            result: await this.ingestService.add.game.addFromScraper(profile.id, seed, options)
+          }
+        } catch (error) {
+          if (!isRecoverableScraperFailure(error)) {
+            throw error
+          }
+
+          const message = error instanceof Error ? error.message : String(error)
+          const metadataMissing = isMissingMetadataScraperFailure(error)
           log.warn('Scraper ingest failed, falling back to direct ingest.', {
             gameEntityPath: gameEntity.path,
             message: message
           })
-          result = await addDirect()
+          const result = await addDirect()
+          return {
+            kind: 'added',
+            result,
+            warnings: [
+              createWarning(getScraperProblemType(error), {
+                reason: metadataMissing
+                  ? '未找到可用元数据，已使用目录名直接添加。'
+                  : '刮削失败，已使用目录名直接添加。'
+              })
+            ]
+          }
         }
-        break
       default:
         return assertNever(ingestMode)
     }
+  }
 
+  private logGameEntityProcessOutcome(gameEntity: GameEntity, result: IngestAddGameResult): void {
     if (result.isNew) {
       log.info('Successfully added game.', {
-        gameName: gameName,
+        gameName: gameEntity.matchedGame.gameName,
         resultGameId: result.gameId,
         gameEntityPath: gameEntity.path
       })
@@ -384,8 +514,6 @@ export class GameScannerHandler {
         })
       }
     }
-
-    return result
   }
 
   private async processEntity(
@@ -403,13 +531,30 @@ export class GameScannerHandler {
       try {
         stat = await fs.stat(entity.path)
       } catch (error) {
-        log.error('Failed to stat entity.', { entityPath: entity.path, error: error })
-        return { kind: 'processed-only' }
+        const message = error instanceof Error ? error.message : String(error)
+        log.warn('Entity path is inaccessible.', { entityPath: entity.path, message })
+        return {
+          ...createScannedEntity(entity),
+          kind: 'failed',
+          errors: [
+            createError('path-unavailable', {
+              reason: `路径不可访问，未添加：${message}`
+            })
+          ]
+        }
       }
 
       if (!stat.isDirectory()) {
-        log.info('Skipping non-directory entity.', { entityPath: entity.path })
-        return { kind: 'processed-only' }
+        log.info('Entity is not a directory.', { entityPath: entity.path })
+        return {
+          ...createScannedEntity(entity),
+          kind: 'failed',
+          errors: [
+            createError('unsupported-entry', {
+              reason: '路径不是可扫描目录，未添加。'
+            })
+          ]
+        }
       }
 
       const existingByPath = this.dbService.entityFinder.findExistingGame({
@@ -422,13 +567,8 @@ export class GameScannerHandler {
         })
 
         return {
-          kind: 'skipped',
-          skippedScan: {
-            name: entity.extractedName,
-            path: entity.path,
-            reason: 'path',
-            existingGameId: existingByPath.id
-          }
+          kind: 'existing',
+          existing: createExisting(entity, existingByPath)
         }
       }
 
@@ -436,7 +576,7 @@ export class GameScannerHandler {
         enablePhash: options.scannerUsePhash
       })
       const matchedEntity: GameEntity = { ...entity, matchedGame }
-      const addResult = await this.processGameEntity(
+      const outcome = await this.processGameEntity(
         matchedEntity,
         options.profile,
         options.scanner,
@@ -444,34 +584,66 @@ export class GameScannerHandler {
         options.signal
       )
 
+      if (outcome.kind === 'failed') {
+        log.warn('Game entity failed with scanner issues.', {
+          entityPath: entity.path,
+          issueTypes: outcome.errors.map((issue) => issue.type).join(', '),
+          issueReasons: outcome.errors.map((issue) => issue.reason).join(' | ')
+        })
+        return {
+          ...createScannedEntity(entity),
+          kind: 'failed',
+          errors: outcome.errors
+        }
+      }
+
+      const addResult = outcome.result
+      this.logGameEntityProcessOutcome(matchedEntity, addResult)
+      const warnings = [...(outcome.warnings ?? []), ...createIngestWarnings(addResult.warnings)]
+
       if (addResult.isNew) {
-        return { kind: 'new' }
+        return {
+          ...createScannedEntity(entity),
+          kind: 'new',
+          gameId: addResult.gameId,
+          warnings: warnings.length > 0 ? warnings : undefined
+        }
       }
 
       log.info('Game already exists.', {
         entityPath: entity.path,
         addResultExistingReason: addResult.existingReason
       })
-      return {
-        kind: 'skipped',
-        skippedScan: {
-          name: entity.extractedName,
-          path: entity.path,
-          reason: (addResult.existingReason || 'externalId') as 'path' | 'externalId',
-          existingGameId: addResult.gameId
+
+      if (addResult.existingReason === 'path') {
+        return {
+          kind: 'existing',
+          existing: createExisting(entity, { id: addResult.gameId })
         }
+      }
+
+      return {
+        ...createScannedEntity(entity),
+        kind: 'failed',
+        existingGameId: addResult.gameId,
+        errors: [
+          createError('duplicate-external-id', {
+            reason: '外部 ID 已关联到现有游戏，当前路径未添加。'
+          })
+        ]
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error)
       log.error('Error processing entity.', { entityPath: entity.path, errorMsg: errorMsg })
 
       return {
+        ...createScannedEntity(entity),
         kind: 'failed',
-        failedScan: {
-          name: entity.extractedName,
-          path: entity.path,
-          reason: errorMsg
-        }
+        errors: [
+          createError('unexpected-error', {
+            reason: errorMsg
+          })
+        ]
       }
     }
   }

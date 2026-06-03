@@ -10,9 +10,9 @@ const log = createLogger('Scanner')
 export interface ScanOptions {
   /** Depth at which to collect entities (0 = immediate children) */
   entityDepth: number
-  /** Names to ignore (case-insensitive) */
+  /** Extracted entity names to ignore (case-insensitive) */
   ignoredNames: string[]
-  /** Rules for extracting entity name from folder/file name */
+  /** Rules for extracting entity name from directory name */
   nameExtractionRules: NameExtractionRule[]
 }
 
@@ -44,7 +44,7 @@ export class ScannerDiscovery {
 
   /**
    * Generic entity scanner - works for all media types.
-   * Returns all entries at the specified depth level.
+   * Returns scannable directory entries at the specified depth level.
    */
   async scanForEntities(rootPath: string, options: ScanOptions): Promise<EntityEntry[]> {
     const { entityDepth, ignoredNames, nameExtractionRules } = options
@@ -53,10 +53,9 @@ export class ScannerDiscovery {
       const entries = await fs.readdir(rootPath, { withFileTypes: true })
 
       const ignoredNameSet = new Set(ignoredNames.map((name) => name.toLowerCase()))
-      const filtered = entries.filter((entry) => !ignoredNameSet.has(entry.name.toLowerCase()))
 
       if (entityDepth > 0) {
-        const subDirs = filtered.filter((e) => e.isDirectory() || e.isSymbolicLink())
+        const subDirs = entries.filter((e) => e.isDirectory() || e.isSymbolicLink())
         const results = await Promise.all(
           subDirs.map((d) =>
             this.scanForEntities(path.join(rootPath, d.name), {
@@ -69,21 +68,25 @@ export class ScannerDiscovery {
         return results.flat()
       }
 
-      return filtered.map((entry) => {
-        const originalName = entry.name
-        const originalBaseName = entry.isFile() ? path.parse(originalName).name : originalName
-        const { extractedName, matchedRuleId } = this.extractEntityName(
-          originalBaseName,
-          nameExtractionRules
-        )
-        return {
-          path: path.join(rootPath, entry.name),
-          originalName,
-          originalBaseName,
-          extractedName,
-          matchedRuleId
-        }
-      })
+      const entityEntries = entries.filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
+
+      return entityEntries
+        .map((entry) => {
+          const originalName = entry.name
+          const originalBaseName = originalName
+          const { extractedName, matchedRuleId } = this.extractEntityName(
+            originalBaseName,
+            nameExtractionRules
+          )
+          return {
+            path: path.join(rootPath, entry.name),
+            originalName,
+            originalBaseName,
+            extractedName,
+            matchedRuleId
+          }
+        })
+        .filter((entity) => !ignoredNameSet.has(entity.extractedName.toLowerCase()))
     } catch (error) {
       log.error('Failed to scan directory.', { rootPath: rootPath, error: error })
       return []
