@@ -30,6 +30,7 @@ import type { RpcRequestOptions } from './rpc-core'
 import { ExtensionRuntimeSecrets } from './secrets'
 import {
   createRuntimeFailureState,
+  createRuntimeLoadingState,
   createRuntimeRunningState,
   createRuntimeStoppedState,
   appendRuntimeDiagnostic,
@@ -259,7 +260,7 @@ export class RuntimeManager {
     const generation = this.nextGeneration()
     const runtimeHandle = randomUUID()
     this.runtimeHandles.set(runtimeHandle, extension)
-    this.setRuntimeState(extension.id, createRuntimeRunningState())
+    this.recordRuntimeLoading(extension.id)
 
     try {
       await this.requestHostLifecycle(
@@ -450,12 +451,14 @@ export class RuntimeManager {
     cause: ExtensionRuntimeChangeCause,
     skipExtensionIds = new Set<string>()
   ): Promise<void> {
+    this.recordDesiredRuntimeLoading(skipExtensionIds)
     await this.stopHostLocked({ clearDesired: false })
     await this.recoverDesiredExtensionsLocked(cause, skipExtensionIds)
   }
 
   private async recycleHostLocked(cause: ExtensionRuntimeChangeCause): Promise<void> {
     log.info('Recycling extension host.', { cause: cause })
+    this.recordDesiredRuntimeLoading()
     await this.stopHostLocked({
       clearDesired: false,
       unloadReason: toRecycleUnloadReason(cause)
@@ -622,6 +625,21 @@ export class RuntimeManager {
       extensionId,
       createRuntimeRunningState(this.runtimeStates.get(extensionId)?.diagnostics ?? [])
     )
+  }
+
+  private recordRuntimeLoading(extensionId: string): void {
+    this.setRuntimeState(
+      extensionId,
+      createRuntimeLoadingState(this.runtimeStates.get(extensionId)?.diagnostics ?? [])
+    )
+  }
+
+  private recordDesiredRuntimeLoading(skipExtensionIds = new Set<string>()): void {
+    for (const extensionId of this.desiredExtensions.keys()) {
+      if (!skipExtensionIds.has(extensionId)) {
+        this.recordRuntimeLoading(extensionId)
+      }
+    }
   }
 
   private recordRuntimeFailure(extensionId: string, error: string): void {

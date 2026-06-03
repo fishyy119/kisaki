@@ -31,7 +31,7 @@ import {
   ExtensionRepositoryStore
 } from './repositories'
 import { ExtensionReloadWatcher } from './reload-watcher'
-import { RuntimeManager } from './runtime'
+import { RuntimeManager, type ExtensionRuntimeState } from './runtime'
 import { ExtensionSignerTrustManager, ExtensionSignerTrustStore } from './signers'
 import { ExtensionUpdateManager, ExtensionUpdatePlanner } from './updates'
 import type { ExtensionServicePaths } from './types'
@@ -163,7 +163,9 @@ export class ExtensionService implements IService {
       hostModulePath: resolveInsideRoot(app.getAppPath(), 'out', 'main', 'extension-host.js'),
       hostInspect: getBootstrapArgs().extensionHostInspect,
       capabilities: this.capabilities,
-      contributions: this.contributions
+      contributions: this.contributions,
+      onRuntimeStateChanged: (extensionId, state) =>
+        this.emitRuntimeStateChanged(extensionId, state)
     })
     this.reloadWatcher = new ExtensionReloadWatcher(async (extensionId) => {
       await this.installations.reloadRuntime(extensionId, 'file-change')
@@ -243,6 +245,18 @@ export class ExtensionService implements IService {
   private emitInstallationsChanged(): void {
     this.ipc.send('extension:installations-changed')
     this.ipc.send('extension:catalog-changed')
+  }
+
+  private emitRuntimeStateChanged(extensionId: string, state: ExtensionRuntimeState): void {
+    const runtimeInfo = this.installations.getRuntimeInfo(extensionId, state)
+    if (!runtimeInfo) {
+      return
+    }
+
+    this.ipc.send('extension:runtime-state-changed', {
+      extensionId,
+      ...runtimeInfo
+    })
   }
 
   private emitTrustedSignersChanged(): void {

@@ -6,7 +6,7 @@ import type {
   ExtensionUnloadReason
 } from '@kisaki3/extension-api'
 
-export type ExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
+export type ExtensionRuntimeStatus = 'loading' | 'running' | 'failed' | 'stopped'
 const MAX_RUNTIME_DIAGNOSTICS = 50
 
 export interface ExtensionRuntimeState {
@@ -20,6 +20,17 @@ export interface LoadedExtensionState {
   metadata: ExtensionRuntimeMetadata
   runtimeHandle: ExtensionRuntimeHandle
   generation: number
+}
+
+export function createRuntimeLoadingState(
+  diagnostics: readonly ExtensionRuntimeDiagnostic[] = []
+): ExtensionRuntimeState {
+  return {
+    status: 'loading',
+    error: null,
+    diagnostics,
+    updatedAt: new Date().toISOString()
+  }
 }
 
 export function createRuntimeRunningState(

@@ -77,6 +77,7 @@ import type {
   ExtensionRepositoryInfo,
   ExtensionRepositoryUpdateRequest,
   ExtensionResolvedEntityMenu,
+  ExtensionRuntimeStateChangedEvent,
   ExtensionSettingsPanelRegistrationInfo,
   ExtensionSettingsPanelCallbackResponse,
   ExtensionSettingsPanelInvokeRequest,
@@ -479,6 +480,7 @@ export interface IpcMainHandlers {
   'extension:get-automatic-update-run': () => IpcResult<ExtensionAutomaticUpdateRunState>
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:reload': (extensionId: string) => IpcVoidResult
+  'extension:restart-host': () => IpcVoidResult
   'extension:get-installed-packages': () => IpcResult<ExtensionInstalledPackageInfo[]>
   'extension:list-trusted-signers': () => IpcResult<readonly ExtensionTrustedSignerInfo[]>
   'extension:remove-trusted-signer': (trustedSignerId: string) => IpcVoidResult
@@ -570,6 +572,7 @@ export interface IpcRendererEvents {
   'extension:repositories-changed': []
   'extension:catalog-changed': []
   'extension:installations-changed': []
+  'extension:runtime-state-changed': [event: ExtensionRuntimeStateChangedEvent]
   'extension:automatic-update-run-changed': [state: ExtensionAutomaticUpdateRunState]
   'extension:trusted-signers-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]

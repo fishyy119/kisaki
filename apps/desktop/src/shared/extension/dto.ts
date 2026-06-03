@@ -55,9 +55,15 @@ import type { ExtensionInstallationSource } from './installation-source'
 
 export type InstalledExtensionStatus = 'ready' | 'invalid' | 'missing-package'
 
-export type InstalledExtensionRuntimeStatus = 'running' | 'failed' | 'stopped'
+export type InstalledExtensionRuntimeStatus = 'loading' | 'running' | 'failed' | 'stopped'
 
-export interface ExtensionInstalledPackageInfo {
+export interface ExtensionInstalledRuntimeInfo {
+  runtimeStatus: InstalledExtensionRuntimeStatus
+  runtimeError: string | null
+  runtimeDiagnostics: readonly ExtensionRuntimeDiagnostic[]
+}
+
+export interface ExtensionInstalledPackageInfo extends ExtensionInstalledRuntimeInfo {
   builtin: boolean
   id: string
   name: string
@@ -69,9 +75,6 @@ export interface ExtensionInstalledPackageInfo {
   categories: readonly ExtensionCategory[]
   enabled: boolean
   status: InstalledExtensionStatus
-  runtimeStatus: InstalledExtensionRuntimeStatus
-  runtimeError: string | null
-  runtimeDiagnostics: readonly ExtensionRuntimeDiagnostic[]
   installationSource: ExtensionInstallationSource | null
   updatePolicy?: ExtensionInstallUpdatePolicy
   pinnedVersion?: string | null
@@ -79,6 +82,10 @@ export interface ExtensionInstalledPackageInfo {
   installedAt?: string | null
   directory: string
   issues: readonly string[]
+}
+
+export interface ExtensionRuntimeStateChangedEvent extends ExtensionInstalledRuntimeInfo {
+  extensionId: string
 }
 
 export interface ExtensionUpdateInfo {

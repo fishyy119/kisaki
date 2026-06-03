@@ -7,10 +7,18 @@ import { RouterLink, useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 
-interface Emits {
-  (e: 'openInstallDialog'): void
+interface Props {
+  reloadingExtensionHost?: boolean
 }
 
+interface Emits {
+  (e: 'openInstallDialog'): void
+  (e: 'reloadExtensionHost'): void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  reloadingExtensionHost: false
+})
 const emit = defineEmits<Emits>()
 
 const route = useRoute()
@@ -94,6 +102,20 @@ function isRouteActive(routeName: string): boolean {
 
     <!-- Right: Actions -->
     <div class="flex items-center gap-2 shrink-0">
+      <Button
+        variant="outline"
+        size="sm"
+        class="text-xs gap-1.5"
+        :disabled="props.reloadingExtensionHost"
+        @click="emit('reloadExtensionHost')"
+      >
+        <Icon
+          icon="icon-[mdi--restart]"
+          class="size-4"
+        />
+        重载进程
+      </Button>
+
       <!-- Install extension button -->
       <Button
         variant="default"

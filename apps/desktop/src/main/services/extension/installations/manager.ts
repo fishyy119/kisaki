@@ -8,6 +8,7 @@ import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type { EventService } from '@main/services/event'
 import type {
   ExtensionInstalledPackageInfo,
+  ExtensionInstalledRuntimeInfo,
   ExtensionPurgeDataRequest,
   ExtensionUpdatePolicyRequest
 } from '@shared/extension'
@@ -148,6 +149,18 @@ export class ExtensionInstallationManager {
 
   getRuntimeState(extensionId: string): ExtensionRuntimeState | null {
     return this.runtime.getRuntimeState(requireSafeExtensionId(extensionId))
+  }
+
+  getRuntimeInfo(
+    extensionId: string,
+    runtimeState: ExtensionRuntimeState | null = this.getRuntimeState(extensionId)
+  ): ExtensionInstalledRuntimeInfo | null {
+    const entry = this.get(extensionId)
+    if (!entry) {
+      return null
+    }
+
+    return toExtensionInstalledRuntimeInfo(entry, runtimeState)
   }
 
   async enable(extensionId: string): Promise<ExtensionInstalledEntry> {
@@ -551,13 +564,8 @@ function toExtensionInstalledPackageInfo(
   entry: ExtensionInstalledEntry,
   runtimeState: ExtensionRuntimeState | null
 ): ExtensionInstalledPackageInfo {
-  const runtimeStatus =
-    entry.enabled && entry.status === 'ready' ? (runtimeState?.status ?? 'stopped') : 'stopped'
-  const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
-  const runtimeDiagnostics =
-    entry.enabled && entry.status === 'ready' ? (runtimeState?.diagnostics ?? []) : []
-
   return {
+    ...toExtensionInstalledRuntimeInfo(entry, runtimeState),
     builtin: entry.builtin,
     id: entry.id,
     name: entry.manifest?.name ?? entry.id,
@@ -571,9 +579,6 @@ function toExtensionInstalledPackageInfo(
     categories: entry.categories,
     enabled: entry.enabled,
     status: entry.status,
-    runtimeStatus,
-    runtimeError,
-    runtimeDiagnostics,
     installationSource: entry.source,
     updatePolicy: entry.updatePolicy ?? undefined,
     pinnedVersion: entry.pinnedVersion,
@@ -581,6 +586,23 @@ function toExtensionInstalledPackageInfo(
     installedAt: entry.installedAt,
     directory: entry.packagePath,
     issues: entry.issues
+  }
+}
+
+function toExtensionInstalledRuntimeInfo(
+  entry: ExtensionInstalledEntry,
+  runtimeState: ExtensionRuntimeState | null
+): ExtensionInstalledRuntimeInfo {
+  const runtimeStatus =
+    entry.enabled && entry.status === 'ready' ? (runtimeState?.status ?? 'stopped') : 'stopped'
+  const runtimeError = runtimeStatus === 'failed' ? (runtimeState?.error ?? null) : null
+  const runtimeDiagnostics =
+    entry.enabled && entry.status === 'ready' ? (runtimeState?.diagnostics ?? []) : []
+
+  return {
+    runtimeStatus,
+    runtimeError,
+    runtimeDiagnostics
   }
 }
 

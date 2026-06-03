@@ -78,6 +78,8 @@ const runtimeStatusLabel = computed(() => {
   }
 
   switch (props.extension.runtimeStatus) {
+    case 'loading':
+      return '加载中'
     case 'running':
       return '运行中'
     case 'failed':

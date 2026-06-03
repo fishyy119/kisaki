@@ -16,6 +16,7 @@ import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
 import type {
   ExtensionAutomaticUpdateRunState,
+  ExtensionRuntimeStateChangedEvent,
   ExtensionUpdateCheckResult
 } from '@shared/extension'
 
@@ -47,12 +48,19 @@ const extensionsList = computed(() => extensions.value ?? [])
 const updates = computed(() => updateCheck.value.updates)
 
 let unsubscribeInstallationsChanged: (() => void) | null = null
+let unsubscribeRuntimeStateChanged: (() => void) | null = null
 let unsubscribeAutomaticUpdateRunChanged: (() => void) | null = null
 
 onMounted(() => {
   unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
     void refreshInstalledCatalog()
   })
+  unsubscribeRuntimeStateChanged = ipcManager.on(
+    'extension:runtime-state-changed',
+    (_event, state) => {
+      applyRuntimeStateChanged(state)
+    }
+  )
   unsubscribeAutomaticUpdateRunChanged = ipcManager.on(
     'extension:automatic-update-run-changed',
     (_event, state) => {
@@ -64,6 +72,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   unsubscribeInstallationsChanged?.()
+  unsubscribeRuntimeStateChanged?.()
   unsubscribeAutomaticUpdateRunChanged?.()
 })
 
@@ -78,6 +87,32 @@ async function refreshInstalledCatalog() {
 
 async function handleRefresh() {
   await refreshInstalledCatalog()
+}
+
+function applyRuntimeStateChanged(state: ExtensionRuntimeStateChangedEvent) {
+  const current = extensions.value
+  if (!current) {
+    return
+  }
+
+  let changed = false
+  const next = current.map((extension) => {
+    if (extension.id !== state.extensionId) {
+      return extension
+    }
+
+    changed = true
+    return {
+      ...extension,
+      runtimeStatus: state.runtimeStatus,
+      runtimeError: state.runtimeError,
+      runtimeDiagnostics: state.runtimeDiagnostics
+    }
+  })
+
+  if (changed) {
+    extensions.value = next
+  }
 }
 
 async function handleCheckUpdates() {
