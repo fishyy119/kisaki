@@ -10,6 +10,7 @@
 import { createLogger } from '@main/log'
 import type { DeeplinkResult, DeeplinkRouteContext, DeeplinkRouteHandler } from '../types'
 import type { LauncherService } from '@main/services/launcher'
+import type { GameLaunchResult } from '@shared/launcher'
 
 const log = createLogger('Deeplink')
 
@@ -41,17 +42,30 @@ export class LaunchHandler implements DeeplinkRouteHandler<typeof LAUNCH_DEEPLIN
     deeplink: LaunchDeeplinkContext
   ): Promise<DeeplinkResult> {
     try {
-      // Launch the game
-      await this.launcher.game.launchGame(gameId, { cancelBehavior: 'throw' })
+      const result = await this.launcher.game.launchGame(gameId, { cancelBehavior: 'throw' })
 
-      log.info('Launched game via deeplink.', { gameId: gameId })
+      if (result.status !== 'detected') {
+        log.warn('Game launch was not confirmed via deeplink.', {
+          gameId: gameId,
+          resultStatus: result.status
+        })
+        return {
+          success: false,
+          path: deeplink.path,
+          pattern: deeplink.pattern,
+          message: getLaunchDeeplinkMessage(gameId, result),
+          data: { mediaType: 'game', entityId: gameId, launch: result }
+        }
+      }
+
+      log.info('Game launch confirmed via deeplink.', { gameId: gameId, processPid: result.pid })
 
       return {
         success: true,
         path: deeplink.path,
         pattern: deeplink.pattern,
-        message: `Launched: ${gameId}`,
-        data: { mediaType: 'game', entityId: gameId }
+        message: `Launch confirmed: ${gameId}`,
+        data: { mediaType: 'game', entityId: gameId, launch: result }
       }
     } catch (error) {
       log.error('Failed to launch game.', error, { gameId: gameId })
@@ -62,5 +76,16 @@ export class LaunchHandler implements DeeplinkRouteHandler<typeof LAUNCH_DEEPLIN
         message: (error as Error).message
       }
     }
+  }
+}
+
+function getLaunchDeeplinkMessage(gameId: string, result: GameLaunchResult): string {
+  switch (result.status) {
+    case 'detected':
+      return `Launch confirmed: ${gameId}`
+    case 'cancelled':
+      return `Launch cancelled: ${gameId}`
+    case 'unconfirmed':
+      return `Launch requested but not confirmed: ${gameId}`
   }
 }

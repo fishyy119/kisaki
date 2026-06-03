@@ -125,6 +125,7 @@ import type {
   DeeplinkAuthErrorPayload
 } from './deeplink'
 import type { BootstrapArgs } from './bootstrap'
+import type { GameLaunchResult, GameStopResult } from './launcher'
 
 // =============================================================================
 // IPC Result Types
@@ -412,8 +413,8 @@ export interface IpcMainHandlers {
   'monitor:compute-effective-path': (config: GameMonitorPathConfig) => IpcResult<string | null>
 
   // Launcher
-  'launcher:kill-game': (gameId: string) => IpcVoidResult
-  'launcher:launch-game': (gameId: string) => IpcVoidResult
+  'launcher:kill-game': (gameId: string) => IpcResult<GameStopResult>
+  'launcher:launch-game': (gameId: string) => IpcResult<GameLaunchResult>
   'launcher:apply-default-config': (gameId: string, filePath: string) => IpcVoidResult
 
   // Native dialogs

@@ -5,11 +5,10 @@
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGameMonitorStore } from '@renderer/stores'
 import { ipcManager } from '@renderer/core/ipc'
-import { notify } from '@renderer/core/notify'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils'
 import { cva } from 'class-variance-authority'
@@ -41,6 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const gameMonitorStore = useGameMonitorStore()
 const isRunning = computed(() => gameMonitorStore.isGameRunning(props.gameId))
+const isActionPending = ref(false)
 
 const iconButtonVariants = cva('relative', {
   variants: {
@@ -74,27 +74,29 @@ async function handleClick(e: Event) {
   e.stopPropagation()
   e.preventDefault()
 
+  if (isActionPending.value) {
+    return
+  }
+
+  const action = isRunning.value ? 'stop' : 'play'
+  isActionPending.value = true
+
   try {
-    if (isRunning.value) {
+    if (action === 'stop') {
       const result = await ipcManager.invoke('launcher:kill-game', props.gameId)
       if (!result.success) {
         log.warn('launcher:kill-game failed:', result.error)
-        const message = result.error === 'Game is not running' ? '游戏未运行' : result.error
-        notify.error('停止游戏失败', message)
-        return
       }
     } else {
       const result = await ipcManager.invoke('launcher:launch-game', props.gameId)
       if (!result.success) {
         log.warn('launcher:launch-game failed:', result.error)
-        const message = result.error === 'Game not found' ? '游戏不存在' : result.error
-        notify.error('启动游戏失败', message)
-        return
       }
     }
   } catch (error) {
     log.error('launcher call threw:', error)
-    notify.error('操作失败')
+  } finally {
+    isActionPending.value = false
   }
 }
 </script>
@@ -107,6 +109,7 @@ async function handleClick(e: Event) {
   >
     <Button
       :variant="isRunning ? 'secondary' : 'default'"
+      :disabled="isActionPending"
       :class="
         cn(
           'rounded-full w-full h-full p-0',
@@ -128,6 +131,7 @@ async function handleClick(e: Event) {
     v-else
     :variant="isRunning ? 'secondary' : 'default'"
     :size="labeledButtonSize"
+    :disabled="isActionPending"
     :class="cn('gap-1.5', props.class)"
     @click="handleClick"
   >

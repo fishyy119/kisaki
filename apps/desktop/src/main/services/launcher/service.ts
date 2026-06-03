@@ -15,7 +15,13 @@ const log = createLogger('Launcher')
 
 export class LauncherService implements IMediaService {
   readonly id = 'launcher'
-  readonly deps = ['db', 'ipc', 'monitor', 'native'] as const satisfies readonly ServiceName[]
+  readonly deps = [
+    'db',
+    'ipc',
+    'monitor',
+    'native',
+    'notify'
+  ] as const satisfies readonly ServiceName[]
 
   game!: GameLauncherHandler
 
@@ -24,8 +30,9 @@ export class LauncherService implements IMediaService {
     const monitorService = container.get('monitor')
     const ipcService = container.get('ipc')
     const nativeService = container.get('native')
+    const notifyService = container.get('notify')
 
-    this.game = new GameLauncherHandler(dbService, monitorService, nativeService)
+    this.game = new GameLauncherHandler(dbService, monitorService, nativeService, notifyService)
     registerLauncherIpc(this, ipcService)
     log.info('Initialized')
   }

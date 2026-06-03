@@ -46,6 +46,7 @@ interface MonitorInfo {
 export class GameMonitorHandler {
   private monitors: Map<string, MonitorInfo> = new Map()
   private pollingTimer?: NodeJS.Timeout
+  private activePoll: Promise<void> | null = null
   private readonly POLLING_INTERVAL = 1000 // 1s polling interval
   private readonly BACKGROUND_BUFFER_TIME = 60000 // 60s background buffer time
 
@@ -220,6 +221,58 @@ export class GameMonitorHandler {
     return status
   }
 
+  async waitForRunning(gameId: string, timeoutMs: number): Promise<GameRunningStatus | null> {
+    const current = this.getStatus(gameId)
+    if (current?.isRunning) {
+      return current
+    }
+
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() <= deadline) {
+      await this.pollAllGames()
+
+      const status = this.getStatus(gameId)
+      if (status?.isRunning) {
+        return status
+      }
+
+      const remainingMs = deadline - Date.now()
+      if (remainingMs <= 0) {
+        break
+      }
+
+      await delay(Math.min(this.POLLING_INTERVAL, remainingMs))
+    }
+
+    return null
+  }
+
+  async waitForStopped(gameId: string, timeoutMs: number): Promise<boolean> {
+    const current = this.getStatus(gameId)
+    if (!current?.isRunning) {
+      return true
+    }
+
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() <= deadline) {
+      await this.pollAllGames()
+
+      const status = this.getStatus(gameId)
+      if (!status?.isRunning) {
+        return true
+      }
+
+      const remainingMs = deadline - Date.now()
+      if (remainingMs <= 0) {
+        break
+      }
+
+      await delay(Math.min(this.POLLING_INTERVAL, remainingMs))
+    }
+
+    return false
+  }
+
   /**
    * Cleanup all monitors
    */
@@ -269,6 +322,17 @@ export class GameMonitorHandler {
    * Poll all games for process status
    */
   private async pollAllGames(): Promise<void> {
+    if (this.activePoll) {
+      return this.activePoll
+    }
+
+    this.activePoll = this.pollAllGamesNow().finally(() => {
+      this.activePoll = null
+    })
+    return this.activePoll
+  }
+
+  private async pollAllGamesNow(): Promise<void> {
     if (this.monitors.size === 0) {
       return
     }
@@ -517,4 +581,10 @@ export class GameMonitorHandler {
 
     log.info('Session saved.', { MathRound: Math.round(duration / 1000) })
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
 }

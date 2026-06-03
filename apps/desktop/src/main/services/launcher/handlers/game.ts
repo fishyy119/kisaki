@@ -14,17 +14,22 @@ import { createLogger } from '@main/log'
 import type { MonitorService } from '@main/services/monitor'
 import type { DbService } from '@main/services/db'
 import type { NativeService } from '@main/services/native'
+import type { NotifyService } from '@main/services/notify'
 import { games } from '@shared/db'
-import { eq } from 'drizzle-orm'
+import type { GameLaunchResult, GameStopResult } from '@shared/launcher'
+import { and, eq } from 'drizzle-orm'
 import { openExternalProtocol } from '@main/utils'
 
 const log = createLogger('Launcher')
+const LAUNCH_DETECTION_TIMEOUT_MS = 10000
+const STOP_DETECTION_TIMEOUT_MS = 10000
 
 export class GameLauncherHandler {
   constructor(
     private dbService: DbService,
     private monitorService: MonitorService,
-    private nativeService: NativeService
+    private nativeService: NativeService,
+    private notifyService: NotifyService
   ) {}
 
   /**
@@ -51,12 +56,40 @@ export class GameLauncherHandler {
    * Launches a game
    * @param gameId - The game ID
    * @param options - Optional behavior toggles
+   * @returns Process detection result.
    * @throws Error when launch fails
    */
   async launchGame(
     gameId: string,
     options?: { cancelBehavior?: 'return' | 'throw' }
-  ): Promise<void> {
+  ): Promise<GameLaunchResult> {
+    const toastId = this.notifyService.loading('正在启动游戏')
+
+    try {
+      const result = await this.performLaunchGame(gameId, options)
+      this.notifyService.update(toastId, {
+        title: getLaunchResultTitle(result),
+        message: getLaunchResultMessage(result),
+        type: result.status === 'detected' ? 'success' : 'warning',
+        duration: result.status === 'unconfirmed' ? 5000 : 3000
+      })
+      return result
+    } catch (error) {
+      const selectionCancelled = isLaunchPathSelectionCancelled(error)
+      this.notifyService.update(toastId, {
+        title: selectionCancelled ? '已取消启动' : '启动游戏失败',
+        message: selectionCancelled ? undefined : formatLaunchErrorMessage(error),
+        type: selectionCancelled ? 'warning' : 'error',
+        duration: selectionCancelled ? 3000 : 5000
+      })
+      throw error
+    }
+  }
+
+  private async performLaunchGame(
+    gameId: string,
+    options?: { cancelBehavior?: 'return' | 'throw' }
+  ): Promise<GameLaunchResult> {
     const [game] = this.dbService.client
       .select()
       .from(games)
@@ -78,7 +111,7 @@ export class GameLauncherHandler {
           throw new Error('Launcher path selection cancelled')
         }
         log.info('Launcher path selection cancelled.', { gameName: game.name, gameId: game.id })
-        return
+        return { status: 'cancelled' }
       }
 
       this.dbService.client
@@ -105,10 +138,61 @@ export class GameLauncherHandler {
         throw new Error(`Unknown launcher mode: ${game.launcherMode}`)
     }
 
-    // Start monitoring after successful launch
-    await this.monitorService.game.startMonitoring(game.id)
+    const monitoringStarted = await this.startMonitoringAfterLaunch(game.id)
+    if (!monitoringStarted) {
+      return {
+        status: 'unconfirmed',
+        reason: 'monitor-unavailable'
+      }
+    }
 
-    log.info('Game launched successfully.', { gameName: game.name, gameId: game.id })
+    const runningStatus = await this.monitorService.game.waitForRunning(
+      game.id,
+      LAUNCH_DETECTION_TIMEOUT_MS
+    )
+    if (!runningStatus) {
+      log.warn('Game launch was not confirmed by monitor.', {
+        gameName: game.name,
+        gameId: game.id
+      })
+      return {
+        status: 'unconfirmed',
+        reason: 'process-not-detected'
+      }
+    }
+
+    this.markNotStartedAsInProgress(game)
+
+    log.info('Game launch confirmed.', {
+      gameName: game.name,
+      gameId: game.id,
+      processPid: runningStatus.pid
+    })
+    return { status: 'detected', pid: runningStatus.pid }
+  }
+
+  private async startMonitoringAfterLaunch(gameId: string): Promise<boolean> {
+    try {
+      await this.monitorService.game.startMonitoring(gameId)
+      return true
+    } catch (error) {
+      log.warn('Failed to start game monitor after launch.', error, { gameId })
+      return false
+    }
+  }
+
+  private markNotStartedAsInProgress(game: Game): void {
+    if (game.status !== 'notStarted') {
+      return
+    }
+
+    this.dbService.client
+      .update(games)
+      .set({ status: 'inProgress' })
+      .where(and(eq(games.id, game.id), eq(games.status, 'notStarted')))
+      .run()
+
+    log.info('Updated game status for launch.', { gameName: game.name, gameId: game.id })
   }
 
   private async selectLauncherPath(game: Game): Promise<string | null> {
@@ -206,7 +290,30 @@ export class GameLauncherHandler {
    * @param gameId - The game ID
    * @throws Error when game is not running or kill fails
    */
-  async killGame(gameId: string): Promise<void> {
+  async killGame(gameId: string): Promise<GameStopResult> {
+    const toastId = this.notifyService.loading('正在停止游戏')
+
+    try {
+      const result = await this.performKillGame(gameId)
+      this.notifyService.update(toastId, {
+        title: getStopResultTitle(result),
+        message: getStopResultMessage(result),
+        type: result.status === 'stopped' ? 'success' : 'warning',
+        duration: result.status === 'stopped' ? 3000 : 5000
+      })
+      return result
+    } catch (error) {
+      this.notifyService.update(toastId, {
+        title: '停止游戏失败',
+        message: formatKillErrorMessage(error),
+        type: 'error',
+        duration: 5000
+      })
+      throw error
+    }
+  }
+
+  private async performKillGame(gameId: string): Promise<GameStopResult> {
     const status = this.monitorService.game.getStatus(gameId)
     if (!status || !status.isRunning || !status.pid) {
       throw new Error('Game is not running')
@@ -220,8 +327,90 @@ export class GameLauncherHandler {
       process.kill(status.pid, 'SIGTERM')
     }
 
-    log.info('Killed game process.', { gameId: gameId, statusPid: status.pid })
+    const stopped = await this.monitorService.game.waitForStopped(gameId, STOP_DETECTION_TIMEOUT_MS)
+    if (!stopped) {
+      log.warn('Game stop was not confirmed by monitor.', { gameId: gameId, statusPid: status.pid })
+      return { status: 'unconfirmed', reason: 'process-still-running' }
+    }
+
+    log.info('Game stop confirmed.', { gameId: gameId, statusPid: status.pid })
+    return { status: 'stopped' }
   }
+}
+
+function formatLaunchErrorMessage(error: unknown): string {
+  const message = toErrorMessage(error)
+
+  if (message === 'Game not found') return '游戏不存在'
+  if (message === 'Launcher path is not set') return '启动路径未设置'
+  if (message.startsWith('File not found:')) return '启动文件不存在'
+  if (message.startsWith('Executable not found:')) return '启动程序不存在'
+  if (message.startsWith('Failed to open file:')) return '打开启动文件失败'
+  if (message.startsWith('Invalid URL format:')) return '启动链接格式不正确'
+  if (message.startsWith('Unknown launcher mode:')) return '未知启动方式'
+
+  return message
+}
+
+function getLaunchResultTitle(result: GameLaunchResult): string {
+  switch (result.status) {
+    case 'detected':
+      return '已启动游戏'
+    case 'cancelled':
+      return '已取消启动'
+    case 'unconfirmed':
+      return '启动请求已发送'
+  }
+}
+
+function getLaunchResultMessage(result: GameLaunchResult): string | undefined {
+  if (result.status !== 'unconfirmed') {
+    return undefined
+  }
+
+  switch (result.reason) {
+    case 'monitor-unavailable':
+      return '无法开始进程检测，请检查监控配置'
+    case 'process-not-detected':
+      return '尚未检测到游戏进程，请检查监控配置'
+  }
+}
+
+function getStopResultTitle(result: GameStopResult): string {
+  switch (result.status) {
+    case 'stopped':
+      return '已停止游戏'
+    case 'unconfirmed':
+      return '停止请求已发送'
+  }
+}
+
+function getStopResultMessage(result: GameStopResult): string | undefined {
+  if (result.status !== 'unconfirmed') {
+    return undefined
+  }
+
+  switch (result.reason) {
+    case 'process-still-running':
+      return '尚未确认游戏进程已停止'
+  }
+}
+
+function formatKillErrorMessage(error: unknown): string {
+  const message = toErrorMessage(error)
+
+  if (message === 'Game is not running') return '游戏未运行'
+  if (message.includes('exited with code')) return '停止进程失败'
+
+  return message
+}
+
+function isLaunchPathSelectionCancelled(error: unknown): boolean {
+  return toErrorMessage(error) === 'Launcher path selection cancelled'
+}
+
+function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 function runExternalCommand(command: string, args: readonly string[]): Promise<void> {
