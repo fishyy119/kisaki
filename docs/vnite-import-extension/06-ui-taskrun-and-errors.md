@@ -1,8 +1,8 @@
 # 06 UI TaskRun And Errors
 
-Vnite importer 的 UI 由 settings panel 提供。它是操作型界面，不做营销页，也不在应用主界面注入额外页面。
+Vnite importer 的 UI 由 settings panel 提供。它是操作型 flow，不做营销页，不在应用主界面注入额外页面，也不把 tabs 当作步骤使用。
 
-## Settings Panel
+## Settings Panel Flow
 
 Panel：
 
@@ -10,99 +10,192 @@ Panel：
 defineSettingsPanel({
   id: 'settings',
   title: 'Vnite 导入',
-  size: 'lg',
-  submitLabel: '保存默认选项'
+  size: 'lg'
 })
 ```
 
-Tabs：
+`resolve()` 始终返回 `fields`，不返回 `tabs`。root footer submit 是唯一主路径按钮；secondary button 只用于“重新选择”“返回修改”“查看详情”“清理临时文件”等旁路动作。
 
-```text
-backup      备份包
-fields      字段
-completion  补全
-preview     预览
-advanced    高级
+Flow state：
+
+```ts
+type VniteImportStep =
+  | 'pickBackup'
+  | 'analyzeBackup'
+  | 'configureImport'
+  | 'previewGraph'
+  | 'running'
+  | 'done'
 ```
 
-### 备份包
+Root model：
 
-字段：
+```ts
+interface VniteImportFlowModel {
+  title?: string
+  description?: string
+  submit?: {
+    label: string
+    disabled?: boolean
+    hidden?: boolean
+  }
+  fields: readonly SettingsPanelField[]
+}
+```
 
-- `选择备份包` button，icon `FolderOpen`。
-- 当前文件 status：文件名、大小、分析时间。
-- `分析备份包` button，icon `Search`。
-- 分析摘要 table：game、game-local、collection、附件、warning 数。
+Footer submit labels：
 
-行为：
+| step              | submit label       | behavior                                         |
+| ----------------- | ------------------ | ------------------------------------------------ |
+| `pickBackup`      | `选择备份包`       | 调 `kisaki.files.pickFile` 并保存 file grant     |
+| `analyzeBackup`   | `分析备份包`       | 解压、读取、生成分析摘要                         |
+| `configureImport` | `生成预览`         | 构建 graph 并调用 `kisaki.library.graph.preview` |
+| `previewGraph`    | `开始导入`         | 创建 TaskRun 并执行 graph apply                  |
+| `running`         | hidden             | 展示运行状态，不允许重复提交                     |
+| `done`            | `导入另一个备份包` | 重置 flow 到 `pickBackup`                        |
 
-- 选择文件后立即保存 file grant 到 `analysis.current`。
-- 分析时创建短 TaskRun 或 settings callback loading state。备份较大时应使用 TaskRun。
-- 分析完成刷新 root。
+## Step: Pick Backup
 
-### 字段
+Fields：
 
-使用 checkbox / multi-select 表达字段组：
+- file status node：尚未选择备份包。
+- notice node：提示选择从 Vnite 导出的数据库备份 zip。
+- optional diagnostics table：上一次导入摘要，仅在用户开启保留摘要时展示。
 
-- 基础信息。
-- 本地启动。
-- 游玩记录。
-- 分类与标签。
-- 制作方与人员。
-- 媒体。
-- 存档。
-- 回忆。
+Submit：
 
-字段组旁展示分析出的覆盖数量，例如“封面 122/124”。不要展示冗长说明；详细 warning 放预览。
+```ts
+const grant = await kisaki.files.pickFile({
+  title: '选择 Vnite 备份包',
+  filters: [{ name: 'Vnite 备份包', extensions: ['zip'] }],
+  copyTo: 'temp',
+  maxSizeBytes: 2 * 1024 * 1024 * 1024
+})
+```
 
-### 补全
+成功选择后：
 
-字段：
+- 保存 `grantId`、`name`、`sizeBytes`、`path`。
+- 进入 `analyzeBackup`。
 
+取消选择后：
+
+- 留在 `pickBackup`。
+- 不显示失败提示。
+
+## Step: Analyze Backup
+
+Fields：
+
+- selected file status：文件名、大小。
+- stale analysis notice：如果已有旧分析且 grant 变化，提示需要重新分析。
+- secondary button：`重新选择`，释放旧 grant 并回到 `pickBackup`。
+
+Submit：
+
+- 创建短任务或使用 settings callback loading state。
+- 解压 zip。
+- 读取 `game`、`game-local`、`game-collection`。
+- 生成 `VniteBackupAnalysisSummary`。
+- 进入 `configureImport`。
+
+分析摘要 fields：
+
+- status nodes：游戏、合集、媒体附件、warning。
+- table：字段覆盖，例如封面 122/124、外部 ID 统计、游玩记录统计。
+
+## Step: Configure Import
+
+Fields 是一个紧凑配置面：
+
+- 字段选择 summary。
+- `编辑字段` button，打开 fields dialog。
 - `补全缺失元数据` switch。
 - `刮削配置` select，来自 `kisaki.scrapers.profiles.list({ mediaType: 'game' })`。
 - `补全范围` radioGroup：`核心与媒体`、`全部可补全字段`、`自定义`。
-- 自定义 surfaces multiSelect。
+- 自定义 surfaces multiSelect，仅在 custom 时显示。
+- conflict mode select：跳过现有、合并缺失字段、覆盖所选字段。
+- `高级选项` button，打开 advanced dialog。
 
-如果没有 game scraper profile：
+没有 game scraper profile 时：
 
-- switch disabled。
+- `补全缺失元数据` disabled。
 - notice tone warning：提示可以先直接导入。
 
-### 预览
+Fields dialog：
 
-展示 dry-run 结果：
+- 使用 checkbox / multi-select 表达字段组。
+- 基础信息、本地启动、游玩记录、分类与标签、制作方与人员、媒体、存档、回忆。
+- 每组显示分析出的覆盖数量，例如“封面 122/124”。
+
+Advanced dialog：
+
+- keep last analysis。
+- cleanup temp。
+- strict attachment mode，默认关闭。
+
+Submit：
+
+- 构建 `LibraryGraphInput`。
+- 调 `kisaki.library.graph.preview(graph)`。
+- 保存 preview result。
+- 进入 `previewGraph`。
+
+## Step: Preview Graph
+
+Fields：
 
 - summary status nodes：新增、更新、跳过、warning。
-- comparisonList：每组游戏显示来源名称、目标状态、命中原因、关键字段。
+- comparisonList：每组游戏显示来源名称、目标状态、匹配诊断、关键字段。
 - diagnostics table：level、code、游戏、message。
+- secondary button：`返回修改`，回到 `configureImport`。
+- secondary button：`重新预览`，重新执行 graph preview。
 
-预览 dialog 有两个动作：
+Submit：
 
-- `重新预览`
-- `开始导入`
+- 创建 extension-owned TaskRun。
+- 进入 `running`。
+- 后台执行正式导入。
 
-### 高级
+## Step: Running
 
-字段：
+Fields：
 
-- conflict mode select：跳过现有、合并缺失字段、覆盖所选字段。
-- keep last analysis switch。
-- cleanup temp button。
+- status node：当前 TaskRun 状态。
+- table 或 comparisonList：实时 counters。
+- notice：导入运行中，取消请到任务中心处理。
 
-默认 conflict mode：`mergeSelected`。
+Submit：
+
+- hidden。
+- 禁止重复创建导入任务。
+
+状态刷新：
+
+- settings panel 通过 TaskRun snapshot 或 extension storage 中的 active run id 刷新。
+- 运行完成后自动进入 `done`，或由用户手动刷新。
+
+## Step: Done
+
+Fields：
+
+- summary status nodes：新增、更新、跳过、补全成功、补全失败、warning。
+- diagnostics table。
+- secondary button：`查看导入结果`，如果未来命令/路由支持，可打开资料库筛选。
+- secondary button：`导出诊断摘要`，后续可选，不是第一版必需。
+
+Submit：
+
+- `导入另一个备份包`。
+- 释放当前 grant。
+- 清理 flow state。
+- 回到 `pickBackup`。
 
 ## Commands
 
-注册 commands，方便后续从命令面板调用：
+注册 command，方便后续从命令面板调用：
 
 ```ts
-context.contributions.commands.register({
-  id: 'vnite-importer.openSettings',
-  title: '打开 Vnite 导入',
-  run: async () => ({ openSettingsPanel: { id: 'settings' } })
-})
-
 context.contributions.commands.register({
   id: 'vnite-importer.importBackup',
   title: '导入 Vnite 备份包',
@@ -110,7 +203,7 @@ context.contributions.commands.register({
 })
 ```
 
-如果 command API 当前不支持打开 settings panel result，则只注册 `importBackup`，settings 入口依赖扩展管理界面。
+不要求命令打开 settings panel。若未来 command result 支持打开指定 settings panel，可新增 `vnite-importer.openSettings`，但不把它作为第一版依赖。
 
 ## TaskRun
 
@@ -120,7 +213,7 @@ context.contributions.commands.register({
 const run = await kisaki.taskRuns.create({
   operation: 'vnite.import',
   title: '导入 Vnite 备份包',
-  description: file.name,
+  description: grant.name,
   subject: { type: 'extension', id: 'builtin.vnite-importer' },
   controls: { cancelable: true, pausable: false },
   presentation: {
@@ -137,16 +230,16 @@ const run = await kisaki.taskRuns.create({
 
 进度 phase：
 
-| phase key     | label                  |
-| ------------- | ---------------------- |
-| `extracting`  | 正在解压备份包         |
-| `reading`     | 正在读取 Vnite 数据    |
-| `planning`    | 正在生成导入计划       |
-| `attachments` | 正在准备媒体文件       |
-| `writing`     | 正在写入 Kisaki 资料库 |
-| `completion`  | 正在补全元数据         |
-| `cleanup`     | 正在清理临时文件       |
-| `finished`    | 导入完成               |
+| phase key       | label                  |
+| --------------- | ---------------------- |
+| `extracting`    | 正在解压备份包         |
+| `reading`       | 正在读取 Vnite 数据    |
+| `buildingGraph` | 正在构建资料库图       |
+| `attachments`   | 正在准备媒体文件       |
+| `writing`       | 正在写入 Kisaki 资料库 |
+| `completion`    | 正在补全元数据         |
+| `cleanup`       | 正在清理临时文件       |
+| `finished`      | 导入完成               |
 
 Counters：
 
@@ -171,10 +264,10 @@ TaskRun output：
 
 ```ts
 interface VniteImportJobSummary {
-  sourceFileName: string
+  fileName: string
   startedAt: number
   finishedAt: number
-  directImport: LibraryGameImportResult
+  graphApply: LibraryGraphResult
   completion?: VniteMetadataCompletionSummary
   diagnostics: readonly VniteImportDiagnostic[]
 }
@@ -187,7 +280,7 @@ interface VniteImportJobSummary {
 `fatal`
 
 - 无法继续，TaskRun fail。
-- 示例：zip 无法解压、PouchDB 无法打开、host import capability validation fail。
+- 示例：zip 无法解压、PouchDB 无法打开、host graph validation fail。
 
 `recoverable`
 
@@ -210,7 +303,8 @@ interface VniteImportJobSummary {
 ```ts
 logger.warn('Vnite import item failed.', {
   code,
-  sourceGameId,
+  itemKey,
+  vniteGameId,
   attachmentId,
   message
 })
@@ -234,8 +328,9 @@ interface VniteImportDiagnostic {
   level: 'info' | 'warning' | 'error'
   code: string
   message: string
-  sourceGameId?: string
-  sourceGameName?: string
+  itemKey?: string
+  vniteGameId?: string
+  vniteGameName?: string
   targetGameId?: string
 }
 ```
@@ -247,7 +342,7 @@ UI table columns：
 - 问题。
 - 处理结果。
 
-`sourceGameId` 默认不直接展示，可在详情里显示。
+`vniteGameId` 默认不直接展示，可在详情里显示。
 
 ## Path Safety
 
@@ -261,12 +356,12 @@ assertInside(target, extractRoot)
 附件导出：
 
 ```ts
-temp/vnite-import/<runId>/attachments/<sourceGameId>/<safeAttachmentName>
+temp/vnite-import/<runId>/attachments/<vniteGameId>/<safeAttachmentName>
 ```
 
-host import：
+host graph apply：
 
-- 再次验证 `sourcePath` 位于当前 extension temp/data/path。
+- 再次验证 attachment `path` 和 note `coverPath` 位于当前 extension temp/data/path。
 - 不接受任意用户路径。
 
 ## Cancellation
@@ -280,7 +375,7 @@ await run.checkpoint()
 取消后：
 
 - 停止读取、导出附件或补全。
-- 如果直接导入已完成，不回滚。
+- 如果 graph apply 已完成部分 item，不回滚。
 - summary 写明已完成和未完成数量。
 - 清理 temp workspace。
 
@@ -292,7 +387,7 @@ UI 文案使用：
 - `字段`
 - `补全`
 - `刮削配置`
-- `导入计划`
+- `资料库图`
 - `预览`
 - `跳过现有`
 - `合并缺失字段`

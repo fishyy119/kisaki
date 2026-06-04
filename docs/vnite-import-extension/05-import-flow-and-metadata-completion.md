@@ -1,30 +1,32 @@
 # 05 Import Flow And Metadata Completion
 
-Vnite 导入分为分析、预览、直接导入、元数据补全和摘要五个阶段。
+Vnite 导入分为分析、graph preview、graph apply、元数据补全和摘要五个阶段。
 
 ## 总流程
 
 ```text
 1. 用户打开 Vnite 导入 settings panel
-2. 用户选择备份 zip
-3. 扩展复制 zip 到受控 temp file grant
+2. 用户通过 footer submit 选择备份 zip
+3. 宿主复制 zip 到受控 temp file grant
 4. 扩展解压并读取 PouchDB
-5. 扩展生成分析摘要和 dry-run 导入计划
+5. 扩展生成分析摘要
 6. 用户选择字段、冲突策略、是否补全、刮削配置
-7. 扩展创建 TaskRun
-8. 扩展导出需要迁移的附件到 temp
-9. 扩展调用 kisaki.library.imports.applyGamePlan
-10. 宿主事务写入 Kisaki
-11. 如启用补全，扩展按导入结果调用 kisaki.ingest.game.update.fromScraper
-12. 扩展完成 TaskRun，输出摘要
-13. 扩展清理 run workspace
+7. 扩展构建 LibraryGraphInput
+8. 扩展调用 kisaki.library.graph.preview
+9. 用户确认后扩展创建 TaskRun
+10. 扩展重新构建 LibraryGraphInput 并导出附件到 temp
+11. 扩展调用 kisaki.library.graph.apply
+12. 宿主按 item-level 写入 Kisaki
+13. 如启用补全，扩展按 graph apply 结果调用 kisaki.ingest.game.update.fromScraper
+14. 扩展完成 TaskRun，输出摘要
+15. 扩展清理 run workspace 和 file grant
 ```
 
 ## 分析阶段
 
 输入：
 
-- `OpenedFile.path`
+- `ExtensionFileGrant.path`
 
 输出：
 
@@ -44,127 +46,126 @@ Vnite 导入分为分析、预览、直接导入、元数据补全和摘要五�
 
 分析阶段不读取 `config-local` 文档内容。
 
-## 预览阶段
+## Graph Preview 阶段
 
 输入：
 
 - `VniteBackupSnapshot`
 - 用户字段选择
 - 冲突策略
-- 当前 Kisaki 资料库匹配结果
+- 是否启用 strict attachment mode
 
 输出：
 
-- dry-run `LibraryGameImportResult`
+- `LibraryGraphResult`，`mode='preview'`
 - preview rows
 
-dry-run 调用：
+preview 调用：
 
 ```ts
-await kisaki.library.imports.applyGamePlan({
-  source,
-  options: {
-    conflictMode,
-    dryRun: true
-  },
-  games,
-  collections
+const graph = buildLibraryGraph({
+  snapshot,
+  fieldSelection,
+  conflictMode,
+  strictAttachments
 })
+
+const preview = await kisaki.library.graph.preview(graph)
 ```
+
+`buildLibraryGraph` 必须为所有 node 生成单次 graph 内唯一的 key。Vnite importer 使用 `vnite:<kind>:...` 前缀，便于 result 和 diagnostics 对应回源数据；宿主不持久化这些 key，也不使用它们做跨次导入匹配。
 
 预览要显示：
 
 - 将新增、更新、跳过、失败的游戏数量。
-- 命中现有游戏的原因：external id 或 path。
+- 命中现有游戏的原因，从 diagnostics 中读取，例如 external id 或 path。
 - 字段选择摘要。
 - 附件数量。
 - 合集数量和成员关系数量。
 - warning 摘要。
 
-## 导入阶段
+## Graph Apply 阶段
 
-正式导入前重新构建 plan，不复用过期 dry-run plan。原因：
+正式导入前重新构建 graph，不复用过期 preview graph。原因：
 
 - 用户可能改了字段。
 - 当前资料库可能变化。
 - temp attachment 文件可能已清理。
+- preview result 不是写入授权，只是用户可读的计划摘要。
 
 导入步骤：
 
 1. TaskRun phase `reading`: 重新读取 snapshot 或复用仍有效 snapshot。
-2. TaskRun phase `planning`: 生成导入计划。
+2. TaskRun phase `buildingGraph`: 生成 `LibraryGraphInput`。
 3. TaskRun phase `attachments`: 导出 PouchDB attachments 到 temp。
-4. TaskRun phase `writing`: 调用 host import capability。
+4. TaskRun phase `writing`: 调用 `kisaki.library.graph.apply`。
 5. TaskRun phase `completion`: 可选 ingest 补全。
-6. TaskRun phase `cleanup`: 删除 workspace。
+6. TaskRun phase `cleanup`: 删除 workspace 和 file grant。
 
 取消点：
 
 - zip 解压前后。
 - 每个 PouchDB 数据库读取后。
 - 每批 attachment 导出后。
-- host import capability 调用前。
+- host graph apply 调用前。
 - 每个 metadata completion 游戏后。
 
-如果取消发生在 host import capability 调用中，宿主应尽力遵循 AbortSignal；若 transaction 已提交，结果按 committed 返回，TaskRun summary 标明“导入已部分完成”。
+如果取消发生在 host graph apply 调用中，宿主应尽力遵循 AbortSignal。Graph API 不承诺整包 all-or-nothing；若部分 item 已提交，结果按 committed 返回，TaskRun summary 标明“导入已部分完成”。
 
-## Host Import Algorithm
+## Host Graph Apply Algorithm
 
-`applyGamePlan` 伪代码：
+`library.graph.apply` 伪代码：
 
 ```ts
-function applyGamePlan(plan, runtime) {
-  validatePlan(plan)
-  validateScopedPaths(plan, runtime)
+function applyGraph(input, runtime, mode) {
+  validateGraph(input)
+  validateScopedPaths(input, runtime)
 
-  const normalized = normalizePlan(plan)
-  const matches = findMatchesByExternalIdAndPath(normalized)
+  const graph = normalizeGraph(input)
+  const matches = matchGraphEntities(graph)
 
-  if (plan.options.dryRun) {
-    return createDryRunResult(normalized, matches)
+  if (mode === 'preview') {
+    return createPreviewResult(graph, matches)
   }
 
-  const txResult = db.transaction((tx) => {
-    const gameMap = new Map()
+  const results = []
 
-    for (const item of normalized.games) {
-      const match = matches.get(item.sourceGameId)
-      const result = upsertGame(tx, item, match, plan.options)
-      gameMap.set(item.sourceGameId, result.gameId)
-      upsertExternalIds(tx, result.gameId, item.match.externalIds)
-      upsertTagsAndRelations(tx, result.gameId, item.relations?.tags)
-      upsertCompaniesAndRelations(tx, result.gameId, item.relations?.companies)
-      upsertPersonsAndRelations(tx, result.gameId, item.relations?.persons)
-      upsertSessions(tx, result.gameId, item.sessions)
-      upsertNotes(tx, result.gameId, item.notes)
-      upsertSaveBackupMetadata(tx, result.gameId, item.attachments)
-    }
+  for (const group of createApplyGroups(graph, matches)) {
+    const groupResult = db.transaction((tx) => {
+      const entityMap = new Map()
 
-    upsertCollections(tx, normalized.collections, gameMap)
-    return { gameMap, rowResults }
-  })
+      upsertMediaNodes(tx, group.media, group.matches, input.options, entityMap)
+      upsertExternalIds(tx, group.media, entityMap)
+      upsertEntityNodes(tx, group.entities, entityMap)
+      applyRelationshipEdges(tx, group.edges, entityMap)
 
-  const attachmentWarnings = persistAttachments(txResult, normalized)
-  return createCommittedResult(txResult, attachmentWarnings)
+      return createCommittedGroupResult(group, entityMap)
+    })
+
+    const attachmentWarnings = persistAttachments(groupResult, graph)
+    results.push(mergeAttachmentDiagnostics(groupResult, attachmentWarnings))
+  }
+
+  return createApplyResult(graph, results)
 }
 ```
 
 事务内写：
 
-- game rows
+- media rows
 - external id rows
-- tag rows and game_tag_links
-- company/person rows and links
+- tag rows and media-tag links
+- company/person rows and media relation links
 - game_sessions
 - game_notes rows
-- collection rows and collection_game_links
+- collection rows and collection-media links
 - saveBackups JSON metadata
 
 事务外写：
 
 - binary attachments copied by `DbService.attachment`
 
-附件失败不删除已导入游戏，返回 warning。原因是 Vnite 备份里媒体价值高但附件失败不应阻断核心用户数据迁移。
+附件失败不删除已导入游戏，返回 warning。原因是 Vnite 备份里媒体价值高，但附件失败不应阻断核心用户数据迁移。用户开启 strict attachment mode 时，宿主可把相关 media item 标记为 failed。
 
 ## Metadata Completion
 
@@ -184,12 +185,12 @@ const profiles = await kisaki.scrapers.profiles.list({ mediaType: 'game' })
 
 ### Lookup Construction
 
-对每个导入成功的游戏：
+对每个导入成功的 game media node：
 
 ```ts
 const lookup = {
-  name: imported.name || imported.originalName || sourceGameId,
-  knownIds: imported.externalIds.filter((id) => id.source !== 'vnite')
+  name: sourceGame.input.name || sourceGame.input.originalName || vniteGameId,
+  knownIds: (sourceGame.input.externalIds ?? []).filter((id) => id.source !== 'vnite')
 }
 ```
 
@@ -264,15 +265,15 @@ ID 来源优先级：
 伪代码：
 
 ```ts
-for (const item of importedGames) {
+for (const item of importedGameNodes) {
   await job.checkpoint()
-  if (item.status !== 'created' && item.status !== 'updated') continue
-  if (!item.gameId) continue
+  if (item.action !== 'create' && item.action !== 'update') continue
+  if (!item.entityId) continue
 
   try {
     await kisaki.ingest.game.update.fromScraper(
       {
-        rootId: item.gameId,
+        rootId: item.entityId,
         profileId,
         lookup: createLookup(item),
         selection: { surfaces },
@@ -303,27 +304,34 @@ for (const item of importedGames) {
 
 匹配顺序：
 
-1. `source='vnite'` external id。
-2. 用户选择 external IDs 时，用 `steam/vndb/igdb/ymgal` external id。
-3. 用户选择 local gameDirPath 时，用 `games.gameDirPath`。
-4. 不使用 name 自动合并。名称相同只显示 warning，需要用户自己处理。
+1. Media node 先按 `input.externalIds` 匹配，包括 `source='vnite'`、`steam`、`vndb`、`igdb`、`ymgal`。
+2. Media node 再按 `input.gameDirPath` 匹配。
+3. Tag 按 name 匹配。
+4. Collection 按 name 匹配。
+5. Person/company/character 只按 external ids 匹配；没有 external ids 时创建新实体。
+6. Note 按 owner media + name 匹配。
+7. Session 按 owner media + startedAt + endedAt 匹配。
+8. Edges 按 from/to/role/slot/order 语义去重。
+9. Media 不使用 name 自动合并。
 
 原因：
 
 - Vnite 备份中存在视觉小说和本地化标题，name 冲突和翻译差异都很常见。
-- 自动按 name 合并容易破坏现有资料库。
+- 自动按 name 合并 media、person、company 或 character 容易破坏现有资料库。
 
 ## Idempotency
 
 重复导入同一备份：
 
-- 已导入游戏命中 `vnite` external id。
+- 每个导入游戏命中 `vnite` external id，或用户选择的其他 external id / local path。
 - `skipExisting` 不重复创建、不重复写入 notes/sessions/attachments。
-- `mergeSelected` 不重复创建关系；sessions 按 `sourceSessionId` 或 startedAt/endedAt 去重。
-- memories notes 按 `sourceNoteId` 去重。
-- collections 按 `sourceCollectionId` + `source='vnite'` provenance 或 collection name 匹配。
+- `mergeSelected` 不重复创建关系。
+- memories notes 按 owner media + note name 去重。
+- sessions 按 owner media + startedAt + endedAt 去重。
+- collections 按 name 匹配。
+- collection-media、media-tag、media-company、media-person 等 edges 按 from/to/role/slot 去重。
 
-如果当前 Kisaki 没有 collection external id 表，collection provenance 可存入 import manager 内部映射表。若不新增表，则使用 collection name 匹配，且 warning 提示合集名称冲突风险。
+Graph node key 不参与跨次导入匹配。External id 是用户可见来源事实，用于 media matching 和诊断；其他实体按自身自然唯一性或 owner-scoped 规则去重。
 
 ## Cleanup
 

@@ -48,11 +48,11 @@ extensions/vnite-importer/
       people.ts
       status.ts
       tags.ts
-      plan.ts
+      graph.ts
       diagnostics.ts
     import/
       options.ts
-      planner.ts
+      builder.ts
       executor.ts
       summary.ts
     completion/
@@ -70,14 +70,13 @@ extensions/vnite-importer/
         index.ts
         panel.ts
         dialogs.ts
+        flow.ts
         runtime.ts
         ids.ts
         resources.ts
-        tabs.ts
-        backup-tab.ts
         fields-dialog.ts
-        preview-dialog.ts
-        import-dialog.ts
+        advanced-dialog.ts
+        preview-view.ts
         options.ts
 ```
 
@@ -145,7 +144,7 @@ extensions/vnite-importer/
 1. 创建 `SettingsStore`。
 2. 创建 `BackupWorkspaceManager`。
 3. 创建 `VniteBackupReader` 和 `VniteBackupAnalyzer`。
-4. 创建 `VniteImportPlanner`。
+4. 创建 `VniteGraphBuilder`。
 5. 创建 `VniteImportExecutor`。
 6. 创建 `MetadataCompletionRunner`。
 7. 创建 `VniteImportJobRunner`。
@@ -159,12 +158,12 @@ extensions/vnite-importer/
 
 ```text
 settings panel
-  -> kisaki.files.openFile
+  -> kisaki.files.pickFile
   -> BackupWorkspaceManager
   -> VniteBackupReader
   -> VniteBackupAnalyzer
-  -> VniteImportPlanner
-  -> kisaki.library.imports.applyGamePlan
+  -> VniteGraphBuilder
+  -> kisaki.library.graph.preview/apply
   -> MetadataCompletionRunner
   -> kisaki.ingest.game.update.fromScraper
   -> TaskRun summary
@@ -234,22 +233,23 @@ settings panel
 - Vnite external id -> Kisaki `ExternalId[]`。
 - Vnite launcher -> Kisaki launcher fields。
 - Vnite metadata arrays -> tags、companies、persons。
-- Vnite media attachments -> import attachment items。
-- Vnite memory -> game notes。
-- Vnite collection -> collection import items。
+- Vnite media attachments -> graph attachment nodes and media-attachment edges。
+- Vnite memory -> graph note nodes and media-note edges。
+- Vnite collection -> graph collection nodes and collection-media edges。
 
 ### import
 
-`import/planner.ts`
+`import/builder.ts`
 
 - 接收 `VniteBackupSnapshot` 和用户字段选择。
-- 生成 `LibraryGameImportPlan`。
-- 添加 source provenance。
+- 生成 `LibraryGraphInput`。
+- 为每个 node 分配单次 graph 内唯一的 key，用于 edges、result 和 diagnostics 对应源数据。
+- 每个游戏总是写入 `vnite` external id。
 - 为每个无法表达字段生成 warning。
 
 `import/executor.ts`
 
-- 调用 `kisaki.library.imports.applyGamePlan`。
+- 调用 `kisaki.library.graph.preview` 或 `kisaki.library.graph.apply`。
 - 不直接循环调用细粒度 library CRUD。
 - 将宿主返回结果转换成 extension summary。
 
@@ -282,7 +282,7 @@ settings panel
 
 `jobs/preview-runner.ts`
 
-- 分析备份包并生成 dry-run plan。
+- 分析备份包并生成 graph preview。
 
 `jobs/import-runner.ts`
 
@@ -300,6 +300,8 @@ settings panel 是唯一 UI 入口，标题为 `Vnite 导入`。
 - 补全选项。
 - 预览差异。
 - 开始导入。
+
+UI 是 flow，不是 tabbed navigation。`ui/settings/flow.ts` 只负责 step state 和 submit label 计算；字段、预览和高级配置分别由对应 view/dialog builder 生成。
 
 ## Storage Schema
 
@@ -327,7 +329,7 @@ interface VniteImporterSettingsV1 {
 interface VniteImportAnalysisState {
   version: 1
   file?: {
-    fileId: string
+    grantId: string
     name: string
     sizeBytes: number
     path: string
@@ -360,8 +362,8 @@ type VniteImportErrorCode =
   | 'attachment_missing'
   | 'attachment_export_failed'
   | 'invalid_vnite_doc'
-  | 'import_plan_invalid'
-  | 'host_import_failed'
+  | 'library_graph_invalid'
+  | 'host_graph_failed'
   | 'scraper_profile_missing'
   | 'metadata_completion_failed'
   | 'job_cancelled'
@@ -373,7 +375,7 @@ type VniteImportErrorCode =
 
 ```text
 ui -> jobs -> import/completion
-jobs -> backup/analyzer/planner/executor
+jobs -> backup/analyzer/import/executor
 import -> mapping/vnite/shared
 completion -> mapping/shared
 backup -> shared

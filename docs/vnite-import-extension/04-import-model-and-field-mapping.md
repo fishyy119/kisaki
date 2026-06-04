@@ -1,6 +1,6 @@
 # 04 Import Model And Field Mapping
 
-Vnite importer 的核心是把不完整、偏 PouchDB 文档的 Vnite 数据规范化为 Kisaki game import plan。所有映射都受用户字段选择控制，但用于幂等的 `vnite` external id 总是写入。
+Vnite importer 的核心是把不完整、偏 PouchDB 文档的 Vnite 数据规范化为 Kisaki library graph。所有映射都受用户字段选择控制，但用于幂等的 `vnite` external id 总是写入。
 
 ## 字段选择模型
 
@@ -132,13 +132,13 @@ function toKisakiScore(score: number): number | null {
 
 ## 日期和时长
 
-| Vnite                     | Kisaki                | 规则                                                               |
-| ------------------------- | --------------------- | ------------------------------------------------------------------ |
-| `record.addDate`          | `games.createdAt`     | 仅在 `activity.createdAt` 开启时写入 import-only `sourceCreatedAt` |
-| `record.lastRunDate`      | `games.lastActiveAt`  | 空值转 `null`                                                      |
-| `record.playTime`         | `games.totalDuration` | 毫秒，非负整数                                                     |
-| `record.timers[]`         | `game_sessions`       | `start/end` 转 timestamp ms；`end <= start` 跳过并 warning         |
-| `record.dailyPlayTimes[]` | 不导入                | Kisaki 可从 sessions 聚合                                          |
+| Vnite                     | Kisaki                | 规则                                                                    |
+| ------------------------- | --------------------- | ----------------------------------------------------------------------- |
+| `record.addDate`          | `games.createdAt`     | 仅在 `activity.createdAt` 开启时写入 `LibraryGameCreateInput.createdAt` |
+| `record.lastRunDate`      | `games.lastActiveAt`  | 空值转 `null`                                                           |
+| `record.playTime`         | `games.totalDuration` | 毫秒，非负整数                                                          |
+| `record.timers[]`         | `game_sessions`       | `start/end` 转 timestamp ms；`end <= start` 跳过并 warning              |
+| `record.dailyPlayTimes[]` | 不导入                | Kisaki 可从 sessions 聚合                                               |
 
 如果 `sessions` 开启但 `totalDuration` 关闭，宿主仍应根据导入 sessions 聚合 `games.totalDuration`，除非用户显式关闭“根据会话更新总时长”。第一版不提供该高级选项，保持 totalDuration 与 sessions 同步。
 
@@ -203,7 +203,7 @@ Vnite 没有独立 tag id，只有字符串数组。Kisaki tag 按 name 全局�
 规则：
 
 - 公司只创建 name-only entity。
-- 同名公司复用现有 company。
+- 同名公司不自动复用。
 - 同一游戏同一公司同一 type 去重。
 - 补全阶段可用 scraper 将 name-only company 丰富为完整公司。
 
@@ -239,8 +239,9 @@ Vnite `metadata.extra` 的 key 不稳定，默认不导入人员。用户开启 
 
 1. 通过 PouchDB `getAttachment` 读取 buffer。
 2. 写入 `temp/vnite-import/<runId>/attachments/<gameId>/<safeName>.webp`。
-3. 在 `LibraryGameAttachmentImportItem.sourcePath` 中传给宿主。
-4. 宿主通过 `DbService.attachment` 保存，返回最终 fileName。
+3. 生成 `LibraryGraphAttachmentNode`，在 `path` 中传给宿主。
+4. 生成 `media-attachment` edge 表达 slot、replace 和 save backup metadata。
+5. 宿主通过 `DbService.attachment` 保存，返回最终 fileName。
 
 ## 回忆记录
 
@@ -291,15 +292,15 @@ interface SaveBackup {
 
 ## 合集
 
-| Vnite                | Kisaki                      |
-| -------------------- | --------------------------- |
-| `gameCollection._id` | collection import source id |
-| `name`               | `collections.name`          |
-| `sort`               | `collections.order`         |
-| `games[]`            | `collection_game_links`     |
-| `sortBy/sortOrder`   | warning                     |
+| Vnite                | Kisaki                            |
+| -------------------- | --------------------------------- |
+| `gameCollection._id` | 当前 graph 的 collection node key |
+| `name`               | `collections.name`                |
+| `sort`               | `collections.order`               |
+| `games[]`            | `collection-media` edges          |
+| `sortBy/sortOrder`   | warning                           |
 
-合集导入依赖 game source id 到 Kisaki game id 的映射。若某个 member game 未导入或失败，该 membership 跳过并 warning。
+合集导入依赖当前 graph 内 media node key 到 Kisaki game id 的映射。若某个 member game 未导入或失败，该 membership edge 跳过并 warning。
 
 ## 冲突策略
 
@@ -312,13 +313,13 @@ interface SaveBackup {
 `mergeSelected`
 
 - external id 或 path 命中现有游戏时，只写用户选择字段中当前为空的字段。
-- collection/tag/relation 使用 merge。
+- collection/tag/relation edges 使用 merge。
 - 媒体 slot 只在当前为空时写入。
 
 `overwriteSelected`
 
 - external id 或 path 命中现有游戏时，覆盖用户选择字段。
-- collection/tag/relation merge，不删除用户现有关系。
+- collection/tag/relation edges merge，不删除用户现有关系。
 - 媒体 slot 覆盖对应 slot。
 
 第一版 UI 默认 `mergeSelected`。
@@ -340,7 +341,7 @@ vnite.media.wideCoverUnsupported
 vnite.collection.sortUnsupported
 vnite.extra.unknownKey
 vnite.attachment.exportFailed
-kisaki.import.existingExternalId
-kisaki.import.existingPath
-kisaki.import.attachmentPersistFailed
+kisaki.graph.existingExternalId
+kisaki.graph.existingPath
+kisaki.graph.attachmentPersistFailed
 ```

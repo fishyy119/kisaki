@@ -9,7 +9,7 @@
 ```text
 packages/extension-api/src/capabilities/files.ts
 packages/extension-api/src/capabilities/index.ts
-packages/extension-api/src/capabilities/library/imports.ts
+packages/extension-api/src/capabilities/library/graph.ts
 packages/extension-api/src/capabilities/library/index.ts
 packages/extension-api/src/capabilities/ingest.ts
 packages/extension-api/src/kisaki.ts
@@ -20,7 +20,8 @@ packages/extension-sdk/src/index.ts
 内容：
 
 - 定义 `FilesCapability`。
-- 定义 `LibraryGameImportPlan` 和结果 DTO。
+- 定义 `LibraryGraphInput`、graph node/edge DTO 和 `LibraryGraphResult`。
+- 在有业务语义的 library create input 中直接内联 `createdAt?: number`、`updatedAt?: number`。
 - 扩展 `IngestCapability`，加入 `game.update.fromScraper`。
 - 更新 RPC request/response map。
 - 更新 SDK facade。
@@ -42,15 +43,16 @@ apps/desktop/src/main/services/extension/capabilities/files.ts
 apps/desktop/src/main/services/extension/capabilities/gateway.ts
 apps/desktop/src/main/services/extension/capabilities/ingest.ts
 apps/desktop/src/main/services/extension/capabilities/library/provider.ts
-apps/desktop/src/main/services/extension/capabilities/library/imports/
+apps/desktop/src/main/services/extension/capabilities/library/graph/
 apps/desktop/src/main/services/extension/runtime/host/sdk-bridge/kisaki-api.ts
 ```
 
 内容：
 
-- `files.openFile` 调 Electron dialog 并复制文件到 extension temp。
-- `files.release` 删除 file grant。
-- `library.imports.applyGamePlan` 实现 dry-run、匹配、事务写入、附件写入和 diagnostics。
+- `files.pickFile` 调 Electron dialog 并复制文件到 extension temp grant。
+- `files.releaseGrant` 删除 file grant。
+- `library.graph.preview` 实现校验、匹配和 preview diagnostics。
+- `library.graph.apply` 实现 item-level 写入、实体自然匹配、附件写入和 diagnostics。
 - `ingest.game.update.fromScraper` 转发到 app ingest update。
 
 检查：
@@ -111,13 +113,13 @@ extensions/vnite-importer/src/vnite/
 - 使用合成 PouchDB fixture。
 - 使用 `tmp/vnite-database-20260603.zip` 做本地 smoke test，但不要把 94MB 真实备份提交到仓库。
 
-## Phase 5: Mapping And Plan Builder
+## Phase 5: Mapping And Graph Builder
 
 实现：
 
 ```text
 extensions/vnite-importer/src/mapping/
-extensions/vnite-importer/src/import/planner.ts
+extensions/vnite-importer/src/import/builder.ts
 ```
 
 内容：
@@ -125,8 +127,9 @@ extensions/vnite-importer/src/import/planner.ts
 - 日期、状态、score、external IDs 映射。
 - tags、companies、persons 映射。
 - launcher 和 savePath 映射。
-- media/memory/save attachment item 构建。
-- collection import items。
+- media/memory/save attachment nodes 和 edges 构建。
+- collection nodes 和 collection-media edges。
+- graph node key 在单次 input 内唯一。
 - diagnostics。
 
 测试：
@@ -146,15 +149,15 @@ extensions/vnite-importer/src/jobs/import-runner.ts
 内容：
 
 - 导出 PouchDB attachment 到 temp。
-- 调 `kisaki.library.imports.applyGamePlan`。
-- 汇总 direct import result。
-- 支持 dry-run preview。
+- 调 `kisaki.library.graph.preview` / `kisaki.library.graph.apply`。
+- 汇总 graph apply result。
+- 支持 graph preview。
 - cancellation checkpoint。
 
 测试：
 
-- mock `kisaki.library.imports.applyGamePlan`。
-- 验证重复导入时 source id 稳定。
+- mock `kisaki.library.graph.preview` / `kisaki.library.graph.apply`。
+- 验证重复导入时实体自然匹配规则生效。
 
 ## Phase 7: Metadata Completion
 
@@ -188,11 +191,13 @@ extensions/vnite-importer/src/ui/settings/
 
 内容：
 
+- flow step state。
+- root footer submit labels。
 - 备份包选择。
 - 分析结果。
 - 字段选择 dialog。
 - 补全设置。
-- dry-run 预览。
+- graph preview。
 - 开始导入。
 - 高级选项。
 
@@ -207,7 +212,7 @@ extensions/vnite-importer/src/ui/settings/
 建议测试层：
 
 - extension-api validation tests。
-- host import manager unit tests。
+- host graph manager unit tests。
 - extension mapper unit tests。
 - extension reader fixture tests。
 - desktop smoke test。
@@ -249,7 +254,7 @@ pnpm check:extension-tooling
 
 ```powershell
 rg -n "builtin.vnite-importer|Vnite 导入|vnite.import" extensions apps packages docs
-rg -n "capabilities.files.openFile|capabilities.library.imports.applyGamePlan|capabilities.ingest.game.update.fromScraper" packages apps
+rg -n "capabilities.files.pickFile|capabilities.library.graph.apply|capabilities.ingest.game.update.fromScraper" packages apps
 rg -n "config-local.*password|officialConfig.*password|selfHostedConfig.*password" extensions/vnite-importer apps/desktop/src/main/services/extension -g "*.ts"
 ```
 
