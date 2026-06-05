@@ -64,6 +64,8 @@ const GAME_CREATE_KEYS = new Set<string>([
   'iconFile',
   'releaseDate',
   'status',
+  'lastActiveAt',
+  'totalDuration',
   'savePath',
   'saveBackups',
   'maxSaveBackups',

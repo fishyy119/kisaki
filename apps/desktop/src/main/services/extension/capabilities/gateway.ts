@@ -12,6 +12,7 @@ import type { ExtensionHostRpcClient } from '../runtime'
 import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
 import { ExtensionEventsCapabilityProvider } from './events'
+import { ExtensionFilesCapabilityProvider } from './files'
 import { ExtensionIngestCapabilityProvider } from './ingest'
 import { ExtensionLibraryCapabilityProvider } from './library'
 import { ExtensionNetworkCapabilityProvider } from './network'
@@ -34,6 +35,7 @@ export interface ExtensionCapabilityGatewayOptions {
 }
 
 export class ExtensionCapabilityGateway {
+  readonly files: ExtensionFilesCapabilityProvider
   readonly library: ExtensionLibraryCapabilityProvider
   readonly network: ExtensionNetworkCapabilityProvider
   readonly notify: ExtensionNotifyCapabilityProvider
@@ -46,6 +48,9 @@ export class ExtensionCapabilityGateway {
   readonly taskRuns: ExtensionTaskRunsCapabilityProvider
 
   constructor(options: ExtensionCapabilityGatewayOptions) {
+    this.files = new ExtensionFilesCapabilityProvider({
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
     this.library = new ExtensionLibraryCapabilityProvider({
       db: options.db,
       resolveRuntimeHandle: options.resolveRuntimeHandle
@@ -93,6 +98,14 @@ export class ExtensionCapabilityGateway {
     this.events.attachRpc(rpc)
     this.taskRuns.attachRpc(rpc)
     this.library.registerRpcHandlers(rpc)
+
+    rpc.handleHostRequest('capabilities.files.pickFile', async ({ runtimeHandle, input }) => ({
+      grant: await this.files.pickFile(runtimeHandle, input)
+    }))
+    rpc.handleHostRequest('capabilities.files.releaseGrant', async ({ runtimeHandle, grantId }) => {
+      await this.files.releaseGrant(runtimeHandle, grantId)
+      return {}
+    })
 
     rpc.handleHostRequest(
       'capabilities.network.request',
@@ -171,6 +184,17 @@ export class ExtensionCapabilityGateway {
           runtimeHandle,
           profileId,
           lookup,
+          options,
+          context.signal
+        )
+      })
+    )
+    rpc.handleHostRequest(
+      'capabilities.ingest.game.update.fromScraper',
+      async ({ runtimeHandle, input, options }, context) => ({
+        result: await this.ingest.updateGameFromScraper(
+          runtimeHandle,
+          input,
           options,
           context.signal
         )
@@ -295,6 +319,7 @@ export class ExtensionCapabilityGateway {
   }
 
   releaseRuntime(runtimeHandle: string): void {
+    this.files.releaseRuntime(runtimeHandle)
     this.events.releaseRuntime(runtimeHandle)
     this.notify.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
@@ -302,6 +327,7 @@ export class ExtensionCapabilityGateway {
   }
 
   releaseAll(): void {
+    this.files.releaseAll()
     this.events.releaseAll()
     this.notify.releaseAll()
     this.commands.releaseAll()

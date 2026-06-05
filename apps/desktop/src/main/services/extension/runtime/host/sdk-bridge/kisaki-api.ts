@@ -243,7 +243,32 @@ export function createKisakiApi(
   }
 
   return {
+    files: {
+      pickFile: async (input) =>
+        (
+          await requestMain('capabilities.files.pickFile', {
+            input
+          })
+        ).grant,
+      releaseGrant: async (grantId) => {
+        await requestMain('capabilities.files.releaseGrant', { grantId })
+      }
+    },
     library: {
+      graph: {
+        preview: async (input) =>
+          (
+            await requestMain('capabilities.library.graph.preview', {
+              input
+            })
+          ).result,
+        apply: async (input) =>
+          (
+            await requestMain('capabilities.library.graph.apply', {
+              input
+            })
+          ).result
+      },
       games: createEntityNamespace<LibraryCapability['games']>({
         get: 'capabilities.library.games.get',
         list: 'capabilities.library.games.list',
@@ -440,6 +465,15 @@ export function createKisakiApi(
                 options
               })
             ).result
+        },
+        update: {
+          fromScraper: async (input, options) =>
+            (
+              await requestMain('capabilities.ingest.game.update.fromScraper', {
+                input,
+                options
+              })
+            ).result
         }
       }
     },
@@ -555,6 +589,9 @@ export function createScopeCapturingKisakiApi(
   const getApi = () => getScopedApi(hooks.requireCurrentScope())
 
   return {
+    get files() {
+      return getApi().files
+    },
     get library() {
       return getApi().library
     },

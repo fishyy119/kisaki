@@ -44,6 +44,7 @@ import {
   type LibraryGameCreateInput,
   type LibraryGamePatch,
   type LibraryGameQuery,
+  type LibraryGraphInput,
   type LibraryPerson,
   type LibraryPersonCreateInput,
   type LibraryPersonPatch,
@@ -57,6 +58,7 @@ import type { DbService } from '@main/services/db'
 import type { ExtensionHostRpcClient } from '../../runtime'
 import { ExtensionLibraryAttachmentStore } from './attachments'
 import { ExtensionLibraryEntityStore } from './entities'
+import { ExtensionLibraryGraphManager } from './graph'
 import { ExtensionLibraryRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
@@ -105,6 +107,7 @@ export class ExtensionLibraryCapabilityProvider {
   readonly entities: ExtensionLibraryEntityStore
   readonly relations: ExtensionLibraryRelationStore
   readonly attachments: ExtensionLibraryAttachmentStore
+  readonly graph: ExtensionLibraryGraphManager
 
   constructor(private readonly options: ExtensionLibraryCapabilityProviderOptions) {
     this.entities = new ExtensionLibraryEntityStore({ db: options.db })
@@ -113,12 +116,37 @@ export class ExtensionLibraryCapabilityProvider {
       db: options.db,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
+    this.graph = new ExtensionLibraryGraphManager({
+      db: options.db,
+      entities: this.entities,
+      attachments: this.attachments,
+      resolveRuntimeHandle: options.resolveRuntimeHandle
+    })
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
     for (const descriptor of this.createEntityRpcDescriptors()) {
       this.registerEntityRpcHandlers(rpc, descriptor)
     }
+
+    rpc.handleHostRequest(
+      'capabilities.library.graph.preview',
+      async ({ runtimeHandle, input }, context) =>
+        this.withRuntime(runtimeHandle, async () => ({
+          result: await this.graph.preview(
+            runtimeHandle,
+            input as LibraryGraphInput,
+            context.signal
+          )
+        }))
+    )
+    rpc.handleHostRequest(
+      'capabilities.library.graph.apply',
+      async ({ runtimeHandle, input }, context) =>
+        this.withRuntime(runtimeHandle, async () => ({
+          result: await this.graph.apply(runtimeHandle, input as LibraryGraphInput, context.signal)
+        }))
+    )
 
     rpc.handleHostRequest('capabilities.library.relations.list', async ({ runtimeHandle, query }) =>
       this.withRuntime(runtimeHandle, () => {

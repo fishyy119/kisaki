@@ -189,6 +189,8 @@ export const GAME_CONFIG = {
   buildCreateValues(id, input) {
     return {
       id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
       name: input.name,
       description: input.description,
       originalName: input.originalName,
@@ -199,6 +201,13 @@ export const GAME_CONFIG = {
       iconFile: input.iconFile,
       releaseDate: input.releaseDate,
       status: input.status,
+      lastActiveAt:
+        input.lastActiveAt === undefined
+          ? undefined
+          : input.lastActiveAt === null
+            ? null
+            : new Date(input.lastActiveAt),
+      totalDuration: input.totalDuration,
       savePath: input.savePath,
       saveBackups: copyReadonlyArray(input.saveBackups),
       maxSaveBackups: input.maxSaveBackups,
@@ -284,6 +293,8 @@ export const PERSON_CONFIG = {
   buildCreateValues(id, input) {
     return {
       id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
       name: input.name,
       description: input.description,
       originalName: input.originalName,
@@ -351,6 +362,8 @@ export const COMPANY_CONFIG = {
   buildCreateValues(id, input) {
     return {
       id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
       name: input.name,
       description: input.description,
       originalName: input.originalName,
@@ -420,6 +433,8 @@ export const CHARACTER_CONFIG = {
   buildCreateValues(id, input) {
     return {
       id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
       name: input.name,
       description: input.description,
       originalName: input.originalName,
@@ -504,6 +519,8 @@ export const COLLECTION_CONFIG = {
   buildCreateValues(id, input) {
     return {
       id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
       name: input.name,
       description: input.description,
       coverFile: input.coverFile,
@@ -567,6 +584,8 @@ export const TAG_CONFIG = {
   buildCreateValues(id, input) {
     return {
       id,
+      createdAt: input.createdAt === undefined ? undefined : new Date(input.createdAt),
+      updatedAt: input.updatedAt === undefined ? undefined : new Date(input.updatedAt),
       name: input.name,
       description: input.description,
       isNsfw: input.isNsfw

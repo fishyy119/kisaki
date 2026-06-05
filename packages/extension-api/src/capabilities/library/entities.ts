@@ -219,6 +219,8 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   iconFile?: string
   releaseDate?: PartialDate
   status?: LibraryGameStatus
+  lastActiveAt?: number | null
+  totalDuration?: number
   savePath?: string
   saveBackups?: readonly SaveBackup[]
   maxSaveBackups?: number
