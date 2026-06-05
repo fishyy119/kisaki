@@ -1,4 +1,5 @@
 import type { LibraryAttachmentCapability } from './attachments'
+import type { LibraryGraphCapability } from './graph'
 import type {
   LibraryCharacter,
   LibraryCharacterCreateInput,
@@ -36,6 +37,7 @@ export interface LibraryEntityNamespace<TEntity, TCreate, TPatch, TQuery> {
 }
 
 export interface LibraryCapability {
+  graph: LibraryGraphCapability
   games: LibraryEntityNamespace<
     LibraryGame,
     LibraryGameCreateInput,
@@ -73,5 +75,6 @@ export interface LibraryCapability {
 
 export type * from './attachments'
 export type * from './entities'
+export type * from './graph'
 export type * from './relations'
 export * from './validation'

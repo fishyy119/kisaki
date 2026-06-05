@@ -1,4 +1,5 @@
 import type { HostEventTopic, HostEvents } from '../capabilities/events'
+import type { ExtensionFileGrant, PickFileInput } from '../capabilities/files'
 import type {
   Automation,
   AutomationCreateInput,
@@ -13,7 +14,10 @@ import type {
 } from '../capabilities/commands'
 import type {
   IngestAddGameFromScraperOptions,
-  IngestAddGameFromScraperResult
+  IngestAddGameFromScraperResult,
+  IngestGameUpdateFromScraperInput,
+  IngestGameUpdateFromScraperOptions,
+  IngestUpdateResult
 } from '../capabilities/ingest'
 import type {
   LibraryAttachment,
@@ -35,6 +39,8 @@ import type {
   LibraryGameCreateInput,
   LibraryGamePatch,
   LibraryGameQuery,
+  LibraryGraphInput,
+  LibraryGraphResult,
   LibraryPerson,
   LibraryPersonCreateInput,
   LibraryPersonPatch,
@@ -93,6 +99,14 @@ export interface RuntimeOpenExternalRequest extends ExtensionScopedRpcParams {
   url: string
 }
 
+export interface PickFileRequest extends ExtensionScopedRpcParams {
+  input?: PickFileInput
+}
+
+export interface ReleaseFileGrantRequest extends ExtensionScopedRpcParams {
+  grantId: string
+}
+
 export interface HostEventSubscriptionRequest extends ExtensionScopedRpcParams {
   subscriptionId: string
   topic: HostEventTopic
@@ -124,6 +138,15 @@ export interface IngestGameAddFromScraperRequest extends ExtensionScopedRpcParam
   profileId: string
   lookup: ScraperLookup
   options?: IngestAddGameFromScraperOptions
+}
+
+export interface IngestGameUpdateFromScraperRequest extends ExtensionScopedRpcParams {
+  input: IngestGameUpdateFromScraperInput
+  options?: IngestGameUpdateFromScraperOptions
+}
+
+export interface LibraryGraphRpcRequest extends ExtensionScopedRpcParams {
+  input: LibraryGraphInput
 }
 
 export interface AutomationCreateRequest extends ExtensionScopedRpcParams {
@@ -223,6 +246,19 @@ export type LibraryEntityRpcRequestMap<TPrefix extends string, TEntity, TCreate,
 }
 
 export type HostToMainCapabilityRpcRequestMap = {
+  'capabilities.files.pickFile': RpcMethodDefinition<
+    PickFileRequest,
+    { grant: ExtensionFileGrant | null }
+  >
+  'capabilities.files.releaseGrant': RpcMethodDefinition<ReleaseFileGrantRequest, RpcNoPayload>
+  'capabilities.library.graph.preview': RpcMethodDefinition<
+    LibraryGraphRpcRequest,
+    { result: LibraryGraphResult }
+  >
+  'capabilities.library.graph.apply': RpcMethodDefinition<
+    LibraryGraphRpcRequest,
+    { result: LibraryGraphResult }
+  >
   'capabilities.library.relations.list': RpcMethodDefinition<
     ExtensionScopedRpcParams & { query?: LibraryRelationQuery },
     { items: readonly LibraryRelation[] }
@@ -275,6 +311,10 @@ export type HostToMainCapabilityRpcRequestMap = {
   'capabilities.ingest.game.add.fromScraper': RpcMethodDefinition<
     IngestGameAddFromScraperRequest,
     { result: IngestAddGameFromScraperResult }
+  >
+  'capabilities.ingest.game.update.fromScraper': RpcMethodDefinition<
+    IngestGameUpdateFromScraperRequest,
+    { result: IngestUpdateResult }
   >
   'capabilities.commands.list': RpcMethodDefinition<
     ExtensionScopedRpcParams,

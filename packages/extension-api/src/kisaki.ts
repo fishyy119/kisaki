@@ -1,6 +1,7 @@
 import type { AutomationsCapability } from './capabilities/automations'
 import type { CommandsCapability } from './capabilities/commands'
 import type { EventsCapability } from './capabilities/events'
+import type { FilesCapability } from './capabilities/files'
 import type { IngestCapability } from './capabilities/ingest'
 import type { LibraryCapability } from './capabilities/library'
 import type { NetworkCapability } from './capabilities/network'
@@ -10,6 +11,7 @@ import type { ScrapersCapability } from './capabilities/scrapers'
 import type { ExtensionTaskRunsCapability } from './capabilities/task-runs'
 
 export interface KisakiApi {
+  readonly files: FilesCapability
   readonly library: LibraryCapability
   readonly network: NetworkCapability
   readonly notify: NotifyCapability

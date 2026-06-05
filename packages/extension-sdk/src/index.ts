@@ -8,6 +8,9 @@ export function defineExtension(definition: ExtensionDefinition): ExtensionDefin
 }
 
 export const kisaki: KisakiApi = {
+  get files() {
+    return getExtensionSdkBridge().api.files
+  },
   get library() {
     return getExtensionSdkBridge().api.library
   },

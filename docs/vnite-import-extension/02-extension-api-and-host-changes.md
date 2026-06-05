@@ -495,7 +495,7 @@ export interface IngestGameUpdateFromScraperOptions {
 
 export interface IngestGameUpdateCapability {
   fromScraper(
-    request: GameUpdateRequest,
+    input: IngestGameUpdateFromScraperInput,
     options?: IngestGameUpdateFromScraperOptions
   ): Promise<IngestUpdateResult>
 }
@@ -516,7 +516,7 @@ RPC：
 
 - 转发到 `IngestService.update.game.updateFromScraper` 或 `updateFromScraperWithTaskRun`。
 - extension initiator 使用 `TaskRunInitiator { type: 'extension' }`。
-- 保留 `GameUpdateRequest` 的 surfaces 和 policy。
+- 保留 `IngestGameUpdateFromScraperInput` 的 surfaces 和 policy。
 
 Vnite importer 使用：
 

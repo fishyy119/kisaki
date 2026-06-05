@@ -54,8 +54,10 @@ import {
   validateRankedEntityFields
 } from './common'
 
+const CREATE_TIMESTAMP_KEYS = ['createdAt', 'updatedAt'] as const
 const GAME_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
   'coverFile',
   'backdropFile',
   'logoFile',
@@ -73,8 +75,37 @@ const GAME_CREATE_KEYS = new Set<string>([
   'descriptionInlineFiles',
   'externalIds'
 ])
-const GAME_PATCH_KEYS = new Set<string>([...GAME_CREATE_KEYS, 'lastActiveAt', 'totalDuration'])
+const GAME_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  'coverFile',
+  'backdropFile',
+  'logoFile',
+  'iconFile',
+  'releaseDate',
+  'status',
+  'savePath',
+  'saveBackups',
+  'maxSaveBackups',
+  'launcherMode',
+  'launcherPath',
+  'monitorMode',
+  'monitorPath',
+  'gameDirPath',
+  'descriptionInlineFiles',
+  'externalIds',
+  'lastActiveAt',
+  'totalDuration'
+])
 const PERSON_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'photoFile',
+  'birthDate',
+  'deathDate',
+  'gender',
+  'externalIds'
+])
+const PERSON_PATCH_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
   'photoFile',
   'birthDate',
@@ -84,11 +115,34 @@ const PERSON_CREATE_KEYS = new Set<string>([
 ])
 const COMPANY_CREATE_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'foundedDate',
+  'logoFile',
+  'externalIds'
+])
+const COMPANY_PATCH_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
   'foundedDate',
   'logoFile',
   'externalIds'
 ])
 const CHARACTER_CREATE_KEYS = new Set<string>([
+  ...RANKED_ENTITY_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'photoFile',
+  'birthDate',
+  'gender',
+  'bloodType',
+  'height',
+  'weight',
+  'bust',
+  'waist',
+  'hips',
+  'cup',
+  'age',
+  'externalIds'
+])
+const CHARACTER_PATCH_KEYS = new Set<string>([
   ...RANKED_ENTITY_KEYS,
   'photoFile',
   'birthDate',
@@ -105,13 +159,27 @@ const CHARACTER_CREATE_KEYS = new Set<string>([
 ])
 const COLLECTION_CREATE_KEYS = new Set<string>([
   ...ENTITY_BASE_CREATE_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
   'coverFile',
   'isNsfw',
   'order',
   'isDynamic',
   'dynamicConfig'
 ])
-const TAG_CREATE_KEYS = new Set<string>([...ENTITY_BASE_CREATE_KEYS, 'isNsfw'])
+const COLLECTION_PATCH_KEYS = new Set<string>([
+  ...ENTITY_BASE_CREATE_KEYS,
+  'coverFile',
+  'isNsfw',
+  'order',
+  'isDynamic',
+  'dynamicConfig'
+])
+const TAG_CREATE_KEYS = new Set<string>([
+  ...ENTITY_BASE_CREATE_KEYS,
+  ...CREATE_TIMESTAMP_KEYS,
+  'isNsfw'
+])
+const TAG_PATCH_KEYS = new Set<string>([...ENTITY_BASE_CREATE_KEYS, 'isNsfw'])
 const SORT_DIRECTIONS = ['asc', 'desc'] as const satisfies readonly SortDirection[]
 const LIST_QUERY_BASE_KEYS = ['ids', 'search', 'limit', 'offset', 'sort'] as const
 const SORT_QUERY_KEYS = new Set<string>(['field', 'direction'])
@@ -425,6 +493,7 @@ function validateGameWriteInput(value: unknown, path: string, create: boolean): 
   return [
     ...validateUnknownKeys(input, create ? GAME_CREATE_KEYS : GAME_PATCH_KEYS, path),
     ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
     ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
     ...validateOptionalNonEmptyString(input.backdropFile, `${path}.backdropFile`),
     ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
@@ -479,8 +548,9 @@ function validatePersonWriteInput(
   }
 
   return [
-    ...validateUnknownKeys(input, PERSON_CREATE_KEYS, path),
+    ...validateUnknownKeys(input, create ? PERSON_CREATE_KEYS : PERSON_PATCH_KEYS, path),
     ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
     ...validateOptionalNonEmptyString(input.photoFile, `${path}.photoFile`),
     ...validateOptionalPartialDate(input.birthDate, `${path}.birthDate`),
     ...validateOptionalPartialDate(input.deathDate, `${path}.deathDate`),
@@ -512,8 +582,9 @@ function validateCompanyWriteInput(
   }
 
   return [
-    ...validateUnknownKeys(input, COMPANY_CREATE_KEYS, path),
+    ...validateUnknownKeys(input, create ? COMPANY_CREATE_KEYS : COMPANY_PATCH_KEYS, path),
     ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
     ...validateOptionalPartialDate(input.foundedDate, `${path}.foundedDate`),
     ...validateOptionalNonEmptyString(input.logoFile, `${path}.logoFile`),
     ...validateOptionalExternalIds(input.externalIds, `${path}.externalIds`)
@@ -542,8 +613,9 @@ function validateCharacterWriteInput(
   }
 
   return [
-    ...validateUnknownKeys(input, CHARACTER_CREATE_KEYS, path),
+    ...validateUnknownKeys(input, create ? CHARACTER_CREATE_KEYS : CHARACTER_PATCH_KEYS, path),
     ...validateRankedEntityFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
     ...validateOptionalNonEmptyString(input.photoFile, `${path}.photoFile`),
     ...validateOptionalPartialDate(input.birthDate, `${path}.birthDate`),
     ...validateOptionalEnumString(
@@ -596,8 +668,9 @@ function validateCollectionWriteInput(
   }
 
   return [
-    ...validateUnknownKeys(input, COLLECTION_CREATE_KEYS, path),
+    ...validateUnknownKeys(input, create ? COLLECTION_CREATE_KEYS : COLLECTION_PATCH_KEYS, path),
     ...validateEntityBaseFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
     ...validateOptionalNonEmptyString(input.coverFile, `${path}.coverFile`),
     ...validateOptionalBoolean(input.isNsfw, `${path}.isNsfw`),
     ...validateOptionalFiniteNumber(input.order, `${path}.order`, 'order must be a finite number.'),
@@ -618,9 +691,25 @@ function validateTagWriteInput(value: unknown, path: string, create: boolean): V
   }
 
   return [
-    ...validateUnknownKeys(input, TAG_CREATE_KEYS, path),
+    ...validateUnknownKeys(input, create ? TAG_CREATE_KEYS : TAG_PATCH_KEYS, path),
     ...validateEntityBaseFields(input, path, create),
+    ...validateCreateTimestamps(input, path, create),
     ...validateOptionalBoolean(input.isNsfw, `${path}.isNsfw`)
+  ]
+}
+
+function validateCreateTimestamps(
+  input: Record<string, unknown>,
+  path: string,
+  create: boolean
+): ValidationIssue[] {
+  if (!create) {
+    return []
+  }
+
+  return [
+    ...validateOptionalNonNegativeFiniteNumber(input.createdAt, `${path}.createdAt`),
+    ...validateOptionalNonNegativeFiniteNumber(input.updatedAt, `${path}.updatedAt`)
   ]
 }
 

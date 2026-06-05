@@ -9,6 +9,40 @@ export interface SaveBackup {
   sizeBytes?: number
 }
 
+export interface LibraryGameSession {
+  id: string
+  gameId: string
+  startedAt: number
+  endedAt: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LibraryGameSessionCreateInput {
+  startedAt: number
+  endedAt: number
+}
+
+export interface LibraryGameNote {
+  id: string
+  gameId: string
+  name: string
+  content?: string
+  coverFile?: string
+  orderInGame: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LibraryGameNoteCreateInput {
+  name: string
+  content?: string
+  coverPath?: string
+  createdAt?: number
+  updatedAt?: number
+  order?: number
+}
+
 export type SortDirection = 'asc' | 'desc'
 
 export interface DynamicEntityConfig {
@@ -177,6 +211,8 @@ export interface LibraryRankedEntityInputBase extends LibraryNamedEntityInputBas
 }
 
 export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
   coverFile?: string
   backdropFile?: string
   logoFile?: string
@@ -195,12 +231,14 @@ export interface LibraryGameCreateInput extends LibraryRankedEntityInputBase {
   externalIds?: readonly ExternalId[]
 }
 
-export type LibraryGamePatch = Partial<LibraryGameCreateInput> & {
+export type LibraryGamePatch = Partial<Omit<LibraryGameCreateInput, 'createdAt' | 'updatedAt'>> & {
   lastActiveAt?: number | null
   totalDuration?: number
 }
 
 export interface LibraryPersonCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
   photoFile?: string
   birthDate?: PartialDate
   deathDate?: PartialDate
@@ -208,17 +246,23 @@ export interface LibraryPersonCreateInput extends LibraryRankedEntityInputBase {
   externalIds?: readonly ExternalId[]
 }
 
-export type LibraryPersonPatch = Partial<LibraryPersonCreateInput>
+export type LibraryPersonPatch = Partial<Omit<LibraryPersonCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryCompanyCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
   foundedDate?: PartialDate
   logoFile?: string
   externalIds?: readonly ExternalId[]
 }
 
-export type LibraryCompanyPatch = Partial<LibraryCompanyCreateInput>
+export type LibraryCompanyPatch = Partial<
+  Omit<LibraryCompanyCreateInput, 'createdAt' | 'updatedAt'>
+>
 
 export interface LibraryCharacterCreateInput extends LibraryRankedEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
   photoFile?: string
   birthDate?: PartialDate
   gender?: LibraryGender
@@ -233,9 +277,13 @@ export interface LibraryCharacterCreateInput extends LibraryRankedEntityInputBas
   externalIds?: readonly ExternalId[]
 }
 
-export type LibraryCharacterPatch = Partial<LibraryCharacterCreateInput>
+export type LibraryCharacterPatch = Partial<
+  Omit<LibraryCharacterCreateInput, 'createdAt' | 'updatedAt'>
+>
 
 export interface LibraryCollectionCreateInput extends LibraryEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
   coverFile?: string
   isNsfw?: boolean
   order?: number
@@ -243,13 +291,17 @@ export interface LibraryCollectionCreateInput extends LibraryEntityInputBase {
   dynamicConfig?: DynamicCollectionConfig
 }
 
-export type LibraryCollectionPatch = Partial<LibraryCollectionCreateInput>
+export type LibraryCollectionPatch = Partial<
+  Omit<LibraryCollectionCreateInput, 'createdAt' | 'updatedAt'>
+>
 
 export interface LibraryTagCreateInput extends LibraryEntityInputBase {
+  createdAt?: number
+  updatedAt?: number
   isNsfw?: boolean
 }
 
-export type LibraryTagPatch = Partial<LibraryTagCreateInput>
+export type LibraryTagPatch = Partial<Omit<LibraryTagCreateInput, 'createdAt' | 'updatedAt'>>
 
 export interface LibraryGameQuery extends LibraryListQuery {
   statuses?: readonly LibraryGameStatus[]
