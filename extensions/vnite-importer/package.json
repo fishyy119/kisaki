@@ -9,6 +9,7 @@
     "validate": "kisx validate",
     "pack": "kisx pack",
     "test:backup": "tsx scripts/test-backup-reader.ts",
+    "test:import": "tsx scripts/test-import-executor.ts",
     "test:mapping": "tsx scripts/test-mapping.ts",
     "typecheck": "tsc --noEmit"
   },

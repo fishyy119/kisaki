@@ -1,3 +1,4 @@
+export const VNITE_IMPORTER_EXTENSION_ID = 'builtin.vnite-importer'
 export const VNITE_IMPORTER_PANEL_ID = 'settings'
 export const VNITE_IMPORTER_NAME = 'Vnite 导入'
 export const VNITE_BACKUP_DATABASE_NAMES = ['game', 'game-local', 'game-collection'] as const
