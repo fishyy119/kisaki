@@ -11,5 +11,5 @@
     "isolatedModules": true,
     "types": ["node"]
   },
-  "include": ["src/**/*", "tsdown.config.ts"]
+  "include": ["src/**/*", "scripts/**/*", "tsdown.config.ts"]
 }
