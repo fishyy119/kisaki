@@ -9,6 +9,7 @@ allowBuilds:
   electron-winstaller: true
   esbuild: true
   lefthook: true
+  leveldown: true
   maplibre-gl: true
   sharp: true
   vue-demi: true
