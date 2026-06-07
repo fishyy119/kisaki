@@ -1,17 +1,12 @@
 import path from 'node:path'
-import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { watch, type FSWatcher } from 'chokidar'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import { CliError, logger } from '../logger'
 import { readValidManifest } from '../manifest'
-import {
-  type ExtensionProject,
-  pathExists,
-  resolveEntryFile,
-  resolvePackageFile,
-  resolveProject
-} from '../project'
+import { type ExtensionProject, pathExists, resolveEntryFile, resolveProject } from '../project'
+import { copyExtensionPackageFiles } from '../package-layout'
 import { runTsdown, spawnTsdown } from './tsdown'
 
 export interface OutputCommandOptions {
@@ -296,8 +291,7 @@ async function writeExtensionPackageOutput(
       await rewriteCopiedDistSourceMaps(project.distDir, path.join(tempPackagePath, 'dist'))
     }
 
-    await removePath(packagePath)
-    await rename(tempPackagePath, packagePath)
+    await replacePath(tempPackagePath, packagePath)
     return packagePath
   } catch (error) {
     await removePath(tempPackagePath).catch(() => undefined)
@@ -310,28 +304,7 @@ async function copyPackageFiles(
   manifest: ExtensionManifest,
   packagePath: string
 ): Promise<void> {
-  await cp(project.manifestPath, path.join(packagePath, 'manifest.json'))
-  await cp(project.distDir, path.join(packagePath, 'dist'), { recursive: true })
-  await copyOptionalPackageFiles(project, manifest, packagePath)
-}
-
-async function copyOptionalPackageFiles(
-  project: ExtensionProject,
-  manifest: ExtensionManifest,
-  packagePath: string
-): Promise<void> {
-  if (await pathExists(project.readmePath)) {
-    await cp(project.readmePath, path.join(packagePath, 'README.md'))
-  }
-
-  if (manifest.icon) {
-    const iconPath = resolvePackageFile(project, manifest.icon)
-    if (iconPath && (await pathExists(iconPath))) {
-      const targetPath = resolvePackageOutputPath(packagePath, manifest.icon)
-      await mkdir(path.dirname(targetPath), { recursive: true })
-      await cp(iconPath, targetPath)
-    }
-  }
+  await copyExtensionPackageFiles(project, manifest, packagePath)
 }
 
 async function clearDirectoryContents(directoryPath: string): Promise<void> {
@@ -346,6 +319,35 @@ async function removePath(targetPath: string): Promise<void> {
     maxRetries: 5,
     retryDelay: 100
   })
+}
+
+async function replacePath(sourcePath: string, targetPath: string): Promise<void> {
+  await removePath(targetPath)
+  await retryFileSystemOperation(() => rename(sourcePath, targetPath))
+}
+
+async function retryFileSystemOperation(operation: () => Promise<void>): Promise<void> {
+  const retryDelays = [50, 100, 250, 500, 1000]
+  let lastError: unknown
+
+  for (const delayMs of [0, ...retryDelays]) {
+    if (delayMs > 0) {
+      await delay(delayMs)
+    }
+
+    try {
+      await operation()
+      return
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function rewriteCopiedDistSourceMaps(
@@ -382,20 +384,14 @@ function toDirectoryFileUrl(directoryPath: string): string {
   return pathToFileURL(directoryWithSeparator).href
 }
 
-function resolvePackageOutputPath(packagePath: string, relativePath: string): string {
-  const root = path.resolve(packagePath)
-  const target = path.resolve(root, relativePath)
-  const relative = path.relative(root, target)
-
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new CliError(`Package output path escapes the extension package: ${relativePath}`)
-  }
-
-  return target
-}
-
 function createOutputWatchTargets(project: ExtensionProject): string[] {
-  return [project.manifestPath, project.readmePath, project.assetsDir, project.distDir]
+  return [
+    project.manifestPath,
+    project.packageJsonPath,
+    project.readmePath,
+    project.assetsDir,
+    project.distDir
+  ]
 }
 
 function toErrorMessage(error: unknown): string {

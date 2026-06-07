@@ -73,8 +73,8 @@ export interface LibraryCapability {
   attachments: LibraryAttachmentCapability
 }
 
-export type * from './attachments'
-export type * from './entities'
-export type * from './graph'
-export type * from './relations'
+export * from './attachments'
+export * from './entities'
+export * from './graph'
+export * from './relations'
 export * from './validation'

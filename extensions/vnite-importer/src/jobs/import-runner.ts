@@ -5,8 +5,11 @@ import type {
   ExtensionTaskRunInitiator,
   ExtensionTaskRunsCapability,
   FilesCapability,
+  GameUpdateSurface,
+  IngestCapability,
   LibraryGraphCapability,
-  LibraryGraphConflictMode
+  LibraryGraphConflictMode,
+  ScraperProfilesCapability
 } from '@kisaki3/extension-sdk'
 import { VNITE_BACKUP_MAX_SIZE_BYTES, VNITE_IMPORTER_EXTENSION_ID } from '../shared/constants'
 import { createVniteBackupAnalysisSummary } from '../backup/analyzer'
@@ -21,23 +24,29 @@ import type {
 } from '../backup/types'
 import { VniteImportError, toSafeErrorMessage } from '../shared/errors'
 import type { PartialVniteImportFieldSelection } from '../import/options'
+import { VniteImportExecutor, type VniteImportExecutorResult } from '../import/executor'
 import {
-  VniteImportExecutor,
-  type VniteImportExecutorResult
-} from '../import/executor'
-import {
-  runVniteImportJob,
-  type VniteImportJobController,
-  type VniteImportJobRun
-} from './context'
+  VniteMetadataCompletionRunner,
+  createEmptyVniteMetadataCompletionSummary,
+  type VniteMetadataCompletionSummary
+} from '../completion'
+import { runVniteImportJob, type VniteImportJobController, type VniteImportJobRun } from './context'
 import type { VniteImportJobSummary } from '../import/summary'
 
 export interface VniteImportJobRunnerDependencies {
   graph: LibraryGraphCapability
   workspaceRoot: string
   files?: FilesCapability
+  ingest?: IngestCapability
+  scraperProfiles?: ScraperProfilesCapability
   taskRuns?: ExtensionTaskRunsCapability
   logger?: ExtensionLogger
+}
+
+export interface VniteMetadataCompletionOptions {
+  enabled: boolean
+  profileId?: string
+  surfaces: readonly GameUpdateSurface[]
 }
 
 export interface VniteImportOptions {
@@ -46,6 +55,7 @@ export interface VniteImportOptions {
   conflictMode?: LibraryGraphConflictMode
   strictAttachments?: boolean
   maxSizeBytes?: number
+  completion?: VniteMetadataCompletionOptions
 }
 
 export interface VniteImportPreviewInput extends VniteImportOptions {
@@ -76,6 +86,7 @@ interface ReadBackupResult {
 export class VniteImportJobRunner {
   private readonly workspaceManager: BackupWorkspaceManager
   private readonly executor: VniteImportExecutor
+  private readonly completion: VniteMetadataCompletionRunner
 
   constructor(private readonly deps: VniteImportJobRunnerDependencies) {
     this.workspaceManager = new BackupWorkspaceManager(deps.workspaceRoot)
@@ -83,6 +94,26 @@ export class VniteImportJobRunner {
       graph: deps.graph,
       logger: deps.logger
     })
+    this.completion = new VniteMetadataCompletionRunner({
+      ingest: deps.ingest,
+      profiles: deps.scraperProfiles,
+      logger: deps.logger
+    })
+  }
+
+  async analyzeFromGrant(input: VniteImportPreviewInput): Promise<VniteBackupAnalysisSummary> {
+    const read = await this.readBackup({
+      fileGrant: input.fileGrant,
+      purpose: 'preview',
+      requestId: input.requestId,
+      maxSizeBytes: input.maxSizeBytes
+    })
+
+    try {
+      return read.analysis
+    } finally {
+      await this.cleanupWorkspace(read.workspace)
+    }
   }
 
   async previewFromGrant(input: VniteImportPreviewInput): Promise<VniteImportPreviewResult> {
@@ -203,7 +234,18 @@ export class VniteImportJobRunner {
         }
       })
 
-      return execution
+      if (!input.completion?.enabled) {
+        return execution
+      }
+
+      const completion = await this.runCompletion({
+        input,
+        snapshot: read.snapshot,
+        execution,
+        job
+      })
+
+      return mergeCompletionSummary(execution, completion)
     } finally {
       await job.report('cleanup', { indeterminate: true }).catch(() => undefined)
       await this.cleanupWorkspace(workspace, job)
@@ -211,6 +253,35 @@ export class VniteImportJobRunner {
         await this.releaseGrant(input.fileGrant.grantId, job)
       }
     }
+  }
+
+  private async runCompletion(input: {
+    input: VniteImportRunInput
+    snapshot: VniteBackupSnapshot
+    execution: VniteImportExecutorResult
+    job: VniteImportJobController
+  }): Promise<VniteMetadataCompletionSummary> {
+    const options = input.input.completion
+    if (!options?.enabled) {
+      return createEmptyVniteMetadataCompletionSummary()
+    }
+
+    await input.job.report('completion', {
+      current: 0,
+      total:
+        input.execution.summary.counters.gamesCreated +
+        input.execution.summary.counters.gamesUpdated
+    })
+
+    return await this.completion.run({
+      graph: input.execution.graph,
+      snapshot: input.snapshot,
+      profileId: options.profileId,
+      surfaces: options.surfaces,
+      signal: input.job.signal,
+      checkpoint: () => input.job.checkpoint(),
+      reportProgress: (progress) => input.job.report('completion', progress)
+    })
   }
 
   private async readBackup(input: {
@@ -268,10 +339,7 @@ export class VniteImportJobRunner {
     }
   }
 
-  private async releaseGrant(
-    grantId: string,
-    job: VniteImportJobController
-  ): Promise<void> {
+  private async releaseGrant(grantId: string, job: VniteImportJobController): Promise<void> {
     if (!this.deps.files) {
       return
     }
@@ -282,6 +350,27 @@ export class VniteImportJobRunner {
       const diagnostic = createCleanupDiagnostic(error)
       job.addDiagnostic(diagnostic)
       this.deps.logger?.warn('Vnite import file grant release failed.', toSafeRunLog(error))
+    }
+  }
+}
+
+function mergeCompletionSummary(
+  execution: VniteImportExecutorResult,
+  completion: VniteMetadataCompletionSummary
+): VniteImportExecutorResult {
+  const diagnostics = [...execution.summary.diagnostics, ...completion.diagnostics]
+
+  return {
+    ...execution,
+    summary: {
+      ...execution.summary,
+      counters: {
+        ...execution.summary.counters,
+        completionCompleted: completion.completed,
+        completionFailed: completion.failed,
+        warnings: diagnostics.filter((diagnostic) => diagnostic.level === 'warning').length
+      },
+      diagnostics
     }
   }
 }

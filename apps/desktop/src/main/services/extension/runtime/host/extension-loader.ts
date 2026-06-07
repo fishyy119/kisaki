@@ -187,23 +187,43 @@ function resolveExtensionDefinition(
   extensionId: string,
   module: Record<string, unknown>
 ): ExtensionDefinition {
-  if (isExtensionDefinition(module.default)) {
-    return module.default
-  }
-
-  if (typeof module.activate === 'function') {
-    return {
-      activate: module.activate as ExtensionDefinition['activate'],
-      deactivate:
-        typeof module.deactivate === 'function'
-          ? (module.deactivate as ExtensionDefinition['deactivate'])
-          : undefined
+  for (const candidate of createExtensionDefinitionCandidates(module)) {
+    const definition = toExtensionDefinition(candidate)
+    if (definition) {
+      return definition
     }
   }
 
   throw new Error(
-    `Extension "${extensionId}" must export either a default defineExtension({...}) object or a named activate(context) function`
+    `Extension "${extensionId}" must export an ExtensionDefinition or activate(context) from its .mjs or .cjs entry.`
   )
+}
+
+function createExtensionDefinitionCandidates(module: Record<string, unknown>): readonly unknown[] {
+  const nestedDefault =
+    isRecord(module.default) && Object.hasOwn(module.default, 'default')
+      ? module.default.default
+      : undefined
+
+  return [module.default, nestedDefault, module]
+}
+
+function toExtensionDefinition(value: unknown): ExtensionDefinition | null {
+  if (isExtensionDefinition(value)) {
+    return value
+  }
+
+  if (isRecord(value) && typeof value.activate === 'function') {
+    return {
+      activate: value.activate as ExtensionDefinition['activate'],
+      deactivate:
+        typeof value.deactivate === 'function'
+          ? (value.deactivate as ExtensionDefinition['deactivate'])
+          : undefined
+    }
+  }
+
+  return null
 }
 
 function isExtensionDefinition(value: unknown): value is ExtensionDefinition {
@@ -212,4 +232,8 @@ function isExtensionDefinition(value: unknown): value is ExtensionDefinition {
     typeof value === 'object' &&
     typeof (value as ExtensionDefinition).activate === 'function'
   )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object'
 }

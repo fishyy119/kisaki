@@ -12,7 +12,6 @@ export default defineConfig({
     '@kisaki3/extension-api',
     '@kisaki3/extension-sdk',
     'extract-zip',
-    'pouchdb',
     'sanitize-filename'
   ],
   outDir: 'dist',
