@@ -57,10 +57,14 @@ export async function submitVniteRoot(
   }
 }
 
-export function createPickBackupFileButton(ui: VniteRootSettingsUi, runtime: VniteSettingsRuntime) {
+export function createPickBackupFileButton(
+  ui: VniteRootSettingsUi,
+  runtime: VniteSettingsRuntime,
+  options: { label?: string } = {}
+) {
   return ui.button({
     id: VNITE_SETTINGS_NODE_IDS.pickBackupFile,
-    label: '选择文件',
+    label: options.label ?? '选择文件',
     icon: 'icon-[mdi--file-upload-outline]',
     async onClick(event) {
       const grant = await pickVniteBackupFile(runtime)

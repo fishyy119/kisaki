@@ -102,7 +102,9 @@ function createRootFields(input: {
       return createPickBackupFields(input.ui, {
         settings: input.resources.settings,
         flow: input.resources.flow,
-        pickButton: createPickBackupFileButton(input.ui, input.runtime)
+        pickButton: createPickBackupFileButton(input.ui, input.runtime, {
+          label: input.resources.flow.file ? '更换文件' : '选择文件'
+        })
       })
     case 'analyzeBackup':
       return createAnalyzeBackupFields(

@@ -34,10 +34,7 @@ export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvent
           label: file?.name ?? '文件',
           value: file ? formatBytes(file.sizeBytes) : '未选择'
         }),
-        {
-          ...input.pickButton,
-          label: file ? '更换文件' : input.pickButton.label
-        }
+        input.pickButton
       ]
     }
   ]

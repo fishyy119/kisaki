@@ -48,12 +48,7 @@ import {
   type SettingsPanelSession,
   type SettingsPanelSurfaceSession
 } from './types'
-import {
-  createSettingsPanelError,
-  normalizeSettingsPanelExtensionValue,
-  parentsEqual,
-  toParams
-} from './values'
+import { createSettingsPanelError, parentsEqual, toParams } from './values'
 
 /**
  * Host-side settings contribution domain.
@@ -585,13 +580,12 @@ export class HostSettingsPanelContributionPoint {
       () => options.contribution.resolve(context, createSettingsPanelNodeFactory()),
       options.signal
     )
-    const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings root')
-    const modelIssues = validateSettingsPanelRootModel(model)
+    const modelIssues = validateSettingsPanelRootModel(rawModel)
     if (modelIssues.length > 0) {
       throwValidationIssues('Resolved settings root', modelIssues)
     }
 
-    const payload = normalizeSettingsPanelRootModel(model, {
+    const payload = normalizeSettingsPanelRootModel(rawModel, {
       extensionId: options.runtime.metadata.id,
       contribution: options.contribution,
       session: options.session,
@@ -626,13 +620,12 @@ export class HostSettingsPanelContributionPoint {
       () => definition.resolve(context, createSettingsPanelNodeFactory()),
       options.signal
     )
-    const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings dialog')
-    const modelIssues = validateSettingsPanelDialogModel(model)
+    const modelIssues = validateSettingsPanelDialogModel(rawModel)
     if (modelIssues.length > 0) {
       throwValidationIssues('Resolved settings dialog', modelIssues)
     }
 
-    const payload = normalizeSettingsPanelDialogModel(model, {
+    const payload = normalizeSettingsPanelDialogModel(rawModel, {
       extensionId: options.runtime.metadata.id,
       contribution: options.contribution,
       session: options.session,
@@ -675,13 +668,12 @@ export class HostSettingsPanelContributionPoint {
       () => definition.resolve(context, createSettingsPanelNodeFactory()),
       options.signal
     )
-    const model = normalizeSettingsPanelExtensionValue(rawModel, 'Resolved settings popover')
-    const modelIssues = validateSettingsPanelPopoverModel(model)
+    const modelIssues = validateSettingsPanelPopoverModel(rawModel)
     if (modelIssues.length > 0) {
       throwValidationIssues('Resolved settings popover', modelIssues)
     }
 
-    const payload = normalizeSettingsPanelPopoverModel(model, {
+    const payload = normalizeSettingsPanelPopoverModel(rawModel, {
       extensionId: options.runtime.metadata.id,
       contribution: options.contribution,
       session: options.session,
