@@ -192,7 +192,7 @@ function runKisxOutput(
 }
 
 function spawnKisxOutputWatcher(projectDir: string, outputRoot: string): ChildProcess {
-  return spawn(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, true, true), {
+  return spawn(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, true, true, true), {
     cwd: desktopRoot,
     stdio: 'inherit'
   })
@@ -202,7 +202,8 @@ function createKisxOutputArgs(
   projectDir: string,
   outputRoot: string,
   watch: boolean,
-  debugSources: boolean
+  debugSources: boolean,
+  skipInitialBuild = false
 ): string[] {
   const args = [
     'exec',
@@ -221,6 +222,10 @@ function createKisxOutputArgs(
 
   if (watch) {
     args.push('--watch')
+  }
+
+  if (skipInitialBuild) {
+    args.push('--skip-initial-build')
   }
 
   return args

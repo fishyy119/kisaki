@@ -46,6 +46,7 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
     )
     .option('--debug-sources', 'Rewrite copied source maps to workspace source paths', false)
     .option('-w, --watch', 'Watch-build and keep the package output synchronized', false)
+    .option('--skip-initial-build', 'Start watch mode from the existing package output', false)
     .action(outputCommand)
 
   program

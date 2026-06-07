@@ -1,11 +1,12 @@
 import type {
   ExtensionTaskRunSnapshot,
   SettingsPanelAnyNodeEvents,
+  SettingsPanelButtonNode,
   SettingsPanelField,
   SettingsPanelNodeFactory
 } from '@kisaki3/extension-sdk'
 import type { VniteBackupAnalysisSummary, VniteImportDiagnostic } from '../../backup/types'
-import type { VniteImportExecutionSummary, VniteImportJobSummary } from '../../import/summary'
+import type { VniteImportJobSummary } from '../../import/summary'
 import type { VniteImportFlowState, VniteImportPreviewState } from './flow'
 import { countAllFields, countSelectedFields } from './options'
 import type { VniteImporterSettingsV1 } from '../../config'
@@ -15,24 +16,28 @@ export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvent
   input: {
     settings: VniteImporterSettingsV1
     flow: VniteImportFlowState
+    pickButton: SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>
   }
 ): readonly SettingsPanelField<TEvents>[] {
+  const file = input.flow.file
   const fields: SettingsPanelField<TEvents>[] = [
     {
       id: 'backup-file',
       label: '备份包',
+      description: '选择从 Vnite 导出的数据库备份 zip。',
+      orientation: 'horizontal',
+      contentLayout: 'inline',
       content: [
         ui.status({
           id: 'backup-file-status',
-          tone: 'neutral',
-          label: '文件',
-          value: '尚未选择备份包'
+          tone: file ? 'success' : 'neutral',
+          label: file?.name ?? '文件',
+          value: file ? formatBytes(file.sizeBytes) : '未选择'
         }),
-        ui.notice({
-          id: 'backup-pick-notice',
-          tone: 'info',
-          text: '请选择从 Vnite 导出的数据库备份 zip。'
-        })
+        {
+          ...input.pickButton,
+          label: file ? '更换文件' : input.pickButton.label
+        }
       ]
     }
   ]

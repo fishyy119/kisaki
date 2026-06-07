@@ -9,6 +9,7 @@ export const VNITE_SETTINGS_NODE_IDS = {
   completionSurfacePreset: 'completionSurfacePreset',
   completionSurfaces: 'completionSurfaces',
   conflictMode: 'conflictMode',
+  pickBackupFile: 'pickBackupFile',
   editFields: 'editFields',
   advancedOptions: 'advancedOptions',
   chooseAnotherBackup: 'chooseAnotherBackup',

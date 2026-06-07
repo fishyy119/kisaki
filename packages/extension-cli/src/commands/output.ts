@@ -7,19 +7,21 @@ import { CliError, logger } from '../logger'
 import { readValidManifest } from '../manifest'
 import { type ExtensionProject, pathExists, resolveEntryFile, resolveProject } from '../project'
 import { copyExtensionPackageFiles } from '../package-layout'
-import { runTsdown, spawnTsdown } from './tsdown'
+import { runTsdown } from './tsdown'
 
 export interface OutputCommandOptions {
   outDir: string
   project?: string
   watch?: boolean
   debugSources?: boolean
+  skipInitialBuild?: boolean
 }
 
 export interface ExtensionOutputOptions {
   outDir: string
   preservePackageRoot?: boolean
   debugSources?: boolean
+  initialBuild?: boolean
 }
 
 export interface ExtensionOutputResult {
@@ -47,10 +49,14 @@ export async function outputCommand(options: OutputCommandOptions): Promise<void
     if (options.debugSources) {
       logger.detail('Debug source maps: enabled')
     }
+    if (options.skipInitialBuild) {
+      logger.detail('Initial build: skipped')
+    }
 
     const session = await watchExtensionOutput(project, {
       outDir: options.outDir,
-      ...(options.debugSources === undefined ? {} : { debugSources: options.debugSources })
+      ...(options.debugSources === undefined ? {} : { debugSources: options.debugSources }),
+      ...(options.skipInitialBuild === undefined ? {} : { initialBuild: !options.skipInitialBuild })
     })
     const result = await session.ready
     logger.success(`Output ready at ${path.relative(project.rootDir, result.packagePath)}`)
@@ -103,7 +109,7 @@ export async function buildExtensionOutput(
 }
 
 /**
- * Starts tsdown in watch mode and keeps outDir/id synchronized with the package layout.
+ * Watches extension project inputs, rebuilds with tsdown, and keeps outDir/id synchronized.
  */
 export async function watchExtensionOutput(
   project: ExtensionProject,
@@ -112,29 +118,64 @@ export async function watchExtensionOutput(
   const manifest = await readValidManifest(project, { checkEntry: false, checkProjectFiles: true })
   const outputRoot = path.resolve(project.rootDir, options.outDir)
   const packagePath = path.join(outputRoot, manifest.id)
-  const tsdown = await spawnTsdown(project.rootDir, ['--watch'])
+  const initialBuild = options.initialBuild ?? true
 
   let watcher: FSWatcher | null = null
   let debounceTimer: NodeJS.Timeout | null = null
-  let retryTimer: NodeJS.Timeout | null = null
   let closed = false
   let readySettled = false
+  let refreshRunning = false
+  let refreshQueued = false
   let lastSyncError: string | null = null
-  let syncQueue = Promise.resolve()
 
   let resolveReady!: (result: ExtensionOutputResult) => void
-  let rejectReady!: (error: unknown) => void
-  const ready = new Promise<ExtensionOutputResult>((resolve, reject) => {
+  const ready = new Promise<ExtensionOutputResult>((resolve) => {
     resolveReady = resolve
-    rejectReady = reject
   })
 
-  const syncNow = async (): Promise<void> => {
+  const settleReadyFromExistingOutput = async (): Promise<void> => {
     if (closed) {
       return
     }
 
     try {
+      const currentManifest = await readValidManifest(project, {
+        checkEntry: true,
+        checkProjectFiles: true
+      })
+      const currentEntryPath = resolveEntryFile(project, currentManifest)
+      if (!currentEntryPath || !(await pathExists(currentEntryPath))) {
+        throw new CliError('Built entry is not ready yet.')
+      }
+
+      if (!(await pathExists(path.join(packagePath, 'manifest.json')))) {
+        throw new CliError('Existing package output is not ready yet.')
+      }
+
+      lastSyncError = null
+      if (!readySettled) {
+        readySettled = true
+        resolveReady({ manifest: currentManifest, packagePath })
+      }
+    } catch (error) {
+      const message = toErrorMessage(error)
+      if (message !== lastSyncError) {
+        logger.warn(`Output sync waiting: ${message}`)
+        lastSyncError = message
+      }
+      scheduleRefresh()
+    }
+  }
+
+  const refreshOutput = async (): Promise<void> => {
+    if (closed) {
+      return
+    }
+
+    try {
+      await readValidManifest(project, { checkEntry: false, checkProjectFiles: true })
+      await runTsdown(project.rootDir, [])
+
       const currentManifest = await readValidManifest(project, {
         checkEntry: true,
         checkProjectFiles: true
@@ -150,10 +191,6 @@ export async function watchExtensionOutput(
       })
 
       lastSyncError = null
-      if (retryTimer) {
-        clearInterval(retryTimer)
-        retryTimer = null
-      }
       logger.detail(`Synced ${path.relative(project.rootDir, currentPackagePath)}`)
 
       if (!readySettled) {
@@ -169,7 +206,28 @@ export async function watchExtensionOutput(
     }
   }
 
-  const scheduleSync = (): void => {
+  const runRefreshQueue = async (): Promise<void> => {
+    if (closed) {
+      return
+    }
+
+    if (refreshRunning) {
+      refreshQueued = true
+      return
+    }
+
+    refreshRunning = true
+    try {
+      do {
+        refreshQueued = false
+        await refreshOutput()
+      } while (refreshQueued && !closed)
+    } finally {
+      refreshRunning = false
+    }
+  }
+
+  const scheduleRefresh = (): void => {
     if (closed) {
       return
     }
@@ -180,7 +238,7 @@ export async function watchExtensionOutput(
 
     debounceTimer = setTimeout(() => {
       debounceTimer = null
-      syncQueue = syncQueue.then(syncNow, syncNow)
+      void runRefreshQueue()
     }, 150)
   }
 
@@ -196,44 +254,14 @@ export async function watchExtensionOutput(
       debounceTimer = null
     }
 
-    if (retryTimer) {
-      clearInterval(retryTimer)
-      retryTimer = null
-    }
-
     if (watcher) {
       await watcher.close()
       watcher = null
     }
-
-    if (!tsdown.killed) {
-      tsdown.kill()
-    }
   }
 
-  tsdown.on('error', (error) => {
-    if (!readySettled) {
-      readySettled = true
-      rejectReady(error)
-    }
-  })
-
-  tsdown.on('close', (code) => {
-    if (closed) {
-      return
-    }
-
-    const error = new CliError(`tsdown watch exited with code ${code ?? 'unknown'}.`)
-    if (!readySettled) {
-      readySettled = true
-      rejectReady(error)
-    } else {
-      logger.warn(error.message)
-    }
-  })
-
-  watcher = watch(createOutputWatchTargets(project), {
-    ignored: [/(^|[/\\])\./, '**/node_modules/**', '**/.git/**', '**/*.map'],
+  watcher = watch(project.rootDir, {
+    ignored: (filePath) => isIgnoredOutputWatchPath(project, outputRoot, filePath),
     ignoreInitial: true,
     persistent: true,
     awaitWriteFinish: {
@@ -242,17 +270,20 @@ export async function watchExtensionOutput(
     }
   })
 
-  watcher.on('add', scheduleSync)
-  watcher.on('change', scheduleSync)
-  watcher.on('unlink', scheduleSync)
-  watcher.on('addDir', scheduleSync)
-  watcher.on('unlinkDir', scheduleSync)
+  watcher.on('add', scheduleRefresh)
+  watcher.on('change', scheduleRefresh)
+  watcher.on('unlink', scheduleRefresh)
+  watcher.on('addDir', scheduleRefresh)
+  watcher.on('unlinkDir', scheduleRefresh)
   watcher.on('error', (error) => {
     logger.warn(`Output watcher error: ${toErrorMessage(error)}`)
   })
 
-  retryTimer = setInterval(scheduleSync, 500)
-  scheduleSync()
+  if (initialBuild) {
+    scheduleRefresh()
+  } else {
+    void settleReadyFromExistingOutput()
+  }
 
   return {
     project,
@@ -384,14 +415,38 @@ function toDirectoryFileUrl(directoryPath: string): string {
   return pathToFileURL(directoryWithSeparator).href
 }
 
-function createOutputWatchTargets(project: ExtensionProject): string[] {
-  return [
-    project.manifestPath,
-    project.packageJsonPath,
-    project.readmePath,
-    project.assetsDir,
-    project.distDir
-  ]
+function isIgnoredOutputWatchPath(
+  project: ExtensionProject,
+  outputRoot: string,
+  filePath: string
+): boolean {
+  const absolutePath = path.resolve(filePath)
+
+  if (
+    isInsideOrEqualPath(project.distDir, absolutePath) ||
+    isInsideOrEqualPath(outputRoot, absolutePath)
+  ) {
+    return true
+  }
+
+  const relativePath = path.relative(project.rootDir, absolutePath)
+  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return false
+  }
+
+  const segments = relativePath.split(path.sep)
+  const basename = segments.at(-1) ?? ''
+
+  return (
+    basename.endsWith('.map') ||
+    segments.some((segment) => segment === 'node_modules' || segment === '.git') ||
+    segments.some((segment) => segment === 'artifacts' || segment.startsWith('.'))
+  )
+}
+
+function isInsideOrEqualPath(parentPath: string, childPath: string): boolean {
+  const relativePath = path.relative(path.resolve(parentPath), path.resolve(childPath))
+  return !relativePath || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))
 }
 
 function toErrorMessage(error: unknown): string {

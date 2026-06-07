@@ -8,6 +8,7 @@ import { omitUndefined } from '../../shared/object'
 import {
   createBackToConfigureButton,
   createChooseAnotherButton,
+  createPickBackupFileButton,
   createRefreshPreviewButton,
   submitVniteRoot,
   toSafeSettingsLog,
@@ -100,7 +101,8 @@ function createRootFields(input: {
     case 'pickBackup':
       return createPickBackupFields(input.ui, {
         settings: input.resources.settings,
-        flow: input.resources.flow
+        flow: input.resources.flow,
+        pickButton: createPickBackupFileButton(input.ui, input.runtime)
       })
     case 'analyzeBackup':
       return createAnalyzeBackupFields(

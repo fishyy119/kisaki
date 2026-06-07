@@ -40,7 +40,7 @@ export async function submitVniteRoot(
 
   switch (step) {
     case 'pickBackup':
-      return await submitPickBackup(runtime, event)
+      return await submitPickBackup(runtime, event, resources.flow.file)
     case 'analyzeBackup':
       return await submitAnalyzeBackup(runtime, event, resources.flow.file)
     case 'configureImport':
@@ -55,6 +55,35 @@ export async function submitVniteRoot(
       })
       return event.refresh('root')
   }
+}
+
+export function createPickBackupFileButton(ui: VniteRootSettingsUi, runtime: VniteSettingsRuntime) {
+  return ui.button({
+    id: VNITE_SETTINGS_NODE_IDS.pickBackupFile,
+    label: '选择文件',
+    icon: 'icon-[mdi--file-upload-outline]',
+    async onClick(event) {
+      const grant = await pickVniteBackupFile(runtime)
+      if (!grant) {
+        return event.refresh('root')
+      }
+
+      const flow = await runtime.flowStore.get()
+      if (flow.file && flow.file.grantId !== grant.grantId) {
+        await runtime.files.releaseGrant(flow.file.grantId).catch((error) => {
+          runtime.logger.warn(
+            'Vnite importer failed to release replaced file grant.',
+            toSafeSettingsLog(error)
+          )
+        })
+      }
+
+      await runtime.flowStore.setFileGrant(grant, 'pickBackup')
+      return event.refresh('root', {
+        message: '已选择备份包。'
+      })
+    }
+  })
 }
 
 export function createChooseAnotherButton(
@@ -148,22 +177,24 @@ export function toSafeSettingsLog(error: unknown): Record<string, unknown> {
 
 async function submitPickBackup(
   runtime: VniteSettingsRuntime,
-  event: SettingsPanelRootSubmitEvent
+  event: SettingsPanelRootSubmitEvent,
+  file: VniteStoredFileGrant | undefined
 ) {
-  const grant = await runtime.files.pickFile({
+  requireFileGrant(file)
+  await runtime.flowStore.setStep('analyzeBackup')
+  return event.refresh('root', {
+    message: '请继续分析备份包。'
+  })
+}
+
+async function pickVniteBackupFile(
+  runtime: VniteSettingsRuntime
+): Promise<ExtensionFileGrant | null> {
+  return await runtime.files.pickFile({
     title: '选择 Vnite 备份包',
     filters: [{ name: 'Vnite 备份包', extensions: ['zip'] }],
     copyTo: 'temp',
     maxSizeBytes: VNITE_BACKUP_MAX_SIZE_BYTES
-  })
-
-  if (!grant) {
-    return event.refresh('root')
-  }
-
-  await runtime.flowStore.setFileGrant(grant)
-  return event.refresh('root', {
-    message: '已选择备份包。'
   })
 }
 

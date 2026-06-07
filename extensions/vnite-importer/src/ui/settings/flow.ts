@@ -53,10 +53,13 @@ export class VniteImportFlowStore {
     return normalized
   }
 
-  async setFileGrant(grant: Pick<ExtensionFileGrant, 'grantId' | 'name' | 'sizeBytes' | 'path'>) {
+  async setFileGrant(
+    grant: Pick<ExtensionFileGrant, 'grantId' | 'name' | 'sizeBytes' | 'path'>,
+    step: VniteImportStep = 'analyzeBackup'
+  ) {
     return await this.set({
       version: 1,
-      step: 'analyzeBackup',
+      step,
       file: {
         grantId: grant.grantId,
         name: grant.name,
@@ -166,6 +169,9 @@ export function resolveVniteImportStep(input: {
   if (!flow.file) {
     return 'pickBackup'
   }
+  if (flow.step === 'pickBackup') {
+    return 'pickBackup'
+  }
   if (!flow.analysis && !flow.preview) {
     return 'analyzeBackup'
   }
@@ -181,7 +187,7 @@ export function resolveVniteImportStep(input: {
 export function getVniteImportSubmitLabel(step: VniteImportStep): string {
   switch (step) {
     case 'pickBackup':
-      return '选择备份包'
+      return '下一步'
     case 'analyzeBackup':
       return '分析备份包'
     case 'configureImport':

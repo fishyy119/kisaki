@@ -45,7 +45,7 @@ export class ExtensionReloadWatcher {
     this.watcher = watch(
       this.targets.map((target) => target.extensionPath),
       {
-        ignored: [/(^|[/\\])\./, '**/node_modules/**', '**/.git/**', '**/*.map'],
+        ignored: isIgnoredExtensionWatchPath,
         ignoreInitial: true,
         persistent: true,
         depth: 8,
@@ -56,9 +56,9 @@ export class ExtensionReloadWatcher {
       }
     )
 
-    this.watcher.on('add', (filePath) => this.scheduleReload(filePath))
-    this.watcher.on('change', (filePath) => this.scheduleReload(filePath))
-    this.watcher.on('unlink', (filePath) => this.scheduleReload(filePath))
+    this.watcher.on('add', (filePath) => this.handleFileEvent(filePath))
+    this.watcher.on('change', (filePath) => this.handleFileEvent(filePath))
+    this.watcher.on('unlink', (filePath) => this.handleFileEvent(filePath))
 
     log.info('Watching active extension(s).', { targetsLength: this.targets.length })
   }
@@ -76,12 +76,17 @@ export class ExtensionReloadWatcher {
     this.reloadDebounceTimers.clear()
   }
 
-  private scheduleReload(filePath: string): void {
-    const target = findTargetForPath(this.targets, filePath)
+  private handleFileEvent(filePath: string): void {
+    const absolutePath = path.resolve(filePath)
+    const target = findTargetForPath(this.targets, absolutePath)
     if (!target) {
       return
     }
 
+    this.scheduleReload(target, path.relative(target.extensionPath, absolutePath))
+  }
+
+  private scheduleReload(target: ExtensionReloadWatchTarget, relativePath: string): void {
     const existingTimer = this.reloadDebounceTimers.get(target.extensionId)
     if (existingTimer) {
       clearTimeout(existingTimer)
@@ -90,7 +95,10 @@ export class ExtensionReloadWatcher {
     const timer = setTimeout(() => {
       this.reloadDebounceTimers.delete(target.extensionId)
 
-      log.info('Reloading extension after file change.', { targetExtensionId: target.extensionId })
+      log.info('Reloading extension after file change.', {
+        targetExtensionId: target.extensionId,
+        changedRelativePath: relativePath
+      })
 
       void Promise.resolve(this.onReload(target.extensionId)).catch((error) => {
         log.error('Failed to reload extension.', error, { targetExtensionId: target.extensionId })
@@ -141,4 +149,20 @@ function isInsidePath(parentPath: string, childPath: string): boolean {
     path.relative(path.resolve(parentPath), path.resolve(childPath)) !== '' &&
     isInsideOrEqualPath(parentPath, childPath)
   )
+}
+
+function isIgnoredExtensionWatchPath(filePath: string): boolean {
+  const normalizedPath = path.normalize(filePath)
+  const segments = normalizedPath.split(/[/\\]+/).filter(Boolean)
+  const basename = segments.at(-1) ?? ''
+
+  return (
+    basename.endsWith('.map') ||
+    segments.some((segment) => segment === 'node_modules' || segment === '.git') ||
+    segments.some((segment) => segment.startsWith('.') && !isDriveSegment(segment))
+  )
+}
+
+function isDriveSegment(segment: string): boolean {
+  return /^[A-Za-z]:$/.test(segment)
 }
