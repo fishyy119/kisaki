@@ -1,4 +1,4 @@
-import type { SerializableValue } from '../shared'
+import type { JsonValue } from '../shared'
 import { RPC_ABORT_EVENT, type RpcMethodDefinition, type RpcNoPayload, type RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
 
@@ -25,16 +25,15 @@ export interface ExtensionRuntimeDiagnosticReportRequest extends ExtensionScoped
 
 export interface StorageGetRequest extends ExtensionScopedRpcParams {
   key: string
-  fallback: SerializableValue
 }
 
 export interface StorageGetResult {
-  value: SerializableValue
+  value?: JsonValue
 }
 
 export interface StorageSetRequest extends ExtensionScopedRpcParams {
   key: string
-  value: SerializableValue
+  value: JsonValue
 }
 
 export interface StorageDeleteRequest extends ExtensionScopedRpcParams {
@@ -54,12 +53,12 @@ export interface SecretsGetRequest extends ExtensionScopedRpcParams {
 }
 
 export interface SecretsGetResult {
-  value?: SerializableValue
+  value?: JsonValue
 }
 
 export interface SecretsSetRequest extends ExtensionScopedRpcParams {
   key: string
-  value: SerializableValue
+  value: JsonValue
 }
 
 export interface SecretsDeleteRequest extends ExtensionScopedRpcParams {

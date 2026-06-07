@@ -7,12 +7,13 @@ import type {
   NetworkRequest,
   NetworkResponse,
   RpcValue,
-  SerializableValue
+  JsonValue
 } from '@kisaki3/extension-api'
 import {
   createUnavailableError,
   createValidationError,
-  normalizeCapabilityError
+  normalizeCapabilityError,
+  toJsonValue
 } from '@kisaki3/extension-api'
 import type { NetworkService } from '@main/services/network'
 import type { FetchOptions } from '@shared/network'
@@ -126,7 +127,7 @@ function normalizeHeaders(headers?: Record<string, string>): Record<string, stri
 }
 
 function normalizeRequestBody(
-  body: SerializableValue | Uint8Array | undefined,
+  body: JsonValue | Uint8Array | undefined,
   headers: Record<string, string>
 ): string | Buffer | undefined {
   if (body === undefined) {
@@ -145,8 +146,7 @@ function normalizeRequestBody(
     headers['content-type'] = 'application/json'
   }
 
-  assertFiniteSerializableValue(body, 'network.request.body')
-  return JSON.stringify(body)
+  return JSON.stringify(toJsonValue(body, 'network.request.body'))
 }
 
 async function readResponseBody(
@@ -185,7 +185,7 @@ async function readJsonResponseBody(response: Response): Promise<RpcValue> {
   }
 
   try {
-    return toRpcValue(JSON.parse(text))
+    return toJsonValue(JSON.parse(text), 'network response body')
   } catch {
     throw createValidationError('The network response body is not valid JSON.')
   }
@@ -198,57 +198,6 @@ function isJsonResponse(response: Response): boolean {
     contentType.includes('text/json') ||
     /\b[a-z0-9.+-]+\+json\b/.test(contentType)
   )
-}
-
-function toRpcValue(value: unknown): RpcValue {
-  if (value instanceof Uint8Array) {
-    return value
-  }
-
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      throw createValidationError('The network response contains a non-finite number.')
-    }
-
-    return value
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => toRpcValue(entry))
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, RpcValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      record[key] = toRpcValue(entry)
-    }
-    return record
-  }
-
-  throw createValidationError('The network response could not be serialized for the extension.')
-}
-
-function assertFiniteSerializableValue(value: SerializableValue, label: string): void {
-  if (typeof value === 'number' && !Number.isFinite(value)) {
-    throw createValidationError(`${label} number values must be finite.`)
-  }
-
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      assertFiniteSerializableValue(entry, label)
-    }
-    return
-  }
-
-  if (value && typeof value === 'object') {
-    for (const entry of Object.values(value)) {
-      assertFiniteSerializableValue(entry, label)
-    }
-  }
 }
 
 function resolveDownloadDestination(

@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '@kisaki3/extension-sdk'
+import type { JsonObject } from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { readString } from '../shared/values'
 import {
@@ -11,9 +11,9 @@ import {
 } from './options'
 
 export function createMyCollectionsImportArgs(
-  values: SerializableRecord,
+  values: JsonObject,
   fallbackProfileId: string
-): SerializableRecord {
+): JsonObject {
   return {
     scope: readImportScope(values),
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),
@@ -24,10 +24,7 @@ export function createMyCollectionsImportArgs(
   }
 }
 
-export function createIndexImportArgs(
-  values: SerializableRecord,
-  fallbackProfileId: string
-): SerializableRecord {
+export function createIndexImportArgs(values: JsonObject, fallbackProfileId: string): JsonObject {
   return {
     scope: readImportScope(values),
     profileId: readString(values, SETTINGS_NODE_IDS.importProfileId, fallbackProfileId),

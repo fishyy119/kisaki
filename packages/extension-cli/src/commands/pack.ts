@@ -48,7 +48,7 @@ export async function packCommand(options: PackCommandOptions): Promise<void> {
       sha256: digest.sha256,
       keyPath: options.key,
       target: options.target,
-      outFile: options.signatureOut
+      ...(options.signatureOut === undefined ? {} : { outFile: options.signatureOut })
     })
 
     logger.success(`Created ${path.relative(project.rootDir, signature.signatureFilePath)}`)

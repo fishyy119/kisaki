@@ -1,4 +1,4 @@
-import type { SerializableRecord, SerializableValue } from '../../../shared'
+import type { JsonObject, JsonValue } from '../../../shared'
 import type { SettingsPanelDialogMap, SettingsPanelPopoverMap } from './definitions'
 import type { SettingsPanelNodeEvents } from './nodes'
 import type {
@@ -29,7 +29,7 @@ export type SettingsPanelRootNodeEvents<
 >
 
 export type SettingsPanelDialogNodeEvents<
-  TParams extends SerializableRecord,
+  TParams extends JsonObject,
   TPopovers extends SettingsPanelPopoverMap
 > = SettingsPanelNodeEvents<
   SettingsPanelDialogChangeEvent<TParams>,
@@ -38,18 +38,17 @@ export type SettingsPanelDialogNodeEvents<
   SettingsPanelDialogButtonResult<TPopovers>
 >
 
-export type SettingsPanelPopoverNodeEvents<TParams extends SerializableRecord> =
-  SettingsPanelNodeEvents<
-    SettingsPanelPopoverChangeEvent<TParams>,
-    SettingsPanelPopoverChangeResult,
-    SettingsPanelPopoverButtonClickEvent<TParams>,
-    SettingsPanelPopoverButtonResult
-  >
+export type SettingsPanelPopoverNodeEvents<TParams extends JsonObject> = SettingsPanelNodeEvents<
+  SettingsPanelPopoverChangeEvent<TParams>,
+  SettingsPanelPopoverChangeResult,
+  SettingsPanelPopoverButtonClickEvent<TParams>,
+  SettingsPanelPopoverButtonResult
+>
 
 export interface SettingsPanelResolveContextBase {
   contributionId: string
   sessionId: string
-  values: SerializableRecord
+  values: JsonObject
   dirtyNodeIds: readonly string[]
   reason?: SettingsPanelRefreshReason
   signal: AbortSignal
@@ -60,30 +59,30 @@ export interface SettingsPanelRootResolveContext extends SettingsPanelResolveCon
 }
 
 export interface SettingsPanelDialogResolveContext<
-  TParams extends SerializableRecord = SerializableRecord
+  TParams extends JsonObject = JsonObject
 > extends SettingsPanelResolveContextBase {
   surface: 'dialog'
   dialogId: string
   params: TParams
-  parentValues: SerializableRecord
+  parentValues: JsonObject
   parentDirtyNodeIds: readonly string[]
 }
 
 export interface SettingsPanelPopoverResolveContext<
-  TParams extends SerializableRecord = SerializableRecord
+  TParams extends JsonObject = JsonObject
 > extends SettingsPanelResolveContextBase {
   surface: 'popover'
   popoverId: string
   params: TParams
   parent: { surface: 'root' } | { surface: 'dialog'; dialogId: string }
-  parentValues: SerializableRecord
+  parentValues: JsonObject
   parentDirtyNodeIds: readonly string[]
 }
 
 export interface SettingsPanelChangeEventBase {
   fieldId: string
   nodeId: string
-  value: SerializableValue
+  value: JsonValue
 }
 
 export interface SettingsPanelButtonClickEventBase {
@@ -95,17 +94,15 @@ export type SettingsPanelRootChangeEvent = SettingsPanelRootResolveContext &
   SettingsPanelRootChangeHelpers &
   SettingsPanelChangeEventBase
 
-export type SettingsPanelDialogChangeEvent<
-  TParams extends SerializableRecord = SerializableRecord
-> = SettingsPanelDialogResolveContext<TParams> &
-  SettingsPanelDialogChangeHelpers &
-  SettingsPanelChangeEventBase
+export type SettingsPanelDialogChangeEvent<TParams extends JsonObject = JsonObject> =
+  SettingsPanelDialogResolveContext<TParams> &
+    SettingsPanelDialogChangeHelpers &
+    SettingsPanelChangeEventBase
 
-export type SettingsPanelPopoverChangeEvent<
-  TParams extends SerializableRecord = SerializableRecord
-> = SettingsPanelPopoverResolveContext<TParams> &
-  SettingsPanelPopoverActionHelpers &
-  SettingsPanelChangeEventBase
+export type SettingsPanelPopoverChangeEvent<TParams extends JsonObject = JsonObject> =
+  SettingsPanelPopoverResolveContext<TParams> &
+    SettingsPanelPopoverActionHelpers &
+    SettingsPanelChangeEventBase
 
 export type SettingsPanelRootButtonClickEvent<
   TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap,
@@ -115,22 +112,19 @@ export type SettingsPanelRootButtonClickEvent<
   SettingsPanelButtonClickEventBase
 
 export type SettingsPanelDialogButtonClickEvent<
-  TParams extends SerializableRecord = SerializableRecord,
+  TParams extends JsonObject = JsonObject,
   TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap
 > = SettingsPanelDialogResolveContext<TParams> &
   SettingsPanelDialogButtonHelpers<TPopovers> &
   SettingsPanelButtonClickEventBase
 
-export type SettingsPanelPopoverButtonClickEvent<
-  TParams extends SerializableRecord = SerializableRecord
-> = SettingsPanelPopoverResolveContext<TParams> &
-  SettingsPanelPopoverActionHelpers &
-  SettingsPanelButtonClickEventBase
+export type SettingsPanelPopoverButtonClickEvent<TParams extends JsonObject = JsonObject> =
+  SettingsPanelPopoverResolveContext<TParams> &
+    SettingsPanelPopoverActionHelpers &
+    SettingsPanelButtonClickEventBase
 
 export interface SettingsPanelRootSubmitEvent
   extends SettingsPanelRootResolveContext, SettingsPanelRootSubmitHelpers {}
 
-export interface SettingsPanelDialogSubmitEvent<
-  TParams extends SerializableRecord = SerializableRecord
->
+export interface SettingsPanelDialogSubmitEvent<TParams extends JsonObject = JsonObject>
   extends SettingsPanelDialogResolveContext<TParams>, SettingsPanelDialogSubmitHelpers {}

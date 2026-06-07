@@ -1,4 +1,5 @@
 import { nowTimestamp } from '../shared/time'
+import { omitUndefined } from '../shared/object'
 import { classifyVniteAttachments, type VniteAttachmentMetadata } from '../vnite/attachments'
 import {
   normalizeVniteCollectionDoc,
@@ -70,12 +71,14 @@ function normalizeGameDocuments(
       continue
     }
 
-    games.push({
-      ...result.value,
-      local: gameLocalById.get(result.value.id),
-      attachments: classifyVniteAttachments(doc.attachments),
-      diagnostics: itemDiagnostics
-    })
+    games.push(
+      omitUndefined({
+        ...result.value,
+        local: gameLocalById.get(result.value.id),
+        attachments: classifyVniteAttachments(doc.attachments),
+        diagnostics: itemDiagnostics
+      })
+    )
   }
 
   return games
@@ -124,14 +127,16 @@ function toDiagnostics(
   }[],
   fallbackDocId: string
 ): VniteImportDiagnostic[] {
-  return issues.map((issue) => ({
-    level: issue.level,
-    code: issue.code,
-    message: issue.message,
-    dbName,
-    docId: issue.docId ?? fallbackDocId,
-    vniteGameId: dbName === 'game' ? (issue.docId ?? fallbackDocId) : undefined
-  }))
+  return issues.map((issue) =>
+    omitUndefined({
+      level: issue.level,
+      code: issue.code,
+      message: issue.message,
+      dbName,
+      docId: issue.docId ?? fallbackDocId,
+      vniteGameId: dbName === 'game' ? (issue.docId ?? fallbackDocId) : undefined
+    })
+  )
 }
 
 export function getGameAttachment(

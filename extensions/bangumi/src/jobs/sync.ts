@@ -1,6 +1,7 @@
 import { formatScopedCollectionType } from '../media/labels'
 import { readBangumiSubjectId } from '../media/game/mapping'
 import { BangumiExtensionError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import type { SyncItemResult } from '../sync/engine'
 import type { BangumiChangedItemsSyncArgs, BangumiFullSyncArgs } from './args'
 import {
@@ -163,17 +164,19 @@ export class SyncJobRunner {
         await job.checkpoint()
         let countScanned = true
         try {
-          const result = await this.deps.syncEngine.collectItem({
-            scope: args.scope,
-            item,
-            updateExisting: args.updateExisting,
-            accountUsername: account.username,
-            checkRemote: true,
-            playStatusEnabled: args.playStatusEnabled,
-            scoreEnabled: args.scoreEnabled,
-            clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
-            signal: job.signal
-          })
+          const result = await this.deps.syncEngine.collectItem(
+            omitUndefined({
+              scope: args.scope,
+              item,
+              updateExisting: args.updateExisting,
+              accountUsername: account.username,
+              checkRemote: true,
+              playStatusEnabled: args.playStatusEnabled,
+              scoreEnabled: args.scoreEnabled,
+              clearRemoteScoreWhenEmpty: args.clearRemoteScoreWhenEmpty,
+              signal: job.signal
+            })
+          )
           recordSyncItemResult(job, result, { includePreview: options.includePreview })
 
           if (result.status === 'wouldSync') {
@@ -199,9 +202,7 @@ export class SyncJobRunner {
             job.increment('scanned')
             job.report(
               options.includePreview ? 'previewingFullSyncItems' : 'collectingFullSyncItems',
-              options.includePreview
-                ? '正在预览 Bangumi 全量同步...'
-                : '正在计算需要同步的游戏...',
+              options.includePreview ? '正在预览 Bangumi 全量同步...' : '正在计算需要同步的游戏...',
               {
                 current: scanned,
                 indeterminate: true

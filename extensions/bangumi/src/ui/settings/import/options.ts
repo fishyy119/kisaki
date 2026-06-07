@@ -1,6 +1,6 @@
 import type {
   ScraperProfileSummary,
-  SerializableRecord,
+  JsonObject,
   SettingsPanelDialogNodeEvents,
   SettingsPanelField,
   SettingsPanelNodeFactory
@@ -42,9 +42,7 @@ const INDEX_TARGET_COLLECTION_MODES = [
   'byIndexTitle'
 ] as const satisfies readonly IndexTargetCollectionMode[]
 
-export function createDialogImportProfileField<
-  TParams extends SerializableRecord = SerializableRecord
->({
+export function createDialogImportProfileField<TParams extends JsonObject = JsonObject>({
   settings,
   values,
   profiles
@@ -52,7 +50,7 @@ export function createDialogImportProfileField<
   settings: SettingsPanelNodeFactory<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
-  values: SerializableRecord
+  values: JsonObject
   profiles: readonly ScraperProfileSummary[]
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
   const scope = readImportScope(values)
@@ -78,9 +76,7 @@ export function createDialogImportProfileField<
   }
 }
 
-export function createDialogImportTargetCollectionField<
-  TParams extends SerializableRecord = SerializableRecord
->({
+export function createDialogImportTargetCollectionField<TParams extends JsonObject = JsonObject>({
   settings,
   values,
   collections
@@ -88,7 +84,7 @@ export function createDialogImportTargetCollectionField<
   settings: SettingsPanelNodeFactory<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
-  values: SerializableRecord
+  values: JsonObject
   collections: readonly LocalCollectionSummary[]
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
   const scope = readImportScope(values)
@@ -122,9 +118,7 @@ export function createDialogImportTargetCollectionField<
   }
 }
 
-export function createDialogIndexTargetCollectionFields<
-  TParams extends SerializableRecord = SerializableRecord
->({
+export function createDialogIndexTargetCollectionFields<TParams extends JsonObject = JsonObject>({
   settings,
   values,
   collections
@@ -132,7 +126,7 @@ export function createDialogIndexTargetCollectionFields<
   settings: SettingsPanelNodeFactory<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
-  values: SerializableRecord
+  values: JsonObject
   collections: readonly LocalCollectionSummary[]
 }): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   const mode = readIndexTargetCollectionMode(values)
@@ -176,9 +170,7 @@ export function createDialogIndexTargetCollectionFields<
   ]
 }
 
-export function createDialogImportScopeField<
-  TParams extends SerializableRecord = SerializableRecord
->({
+export function createDialogImportScopeField<TParams extends JsonObject = JsonObject>({
   settings,
   values,
   mediaRegistry
@@ -186,7 +178,7 @@ export function createDialogImportScopeField<
   settings: SettingsPanelNodeFactory<
     SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>
   >
-  values: SerializableRecord
+  values: JsonObject
   mediaRegistry: MediaRegistry
 }): SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>> {
   return {
@@ -209,12 +201,12 @@ export function createDialogImportScopeField<
   }
 }
 
-export function readImportScope(values: SerializableRecord): BangumiMediaScope {
+export function readImportScope(values: JsonObject): BangumiMediaScope {
   const value = readString(values, SETTINGS_NODE_IDS.importScope, 'game')
   return value === LOCAL_IMPORT_SCOPES[0] ? value : 'game'
 }
 
-export function readImportDataItems(values: SerializableRecord): readonly ImportDataItem[] {
+export function readImportDataItems(values: JsonObject): readonly ImportDataItem[] {
   if (readImportScope(values) !== 'game') {
     return []
   }
@@ -225,7 +217,7 @@ export function readImportDataItems(values: SerializableRecord): readonly Import
   )
 }
 
-export function createImportDataItemArgs(values: SerializableRecord): SerializableRecord {
+export function createImportDataItemArgs(values: JsonObject): JsonObject {
   const fields = readImportDataItems(values)
   return {
     status: fields.includes('status'),
@@ -234,13 +226,13 @@ export function createImportDataItemArgs(values: SerializableRecord): Serializab
   }
 }
 
-export function readImportPatchExisting(values: SerializableRecord): boolean {
+export function readImportPatchExisting(values: JsonObject): boolean {
   return readImportScope(values) === 'game'
     ? readBoolean(values, SETTINGS_NODE_IDS.importPatchExisting, false)
     : false
 }
 
-export function readImportUseTargetCollection(values: SerializableRecord): boolean {
+export function readImportUseTargetCollection(values: JsonObject): boolean {
   if (readImportScope(values) !== 'game') {
     return false
   }
@@ -252,11 +244,11 @@ export function readImportUseTargetCollection(values: SerializableRecord): boole
   )
 }
 
-export function readImportTargetCollectionId(values: SerializableRecord): string {
+export function readImportTargetCollectionId(values: JsonObject): string {
   return readString(values, SETTINGS_NODE_IDS.importTargetCollectionId, '')
 }
 
-export function createImportTargetCollectionArg(values: SerializableRecord): SerializableRecord {
+export function createImportTargetCollectionArg(values: JsonObject): JsonObject {
   if (!readImportUseTargetCollection(values)) {
     return { kind: 'none' }
   }
@@ -265,9 +257,7 @@ export function createImportTargetCollectionArg(values: SerializableRecord): Ser
   return collectionId ? { kind: 'existing', collectionId } : { kind: 'none' }
 }
 
-export function readIndexTargetCollectionMode(
-  values: SerializableRecord
-): IndexTargetCollectionMode {
+export function readIndexTargetCollectionMode(values: JsonObject): IndexTargetCollectionMode {
   if (readImportScope(values) !== 'game') {
     return 'none'
   }
@@ -280,7 +270,7 @@ export function readIndexTargetCollectionMode(
   )
 }
 
-export function createIndexTargetCollectionArg(values: SerializableRecord): SerializableRecord {
+export function createIndexTargetCollectionArg(values: JsonObject): JsonObject {
   const mode = readIndexTargetCollectionMode(values)
 
   if (mode === 'byIndexTitle') {
@@ -295,7 +285,7 @@ export function createIndexTargetCollectionArg(values: SerializableRecord): Seri
   return { kind: 'none' }
 }
 
-export function readImportCollectionTypes(values: SerializableRecord): readonly string[] {
+export function readImportCollectionTypes(values: JsonObject): readonly string[] {
   return readStringArray(
     values,
     SETTINGS_NODE_IDS.importCollectionTypes,

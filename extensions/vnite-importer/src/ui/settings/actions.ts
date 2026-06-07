@@ -2,7 +2,7 @@ import type {
   EmptySettingsPanelPopoverMap,
   ExtensionFileGrant,
   ExtensionTaskRunInitiator,
-  SerializableRecord,
+  JsonObject,
   SettingsPanelField,
   SettingsPanelNodeFactory,
   SettingsPanelRootNodeEvents,
@@ -10,12 +10,13 @@ import type {
 } from '@kisaki3/extension-sdk'
 import { VNITE_BACKUP_MAX_SIZE_BYTES } from '../../shared/constants'
 import { toSafeErrorMessage } from '../../shared/errors'
+import { omitUndefined } from '../../shared/object'
 import { createVniteSettingsDialogs } from './dialogs'
 import { VNITE_SETTINGS_NODE_IDS } from './ids'
 import { readVniteImportFormOptions, type VniteImportFormOptions } from './options'
 import type { VniteSettingsResourceSnapshot } from './resources'
 import { resolveVniteSettingsResources } from './resources'
-import type { VniteImportStep, VniteStoredFileGrant } from './flow'
+import type { VniteStoredFileGrant } from './flow'
 import { resolveVniteImportStep } from './flow'
 import type { VniteSettingsRuntime } from './runtime'
 
@@ -102,11 +103,7 @@ export function createRefreshPreviewButton(ui: VniteRootSettingsUi, runtime: Vni
     async onClick(event) {
       const resources = await resolveVniteSettingsResources(runtime)
       const fileGrant = requireFileGrant(resources.flow.file)
-      const form = await readSubmitForm(
-        runtime,
-        event.values as SerializableRecord,
-        resources.settings
-      )
+      const form = await readSubmitForm(runtime, event.values as JsonObject, resources.settings)
       validateCompletionOptions(form)
       const result = await runtime.jobRunner.previewFromGrant({
         fileGrant,
@@ -193,7 +190,7 @@ async function submitPreview(
   resources: VniteSettingsResourceSnapshot
 ) {
   const fileGrant = requireFileGrant(resources.flow.file)
-  const form = await readSubmitForm(runtime, event.values as SerializableRecord, resources.settings)
+  const form = await readSubmitForm(runtime, event.values as JsonObject, resources.settings)
   await persistRootOptions(runtime, form)
   validateCompletionOptions(form)
 
@@ -222,7 +219,7 @@ async function submitImport(
   resources: VniteSettingsResourceSnapshot
 ) {
   const fileGrant = requireFileGrant(resources.flow.file)
-  const form = await readSubmitForm(runtime, event.values as SerializableRecord, resources.settings)
+  const form = await readSubmitForm(runtime, event.values as JsonObject, resources.settings)
   await persistRootOptions(runtime, form)
   validateCompletionOptions(form)
 
@@ -232,11 +229,11 @@ async function submitImport(
     fieldSelection: form.fieldSelection,
     conflictMode: form.conflictMode,
     strictAttachments: form.strictAttachments,
-    completion: {
+    completion: omitUndefined({
       enabled: form.completion.enabled,
       profileId: form.completion.profileId,
       surfaces: form.completion.surfaces
-    },
+    }),
     initiator: { type: 'user' } satisfies ExtensionTaskRunInitiator
   })
   await runtime.flowStore.setActiveRun(result.runId)
@@ -248,7 +245,7 @@ async function submitImport(
 
 async function readSubmitForm(
   runtime: VniteSettingsRuntime,
-  values: SerializableRecord,
+  values: JsonObject,
   settings: VniteSettingsResourceSnapshot['settings']
 ): Promise<VniteImportFormOptions> {
   const profiles = await runtime.scrapers.profiles.list({ mediaType: 'game' })
@@ -266,14 +263,14 @@ async function persistRootOptions(
 ): Promise<void> {
   await runtime.settingsStore.update((settings) => ({
     ...settings,
-    defaults: {
+    defaults: omitUndefined({
       ...settings.defaults,
       conflictMode: form.conflictMode,
       completeMetadata: form.completion.enabled,
       completionSurfacePreset: form.completion.preset,
       completionSurfaces: form.completion.surfaces,
       scraperProfileId: form.completion.profileId ?? settings.defaults.scraperProfileId
-    }
+    })
   }))
 }
 

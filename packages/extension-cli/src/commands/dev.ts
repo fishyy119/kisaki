@@ -28,7 +28,7 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   const kisaki: ChildProcess = launchKisaki(ready.packagePath, {
     kisakiCommand: options.kisaki,
     cwd: project.rootDir,
-    extensionHostInspect: inspectOptions
+    ...(inspectOptions === undefined ? {} : { extensionHostInspect: inspectOptions })
   })
   let stopped = false
   const stop = (code = 0): void => {
@@ -72,12 +72,18 @@ function resolveExtensionHostInspectOptions(
 ): ExtensionHostInspectLaunchOptions | undefined {
   const inspectBrkAddress = readOptionalAddress(options.inspectBrkExtensionHost)
   if (inspectBrkAddress !== null) {
-    return { mode: 'inspect-brk', address: inspectBrkAddress }
+    return {
+      mode: 'inspect-brk',
+      ...(inspectBrkAddress === undefined ? {} : { address: inspectBrkAddress })
+    }
   }
 
   const inspectAddress = readOptionalAddress(options.inspectExtensionHost)
   if (inspectAddress !== null) {
-    return { mode: 'inspect', address: inspectAddress }
+    return {
+      mode: 'inspect',
+      ...(inspectAddress === undefined ? {} : { address: inspectAddress })
+    }
   }
 
   return undefined

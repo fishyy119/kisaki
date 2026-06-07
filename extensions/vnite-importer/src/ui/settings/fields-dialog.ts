@@ -1,5 +1,5 @@
 import { defineSettingsPanelDialog } from '@kisaki3/extension-sdk'
-import type { SerializableRecord, SettingsPanelSelectOption } from '@kisaki3/extension-sdk'
+import type { JsonObject, SettingsPanelSelectOption } from '@kisaki3/extension-sdk'
 import { VNITE_FIELD_GROUPS, createFieldGroupNodeId, readFieldSelection } from './options'
 import type { VniteSettingsRuntime } from './runtime'
 
@@ -51,7 +51,7 @@ export function createVniteFieldsDialog(runtime: VniteSettingsRuntime) {
         defaults: {
           ...settings.defaults,
           fieldSelection: readFieldSelection(
-            event.values as SerializableRecord,
+            event.values as JsonObject,
             settings.defaults.fieldSelection
           )
         }

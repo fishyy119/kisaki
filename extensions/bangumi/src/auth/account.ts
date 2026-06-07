@@ -4,6 +4,7 @@ import type { BangumiMe } from '../api/types'
 import { BANGUMI_STORAGE_KEYS } from '../shared/ids'
 import type { OAuthRelayTokenStatus } from './relay-client'
 import type { TokenService } from './token-service'
+import { omitUndefined } from '../shared/object'
 
 export interface BangumiAccountSnapshotV1 {
   version: 1
@@ -27,7 +28,7 @@ export class AccountService {
   ) {}
 
   async getAccountSnapshot(): Promise<BangumiAccountSnapshotV1 | undefined> {
-    const raw = await this.storage.get<unknown>(BANGUMI_STORAGE_KEYS.account, null)
+    const raw = await this.storage.get(BANGUMI_STORAGE_KEYS.account)
     return normalizeAccountSnapshot(raw)
   }
 
@@ -56,14 +57,14 @@ export class AccountService {
 }
 
 function toAccountSnapshot(me: BangumiMe): BangumiAccountSnapshotV1 {
-  return {
+  return omitUndefined({
     version: 1,
     id: me.id,
     username: me.username,
     nickname: me.nickname || me.username,
     avatarUrl: me.avatar?.large ?? me.avatar?.medium ?? me.avatar?.small,
     updatedAt: Date.now()
-  }
+  })
 }
 
 function normalizeAccountSnapshot(value: unknown): BangumiAccountSnapshotV1 | undefined {
@@ -98,4 +99,3 @@ function normalizeAccountSnapshot(value: unknown): BangumiAccountSnapshotV1 | un
     updatedAt
   }
 }
-

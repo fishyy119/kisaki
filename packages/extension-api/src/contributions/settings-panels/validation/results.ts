@@ -9,7 +9,7 @@ import {
   validateRequiredBoolean,
   validateRequiredEnumString,
   validateRequiredString,
-  validateSerializableRecord,
+  validateJsonObject,
   validateUnknownKeys
 } from '../../../shared/validation'
 import {
@@ -297,7 +297,7 @@ function validateSettingsPanelDialogTarget(
   ]
 
   if (value.params !== undefined) {
-    issues.push(...validateSerializableRecord(value.params, `${path}.params`))
+    issues.push(...validateJsonObject(value.params, `${path}.params`))
   }
 
   issues.push(
@@ -330,7 +330,7 @@ function validateSettingsPanelPopoverTarget(
   ]
 
   if (value.params !== undefined) {
-    issues.push(...validateSerializableRecord(value.params, `${path}.params`))
+    issues.push(...validateJsonObject(value.params, `${path}.params`))
   }
 
   issues.push(

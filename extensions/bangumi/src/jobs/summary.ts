@@ -1,7 +1,7 @@
-import type { SerializableRecord } from '@kisaki3/extension-sdk'
+import type { JsonObject } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError, type BangumiErrorCode } from '../shared/errors'
 
-export interface BangumiJobError extends SerializableRecord {
+export interface BangumiJobError extends JsonObject {
   scope: string | null
   subjectId: string | null
   localId: string | null
@@ -9,26 +9,26 @@ export interface BangumiJobError extends SerializableRecord {
   message: string
 }
 
-export interface BangumiJobPreviewLink extends SerializableRecord {
+export interface BangumiJobPreviewLink extends JsonObject {
   label: string
   href: string
 }
 
 export type BangumiJobPreviewTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 
-export interface BangumiJobPreviewBadge extends SerializableRecord {
+export interface BangumiJobPreviewBadge extends JsonObject {
   label: string
   tone: BangumiJobPreviewTone
 }
 
-export interface BangumiJobPreviewRow extends SerializableRecord {
+export interface BangumiJobPreviewRow extends JsonObject {
   label: string
   before: string
   after: string
   tone: BangumiJobPreviewTone
 }
 
-export interface BangumiJobPreviewGroup extends SerializableRecord {
+export interface BangumiJobPreviewGroup extends JsonObject {
   id: string
   title: string
   link: BangumiJobPreviewLink
@@ -36,7 +36,7 @@ export interface BangumiJobPreviewGroup extends SerializableRecord {
   rows: readonly BangumiJobPreviewRow[]
 }
 
-export interface BangumiJobSummary extends SerializableRecord {
+export interface BangumiJobSummary extends JsonObject {
   version: 1
   commandId: string
   startedAt: number

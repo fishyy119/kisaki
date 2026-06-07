@@ -1,4 +1,4 @@
-import type { SerializableValue } from '@kisaki3/extension-api'
+import type { JsonValue } from '@kisaki3/extension-api'
 import type {
   ExtensionResolvedSettingsPanelDialog,
   ExtensionResolvedSettingsPanelField,
@@ -42,7 +42,7 @@ export function createDraftSnapshot(
     | ExtensionResolvedSettingsPanelDialog
     | ExtensionResolvedSettingsPanelPopover
 ): ExtensionSettingsPanelDraftSnapshot {
-  const values: Record<string, SerializableValue> = {}
+  const values: Record<string, JsonValue> = {}
   for (const field of getSettingsFields(view)) {
     for (const node of field.content) {
       if (isSettingsValueNode(node) && 'initialValue' in node) {
@@ -61,7 +61,7 @@ export function mergeDraftSnapshot(
   next: ExtensionSettingsPanelDraftSnapshot,
   previous: ExtensionSettingsPanelDraftSnapshot
 ): ExtensionSettingsPanelDraftSnapshot {
-  const values: Record<string, SerializableValue> = { ...next.values }
+  const values: Record<string, JsonValue> = { ...next.values }
   const dirtyNodeIds = previous.dirtyNodeIds.filter((nodeId) => nodeId in next.values)
 
   for (const nodeId of dirtyNodeIds) {

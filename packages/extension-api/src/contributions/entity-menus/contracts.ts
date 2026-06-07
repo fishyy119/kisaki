@@ -1,8 +1,8 @@
-import type { Disposable, MaybePromise, SerializableRecord, UiCallbackResult } from '../../shared'
+import type { Disposable, MaybePromise, JsonObject, UiCallbackResult } from '../../shared'
 
 export interface EntityMenuRefreshReason {
   reason?: string
-  params?: SerializableRecord
+  params?: JsonObject
 }
 
 export interface EntityMenuInputBase {

@@ -76,7 +76,9 @@ export async function registryInitCommand(options: RegistryInitCommandOptions): 
   assertRegistryManifestValid(manifest)
 
   const manifestPath = path.resolve(options.out)
-  await writeJsonDocument(manifestPath, manifest, { overwrite: options.force })
+  await writeJsonDocument(manifestPath, manifest, {
+    ...(options.force === undefined ? {} : { overwrite: options.force })
+  })
   logger.success(`Created ${manifestPath}`)
 }
 
@@ -117,7 +119,7 @@ export async function registryAddReleaseCommand(
     sha256: packageInfo.sha256
   }
   const verifiedSignature = await readVerifiedSignature({
-    signaturePath: options.signature,
+    ...(options.signature === undefined ? {} : { signaturePath: options.signature }),
     manifest: packageInfo.manifest,
     target: options.target,
     size: packageInfo.size,
@@ -136,7 +138,7 @@ export async function registryAddReleaseCommand(
     extensionManifest: packageInfo.manifest,
     release,
     signingKey,
-    replace: options.replace
+    ...(options.replace === undefined ? {} : { replace: options.replace })
   })
 
   assertRegistryManifestValid(updatedManifest, options)
@@ -187,7 +189,7 @@ export async function registrySignCommand(
     sha256: packageInfo.sha256,
     keyPath: options.key,
     target: options.target,
-    outFile: options.out
+    ...(options.out === undefined ? {} : { outFile: options.out })
   })
 
   logger.success(`Created ${result.signatureFilePath}`)
@@ -280,7 +282,7 @@ function upsertRegistryRelease(input: {
           packageId: existingPackage.id,
           existing: existingPackage.releases[releaseIndex],
           incoming: input.release,
-          replace: input.replace
+          ...(input.replace === undefined ? {} : { replace: input.replace })
         })
       : input.release
   const releases =
@@ -421,7 +423,9 @@ async function readRegistryManifestFile(
   }
 
   const parsed = parseExtensionRegistryManifest(raw, {
-    allowInsecureLocalUrls: options.allowInsecureLocalUrls
+    ...(options.allowInsecureLocalUrls === undefined
+      ? {}
+      : { allowInsecureLocalUrls: options.allowInsecureLocalUrls })
   })
 
   if (!parsed.manifest) {
@@ -437,7 +441,9 @@ function assertRegistryManifestValid(
   options: RegistryValidateCommandOptions = {}
 ): void {
   const parsed = parseExtensionRegistryManifest(manifest, {
-    allowInsecureLocalUrls: options.allowInsecureLocalUrls
+    ...(options.allowInsecureLocalUrls === undefined
+      ? {}
+      : { allowInsecureLocalUrls: options.allowInsecureLocalUrls })
   })
 
   if (!parsed.manifest) {
@@ -536,17 +542,15 @@ async function writeJsonDocument(
   }
 }
 
-function compactRegistryManifest(manifest: ExtensionRegistryManifest): ExtensionRegistryManifest {
+function compactRegistryManifest(manifest: unknown): ExtensionRegistryManifest {
   return removeUndefined(manifest) as ExtensionRegistryManifest
 }
 
-function compactRegistryPackage(
-  registryPackage: ExtensionRegistryPackage
-): ExtensionRegistryPackage {
+function compactRegistryPackage(registryPackage: unknown): ExtensionRegistryPackage {
   return removeUndefined(registryPackage) as ExtensionRegistryPackage
 }
 
-function compactRegistryRelease(release: ExtensionRegistryRelease): ExtensionRegistryRelease {
+function compactRegistryRelease(release: unknown): ExtensionRegistryRelease {
   return removeUndefined(release) as ExtensionRegistryRelease
 }
 

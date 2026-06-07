@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 import { VNITE_BACKUP_MAX_SIZE_BYTES, VNITE_BACKUP_DATABASE_NAMES } from '../shared/constants'
+import { omitUndefined } from '../shared/object'
 import { nowTimestamp } from '../shared/time'
 import { VNITE_MEDIA_ATTACHMENT_IDS } from '../vnite/attachments'
 import { createVniteBackupStatistics } from '../vnite/statistics'
@@ -60,7 +61,7 @@ export async function createVniteBackupAnalysisSummary(
   })
   const diagnostics = [...snapshot.diagnostics, ...createAnalysisDiagnostics(snapshot)]
 
-  return {
+  return omitUndefined({
     createdAt: nowTimestamp(),
     file: file
       ? {
@@ -71,7 +72,7 @@ export async function createVniteBackupAnalysisSummary(
     statistics,
     fieldCoverage: createFieldCoverage(statistics.games.total, statistics),
     diagnostics
-  }
+  })
 }
 
 export function createAnalysisDiagnostics(

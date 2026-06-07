@@ -12,6 +12,7 @@ import type {
 } from '@kisaki3/extension-api'
 import { VniteImportExecutor } from '../src/import'
 import type { VniteBackupGame, VniteBackupSnapshot } from '../src/backup/types'
+import { omitUndefined } from '../src/shared/object'
 import { classifyVniteAttachment } from '../src/vnite/attachments'
 import { createDefaultVniteGameDoc } from '../src/vnite/defaults'
 
@@ -143,13 +144,15 @@ function createGraphResult(
   action: LibraryGraphResultAction
 ): LibraryGraphResult {
   const startedAt = Date.now()
-  const nodes = collectGraphNodes(input).map((node) => ({
-    key: node.key,
-    kind: node.kind,
-    mediaType: node.kind === 'media' ? node.mediaType : undefined,
-    entityId: node.kind === 'media' ? 'game-alpha-local' : undefined,
-    action
-  }))
+  const nodes = collectGraphNodes(input).map((node) =>
+    omitUndefined({
+      key: node.key,
+      kind: node.kind,
+      mediaType: node.kind === 'media' ? node.mediaType : undefined,
+      entityId: node.kind === 'media' ? 'game-alpha-local' : undefined,
+      action
+    })
+  )
   const edges = (input.edges ?? []).map((edge) => ({
     kind: edge.kind,
     fromKey: edge.from.key,
@@ -157,7 +160,7 @@ function createGraphResult(
     action
   }))
 
-  return {
+  return omitUndefined({
     requestId: input.requestId,
     mode,
     startedAt,
@@ -166,7 +169,7 @@ function createGraphResult(
     edges,
     counters: {},
     diagnostics: input.diagnostics ?? []
-  }
+  })
 }
 
 function collectGraphNodes(input: LibraryGraphInput): readonly {

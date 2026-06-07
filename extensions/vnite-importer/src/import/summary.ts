@@ -4,10 +4,8 @@ import type {
   LibraryGraphResultAction
 } from '@kisaki3/extension-api'
 import type { VniteBackupGame, VniteBackupSnapshot, VniteImportDiagnostic } from '../backup/types'
-import {
-  createVniteExtraNoteNodeKey,
-  createVniteGameNodeKey
-} from '../mapping'
+import { omitUndefined } from '../shared/object'
+import { createVniteExtraNoteNodeKey, createVniteGameNodeKey } from '../mapping'
 
 export interface VniteImportExecutionCounters {
   gamesTotal: number
@@ -48,14 +46,14 @@ export function createVniteImportExecutionSummary(input: {
 }): VniteImportExecutionSummary {
   const diagnostics = toVniteImportDiagnostics(input.graph, input.snapshot)
 
-  return {
+  return omitUndefined({
     mode: input.graph.mode,
     requestId: input.graph.requestId,
     startedAt: input.graph.startedAt,
     finishedAt: input.graph.finishedAt,
     counters: createVniteImportExecutionCounters(input.graph, diagnostics),
     diagnostics
-  }
+  })
 }
 
 export function createVniteImportJobSummary(input: {
@@ -65,10 +63,7 @@ export function createVniteImportJobSummary(input: {
   executionSummary: VniteImportExecutionSummary
   diagnostics?: readonly VniteImportDiagnostic[]
 }): VniteImportJobSummary {
-  const diagnostics = [
-    ...input.executionSummary.diagnostics,
-    ...(input.diagnostics ?? [])
-  ]
+  const diagnostics = [...input.executionSummary.diagnostics, ...(input.diagnostics ?? [])]
 
   return {
     fileName: input.fileName,
@@ -141,14 +136,14 @@ function toVniteImportDiagnostic(
 ): VniteImportDiagnostic {
   const game = diagnostic.nodeKey ? resolveGameFromNodeKey(diagnostic.nodeKey, games) : undefined
 
-  return {
+  return omitUndefined({
     level: diagnostic.level,
     code: diagnostic.code,
     message: diagnostic.message,
     itemKey: diagnostic.nodeKey,
     vniteGameId: game?.id,
     vniteGameName: game ? readGameName(game) : undefined
-  }
+  })
 }
 
 function resolveGameFromNodeKey(

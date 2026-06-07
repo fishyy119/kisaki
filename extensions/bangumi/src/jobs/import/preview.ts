@@ -4,6 +4,7 @@ import { formatScopedCollectionType, getMediaScopeLabel } from '../../media/labe
 import type { BangumiMediaScope } from '../../media/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter, LocalMediaItem } from '../../media/types'
 import { BangumiExtensionError } from '../../shared/errors'
+import { omitUndefined } from '../../shared/object'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
 import type { JobStateController } from '../context'
 import {
@@ -74,7 +75,11 @@ export function previewIndexImport(
   for (const [index, operation] of collected.operations.entries()) {
     if (operation.kind === 'create') {
       job.addPreviewGroup(
-        createIndexCreatePreviewChange(operation.item.subject, collected.targetCollection, args.scope)
+        createIndexCreatePreviewChange(
+          operation.item.subject,
+          collected.targetCollection,
+          args.scope
+        )
       )
       job.increment('wouldImport')
     } else {
@@ -170,10 +175,13 @@ export function recordRemoteOnlyIndexPreview(
   for (const [index, planItem] of planItems.entries()) {
     const { action, subject, subjectId } = planItem
     if (action.kind === 'error') {
-      job.addError(new BangumiExtensionError('bangumi_validation', action.message), {
-        scope,
-        subjectId: action.subjectId
-      })
+      job.addError(
+        new BangumiExtensionError('bangumi_validation', action.message),
+        omitUndefined({
+          scope,
+          subjectId: action.subjectId
+        })
+      )
       job.increment('failedItems')
       continue
     }
@@ -302,7 +310,8 @@ function createIndexCreatePreviewChange(
   targetCollection: LocalCollectionTarget | undefined,
   scope: BangumiMediaScope
 ): BangumiJobPreviewGroup {
-  const subjectId = typeof subject.id === 'number' && subject.id > 0 ? Math.trunc(subject.id) : subject.id
+  const subjectId =
+    typeof subject.id === 'number' && subject.id > 0 ? Math.trunc(subject.id) : subject.id
   const title = formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
   const label = getMediaScopeLabel(scope)
   const rows: BangumiJobPreviewRow[] = [

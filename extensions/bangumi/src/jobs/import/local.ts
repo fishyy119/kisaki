@@ -10,10 +10,8 @@ import type {
 } from '../../media/types'
 import { BANGUMI_SOURCE_ID } from '../../shared/constants'
 import { BangumiExtensionError } from '../../shared/errors'
-import type {
-  BangumiImportCollectionsArgs,
-  BangumiImportTargetCollection
-} from '../args'
+import { omitUndefined } from '../../shared/object'
+import type { BangumiImportCollectionsArgs, BangumiImportTargetCollection } from '../args'
 import type { CollectionLocalUpdatePlan } from './model'
 import { formatBangumiSubjectTitle } from '../presentation'
 import type { BangumiJobPreviewRow } from '../summary'
@@ -214,12 +212,12 @@ export async function buildCollectionLocalUpdatePlan({
     })
   }
 
-  return {
+  return omitUndefined({
     patch,
     tagNames,
     targetCollection: resolvedTargetCollection,
     rows
-  }
+  })
 }
 
 export function hasCollectionLocalChanges(plan: CollectionLocalUpdatePlan): boolean {

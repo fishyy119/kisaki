@@ -36,36 +36,41 @@ export function normalizeVniteImporterSettings(value: unknown): VniteImporterSet
   const defaults = createDefaultVniteImporterSettings()
   const inputDefaults = asRecord(input?.defaults)
   const cleanup = asRecord(input?.cleanup)
+  const scraperProfileId = normalizeOptionalString(inputDefaults?.scraperProfileId)
+  const normalizedDefaults: VniteImporterSettingsV1['defaults'] = {
+    fieldSelection: normalizeFieldSelection(
+      inputDefaults?.fieldSelection,
+      defaults.defaults.fieldSelection
+    ),
+    conflictMode: normalizeConflictMode(
+      inputDefaults?.conflictMode,
+      defaults.defaults.conflictMode
+    ),
+    strictAttachments: normalizeBoolean(
+      inputDefaults?.strictAttachments,
+      defaults.defaults.strictAttachments
+    ),
+    completeMetadata: normalizeBoolean(
+      inputDefaults?.completeMetadata,
+      defaults.defaults.completeMetadata
+    ),
+    completionSurfacePreset: normalizeVniteCompletionSurfacePreset(
+      inputDefaults?.completionSurfacePreset,
+      defaults.defaults.completionSurfacePreset
+    ),
+    completionSurfaces: normalizeCompletionSurfaces(
+      inputDefaults?.completionSurfaces,
+      defaults.defaults.completionSurfaces
+    )
+  }
+
+  if (scraperProfileId !== undefined) {
+    normalizedDefaults.scraperProfileId = scraperProfileId
+  }
 
   return {
     version: 1,
-    defaults: {
-      fieldSelection: normalizeFieldSelection(
-        inputDefaults?.fieldSelection,
-        defaults.defaults.fieldSelection
-      ),
-      conflictMode: normalizeConflictMode(
-        inputDefaults?.conflictMode,
-        defaults.defaults.conflictMode
-      ),
-      strictAttachments: normalizeBoolean(
-        inputDefaults?.strictAttachments,
-        defaults.defaults.strictAttachments
-      ),
-      completeMetadata: normalizeBoolean(
-        inputDefaults?.completeMetadata,
-        defaults.defaults.completeMetadata
-      ),
-      completionSurfacePreset: normalizeVniteCompletionSurfacePreset(
-        inputDefaults?.completionSurfacePreset,
-        defaults.defaults.completionSurfacePreset
-      ),
-      completionSurfaces: normalizeCompletionSurfaces(
-        inputDefaults?.completionSurfaces,
-        defaults.defaults.completionSurfaces
-      ),
-      scraperProfileId: normalizeOptionalString(inputDefaults?.scraperProfileId)
-    },
+    defaults: normalizedDefaults,
     cleanup: {
       keepLastAnalysis: normalizeBoolean(
         cleanup?.keepLastAnalysis,

@@ -15,8 +15,8 @@ import type {
   ExtensionRuntimeDiagnostic,
   GameScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo,
-  SerializableRecord,
-  SerializableValue,
+  JsonObject,
+  JsonValue,
   SettingsPanelButtonNode,
   SettingsPanelCallbackResult,
   SettingsPanelCheckboxNode,
@@ -544,7 +544,7 @@ export type ExtensionSettingsPanelSurface = 'root' | 'dialog' | 'popover'
 export type ExtensionSettingsPanelScope = ExtensionSettingsPanelSurface | 'all'
 
 export interface ExtensionSettingsPanelDraftSnapshot {
-  values: SerializableRecord
+  values: JsonObject
   dirtyNodeIds: readonly string[]
 }
 
@@ -718,7 +718,7 @@ export type ExtensionSettingsPanelOpenRequest =
   | (ExtensionSettingsPanelSessionRef & {
       surface: 'dialog'
       dialogId: string
-      params?: SerializableRecord
+      params?: JsonObject
       parentDraft: ExtensionSettingsPanelDraftSnapshot
       revision: number
     })
@@ -726,7 +726,7 @@ export type ExtensionSettingsPanelOpenRequest =
       surface: 'popover'
       popoverId: string
       parent: ExtensionSettingsPanelParentRef
-      params?: SerializableRecord
+      params?: JsonObject
       parentDraft: ExtensionSettingsPanelDraftSnapshot
       anchorNodeKey: string
       revision: number
@@ -785,7 +785,7 @@ export interface ExtensionSettingsPanelInvokeBase extends ExtensionSettingsPanel
   callbackId: string
   fieldId: string
   nodeId: string
-  value?: SerializableValue
+  value?: JsonValue
   requestId: string
   revision: number
 }

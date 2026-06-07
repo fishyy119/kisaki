@@ -9,6 +9,7 @@ import {
   parseVniteTimestamp,
   type VniteAttachmentPathResolver
 } from '../mapping'
+import { omitUndefined } from '../shared/object'
 import type { VniteGraphBuildContext } from './context'
 import { createUniqueNoteName } from './notes'
 import { trimToUndefined } from './values'
@@ -58,14 +59,14 @@ export function addMemoryNoteItems(
     context.graph.addNoteNode({
       kind: 'note',
       key: noteKey,
-      input: {
+      input: omitUndefined({
         name,
         content,
         coverPath,
         createdAt: timestamp.value,
         updatedAt: timestamp.value,
         order
-      }
+      })
     })
     context.graph.addEdge({
       kind: 'media-note',

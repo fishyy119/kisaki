@@ -1,4 +1,5 @@
 import { eq, inArray } from 'drizzle-orm'
+import { measureJsonBytes } from '@kisaki3/extension-api'
 import type { TaskRun, TaskRunFinalStatus, TaskRunHistoryListQuery } from '@shared/task-run'
 import { taskRunHistory, type NewTaskRunHistoryRow, type TaskRunHistoryRow } from '@shared/db'
 import type { DbContext } from '@main/services/db/types'
@@ -238,71 +239,7 @@ function assertJsonStorageWithinLimit(value: unknown, label: string): void {
     return
   }
 
-  assertJsonSerializable(value, label, new WeakSet())
-
-  let serialized: string
-  try {
-    serialized = JSON.stringify(value)
-  } catch {
-    throw new Error(`${label} must be JSON serializable.`)
-  }
-
-  if (serialized === undefined) {
-    throw new Error(`${label} must be JSON serializable.`)
-  }
-
-  if (Buffer.byteLength(serialized, 'utf8') > MAX_HISTORY_JSON_BYTES) {
+  if (measureJsonBytes(value, label) > MAX_HISTORY_JSON_BYTES) {
     throw new Error(`${label} is too large to store in task run history.`)
   }
-}
-
-function assertJsonSerializable(value: unknown, label: string, seen: WeakSet<object>): void {
-  if (value === null) {
-    return
-  }
-
-  switch (typeof value) {
-    case 'string':
-    case 'boolean':
-      return
-    case 'number':
-      if (!Number.isFinite(value)) {
-        throw new Error(`${label} must be JSON serializable.`)
-      }
-      return
-    case 'undefined':
-    case 'function':
-    case 'symbol':
-    case 'bigint':
-      throw new Error(`${label} must be JSON serializable.`)
-    case 'object':
-      break
-  }
-
-  if (seen.has(value)) {
-    throw new Error(`${label} must be JSON serializable.`)
-  }
-  seen.add(value)
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      assertJsonSerializable(item, label, seen)
-    }
-    seen.delete(value)
-    return
-  }
-
-  if (!isPlainObject(value)) {
-    throw new Error(`${label} must be JSON serializable.`)
-  }
-
-  for (const item of Object.values(value)) {
-    assertJsonSerializable(item, label, seen)
-  }
-  seen.delete(value)
-}
-
-function isPlainObject(value: object): value is Record<string, unknown> {
-  const prototype = Object.getPrototypeOf(value)
-  return prototype === Object.prototype || prototype === null
 }

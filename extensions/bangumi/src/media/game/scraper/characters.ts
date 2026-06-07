@@ -11,6 +11,7 @@ import type {
   BangumiRelatedCharacter
 } from '../../../api/types'
 import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
+import { omitUndefined } from '../../../shared/object'
 import { dedupeTags } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
 import { extractImageUrls } from './format/images'
@@ -30,7 +31,7 @@ interface BuildGameCharactersOptions {
   getSubjectCharacters: () => Promise<BangumiRelatedCharacter[]>
   getCharacterDetails: () => Promise<Map<number, BangumiCharacterDetail>>
   getCharacterPersons: () => Promise<Map<number, BangumiCharacterPerson[]>>
-  locale?: Locale
+  locale?: Locale | undefined
 }
 
 export async function buildGameCharacters({
@@ -118,7 +119,7 @@ function mapGameCharacter({
   relatedCharacter: BangumiRelatedCharacter
   detail: BangumiCharacterDetail | undefined
   characterPersons: BangumiCharacterPerson[] | undefined
-  locale?: Locale
+  locale?: Locale | undefined
 }): ScrapedGameCharacterFact {
   const { name, originalName } = resolveLocalizedEntityName(
     detail?.name || relatedCharacter.name,
@@ -136,7 +137,7 @@ function mapGameCharacter({
   const persons = buildCharacterPersons(subjectId, relatedCharacter, characterPersons)
   const photos = dedupeUrls(extractImageUrls(detail?.images || relatedCharacter.images))
 
-  return {
+  return omitUndefined({
     name,
     originalName,
     description: normalizeDescription(detail?.summary || relatedCharacter.summary),
@@ -154,7 +155,7 @@ function mapGameCharacter({
     tags: tags.length > 0 ? dedupeTags(tags) : undefined,
     type: mapBangumiCharacterRelation(relatedCharacter.relation),
     persons: persons.length > 0 ? persons : undefined
-  }
+  })
 }
 
 function buildCharacterPersons(
@@ -165,16 +166,18 @@ function buildCharacterPersons(
   const persons: ScrapedCharacterPersonFact[] = []
 
   for (const actor of relatedCharacter.actors ?? []) {
-    persons.push({
-      name: actor.name,
-      originalName: actor.name,
-      description: normalizeDescription(actor.short_summary),
-      relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
-      identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(actor.id) }] },
-      photos: dedupeUrls(extractImageUrls(actor.images)),
-      tags: mapBangumiCareersToTags(actor.career),
-      type: 'actor'
-    })
+    persons.push(
+      omitUndefined({
+        name: actor.name,
+        originalName: actor.name,
+        description: normalizeDescription(actor.short_summary),
+        relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(actor.id) }],
+        identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(actor.id) }] },
+        photos: dedupeUrls(extractImageUrls(actor.images)),
+        tags: mapBangumiCareersToTags(actor.career),
+        type: 'actor'
+      })
+    )
   }
 
   for (const personRef of characterPersons ?? []) {
@@ -185,15 +188,17 @@ function buildCharacterPersons(
       continue
     }
 
-    persons.push({
-      name: personRef.name,
-      originalName: personRef.name,
-      relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
-      identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(personRef.id) }] },
-      photos: dedupeUrls(extractImageUrls(personRef.images)),
-      type: 'actor',
-      note: personRef.staff?.trim() || undefined
-    })
+    persons.push(
+      omitUndefined({
+        name: personRef.name,
+        originalName: personRef.name,
+        relatedSites: [{ label: 'Bangumi', url: buildBangumiPersonUrl(personRef.id) }],
+        identity: { externalIds: [{ source: BANGUMI_SOURCE_ID, id: String(personRef.id) }] },
+        photos: dedupeUrls(extractImageUrls(personRef.images)),
+        type: 'actor',
+        note: personRef.staff?.trim() || undefined
+      })
+    )
   }
 
   return persons

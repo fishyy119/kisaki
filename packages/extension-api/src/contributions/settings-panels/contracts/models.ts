@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '../../../shared'
+import type { JsonObject } from '../../../shared'
 import type {
   EmptySettingsPanelDialogMap,
   EmptySettingsPanelPopoverMap,
@@ -37,7 +37,7 @@ export interface SettingsPanelRootModelBase {
 }
 
 export interface SettingsPanelDialogModel<
-  TParams extends SerializableRecord = SerializableRecord,
+  TParams extends JsonObject = JsonObject,
   TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap
 > {
   title?: string
@@ -47,9 +47,7 @@ export interface SettingsPanelDialogModel<
   fields: readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, TPopovers>>[]
 }
 
-export interface SettingsPanelPopoverModel<
-  TParams extends SerializableRecord = SerializableRecord
-> {
+export interface SettingsPanelPopoverModel<TParams extends JsonObject = JsonObject> {
   title?: string
   description?: string
   width?: SettingsPanelPopoverWidth

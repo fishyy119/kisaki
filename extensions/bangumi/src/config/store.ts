@@ -1,17 +1,13 @@
 import type { ExtensionStorage } from '@kisaki3/extension-sdk'
 import { createDefaultBangumiSettings } from './defaults'
-import {
-  isBangumiSettingsV1,
-  normalizeBangumiSettings,
-  type BangumiSettingsV1
-} from './schema'
+import { isBangumiSettingsV1, normalizeBangumiSettings, type BangumiSettingsV1 } from './schema'
 import { BANGUMI_STORAGE_KEYS } from '../shared/ids'
 
 export class SettingsStore {
   constructor(private readonly storage: ExtensionStorage) {}
 
   async get(): Promise<BangumiSettingsV1> {
-    const raw = await this.storage.get<unknown>(BANGUMI_STORAGE_KEYS.settings, null)
+    const raw = await this.storage.get(BANGUMI_STORAGE_KEYS.settings)
     const settings = normalizeBangumiSettings(raw)
 
     if (!isBangumiSettingsV1(raw)) {

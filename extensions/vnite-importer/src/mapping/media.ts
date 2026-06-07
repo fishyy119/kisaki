@@ -6,6 +6,7 @@ import type {
 } from '@kisaki3/extension-api'
 import type { VniteAttachmentMetadata } from '../vnite/attachments'
 import type { VniteBackupGame } from '../backup/types'
+import { omitUndefined } from '../shared/object'
 import { toSafeFileName } from '../shared/path'
 
 export interface VniteAttachmentPathRequest {
@@ -31,13 +32,13 @@ export function createVniteAttachmentNode(input: {
   attachment: VniteAttachmentMetadata
   sourcePath: string
 }): LibraryGraphAttachmentNode {
-  return {
+  return omitUndefined({
     kind: 'attachment',
     key: input.key,
     path: input.sourcePath,
     fileName: toVniteAttachmentFileName(input.attachment),
     contentType: input.attachment.contentType
-  }
+  })
 }
 
 export function createVniteMediaAttachmentEdge(input: {
@@ -46,13 +47,13 @@ export function createVniteMediaAttachmentEdge(input: {
   slot: LibraryGraphAttachmentSlot
   saveBackup?: LibraryGraphMediaAttachmentEdge['saveBackup']
 }): LibraryGraphMediaAttachmentEdge {
-  return {
+  return omitUndefined({
     kind: 'media-attachment',
     from: { kind: 'media', key: input.mediaKey },
     to: { kind: 'attachment', key: input.attachmentKey },
     slot: input.slot,
     saveBackup: input.saveBackup
-  }
+  })
 }
 
 export function findVniteMediaAttachment(

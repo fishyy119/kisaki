@@ -1,12 +1,14 @@
 import { ExtensionTaskRunCancellation, readErrorCode } from '@kisaki3/extension-api'
 import type {
+  AutomationCreateInput,
+  AutomationUpdateInput,
+  CommandInvocationRequest,
   Disposable,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionEventTopic,
   ExtensionTaskRunActiveListQuery,
   ExtensionTaskRunCreateInput,
-  ExtensionTaskRunFailureErrorPayload,
   ExtensionTaskRunHandle,
   ExtensionTaskRunHistoryListQuery,
   ExtensionTaskRunProgressUpdate,
@@ -29,10 +31,9 @@ import type {
   RpcResult
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope } from './types'
-import {
-  JSON_COMPATIBLE_UNDEFINED_SERIALIZATION,
-  toSerializableRecord
-} from './utils/serialization'
+import { toNetworkDownloadRequest, toNetworkRequest } from './utils/network'
+import { toJsonRecord, toOptionalJsonRecord } from './utils/serialization'
+import { toTaskRunFailureErrorPayload } from './utils/task-runs'
 
 const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
 
@@ -198,10 +199,7 @@ export function createKisakiApi(
         try {
           await requestMain('capabilities.taskRuns.report', {
             runId: run.id,
-            update: toJsonCompatibleRecord<ExtensionTaskRunProgressUpdate>(
-              update,
-              'task run progress update'
-            )
+            update: toJsonRecord<ExtensionTaskRunProgressUpdate>(update, 'task run progress update')
           })
         } catch (error) {
           mapTaskRunError(error)
@@ -219,7 +217,7 @@ export function createKisakiApi(
       complete: async (result) => {
         await requestMain('capabilities.taskRuns.complete', {
           runId: run.id,
-          result: toOptionalJsonCompatibleRecord(result, 'task run result')
+          result: toOptionalJsonRecord(result, 'task run result')
         })
         dispose()
       },
@@ -227,14 +225,14 @@ export function createKisakiApi(
         await requestMain('capabilities.taskRuns.fail', {
           runId: run.id,
           error: toTaskRunFailureErrorPayload(error),
-          result: toOptionalJsonCompatibleRecord(result, 'task run result')
+          result: toOptionalJsonRecord(result, 'task run result')
         })
         dispose()
       },
       cancel: async (result) => {
         await requestMain('capabilities.taskRuns.cancel', {
           runId: run.id,
-          result: toOptionalJsonCompatibleRecord(result, 'task run result')
+          result: toOptionalJsonRecord(result, 'task run result')
         })
         controller.abort()
         dispose()
@@ -360,10 +358,17 @@ export function createKisakiApi(
     },
     network: {
       request: async <TData = unknown>(input: NetworkRequest): Promise<NetworkResponse<TData>> =>
-        (await requestMain('capabilities.network.request', { input }))
-          .response as NetworkResponse<TData>,
+        (
+          await requestMain('capabilities.network.request', {
+            input: toNetworkRequest(input)
+          })
+        ).response as NetworkResponse<TData>,
       download: async (input: NetworkDownloadRequest) =>
-        (await requestMain('capabilities.network.download', { input })).result
+        (
+          await requestMain('capabilities.network.download', {
+            input: toNetworkDownloadRequest(input)
+          })
+        ).result
     },
     notify: {
       success: async (title, options) =>
@@ -488,7 +493,7 @@ export function createKisakiApi(
       invoke: async (request) =>
         (
           await requestMain('capabilities.commands.invoke', {
-            request
+            request: toJsonRecord<CommandInvocationRequest>(request, 'command invocation request')
           })
         ).result
     },
@@ -503,14 +508,14 @@ export function createKisakiApi(
       create: async (input) =>
         (
           await requestMain('capabilities.automations.create', {
-            input
+            input: toJsonRecord<AutomationCreateInput>(input, 'automation create input')
           })
         ).automation,
       update: async (automationId, patch) =>
         (
           await requestMain('capabilities.automations.update', {
             automationId,
-            patch
+            patch: toJsonRecord<AutomationUpdateInput>(patch, 'automation update input')
           })
         ).automation,
       setEnabled: async (automationId, enabled) =>
@@ -535,17 +540,14 @@ export function createKisakiApi(
         createTaskRunHandle(
           (
             await requestMain('capabilities.taskRuns.create', {
-              input: toJsonCompatibleRecord<ExtensionTaskRunCreateInput>(
-                input,
-                'task run create input'
-              )
+              input: toJsonRecord<ExtensionTaskRunCreateInput>(input, 'task run create input')
             })
           ).run
         ),
       listActiveOwn: async (query) =>
         (
           await requestMain('capabilities.taskRuns.listActiveOwn', {
-            query: toOptionalJsonCompatibleRecord<ExtensionTaskRunActiveListQuery>(
+            query: toOptionalJsonRecord<ExtensionTaskRunActiveListQuery>(
               query,
               'task run active query'
             )
@@ -554,7 +556,7 @@ export function createKisakiApi(
       listHistoryOwn: async (query) =>
         (
           await requestMain('capabilities.taskRuns.listHistoryOwn', {
-            query: toOptionalJsonCompatibleRecord<ExtensionTaskRunHistoryListQuery>(
+            query: toOptionalJsonRecord<ExtensionTaskRunHistoryListQuery>(
               query,
               'task run history query'
             )
@@ -623,40 +625,4 @@ export function createScopeCapturingKisakiApi(
       return getApi().taskRuns
     }
   }
-}
-
-function toTaskRunFailureErrorPayload(error: unknown): ExtensionTaskRunFailureErrorPayload {
-  if (error instanceof Error) {
-    const message = error.message.trim()
-    const code = readErrorCode(error)
-    return {
-      message: message || 'Extension task run failed.',
-      ...(code ? { code } : {})
-    }
-  }
-
-  if (typeof error === 'string' && error.trim()) {
-    return {
-      message: error.trim()
-    }
-  }
-
-  return {
-    message: 'Extension task run failed.'
-  }
-}
-
-function toOptionalJsonCompatibleRecord<TRecord extends object>(
-  value: TRecord | undefined,
-  label: string
-): TRecord | undefined {
-  return value === undefined ? undefined : toJsonCompatibleRecord(value, label)
-}
-
-function toJsonCompatibleRecord<TRecord extends object>(value: TRecord, label: string): TRecord {
-  return toSerializableRecord(
-    value,
-    label,
-    JSON_COMPATIBLE_UNDEFINED_SERIALIZATION
-  ) as unknown as TRecord
 }

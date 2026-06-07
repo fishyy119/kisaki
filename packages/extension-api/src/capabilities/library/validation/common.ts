@@ -12,7 +12,7 @@ import {
   validateRequiredEnumString,
   validateRequiredFiniteNumber,
   validateRequiredString,
-  validateSerializableRecord,
+  validateJsonObject,
   validateUnknownKeys
 } from '../../../shared/validation'
 
@@ -383,7 +383,7 @@ function validateDynamicEntityConfig(value: unknown, path: string): ValidationIs
   return [
     ...validateUnknownKeys(value, DYNAMIC_ENTITY_CONFIG_KEYS, path),
     ...validateRequiredBoolean(value.enabled, `${path}.enabled`),
-    ...validateSerializableRecord(value.filter, `${path}.filter`),
+    ...validateJsonObject(value.filter, `${path}.filter`),
     ...validateRequiredString(value.sortField, `${path}.sortField`, {
       trim: true,
       valueMessage: 'sortField must be a non-empty string.'

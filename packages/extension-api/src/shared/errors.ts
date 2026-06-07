@@ -1,10 +1,10 @@
-import type { SerializableRecord } from './serialization'
+import type { JsonObject } from './serialization'
 import type { ValidationIssue } from './validation'
 import {
   isPlainObject,
   validateOptionalString,
   validateRequiredString,
-  validateSerializableRecord,
+  validateJsonObject,
   validateUnknownKeys
 } from './validation'
 
@@ -27,7 +27,7 @@ export type ExtensionCapabilityErrorCode = ExtensionErrorCode
 export interface ExtensionErrorShape {
   code?: string
   message: string
-  details?: SerializableRecord
+  details?: JsonObject
 }
 
 export interface ValidateExtensionErrorShapeOptions {
@@ -37,7 +37,7 @@ export interface ValidateExtensionErrorShapeOptions {
 
 export interface ExtensionErrorOptions {
   code?: ExtensionErrorCode
-  details?: SerializableRecord
+  details?: JsonObject
   exposeStack?: boolean
 }
 
@@ -50,13 +50,17 @@ export interface NormalizeExtensionErrorOptions {
 export class ExtensionError extends Error {
   readonly name = 'ExtensionError'
   readonly code?: string
-  readonly details?: SerializableRecord
+  readonly details?: JsonObject
   readonly exposeStack: boolean
 
   constructor(message: string, options: ExtensionErrorOptions = {}) {
     super(message)
-    this.code = options.code
-    this.details = options.details
+    if (options.code !== undefined) {
+      this.code = options.code
+    }
+    if (options.details !== undefined) {
+      this.details = options.details
+    }
     this.exposeStack = options.exposeStack ?? false
   }
 }
@@ -90,7 +94,7 @@ export function validateExtensionErrorShape(
   )
 
   if (value.details !== undefined) {
-    issues.push(...validateSerializableRecord(value.details, `${path}.details`))
+    issues.push(...validateJsonObject(value.details, `${path}.details`))
   }
 
   return issues
@@ -107,52 +111,28 @@ export function createExtensionError(
   return new ExtensionError(message, options)
 }
 
-export function createValidationError(
-  message: string,
-  details?: SerializableRecord
-): ExtensionError {
-  return createExtensionError(message, {
-    code: 'validation_failure',
-    details
-  })
+export function createValidationError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, 'validation_failure', details)
 }
 
-export function createNotFoundError(message: string, details?: SerializableRecord): ExtensionError {
-  return createExtensionError(message, {
-    code: 'not_found',
-    details
-  })
+export function createNotFoundError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, 'not_found', details)
 }
 
-export function createConflictError(message: string, details?: SerializableRecord): ExtensionError {
-  return createExtensionError(message, {
-    code: 'conflict',
-    details
-  })
+export function createConflictError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, 'conflict', details)
 }
 
-export function createTimeoutError(message: string, details?: SerializableRecord): ExtensionError {
-  return createExtensionError(message, {
-    code: 'timeout',
-    details
-  })
+export function createTimeoutError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, 'timeout', details)
 }
 
-export function createUnavailableError(
-  message: string,
-  details?: SerializableRecord
-): ExtensionError {
-  return createExtensionError(message, {
-    code: 'unavailable',
-    details
-  })
+export function createUnavailableError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, 'unavailable', details)
 }
 
-export function createInternalError(message: string, details?: SerializableRecord): ExtensionError {
-  return createExtensionError(message, {
-    code: 'internal',
-    details
-  })
+export function createInternalError(message: string, details?: JsonObject): ExtensionError {
+  return createCodedExtensionError(message, 'internal', details)
 }
 
 export function normalizeExtensionError(
@@ -195,15 +175,13 @@ export function readErrorCode(error: unknown): string | undefined {
     : undefined
 }
 
-export function readErrorDetails(error: unknown): SerializableRecord | undefined {
+export function readErrorDetails(error: unknown): JsonObject | undefined {
   if (!(error instanceof Error) || !('details' in error)) {
     return undefined
   }
 
   const details = (error as Error & { details?: unknown }).details
-  return validateSerializableRecord(details).length === 0
-    ? (details as SerializableRecord)
-    : undefined
+  return validateJsonObject(details).length === 0 ? (details as JsonObject) : undefined
 }
 
 function isAbortLikeError(error: Error): boolean {
@@ -216,4 +194,20 @@ function matchesErrorCode(code: string | undefined, patterns: readonly string[])
   }
 
   return patterns.some((pattern) => code === pattern || code.startsWith(`${pattern}_`))
+}
+
+function createCodedExtensionError(
+  message: string,
+  code: ExtensionErrorCode,
+  details?: JsonObject
+): ExtensionError {
+  return createExtensionError(
+    message,
+    details === undefined
+      ? { code }
+      : {
+          code,
+          details
+        }
+  )
 }

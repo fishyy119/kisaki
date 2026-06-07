@@ -1,4 +1,5 @@
 import type { ExternalId, ScrapedTag } from '@kisaki3/extension-sdk'
+import { omitUndefined } from '../../../../shared/object'
 
 export function dedupeExternalIds(ids: ExternalId[]): ExternalId[] {
   const seen = new Set<string>()
@@ -29,11 +30,13 @@ export function dedupeTags(tags: ScrapedTag[]): ScrapedTag[] {
     const key = `${name.toLowerCase()}::${note.toLowerCase()}::${tag.isNsfw ? 'nsfw' : ''}::${tag.isSpoiler ? 'spoiler' : ''}`
     if (seen.has(key)) continue
     seen.add(key)
-    result.push({
-      ...tag,
-      name,
-      note: note || undefined
-    })
+    result.push(
+      omitUndefined({
+        ...tag,
+        name,
+        note: note || undefined
+      })
+    )
   }
 
   return result

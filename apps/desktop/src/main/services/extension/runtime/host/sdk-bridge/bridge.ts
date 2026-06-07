@@ -61,7 +61,7 @@ import {
   createSettingsPanelRegistrar,
   createThemeRegistrar
 } from './registrars'
-import { toSerializableRecord } from './utils/serialization'
+import { toJsonObject } from './utils/serialization'
 import { createExtensionStorage } from './storage'
 import { createExtensionSecrets } from './secrets'
 import { configureExtensionSdkBridge, resetExtensionSdkBridge } from './store'
@@ -609,7 +609,7 @@ export class ExtensionHostSdkBridge {
       )
     }
 
-    const normalizedPayload = toSerializableRecord(payload, 'extension event payload')
+    const normalizedPayload = toJsonObject(payload, 'extension event payload')
     const listeners = this.extensionEventListeners.get(topic)
     if (!listeners || listeners.size === 0) {
       return

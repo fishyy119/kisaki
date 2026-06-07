@@ -8,6 +8,7 @@ import type { MediaRegistry } from '../media/registry'
 import type { SettingsStore } from '../config/store'
 import { createBangumiSubjectRef } from '../identity/subject-ref'
 import { BangumiExtensionError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import { createSyncFingerprint, type SyncStateStore } from './fingerprint'
 import {
   createSyncMappingOptions,
@@ -44,12 +45,12 @@ export interface SyncItemResult {
 
 export interface SyncItemOptions extends SyncMappingOverrides {
   scope: BangumiMediaScope
-  item?: LocalMediaItem
-  localId?: string
-  updateExisting?: boolean
-  accountUsername?: string
-  checkRemote?: boolean
-  signal?: AbortSignal
+  item?: LocalMediaItem | undefined
+  localId?: string | undefined
+  updateExisting?: boolean | undefined
+  accountUsername?: string | undefined
+  checkRemote?: boolean | undefined
+  signal?: AbortSignal | undefined
 }
 
 export interface SyncEngineDependencies {
@@ -66,7 +67,7 @@ export class SyncEngine {
 
   async syncItem(options: SyncItemOptions): Promise<SyncItemResult> {
     const result = await this.collectItem(options)
-    return this.applyItem(result, { signal: options.signal })
+    return this.applyItem(result, omitUndefined({ signal: options.signal }))
   }
 
   async collectItem(options: SyncItemOptions): Promise<SyncItemResult> {
@@ -106,17 +107,19 @@ export class SyncEngine {
       }
     }
 
-    const fingerprint = createSyncFingerprint({
-      scope: options.scope,
-      localId: item.localId,
-      subjectId,
-      playStatusEnabled: mappingOptions.playStatusEnabled,
-      mappedType: payloadPlan.mappedType,
-      scoreEnabled: mappingOptions.scoreEnabled,
-      mappedRate: payloadPlan.mappedRate,
-      clearRemoteScoreWhenEmpty: mappingOptions.clearRemoteScoreWhenEmpty,
-      payload: payloadPlan.payload
-    })
+    const fingerprint = createSyncFingerprint(
+      omitUndefined({
+        scope: options.scope,
+        localId: item.localId,
+        subjectId,
+        playStatusEnabled: mappingOptions.playStatusEnabled,
+        mappedType: payloadPlan.mappedType,
+        scoreEnabled: mappingOptions.scoreEnabled,
+        mappedRate: payloadPlan.mappedRate,
+        clearRemoteScoreWhenEmpty: mappingOptions.clearRemoteScoreWhenEmpty,
+        payload: payloadPlan.payload
+      })
+    )
 
     const suppress = this.deps.suppressor.match(options.scope, item.localId, fingerprint)
     if (suppress) {
@@ -151,7 +154,7 @@ export class SyncEngine {
     }
 
     if (options.checkRemote && syncPayloadMatchesRemote(payloadPlan.payload, remote)) {
-      return {
+      return omitUndefined({
         status: 'skippedNoChange',
         scope: options.scope,
         localId: item.localId,
@@ -160,7 +163,7 @@ export class SyncEngine {
         payload: payloadPlan.payload,
         fingerprint,
         remote
-      }
+      })
     }
 
     if (!options.checkRemote) {
@@ -181,7 +184,7 @@ export class SyncEngine {
       }
     }
 
-    return {
+    return omitUndefined({
       status: 'wouldSync',
       scope: options.scope,
       localId: item.localId,
@@ -190,12 +193,12 @@ export class SyncEngine {
       payload: payloadPlan.payload,
       fingerprint,
       remote
-    }
+    })
   }
 
   async applyItem(
     result: SyncItemResult,
-    options: { signal?: AbortSignal } = {}
+    options: { signal?: AbortSignal | undefined } = {}
   ): Promise<SyncItemResult> {
     if (result.status === 'skippedNoChange' && result.remote) {
       await this.recordSuccessfulNoChange(result)

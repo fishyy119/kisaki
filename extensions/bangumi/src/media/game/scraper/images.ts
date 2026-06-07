@@ -1,5 +1,6 @@
 import type { BangumiClient } from '../../../api/client'
 import type { BangumiSubject, BangumiSubjectRelation } from '../../../api/types'
+import { omitUndefined } from '../../../shared/object'
 import { extractImageUrls } from './format/images'
 import { dedupeUrls } from './format/urls'
 import type { BangumiSubjectImageVariants } from './types'
@@ -15,7 +16,7 @@ export async function fetchSubjectImageVariants(
     client.getSubjectImageUrl(subjectId, 'grid').catch(() => undefined)
   ])
 
-  return { large, common, small, grid }
+  return omitUndefined({ large, common, small, grid })
 }
 
 export async function buildGameCovers(

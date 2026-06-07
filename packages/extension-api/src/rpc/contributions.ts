@@ -44,7 +44,7 @@ import type {
   ScraperSessionResult
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
-import type { Locale, SerializableRecord, SerializableValue, UiCallbackResult } from '../shared'
+import type { Locale, JsonObject, JsonValue, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
@@ -123,7 +123,7 @@ export type EntityMenuResolveRequest = EntityMenuScopedRpcParams & {
 }
 
 export interface EntityMenuResolveResponse {
-  nodes: readonly SerializableRecord[]
+  nodes: readonly JsonObject[]
 }
 
 export type EntityMenuInvokeRequest = EntityMenuScopedRpcParams & {
@@ -145,7 +145,7 @@ export type SettingsPanelRpcSurface = 'root' | 'dialog' | 'popover'
 export type SettingsPanelRpcScope = SettingsPanelRpcSurface | 'all'
 
 export interface SettingsPanelDraftSnapshot {
-  values: SerializableRecord
+  values: JsonObject
   dirtyNodeIds: readonly string[]
 }
 
@@ -164,7 +164,7 @@ export type SettingsPanelOpenRequest =
   | (SettingsPanelSessionRef & {
       surface: 'dialog'
       dialogId: string
-      params?: SerializableRecord
+      params?: JsonObject
       parentDraft: SettingsPanelDraftSnapshot
       revision: number
     })
@@ -172,7 +172,7 @@ export type SettingsPanelOpenRequest =
       surface: 'popover'
       popoverId: string
       parent: SettingsPanelParentRef
-      params?: SerializableRecord
+      params?: JsonObject
       parentDraft: SettingsPanelDraftSnapshot
       anchorNodeKey: string
       revision: number
@@ -231,7 +231,7 @@ export interface SettingsPanelInvokeBase extends SettingsPanelSessionRef {
   callbackId: string
   fieldId: string
   nodeId: string
-  value?: SerializableValue
+  value?: JsonValue
   requestId: string
   revision: number
 }
@@ -264,7 +264,7 @@ export type SettingsPanelReleaseRequest =
       parent: SettingsPanelParentRef
     })
 
-export type SettingsPanelResolvedSurfacePayload = SerializableRecord
+export type SettingsPanelResolvedSurfacePayload = JsonObject
 
 export type SettingsPanelOpenResponse =
   | {
@@ -319,7 +319,7 @@ export type DeeplinkRouteHandleResponse = DeeplinkRouteHandleResult
 
 export interface CommandExecuteRequest extends ExtensionScopedRpcParams {
   commandId: string
-  args: SerializableRecord
+  args: JsonObject
   source: CommandInvocationSource
 }
 

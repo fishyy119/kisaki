@@ -1,5 +1,7 @@
 import {
   createValidationError,
+  measureJsonBytes,
+  toJsonValue,
   type ExtensionRuntimeMetadata,
   type ExtensionTaskRunActiveListQuery,
   type ExtensionTaskRunCreateInput,
@@ -213,7 +215,7 @@ export function normalizeCompletionResult(
   const title = normalizeOptionalText(result.title, 'Task run result title', MAX_TEXT_LENGTH)
   const summary = normalizeOptionalText(result.summary, 'Task run result summary', MAX_TEXT_LENGTH)
   const output =
-    result.output === undefined ? undefined : cloneJsonValue(result.output, 'Task run output')
+    result.output === undefined ? undefined : toTaskRunJsonValue(result.output, 'Task run output')
   const counters = normalizeCounters(result.counters)
   const warnings = normalizeWarnings(result.warnings)
 
@@ -690,63 +692,26 @@ function assertKnownKeys(
   }
 }
 
-function cloneJsonValue<T>(value: T, label: string): T {
-  assertJsonSerializable(value, label, new WeakSet())
-  return JSON.parse(JSON.stringify(value)) as T
-}
-
 function assertJsonWithinLimit(value: unknown, maxBytes: number, label: string): void {
-  assertJsonSerializable(value, label, new WeakSet())
-  const serialized = JSON.stringify(value)
-  if (serialized === undefined || Buffer.byteLength(serialized, 'utf8') > maxBytes) {
+  if (measureTaskRunJsonBytes(value, label) > maxBytes) {
     throw createValidationError(`${label} is too large.`)
   }
 }
 
-function assertJsonSerializable(value: unknown, label: string, seen: WeakSet<object>): void {
-  if (value === null) {
-    return
+function toTaskRunJsonValue(value: unknown, label: string) {
+  try {
+    return toJsonValue(value, label)
+  } catch {
+    throw createValidationError(`${label} must contain only JSON values.`)
   }
+}
 
-  switch (typeof value) {
-    case 'string':
-    case 'boolean':
-      return
-    case 'number':
-      if (!Number.isFinite(value)) {
-        throw createValidationError(`${label} must be JSON serializable.`)
-      }
-      return
-    case 'undefined':
-    case 'function':
-    case 'symbol':
-    case 'bigint':
-      throw createValidationError(`${label} must be JSON serializable.`)
-    case 'object':
-      break
+function measureTaskRunJsonBytes(value: unknown, label: string): number {
+  try {
+    return measureJsonBytes(value, label)
+  } catch {
+    throw createValidationError(`${label} must contain only JSON values.`)
   }
-
-  if (seen.has(value)) {
-    throw createValidationError(`${label} must not contain circular references.`)
-  }
-  seen.add(value)
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      assertJsonSerializable(item, label, seen)
-    }
-    seen.delete(value)
-    return
-  }
-
-  if (!isPlainObject(value)) {
-    throw createValidationError(`${label} must be JSON serializable.`)
-  }
-
-  for (const item of Object.values(value)) {
-    assertJsonSerializable(item, label, seen)
-  }
-  seen.delete(value)
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -3,6 +3,7 @@ import {
   type DeeplinkRouteRegistration,
   type DeeplinkRouteHandleRequest,
   type DeeplinkRouteHandleResponse,
+  toJsonValue,
   validateDeeplinkRouteContributionShape,
   validateDeeplinkRouteHandleEvent,
   validateDeeplinkRouteHandleResult
@@ -112,11 +113,14 @@ export class HostDeeplinkRouteContributionPoint {
       throwValidationIssues('Deeplink route handle event', requestIssues)
     }
 
-    const response = await this.options.runInExtensionContext(
-      runtime,
-      () => contribution.handle(request.event),
-      signal
-    )
+    const response = toJsonValue(
+      await this.options.runInExtensionContext(
+        runtime,
+        () => contribution.handle(request.event),
+        signal
+      ),
+      'deeplink route handle result'
+    ) as unknown as DeeplinkRouteHandleResponse
     const responseIssues = validateDeeplinkRouteHandleResult(response)
     if (responseIssues.length > 0) {
       throwValidationIssues('Deeplink route handle result', responseIssues)

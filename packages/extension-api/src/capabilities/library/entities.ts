@@ -1,4 +1,4 @@
-import type { ExternalId, PartialDate, RelatedSite, SerializableRecord } from '../../shared'
+import type { ExternalId, PartialDate, RelatedSite, JsonObject } from '../../shared'
 import type { LibraryBloodType, LibraryCupSize, LibraryGender } from '../../shared/library'
 
 export interface SaveBackup {
@@ -47,7 +47,7 @@ export type SortDirection = 'asc' | 'desc'
 
 export interface DynamicEntityConfig {
   enabled: boolean
-  filter: SerializableRecord
+  filter: JsonObject
   sortField: string
   sortDirection: SortDirection
 }

@@ -55,13 +55,8 @@ export function registerHostRequests(options: HostRequestOptions): void {
 
   options.rpc.handleHostRequest('runtime.storage.get', async (params, context) => {
     try {
-      const value = await options.storage.get(
-        params.runtimeHandle,
-        params.key,
-        params.fallback,
-        context.signal
-      )
-      return { value }
+      const value = await options.storage.get(params.runtimeHandle, params.key, context.signal)
+      return value === undefined ? EMPTY_RPC_RESULT : { value }
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to read extension storage.')
     }

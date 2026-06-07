@@ -113,7 +113,10 @@ export async function generateSigningKeyFile(
     createdAt: new Date().toISOString()
   }
 
-  await writeJsonFile(keyFilePath, key, { overwrite: options.force, mode: 0o600 })
+  await writeJsonFile(keyFilePath, key, {
+    ...(options.force === undefined ? {} : { overwrite: options.force }),
+    mode: 0o600
+  })
   return { keyFilePath, key }
 }
 

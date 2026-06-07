@@ -286,5 +286,8 @@ function parseArgs(args: readonly string[]): ParsedArgs {
     }
   }
 
-  return { projectName, options: { git, publishWorkflow } }
+  return {
+    ...(projectName === undefined ? {} : { projectName }),
+    options: { git, publishWorkflow }
+  }
 }

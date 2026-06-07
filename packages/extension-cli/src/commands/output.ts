@@ -50,7 +50,7 @@ export async function outputCommand(options: OutputCommandOptions): Promise<void
 
     const session = await watchExtensionOutput(project, {
       outDir: options.outDir,
-      debugSources: options.debugSources
+      ...(options.debugSources === undefined ? {} : { debugSources: options.debugSources })
     })
     const result = await session.ready
     logger.success(`Output ready at ${path.relative(project.rootDir, result.packagePath)}`)
@@ -81,7 +81,7 @@ export async function outputCommand(options: OutputCommandOptions): Promise<void
 
   const result = await buildExtensionOutput(project, {
     outDir: options.outDir,
-    debugSources: options.debugSources
+    ...(options.debugSources === undefined ? {} : { debugSources: options.debugSources })
   })
   logger.success(`Output written to ${path.relative(project.rootDir, result.packagePath)}`)
 }

@@ -1,6 +1,6 @@
 import type {
   ExtensionErrorShape,
-  SerializableRecord,
+  JsonObject,
   SettingsPanelDraftSnapshot,
   SettingsPanelParentRef,
   SettingsPanelRefreshReason
@@ -28,7 +28,7 @@ export function createDialogContext(
   contributionId: string,
   sessionId: string,
   dialogId: string,
-  params: SerializableRecord,
+  params: JsonObject,
   draft: SettingsPanelDraftSnapshot,
   parentDraft: SettingsPanelDraftSnapshot,
   signal: AbortSignal,
@@ -54,7 +54,7 @@ export function createPopoverContext(
   sessionId: string,
   popoverId: string,
   parent: SettingsPanelParentRef,
-  params: SerializableRecord,
+  params: JsonObject,
   draft: SettingsPanelDraftSnapshot,
   parentDraft: SettingsPanelDraftSnapshot,
   signal: AbortSignal,
@@ -156,7 +156,7 @@ function createClosePopover(options: Record<string, unknown> = {}) {
 
 function createOpenDialog(
   dialogId: string,
-  params?: SerializableRecord,
+  params?: JsonObject,
   options: Record<string, unknown> = {}
 ) {
   return compactRecord({
@@ -168,7 +168,7 @@ function createOpenDialog(
 
 function createOpenPopover(
   popoverId: string,
-  params?: SerializableRecord,
+  params?: JsonObject,
   options: Record<string, unknown> = {}
 ) {
   return compactRecord({

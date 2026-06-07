@@ -1,5 +1,6 @@
 import type { ExtensionLogger } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import type { OAuthRelayClient, OAuthRelayTokenStatus } from './relay-client'
 import type { BangumiTokenSecretV1 } from './token-store'
 import { TokenStore } from './token-store'
@@ -7,9 +8,9 @@ import { TokenStore } from './token-store'
 const REFRESH_SAFETY_WINDOW_MS = 5 * 60 * 1000
 
 export interface TokenAccessOptions {
-  forceRefresh?: boolean
-  optional?: boolean
-  signal?: AbortSignal
+  forceRefresh?: boolean | undefined
+  optional?: boolean | undefined
+  signal?: AbortSignal | undefined
 }
 
 export interface StoredTokenState {
@@ -78,14 +79,14 @@ export class TokenService {
     }
 
     const refreshed = await this.relayClient.refresh(current.refreshToken, options.signal)
-    const next: Omit<BangumiTokenSecretV1, 'version'> = {
+    const next: Omit<BangumiTokenSecretV1, 'version'> = omitUndefined({
       accessToken: refreshed.accessToken,
       refreshToken: refreshed.refreshToken ?? current.refreshToken,
       tokenType: refreshed.tokenType ?? current.tokenType,
       scope: refreshed.scope ?? current.scope,
       userId: refreshed.userId ?? current.userId,
       expiresAt: refreshed.expiresAt ?? current.expiresAt
-    }
+    })
 
     await this.tokenStore.setToken(next)
     const stored = await this.tokenStore.getToken()
@@ -114,13 +115,13 @@ export class TokenService {
     const token = await this.tokenStore.getToken()
     const now = Date.now()
 
-    return {
+    return omitUndefined({
       hasToken: !!token,
       hasRefreshToken: !!token?.refreshToken,
       expiresAt: token?.expiresAt,
       expired: isExpired(token?.expiresAt, now),
       refreshRecommended: shouldRefreshToken(token?.expiresAt, now)
-    }
+    })
   }
 
   async clear(): Promise<void> {
@@ -147,4 +148,3 @@ function toSafeErrorLog(error: unknown): Record<string, unknown> {
 
   return { message: String(error) }
 }
-

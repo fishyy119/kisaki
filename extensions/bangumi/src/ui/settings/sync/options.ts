@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '@kisaki3/extension-sdk'
+import type { JsonObject } from '@kisaki3/extension-sdk'
 import type { BangumiSettingsV1 } from '../../../config/schema'
 import type { BangumiMediaScope } from '../../../media/scopes'
 import { SETTINGS_NODE_IDS } from '../ids'
@@ -58,7 +58,7 @@ export function createAutoSyncFlags(items: readonly AutoSyncItem[]): {
   }
 }
 
-export function createFullSyncItemArgs(items: readonly FullSyncItem[]): SerializableRecord {
+export function createFullSyncItemArgs(items: readonly FullSyncItem[]): JsonObject {
   return {
     playStatusEnabled: items.includes('status'),
     scoreEnabled: items.includes('score')

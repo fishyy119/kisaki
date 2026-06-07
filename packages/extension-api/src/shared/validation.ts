@@ -1,3 +1,8 @@
+import {
+  validateJsonObject as validateJsonObjectInput,
+  validateJsonValue as validateJsonValueInput
+} from './serialization'
+
 export interface ValidationIssue {
   path: string
   message: string
@@ -206,18 +211,12 @@ export function validateOptionalEnumString<TValue extends string>(
   return validateRequiredEnumString(value, path, allowedValues, message)
 }
 
-export function validateSerializableValue(value: unknown, path = '$'): ValidationIssue[] {
-  const issues: ValidationIssue[] = []
-  visitSerializableValue(value, path, issues, new Set<object>())
-  return issues
+export function validateJsonValue(value: unknown, path = '$'): ValidationIssue[] {
+  return validateJsonValueInput(value, path)
 }
 
-export function validateSerializableRecord(value: unknown, path = '$'): ValidationIssue[] {
-  if (!isPlainObject(value)) {
-    return [{ path, message: 'Field must be an object containing serializable values.' }]
-  }
-
-  return validateSerializableValue(value, path)
+export function validateJsonObject(value: unknown, path = '$'): ValidationIssue[] {
+  return validateJsonObjectInput(value, path)
 }
 
 export function isAbortSignal(value: unknown): value is AbortSignal {
@@ -228,64 +227,4 @@ export function isAbortSignal(value: unknown): value is AbortSignal {
     typeof (value as AbortSignal).addEventListener === 'function' &&
     typeof (value as AbortSignal).removeEventListener === 'function'
   )
-}
-
-function visitSerializableValue(
-  value: unknown,
-  path: string,
-  issues: ValidationIssue[],
-  ancestors: Set<object>
-): void {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return
-  }
-
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      issues.push({
-        path,
-        message: 'Number values must be finite.'
-      })
-    }
-    return
-  }
-
-  if (Array.isArray(value)) {
-    if (ancestors.has(value)) {
-      issues.push({
-        path,
-        message: 'Value must not contain circular references.'
-      })
-      return
-    }
-
-    ancestors.add(value)
-    for (const [index, item] of value.entries()) {
-      visitSerializableValue(item, `${path}[${index}]`, issues, ancestors)
-    }
-    ancestors.delete(value)
-    return
-  }
-
-  if (isPlainObject(value)) {
-    if (ancestors.has(value)) {
-      issues.push({
-        path,
-        message: 'Value must not contain circular references.'
-      })
-      return
-    }
-
-    ancestors.add(value)
-    for (const [key, entry] of Object.entries(value)) {
-      visitSerializableValue(entry, `${path}.${key}`, issues, ancestors)
-    }
-    ancestors.delete(value)
-    return
-  }
-
-  issues.push({
-    path,
-    message: 'Value must be JSON serializable.'
-  })
 }

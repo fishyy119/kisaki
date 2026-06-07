@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '../shared'
+import type { JsonObject } from '../shared'
 
 export interface AutomationCronTrigger {
   expression: string
@@ -42,7 +42,7 @@ export interface Automation {
   id: string
   name: string
   commandId: string
-  args: SerializableRecord
+  args: JsonObject
   enabled: boolean
   triggers: AutomationTriggers
   failurePolicy: AutomationFailurePolicy
@@ -56,7 +56,7 @@ export interface Automation {
 export interface AutomationCreateInput {
   name?: string
   commandId: string
-  args?: SerializableRecord
+  args?: JsonObject
   enabled?: boolean
   triggers?: AutomationTriggers
   failurePolicy?: AutomationFailurePolicy

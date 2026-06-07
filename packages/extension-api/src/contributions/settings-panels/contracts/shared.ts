@@ -1,10 +1,10 @@
-import type { SerializableRecord } from '../../../shared'
+import type { JsonObject } from '../../../shared'
 
 export type { MaybePromise } from '../../../shared'
 
 export interface SettingsPanelRefreshReason {
   reason?: string
-  params?: SerializableRecord
+  params?: JsonObject
 }
 
 export type SettingsPanelRefreshTarget = 'self' | 'root' | 'dialog' | 'popover' | 'all'

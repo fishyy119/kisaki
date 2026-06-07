@@ -14,7 +14,7 @@ import type {
   ExtensionResolvedSettingsPanelRecordListNode,
   ExtensionSettingsPanelSurface
 } from '@shared/extension'
-import type { SerializableRecord } from '@kisaki3/extension-api'
+import type { JsonObject } from '@kisaki3/extension-api'
 
 const props = defineProps<{
   node: ExtensionResolvedSettingsPanelRecordListNode
@@ -28,9 +28,7 @@ const parseError = ref<string | null>(null)
 const jsonValue = ref('')
 const rows = computed(() => {
   const current = props.state.draft.values[props.node.id]
-  return Array.isArray(current)
-    ? current.filter((item): item is SerializableRecord => isRecord(item))
-    : []
+  return Array.isArray(current) ? current.filter((item): item is JsonObject => isRecord(item)) : []
 })
 const disabled = computed(
   () =>
@@ -68,7 +66,7 @@ function applyJsonValue(): void {
   }
 }
 
-function isRecord(value: unknown): value is SerializableRecord {
+function isRecord(value: unknown): value is JsonObject {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 </script>

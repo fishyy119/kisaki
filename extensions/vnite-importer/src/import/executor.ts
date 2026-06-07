@@ -16,6 +16,7 @@ import type {
   VniteImportDiagnostic
 } from '../backup/types'
 import { VniteImportError, toSafeErrorMessage } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import { assertInsidePath, toSafeFileName } from '../shared/path'
 import {
   createVniteAttachmentPathKey,
@@ -33,10 +34,7 @@ import {
   type PartialVniteImportFieldSelection,
   type VniteImportFieldSelection
 } from './options'
-import {
-  createVniteImportExecutionSummary,
-  type VniteImportExecutionSummary
-} from './summary'
+import { createVniteImportExecutionSummary, type VniteImportExecutionSummary } from './summary'
 
 export interface VniteImportExecutorDependencies {
   graph: LibraryGraphCapability
@@ -164,9 +162,7 @@ export class VniteImportExecutor {
     await checkpoint(input)
 
     const result =
-      mode === 'preview'
-        ? await this.deps.graph.preview(graph)
-        : await this.deps.graph.apply(graph)
+      mode === 'preview' ? await this.deps.graph.preview(graph) : await this.deps.graph.apply(graph)
     const summary = createVniteImportExecutionSummary({
       graph: result,
       snapshot: input.snapshot
@@ -184,15 +180,17 @@ function createGraphInput(
   input: ExecuteVniteImportGraphInput,
   attachmentExport: VniteAttachmentExportResult
 ): LibraryGraphInput {
-  const graph = buildVniteLibraryGraph({
-    snapshot: input.snapshot,
-    requestId: input.requestId,
-    fieldSelection: input.fieldSelection,
-    conflictMode: input.conflictMode,
-    strictAttachments: input.strictAttachments,
-    resolveAttachmentPath: ({ gameId, attachmentId }) =>
-      attachmentExport.resolvePath(gameId, attachmentId)
-  })
+  const graph = buildVniteLibraryGraph(
+    omitUndefined({
+      snapshot: input.snapshot,
+      requestId: input.requestId,
+      fieldSelection: input.fieldSelection,
+      conflictMode: input.conflictMode,
+      strictAttachments: input.strictAttachments,
+      resolveAttachmentPath: (request: { gameId: string; attachmentId: string }) =>
+        attachmentExport.resolvePath(request.gameId, request.attachmentId)
+    })
+  )
 
   return {
     ...graph,
@@ -294,7 +292,8 @@ function createAttachmentExportDiagnostic(
     message: 'Vnite 附件导出失败，已跳过该附件。',
     itemKey: createVniteGameNodeKey(item.game.id),
     vniteGameId: item.game.id,
-    vniteGameName: item.game.doc.metadata.name || item.game.doc.metadata.originalName || item.game.id,
+    vniteGameName:
+      item.game.doc.metadata.name || item.game.doc.metadata.originalName || item.game.id,
     dbName: 'game',
     docId: item.game.id,
     attachmentId: item.attachment.id

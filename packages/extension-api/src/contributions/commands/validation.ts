@@ -6,8 +6,8 @@ import {
   validateOptionalString,
   validateRequiredFunction,
   validateRequiredString,
-  validateSerializableRecord,
-  validateSerializableValue,
+  validateJsonObject,
+  validateJsonValue,
   validateUnknownKeys
 } from '../../shared/validation'
 
@@ -54,11 +54,11 @@ export function validateCommandContributionShape(value: unknown): ValidationIssu
   ]
 
   if (value.argsSchema !== undefined) {
-    issues.push(...validateSerializableRecord(value.argsSchema, '$.argsSchema'))
+    issues.push(...validateJsonObject(value.argsSchema, '$.argsSchema'))
   }
 
   if (value.defaultArgs !== undefined) {
-    issues.push(...validateSerializableRecord(value.defaultArgs, '$.defaultArgs'))
+    issues.push(...validateJsonObject(value.defaultArgs, '$.defaultArgs'))
   }
 
   return issues
@@ -69,7 +69,7 @@ export function validateCommandContributionExecuteResult(value: unknown): Valida
     return []
   }
 
-  return validateSerializableValue(value)
+  return validateJsonValue(value)
 }
 
 export function isCommandContribution(value: unknown): value is CommandContribution {

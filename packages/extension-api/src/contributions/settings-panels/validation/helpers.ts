@@ -7,7 +7,7 @@ import {
   validateRequiredBoolean,
   validateRequiredEnumString,
   validateRequiredFiniteNumber,
-  validateSerializableRecord
+  validateJsonObject
 } from '../../../shared/validation'
 import {
   SETTINGS_PANEL_DIALOG_SIZE_VALUES,
@@ -105,7 +105,7 @@ export function validateRecordArray(
   }
 
   for (const [index, row] of value.entries()) {
-    issues.push(...validateSerializableRecord(row, `${path}[${index}]`))
+    issues.push(...validateJsonObject(row, `${path}[${index}]`))
   }
 
   return issues

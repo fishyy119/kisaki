@@ -1,4 +1,5 @@
 import type { BangumiInfoboxItem, BangumiInfoboxValue } from '../../../../api/types'
+import { omitUndefined } from '../../../../shared/object'
 import { normalizeToken } from './text'
 
 type CharacterMeasurements = {
@@ -70,7 +71,7 @@ export function extractCharacterMeasurementsFromInfobox(
     }
   }
 
-  return { height, weight, bust, waist, hips }
+  return omitUndefined({ height, weight, bust, waist, hips })
 }
 
 function isHeightKey(lower: string, compact: string, normalized: string): boolean {
@@ -158,16 +159,16 @@ function parseBwhValue(value: string): Pick<CharacterMeasurements, 'bust' | 'wai
   )
 
   if (bust !== undefined || waist !== undefined || hips !== undefined) {
-    return { bust, waist, hips }
+    return omitUndefined({ bust, waist, hips })
   }
 
   const numbers = extractNumericValues(normalized)
   if (numbers.length >= 3) {
-    return {
+    return omitUndefined({
       bust: clampMeasurement(numbers[0], 40, 180),
       waist: clampMeasurement(numbers[1], 30, 150),
       hips: clampMeasurement(numbers[2], 40, 180)
-    }
+    })
   }
 
   return {}

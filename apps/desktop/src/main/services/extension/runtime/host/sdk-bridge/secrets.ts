@@ -1,7 +1,7 @@
-import type { ExtensionSecrets, SerializableValue } from '@kisaki3/extension-api'
+import type { ExtensionSecrets, JsonValue } from '@kisaki3/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
-import { toSerializableValue } from './utils/serialization'
+import { toJsonValue } from './utils/serialization'
 
 interface ExtensionSecretsOptions {
   scope: ActiveExtensionScope
@@ -16,9 +16,7 @@ export function createExtensionSecrets(options: ExtensionSecretsOptions): Extens
   const getRequestOptions = () => options.getRequestOptions(options.scope)
 
   return {
-    get: async <T extends SerializableValue = SerializableValue>(
-      key: string
-    ): Promise<T | undefined> => {
+    get: async <T extends JsonValue = JsonValue>(key: string): Promise<T | undefined> => {
       const result = await options.rpc.requestMain(
         'runtime.secrets.get',
         {
@@ -30,16 +28,13 @@ export function createExtensionSecrets(options: ExtensionSecretsOptions): Extens
 
       return result.value as T | undefined
     },
-    set: async <T extends SerializableValue = SerializableValue>(
-      key: string,
-      value: T
-    ): Promise<void> => {
+    set: async (key: string, value: unknown): Promise<void> => {
       await options.rpc.requestMain(
         'runtime.secrets.set',
         {
           runtimeHandle: options.scope.runtimeHandle,
           key,
-          value: toSerializableValue(value, 'secrets value')
+          value: toJsonValue(value, 'secrets value')
         },
         getRequestOptions()
       )

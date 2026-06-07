@@ -11,7 +11,7 @@ export class VniteImporterSettingsStore {
   constructor(private readonly storage: ExtensionStorage) {}
 
   async get(): Promise<VniteImporterSettingsV1> {
-    const raw = await this.storage.get<unknown>(VNITE_IMPORTER_STORAGE_KEYS.settings, null)
+    const raw = await this.storage.get(VNITE_IMPORTER_STORAGE_KEYS.settings)
     const settings = normalizeVniteImporterSettings(raw)
 
     if (!isVniteImporterSettingsV1(raw)) {

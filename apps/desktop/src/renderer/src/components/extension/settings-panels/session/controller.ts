@@ -1,11 +1,7 @@
 import { computed, isRef, onBeforeUnmount, ref, toRaw, watch, type Ref } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
-import type {
-  SerializableRecord,
-  SerializableValue,
-  SettingsPanelCallbackResult
-} from '@kisaki3/extension-api'
+import type { JsonObject, JsonValue, SettingsPanelCallbackResult } from '@kisaki3/extension-api'
 import type {
   ExtensionResolvedSettingsPanelNode,
   ExtensionSettingsPanelCallbackResponse,
@@ -204,7 +200,7 @@ export function useExtensionSettingsPanelSession(
   function updateValue(
     surface: SettingsPanelSurfaceState<ExtensionSettingsPanelSurface>,
     nodeId: string,
-    value: SerializableValue
+    value: JsonValue
   ): void {
     const nextDirtyNodeIds = surface.draft.dirtyNodeIds.includes(nodeId)
       ? surface.draft.dirtyNodeIds
@@ -361,7 +357,7 @@ export function useExtensionSettingsPanelSession(
     }
   }
 
-  async function openDialog(dialogId: string, params?: SerializableRecord): Promise<void> {
+  async function openDialog(dialogId: string, params?: JsonObject): Promise<void> {
     if (!session.value || !root.value) {
       return
     }
@@ -392,7 +388,7 @@ export function useExtensionSettingsPanelSession(
     parentSurface: SettingsPanelSurfaceState<ExtensionSettingsPanelSurface>,
     anchorNodeKey: string,
     popoverId: string,
-    params?: SerializableRecord
+    params?: JsonObject
   ): Promise<void> {
     if (!session.value || parentSurface.surface === 'popover') {
       return

@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import type { SerializableValue } from '@kisaki3/extension-api'
+import type { JsonValue } from '@kisaki3/extension-api'
 import type {
   ExtensionResolvedSettingsPanelDialog,
   ExtensionResolvedSettingsPanelNode,
@@ -40,7 +40,7 @@ export interface SettingsPanelInvokeSource<TSurface extends ExtensionSettingsPan
   surface: SettingsPanelSurfaceState<TSurface>
   fieldId: string
   node: ExtensionResolvedSettingsPanelNode
-  value?: SerializableValue
+  value?: JsonValue
 }
 
 export interface ExtensionSettingsPanelSessionController {
@@ -60,7 +60,7 @@ export interface ExtensionSettingsPanelSessionController {
   updateValue: (
     surface: SettingsPanelSurfaceState<ExtensionSettingsPanelSurface>,
     nodeId: string,
-    value: SerializableValue
+    value: JsonValue
   ) => void
   invokeNode: (source: SettingsPanelInvokeSource<ExtensionSettingsPanelSurface>) => Promise<void>
   submit: (surface: SettingsPanelSurfaceState<'root' | 'dialog'>) => Promise<void>

@@ -5,6 +5,7 @@ import { ImportPlanner } from '../../import/planner'
 import type { BangumiMediaScope } from '../../media/scopes'
 import type { LocalMediaAdapter } from '../../media/types'
 import { BangumiExtensionError } from '../../shared/errors'
+import { omitUndefined } from '../../shared/object'
 import { createImportSuppressTtlMs } from '../../sync/suppressor'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
 import {
@@ -112,10 +113,7 @@ export class ImportJobRunner {
     })
   }
 
-  runImportIndex(
-    args: BangumiImportIndexArgs,
-    context: BangumiJobRun
-  ): Promise<BangumiJobSummary> {
+  runImportIndex(args: BangumiImportIndexArgs, context: BangumiJobRun): Promise<BangumiJobSummary> {
     return runBangumiJob(context, this.deps.logger, async (job) => {
       const collected = await this.collectIndexImport(args, job, { requireWritable: true })
       if (!collected.adapter?.supportsImportWrite) {
@@ -207,13 +205,13 @@ export class ImportJobRunner {
         fields: args.fields,
         targetCollection
       })
-      return {
+      return omitUndefined({
         label: descriptor.label,
         targetCollection,
         planItems: plan.items,
         operations: [],
         skippedNoChange: 0
-      }
+      })
     }
 
     job.report('matchingLocalItems', `正在匹配${descriptor.label}...`, {
@@ -239,14 +237,14 @@ export class ImportJobRunner {
       targetCollection
     })
 
-    return {
+    return omitUndefined({
       label: descriptor.label,
       adapter,
       targetCollection,
       planItems: plan.items,
       operations: collected.operations,
       skippedNoChange: collected.skippedNoChange
-    }
+    })
   }
 
   private async collectIndexImport(
@@ -296,13 +294,13 @@ export class ImportJobRunner {
         patchExisting: args.patchExisting,
         targetCollection
       })
-      return {
+      return omitUndefined({
         label: descriptor.label,
         targetCollection,
         planItems: plan.items,
         operations: [],
         skippedNoChange: 0
-      }
+      })
     }
 
     job.report('matchingLocalItems', `正在匹配${descriptor.label}...`, {
@@ -330,14 +328,14 @@ export class ImportJobRunner {
       targetCollection
     })
 
-    return {
+    return omitUndefined({
       label: descriptor.label,
       adapter,
       targetCollection,
       planItems: plan.items,
       operations: collected.operations,
       skippedNoChange: collected.skippedNoChange
-    }
+    })
   }
 
   private async executeCollectionImport(

@@ -1,5 +1,6 @@
 import type { DeeplinkRouteHandleEvent, ExtensionLogger } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import type { OAuthRelayClient, OAuthRelayToken } from './relay-client'
 import type { BangumiPendingSessionSecretV1 } from './token-store'
 import { TokenStore } from './token-store'
@@ -79,13 +80,13 @@ export class OAuthFlow {
       return { pending: false, expired: false }
     }
 
-    return {
+    return omitUndefined({
       pending: true,
       sessionId: pending.sessionId,
       authorizeUrl: pending.authorizeUrl,
       expiresAt: pending.expiresAt,
       expired: pending.expiresAt <= Date.now()
-    }
+    })
   }
 
   private async completeSession(

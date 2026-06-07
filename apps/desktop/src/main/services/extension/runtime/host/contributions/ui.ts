@@ -2,8 +2,8 @@ import {
   createUiError,
   readErrorCode,
   readErrorDetails,
+  toJsonValue,
   validateUiCallbackResult,
-  type SerializableRecord,
   type UiCallbackResult
 } from '@kisaki3/extension-api'
 import { formatValidationIssues } from './shared'
@@ -14,7 +14,7 @@ export async function invokeUiCallback(
   callback: () => Promise<UiCallbackResult> | UiCallbackResult
 ): Promise<UiCallbackResult> {
   try {
-    const result = await callback()
+    const result = toJsonValue(await callback(), label) as UiCallbackResult
     const issues = validateUiCallbackResult(result)
 
     if (issues.length > 0) {
@@ -39,7 +39,7 @@ export async function invokeUiCallback(
     console.warn(`[ExtensionHost][${extensionId}] ${label} failed:`, error)
     return createUiError(error instanceof Error ? error.message : 'Extension UI callback failed.', {
       code: readErrorCode(error) ?? 'internal',
-      details: readErrorDetails(error) as SerializableRecord | undefined
+      details: readErrorDetails(error)
     })
   }
 }

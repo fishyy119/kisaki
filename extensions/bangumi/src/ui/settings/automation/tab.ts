@@ -100,7 +100,7 @@ function createAutomationField({
   scope: BangumiSettingsRootScope
   id: string
   label: string
-  existingAutomation?: Automation
+  existingAutomation?: Automation | undefined
   create: () => Promise<Automation>
 }): BangumiSettingsRootField {
   const { ui } = scope

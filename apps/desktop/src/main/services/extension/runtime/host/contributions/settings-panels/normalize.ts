@@ -7,10 +7,7 @@ import type {
   SettingsPanelRootModel,
   SettingsPanelTab
 } from '@kisaki3/extension-api'
-import {
-  JSON_COMPATIBLE_UNDEFINED_SERIALIZATION,
-  toSerializableRecord
-} from '../../sdk-bridge/utils/serialization'
+import { toJsonObject } from '../../sdk-bridge/utils/serialization'
 import { registerSettingsPanelCallback } from './callbacks'
 import type { NormalizeSettingsPanelContext } from './types'
 import { compactRecord } from './values'
@@ -40,14 +37,14 @@ export function normalizeSettingsPanelRootModel(
         )
       }
 
-  return toSettingsPanelSerializableRecord(payload, 'resolved settings root')
+  return toSettingsPanelJsonObject(payload, 'resolved settings root')
 }
 
 export function normalizeSettingsPanelDialogModel(
   model: SettingsPanelDialogModel<any, any>,
   context: NormalizeSettingsPanelContext
 ): SettingsPanelResolvedSurfacePayload {
-  return toSettingsPanelSerializableRecord(
+  return toSettingsPanelJsonObject(
     compactRecord({
       surface: 'dialog',
       dialogId: context.surface.dialogId,
@@ -67,7 +64,7 @@ export function normalizeSettingsPanelPopoverModel(
   model: SettingsPanelPopoverModel<any>,
   context: NormalizeSettingsPanelContext
 ): SettingsPanelResolvedSurfacePayload {
-  return toSettingsPanelSerializableRecord(
+  return toSettingsPanelJsonObject(
     compactRecord({
       surface: 'popover',
       popoverId: context.surface.popoverId,
@@ -84,11 +81,11 @@ export function normalizeSettingsPanelPopoverModel(
   )
 }
 
-function toSettingsPanelSerializableRecord(
+function toSettingsPanelJsonObject(
   value: unknown,
   label: string
 ): SettingsPanelResolvedSurfacePayload {
-  return toSerializableRecord(value, label, JSON_COMPATIBLE_UNDEFINED_SERIALIZATION)
+  return toJsonObject(value, label)
 }
 
 function normalizeSettingsPanelTab(

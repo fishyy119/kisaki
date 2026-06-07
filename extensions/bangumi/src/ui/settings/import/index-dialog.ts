@@ -1,7 +1,7 @@
 import {
   defineSettingsPanelDialog,
   type ScraperProfileSummary,
-  type SerializableRecord
+  type JsonObject
 } from '@kisaki3/extension-sdk'
 import { SETTINGS_NODE_IDS } from '../ids'
 import { normalizeImportIndexArgs } from '../../../jobs/args'
@@ -98,13 +98,10 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
                     args,
                     signal: runtime.abortSignal,
                     run: (run) =>
-                      runtime.jobRunner.previewImportIndex(
-                        normalizeImportIndexArgs(args),
-                        {
-                          commandId: BANGUMI_COMMAND_IDS.importIndex,
-                          run
-                        }
-                      ),
+                      runtime.jobRunner.previewImportIndex(normalizeImportIndexArgs(args), {
+                        commandId: BANGUMI_COMMAND_IDS.importIndex,
+                        run
+                      }),
                     previewRegistry: runtime.previewRegistry,
                     event
                   })
@@ -150,10 +147,7 @@ async function submitIndexDialog({
   }
 }
 
-function mergeIndexDialogValues(
-  values: SerializableRecord,
-  parentValues: SerializableRecord
-): SerializableRecord {
+function mergeIndexDialogValues(values: JsonObject, parentValues: JsonObject): JsonObject {
   return {
     ...parentValues,
     ...values

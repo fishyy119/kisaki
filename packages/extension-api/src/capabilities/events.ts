@@ -8,8 +8,8 @@ import type {
   MaybePromise,
   PartialDate,
   RelatedSite,
-  SerializableRecord,
-  SerializableValue
+  JsonObject,
+  JsonValue
 } from '../shared'
 import type { DynamicCollectionConfig, LibraryGameStatus } from './library/entities'
 
@@ -404,7 +404,7 @@ export interface LibraryTagDeletedEvent {
 export interface HostEvents {
   'app.ready': Record<string, never>
   'app.locale.changed': { locale: AppLocale | null }
-  'app.settings.changed': { key: string; value: SerializableValue | undefined }
+  'app.settings.changed': { key: string; value: JsonValue | undefined }
   'app.theme.changed': { themeId: string; mode: 'light' | 'dark' | 'system' }
   'extension.enabled': { extensionId: string }
   'extension.disabled': { extensionId: string }
@@ -443,7 +443,7 @@ export type HostEventListener<K extends HostEventTopic> = (
   payload: HostEvents[K]
 ) => MaybePromise<void>
 
-export type ExtensionEventPayload = SerializableRecord
+export type ExtensionEventPayload = JsonObject
 
 export type ExtensionEventListener<TPayload extends ExtensionEventPayload = ExtensionEventPayload> =
   (payload: TPayload) => MaybePromise<void>

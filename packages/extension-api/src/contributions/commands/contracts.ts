@@ -1,22 +1,22 @@
 import type { CommandDangerLevel, CommandInvocationSource } from '../../capabilities/commands'
-import type { Disposable, MaybePromise, SerializableRecord, SerializableValue } from '../../shared'
+import type { Disposable, MaybePromise, JsonObject, JsonValue } from '../../shared'
 
 export interface CommandContributionExecuteEvent {
   commandId: string
   source: CommandInvocationSource
 }
 
-export type CommandContributionExecuteResult = SerializableValue | void
+export type CommandContributionExecuteResult = JsonValue | void
 
 export interface CommandContribution {
   id: string
   title: string
   description?: string
-  argsSchema?: SerializableRecord
-  defaultArgs?: SerializableRecord
+  argsSchema?: JsonObject
+  defaultArgs?: JsonObject
   dangerLevel?: CommandDangerLevel
   execute(
-    args: SerializableRecord,
+    args: JsonObject,
     event: CommandContributionExecuteEvent
   ): MaybePromise<CommandContributionExecuteResult>
 }

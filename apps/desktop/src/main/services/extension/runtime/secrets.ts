@@ -7,9 +7,10 @@ import { createLogger } from '@main/log'
 import {
   createUnavailableError,
   createValidationError,
+  toJsonValue,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
-  type SerializableValue
+  type JsonValue
 } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
@@ -40,7 +41,7 @@ export class ExtensionRuntimeSecrets {
     runtimeHandle: ExtensionRuntimeHandle,
     key: string,
     signal?: AbortSignal
-  ): Promise<SerializableValue | undefined> {
+  ): Promise<JsonValue | undefined> {
     return this.withLock(runtimeHandle, signal, async () => {
       const document = await this.read(runtimeHandle)
       const entry = document[normalizeKey(key)]
@@ -51,11 +52,11 @@ export class ExtensionRuntimeSecrets {
   async set(
     runtimeHandle: ExtensionRuntimeHandle,
     key: string,
-    value: SerializableValue,
+    value: JsonValue,
     signal?: AbortSignal
   ): Promise<void> {
     await this.withLock(runtimeHandle, signal, async (secretsPath) => {
-      const normalizedValue = requireSerializableValue(value, 'secrets value')
+      const normalizedValue = toJsonValue(value, 'secrets value')
       const document = await this.read(runtimeHandle)
       document[normalizeKey(key)] = this.encrypt(normalizedValue)
       await this.write(runtimeHandle, secretsPath, document, signal)
@@ -127,7 +128,7 @@ export class ExtensionRuntimeSecrets {
     }
   }
 
-  private encrypt(value: SerializableValue): StoredSecretValue {
+  private encrypt(value: JsonValue): StoredSecretValue {
     this.requireEncryptionAvailable()
     const plaintext = JSON.stringify(value)
     return {
@@ -137,12 +138,12 @@ export class ExtensionRuntimeSecrets {
     }
   }
 
-  private decrypt(entry: StoredSecretValue): SerializableValue | undefined {
+  private decrypt(entry: StoredSecretValue): JsonValue | undefined {
     this.requireEncryptionAvailable()
 
     try {
       const plaintext = safeStorage.decryptString(Buffer.from(entry.data, 'base64'))
-      return normalizeSerializableValue(JSON.parse(plaintext))
+      return toJsonValue(JSON.parse(plaintext), 'secrets value')
     } catch (error) {
       log.warn('Failed to decrypt extension secret:', error)
       return undefined
@@ -246,49 +247,4 @@ function isStoredSecretValue(value: unknown): value is StoredSecretValue {
     record.encoding === 'electron-safe-storage' &&
     typeof record.data === 'string'
   )
-}
-
-function normalizeSerializableValue(value: unknown): SerializableValue | undefined {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : undefined
-  }
-
-  if (Array.isArray(value)) {
-    const items: SerializableValue[] = []
-    for (const entry of value) {
-      const normalized = normalizeSerializableValue(entry)
-      if (normalized === undefined) {
-        return undefined
-      }
-      items.push(normalized)
-    }
-    return items
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      const normalized = normalizeSerializableValue(entry)
-      if (normalized === undefined) {
-        return undefined
-      }
-      record[key] = normalized
-    }
-    return record
-  }
-
-  return undefined
-}
-
-function requireSerializableValue(value: unknown, label: string): SerializableValue {
-  const normalized = normalizeSerializableValue(value)
-  if (normalized === undefined) {
-    throw createValidationError(`${label} must be JSON serializable with finite number values.`)
-  }
-
-  return normalized
 }

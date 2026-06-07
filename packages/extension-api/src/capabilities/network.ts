@@ -1,4 +1,4 @@
-import type { SerializableValue } from '../shared'
+import type { JsonValue } from '../shared'
 
 export type NetworkMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -9,7 +9,7 @@ export interface NetworkRequest {
   method?: NetworkMethod
   headers?: Record<string, string>
   query?: Record<string, string | number | boolean>
-  body?: SerializableValue | Uint8Array
+  body?: JsonValue | Uint8Array
   timeoutMs?: number
   responseType?: NetworkResponseType
 }

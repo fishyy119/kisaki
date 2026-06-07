@@ -23,8 +23,13 @@ import type {
   VniteImportDiagnostic
 } from '../backup/types'
 import { VniteImportError, toSafeErrorMessage } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import type { PartialVniteImportFieldSelection } from '../import/options'
-import { VniteImportExecutor, type VniteImportExecutorResult } from '../import/executor'
+import {
+  VniteImportExecutor,
+  type VniteAttachmentExportProgress,
+  type VniteImportExecutorResult
+} from '../import/executor'
 import {
   VniteMetadataCompletionRunner,
   createEmptyVniteMetadataCompletionSummary,
@@ -90,24 +95,30 @@ export class VniteImportJobRunner {
 
   constructor(private readonly deps: VniteImportJobRunnerDependencies) {
     this.workspaceManager = new BackupWorkspaceManager(deps.workspaceRoot)
-    this.executor = new VniteImportExecutor({
-      graph: deps.graph,
-      logger: deps.logger
-    })
-    this.completion = new VniteMetadataCompletionRunner({
-      ingest: deps.ingest,
-      profiles: deps.scraperProfiles,
-      logger: deps.logger
-    })
+    this.executor = new VniteImportExecutor(
+      omitUndefined({
+        graph: deps.graph,
+        logger: deps.logger
+      })
+    )
+    this.completion = new VniteMetadataCompletionRunner(
+      omitUndefined({
+        ingest: deps.ingest,
+        profiles: deps.scraperProfiles,
+        logger: deps.logger
+      })
+    )
   }
 
   async analyzeFromGrant(input: VniteImportPreviewInput): Promise<VniteBackupAnalysisSummary> {
-    const read = await this.readBackup({
-      fileGrant: input.fileGrant,
-      purpose: 'preview',
-      requestId: input.requestId,
-      maxSizeBytes: input.maxSizeBytes
-    })
+    const read = await this.readBackup(
+      omitUndefined({
+        fileGrant: input.fileGrant,
+        purpose: 'preview',
+        requestId: input.requestId,
+        maxSizeBytes: input.maxSizeBytes
+      })
+    )
 
     try {
       return read.analysis
@@ -117,22 +128,26 @@ export class VniteImportJobRunner {
   }
 
   async previewFromGrant(input: VniteImportPreviewInput): Promise<VniteImportPreviewResult> {
-    const read = await this.readBackup({
-      fileGrant: input.fileGrant,
-      purpose: 'preview',
-      requestId: input.requestId,
-      maxSizeBytes: input.maxSizeBytes
-    })
+    const read = await this.readBackup(
+      omitUndefined({
+        fileGrant: input.fileGrant,
+        purpose: 'preview',
+        requestId: input.requestId,
+        maxSizeBytes: input.maxSizeBytes
+      })
+    )
 
     try {
-      const execution = await this.executor.preview({
-        snapshot: read.snapshot,
-        workspace: read.workspace,
-        requestId: input.requestId,
-        fieldSelection: input.fieldSelection,
-        conflictMode: input.conflictMode,
-        strictAttachments: input.strictAttachments
-      })
+      const execution = await this.executor.preview(
+        omitUndefined({
+          snapshot: read.snapshot,
+          workspace: read.workspace,
+          requestId: input.requestId,
+          fieldSelection: input.fieldSelection,
+          conflictMode: input.conflictMode,
+          strictAttachments: input.strictAttachments
+        })
+      )
 
       return {
         analysis: read.analysis,
@@ -148,29 +163,31 @@ export class VniteImportJobRunner {
       throw new VniteImportError('host_graph_failed', 'Vnite 导入任务能力不可用。')
     }
 
-    const run = await this.deps.taskRuns.create({
-      operation: 'vnite.import',
-      title: '导入 Vnite 备份包',
-      description: input.fileGrant.name,
-      initiator: input.initiator,
-      subject: {
-        type: 'extension',
-        id: VNITE_IMPORTER_EXTENSION_ID
-      },
-      controls: {
-        cancelable: true,
-        pausable: false
-      },
-      presentation: {
-        notify: {
-          enabled: true,
-          title: '导入 Vnite 备份包',
-          showProgress: true,
-          showResult: true,
-          closable: true
+    const run = await this.deps.taskRuns.create(
+      omitUndefined({
+        operation: 'vnite.import',
+        title: '导入 Vnite 备份包',
+        description: input.fileGrant.name,
+        initiator: input.initiator,
+        subject: {
+          type: 'extension',
+          id: VNITE_IMPORTER_EXTENSION_ID
+        },
+        controls: {
+          cancelable: true,
+          pausable: false
+        },
+        presentation: {
+          notify: {
+            enabled: true,
+            title: '导入 Vnite 备份包',
+            showProgress: true,
+            showResult: true,
+            closable: true
+          }
         }
-      }
-    })
+      })
+    )
 
     void this.runImportFromGrant(input, run).catch((error) => {
       this.deps.logger?.warn('Vnite import task launcher failed.', toSafeRunLog(error))
@@ -201,13 +218,15 @@ export class VniteImportJobRunner {
 
     try {
       await job.report('extracting', { indeterminate: true })
-      const read = await this.readBackup({
-        fileGrant: input.fileGrant,
-        purpose: 'import',
-        requestId: input.requestId,
-        maxSizeBytes: input.maxSizeBytes,
-        checkpoint: () => job.checkpoint()
-      })
+      const read = await this.readBackup(
+        omitUndefined({
+          fileGrant: input.fileGrant,
+          purpose: 'import',
+          requestId: input.requestId,
+          maxSizeBytes: input.maxSizeBytes,
+          checkpoint: () => job.checkpoint()
+        })
+      )
       workspace = read.workspace
 
       job.mergeCounters({
@@ -217,22 +236,24 @@ export class VniteImportJobRunner {
       })
       await job.report('buildingGraph', { indeterminate: true })
 
-      const execution = await this.executor.apply({
-        snapshot: read.snapshot,
-        workspace: read.workspace,
-        requestId: input.requestId,
-        fieldSelection: input.fieldSelection,
-        conflictMode: input.conflictMode,
-        strictAttachments: input.strictAttachments,
-        signal: job.signal,
-        checkpoint: () => job.checkpoint(),
-        reportAttachmentProgress: async (progress) => {
-          await job.report('attachments', progress)
-        },
-        beforeGraphCall: async () => {
-          await job.report('writing', { indeterminate: true })
-        }
-      })
+      const execution = await this.executor.apply(
+        omitUndefined({
+          snapshot: read.snapshot,
+          workspace: read.workspace,
+          requestId: input.requestId,
+          fieldSelection: input.fieldSelection,
+          conflictMode: input.conflictMode,
+          strictAttachments: input.strictAttachments,
+          signal: job.signal,
+          checkpoint: () => job.checkpoint(),
+          reportAttachmentProgress: async (progress: VniteAttachmentExportProgress) => {
+            await job.report('attachments', progress)
+          },
+          beforeGraphCall: async () => {
+            await job.report('writing', { indeterminate: true })
+          }
+        })
+      )
 
       if (!input.completion?.enabled) {
         return execution
@@ -273,15 +294,18 @@ export class VniteImportJobRunner {
         input.execution.summary.counters.gamesUpdated
     })
 
-    return await this.completion.run({
-      graph: input.execution.graph,
-      snapshot: input.snapshot,
-      profileId: options.profileId,
-      surfaces: options.surfaces,
-      signal: input.job.signal,
-      checkpoint: () => input.job.checkpoint(),
-      reportProgress: (progress) => input.job.report('completion', progress)
-    })
+    return await this.completion.run(
+      omitUndefined({
+        graph: input.execution.graph,
+        snapshot: input.snapshot,
+        profileId: options.profileId,
+        surfaces: options.surfaces,
+        signal: input.job.signal,
+        checkpoint: () => input.job.checkpoint(),
+        reportProgress: (progress: { current: number; total: number }) =>
+          input.job.report('completion', progress)
+      })
+    )
   }
 
   private async readBackup(input: {
@@ -291,10 +315,12 @@ export class VniteImportJobRunner {
     maxSizeBytes?: number
     checkpoint?: () => Promise<void>
   }): Promise<ReadBackupResult> {
-    const workspace = await this.workspaceManager.create({
-      purpose: input.purpose,
-      runId: input.requestId
-    })
+    const workspace = await this.workspaceManager.create(
+      omitUndefined({
+        purpose: input.purpose,
+        runId: input.requestId
+      })
+    )
 
     try {
       await input.checkpoint?.()

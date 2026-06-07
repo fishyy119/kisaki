@@ -1,4 +1,4 @@
-import type { SerializablePrimitive, SerializableRecord } from '../shared'
+import type { JsonPrimitive, JsonObject } from '../shared'
 import type { ExtensionErrorShape } from '../shared/errors'
 import type { ValidationIssue } from '../shared/validation'
 import {
@@ -17,7 +17,7 @@ export interface RpcErrorPayload extends ExtensionErrorShape {
 
 export class RpcTimeoutError extends Error {
   readonly code = 'timeout'
-  readonly details: SerializableRecord
+  readonly details: JsonObject
 
   constructor(
     readonly method: string,
@@ -85,11 +85,12 @@ export function toRpcErrorPayload(error: unknown): RpcErrorPayload {
 }
 
 export function fromRpcErrorPayload(payload: RpcErrorPayload): Error {
-  const error = createExtensionError(payload.message, {
-    code: payload.code,
-    details: payload.details,
+  const options = {
+    ...(payload.code === undefined ? {} : { code: payload.code }),
+    ...(payload.details === undefined ? {} : { details: payload.details }),
     exposeStack: Boolean(payload.stack)
-  })
+  }
+  const error = createExtensionError(payload.message, options)
 
   if (payload.stack) {
     error.stack = payload.stack
@@ -100,7 +101,7 @@ export function fromRpcErrorPayload(payload: RpcErrorPayload): Error {
 
 export type RpcBinary = Uint8Array
 
-export type RpcPrimitive = SerializablePrimitive
+export type RpcPrimitive = JsonPrimitive
 
 export type RpcValue =
   | RpcPrimitive
@@ -125,14 +126,14 @@ export const RPC_ABORT_EVENT = 'rpc.abort'
 export interface RpcHandshakeRequest {
   protocolVersion: string
   peerVersion?: string
-  metadata?: SerializableRecord
+  metadata?: JsonObject
 }
 
 export interface RpcHandshakeResponse {
   protocolVersion: string
   accepted: boolean
   error?: RpcErrorPayload
-  metadata?: SerializableRecord
+  metadata?: JsonObject
 }
 
 export interface RpcRequestMessage<TMethod extends RpcMethod = RpcMethod, TParams = RpcValue> {

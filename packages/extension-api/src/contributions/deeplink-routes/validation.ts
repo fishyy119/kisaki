@@ -7,7 +7,7 @@ import {
   validateRequiredBoolean,
   validateRequiredFunction,
   validateRequiredString,
-  validateSerializableValue,
+  validateJsonValue,
   validateUnknownKeys
 } from '../../shared/validation'
 
@@ -173,7 +173,7 @@ export function validateDeeplinkRouteHandleResult(value: unknown): ValidationIss
   ]
 
   if (value.data !== undefined) {
-    issues.push(...validateSerializableValue(value.data, '$.data'))
+    issues.push(...validateJsonValue(value.data, '$.data'))
   }
 
   return issues

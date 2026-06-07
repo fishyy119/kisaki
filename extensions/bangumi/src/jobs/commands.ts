@@ -3,7 +3,7 @@ import type {
   CommandRegistrar,
   Disposable,
   ExtensionTaskRunHandle,
-  SerializableRecord
+  JsonObject
 } from '@kisaki3/extension-sdk'
 import { kisaki, isExtensionTaskRunCancellation } from '@kisaki3/extension-sdk'
 import {
@@ -206,12 +206,12 @@ export function registerBangumiJobCommands(
   return registrations
 }
 
-function createObjectArgsSchema(properties: Record<string, string>): SerializableRecord {
+function createObjectArgsSchema(properties: Record<string, string>): JsonObject {
   return {
     type: 'object',
     properties: Object.fromEntries(
       Object.entries(properties).map(([key, type]) => [key, { type }])
-    ) as SerializableRecord
+    ) as JsonObject
   }
 }
 
@@ -226,7 +226,7 @@ async function startBangumiTaskRun(options: {
   title: string
   description: string
   run(run: ExtensionTaskRunHandle): Promise<unknown>
-}): Promise<SerializableRecord> {
+}): Promise<JsonObject> {
   if (options.signal.aborted) {
     throw new BangumiExtensionError('job_cancelled', 'Bangumi job 已取消。')
   }

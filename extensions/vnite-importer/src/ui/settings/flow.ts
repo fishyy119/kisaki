@@ -44,9 +44,7 @@ export class VniteImportFlowStore {
   constructor(private readonly storage: ExtensionStorage) {}
 
   async get(): Promise<VniteImportFlowState> {
-    return normalizeFlowState(
-      await this.storage.get<unknown>(VNITE_IMPORTER_STORAGE_KEYS.flow, null)
-    )
+    return normalizeFlowState(await this.storage.get(VNITE_IMPORTER_STORAGE_KEYS.flow))
   }
 
   async set(state: VniteImportFlowState): Promise<VniteImportFlowState> {
@@ -78,13 +76,16 @@ export class VniteImportFlowStore {
   }
 
   async setAnalysis(analysis: VniteBackupAnalysisSummary): Promise<VniteImportFlowState> {
-    return await this.update((state) => ({
-      ...state,
-      step: 'configureImport',
-      analysis,
-      preview: undefined,
-      updatedAt: Date.now()
-    }))
+    return await this.update((state) => {
+      const rest = { ...state }
+      delete rest.preview
+      return {
+        ...rest,
+        step: 'configureImport',
+        analysis,
+        updatedAt: Date.now()
+      }
+    })
   }
 
   async setPreview(preview: VniteImportPreviewState): Promise<VniteImportFlowState> {
@@ -107,32 +108,41 @@ export class VniteImportFlowStore {
   }
 
   async setDone(summary: VniteImportJobSummary): Promise<VniteImportFlowState> {
-    return await this.update((state) => ({
-      ...state,
-      step: 'done',
-      activeRunId: undefined,
-      lastSummary: summary,
-      updatedAt: Date.now()
-    }))
+    return await this.update((state) => {
+      const rest = { ...state }
+      delete rest.activeRunId
+      return {
+        ...rest,
+        step: 'done',
+        lastSummary: summary,
+        updatedAt: Date.now()
+      }
+    })
   }
 
   async clearActiveRun(step: VniteImportStep = 'done'): Promise<VniteImportFlowState> {
-    return await this.update((state) => ({
-      ...state,
-      step,
-      activeRunId: undefined,
-      updatedAt: Date.now()
-    }))
+    return await this.update((state) => {
+      const rest = { ...state }
+      delete rest.activeRunId
+      return {
+        ...rest,
+        step,
+        updatedAt: Date.now()
+      }
+    })
   }
 
   async reset(options: { keepLastSummary?: boolean } = {}): Promise<VniteImportFlowState> {
     const previous = await this.get()
-    return await this.set({
+    const state: VniteImportFlowState = {
       version: 1,
       step: 'pickBackup',
-      lastSummary: options.keepLastSummary ? previous.lastSummary : undefined,
       updatedAt: Date.now()
-    })
+    }
+    if (options.keepLastSummary && previous.lastSummary) {
+      state.lastSummary = previous.lastSummary
+    }
+    return await this.set(state)
   }
 
   private async update(
@@ -191,20 +201,32 @@ function normalizeFlowState(value: unknown): VniteImportFlowState {
   }
 
   const step = normalizeStep(value.step)
-  return {
+  const normalized: VniteImportFlowState = {
     version: 1,
     step,
-    file: normalizeFile(value.file),
-    analysis: isRecord(value.analysis)
-      ? (value.analysis as unknown as VniteBackupAnalysisSummary)
-      : undefined,
-    preview: normalizePreview(value.preview),
-    activeRunId: normalizeOptionalString(value.activeRunId),
-    lastSummary: isRecord(value.lastSummary)
-      ? (value.lastSummary as unknown as VniteImportJobSummary)
-      : undefined,
     updatedAt: normalizeTimestamp(value.updatedAt)
   }
+  const file = normalizeFile(value.file)
+  const preview = normalizePreview(value.preview)
+  const activeRunId = normalizeOptionalString(value.activeRunId)
+
+  if (file) {
+    normalized.file = file
+  }
+  if (isRecord(value.analysis)) {
+    normalized.analysis = value.analysis as unknown as VniteBackupAnalysisSummary
+  }
+  if (preview) {
+    normalized.preview = preview
+  }
+  if (activeRunId) {
+    normalized.activeRunId = activeRunId
+  }
+  if (isRecord(value.lastSummary)) {
+    normalized.lastSummary = value.lastSummary as unknown as VniteImportJobSummary
+  }
+
+  return normalized
 }
 
 function createEmptyFlowState(): VniteImportFlowState {

@@ -1,5 +1,6 @@
 import type { Locale } from '@kisaki3/extension-sdk'
 import type { BangumiInfoboxItem } from '../../../../api/types'
+import { omitUndefined } from '../../../../shared/object'
 import { extractChineseNameFromInfobox } from './infobox'
 
 export function isChineseLocale(locale?: Locale): boolean {
@@ -15,10 +16,10 @@ export function resolveLocalizedSubjectName(
   const cn = nameCn?.trim() || ''
 
   if (isChineseLocale(locale) && cn) {
-    return {
+    return omitUndefined({
       name: cn,
       originalName: cn !== original ? original : undefined
-    }
+    })
   }
 
   return { name: original || cn }

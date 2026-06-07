@@ -1,5 +1,9 @@
-import type { HostEventTopic, HostEvents, SerializableValue } from '@kisaki3/extension-api'
-import { createValidationError, normalizeCapabilityError } from '@kisaki3/extension-api'
+import type { HostEventTopic, HostEvents, JsonValue } from '@kisaki3/extension-api'
+import {
+  createValidationError,
+  normalizeCapabilityError,
+  toJsonValue
+} from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
 import type { AppEvents } from '@shared/events'
@@ -103,7 +107,7 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('app.settings.changed', ({ setting, value }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             key: setting,
-            value: toSerializableValue(value)
+            value: toOptionalJsonValue(value)
           })
         })
       case 'app.theme.changed':
@@ -279,44 +283,8 @@ export class ExtensionEventsCapabilityProvider {
   }
 }
 
-function toSerializableValue(value: unknown): SerializableValue | undefined {
-  if (
-    value === undefined ||
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'boolean'
-  ) {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : String(value)
-  }
-
-  if (Array.isArray(value)) {
-    const normalized: SerializableValue[] = []
-    for (const entry of value) {
-      const serialized = toSerializableValue(entry)
-      if (serialized === undefined) {
-        return JSON.stringify(value)
-      }
-      normalized.push(serialized)
-    }
-    return normalized
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      const serialized = toSerializableValue(entry)
-      if (serialized !== undefined) {
-        record[key] = serialized
-      }
-    }
-    return record
-  }
-
-  return String(value)
+function toOptionalJsonValue(value: unknown): JsonValue | undefined {
+  return value === undefined ? undefined : toJsonValue(value, 'host event value')
 }
 
 function toHostGameCreatedEvent(event: AppEvents['game.created'][0]): HostEvents['game.created'] {
@@ -372,5 +340,5 @@ function toHostPersonDeletedEvent(
 }
 
 function cloneHostValue<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T
+  return toJsonValue(value, 'host event payload') as T
 }

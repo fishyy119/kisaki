@@ -4,6 +4,7 @@ import {
   VNITE_COMPLETION_SURFACE_PRESET_OPTIONS
 } from '../../completion'
 import { VNITE_IMPORTER_NAME, VNITE_IMPORTER_PANEL_ID } from '../../shared/constants'
+import { omitUndefined } from '../../shared/object'
 import {
   createBackToConfigureButton,
   createChooseAnotherButton,
@@ -136,11 +137,13 @@ function createConfigureFields(input: {
 }): readonly VniteRootSettingsField[] {
   const profilesAvailable = input.resources.profiles.length > 0
   const profileOptions = profilesAvailable
-    ? input.resources.profiles.map((profile) => ({
-        value: profile.id,
-        label: profile.name,
-        description: profile.description ?? undefined
-      }))
+    ? input.resources.profiles.map((profile) =>
+        omitUndefined({
+          value: profile.id,
+          label: profile.name,
+          description: profile.description ?? undefined
+        })
+      )
     : [{ value: '', label: '没有可用刮削配置', disabled: true }]
   const selectedProfileId =
     input.form.completion.profileId ?? input.defaultProfileId ?? profileOptions[0]?.value ?? ''

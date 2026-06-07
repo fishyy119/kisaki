@@ -1,8 +1,8 @@
 import type {
   DynamicCollectionConfig as ApiDynamicCollectionConfig,
   DynamicEntityConfig as ApiDynamicEntityConfig,
-  SerializableRecord,
-  SerializableValue
+  JsonObject,
+  JsonValue
 } from '@kisaki3/extension-api'
 import type {
   DynamicCollectionConfig as DbDynamicCollectionConfig,
@@ -72,13 +72,13 @@ function toDbDynamicEntityConfig(value: ApiDynamicEntityConfig): DbDynamicEntity
 function toApiDynamicEntityConfig(value: DbDynamicEntityConfig): ApiDynamicEntityConfig {
   return {
     enabled: value.enabled,
-    filter: toSerializableFilter(value.filter),
+    filter: toJsonFilter(value.filter),
     sortField: value.sortField,
     sortDirection: value.sortDirection
   }
 }
 
-function toDbFilterState(value: SerializableRecord): FilterState {
+function toDbFilterState(value: JsonObject): FilterState {
   const filter: FilterState = {}
   for (const [key, entry] of Object.entries(value)) {
     const filterValue = toDbFilterValue(entry)
@@ -89,15 +89,15 @@ function toDbFilterState(value: SerializableRecord): FilterState {
   return filter
 }
 
-function toSerializableFilter(value: FilterState): SerializableRecord {
-  const filter: Record<string, SerializableValue> = {}
+function toJsonFilter(value: FilterState): JsonObject {
+  const filter: Record<string, JsonValue> = {}
   for (const [key, entry] of Object.entries(value)) {
-    filter[key] = toSerializableFilterValue(entry)
+    filter[key] = toJsonFilterValue(entry)
   }
   return filter
 }
 
-function toDbFilterValue(value: SerializableValue): FilterValue | undefined {
+function toDbFilterValue(value: JsonValue): FilterValue | undefined {
   if (value === true) {
     return true
   }
@@ -115,7 +115,7 @@ function toDbFilterValue(value: SerializableValue): FilterValue | undefined {
     return strings.length ? strings : undefined
   }
 
-  if (!isSerializableRecord(value)) {
+  if (!isJsonObjectLike(value)) {
     return undefined
   }
 
@@ -132,7 +132,7 @@ function toDbFilterValue(value: SerializableValue): FilterValue | undefined {
   return toDateRangeValue(value)
 }
 
-function toRelationValue(value: SerializableRecord): RelationValue | undefined {
+function toRelationValue(value: JsonObject): RelationValue | undefined {
   const match = value.match
   const ids = value.ids
   if ((match !== 'any' && match !== 'all') || !Array.isArray(ids)) {
@@ -146,7 +146,7 @@ function toRelationValue(value: SerializableRecord): RelationValue | undefined {
   return normalizedIds.length ? { match, ids: normalizedIds } : undefined
 }
 
-function toNumberRangeValue(value: SerializableRecord): FilterValue | undefined {
+function toNumberRangeValue(value: JsonObject): FilterValue | undefined {
   const min = value.min
   const max = value.max
   const normalizedMin = typeof min === 'number' ? min : undefined
@@ -159,13 +159,13 @@ function toNumberRangeValue(value: SerializableRecord): FilterValue | undefined 
   return { min: normalizedMin, max: normalizedMax }
 }
 
-function toDateRangeValue(value: SerializableRecord): FilterValue | undefined {
+function toDateRangeValue(value: JsonObject): FilterValue | undefined {
   const from = typeof value.from === 'string' && value.from.trim() ? value.from.trim() : undefined
   const to = typeof value.to === 'string' && value.to.trim() ? value.to.trim() : undefined
   return from || to ? { from, to } : undefined
 }
 
-function toSerializableFilterValue(value: FilterValue): SerializableValue {
+function toJsonFilterValue(value: FilterValue): JsonValue {
   if (value === true || typeof value === 'string') {
     return value
   }
@@ -178,7 +178,7 @@ function toSerializableFilterValue(value: FilterValue): SerializableValue {
     return { match: value.match, ids: [...value.ids] }
   }
 
-  const result: Record<string, SerializableValue> = {}
+  const result: Record<string, JsonValue> = {}
   if ('min' in value || 'max' in value) {
     if (value.min !== undefined) {
       result.min = value.min
@@ -200,6 +200,6 @@ function toSerializableFilterValue(value: FilterValue): SerializableValue {
   return result
 }
 
-function isSerializableRecord(value: SerializableValue): value is SerializableRecord {
+function isJsonObjectLike(value: JsonValue): value is JsonObject {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }

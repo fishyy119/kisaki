@@ -34,10 +34,7 @@ interface BangumiSyncStateV1 {
 export class SyncStateStore {
   constructor(private readonly storage: ExtensionStorage) {}
 
-  async getLastFingerprint(
-    scope: BangumiMediaScope,
-    localId: string
-  ): Promise<string | undefined> {
+  async getLastFingerprint(scope: BangumiMediaScope, localId: string): Promise<string | undefined> {
     const state = await this.read()
     return state.fingerprints[createFingerprintKey(scope, localId)]?.fingerprint
   }
@@ -54,7 +51,7 @@ export class SyncStateStore {
   }
 
   private async read(): Promise<BangumiSyncStateV1> {
-    const raw = await this.storage.get<unknown>(BANGUMI_STORAGE_KEYS.syncState, null)
+    const raw = await this.storage.get(BANGUMI_STORAGE_KEYS.syncState)
     const state = normalizeSyncState(raw)
 
     if (!syncStateEqual(raw, state)) {

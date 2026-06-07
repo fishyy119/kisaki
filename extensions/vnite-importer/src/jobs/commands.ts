@@ -2,11 +2,12 @@ import type {
   CommandContributionExecuteEvent,
   CommandRegistrar,
   Disposable,
-  SerializableRecord
+  JsonObject
 } from '@kisaki3/extension-sdk'
 import { resolveVniteCompletionSurfaces } from '../completion'
 import type { VniteImporterSettingsStore } from '../config'
 import { VniteImportError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import type { VniteImportFlowStore } from '../ui/settings'
 import type { VniteImportJobRunner } from './import-runner'
 
@@ -41,7 +42,7 @@ async function startImportFromCurrentSettings(
     signal: AbortSignal
   },
   event: CommandContributionExecuteEvent
-): Promise<SerializableRecord> {
+): Promise<JsonObject> {
   if (input.signal.aborted) {
     throw new VniteImportError('job_cancelled', 'Vnite 导入已取消。')
   }
@@ -60,14 +61,14 @@ async function startImportFromCurrentSettings(
     fieldSelection: settings.defaults.fieldSelection,
     conflictMode: settings.defaults.conflictMode,
     strictAttachments: settings.defaults.strictAttachments,
-    completion: {
+    completion: omitUndefined({
       enabled: settings.defaults.completeMetadata,
       profileId: settings.defaults.scraperProfileId,
       surfaces: resolveVniteCompletionSurfaces({
         preset: settings.defaults.completionSurfacePreset,
         customSurfaces: settings.defaults.completionSurfaces
       })
-    },
+    }),
     initiator: event.source
   })
   await input.flowStore.setActiveRun(result.runId)

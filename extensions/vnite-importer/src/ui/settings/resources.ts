@@ -1,6 +1,7 @@
 import type { ExtensionTaskRunSnapshot, ScraperProfileSummary } from '@kisaki3/extension-sdk'
 import type { VniteImporterSettingsV1 } from '../../config'
 import type { VniteImportJobSummary } from '../../import/summary'
+import { omitUndefined } from '../../shared/object'
 import type { VniteImportFlowState } from './flow'
 import type { VniteSettingsRuntime } from './runtime'
 
@@ -21,13 +22,13 @@ export async function resolveVniteSettingsResources(
   ])
   const runState = await resolveImportRunState(runtime)
 
-  return {
+  return omitUndefined({
     settings,
     flow: runState.flow,
     profiles,
     activeRun: runState.activeRun,
     finishedRun: runState.finishedRun
-  }
+  })
 }
 
 async function listGameScraperProfiles(

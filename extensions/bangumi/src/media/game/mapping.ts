@@ -23,9 +23,9 @@ export interface SyncPayloadPlan {
 }
 
 export interface SyncMappingOverrides {
-  playStatusEnabled?: boolean
-  scoreEnabled?: boolean
-  clearRemoteScoreWhenEmpty?: boolean
+  playStatusEnabled?: boolean | undefined
+  scoreEnabled?: boolean | undefined
+  clearRemoteScoreWhenEmpty?: boolean | undefined
 }
 
 export function createSyncMappingOptions(

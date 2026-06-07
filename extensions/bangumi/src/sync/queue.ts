@@ -59,7 +59,7 @@ export class SyncQueueStore {
   }
 
   private async read(): Promise<BangumiSyncQueueV1> {
-    const raw = await this.storage.get<unknown>(BANGUMI_STORAGE_KEYS.syncQueue, null)
+    const raw = await this.storage.get(BANGUMI_STORAGE_KEYS.syncQueue)
     const queue = normalizeQueue(raw)
 
     if (!queueEqual(raw, queue)) {

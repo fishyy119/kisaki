@@ -1,7 +1,7 @@
 import type {
   GameUpdateSurface,
   LibraryGraphConflictMode,
-  SerializableRecord,
+  JsonObject,
   SettingsPanelSelectOption
 } from '@kisaki3/extension-sdk'
 import type { VniteImporterSettingsV1 } from '../../config'
@@ -12,6 +12,7 @@ import {
   type VniteCompletionSurfacePreset
 } from '../../completion'
 import type { VniteImportFieldSelection } from '../../import/options'
+import { omitUndefined } from '../../shared/object'
 import { VNITE_SETTINGS_NODE_IDS } from './ids'
 
 export const VNITE_CONFLICT_MODE_OPTIONS = [
@@ -151,7 +152,7 @@ export const VNITE_FIELD_GROUPS = [
 ] as const satisfies readonly VniteFieldGroupDefinition[]
 
 export function readVniteImportFormOptions(input: {
-  values: SerializableRecord
+  values: JsonObject
   settings: VniteImporterSettingsV1
   defaultProfileId?: string
   profilesAvailable: boolean
@@ -181,7 +182,7 @@ export function readVniteImportFormOptions(input: {
     fieldSelection: defaults.fieldSelection,
     conflictMode: readConflictMode(input.values, defaults.conflictMode),
     strictAttachments: defaults.strictAttachments,
-    completion: {
+    completion: omitUndefined({
       enabled: completionEnabled,
       profileId: profileId || undefined,
       preset,
@@ -189,7 +190,7 @@ export function readVniteImportFormOptions(input: {
         preset,
         customSurfaces: customSurfaces.length > 0 ? customSurfaces : defaults.completionSurfaces
       })
-    }
+    })
   }
 }
 
@@ -202,7 +203,7 @@ export function createFieldGroupNodeId(group: keyof VniteImportFieldSelection): 
 }
 
 export function readFieldSelection(
-  values: SerializableRecord,
+  values: JsonObject,
   fallback: VniteImportFieldSelection
 ): VniteImportFieldSelection {
   const selection = structuredClone(fallback) as VniteImportFieldSelection
@@ -243,20 +244,16 @@ export function countAllFields(): number {
   return VNITE_FIELD_GROUPS.reduce((sum, group) => sum + group.items.length, 0)
 }
 
-export function readBoolean(
-  values: SerializableRecord,
-  nodeId: string,
-  fallback: boolean
-): boolean {
+export function readBoolean(values: JsonObject, nodeId: string, fallback: boolean): boolean {
   return typeof values[nodeId] === 'boolean' ? values[nodeId] : fallback
 }
 
-export function readString(values: SerializableRecord, nodeId: string, fallback: string): string {
+export function readString(values: JsonObject, nodeId: string, fallback: string): string {
   return typeof values[nodeId] === 'string' ? values[nodeId] : fallback
 }
 
 function readConflictMode(
-  values: SerializableRecord,
+  values: JsonObject,
   fallback: LibraryGraphConflictMode
 ): LibraryGraphConflictMode {
   const value = readString(values, VNITE_SETTINGS_NODE_IDS.conflictMode, fallback)

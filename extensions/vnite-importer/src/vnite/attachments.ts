@@ -1,3 +1,4 @@
+import { omitUndefined } from '../shared/object'
 import type { VnitePouchAttachmentStub } from './models'
 
 export const VNITE_MEDIA_ATTACHMENT_IDS = {
@@ -93,10 +94,10 @@ function createAttachmentBase(
   id: string,
   stub?: VnitePouchAttachmentStub
 ): Omit<VniteAttachmentMetadata, 'category'> {
-  return {
+  return omitUndefined({
     id,
     contentType: getVniteAttachmentContentType(stub),
     sizeBytes: typeof stub?.length === 'number' ? stub.length : undefined,
     digest: stub?.digest
-  }
+  })
 }

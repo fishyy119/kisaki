@@ -15,8 +15,8 @@ export async function keyGenerateCommand(options: KeyGenerateCommandOptions): Pr
   logger.heading('kisx key generate', 'Generating extension signing key.')
   const result = await generateSigningKeyFile({
     outFile: options.out,
-    keyId: options.id,
-    force: options.force
+    ...(options.id === undefined ? {} : { keyId: options.id }),
+    ...(options.force === undefined ? {} : { force: options.force })
   })
 
   logger.success(`Created ${result.keyFilePath}`)

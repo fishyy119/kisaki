@@ -4,11 +4,12 @@ import { Mutex } from 'async-mutex'
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
 import {
-  createValidationError,
   createUnavailableError,
+  toJsonObject,
+  toJsonValue,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata,
-  type SerializableValue
+  type JsonValue
 } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
@@ -30,24 +31,22 @@ export class ExtensionRuntimeStorage {
   async get(
     runtimeHandle: ExtensionRuntimeHandle,
     key: string,
-    fallback: SerializableValue,
     signal?: AbortSignal
-  ): Promise<SerializableValue> {
+  ): Promise<JsonValue | undefined> {
     return this.withLock(runtimeHandle, signal, async () => {
-      const normalizedFallback = requireSerializableValue(fallback, 'storage fallback')
       const storage = await this.read(runtimeHandle)
-      return key in storage ? storage[key] : normalizedFallback
+      return storage[key]
     })
   }
 
   async set(
     runtimeHandle: ExtensionRuntimeHandle,
     key: string,
-    value: SerializableValue,
+    value: JsonValue,
     signal?: AbortSignal
   ): Promise<void> {
     await this.withLock(runtimeHandle, signal, async (storagePath) => {
-      const normalizedValue = requireSerializableValue(value, 'storage value')
+      const normalizedValue = toJsonValue(value, 'storage value')
       const storage = await this.read(runtimeHandle)
       storage[key] = normalizedValue
       await this.write(runtimeHandle, storagePath, storage, signal)
@@ -77,9 +76,7 @@ export class ExtensionRuntimeStorage {
     })
   }
 
-  private async read(
-    runtimeHandle: ExtensionRuntimeHandle
-  ): Promise<Record<string, SerializableValue>> {
+  private async read(runtimeHandle: ExtensionRuntimeHandle): Promise<Record<string, JsonValue>> {
     const storagePath = this.getStoragePath(this.requireRuntimeHandle(runtimeHandle))
     await fse.ensureDir(path.dirname(storagePath))
 
@@ -89,7 +86,7 @@ export class ExtensionRuntimeStorage {
 
     try {
       const raw = await fse.readJson(storagePath)
-      return normalizeSerializableRecord(raw)
+      return toJsonObject(raw, 'extension storage document') as Record<string, JsonValue>
     } catch (error) {
       log.warn('Failed to read extension storage document, using empty document.', error, {
         runtimeHandle: runtimeHandle
@@ -101,7 +98,7 @@ export class ExtensionRuntimeStorage {
   private async write(
     runtimeHandle: ExtensionRuntimeHandle,
     storagePath: string,
-    document: Record<string, SerializableValue>,
+    document: Record<string, JsonValue>,
     signal?: AbortSignal
   ): Promise<void> {
     this.requireActiveRequest(runtimeHandle, storagePath, signal)
@@ -177,64 +174,4 @@ export class ExtensionRuntimeStorage {
       )
     }
   }
-}
-
-function normalizeSerializableRecord(value: unknown): Record<string, SerializableValue> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {}
-  }
-
-  const result: Record<string, SerializableValue> = {}
-  for (const [key, entry] of Object.entries(value)) {
-    const normalized = normalizeSerializableValue(entry)
-    if (normalized !== undefined) {
-      result[key] = normalized
-    }
-  }
-  return result
-}
-
-function normalizeSerializableValue(value: unknown): SerializableValue | undefined {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : undefined
-  }
-
-  if (Array.isArray(value)) {
-    const items: SerializableValue[] = []
-    for (const entry of value) {
-      const normalized = normalizeSerializableValue(entry)
-      if (normalized === undefined) {
-        return undefined
-      }
-      items.push(normalized)
-    }
-    return items
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      const normalized = normalizeSerializableValue(entry)
-      if (normalized === undefined) {
-        return undefined
-      }
-      record[key] = normalized
-    }
-    return record
-  }
-
-  return undefined
-}
-
-function requireSerializableValue(value: unknown, label: string): SerializableValue {
-  const normalized = normalizeSerializableValue(value)
-  if (normalized === undefined) {
-    throw createValidationError(`${label} must be JSON serializable with finite number values.`)
-  }
-
-  return normalized
 }

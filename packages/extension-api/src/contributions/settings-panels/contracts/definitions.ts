@@ -1,4 +1,4 @@
-import type { Disposable, MaybePromise, SerializableRecord } from '../../../shared'
+import type { Disposable, MaybePromise, JsonObject } from '../../../shared'
 import type {
   SettingsPanelDialogNodeEvents,
   SettingsPanelDialogResolveContext,
@@ -46,7 +46,7 @@ export function defineSettingsPanel<
 }
 
 export function defineSettingsPanelDialog<
-  const TParams extends SerializableRecord = SerializableRecord,
+  const TParams extends JsonObject = JsonObject,
   const TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap
 >(
   definition: SettingsPanelDialogDefinition<TParams, TPopovers>
@@ -54,9 +54,9 @@ export function defineSettingsPanelDialog<
   return definition
 }
 
-export function defineSettingsPanelPopover<
-  const TParams extends SerializableRecord = SerializableRecord
->(definition: SettingsPanelPopoverDefinition<TParams>): SettingsPanelPopoverDefinition<TParams> {
+export function defineSettingsPanelPopover<const TParams extends JsonObject = JsonObject>(
+  definition: SettingsPanelPopoverDefinition<TParams>
+): SettingsPanelPopoverDefinition<TParams> {
   return definition
 }
 
@@ -71,7 +71,7 @@ export type EmptySettingsPanelPopoverMap = Record<never, never>
 
 export type SettingsPanelDialogMap<
   TPopovers extends SettingsPanelPopoverMap = SettingsPanelPopoverMap
-> = Record<string, SettingsPanelDialogDefinition<SerializableRecord, TPopovers>>
+> = Record<string, SettingsPanelDialogDefinition<JsonObject, TPopovers>>
 
 export type EmptySettingsPanelDialogMap = Record<never, never>
 
@@ -80,12 +80,12 @@ export type SettingsPanelPopoverId<TPopovers> = Extract<keyof TPopovers, string>
 export type SettingsPanelDialogId<TDialogs> = Extract<keyof TDialogs, string>
 
 export type SettingsPanelPopoverParams<TPopover> =
-  TPopover extends SettingsPanelPopoverDefinition<infer TParams> ? TParams : SerializableRecord
+  TPopover extends SettingsPanelPopoverDefinition<infer TParams> ? TParams : JsonObject
 
 export type SettingsPanelDialogParams<TDialog> =
   TDialog extends SettingsPanelDialogDefinition<infer TParams, infer _TPopovers>
     ? TParams
-    : SerializableRecord
+    : JsonObject
 
 export interface SettingsPanelContribution<
   TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap,
@@ -107,7 +107,7 @@ export interface SettingsPanelContribution<
 }
 
 export interface SettingsPanelDialogDefinition<
-  TParams extends SerializableRecord = SerializableRecord,
+  TParams extends JsonObject = JsonObject,
   TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap
 > {
   title?: string
@@ -122,9 +122,7 @@ export interface SettingsPanelDialogDefinition<
   ): MaybePromise<SettingsPanelDialogSubmitResult>
 }
 
-export interface SettingsPanelPopoverDefinition<
-  TParams extends SerializableRecord = SerializableRecord
-> {
+export interface SettingsPanelPopoverDefinition<TParams extends JsonObject = JsonObject> {
   title?: string
   width?: SettingsPanelPopoverWidth
   resolve(

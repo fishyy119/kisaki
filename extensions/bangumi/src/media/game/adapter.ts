@@ -10,6 +10,7 @@ import {
 } from '@kisaki3/extension-sdk'
 import { BANGUMI_COLLECTION_LABELS_BY_SCOPE, BANGUMI_SCOPE_LABELS } from '../labels'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../scopes'
+import { omitUndefined } from '../../shared/object'
 import type {
   BangumiMediaDescriptor,
   LocalCollectionSummary,
@@ -81,11 +82,13 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
   }
 
   async listLocalItems(query: LocalMediaListQuery): Promise<readonly LocalMediaItem[]> {
-    const games = await kisaki.library.games.list({
-      includeNsfw: query.includeNsfw ?? true,
-      limit: query.limit,
-      offset: query.offset
-    })
+    const games = await kisaki.library.games.list(
+      omitUndefined({
+        includeNsfw: query.includeNsfw ?? true,
+        limit: query.limit,
+        offset: query.offset
+      })
+    )
 
     return games.map(mapLibraryGame)
   }
@@ -243,7 +246,7 @@ export function createGameMediaDescriptor(adapter: LocalMediaAdapter): BangumiMe
 }
 
 function mapLibraryGame(game: LibraryGame): LocalMediaItem {
-  return {
+  return omitUndefined({
     scope: 'game',
     localId: game.id,
     name: game.name,
@@ -253,7 +256,7 @@ function mapLibraryGame(game: LibraryGame): LocalMediaItem {
       source: externalId.source,
       id: externalId.id
     }))
-  }
+  })
 }
 
 function mapCollectionSummary(collection: LibraryCollection): LocalCollectionSummary {

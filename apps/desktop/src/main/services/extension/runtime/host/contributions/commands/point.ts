@@ -2,13 +2,13 @@ import type {
   CommandContribution,
   CommandExecuteRequest,
   CommandRegistration,
-  SerializableValue
+  JsonValue
 } from '@kisaki3/extension-api'
 import { validateCommandContributionShape } from '@kisaki3/extension-api'
 import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
-import { toSerializableValue } from '../../sdk-bridge/utils/serialization'
+import { toJsonValue } from '../../sdk-bridge/utils/serialization'
 
 export class HostCommandContributionPoint {
   constructor(private readonly options: HostContributionDomainOptions) {}
@@ -69,7 +69,7 @@ export class HostCommandContributionPoint {
   async execute(
     request: CommandExecuteRequest,
     signal: AbortSignal
-  ): Promise<{ output?: SerializableValue }> {
+  ): Promise<{ output?: JsonValue }> {
     const runtime = this.options.registry.getByRuntimeHandle(request.runtimeHandle)
     if (!runtime) {
       throw new Error(`Extension runtime "${request.runtimeHandle}" is not active.`)
@@ -97,7 +97,7 @@ export class HostCommandContributionPoint {
     }
 
     return {
-      output: toSerializableValue(output, 'command output')
+      output: toJsonValue(output, 'command output')
     }
   }
 

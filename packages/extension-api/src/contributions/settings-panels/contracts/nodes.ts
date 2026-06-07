@@ -1,4 +1,4 @@
-import type { MaybePromise, SerializableRecord } from '../../../shared'
+import type { MaybePromise, JsonObject } from '../../../shared'
 import type { SettingsPanelNodeWidth } from './shared'
 
 export interface SettingsPanelNodeEvents<TChangeEvent, TChangeResult, TButtonEvent, TButtonResult> {
@@ -140,7 +140,7 @@ export interface SettingsPanelStringListNode<
 export interface SettingsPanelRecordListNode<
   TChangeEvent,
   TChangeResult
-> extends SettingsPanelValueNodeBase<readonly SerializableRecord[], TChangeEvent, TChangeResult> {
+> extends SettingsPanelValueNodeBase<readonly JsonObject[], TChangeEvent, TChangeResult> {
   kind: 'recordList'
   columns: readonly SettingsPanelRecordListColumn[]
   addLabel?: string
@@ -182,7 +182,7 @@ export interface SettingsPanelTableNode extends SettingsPanelNodeBase {
   kind: 'table'
   title?: string
   columns?: readonly SettingsPanelTableColumn[]
-  rows: readonly SerializableRecord[]
+  rows: readonly JsonObject[]
   emptyLabel?: string
 }
 

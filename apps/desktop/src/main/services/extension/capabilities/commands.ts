@@ -1,12 +1,13 @@
 import {
   createUnavailableError,
+  toJsonObject,
+  toJsonValue,
   type CommandDescriptor,
   type CommandInvocationRequest,
   type CommandInvocationResult,
   type CommandListItem,
   type ExtensionRuntimeMetadata,
-  type SerializableRecord,
-  type SerializableValue
+  type JsonObject
 } from '@kisaki3/extension-api'
 import type { CommandService } from '@main/services/command'
 import type {
@@ -89,8 +90,8 @@ function toPublicCommandDescriptor(command: AppCommandDescriptor): CommandDescri
     id: command.id,
     title: command.title,
     description: command.description,
-    argsSchema: toOptionalPublicSerializableRecord(command.argsSchema),
-    defaultArgs: toOptionalPublicSerializableRecord(command.defaultArgs),
+    argsSchema: toOptionalPublicJsonObject(command.argsSchema),
+    defaultArgs: toOptionalPublicJsonObject(command.defaultArgs),
     dangerLevel: command.dangerLevel,
     ownerExtensionId: command.ownerExtensionId
   }
@@ -101,50 +102,12 @@ function toPublicCommandInvocationResult(
 ): CommandInvocationResult {
   return {
     commandId: result.commandId,
-    output:
-      result.output === undefined
-        ? undefined
-        : toPublicSerializableValue(result.output, 'command output')
+    output: result.output === undefined ? undefined : toJsonValue(result.output, 'command output')
   }
 }
 
-function toOptionalPublicSerializableRecord(
+function toOptionalPublicJsonObject(
   value: Record<string, unknown> | undefined
-): SerializableRecord | undefined {
-  return value === undefined ? undefined : toPublicSerializableRecord(value, 'command record')
-}
-
-function toPublicSerializableRecord(value: unknown, label: string): SerializableRecord {
-  const normalized = toPublicSerializableValue(value, label)
-  if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
-    throw new Error(`${label} must be a serializable object.`)
-  }
-  return normalized as SerializableRecord
-}
-
-function toPublicSerializableValue(value: unknown, label: string): SerializableValue {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      throw new Error(`${label} number values must be finite.`)
-    }
-    return value
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => toPublicSerializableValue(entry, label))
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      record[key] = toPublicSerializableValue(entry, label)
-    }
-    return record
-  }
-
-  throw new Error(`${label} must be JSON serializable.`)
+): JsonObject | undefined {
+  return value === undefined ? undefined : toJsonObject(value, 'command record')
 }

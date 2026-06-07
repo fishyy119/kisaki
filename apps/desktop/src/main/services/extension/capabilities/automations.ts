@@ -1,12 +1,11 @@
 import {
   createUnavailableError,
+  toJsonObject,
   type Automation,
   type AutomationCreateInput,
   type AutomationRunHistoryRecord,
   type AutomationUpdateInput,
-  type ExtensionRuntimeMetadata,
-  type SerializableRecord,
-  type SerializableValue
+  type ExtensionRuntimeMetadata
 } from '@kisaki3/extension-api'
 import type { AutomationService } from '@main/services/automation'
 import type { CommandService } from '@main/services/command'
@@ -154,7 +153,7 @@ function toPublicAutomation(automation: AppAutomation): Automation {
     id: automation.id,
     name: automation.name,
     commandId: automation.commandId,
-    args: toPublicSerializableRecord(automation.args, 'automation args'),
+    args: toJsonObject(automation.args, 'automation args'),
     enabled: automation.enabled,
     triggers: automation.triggers,
     failurePolicy: automation.failurePolicy,
@@ -182,39 +181,4 @@ function toPublicAutomationRunRecord(
     trigger: record.trigger,
     error: record.error
   }
-}
-
-function toPublicSerializableRecord(value: unknown, label: string): SerializableRecord {
-  const normalized = toPublicSerializableValue(value, label)
-  if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
-    throw new Error(`${label} must be a serializable object.`)
-  }
-  return normalized as SerializableRecord
-}
-
-function toPublicSerializableValue(value: unknown, label: string): SerializableValue {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      throw new Error(`${label} number values must be finite.`)
-    }
-    return value
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => toPublicSerializableValue(entry, label))
-  }
-
-  if (value && typeof value === 'object') {
-    const record: Record<string, SerializableValue> = {}
-    for (const [key, entry] of Object.entries(value)) {
-      record[key] = toPublicSerializableValue(entry, label)
-    }
-    return record
-  }
-
-  throw new Error(`${label} must be JSON serializable.`)
 }

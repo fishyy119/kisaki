@@ -2,6 +2,7 @@ import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import
 import { getMediaScopeLabel } from '../../media/labels'
 import type { BangumiMediaScope } from '../../media/scopes'
 import { BangumiExtensionError } from '../../shared/errors'
+import { omitUndefined } from '../../shared/object'
 import type { JobStateController } from '../context'
 import type { CollectionImportOperation, IndexImportOperation } from './model'
 
@@ -139,10 +140,13 @@ function recordSkippedImportAction(
     case 'patch':
       return
     case 'error':
-      job.addError(new BangumiExtensionError('bangumi_validation', action.message), {
-        scope: action.scope,
-        subjectId: action.subjectId
-      })
+      job.addError(
+        new BangumiExtensionError('bangumi_validation', action.message),
+        omitUndefined({
+          scope: action.scope,
+          subjectId: action.subjectId
+        })
+      )
       job.increment('failedItems')
       return
     case 'skip':

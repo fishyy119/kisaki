@@ -250,12 +250,18 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
     return { manifest: null, issues }
   }
 
+  const { icon: _icon, ...manifestWithoutIcon } = manifest
+  const normalizedManifest: ExtensionManifest = {
+    ...manifestWithoutIcon,
+    entry: normalizedEntry
+  }
+
+  if (normalizedIcon !== undefined && normalizedIcon !== null) {
+    normalizedManifest.icon = normalizedIcon
+  }
+
   return {
-    manifest: {
-      ...manifest,
-      entry: normalizedEntry,
-      icon: normalizedIcon ?? undefined
-    },
+    manifest: normalizedManifest,
     issues
   }
 }

@@ -1,4 +1,5 @@
 import type { LibraryGraphDiagnostic, PartialDate } from '@kisaki3/extension-api'
+import { omitUndefined } from '../shared/object'
 import { createVniteGraphDiagnostic } from './diagnostics'
 
 export interface VniteDateMappingContext {
@@ -34,11 +35,11 @@ export function parseVnitePartialDate(
   }
 
   return {
-    value: {
+    value: omitUndefined({
       year,
       month,
       day
-    },
+    }),
     diagnostics: []
   }
 }

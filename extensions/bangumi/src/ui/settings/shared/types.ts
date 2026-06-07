@@ -1,7 +1,7 @@
 import type {
   CommandInvocationResult,
   EmptySettingsPanelPopoverMap,
-  SerializableRecord,
+  JsonObject,
   SettingsPanelDialogButtonClickEvent,
   SettingsPanelDialogButtonResult,
   SettingsPanelDialogSubmitEvent,
@@ -10,14 +10,12 @@ import type {
 
 export type BangumiSettingsPopovers = EmptySettingsPanelPopoverMap
 
-export type BangumiSettingsDialogButtonEvent<
-  TParams extends SerializableRecord = SerializableRecord
-> = SettingsPanelDialogButtonClickEvent<TParams, BangumiSettingsPopovers>
+export type BangumiSettingsDialogButtonEvent<TParams extends JsonObject = JsonObject> =
+  SettingsPanelDialogButtonClickEvent<TParams, BangumiSettingsPopovers>
 export type BangumiSettingsDialogButtonResult =
   SettingsPanelDialogButtonResult<BangumiSettingsPopovers>
-export type BangumiSettingsDialogSubmitEvent<
-  TParams extends SerializableRecord = SerializableRecord
-> = SettingsPanelDialogSubmitEvent<TParams>
+export type BangumiSettingsDialogSubmitEvent<TParams extends JsonObject = JsonObject> =
+  SettingsPanelDialogSubmitEvent<TParams>
 export type BangumiSettingsDialogSubmitResult = SettingsPanelDialogSubmitResult
 
 export type BangumiPreviewKey = 'sync.full' | 'import.myCollections' | 'import.index'
@@ -26,30 +24,30 @@ export type ResolvedPreviewResult = CompletedPreviewResult
 
 export interface CompletedPreviewResult {
   state: 'completed'
-  args: SerializableRecord
+  args: JsonObject
   result: CommandInvocationResult
 }
 
-export interface BangumiPreviewLink extends SerializableRecord {
+export interface BangumiPreviewLink extends JsonObject {
   label: string
   href: string
 }
 
 export type BangumiPreviewTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 
-export interface BangumiPreviewBadge extends SerializableRecord {
+export interface BangumiPreviewBadge extends JsonObject {
   label: string
   tone: BangumiPreviewTone
 }
 
-export interface BangumiPreviewRow extends SerializableRecord {
+export interface BangumiPreviewRow extends JsonObject {
   label: string
   before: string
   after: string
   tone: BangumiPreviewTone
 }
 
-export interface BangumiPreviewGroup extends SerializableRecord {
+export interface BangumiPreviewGroup extends JsonObject {
   id: string
   title: string
   link: BangumiPreviewLink

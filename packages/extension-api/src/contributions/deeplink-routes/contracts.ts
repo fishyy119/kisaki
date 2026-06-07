@@ -1,4 +1,4 @@
-import type { Disposable, MaybePromise, SerializableValue } from '../../shared'
+import type { Disposable, MaybePromise, JsonValue } from '../../shared'
 
 export type DeeplinkRouteParamMap = Record<string, string>
 
@@ -41,7 +41,7 @@ export interface DeeplinkRouteHandleResult {
   success: boolean
   status?: 'handled' | 'ignored' | 'error'
   message?: string
-  data?: SerializableValue
+  data?: JsonValue
 }
 
 export interface DeeplinkRouteContribution<TPattern extends string = string> {

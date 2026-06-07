@@ -30,9 +30,7 @@ export interface LocalMediaChangeEvent {
   reason: LocalMediaChangeReason
 }
 
-export type LocalMediaChangeListener = (
-  event: LocalMediaChangeEvent
-) => void | Promise<void>
+export type LocalMediaChangeListener = (event: LocalMediaChangeEvent) => void | Promise<void>
 
 export interface LocalMediaAddFromScraperInput {
   profileId: string
@@ -89,7 +87,7 @@ export interface BangumiMediaDescriptor {
   subjectType: BangumiSupportedSubjectType
   label: string
   collectionLabels: Record<BangumiCollectionType, string>
-  localAdapter?: LocalMediaAdapter
+  localAdapter?: LocalMediaAdapter | undefined
 }
 
 export interface RemoteOnlyMediaDescriptor extends BangumiMediaDescriptor {

@@ -4,13 +4,9 @@ import type {
   NetworkMethod,
   NetworkResponse,
   NetworkResponseType,
-  SerializableValue
+  JsonValue
 } from '@kisaki3/extension-sdk'
-import {
-  BangumiApiError,
-  normalizeBangumiApiError,
-  readRetryAfterMs
-} from './errors'
+import { BangumiApiError, normalizeBangumiApiError, readRetryAfterMs } from './errors'
 import { BangumiRateLimiter, delay, normalizeRateLimitConfig, throwIfAborted } from './limiter'
 import { normalizePageQuery, toPage, type Page, type PageQuery } from './pagination'
 import type {
@@ -36,29 +32,33 @@ import type {
 import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import type { TokenService } from '../auth/token-service'
 import type { BangumiSubjectRef } from '../identity/subject-ref'
 import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
 
-type BangumiClientSettings = Pick<BangumiSettingsV1['client'], 'rateLimit' | 'timeoutMs' | 'retryCount'>
+type BangumiClientSettings = Pick<
+  BangumiSettingsV1['client'],
+  'rateLimit' | 'timeoutMs' | 'retryCount'
+>
 type AuthMode = 'none' | 'optional' | 'required'
 
 interface BangumiClientOptions {
   userAgent: string
-  logger?: ExtensionLogger
-  baseUrl?: string
+  logger?: ExtensionLogger | undefined
+  baseUrl?: string | undefined
 }
 
 interface RequestOptions {
-  query?: Record<string, string | number | boolean | undefined>
-  body?: unknown
-  auth?: AuthMode
-  responseType?: NetworkResponseType
-  signal?: AbortSignal
+  query?: Record<string, string | number | boolean | undefined> | undefined
+  body?: unknown | undefined
+  auth?: AuthMode | undefined
+  responseType?: NetworkResponseType | undefined
+  signal?: AbortSignal | undefined
 }
 
 interface SendOptions extends RequestOptions {
-  forceRefresh?: boolean
+  forceRefresh?: boolean | undefined
 }
 
 export class BangumiClient {
@@ -75,7 +75,9 @@ export class BangumiClient {
   ) {
     this.baseUrl = options.baseUrl ?? BANGUMI_API_BASE_URL
     this.userAgent = options.userAgent
-    this.logger = options.logger
+    if (options.logger !== undefined) {
+      this.logger = options.logger
+    }
     this.limiter = new BangumiRateLimiter(async () =>
       normalizeRateLimitConfig((await this.getClientSettings()).rateLimit)
     )
@@ -257,7 +259,10 @@ export class BangumiClient {
     })
   }
 
-  async getIndex(indexId: number, options: Pick<RequestOptions, 'signal'> = {}): Promise<BangumiIndex> {
+  async getIndex(
+    indexId: number,
+    options: Pick<RequestOptions, 'signal'> = {}
+  ): Promise<BangumiIndex> {
     return this.request<BangumiIndex>('GET', `/v0/indices/${indexId}`, {
       auth: 'optional',
       signal: options.signal
@@ -392,14 +397,16 @@ export class BangumiClient {
 
     await this.limiter.acquire(options.signal)
 
-    return this.network.request<T>({
-      url: this.buildUrl(pathname, options.query),
-      method,
-      headers: this.buildHeaders(method, accessToken),
-      body: options.body === undefined ? undefined : (options.body as SerializableValue),
-      timeoutMs: normalizeTimeoutMs(settings.timeoutMs),
-      responseType: options.responseType ?? 'json'
-    })
+    return this.network.request<T>(
+      omitUndefined({
+        url: this.buildUrl(pathname, options.query),
+        method,
+        headers: this.buildHeaders(method, accessToken),
+        body: options.body === undefined ? undefined : (options.body as JsonValue),
+        timeoutMs: normalizeTimeoutMs(settings.timeoutMs),
+        responseType: options.responseType ?? 'json'
+      })
+    )
   }
 
   private async tryForceRefresh(options: SendOptions): Promise<boolean> {
@@ -465,7 +472,10 @@ function normalizeMe(value: BangumiMe): BangumiMe {
     ...value,
     id: Math.trunc(value.id),
     username: value.username.trim(),
-    nickname: typeof value.nickname === 'string' && value.nickname.trim() ? value.nickname.trim() : value.username.trim()
+    nickname:
+      typeof value.nickname === 'string' && value.nickname.trim()
+        ? value.nickname.trim()
+        : value.username.trim()
   }
 }
 

@@ -22,7 +22,7 @@ import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 import { invokeUiCallback } from '../ui'
-import { toSerializableRecord } from '../../sdk-bridge/utils/serialization'
+import { toJsonObject } from '../../sdk-bridge/utils/serialization'
 import {
   getEntityMenuRegistrationMap,
   type LoadedExtensionRuntime,
@@ -214,7 +214,7 @@ export class HostEntityMenuContributionPoint {
     }
     const normalizedNodes = normalizeMenuNodes(runtime.metadata.id, registration.id, nodes, session)
     const serializableNodes = normalizedNodes.map((node, index) =>
-      toSerializableRecord(node, `resolved menu node ${index}`)
+      toJsonObject(node, `resolved menu node ${index}`)
     )
 
     const sessionKey = getSessionKey(

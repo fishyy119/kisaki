@@ -60,7 +60,7 @@ export interface PlanCollectionsOptions {
   localWritable: boolean
   patchExisting: boolean
   fields: ImportPlannerWriteFields
-  targetCollection?: LocalCollectionTarget
+  targetCollection?: LocalCollectionTarget | undefined
 }
 
 export interface PlanIndexSubjectsOptions {
@@ -69,7 +69,7 @@ export interface PlanIndexSubjectsOptions {
   localItems?: ReadonlyMap<string, LocalMediaItem>
   localWritable: boolean
   patchExisting: boolean
-  targetCollection?: LocalCollectionTarget
+  targetCollection?: LocalCollectionTarget | undefined
 }
 
 export class ImportPlanner {

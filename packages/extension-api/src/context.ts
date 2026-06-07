@@ -1,4 +1,4 @@
-import type { DisposableStore, SerializableValue } from './shared'
+import type { DisposableStore, JsonValue } from './shared'
 import type {
   CommandRegistrar,
   DeeplinkRouteRegistrar,
@@ -29,15 +29,15 @@ export interface ExtensionLogger {
 }
 
 export interface ExtensionStorage {
-  get<T>(key: string, fallback: T): Promise<T>
-  set<T>(key: string, value: T): Promise<void>
+  get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined>
+  set(key: string, value: unknown): Promise<void>
   delete(key: string): Promise<void>
   listKeys(prefix?: string): Promise<readonly string[]>
 }
 
 export interface ExtensionSecrets {
-  get<T extends SerializableValue = SerializableValue>(key: string): Promise<T | undefined>
-  set<T extends SerializableValue = SerializableValue>(key: string, value: T): Promise<void>
+  get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined>
+  set(key: string, value: unknown): Promise<void>
   delete(key: string): Promise<void>
   listKeys(prefix?: string): Promise<readonly string[]>
 }

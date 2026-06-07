@@ -1,4 +1,4 @@
-import type { SerializableRecord } from '@kisaki3/extension-sdk'
+import type { JsonObject } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionType } from '../config/schema'
 import { requireBangumiMediaScope, type BangumiMediaScope } from '../media/scopes'
 import { BangumiExtensionError } from '../shared/errors'
@@ -53,23 +53,21 @@ export interface BangumiImportIndexArgs extends BangumiScopedArgs {
 
 const BANGUMI_COLLECTION_TYPES = [1, 2, 3, 4, 5] as const satisfies readonly BangumiCollectionType[]
 
-export function normalizeAuthRefreshArgs(args: SerializableRecord): BangumiAuthRefreshArgs {
+export function normalizeAuthRefreshArgs(args: JsonObject): BangumiAuthRefreshArgs {
   return {
     forceRefresh: readBoolean(args.forceRefresh, true),
     verifyAccount: readBoolean(args.verifyAccount, true)
   }
 }
 
-export function normalizeChangedItemsSyncArgs(
-  args: SerializableRecord
-): BangumiChangedItemsSyncArgs {
+export function normalizeChangedItemsSyncArgs(args: JsonObject): BangumiChangedItemsSyncArgs {
   return {
     scope: readScope(args.scope),
     limit: readInteger(args.limit, 500, { min: 1, max: 10_000 })
   }
 }
 
-export function normalizeFullSyncArgs(args: SerializableRecord): BangumiFullSyncArgs {
+export function normalizeFullSyncArgs(args: JsonObject): BangumiFullSyncArgs {
   return {
     scope: readScope(args.scope),
     updateExisting: readBoolean(args.updateExisting, true),
@@ -80,9 +78,7 @@ export function normalizeFullSyncArgs(args: SerializableRecord): BangumiFullSync
   }
 }
 
-export function normalizeImportCollectionsArgs(
-  args: SerializableRecord
-): BangumiImportCollectionsArgs {
+export function normalizeImportCollectionsArgs(args: JsonObject): BangumiImportCollectionsArgs {
   return {
     scope: readScope(args.scope),
     ...readOptionalStringProp(args.profileId, 'profileId'),
@@ -93,7 +89,7 @@ export function normalizeImportCollectionsArgs(
   }
 }
 
-export function normalizeImportIndexArgs(args: SerializableRecord): BangumiImportIndexArgs {
+export function normalizeImportIndexArgs(args: JsonObject): BangumiImportIndexArgs {
   const indexInput = readRequiredString(args.indexInput, '请输入 Bangumi 目录 ID 或链接。')
 
   return {

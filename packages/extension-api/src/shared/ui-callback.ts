@@ -1,5 +1,5 @@
 import type { ExtensionErrorShape } from './errors'
-import type { SerializableRecord } from './serialization'
+import type { JsonObject } from './serialization'
 import type { ValidationIssue } from './validation'
 import { validateExtensionErrorShape } from './errors'
 import {
@@ -25,18 +25,22 @@ export function createUiError(
   message: string,
   options: {
     code?: string
-    details?: SerializableRecord
+    details?: JsonObject
     refresh?: boolean
   } = {}
 ): UiCallbackResult {
+  const error: ExtensionErrorShape = { message }
+  if (options.code !== undefined) {
+    error.code = options.code
+  }
+  if (options.details !== undefined) {
+    error.details = options.details
+  }
+
   return {
     success: false,
     refresh: options.refresh ?? false,
-    error: {
-      code: options.code,
-      message,
-      details: options.details
-    }
+    error
   }
 }
 

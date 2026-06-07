@@ -9,6 +9,7 @@ import type {
 import type { VniteBackupGame, VniteBackupSnapshot, VniteImportDiagnostic } from '../backup/types'
 import { createVniteGameNodeKey } from '../mapping'
 import { VniteImportError, toSafeErrorMessage } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 import { createVniteCompletionLookup } from './lookup'
 import {
   createEmptyVniteMetadataCompletionSummary,
@@ -165,7 +166,7 @@ function createCompletionFailureDiagnostic(
   error: unknown
 ): VniteImportDiagnostic {
   void error
-  return {
+  return omitUndefined({
     level: 'warning',
     code: 'metadata_completion_failed',
     message: '补全元数据失败，已保留直接导入结果。',
@@ -173,7 +174,7 @@ function createCompletionFailureDiagnostic(
     vniteGameId: game.id,
     vniteGameName: readGameName(game),
     targetGameId
-  }
+  })
 }
 
 function readGameName(game: VniteBackupGame): string {

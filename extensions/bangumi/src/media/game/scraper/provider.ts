@@ -9,6 +9,7 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import { BANGUMI_SOURCE_ID, BANGUMI_SUBJECT_TYPE_GAME } from '../../../shared/constants'
+import { omitUndefined } from '../../../shared/object'
 import { parseBangumiSubjectDate } from './format/dates'
 import { parseBangumiId } from './format/ids'
 import { resolveLocalizedSubjectName } from './format/names'
@@ -57,13 +58,13 @@ export class BangumiProvider implements GameScraperProvider {
           locale
         )
 
-        return {
+        return omitUndefined({
           id: String(subject.id),
           name,
           originalName,
           releaseDate: parseBangumiSubjectDate(subject.date),
           externalIds: [{ source: this.externalIdSource, id: String(subject.id) }]
-        }
+        })
       })
   }
 
@@ -99,12 +100,12 @@ export class BangumiProvider implements GameScraperProvider {
   ): IdResolvedTarget {
     const normalizedId = id.trim()
 
-    return {
+    return omitUndefined({
       id: normalizedId,
       cacheKey: normalizedId,
       resolveName: resolveName?.trim() || undefined,
       identity
-    }
+    })
   }
 
   private findKnownSubjectId(lookup: ScraperLookup): string | undefined {

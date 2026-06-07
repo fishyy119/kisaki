@@ -1,24 +1,25 @@
 import type { LibraryGraphDiagnostic, LibraryGraphEdgeKind } from '@kisaki3/extension-api'
 import type { VniteImportDiagnostic } from '../backup/types'
+import { omitUndefined } from '../shared/object'
 
 export interface VniteGraphDiagnosticInput {
   level: LibraryGraphDiagnostic['level']
   code: string
   message: string
-  nodeKey?: string
-  edgeKind?: LibraryGraphEdgeKind
+  nodeKey?: string | undefined
+  edgeKind?: LibraryGraphEdgeKind | undefined
 }
 
 export function createVniteGraphDiagnostic(
   input: VniteGraphDiagnosticInput
 ): LibraryGraphDiagnostic {
-  return {
+  return omitUndefined({
     level: input.level,
     code: input.code,
     message: input.message,
     nodeKey: input.nodeKey,
     edgeKind: input.edgeKind
-  }
+  })
 }
 
 export function toLibraryGraphDiagnostic(

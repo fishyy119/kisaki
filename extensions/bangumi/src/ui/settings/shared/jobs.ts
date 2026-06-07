@@ -2,9 +2,10 @@ import {
   kisaki,
   type CommandInvocationResult,
   type ExtensionTaskRunSnapshot,
-  type SerializableRecord
+  type JsonObject
 } from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../../../jobs/commands'
+import { omitUndefined } from '../../../shared/object'
 import type { BangumiSettingsRootButtonEvent, BangumiSettingsRootButtonResult } from '../contracts'
 import type {
   BangumiSettingsDialogButtonEvent,
@@ -44,7 +45,7 @@ export async function isBangumiCommandActive(commandId: BangumiCommandId): Promi
 
 export async function startRootManualJob(options: {
   commandId: BangumiCommandId
-  args: SerializableRecord
+  args: JsonObject
   event: BangumiSettingsRootButtonEvent
 }): Promise<BangumiSettingsRootButtonResult> {
   if (await isBangumiCommandActive(options.commandId)) {
@@ -57,25 +58,19 @@ export async function startRootManualJob(options: {
   })
 }
 
-export function startDialogManualJob<
-  TParams extends SerializableRecord = SerializableRecord
->(options: {
+export function startDialogManualJob<TParams extends JsonObject = JsonObject>(options: {
   commandId: BangumiCommandId
-  args: SerializableRecord
+  args: JsonObject
   event: BangumiSettingsDialogButtonEvent<TParams>
 }): Promise<BangumiSettingsDialogButtonResult>
-export function startDialogManualJob<
-  TParams extends SerializableRecord = SerializableRecord
->(options: {
+export function startDialogManualJob<TParams extends JsonObject = JsonObject>(options: {
   commandId: BangumiCommandId
-  args: SerializableRecord
+  args: JsonObject
   event: BangumiSettingsDialogSubmitEvent<TParams>
 }): Promise<BangumiSettingsDialogSubmitResult>
-export async function startDialogManualJob<
-  TParams extends SerializableRecord = SerializableRecord
->(options: {
+export async function startDialogManualJob<TParams extends JsonObject = JsonObject>(options: {
   commandId: BangumiCommandId
-  args: SerializableRecord
+  args: JsonObject
   event: BangumiSettingsDialogButtonEvent<TParams> | BangumiSettingsDialogSubmitEvent<TParams>
 }): Promise<BangumiSettingsDialogButtonResult | BangumiSettingsDialogSubmitResult> {
   if (await isBangumiCommandActive(options.commandId)) {
@@ -103,14 +98,14 @@ async function startCommandJob({
   args
 }: {
   commandId: BangumiCommandId
-  args: SerializableRecord
+  args: JsonObject
 }): Promise<void> {
   await startBangumiCommandJob(commandId, args)
 }
 
 export async function startBangumiCommandJob(
   commandId: BangumiCommandId,
-  args: SerializableRecord,
+  args: JsonObject,
   options: { waitForResult?: boolean } = {}
 ): Promise<CommandInvocationResult> {
   const result = await kisaki.commands.invoke({
@@ -149,10 +144,10 @@ function toCommandResultFromRun(
   commandId: BangumiCommandId,
   run: ExtensionTaskRunSnapshot
 ): CommandInvocationResult {
-  return {
+  return omitUndefined({
     commandId,
     output: run.result?.output as CommandInvocationResult['output']
-  }
+  })
 }
 
 function asPlainRecord(value: unknown): Record<string, unknown> | undefined {

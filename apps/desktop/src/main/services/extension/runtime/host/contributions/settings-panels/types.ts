@@ -1,5 +1,5 @@
 import type {
-  SerializableRecord,
+  JsonObject,
   SettingsPanelDialogSize,
   SettingsPanelPopoverWidth,
   SettingsPanelCallbackResult,
@@ -29,7 +29,7 @@ export interface SettingsPanelSurfaceSession {
   popoverId?: string
   parent?: SettingsPanelParentRef
   anchorNodeKey?: string
-  params: SerializableRecord
+  params: JsonObject
   callbacks: Map<string, SettingsPanelCallbackRecord>
 }
 
@@ -57,7 +57,7 @@ export interface ResolveSettingsPanelDialogOptions {
   contribution: SettingsPanelContribution<any, any>
   session: SettingsPanelSession
   dialogId: string
-  params: SerializableRecord
+  params: JsonObject
   draft: SettingsPanelDraftSnapshot
   parentDraft: SettingsPanelDraftSnapshot
   reason?: SettingsPanelRefreshReason
@@ -70,7 +70,7 @@ export interface ResolveSettingsPanelPopoverOptions {
   session: SettingsPanelSession
   popoverId: string
   parent: SettingsPanelParentRef
-  params: SerializableRecord
+  params: JsonObject
   draft: SettingsPanelDraftSnapshot
   parentDraft: SettingsPanelDraftSnapshot
   anchorNodeKey?: string

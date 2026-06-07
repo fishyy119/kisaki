@@ -154,11 +154,14 @@ function validateRelativeFilePath(
 }
 
 function normalizeManifest(manifest: ExtensionManifest): ExtensionManifest {
-  return {
+  const normalized: ExtensionManifest = {
     ...manifest,
-    entry: normalizeExtensionPackagePath(manifest.entry) ?? manifest.entry,
-    icon: manifest.icon
-      ? (normalizeExtensionPackagePath(manifest.icon) ?? manifest.icon)
-      : undefined
+    entry: normalizeExtensionPackagePath(manifest.entry) ?? manifest.entry
   }
+
+  if (manifest.icon) {
+    normalized.icon = normalizeExtensionPackagePath(manifest.icon) ?? manifest.icon
+  }
+
+  return normalized
 }

@@ -4,13 +4,14 @@ import {
   type CommandInvocationResult,
   type ExtensionTaskRunProgressUpdate,
   type ExtensionTaskRunResult,
-  type SerializableRecord,
+  type JsonObject,
   type SettingsPanelDialogNodeEvents,
   type SettingsPanelField,
   type SettingsPanelNodeFactory
 } from '@kisaki3/extension-sdk'
 import type { BangumiCommandId } from '../../../jobs/commands'
 import type { BangumiJobHandle } from '../../../jobs/runner'
+import { omitUndefined } from '../../../shared/object'
 import { createRunningJobError, isBangumiCommandActive } from './jobs'
 import type {
   BangumiPreviewBadge,
@@ -38,7 +39,7 @@ export class PreviewResultRegistry {
   get(
     sessionId: string,
     previewKey: BangumiPreviewKey,
-    args: SerializableRecord
+    args: JsonObject
   ): ResolvedPreviewResult | undefined {
     this.prune()
     const stored = this.results.get(this.createKey(sessionId, previewKey))
@@ -51,7 +52,7 @@ export class PreviewResultRegistry {
   setCompleted(
     sessionId: string,
     previewKey: BangumiPreviewKey,
-    args: SerializableRecord,
+    args: JsonObject,
     result: CommandInvocationResult
   ): void {
     this.prune()
@@ -94,7 +95,7 @@ export class PreviewResultRegistry {
   }
 }
 
-export function createDialogPreviewFields<TParams extends SerializableRecord = SerializableRecord>({
+export function createDialogPreviewFields<TParams extends JsonObject = JsonObject>({
   settings,
   id,
   label,
@@ -106,8 +107,8 @@ export function createDialogPreviewFields<TParams extends SerializableRecord = S
   >
   id: string
   label: string
-  emptyLabel?: string
-  preview?: ResolvedPreviewResult
+  emptyLabel?: string | undefined
+  preview?: ResolvedPreviewResult | undefined
 }): readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, BangumiSettingsPopovers>>[] {
   if (!preview) {
     return []
@@ -137,7 +138,7 @@ export async function runDialogPreview(options: {
   previewKey: BangumiPreviewKey
   commandId: BangumiCommandId
   title: string
-  args: SerializableRecord
+  args: JsonObject
   signal: AbortSignal
   run(run: BangumiJobHandle): Promise<unknown>
   previewRegistry: PreviewResultRegistry
@@ -166,7 +167,7 @@ export async function runDialogSubmitPreview(options: {
   previewKey: BangumiPreviewKey
   commandId: BangumiCommandId
   title: string
-  args: SerializableRecord
+  args: JsonObject
   signal: AbortSignal
   run(run: BangumiJobHandle): Promise<unknown>
   previewRegistry: PreviewResultRegistry
@@ -203,10 +204,10 @@ async function startPreviewRun(options: {
     signal: options.signal
   })
   const output = await options.run(run)
-  return {
+  return omitUndefined({
     commandId: options.commandId,
     output: output as CommandInvocationResult['output']
-  }
+  })
 }
 
 async function createNotificationPreviewHandle(options: {
@@ -242,10 +243,15 @@ class NotificationPreviewHandle implements BangumiJobHandle {
   }
 
   async report(update: ExtensionTaskRunProgressUpdate): Promise<void> {
-    await kisaki.notify.update(this.options.id, 'loading', this.options.title, {
-      message: formatPreviewProgress(update),
-      closable: true
-    })
+    await kisaki.notify.update(
+      this.options.id,
+      'loading',
+      this.options.title,
+      omitUndefined({
+        message: formatPreviewProgress(update),
+        closable: true
+      })
+    )
   }
 
   async checkpoint(): Promise<void> {
@@ -420,7 +426,7 @@ function getPreviewGroupOrder(group: BangumiPreviewGroup): number {
   return 30
 }
 
-function serializePreviewArgs(args: SerializableRecord): string {
+function serializePreviewArgs(args: JsonObject): string {
   return JSON.stringify(args)
 }
 

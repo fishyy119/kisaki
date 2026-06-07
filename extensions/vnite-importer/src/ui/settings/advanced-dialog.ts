@@ -1,5 +1,5 @@
 import { defineSettingsPanelDialog } from '@kisaki3/extension-sdk'
-import type { SerializableRecord } from '@kisaki3/extension-sdk'
+import type { JsonObject } from '@kisaki3/extension-sdk'
 import { VNITE_SETTINGS_NODE_IDS } from './ids'
 import { readBoolean } from './options'
 import type { VniteSettingsRuntime } from './runtime'
@@ -80,7 +80,7 @@ export function createVniteAdvancedDialog(runtime: VniteSettingsRuntime) {
       }
     },
     async submit(event) {
-      const values = event.values as SerializableRecord
+      const values = event.values as JsonObject
       await runtime.settingsStore.update((settings) => ({
         ...settings,
         defaults: {

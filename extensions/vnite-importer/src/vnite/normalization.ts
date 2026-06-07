@@ -1,3 +1,4 @@
+import { omitUndefined } from '../shared/object'
 import {
   DEFAULT_VNITE_LAUNCHER_MODE,
   DEFAULT_VNITE_MONITOR_MODE,
@@ -157,20 +158,20 @@ export function normalizeVniteGameLocalDoc(
   const utils = toRecord(doc.utils)
   const issues: VniteNormalizationIssue[] = []
 
-  normalized.path = {
+  normalized.path = omitUndefined({
     gamePath: readString(path.gamePath),
     savePaths: readStringArray(path.savePaths),
     screenshotPath: readOptionalString(path.screenshotPath)
-  }
+  })
   normalized.launcher = {
     mode: readLauncherMode(launcher.mode, id, issues),
-    fileConfig: {
+    fileConfig: omitUndefined({
       path: readString(fileConfig.path),
       args: readStringArray(fileConfig.args),
       monitorMode: readMonitorMode(fileConfig.monitorMode),
       monitorPath: readString(fileConfig.monitorPath),
       workingDirectory: readOptionalString(fileConfig.workingDirectory)
-    },
+    }),
     urlConfig: {
       url: readString(urlConfig.url),
       browserPath: readString(urlConfig.browserPath),
@@ -243,13 +244,13 @@ export function readAttachmentStubs(
 
   for (const [id, rawStub] of Object.entries(record)) {
     const stub = toRecord(rawStub)
-    attachments[id] = {
+    attachments[id] = omitUndefined({
       content_type: readOptionalString(stub.content_type),
       contentType: readOptionalString(stub.contentType),
       digest: readOptionalString(stub.digest),
       length: readOptionalNumber(stub.length),
       stub: readOptionalBoolean(stub.stub)
-    }
+    })
   }
 
   return attachments

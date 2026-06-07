@@ -1,4 +1,4 @@
-import type { SerializableRecord, SerializableValue } from '../shared'
+import type { JsonObject, JsonValue } from '../shared'
 
 export type CommandDangerLevel = 'none' | 'low' | 'medium' | 'high'
 
@@ -35,8 +35,8 @@ export interface CommandDescriptor {
   id: string
   title: string
   description?: string
-  argsSchema?: SerializableRecord
-  defaultArgs?: SerializableRecord
+  argsSchema?: JsonObject
+  defaultArgs?: JsonObject
   dangerLevel: CommandDangerLevel
   ownerExtensionId?: string
 }
@@ -45,7 +45,7 @@ export type CommandListItem = CommandDescriptor
 
 export interface CommandInvocationRequest {
   commandId: string
-  args?: SerializableRecord
+  args?: JsonObject
 }
 
 export interface CommandInvocationContext {
@@ -55,7 +55,7 @@ export interface CommandInvocationContext {
 
 export interface CommandInvocationResult {
   commandId: string
-  output?: SerializableValue
+  output?: JsonValue
 }
 
 export interface CommandsCapability {

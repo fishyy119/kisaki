@@ -1,7 +1,7 @@
-import type { ExtensionStorage } from '@kisaki3/extension-api'
+import type { ExtensionStorage, JsonValue } from '@kisaki3/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
-import { toSerializableValue } from './utils/serialization'
+import { toJsonValue } from './utils/serialization'
 
 interface ExtensionStorageOptions {
   scope: ActiveExtensionScope
@@ -16,26 +16,25 @@ export function createExtensionStorage(options: ExtensionStorageOptions): Extens
   const getRequestOptions = () => options.getRequestOptions(options.scope)
 
   return {
-    get: async <T>(key: string, fallback: T): Promise<T> => {
+    get: async <T extends JsonValue = JsonValue>(key: string): Promise<T | undefined> => {
       const result = await options.rpc.requestMain(
         'runtime.storage.get',
         {
           runtimeHandle: options.scope.runtimeHandle,
-          key,
-          fallback: toSerializableValue(fallback, 'storage fallback')
+          key
         },
         getRequestOptions()
       )
 
-      return result.value as T
+      return result.value as T | undefined
     },
-    set: async <T>(key: string, value: T): Promise<void> => {
+    set: async (key: string, value: unknown): Promise<void> => {
       await options.rpc.requestMain(
         'runtime.storage.set',
         {
           runtimeHandle: options.scope.runtimeHandle,
           key,
-          value: toSerializableValue(value, 'storage value')
+          value: toJsonValue(value, 'storage value')
         },
         getRequestOptions()
       )

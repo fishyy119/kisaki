@@ -1,4 +1,5 @@
 import { BangumiExtensionError, type BangumiErrorCode } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 
 export interface BangumiApiErrorOptions {
   status?: number
@@ -14,9 +15,15 @@ export class BangumiApiError extends BangumiExtensionError {
   constructor(code: BangumiErrorCode, message: string, options: BangumiApiErrorOptions = {}) {
     super(code, message)
     this.name = 'BangumiApiError'
-    this.status = options.status
-    this.path = options.path
-    this.retryAfterMs = options.retryAfterMs
+    if (options.status !== undefined) {
+      this.status = options.status
+    }
+    if (options.path !== undefined) {
+      this.path = options.path
+    }
+    if (options.retryAfterMs !== undefined) {
+      this.retryAfterMs = options.retryAfterMs
+    }
   }
 }
 
@@ -46,7 +53,7 @@ export function normalizeBangumiApiError(
     return new BangumiApiError(
       'bangumi_rate_limited',
       detail || 'Bangumi API 请求过于频繁，请稍后重试。',
-      { status, path, retryAfterMs }
+      omitUndefined({ status, path, retryAfterMs })
     )
   }
 
@@ -111,4 +118,3 @@ function readErrorMessage(data: unknown): string | undefined {
 
   return undefined
 }
-

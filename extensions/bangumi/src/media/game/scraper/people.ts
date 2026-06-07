@@ -2,6 +2,7 @@ import type { Locale, ScrapedGameCompanyFact, ScrapedGamePersonFact } from '@kis
 import type { BangumiClient } from '../../../api/client'
 import type { BangumiPersonDetail, BangumiRelatedPerson } from '../../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../../shared/constants'
+import { omitUndefined } from '../../../shared/object'
 import { dedupeExternalIds } from './format/dedupe'
 import { toPartialDateFromParts } from './format/dates'
 import { extractExternalIdsFromSites, extractRelatedSitesFromInfobox } from './format/infobox'
@@ -20,7 +21,7 @@ import { buildBangumiPersonUrl, dedupeRelatedSites, dedupeUrls } from './format/
 export async function buildGamePersons(
   getSubjectPersons: () => Promise<BangumiRelatedPerson[]>,
   getPersonDetails: () => Promise<Map<number, BangumiPersonDetail>>,
-  locale?: Locale
+  locale?: Locale | undefined
 ): Promise<ScrapedGamePersonFact[]> {
   const relatedPersons = (await getSubjectPersons()).filter((person) => person.type === 1)
   if (!relatedPersons.length) return []
@@ -103,7 +104,7 @@ function mapGamePerson(
   const tags = mapBangumiCareersToTags(careers)
   const type = mapBangumiPersonRole(relatedPerson.relation, careers)
 
-  return {
+  return omitUndefined({
     name,
     originalName,
     description: normalizeDescription(detail?.summary),
@@ -115,13 +116,13 @@ function mapGamePerson(
     birthDate: toPartialDateFromParts(detail?.birth_year, detail?.birth_mon, detail?.birth_day),
     type,
     note: composeBangumiRoleNote(relatedPerson.relation, relatedPerson.eps)
-  }
+  })
 }
 
 function mapGameCompany(
   relatedCompany: BangumiRelatedPerson,
   detail: BangumiPersonDetail | undefined,
-  locale?: Locale
+  locale?: Locale | undefined
 ): ScrapedGameCompanyFact {
   const { name, originalName } = resolveLocalizedEntityName(
     detail?.name || relatedCompany.name,
@@ -142,7 +143,7 @@ function mapGameCompany(
   const logos = dedupeUrls(extractImageUrls(detail?.images || relatedCompany.images))
   const tags = mapBangumiCareersToTags(detail?.career ?? relatedCompany.career)
 
-  return {
+  return omitUndefined({
     name,
     originalName,
     description: normalizeDescription(detail?.summary),
@@ -152,5 +153,5 @@ function mapGameCompany(
     tags: tags.length > 0 ? tags : undefined,
     type: mapBangumiCompanyRole(relatedCompany.relation),
     note: composeBangumiRoleNote(relatedCompany.relation, relatedCompany.eps)
-  }
+  })
 }

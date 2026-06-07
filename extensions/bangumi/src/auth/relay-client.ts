@@ -1,6 +1,7 @@
-import type { NetworkCapability, SerializableRecord } from '@kisaki3/extension-sdk'
+import type { NetworkCapability, JsonObject } from '@kisaki3/extension-sdk'
 import { BANGUMI_OAUTH_RELAY_BASE_URL } from '../shared/constants'
 import { BangumiExtensionError } from '../shared/errors'
+import { omitUndefined } from '../shared/object'
 
 export interface OAuthRelaySession {
   sessionId: string
@@ -53,10 +54,18 @@ export class OAuthRelayClient {
     private readonly baseUrl = BANGUMI_OAUTH_RELAY_BASE_URL
   ) {}
 
-  async createSession(desktopCallbackUrl: string, signal?: AbortSignal): Promise<OAuthRelaySession> {
-    const data = await this.request<unknown>('POST', '/sessions', {
-      desktopCallbackUrl
-    }, signal)
+  async createSession(
+    desktopCallbackUrl: string,
+    signal?: AbortSignal
+  ): Promise<OAuthRelaySession> {
+    const data = await this.request<unknown>(
+      'POST',
+      '/sessions',
+      {
+        desktopCallbackUrl
+      },
+      signal
+    )
 
     return normalizeSession(data)
   }
@@ -98,12 +107,12 @@ export class OAuthRelayClient {
         responseType: 'json'
       })
 
-      return {
+      return omitUndefined({
         ok: response.ok,
         status: response.status,
         checkedAt,
         message: response.ok ? 'OAuth Relay 可用。' : readRelayErrorMessage(response.data)
-      }
+      })
     } catch {
       if (signal?.aborted) {
         throw createAbortError()
@@ -120,20 +129,22 @@ export class OAuthRelayClient {
   private async request<T>(
     method: RelayMethod,
     pathname: string,
-    body?: SerializableRecord,
+    body?: JsonObject,
     signal?: AbortSignal
   ): Promise<T> {
     throwIfAborted(signal)
 
     try {
-      const response = await this.network.request<T>({
-        url: this.buildUrl(pathname),
-        method,
-        headers: this.buildHeaders(),
-        body,
-        timeoutMs: await this.readTimeoutMs(),
-        responseType: 'json'
-      })
+      const response = await this.network.request<T>(
+        omitUndefined({
+          url: this.buildUrl(pathname),
+          method,
+          headers: this.buildHeaders(),
+          body,
+          timeoutMs: await this.readTimeoutMs(),
+          responseType: 'json'
+        })
+      )
 
       if (!response.ok) {
         throw new BangumiExtensionError(
@@ -194,8 +205,9 @@ function normalizeSession(value: unknown): OAuthRelaySession {
 }
 
 function normalizeToken(value: unknown): OAuthRelayToken {
-  const record = findRecordWithString(value, ACCESS_TOKEN_KEYS, TOKEN_CONTAINER_KEYS)
-    ?? requireRecord(value, 'OAuth Relay token response is invalid.')
+  const record =
+    findRecordWithString(value, ACCESS_TOKEN_KEYS, TOKEN_CONTAINER_KEYS) ??
+    requireRecord(value, 'OAuth Relay token response is invalid.')
   const accessToken = readRequiredString(record, ACCESS_TOKEN_KEYS)
 
   if (!accessToken) {

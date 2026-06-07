@@ -1,4 +1,5 @@
 import type { LibraryGameCreateInput, LibraryGraphDiagnostic } from '@kisaki3/extension-api'
+import { omitUndefined } from '../shared/object'
 import type { NormalizedVniteGameLocal, VniteGameLocalDoc } from '../vnite/models'
 import { createVniteGraphDiagnostic } from './diagnostics'
 
@@ -70,27 +71,27 @@ export function joinVniteScriptCommand(command: readonly string[]): string | und
 function mapLauncherFields(doc: VniteGameLocalDoc): Partial<LibraryGameCreateInput> {
   switch (doc.launcher.mode) {
     case 'url':
-      return {
+      return omitUndefined({
         launcherMode: 'url',
         launcherPath: trimToUndefined(doc.launcher.urlConfig.url),
         monitorMode: doc.launcher.urlConfig.monitorMode,
         monitorPath: trimToUndefined(doc.launcher.urlConfig.monitorPath)
-      }
+      })
     case 'script':
-      return {
+      return omitUndefined({
         launcherMode: 'exec',
         launcherPath: joinVniteScriptCommand(doc.launcher.scriptConfig.command),
         monitorMode: doc.launcher.scriptConfig.monitorMode,
         monitorPath: trimToUndefined(doc.launcher.scriptConfig.monitorPath)
-      }
+      })
     case 'file':
-      return {
+      return omitUndefined({
         launcherMode: 'file',
         launcherPath:
           trimToUndefined(doc.path.gamePath) ?? trimToUndefined(doc.launcher.fileConfig.path),
         monitorMode: doc.launcher.fileConfig.monitorMode,
         monitorPath: trimToUndefined(doc.launcher.fileConfig.monitorPath)
-      }
+      })
   }
 }
 

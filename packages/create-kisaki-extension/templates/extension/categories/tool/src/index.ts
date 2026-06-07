@@ -33,7 +33,7 @@ export default defineExtension({
           }
         },
         async resolve(_context, settings) {
-          const enabled = await context.storage.get('enabled', true)
+          const enabled = (await context.storage.get<boolean>('enabled')) ?? true
 
           return {
             fields: [

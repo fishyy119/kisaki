@@ -6,6 +6,7 @@ import type {
 } from '@kisaki3/extension-sdk'
 import type { BangumiSubject } from '../../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../../shared/constants'
+import { omitUndefined } from '../../../shared/object'
 import { dedupeExternalIds, dedupeTags } from './format/dedupe'
 import { parseBangumiSubjectDate } from './format/dates'
 import { extractExternalIdsFromSites, extractRelatedSitesFromInfobox } from './format/infobox'
@@ -15,7 +16,7 @@ import { buildBangumiSubjectUrl, dedupeRelatedSites } from './format/urls'
 
 interface BuildGameInfoOptions {
   getSubject: () => Promise<BangumiSubject>
-  locale?: Locale
+  locale?: Locale | undefined
 }
 
 export async function buildGameInfo({
@@ -31,13 +32,13 @@ export async function buildGameInfo({
     ...extractRelatedSitesFromInfobox(subject.infobox)
   ])
 
-  return {
+  return omitUndefined({
     name,
     originalName,
     releaseDate: parseBangumiSubjectDate(subject.date),
     description: normalizeDescription(subject.summary),
     relatedSites
-  }
+  })
 }
 
 export async function buildGameIdentity(
