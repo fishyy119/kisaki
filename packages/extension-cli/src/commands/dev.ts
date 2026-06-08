@@ -25,7 +25,7 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   const output = await watchExtensionOutput(project, { outDir: options.outDir, debugSources: true })
   const ready = await output.ready
 
-  const kisaki: ChildProcess = launchKisaki(ready.packagePath, {
+  const kisaki: ChildProcess = launchKisaki(ready.publicationPath, {
     kisakiCommand: options.kisaki,
     cwd: project.rootDir,
     ...(inspectOptions === undefined ? {} : { extensionHostInspect: inspectOptions })

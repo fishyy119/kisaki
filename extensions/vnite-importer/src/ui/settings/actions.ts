@@ -41,8 +41,6 @@ export async function submitVniteRoot(
   switch (step) {
     case 'pickBackup':
       return await submitPickBackup(runtime, event, resources.flow.file)
-    case 'analyzeBackup':
-      return await submitAnalyzeBackup(runtime, event, resources.flow.file)
     case 'configureImport':
       return await submitPreview(runtime, event, resources)
     case 'previewGraph':
@@ -184,10 +182,15 @@ async function submitPickBackup(
   event: SettingsPanelRootSubmitEvent,
   file: VniteStoredFileGrant | undefined
 ) {
-  requireFileGrant(file)
-  await runtime.flowStore.setStep('analyzeBackup')
+  const fileGrant = requireFileGrant(file)
+  const analysis = await runtime.jobRunner.analyzeFromGrant({
+    fileGrant,
+    requestId: createRequestId()
+  })
+  await runtime.flowStore.setAnalysis(analysis)
+
   return event.refresh('root', {
-    message: '请继续分析备份包。'
+    message: '备份包分析完成。'
   })
 }
 
@@ -199,23 +202,6 @@ async function pickVniteBackupFile(
     filters: [{ name: 'Vnite 备份包', extensions: ['zip'] }],
     copyTo: 'temp',
     maxSizeBytes: VNITE_BACKUP_MAX_SIZE_BYTES
-  })
-}
-
-async function submitAnalyzeBackup(
-  runtime: VniteSettingsRuntime,
-  event: SettingsPanelRootSubmitEvent,
-  file: VniteStoredFileGrant | undefined
-) {
-  const fileGrant = requireFileGrant(file)
-  const analysis = await runtime.jobRunner.analyzeFromGrant({
-    fileGrant,
-    requestId: createRequestId()
-  })
-  await runtime.flowStore.setAnalysis(analysis)
-
-  return event.refresh('root', {
-    message: '备份包分析完成。'
   })
 }
 

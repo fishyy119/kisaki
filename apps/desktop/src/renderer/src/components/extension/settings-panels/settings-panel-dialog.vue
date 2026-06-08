@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -69,6 +70,9 @@ function getSizeClass(size?: string): string {
     >
       <DialogHeader>
         <DialogTitle>{{ root?.view.title ?? props.contribution.title }}</DialogTitle>
+        <DialogDescription v-if="root?.view.description">
+          {{ root.view.description }}
+        </DialogDescription>
       </DialogHeader>
 
       <DialogBody

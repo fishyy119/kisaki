@@ -25,8 +25,10 @@ kisx dev
 - `kisx validate` checks the manifest, required project files, and
   `engines.kisaki` Extension API compatibility range.
 - `kisx build` validates, runs tsdown, and verifies the built entry.
-- `kisx output` writes an unpacked package to `out/extensions/<extension-id>`.
-  Use `--watch` for synchronized output; `dev-output` is an alias.
+- `kisx output` publishes immutable unpacked package versions under
+  `out/extensions/<extension-id>/versions/<build-id>` and atomically updates
+  `out/extensions/<extension-id>/current.json`. Use `--watch` for synchronized
+  output; `dev-output` is an alias.
 - `kisx pack` writes a `.kisx` archive and prints size plus sha256.
 - `kisx key generate` creates an Ed25519 author signing key.
 - `kisx registry init|validate|add-release|digest|sign` manages static registry

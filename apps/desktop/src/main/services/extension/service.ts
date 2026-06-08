@@ -30,7 +30,7 @@ import {
   ExtensionRepositoryManager,
   ExtensionRepositoryStore
 } from './repositories'
-import { ExtensionReloadWatcher } from './reload-watcher'
+import { ExtensionDevelopmentReloadWatcher } from './reload-watcher'
 import { RuntimeManager, type ExtensionRuntimeState } from './runtime'
 import { ExtensionSignerTrustManager, ExtensionSignerTrustStore } from './signers'
 import { ExtensionUpdateManager, ExtensionUpdatePlanner } from './updates'
@@ -69,7 +69,7 @@ export class ExtensionService implements IService {
 
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
-  private reloadWatcher!: ExtensionReloadWatcher
+  private developmentReloadWatcher!: ExtensionDevelopmentReloadWatcher
   private packageCommitter!: ExtensionPackageCommitter
   private packageRecovery!: ExtensionPackageRecovery
   private contributionSnapshotEmitQueued = false
@@ -167,8 +167,8 @@ export class ExtensionService implements IService {
       onRuntimeStateChanged: (extensionId, state) =>
         this.emitRuntimeStateChanged(extensionId, state)
     })
-    this.reloadWatcher = new ExtensionReloadWatcher(async (extensionId) => {
-      await this.installations.reloadRuntime(extensionId, 'file-change')
+    this.developmentReloadWatcher = new ExtensionDevelopmentReloadWatcher(async (extensionId) => {
+      await this.installations.reloadRuntime(extensionId, 'development-file-change')
     })
     this.installations = new ExtensionInstallationManager({
       layout,
@@ -176,7 +176,7 @@ export class ExtensionService implements IService {
       store: installationStore,
       runtime: this.runtime,
       contributions: this.contributions,
-      reloadWatcher: this.reloadWatcher,
+      developmentReloadWatcher: this.developmentReloadWatcher,
       packageCommitter: this.packageCommitter,
       event: container.get('event'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
@@ -222,7 +222,7 @@ export class ExtensionService implements IService {
   }
 
   async dispose(): Promise<void> {
-    await this.reloadWatcher.stop()
+    await this.developmentReloadWatcher.stop()
     await this.runtime.shutdownHost()
   }
 

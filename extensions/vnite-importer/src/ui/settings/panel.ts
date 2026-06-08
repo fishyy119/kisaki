@@ -26,7 +26,6 @@ import {
 } from './options'
 import {
   createAnalysisSummaryFields,
-  createAnalyzeBackupFields,
   createDoneFields,
   createFieldSelectionSummaryField,
   createPickBackupFields,
@@ -97,39 +96,34 @@ function createRootFields(input: {
   form: VniteImportFormOptions
   defaultProfileId?: string
 }): readonly VniteRootSettingsField[] {
-  switch (input.step) {
-    case 'pickBackup':
-      return createPickBackupFields(input.ui, {
-        settings: input.resources.settings,
-        flow: input.resources.flow,
-        pickButton: createPickBackupFileButton(input.ui, input.runtime, {
-          label: input.resources.flow.file ? '更换文件' : '选择文件'
-        })
+  if (input.step === 'pickBackup') {
+    return createPickBackupFields(input.ui, {
+      settings: input.resources.settings,
+      flow: input.resources.flow,
+      pickButton: createPickBackupFileButton(input.ui, input.runtime, {
+        label: input.resources.flow.file ? '更换文件' : '选择文件'
       })
-    case 'analyzeBackup':
-      return createAnalyzeBackupFields(
-        input.ui,
-        input.resources.flow,
-        createChooseAnotherButton(
-          input.ui,
-          input.runtime,
-          input.resources.settings.cleanup.keepLastAnalysis
-        )
-      )
-    case 'configureImport':
-      return createConfigureFields(input)
-    case 'previewGraph':
-      return input.resources.flow.preview
-        ? createPreviewGraphFields(input.ui, input.resources.flow.preview, [
-            createBackToConfigureButton(input.ui, input.runtime),
-            createRefreshPreviewButton(input.ui, input.runtime)
-          ])
-        : createConfigureFields(input)
-    case 'running':
-      return createRunningFields(input.ui, input.resources.activeRun, input.resources.flow)
-    case 'done':
-      return createDoneFields(input.ui, input.resources.flow.lastSummary)
+    })
   }
+
+  if (input.step === 'previewGraph') {
+    return input.resources.flow.preview
+      ? createPreviewGraphFields(input.ui, input.resources.flow.preview, [
+          createBackToConfigureButton(input.ui, input.runtime),
+          createRefreshPreviewButton(input.ui, input.runtime)
+        ])
+      : createConfigureFields(input)
+  }
+
+  if (input.step === 'running') {
+    return createRunningFields(input.ui, input.resources.activeRun, input.resources.flow)
+  }
+
+  if (input.step === 'done') {
+    return createDoneFields(input.ui, input.resources.flow.lastSummary)
+  }
+
+  return createConfigureFields(input)
 }
 
 function createConfigureFields(input: {

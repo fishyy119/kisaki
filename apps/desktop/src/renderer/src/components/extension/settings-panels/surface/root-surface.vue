@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { DialogBody, DialogDescription, DialogFooter } from '@renderer/components/ui/dialog'
+import { DialogBody, DialogFooter } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Popover } from '@renderer/components/ui/popover'
 import SettingsField from './field.vue'
@@ -29,10 +29,6 @@ function handlePopoverOpenChange(open: boolean): void {
 </script>
 
 <template>
-  <DialogDescription v-if="view.description">
-    {{ view.description }}
-  </DialogDescription>
-
   <Popover
     :open="!!popover"
     @update:open="handlePopoverOpenChange"

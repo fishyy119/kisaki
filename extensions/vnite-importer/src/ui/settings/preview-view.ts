@@ -46,41 +46,6 @@ export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvent
   return fields
 }
 
-export function createAnalyzeBackupFields<TEvents extends SettingsPanelAnyNodeEvents>(
-  ui: SettingsPanelNodeFactory<TEvents>,
-  flow: VniteImportFlowState,
-  onChooseAnother: SettingsPanelField<TEvents>['content'][number]
-): readonly SettingsPanelField<TEvents>[] {
-  return [
-    {
-      id: 'selected-file',
-      label: '备份包',
-      orientation: 'horizontal',
-      contentLayout: 'inline',
-      content: [
-        ui.status({
-          id: 'selected-file-status',
-          tone: 'success',
-          label: flow.file?.name ?? '文件',
-          value: flow.file ? formatBytes(flow.file.sizeBytes) : '未选择'
-        }),
-        onChooseAnother
-      ]
-    },
-    {
-      id: 'analysis-pending',
-      label: '分析',
-      content: [
-        ui.notice({
-          id: 'analysis-pending-notice',
-          tone: 'info',
-          text: '分析会读取游戏、合集、标签、游玩记录、媒体附件、存档记录和回忆记录统计。'
-        })
-      ]
-    }
-  ]
-}
-
 export function createAnalysisSummaryFields<TEvents extends SettingsPanelAnyNodeEvents>(
   ui: SettingsPanelNodeFactory<TEvents>,
   analysis: VniteBackupAnalysisSummary
@@ -117,27 +82,6 @@ export function createAnalysisSummaryFields<TEvents extends SettingsPanelAnyNode
           tone: warningCount > 0 ? 'warning' : 'neutral',
           label: 'Warning',
           value: String(warningCount)
-        })
-      ]
-    },
-    {
-      id: 'analysis-field-coverage',
-      label: '字段覆盖',
-      content: [
-        ui.table({
-          id: 'field-coverage-table',
-          columns: [
-            { key: 'label', label: '字段' },
-            { key: 'present', label: '可导入', kind: 'number' },
-            { key: 'total', label: '总数', kind: 'number' },
-            { key: 'coverage', label: '覆盖率' }
-          ],
-          rows: analysis.fieldCoverage.map((item) => ({
-            label: item.label,
-            present: item.present,
-            total: item.total,
-            coverage: formatCoverage(item.present, item.total)
-          }))
         })
       ]
     },
@@ -433,10 +377,6 @@ function createDiagnosticsField<TEvents extends SettingsPanelAnyNodeEvents>(
       })
     ]
   }
-}
-
-function formatCoverage(present: number, total: number): string {
-  return total > 0 ? `${Math.round((present / total) * 100)}%` : '0%'
 }
 
 export function formatBytes(value: number): string {

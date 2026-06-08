@@ -4,6 +4,7 @@ import type { ValidationIssue } from '@kisaki3/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
 import {
   type ExtensionPackageLayout,
+  readExtensionPackagePublication,
   readExtensionManifestFile,
   validateInstalledExtensionPackage
 } from '../packages'
@@ -12,6 +13,13 @@ import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionInstallationStore } from './store'
 
 const log = createLogger('Extension')
+
+interface ScannedPackageLocation {
+  packagePath: string
+  manifestPath: string
+  developmentReloadPath: string | null
+  issues: readonly ValidationIssue[]
+}
 
 /**
  * Builds the installed-extension view from built-in packages and SQLite
@@ -91,13 +99,14 @@ export class ExtensionInstallationView {
     const packages: ScannedExtensionPackage[] = []
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) {
         continue
       }
 
       const directoryName = entry.name
-      const packagePath = resolveInsideRoot(rootDir, directoryName)
-      const manifestPath = resolveInsideRoot(packagePath, 'manifest.json')
+      const packageRoot = resolveInsideRoot(rootDir, directoryName)
+      const location = await resolveScannedPackageLocation(packageRoot, directoryName, builtin)
+      const { packagePath, manifestPath, developmentReloadPath } = location
 
       if (!(await fse.pathExists(manifestPath))) {
         packages.push({
@@ -106,15 +115,19 @@ export class ExtensionInstallationView {
           directoryName,
           packagePath,
           manifestPath,
+          developmentReloadPath,
           manifest: null,
-          issues: [{ path: '$', message: 'Installed package is missing manifest.json.' }]
+          issues: [
+            ...location.issues,
+            { path: '$', message: 'Installed package is missing manifest.json.' }
+          ]
         })
         continue
       }
 
       try {
         const parsed = await readExtensionManifestFile(manifestPath)
-        const issues = [...parsed.issues]
+        const issues = [...location.issues, ...parsed.issues]
 
         if (parsed.manifest) {
           issues.push(...(await validateInstalledExtensionPackage(packagePath, parsed.manifest)))
@@ -133,6 +146,7 @@ export class ExtensionInstallationView {
           directoryName,
           packagePath,
           manifestPath,
+          developmentReloadPath,
           manifest: parsed.manifest,
           issues
         })
@@ -144,13 +158,55 @@ export class ExtensionInstallationView {
           directoryName,
           packagePath,
           manifestPath,
+          developmentReloadPath,
           manifest: null,
-          issues: [{ path: '$', message: 'manifest.json could not be read.' }]
+          issues: [...location.issues, { path: '$', message: 'manifest.json could not be read.' }]
         })
       }
     }
 
     return packages
+  }
+}
+
+async function resolveScannedPackageLocation(
+  packageRoot: string,
+  directoryName: string,
+  builtin: boolean
+): Promise<ScannedPackageLocation> {
+  if (!builtin) {
+    return {
+      packagePath: packageRoot,
+      manifestPath: resolveInsideRoot(packageRoot, 'manifest.json'),
+      developmentReloadPath: null,
+      issues: []
+    }
+  }
+
+  try {
+    const publication = await readExtensionPackagePublication(packageRoot, directoryName)
+    if (!publication) {
+      return {
+        packagePath: packageRoot,
+        manifestPath: resolveInsideRoot(packageRoot, 'manifest.json'),
+        developmentReloadPath: packageRoot,
+        issues: [{ path: 'current.json', message: 'Built-in package output is not published.' }]
+      }
+    }
+
+    return {
+      packagePath: publication.packagePath,
+      manifestPath: publication.manifestPath,
+      developmentReloadPath: publication.publicationPath,
+      issues: []
+    }
+  } catch (error) {
+    return {
+      packagePath: packageRoot,
+      manifestPath: resolveInsideRoot(packageRoot, 'manifest.json'),
+      developmentReloadPath: packageRoot,
+      issues: [{ path: 'current.json', message: toIssueMessage(error) }]
+    }
   }
 }
 
@@ -163,6 +219,7 @@ function buildInstalledEntry(
   const builtin = pkg?.builtin ?? false
   const packagePath = pkg?.packagePath ?? layout.packageDir(extensionId)
   const manifestPath = pkg?.manifestPath ?? layout.packageManifestPath(extensionId)
+  const developmentReloadPath = pkg?.developmentReloadPath ?? null
   const dataPath = layout.dataPath(extensionId)
   const tempPath = layout.runtimeTempPath(extensionId)
 
@@ -185,6 +242,7 @@ function buildInstalledEntry(
       updatedAt: toIsoString(installation?.updatedAt),
       packagePath,
       manifestPath,
+      developmentReloadPath,
       dataPath,
       tempPath
     }
@@ -227,6 +285,7 @@ function buildInstalledEntry(
     updatedAt: toIsoString(installation?.updatedAt),
     packagePath,
     manifestPath,
+    developmentReloadPath,
     dataPath,
     tempPath
   }
@@ -283,6 +342,10 @@ function findPackageRecord(
 
 function formatIssue(issue: ValidationIssue): string {
   return `${issue.path}: ${issue.message}`
+}
+
+function toIssueMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Package publication could not be read.'
 }
 
 function toIsoString(value: Date | number | string | null | undefined): string | null {

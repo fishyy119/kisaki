@@ -1,33 +1,35 @@
 import path from 'node:path'
 import { watch, type FSWatcher } from 'chokidar'
 import { createLogger } from '@main/log'
+import { EXTENSION_PACKAGE_CURRENT_FILE } from './packages'
 import { isInsideOrEqualPath } from './shared/path-confinement'
 
 const log = createLogger('Extension')
 
-export interface ExtensionReloadWatchTarget {
+export interface ExtensionDevelopmentReloadWatchTarget {
   extensionId: string
   extensionPath: string
+  watchPath: string
 }
 
-export type ExtensionReloadCallback = (extensionId: string) => Promise<void> | void
+export type ExtensionDevelopmentReloadCallback = (extensionId: string) => Promise<void> | void
 
 /**
- * Watches active extension package roots and requests a native runtime reload when
- * their files change. This is extension-system behavior, not a dev-only flow.
+ * Watches development extension outputs and requests runtime reloads after a
+ * complete dev package publication or direct dev package file change.
  */
-export class ExtensionReloadWatcher {
+export class ExtensionDevelopmentReloadWatcher {
   private readonly reloadDebounceTimers = new Map<string, NodeJS.Timeout>()
   private watcher: FSWatcher | null = null
-  private targets: readonly ExtensionReloadWatchTarget[] = []
+  private targets: readonly ExtensionDevelopmentReloadWatchTarget[] = []
   private targetSignature = ''
 
-  constructor(private readonly onReload: ExtensionReloadCallback) {}
+  constructor(private readonly onReload: ExtensionDevelopmentReloadCallback) {}
 
-  async updateTargets(targets: readonly ExtensionReloadWatchTarget[]): Promise<void> {
+  async updateTargets(targets: readonly ExtensionDevelopmentReloadWatchTarget[]): Promise<void> {
     const normalizedTargets = normalizeTargets(targets)
     const nextSignature = normalizedTargets
-      .map((target) => `${target.extensionId}\0${target.extensionPath}`)
+      .map((target) => `${target.extensionId}\0${target.extensionPath}\0${target.watchPath}`)
       .join('\n')
 
     if (nextSignature === this.targetSignature) {
@@ -42,25 +44,22 @@ export class ExtensionReloadWatcher {
       return
     }
 
-    this.watcher = watch(
-      this.targets.map((target) => target.extensionPath),
-      {
-        ignored: isIgnoredExtensionWatchPath,
-        ignoreInitial: true,
-        persistent: true,
-        depth: 8,
-        awaitWriteFinish: {
-          stabilityThreshold: 250,
-          pollInterval: 50
-        }
+    this.watcher = watch([...new Set(this.targets.map((target) => target.watchPath))], {
+      ignored: isIgnoredExtensionWatchPath,
+      ignoreInitial: true,
+      persistent: true,
+      depth: 8,
+      awaitWriteFinish: {
+        stabilityThreshold: 250,
+        pollInterval: 50
       }
-    )
+    })
 
     this.watcher.on('add', (filePath) => this.handleFileEvent(filePath))
     this.watcher.on('change', (filePath) => this.handleFileEvent(filePath))
     this.watcher.on('unlink', (filePath) => this.handleFileEvent(filePath))
 
-    log.info('Watching active extension(s).', { targetsLength: this.targets.length })
+    log.info('Watching development extension(s).', { targetsLength: this.targets.length })
   }
 
   async stop(): Promise<void> {
@@ -83,10 +82,17 @@ export class ExtensionReloadWatcher {
       return
     }
 
-    this.scheduleReload(target, path.relative(target.extensionPath, absolutePath))
+    if (!shouldReloadForPath(target, absolutePath)) {
+      return
+    }
+
+    this.scheduleReload(target, path.relative(target.watchPath, absolutePath))
   }
 
-  private scheduleReload(target: ExtensionReloadWatchTarget, relativePath: string): void {
+  private scheduleReload(
+    target: ExtensionDevelopmentReloadWatchTarget,
+    relativePath: string
+  ): void {
     const existingTimer = this.reloadDebounceTimers.get(target.extensionId)
     if (existingTimer) {
       clearTimeout(existingTimer)
@@ -95,7 +101,7 @@ export class ExtensionReloadWatcher {
     const timer = setTimeout(() => {
       this.reloadDebounceTimers.delete(target.extensionId)
 
-      log.info('Reloading extension after file change.', {
+      log.info('Reloading development extension after file change.', {
         targetExtensionId: target.extensionId,
         changedRelativePath: relativePath
       })
@@ -110,14 +116,15 @@ export class ExtensionReloadWatcher {
 }
 
 function normalizeTargets(
-  targets: readonly ExtensionReloadWatchTarget[]
-): readonly ExtensionReloadWatchTarget[] {
-  const byId = new Map<string, ExtensionReloadWatchTarget>()
+  targets: readonly ExtensionDevelopmentReloadWatchTarget[]
+): readonly ExtensionDevelopmentReloadWatchTarget[] {
+  const byId = new Map<string, ExtensionDevelopmentReloadWatchTarget>()
 
   for (const target of targets) {
     byId.set(target.extensionId, {
       extensionId: target.extensionId,
-      extensionPath: path.resolve(target.extensionPath)
+      extensionPath: path.resolve(target.extensionPath),
+      watchPath: path.resolve(target.watchPath)
     })
   }
 
@@ -125,18 +132,18 @@ function normalizeTargets(
 }
 
 function findTargetForPath(
-  targets: readonly ExtensionReloadWatchTarget[],
+  targets: readonly ExtensionDevelopmentReloadWatchTarget[],
   filePath: string
-): ExtensionReloadWatchTarget | null {
+): ExtensionDevelopmentReloadWatchTarget | null {
   const absolutePath = path.resolve(filePath)
-  let bestTarget: ExtensionReloadWatchTarget | null = null
+  let bestTarget: ExtensionDevelopmentReloadWatchTarget | null = null
 
   for (const target of targets) {
-    if (!isInsidePath(target.extensionPath, absolutePath)) {
+    if (!isInsidePath(target.watchPath, absolutePath)) {
       continue
     }
 
-    if (!bestTarget || target.extensionPath.length > bestTarget.extensionPath.length) {
+    if (!bestTarget || target.watchPath.length > bestTarget.watchPath.length) {
       bestTarget = target
     }
   }
@@ -149,6 +156,17 @@ function isInsidePath(parentPath: string, childPath: string): boolean {
     path.relative(path.resolve(parentPath), path.resolve(childPath)) !== '' &&
     isInsideOrEqualPath(parentPath, childPath)
   )
+}
+
+function shouldReloadForPath(
+  target: ExtensionDevelopmentReloadWatchTarget,
+  filePath: string
+): boolean {
+  if (path.resolve(target.watchPath) === path.resolve(target.extensionPath)) {
+    return true
+  }
+
+  return filePath === path.resolve(target.watchPath, EXTENSION_PACKAGE_CURRENT_FILE)
 }
 
 function isIgnoredExtensionWatchPath(filePath: string): boolean {

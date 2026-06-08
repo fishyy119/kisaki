@@ -75,8 +75,8 @@ export interface RuntimeReloadOptions {
  * Main-process facade for the shared extension host lifecycle.
  *
  * Runtime state is reconciled from a desired extension set. Load, unload, reload,
- * package updates, file changes and crash recovery all flow through the same
- * state machine so the main process does not drift from the host process.
+ * package updates, development file changes and crash recovery all flow through
+ * the same state machine so the main process does not drift from the host process.
  */
 export class RuntimeManager {
   private readonly mutex = new Mutex()
@@ -715,7 +715,7 @@ function toRecycleUnloadReason(cause: ExtensionRuntimeChangeCause): ExtensionUnl
   switch (cause) {
     case 'package-update':
       return 'update'
-    case 'file-change':
+    case 'development-file-change':
     case 'metadata-change':
     case 'user':
       return 'reload'

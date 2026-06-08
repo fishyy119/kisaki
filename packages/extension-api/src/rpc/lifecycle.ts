@@ -11,7 +11,7 @@ export type ExtensionRuntimeChangeCause =
   | 'uninstall'
   | 'package-update'
   | 'metadata-change'
-  | 'file-change'
+  | 'development-file-change'
   | 'user'
   | 'crash-recovery'
   | 'host-timeout'

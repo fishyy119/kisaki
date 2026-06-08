@@ -22,6 +22,7 @@ export interface ScannedExtensionPackage {
   directoryName: string
   packagePath: string
   manifestPath: string
+  developmentReloadPath: string | null
   manifest: ExtensionManifest | null
   issues: readonly ValidationIssue[]
 }
@@ -46,6 +47,7 @@ export interface ExtensionInstalledEntry {
   updatedAt: string | null
   packagePath: string
   manifestPath: string
+  developmentReloadPath: string | null
   dataPath: string
   tempPath: string
 }
