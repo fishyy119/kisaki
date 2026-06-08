@@ -8,7 +8,6 @@ import {
   type VniteImportFieldSelection
 } from '../import/options'
 import {
-  DEFAULT_VNITE_COMPLETION_CUSTOM_SURFACES,
   normalizeGameUpdateSurfaces,
   normalizeVniteCompletionSurfacePreset,
   type VniteCompletionSurfacePreset
@@ -26,16 +25,12 @@ export interface VniteImporterSettingsV1 {
     completionSurfaces: readonly GameUpdateSurface[]
     scraperProfileId?: string
   }
-  cleanup: {
-    keepLastAnalysis: boolean
-  }
 }
 
 export function normalizeVniteImporterSettings(value: unknown): VniteImporterSettingsV1 {
   const input = isRecord(value) && value.version === 1 ? value : undefined
   const defaults = createDefaultVniteImporterSettings()
   const inputDefaults = asRecord(input?.defaults)
-  const cleanup = asRecord(input?.cleanup)
   const scraperProfileId = normalizeOptionalString(inputDefaults?.scraperProfileId)
   const normalizedDefaults: VniteImporterSettingsV1['defaults'] = {
     fieldSelection: normalizeFieldSelection(
@@ -70,13 +65,7 @@ export function normalizeVniteImporterSettings(value: unknown): VniteImporterSet
 
   return {
     version: 1,
-    defaults: normalizedDefaults,
-    cleanup: {
-      keepLastAnalysis: normalizeBoolean(
-        cleanup?.keepLastAnalysis,
-        defaults.cleanup.keepLastAnalysis
-      )
-    }
+    defaults: normalizedDefaults
   }
 }
 

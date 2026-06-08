@@ -1,6 +1,6 @@
 export const VNITE_SETTINGS_DIALOG_IDS = {
   fields: 'fields',
-  advanced: 'advanced'
+  diagnostics: 'diagnostics'
 } as const
 
 export const VNITE_SETTINGS_NODE_IDS = {
@@ -9,16 +9,13 @@ export const VNITE_SETTINGS_NODE_IDS = {
   completionSurfacePreset: 'completionSurfacePreset',
   completionSurfaces: 'completionSurfaces',
   conflictMode: 'conflictMode',
+  strictAttachments: 'strictAttachments',
   pickBackupFile: 'pickBackupFile',
   editFields: 'editFields',
-  advancedOptions: 'advancedOptions',
   chooseAnotherBackup: 'chooseAnotherBackup',
   backToConfigure: 'backToConfigure',
   refreshPreview: 'refreshPreview',
-  resetFlow: 'resetFlow',
-  keepLastAnalysis: 'keepLastAnalysis',
-  strictAttachments: 'strictAttachments',
-  cleanupCurrentState: 'cleanupCurrentState'
+  viewDiagnostics: 'viewDiagnostics'
 } as const
 
 export type VniteSettingsDialogId =

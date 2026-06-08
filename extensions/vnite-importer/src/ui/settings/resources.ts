@@ -5,6 +5,10 @@ import { omitUndefined } from '../../shared/object'
 import type { VniteImportFlowState } from './flow'
 import type { VniteSettingsRuntime } from './runtime'
 
+export interface ResolveVniteSettingsResourcesOptions {
+  resetTransientFlow?: boolean
+}
+
 export interface VniteSettingsResourceSnapshot {
   settings: VniteImporterSettingsV1
   flow: VniteImportFlowState
@@ -14,13 +18,20 @@ export interface VniteSettingsResourceSnapshot {
 }
 
 export async function resolveVniteSettingsResources(
-  runtime: VniteSettingsRuntime
+  runtime: VniteSettingsRuntime,
+  options: ResolveVniteSettingsResourcesOptions = {}
 ): Promise<VniteSettingsResourceSnapshot> {
   const [settings, profiles] = await Promise.all([
     runtime.settingsStore.get(),
     listGameScraperProfiles(runtime)
   ])
-  const runState = await resolveImportRunState(runtime)
+  let runState = await resolveImportRunState(runtime)
+
+  if (options.resetTransientFlow && shouldResetTransientFlow(runState)) {
+    runState = {
+      flow: await resetTransientFlow(runtime, runState.flow)
+    }
+  }
 
   return omitUndefined({
     settings,
@@ -80,6 +91,40 @@ async function resolveImportRunState(runtime: VniteSettingsRuntime): Promise<{
   }
 
   return { flow }
+}
+
+function shouldResetTransientFlow(input: {
+  flow: VniteImportFlowState
+  activeRun?: ExtensionTaskRunSnapshot
+}): boolean {
+  const flow = input.flow
+  if (input.activeRun) {
+    return false
+  }
+
+  return (
+    !!flow.file ||
+    !!flow.analysis ||
+    !!flow.preview ||
+    !!flow.activeRunId ||
+    flow.step !== 'pickBackup'
+  )
+}
+
+async function resetTransientFlow(
+  runtime: VniteSettingsRuntime,
+  flow: VniteImportFlowState
+): Promise<VniteImportFlowState> {
+  if (flow.file) {
+    await runtime.files.releaseGrant(flow.file.grantId).catch((error) => {
+      runtime.logger.warn(
+        'Vnite importer failed to release stale settings file grant.',
+        toSafeLog(error)
+      )
+    })
+  }
+
+  return await runtime.flowStore.reset()
 }
 
 function readJobSummary(run: ExtensionTaskRunSnapshot): VniteImportJobSummary | undefined {

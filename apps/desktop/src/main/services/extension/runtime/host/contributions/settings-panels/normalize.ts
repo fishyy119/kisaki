@@ -2,6 +2,7 @@ import type {
   SettingsPanelDialogModel,
   SettingsPanelField,
   SettingsPanelFieldContentNode,
+  SettingsPanelFooterAction,
   SettingsPanelPopoverModel,
   SettingsPanelResolvedSurfacePayload,
   SettingsPanelRootModel,
@@ -12,6 +13,8 @@ import { registerSettingsPanelCallback } from './callbacks'
 import type { NormalizeSettingsPanelContext } from './types'
 import { compactRecord } from './values'
 
+const SETTINGS_PANEL_FOOTER_FIELD_ID = '__footer__'
+
 export function normalizeSettingsPanelRootModel(
   model: SettingsPanelRootModel<any, any>,
   context: NormalizeSettingsPanelContext
@@ -20,7 +23,8 @@ export function normalizeSettingsPanelRootModel(
     surface: 'root',
     title: model.title,
     description: model.description,
-    submitLabel: model.submitLabel ?? context.contribution.submitLabel
+    submitLabel: model.submitLabel ?? context.contribution.submitLabel,
+    footerActions: normalizeSettingsPanelFooterActions(model.footerActions, context)
   })
 
   const tabs = (model as { tabs?: readonly SettingsPanelTab<any>[] }).tabs
@@ -52,6 +56,7 @@ export function normalizeSettingsPanelDialogModel(
       description: model.description,
       size: model.size ?? context.surfaceDefaults?.size,
       submitLabel: model.submitLabel ?? context.surfaceDefaults?.submitLabel,
+      footerActions: normalizeSettingsPanelFooterActions(model.footerActions, context),
       fields: (model.fields as readonly SettingsPanelField<any>[]).map((field) =>
         normalizeSettingsPanelField(field, context)
       )
@@ -79,6 +84,30 @@ export function normalizeSettingsPanelPopoverModel(
     }),
     'resolved settings popover'
   )
+}
+
+function normalizeSettingsPanelFooterActions(
+  actions: readonly SettingsPanelFooterAction<any>[] | undefined,
+  context: NormalizeSettingsPanelContext
+): readonly Record<string, unknown>[] | undefined {
+  return actions?.map((action) => {
+    const { onClick, ...item } = action
+    const callbackId =
+      typeof onClick === 'function'
+        ? registerSettingsPanelCallback(
+            SETTINGS_PANEL_FOOTER_FIELD_ID,
+            action.id,
+            'button',
+            context,
+            onClick
+          )
+        : undefined
+    return compactRecord({
+      ...item,
+      placement: action.placement ?? 'end',
+      callbackId
+    })
+  })
 }
 
 function toSettingsPanelJsonObject(

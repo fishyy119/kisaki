@@ -63,6 +63,23 @@ function getCellTextClass(column: SettingsPanelTableColumn): string | undefined 
   return column.truncate ? 'block truncate' : undefined
 }
 
+function getCellTitle(column: SettingsPanelTableColumn, value: unknown): string | undefined {
+  if (!column.truncate) {
+    return undefined
+  }
+
+  const text = formatCell(value).trim()
+  return text || undefined
+}
+
+function getLinkTitle(column: SettingsPanelTableColumn, value: unknown): string | undefined {
+  if (!column.truncate) {
+    return undefined
+  }
+
+  return getLinkCell(value)?.label ?? getCellTitle(column, value)
+}
+
 function getLinkCell(value: unknown): SettingsPanelTableLinkCell | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined
@@ -151,6 +168,7 @@ async function openLink(href: string): Promise<void> {
                   v-if="getLinkCell(row[column.key])"
                   type="button"
                   class="inline-flex max-w-full min-w-0 items-center text-left text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                  :title="getLinkTitle(column, row[column.key])"
                   @click="openLink(getLinkCell(row[column.key])!.href)"
                 >
                   <span class="truncate">{{ getLinkCell(row[column.key])!.label }}</span>
@@ -158,12 +176,16 @@ async function openLink(href: string): Promise<void> {
                 <span
                   v-else
                   :class="getCellTextClass(column)"
+                  :title="getCellTitle(column, row[column.key])"
                 >
                   {{ formatCell(row[column.key]) }}
                 </span>
               </template>
               <template v-else>
-                <span :class="getCellTextClass(column)">
+                <span
+                  :class="getCellTextClass(column)"
+                  :title="getCellTitle(column, row[column.key])"
+                >
                   {{ formatCell(row[column.key]) }}
                 </span>
               </template>

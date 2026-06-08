@@ -181,7 +181,11 @@ export function readVniteImportFormOptions(input: {
   return {
     fieldSelection: defaults.fieldSelection,
     conflictMode: readConflictMode(input.values, defaults.conflictMode),
-    strictAttachments: defaults.strictAttachments,
+    strictAttachments: readBoolean(
+      input.values,
+      VNITE_SETTINGS_NODE_IDS.strictAttachments,
+      defaults.strictAttachments
+    ),
     completion: omitUndefined({
       enabled: completionEnabled,
       profileId: profileId || undefined,

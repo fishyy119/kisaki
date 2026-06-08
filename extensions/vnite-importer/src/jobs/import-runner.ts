@@ -75,6 +75,7 @@ export interface VniteImportRunInput extends VniteImportOptions {
 
 export interface VniteImportPreviewResult {
   analysis: VniteBackupAnalysisSummary
+  snapshot: VniteBackupSnapshot
   execution: VniteImportExecutorResult
 }
 
@@ -151,6 +152,7 @@ export class VniteImportJobRunner {
 
       return {
         analysis: read.analysis,
+        snapshot: read.snapshot,
         execution
       }
     } finally {

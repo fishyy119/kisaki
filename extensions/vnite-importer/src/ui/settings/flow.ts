@@ -1,7 +1,8 @@
 import type {
   ExtensionFileGrant,
   ExtensionStorage,
-  LibraryGraphResult
+  LibraryGraphResult,
+  LibraryGraphResultAction
 } from '@kisaki3/extension-sdk'
 import { VNITE_IMPORTER_STORAGE_KEYS } from '../../shared/constants'
 import type { VniteBackupAnalysisSummary } from '../../backup/types'
@@ -21,6 +22,36 @@ export interface VniteImportPreviewState {
   analysis: VniteBackupAnalysisSummary
   graph: LibraryGraphResult
   summary: VniteImportExecutionSummary
+  games: readonly VniteImportPreviewGame[]
+}
+
+export interface VniteImportPreviewGame {
+  key: string
+  title: string
+  subtitle?: string
+  action: LibraryGraphResultAction
+  entityId?: string
+  existing?: VniteImportPreviewExistingGame
+  name?: string
+  originalName?: string
+  releaseDate?: string
+  developers?: string
+  publishers?: string
+  platforms?: string
+  genres?: string
+  tags?: string
+  collections?: string
+  playStatus?: string
+  playTime?: string
+  score?: string
+  localPath?: string
+  attachments?: string
+}
+
+export interface VniteImportPreviewExistingGame {
+  metadata?: string
+  activity?: string
+  organization?: string
 }
 
 export interface VniteImportFlowState {
@@ -129,17 +160,12 @@ export class VniteImportFlowStore {
     })
   }
 
-  async reset(options: { keepLastSummary?: boolean } = {}): Promise<VniteImportFlowState> {
-    const previous = await this.get()
-    const state: VniteImportFlowState = {
+  async reset(): Promise<VniteImportFlowState> {
+    return await this.set({
       version: 1,
       step: 'pickBackup',
       updatedAt: Date.now()
-    }
-    if (options.keepLastSummary && previous.lastSummary) {
-      state.lastSummary = previous.lastSummary
-    }
-    return await this.set(state)
+    })
   }
 
   private async update(
@@ -274,7 +300,89 @@ function normalizePreview(value: unknown): VniteImportPreviewState | undefined {
     createdAt: normalizeTimestamp(input.createdAt),
     analysis: input.analysis as unknown as VniteBackupAnalysisSummary,
     graph: input.graph as unknown as LibraryGraphResult,
-    summary: input.summary as unknown as VniteImportExecutionSummary
+    summary: input.summary as unknown as VniteImportExecutionSummary,
+    games: normalizePreviewGames(input.games)
+  }
+}
+
+function normalizePreviewGames(value: unknown): readonly VniteImportPreviewGame[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.flatMap((item) => {
+    const normalized = normalizePreviewGame(item)
+    return normalized ? [normalized] : []
+  })
+}
+
+function normalizePreviewGame(value: unknown): VniteImportPreviewGame | undefined {
+  const input = isRecord(value) ? value : undefined
+  const key = normalizeOptionalString(input?.key)
+  const title = normalizeOptionalString(input?.title)
+  const action = normalizePreviewAction(input?.action)
+
+  if (!key || !title || !action) {
+    return undefined
+  }
+
+  const game: VniteImportPreviewGame = { key, title, action }
+  assignOptionalString(game, 'entityId', input?.entityId)
+  assignOptionalExistingGame(game, input?.existing)
+  assignOptionalString(game, 'subtitle', input?.subtitle)
+  assignOptionalString(game, 'name', input?.name)
+  assignOptionalString(game, 'originalName', input?.originalName)
+  assignOptionalString(game, 'releaseDate', input?.releaseDate)
+  assignOptionalString(game, 'developers', input?.developers)
+  assignOptionalString(game, 'publishers', input?.publishers)
+  assignOptionalString(game, 'platforms', input?.platforms)
+  assignOptionalString(game, 'genres', input?.genres)
+  assignOptionalString(game, 'tags', input?.tags)
+  assignOptionalString(game, 'collections', input?.collections)
+  assignOptionalString(game, 'playStatus', input?.playStatus)
+  assignOptionalString(game, 'playTime', input?.playTime)
+  assignOptionalString(game, 'score', input?.score)
+  assignOptionalString(game, 'localPath', input?.localPath)
+  assignOptionalString(game, 'attachments', input?.attachments)
+  return game
+}
+
+function assignOptionalExistingGame(target: VniteImportPreviewGame, value: unknown): void {
+  const input = isRecord(value) ? value : undefined
+  if (!input) {
+    return
+  }
+
+  const existing: VniteImportPreviewExistingGame = {}
+  assignOptionalString(existing, 'metadata', input.metadata)
+  assignOptionalString(existing, 'activity', input.activity)
+  assignOptionalString(existing, 'organization', input.organization)
+
+  if (Object.keys(existing).length > 0) {
+    target.existing = existing
+  }
+}
+
+function normalizePreviewAction(value: unknown): LibraryGraphResultAction | undefined {
+  switch (value) {
+    case 'create':
+    case 'update':
+    case 'skip':
+    case 'fail':
+      return value
+    default:
+      return undefined
+  }
+}
+
+function assignOptionalString<TTarget extends object, TKey extends keyof TTarget>(
+  target: TTarget,
+  key: TKey,
+  value: unknown
+): void {
+  const normalized = normalizeOptionalString(value)
+  if (normalized) {
+    Object.assign(target, { [key]: normalized })
   }
 }
 

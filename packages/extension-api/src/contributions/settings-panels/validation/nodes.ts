@@ -22,6 +22,7 @@ import {
   FIELD_HELP_KEYS,
   FIELD_LINK_KEYS,
   FIELD_KEYS,
+  FOOTER_ACTION_KEYS,
   NODE_BASE_KEYS,
   RECORD_LIST_COLUMN_KEYS,
   SELECT_OPTION_KEYS,
@@ -29,6 +30,7 @@ import {
   SETTINGS_PANEL_COMPARISON_TONE_VALUES,
   SETTINGS_PANEL_CONTENT_LAYOUT_VALUES,
   SETTINGS_PANEL_FIELD_ORIENTATION_VALUES,
+  SETTINGS_PANEL_FOOTER_ACTION_PLACEMENT_VALUES,
   SETTINGS_PANEL_IMAGE_FIT_VALUES,
   SETTINGS_PANEL_NODE_WIDTH_VALUES,
   SETTINGS_PANEL_NOTICE_TONE_VALUES,
@@ -82,6 +84,37 @@ export function validateSettingsPanelNodes(value: unknown): ValidationIssue[] {
   const state = createSurfaceValidationState()
   for (const [index, node] of value.entries()) {
     issues.push(...validateSettingsPanelNodeLike(node, `$[${index}]`, state))
+  }
+
+  return issues
+}
+
+export function validateSettingsPanelFooterActions(
+  value: unknown,
+  path: string
+): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
+  const issues = validateRequiredArray(value, path, {
+    typeMessage: 'footerActions must be an array when provided.'
+  })
+
+  if (!Array.isArray(value)) {
+    return issues
+  }
+
+  const seenIds = new Set<string>()
+  for (const [index, action] of value.entries()) {
+    const actionPath = `${path}[${index}]`
+    if (!isPlainObject(action)) {
+      issues.push({ path: actionPath, message: 'Footer action must be an object.' })
+      continue
+    }
+
+    issues.push(...validateSettingsPanelFooterAction(action, actionPath))
+    pushUniqueKeyIssue(action.id, seenIds, `${actionPath}.id`, issues, 'Footer action')
   }
 
   return issues
@@ -631,6 +664,51 @@ function validateSettingsPanelButtonConfirmation(value: unknown, path: string): 
     ...validateOptionalString(value.cancelLabel, `${path}.cancelLabel`, {
       typeMessage: 'confirm.cancelLabel must be a string when provided.'
     })
+  ]
+}
+
+function validateSettingsPanelFooterAction(
+  value: Record<string, unknown>,
+  path: string
+): ValidationIssue[] {
+  return [
+    ...validateUnknownKeys(value, FOOTER_ACTION_KEYS, path),
+    ...validateRequiredString(value.id, `${path}.id`, {
+      trim: true,
+      valueMessage: 'Footer action id must be a non-empty string.'
+    }),
+    ...validateRequiredString(value.label, `${path}.label`, {
+      trim: true,
+      valueMessage: 'Footer action label must be a non-empty string.'
+    }),
+    ...validateOptionalString(value.icon, `${path}.icon`, {
+      typeMessage: 'Footer action icon must be a string when provided.'
+    }),
+    ...validateOptionalEnumString(
+      value.tone,
+      `${path}.tone`,
+      SETTINGS_PANEL_BUTTON_TONE_VALUES,
+      'Footer action tone must be one of the supported button tones.'
+    ),
+    ...validateOptionalBoolean(value.hidden, `${path}.hidden`).map((issue) => ({
+      ...issue,
+      message: 'Footer action hidden must be a boolean when provided.'
+    })),
+    ...validateOptionalBoolean(value.disabled, `${path}.disabled`).map((issue) => ({
+      ...issue,
+      message: 'Footer action disabled must be a boolean when provided.'
+    })),
+    ...validateOptionalEnumString(
+      value.placement,
+      `${path}.placement`,
+      SETTINGS_PANEL_FOOTER_ACTION_PLACEMENT_VALUES,
+      'Footer action placement must be one of the supported placements.'
+    ),
+    ...validateSettingsPanelButtonConfirmation(value.confirm, `${path}.confirm`),
+    ...validateOptionalFunction(value.onClick, `${path}.onClick`).map((issue) => ({
+      ...issue,
+      message: 'Footer action onClick must be a function when provided.'
+    }))
   ]
 }
 

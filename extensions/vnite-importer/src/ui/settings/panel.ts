@@ -6,10 +6,10 @@ import {
 import { VNITE_IMPORTER_NAME, VNITE_IMPORTER_PANEL_ID } from '../../shared/constants'
 import { omitUndefined } from '../../shared/object'
 import {
-  createBackToConfigureButton,
-  createChooseAnotherButton,
+  createBackToConfigureFooterAction,
+  createChooseAnotherFooterAction,
   createPickBackupFileButton,
-  createRefreshPreviewButton,
+  createRefreshPreviewFooterAction,
   submitVniteRoot,
   toSafeSettingsLog,
   toUserErrorMessage,
@@ -21,6 +21,8 @@ import { getVniteImportSubmitLabel, resolveVniteImportStep, type VniteImportStep
 import { VNITE_SETTINGS_DIALOG_IDS, VNITE_SETTINGS_NODE_IDS } from './ids'
 import {
   VNITE_CONFLICT_MODE_OPTIONS,
+  countAllFields,
+  countSelectedFields,
   readVniteImportFormOptions,
   type VniteImportFormOptions
 } from './options'
@@ -35,8 +37,11 @@ import {
 import { resolveVniteSettingsResources, type VniteSettingsResourceSnapshot } from './resources'
 import type { VniteSettingsRuntime } from './runtime'
 
+const MAX_TRACKED_ROOT_SESSIONS = 32
+
 export function createVniteImporterSettingsPanel(runtime: VniteSettingsRuntime) {
   const dialogs = createVniteSettingsDialogs(runtime)
+  const initializedRootSessions = new Set<string>()
 
   return defineSettingsPanel({
     id: VNITE_IMPORTER_PANEL_ID,
@@ -44,7 +49,9 @@ export function createVniteImporterSettingsPanel(runtime: VniteSettingsRuntime) 
     size: 'lg',
     dialogs,
     async resolve(context, ui) {
-      const resources = await resolveVniteSettingsResources(runtime)
+      const resources = await resolveVniteSettingsResources(runtime, {
+        resetTransientFlow: markRootSessionInitialized(initializedRootSessions, context.sessionId)
+      })
       const step = resolveVniteImportStep({
         flow: resources.flow,
         hasActiveRun: !!resources.activeRun
@@ -61,6 +68,11 @@ export function createVniteImporterSettingsPanel(runtime: VniteSettingsRuntime) 
         title: VNITE_IMPORTER_NAME,
         description: '从 Vnite 数据库备份包导入游戏和用户数据。',
         submitLabel: getVniteImportSubmitLabel(step),
+        footerActions: createRootFooterActions({
+          runtime,
+          step,
+          hasPreview: !!resources.flow.preview
+        }),
         fields: createRootFields({
           ui,
           runtime,
@@ -88,6 +100,41 @@ export function createVniteImporterSettingsPanel(runtime: VniteSettingsRuntime) 
   })
 }
 
+function markRootSessionInitialized(sessions: Set<string>, sessionId: string): boolean {
+  if (sessions.has(sessionId)) {
+    return false
+  }
+
+  sessions.add(sessionId)
+  if (sessions.size > MAX_TRACKED_ROOT_SESSIONS) {
+    const oldestSession = sessions.values().next().value
+    if (oldestSession) {
+      sessions.delete(oldestSession)
+    }
+  }
+
+  return true
+}
+
+function createRootFooterActions(input: {
+  runtime: VniteSettingsRuntime
+  step: VniteImportStep
+  hasPreview: boolean
+}) {
+  if (input.step === 'configureImport') {
+    return [createChooseAnotherFooterAction(input.runtime)]
+  }
+
+  if (input.step === 'previewGraph' && input.hasPreview) {
+    return [
+      createBackToConfigureFooterAction(input.runtime),
+      createRefreshPreviewFooterAction(input.runtime)
+    ]
+  }
+
+  return []
+}
+
 function createRootFields(input: {
   ui: VniteRootSettingsUi
   runtime: VniteSettingsRuntime
@@ -98,7 +145,6 @@ function createRootFields(input: {
 }): readonly VniteRootSettingsField[] {
   if (input.step === 'pickBackup') {
     return createPickBackupFields(input.ui, {
-      settings: input.resources.settings,
       flow: input.resources.flow,
       pickButton: createPickBackupFileButton(input.ui, input.runtime, {
         label: input.resources.flow.file ? '更换文件' : '选择文件'
@@ -108,10 +154,11 @@ function createRootFields(input: {
 
   if (input.step === 'previewGraph') {
     return input.resources.flow.preview
-      ? createPreviewGraphFields(input.ui, input.resources.flow.preview, [
-          createBackToConfigureButton(input.ui, input.runtime),
-          createRefreshPreviewButton(input.ui, input.runtime)
-        ])
+      ? createPreviewGraphFields(
+          input.ui,
+          input.resources.flow.preview,
+          createOpenDiagnosticsButton(input.ui)
+        )
       : createConfigureFields(input)
   }
 
@@ -120,10 +167,24 @@ function createRootFields(input: {
   }
 
   if (input.step === 'done') {
-    return createDoneFields(input.ui, input.resources.flow.lastSummary)
+    return createDoneFields(
+      input.ui,
+      input.resources.flow.lastSummary,
+      createOpenDiagnosticsButton(input.ui)
+    )
   }
 
   return createConfigureFields(input)
+}
+
+function createOpenDiagnosticsButton(ui: VniteRootSettingsUi) {
+  return ui.button({
+    id: VNITE_SETTINGS_NODE_IDS.viewDiagnostics,
+    label: '查看诊断',
+    onClick(event) {
+      return event.openDialog(VNITE_SETTINGS_DIALOG_IDS.diagnostics)
+    }
+  })
 }
 
 function createConfigureFields(input: {
@@ -152,7 +213,8 @@ function createConfigureFields(input: {
       : []),
     createFieldSelectionSummaryField(
       input.ui,
-      input.resources.settings,
+      countSelectedFields(input.resources.settings.defaults.fieldSelection),
+      countAllFields(),
       input.ui.button({
         id: VNITE_SETTINGS_NODE_IDS.editFields,
         label: '编辑字段',
@@ -234,22 +296,14 @@ function createConfigureFields(input: {
       ]
     },
     {
-      id: 'advanced-options',
-      label: '高级选项',
-      contentLayout: 'inline',
+      id: 'strict-attachments',
+      label: '附件失败策略',
+      description: '启用后，附件导入失败会让相关写入节点失败；关闭时只生成诊断 warning。',
       content: [
-        input.ui.button({
-          id: VNITE_SETTINGS_NODE_IDS.advancedOptions,
-          label: '高级选项',
-          onClick(event) {
-            return event.openDialog(VNITE_SETTINGS_DIALOG_IDS.advanced)
-          }
-        }),
-        createChooseAnotherButton(
-          input.ui,
-          input.runtime,
-          input.resources.settings.cleanup.keepLastAnalysis
-        )
+        input.ui.switch({
+          id: VNITE_SETTINGS_NODE_IDS.strictAttachments,
+          initialValue: input.form.strictAttachments
+        })
       ]
     }
   ]

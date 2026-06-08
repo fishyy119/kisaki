@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { DialogBody, DialogFooter } from '@renderer/components/ui/dialog'
-import { Button } from '@renderer/components/ui/button'
 import { Popover } from '@renderer/components/ui/popover'
 import SettingsField from './field.vue'
 import PopoverSurface from './popover-surface.vue'
 import SettingsTabs from './tabs.vue'
+import FooterActions from './footer-actions.vue'
 import type { ExtensionSettingsPanelSessionController, SettingsPanelSurfaceState } from '../session'
 
 defineOptions({
@@ -58,20 +58,9 @@ function handlePopoverOpenChange(open: boolean): void {
   </Popover>
 
   <DialogFooter>
-    <Button
-      type="button"
-      variant="outline"
-      :disabled="props.controller.busy.value"
-      @click="props.controller.closeRoot"
-    >
-      关闭
-    </Button>
-    <Button
-      type="button"
-      :disabled="props.controller.busy.value"
-      @click="props.controller.submit(props.state)"
-    >
-      {{ view.submitLabel ?? '保存' }}
-    </Button>
+    <FooterActions
+      :state="props.state"
+      :controller="props.controller"
+    />
   </DialogFooter>
 </template>

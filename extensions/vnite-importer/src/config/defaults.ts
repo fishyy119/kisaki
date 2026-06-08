@@ -18,9 +18,6 @@ export function createDefaultVniteImporterSettings(): VniteImporterSettingsV1 {
       completeMetadata: false,
       completionSurfacePreset: DEFAULT_VNITE_COMPLETION_SURFACE_PRESET,
       completionSurfaces: DEFAULT_VNITE_COMPLETION_CUSTOM_SURFACES
-    },
-    cleanup: {
-      keepLastAnalysis: true
     }
   }
 }

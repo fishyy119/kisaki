@@ -11,6 +11,7 @@
     "test:backup": "tsx scripts/test-backup-reader.ts",
     "test:import": "tsx scripts/test-import-executor.ts",
     "test:mapping": "tsx scripts/test-mapping.ts",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

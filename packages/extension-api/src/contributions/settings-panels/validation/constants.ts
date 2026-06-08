@@ -33,6 +33,7 @@ export const SETTINGS_PANEL_STATUS_TONE_VALUES = [
 ] as const
 export const SETTINGS_PANEL_TEXT_TONE_VALUES = ['default', 'muted', 'danger'] as const
 export const SETTINGS_PANEL_BUTTON_TONE_VALUES = ['default', 'primary', 'danger'] as const
+export const SETTINGS_PANEL_FOOTER_ACTION_PLACEMENT_VALUES = ['start', 'end'] as const
 export const SETTINGS_PANEL_NODE_WIDTH_VALUES = ['auto', 'sm', 'md', 'lg', 'full'] as const
 export const SETTINGS_PANEL_FIELD_ORIENTATION_VALUES = [
   'vertical',
@@ -96,6 +97,7 @@ export const ROOT_MODEL_KEYS = new Set<string>([
   'title',
   'description',
   'submitLabel',
+  'footerActions',
   'fields',
   'tabs',
   'activeTabId'
@@ -105,6 +107,7 @@ export const DIALOG_MODEL_KEYS = new Set<string>([
   'description',
   'size',
   'submitLabel',
+  'footerActions',
   'fields'
 ])
 export const POPOVER_MODEL_KEYS = new Set<string>(['title', 'description', 'width', 'fields'])
@@ -133,6 +136,17 @@ export const BUTTON_CONFIRM_KEYS = new Set<string>([
   'description',
   'confirmLabel',
   'cancelLabel'
+])
+export const FOOTER_ACTION_KEYS = new Set<string>([
+  'id',
+  'label',
+  'icon',
+  'tone',
+  'hidden',
+  'disabled',
+  'placement',
+  'confirm',
+  'onClick'
 ])
 export const TABLE_COLUMN_KEYS = new Set<string>(['key', 'label', 'kind', 'truncate', 'weight'])
 export const COMPARISON_LIST_KEYS = new Set<string>([

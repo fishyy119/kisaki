@@ -10,13 +10,14 @@ import type {
   SettingsPanelPopoverNodeEvents,
   SettingsPanelRootNodeEvents
 } from './events'
-import type { SettingsPanelField, SettingsPanelTab } from './nodes'
+import type { SettingsPanelAnyNodeEvents, SettingsPanelField, SettingsPanelTab } from './nodes'
+import type { SettingsPanelFooterAction } from './nodes'
 import type { SettingsPanelDialogSize, SettingsPanelPopoverWidth } from './shared'
 
 export type SettingsPanelRootModel<
   TPopovers extends SettingsPanelPopoverMap = EmptySettingsPanelPopoverMap,
   TDialogs extends SettingsPanelDialogMap<TPopovers> = EmptySettingsPanelDialogMap
-> = SettingsPanelRootModelBase &
+> = SettingsPanelRootModelBase<SettingsPanelRootNodeEvents<TPopovers, TDialogs>> &
   (
     | {
         fields: readonly SettingsPanelField<SettingsPanelRootNodeEvents<TPopovers, TDialogs>>[]
@@ -30,10 +31,13 @@ export type SettingsPanelRootModel<
       }
   )
 
-export interface SettingsPanelRootModelBase {
+export interface SettingsPanelRootModelBase<
+  TEvents extends SettingsPanelAnyNodeEvents = SettingsPanelAnyNodeEvents
+> {
   title?: string
   description?: string
   submitLabel?: string
+  footerActions?: readonly SettingsPanelFooterAction<TEvents>[]
 }
 
 export interface SettingsPanelDialogModel<
@@ -44,6 +48,9 @@ export interface SettingsPanelDialogModel<
   description?: string
   size?: SettingsPanelDialogSize
   submitLabel?: string
+  footerActions?: readonly SettingsPanelFooterAction<
+    SettingsPanelDialogNodeEvents<TParams, TPopovers>
+  >[]
   fields: readonly SettingsPanelField<SettingsPanelDialogNodeEvents<TParams, TPopovers>>[]
 }
 

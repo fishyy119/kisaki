@@ -5,16 +5,17 @@ import type {
   SettingsPanelField,
   SettingsPanelNodeFactory
 } from '@kisaki3/extension-sdk'
-import type { VniteBackupAnalysisSummary, VniteImportDiagnostic } from '../../backup/types'
+import type { VniteBackupAnalysisSummary } from '../../backup/types'
 import type { VniteImportJobSummary } from '../../import/summary'
-import type { VniteImportFlowState, VniteImportPreviewState } from './flow'
-import { countAllFields, countSelectedFields } from './options'
-import type { VniteImporterSettingsV1 } from '../../config'
+import type { VniteImportFlowState, VniteImportPreviewGame, VniteImportPreviewState } from './flow'
+import { countVisibleDiagnostics } from './diagnostics-view'
+
+const WRITE_PLAN_ROW_LIMIT = 120
+const UPDATE_PLAN_GROUP_LIMIT = 40
 
 export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvents>(
   ui: SettingsPanelNodeFactory<TEvents>,
   input: {
-    settings: VniteImporterSettingsV1
     flow: VniteImportFlowState
     pickButton: SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>
   }
@@ -37,10 +38,6 @@ export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvent
       ]
     }
   ]
-
-  if (input.settings.cleanup.keepLastAnalysis && input.flow.lastSummary) {
-    fields.push(createJobSummaryField(ui, input.flow.lastSummary, '上一次导入摘要'))
-  }
 
   return fields
 }
@@ -121,12 +118,10 @@ export function createAnalysisSummaryFields<TEvents extends SettingsPanelAnyNode
 
 export function createFieldSelectionSummaryField<TEvents extends SettingsPanelAnyNodeEvents>(
   ui: SettingsPanelNodeFactory<TEvents>,
-  settings: VniteImporterSettingsV1,
+  selectedCount: number,
+  totalCount: number,
   editButton: SettingsPanelField<TEvents>['content'][number]
 ): SettingsPanelField<TEvents> {
-  const selected = countSelectedFields(settings.defaults.fieldSelection)
-  const total = countAllFields()
-
   return {
     id: 'field-selection-summary',
     label: '字段',
@@ -134,9 +129,9 @@ export function createFieldSelectionSummaryField<TEvents extends SettingsPanelAn
     content: [
       ui.status({
         id: 'field-selection-count',
-        tone: selected > 0 ? 'success' : 'warning',
+        tone: selectedCount > 0 ? 'success' : 'warning',
         label: '已选择',
-        value: `${selected}/${total}`
+        value: `${selectedCount}/${totalCount}`
       }),
       editButton
     ]
@@ -146,10 +141,11 @@ export function createFieldSelectionSummaryField<TEvents extends SettingsPanelAn
 export function createPreviewGraphFields<TEvents extends SettingsPanelAnyNodeEvents>(
   ui: SettingsPanelNodeFactory<TEvents>,
   preview: VniteImportPreviewState,
-  actions: readonly SettingsPanelField<TEvents>['content'][number][]
+  diagnosticsButton: SettingsPanelField<TEvents>['content'][number]
 ): readonly SettingsPanelField<TEvents>[] {
   const counters = preview.summary.counters
   const warningCount = preview.summary.diagnostics.filter((item) => item.level === 'warning').length
+  const diagnosticCount = countVisibleDiagnostics(preview.summary.diagnostics)
 
   return [
     {
@@ -184,56 +180,11 @@ export function createPreviewGraphFields<TEvents extends SettingsPanelAnyNodeEve
         })
       ]
     },
-    {
-      id: 'preview-actions',
-      label: '操作',
-      contentLayout: 'inline',
-      content: actions
-    },
-    {
-      id: 'preview-games',
-      label: '资料库图',
-      content: [
-        ui.comparisonList({
-          id: 'preview-game-list',
-          title: '游戏写入计划',
-          summary: [
-            { label: '游戏', value: String(counters.gamesTotal) },
-            { label: '附件', value: String(counters.attachmentsImported) },
-            { label: '合集新增', value: String(counters.collectionsCreated) }
-          ],
-          groups: preview.graph.nodes
-            .filter((node) => node.kind === 'media' && node.mediaType === 'game')
-            .slice(0, 80)
-            .map((node) => ({
-              id: node.key,
-              title: toGameTitle(node.key),
-              badges: [
-                {
-                  label: toActionLabel(node.action),
-                  tone: toActionTone(node.action)
-                }
-              ],
-              rows: [
-                {
-                  label: '来源',
-                  before: 'Vnite',
-                  after: toGameTitle(node.key),
-                  tone: 'info'
-                },
-                {
-                  label: '目标',
-                  before: 'Kisaki',
-                  after: node.entityId ?? '导入后生成',
-                  tone: node.entityId ? 'success' : 'neutral'
-                }
-              ]
-            })),
-          emptyLabel: '没有可预览的游戏。'
-        })
-      ]
-    },
-    createDiagnosticsField(ui, preview.summary.diagnostics)
+    createWritePlanField(ui, preview.games),
+    createUpdatePlanField(ui, preview.games),
+    ...(diagnosticCount > 0
+      ? [createDiagnosticsLauncherField(ui, diagnosticCount, diagnosticsButton)]
+      : [])
   ]
 }
 
@@ -285,7 +236,8 @@ export function createRunningFields<TEvents extends SettingsPanelAnyNodeEvents>(
 
 export function createDoneFields<TEvents extends SettingsPanelAnyNodeEvents>(
   ui: SettingsPanelNodeFactory<TEvents>,
-  summary: VniteImportJobSummary | undefined
+  summary: VniteImportJobSummary | undefined,
+  diagnosticsButton: SettingsPanelField<TEvents>['content'][number]
 ): readonly SettingsPanelField<TEvents>[] {
   if (!summary) {
     return [
@@ -305,7 +257,15 @@ export function createDoneFields<TEvents extends SettingsPanelAnyNodeEvents>(
 
   return [
     createJobSummaryField(ui, summary, '导入摘要'),
-    createDiagnosticsField(ui, summary.diagnostics)
+    ...(countVisibleDiagnostics(summary.diagnostics) > 0
+      ? [
+          createDiagnosticsLauncherField(
+            ui,
+            countVisibleDiagnostics(summary.diagnostics),
+            diagnosticsButton
+          )
+        ]
+      : [])
   ]
 }
 
@@ -348,32 +308,164 @@ function createJobSummaryField<TEvents extends SettingsPanelAnyNodeEvents>(
   }
 }
 
-function createDiagnosticsField<TEvents extends SettingsPanelAnyNodeEvents>(
+function createWritePlanField<TEvents extends SettingsPanelAnyNodeEvents>(
   ui: SettingsPanelNodeFactory<TEvents>,
-  diagnostics: readonly VniteImportDiagnostic[]
+  games: readonly VniteImportPreviewGame[]
 ): SettingsPanelField<TEvents> {
+  const plannedGames = games.filter(isWritePlannedGame)
+
   return {
-    id: 'diagnostics',
-    label: '诊断',
+    id: 'write-plan',
+    label: '写入计划',
     content: [
       ui.table({
-        id: 'diagnostics-table',
-        columns: [
-          { key: 'level', label: '级别' },
-          { key: 'game', label: '游戏', truncate: true },
-          { key: 'issue', label: '问题', truncate: true },
-          { key: 'result', label: '处理结果', truncate: true }
-        ],
-        rows: diagnostics.slice(0, 120).map((diagnostic) => ({
-          level: toDiagnosticLevelLabel(diagnostic.level),
-          game: diagnostic.vniteGameName ?? diagnostic.vniteGameId ?? diagnostic.itemKey ?? '-',
-          issue: diagnostic.code,
-          result: diagnostic.message
+        id: 'write-plan-table',
+        title: createWritePlanTitle(plannedGames.length),
+        columns: [{ key: 'game', label: '游戏', truncate: true }],
+        rows: plannedGames.slice(0, WRITE_PLAN_ROW_LIMIT).map((game) => ({
+          game: game.title
         })),
-        emptyLabel: '没有诊断信息。'
+        emptyLabel: '没有需要写入的游戏。'
       })
     ]
   }
+}
+
+function createUpdatePlanField<TEvents extends SettingsPanelAnyNodeEvents>(
+  ui: SettingsPanelNodeFactory<TEvents>,
+  games: readonly VniteImportPreviewGame[]
+): SettingsPanelField<TEvents> {
+  const updateGames = games.filter((game) => game.action === 'update')
+
+  return {
+    id: 'update-plan',
+    label: '更新计划',
+    content: [
+      ui.comparisonList({
+        id: 'update-plan-list',
+        title: createUpdatePlanTitle(updateGames.length),
+        groups: updateGames.slice(0, UPDATE_PLAN_GROUP_LIMIT).map(toUpdatePlanGroup),
+        emptyLabel: '没有需要更新的已有游戏。'
+      })
+    ]
+  }
+}
+
+function createDiagnosticsLauncherField<TEvents extends SettingsPanelAnyNodeEvents>(
+  ui: SettingsPanelNodeFactory<TEvents>,
+  diagnosticCount: number,
+  diagnosticsButton: SettingsPanelField<TEvents>['content'][number]
+): SettingsPanelField<TEvents> {
+  return {
+    id: 'diagnostics-entry',
+    label: '诊断',
+    contentLayout: 'inline',
+    content: [
+      ui.status({
+        id: 'diagnostics-count',
+        tone: 'warning',
+        label: '需要处理',
+        value: String(diagnosticCount)
+      }),
+      diagnosticsButton
+    ]
+  }
+}
+
+function createWritePlanTitle(total: number): string {
+  return total > WRITE_PLAN_ROW_LIMIT
+    ? `游戏写入名单（前 ${WRITE_PLAN_ROW_LIMIT} / ${total}）`
+    : '游戏写入名单'
+}
+
+function createUpdatePlanTitle(total: number): string {
+  return total > UPDATE_PLAN_GROUP_LIMIT
+    ? `已有游戏更新计划（前 ${UPDATE_PLAN_GROUP_LIMIT} / ${total}）`
+    : '已有游戏更新计划'
+}
+
+function toUpdatePlanGroup(game: VniteImportPreviewGame) {
+  const rows = [
+    {
+      label: '资料',
+      before: game.existing?.metadata ?? '-',
+      after: formatMetadataPlan(game),
+      tone: 'info' as const
+    },
+    {
+      label: '记录',
+      before: game.existing?.activity ?? '-',
+      after: formatActivityPlan(game),
+      tone: 'info' as const
+    },
+    {
+      label: '组织 / 媒体',
+      before: game.existing?.organization ?? '-',
+      after: formatImportDataPlan(game),
+      tone: 'info' as const
+    }
+  ].filter((row) => row.after !== '-')
+
+  return {
+    id: game.key,
+    title: game.title,
+    rows:
+      rows.length > 0
+        ? rows
+        : [
+            {
+              label: '更新',
+              before: formatExistingFallback(game),
+              after: '按所选字段更新',
+              tone: 'info' as const
+            }
+          ]
+  }
+}
+
+function formatExistingFallback(game: VniteImportPreviewGame): string {
+  return (
+    formatParts([game.existing?.metadata, game.existing?.activity, game.existing?.organization]) ||
+    '-'
+  )
+}
+
+function isWritePlannedGame(game: VniteImportPreviewGame): boolean {
+  return game.action === 'create' || game.action === 'update'
+}
+
+function formatMetadataPlan(game: VniteImportPreviewGame): string {
+  return formatParts([
+    formatLabeledValue('名称', game.name),
+    formatLabeledValue('原名', game.originalName),
+    formatLabeledValue('发售', game.releaseDate),
+    formatLabeledValue('开发', game.developers),
+    formatLabeledValue('发行', game.publishers),
+    formatLabeledValue('平台', game.platforms),
+    formatLabeledValue('类型', game.genres)
+  ])
+}
+
+function formatActivityPlan(game: VniteImportPreviewGame): string {
+  return formatParts([game.playStatus, game.score, game.playTime])
+}
+
+function formatImportDataPlan(game: VniteImportPreviewGame): string {
+  return formatParts([
+    formatLabeledValue('合集', game.collections),
+    formatLabeledValue('标签', game.tags),
+    game.attachments,
+    formatLabeledValue('路径', game.localPath)
+  ])
+}
+
+function formatLabeledValue(label: string, value: string | undefined): string | undefined {
+  return value ? `${label} ${value}` : undefined
+}
+
+function formatParts(parts: readonly (string | undefined)[]): string {
+  const normalized = parts.filter((part): part is string => !!part)
+  return normalized.length ? normalized.join(' / ') : '-'
 }
 
 export function formatBytes(value: number): string {
@@ -391,49 +483,4 @@ export function formatBytes(value: number): string {
   }
 
   return `${value} B`
-}
-
-function toGameTitle(key: string): string {
-  return key.startsWith('vnite:game:') ? key.slice('vnite:game:'.length) : key
-}
-
-function toActionLabel(action: string): string {
-  switch (action) {
-    case 'create':
-      return '新增'
-    case 'update':
-      return '更新'
-    case 'skip':
-      return '跳过'
-    case 'fail':
-      return '失败'
-    default:
-      return action
-  }
-}
-
-function toActionTone(action: string): 'neutral' | 'success' | 'warning' | 'danger' {
-  switch (action) {
-    case 'create':
-    case 'update':
-      return 'success'
-    case 'skip':
-      return 'warning'
-    case 'fail':
-      return 'danger'
-    default:
-      return 'neutral'
-  }
-}
-
-function toDiagnosticLevelLabel(level: string): string {
-  switch (level) {
-    case 'warning':
-      return 'Warning'
-    case 'error':
-      return 'Error'
-    case 'info':
-    default:
-      return 'Info'
-  }
 }

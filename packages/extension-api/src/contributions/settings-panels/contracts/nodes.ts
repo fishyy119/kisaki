@@ -159,6 +159,13 @@ export interface SettingsPanelButtonNode<
   onClick?: (event: TButtonEvent) => MaybePromise<TButtonResult>
 }
 
+export type SettingsPanelFooterAction<TEvents extends SettingsPanelAnyNodeEvents> = Omit<
+  SettingsPanelButtonNode<TEvents['buttonEvent'], TEvents['buttonResult']>,
+  'kind' | 'grow' | 'width'
+> & {
+  placement?: 'start' | 'end'
+}
+
 export interface SettingsPanelTextNode extends SettingsPanelNodeBase {
   kind: 'text'
   text: string

@@ -16,7 +16,11 @@ import {
   validateDialogModelBase,
   validateRootModelBase
 } from './helpers'
-import { validateSettingsPanelFieldArray, validateSettingsPanelTabArray } from './nodes'
+import {
+  validateSettingsPanelFieldArray,
+  validateSettingsPanelFooterActions,
+  validateSettingsPanelTabArray
+} from './nodes'
 
 export function validateSettingsPanelRootModel(value: unknown): ValidationIssue[] {
   if (!isPlainObject(value)) {
@@ -26,7 +30,11 @@ export function validateSettingsPanelRootModel(value: unknown): ValidationIssue[
   const state = createSurfaceValidationState()
   const hasFields = value.fields !== undefined
   const hasTabs = value.tabs !== undefined
-  const issues = [...validateUnknownKeys(value, ROOT_MODEL_KEYS), ...validateRootModelBase(value)]
+  const issues = [
+    ...validateUnknownKeys(value, ROOT_MODEL_KEYS),
+    ...validateRootModelBase(value),
+    ...validateSettingsPanelFooterActions(value.footerActions, '$.footerActions')
+  ]
 
   if (hasFields === hasTabs) {
     issues.push({
@@ -62,6 +70,7 @@ export function validateSettingsPanelDialogModel(value: unknown): ValidationIssu
   const issues = [
     ...validateUnknownKeys(value, DIALOG_MODEL_KEYS),
     ...validateDialogModelBase(value),
+    ...validateSettingsPanelFooterActions(value.footerActions, '$.footerActions'),
     ...validateSettingsPanelFieldArray(value.fields, '$.fields', state, 1)
   ]
 

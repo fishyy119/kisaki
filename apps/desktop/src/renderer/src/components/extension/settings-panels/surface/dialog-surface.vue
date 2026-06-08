@@ -9,10 +9,11 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import { Button } from '@renderer/components/ui/button'
 import { Popover } from '@renderer/components/ui/popover'
 import SettingsField from './field.vue'
 import PopoverSurface from './popover-surface.vue'
+import FooterActions from './footer-actions.vue'
+import { getSettingsPanelDialogWidthClass } from '../dialog-width'
 import type { ExtensionSettingsPanelSessionController, SettingsPanelSurfaceState } from '../session'
 
 defineOptions({
@@ -25,19 +26,7 @@ const props = defineProps<{
 }>()
 
 const popover = computed(() => props.controller.activeDialogPopover.value)
-const sizeClass = computed(() => {
-  switch (props.state.view.size) {
-    case 'sm':
-      return 'max-w-md'
-    case 'lg':
-      return 'max-w-2xl'
-    case 'xl':
-      return 'max-w-4xl'
-    case 'md':
-    default:
-      return 'max-w-xl'
-  }
-})
+const sizeClass = computed(() => getSettingsPanelDialogWidthClass(props.state.view.size))
 
 const openModel = computed({
   get: () => true,
@@ -93,21 +82,10 @@ function handlePopoverOpenChange(open: boolean): void {
       </Popover>
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          :disabled="props.controller.busy.value"
-          @click="props.controller.closeDialog"
-        >
-          关闭
-        </Button>
-        <Button
-          type="button"
-          :disabled="props.controller.busy.value"
-          @click="props.controller.submit(props.state)"
-        >
-          {{ props.state.view.submitLabel ?? '保存' }}
-        </Button>
+        <FooterActions
+          :state="props.state"
+          :controller="props.controller"
+        />
       </DialogFooter>
     </DialogContent>
   </Dialog>

@@ -17,12 +17,14 @@ import type {
   PersonScraperProviderRegistrationInfo,
   JsonObject,
   JsonValue,
+  SettingsPanelAnyNodeEvents,
   SettingsPanelButtonNode,
   SettingsPanelCallbackResult,
   SettingsPanelCheckboxNode,
   SettingsPanelComparisonListNode,
   SettingsPanelDialogSize,
   SettingsPanelDividerNode,
+  SettingsPanelFooterAction,
   SettingsPanelFieldHelp,
   SettingsPanelFieldLink,
   SettingsPanelImageNode,
@@ -616,6 +618,10 @@ export type ExtensionResolvedSettingsPanelButtonNode = ExtensionResolvedSettings
   SettingsPanelButtonNode<unknown, unknown>
 >
 
+export type ExtensionResolvedSettingsPanelFooterAction = ExtensionResolvedSettingsPanelButtonBase<
+  SettingsPanelFooterAction<SettingsPanelAnyNodeEvents>
+>
+
 export type ExtensionResolvedSettingsPanelTextNode = SettingsPanelTextNode
 export type ExtensionResolvedSettingsPanelNoticeNode = SettingsPanelNoticeNode
 export type ExtensionResolvedSettingsPanelStatusNode = SettingsPanelStatusNode
@@ -674,6 +680,7 @@ export type ExtensionResolvedSettingsPanelRoot = {
   title?: string
   description?: string
   submitLabel?: string
+  footerActions?: readonly ExtensionResolvedSettingsPanelFooterAction[]
 } & (
   | {
       fields: readonly ExtensionResolvedSettingsPanelField[]
@@ -694,6 +701,7 @@ export interface ExtensionResolvedSettingsPanelDialog {
   description?: string
   size?: SettingsPanelDialogSize
   submitLabel?: string
+  footerActions?: readonly ExtensionResolvedSettingsPanelFooterAction[]
   fields: readonly ExtensionResolvedSettingsPanelField[]
 }
 

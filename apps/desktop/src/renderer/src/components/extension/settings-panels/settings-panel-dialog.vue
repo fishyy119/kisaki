@@ -14,6 +14,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import RootSurface from './surface/root-surface.vue'
 import DialogSurface from './surface/dialog-surface.vue'
 import { useExtensionSettingsPanelSession } from './session'
+import { getSettingsPanelDialogWidthClass } from './dialog-width'
 import type { ExtensionSettingsPanelRegistrationInfo } from '@shared/extension'
 
 defineOptions({
@@ -36,7 +37,7 @@ const session = useExtensionSettingsPanelSession(contributionRef, open, {
 })
 const root = computed(() => session.root.value)
 const activeDialog = computed(() => session.activeDialog.value)
-const sizeClass = computed(() => getSizeClass(props.contribution.size))
+const sizeClass = computed(() => getSettingsPanelDialogWidthClass(props.contribution.size))
 
 const openModel = computed({
   get: () => open.value,
@@ -46,20 +47,6 @@ const openModel = computed({
     }
   }
 })
-
-function getSizeClass(size?: string): string {
-  switch (size) {
-    case 'sm':
-      return 'max-w-md'
-    case 'lg':
-      return 'max-w-2xl'
-    case 'xl':
-      return 'max-w-4xl'
-    case 'md':
-    default:
-      return 'max-w-xl'
-  }
-}
 </script>
 
 <template>

@@ -92,7 +92,10 @@ async function openLink(href: string): Promise<void> {
         <div class="flex min-w-0 flex-wrap items-center gap-1.5 bg-muted/25 px-2.5 py-1.5">
           <div class="min-w-0 flex-1">
             <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span class="min-w-0 truncate text-xs font-medium leading-5 text-foreground">
+              <span
+                class="min-w-0 truncate text-xs font-medium leading-5 text-foreground"
+                :title="group.title"
+              >
                 {{ group.title }}
               </span>
               <button
@@ -101,11 +104,17 @@ async function openLink(href: string): Promise<void> {
                 class="inline-flex min-w-0 max-w-full items-center text-left text-xs text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                 @click="openLink(group.link.href)"
               >
-                <span class="truncate">{{ group.link.label }}</span>
+                <span
+                  class="truncate"
+                  :title="group.link.label"
+                >
+                  {{ group.link.label }}
+                </span>
               </button>
               <span
                 v-if="group.subtitle"
                 class="min-w-0 truncate text-xs text-muted-foreground"
+                :title="group.subtitle"
               >
                 {{ group.subtitle }}
               </span>
@@ -132,10 +141,25 @@ async function openLink(href: string): Promise<void> {
             :key="`${row.label}:${rowIndex}`"
             class="grid min-w-0 grid-cols-[minmax(4.75rem,0.72fr)_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 px-2.5 py-1 text-xs leading-5"
           >
-            <div class="min-w-0 truncate text-muted-foreground">{{ row.label }}</div>
-            <div class="min-w-0 truncate text-muted-foreground">{{ row.before }}</div>
+            <div
+              class="min-w-0 truncate text-muted-foreground"
+              :title="row.label"
+            >
+              {{ row.label }}
+            </div>
+            <div
+              class="min-w-0 truncate text-muted-foreground"
+              :title="row.before"
+            >
+              {{ row.before }}
+            </div>
             <div class="text-xs text-muted-foreground">-&gt;</div>
-            <div :class="getRowAfterClass(row.tone)">{{ row.after }}</div>
+            <div
+              :class="getRowAfterClass(row.tone)"
+              :title="row.after"
+            >
+              {{ row.after }}
+            </div>
           </div>
         </div>
       </div>
