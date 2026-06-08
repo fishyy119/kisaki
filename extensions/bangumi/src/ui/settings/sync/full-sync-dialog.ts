@@ -42,6 +42,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
             id: 'full-sync-items',
             label: '同步项',
             description: '选择全量同步要写入 Bangumi 的数据',
+            orientation: 'horizontal',
             content: [
               ui.multiSelect({
                 id: SETTINGS_NODE_IDS.fullSyncItems,
@@ -57,6 +58,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
             id: 'full-sync-update-existing',
             label: '更新已有收藏',
             description: '关闭后只创建缺失收藏，不修改远端已有收藏',
+            orientation: 'horizontal',
             content: [
               ui.switch({
                 id: SETTINGS_NODE_IDS.fullSyncUpdateExisting,
@@ -72,6 +74,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
             label: '允许删除远端评分',
             description: '本地评分为空或状态为想玩时删除 Bangumi 收藏中的评分',
             disabled: !updateExisting || !scoreSyncEnabled,
+            orientation: 'horizontal',
             content: [
               ui.checkbox({
                 id: SETTINGS_NODE_IDS.fullSyncClearRemoteScoreWhenEmpty,
@@ -86,6 +89,7 @@ export function createFullSyncDialog(runtime: BangumiSettingsRuntime) {
           {
             id: 'full-sync-batch-size',
             label: '批次大小',
+            orientation: 'horizontal',
             content: [
               ui.numberInput({
                 id: SETTINGS_NODE_IDS.fullSyncBatchSize,

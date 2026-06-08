@@ -61,6 +61,7 @@ export function createDialogImportProfileField<TParams extends JsonObject = Json
     id: 'import-profile',
     label: '刮削配置',
     hidden: scope !== 'game',
+    orientation: 'horizontal',
     content: [
       settings.select({
         id: SETTINGS_NODE_IDS.importProfileId,
@@ -154,6 +155,7 @@ export function createDialogIndexTargetCollectionFields<TParams extends JsonObje
       id: 'index-target-collection-id',
       label: '选择合集',
       hidden: scope !== 'game' || mode !== 'existing',
+      orientation: 'horizontal',
       content: [
         settings.select({
           id: SETTINGS_NODE_IDS.importTargetCollectionId,

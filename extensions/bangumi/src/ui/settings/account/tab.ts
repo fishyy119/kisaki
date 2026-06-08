@@ -23,6 +23,7 @@ export async function resolveAccountTab(
       {
         id: 'account-status',
         label: 'Bangumi 账号',
+        orientation: 'horizontal',
         content: [
           ui.text({
             id: 'account-summary',
@@ -35,6 +36,7 @@ export async function resolveAccountTab(
         id: 'account-token-expires-at',
         label: '过期时间',
         hidden: !tokenState.hasToken,
+        orientation: 'horizontal',
         content: [
           ui.text({
             id: 'token-expires-at',

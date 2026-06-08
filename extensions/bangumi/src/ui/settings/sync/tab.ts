@@ -56,6 +56,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
         label: '自动同步',
         description: `本地${selectedDescriptor.label}变化后自动写入 Bangumi 收藏`,
         hidden: !localSyncAvailable,
+        orientation: 'horizontal',
         content: [
           scope.ui.switch({
             id: SETTINGS_NODE_IDS.autoSyncEnabled,
@@ -72,6 +73,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
         description: `选择自动同步要处理的${selectedDescriptor.label}变化`,
         hidden: !localSyncAvailable,
         disabled: !autoSyncEnabled,
+        orientation: 'horizontal',
         content: [
           scope.ui.multiSelect({
             id: SETTINGS_NODE_IDS.autoSyncItems,
@@ -89,6 +91,7 @@ export async function resolveSyncTab(scope: BangumiSettingsRootScope): Promise<B
         description: '本地评分为空或状态为想玩时删除 Bangumi 收藏中的评分',
         hidden: !localSyncAvailable,
         disabled: !autoSyncEnabled || !scoreSyncEnabled,
+        orientation: 'horizontal',
         content: [
           scope.ui.checkbox({
             id: SETTINGS_NODE_IDS.clearRemoteScoreWhenEmpty,

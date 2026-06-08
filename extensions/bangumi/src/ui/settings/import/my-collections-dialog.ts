@@ -83,6 +83,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             label: '数据项',
             description: '选择导入时携带的数据',
             hidden: selectedScope !== 'game',
+            orientation: 'horizontal',
             content: [
               ui.multiSelect({
                 id: SETTINGS_NODE_IDS.importDataItems,
@@ -99,6 +100,7 @@ export function createMyCollectionsDialog(runtime: BangumiSettingsRuntime) {
             label: '更新已存在游戏',
             description: '按 Bangumi ID 匹配本地游戏，更新选中的数据项并加入目标合集',
             hidden: selectedScope !== 'game',
+            orientation: 'horizontal',
             content: [
               ui.switch({
                 id: SETTINGS_NODE_IDS.importPatchExisting,

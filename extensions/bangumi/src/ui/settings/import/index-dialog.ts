@@ -66,6 +66,7 @@ export function createIndexDialog(runtime: BangumiSettingsRuntime) {
             label: '更新已存在游戏',
             description: '按 Bangumi ID 匹配本地游戏，加入目标合集',
             disabled: !hasTargetCollection,
+            orientation: 'horizontal',
             content: [
               ui.switch({
                 id: SETTINGS_NODE_IDS.importPatchExisting,

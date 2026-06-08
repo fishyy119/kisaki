@@ -22,6 +22,7 @@ export async function resolveAdvancedTab(
         id: 'login-timeout',
         label: '登录超时（分钟）',
         description: '从打开浏览器授权到完成登录的等待时间',
+        orientation: 'horizontal',
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.loginTimeoutMinutes,
@@ -36,6 +37,7 @@ export async function resolveAdvancedTab(
         id: 'rate-limit-max-requests',
         label: 'API 请求数',
         description: '同一时间窗口内最多允许发起的 Bangumi API 请求',
+        orientation: 'horizontal',
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.rateLimitMaxRequests,
@@ -50,6 +52,7 @@ export async function resolveAdvancedTab(
         id: 'rate-limit-window',
         label: 'API 时间窗口（秒）',
         description: '请求数统计窗口，默认是每 60 秒最多 120 次请求',
+        orientation: 'horizontal',
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.rateLimitWindowSeconds,
@@ -64,6 +67,7 @@ export async function resolveAdvancedTab(
         id: 'timeout',
         label: 'API 超时（秒）',
         description: '单次 Bangumi API 请求等待响应的最长时间',
+        orientation: 'horizontal',
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.timeoutSeconds,
@@ -78,6 +82,7 @@ export async function resolveAdvancedTab(
         id: 'retry-count',
         label: '重试次数',
         description: '遇到限流、网络错误或临时服务错误时的最多重试次数',
+        orientation: 'horizontal',
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.retryCount,
@@ -92,6 +97,7 @@ export async function resolveAdvancedTab(
         id: 'debounce',
         label: '自动同步防抖时间（秒）',
         description: '本地变化后延迟一小段时间再同步，避免连续编辑触发多次请求',
+        orientation: 'horizontal',
         content: [
           scope.ui.numberInput({
             id: SETTINGS_NODE_IDS.debounceSeconds,
@@ -107,6 +113,7 @@ export async function resolveAdvancedTab(
         label: '同步错误通知',
         description: '自动同步失败时显示桌面通知',
         disabled: !autoSyncEnabled,
+        orientation: 'horizontal',
         content: [
           scope.ui.switch({
             id: SETTINGS_NODE_IDS.autoSyncNotifyErrors,
@@ -118,6 +125,7 @@ export async function resolveAdvancedTab(
         id: 'clear-credentials',
         label: '清除凭据',
         description: '删除 Bangumi token、登录会话和账号摘要，不影响设置、同步状态或自动化',
+        orientation: 'horizontal',
         content: [
           scope.ui.button({
             id: 'clear-credentials',
@@ -147,6 +155,7 @@ export async function resolveAdvancedTab(
         id: 'clear-sync-state',
         label: '清除同步状态',
         description: '删除同步 fingerprint 和待同步队列，不删除主应用自动化或历史记录',
+        orientation: 'horizontal',
         content: [
           scope.ui.button({
             id: 'clear-sync-state',
@@ -179,6 +188,7 @@ export async function resolveAdvancedTab(
         id: 'restore-defaults',
         label: '恢复默认设置',
         description: '只重置设置，不删除 token、同步状态或自动化',
+        orientation: 'horizontal',
         content: [
           scope.ui.button({
             id: 'restore-defaults',
