@@ -144,7 +144,8 @@ export function createPreviewGraphFields<TEvents extends SettingsPanelAnyNodeEve
   diagnosticsButton: SettingsPanelField<TEvents>['content'][number]
 ): readonly SettingsPanelField<TEvents>[] {
   const counters = preview.summary.counters
-  const warningCount = preview.summary.diagnostics.filter((item) => item.level === 'warning').length
+  const errorCount = counters.errors ?? 0
+  const warningSummaryCount = counters.warnings ?? 0
   const diagnosticCount = countVisibleDiagnostics(preview.summary.diagnostics)
 
   return [
@@ -173,10 +174,16 @@ export function createPreviewGraphFields<TEvents extends SettingsPanelAnyNodeEve
           value: String(counters.gamesSkipped)
         }),
         ui.status({
+          id: 'preview-errors',
+          tone: errorCount > 0 ? 'danger' : 'neutral',
+          label: 'Error',
+          value: String(errorCount)
+        }),
+        ui.status({
           id: 'preview-warnings',
-          tone: warningCount > 0 ? 'warning' : 'neutral',
+          tone: warningSummaryCount > 0 ? 'warning' : 'neutral',
           label: 'Warning',
-          value: String(warningCount)
+          value: String(warningSummaryCount)
         })
       ]
     },
@@ -274,6 +281,9 @@ function createJobSummaryField<TEvents extends SettingsPanelAnyNodeEvents>(
   summary: VniteImportJobSummary,
   label: string
 ): SettingsPanelField<TEvents> {
+  const errorCount = summary.counters.errors ?? 0
+  const warningCount = summary.counters.warnings ?? 0
+
   return {
     id: 'job-summary',
     label,
@@ -299,10 +309,16 @@ function createJobSummaryField<TEvents extends SettingsPanelAnyNodeEvents>(
         value: String(summary.counters.completionCompleted)
       }),
       ui.status({
+        id: 'summary-errors',
+        tone: errorCount > 0 ? 'danger' : 'neutral',
+        label: 'Error',
+        value: String(errorCount)
+      }),
+      ui.status({
         id: 'summary-warnings',
-        tone: summary.counters.warnings > 0 ? 'warning' : 'neutral',
+        tone: warningCount > 0 ? 'warning' : 'neutral',
         label: 'Warning',
-        value: String(summary.counters.warnings)
+        value: String(warningCount)
       })
     ]
   }

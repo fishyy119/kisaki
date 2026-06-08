@@ -84,6 +84,7 @@ export interface LibraryGraphNodeMatch {
   entityId?: string
   existing?: LibraryGraphEntity
   reason?: LibraryGraphMatchReason
+  blocked?: boolean
   diagnostics: LibraryGraphDiagnostic[]
 }
 

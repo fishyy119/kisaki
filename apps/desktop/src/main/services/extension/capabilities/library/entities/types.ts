@@ -38,6 +38,8 @@ export type LibraryEntityTable = SQLiteTable & {
 export interface ExternalIdConfig<TTable extends SQLiteTable = SQLiteTable> {
   table: TTable
   entityIdColumn: AnySQLiteColumn<{ data: string }>
+  sourceColumn: AnySQLiteColumn<{ data: string }>
+  externalIdColumn: AnySQLiteColumn<{ data: string }>
   orderColumn: AnySQLiteColumn<{ data: number }>
   toEntityId(row: TTable['$inferSelect']): string
   toExternalId(row: TTable['$inferSelect']): ExternalId

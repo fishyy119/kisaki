@@ -19,6 +19,7 @@ export interface VniteImportExecutionCounters {
   attachmentsFailed: number
   completionCompleted: number
   completionFailed: number
+  errors: number
   warnings: number
 }
 
@@ -35,7 +36,6 @@ export interface VniteImportJobSummary {
   fileName: string
   startedAt: number
   finishedAt: number
-  graphApply: LibraryGraphResult
   counters: VniteImportExecutionCounters
   diagnostics: readonly VniteImportDiagnostic[]
 }
@@ -59,7 +59,6 @@ export function createVniteImportExecutionSummary(input: {
 export function createVniteImportJobSummary(input: {
   fileName: string
   startedAt: number
-  graphApply: LibraryGraphResult
   executionSummary: VniteImportExecutionSummary
   diagnostics?: readonly VniteImportDiagnostic[]
 }): VniteImportJobSummary {
@@ -69,9 +68,9 @@ export function createVniteImportJobSummary(input: {
     fileName: input.fileName,
     startedAt: input.startedAt,
     finishedAt: Date.now(),
-    graphApply: input.graphApply,
     counters: {
       ...input.executionSummary.counters,
+      errors: diagnostics.filter((diagnostic) => diagnostic.level === 'error').length,
       warnings: diagnostics.filter((diagnostic) => diagnostic.level === 'warning').length
     },
     diagnostics
@@ -99,6 +98,7 @@ export function createVniteImportExecutionCounters(
     attachmentsFailed: countActions(attachmentNodes, 'fail'),
     completionCompleted: 0,
     completionFailed: 0,
+    errors: diagnostics.filter((diagnostic) => diagnostic.level === 'error').length,
     warnings: diagnostics.filter((diagnostic) => diagnostic.level === 'warning').length
   }
 }
@@ -116,11 +116,36 @@ export function toVniteImportDiagnostics(
 export function collectLibraryGraphDiagnostics(
   graph: LibraryGraphResult
 ): readonly LibraryGraphDiagnostic[] {
-  return [
+  return dedupeLibraryGraphDiagnostics([
     ...graph.diagnostics,
     ...graph.nodes.flatMap((node) => node.diagnostics ?? []),
     ...graph.edges.flatMap((edge) => edge.diagnostics ?? [])
-  ]
+  ])
+}
+
+function dedupeLibraryGraphDiagnostics(
+  diagnostics: readonly LibraryGraphDiagnostic[]
+): readonly LibraryGraphDiagnostic[] {
+  const seen = new Set<string>()
+  const result: LibraryGraphDiagnostic[] = []
+
+  for (const diagnostic of diagnostics) {
+    const key = [
+      diagnostic.level,
+      diagnostic.code,
+      diagnostic.message,
+      diagnostic.nodeKey ?? '',
+      diagnostic.edgeKind ?? ''
+    ].join('\u0000')
+    if (seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    result.push(diagnostic)
+  }
+
+  return result
 }
 
 function countActions(

@@ -11,6 +11,7 @@ export interface ExecuteLibraryGraphOptions {
 
 export interface ApplyState {
   entityIds: Map<string, string>
+  failedNodes: Set<string>
   skippedMedia: Set<string>
   noteOwners: Map<string, string>
   sessionOwners: Map<string, string>

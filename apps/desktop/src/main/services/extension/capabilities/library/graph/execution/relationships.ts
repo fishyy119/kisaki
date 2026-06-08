@@ -3,7 +3,7 @@ import type { LibraryGraphEdge, LibraryGraphResultAction } from '@kisaki3/extens
 import { collectionGameLinks, gameCompanyLinks, gamePersonLinks, gameTagLinks } from '@shared/db'
 import type { ApplyState, ExecuteLibraryGraphOptions } from './types'
 import { planOrderUpdate, stripUndefined } from './patches'
-import { getEntityId, requireEntityId } from './state'
+import { getEntityId, isEntityNodeFailed, requireEntityId } from './state'
 
 type CollectionMediaEdge = Extract<LibraryGraphEdge, { kind: 'collection-media' }>
 type RelationEdge = Extract<
@@ -16,6 +16,10 @@ export function previewCollectionGameEdge(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
   const collectionId = getEntityId(state, edge.from.kind, edge.from.key)
   const gameId = getEntityId(state, edge.to.kind, edge.to.key)
   if (!collectionId || !gameId) {
@@ -43,6 +47,10 @@ export function previewRelationEdge(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
   if (state.skippedMedia.has(edge.from.key)) {
     return 'skip'
   }
@@ -105,6 +113,10 @@ export function applyCollectionGameEdge(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
   const collectionId = requireEntityId(state, edge.from.kind, edge.from.key)
   const gameId = requireEntityId(state, edge.to.kind, edge.to.key)
   const existing = options.db.client
@@ -148,6 +160,10 @@ export function applyGameTagEdge(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
   if (state.skippedMedia.has(edge.from.key)) {
     return 'skip'
   }
@@ -183,6 +199,10 @@ export function applyGameCompanyEdge(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
   if (state.skippedMedia.has(edge.from.key)) {
     return 'skip'
   }
@@ -219,6 +239,10 @@ export function applyGamePersonEdge(
   state: ApplyState,
   options: ExecuteLibraryGraphOptions
 ): LibraryGraphResultAction {
+  if (isEndpointFailed(edge, state)) {
+    return 'fail'
+  }
+
   if (state.skippedMedia.has(edge.from.key)) {
     return 'skip'
   }
@@ -256,4 +280,11 @@ export function applyGamePersonEdge(
   }
 
   return 'skip'
+}
+
+function isEndpointFailed(edge: CollectionMediaEdge | RelationEdge, state: ApplyState): boolean {
+  return (
+    isEntityNodeFailed(state, edge.from.kind, edge.from.key) ||
+    isEntityNodeFailed(state, edge.to.kind, edge.to.key)
+  )
 }

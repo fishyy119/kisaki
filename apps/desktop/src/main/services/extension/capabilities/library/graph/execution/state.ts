@@ -37,6 +37,7 @@ export function createDraft(graph: NormalizedLibraryGraph): LibraryGraphResultDr
 export function createApplyState(): ApplyState {
   return {
     entityIds: new Map(),
+    failedNodes: new Set(),
     skippedMedia: new Set(),
     noteOwners: new Map(),
     sessionOwners: new Map(),
@@ -56,7 +57,10 @@ export function setEntityNodeResult(
   if (entityId) {
     state.entityIds.set(graphNodeIdentity(entry.kind, entry.key), entityId)
   }
-  if (entry.kind === 'media' && action === 'skip') {
+  if (action === 'fail') {
+    state.failedNodes.add(graphNodeIdentity(entry.kind, entry.key))
+  }
+  if (entry.kind === 'media' && (action === 'skip' || action === 'fail')) {
     state.skippedMedia.add(entry.key)
   }
   if (match?.diagnostics?.length) {
@@ -114,6 +118,14 @@ export function requireEntityId(
     throw new Error(`Graph node "${key}" did not resolve to an entity id.`)
   }
   return entityId
+}
+
+export function isEntityNodeFailed(
+  state: ApplyState,
+  kind: LibraryGraphNodeKind,
+  key: string
+): boolean {
+  return state.failedNodes.has(graphNodeIdentity(kind, key))
 }
 
 export function pushEdgeResult(

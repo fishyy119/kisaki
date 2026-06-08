@@ -5,7 +5,6 @@ import type {
   ExtensionTaskRunProgressWork,
   ExtensionTaskRunWarning
 } from '@kisaki3/extension-sdk'
-import type { LibraryGraphResult } from '@kisaki3/extension-api'
 import { isExtensionTaskRunCancellation } from '@kisaki3/extension-sdk'
 import type { VniteImportDiagnostic } from '../backup/types'
 import { VniteImportError, toSafeErrorMessage } from '../shared/errors'
@@ -125,7 +124,6 @@ export async function runVniteImportJob(
     const summary = createVniteImportJobSummary({
       fileName: context.fileName,
       startedAt: state.startedAt,
-      graphApply: execution.graph,
       executionSummary: execution.summary,
       diagnostics: state.diagnostics
     })
@@ -212,7 +210,6 @@ function createFailedJobSummary(
     fileName,
     startedAt: state.startedAt,
     finishedAt: Date.now(),
-    graphApply: createEmptyGraphResult(state.startedAt),
     counters: {
       gamesTotal: state.counters.gamesTotal ?? 0,
       gamesCreated: state.counters.gamesCreated ?? 0,
@@ -225,21 +222,10 @@ function createFailedJobSummary(
       attachmentsFailed: state.counters.attachmentsFailed ?? 0,
       completionCompleted: state.counters.completionCompleted ?? 0,
       completionFailed: state.counters.completionFailed ?? 0,
+      errors: diagnostics.filter((item) => item.level === 'error').length,
       warnings: diagnostics.filter((item) => item.level === 'warning').length
     },
     diagnostics
-  }
-}
-
-function createEmptyGraphResult(startedAt: number): LibraryGraphResult {
-  return {
-    mode: 'apply',
-    startedAt,
-    finishedAt: Date.now(),
-    nodes: [],
-    edges: [],
-    counters: {},
-    diagnostics: []
   }
 }
 

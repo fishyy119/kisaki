@@ -74,6 +74,8 @@ import {
 const GAME_EXTERNAL_IDS_CONFIG = {
   table: gameExternalIds,
   entityIdColumn: gameExternalIds.gameId,
+  sourceColumn: gameExternalIds.source,
+  externalIdColumn: gameExternalIds.externalId,
   orderColumn: gameExternalIds.orderInGame,
   toEntityId(row) {
     return row.gameId
@@ -94,6 +96,8 @@ const GAME_EXTERNAL_IDS_CONFIG = {
 const PERSON_EXTERNAL_IDS_CONFIG = {
   table: personExternalIds,
   entityIdColumn: personExternalIds.personId,
+  sourceColumn: personExternalIds.source,
+  externalIdColumn: personExternalIds.externalId,
   orderColumn: personExternalIds.orderInPerson,
   toEntityId(row) {
     return row.personId
@@ -114,6 +118,8 @@ const PERSON_EXTERNAL_IDS_CONFIG = {
 const COMPANY_EXTERNAL_IDS_CONFIG = {
   table: companyExternalIds,
   entityIdColumn: companyExternalIds.companyId,
+  sourceColumn: companyExternalIds.source,
+  externalIdColumn: companyExternalIds.externalId,
   orderColumn: companyExternalIds.orderInCompany,
   toEntityId(row) {
     return row.companyId
@@ -134,6 +140,8 @@ const COMPANY_EXTERNAL_IDS_CONFIG = {
 const CHARACTER_EXTERNAL_IDS_CONFIG = {
   table: characterExternalIds,
   entityIdColumn: characterExternalIds.characterId,
+  sourceColumn: characterExternalIds.source,
+  externalIdColumn: characterExternalIds.externalId,
   orderColumn: characterExternalIds.orderInCharacter,
   toEntityId(row) {
     return row.characterId
