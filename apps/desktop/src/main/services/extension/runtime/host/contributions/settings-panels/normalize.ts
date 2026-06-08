@@ -113,7 +113,7 @@ function normalizeSettingsPanelField(
     link: field.link,
     hidden: field.hidden,
     disabled: field.disabled,
-    orientation: field.orientation ?? 'horizontal',
+    orientation: field.orientation ?? 'vertical',
     span: field.span,
     contentLayout: field.contentLayout,
     contentColumns: field.contentColumns,

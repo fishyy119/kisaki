@@ -40,7 +40,6 @@ export function createVniteAdvancedDialog(runtime: VniteSettingsRuntime) {
             id: 'cleanup-current-state',
             label: '清理临时状态',
             description: '释放当前备份包授权并回到起始步骤',
-            orientation: 'horizontal',
             contentLayout: 'inline',
             content: [
               ui.button({

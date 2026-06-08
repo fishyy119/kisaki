@@ -236,7 +236,6 @@ function createConfigureFields(input: {
     {
       id: 'advanced-options',
       label: '高级选项',
-      orientation: 'horizontal',
       contentLayout: 'inline',
       content: [
         input.ui.button({

@@ -25,7 +25,6 @@ export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvent
       id: 'backup-file',
       label: '备份包',
       description: '选择从 Vnite 导出的数据库备份 zip。',
-      orientation: 'horizontal',
       contentLayout: 'inline',
       content: [
         ui.status({
@@ -131,7 +130,6 @@ export function createFieldSelectionSummaryField<TEvents extends SettingsPanelAn
   return {
     id: 'field-selection-summary',
     label: '字段',
-    orientation: 'horizontal',
     contentLayout: 'inline',
     content: [
       ui.status({
@@ -189,7 +187,6 @@ export function createPreviewGraphFields<TEvents extends SettingsPanelAnyNodeEve
     {
       id: 'preview-actions',
       label: '操作',
-      orientation: 'horizontal',
       contentLayout: 'inline',
       content: actions
     },
