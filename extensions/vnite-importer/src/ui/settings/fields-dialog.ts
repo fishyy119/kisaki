@@ -9,16 +9,7 @@ export function createVniteFieldsDialog(runtime: VniteSettingsRuntime) {
     size: 'lg',
     submitLabel: '保存字段',
     async resolve(_context, ui) {
-      const [settings, flow] = await Promise.all([
-        runtime.settingsStore.get(),
-        runtime.flowStore.get()
-      ])
-      const coverage = new Map(
-        (flow.analysis?.fieldCoverage ?? []).map((item) => [
-          item.key,
-          `${item.present}/${item.total}`
-        ])
-      )
+      const settings = await runtime.settingsStore.get()
 
       return {
         fields: VNITE_FIELD_GROUPS.map((group) => {
@@ -37,7 +28,7 @@ export function createVniteFieldsDialog(runtime: VniteSettingsRuntime) {
                   .filter((item) => groupSelection[item.key])
                   .map((item) => item.key),
                 options: group.items.map((item) =>
-                  createFieldOption(item, coverage)
+                  createFieldOption(item)
                 ) satisfies readonly SettingsPanelSelectOption[]
               })
             ]
@@ -64,17 +55,14 @@ export function createVniteFieldsDialog(runtime: VniteSettingsRuntime) {
   })
 }
 
-function createFieldOption(
-  item: { key: string; label: string; description?: string; coverageKey?: string },
-  coverage: Map<string, string>
-): SettingsPanelSelectOption {
-  const coverageText = item.coverageKey ? coverage.get(item.coverageKey) : undefined
-
+function createFieldOption(item: {
+  key: string
+  label: string
+  description?: string
+}): SettingsPanelSelectOption {
   return {
     value: item.key,
     label: item.label,
-    description: [item.description, coverageText ? `覆盖 ${coverageText}` : undefined]
-      .filter(Boolean)
-      .join('，')
+    ...(item.description ? { description: item.description } : {})
   }
 }

@@ -27,7 +27,6 @@ import {
   type VniteImportFormOptions
 } from './options'
 import {
-  createAnalysisSummaryFields,
   createDoneFields,
   createFieldSelectionSummaryField,
   createPickBackupFields,
@@ -121,11 +120,11 @@ function createRootFooterActions(input: {
   step: VniteImportStep
   hasPreview: boolean
 }) {
-  if (input.step === 'configureImport') {
+  if (input.step === 'config') {
     return [createChooseAnotherFooterAction(input.runtime)]
   }
 
-  if (input.step === 'previewGraph' && input.hasPreview) {
+  if (input.step === 'preview' && input.hasPreview) {
     return [
       createBackToConfigureFooterAction(input.runtime),
       createRefreshPreviewFooterAction(input.runtime)
@@ -152,7 +151,7 @@ function createRootFields(input: {
     })
   }
 
-  if (input.step === 'previewGraph') {
+  if (input.step === 'preview') {
     return input.resources.flow.preview
       ? createPreviewGraphFields(
           input.ui,
@@ -208,9 +207,6 @@ function createConfigureFields(input: {
     input.form.completion.profileId ?? input.defaultProfileId ?? profileOptions[0]?.value ?? ''
 
   return [
-    ...(input.resources.flow.analysis
-      ? createAnalysisSummaryFields(input.ui, input.resources.flow.analysis)
-      : []),
     createFieldSelectionSummaryField(
       input.ui,
       countSelectedFields(input.resources.settings.defaults.fieldSelection),

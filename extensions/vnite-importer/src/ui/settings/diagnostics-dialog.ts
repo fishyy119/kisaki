@@ -46,10 +46,9 @@ export function createVniteDiagnosticsDialog(runtime: VniteSettingsRuntime) {
 }
 
 function resolveCurrentDiagnostics(flow: VniteImportFlowState): readonly VniteImportDiagnostic[] {
-  return (
-    flow.preview?.summary.diagnostics ??
-    flow.lastSummary?.diagnostics ??
-    flow.analysis?.diagnostics ??
-    []
-  )
+  if (flow.preview) {
+    return [...flow.preview.analysis.diagnostics, ...flow.preview.summary.diagnostics]
+  }
+
+  return flow.lastSummary?.diagnostics ?? []
 }

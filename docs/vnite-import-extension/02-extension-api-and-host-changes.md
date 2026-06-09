@@ -596,28 +596,29 @@ export interface KisakiApi {
 
 ## 设置面板交互
 
-不新增 file input node。Vnite importer 在 flow 的 `pickBackup` step 中通过 root `submit` 触发 `kisaki.files.pickFile`：
+不新增 file input node。Vnite importer 在 flow 的 `pickBackup` step 中通过 button 触发 `kisaki.files.pickFile`，root `submit` 只负责确认已选择 grant 并进入 `config`：
 
 ```ts
-async submit(event) {
-  const step = readStep(event.values)
+async function pickBackupFile(event) {
+  const grant = await kisaki.files.pickFile({
+    title: '选择 Vnite 备份包',
+    filters: [{ name: 'Vnite 备份包', extensions: ['zip'] }],
+    copyTo: 'temp',
+    maxSizeBytes: 2 * 1024 * 1024 * 1024
+  })
 
-  if (step === 'pickBackup') {
-    const grant = await kisaki.files.pickFile({
-      title: '选择 Vnite 备份包',
-      filters: [{ name: 'Vnite 备份包', extensions: ['zip'] }],
-      copyTo: 'temp',
-      maxSizeBytes: 2 * 1024 * 1024 * 1024
-    })
-
-    if (!grant) {
-      return event.refresh('root')
-    }
-
-    await runtime.flowStore.setFileGrant(grant)
-    await runtime.flowStore.setStep('analyzeBackup')
-    return event.success({ refresh: 'root' })
+  if (!grant) {
+    return event.refresh('root')
   }
+
+  await runtime.flowStore.setFileGrant(grant, 'pickBackup')
+  return event.refresh('root')
+}
+
+async function submit(event) {
+  requireFileGrant(await runtime.flowStore.get())
+  await runtime.flowStore.setStep('config')
+  return event.refresh('root')
 }
 ```
 

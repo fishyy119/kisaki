@@ -5,7 +5,6 @@ import type {
   SettingsPanelField,
   SettingsPanelNodeFactory
 } from '@kisaki3/extension-sdk'
-import type { VniteBackupAnalysisSummary } from '../../backup/types'
 import type { VniteImportJobSummary } from '../../import/summary'
 import type { VniteImportFlowState, VniteImportPreviewGame, VniteImportPreviewState } from './flow'
 import { countVisibleDiagnostics } from './diagnostics-view'
@@ -40,80 +39,6 @@ export function createPickBackupFields<TEvents extends SettingsPanelAnyNodeEvent
   ]
 
   return fields
-}
-
-export function createAnalysisSummaryFields<TEvents extends SettingsPanelAnyNodeEvents>(
-  ui: SettingsPanelNodeFactory<TEvents>,
-  analysis: VniteBackupAnalysisSummary
-): readonly SettingsPanelField<TEvents>[] {
-  const warningCount = analysis.diagnostics.filter((item) => item.level === 'warning').length
-
-  return [
-    {
-      id: 'analysis-summary',
-      label: '分析结果',
-      contentLayout: 'grid',
-      contentColumns: 2,
-      content: [
-        ui.status({
-          id: 'analysis-games',
-          tone: 'success',
-          label: '游戏',
-          value: String(analysis.statistics.games.total)
-        }),
-        ui.status({
-          id: 'analysis-collections',
-          tone: 'success',
-          label: '合集',
-          value: String(analysis.statistics.collections.total)
-        }),
-        ui.status({
-          id: 'analysis-attachments',
-          tone: 'success',
-          label: '媒体附件',
-          value: String(analysis.statistics.attachments.total)
-        }),
-        ui.status({
-          id: 'analysis-warnings',
-          tone: warningCount > 0 ? 'warning' : 'neutral',
-          label: 'Warning',
-          value: String(warningCount)
-        })
-      ]
-    },
-    {
-      id: 'analysis-details',
-      label: '分布',
-      contentLayout: 'grid',
-      contentColumns: 2,
-      content: [
-        ui.table({
-          id: 'external-id-table',
-          title: '外部 ID',
-          columns: [
-            { key: 'source', label: '来源' },
-            { key: 'count', label: '数量', kind: 'number' }
-          ],
-          rows: Object.entries(analysis.statistics.externalIds).map(([source, count]) => ({
-            source,
-            count
-          }))
-        }),
-        ui.table({
-          id: 'status-table',
-          title: '游玩状态',
-          columns: [
-            { key: 'status', label: '状态' },
-            { key: 'count', label: '数量', kind: 'number' }
-          ],
-          rows: Object.entries(analysis.statistics.statusDistribution).map(([status, count]) => ({
-            status,
-            count
-          }))
-        })
-      ]
-    }
-  ]
 }
 
 export function createFieldSelectionSummaryField<TEvents extends SettingsPanelAnyNodeEvents>(

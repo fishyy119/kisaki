@@ -43,9 +43,9 @@ export async function submitVniteRoot(
   switch (step) {
     case 'pickBackup':
       return await submitPickBackup(runtime, event, resources.flow.file)
-    case 'configureImport':
+    case 'config':
       return await submitPreview(runtime, event, resources)
-    case 'previewGraph':
+    case 'preview':
       return await submitImport(runtime, event, resources)
     case 'running':
       return event.refresh('root')
@@ -63,7 +63,6 @@ export function createPickBackupFileButton(
   return ui.button({
     id: VNITE_SETTINGS_NODE_IDS.pickBackupFile,
     label: options.label ?? '选择文件',
-    icon: 'icon-[mdi--file-upload-outline]',
     async onClick(event) {
       const grant = await pickVniteBackupFile(runtime)
       if (!grant) {
@@ -119,7 +118,7 @@ export function createBackToConfigureFooterAction(
     label: '返回修改',
     placement: 'start',
     async onClick(event) {
-      await runtime.flowStore.setStep('configureImport')
+      await runtime.flowStore.setStep('config')
       return event.refresh('root')
     }
   }
@@ -232,21 +231,11 @@ async function submitPickBackup(
   event: SettingsPanelRootSubmitEvent,
   file: VniteStoredFileGrant | undefined
 ) {
-  const fileGrant = requireFileGrant(file)
-  const analysis = await withSettingsLoading(runtime, {
-    id: 'vnite-importer.settings.analyze',
-    title: '正在分析 Vnite 备份包',
-    message: '正在读取备份包内容并统计可导入数据。',
-    run: async () =>
-      await runtime.jobRunner.analyzeFromGrant({
-        fileGrant,
-        requestId: createRequestId()
-      })
-  })
-  await runtime.flowStore.setAnalysis(analysis)
+  requireFileGrant(file)
+  await runtime.flowStore.setStep('config')
 
   return event.refresh('root', {
-    message: '备份包分析完成。'
+    message: '已进入导入配置。'
   })
 }
 

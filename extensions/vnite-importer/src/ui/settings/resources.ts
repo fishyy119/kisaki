@@ -102,13 +102,7 @@ function shouldResetTransientFlow(input: {
     return false
   }
 
-  return (
-    !!flow.file ||
-    !!flow.analysis ||
-    !!flow.preview ||
-    !!flow.activeRunId ||
-    flow.step !== 'pickBackup'
-  )
+  return !!flow.file || !!flow.preview || !!flow.activeRunId || flow.step !== 'pickBackup'
 }
 
 async function resetTransientFlow(

@@ -56,7 +56,6 @@ export interface VniteFieldItemDefinition {
   key: string
   label: string
   description?: string
-  coverageKey?: string
 }
 
 export const VNITE_FIELD_GROUPS = [
@@ -80,8 +79,8 @@ export const VNITE_FIELD_GROUPS = [
     label: '本地启动',
     description: '启动器、游戏目录和存档路径',
     items: [
-      { key: 'launcher', label: '启动配置', coverageKey: 'local.gamePath' },
-      { key: 'gameDirPath', label: '游戏目录', coverageKey: 'local.gamePath' },
+      { key: 'launcher', label: '启动配置' },
+      { key: 'gameDirPath', label: '游戏目录' },
       { key: 'savePath', label: '存档路径' }
     ]
   },
@@ -91,9 +90,9 @@ export const VNITE_FIELD_GROUPS = [
     description: '状态、评分、时长、会话和添加时间',
     items: [
       { key: 'status', label: '游玩状态' },
-      { key: 'score', label: '评分', coverageKey: 'activity.score' },
-      { key: 'totalDuration', label: '总游玩时长', coverageKey: 'activity.playTime' },
-      { key: 'lastActiveAt', label: '最后游玩时间', coverageKey: 'activity.lastRunDate' },
+      { key: 'score', label: '评分' },
+      { key: 'totalDuration', label: '总游玩时长' },
+      { key: 'lastActiveAt', label: '最后游玩时间' },
       { key: 'sessions', label: '游玩会话' },
       { key: 'createdAt', label: '添加时间' }
     ]
@@ -124,10 +123,10 @@ export const VNITE_FIELD_GROUPS = [
     label: '媒体',
     description: '封面、背景图、Logo、图标和简介图片',
     items: [
-      { key: 'cover', label: '封面', coverageKey: 'media.cover' },
-      { key: 'backdrop', label: '背景图', coverageKey: 'media.backdrop' },
-      { key: 'logo', label: 'Logo', coverageKey: 'media.logo' },
-      { key: 'icon', label: '图标', coverageKey: 'media.icon' },
+      { key: 'cover', label: '封面' },
+      { key: 'backdrop', label: '背景图' },
+      { key: 'logo', label: 'Logo' },
+      { key: 'icon', label: '图标' },
       { key: 'descriptionImages', label: '简介图片' }
     ]
   },
@@ -136,7 +135,7 @@ export const VNITE_FIELD_GROUPS = [
     label: '存档',
     description: '存档备份和最大备份数',
     items: [
-      { key: 'saveBackups', label: '存档备份', coverageKey: 'saves.saveBackups' },
+      { key: 'saveBackups', label: '存档备份' },
       { key: 'maxSaveBackups', label: '最大备份数' }
     ]
   },
@@ -145,7 +144,7 @@ export const VNITE_FIELD_GROUPS = [
     label: '回忆',
     description: '回忆记录和回忆图片',
     items: [
-      { key: 'notes', label: '回忆记录', coverageKey: 'memories.notes' },
+      { key: 'notes', label: '回忆记录' },
       { key: 'noteImages', label: '回忆图片' }
     ]
   }

@@ -8,7 +8,7 @@ import { VNITE_IMPORTER_STORAGE_KEYS } from '../../shared/constants'
 import type { VniteBackupAnalysisSummary } from '../../backup/types'
 import type { VniteImportExecutionSummary, VniteImportJobSummary } from '../../import/summary'
 
-export type VniteImportStep = 'pickBackup' | 'configureImport' | 'previewGraph' | 'running' | 'done'
+export type VniteImportStep = 'pickBackup' | 'config' | 'preview' | 'running' | 'done'
 
 export interface VniteStoredFileGrant {
   grantId: string
@@ -58,7 +58,6 @@ export interface VniteImportFlowState {
   version: 1
   step: VniteImportStep
   file?: VniteStoredFileGrant
-  analysis?: VniteBackupAnalysisSummary
   preview?: VniteImportPreviewState
   activeRunId?: string
   lastSummary?: VniteImportJobSummary
@@ -103,24 +102,10 @@ export class VniteImportFlowStore {
     }))
   }
 
-  async setAnalysis(analysis: VniteBackupAnalysisSummary): Promise<VniteImportFlowState> {
-    return await this.update((state) => {
-      const rest = { ...state }
-      delete rest.preview
-      return {
-        ...rest,
-        step: 'configureImport',
-        analysis,
-        updatedAt: Date.now()
-      }
-    })
-  }
-
   async setPreview(preview: VniteImportPreviewState): Promise<VniteImportFlowState> {
     return await this.update((state) => ({
       ...state,
-      step: 'previewGraph',
-      analysis: preview.analysis,
+      step: 'preview',
       preview,
       updatedAt: Date.now()
     }))
@@ -192,25 +177,22 @@ export function resolveVniteImportStep(input: {
   if (flow.step === 'pickBackup') {
     return 'pickBackup'
   }
-  if (!flow.analysis && !flow.preview) {
-    return 'pickBackup'
-  }
-  if (flow.step === 'previewGraph' && flow.preview) {
-    return 'previewGraph'
+  if (flow.step === 'preview' && flow.preview) {
+    return 'preview'
   }
   if (flow.step === 'running') {
     return 'running'
   }
-  return 'configureImport'
+  return 'config'
 }
 
 export function getVniteImportSubmitLabel(step: VniteImportStep): string {
   switch (step) {
     case 'pickBackup':
       return '下一步'
-    case 'configureImport':
+    case 'config':
       return '生成预览'
-    case 'previewGraph':
+    case 'preview':
       return '开始导入'
     case 'running':
       return '刷新状态'
@@ -237,9 +219,6 @@ function normalizeFlowState(value: unknown): VniteImportFlowState {
   if (file) {
     normalized.file = file
   }
-  if (isRecord(value.analysis)) {
-    normalized.analysis = value.analysis as unknown as VniteBackupAnalysisSummary
-  }
   if (preview) {
     normalized.preview = preview
   }
@@ -264,13 +243,11 @@ function createEmptyFlowState(): VniteImportFlowState {
 function normalizeStep(value: unknown): VniteImportStep {
   switch (value) {
     case 'pickBackup':
-    case 'configureImport':
-    case 'previewGraph':
+    case 'config':
+    case 'preview':
     case 'running':
     case 'done':
       return value
-    case 'analyzeBackup':
-      return 'pickBackup'
     default:
       return 'pickBackup'
   }

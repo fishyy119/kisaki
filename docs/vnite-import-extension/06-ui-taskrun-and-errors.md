@@ -19,13 +19,7 @@ defineSettingsPanel({
 Flow state：
 
 ```ts
-type VniteImportStep =
-  | 'pickBackup'
-  | 'analyzeBackup'
-  | 'configureImport'
-  | 'previewGraph'
-  | 'running'
-  | 'done'
+type VniteImportStep = 'pickBackup' | 'config' | 'preview' | 'running' | 'done'
 ```
 
 Root model：
@@ -45,24 +39,22 @@ interface VniteImportFlowModel {
 
 Footer submit labels：
 
-| step              | submit label       | behavior                                         |
-| ----------------- | ------------------ | ------------------------------------------------ |
-| `pickBackup`      | `选择备份包`       | 调 `kisaki.files.pickFile` 并保存 file grant     |
-| `analyzeBackup`   | `分析备份包`       | 解压、读取、生成分析摘要                         |
-| `configureImport` | `生成预览`         | 构建 graph 并调用 `kisaki.library.graph.preview` |
-| `previewGraph`    | `开始导入`         | 创建 TaskRun 并执行 graph apply                  |
-| `running`         | hidden             | 展示运行状态，不允许重复提交                     |
-| `done`            | `导入另一个备份包` | 重置 flow 到 `pickBackup`                        |
+| step         | submit label       | behavior                                                     |
+| ------------ | ------------------ | ------------------------------------------------------------ |
+| `pickBackup` | `下一步`           | 确认已保存 file grant 并进入配置                             |
+| `config`     | `生成预览`         | 读取备份包、生成 graph 并调用 `kisaki.library.graph.preview` |
+| `preview`    | `开始导入`         | 创建 TaskRun 并执行 graph apply                              |
+| `running`    | `刷新状态`         | 展示运行状态，不允许重复创建导入任务                         |
+| `done`       | `导入另一个备份包` | 重置 flow 到 `pickBackup`                                    |
 
 ## Step: Pick Backup
 
 Fields：
 
-- file status node：尚未选择备份包。
-- notice node：提示选择从 Vnite 导出的数据库备份 zip。
-- optional diagnostics table：上一次导入摘要，仅在用户开启保留摘要时展示。
+- file status node：显示当前备份包文件名和大小。
+- file button：选择或更换从 Vnite 导出的数据库备份 zip。
 
-Submit：
+File button：
 
 ```ts
 const grant = await kisaki.files.pickFile({
@@ -76,37 +68,21 @@ const grant = await kisaki.files.pickFile({
 成功选择后：
 
 - 保存 `grantId`、`name`、`sizeBytes`、`path`。
-- 进入 `analyzeBackup`。
+- 留在 `pickBackup`，用户通过主按钮进入配置。
 
 取消选择后：
 
 - 留在 `pickBackup`。
 - 不显示失败提示。
 
-## Step: Analyze Backup
-
-Fields：
-
-- selected file status：文件名、大小。
-- stale analysis notice：如果已有旧分析且 grant 变化，提示需要重新分析。
-- secondary button：`重新选择`，释放旧 grant 并回到 `pickBackup`。
-
 Submit：
 
-- 创建短任务或使用 settings callback loading state。
-- 解压 zip。
-- 读取 `game`、`game-local`、`game-collection`。
-- 生成 `VniteBackupAnalysisSummary`。
-- 进入 `configureImport`。
-
-分析摘要 fields：
-
-- status nodes：游戏、合集、媒体附件、warning。
-- table：字段覆盖，例如封面 122/124、外部 ID 统计、游玩记录统计。
+- 校验已选择备份包。
+- 进入 `config`。
 
 ## Step: Configure Import
 
-Fields 是一个紧凑配置面：
+Fields 是一个紧凑配置面，不展示分析摘要、字段覆盖或分布表：
 
 - 字段选择 summary。
 - `编辑字段` button，打开 fields dialog。
@@ -115,7 +91,7 @@ Fields 是一个紧凑配置面：
 - `补全范围` radioGroup：`核心与媒体`、`全部可补全字段`、`自定义`。
 - 自定义 surfaces multiSelect，仅在 custom 时显示。
 - conflict mode select：跳过现有、合并缺失字段、覆盖所选字段。
-- `高级选项` button，打开 advanced dialog。
+- strict attachment mode switch，默认关闭。
 
 没有 game scraper profile 时：
 
@@ -126,29 +102,24 @@ Fields dialog：
 
 - 使用 checkbox / multi-select 表达字段组。
 - 基础信息、本地启动、游玩记录、分类与标签、制作方与人员、媒体、存档、回忆。
-- 每组显示分析出的覆盖数量，例如“封面 122/124”。
-
-Advanced dialog：
-
-- keep last analysis。
-- cleanup temp。
-- strict attachment mode，默认关闭。
 
 Submit：
 
+- 解压并读取备份包。
 - 构建 `LibraryGraphInput`。
 - 调 `kisaki.library.graph.preview(graph)`。
 - 保存 preview result。
-- 进入 `previewGraph`。
+- 进入 `preview`。
 
 ## Step: Preview Graph
 
 Fields：
 
-- summary status nodes：新增、更新、跳过、warning。
-- comparisonList：每组游戏显示来源名称、目标状态、匹配诊断、关键字段。
-- diagnostics table：level、code、游戏、message。
-- secondary button：`返回修改`，回到 `configureImport`。
+- summary status nodes：新增、更新、跳过、error、warning。
+- 写入计划 table。
+- 更新计划 comparisonList。
+- diagnostics button：打开诊断表。
+- secondary button：`返回修改`，回到 `config`。
 - secondary button：`重新预览`，重新执行 graph preview。
 
 Submit：
