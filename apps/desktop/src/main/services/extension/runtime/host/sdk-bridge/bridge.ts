@@ -32,7 +32,7 @@ import type {
   ThemeContribution,
   ThemeRegistration
 } from '@kisaki3/extension-api'
-import { isExtensionEventTopic } from '@kisaki3/extension-api'
+import { isExtensionEventTopic, toJsonObject } from '@kisaki3/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostCommandContributionPoint } from '../contributions/commands'
@@ -61,7 +61,6 @@ import {
   createSettingsPanelRegistrar,
   createThemeRegistrar
 } from './registrars'
-import { toJsonObject } from './utils/serialization'
 import { createExtensionStorage } from './storage'
 import { createExtensionSecrets } from './secrets'
 import { configureExtensionSdkBridge, resetExtensionSdkBridge } from './store'

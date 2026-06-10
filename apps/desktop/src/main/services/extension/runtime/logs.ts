@@ -4,7 +4,8 @@ import rawLog from 'electron-log/main'
 import {
   createUnavailableError,
   type ExtensionRuntimeHandle,
-  type ExtensionRuntimeMetadata
+  type ExtensionRuntimeMetadata,
+  type RpcValue
 } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 
@@ -33,7 +34,7 @@ export class ExtensionRuntimeLogs {
     runtimeHandle: ExtensionRuntimeHandle,
     level: ExtensionLogLevel,
     message: string,
-    args: readonly unknown[],
+    args: readonly RpcValue[],
     signal?: AbortSignal
   ): Promise<void> {
     const extension = this.requireRuntimeHandle(runtimeHandle)

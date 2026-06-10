@@ -284,7 +284,7 @@ export interface ScannerCoreSnapshot {
   targetCollectionId?: string | null
   scanIntervalMinutes?: number | null
   entityDepth?: number | null
-  nameExtractionRules?: unknown
+  nameExtractionRules?: JsonValue
 }
 
 export type ScannerChange = LibraryCoreChange<ScannerCoreSnapshot>

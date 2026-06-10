@@ -70,7 +70,11 @@ export function compactRecord(record: Record<string, unknown>): Record<string, u
   return compacted
 }
 
-export function normalizeSettingsPanelExtensionValue<T>(value: T, label: string): T {
+/**
+ * Normalizes an extension-produced settings panel value through JSON
+ * canonicalization while preserving its compile-time type.
+ */
+export function toSettingsPanelJsonValue<T>(value: T, label: string): T {
   return toJsonValue(value, label) as T
 }
 

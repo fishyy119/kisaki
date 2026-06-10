@@ -1,14 +1,13 @@
+import type { ValidationIssue } from './validation'
+
 export type JsonPrimitive = string | number | boolean | null
 
-export type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue }
+export type JsonArray = readonly JsonValue[]
+
+export type JsonValue = JsonPrimitive | JsonArray | { readonly [key: string]: JsonValue }
 
 export interface JsonObject {
   readonly [key: string]: JsonValue
-}
-
-export interface JsonSerializationIssue {
-  path: string
-  message: string
 }
 
 interface JsonSerializationState {
@@ -16,6 +15,15 @@ interface JsonSerializationState {
   readonly seen: Set<object>
 }
 
+/**
+ * Normalizes an untrusted value into the strict JSON data model.
+ * @remarks Deep-copies onto null-prototype records: drops `undefined` object
+ * properties, converts array holes and `undefined` entries to `null`, and
+ * rejects non-finite numbers, circular references, and non-plain values
+ * (Date, Map, Set, class instances, functions; `toJSON` is not honored).
+ * @param label - Prefix used in error messages to locate the offending path.
+ * @throws Error when the value cannot be represented as JSON.
+ */
 export function toJsonValue(value: unknown, label = 'value'): JsonValue {
   return serializeJsonValue(value, '', {
     label,
@@ -23,6 +31,11 @@ export function toJsonValue(value: unknown, label = 'value'): JsonValue {
   })
 }
 
+/**
+ * Normalizes an untrusted value like {@link toJsonValue} and requires the root
+ * to be a JSON object.
+ * @throws Error when the value is not a JSON object.
+ */
 export function toJsonObject(value: unknown, label = 'value'): JsonObject {
   const normalized = toJsonValue(value, label)
   if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
@@ -32,17 +45,29 @@ export function toJsonObject(value: unknown, label = 'value'): JsonObject {
   return normalized as JsonObject
 }
 
+/**
+ * Measures the UTF-8 byte size of the normalized JSON encoding of a value.
+ * @throws Error when the value cannot be represented as JSON.
+ */
 export function measureJsonBytes(value: unknown, label = 'value'): number {
   return new TextEncoder().encode(JSON.stringify(toJsonValue(value, label))).byteLength
 }
 
-export function validateJsonValue(value: unknown, path = '$'): JsonSerializationIssue[] {
-  const issues: JsonSerializationIssue[] = []
+/**
+ * Collects the issues that prevent a value from being a strict JSON value.
+ * @returns An empty array when the value already satisfies {@link JsonValue}.
+ */
+export function validateJsonValue(value: unknown, path = '$'): ValidationIssue[] {
+  const issues: ValidationIssue[] = []
   visitJsonValue(value, path, issues, new Set<object>(), true)
   return issues
 }
 
-export function validateJsonObject(value: unknown, path = '$'): JsonSerializationIssue[] {
+/**
+ * Collects the issues that prevent a value from being a strict JSON object.
+ * @returns An empty array when the value already satisfies {@link JsonObject}.
+ */
+export function validateJsonObject(value: unknown, path = '$'): ValidationIssue[] {
   if (!isPlainRecord(value)) {
     return [{ path, message: 'Field must be an object containing JSON values.' }]
   }
@@ -120,7 +145,7 @@ function serializeJsonValue(
 function visitJsonValue(
   value: unknown,
   path: string,
-  issues: JsonSerializationIssue[],
+  issues: ValidationIssue[],
   ancestors: Set<object>,
   isRoot: boolean
 ): void {

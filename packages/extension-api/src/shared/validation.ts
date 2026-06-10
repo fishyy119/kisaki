@@ -1,8 +1,6 @@
-import {
-  validateJsonObject as validateJsonObjectInput,
-  validateJsonValue as validateJsonValueInput
-} from './serialization'
-
+/**
+ * Issue reported by boundary validation helpers, located by a JSONPath-like path.
+ */
 export interface ValidationIssue {
   path: string
   message: string
@@ -209,14 +207,6 @@ export function validateOptionalEnumString<TValue extends string>(
   }
 
   return validateRequiredEnumString(value, path, allowedValues, message)
-}
-
-export function validateJsonValue(value: unknown, path = '$'): ValidationIssue[] {
-  return validateJsonValueInput(value, path)
-}
-
-export function validateJsonObject(value: unknown, path = '$'): ValidationIssue[] {
-  return validateJsonObjectInput(value, path)
 }
 
 export function isAbortSignal(value: unknown): value is AbortSignal {

@@ -1,4 +1,5 @@
 import type { JsonValue } from '../shared'
+import type { RpcValue } from '../rpc/core'
 
 export type NetworkMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -14,7 +15,7 @@ export interface NetworkRequest {
   responseType?: NetworkResponseType
 }
 
-export interface NetworkResponse<TData = unknown> {
+export interface NetworkResponse<TData = RpcValue> {
   url: string
   ok: boolean
   status: number
@@ -37,6 +38,6 @@ export interface NetworkDownloadResult {
 }
 
 export interface NetworkCapability {
-  request<TData = unknown>(input: NetworkRequest): Promise<NetworkResponse<TData>>
+  request<TData = RpcValue>(input: NetworkRequest): Promise<NetworkResponse<TData>>
   download(input: NetworkDownloadRequest): Promise<NetworkDownloadResult>
 }

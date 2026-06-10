@@ -28,6 +28,14 @@ export interface ExtensionLogger {
   error(message: string, ...args: unknown[]): void
 }
 
+/**
+ * Extension-scoped persistent key-value storage.
+ * @remarks Values are plain JSON data. `set` normalizes its input before
+ * persisting: `undefined` object properties are dropped, and values that are
+ * not representable as JSON (Date, Map, Set, class instances, functions,
+ * non-finite numbers, circular references) are rejected; `toJSON` is not
+ * honored.
+ */
 export interface ExtensionStorage {
   get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined>
   set(key: string, value: unknown): Promise<void>
@@ -35,6 +43,10 @@ export interface ExtensionStorage {
   listKeys(prefix?: string): Promise<readonly string[]>
 }
 
+/**
+ * Extension-scoped encrypted key-value storage.
+ * @remarks Follows the same strict JSON value contract as {@link ExtensionStorage}.
+ */
 export interface ExtensionSecrets {
   get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined>
   set(key: string, value: unknown): Promise<void>

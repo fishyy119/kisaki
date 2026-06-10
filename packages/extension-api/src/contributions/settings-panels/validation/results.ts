@@ -1,4 +1,5 @@
 import { validateExtensionErrorShape } from '../../../shared/errors'
+import { validateJsonObject } from '../../../shared/json'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   isPlainObject,
@@ -9,7 +10,6 @@ import {
   validateRequiredBoolean,
   validateRequiredEnumString,
   validateRequiredString,
-  validateJsonObject,
   validateUnknownKeys
 } from '../../../shared/validation'
 import {

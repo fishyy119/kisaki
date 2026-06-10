@@ -1,5 +1,5 @@
 import type { ExtensionErrorShape } from './errors'
-import type { JsonObject } from './serialization'
+import type { JsonObject } from './json'
 import type { ValidationIssue } from './validation'
 import { validateExtensionErrorShape } from './errors'
 import {

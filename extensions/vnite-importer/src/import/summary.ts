@@ -7,7 +7,9 @@ import type { VniteBackupGame, VniteBackupSnapshot, VniteImportDiagnostic } from
 import { omitUndefined } from '../shared/object'
 import { createVniteExtraNoteNodeKey, createVniteGameNodeKey } from '../mapping'
 
-export interface VniteImportExecutionCounters {
+// Type alias keeps the implicit index signature so counters stay assignable
+// to both Record<string, number> and the JsonValue task-run output contract.
+export type VniteImportExecutionCounters = {
   gamesTotal: number
   gamesCreated: number
   gamesUpdated: number
@@ -32,7 +34,9 @@ export interface VniteImportExecutionSummary {
   diagnostics: readonly VniteImportDiagnostic[]
 }
 
-export interface VniteImportJobSummary {
+// Type alias keeps the implicit index signature so the summary satisfies the
+// JsonValue task-run output contract without widening property reads.
+export type VniteImportJobSummary = {
   fileName: string
   startedAt: number
   finishedAt: number

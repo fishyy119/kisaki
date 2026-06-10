@@ -1,4 +1,5 @@
 import type { DeeplinkRouteContribution } from './contracts'
+import { validateJsonValue } from '../../shared/json'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
@@ -7,7 +8,6 @@ import {
   validateRequiredBoolean,
   validateRequiredFunction,
   validateRequiredString,
-  validateJsonValue,
   validateUnknownKeys
 } from '../../shared/validation'
 

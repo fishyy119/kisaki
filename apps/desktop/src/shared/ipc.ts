@@ -78,7 +78,6 @@ import type {
   ExtensionRepositoryUpdateRequest,
   ExtensionResolvedEntityMenu,
   ExtensionRuntimeStateChangedEvent,
-  ExtensionSettingsPanelRegistrationInfo,
   ExtensionSettingsPanelCallbackResponse,
   ExtensionSettingsPanelInvokeRequest,
   ExtensionSettingsPanelOpenRequest,
@@ -499,9 +498,6 @@ export interface IpcMainHandlers {
     request?: ExtensionCatalogSearchRequest
   ) => IpcResult<ExtensionCatalogSearchResult>
   'extension:get-contribution-snapshot': () => IpcResult<ExtensionContributionSnapshot>
-  'extension:get-settings-panel-contributions': () => IpcResult<
-    readonly ExtensionSettingsPanelRegistrationInfo[]
-  >
   'extension:resolve-entity-menu': (
     request: ExtensionEntityMenuResolveRequest
   ) => IpcResult<ExtensionResolvedEntityMenu>

@@ -15,6 +15,7 @@ import {
   type EntityMenuResolveResponse,
   type EntityMenuScope,
   type UiCallbackResult,
+  toJsonObject,
   validateEntityMenuContributionShape,
   validateEntityMenuNodes
 } from '@kisaki3/extension-api'
@@ -22,7 +23,6 @@ import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
 import { invokeUiCallback } from '../ui'
-import { toJsonObject } from '../../sdk-bridge/utils/serialization'
 import {
   getEntityMenuRegistrationMap,
   type LoadedExtensionRuntime,

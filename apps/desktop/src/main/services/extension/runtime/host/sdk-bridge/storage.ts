@@ -1,7 +1,7 @@
 import type { ExtensionStorage, JsonValue } from '@kisaki3/extension-api'
+import { toJsonValue } from '@kisaki3/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
-import { toJsonValue } from './utils/serialization'
 
 interface ExtensionStorageOptions {
   scope: ActiveExtensionScope

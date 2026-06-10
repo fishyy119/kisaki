@@ -27,7 +27,7 @@ import type { NormalizeSettingsPanelContext, SettingsPanelCallbackKind } from '.
 import {
   compactRecord,
   createSettingsPanelError,
-  normalizeSettingsPanelExtensionValue,
+  toSettingsPanelJsonValue,
   validateChangeValue
 } from './values'
 
@@ -249,7 +249,7 @@ export async function invokeSettingsPanelCallback(
   validate: (value: unknown) => readonly { path: string; message: string }[]
 ): Promise<SettingsPanelCallbackResult> {
   try {
-    const result = normalizeSettingsPanelExtensionValue(await callback(), label)
+    const result = toSettingsPanelJsonValue(await callback(), label)
     const issues = validate(result)
     if (issues.length > 0) {
       console.warn(

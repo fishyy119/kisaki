@@ -255,18 +255,26 @@ export function toSettingsSession(
   }
 }
 
+/**
+ * Casts a host-resolved surface payload to the renderer DTO.
+ * @remarks Invariant: the host validates the surface model and normalizes it
+ * to strict JSON before it crosses the RPC boundary, so no runtime check is
+ * repeated here.
+ */
 export function toResolvedRoot(
   payload: SettingsPanelResolvedSurfacePayload
 ): ExtensionResolvedSettingsPanelRoot {
   return payload as unknown as ExtensionResolvedSettingsPanelRoot
 }
 
+/** See {@link toResolvedRoot} for the host-side validation invariant. */
 export function toResolvedDialog(
   payload: SettingsPanelResolvedSurfacePayload
 ): ExtensionResolvedSettingsPanelDialog {
   return payload as unknown as ExtensionResolvedSettingsPanelDialog
 }
 
+/** See {@link toResolvedRoot} for the host-side validation invariant. */
 export function toResolvedPopover(
   payload: SettingsPanelResolvedSurfacePayload
 ): ExtensionResolvedSettingsPanelPopover {

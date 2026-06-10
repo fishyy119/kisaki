@@ -341,6 +341,8 @@ export class ExtensionEntityMenuContributionPoint {
       if (result.status === 'fulfilled') {
         groups.push({
           ...toMenuInfo(result.value.registration),
+          // Invariant: the host validates and JSON-normalizes resolved nodes
+          // before they cross the RPC boundary, so the cast is not re-checked.
           nodes: result.value.resolved
             .nodes as unknown as readonly ExtensionResolvedEntityMenuNode[]
         })

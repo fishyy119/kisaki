@@ -1,5 +1,6 @@
 import type { NetworkDownloadRequest, NetworkRequest } from '@kisaki3/extension-api'
-import { toJsonObject, toJsonValue, toOptionalJsonField } from './serialization'
+import { toJsonObject, toJsonValue } from '@kisaki3/extension-api'
+import { toOptionalJsonField } from './json'
 
 export function toNetworkRequest(input: NetworkRequest): NetworkRequest {
   const record = requireRecord(input, 'network request')

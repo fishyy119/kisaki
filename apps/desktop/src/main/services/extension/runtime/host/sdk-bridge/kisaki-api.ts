@@ -32,7 +32,7 @@ import type {
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope } from './types'
 import { toNetworkDownloadRequest, toNetworkRequest } from './utils/network'
-import { toJsonRecord, toOptionalJsonRecord } from './utils/serialization'
+import { toJsonRecord, toOptionalJsonRecord } from './utils/json'
 import { toTaskRunFailureErrorPayload } from './utils/task-runs'
 
 const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'

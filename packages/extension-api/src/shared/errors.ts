@@ -1,10 +1,9 @@
-import type { JsonObject } from './serialization'
+import { validateJsonObject, type JsonObject } from './json'
 import type { ValidationIssue } from './validation'
 import {
   isPlainObject,
   validateOptionalString,
   validateRequiredString,
-  validateJsonObject,
   validateUnknownKeys
 } from './validation'
 
@@ -153,7 +152,11 @@ export function normalizeExtensionError(
       )
     }
 
-    if (isAbortLikeError(error)) {
+    if (isAbortError(error)) {
+      return createUnavailableError('The host capability request was aborted.')
+    }
+
+    if (isTimeoutLikeError(error)) {
       return createTimeoutError(options.timeoutMessage ?? 'The host capability request timed out.')
     }
   }
@@ -184,8 +187,12 @@ export function readErrorDetails(error: unknown): JsonObject | undefined {
   return validateJsonObject(details).length === 0 ? (details as JsonObject) : undefined
 }
 
-function isAbortLikeError(error: Error): boolean {
-  return error.name === 'AbortError' || /timeout/i.test(error.message)
+function isAbortError(error: Error): boolean {
+  return error.name === 'AbortError'
+}
+
+function isTimeoutLikeError(error: Error): boolean {
+  return /timeout/i.test(error.message)
 }
 
 function matchesErrorCode(code: string | undefined, patterns: readonly string[]): boolean {

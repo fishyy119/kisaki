@@ -13,7 +13,9 @@ export type VniteBackupDatabaseName = (typeof VNITE_BACKUP_DATABASE_NAMES)[numbe
 
 export type VniteImportDiagnosticLevel = 'info' | 'warning' | 'error'
 
-export interface VniteImportDiagnostic {
+// Type alias keeps the implicit index signature so diagnostics stay
+// assignable to the JsonValue task-run output contract.
+export type VniteImportDiagnostic = {
   level: VniteImportDiagnosticLevel
   code: string
   message: string

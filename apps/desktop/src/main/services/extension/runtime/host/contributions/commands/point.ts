@@ -4,11 +4,10 @@ import type {
   CommandRegistration,
   JsonValue
 } from '@kisaki3/extension-api'
-import { validateCommandContributionShape } from '@kisaki3/extension-api'
+import { toJsonValue, validateCommandContributionShape } from '@kisaki3/extension-api'
 import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
-import { toJsonValue } from '../../sdk-bridge/utils/serialization'
 
 export class HostCommandContributionPoint {
   constructor(private readonly options: HostContributionDomainOptions) {}

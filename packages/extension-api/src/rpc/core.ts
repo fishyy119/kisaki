@@ -1,15 +1,6 @@
 import type { JsonPrimitive, JsonObject } from '../shared'
 import type { ExtensionErrorShape } from '../shared/errors'
-import type { ValidationIssue } from '../shared/validation'
-import {
-  createExtensionError,
-  readErrorCode,
-  readErrorDetails,
-  validateExtensionErrorShape
-} from '../shared/errors'
-import { validateOptionalString } from '../shared/validation'
-
-const RPC_ERROR_PAYLOAD_KEYS = new Set<string>(['code', 'message', 'details', 'stack'])
+import { createExtensionError, readErrorCode, readErrorDetails } from '../shared/errors'
 
 export interface RpcErrorPayload extends ExtensionErrorShape {
   stack?: string
@@ -30,28 +21,6 @@ export class RpcTimeoutError extends Error {
       timeoutMs
     }
   }
-}
-
-export function validateRpcErrorPayload(value: unknown): ValidationIssue[] {
-  const issues = validateExtensionErrorShape(value, {
-    allowedKeys: RPC_ERROR_PAYLOAD_KEYS
-  })
-
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    issues.push(
-      ...validateOptionalString((value as Record<string, unknown>).stack, '$.stack', {
-        minLength: 1,
-        typeMessage: 'stack must be a string when provided.',
-        valueMessage: 'stack must be a non-empty string when provided.'
-      })
-    )
-  }
-
-  return issues
-}
-
-export function isRpcErrorPayload(value: unknown): value is RpcErrorPayload {
-  return validateRpcErrorPayload(value).length === 0
 }
 
 export function toRpcErrorPayload(error: unknown): RpcErrorPayload {

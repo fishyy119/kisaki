@@ -226,7 +226,8 @@ export class RpcMessageChannel {
         kind: 'response',
         id,
         ok: true,
-        result: result ?? {}
+        // Void handler results map to the RpcNoPayload empty object.
+        result: result === undefined ? {} : result
       } as RpcMessage)
     } catch (error) {
       this.sendMessage({

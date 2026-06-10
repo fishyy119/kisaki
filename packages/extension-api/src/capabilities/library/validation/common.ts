@@ -1,6 +1,7 @@
 import type { LibraryEntityType } from '../entities'
 import { LIBRARY_ENTITY_TYPES } from '../entities'
 import { createValidationError } from '../../../shared/errors'
+import { validateJsonObject } from '../../../shared/json'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   isPlainObject,
@@ -12,7 +13,6 @@ import {
   validateRequiredEnumString,
   validateRequiredFiniteNumber,
   validateRequiredString,
-  validateJsonObject,
   validateUnknownKeys
 } from '../../../shared/validation'
 

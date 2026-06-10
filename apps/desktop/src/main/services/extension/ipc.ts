@@ -102,10 +102,6 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpc(() => service.contributions.getSnapshot())
   )
 
-  ipc.handle('extension:get-settings-panel-contributions', () =>
-    wrapIpc(() => service.contributions.listSettingsPanels())
-  )
-
   ipc.handle('extension:resolve-entity-menu', async (_, request) =>
     wrapIpc(() => service.contributions.resolveEntityMenu(request))
   )

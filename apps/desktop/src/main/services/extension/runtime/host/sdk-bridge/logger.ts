@@ -1,7 +1,7 @@
-import type { ExtensionLogger, ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
+import type { ExtensionLogger, ExtensionRuntimeMetadata, RpcValue } from '@kisaki3/extension-api'
+import { toJsonValue } from '@kisaki3/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
-import { toRpcValue } from './utils/serialization'
 
 interface ExtensionLoggerOptions {
   scope: ActiveExtensionScope
@@ -26,7 +26,7 @@ export function createExtensionLogger(options: ExtensionLoggerOptions): Extensio
         runtimeHandle: options.scope.runtimeHandle,
         level,
         message,
-        args: args.map((value) => toRpcValue(value))
+        args: args.map((value) => toLogRpcValue(value))
       },
       options.getRequestOptions(options.scope)
     )
@@ -45,5 +45,36 @@ export function createExtensionLogger(options: ExtensionLoggerOptions): Extensio
     info: (message, ...args) => logWithLevel('info', message, args),
     warn: (message, ...args) => logWithLevel('warn', message, args),
     error: (message, ...args) => logWithLevel('error', message, args)
+  }
+}
+
+/**
+ * Converts an arbitrary log argument into an RPC-safe value.
+ * @remarks Log-only policy: binary passes through, errors serialize with their
+ * stack for diagnostics, and values that are not JSON degrade to their string
+ * form instead of failing the log call.
+ */
+function toLogRpcValue(value: unknown): RpcValue {
+  if (value instanceof Uint8Array) {
+    return value
+  }
+
+  if (value instanceof Error) {
+    const serializedError: Record<string, string> = {
+      name: value.name,
+      message: value.message
+    }
+
+    if (value.stack) {
+      serializedError.stack = value.stack
+    }
+
+    return serializedError
+  }
+
+  try {
+    return toJsonValue(value, 'log argument')
+  } catch {
+    return String(value)
   }
 }

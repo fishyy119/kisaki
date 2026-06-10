@@ -3,6 +3,7 @@ export * from './lifecycle'
 export * from './runtime'
 export * from './contributions'
 export * from './capabilities'
+export type { WireSafe } from './wire'
 
 import type {
   HostToMainCapabilityRpcRequestMap,

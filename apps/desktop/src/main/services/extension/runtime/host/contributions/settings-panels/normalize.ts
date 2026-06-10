@@ -8,7 +8,7 @@ import type {
   SettingsPanelRootModel,
   SettingsPanelTab
 } from '@kisaki3/extension-api'
-import { toJsonObject } from '../../sdk-bridge/utils/serialization'
+import { toJsonObject } from '@kisaki3/extension-api'
 import { registerSettingsPanelCallback } from './callbacks'
 import type { NormalizeSettingsPanelContext } from './types'
 import { compactRecord } from './values'

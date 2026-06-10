@@ -1,4 +1,5 @@
 import type { CommandContribution, CommandContributionExecuteResult } from './contracts'
+import { validateJsonObject, validateJsonValue } from '../../shared/json'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
@@ -6,8 +7,6 @@ import {
   validateOptionalString,
   validateRequiredFunction,
   validateRequiredString,
-  validateJsonObject,
-  validateJsonValue,
   validateUnknownKeys
 } from '../../shared/validation'
 

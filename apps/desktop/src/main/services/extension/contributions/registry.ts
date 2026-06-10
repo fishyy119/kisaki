@@ -12,7 +12,6 @@ import type {
   ExtensionSettingsPanelOpenResponse,
   ExtensionSettingsPanelRefreshRequest,
   ExtensionSettingsPanelRefreshResponse,
-  ExtensionSettingsPanelRegistrationInfo,
   ExtensionSettingsPanelReleaseRequest,
   ExtensionSettingsPanelSubmitRequest,
   ExtensionThemeRegistrationInfo
@@ -186,10 +185,6 @@ export class ExtensionContributionRegistry {
       deeplinkRoutes: this.deeplinkRoutes.getSnapshot(),
       themes: this.themes.getSnapshot()
     }
-  }
-
-  listSettingsPanels(): readonly ExtensionSettingsPanelRegistrationInfo[] {
-    return this.settingsPanels.getSnapshot()
   }
 
   listThemes(): readonly ExtensionThemeRegistrationInfo[] {

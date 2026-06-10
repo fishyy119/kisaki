@@ -1,3 +1,5 @@
+import type { JsonValue } from '../shared'
+
 export type ExtensionTaskRunOperation = string
 
 export type ExtensionTaskRunStatus =
@@ -97,7 +99,7 @@ export interface ExtensionTaskRunResult {
   status: ExtensionTaskRunFinalStatus
   title?: string
   summary?: string
-  output?: unknown
+  output?: JsonValue
   error?: string
   counters?: Record<string, number>
   warnings?: readonly ExtensionTaskRunWarning[]

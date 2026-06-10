@@ -1,3 +1,4 @@
+import { validateJsonObject } from '../../../shared/json'
 import type { ValidationIssue } from '../../../shared/validation'
 import {
   prefixIssues,
@@ -6,8 +7,7 @@ import {
   validateRequiredArray,
   validateRequiredBoolean,
   validateRequiredEnumString,
-  validateRequiredFiniteNumber,
-  validateJsonObject
+  validateRequiredFiniteNumber
 } from '../../../shared/validation'
 import {
   SETTINGS_PANEL_DIALOG_SIZE_VALUES,

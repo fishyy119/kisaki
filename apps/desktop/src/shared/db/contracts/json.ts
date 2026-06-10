@@ -28,8 +28,12 @@ export interface FailedScan {
   path: string
 }
 
-/** Name extraction rule for scanner */
-export interface NameExtractionRule {
+/**
+ * Name extraction rule for scanner.
+ * @remarks Type alias keeps the implicit index signature so rules stay
+ * assignable to JSON value contracts at the extension boundary.
+ */
+export type NameExtractionRule = {
   /** Unique identifier for ordering/management */
   id: string
   /** Human-readable description */
