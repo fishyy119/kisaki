@@ -1,5 +1,7 @@
 # 扩展贡献点当前设计
 
+> 历史设计文档：文中的 settings panels（声明式设置面板）体系已被 webview 扩展 UI 体系（cardActions + kisaki.webviews）整体取代。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 本文取代早期只覆盖设置面板与实体菜单的贡献点重构说明。当前完整实施准则以
 [extension-contribution-api-redesign.md](extension-contribution-api-redesign.md) 为准。
 

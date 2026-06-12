@@ -1,5 +1,7 @@
 # 02 Extension API And Host Changes
 
+> 历史设计文档：文中的 settings panels（声明式设置面板）体系已被 webview 扩展 UI 体系（cardActions + kisaki.webviews）整体取代。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 Vnite 导入需要新增宿主能力。扩展 API 尚未上线，本设计直接定义目标 API，不保留兼容别名。
 
 ## API 原则

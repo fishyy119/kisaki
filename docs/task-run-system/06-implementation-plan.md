@@ -1,5 +1,7 @@
 # 06 Implementation Plan
 
+> 历史设计文档：文中的 `ExtensionTaskRun*` 类型已在 extension-api 中更名为 `TaskRun*`。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 本实施计划不考虑向后兼容。允许删除、重命名和迁移现有服务、IPC、DB 表和 extension API。
 
 ## Phase 1: Shared contracts and DB schema

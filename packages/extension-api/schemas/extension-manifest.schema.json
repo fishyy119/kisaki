@@ -42,7 +42,7 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
-      "description": "Package-relative root directory of built webview UI assets, e.g. dist/ui. Required for the extension to open webviews."
+      "description": "Package-relative root directory of built webview UI assets, e.g. ./dist/ui. Required for the extension to open webviews."
     },
     "description": {
       "type": "string"

@@ -9,7 +9,7 @@
     "validate": "kisx validate",
     "pack": "kisx pack",
     "lint": "eslint .",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false && vue-tsc --noEmit -p tsconfig.ui.json --composite false"
   },
   "dependencies": {
     "@kisaki3/extension-sdk": "workspace:*"

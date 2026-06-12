@@ -17,7 +17,10 @@ import {
 } from '../src/host/mapping'
 import type { VniteAttachmentMetadata } from '../src/host/vnite/attachments'
 import type { VniteBackupGame, VniteBackupSnapshot } from '../src/host/backup/types'
-import { createDefaultVniteGameDoc, createDefaultVniteGameLocalDoc } from '../src/host/vnite/defaults'
+import {
+  createDefaultVniteGameDoc,
+  createDefaultVniteGameLocalDoc
+} from '../src/host/vnite/defaults'
 import { normalizeVniteGameDoc } from '../src/host/vnite/normalization'
 
 function main(): void {

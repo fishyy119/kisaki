@@ -29,8 +29,8 @@ export interface ExtensionManifest {
   categories: readonly ExtensionCategory[]
   entry: string
   /**
-   * Package-relative root directory of built webview UI assets, e.g. `dist/ui`.
-   * Required for the extension to open webviews.
+   * Package-relative root directory of built webview UI assets, e.g.
+   * `./dist/ui`. Required for the extension to open webviews.
    */
   ui?: string
   description?: string

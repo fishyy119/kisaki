@@ -1,3 +1,8 @@
+<!--
+Account Tab manages the Bangumi login session: OAuth login, verification,
+credential refresh, and logout.
+Boundary: renders `overview.account` and emits refresh/error to the app shell.
+-->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'

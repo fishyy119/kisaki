@@ -1,7 +1,12 @@
+<!--
+Fields Modal edits the Vnite field selection as a local draft grouped by
+field group.
+Boundary: emits the draft on save; persistence stays in the extension host.
+-->
 <script setup lang="ts">
 import { reactive } from 'vue'
 import type { VniteImportFieldSelection } from '../../../shared/import-wizard'
-import { VNITE_FIELD_GROUPS } from '../../../shared/import-wizard'
+import { VNITE_FIELD_GROUPS } from '../fields'
 import Modal from './modal.vue'
 
 interface Props {

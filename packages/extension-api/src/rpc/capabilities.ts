@@ -65,12 +65,12 @@ import type { NotificationHandle, NotificationKind, NotifyOptions } from '../cap
 import type { RuntimeInfo } from '../capabilities/runtime'
 import type { ScraperProfileListQuery, ScraperProfileSummary } from '../capabilities/scrapers'
 import type {
-  ExtensionTaskRunActiveListQuery,
-  ExtensionTaskRunCreateInput,
-  ExtensionTaskRunHistoryListQuery,
-  ExtensionTaskRunProgressUpdate,
-  ExtensionTaskRunResult,
-  ExtensionTaskRunSnapshot
+  TaskRunActiveListQuery,
+  TaskRunCreateInput,
+  TaskRunHistoryListQuery,
+  TaskRunProgressUpdate,
+  TaskRunResult,
+  TaskRunSnapshot
 } from '../capabilities/task-runs'
 import type { WebviewOpenOptions } from '../capabilities/webviews'
 import type { ScraperLookup } from '../contributions/scraper-providers'
@@ -177,45 +177,45 @@ export interface AutomationRunRequest extends ExtensionScopedRpcParams {
   automationId: string
 }
 
-export interface ExtensionTaskRunFailureErrorPayload {
+export interface TaskRunFailureErrorPayload {
   message: string
   code?: string
 }
 
-export interface ExtensionTaskRunCreateRequest extends ExtensionScopedRpcParams {
-  input: ExtensionTaskRunCreateInput
+export interface TaskRunCreateRequest extends ExtensionScopedRpcParams {
+  input: TaskRunCreateInput
 }
 
-export interface ExtensionTaskRunScopedRequest extends ExtensionScopedRpcParams {
+export interface TaskRunScopedRequest extends ExtensionScopedRpcParams {
   runId: string
 }
 
-export interface ExtensionTaskRunReportRequest extends ExtensionTaskRunScopedRequest {
-  update: ExtensionTaskRunProgressUpdate
+export interface TaskRunReportRequest extends TaskRunScopedRequest {
+  update: TaskRunProgressUpdate
 }
 
-export interface ExtensionTaskRunCompleteRequest extends ExtensionTaskRunScopedRequest {
-  result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
+export interface TaskRunCompleteRequest extends TaskRunScopedRequest {
+  result?: Omit<TaskRunResult, 'status' | 'error'>
 }
 
-export interface ExtensionTaskRunFailRequest extends ExtensionTaskRunScopedRequest {
-  error: ExtensionTaskRunFailureErrorPayload
-  result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
+export interface TaskRunFailRequest extends TaskRunScopedRequest {
+  error: TaskRunFailureErrorPayload
+  result?: Omit<TaskRunResult, 'status' | 'error'>
 }
 
-export interface ExtensionTaskRunCancelRequest extends ExtensionTaskRunScopedRequest {
-  result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
+export interface TaskRunCancelRequest extends TaskRunScopedRequest {
+  result?: Omit<TaskRunResult, 'status' | 'error'>
 }
 
-export interface ExtensionTaskRunActiveListRequest extends ExtensionScopedRpcParams {
-  query?: ExtensionTaskRunActiveListQuery
+export interface TaskRunActiveListRequest extends ExtensionScopedRpcParams {
+  query?: TaskRunActiveListQuery
 }
 
-export interface ExtensionTaskRunHistoryListRequest extends ExtensionScopedRpcParams {
-  query?: ExtensionTaskRunHistoryListQuery
+export interface TaskRunHistoryListRequest extends ExtensionScopedRpcParams {
+  query?: TaskRunHistoryListQuery
 }
 
-export interface ExtensionTaskRunCancelRequestedEvent {
+export interface TaskRunCancelRequestedEvent {
   runtimeHandle: string
   runId: string
 }
@@ -379,39 +379,33 @@ export type HostToMainCapabilityRpcRequestMap = {
     { record: AutomationRunHistoryRecord | null }
   >
   'capabilities.taskRuns.create': RpcMethodDefinition<
-    ExtensionTaskRunCreateRequest,
-    { run: ExtensionTaskRunSnapshot }
+    TaskRunCreateRequest,
+    { run: TaskRunSnapshot }
   >
-  'capabilities.taskRuns.report': RpcMethodDefinition<ExtensionTaskRunReportRequest, RpcNoPayload>
-  'capabilities.taskRuns.checkpoint': RpcMethodDefinition<
-    ExtensionTaskRunScopedRequest,
-    RpcNoPayload
-  >
-  'capabilities.taskRuns.complete': RpcMethodDefinition<
-    ExtensionTaskRunCompleteRequest,
-    RpcNoPayload
-  >
-  'capabilities.taskRuns.fail': RpcMethodDefinition<ExtensionTaskRunFailRequest, RpcNoPayload>
-  'capabilities.taskRuns.cancel': RpcMethodDefinition<ExtensionTaskRunCancelRequest, RpcNoPayload>
+  'capabilities.taskRuns.report': RpcMethodDefinition<TaskRunReportRequest, RpcNoPayload>
+  'capabilities.taskRuns.checkpoint': RpcMethodDefinition<TaskRunScopedRequest, RpcNoPayload>
+  'capabilities.taskRuns.complete': RpcMethodDefinition<TaskRunCompleteRequest, RpcNoPayload>
+  'capabilities.taskRuns.fail': RpcMethodDefinition<TaskRunFailRequest, RpcNoPayload>
+  'capabilities.taskRuns.cancel': RpcMethodDefinition<TaskRunCancelRequest, RpcNoPayload>
   'capabilities.taskRuns.listActiveOwn': RpcMethodDefinition<
-    ExtensionTaskRunActiveListRequest,
-    { items: readonly ExtensionTaskRunSnapshot[] }
+    TaskRunActiveListRequest,
+    { items: readonly TaskRunSnapshot[] }
   >
   'capabilities.taskRuns.listHistoryOwn': RpcMethodDefinition<
-    ExtensionTaskRunHistoryListRequest,
-    { items: readonly ExtensionTaskRunSnapshot[] }
+    TaskRunHistoryListRequest,
+    { items: readonly TaskRunSnapshot[] }
   >
   'capabilities.taskRuns.getActiveOwn': RpcMethodDefinition<
-    ExtensionTaskRunScopedRequest,
-    { run: ExtensionTaskRunSnapshot | null }
+    TaskRunScopedRequest,
+    { run: TaskRunSnapshot | null }
   >
   'capabilities.taskRuns.getHistoryOwn': RpcMethodDefinition<
-    ExtensionTaskRunScopedRequest,
-    { run: ExtensionTaskRunSnapshot | null }
+    TaskRunScopedRequest,
+    { run: TaskRunSnapshot | null }
   >
   'capabilities.taskRuns.waitOwn': RpcMethodDefinition<
-    ExtensionTaskRunScopedRequest,
-    { run: ExtensionTaskRunSnapshot }
+    TaskRunScopedRequest,
+    { run: TaskRunSnapshot }
   >
   'capabilities.events.subscribeHost': RpcMethodDefinition<
     HostEventSubscriptionRequest,
@@ -472,7 +466,7 @@ export type HostToMainCapabilityRpcRequestMap = {
 
 export interface MainToHostCapabilityRpcEventMap {
   'capabilities.events.host': HostEventNotification
-  'capabilities.taskRuns.cancelRequested': ExtensionTaskRunCancelRequestedEvent
+  'capabilities.taskRuns.cancelRequested': TaskRunCancelRequestedEvent
   'capabilities.webviews.messagePosted': WebviewMessagePostedEvent
   'capabilities.webviews.closed': WebviewClosedEvent
 }

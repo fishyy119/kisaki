@@ -1,5 +1,7 @@
 # 06 UI TaskRun And Errors
 
+> 历史设计文档：文中的 settings panels（声明式设置面板）体系已被 webview 扩展 UI 体系（cardActions + kisaki.webviews）整体取代，`ExtensionTaskRun*` 类型也已在 extension-api 中更名为 `TaskRun*`。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 Vnite importer 的 UI 由 settings panel 提供。它是操作型 flow，不做营销页，不在应用主界面注入额外页面，也不把 tabs 当作步骤使用。
 
 ## Settings Panel Flow

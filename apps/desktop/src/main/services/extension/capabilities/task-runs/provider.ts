@@ -1,13 +1,13 @@
 import {
   createUnavailableError,
   type ExtensionRuntimeMetadata,
-  type ExtensionTaskRunActiveListQuery,
-  type ExtensionTaskRunCreateInput,
-  type ExtensionTaskRunFailureErrorPayload,
-  type ExtensionTaskRunHistoryListQuery,
-  type ExtensionTaskRunProgressUpdate,
-  type ExtensionTaskRunResult,
-  type ExtensionTaskRunSnapshot
+  type TaskRunActiveListQuery as ExtensionTaskRunActiveListQuery,
+  type TaskRunCreateInput as ExtensionTaskRunCreateInput,
+  type TaskRunFailureErrorPayload as ExtensionTaskRunFailureErrorPayload,
+  type TaskRunHistoryListQuery as ExtensionTaskRunHistoryListQuery,
+  type TaskRunProgressUpdate as ExtensionTaskRunProgressUpdate,
+  type TaskRunResult as ExtensionTaskRunResult,
+  type TaskRunSnapshot as ExtensionTaskRunSnapshot
 } from '@kisaki3/extension-api'
 import type { CommandService } from '@main/services/command'
 import type { TaskRunService } from '@main/services/task-run'

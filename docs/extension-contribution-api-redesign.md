@@ -1,5 +1,7 @@
 # 扩展贡献点 API 统一重构设计与实施文档
 
+> 历史设计文档：文中的 settings panels（声明式设置面板）体系已被 webview 扩展 UI 体系（cardActions + kisaki.webviews）整体取代。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 本文定义 Kisaki 扩展贡献点 API 的目标形态、命名规则、类型重命名、跨进程 RPC、文件组织和实施顺序。
 
 本次重构不考虑向后兼容：旧 API、旧类型、旧 RPC 名称、旧目录名和旧示例全部删除或重命名，不保留 deprecated alias、shim 或双写逻辑。

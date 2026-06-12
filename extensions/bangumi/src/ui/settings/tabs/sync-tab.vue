@@ -1,3 +1,8 @@
+<!--
+Sync Tab edits auto-sync settings and runs changed/full sync jobs, including
+the full-sync preview modal.
+Boundary: binds the shared settings form; job calls go through `host` RPC.
+-->
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import type {

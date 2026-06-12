@@ -12,7 +12,7 @@
     "test:import": "tsx scripts/test-import-executor.ts",
     "test:mapping": "tsx scripts/test-mapping.ts",
     "lint": "eslint .",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false && vue-tsc --noEmit -p tsconfig.ui.json --composite false"
   },
   "dependencies": {
     "@kisaki3/extension-sdk": "workspace:*",

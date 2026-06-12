@@ -1,3 +1,9 @@
+<!--
+Import Tab runs Bangumi collection and index imports, including their
+configuration and preview modals.
+Boundary: renders `overview` data and emits refresh/error; jobs go through
+`host` RPC.
+-->
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import type {

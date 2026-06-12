@@ -1,5 +1,5 @@
 import {
-  ExtensionTaskRunCancellation,
+  TaskRunCancellation,
   createValidationError,
   readErrorCode,
   toJsonValue,
@@ -13,12 +13,12 @@ import type {
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionEventTopic,
-  ExtensionTaskRunActiveListQuery,
-  ExtensionTaskRunCreateInput,
-  ExtensionTaskRunHandle,
-  ExtensionTaskRunHistoryListQuery,
-  ExtensionTaskRunProgressUpdate,
-  ExtensionTaskRunSnapshot,
+  TaskRunActiveListQuery,
+  TaskRunCreateInput,
+  TaskRunHandle,
+  TaskRunHistoryListQuery,
+  TaskRunProgressUpdate,
+  TaskRunSnapshot,
   HostEventListener,
   HostEventTopic,
   HostToMainRpcMethod,
@@ -205,7 +205,7 @@ export function createKisakiApi(
     }
   }
 
-  const createTaskRunHandle = (run: ExtensionTaskRunSnapshot): ExtensionTaskRunHandle => {
+  const createTaskRunHandle = (run: TaskRunSnapshot): TaskRunHandle => {
     const scope = requireScope()
     const controller = new AbortController()
     const registration = hooks.registerTaskRunAbortController(scope, run.id, controller)
@@ -222,13 +222,13 @@ export function createKisakiApi(
 
     const throwIfCancelled = () => {
       if (controller.signal.aborted) {
-        throw new ExtensionTaskRunCancellation()
+        throw new TaskRunCancellation()
       }
     }
 
     const mapTaskRunError = (error: unknown): never => {
       if (controller.signal.aborted || readErrorCode(error) === TASK_RUN_CANCELLED_ERROR_CODE) {
-        throw new ExtensionTaskRunCancellation()
+        throw new TaskRunCancellation()
       }
 
       throw error
@@ -242,7 +242,7 @@ export function createKisakiApi(
         try {
           await requestMain('capabilities.taskRuns.report', {
             runId: run.id,
-            update: toJsonRecord<ExtensionTaskRunProgressUpdate>(update, 'task run progress update')
+            update: toJsonRecord<TaskRunProgressUpdate>(update, 'task run progress update')
           })
         } catch (error) {
           mapTaskRunError(error)
@@ -583,26 +583,20 @@ export function createKisakiApi(
         createTaskRunHandle(
           (
             await requestMain('capabilities.taskRuns.create', {
-              input: toJsonRecord<ExtensionTaskRunCreateInput>(input, 'task run create input')
+              input: toJsonRecord<TaskRunCreateInput>(input, 'task run create input')
             })
           ).run
         ),
       listActiveOwn: async (query) =>
         (
           await requestMain('capabilities.taskRuns.listActiveOwn', {
-            query: toOptionalJsonRecord<ExtensionTaskRunActiveListQuery>(
-              query,
-              'task run active query'
-            )
+            query: toOptionalJsonRecord<TaskRunActiveListQuery>(query, 'task run active query')
           })
         ).items,
       listHistoryOwn: async (query) =>
         (
           await requestMain('capabilities.taskRuns.listHistoryOwn', {
-            query: toOptionalJsonRecord<ExtensionTaskRunHistoryListQuery>(
-              query,
-              'task run history query'
-            )
+            query: toOptionalJsonRecord<TaskRunHistoryListQuery>(query, 'task run history query')
           })
         ).items,
       getActiveOwn: async (runId) =>

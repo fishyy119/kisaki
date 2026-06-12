@@ -1,5 +1,7 @@
 # 扩展发现、安装、更新、卸载分布式注册表重构设计与实施文档
 
+> 历史设计文档：文中提及的 settings panels（声明式设置面板）体系已被 webview 扩展 UI 体系（cardActions + kisaki.webviews）整体取代。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 本文定义 Kisaki 扩展管理系统的目标形态：以 Jellyfin 插件仓库的分布式 manifest 思路为参考，重构扩展发现、安装、更新和卸载链路。
 
 本次重构不考虑向后兼容：旧 source provider、旧 `provider/locator` 来源模型、旧 `state.json` 状态文件、旧发现 IPC、旧安装目录布局和旧 UI 状态都直接删除，不提供迁移、桥接或降级路径。扩展运行时贡献点 API 不属于本文改造范围，除非安装状态或包路径变更需要调整运行时加载入口。

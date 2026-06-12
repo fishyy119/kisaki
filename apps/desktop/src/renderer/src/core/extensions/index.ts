@@ -4,6 +4,7 @@ export {
   setupExtensionContributionStore
 } from './store'
 export { refreshExtensionThemes, setupExtensionThemeSync, syncExtensionThemes } from './themes'
+export { leaveExtensionWebviewPage, setupExtensionWebviewNavigation } from './webview-navigation'
 export {
   closeWebview,
   extensionWebviewStore,

@@ -1,5 +1,7 @@
 # 07 Extension API And Bangumi Refactor
 
+> 历史设计文档：文中的 `ExtensionTaskRun*` 类型已在 extension-api 中更名为 `TaskRun*`。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 本文是 `kisaki.taskRuns` public extension API 和现有 Bangumi 内置扩展重构的唯一细化文档。其他 task-run 文档只描述边界和引用本文，避免 extension API、SDK bridge、RPC、Bangumi 迁移散落在多个阶段里。
 
 旧 `docs/bangumi-builtin-extension/*` 可以后续再统一清理；实现 task-run 集成时以本文为准。

@@ -3,15 +3,15 @@ import {
   measureJsonBytes,
   toJsonValue,
   type ExtensionRuntimeMetadata,
-  type ExtensionTaskRunActiveListQuery,
-  type ExtensionTaskRunCreateInput,
-  type ExtensionTaskRunHistoryListQuery,
-  type ExtensionTaskRunInitiator,
-  type ExtensionTaskRunProgressPhase,
-  type ExtensionTaskRunProgressUpdate,
-  type ExtensionTaskRunProgressWork,
-  type ExtensionTaskRunResult,
-  type ExtensionTaskRunWarning
+  type TaskRunActiveListQuery as ExtensionTaskRunActiveListQuery,
+  type TaskRunCreateInput as ExtensionTaskRunCreateInput,
+  type TaskRunHistoryListQuery as ExtensionTaskRunHistoryListQuery,
+  type TaskRunInitiator as ExtensionTaskRunInitiator,
+  type TaskRunProgressPhase as ExtensionTaskRunProgressPhase,
+  type TaskRunProgressUpdate as ExtensionTaskRunProgressUpdate,
+  type TaskRunProgressWork as ExtensionTaskRunProgressWork,
+  type TaskRunResult as ExtensionTaskRunResult,
+  type TaskRunWarning as ExtensionTaskRunWarning
 } from '@kisaki3/extension-api'
 import type { CommandService } from '@main/services/command'
 import type {

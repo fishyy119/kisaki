@@ -1,3 +1,8 @@
+<!--
+Modal is the in-document overlay dialog primitive with title, close control,
+and an optional footer slot.
+Boundary: purely presentational; emits close and never owns business state.
+-->
 <script setup lang="ts">
 interface Props {
   title: string

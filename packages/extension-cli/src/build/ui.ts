@@ -10,7 +10,10 @@ import { pathExists } from '../project'
 
 const UI_ENTRY_FILE = 'index.html'
 const UI_ENTRY_MAX_DEPTH = 4
+// Normalized form compared against parsed manifests; manifests declare the
+// official package-relative style with a ./ prefix.
 const EXPECTED_MANIFEST_UI_ROOT = 'dist/ui'
+const MANIFEST_UI_DECLARATION = './dist/ui'
 
 export interface ExtensionUiEntry {
   /**
@@ -66,13 +69,13 @@ export function assertUiConsistency(
 
   if (!manifest.ui && entries.length > 0) {
     throw new CliError(
-      `src/ui contains webview entries but manifest.json does not declare "ui": "${EXPECTED_MANIFEST_UI_ROOT}".`
+      `src/ui contains webview entries but manifest.json does not declare "ui": "${MANIFEST_UI_DECLARATION}".`
     )
   }
 
   if (manifest.ui && manifest.ui !== EXPECTED_MANIFEST_UI_ROOT) {
     throw new CliError(
-      `manifest.json "ui" must be "${EXPECTED_MANIFEST_UI_ROOT}"; kisx emits webview assets there.`
+      `manifest.json "ui" must be "${MANIFEST_UI_DECLARATION}"; kisx emits webview assets there.`
     )
   }
 }

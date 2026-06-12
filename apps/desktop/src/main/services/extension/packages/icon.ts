@@ -3,11 +3,12 @@ import { createHash, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
-import { net, protocol } from 'electron'
+import { net } from 'electron'
 import { EXTENSION_ICON_SCHEME } from '@main/bootstrap/protocol'
 import type { NetworkService } from '@main/services/network'
 import type { ExtensionRegistryPackageIcon } from '@kisaki3/extension-registry'
 import { resolveInsideRoot } from '../shared/path-confinement'
+import { createProtocolHandlerSlot } from '../shared/protocol-slot'
 import { hashFile } from './verifier'
 
 const log = createLogger('Extension')
@@ -17,8 +18,10 @@ const EXTENSION_ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const ICON_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
 const ICON_CACHE_KEY_PATTERN = /^[a-f0-9]{64}$/
 
-let extensionIconProtocolRegistered = false
-let activeExtensionIconManager: ExtensionIconManager | null = null
+const extensionIconProtocolSlot = createProtocolHandlerSlot(
+  EXTENSION_ICON_SCHEME,
+  'Extension icon service unavailable'
+)
 
 export class ExtensionIconManager {
   readonly cacheDir: string
@@ -34,19 +37,7 @@ export class ExtensionIconManager {
   }
 
   registerProtocolHandler(): void {
-    activateExtensionIconManager(this)
-    if (extensionIconProtocolRegistered) {
-      return
-    }
-
-    protocol.handle(EXTENSION_ICON_SCHEME, (request) => {
-      if (!activeExtensionIconManager) {
-        return new Response('Extension icon service unavailable', { status: 503 })
-      }
-
-      return activeExtensionIconManager.serveIconRequest(request)
-    })
-    extensionIconProtocolRegistered = true
+    extensionIconProtocolSlot.activate((request) => this.serveIconRequest(request))
   }
 
   setAvailableIcons(icons: Iterable<ExtensionRegistryPackageIcon | null | undefined>): void {
@@ -185,10 +176,6 @@ export class ExtensionIconManager {
   private cachePath(icon: ExtensionRegistryPackageIcon): string {
     return resolveInsideRoot(this.cacheDir, `${this.cacheKey(icon)}${getIconExtension(icon.url)}`)
   }
-}
-
-function activateExtensionIconManager(manager: ExtensionIconManager): void {
-  activeExtensionIconManager = manager
 }
 
 function getIconExtension(url: string): string {

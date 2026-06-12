@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false && vue-tsc --noEmit -p tsconfig.ui.json --composite false"
   },
   "dependencies": {
     "vue": "^3.5.26"

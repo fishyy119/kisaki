@@ -37,10 +37,12 @@ const ready = ref(false)
 const themeStore = useThemeStore()
 const { resolvedTheme, activeThemeId } = storeToRefs(themeStore)
 
-// Theme is read non-reactively on purpose: the bootstrap snapshot must not
-// rebuild the URL (and reload the iframe) on theme switches; updates flow
-// through postMessage instead.
-const src = computed(() => buildDocumentSrc(props.session))
+// The bootstrap snapshot is computed once per frame and then frozen: session
+// fields are immutable for the session lifetime and theme updates flow
+// through postMessage, so the iframe URL must never rebuild (a rebuild would
+// reload the document and drop its state).
+let frozenSrc: string | null = null
+const src = computed(() => (frozenSrc ??= buildDocumentSrc(props.session)))
 let unregisterFrame: (() => void) | null = null
 
 onMounted(() => {

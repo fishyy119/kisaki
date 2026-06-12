@@ -1,7 +1,4 @@
-import {
-  createExtensionError,
-  type ExtensionTaskRunFailureErrorPayload
-} from '@kisaki3/extension-api'
+import { createExtensionError, type TaskRunFailureErrorPayload } from '@kisaki3/extension-api'
 
 const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
 
@@ -11,7 +8,7 @@ export function createTaskRunCancelledError() {
   })
 }
 
-export function toFailureError(payload: ExtensionTaskRunFailureErrorPayload): Error {
+export function toFailureError(payload: TaskRunFailureErrorPayload): Error {
   const message =
     isPlainObject(payload) && typeof payload.message === 'string' && payload.message.trim()
       ? payload.message.trim()

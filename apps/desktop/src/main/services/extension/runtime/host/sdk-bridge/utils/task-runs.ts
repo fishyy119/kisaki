@@ -1,6 +1,6 @@
-import { readErrorCode, type ExtensionTaskRunFailureErrorPayload } from '@kisaki3/extension-api'
+import { readErrorCode, type TaskRunFailureErrorPayload } from '@kisaki3/extension-api'
 
-export function toTaskRunFailureErrorPayload(error: unknown): ExtensionTaskRunFailureErrorPayload {
+export function toTaskRunFailureErrorPayload(error: unknown): TaskRunFailureErrorPayload {
   if (error instanceof Error) {
     const message = error.message.trim()
     const code = readErrorCode(error)

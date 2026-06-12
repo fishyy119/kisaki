@@ -10,6 +10,7 @@ import { eventManager } from './core/event'
 import {
   refreshExtensionContributionSnapshot,
   setupExtensionContributionStore,
+  setupExtensionWebviewNavigation,
   setupExtensionWebviewStore
 } from './core/extensions'
 import { setupDeeplinkHandlers } from './core/deeplink'
@@ -65,8 +66,9 @@ async function initMainWindowRenderer() {
       log.error('Failed to refresh contribution snapshot:', error)
     })
 
-    // Extension webview session sync.
+    // Extension webview session sync and page-surface navigation.
     setupExtensionWebviewStore()
+    setupExtensionWebviewNavigation()
 
     // Store initialization (registers listeners + fetches initial state)
     await useGameMonitorStore().init()

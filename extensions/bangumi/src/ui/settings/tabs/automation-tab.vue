@@ -1,3 +1,8 @@
+<!--
+Automation Tab shows the state of the built-in Bangumi automations and
+creates missing ones.
+Boundary: renders `overview.automations`; creation goes through `host` RPC.
+-->
 <script setup lang="ts">
 import { ref } from 'vue'
 import type {

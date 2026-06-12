@@ -1,3 +1,8 @@
+<!--
+Main webview document root for the __EXTENSION_NAME__ extension.
+Boundary: talks to the extension host only through webview RPC; state is
+loaded from and saved to host storage.
+-->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { createWebviewRpc, webview } from '@kisaki3/extension-sdk/webview'

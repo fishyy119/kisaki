@@ -52,7 +52,14 @@ function handleOpenChange(session: ExtensionWebviewSessionInfo, open: boolean): 
       <DialogHeader class="pr-9">
         <DialogTitle class="text-sm truncate">{{ session.title }}</DialogTitle>
       </DialogHeader>
-      <div :class="cn('min-h-0 rounded-b-md overflow-hidden', DIALOG_SIZE_CLASSES[getDialogSize(session)].height)">
+      <div
+        :class="
+          cn(
+            'min-h-0 rounded-b-md overflow-hidden',
+            DIALOG_SIZE_CLASSES[getDialogSize(session)].height
+          )
+        "
+      >
         <ExtensionWebviewFrame :session="session" />
       </div>
     </DialogContent>

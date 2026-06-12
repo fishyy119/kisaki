@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  createUnavailableError,
   createValidationError,
   normalizeExtensionPackagePath,
   validateWebviewOpenOptionsShape,
@@ -212,7 +213,7 @@ export class ExtensionWebviewsCapabilityProvider {
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {
     const metadata = this.options.resolveRuntimeHandle(runtimeHandle)
     if (!metadata) {
-      throw new Error(`Runtime handle "${runtimeHandle}" is not active.`)
+      throw createUnavailableError(`Runtime handle "${runtimeHandle}" is not active.`)
     }
 
     return metadata

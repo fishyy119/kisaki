@@ -1,14 +1,17 @@
 import { pathToFileURL } from 'node:url'
 import fse from 'fs-extra'
-import { net, protocol } from 'electron'
+import { net } from 'electron'
 import { createLogger } from '@main/log'
 import { EXTENSION_UI_SCHEME } from '@main/bootstrap/protocol'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
+import { createProtocolHandlerSlot } from '../shared/protocol-slot'
 
 const log = createLogger('Extension')
 
-let extensionUiProtocolRegistered = false
-let activeExtensionUiAssetServer: ExtensionUiAssetServer | null = null
+const extensionUiProtocolSlot = createProtocolHandlerSlot(
+  EXTENSION_UI_SCHEME,
+  'Extension UI service unavailable'
+)
 
 /**
  * Delivery source for an extension's webview UI assets.
@@ -30,19 +33,7 @@ export class ExtensionUiAssetServer {
   constructor(private readonly options: ExtensionUiAssetServerOptions) {}
 
   registerProtocolHandler(): void {
-    activateExtensionUiAssetServer(this)
-    if (extensionUiProtocolRegistered) {
-      return
-    }
-
-    protocol.handle(EXTENSION_UI_SCHEME, (request) => {
-      if (!activeExtensionUiAssetServer) {
-        return new Response('Extension UI service unavailable', { status: 503 })
-      }
-
-      return activeExtensionUiAssetServer.serveRequest(request)
-    })
-    extensionUiProtocolRegistered = true
+    extensionUiProtocolSlot.activate((request) => this.serveRequest(request))
   }
 
   documentUrl(extensionId: string, entry: string): string {
@@ -78,8 +69,4 @@ export class ExtensionUiAssetServer {
 
 export function resolveExtensionUiRootPath(packagePath: string, uiRoot: string): string {
   return resolveInsideRoot(packagePath, ...uiRoot.split('/').filter(Boolean))
-}
-
-function activateExtensionUiAssetServer(server: ExtensionUiAssetServer): void {
-  activeExtensionUiAssetServer = server
 }

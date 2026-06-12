@@ -28,5 +28,53 @@ export default defineConfig([
       'vue/require-default-prop': 'off'
     }
   },
+  {
+    files: ['src/host/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/ui', '**/ui/**'],
+              message: 'Host code must not import webview UI modules.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['src/ui/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/host', '**/host/**'],
+              message: 'Webview UI code must not import host modules.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['src/shared/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/host', '**/host/**', '**/ui', '**/ui/**'],
+              message: 'Shared contracts must not import host or UI modules.'
+            }
+          ]
+        }
+      ]
+    }
+  },
   prettier
 ])

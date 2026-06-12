@@ -1,17 +1,16 @@
 import type {
   ExtensionFileGrant,
   ExtensionLogger,
-  ExtensionTaskRunSnapshot,
+  TaskRunSnapshot,
   FilesCapability,
   LibraryCapability,
   NotifyCapability,
   ScrapersCapability,
-  ExtensionTaskRunsCapability
+  TaskRunsCapability
 } from '@kisaki3/extension-sdk'
 import type { VniteImportDiagnostic } from '../backup/types'
 import type { VniteImporterSettingsStore, VniteImporterSettingsV1 } from '../config'
 import {
-  getVniteImportSubmitLabel,
   resolveVniteImportStep,
   type VniteImportFlowState,
   type VniteImportFlowStore,
@@ -29,9 +28,9 @@ import type {
   VnitePreviewDto,
   VnitePreviewUpdateGroupDto,
   VniteImportWizardHostFunctions,
+  VniteRunDto,
   VniteWizardState
 } from '../../shared/import-wizard'
-import { countAllFields, countSelectedFields } from '../../shared/import-wizard'
 
 const WRITE_PLAN_ROW_LIMIT = 120
 const UPDATE_PLAN_GROUP_LIMIT = 40
@@ -44,7 +43,7 @@ export interface VniteImportWizardRuntime {
   files: FilesCapability
   notify: NotifyCapability
   scrapers: ScrapersCapability
-  taskRuns: ExtensionTaskRunsCapability
+  taskRuns: TaskRunsCapability
   logger: ExtensionLogger
   abortSignal: AbortSignal
 }
@@ -193,15 +192,12 @@ async function resolveWizardState(runtime: VniteImportWizardRuntime): Promise<Vn
 
   return {
     step,
-    submitLabel: getVniteImportSubmitLabel(step),
-    file: flow.file ? { name: flow.file.name, sizeLabel: formatBytes(flow.file.sizeBytes) } : null,
+    file: flow.file ? { name: flow.file.name, sizeBytes: flow.file.sizeBytes } : null,
     options: toOptionsForm(settings, profiles),
     fieldSelection: settings.defaults.fieldSelection,
-    selectedFieldCount: countSelectedFields(settings.defaults.fieldSelection),
-    totalFieldCount: countAllFields(),
     profiles,
     preview: flow.preview ? toPreviewDto(flow) : null,
-    run: runState.activeRun ? toRunDto(runState.activeRun, flow) : null,
+    run: runState.activeRun ? toRunDto(runState.activeRun) : null,
     doneSummary: flow.lastSummary ? toDoneSummaryDto(flow.lastSummary) : null,
     diagnostics: toDiagnosticsTableRows(visibleDiagnostics).map((row) => ({
       level: row.level ?? '',
@@ -214,7 +210,7 @@ async function resolveWizardState(runtime: VniteImportWizardRuntime): Promise<Vn
 
 async function resolveImportRunState(runtime: VniteImportWizardRuntime): Promise<{
   flow: VniteImportFlowState
-  activeRun?: ExtensionTaskRunSnapshot
+  activeRun?: TaskRunSnapshot
 }> {
   let flow = await runtime.flowStore.get()
 
@@ -379,9 +375,10 @@ function formatMetadataPlan(game: VniteImportPreviewGame): string {
   ])
 }
 
-function toRunDto(run: ExtensionTaskRunSnapshot, flow: VniteImportFlowState) {
+function toRunDto(run: TaskRunSnapshot): VniteRunDto {
   return {
-    statusLabel: run.progress?.phase?.label ?? run.status ?? flow.activeRunId ?? '正在刷新',
+    status: run.status,
+    phaseLabel: run.progress?.phase?.label ?? null,
     counters: run.progress?.counters ?? {}
   }
 }
@@ -471,28 +468,11 @@ function validateCompletionOptions(options: VniteImportOptionsForm): void {
   }
 }
 
-function readJobSummary(run: ExtensionTaskRunSnapshot): VniteImportJobSummary | undefined {
+function readJobSummary(run: TaskRunSnapshot): VniteImportJobSummary | undefined {
   const output = run.result?.output
   return isRecord(output) && isRecord(output.counters)
     ? (output as unknown as VniteImportJobSummary)
     : undefined
-}
-
-function formatBytes(value: number): string {
-  if (value < 1024) {
-    return `${value} B`
-  }
-
-  const units = ['KB', 'MB', 'GB'] as const
-  let current = value / 1024
-  for (const unit of units) {
-    if (current < 1024 || unit === 'GB') {
-      return `${current.toFixed(current >= 10 ? 0 : 1)} ${unit}`
-    }
-    current /= 1024
-  }
-
-  return `${value} B`
 }
 
 function formatParts(parts: readonly (string | undefined)[]): string {

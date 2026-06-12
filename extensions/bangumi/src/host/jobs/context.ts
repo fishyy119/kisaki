@@ -1,9 +1,9 @@
 import {
-  isExtensionTaskRunCancellation,
+  isTaskRunCancellation,
   type ExtensionLogger,
-  type ExtensionTaskRunProgressUpdate,
-  type ExtensionTaskRunProgressWork,
-  type ExtensionTaskRunResult
+  type TaskRunProgressUpdate,
+  type TaskRunProgressWork,
+  type TaskRunResult
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import type { AccountService } from '../auth/account'
@@ -24,7 +24,7 @@ import {
 import { BangumiExtensionError } from '../utils/errors'
 
 type JobProgressWorkInput = Partial<
-  Pick<ExtensionTaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
+  Pick<TaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
 >
 
 export interface JobRunnerDependencies {
@@ -46,11 +46,11 @@ export interface BangumiJobRun {
 
 export interface BangumiJobHandle {
   readonly signal: AbortSignal
-  report(update: ExtensionTaskRunProgressUpdate): Promise<void>
+  report(update: TaskRunProgressUpdate): Promise<void>
   checkpoint(): Promise<void>
-  complete(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
-  fail(error: unknown, result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
-  cancel(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
+  complete(result?: Omit<TaskRunResult, 'status' | 'error'>): Promise<void>
+  fail(error: unknown, result?: Omit<TaskRunResult, 'status' | 'error'>): Promise<void>
+  cancel(result?: Omit<TaskRunResult, 'status' | 'error'>): Promise<void>
 }
 
 export interface JobCounters {
@@ -96,7 +96,7 @@ export class JobStateController {
   }
 
   report(phase: string, label: string, progress: JobProgressWorkInput = {}): void {
-    const update: ExtensionTaskRunProgressUpdate = {
+    const update: TaskRunProgressUpdate = {
       phase: {
         key: phase,
         label
@@ -111,10 +111,8 @@ export class JobStateController {
   }
 }
 
-function createProgressWork(
-  progress: JobProgressWorkInput
-): ExtensionTaskRunProgressWork | undefined {
-  const work: ExtensionTaskRunProgressWork = {}
+function createProgressWork(progress: JobProgressWorkInput): TaskRunProgressWork | undefined {
+  const work: TaskRunProgressWork = {}
   if (progress.current !== undefined) {
     work.current = progress.current
   }
@@ -166,11 +164,7 @@ export async function runBangumiJob(
     })
     return summary
   } catch (error) {
-    if (
-      isExtensionTaskRunCancellation(error) ||
-      isCancellationError(error) ||
-      context.run.signal.aborted
-    ) {
+    if (isTaskRunCancellation(error) || isCancellationError(error) || context.run.signal.aborted) {
       job.report('cancelled', 'Bangumi job 已取消。', { indeterminate: true })
       const summary = createBangumiJobSummary({
         commandId: state.commandId,

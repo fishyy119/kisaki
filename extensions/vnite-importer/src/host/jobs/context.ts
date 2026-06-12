@@ -1,11 +1,11 @@
 import type {
   ExtensionLogger,
-  ExtensionTaskRunHandle,
-  ExtensionTaskRunProgressUpdate,
-  ExtensionTaskRunProgressWork,
-  ExtensionTaskRunWarning
+  TaskRunHandle,
+  TaskRunProgressUpdate,
+  TaskRunProgressWork,
+  TaskRunWarning
 } from '@kisaki3/extension-sdk'
-import { isExtensionTaskRunCancellation } from '@kisaki3/extension-sdk'
+import { isTaskRunCancellation } from '@kisaki3/extension-sdk'
 import type { VniteImportDiagnostic } from '../backup/types'
 import { VniteImportError, toSafeErrorMessage } from '../utils/errors'
 import type { VniteImportExecutorResult } from '../import/executor'
@@ -25,12 +25,12 @@ export const VNITE_IMPORT_JOB_PHASES = {
 export type VniteImportJobPhase = keyof typeof VNITE_IMPORT_JOB_PHASES
 
 type JobProgressWorkInput = Partial<
-  Pick<ExtensionTaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
+  Pick<TaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
 >
 
 export interface VniteImportJobRun {
   fileName: string
-  run: ExtensionTaskRunHandle
+  run: TaskRunHandle
 }
 
 interface VniteImportJobState {
@@ -42,7 +42,7 @@ interface VniteImportJobState {
 export class VniteImportJobController {
   constructor(
     private readonly state: VniteImportJobState,
-    private readonly run: ExtensionTaskRunHandle
+    private readonly run: TaskRunHandle
   ) {}
 
   get signal(): AbortSignal {
@@ -81,7 +81,7 @@ export class VniteImportJobController {
   }
 
   async report(phase: VniteImportJobPhase, progress: JobProgressWorkInput = {}): Promise<void> {
-    const update: ExtensionTaskRunProgressUpdate = {
+    const update: TaskRunProgressUpdate = {
       phase: {
         key: phase,
         label: VNITE_IMPORT_JOB_PHASES[phase]
@@ -159,7 +159,7 @@ export async function runVniteImportJob(
 
 export function toTaskRunWarnings(
   diagnostics: readonly VniteImportDiagnostic[]
-): readonly ExtensionTaskRunWarning[] {
+): readonly TaskRunWarning[] {
   return diagnostics
     .filter((diagnostic) => diagnostic.level === 'warning')
     .map((diagnostic) => ({
@@ -168,10 +168,8 @@ export function toTaskRunWarnings(
     }))
 }
 
-function createProgressWork(
-  progress: JobProgressWorkInput
-): ExtensionTaskRunProgressWork | undefined {
-  const work: ExtensionTaskRunProgressWork = {}
+function createProgressWork(progress: JobProgressWorkInput): TaskRunProgressWork | undefined {
+  const work: TaskRunProgressWork = {}
   if (progress.current !== undefined) {
     work.current = progress.current
   }
@@ -241,7 +239,7 @@ function toFailureDiagnostic(error: unknown): VniteImportDiagnostic | undefined 
 function isVniteImportCancellation(error: unknown, signal?: AbortSignal): boolean {
   return (
     signal?.aborted ||
-    isExtensionTaskRunCancellation(error) ||
+    isTaskRunCancellation(error) ||
     (error instanceof VniteImportError && error.code === 'job_cancelled')
   )
 }

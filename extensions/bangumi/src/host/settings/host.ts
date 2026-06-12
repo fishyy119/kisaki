@@ -1,8 +1,8 @@
 import {
-  ExtensionTaskRunCancellation,
+  TaskRunCancellation,
   kisaki,
-  type ExtensionTaskRunProgressUpdate,
-  type ExtensionTaskRunResult,
+  type TaskRunProgressUpdate,
+  type TaskRunResult,
   type JsonObject
 } from '@kisaki3/extension-sdk'
 import type { AccountService } from '../auth/account'
@@ -397,7 +397,7 @@ async function listCollections(runtime: BangumiSettingsRuntime) {
   }
 }
 
-type PreviewResult = Omit<ExtensionTaskRunResult, 'status' | 'error'>
+type PreviewResult = Omit<TaskRunResult, 'status' | 'error'>
 
 async function createNotificationPreviewHandle(
   title: string,
@@ -420,7 +420,7 @@ class NotificationPreviewHandle implements BangumiJobHandle {
     readonly signal: AbortSignal
   ) {}
 
-  async report(update: ExtensionTaskRunProgressUpdate): Promise<void> {
+  async report(update: TaskRunProgressUpdate): Promise<void> {
     await kisaki.notify.update(
       this.id,
       'loading',
@@ -434,7 +434,7 @@ class NotificationPreviewHandle implements BangumiJobHandle {
 
   async checkpoint(): Promise<void> {
     if (this.signal.aborted) {
-      throw new ExtensionTaskRunCancellation('Bangumi preview was cancelled.')
+      throw new TaskRunCancellation('Bangumi preview was cancelled.')
     }
   }
 
@@ -460,7 +460,7 @@ class NotificationPreviewHandle implements BangumiJobHandle {
   }
 }
 
-function formatPreviewProgress(update: ExtensionTaskRunProgressUpdate): string | undefined {
+function formatPreviewProgress(update: TaskRunProgressUpdate): string | undefined {
   const base = update.phase?.label
   const current = update.work?.current
   const total = update.work?.total

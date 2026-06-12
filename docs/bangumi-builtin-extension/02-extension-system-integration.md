@@ -1,5 +1,7 @@
 # 02 Extension System Integration
 
+> 历史设计文档：文中的 settings panels（声明式设置面板）体系已被 webview 扩展 UI 体系（cardActions + kisaki.webviews）整体取代。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 ## 现有宿主能力
 
 | 需求              | 当前入口                                               | Bangumi 内部归属                                       |

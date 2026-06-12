@@ -1,8 +1,8 @@
 import type { JsonValue } from '../shared'
 
-export type ExtensionTaskRunOperation = string
+export type TaskRunOperation = string
 
-export type ExtensionTaskRunStatus =
+export type TaskRunStatus =
   | 'queued'
   | 'running'
   | 'pausing'
@@ -12,16 +12,13 @@ export type ExtensionTaskRunStatus =
   | 'failed'
   | 'cancelled'
 
-export type ExtensionTaskRunFinalStatus = Extract<
-  ExtensionTaskRunStatus,
-  'completed' | 'failed' | 'cancelled'
->
+export type TaskRunFinalStatus = Extract<TaskRunStatus, 'completed' | 'failed' | 'cancelled'>
 
-export type ExtensionTaskRunAutomationTrigger = 'manual' | 'startup' | 'cron'
+export type TaskRunAutomationTrigger = 'manual' | 'startup' | 'cron'
 
-export type ExtensionTaskRunSystemReason = 'startup' | 'maintenance' | 'update' | 'shutdown'
+export type TaskRunSystemReason = 'startup' | 'maintenance' | 'update' | 'shutdown'
 
-export type ExtensionTaskRunInitiator =
+export type TaskRunInitiator =
   | {
       type: 'user'
     }
@@ -30,7 +27,7 @@ export type ExtensionTaskRunInitiator =
       automation: {
         id: string
         nameSnapshot: string
-        trigger: ExtensionTaskRunAutomationTrigger
+        trigger: TaskRunAutomationTrigger
         attempt: number
       }
     }
@@ -43,10 +40,10 @@ export type ExtensionTaskRunInitiator =
     }
   | {
       type: 'system'
-      reason?: ExtensionTaskRunSystemReason
+      reason?: TaskRunSystemReason
     }
 
-export type ExtensionTaskRunProgressUnit =
+export type TaskRunProgressUnit =
   | 'item'
   | 'file'
   | 'byte'
@@ -55,70 +52,70 @@ export type ExtensionTaskRunProgressUnit =
   | 'package'
   | 'request'
 
-export type ExtensionTaskRunRatePeriod = 'second' | 'minute' | 'hour'
+export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
 
-export interface ExtensionTaskRunWarning {
+export interface TaskRunWarning {
   code?: string
   message: string
 }
 
-export interface ExtensionTaskRunProgressPhase {
+export interface TaskRunProgressPhase {
   key: string
   label: string
   current?: number
   total?: number
 }
 
-export interface ExtensionTaskRunProgressWork {
+export interface TaskRunProgressWork {
   current?: number
   total?: number
-  unit?: ExtensionTaskRunProgressUnit
-  ratePeriod?: ExtensionTaskRunRatePeriod
+  unit?: TaskRunProgressUnit
+  ratePeriod?: TaskRunRatePeriod
   indeterminate?: boolean
 }
 
-export interface ExtensionTaskRunProgressWorkMetrics {
+export interface TaskRunProgressWorkMetrics {
   rate?: number
   etaMs?: number
   percent?: number
 }
 
-export interface ExtensionTaskRunProgressUpdate {
-  phase?: ExtensionTaskRunProgressPhase
-  work?: ExtensionTaskRunProgressWork
+export interface TaskRunProgressUpdate {
+  phase?: TaskRunProgressPhase
+  work?: TaskRunProgressWork
   counters?: Record<string, number>
-  warnings?: readonly ExtensionTaskRunWarning[]
+  warnings?: readonly TaskRunWarning[]
 }
 
-export interface ExtensionTaskRunProgress extends Omit<ExtensionTaskRunProgressUpdate, 'work'> {
-  work?: ExtensionTaskRunProgressWork & ExtensionTaskRunProgressWorkMetrics
+export interface TaskRunProgress extends Omit<TaskRunProgressUpdate, 'work'> {
+  work?: TaskRunProgressWork & TaskRunProgressWorkMetrics
   updatedAt: number
 }
 
-export interface ExtensionTaskRunResult {
-  status: ExtensionTaskRunFinalStatus
+export interface TaskRunResult {
+  status: TaskRunFinalStatus
   title?: string
   summary?: string
   output?: JsonValue
   error?: string
   counters?: Record<string, number>
-  warnings?: readonly ExtensionTaskRunWarning[]
+  warnings?: readonly TaskRunWarning[]
 }
 
-export type ExtensionTaskRunSubjectType = 'command' | 'extension'
+export type TaskRunSubjectType = 'command' | 'extension'
 
-export interface ExtensionTaskRunSubject {
-  type: ExtensionTaskRunSubjectType
+export interface TaskRunSubject {
+  type: TaskRunSubjectType
   id?: string
   labelSnapshot?: string
 }
 
-export interface ExtensionTaskRunControls {
+export interface TaskRunControls {
   cancelable?: boolean
   pausable?: boolean
 }
 
-export interface ExtensionTaskRunPresentation {
+export interface TaskRunPresentation {
   notify?: {
     enabled: boolean
     title?: string
@@ -129,85 +126,79 @@ export interface ExtensionTaskRunPresentation {
   }
 }
 
-export interface ExtensionTaskRunSnapshot {
+export interface TaskRunSnapshot {
   id: string
-  operation: ExtensionTaskRunOperation
+  operation: TaskRunOperation
   title: string
   description?: string
-  status: ExtensionTaskRunStatus
-  initiator: ExtensionTaskRunInitiator
-  subject?: ExtensionTaskRunSubject
-  controls: Required<ExtensionTaskRunControls>
-  progress?: ExtensionTaskRunProgress
-  result?: ExtensionTaskRunResult
+  status: TaskRunStatus
+  initiator: TaskRunInitiator
+  subject?: TaskRunSubject
+  controls: Required<TaskRunControls>
+  progress?: TaskRunProgress
+  result?: TaskRunResult
   createdAt: number
   startedAt?: number
   updatedAt: number
   finishedAt?: number
 }
 
-export interface ExtensionTaskRunCreateInput {
-  operation: ExtensionTaskRunOperation
+export interface TaskRunCreateInput {
+  operation: TaskRunOperation
   title: string
   description?: string
-  initiator?: ExtensionTaskRunInitiator
-  subject?: ExtensionTaskRunSubject
-  controls?: ExtensionTaskRunControls
-  presentation?: ExtensionTaskRunPresentation
+  initiator?: TaskRunInitiator
+  subject?: TaskRunSubject
+  controls?: TaskRunControls
+  presentation?: TaskRunPresentation
 }
 
-export interface ExtensionTaskRunActiveListQuery {
-  operations?: readonly ExtensionTaskRunOperation[]
+export interface TaskRunActiveListQuery {
+  operations?: readonly TaskRunOperation[]
   subject?: {
-    type: ExtensionTaskRunSubjectType
+    type: TaskRunSubjectType
     id?: string
   }
   limit?: number
 }
 
-export interface ExtensionTaskRunHistoryListQuery {
-  statuses?: readonly ExtensionTaskRunFinalStatus[]
-  operations?: readonly ExtensionTaskRunOperation[]
+export interface TaskRunHistoryListQuery {
+  statuses?: readonly TaskRunFinalStatus[]
+  operations?: readonly TaskRunOperation[]
   subject?: {
-    type: ExtensionTaskRunSubjectType
+    type: TaskRunSubjectType
     id?: string
   }
   limit?: number
 }
 
-export class ExtensionTaskRunCancellation extends Error {
-  override readonly name = 'ExtensionTaskRunCancellation'
+export class TaskRunCancellation extends Error {
+  override readonly name = 'TaskRunCancellation'
 
   constructor(message = 'Extension task run was cancelled.') {
     super(message)
   }
 }
 
-export function isExtensionTaskRunCancellation(
-  error: unknown
-): error is ExtensionTaskRunCancellation {
-  return error instanceof ExtensionTaskRunCancellation
+export function isTaskRunCancellation(error: unknown): error is TaskRunCancellation {
+  return error instanceof TaskRunCancellation
 }
 
-export interface ExtensionTaskRunHandle {
+export interface TaskRunHandle {
   readonly id: string
   readonly signal: AbortSignal
-  report(update: ExtensionTaskRunProgressUpdate): Promise<void>
+  report(update: TaskRunProgressUpdate): Promise<void>
   checkpoint(): Promise<void>
-  complete(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
-  fail(error: unknown, result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
-  cancel(result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>): Promise<void>
+  complete(result?: Omit<TaskRunResult, 'status' | 'error'>): Promise<void>
+  fail(error: unknown, result?: Omit<TaskRunResult, 'status' | 'error'>): Promise<void>
+  cancel(result?: Omit<TaskRunResult, 'status' | 'error'>): Promise<void>
 }
 
-export interface ExtensionTaskRunsCapability {
-  create(input: ExtensionTaskRunCreateInput): Promise<ExtensionTaskRunHandle>
-  listActiveOwn(
-    query?: ExtensionTaskRunActiveListQuery
-  ): Promise<readonly ExtensionTaskRunSnapshot[]>
-  listHistoryOwn(
-    query?: ExtensionTaskRunHistoryListQuery
-  ): Promise<readonly ExtensionTaskRunSnapshot[]>
-  getActiveOwn(runId: string): Promise<ExtensionTaskRunSnapshot | null>
-  getHistoryOwn(runId: string): Promise<ExtensionTaskRunSnapshot | null>
-  waitOwn(runId: string): Promise<ExtensionTaskRunSnapshot>
+export interface TaskRunsCapability {
+  create(input: TaskRunCreateInput): Promise<TaskRunHandle>
+  listActiveOwn(query?: TaskRunActiveListQuery): Promise<readonly TaskRunSnapshot[]>
+  listHistoryOwn(query?: TaskRunHistoryListQuery): Promise<readonly TaskRunSnapshot[]>
+  getActiveOwn(runId: string): Promise<TaskRunSnapshot | null>
+  getHistoryOwn(runId: string): Promise<TaskRunSnapshot | null>
+  waitOwn(runId: string): Promise<TaskRunSnapshot>
 }

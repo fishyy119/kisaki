@@ -8,7 +8,7 @@ runtime topology:
 
 - `src/host/index.ts` — the Node host entry, bundled to `manifest.entry`
 - `src/ui/<view>/index.html` — webview documents, bundled to `dist/ui` and
-  declared as `"ui": "dist/ui"` in the manifest
+  declared as `"ui": "./dist/ui"` in the manifest
 - `src/shared/` — RPC contracts and DTOs imported by both sides (never imports
   from `host` or `ui`)
 

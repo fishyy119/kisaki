@@ -1,3 +1,8 @@
+<!--
+Bangumi Settings App is the settings webview document root: tab shell, shared
+form lifecycle, and save/refresh of the settings overview.
+Boundary: talks to the extension host only through the typed `host` RPC facade.
+-->
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import type { BangumiSettingsOverview } from '../../shared/settings'

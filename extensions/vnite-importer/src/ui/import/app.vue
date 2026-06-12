@@ -1,8 +1,15 @@
+<!--
+Vnite Import Wizard App is the import webview document root: step navigation,
+options form, preview/run/done views, and modals.
+Boundary: all flow state lives in the extension host; the UI renders
+`VniteWizardState` and drives transitions through `host` RPC.
+-->
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import type { GameUpdateSurface } from '@kisaki3/extension-sdk'
+import type { TaskRunStatus, GameUpdateSurface } from '@kisaki3/extension-sdk'
 import type { VniteImportFieldSelection } from '../../shared/import-wizard'
 import type { VniteImportOptionsForm, VniteWizardState } from '../../shared/import-wizard'
+import { countSelectedFields, countTotalFields } from './fields'
 import { host, toErrorMessage } from './rpc'
 import Modal from './components/modal.vue'
 import FieldsModal from './components/fields-modal.vue'
@@ -13,6 +20,25 @@ const STEP_LABELS: Record<VniteWizardState['step'], string> = {
   preview: '预览',
   running: '导入中',
   done: '完成'
+}
+
+const SUBMIT_LABELS: Record<VniteWizardState['step'], string> = {
+  pickBackup: '下一步',
+  config: '生成预览',
+  preview: '开始导入',
+  running: '刷新状态',
+  done: '导入另一个备份包'
+}
+
+const RUN_STATUS_LABELS: Record<TaskRunStatus, string> = {
+  queued: '排队中',
+  running: '运行中',
+  pausing: '暂停中',
+  paused: '已暂停',
+  cancelling: '取消中',
+  completed: '已完成',
+  failed: '已失败',
+  cancelled: '已取消'
 }
 
 const STEP_ORDER: readonly VniteWizardState['step'][] = [
@@ -69,6 +95,18 @@ const diagnosticsOpen = ref(false)
 const savingFields = ref(false)
 
 const stepIndex = computed(() => (state.value ? STEP_ORDER.indexOf(state.value.step) : 0))
+const totalFieldCount = countTotalFields()
+const selectedFieldCount = computed(() =>
+  state.value ? countSelectedFields(state.value.fieldSelection) : 0
+)
+const runStatusText = computed(() => {
+  const run = state.value?.run
+  if (!run) {
+    return RUN_STATUS_LABELS.running
+  }
+
+  return run.phaseLabel ?? RUN_STATUS_LABELS[run.status]
+})
 
 onMounted(() => {
   void runHostAction(() => host.getState())
@@ -153,6 +191,23 @@ function toggleSurface(surface: GameUpdateSurface, checked: boolean): void {
   }
   options.completionSurfaces = [...next]
 }
+
+function formatBytes(value: number): string {
+  if (value < 1024) {
+    return `${value} B`
+  }
+
+  const units = ['KB', 'MB', 'GB'] as const
+  let current = value / 1024
+  for (const unit of units) {
+    if (current < 1024 || unit === 'GB') {
+      return `${current.toFixed(current >= 10 ? 0 : 1)} ${unit}`
+    }
+    current /= 1024
+  }
+
+  return `${value} B`
+}
 </script>
 
 <template>
@@ -193,7 +248,9 @@ function toggleSurface(surface: GameUpdateSurface, checked: boolean): void {
           </div>
           <div class="field-control">
             <span :class="state.file ? '' : 'text-muted-foreground'">
-              {{ state.file ? `${state.file.name}（${state.file.sizeLabel}）` : '未选择' }}
+              {{
+                state.file ? `${state.file.name}（${formatBytes(state.file.sizeBytes)}）` : '未选择'
+              }}
             </span>
             <button
               type="button"
@@ -214,7 +271,7 @@ function toggleSurface(surface: GameUpdateSurface, checked: boolean): void {
             <span class="field-hint">选择从备份包写入资料库的字段。</span>
           </div>
           <div class="field-control">
-            <span>{{ state.selectedFieldCount }}/{{ state.totalFieldCount }}</span>
+            <span>{{ selectedFieldCount }}/{{ totalFieldCount }}</span>
             <button
               type="button"
               @click="fieldsOpen = true"
@@ -457,7 +514,7 @@ function toggleSurface(surface: GameUpdateSurface, checked: boolean): void {
             <span class="field-label">运行状态</span>
           </div>
           <div class="field-control">
-            <span>{{ state.run?.statusLabel ?? '正在刷新' }}</span>
+            <span>{{ runStatusText }}</span>
           </div>
         </div>
         <p class="notice">导入运行中，取消请到任务中心处理。</p>
@@ -583,7 +640,7 @@ function toggleSurface(surface: GameUpdateSurface, checked: boolean): void {
         :disabled="busy || (state.step === 'pickBackup' && !state.file)"
         @click="submit"
       >
-        {{ busy ? '处理中...' : state.submitLabel }}
+        {{ busy ? '处理中...' : SUBMIT_LABELS[state.step] }}
       </button>
     </footer>
 

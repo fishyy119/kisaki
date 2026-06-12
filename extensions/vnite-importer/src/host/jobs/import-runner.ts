@@ -1,9 +1,9 @@
 import type {
   ExtensionFileGrant,
   ExtensionLogger,
-  ExtensionTaskRunHandle,
-  ExtensionTaskRunInitiator,
-  ExtensionTaskRunsCapability,
+  TaskRunHandle,
+  TaskRunInitiator,
+  TaskRunsCapability,
   FilesCapability,
   GameUpdateSurface,
   IngestCapability,
@@ -44,7 +44,7 @@ export interface VniteImportJobRunnerDependencies {
   files?: FilesCapability
   ingest?: IngestCapability
   scraperProfiles?: ScraperProfilesCapability
-  taskRuns?: ExtensionTaskRunsCapability
+  taskRuns?: TaskRunsCapability
   logger?: ExtensionLogger
 }
 
@@ -69,7 +69,7 @@ export interface VniteImportPreviewInput extends VniteImportOptions {
 
 export interface VniteImportRunInput extends VniteImportOptions {
   fileGrant: Pick<ExtensionFileGrant, 'grantId' | 'name' | 'path' | 'sizeBytes'>
-  initiator?: ExtensionTaskRunInitiator
+  initiator?: TaskRunInitiator
   releaseGrantOnCleanup?: boolean
 }
 
@@ -200,7 +200,7 @@ export class VniteImportJobRunner {
 
   async runImportFromGrant(
     input: VniteImportRunInput,
-    run: ExtensionTaskRunHandle
+    run: TaskRunHandle
   ): Promise<VniteImportJobSummary> {
     return await runVniteImportJob(
       {

@@ -4,14 +4,14 @@ Boundary: route-bound session lifetime; leaving the route closes the session.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave } from 'vue-router'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { ExtensionWebviewFrame } from '@renderer/components/extension/webview-host'
 import {
   closeWebview,
-  extensionWebviewStore,
-  getExtensionWebviewSession
+  getExtensionWebviewSession,
+  leaveExtensionWebviewPage
 } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 
@@ -23,11 +23,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const router = useRouter()
-const session = computed(() => {
-  void extensionWebviewStore.sessions.value
-  return getExtensionWebviewSession(props.webviewId)
-})
+const session = computed(() => getExtensionWebviewSession(props.webviewId))
 
 onBeforeRouteLeave(() => {
   if (!getExtensionWebviewSession(props.webviewId)) {
@@ -38,14 +34,6 @@ onBeforeRouteLeave(() => {
     log.error('Failed to close webview session:', error)
   })
 })
-
-function goBack(): void {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    void router.replace('/library')
-  }
-}
 </script>
 
 <template>
@@ -54,7 +42,7 @@ function goBack(): void {
       <Button
         size="icon-sm"
         variant="ghost"
-        @click="goBack"
+        @click="leaveExtensionWebviewPage"
       >
         <Icon
           icon="icon-[mdi--arrow-left]"

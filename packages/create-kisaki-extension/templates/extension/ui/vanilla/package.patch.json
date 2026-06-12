@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false && tsc --noEmit -p tsconfig.ui.json --composite false"
+  },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",
     "tailwindcss": "^4.1.17"

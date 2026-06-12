@@ -1,3 +1,8 @@
+<!--
+Advanced Tab edits client/network settings and hosts destructive maintenance
+actions (clear sync state, reset settings) behind confirmation prompts.
+Boundary: binds the shared settings form; actions go through `host` RPC.
+-->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { settingsForm } from '../form'

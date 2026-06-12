@@ -1,5 +1,7 @@
 # 05 Sync And Import
 
+> 历史设计文档：文中的 `ExtensionTaskRun*` 类型已在 extension-api 中更名为 `TaskRun*`。现状以 `.claude/skills/kisaki/references/extension-system.md` 为准。
+
 ## 公共规则
 
 - 所有同步和导入都必须带 `BangumiMediaScope`。

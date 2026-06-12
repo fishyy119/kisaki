@@ -1,3 +1,8 @@
+<!--
+Preview Groups renders job preview output as grouped badge and before/after
+row lists.
+Boundary: purely presentational over `BangumiPreviewGroupDto` data.
+-->
 <script setup lang="ts">
 import type { BangumiJobPreviewTone, BangumiPreviewGroupDto } from '../../../shared/settings'
 

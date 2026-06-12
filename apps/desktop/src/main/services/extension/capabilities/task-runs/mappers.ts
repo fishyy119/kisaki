@@ -1,9 +1,9 @@
 import type {
-  ExtensionTaskRunInitiator,
-  ExtensionTaskRunProgress,
-  ExtensionTaskRunResult,
-  ExtensionTaskRunSnapshot,
-  ExtensionTaskRunSubject
+  TaskRunInitiator as ExtensionTaskRunInitiator,
+  TaskRunProgress as ExtensionTaskRunProgress,
+  TaskRunResult as ExtensionTaskRunResult,
+  TaskRunSnapshot as ExtensionTaskRunSnapshot,
+  TaskRunSubject as ExtensionTaskRunSubject
 } from '@kisaki3/extension-api'
 import type { TaskRun, TaskRunInitiator, TaskRunOperation, TaskRunSubject } from '@shared/task-run'
 

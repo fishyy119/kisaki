@@ -17,10 +17,11 @@ workflow prompt.
 
 Generated projects include `manifest.json`, `src/host/index.ts`, `README.md`,
 and npm scripts backed by the `kisx` CLI, plus engineering config out of the
-box: ESLint (flat config), Prettier, `.editorconfig`, `.gitattributes`, and
-`.gitignore`. Projects with a webview UI also include
+box: ESLint (flat config) with host/ui/shared import-boundary rules, per-layer
+tsconfigs (`tsconfig.host.json` Node-only, `tsconfig.ui.json` DOM-only),
+Prettier, `.editorconfig`, `.gitattributes`, and `.gitignore`. Projects with a webview UI also include
 `src/ui/main/index.html`, a `src/shared/contract.ts` RPC contract, Tailwind
-CSS wired through `kisx.config.ts`, and a `"ui": "dist/ui"` manifest
+CSS wired through `kisx.config.ts`, and a `"ui": "./dist/ui"` manifest
 declaration (the Vue variant additionally adds `@vitejs/plugin-vue` and
 Vue-aware ESLint):
 

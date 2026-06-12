@@ -185,21 +185,6 @@ export function resolveVniteImportStep(input: {
   return 'config'
 }
 
-export function getVniteImportSubmitLabel(step: VniteImportStep): string {
-  switch (step) {
-    case 'pickBackup':
-      return '下一步'
-    case 'config':
-      return '生成预览'
-    case 'preview':
-      return '开始导入'
-    case 'running':
-      return '刷新状态'
-    case 'done':
-      return '导入另一个备份包'
-  }
-}
-
 function normalizeFlowState(value: unknown): VniteImportFlowState {
   if (!isRecord(value) || value.version !== 1) {
     return createEmptyFlowState()

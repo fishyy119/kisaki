@@ -10,7 +10,7 @@
     "pack": "kisx pack",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false"
   },
   "dependencies": {
     "@kisaki3/extension-sdk": "^__TOOLING_VERSION__"

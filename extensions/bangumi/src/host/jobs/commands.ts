@@ -2,10 +2,10 @@ import type {
   CommandContributionExecuteEvent,
   CommandRegistrar,
   Disposable,
-  ExtensionTaskRunHandle,
+  TaskRunHandle,
   JsonObject
 } from '@kisaki3/extension-sdk'
-import { kisaki, isExtensionTaskRunCancellation } from '@kisaki3/extension-sdk'
+import { kisaki, isTaskRunCancellation } from '@kisaki3/extension-sdk'
 import {
   normalizeAuthRefreshArgs,
   normalizeChangedItemsSyncArgs,
@@ -225,7 +225,7 @@ async function startBangumiTaskRun(options: {
   operation: string
   title: string
   description: string
-  run(run: ExtensionTaskRunHandle): Promise<unknown>
+  run(run: TaskRunHandle): Promise<unknown>
 }): Promise<JsonObject> {
   if (options.signal.aborted) {
     throw new BangumiExtensionError('job_cancelled', 'Bangumi job 已取消。')
@@ -256,7 +256,7 @@ async function startBangumiTaskRun(options: {
   })
 
   void options.run(run).catch((error) => {
-    if (!isExtensionTaskRunCancellation(error)) {
+    if (!isTaskRunCancellation(error)) {
       void error
     }
   })
