@@ -2,7 +2,7 @@ import { once } from 'node:events'
 import { utilityProcess, type ForkOptions, type UtilityProcess } from 'electron'
 import { createLogger } from '@main/log'
 import type { ExtensionHostInspectOptions } from '@shared/bootstrap'
-import type { RpcMessage } from '@kisaki3/extension-api'
+import type { RpcEnvelope } from '@kisaki3/extension-api'
 
 const log = createLogger('Extension')
 
@@ -80,12 +80,12 @@ export class ExtensionHostController {
     await Promise.race([exited, delay(2_000)])
   }
 
-  send(message: RpcMessage): void {
+  send(envelope: RpcEnvelope): void {
     if (!this.process?.pid) {
       throw new Error('Extension host process is not running')
     }
 
-    this.process.postMessage(message)
+    this.process.postMessage(envelope)
   }
 
   isRunning(): boolean {

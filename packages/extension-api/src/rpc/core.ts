@@ -105,47 +105,50 @@ export interface RpcHandshakeResponse {
   metadata?: JsonObject
 }
 
-export interface RpcRequestMessage<TMethod extends RpcMethod = RpcMethod, TParams = RpcValue> {
+export interface RpcRequestEnvelope<TMethod extends RpcMethod = RpcMethod, TParams = RpcValue> {
   kind: 'request'
   id: string
   method: TMethod
   params: TParams
 }
 
-export interface RpcSuccessResponseMessage<TResult = RpcValue> {
+export interface RpcSuccessResponseEnvelope<TResult = RpcValue> {
   kind: 'response'
   id: string
   ok: true
   result: TResult
 }
 
-export interface RpcErrorResponseMessage {
+export interface RpcErrorResponseEnvelope {
   kind: 'response'
   id: string
   ok: false
   error: RpcErrorPayload
 }
 
-export interface RpcEventMessage<TName extends RpcEventTopic = RpcEventTopic, TPayload = RpcValue> {
+export interface RpcEventEnvelope<
+  TName extends RpcEventTopic = RpcEventTopic,
+  TPayload = RpcValue
+> {
   kind: 'event'
   name: TName
   payload: TPayload
 }
 
-export type RpcResponseMessage<TResult = RpcValue> =
-  | RpcSuccessResponseMessage<TResult>
-  | RpcErrorResponseMessage
+export type RpcResponseEnvelope<TResult = RpcValue> =
+  | RpcSuccessResponseEnvelope<TResult>
+  | RpcErrorResponseEnvelope
 
-export type RpcMessage<
+export type RpcEnvelope<
   TMethod extends RpcMethod = RpcMethod,
   TParams = RpcValue,
   TResult = RpcValue,
   TEventName extends RpcEventTopic = RpcEventTopic,
   TEventPayload = RpcValue
 > =
-  | RpcRequestMessage<TMethod, TParams>
-  | RpcResponseMessage<TResult>
-  | RpcEventMessage<TEventName, TEventPayload>
+  | RpcRequestEnvelope<TMethod, TParams>
+  | RpcResponseEnvelope<TResult>
+  | RpcEventEnvelope<TEventName, TEventPayload>
 
 export interface RpcNoPayload {
   readonly [key: string]: never
@@ -172,17 +175,17 @@ export type RpcResult<TMap extends RpcRequestMap, TMethod extends RpcMethodName<
 
 export type RpcPayload<TMap extends RpcEventMap, TEvent extends RpcEventName<TMap>> = TMap[TEvent]
 
-export type RpcTypedRequestMessage<
+export type RpcTypedRequestEnvelope<
   TMap extends RpcRequestMap,
   TMethod extends RpcMethodName<TMap> = RpcMethodName<TMap>
-> = RpcRequestMessage<TMethod, RpcParams<TMap, TMethod>>
+> = RpcRequestEnvelope<TMethod, RpcParams<TMap, TMethod>>
 
-export type RpcTypedResponseMessage<
+export type RpcTypedResponseEnvelope<
   TMap extends RpcRequestMap,
   TMethod extends RpcMethodName<TMap> = RpcMethodName<TMap>
-> = RpcResponseMessage<RpcResult<TMap, TMethod>>
+> = RpcResponseEnvelope<RpcResult<TMap, TMethod>>
 
-export type RpcTypedEventMessage<
+export type RpcTypedEventEnvelope<
   TMap extends RpcEventMap,
   TEvent extends RpcEventName<TMap> = RpcEventName<TMap>
-> = RpcEventMessage<TEvent, RpcPayload<TMap, TEvent>>
+> = RpcEventEnvelope<TEvent, RpcPayload<TMap, TEvent>>

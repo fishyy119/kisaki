@@ -3,16 +3,30 @@ import type {
   ExtensionRuntimeMetadata,
   NotificationHandle,
   NotificationKind,
+  NotifyMode,
   NotifyOptions
 } from '@kisaki3/extension-api'
 import {
   createConflictError,
   createNotFoundError,
   createUnavailableError,
+  createValidationError,
   normalizeCapabilityError
 } from '@kisaki3/extension-api'
 import type { NotifyService } from '@main/services/notify'
 import type { NotifyOptions as SharedNotifyOptions } from '@shared/notify'
+
+const NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  'success',
+  'info',
+  'warning',
+  'error',
+  'loading'
+]
+
+const NOTIFY_MODES: readonly NotifyMode[] = ['toast', 'native', 'auto']
+
+const NOTIFY_OPTION_KEYS = new Set<string>(['message', 'mode', 'id', 'closable'])
 
 export interface ExtensionNotifyCapabilityProviderOptions {
   notify: NotifyService
@@ -161,6 +175,18 @@ function normalizeOptions(
   notifyOptions: SharedNotifyOptions
   requestedId?: string
 } {
+  if (typeof title !== 'string' || title.trim().length === 0) {
+    throw createValidationError('notify title must be a non-empty string.')
+  }
+
+  if (!NOTIFICATION_KINDS.includes(kind)) {
+    throw createValidationError(`notify kind must be one of: ${NOTIFICATION_KINDS.join(', ')}.`)
+  }
+
+  if (options === undefined) {
+    return { notifyOptions: { title, type: kind } }
+  }
+
   if (typeof options === 'string') {
     return {
       notifyOptions: {
@@ -171,14 +197,55 @@ function normalizeOptions(
     }
   }
 
+  if (!isPlainRecord(options)) {
+    throw createValidationError('notify options must be a string or an object.')
+  }
+
+  const record: Record<string, unknown> = options
+  for (const key of Object.keys(record)) {
+    if (!NOTIFY_OPTION_KEYS.has(key)) {
+      throw createValidationError(`notify options contain an unknown field "${key}".`)
+    }
+  }
+
+  const { message, mode, id, closable } = record
+  if (message !== undefined && typeof message !== 'string') {
+    throw createValidationError('notify options.message must be a string.')
+  }
+
+  if (mode !== undefined && !isNotifyMode(mode)) {
+    throw createValidationError(`notify options.mode must be one of: ${NOTIFY_MODES.join(', ')}.`)
+  }
+
+  if (id !== undefined && (typeof id !== 'string' || id.length === 0)) {
+    throw createValidationError('notify options.id must be a non-empty string.')
+  }
+
+  if (closable !== undefined && typeof closable !== 'boolean') {
+    throw createValidationError('notify options.closable must be a boolean.')
+  }
+
   return {
     notifyOptions: {
       title,
-      message: options?.message,
+      message,
       type: kind,
-      target: options?.mode,
-      closable: options?.closable
+      target: mode,
+      closable
     },
-    requestedId: options?.id
+    requestedId: id
   }
+}
+
+function isNotifyMode(value: unknown): value is NotifyMode {
+  return typeof value === 'string' && (NOTIFY_MODES as readonly string[]).includes(value)
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }

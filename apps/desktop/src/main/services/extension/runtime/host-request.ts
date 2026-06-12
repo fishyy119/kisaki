@@ -1,6 +1,8 @@
 import {
-  type ExtensionRuntimeDiagnostic,
+  createValidationError,
   normalizeCapabilityError,
+  type ExtensionRuntimeDiagnostic,
+  type ExtensionRuntimeDiagnosticSeverity,
   type ExtensionRuntimeHandle,
   type ExtensionRuntimeMetadata
 } from '@kisaki3/extension-api'
@@ -46,7 +48,7 @@ export function registerHostRequests(options: HostRequestOptions): void {
   options.rpc.handleHostRequest('runtime.diagnostics.report', async (params) => {
     try {
       requireRuntimeHandle(options, params.runtimeHandle)
-      options.reportDiagnostic(params.runtimeHandle, params.diagnostic)
+      options.reportDiagnostic(params.runtimeHandle, validateDiagnostic(params.diagnostic))
       return EMPTY_RPC_RESULT
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to report extension runtime diagnostic.')
@@ -147,4 +149,53 @@ function requireRuntimeHandle(
   }
 
   return extension
+}
+
+const DIAGNOSTIC_SEVERITIES: readonly ExtensionRuntimeDiagnosticSeverity[] = [
+  'info',
+  'warning',
+  'error'
+]
+
+const DIAGNOSTIC_KEYS = new Set<string>([
+  'severity',
+  'source',
+  'code',
+  'message',
+  'details',
+  'createdAt'
+])
+
+function validateDiagnostic(diagnostic: ExtensionRuntimeDiagnostic): ExtensionRuntimeDiagnostic {
+  if (!diagnostic || typeof diagnostic !== 'object' || Array.isArray(diagnostic)) {
+    throw createValidationError('diagnostic must be an object.')
+  }
+
+  for (const key of Object.keys(diagnostic)) {
+    if (!DIAGNOSTIC_KEYS.has(key)) {
+      throw createValidationError(`diagnostic contains an unknown field "${key}".`)
+    }
+  }
+
+  if (!DIAGNOSTIC_SEVERITIES.includes(diagnostic.severity)) {
+    throw createValidationError(
+      `diagnostic.severity must be one of: ${DIAGNOSTIC_SEVERITIES.join(', ')}.`
+    )
+  }
+
+  requireDiagnosticString(diagnostic.source, 'diagnostic.source')
+  requireDiagnosticString(diagnostic.code, 'diagnostic.code')
+  requireDiagnosticString(diagnostic.message, 'diagnostic.message')
+  requireDiagnosticString(diagnostic.createdAt, 'diagnostic.createdAt')
+  if (diagnostic.details !== undefined && typeof diagnostic.details !== 'string') {
+    throw createValidationError('diagnostic.details must be a string.')
+  }
+
+  return diagnostic
+}
+
+function requireDiagnosticString(value: unknown, label: string): void {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw createValidationError(`${label} must be a non-empty string.`)
+  }
 }

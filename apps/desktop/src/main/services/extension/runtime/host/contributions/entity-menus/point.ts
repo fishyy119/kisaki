@@ -14,8 +14,8 @@ import {
   type EntityMenuResolveRequest,
   type EntityMenuResolveResponse,
   type EntityMenuScope,
+  type JsonObject,
   type UiCallbackResult,
-  toJsonObject,
   validateEntityMenuContributionShape,
   validateEntityMenuNodes
 } from '@kisaki3/extension-api'
@@ -213,9 +213,6 @@ export class HostEntityMenuContributionPoint {
       callbacks: new Map()
     }
     const normalizedNodes = normalizeMenuNodes(runtime.metadata.id, registration.id, nodes, session)
-    const serializableNodes = normalizedNodes.map((node, index) =>
-      toJsonObject(node, `resolved menu node ${index}`)
-    )
 
     const sessionKey = getSessionKey(
       request.runtimeHandle,
@@ -233,7 +230,10 @@ export class HostEntityMenuContributionPoint {
       { once: true }
     )
 
-    return { nodes: serializableNodes }
+    // The RPC channel normalizes the response into the JSON model; the nodes
+    // were shape-validated above and stripped of callbacks during
+    // normalization.
+    return { nodes: normalizedNodes as readonly JsonObject[] }
   }
 
   async invoke(request: EntityMenuInvokeRequest, signal: AbortSignal): Promise<UiCallbackResult> {

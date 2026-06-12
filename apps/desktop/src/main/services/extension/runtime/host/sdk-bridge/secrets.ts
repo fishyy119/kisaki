@@ -1,5 +1,4 @@
 import type { ExtensionSecrets, JsonValue } from '@kisaki3/extension-api'
-import { toJsonValue } from '@kisaki3/extension-api'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import type { ActiveExtensionScope } from './types'
 
@@ -34,7 +33,9 @@ export function createExtensionSecrets(options: ExtensionSecretsOptions): Extens
         {
           runtimeHandle: options.scope.runtimeHandle,
           key,
-          value: toJsonValue(value, 'secrets value')
+          // The RPC channel normalizes the value into the JSON model at send
+          // time and rejects non-JSON input at this call site.
+          value: value as JsonValue
         },
         getRequestOptions()
       )

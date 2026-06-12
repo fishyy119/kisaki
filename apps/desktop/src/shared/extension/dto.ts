@@ -16,6 +16,7 @@ import type {
   GameScraperProviderRegistrationInfo,
   PersonScraperProviderRegistrationInfo,
   JsonObject,
+  JsonSafe,
   JsonValue,
   ThemeContribution,
   UiCallbackResult,
@@ -554,3 +555,50 @@ export interface ExtensionWebviewReadyRequest {
 export interface ExtensionWebviewCloseRequest {
   webviewId: string
 }
+
+type UnsafeDtosOf<TMap> = {
+  [K in keyof TMap]: [TMap[K]] extends [JsonSafe<TMap[K]>] ? never : K
+}[keyof TMap]
+
+type AssertNever<T extends never> = T
+
+/**
+ * Compile-time guarantees that every extension DTO crossing the main↔renderer
+ * IPC boundary stays inside the strict JSON value domain. A non-JSON field
+ * surfaces here as a type error naming the offending DTO.
+ */
+export type AssertExtensionDtosAreJsonSafe = AssertNever<
+  UnsafeDtosOf<{
+    ExtensionInstalledPackageInfo: ExtensionInstalledPackageInfo
+    ExtensionRuntimeStateChangedEvent: ExtensionRuntimeStateChangedEvent
+    ExtensionUpdateCheckResult: ExtensionUpdateCheckResult
+    ExtensionRepositoryInfo: ExtensionRepositoryInfo
+    ExtensionRepositoryCreateRequest: ExtensionRepositoryCreateRequest
+    ExtensionRepositoryUpdateRequest: ExtensionRepositoryUpdateRequest
+    ExtensionRepositoryRefreshResult: ExtensionRepositoryRefreshResult
+    ExtensionTrustedSignerInfo: ExtensionTrustedSignerInfo
+    ExtensionCatalogSearchRequest: ExtensionCatalogSearchRequest
+    ExtensionCatalogSearchResult: ExtensionCatalogSearchResult
+    ExtensionAutomaticUpdateRunState: ExtensionAutomaticUpdateRunState
+    ExtensionCreateInstallPlanRequest: ExtensionCreateInstallPlanRequest
+    ExtensionInstallPlan: ExtensionInstallPlan
+    ExtensionInstallReleaseRequest: ExtensionInstallReleaseRequest
+    ExtensionInstallFromFileRequest: ExtensionInstallFromFileRequest
+    ExtensionPurgeDataRequest: ExtensionPurgeDataRequest
+    ExtensionUpdatePolicyRequest: ExtensionUpdatePolicyRequest
+    ExtensionUpdateRequest: ExtensionUpdateRequest
+    ExtensionContributionSnapshot: ExtensionContributionSnapshot
+    ExtensionResolvedEntityMenu: ExtensionResolvedEntityMenu
+    ExtensionEntityMenuResolveRequest: ExtensionEntityMenuResolveRequest
+    ExtensionEntityMenuInvokeRequest: ExtensionEntityMenuInvokeRequest
+    ExtensionEntityMenuInvokeResponse: ExtensionEntityMenuInvokeResponse
+    ExtensionEntityMenuReleaseRequest: ExtensionEntityMenuReleaseRequest
+    ExtensionEntityMenuRefreshRequestedEvent: ExtensionEntityMenuRefreshRequestedEvent
+    ExtensionCardActionRunRequest: ExtensionCardActionRunRequest
+    ExtensionWebviewSessionInfo: ExtensionWebviewSessionInfo
+    ExtensionWebviewMessageEvent: ExtensionWebviewMessageEvent
+    ExtensionWebviewPostMessageRequest: ExtensionWebviewPostMessageRequest
+    ExtensionWebviewReadyRequest: ExtensionWebviewReadyRequest
+    ExtensionWebviewCloseRequest: ExtensionWebviewCloseRequest
+  }>
+>

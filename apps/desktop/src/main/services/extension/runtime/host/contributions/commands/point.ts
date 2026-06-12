@@ -4,7 +4,7 @@ import type {
   CommandRegistration,
   JsonValue
 } from '@kisaki3/extension-api'
-import { toJsonValue, validateCommandContributionShape } from '@kisaki3/extension-api'
+import { validateCommandContributionShape } from '@kisaki3/extension-api'
 import { requireRuntimeByScope, throwValidationIssues } from '../shared'
 import type { HostContributionDomainOptions, HostContributionScope } from '../types'
 import { createContributionRegistration } from '../registration'
@@ -95,9 +95,9 @@ export class HostCommandContributionPoint {
       return {}
     }
 
-    return {
-      output: toJsonValue(output, 'command output')
-    }
+    // The RPC channel normalizes the response into the JSON model and rejects
+    // non-JSON command output at this boundary.
+    return { output: output as JsonValue }
   }
 
   releaseRuntime(runtimeHandle: string): void {

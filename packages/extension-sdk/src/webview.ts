@@ -4,11 +4,11 @@ import type {
   JsonValue,
   WebviewBootstrapPayload,
   WebviewClient,
-  WebviewClientMessage,
-  WebviewEmbedderMessage,
+  WebviewClientEnvelope,
+  WebviewEmbedderEnvelope,
   WebviewTheme
 } from '@kisaki3/extension-api'
-import { WEBVIEW_BOOTSTRAP_QUERY_PARAM } from '@kisaki3/extension-api'
+import { WEBVIEW_BOOTSTRAP_QUERY_PARAM, toJsonValue } from '@kisaki3/extension-api'
 
 export { createWebviewRpc } from './shared/webview-rpc'
 export type {
@@ -43,13 +43,44 @@ function readBootstrap(): WebviewBootstrapPayload | null {
   }
 
   try {
-    return JSON.parse(raw) as WebviewBootstrapPayload
+    const parsed: unknown = JSON.parse(raw)
+    return isBootstrapPayload(parsed) ? parsed : null
   } catch {
     return null
   }
 }
 
-function isEmbedderMessage(value: unknown): value is WebviewEmbedderMessage {
+function isBootstrapPayload(value: unknown): value is WebviewBootstrapPayload {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.webviewId === 'string' &&
+    value.webviewId.length > 0 &&
+    typeof value.extensionId === 'string' &&
+    value.extensionId.length > 0 &&
+    isRecord(value.params) &&
+    isWebviewTheme(value.theme)
+  )
+}
+
+function isWebviewTheme(value: unknown): value is WebviewTheme {
+  if (!isRecord(value) || (value.mode !== 'light' && value.mode !== 'dark')) {
+    return false
+  }
+
+  return (
+    isRecord(value.tokens) &&
+    Object.values(value.tokens).every((token) => typeof token === 'string')
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isEmbedderEnvelope(value: unknown): value is WebviewEmbedderEnvelope {
   return (
     Boolean(value) &&
     typeof value === 'object' &&
@@ -77,8 +108,8 @@ function applyThemeToDocument(theme: WebviewTheme): void {
   root.style.colorScheme = theme.mode
 }
 
-function postToEmbedder(message: WebviewClientMessage): void {
-  window.parent.postMessage(message, '*')
+function postToEmbedder(envelope: WebviewClientEnvelope): void {
+  window.parent.postMessage(envelope, '*')
 }
 
 function dispatchMessage(message: JsonValue): void {
@@ -108,21 +139,21 @@ function connect(): WebviewClientConnection | null {
   }
 
   window.addEventListener('message', (event) => {
-    if (event.source !== window.parent || !isEmbedderMessage(event.data)) {
+    if (event.source !== window.parent || !isEmbedderEnvelope(event.data)) {
       return
     }
 
-    const message = event.data
-    if (message.type === 'kisaki-webview:message') {
-      dispatchMessage(message.message)
+    const envelope = event.data
+    if (envelope.type === 'kisaki-webview:message') {
+      dispatchMessage(envelope.message)
       return
     }
 
-    if (message.type === 'kisaki-webview:theme') {
-      state.theme = message.theme
-      applyThemeToDocument(message.theme)
+    if (envelope.type === 'kisaki-webview:theme') {
+      state.theme = envelope.theme
+      applyThemeToDocument(envelope.theme)
       for (const listener of themeListeners) {
-        listener(message.theme)
+        listener(envelope.theme)
       }
     }
   })
@@ -173,7 +204,13 @@ export const webview: WebviewClient = {
   },
   postMessage(message: JsonValue): void {
     const { bootstrap } = requireConnection()
-    postToEmbedder({ type: 'kisaki-webview:message', webviewId: bootstrap.webviewId, message })
+    postToEmbedder({
+      type: 'kisaki-webview:message',
+      webviewId: bootstrap.webviewId,
+      // Normalize at the transport gate so non-JSON input fails here instead
+      // of being silently mangled by structured clone along the relay.
+      message: toJsonValue(message, 'webview message')
+    })
   },
   onMessage(listener: (message: JsonValue) => void): Disposable {
     requireConnection()

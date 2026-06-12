@@ -9,8 +9,8 @@ import { storeToRefs } from 'pinia'
 import {
   WEBVIEW_BOOTSTRAP_QUERY_PARAM,
   type WebviewBootstrapPayload,
-  type WebviewClientMessage,
-  type WebviewEmbedderMessage
+  type WebviewClientEnvelope,
+  type WebviewEmbedderEnvelope
 } from '@kisaki3/extension-api'
 import type { ExtensionWebviewSessionInfo } from '@shared/extension'
 import { Icon } from '@renderer/components/ui/icon'
@@ -44,6 +44,11 @@ const { resolvedTheme, activeThemeId } = storeToRefs(themeStore)
 let frozenSrc: string | null = null
 const src = computed(() => (frozenSrc ??= buildDocumentSrc(props.session)))
 let unregisterFrame: (() => void) | null = null
+
+// Pin both directions of the window message channel to the document origin,
+// so a frame that navigated elsewhere can neither receive host messages nor
+// spoof client envelopes.
+const documentOrigin = computed(() => new URL(props.session.documentUrl).origin)
 
 onMounted(() => {
   window.addEventListener('message', handleWindowMessage)
@@ -85,12 +90,16 @@ function handleWindowMessage(event: MessageEvent): void {
     return
   }
 
-  const message = toClientMessage(event.data)
-  if (!message || message.webviewId !== props.session.webviewId) {
+  if (event.origin !== documentOrigin.value) {
     return
   }
 
-  switch (message.type) {
+  const envelope = toClientEnvelope(event.data)
+  if (!envelope || envelope.webviewId !== props.session.webviewId) {
+    return
+  }
+
+  switch (envelope.type) {
     case 'kisaki-webview:ready':
       ready.value = true
       postCurrentTheme()
@@ -99,7 +108,7 @@ function handleWindowMessage(event: MessageEvent): void {
       })
       return
     case 'kisaki-webview:message':
-      void postWebviewMessage(props.session.webviewId, message.message).catch((error) => {
+      void postWebviewMessage(props.session.webviewId, envelope.message).catch((error) => {
         log.error('Failed to forward webview message:', error)
       })
       return
@@ -110,7 +119,7 @@ function handleWindowMessage(event: MessageEvent): void {
   }
 }
 
-function toClientMessage(value: unknown): WebviewClientMessage | null {
+function toClientEnvelope(value: unknown): WebviewClientEnvelope | null {
   if (
     !value ||
     typeof value !== 'object' ||
@@ -121,12 +130,12 @@ function toClientMessage(value: unknown): WebviewClientMessage | null {
   }
 
   return (value as { type: string }).type.startsWith('kisaki-webview:')
-    ? (value as WebviewClientMessage)
+    ? (value as WebviewClientEnvelope)
     : null
 }
 
-function postToFrame(message: WebviewEmbedderMessage): void {
-  frame.value?.contentWindow?.postMessage(message, '*')
+function postToFrame(envelope: WebviewEmbedderEnvelope): void {
+  frame.value?.contentWindow?.postMessage(envelope, documentOrigin.value)
 }
 
 function postCurrentTheme(): void {

@@ -8,19 +8,19 @@ import {
   type MainToHostRpcEventMap,
   type MainToHostRpcMethod,
   type MainToHostRpcRequestMap,
+  type RpcEnvelope,
   type RpcHandshakeRequest,
   type RpcHandshakeResponse,
-  type RpcMessage,
   type RpcParams,
   type RpcResult
 } from '@kisaki3/extension-api'
-import { RpcMessageChannel, type RpcRequestContext, type RpcRequestOptions } from '../rpc-core'
+import { RpcChannel, type RpcRequestContext, type RpcRequestOptions } from '../rpc-core'
 
 export class ExtensionHostRpcServer {
-  private readonly channel: RpcMessageChannel
+  private readonly channel: RpcChannel
 
-  constructor(sender: (message: RpcMessage) => void) {
-    this.channel = new RpcMessageChannel(sender)
+  constructor(sender: (envelope: RpcEnvelope) => void) {
+    this.channel = new RpcChannel(sender)
   }
 
   onMessage(message: unknown): Promise<void> {

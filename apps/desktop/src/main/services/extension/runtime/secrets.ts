@@ -16,10 +16,16 @@ import { resolveInsideRoot } from '../shared/path-confinement'
 
 const log = createLogger('Extension')
 
+/** Secrets hold credentials and tokens, so single values stay small. */
+const SECRET_VALUE_MAX_BYTES = 64 * 1024
+
+/** Cap for the whole secrets.json document, which is rewritten on every set. */
+const SECRET_DOCUMENT_MAX_BYTES = 1024 * 1024
+
 interface StoredSecretValue {
   version: 1
   encoding: 'electron-safe-storage'
-  data: string
+  ciphertext: string
 }
 
 type StoredSecretDocument = Record<string, StoredSecretValue>
@@ -56,9 +62,23 @@ export class ExtensionRuntimeSecrets {
     signal?: AbortSignal
   ): Promise<void> {
     await this.withLock(runtimeHandle, signal, async (secretsPath) => {
+      // Canonicalize at the disk boundary: the persisted document must stay
+      // pure JSON regardless of which main-side caller produced the value.
       const normalizedValue = toJsonValue(value, 'secrets value')
+      if (Buffer.byteLength(JSON.stringify(normalizedValue), 'utf8') > SECRET_VALUE_MAX_BYTES) {
+        throw createValidationError(
+          `Secret value for key "${key}" exceeds ${SECRET_VALUE_MAX_BYTES} bytes.`
+        )
+      }
+
       const document = await this.read(runtimeHandle)
       document[normalizeKey(key)] = this.encrypt(normalizedValue)
+      if (Buffer.byteLength(JSON.stringify(document), 'utf8') > SECRET_DOCUMENT_MAX_BYTES) {
+        throw createValidationError(
+          `Extension secrets document exceeds ${SECRET_DOCUMENT_MAX_BYTES} bytes.`
+        )
+      }
+
       await this.write(runtimeHandle, secretsPath, document, signal)
     })
   }
@@ -134,7 +154,7 @@ export class ExtensionRuntimeSecrets {
     return {
       version: 1,
       encoding: 'electron-safe-storage',
-      data: safeStorage.encryptString(plaintext).toString('base64')
+      ciphertext: safeStorage.encryptString(plaintext).toString('base64')
     }
   }
 
@@ -142,7 +162,7 @@ export class ExtensionRuntimeSecrets {
     this.requireEncryptionAvailable()
 
     try {
-      const plaintext = safeStorage.decryptString(Buffer.from(entry.data, 'base64'))
+      const plaintext = safeStorage.decryptString(Buffer.from(entry.ciphertext, 'base64'))
       return toJsonValue(JSON.parse(plaintext), 'secrets value')
     } catch (error) {
       log.warn('Failed to decrypt extension secret:', error)
@@ -245,6 +265,6 @@ function isStoredSecretValue(value: unknown): value is StoredSecretValue {
   return (
     record.version === 1 &&
     record.encoding === 'electron-safe-storage' &&
-    typeof record.data === 'string'
+    typeof record.ciphertext === 'string'
   )
 }

@@ -90,7 +90,7 @@ export interface WebviewBootstrapPayload {
 /**
  * Window message envelope posted from the webview document to the app.
  */
-export type WebviewClientMessage =
+export type WebviewClientEnvelope =
   | { type: 'kisaki-webview:ready'; webviewId: string }
   | { type: 'kisaki-webview:message'; webviewId: string; message: JsonValue }
   | { type: 'kisaki-webview:close'; webviewId: string }
@@ -98,7 +98,7 @@ export type WebviewClientMessage =
 /**
  * Window message envelope posted from the app to the webview document.
  */
-export type WebviewEmbedderMessage =
+export type WebviewEmbedderEnvelope =
   | { type: 'kisaki-webview:message'; message: JsonValue }
   | { type: 'kisaki-webview:theme'; theme: WebviewTheme }
 

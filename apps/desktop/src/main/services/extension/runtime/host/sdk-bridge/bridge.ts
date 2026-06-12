@@ -613,6 +613,9 @@ export class ExtensionHostSdkBridge {
       )
     }
 
+    // Extension events are dispatched in-process to other extensions sharing
+    // this host, so they never cross the RPC channel; normalizing here is the
+    // isolation boundary that keeps payloads JSON and copies them per emit.
     const normalizedPayload = toJsonObject(payload, 'extension event payload')
     const listeners = this.extensionEventListeners.get(topic)
     if (!listeners || listeners.size === 0) {

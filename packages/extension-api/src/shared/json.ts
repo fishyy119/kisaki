@@ -10,6 +10,23 @@ export interface JsonObject {
   readonly [key: string]: JsonValue
 }
 
+/**
+ * Maps a type onto the strict JSON value domain.
+ * @remarks Functions and values outside the JSON domain (Date, Map, binary,
+ * class instances) map to `never`, so a type `T` is JSON-safe exactly when
+ * `T` is assignable to `JsonSafe<T>`. Compile-time companion of
+ * {@link JsonValue} for asserting that declared DTO types stay pure JSON.
+ */
+export type JsonSafe<T> = T extends JsonPrimitive | undefined
+  ? T
+  : T extends (...args: never) => unknown
+    ? never
+    : T extends readonly (infer TItem)[]
+      ? readonly JsonSafe<TItem>[]
+      : T extends object
+        ? { [K in keyof T]: JsonSafe<T[K]> }
+        : never
+
 interface JsonSerializationState {
   readonly label: string
   readonly seen: Set<object>
@@ -121,7 +138,7 @@ function serializeJsonValue(
 
     state.seen.add(value)
     try {
-      const record = createJsonRecord()
+      const record = createJsonObject()
       for (const [key, entry] of Object.entries(value)) {
         if (entry === undefined) {
           continue
@@ -225,7 +242,7 @@ function visitJsonValue(
   })
 }
 
-function createJsonRecord(): Record<string, JsonValue> {
+function createJsonObject(): Record<string, JsonValue> {
   return Object.create(null) as Record<string, JsonValue>
 }
 

@@ -1,5 +1,5 @@
 import type { Disposable, ExtensionErrorShape, JsonValue } from '@kisaki3/extension-api'
-import { createExtensionError, toJsonValue } from '@kisaki3/extension-api'
+import { createExtensionError } from '@kisaki3/extension-api'
 
 const RPC_CALL_KIND = 'kisaki-webview-rpc:call'
 const RPC_RESULT_KIND = 'kisaki-webview-rpc:result'
@@ -7,6 +7,9 @@ const RPC_RESULT_KIND = 'kisaki-webview-rpc:result'
 /**
  * Message transport bridging one webview session. Satisfied by the host-side
  * `WebviewHandle` and the in-document `webview` client.
+ * @remarks The transport owns JSON-model enforcement: both built-in
+ * transports normalize outgoing messages at their gate, so the RPC layer
+ * sends envelopes as-is.
  */
 export interface WebviewRpcTransport {
   readonly signal?: AbortSignal
@@ -133,40 +136,43 @@ export function createWebviewRpc<
     }
   }
 
-  const respond = (envelope: RpcSuccessEnvelope | RpcErrorEnvelope): void => {
-    void transport.postMessage(toJsonValue(envelope, 'webview RPC result'))
+  const respond = async (envelope: RpcSuccessEnvelope | RpcErrorEnvelope): Promise<void> => {
+    await transport.postMessage(envelope as unknown as JsonValue)
+  }
+
+  const respondError = (id: string, error: unknown): void => {
+    // Error shapes are pure JSON by construction, so only transport loss can
+    // reject here; the session teardown already settles the other side then.
+    void respond({ kind: RPC_RESULT_KIND, id, ok: false, error: toErrorShape(error) }).catch(
+      () => undefined
+    )
   }
 
   const handleCall = async (envelope: RpcCallEnvelope): Promise<void> => {
     const fn = (functions as Record<string, unknown> | undefined)?.[envelope.method]
     if (typeof fn !== 'function') {
-      respond({
-        kind: RPC_RESULT_KIND,
-        id: envelope.id,
-        ok: false,
-        error: {
-          message: `Webview RPC method "${envelope.method}" is not exposed by the other side.`,
-          code: 'method_not_found'
-        }
-      })
+      respondError(
+        envelope.id,
+        createExtensionError(
+          `Webview RPC method "${envelope.method}" is not exposed by the other side.`,
+          { code: 'method_not_found' }
+        )
+      )
       return
     }
 
     try {
       const value: unknown = await (fn as (...args: unknown[]) => unknown)(...envelope.args)
-      respond({
+      // The transport gate normalizes the envelope; a non-JSON local result
+      // fails here and is reported to the caller as an RPC error instead.
+      await respond({
         kind: RPC_RESULT_KIND,
         id: envelope.id,
         ok: true,
-        ...(value === undefined ? {} : { value: toJsonValue(value, 'webview RPC result') })
+        ...(value === undefined ? {} : { value: value as JsonValue })
       })
     } catch (error) {
-      respond({
-        kind: RPC_RESULT_KIND,
-        id: envelope.id,
-        ok: false,
-        error: toErrorShape(error)
-      })
+      respondError(envelope.id, error)
     }
   }
 
@@ -212,18 +218,28 @@ export function createWebviewRpc<
       kind: RPC_CALL_KIND,
       id,
       method,
-      args: args.map((arg, index) => toJsonValue(arg, `webview RPC argument ${index}`))
+      // The transport gate normalizes the envelope, so non-JSON arguments
+      // reject the call below without ever reaching the other side.
+      args: args as readonly JsonValue[]
     }
 
     return new Promise<unknown>((resolve, reject) => {
       pending.set(id, { resolve, reject })
-      Promise.resolve(transport.postMessage(toJsonValue(envelope, 'webview RPC call'))).catch(
-        (error: unknown) => {
-          if (pending.delete(id)) {
-            reject(error instanceof Error ? error : new Error(String(error)))
-          }
+
+      const rejectCall = (error: unknown): void => {
+        if (pending.delete(id)) {
+          reject(error instanceof Error ? error : new Error(String(error)))
         }
-      )
+      }
+
+      // The transport gate may reject either synchronously (in-document
+      // client) or asynchronously (host-side handle); both must settle the
+      // pending call.
+      try {
+        Promise.resolve(transport.postMessage(envelope as unknown as JsonValue)).catch(rejectCall)
+      } catch (error) {
+        rejectCall(error)
+      }
     })
   }
 

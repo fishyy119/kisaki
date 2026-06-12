@@ -3,6 +3,7 @@ import {
   createUnavailableError,
   createValidationError,
   normalizeExtensionPackagePath,
+  validateJsonValue,
   validateWebviewOpenOptionsShape,
   type ExtensionRuntimeMetadata,
   type JsonValue,
@@ -146,6 +147,21 @@ export class ExtensionWebviewsCapabilityProvider {
     const session = this.sessions.get(webviewId)
     if (!session) {
       return
+    }
+
+    // The renderer relays this value from the untrusted webview document, so
+    // main validates the JSON model before the value enters the host link.
+    const issues = validateJsonValue(message, 'message')
+    if (issues.length > 0) {
+      log.warn(
+        `Dropped invalid webview message from "${session.info.extensionId}" webview "${webviewId}".`,
+        issues
+      )
+      throw createValidationError(
+        `Webview message is invalid:\n${issues
+          .map((issue) => `${issue.path}: ${issue.message}`)
+          .join('\n')}`
+      )
     }
 
     this.rpc?.sendEventToHost('capabilities.webviews.messagePosted', {

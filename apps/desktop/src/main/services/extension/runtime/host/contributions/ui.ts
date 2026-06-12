@@ -2,7 +2,6 @@ import {
   createUiError,
   readErrorCode,
   readErrorDetails,
-  toJsonValue,
   validateUiCallbackResult,
   type UiCallbackResult
 } from '@kisaki3/extension-api'
@@ -14,7 +13,7 @@ export async function invokeUiCallback(
   callback: () => Promise<UiCallbackResult> | UiCallbackResult
 ): Promise<UiCallbackResult> {
   try {
-    const result = toJsonValue(await callback(), label) as UiCallbackResult
+    const result = await callback()
     const issues = validateUiCallbackResult(result)
 
     if (issues.length > 0) {

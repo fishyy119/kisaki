@@ -6,8 +6,10 @@ import {
   createUnavailableError,
   fromRpcErrorPayload,
   toRpcErrorPayload,
-  type RpcMessage
+  type RpcEnvelope,
+  type RpcValue
 } from '@kisaki3/extension-api'
+import { toRpcValue } from './rpc-value'
 
 export interface RpcRequestOptions {
   timeoutMs?: number
@@ -30,16 +32,24 @@ interface PendingRpcRequest {
   timeoutId?: NodeJS.Timeout
 }
 
-export class RpcMessageChannel {
+/**
+ * Bidirectional RPC channel speaking {@link RpcEnvelope} over a
+ * structured-clone transport.
+ * @remarks The channel is the single enforcement point of the wire value
+ * domain: every outgoing params, event payload, and handler result is
+ * normalized through {@link toRpcValue}, so callers never serialize manually
+ * and non-wire values fail fast at the boundary they attempt to cross.
+ */
+export class RpcChannel {
   private readonly requestHandlers = new Map<string, RpcRequestHandler>()
   private readonly eventListeners = new Map<string, Set<RpcEventListener>>()
   private readonly pendingRequests = new Map<string, PendingRpcRequest>()
   private readonly activeRequests = new Map<string, AbortController>()
 
-  constructor(private sendMessage: (message: RpcMessage) => void) {}
+  constructor(private sendEnvelope: (envelope: RpcEnvelope) => void) {}
 
-  setSender(sender: (message: RpcMessage) => void): void {
-    this.sendMessage = sender
+  setSender(sender: (envelope: RpcEnvelope) => void): void {
+    this.sendEnvelope = sender
   }
 
   handle(method: string, handler: RpcRequestHandler): void {
@@ -63,11 +73,11 @@ export class RpcMessageChannel {
   }
 
   sendEvent(name: string, payload: unknown): void {
-    this.sendMessage({
+    this.sendEnvelope({
       kind: 'event',
       name,
-      payload
-    } as RpcMessage)
+      payload: toRpcValue(payload, `RPC event "${name}" payload`)
+    })
   }
 
   request<TResult = unknown>(
@@ -76,13 +86,20 @@ export class RpcMessageChannel {
     options: RpcRequestOptions = {}
   ): Promise<TResult> {
     return new Promise<TResult>((resolve, reject) => {
-      const id = randomUUID()
-
       if (options.signal?.aborted) {
         reject(createRpcAbortError(method, 'before dispatch'))
         return
       }
 
+      let wireParams: RpcValue
+      try {
+        wireParams = toRpcValue(params, `RPC request "${method}" params`)
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)))
+        return
+      }
+
+      const id = randomUUID()
       const pending: PendingRpcRequest = {
         resolve: (value) => resolve(value as TResult),
         reject
@@ -115,31 +132,40 @@ export class RpcMessageChannel {
       }
 
       this.pendingRequests.set(id, pending)
-      this.sendMessage({
-        kind: 'request',
-        id,
-        method,
-        params
-      } as RpcMessage)
+      try {
+        this.sendEnvelope({
+          kind: 'request',
+          id,
+          method,
+          params: wireParams
+        })
+      } catch (error) {
+        this.pendingRequests.delete(id)
+        if (pending.timeoutId) {
+          clearTimeout(pending.timeoutId)
+        }
+        pending.cleanupAbort?.()
+        reject(error instanceof Error ? error : new Error(String(error)))
+      }
     })
   }
 
-  async receive(message: unknown): Promise<void> {
-    if (!isRpcEnvelope(message)) {
+  async receive(envelope: unknown): Promise<void> {
+    if (!isRpcEnvelope(envelope)) {
       return
     }
 
-    if (message.kind === 'response') {
-      this.handleResponse(message)
+    if (envelope.kind === 'response') {
+      this.handleResponse(envelope)
       return
     }
 
-    if (message.kind === 'event') {
-      await this.handleEvent(message.name, message.payload)
+    if (envelope.kind === 'event') {
+      await this.handleEvent(envelope.name, envelope.payload)
       return
     }
 
-    await this.handleRequest(message.id, message.method, message.params)
+    await this.handleRequest(envelope.id, envelope.method, envelope.params)
   }
 
   dispose(reason = 'RPC channel disposed'): void {
@@ -161,24 +187,24 @@ export class RpcMessageChannel {
     this.eventListeners.clear()
   }
 
-  private handleResponse(message: Extract<RpcMessage, { kind: 'response' }>): void {
-    const pending = this.pendingRequests.get(message.id)
+  private handleResponse(envelope: Extract<RpcEnvelope, { kind: 'response' }>): void {
+    const pending = this.pendingRequests.get(envelope.id)
     if (!pending) {
       return
     }
 
-    this.pendingRequests.delete(message.id)
+    this.pendingRequests.delete(envelope.id)
     if (pending.timeoutId) {
       clearTimeout(pending.timeoutId)
     }
     pending.cleanupAbort?.()
 
-    if (message.ok) {
-      pending.resolve(message.result)
+    if (envelope.ok) {
+      pending.resolve(envelope.result)
       return
     }
 
-    pending.reject(fromRpcErrorPayload(message.error))
+    pending.reject(fromRpcErrorPayload(envelope.error))
   }
 
   private async handleEvent(name: string, payload: unknown): Promise<void> {
@@ -200,7 +226,7 @@ export class RpcMessageChannel {
   private async handleRequest(id: string, method: string, params: unknown): Promise<void> {
     const handler = this.requestHandlers.get(method)
     if (!handler) {
-      this.sendMessage({
+      this.sendEnvelope({
         kind: 'response',
         id,
         ok: false,
@@ -222,15 +248,16 @@ export class RpcMessageChannel {
         signal: controller.signal
       })
 
-      this.sendMessage({
+      this.sendEnvelope({
         kind: 'response',
         id,
         ok: true,
         // Void handler results map to the RpcNoPayload empty object.
-        result: result === undefined ? {} : result
-      } as RpcMessage)
+        result:
+          result === undefined ? {} : toRpcValue(result, `RPC response for "${method}" result`)
+      })
     } catch (error) {
-      this.sendMessage({
+      this.sendEnvelope({
         kind: 'response',
         id,
         ok: false,
@@ -257,27 +284,27 @@ function createRpcAbortError(method: string, phase: string): Error {
   })
 }
 
-function isRpcEnvelope(message: unknown): message is RpcMessage {
-  if (!isPlainRecord(message) || typeof message.kind !== 'string') {
+function isRpcEnvelope(envelope: unknown): envelope is RpcEnvelope {
+  if (!isPlainRecord(envelope) || typeof envelope.kind !== 'string') {
     return false
   }
 
-  if (message.kind === 'request') {
+  if (envelope.kind === 'request') {
     return (
-      typeof message.id === 'string' && typeof message.method === 'string' && 'params' in message
+      typeof envelope.id === 'string' && typeof envelope.method === 'string' && 'params' in envelope
     )
   }
 
-  if (message.kind === 'response') {
-    if (typeof message.id !== 'string' || typeof message.ok !== 'boolean') {
+  if (envelope.kind === 'response') {
+    if (typeof envelope.id !== 'string' || typeof envelope.ok !== 'boolean') {
       return false
     }
 
-    return message.ok ? 'result' in message : isPlainRecord(message.error)
+    return envelope.ok ? 'result' in envelope : isPlainRecord(envelope.error)
   }
 
-  if (message.kind === 'event') {
-    return typeof message.name === 'string' && 'payload' in message
+  if (envelope.kind === 'event') {
+    return typeof envelope.name === 'string' && 'payload' in envelope
   }
 
   return false
@@ -288,5 +315,5 @@ function isAbortPayload(payload: unknown): payload is { requestId: string } {
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

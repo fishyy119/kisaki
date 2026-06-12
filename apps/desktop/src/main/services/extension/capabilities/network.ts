@@ -4,8 +4,10 @@ import type {
   ExtensionRuntimeMetadata,
   NetworkDownloadRequest,
   NetworkDownloadResult,
+  NetworkMethod,
   NetworkRequest,
   NetworkResponse,
+  NetworkResponseType,
   RpcValue,
   JsonValue
 } from '@kisaki3/extension-api'
@@ -18,6 +20,10 @@ import {
 import type { NetworkService } from '@main/services/network'
 import type { FetchOptions } from '@shared/network'
 import { assertInsideAnyRoot, resolveInsideRoot } from '../shared/path-confinement'
+
+const NETWORK_METHODS: readonly NetworkMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+
+const NETWORK_RESPONSE_TYPES: readonly NetworkResponseType[] = ['json', 'text', 'arrayBuffer']
 
 export interface ExtensionNetworkCapabilityProviderOptions {
   network: NetworkService
@@ -36,13 +42,20 @@ export class ExtensionNetworkCapabilityProvider {
 
     try {
       const url = buildRequestUrl(input.url, input.query)
-      const headers = normalizeHeaders(input.headers) ?? {}
+      const method = readOptionalEnum(input.method, NETWORK_METHODS, 'network.request.method')
+      const responseType = readOptionalEnum(
+        input.responseType,
+        NETWORK_RESPONSE_TYPES,
+        'network.request.responseType'
+      )
+      const timeoutMs = readOptionalTimeout(input.timeoutMs, 'network.request.timeoutMs')
+      const headers = normalizeHeaders(input.headers, 'network.request.headers') ?? {}
       const body = normalizeRequestBody(input.body, headers)
       const response = await this.options.network.request.fetch(url, {
-        method: input.method,
+        method,
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         body,
-        timeout: input.timeoutMs,
+        timeout: timeoutMs,
         signal
       } as FetchOptions)
 
@@ -51,7 +64,7 @@ export class ExtensionNetworkCapabilityProvider {
         ok: response.ok,
         status: response.status,
         headers: Object.fromEntries(response.headers.entries()),
-        data: await readResponseBody(response, input.responseType)
+        data: await readResponseBody(response, responseType)
       }
     } catch (error) {
       throw normalizeCapabilityError(error, 'The network request failed.')
@@ -64,12 +77,18 @@ export class ExtensionNetworkCapabilityProvider {
     signal?: AbortSignal
   ): Promise<NetworkDownloadResult> {
     const metadata = this.requireRuntime(runtimeHandle)
+    if (typeof input.url !== 'string' || input.url.trim().length === 0) {
+      throw createValidationError('network.download.url must be a non-empty string.')
+    }
+
+    const headers = normalizeHeaders(input.headers, 'network.download.headers')
+    const timeoutMs = readOptionalTimeout(input.timeoutMs, 'network.download.timeoutMs')
     const destinationPath = resolveDownloadDestination(metadata, input)
 
     try {
       await this.options.network.download.toFile(input.url, destinationPath, {
-        headers: normalizeHeaders(input.headers),
-        timeout: input.timeoutMs,
+        headers,
+        timeout: timeoutMs,
         signal
       })
 
@@ -101,29 +120,86 @@ function buildRequestUrl(
     throw createValidationError('network.request.url must be a non-empty string.')
   }
 
+  if (query !== undefined && !isPlainRecord(query)) {
+    throw createValidationError('network.request.query must be an object.')
+  }
+
   const url = new URL(rawUrl)
   for (const [key, value] of Object.entries(query ?? {})) {
-    if (typeof value === 'number' && !Number.isFinite(value)) {
-      throw createValidationError('network.request.query number values must be finite.')
+    if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+      throw createValidationError(
+        `network.request.query.${key} must be a string, number, or boolean.`
+      )
     }
+
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      throw createValidationError(`network.request.query.${key} must be a finite number.`)
+    }
+
     url.searchParams.set(key, String(value))
   }
   return url.toString()
 }
 
-function normalizeHeaders(headers?: Record<string, string>): Record<string, string> | undefined {
-  if (!headers) {
+function normalizeHeaders(
+  headers: Record<string, string> | undefined,
+  label: string
+): Record<string, string> | undefined {
+  if (headers === undefined) {
     return undefined
+  }
+
+  if (!isPlainRecord(headers)) {
+    throw createValidationError(`${label} must be an object of string values.`)
   }
 
   const normalized: Record<string, string> = {}
   for (const [key, value] of Object.entries(headers)) {
-    if (typeof value === 'string') {
-      normalized[key] = value
+    if (typeof value !== 'string') {
+      throw createValidationError(`${label}.${key} must be a string.`)
     }
+
+    normalized[key] = value
   }
 
   return Object.keys(normalized).length > 0 ? normalized : undefined
+}
+
+function readOptionalEnum<T extends string>(
+  value: T | undefined,
+  allowed: readonly T[],
+  label: string
+): T | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'string' || !allowed.includes(value)) {
+    throw createValidationError(`${label} must be one of: ${allowed.join(', ')}.`)
+  }
+
+  return value
+}
+
+function readOptionalTimeout(value: number | undefined, label: string): number | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw createValidationError(`${label} must be a positive number of milliseconds.`)
+  }
+
+  return value
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }
 
 function normalizeRequestBody(
@@ -146,7 +222,8 @@ function normalizeRequestBody(
     headers['content-type'] = 'application/json'
   }
 
-  return JSON.stringify(toJsonValue(body, 'network.request.body'))
+  // The RPC channel already canonicalized the body into the JSON model.
+  return JSON.stringify(body)
 }
 
 async function readResponseBody(

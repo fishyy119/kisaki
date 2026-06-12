@@ -5,6 +5,7 @@ import fse from 'fs-extra'
 import { createLogger } from '@main/log'
 import {
   createUnavailableError,
+  createValidationError,
   toJsonObject,
   toJsonValue,
   type ExtensionRuntimeHandle,
@@ -14,6 +15,12 @@ import {
 import { resolveInsideRoot } from '../shared/path-confinement'
 
 const log = createLogger('Extension')
+
+/** Generous per-value cap that still keeps single writes IPC-friendly. */
+const STORAGE_VALUE_MAX_BYTES = 1024 * 1024
+
+/** Cap for the whole storage.json document, which is rewritten on every set. */
+const STORAGE_DOCUMENT_MAX_BYTES = 8 * 1024 * 1024
 
 export class ExtensionRuntimeStorage {
   private readonly mutexes = new Map<string, Mutex>()
@@ -46,9 +53,23 @@ export class ExtensionRuntimeStorage {
     signal?: AbortSignal
   ): Promise<void> {
     await this.withLock(runtimeHandle, signal, async (storagePath) => {
+      // Canonicalize at the disk boundary: the persisted document must stay
+      // pure JSON regardless of which main-side caller produced the value.
       const normalizedValue = toJsonValue(value, 'storage value')
+      if (measureCanonicalJsonBytes(normalizedValue) > STORAGE_VALUE_MAX_BYTES) {
+        throw createValidationError(
+          `Storage value for key "${key}" exceeds ${STORAGE_VALUE_MAX_BYTES} bytes.`
+        )
+      }
+
       const storage = await this.read(runtimeHandle)
       storage[key] = normalizedValue
+      if (measureCanonicalJsonBytes(storage) > STORAGE_DOCUMENT_MAX_BYTES) {
+        throw createValidationError(
+          `Extension storage document exceeds ${STORAGE_DOCUMENT_MAX_BYTES} bytes.`
+        )
+      }
+
       await this.write(runtimeHandle, storagePath, storage, signal)
     })
   }
@@ -174,4 +195,9 @@ export class ExtensionRuntimeStorage {
       )
     }
   }
+}
+
+/** Measures an already-canonical JSON value without re-normalizing it. */
+function measureCanonicalJsonBytes(value: JsonValue): number {
+  return Buffer.byteLength(JSON.stringify(value), 'utf8')
 }

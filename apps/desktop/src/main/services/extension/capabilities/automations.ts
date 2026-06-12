@@ -1,11 +1,11 @@
 import {
   createUnavailableError,
-  toJsonObject,
   type Automation,
   type AutomationCreateInput,
   type AutomationRunHistoryRecord,
   type AutomationUpdateInput,
-  type ExtensionRuntimeMetadata
+  type ExtensionRuntimeMetadata,
+  type JsonObject
 } from '@kisaki3/extension-api'
 import type { AutomationService } from '@main/services/automation'
 import type { CommandService } from '@main/services/command'
@@ -153,7 +153,8 @@ function toPublicAutomation(automation: AppAutomation): Automation {
     id: automation.id,
     name: automation.name,
     commandId: automation.commandId,
-    args: toJsonObject(automation.args, 'automation args'),
+    // The RPC channel normalizes responses into the JSON model.
+    args: automation.args as JsonObject,
     enabled: automation.enabled,
     triggers: automation.triggers,
     failurePolicy: automation.failurePolicy,

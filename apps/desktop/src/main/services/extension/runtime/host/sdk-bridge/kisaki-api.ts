@@ -1,23 +1,10 @@
-import {
-  TaskRunCancellation,
-  createValidationError,
-  readErrorCode,
-  toJsonValue,
-  validateWebviewOpenOptionsShape
-} from '@kisaki3/extension-api'
+import { TaskRunCancellation, readErrorCode } from '@kisaki3/extension-api'
 import type {
-  AutomationCreateInput,
-  AutomationUpdateInput,
-  CommandInvocationRequest,
   Disposable,
   ExtensionEventListener,
   ExtensionEventPayload,
   ExtensionEventTopic,
-  TaskRunActiveListQuery,
-  TaskRunCreateInput,
   TaskRunHandle,
-  TaskRunHistoryListQuery,
-  TaskRunProgressUpdate,
   TaskRunSnapshot,
   HostEventListener,
   HostEventTopic,
@@ -39,8 +26,6 @@ import type {
   WebviewOpenOptions
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope, WebviewSessionBinding } from './types'
-import { toNetworkDownloadRequest, toNetworkRequest } from './utils/network'
-import { toJsonRecord, toOptionalJsonRecord } from './utils/json'
 import { toTaskRunFailureErrorPayload } from './utils/task-runs'
 
 const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
@@ -119,6 +104,10 @@ export interface KisakiApiBridgeHooks {
  * Creates a public Kisaki SDK API facade. When boundScope is provided, all
  * capability calls stay tied to that extension even after the original
  * activation stack has unwound.
+ * @remarks The facade passes payloads through untouched: the RPC channel
+ * normalizes every outgoing value into the wire domain (rejecting non-JSON
+ * input synchronously at the call site), and the main-process capability
+ * providers are the authoritative validators of payload shapes and limits.
  */
 export function createKisakiApi(
   hooks: KisakiApiBridgeHooks,
@@ -173,29 +162,14 @@ export function createKisakiApi(
 
   const openWebview = async (options: WebviewOpenOptions): Promise<WebviewHandle> => {
     const scope = requireScope()
-    const issues = validateWebviewOpenOptionsShape(options)
-    if (issues.length > 0) {
-      throw createValidationError(
-        `Webview open options are invalid:\n${issues
-          .map((issue) => `${issue.path}: ${issue.message}`)
-          .join('\n')}`,
-        { issues: issues.map((issue) => ({ path: issue.path, message: issue.message })) }
-      )
-    }
-
-    const { webviewId } = await requestMain('capabilities.webviews.open', {
-      options: toJsonRecord<WebviewOpenOptions>(options, 'webview open options')
-    })
+    const { webviewId } = await requestMain('capabilities.webviews.open', { options })
     const binding = hooks.registerWebviewSession(scope, webviewId)
 
     return {
       id: webviewId,
       signal: binding.signal,
       postMessage: async (message) => {
-        await requestMain('capabilities.webviews.postMessage', {
-          webviewId,
-          message: toJsonValue(message, 'webview message')
-        })
+        await requestMain('capabilities.webviews.postMessage', { webviewId, message })
       },
       onMessage: (listener) => binding.onMessage(listener),
       onClose: (listener) => binding.onClose(listener),
@@ -240,10 +214,7 @@ export function createKisakiApi(
       report: async (update) => {
         throwIfCancelled()
         try {
-          await requestMain('capabilities.taskRuns.report', {
-            runId: run.id,
-            update: toJsonRecord<TaskRunProgressUpdate>(update, 'task run progress update')
-          })
+          await requestMain('capabilities.taskRuns.report', { runId: run.id, update })
         } catch (error) {
           mapTaskRunError(error)
         }
@@ -258,25 +229,19 @@ export function createKisakiApi(
         throwIfCancelled()
       },
       complete: async (result) => {
-        await requestMain('capabilities.taskRuns.complete', {
-          runId: run.id,
-          result: toOptionalJsonRecord(result, 'task run result')
-        })
+        await requestMain('capabilities.taskRuns.complete', { runId: run.id, result })
         dispose()
       },
       fail: async (error, result) => {
         await requestMain('capabilities.taskRuns.fail', {
           runId: run.id,
           error: toTaskRunFailureErrorPayload(error),
-          result: toOptionalJsonRecord(result, 'task run result')
+          result
         })
         dispose()
       },
       cancel: async (result) => {
-        await requestMain('capabilities.taskRuns.cancel', {
-          runId: run.id,
-          result: toOptionalJsonRecord(result, 'task run result')
-        })
+        await requestMain('capabilities.taskRuns.cancel', { runId: run.id, result })
         controller.abort()
         dispose()
       }
@@ -401,17 +366,10 @@ export function createKisakiApi(
     },
     network: {
       request: async <TData = unknown>(input: NetworkRequest): Promise<NetworkResponse<TData>> =>
-        (
-          await requestMain('capabilities.network.request', {
-            input: toNetworkRequest(input)
-          })
-        ).response as NetworkResponse<TData>,
+        (await requestMain('capabilities.network.request', { input }))
+          .response as NetworkResponse<TData>,
       download: async (input: NetworkDownloadRequest) =>
-        (
-          await requestMain('capabilities.network.download', {
-            input: toNetworkDownloadRequest(input)
-          })
-        ).result
+        (await requestMain('capabilities.network.download', { input })).result
     },
     notify: {
       success: async (title, options) =>
@@ -534,11 +492,7 @@ export function createKisakiApi(
           })
         ).command,
       invoke: async (request) =>
-        (
-          await requestMain('capabilities.commands.invoke', {
-            request: toJsonRecord<CommandInvocationRequest>(request, 'command invocation request')
-          })
-        ).result
+        (await requestMain('capabilities.commands.invoke', { request })).result
     },
     automations: {
       list: async () => (await requestMain('capabilities.automations.list', {})).items,
@@ -549,18 +503,9 @@ export function createKisakiApi(
           })
         ).automation,
       create: async (input) =>
-        (
-          await requestMain('capabilities.automations.create', {
-            input: toJsonRecord<AutomationCreateInput>(input, 'automation create input')
-          })
-        ).automation,
+        (await requestMain('capabilities.automations.create', { input })).automation,
       update: async (automationId, patch) =>
-        (
-          await requestMain('capabilities.automations.update', {
-            automationId,
-            patch: toJsonRecord<AutomationUpdateInput>(patch, 'automation update input')
-          })
-        ).automation,
+        (await requestMain('capabilities.automations.update', { automationId, patch })).automation,
       setEnabled: async (automationId, enabled) =>
         (
           await requestMain('capabilities.automations.setEnabled', {
@@ -580,25 +525,11 @@ export function createKisakiApi(
     },
     taskRuns: {
       create: async (input) =>
-        createTaskRunHandle(
-          (
-            await requestMain('capabilities.taskRuns.create', {
-              input: toJsonRecord<TaskRunCreateInput>(input, 'task run create input')
-            })
-          ).run
-        ),
+        createTaskRunHandle((await requestMain('capabilities.taskRuns.create', { input })).run),
       listActiveOwn: async (query) =>
-        (
-          await requestMain('capabilities.taskRuns.listActiveOwn', {
-            query: toOptionalJsonRecord<TaskRunActiveListQuery>(query, 'task run active query')
-          })
-        ).items,
+        (await requestMain('capabilities.taskRuns.listActiveOwn', { query })).items,
       listHistoryOwn: async (query) =>
-        (
-          await requestMain('capabilities.taskRuns.listHistoryOwn', {
-            query: toOptionalJsonRecord<TaskRunHistoryListQuery>(query, 'task run history query')
-          })
-        ).items,
+        (await requestMain('capabilities.taskRuns.listHistoryOwn', { query })).items,
       getActiveOwn: async (runId) =>
         (
           await requestMain('capabilities.taskRuns.getActiveOwn', {

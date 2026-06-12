@@ -1,11 +1,16 @@
 import {
+  GAME_UPDATE_SURFACES,
+  LOCALES,
   createUnavailableError,
+  createValidationError,
   type ExtensionRuntimeMetadata,
+  type GameUpdateSurface,
   type IngestAddGameFromScraperOptions,
   type IngestAddGameFromScraperResult,
   type IngestGameUpdateFromScraperInput,
   type IngestGameUpdateFromScraperOptions,
   type IngestUpdateResult,
+  type Locale,
   type ScraperLookup
 } from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
@@ -33,6 +38,7 @@ export class ExtensionIngestCapabilityProvider {
     signal?: AbortSignal
   ): Promise<IngestAddGameFromScraperResult> {
     const metadata = this.requireRuntime(runtimeHandle)
+    readNonEmptyString(profileId, 'ingest profileId')
     const appOptions = toAppAddGameFromScraperOptions(options)
     const result =
       options?.taskRun === false
@@ -58,6 +64,7 @@ export class ExtensionIngestCapabilityProvider {
     signal?: AbortSignal
   ): Promise<IngestUpdateResult> {
     const metadata = this.requireRuntime(runtimeHandle)
+    validateUpdateOptions(options)
     const request = toAppGameUpdateRequest(input)
     const result =
       options?.taskRun === false
@@ -87,13 +94,43 @@ export class ExtensionIngestCapabilityProvider {
 function toAppAddGameFromScraperOptions(
   options: IngestAddGameFromScraperOptions | undefined
 ): AppIngestAddGameFromScraperOptions {
-  if (!options) {
+  if (options === undefined) {
     return {}
   }
 
-  const { taskRun: _taskRun, ...appOptions } = options
-  return appOptions
+  if (!isPlainRecord(options)) {
+    throw createValidationError('ingest add options must be an object.')
+  }
+
+  for (const key of Object.keys(options)) {
+    if (!ADD_GAME_OPTION_KEYS.has(key)) {
+      throw createValidationError(`ingest add options contain an unknown field "${key}".`)
+    }
+  }
+
+  if (options.taskRun !== undefined && typeof options.taskRun !== 'boolean') {
+    throw createValidationError('ingest add options.taskRun must be a boolean.')
+  }
+
+  return {
+    gameDirPath: readOptionalNonEmptyString(options.gameDirPath, 'ingest add options.gameDirPath'),
+    gameFilePath: readOptionalNonEmptyString(
+      options.gameFilePath,
+      'ingest add options.gameFilePath'
+    ),
+    targetCollectionId: readOptionalNonEmptyString(
+      options.targetCollectionId,
+      'ingest add options.targetCollectionId'
+    )
+  }
 }
+
+const ADD_GAME_OPTION_KEYS = new Set<string>([
+  'gameDirPath',
+  'gameFilePath',
+  'targetCollectionId',
+  'taskRun'
+])
 
 function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): TaskRunInitiator {
   return {
@@ -106,35 +143,145 @@ function createExtensionTaskRunInitiator(metadata: ExtensionRuntimeMetadata): Ta
 }
 
 function toAppScraperLookup(lookup: ScraperLookup): AppScraperLookup {
+  if (!isPlainRecord(lookup)) {
+    throw createValidationError('ingest lookup must be an object.')
+  }
+
   return {
-    name: lookup.name,
-    locale: lookup.locale,
-    knownIds: lookup.knownIds?.map((knownId) => ({
-      source: knownId.source,
-      id: knownId.id
-    }))
+    name: readNonEmptyString(lookup.name, 'ingest lookup.name'),
+    locale: readOptionalLocale(lookup.locale),
+    knownIds: lookup.knownIds === undefined ? undefined : readKnownIds(lookup.knownIds)
   }
 }
 
+function readOptionalLocale(value: unknown): Locale | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'string' || !(LOCALES as readonly string[]).includes(value)) {
+    throw createValidationError(`ingest lookup.locale must be one of: ${LOCALES.join(', ')}.`)
+  }
+
+  return value as Locale
+}
+
 function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUpdateRequest {
+  if (!isPlainRecord(input) || !isPlainRecord(input.lookup)) {
+    throw createValidationError('ingest update input must be an object with a lookup.')
+  }
+
+  if (!isPlainRecord(input.selection) || !isPlainRecord(input.policy)) {
+    throw createValidationError('ingest update input must declare a selection and a policy.')
+  }
+
   return {
-    rootId: input.rootId,
-    profileId: input.profileId,
+    rootId: readNonEmptyString(input.rootId, 'ingest update input.rootId'),
+    profileId: readNonEmptyString(input.profileId, 'ingest update input.profileId'),
     lookup: {
-      name: input.lookup.name,
-      knownIds: input.lookup.knownIds.map((knownId) => ({
-        source: knownId.source,
-        id: knownId.id
-      }))
+      name: readNonEmptyString(input.lookup.name, 'ingest update lookup.name'),
+      knownIds: readKnownIds(input.lookup.knownIds)
     },
     selection: {
-      surfaces: [...input.selection.surfaces]
+      surfaces: readUpdateSurfaces(input.selection.surfaces)
     },
     policy: {
-      singularUpdate: input.policy.singularUpdate,
-      collectionUpdate: input.policy.collectionUpdate
+      singularUpdate: readEnum(
+        input.policy.singularUpdate,
+        ['ifMissing', 'overwrite'],
+        'ingest update policy.singularUpdate'
+      ),
+      collectionUpdate: readEnum(
+        input.policy.collectionUpdate,
+        ['merge', 'replace'],
+        'ingest update policy.collectionUpdate'
+      )
     }
   }
+}
+
+const GAME_UPDATE_SURFACE_KEYS = new Set<string>(GAME_UPDATE_SURFACES.map((surface) => surface.key))
+
+function readKnownIds(value: unknown): { source: string; id: string }[] {
+  if (!Array.isArray(value)) {
+    throw createValidationError('ingest lookup.knownIds must be an array.')
+  }
+
+  return value.map((knownId, index) => {
+    if (!isPlainRecord(knownId)) {
+      throw createValidationError(`ingest lookup.knownIds[${index}] must be an object.`)
+    }
+
+    return {
+      source: readNonEmptyString(knownId.source, `ingest lookup.knownIds[${index}].source`),
+      id: readNonEmptyString(knownId.id, `ingest lookup.knownIds[${index}].id`)
+    }
+  })
+}
+
+function readUpdateSurfaces(value: unknown): GameUpdateSurface[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw createValidationError('ingest update selection.surfaces must be a non-empty array.')
+  }
+
+  return value.map((surface, index) => {
+    if (typeof surface !== 'string' || !GAME_UPDATE_SURFACE_KEYS.has(surface)) {
+      throw createValidationError(
+        `ingest update selection.surfaces[${index}] must be a known update surface.`
+      )
+    }
+
+    return surface as GameUpdateSurface
+  })
+}
+
+function validateUpdateOptions(options: IngestGameUpdateFromScraperOptions | undefined): void {
+  if (options === undefined) {
+    return
+  }
+
+  if (!isPlainRecord(options)) {
+    throw createValidationError('ingest update options must be an object.')
+  }
+
+  for (const key of Object.keys(options)) {
+    if (key !== 'taskRun') {
+      throw createValidationError(`ingest update options contain an unknown field "${key}".`)
+    }
+  }
+
+  if (options.taskRun !== undefined && typeof options.taskRun !== 'boolean') {
+    throw createValidationError('ingest update options.taskRun must be a boolean.')
+  }
+}
+
+function readEnum<T extends string>(value: unknown, allowed: readonly T[], label: string): T {
+  if (typeof value !== 'string' || !allowed.includes(value as T)) {
+    throw createValidationError(`${label} must be one of: ${allowed.join(', ')}.`)
+  }
+
+  return value as T
+}
+
+function readNonEmptyString(value: unknown, label: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw createValidationError(`${label} must be a non-empty string.`)
+  }
+
+  return value
+}
+
+function readOptionalNonEmptyString(value: unknown, label: string): string | undefined {
+  return value === undefined ? undefined : readNonEmptyString(value, label)
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }
 
 function toPublicIngestAddGameFromScraperResult(

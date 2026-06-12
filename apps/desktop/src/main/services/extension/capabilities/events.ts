@@ -1,9 +1,5 @@
 import type { HostEventTopic, HostEvents, JsonValue } from '@kisaki3/extension-api'
-import {
-  createValidationError,
-  normalizeCapabilityError,
-  toJsonValue
-} from '@kisaki3/extension-api'
+import { createValidationError, normalizeCapabilityError } from '@kisaki3/extension-api'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
 import type { AppEvents } from '@shared/events'
@@ -107,7 +103,7 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('app.settings.changed', ({ setting, value }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             key: setting,
-            value: toOptionalJsonValue(value)
+            value: value as JsonValue | undefined
           })
         })
       case 'app.theme.changed':
@@ -131,11 +127,11 @@ export class ExtensionEventsCapabilityProvider {
         })
       case 'game.started':
         return this.options.event.bus.on('game.started', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       case 'game.stopped':
         return this.options.event.bus.on('game.stopped', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       case 'person.created':
         return this.options.event.bus.on('person.created', (event) => {
@@ -161,7 +157,7 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('character.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             characterId: event.characterId,
-            changes: cloneHostValue(event.changes),
+            changes: event.changes,
             occurredAt: event.occurredAt
           })
         })
@@ -184,7 +180,7 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('company.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             companyId: event.companyId,
-            changes: cloneHostValue(event.changes),
+            changes: event.changes,
             occurredAt: event.occurredAt
           })
         })
@@ -207,7 +203,7 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('collection.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             collectionId: event.collectionId,
-            changes: cloneHostValue(event.changes) as HostEvents['collection.updated']['changes'],
+            changes: event.changes as HostEvents['collection.updated']['changes'],
             occurredAt: event.occurredAt
           })
         })
@@ -230,7 +226,7 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('tag.updated', (event) => {
           this.emitSubscriptionEvent(subscriptionId, topic, {
             tagId: event.tagId,
-            changes: cloneHostValue(event.changes),
+            changes: event.changes,
             occurredAt: event.occurredAt
           })
         })
@@ -243,29 +239,34 @@ export class ExtensionEventsCapabilityProvider {
         })
       case 'scanner.created':
         return this.options.event.bus.on('scanner.created', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       case 'scanner.updated':
         return this.options.event.bus.on('scanner.updated', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       case 'scanner.deleted':
         return this.options.event.bus.on('scanner.deleted', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       case 'scanner.started':
         return this.options.event.bus.on('scanner.started', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       case 'scanner.finished':
         return this.options.event.bus.on('scanner.finished', (event) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, cloneHostValue(event))
+          this.emitSubscriptionEvent(subscriptionId, topic, event)
         })
       default:
         throw createValidationError(`Unsupported host event topic "${topic}".`)
     }
   }
 
+  /**
+   * Relays an app event to the host subscription. The RPC channel deep-copies
+   * and normalizes the payload per send, isolating host subscribers from the
+   * shared app event object.
+   */
   private emitSubscriptionEvent<K extends HostEventTopic>(
     subscriptionId: string,
     topic: K,
@@ -283,10 +284,6 @@ export class ExtensionEventsCapabilityProvider {
   }
 }
 
-function toOptionalJsonValue(value: unknown): JsonValue | undefined {
-  return value === undefined ? undefined : toJsonValue(value, 'host event value')
-}
-
 function toHostGameCreatedEvent(event: AppEvents['game.created'][0]): HostEvents['game.created'] {
   return {
     gameId: event.gameId,
@@ -298,7 +295,7 @@ function toHostGameCreatedEvent(event: AppEvents['game.created'][0]): HostEvents
 function toHostGameUpdatedEvent(event: AppEvents['game.updated'][0]): HostEvents['game.updated'] {
   return {
     gameId: event.gameId,
-    changes: cloneHostValue(event.changes),
+    changes: event.changes,
     occurredAt: event.occurredAt
   }
 }
@@ -325,7 +322,7 @@ function toHostPersonUpdatedEvent(
 ): HostEvents['person.updated'] {
   return {
     personId: event.personId,
-    changes: cloneHostValue(event.changes),
+    changes: event.changes,
     occurredAt: event.occurredAt
   }
 }
@@ -337,8 +334,4 @@ function toHostPersonDeletedEvent(
     personId: event.personId,
     occurredAt: event.occurredAt
   }
-}
-
-function cloneHostValue<T>(value: T): T {
-  return toJsonValue(value, 'host event payload') as T
 }

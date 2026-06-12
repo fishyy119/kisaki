@@ -3,7 +3,6 @@ import {
   type DeeplinkRouteRegistration,
   type DeeplinkRouteHandleRequest,
   type DeeplinkRouteHandleResponse,
-  toJsonValue,
   validateDeeplinkRouteContributionShape,
   validateDeeplinkRouteHandleEvent,
   validateDeeplinkRouteHandleResult
@@ -113,20 +112,19 @@ export class HostDeeplinkRouteContributionPoint {
       throwValidationIssues('Deeplink route handle event', requestIssues)
     }
 
-    const response = toJsonValue(
-      await this.options.runInExtensionContext(
-        runtime,
-        () => contribution.handle(request.event),
-        signal
-      ),
-      'deeplink route handle result'
-    ) as unknown as DeeplinkRouteHandleResponse
-    const responseIssues = validateDeeplinkRouteHandleResult(response)
+    const result = await this.options.runInExtensionContext(
+      runtime,
+      () => contribution.handle(request.event),
+      signal
+    )
+    const responseIssues = validateDeeplinkRouteHandleResult(result)
     if (responseIssues.length > 0) {
       throwValidationIssues('Deeplink route handle result', responseIssues)
     }
 
-    return response
+    // The RPC channel normalizes the shape-validated result into the JSON
+    // model on response.
+    return result as DeeplinkRouteHandleResponse
   }
 
   releaseRuntime(runtimeHandle: string): void {

@@ -1,13 +1,12 @@
 import {
   createUnavailableError,
-  toJsonObject,
-  toJsonValue,
   type CommandDescriptor,
   type CommandInvocationRequest,
   type CommandInvocationResult,
   type CommandListItem,
   type ExtensionRuntimeMetadata,
-  type JsonObject
+  type JsonObject,
+  type JsonValue
 } from '@kisaki3/extension-api'
 import type { CommandService } from '@main/services/command'
 import type {
@@ -97,17 +96,20 @@ function toPublicCommandDescriptor(command: AppCommandDescriptor): CommandDescri
   }
 }
 
+// The RPC channel normalizes responses into the JSON model, so the public
+// mappers only narrow types instead of copying values.
+
 function toPublicCommandInvocationResult(
   result: AppCommandInvocationResult
 ): CommandInvocationResult {
   return {
     commandId: result.commandId,
-    output: result.output === undefined ? undefined : toJsonValue(result.output, 'command output')
+    output: result.output as JsonValue | undefined
   }
 }
 
 function toOptionalPublicJsonObject(
   value: Record<string, unknown> | undefined
 ): JsonObject | undefined {
-  return value === undefined ? undefined : toJsonObject(value, 'command record')
+  return value as JsonObject | undefined
 }
