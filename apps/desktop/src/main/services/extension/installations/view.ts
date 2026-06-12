@@ -18,6 +18,7 @@ interface ScannedPackageLocation {
   packagePath: string
   manifestPath: string
   developmentReloadPath: string | null
+  uiDevServerOrigin: string | null
   issues: readonly ValidationIssue[]
 }
 
@@ -106,7 +107,7 @@ export class ExtensionInstallationView {
       const directoryName = entry.name
       const packageRoot = resolveInsideRoot(rootDir, directoryName)
       const location = await resolveScannedPackageLocation(packageRoot, directoryName, builtin)
-      const { packagePath, manifestPath, developmentReloadPath } = location
+      const { packagePath, manifestPath, developmentReloadPath, uiDevServerOrigin } = location
 
       if (!(await fse.pathExists(manifestPath))) {
         packages.push({
@@ -116,6 +117,7 @@ export class ExtensionInstallationView {
           packagePath,
           manifestPath,
           developmentReloadPath,
+          uiDevServerOrigin,
           manifest: null,
           issues: [
             ...location.issues,
@@ -147,6 +149,7 @@ export class ExtensionInstallationView {
           packagePath,
           manifestPath,
           developmentReloadPath,
+          uiDevServerOrigin,
           manifest: parsed.manifest,
           issues
         })
@@ -159,6 +162,7 @@ export class ExtensionInstallationView {
           packagePath,
           manifestPath,
           developmentReloadPath,
+          uiDevServerOrigin,
           manifest: null,
           issues: [...location.issues, { path: '$', message: 'manifest.json could not be read.' }]
         })
@@ -179,6 +183,7 @@ async function resolveScannedPackageLocation(
       packagePath: packageRoot,
       manifestPath: resolveInsideRoot(packageRoot, 'manifest.json'),
       developmentReloadPath: null,
+      uiDevServerOrigin: null,
       issues: []
     }
   }
@@ -190,6 +195,7 @@ async function resolveScannedPackageLocation(
         packagePath: packageRoot,
         manifestPath: resolveInsideRoot(packageRoot, 'manifest.json'),
         developmentReloadPath: packageRoot,
+        uiDevServerOrigin: null,
         issues: [{ path: 'current.json', message: 'Built-in package output is not published.' }]
       }
     }
@@ -198,6 +204,7 @@ async function resolveScannedPackageLocation(
       packagePath: publication.packagePath,
       manifestPath: publication.manifestPath,
       developmentReloadPath: publication.publicationPath,
+      uiDevServerOrigin: publication.uiDevServerOrigin,
       issues: []
     }
   } catch (error) {
@@ -205,6 +212,7 @@ async function resolveScannedPackageLocation(
       packagePath: packageRoot,
       manifestPath: resolveInsideRoot(packageRoot, 'manifest.json'),
       developmentReloadPath: packageRoot,
+      uiDevServerOrigin: null,
       issues: [{ path: 'current.json', message: toIssueMessage(error) }]
     }
   }
@@ -220,6 +228,7 @@ function buildInstalledEntry(
   const packagePath = pkg?.packagePath ?? layout.packageDir(extensionId)
   const manifestPath = pkg?.manifestPath ?? layout.packageManifestPath(extensionId)
   const developmentReloadPath = pkg?.developmentReloadPath ?? null
+  const uiDevServerOrigin = pkg?.uiDevServerOrigin ?? null
   const dataPath = layout.dataPath(extensionId)
   const tempPath = layout.runtimeTempPath(extensionId)
 
@@ -243,6 +252,7 @@ function buildInstalledEntry(
       packagePath,
       manifestPath,
       developmentReloadPath,
+      uiDevServerOrigin,
       dataPath,
       tempPath
     }
@@ -286,6 +296,7 @@ function buildInstalledEntry(
     packagePath,
     manifestPath,
     developmentReloadPath,
+    uiDevServerOrigin,
     dataPath,
     tempPath
   }

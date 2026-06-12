@@ -1,5 +1,5 @@
 import { CliError, logger } from '../logger'
-import { generateSigningKeyFile } from '../signing'
+import { generateSigningKeyFile } from '../packaging'
 
 export interface KeyGenerateCommandOptions {
   out?: string

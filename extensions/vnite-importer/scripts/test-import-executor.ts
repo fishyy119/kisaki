@@ -10,11 +10,11 @@ import type {
   LibraryGraphResult,
   LibraryGraphResultAction
 } from '@kisaki3/extension-api'
-import { VniteImportExecutor } from '../src/import'
-import type { VniteBackupGame, VniteBackupSnapshot } from '../src/backup/types'
-import { omitUndefined } from '../src/shared/object'
-import { classifyVniteAttachment } from '../src/vnite/attachments'
-import { createDefaultVniteGameDoc } from '../src/vnite/defaults'
+import { VniteImportExecutor } from '../src/host/import'
+import type { VniteBackupGame, VniteBackupSnapshot } from '../src/host/backup/types'
+import { omitUndefined } from '../src/host/utils/object'
+import { classifyVniteAttachment } from '../src/host/vnite/attachments'
+import { createDefaultVniteGameDoc } from '../src/host/vnite/defaults'
 
 async function main(): Promise<void> {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'kisaki-vnite-import-executor-'))

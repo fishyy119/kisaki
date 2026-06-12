@@ -8,17 +8,24 @@
     "dev": "kisx dev",
     "validate": "kisx validate",
     "pack": "kisx pack",
+    "lint": "eslint .",
+    "format": "prettier --write .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@kisaki3/extension-sdk": "^__TOOLING_VERSION__"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@kisaki3/extension-api": "^__TOOLING_VERSION__",
     "@kisaki3/extension-cli": "^__TOOLING_VERSION__",
     "@types/node": "^22.19.1",
-    "tsdown": "^0.19.0",
-    "typescript": "^5.9.3"
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "jiti": "^2.6.1",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.49.0"
   },
   "keywords": [
     "kisaki",

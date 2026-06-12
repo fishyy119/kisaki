@@ -1,4 +1,5 @@
 import type { CommandInvocationSource } from '../capabilities/commands'
+import type { CardActionContribution } from '../contributions/card-actions'
 import type {
   CommandContribution,
   CommandContributionExecuteResult
@@ -13,17 +14,6 @@ import type {
   EntityMenuRefreshReason,
   EntityMenuScope
 } from '../contributions/entity-menus'
-import type {
-  SettingsPanelDialogButtonResult,
-  SettingsPanelDialogChangeResult,
-  SettingsPanelDialogSize,
-  SettingsPanelDialogSubmitResult,
-  SettingsPanelPopoverActionResult,
-  SettingsPanelRefreshReason,
-  SettingsPanelRootButtonResult,
-  SettingsPanelRootChangeResult,
-  SettingsPanelRootSubmitResult
-} from '../contributions/settings-panels'
 import type {
   CharacterScraperSlot,
   CharacterSessionResultMap,
@@ -44,7 +34,7 @@ import type {
   ScraperSessionResult
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
-import type { Locale, JsonObject, JsonValue, UiCallbackResult } from '../shared'
+import type { Locale, JsonObject, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
@@ -65,13 +55,7 @@ export interface EntityMenuScopedRpcParams extends ExtensionScopedRpcParams {
   scope: EntityMenuRegistrationInfo['scope']
 }
 
-export interface SettingsPanelRegistrationInfo {
-  id: string
-  title: string
-  description?: string
-  size?: SettingsPanelDialogSize
-  order?: number
-}
+export type CardActionRegistrationInfo = Omit<CardActionContribution, 'run'>
 
 export interface DeeplinkRouteRegistrationInfo {
   id: string
@@ -139,176 +123,6 @@ export interface EntityMenuReleaseRequest {
 
 export type EntityMenuRefreshRequestedNotification = EntityMenuScopedRpcParams & {
   reason?: EntityMenuRefreshReason
-}
-
-export type SettingsPanelRpcSurface = 'root' | 'dialog' | 'popover'
-export type SettingsPanelRpcScope = SettingsPanelRpcSurface | 'all'
-
-export interface SettingsPanelDraftSnapshot {
-  values: JsonObject
-  dirtyNodeIds: readonly string[]
-}
-
-export type SettingsPanelParentRef = { surface: 'root' } | { surface: 'dialog'; dialogId: string }
-
-export interface SettingsPanelSessionRef extends ContributionScopedRpcParams {
-  sessionId: string
-}
-
-export type SettingsPanelOpenRequest =
-  | (ContributionScopedRpcParams & {
-      surface: 'root'
-      sessionId: string
-      reason?: SettingsPanelRefreshReason
-    })
-  | (SettingsPanelSessionRef & {
-      surface: 'dialog'
-      dialogId: string
-      params?: JsonObject
-      parentDraft: SettingsPanelDraftSnapshot
-      revision: number
-    })
-  | (SettingsPanelSessionRef & {
-      surface: 'popover'
-      popoverId: string
-      parent: SettingsPanelParentRef
-      params?: JsonObject
-      parentDraft: SettingsPanelDraftSnapshot
-      anchorNodeKey: string
-      revision: number
-    })
-
-export type SettingsPanelRefreshRequest =
-  | (SettingsPanelSessionRef & {
-      surface: 'root'
-      draft: SettingsPanelDraftSnapshot
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-  | (SettingsPanelSessionRef & {
-      surface: 'dialog'
-      dialogId: string
-      draft: SettingsPanelDraftSnapshot
-      parentDraft: SettingsPanelDraftSnapshot
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-  | (SettingsPanelSessionRef & {
-      surface: 'popover'
-      popoverId: string
-      parent: SettingsPanelParentRef
-      draft: SettingsPanelDraftSnapshot
-      parentDraft: SettingsPanelDraftSnapshot
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-  | (SettingsPanelSessionRef & {
-      surface: 'all'
-      rootDraft: SettingsPanelDraftSnapshot
-      activeDialog?: {
-        dialogId: string
-        draft: SettingsPanelDraftSnapshot
-      }
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-
-export type SettingsPanelSubmitRequest =
-  | (SettingsPanelSessionRef & {
-      surface: 'root'
-      draft: SettingsPanelDraftSnapshot
-      revision: number
-    })
-  | (SettingsPanelSessionRef & {
-      surface: 'dialog'
-      dialogId: string
-      draft: SettingsPanelDraftSnapshot
-      parentDraft: SettingsPanelDraftSnapshot
-      revision: number
-    })
-
-export interface SettingsPanelInvokeBase extends SettingsPanelSessionRef {
-  callbackId: string
-  fieldId: string
-  nodeId: string
-  value?: JsonValue
-  requestId: string
-  revision: number
-}
-
-export type SettingsPanelInvokeRequest =
-  | (SettingsPanelInvokeBase & {
-      surface: 'root'
-      draft: SettingsPanelDraftSnapshot
-    })
-  | (SettingsPanelInvokeBase & {
-      surface: 'dialog'
-      dialogId: string
-      draft: SettingsPanelDraftSnapshot
-      parentDraft: SettingsPanelDraftSnapshot
-    })
-  | (SettingsPanelInvokeBase & {
-      surface: 'popover'
-      popoverId: string
-      parent: SettingsPanelParentRef
-      draft: SettingsPanelDraftSnapshot
-      parentDraft: SettingsPanelDraftSnapshot
-    })
-
-export type SettingsPanelReleaseRequest =
-  | (SettingsPanelSessionRef & { surface: 'root' | 'all' })
-  | (SettingsPanelSessionRef & { surface: 'dialog'; dialogId: string })
-  | (SettingsPanelSessionRef & {
-      surface: 'popover'
-      popoverId: string
-      parent: SettingsPanelParentRef
-    })
-
-export type SettingsPanelResolvedSurfacePayload = JsonObject
-
-export type SettingsPanelOpenResponse =
-  | {
-      surface: 'root'
-      sessionId: string
-      view: SettingsPanelResolvedSurfacePayload
-    }
-  | {
-      surface: 'dialog'
-      dialog: SettingsPanelResolvedSurfacePayload
-    }
-  | {
-      surface: 'popover'
-      popover: SettingsPanelResolvedSurfacePayload
-    }
-
-export type SettingsPanelRefreshResponse =
-  | SettingsPanelOpenResponse
-  | {
-      surface: 'all'
-      sessionId: string
-      view: SettingsPanelResolvedSurfacePayload
-      activeDialog?: {
-        dialogId: string
-        dialog: SettingsPanelResolvedSurfacePayload
-      }
-    }
-
-export type SettingsPanelCallbackResult =
-  | SettingsPanelRootChangeResult
-  | SettingsPanelDialogChangeResult
-  | SettingsPanelPopoverActionResult
-  | SettingsPanelRootButtonResult
-  | SettingsPanelDialogButtonResult
-  | SettingsPanelRootSubmitResult
-  | SettingsPanelDialogSubmitResult
-
-export interface SettingsPanelCallbackResponse {
-  result: SettingsPanelCallbackResult
-}
-
-export interface SettingsPanelRefreshRequestedNotification extends ExtensionScopedRpcParams {
-  contributionId: string
-  reason?: SettingsPanelRefreshReason
 }
 
 export interface DeeplinkRouteHandleRequest extends ContributionScopedRpcParams {
@@ -468,26 +282,7 @@ export interface MainToHostContributionRpcRequestMap {
   >
   'contributions.entityMenus.invoke': RpcMethodDefinition<EntityMenuInvokeRequest, UiCallbackResult>
   'contributions.entityMenus.release': RpcMethodDefinition<EntityMenuReleaseRequest, RpcNoPayload>
-  'contributions.settingsPanels.open': RpcMethodDefinition<
-    SettingsPanelOpenRequest,
-    SettingsPanelOpenResponse
-  >
-  'contributions.settingsPanels.refresh': RpcMethodDefinition<
-    SettingsPanelRefreshRequest,
-    SettingsPanelRefreshResponse
-  >
-  'contributions.settingsPanels.submit': RpcMethodDefinition<
-    SettingsPanelSubmitRequest,
-    SettingsPanelCallbackResponse
-  >
-  'contributions.settingsPanels.invoke': RpcMethodDefinition<
-    SettingsPanelInvokeRequest,
-    SettingsPanelCallbackResponse
-  >
-  'contributions.settingsPanels.release': RpcMethodDefinition<
-    SettingsPanelReleaseRequest,
-    RpcNoPayload
-  >
+  'contributions.cardActions.run': RpcMethodDefinition<ContributionScopedRpcParams, RpcNoPayload>
   'contributions.scraperProviders.search': RpcMethodDefinition<
     ScraperProviderSearchRequest,
     ScraperProviderSearchResponse
@@ -531,16 +326,12 @@ export type HostToMainContributionRpcRequestMap = {
     EntityMenuRefreshRequestedNotification,
     RpcNoPayload
   >
-  'contributions.settingsPanels.register': RpcMethodDefinition<
-    ExtensionScopedRpcParams & { panel: SettingsPanelRegistrationInfo },
+  'contributions.cardActions.register': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { action: CardActionRegistrationInfo },
     RpcNoPayload
   >
-  'contributions.settingsPanels.unregister': RpcMethodDefinition<
+  'contributions.cardActions.unregister': RpcMethodDefinition<
     ExtensionScopedRpcParams & { contributionId: string },
-    RpcNoPayload
-  >
-  'contributions.settingsPanels.refreshRequested': RpcMethodDefinition<
-    SettingsPanelRefreshRequestedNotification,
     RpcNoPayload
   >
   'contributions.scraperProviders.register': RpcMethodDefinition<

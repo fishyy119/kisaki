@@ -23,7 +23,8 @@ import {
   ExtensionPackageExtractor,
   ExtensionPackageLayout,
   ExtensionPackageRecovery,
-  ExtensionPackageVerifier
+  ExtensionPackageVerifier,
+  ExtensionUiAssetServer
 } from './packages'
 import {
   ExtensionRepositoryFetcher,
@@ -111,6 +112,12 @@ export class ExtensionService implements IService {
     const iconManager = new ExtensionIconManager(rootDir, networkService)
     iconManager.registerProtocolHandler()
 
+    const uiAssetServer = new ExtensionUiAssetServer({
+      resolveUiSource: (extensionId) =>
+        this.installations?.resolveWebviewUiSource(extensionId) ?? null
+    })
+    uiAssetServer.registerProtocolHandler()
+
     this.signers = new ExtensionSignerTrustManager({
       store: new ExtensionSignerTrustStore(dbService.client),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
@@ -144,7 +151,14 @@ export class ExtensionService implements IService {
       scraper: container.get('scraper'),
       taskRun: container.get('task-run'),
       resolveRuntimeHandle: (runtimeHandle) =>
-        this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null
+        this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
+      resolveWebviewUiSource: (extensionId) =>
+        this.installations?.resolveWebviewUiSource(extensionId) ?? null,
+      buildWebviewPackageDocumentUrl: (extensionId, entry) =>
+        uiAssetServer.documentUrl(extensionId, entry),
+      onWebviewSessionsChanged: (sessions) =>
+        this.ipc.send('extension:webview-sessions-changed', sessions),
+      onWebviewMessage: (event) => this.ipc.send('extension:webview-message', event)
     })
     this.contributions = new ExtensionContributionRegistry({
       command: container.get('command'),
@@ -153,8 +167,6 @@ export class ExtensionService implements IService {
       onDidChange: () => this.emitContributionSnapshotChanged(),
       onEntityMenusRefreshRequested: (event) =>
         this.ipc.send('extension:entity-menus-refresh-requested', event),
-      onSettingsPanelsRefreshRequested: (event) =>
-        this.ipc.send('extension:settings-panels-refresh-requested', event),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       requestHost: (method, params, options) => this.runtime.requestHost(method, params, options)

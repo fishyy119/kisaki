@@ -21,9 +21,11 @@ import type {
 import {
   type ExtensionPackageCommitter,
   type ExtensionPackageLayout,
+  type ExtensionWebviewUiSource,
   readExtensionPackagePublication,
   readExtensionManifestFile,
   resolveExtensionFilePath,
+  resolveExtensionUiRootPath,
   validateInstalledExtensionPackage
 } from '../packages'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
@@ -40,6 +42,7 @@ interface ResolvedDevExtensionPackage {
   packagePath: string
   manifestPath: string
   developmentReloadPath: string
+  uiDevServerOrigin: string | null
   directoryName: string
 }
 
@@ -156,6 +159,27 @@ export class ExtensionInstallationManager {
   createRuntimeMetadata(extensionId: string): ExtensionRuntimeMetadata {
     const entry = this.require(extensionId)
     return this.createInstalledRuntimeMetadata(entry)
+  }
+
+  /**
+   * Resolves how an extension's webview UI assets are delivered: from a dev
+   * server in development, otherwise from the manifest `ui` root inside the
+   * installed package. Returns null when the extension declares no UI.
+   */
+  resolveWebviewUiSource(extensionId: string): ExtensionWebviewUiSource | null {
+    const entry = this.get(extensionId)
+    if (!entry?.manifest?.ui) {
+      return null
+    }
+
+    if (entry.uiDevServerOrigin) {
+      return { kind: 'dev-server', origin: entry.uiDevServerOrigin }
+    }
+
+    return {
+      kind: 'package',
+      rootPath: resolveExtensionUiRootPath(entry.packagePath, entry.manifest.ui)
+    }
   }
 
   getRuntimeState(extensionId: string): ExtensionRuntimeState | null {
@@ -393,7 +417,8 @@ export class ExtensionInstallationManager {
 
     try {
       const resolvedPackage = await resolveDevExtensionPackage(devExtensionPath)
-      const { packagePath, manifestPath, developmentReloadPath } = resolvedPackage
+      const { packagePath, manifestPath, developmentReloadPath, uiDevServerOrigin } =
+        resolvedPackage
       const parsed = await readExtensionManifestFile(manifestPath)
       if (!parsed.manifest) {
         throw new Error(parsed.issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
@@ -433,6 +458,7 @@ export class ExtensionInstallationManager {
         packagePath,
         manifestPath,
         developmentReloadPath,
+        uiDevServerOrigin,
         dataPath,
         tempPath
       }
@@ -603,6 +629,7 @@ async function resolveDevExtensionPackage(
       packagePath: publication.packagePath,
       manifestPath: publication.manifestPath,
       developmentReloadPath: publication.publicationPath,
+      uiDevServerOrigin: publication.uiDevServerOrigin,
       directoryName: path.basename(publication.publicationPath)
     }
   }
@@ -611,6 +638,7 @@ async function resolveDevExtensionPackage(
     packagePath: developmentReloadPath,
     manifestPath: resolveInsideRoot(developmentReloadPath, 'manifest.json'),
     developmentReloadPath,
+    uiDevServerOrigin: null,
     directoryName: path.basename(developmentReloadPath)
   }
 }

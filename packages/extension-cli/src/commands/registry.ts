@@ -15,15 +15,15 @@ import {
 } from '@kisaki3/extension-registry'
 import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
 import { CliError, logger } from '../logger'
-import { inspectKisxPackage } from '../package-info'
-import { readJsonFile } from '../project'
 import {
+  inspectKisxPackage,
   readArtifactSignatureFile,
   signKisxArtifact,
   type VerifiedArtifactSignature,
   verifyArtifactSignatureForPackage,
   verifyRegistryArtifactSignature
-} from '../signing'
+} from '../packaging'
+import { readJsonFile } from '../project'
 
 export interface RegistryInitCommandOptions {
   out: string

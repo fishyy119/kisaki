@@ -29,10 +29,7 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
     .description('CLI tools for Kisaki extension development')
     .version(options.version)
 
-  program
-    .command('build')
-    .description('Build the current extension with tsdown')
-    .action(buildCommand)
+  program.command('build').description('Build the current extension with Vite').action(buildCommand)
 
   program
     .command('output')

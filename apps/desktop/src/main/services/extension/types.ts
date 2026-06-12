@@ -23,6 +23,7 @@ export interface ScannedExtensionPackage {
   packagePath: string
   manifestPath: string
   developmentReloadPath: string | null
+  uiDevServerOrigin: string | null
   manifest: ExtensionManifest | null
   issues: readonly ValidationIssue[]
 }
@@ -48,6 +49,7 @@ export interface ExtensionInstalledEntry {
   packagePath: string
   manifestPath: string
   developmentReloadPath: string | null
+  uiDevServerOrigin: string | null
   dataPath: string
   tempPath: string
 }

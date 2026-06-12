@@ -57,6 +57,10 @@ export async function validateInstalledExtensionPackage(
 ): Promise<ValidationIssue[]> {
   const issues = await validateExtensionFileExists(extensionPath, manifest.entry, '$.entry')
 
+  if (manifest.ui) {
+    issues.push(...(await validateExtensionFileExists(extensionPath, manifest.ui, '$.ui')))
+  }
+
   if (manifest.icon) {
     issues.push(...(await validateExtensionFileExists(extensionPath, manifest.icon, '$.icon')))
   }

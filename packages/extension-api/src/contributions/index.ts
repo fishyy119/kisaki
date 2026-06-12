@@ -1,5 +1,5 @@
 export * from './entity-menus'
-export * from './settings-panels'
+export * from './card-actions'
 export * from './scraper-providers'
 export * from './deeplink-routes'
 export * from './themes'

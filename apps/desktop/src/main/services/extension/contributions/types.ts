@@ -6,10 +6,7 @@ import type {
   RpcParams,
   RpcResult
 } from '@kisaki3/extension-api'
-import type {
-  ExtensionEntityMenuRefreshRequestedEvent,
-  ExtensionSettingsPanelRefreshRequestedEvent
-} from '@shared/extension'
+import type { ExtensionEntityMenuRefreshRequestedEvent } from '@shared/extension'
 import type { DeeplinkService } from '@main/services/deeplink'
 import type { CommandService } from '@main/services/command'
 import type { ScraperService } from '@main/services/scraper'
@@ -21,7 +18,6 @@ export interface ExtensionContributionDomainOptions {
   scraper?: ScraperService
   onDidChange?: () => void
   onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
-  onSettingsPanelsRefreshRequested?: (event: ExtensionSettingsPanelRefreshRequestedEvent) => void
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   requestHost<K extends MainToHostRpcMethod>(
     method: K,

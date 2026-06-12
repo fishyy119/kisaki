@@ -72,7 +72,9 @@ import type {
   ExtensionTaskRunResult,
   ExtensionTaskRunSnapshot
 } from '../capabilities/task-runs'
+import type { WebviewOpenOptions } from '../capabilities/webviews'
 import type { ScraperLookup } from '../contributions/scraper-providers'
+import type { JsonValue } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
 
@@ -216,6 +218,29 @@ export interface ExtensionTaskRunHistoryListRequest extends ExtensionScopedRpcPa
 export interface ExtensionTaskRunCancelRequestedEvent {
   runtimeHandle: string
   runId: string
+}
+
+export interface WebviewOpenRpcRequest extends ExtensionScopedRpcParams {
+  options: WebviewOpenOptions
+}
+
+export interface WebviewScopedRpcRequest extends ExtensionScopedRpcParams {
+  webviewId: string
+}
+
+export interface WebviewPostMessageRpcRequest extends WebviewScopedRpcRequest {
+  message: JsonValue
+}
+
+export interface WebviewMessagePostedEvent {
+  runtimeHandle: string
+  webviewId: string
+  message: JsonValue
+}
+
+export interface WebviewClosedEvent {
+  runtimeHandle: string
+  webviewId: string
 }
 
 export type LibraryEntityRpcRequestMap<TPrefix extends string, TEntity, TCreate, TPatch, TQuery> = {
@@ -396,6 +421,12 @@ export type HostToMainCapabilityRpcRequestMap = {
     HostEventSubscriptionRequest,
     RpcNoPayload
   >
+  'capabilities.webviews.open': RpcMethodDefinition<WebviewOpenRpcRequest, { webviewId: string }>
+  'capabilities.webviews.close': RpcMethodDefinition<WebviewScopedRpcRequest, RpcNoPayload>
+  'capabilities.webviews.postMessage': RpcMethodDefinition<
+    WebviewPostMessageRpcRequest,
+    RpcNoPayload
+  >
 } & LibraryEntityRpcRequestMap<
   'capabilities.library.games',
   LibraryGame,
@@ -442,4 +473,6 @@ export type HostToMainCapabilityRpcRequestMap = {
 export interface MainToHostCapabilityRpcEventMap {
   'capabilities.events.host': HostEventNotification
   'capabilities.taskRuns.cancelRequested': ExtensionTaskRunCancelRequestedEvent
+  'capabilities.webviews.messagePosted': WebviewMessagePostedEvent
+  'capabilities.webviews.closed': WebviewClosedEvent
 }

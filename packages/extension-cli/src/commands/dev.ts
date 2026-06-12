@@ -1,8 +1,14 @@
 import type { ChildProcess } from 'node:child_process'
 import { CliError, logger } from '../logger'
 import { launchKisaki, type ExtensionHostInspectLaunchOptions } from '../launch'
-import { resolveProject } from '../project'
-import { watchExtensionOutput, type ExtensionOutputWatchSession } from './output'
+import { readValidManifest, resolveProject } from '../project'
+import {
+  discoverUiEntries,
+  loadKisxConfig,
+  startUiDevServer,
+  type ExtensionUiDevServer
+} from '../build'
+import { watchExtensionOutput, type ExtensionOutputWatchSession } from '../publication'
 
 export interface DevCommandOptions {
   kisaki: string
@@ -12,7 +18,9 @@ export interface DevCommandOptions {
 }
 
 /**
- * Starts extension package output in watch mode and launches Kisaki with --dev-extension.
+ * Runs the two-track development loop: host bundle changes republish the
+ * package and recycle the extension host, while webview documents serve from
+ * a Vite dev server with full HMR and never touch the host.
  */
 export async function devCommand(options: DevCommandOptions): Promise<void> {
   const project = await resolveProject()
@@ -21,8 +29,22 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   logger.detail(`Project: ${project.rootDir}`)
   logger.detail(`Output: ${options.outDir}`)
 
+  const manifest = await readValidManifest(project, { checkEntry: false, checkProjectFiles: true })
+  const config = await loadKisxConfig(project, { command: 'serve', mode: 'development' })
   const inspectOptions = resolveExtensionHostInspectOptions(options)
-  const output = await watchExtensionOutput(project, { outDir: options.outDir, debugSources: true })
+
+  let uiServer: ExtensionUiDevServer | null = null
+  const uiEntries = await discoverUiEntries(project)
+  if (manifest.ui && uiEntries.length > 0) {
+    uiServer = await startUiDevServer(project, config)
+    logger.detail(`UI dev server: ${uiServer.origin}`)
+  }
+
+  const output = await watchExtensionOutput(project, {
+    outDir: options.outDir,
+    debugSources: true,
+    ...(uiServer === null ? {} : { ui: { mode: 'dev-server', origin: uiServer.origin } })
+  })
   const ready = await output.ready
 
   const kisaki: ChildProcess = launchKisaki(ready.publicationPath, {
@@ -41,7 +63,7 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
       kisaki.kill()
     }
 
-    void closeOutputAndExit(output, code)
+    void shutdownAndExit(output, uiServer, code)
   }
 
   kisaki.on('error', (error) => {
@@ -56,6 +78,11 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
   })
 
   logger.success('Kisaki started with development extension output.')
+  if (uiServer) {
+    logger.detail(
+      'Webview UI changes hot-reload in place; host changes recycle the extension host.'
+    )
+  }
 
   process.once('SIGINT', () => {
     stop(130)
@@ -102,12 +129,14 @@ function readOptionalAddress(value: string | boolean | undefined): string | unde
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-async function closeOutputAndExit(
+async function shutdownAndExit(
   output: ExtensionOutputWatchSession,
+  uiServer: ExtensionUiDevServer | null,
   code: number
 ): Promise<void> {
   try {
     await output.close()
+    await uiServer?.close()
   } catch (error) {
     if (error instanceof CliError) {
       logger.warn(error.message)

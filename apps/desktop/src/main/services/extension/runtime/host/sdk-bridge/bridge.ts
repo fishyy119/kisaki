@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import type {
+  CardActionContribution,
+  CardActionRegistration,
   CommandRegistration,
   CommandContribution,
   DeeplinkRouteContribution,
@@ -27,14 +29,13 @@ import type {
   ScraperProviderRegistration,
   RpcParams,
   RpcResult,
-  SettingsPanelContribution,
-  SettingsPanelRegistration,
   ThemeContribution,
   ThemeRegistration
 } from '@kisaki3/extension-api'
 import { isExtensionEventTopic, toJsonObject } from '@kisaki3/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
+import { HostCardActionContributionPoint } from '../contributions/card-actions'
 import { HostCommandContributionPoint } from '../contributions/commands'
 import { HostDeeplinkRouteContributionPoint } from '../contributions/deeplink-routes'
 import { HostEntityMenuContributionPoint } from '../contributions/entity-menus'
@@ -42,7 +43,6 @@ import {
   HostScraperProviderContributionPoint,
   MAIN_TO_HOST_SCRAPER_RPC
 } from '../contributions/scraper-providers'
-import { HostSettingsPanelContributionPoint } from '../contributions/settings-panels'
 import { HostThemeContributionPoint } from '../contributions/themes'
 import type { HostContributionDiagnosticInput, HostContributionScope } from '../contributions/types'
 import { createDisposable, createDisposableStore } from './disposables'
@@ -54,13 +54,14 @@ import {
 import { createExtensionLogger } from './logger'
 import { resolveInsideExtension } from './utils/paths'
 import {
+  createCardActionRegistrar,
   createDeeplinkRouteRegistrar,
   createCommandRegistrar,
   createEntityMenuRegistrar,
   createScraperProviderRegistrar,
-  createSettingsPanelRegistrar,
   createThemeRegistrar
 } from './registrars'
+import { HostWebviewSessionManager } from './webviews'
 import { createExtensionStorage } from './storage'
 import { createExtensionSecrets } from './secrets'
 import { configureExtensionSdkBridge, resetExtensionSdkBridge } from './store'
@@ -94,11 +95,12 @@ export class ExtensionHostSdkBridge {
   private readonly executionScope = new AsyncLocalStorage<ActiveExtensionScope>()
   private readonly bridge: ExtensionSdkBridge
   private readonly entityMenus: HostEntityMenuContributionPoint
-  private readonly settingsPanels: HostSettingsPanelContributionPoint
+  private readonly cardActions: HostCardActionContributionPoint
   private readonly scraperProviders: HostScraperProviderContributionPoint
   private readonly deeplinkRoutes: HostDeeplinkRouteContributionPoint
   private readonly themes: HostThemeContributionPoint
   private readonly commands: HostCommandContributionPoint
+  private readonly webviews: HostWebviewSessionManager
   private readonly hostEventSubscriptions = new Map<string, HostEventSubscriptionRecord>()
   private readonly extensionEventListeners = new Map<
     ExtensionEventTopic,
@@ -112,6 +114,8 @@ export class ExtensionHostSdkBridge {
   >()
   private readonly mainEventCleanup: () => void
   private readonly taskRunCancelCleanup: () => void
+  private readonly webviewMessageCleanup: () => void
+  private readonly webviewClosedCleanup: () => void
 
   constructor(
     private readonly registry: ExtensionRegistry,
@@ -140,17 +144,27 @@ export class ExtensionHostSdkBridge {
       }
     }
     this.entityMenus = new HostEntityMenuContributionPoint(contributionOptions)
-    this.settingsPanels = new HostSettingsPanelContributionPoint(contributionOptions)
+    this.cardActions = new HostCardActionContributionPoint(contributionOptions)
     this.scraperProviders = new HostScraperProviderContributionPoint(contributionOptions)
     this.deeplinkRoutes = new HostDeeplinkRouteContributionPoint(contributionOptions)
     this.themes = new HostThemeContributionPoint(contributionOptions)
     this.commands = new HostCommandContributionPoint(contributionOptions)
+    this.webviews = new HostWebviewSessionManager({
+      runInExtensionContext: (scope, callback) => this.runInExtensionContext(scope, callback)
+    })
     this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
       this.handleHostEventNotification(payload)
     )
     this.taskRunCancelCleanup = this.rpc.onMainEvent(
       'capabilities.taskRuns.cancelRequested',
       (payload) => this.handleTaskRunCancelRequested(payload)
+    )
+    this.webviewMessageCleanup = this.rpc.onMainEvent(
+      'capabilities.webviews.messagePosted',
+      (payload) => this.webviews.handleMessagePosted(payload)
+    )
+    this.webviewClosedCleanup = this.rpc.onMainEvent('capabilities.webviews.closed', (payload) =>
+      this.webviews.handleClosed(payload)
     )
   }
 
@@ -161,12 +175,15 @@ export class ExtensionHostSdkBridge {
   async dispose(): Promise<void> {
     this.mainEventCleanup()
     this.taskRunCancelCleanup()
+    this.webviewMessageCleanup()
+    this.webviewClosedCleanup()
     this.entityMenus.releaseAll()
-    this.settingsPanels.releaseAll()
+    this.cardActions.releaseAll()
     await this.scraperProviders.releaseAll()
     this.deeplinkRoutes.releaseAll()
     this.themes.releaseAll()
     this.commands.releaseAll()
+    this.webviews.releaseAll()
     this.pendingMainRequests.clear()
     this.abortAllTaskRuns()
     this.taskRunAbortControllers.clear()
@@ -187,22 +204,9 @@ export class ExtensionHostSdkBridge {
       this.entityMenus.release(params)
       return {}
     })
-    this.rpc.handle('contributions.settingsPanels.open', (params, context) =>
-      this.settingsPanels.open(params, context.signal)
+    this.rpc.handle('contributions.cardActions.run', (params, context) =>
+      this.cardActions.run(params, context.signal)
     )
-    this.rpc.handle('contributions.settingsPanels.refresh', (params, context) =>
-      this.settingsPanels.refresh(params, context.signal)
-    )
-    this.rpc.handle('contributions.settingsPanels.submit', (params, context) =>
-      this.settingsPanels.submit(params, context.signal)
-    )
-    this.rpc.handle('contributions.settingsPanels.invoke', (params, context) =>
-      this.settingsPanels.invoke(params, context.signal)
-    )
-    this.rpc.handle('contributions.settingsPanels.release', (params) => {
-      this.settingsPanels.release(params)
-      return {}
-    })
     this.rpc.handle('contributions.deeplinkRoutes.handle', (params, context) =>
       this.deeplinkRoutes.handle(params, context.signal)
     )
@@ -242,11 +246,12 @@ export class ExtensionHostSdkBridge {
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     this.entityMenus.releaseRuntime(runtimeHandle)
-    this.settingsPanels.releaseRuntime(runtimeHandle)
+    this.cardActions.releaseRuntime(runtimeHandle)
     await this.scraperProviders.releaseRuntime(runtimeHandle)
     this.deeplinkRoutes.releaseRuntime(runtimeHandle)
     this.themes.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
+    this.webviews.releaseRuntime(runtimeHandle)
     await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
     this.disposeExtensionEventListenersForRuntime(runtimeHandle)
     this.abortTaskRunsForRuntime(runtimeHandle)
@@ -276,7 +281,7 @@ export class ExtensionHostSdkBridge {
         contributions: {
           commands: createCommandRegistrar(this.bridge, subscriptions, scope),
           entityMenus: createEntityMenuRegistrar(this.bridge, subscriptions, scope),
-          settingsPanels: createSettingsPanelRegistrar(this.bridge, subscriptions, scope),
+          cardActions: createCardActionRegistrar(this.bridge, subscriptions, scope),
           scraperProviders: createScraperProviderRegistrar(this.bridge, subscriptions, scope),
           deeplinkRoutes: createDeeplinkRouteRegistrar(this.bridge, subscriptions, scope),
           themes: createThemeRegistrar(this.bridge, subscriptions, scope)
@@ -325,8 +330,7 @@ export class ExtensionHostSdkBridge {
       registerCommand: (scope, command) => this.registerCommand(scope, command),
       registerEntityMenu: (scope, domain, menuScope, contribution) =>
         this.registerEntityMenu(scope, domain, menuScope, contribution),
-      registerSettingsPanel: (scope, contribution) =>
-        this.registerSettingsPanel(scope, contribution),
+      registerCardAction: (scope, action) => this.registerCardAction(scope, action),
       registerScraperProvider: (scope, mediaType, provider) =>
         this.registerScraperProvider(scope, mediaType, provider),
       registerDeeplinkRoute: (scope, contribution) =>
@@ -347,7 +351,8 @@ export class ExtensionHostSdkBridge {
         this.subscribeExtensionEvent(scope, topic, listener),
       emitExtensionEvent: (scope, topic, payload) => this.emitExtensionEvent(scope, topic, payload),
       registerTaskRunAbortController: (scope, runId, controller) =>
-        this.registerTaskRunAbortController(scope, runId, controller)
+        this.registerTaskRunAbortController(scope, runId, controller),
+      registerWebviewSession: (scope, webviewId) => this.webviews.register(scope, webviewId)
     }
   }
 
@@ -396,11 +401,11 @@ export class ExtensionHostSdkBridge {
     return this.entityMenus.register(scope, domain, menuScope, contribution)
   }
 
-  private registerSettingsPanel(
+  private registerCardAction(
     scope: ActiveExtensionScope,
-    contribution: SettingsPanelContribution<any, any>
-  ): SettingsPanelRegistration {
-    return this.settingsPanels.register(scope, contribution)
+    action: CardActionContribution
+  ): CardActionRegistration {
+    return this.cardActions.register(scope, action)
   }
 
   private registerScraperProvider<TMediaType extends ScraperMediaType>(

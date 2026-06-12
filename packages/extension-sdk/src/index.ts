@@ -2,6 +2,12 @@ import type { ExtensionDefinition, KisakiApi } from '@kisaki3/extension-api'
 import { getExtensionSdkBridge } from './bridge'
 
 export * from '@kisaki3/extension-api'
+export { createWebviewRpc } from './shared/webview-rpc'
+export type {
+  WebviewRpcFunctions,
+  WebviewRpcRemote,
+  WebviewRpcTransport
+} from './shared/webview-rpc'
 
 export function defineExtension(definition: ExtensionDefinition): ExtensionDefinition {
   return definition
@@ -40,5 +46,8 @@ export const kisaki: KisakiApi = {
   },
   get taskRuns() {
     return getExtensionSdkBridge().api.taskRuns
+  },
+  get webviews() {
+    return getExtensionSdkBridge().api.webviews
   }
 }

@@ -11,6 +11,7 @@ import { bold, cyan, dim, green, red } from 'kolorist'
 import {
   type ExtensionScaffoldConfig,
   type ExtensionPublishWorkflow,
+  type ExtensionUiVariant,
   scaffoldExtension,
   isProjectName,
   toDisplayName,
@@ -73,6 +74,7 @@ export async function runCreateExtensionCli(
     description: response.description || 'A Kisaki extension.',
     author: response.author || '',
     category: response.category || DEFAULT_EXTENSION_CATEGORY,
+    uiVariant: (response.uiVariant as ExtensionUiVariant | undefined) ?? 'none',
     toolingVersion: options.toolingVersion,
     extensionApiRange: getRecommendedExtensionApiRange(EXTENSION_API_VERSION),
     publishWorkflow:
@@ -177,6 +179,25 @@ function createPromptQuestions(parsed: ParsedArgs): PromptQuestion[] {
       message: 'Category:',
       initial: EXTENSION_CATEGORIES.indexOf(DEFAULT_EXTENSION_CATEGORY),
       choices: EXTENSION_CATEGORIES.map((category) => ({ title: category, value: category }))
+    },
+    {
+      type: (_previous: unknown, values: { category?: ExtensionCategory }) =>
+        values.category === 'tool' ? 'select' : null,
+      name: 'uiVariant',
+      message: 'Webview UI:',
+      initial: 0,
+      choices: [
+        {
+          title: 'Vanilla TypeScript',
+          value: 'vanilla',
+          description: 'Plain DOM webview document with minimal dependencies.'
+        },
+        {
+          title: 'Vue',
+          value: 'vue',
+          description: 'Vue single-file-component webview app.'
+        }
+      ]
     },
     {
       type: 'text',

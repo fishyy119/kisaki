@@ -18,10 +18,22 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./webview": {
+      "import": {
+        "types": "./dist/webview.d.mts",
+        "default": "./dist/webview.mjs"
+      },
+      "require": {
+        "types": "./dist/webview.d.cts",
+        "default": "./dist/webview.cjs"
+      }
+    },
+    "./theme.css": "./theme.css"
   },
   "files": [
     "dist",
+    "theme.css",
     "README.md"
   ],
   "scripts": {

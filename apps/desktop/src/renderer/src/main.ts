@@ -9,7 +9,8 @@ import { initI18n } from './core/i18n'
 import { eventManager } from './core/event'
 import {
   refreshExtensionContributionSnapshot,
-  setupExtensionContributionStore
+  setupExtensionContributionStore,
+  setupExtensionWebviewStore
 } from './core/extensions'
 import { setupDeeplinkHandlers } from './core/deeplink'
 import {
@@ -63,6 +64,9 @@ async function initMainWindowRenderer() {
     void refreshExtensionContributionSnapshot().catch((error) => {
       log.error('Failed to refresh contribution snapshot:', error)
     })
+
+    // Extension webview session sync.
+    setupExtensionWebviewStore()
 
     // Store initialization (registers listeners + fetches initial state)
     await useGameMonitorStore().init()

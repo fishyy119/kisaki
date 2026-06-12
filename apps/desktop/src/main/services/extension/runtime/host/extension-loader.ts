@@ -78,7 +78,7 @@ export class ExtensionLoader {
       subscriptions,
       abortController,
       entityMenus: createEntityMenuRegistrationMaps(),
-      settingsPanels: new Map(),
+      cardActions: new Map(),
       scraperProviders: createScraperProviderMaps(),
       deeplinkRoutes: new Map(),
       themes: new Map(),

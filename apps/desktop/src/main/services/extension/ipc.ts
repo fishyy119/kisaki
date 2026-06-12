@@ -114,24 +114,26 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpcVoid(() => service.contributions.releaseEntityMenu(request))
   )
 
-  ipc.handle('extension:open-settings-panel', async (_, request) =>
-    wrapIpc(() => service.contributions.openSettingsPanel(request))
+  ipc.handle('extension:run-card-action', async (_, request) =>
+    wrapIpcVoid(() => service.contributions.runCardAction(request))
   )
 
-  ipc.handle('extension:refresh-settings-panel', async (_, request) =>
-    wrapIpc(() => service.contributions.refreshSettingsPanel(request))
+  ipc.handle('extension:get-webview-sessions', () =>
+    wrapIpc(() => service.capabilities.webviews.listSessions())
   )
 
-  ipc.handle('extension:submit-settings-panel', async (_, request) =>
-    wrapIpc(() => service.contributions.submitSettingsPanel(request))
+  ipc.handle('extension:post-webview-message', async (_, request) =>
+    wrapIpcVoid(() =>
+      service.capabilities.webviews.postMessageToHost(request.webviewId, request.message)
+    )
   )
 
-  ipc.handle('extension:invoke-settings-panel-node', async (_, request) =>
-    wrapIpc(() => service.contributions.invokeSettingsPanelNode(request))
+  ipc.handle('extension:notify-webview-ready', async (_, request) =>
+    wrapIpcVoid(() => service.capabilities.webviews.notifyReady(request.webviewId))
   )
 
-  ipc.handle('extension:release-settings-panel', async (_, request) =>
-    wrapIpcVoid(() => service.contributions.releaseSettingsPanel(request))
+  ipc.handle('extension:close-webview', async (_, request) =>
+    wrapIpcVoid(() => service.capabilities.webviews.closeFromRenderer(request.webviewId))
   )
 
   ipc.handle('extension:get-theme-contributions', () =>

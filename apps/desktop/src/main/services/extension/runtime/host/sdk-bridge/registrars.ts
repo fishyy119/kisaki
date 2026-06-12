@@ -1,4 +1,6 @@
 import type {
+  CardActionContribution,
+  CardActionRegistrar,
   CharacterScraperProvider,
   CommandContribution,
   CommandRegistrar,
@@ -14,10 +16,6 @@ import type {
   GameScraperProvider,
   PersonScraperProvider,
   ScraperProviderRegistrar,
-  SettingsPanelContribution,
-  SettingsPanelDialogMap,
-  SettingsPanelPopoverMap,
-  SettingsPanelRegistrar,
   ThemeRegistrar,
   ThemeContribution
 } from '@kisaki3/extension-api'
@@ -86,19 +84,16 @@ export function createEntityMenuRegistrar(
 }
 
 /**
- * Creates the settings panel contribution registrar bound to runtime subscriptions.
+ * Creates the card action contribution registrar bound to runtime subscriptions.
  */
-export function createSettingsPanelRegistrar(
+export function createCardActionRegistrar(
   bridge: ExtensionSdkBridge,
   subscriptions: DisposableStore,
   scope: ActiveExtensionScope
-): SettingsPanelRegistrar {
+): CardActionRegistrar {
   return {
-    register<
-      const TPopovers extends SettingsPanelPopoverMap,
-      const TDialogs extends SettingsPanelDialogMap<TPopovers>
-    >(contribution: SettingsPanelContribution<TPopovers, TDialogs>) {
-      const disposable = bridge.registerSettingsPanel(scope, contribution)
+    register(action: CardActionContribution) {
+      const disposable = bridge.registerCardAction(scope, action)
       subscriptions.add(disposable)
       return disposable
     }

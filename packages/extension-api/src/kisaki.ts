@@ -9,6 +9,7 @@ import type { NotifyCapability } from './capabilities/notify'
 import type { RuntimeCapability } from './capabilities/runtime'
 import type { ScrapersCapability } from './capabilities/scrapers'
 import type { ExtensionTaskRunsCapability } from './capabilities/task-runs'
+import type { WebviewsCapability } from './capabilities/webviews'
 
 export interface KisakiApi {
   readonly files: FilesCapability
@@ -22,4 +23,5 @@ export interface KisakiApi {
   readonly commands: CommandsCapability
   readonly automations: AutomationsCapability
   readonly taskRuns: ExtensionTaskRunsCapability
+  readonly webviews: WebviewsCapability
 }

@@ -9,12 +9,20 @@ npm create kisaki-extension my-extension
 ```
 
 The CLI prompts for extension id, display name, category, description, author,
-publish workflow, registry metadata, and git initialization. Pass `--git` or
-`--no-git` to skip the git prompt. Pass `--github-single`,
-`--github-monorepo`, or `--manual` to skip the publish workflow prompt.
+publish workflow, registry metadata, and git initialization. The `tool`
+category additionally prompts for the webview UI stack (vanilla TypeScript or
+Vue). Pass `--git` or `--no-git` to skip the git prompt. Pass
+`--github-single`, `--github-monorepo`, or `--manual` to skip the publish
+workflow prompt.
 
-Generated projects include `manifest.json`, `src/index.ts`, `tsdown.config.ts`,
-`README.md`, `.gitignore`, and npm scripts backed by the `kisx` CLI:
+Generated projects include `manifest.json`, `src/host/index.ts`, `README.md`,
+and npm scripts backed by the `kisx` CLI, plus engineering config out of the
+box: ESLint (flat config), Prettier, `.editorconfig`, `.gitattributes`, and
+`.gitignore`. Projects with a webview UI also include
+`src/ui/main/index.html`, a `src/shared/contract.ts` RPC contract, Tailwind
+CSS wired through `kisx.config.ts`, and a `"ui": "dist/ui"` manifest
+declaration (the Vue variant additionally adds `@vitejs/plugin-vue` and
+Vue-aware ESLint):
 
 ```bash
 npm run build
@@ -35,7 +43,14 @@ template:
 - `templates/workspace/publish/<workflow>`
 - `templates/extension/base`
 - `templates/extension/categories/<category>`
+- `templates/extension/ui/<variant>` (webview UI, when applicable)
 - `templates/extension/publish/<workflow>`
+
+Layers copy token-rendered files. A layer file named `<name>.patch.json` is
+not copied; it deep-merges into the `<name>.json` produced by earlier layers
+(objects merge recursively, arrays and scalars replace). UI variants use this
+to add their manifest `ui` field and dependencies as template data instead of
+hardcoding them in scaffold code.
 
 For example, choosing `theme` and `GitHub single extension` combines the
 workspace base, GitHub single workflow, extension base, theme files, and GitHub

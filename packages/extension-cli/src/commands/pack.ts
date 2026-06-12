@@ -1,11 +1,8 @@
 import path from 'node:path'
 import type { ExtensionRegistryArtifactTarget } from '@kisaki3/extension-registry'
-import { createKisxArchive } from '../archive'
 import { CliError, logger } from '../logger'
-import { readValidManifest } from '../manifest'
-import { hashFile } from '../package-info'
-import { resolveProject } from '../project'
-import { signKisxArtifact } from '../signing'
+import { createKisxArchive, hashFile, signKisxArtifact } from '../packaging'
+import { readValidManifest, resolveProject } from '../project'
 import { buildCommand } from './build'
 
 export interface PackCommandOptions {

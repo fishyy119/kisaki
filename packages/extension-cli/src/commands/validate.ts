@@ -1,6 +1,5 @@
 import { logger } from '../logger'
-import { validateManifest } from '../manifest'
-import { resolveProject } from '../project'
+import { resolveProject, validateManifest } from '../project'
 
 /**
  * Validates the current extension project.

@@ -1,0 +1,1 @@
+export { HostCardActionContributionPoint } from './point'

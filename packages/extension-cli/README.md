@@ -1,10 +1,21 @@
 # @kisaki3/extension-cli
 
-`kisx` command line tools for Kisaki extension development.
+`kisx` command line tools for Kisaki extension development, built on an
+embedded Vite orchestrator.
 
-The CLI expects an extension project with `manifest.json`, `src/index.ts`, and
-`tsdown.config.ts`. `README.md` and the manifest icon are copied into package output
-when present.
+The CLI expects an extension project with three source sides mirroring the
+runtime topology:
+
+- `src/host/index.ts` — the Node host entry, bundled to `manifest.entry`
+- `src/ui/<view>/index.html` — webview documents, bundled to `dist/ui` and
+  declared as `"ui": "dist/ui"` in the manifest
+- `src/shared/` — RPC contracts and DTOs imported by both sides (never imports
+  from `host` or `ui`)
+
+An optional `kisx.config.ts` exports `{ entry?, ui? }` Vite user configs merged
+over the kisx defaults (for example to add `@vitejs/plugin-vue` and
+`@tailwindcss/vite` for the `ui` build). `README.md` and the manifest icon are
+copied into package output when present.
 
 ## Commands
 
@@ -24,17 +35,20 @@ kisx dev
 
 - `kisx validate` checks the manifest, required project files, and
   `engines.kisaki` Extension API compatibility range.
-- `kisx build` validates, runs tsdown, and verifies the built entry.
+- `kisx build` validates, builds the host entry and webview documents with
+  Vite, and verifies the built entry.
 - `kisx output` publishes immutable unpacked package versions under
   `out/extensions/<extension-id>/versions/<build-id>` and atomically updates
   `out/extensions/<extension-id>/current.json`. Use `--watch` for synchronized
-  output; `dev-output` is an alias.
+  output driven by Vite watch builds; `dev-output` is an alias.
 - `kisx pack` writes a `.kisx` archive and prints size plus sha256.
 - `kisx key generate` creates an Ed25519 author signing key.
 - `kisx registry init|validate|add-release|digest|sign` manages static registry
   manifests and release artifacts.
-- `kisx dev` watch-builds package output and launches Kisaki with
-  `--dev-extension`.
+- `kisx dev` runs the two-track development loop and launches Kisaki with
+  `--dev-extension`: webview documents serve from a Vite dev server with full
+  HMR (published as `ui.mode = "dev-server"` in `current.json`), while host
+  entry changes republish the package and recycle the extension host.
 
 ## Packaging
 

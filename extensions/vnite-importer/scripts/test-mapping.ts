@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { buildVniteLibraryGraph } from '../src/import'
+import { buildVniteLibraryGraph } from '../src/host/import'
 import {
   createVniteAttachmentPathKey,
   createVniteEdgeIdentity,
@@ -14,11 +14,11 @@ import {
   parseVnitePartialDate,
   parseVniteTimestamp,
   toKisakiScore
-} from '../src/mapping'
-import type { VniteAttachmentMetadata } from '../src/vnite/attachments'
-import type { VniteBackupGame, VniteBackupSnapshot } from '../src/backup/types'
-import { createDefaultVniteGameDoc, createDefaultVniteGameLocalDoc } from '../src/vnite/defaults'
-import { normalizeVniteGameDoc } from '../src/vnite/normalization'
+} from '../src/host/mapping'
+import type { VniteAttachmentMetadata } from '../src/host/vnite/attachments'
+import type { VniteBackupGame, VniteBackupSnapshot } from '../src/host/backup/types'
+import { createDefaultVniteGameDoc, createDefaultVniteGameLocalDoc } from '../src/host/vnite/defaults'
+import { normalizeVniteGameDoc } from '../src/host/vnite/normalization'
 
 function main(): void {
   testDateMapping()

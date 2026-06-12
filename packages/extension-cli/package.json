@@ -11,6 +11,14 @@
   "bin": {
     "kisx": "./dist/index.mjs"
   },
+  "exports": {
+    "./config": {
+      "import": {
+        "types": "./dist/config.d.mts",
+        "default": "./dist/config.mjs"
+      }
+    }
+  },
   "files": [
     "dist",
     "README.md"
@@ -33,7 +41,8 @@
     "commander": "^13.1.0",
     "cross-spawn": "^7.0.6",
     "kolorist": "^1.8.0",
-    "semver": "^7.7.3"
+    "semver": "^7.7.3",
+    "vite": "^7.2.6"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
@@ -41,6 +50,7 @@
     "@types/cross-spawn": "^6.0.6",
     "@types/node": "^22.19.1",
     "@types/semver": "^7.7.1",
+    "rollup": "^4.52.5",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {

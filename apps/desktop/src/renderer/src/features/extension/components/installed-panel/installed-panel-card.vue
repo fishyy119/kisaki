@@ -1,6 +1,6 @@
 <!--
 Installed Extension Card manages one installed extension row.
-Boundary: toggles, updates, uninstalls, and opens structured settings.
+Boundary: toggles, updates, uninstalls, and runs registered card actions.
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
@@ -9,7 +9,6 @@ import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Badge } from '@renderer/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { ExtensionSettingsPanelDialog } from '@renderer/components/extension/settings-panels'
 import ExtensionInstalledDetailsDialog from './installed-panel-details-dialog.vue'
 import ExtensionUninstallDialog from '../extension-uninstall-dialog.vue'
 import ExtensionUpdateDialog from '../extension-update-dialog.vue'
@@ -22,8 +21,8 @@ import {
   refreshExtensionContributionSnapshot
 } from '@renderer/core/extensions'
 import type {
+  ExtensionCardActionRegistrationInfo,
   ExtensionInstalledPackageInfo,
-  ExtensionSettingsPanelRegistrationInfo,
   ExtensionUpdateInfo
 } from '@shared/extension'
 import { createLogger } from '@renderer/core/log'
@@ -44,27 +43,17 @@ const emit = defineEmits<Emits>()
 
 const toggling = ref(false)
 const iconError = ref(false)
-const settingsOpen = ref(false)
 const detailsDialogOpen = ref(false)
 const updateDialogOpen = ref(false)
 const updatePolicyDialogOpen = ref(false)
 const uninstallDialogOpen = ref(false)
-const activeSettingsContribution = ref<ExtensionSettingsPanelRegistrationInfo | null>(null)
-const settingsContributionMissingWhileOpen = ref(false)
-const settingsRegistrationRevision = ref(0)
+const runningCardActionIds = ref<readonly string[]>([])
 
-const settingsContribution = computed(
-  () =>
-    extensionContributionStore.settingsPanels.value.find(
-      (contribution) => contribution.extensionId === props.extension.id
-    ) ?? null
+const cardActions = computed(() =>
+  extensionContributionStore.cardActions.value.filter(
+    (action) => action.extensionId === props.extension.id
+  )
 )
-const hasSettings = computed(
-  () =>
-    settingsContribution.value !== null ||
-    Boolean(settingsOpen.value && activeSettingsContribution.value)
-)
-const settingsContributionAvailable = computed(() => settingsContribution.value !== null)
 
 const iconUrl = computed(() => props.extension.iconUrl)
 const versionLabel = computed(() =>
@@ -110,44 +99,6 @@ watch(iconUrl, () => {
   iconError.value = false
 })
 
-watch(settingsContribution, (contribution) => {
-  if (!settingsOpen.value) {
-    return
-  }
-
-  if (!contribution) {
-    settingsContributionMissingWhileOpen.value = true
-    return
-  }
-
-  const previous = activeSettingsContribution.value
-  activeSettingsContribution.value = contribution
-
-  if (
-    settingsContributionMissingWhileOpen.value ||
-    !previous ||
-    getSettingsContributionKey(previous) !== getSettingsContributionKey(contribution)
-  ) {
-    settingsRegistrationRevision.value += 1
-  }
-
-  settingsContributionMissingWhileOpen.value = false
-})
-
-watch(settingsOpen, (open) => {
-  if (!open) {
-    activeSettingsContribution.value = null
-    settingsContributionMissingWhileOpen.value = false
-    return
-  }
-
-  const contribution = settingsContribution.value
-  if (contribution) {
-    activeSettingsContribution.value = contribution
-    settingsContributionMissingWhileOpen.value = false
-  }
-})
-
 async function handleToggle(enabled: boolean) {
   if (isBuiltin.value) {
     notify.error('内置扩展由 Kisaki 管理')
@@ -184,26 +135,31 @@ const enabledModel = computed({
   set: (v: boolean) => handleToggle(v)
 })
 
-function openSettingsPanel() {
-  if (!settingsContribution.value) {
+function isCardActionRunning(action: ExtensionCardActionRegistrationInfo): boolean {
+  return runningCardActionIds.value.includes(action.contributionId)
+}
+
+async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
+  if (isCardActionRunning(action)) {
     return
   }
 
-  activeSettingsContribution.value = settingsContribution.value
-  settingsContributionMissingWhileOpen.value = false
-  settingsOpen.value = true
-}
-
-function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistrationInfo): string {
-  return [
-    contribution.extensionId,
-    contribution.contributionId,
-    contribution.extensionVersion,
-    contribution.title,
-    contribution.description ?? '',
-    contribution.size ?? '',
-    contribution.order
-  ].join('\0')
+  runningCardActionIds.value = [...runningCardActionIds.value, action.contributionId]
+  try {
+    unwrapIpcVoid(
+      await ipcManager.invoke('extension:run-card-action', {
+        extensionId: action.extensionId,
+        contributionId: action.contributionId
+      })
+    )
+  } catch (error) {
+    log.error('Card action failed:', error)
+    notify.error('扩展操作失败', (error as Error).message)
+  } finally {
+    runningCardActionIds.value = runningCardActionIds.value.filter(
+      (id) => id !== action.contributionId
+    )
+  }
 }
 </script>
 
@@ -328,20 +284,26 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
           />
           更新
         </Button>
-        <Tooltip v-if="hasSettings">
+        <Tooltip
+          v-for="action in cardActions"
+          :key="action.contributionId"
+        >
           <TooltipTrigger as-child>
             <Button
-              size="icon-sm"
+              size="sm"
               variant="ghost"
-              @click="openSettingsPanel"
+              :disabled="isCardActionRunning(action)"
+              @click="runCardAction(action)"
             >
               <Icon
-                icon="icon-[mdi--cog-outline]"
-                class="size-4"
+                v-if="isCardActionRunning(action)"
+                icon="icon-[mdi--loading]"
+                class="size-3.5 animate-spin"
               />
+              {{ action.label }}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>设置</TooltipContent>
+          <TooltipContent v-if="action.description">{{ action.description }}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger as-child>
@@ -391,15 +353,6 @@ function getSettingsContributionKey(contribution: ExtensionSettingsPanelRegistra
         </Tooltip>
       </div>
     </div>
-
-    <!-- Settings Dialog -->
-    <ExtensionSettingsPanelDialog
-      v-if="settingsOpen && activeSettingsContribution"
-      v-model:open="settingsOpen"
-      :contribution="activeSettingsContribution"
-      :available="settingsContributionAvailable"
-      :registration-revision="settingsRegistrationRevision"
-    />
 
     <ExtensionInstalledDetailsDialog
       v-if="detailsDialogOpen"

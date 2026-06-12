@@ -1,10 +1,13 @@
 import type {
+  CardActionContribution,
+  CardActionRegistration,
   CharacterScraperProvider,
   CompanyScraperProvider,
   CommandContribution,
   CommandRegistration,
   DeeplinkRouteContribution,
   DeeplinkRouteRegistration,
+  Disposable,
   EntityMenuContribution,
   EntityMenuDomain,
   EntityMenuInputFor,
@@ -20,12 +23,11 @@ import type {
   GameScraperProvider,
   HostEventListener,
   HostEventTopic,
+  JsonValue,
   KisakiApi,
   PersonScraperProvider,
   ScraperMediaType,
   ScraperProviderRegistration,
-  SettingsPanelContribution,
-  SettingsPanelRegistration,
   ThemeRegistration,
   ThemeContribution
 } from '@kisaki3/extension-api'
@@ -66,6 +68,16 @@ export interface ExtensionEventListenerRecord {
 }
 
 /**
+ * Host-process binding for one open webview session. Routes main-relayed
+ * messages and close notifications to author callbacks.
+ */
+export interface WebviewSessionBinding {
+  readonly signal: AbortSignal
+  onMessage(listener: (message: JsonValue) => void): Disposable
+  onClose(listener: () => void): Disposable
+}
+
+/**
  * Private bridge exposed to the public extension SDK package.
  */
 export interface ExtensionSdkBridge {
@@ -80,10 +92,10 @@ export interface ExtensionSdkBridge {
     menuScope: TScope,
     contribution: EntityMenuContribution<EntityMenuInputFor<TDomain, TScope>>
   ): EntityMenuRegistration
-  registerSettingsPanel(
+  registerCardAction(
     scope: ActiveExtensionScope,
-    contribution: SettingsPanelContribution<any, any>
-  ): SettingsPanelRegistration
+    action: CardActionContribution
+  ): CardActionRegistration
   registerScraperProvider<TMediaType extends ScraperMediaType>(
     scope: ActiveExtensionScope,
     mediaType: TMediaType,

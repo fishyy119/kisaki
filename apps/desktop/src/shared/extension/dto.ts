@@ -17,35 +17,9 @@ import type {
   PersonScraperProviderRegistrationInfo,
   JsonObject,
   JsonValue,
-  SettingsPanelAnyNodeEvents,
-  SettingsPanelButtonNode,
-  SettingsPanelCallbackResult,
-  SettingsPanelCheckboxNode,
-  SettingsPanelComparisonListNode,
-  SettingsPanelDialogSize,
-  SettingsPanelDividerNode,
-  SettingsPanelFooterAction,
-  SettingsPanelFieldHelp,
-  SettingsPanelFieldLink,
-  SettingsPanelImageNode,
-  SettingsPanelLinkNode,
-  SettingsPanelMultiSelectNode,
-  SettingsPanelNoticeNode,
-  SettingsPanelNumberInputNode,
-  SettingsPanelPopoverWidth,
-  SettingsPanelRadioGroupNode,
-  SettingsPanelRecordListNode,
-  SettingsPanelRefreshReason,
-  SettingsPanelSelectNode,
-  SettingsPanelStatusNode,
-  SettingsPanelStringListNode,
-  SettingsPanelSwitchNode,
-  SettingsPanelTableNode,
-  SettingsPanelTextInputNode,
-  SettingsPanelTextNode,
-  SettingsPanelTextareaNode,
   ThemeContribution,
-  UiCallbackResult
+  UiCallbackResult,
+  WebviewSurface
 } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifactTarget,
@@ -442,11 +416,10 @@ export type ExtensionEntityMenuRegistrationInfo = ExtensionContributionOwnerInfo
     order: number
   }
 
-export interface ExtensionSettingsPanelRegistrationInfo extends ExtensionContributionOwnerInfo {
+export interface ExtensionCardActionRegistrationInfo extends ExtensionContributionOwnerInfo {
   contributionId: string
-  title: string
+  label: string
   description?: string
-  size?: SettingsPanelDialogSize
   order: number
 }
 
@@ -469,7 +442,7 @@ export interface ExtensionScraperProviderRegistrationInfo extends ExtensionContr
 
 export interface ExtensionContributionSnapshot {
   entityMenus: readonly ExtensionEntityMenuRegistrationInfo[]
-  settingsPanels: readonly ExtensionSettingsPanelRegistrationInfo[]
+  cardActions: readonly ExtensionCardActionRegistrationInfo[]
   scraperProviders: readonly ExtensionScraperProviderRegistrationInfo[]
   deeplinkRoutes: readonly ExtensionDeeplinkRouteRegistrationInfo[]
   themes: readonly ExtensionThemeRegistrationInfo[]
@@ -542,333 +515,42 @@ export type ExtensionEntityMenuRefreshRequestedEvent = ExtensionEntityMenuRegist
   reason?: EntityMenuRefreshReason
 }
 
-export type ExtensionSettingsPanelSurface = 'root' | 'dialog' | 'popover'
-export type ExtensionSettingsPanelScope = ExtensionSettingsPanelSurface | 'all'
-
-export interface ExtensionSettingsPanelDraftSnapshot {
-  values: JsonObject
-  dirtyNodeIds: readonly string[]
-}
-
-export interface ExtensionSettingsPanelSessionRef {
-  sessionId: string
+export interface ExtensionCardActionRunRequest {
   extensionId: string
   contributionId: string
 }
 
-export type ExtensionSettingsPanelSession = ExtensionSettingsPanelSessionRef
-
-export type ExtensionSettingsPanelParentRef =
-  | { surface: 'root' }
-  | { surface: 'dialog'; dialogId: string }
-
-type ExtensionResolvedSettingsPanelChangeNode<TNode extends { onChange?: unknown }> = Omit<
-  TNode,
-  'onChange'
-> & {
-  callbackId?: string
-}
-
-type ExtensionResolvedSettingsPanelButtonBase<TNode extends { onClick?: unknown }> = Omit<
-  TNode,
-  'onClick'
-> & {
-  callbackId?: string
-}
-
-export type ExtensionResolvedSettingsPanelSwitchNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelSwitchNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelCheckboxNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelCheckboxNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelSelectNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelSelectNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelRadioGroupNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelRadioGroupNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelMultiSelectNode =
-  ExtensionResolvedSettingsPanelChangeNode<SettingsPanelMultiSelectNode<unknown, unknown>>
-
-export type ExtensionResolvedSettingsPanelTextInputNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelTextInputNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelTextareaNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelTextareaNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelNumberInputNode =
-  ExtensionResolvedSettingsPanelChangeNode<SettingsPanelNumberInputNode<unknown, unknown>>
-
-export type ExtensionResolvedSettingsPanelStringListNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelStringListNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelRecordListNode = ExtensionResolvedSettingsPanelChangeNode<
-  SettingsPanelRecordListNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelButtonNode = ExtensionResolvedSettingsPanelButtonBase<
-  SettingsPanelButtonNode<unknown, unknown>
->
-
-export type ExtensionResolvedSettingsPanelFooterAction = ExtensionResolvedSettingsPanelButtonBase<
-  SettingsPanelFooterAction<SettingsPanelAnyNodeEvents>
->
-
-export type ExtensionResolvedSettingsPanelTextNode = SettingsPanelTextNode
-export type ExtensionResolvedSettingsPanelNoticeNode = SettingsPanelNoticeNode
-export type ExtensionResolvedSettingsPanelStatusNode = SettingsPanelStatusNode
-export type ExtensionResolvedSettingsPanelTableNode = SettingsPanelTableNode
-export type ExtensionResolvedSettingsPanelComparisonListNode = SettingsPanelComparisonListNode
-export type ExtensionResolvedSettingsPanelLinkNode = SettingsPanelLinkNode
-export type ExtensionResolvedSettingsPanelImageNode = SettingsPanelImageNode
-export type ExtensionResolvedSettingsPanelDividerNode = SettingsPanelDividerNode
-
-export type ExtensionResolvedSettingsPanelNode =
-  | ExtensionResolvedSettingsPanelSwitchNode
-  | ExtensionResolvedSettingsPanelCheckboxNode
-  | ExtensionResolvedSettingsPanelSelectNode
-  | ExtensionResolvedSettingsPanelRadioGroupNode
-  | ExtensionResolvedSettingsPanelMultiSelectNode
-  | ExtensionResolvedSettingsPanelTextInputNode
-  | ExtensionResolvedSettingsPanelTextareaNode
-  | ExtensionResolvedSettingsPanelNumberInputNode
-  | ExtensionResolvedSettingsPanelStringListNode
-  | ExtensionResolvedSettingsPanelRecordListNode
-  | ExtensionResolvedSettingsPanelButtonNode
-  | ExtensionResolvedSettingsPanelTextNode
-  | ExtensionResolvedSettingsPanelNoticeNode
-  | ExtensionResolvedSettingsPanelStatusNode
-  | ExtensionResolvedSettingsPanelTableNode
-  | ExtensionResolvedSettingsPanelComparisonListNode
-  | ExtensionResolvedSettingsPanelLinkNode
-  | ExtensionResolvedSettingsPanelImageNode
-  | ExtensionResolvedSettingsPanelDividerNode
-
-export interface ExtensionResolvedSettingsPanelField {
-  id: string
-  label?: string
-  description?: string
-  help?: SettingsPanelFieldHelp
-  link?: SettingsPanelFieldLink
-  hidden?: boolean
-  disabled?: boolean
-  orientation?: 'vertical' | 'horizontal' | 'responsive'
-  span?: 1 | 2 | 3 | 'full'
-  contentLayout?: 'stack' | 'inline' | 'grid'
-  contentColumns?: 1 | 2 | 3
-  content: readonly ExtensionResolvedSettingsPanelNode[]
-}
-
-export interface ExtensionResolvedSettingsPanelTab {
-  id: string
-  label: string
-  description?: string
-  icon?: string
-  fields: readonly ExtensionResolvedSettingsPanelField[]
-}
-
-export type ExtensionResolvedSettingsPanelRoot = {
-  surface: 'root'
-  title?: string
-  description?: string
-  submitLabel?: string
-  footerActions?: readonly ExtensionResolvedSettingsPanelFooterAction[]
-} & (
-  | {
-      fields: readonly ExtensionResolvedSettingsPanelField[]
-      tabs?: never
-      activeTabId?: never
-    }
-  | {
-      tabs: readonly ExtensionResolvedSettingsPanelTab[]
-      activeTabId?: string
-      fields?: never
-    }
-)
-
-export interface ExtensionResolvedSettingsPanelDialog {
-  surface: 'dialog'
-  dialogId: string
-  title?: string
-  description?: string
-  size?: SettingsPanelDialogSize
-  submitLabel?: string
-  footerActions?: readonly ExtensionResolvedSettingsPanelFooterAction[]
-  fields: readonly ExtensionResolvedSettingsPanelField[]
-}
-
-export interface ExtensionResolvedSettingsPanelPopover {
-  surface: 'popover'
-  popoverId: string
-  parent: ExtensionSettingsPanelParentRef
-  anchorNodeKey?: string
-  title?: string
-  description?: string
-  width?: SettingsPanelPopoverWidth
-  fields: readonly ExtensionResolvedSettingsPanelField[]
-}
-
-export type ExtensionSettingsPanelOpenRequest =
-  | {
-      surface: 'root'
-      extensionId: string
-      contributionId: string
-      reason?: SettingsPanelRefreshReason
-    }
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'dialog'
-      dialogId: string
-      params?: JsonObject
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-      revision: number
-    })
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'popover'
-      popoverId: string
-      parent: ExtensionSettingsPanelParentRef
-      params?: JsonObject
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-      anchorNodeKey: string
-      revision: number
-    })
-
-export type ExtensionSettingsPanelRefreshRequest =
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'root'
-      draft: ExtensionSettingsPanelDraftSnapshot
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'dialog'
-      dialogId: string
-      draft: ExtensionSettingsPanelDraftSnapshot
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'popover'
-      popoverId: string
-      parent: ExtensionSettingsPanelParentRef
-      draft: ExtensionSettingsPanelDraftSnapshot
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'all'
-      rootDraft: ExtensionSettingsPanelDraftSnapshot
-      activeDialog?: {
-        dialogId: string
-        draft: ExtensionSettingsPanelDraftSnapshot
-      }
-      reason?: SettingsPanelRefreshReason
-      revision: number
-    })
-
-export type ExtensionSettingsPanelSubmitRequest =
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'root'
-      draft: ExtensionSettingsPanelDraftSnapshot
-      revision: number
-    })
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'dialog'
-      dialogId: string
-      draft: ExtensionSettingsPanelDraftSnapshot
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-      revision: number
-    })
-
-export interface ExtensionSettingsPanelInvokeBase extends ExtensionSettingsPanelSessionRef {
-  callbackId: string
-  fieldId: string
-  nodeId: string
-  value?: JsonValue
-  requestId: string
-  revision: number
-}
-
-export type ExtensionSettingsPanelInvokeRequest =
-  | (ExtensionSettingsPanelInvokeBase & {
-      surface: 'root'
-      draft: ExtensionSettingsPanelDraftSnapshot
-    })
-  | (ExtensionSettingsPanelInvokeBase & {
-      surface: 'dialog'
-      dialogId: string
-      draft: ExtensionSettingsPanelDraftSnapshot
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-    })
-  | (ExtensionSettingsPanelInvokeBase & {
-      surface: 'popover'
-      popoverId: string
-      parent: ExtensionSettingsPanelParentRef
-      draft: ExtensionSettingsPanelDraftSnapshot
-      parentDraft: ExtensionSettingsPanelDraftSnapshot
-    })
-
-export type ExtensionSettingsPanelReleaseRequest =
-  | (ExtensionSettingsPanelSessionRef & { surface: 'root' | 'all' })
-  | (ExtensionSettingsPanelSessionRef & { surface: 'dialog'; dialogId: string })
-  | (ExtensionSettingsPanelSessionRef & {
-      surface: 'popover'
-      popoverId: string
-      parent: ExtensionSettingsPanelParentRef
-    })
-
-export type ExtensionSettingsPanelOpenResponse =
-  | {
-      surface: 'root'
-      session: ExtensionSettingsPanelSession
-      view: ExtensionResolvedSettingsPanelRoot
-    }
-  | {
-      surface: 'dialog'
-      dialog: ExtensionResolvedSettingsPanelDialog
-    }
-  | {
-      surface: 'popover'
-      popover: ExtensionResolvedSettingsPanelPopover
-    }
-
-export type ExtensionSettingsPanelRefreshResponse =
-  | {
-      surface: 'root'
-      view: ExtensionResolvedSettingsPanelRoot
-    }
-  | {
-      surface: 'dialog'
-      dialog: ExtensionResolvedSettingsPanelDialog
-    }
-  | {
-      surface: 'popover'
-      popover: ExtensionResolvedSettingsPanelPopover
-    }
-  | {
-      surface: 'all'
-      view: ExtensionResolvedSettingsPanelRoot
-      activeDialog?: {
-        dialogId: string
-        dialog: ExtensionResolvedSettingsPanelDialog
-      }
-    }
-
-export interface ExtensionSettingsPanelCallbackResponse {
-  result: SettingsPanelCallbackResult
-}
-
-export interface ExtensionSettingsPanelRefreshRequestedEvent {
+/**
+ * One open webview session as projected to the renderer. The renderer mounts
+ * an iframe at `documentUrl` (appending the bootstrap query) inside the
+ * surface container and relays messages through main.
+ */
+export interface ExtensionWebviewSessionInfo {
+  webviewId: string
   extensionId: string
-  contributionId: string
-  reason?: SettingsPanelRefreshReason
+  extensionName: string
+  title: string
+  surface: WebviewSurface
+  entry: string
+  params: JsonObject
+  documentUrl: string
+  openedAt: number
+}
+
+export interface ExtensionWebviewMessageEvent {
+  webviewId: string
+  message: JsonValue
+}
+
+export interface ExtensionWebviewPostMessageRequest {
+  webviewId: string
+  message: JsonValue
+}
+
+export interface ExtensionWebviewReadyRequest {
+  webviewId: string
+}
+
+export interface ExtensionWebviewCloseRequest {
+  webviewId: string
 }

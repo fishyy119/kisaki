@@ -1,4 +1,10 @@
-import { ExtensionTaskRunCancellation, readErrorCode } from '@kisaki3/extension-api'
+import {
+  ExtensionTaskRunCancellation,
+  createValidationError,
+  readErrorCode,
+  toJsonValue,
+  validateWebviewOpenOptionsShape
+} from '@kisaki3/extension-api'
 import type {
   AutomationCreateInput,
   AutomationUpdateInput,
@@ -28,9 +34,11 @@ import type {
   NetworkRequest,
   NetworkResponse,
   RpcParams,
-  RpcResult
+  RpcResult,
+  WebviewHandle,
+  WebviewOpenOptions
 } from '@kisaki3/extension-api'
-import type { ActiveExtensionScope } from './types'
+import type { ActiveExtensionScope, WebviewSessionBinding } from './types'
 import { toNetworkDownloadRequest, toNetworkRequest } from './utils/network'
 import { toJsonRecord, toOptionalJsonRecord } from './utils/json'
 import { toTaskRunFailureErrorPayload } from './utils/task-runs'
@@ -104,6 +112,7 @@ export interface KisakiApiBridgeHooks {
     runId: string,
     controller: AbortController
   ): Disposable
+  registerWebviewSession(scope: ActiveExtensionScope, webviewId: string): WebviewSessionBinding
 }
 
 /**
@@ -160,6 +169,40 @@ export function createKisakiApi(
         >)
       }
     } as unknown as TNamespace
+  }
+
+  const openWebview = async (options: WebviewOpenOptions): Promise<WebviewHandle> => {
+    const scope = requireScope()
+    const issues = validateWebviewOpenOptionsShape(options)
+    if (issues.length > 0) {
+      throw createValidationError(
+        `Webview open options are invalid:\n${issues
+          .map((issue) => `${issue.path}: ${issue.message}`)
+          .join('\n')}`,
+        { issues: issues.map((issue) => ({ path: issue.path, message: issue.message })) }
+      )
+    }
+
+    const { webviewId } = await requestMain('capabilities.webviews.open', {
+      options: toJsonRecord<WebviewOpenOptions>(options, 'webview open options')
+    })
+    const binding = hooks.registerWebviewSession(scope, webviewId)
+
+    return {
+      id: webviewId,
+      signal: binding.signal,
+      postMessage: async (message) => {
+        await requestMain('capabilities.webviews.postMessage', {
+          webviewId,
+          message: toJsonValue(message, 'webview message')
+        })
+      },
+      onMessage: (listener) => binding.onMessage(listener),
+      onClose: (listener) => binding.onClose(listener),
+      close: async () => {
+        await requestMain('capabilities.webviews.close', { webviewId })
+      }
+    }
   }
 
   const createTaskRunHandle = (run: ExtensionTaskRunSnapshot): ExtensionTaskRunHandle => {
@@ -580,6 +623,9 @@ export function createKisakiApi(
             runId
           })
         ).run
+    },
+    webviews: {
+      open: openWebview
     }
   }
 }
@@ -623,6 +669,9 @@ export function createScopeCapturingKisakiApi(
     },
     get taskRuns() {
       return getApi().taskRuns
+    },
+    get webviews() {
+      return getApi().webviews
     }
   }
 }

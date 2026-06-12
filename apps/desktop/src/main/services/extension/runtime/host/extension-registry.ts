@@ -1,4 +1,5 @@
 import type {
+  CardActionContribution,
   CharacterScraperProvider,
   CommandContribution,
   DeeplinkRouteContribution,
@@ -14,7 +15,6 @@ import type {
   GameScraperProvider,
   PersonScraperProvider,
   CompanyScraperProvider,
-  SettingsPanelContribution,
   ScraperMediaType,
   ThemeContribution,
   DisposableStore
@@ -65,7 +65,7 @@ export interface LoadedExtensionRuntime {
   subscriptions: DisposableStore
   abortController: AbortController
   entityMenus: EntityMenuRegistrationMaps
-  settingsPanels: Map<string, SettingsPanelContribution<any, any>>
+  cardActions: Map<string, CardActionContribution>
   scraperProviders: ScraperProviderMaps
   deeplinkRoutes: Map<string, DeeplinkRouteContribution>
   themes: Map<string, ThemeContribution>
@@ -142,15 +142,12 @@ export class ExtensionRegistry {
     getEntityMenuRegistrationMap(this.require(extensionId), domain, scope).delete(contributionId)
   }
 
-  registerSettingsPanel(
-    extensionId: string,
-    contribution: SettingsPanelContribution<any, any>
-  ): void {
-    this.require(extensionId).settingsPanels.set(contribution.id, contribution)
+  registerCardAction(extensionId: string, action: CardActionContribution): void {
+    this.require(extensionId).cardActions.set(action.id, action)
   }
 
-  unregisterSettingsPanel(extensionId: string, contributionId: string): void {
-    this.require(extensionId).settingsPanels.delete(contributionId)
+  unregisterCardAction(extensionId: string, contributionId: string): void {
+    this.require(extensionId).cardActions.delete(contributionId)
   }
 
   getScraperProviders<TMediaType extends ScraperMediaType>(

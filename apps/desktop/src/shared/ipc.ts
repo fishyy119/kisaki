@@ -78,16 +78,13 @@ import type {
   ExtensionRepositoryUpdateRequest,
   ExtensionResolvedEntityMenu,
   ExtensionRuntimeStateChangedEvent,
-  ExtensionSettingsPanelCallbackResponse,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelOpenRequest,
-  ExtensionSettingsPanelOpenResponse,
-  ExtensionSettingsPanelRefreshRequest,
-  ExtensionSettingsPanelRefreshResponse,
-  ExtensionSettingsPanelRefreshRequestedEvent,
-  ExtensionSettingsPanelReleaseRequest,
-  ExtensionSettingsPanelSubmitRequest,
+  ExtensionCardActionRunRequest,
   ExtensionThemeRegistrationInfo,
+  ExtensionWebviewCloseRequest,
+  ExtensionWebviewMessageEvent,
+  ExtensionWebviewPostMessageRequest,
+  ExtensionWebviewReadyRequest,
+  ExtensionWebviewSessionInfo,
   ExtensionTrustedSignerInfo,
   ExtensionAutomaticUpdateRunState,
   ExtensionUpdateCheckResult,
@@ -505,21 +502,11 @@ export interface IpcMainHandlers {
     request: ExtensionEntityMenuInvokeRequest
   ) => IpcResult<ExtensionEntityMenuInvokeResponse>
   'extension:release-entity-menu': (request: ExtensionEntityMenuReleaseRequest) => IpcVoidResult
-  'extension:open-settings-panel': (
-    request: ExtensionSettingsPanelOpenRequest
-  ) => IpcResult<ExtensionSettingsPanelOpenResponse>
-  'extension:refresh-settings-panel': (
-    request: ExtensionSettingsPanelRefreshRequest
-  ) => IpcResult<ExtensionSettingsPanelRefreshResponse>
-  'extension:submit-settings-panel': (
-    request: ExtensionSettingsPanelSubmitRequest
-  ) => IpcResult<ExtensionSettingsPanelCallbackResponse>
-  'extension:invoke-settings-panel-node': (
-    request: ExtensionSettingsPanelInvokeRequest
-  ) => IpcResult<ExtensionSettingsPanelCallbackResponse>
-  'extension:release-settings-panel': (
-    request: ExtensionSettingsPanelReleaseRequest
-  ) => IpcVoidResult
+  'extension:run-card-action': (request: ExtensionCardActionRunRequest) => IpcVoidResult
+  'extension:get-webview-sessions': () => IpcResult<readonly ExtensionWebviewSessionInfo[]>
+  'extension:post-webview-message': (request: ExtensionWebviewPostMessageRequest) => IpcVoidResult
+  'extension:notify-webview-ready': (request: ExtensionWebviewReadyRequest) => IpcVoidResult
+  'extension:close-webview': (request: ExtensionWebviewCloseRequest) => IpcVoidResult
   'extension:get-theme-contributions': () => IpcResult<readonly ExtensionThemeRegistrationInfo[]>
 
   // Scanner
@@ -573,10 +560,9 @@ export interface IpcRendererEvents {
   'extension:automatic-update-run-changed': [state: ExtensionAutomaticUpdateRunState]
   'extension:trusted-signers-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]
-  'extension:settings-panels-refresh-requested': [
-    event: ExtensionSettingsPanelRefreshRequestedEvent
-  ]
   'extension:entity-menus-refresh-requested': [event: ExtensionEntityMenuRefreshRequestedEvent]
+  'extension:webview-sessions-changed': [sessions: readonly ExtensionWebviewSessionInfo[]]
+  'extension:webview-message': [event: ExtensionWebviewMessageEvent]
 
   // Deeplink events (main → renderer)
   'deeplink:navigate': [DeeplinkNavigatePayload]

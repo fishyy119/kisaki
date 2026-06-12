@@ -1,1 +1,0 @@
-export { HostSettingsPanelContributionPoint } from './point'

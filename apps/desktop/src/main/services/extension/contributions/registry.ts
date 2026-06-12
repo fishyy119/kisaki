@@ -1,28 +1,21 @@
 import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
 import type {
+  ExtensionCardActionRunRequest,
   ExtensionContributionSnapshot,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
   ExtensionResolvedEntityMenu,
-  ExtensionSettingsPanelCallbackResponse,
-  ExtensionSettingsPanelInvokeRequest,
-  ExtensionSettingsPanelOpenRequest,
-  ExtensionSettingsPanelOpenResponse,
-  ExtensionSettingsPanelRefreshRequest,
-  ExtensionSettingsPanelRefreshResponse,
-  ExtensionSettingsPanelReleaseRequest,
-  ExtensionSettingsPanelSubmitRequest,
   ExtensionThemeRegistrationInfo
 } from '@shared/extension'
 import type { ExtensionHostRpcClient } from '../runtime'
 import { requireSafeExtensionId } from '../shared/path-confinement'
+import { ExtensionCardActionContributionPoint } from './card-actions'
 import { ExtensionCommandContributionPoint } from './commands'
 import { ExtensionDeeplinkRouteContributionPoint } from './deeplink-routes'
 import { ExtensionEntityMenuContributionPoint } from './entity-menus'
 import { ExtensionScraperProviderContributionPoint } from './scraper-providers'
-import { ExtensionSettingsPanelContributionPoint } from './settings-panels'
 import { ExtensionThemeContributionPoint } from './themes'
 import type {
   ExtensionContributionDomainOptions,
@@ -31,7 +24,7 @@ import type {
 
 export class ExtensionContributionRegistry {
   readonly entityMenus: ExtensionEntityMenuContributionPoint
-  readonly settingsPanels: ExtensionSettingsPanelContributionPoint
+  readonly cardActions: ExtensionCardActionContributionPoint
   readonly themes: ExtensionThemeContributionPoint
   readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionPoint
   readonly scraperProviders: ExtensionScraperProviderContributionPoint
@@ -39,7 +32,7 @@ export class ExtensionContributionRegistry {
 
   constructor(private readonly options: ExtensionContributionDomainOptions) {
     this.entityMenus = new ExtensionEntityMenuContributionPoint(options)
-    this.settingsPanels = new ExtensionSettingsPanelContributionPoint(options)
+    this.cardActions = new ExtensionCardActionContributionPoint(options)
     this.themes = new ExtensionThemeContributionPoint(options)
     this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint(options)
     this.scraperProviders = new ExtensionScraperProviderContributionPoint(options)
@@ -74,24 +67,17 @@ export class ExtensionContributionRegistry {
       }
     )
     rpc.handleHostRequest(
-      'contributions.settingsPanels.register',
-      async ({ runtimeHandle, panel }) => {
-        this.settingsPanels.register(runtimeHandle, panel)
+      'contributions.cardActions.register',
+      async ({ runtimeHandle, action }) => {
+        this.cardActions.register(runtimeHandle, action)
         this.notifyChanged()
         return {}
       }
     )
     rpc.handleHostRequest(
-      'contributions.settingsPanels.refreshRequested',
-      async ({ runtimeHandle, contributionId, reason }) => {
-        this.settingsPanels.notifyRefreshRequested(runtimeHandle, contributionId, reason)
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'contributions.settingsPanels.unregister',
+      'contributions.cardActions.unregister',
       async ({ runtimeHandle, contributionId }) => {
-        this.settingsPanels.unregister(runtimeHandle, contributionId)
+        this.cardActions.unregister(runtimeHandle, contributionId)
         this.notifyChanged()
         return {}
       }
@@ -154,7 +140,7 @@ export class ExtensionContributionRegistry {
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
     try {
       this.entityMenus.releaseRuntime(runtimeHandle)
-      this.settingsPanels.releaseRuntime(runtimeHandle)
+      this.cardActions.releaseRuntime(runtimeHandle)
       this.themes.releaseRuntime(runtimeHandle)
       this.deeplinkRoutes.releaseRuntime(runtimeHandle)
       await this.scraperProviders.releaseRuntime(runtimeHandle)
@@ -167,7 +153,7 @@ export class ExtensionContributionRegistry {
   async releaseAll(): Promise<void> {
     try {
       this.entityMenus.releaseAll()
-      this.settingsPanels.releaseAll()
+      this.cardActions.releaseAll()
       this.themes.releaseAll()
       this.deeplinkRoutes.releaseAll()
       await this.scraperProviders.releaseAll()
@@ -180,7 +166,7 @@ export class ExtensionContributionRegistry {
   getSnapshot(): ExtensionContributionSnapshot {
     return {
       entityMenus: this.entityMenus.getSnapshot(),
-      settingsPanels: this.settingsPanels.getSnapshot(),
+      cardActions: this.cardActions.getSnapshot(),
       scraperProviders: this.scraperProviders.getSnapshot(),
       deeplinkRoutes: this.deeplinkRoutes.getSnapshot(),
       themes: this.themes.getSnapshot()
@@ -210,44 +196,8 @@ export class ExtensionContributionRegistry {
     return this.entityMenus.release(request)
   }
 
-  openSettingsPanel(
-    request: ExtensionSettingsPanelOpenRequest
-  ): Promise<ExtensionSettingsPanelOpenResponse> {
-    return this.settingsPanels.open({
-      ...request,
-      extensionId: requireSafeExtensionId(request.extensionId)
-    })
-  }
-
-  refreshSettingsPanel(
-    request: ExtensionSettingsPanelRefreshRequest
-  ): Promise<ExtensionSettingsPanelRefreshResponse> {
-    return this.settingsPanels.refresh({
-      ...request,
-      extensionId: requireSafeExtensionId(request.extensionId)
-    })
-  }
-
-  submitSettingsPanel(
-    request: ExtensionSettingsPanelSubmitRequest
-  ): Promise<ExtensionSettingsPanelCallbackResponse> {
-    return this.settingsPanels.submit({
-      ...request,
-      extensionId: requireSafeExtensionId(request.extensionId)
-    })
-  }
-
-  invokeSettingsPanelNode(
-    request: ExtensionSettingsPanelInvokeRequest
-  ): Promise<ExtensionSettingsPanelCallbackResponse> {
-    return this.settingsPanels.invoke({
-      ...request,
-      extensionId: requireSafeExtensionId(request.extensionId)
-    })
-  }
-
-  releaseSettingsPanel(request: ExtensionSettingsPanelReleaseRequest): Promise<void> {
-    return this.settingsPanels.release({
+  runCardAction(request: ExtensionCardActionRunRequest): Promise<void> {
+    return this.cardActions.run({
       ...request,
       extensionId: requireSafeExtensionId(request.extensionId)
     })
@@ -256,7 +206,7 @@ export class ExtensionContributionRegistry {
   assertReleased(extensionId: string, operation: string): void {
     const diagnostics = [
       ...this.entityMenus.getReleaseDiagnostics(extensionId),
-      ...this.settingsPanels.getReleaseDiagnostics(extensionId),
+      ...this.cardActions.getReleaseDiagnostics(extensionId),
       ...this.scraperProviders.getReleaseDiagnostics(extensionId),
       ...this.deeplinkRoutes.getReleaseDiagnostics(extensionId),
       ...this.themes.getReleaseDiagnostics(extensionId),

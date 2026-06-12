@@ -1,1 +1,0 @@
-export { ExtensionSettingsPanelContributionPoint } from './point'

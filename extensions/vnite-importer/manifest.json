@@ -5,6 +5,7 @@
   "version": "0.0.1",
   "categories": ["tool", "integration"],
   "entry": "./dist/index.mjs",
+  "ui": "dist/ui",
   "description": "Import games and user data from Vnite database backups.",
   "author": "Kisaki",
   "keywords": ["vnite", "import", "backup", "game"],

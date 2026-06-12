@@ -1,10 +1,10 @@
 import type { DisposableStore, JsonValue } from './shared'
 import type {
+  CardActionRegistrar,
   CommandRegistrar,
   DeeplinkRouteRegistrar,
   EntityMenuRegistrar,
   ScraperProviderRegistrar,
-  SettingsPanelRegistrar,
   ThemeRegistrar
 } from './contributions'
 
@@ -67,7 +67,7 @@ export interface ExtensionContext {
 
 export interface ExtensionContributionRegistrars {
   readonly entityMenus: EntityMenuRegistrar
-  readonly settingsPanels: SettingsPanelRegistrar
+  readonly cardActions: CardActionRegistrar
   readonly scraperProviders: ScraperProviderRegistrar
   readonly deeplinkRoutes: DeeplinkRouteRegistrar
   readonly themes: ThemeRegistrar

@@ -4,8 +4,8 @@ import path from 'node:path'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
 import PouchDB from 'pouchdb'
-import { analyzeVniteBackupArchive } from '../src/backup/analyzer'
-import { VnitePouchStore } from '../src/backup/pouch'
+import { analyzeVniteBackupArchive } from '../src/host/backup/analyzer'
+import { VnitePouchStore } from '../src/host/backup/pouch'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 

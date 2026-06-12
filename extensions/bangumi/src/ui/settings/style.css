@@ -1,0 +1,67 @@
+/*
+ * The webview client mirrors the active Kisaki theme as --kisaki-* CSS
+ * variables; the SDK theme bridge maps them onto Tailwind color tokens so the
+ * document uses the same semantic utilities as the app.
+ */
+@import 'tailwindcss';
+@import '@kisaki3/extension-sdk/theme.css';
+
+@layer base {
+  body {
+    @apply m-0 min-h-screen bg-background text-[13px] text-foreground;
+  }
+
+  button {
+    @apply cursor-pointer rounded-md border border-border bg-surface px-3 py-[5px] text-xs whitespace-nowrap text-surface-foreground;
+    @apply hover:enabled:border-primary disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  input[type='text'],
+  input[type='number'],
+  select {
+    @apply min-w-0 rounded-md border border-border bg-surface px-2 py-[5px] text-xs text-surface-foreground;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    @apply accent-primary;
+  }
+}
+
+@layer components {
+  .field {
+    @apply flex items-center justify-between gap-4 border-b border-border/50 py-2 last:border-b-0;
+  }
+
+  .field-info {
+    @apply flex min-w-0 flex-col gap-0.5;
+  }
+
+  .field-label {
+    @apply font-medium;
+  }
+
+  .field-hint {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .field-control {
+    @apply flex shrink-0 items-center gap-2;
+  }
+
+  .check-group {
+    @apply flex flex-wrap gap-3;
+  }
+
+  .check-group label {
+    @apply flex items-center gap-1;
+  }
+
+  .notice {
+    @apply rounded-md border border-border bg-muted px-2.5 py-2 text-xs text-muted-foreground;
+  }
+
+  .notice-danger {
+    @apply border-danger bg-danger/10 text-danger;
+  }
+}

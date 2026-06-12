@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router'
 import { ErrorBoundary } from '@renderer/components/shared'
 import RootLayout from '@renderer/components/layout/root-layout.vue'
+import { ExtensionWebviewDialogHost } from '@renderer/components/extension/webview-host'
 import { Toaster } from '@renderer/components/ui/toaster'
 import { useThemeStore } from '@renderer/stores'
 
@@ -14,6 +15,7 @@ void useThemeStore()
     <RootLayout>
       <RouterView />
     </RootLayout>
+    <ExtensionWebviewDialogHost />
     <Toaster
       expand
       close-button

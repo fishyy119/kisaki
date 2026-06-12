@@ -48,6 +48,9 @@ import {
   StatisticsYearlyPage
 } from '@renderer/features/statistics'
 
+// Extension webview page
+import ExtensionWebviewPage from '@renderer/pages/extension-webview-page.vue'
+
 // Placeholder component for routes during development
 const PlaceholderPage = {
   name: 'PlaceholderPage',
@@ -204,6 +207,13 @@ const routes: RouteRecordRaw[] = [
         component: ExtensionSignersPage
       }
     ]
+  },
+  // Extension webview page surface
+  {
+    path: '/extension-webview/:webviewId',
+    name: 'extension-webview',
+    component: ExtensionWebviewPage,
+    props: true
   },
   // Updater
   {

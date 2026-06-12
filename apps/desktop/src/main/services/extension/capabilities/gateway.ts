@@ -8,6 +8,8 @@ import type { NetworkService } from '@main/services/network'
 import type { NotifyService } from '@main/services/notify'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunService } from '@main/services/task-run'
+import type { ExtensionWebviewMessageEvent, ExtensionWebviewSessionInfo } from '@shared/extension'
+import type { ExtensionWebviewUiSource } from '../packages'
 import type { ExtensionHostRpcClient } from '../runtime'
 import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
@@ -20,6 +22,7 @@ import { ExtensionNotifyCapabilityProvider } from './notify'
 import { ExtensionRuntimeCapabilityProvider } from './runtime'
 import { ExtensionScrapersCapabilityProvider } from './scrapers'
 import { ExtensionTaskRunsCapabilityProvider } from './task-runs'
+import { ExtensionWebviewsCapabilityProvider } from './webviews'
 
 export interface ExtensionCapabilityGatewayOptions {
   automation: AutomationService
@@ -32,6 +35,10 @@ export interface ExtensionCapabilityGatewayOptions {
   scraper: ScraperService
   taskRun: TaskRunService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
+  resolveWebviewUiSource(extensionId: string): ExtensionWebviewUiSource | null
+  buildWebviewPackageDocumentUrl(extensionId: string, entry: string): string
+  onWebviewSessionsChanged(sessions: readonly ExtensionWebviewSessionInfo[]): void
+  onWebviewMessage(event: ExtensionWebviewMessageEvent): void
 }
 
 export class ExtensionCapabilityGateway {
@@ -46,6 +53,7 @@ export class ExtensionCapabilityGateway {
   readonly commands: ExtensionCommandsCapabilityProvider
   readonly automations: ExtensionAutomationsCapabilityProvider
   readonly taskRuns: ExtensionTaskRunsCapabilityProvider
+  readonly webviews: ExtensionWebviewsCapabilityProvider
 
   constructor(options: ExtensionCapabilityGatewayOptions) {
     this.files = new ExtensionFilesCapabilityProvider({
@@ -92,12 +100,35 @@ export class ExtensionCapabilityGateway {
       command: options.command,
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
+    this.webviews = new ExtensionWebviewsCapabilityProvider({
+      resolveRuntimeHandle: options.resolveRuntimeHandle,
+      resolveUiSource: options.resolveWebviewUiSource,
+      buildPackageDocumentUrl: options.buildWebviewPackageDocumentUrl,
+      onSessionsChanged: options.onWebviewSessionsChanged,
+      onWebviewMessage: options.onWebviewMessage
+    })
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
     this.events.attachRpc(rpc)
     this.taskRuns.attachRpc(rpc)
+    this.webviews.attachRpc(rpc)
     this.library.registerRpcHandlers(rpc)
+
+    rpc.handleHostRequest('capabilities.webviews.open', async ({ runtimeHandle, options }) =>
+      this.webviews.open(runtimeHandle, options)
+    )
+    rpc.handleHostRequest('capabilities.webviews.close', async ({ runtimeHandle, webviewId }) => {
+      this.webviews.close(runtimeHandle, webviewId)
+      return {}
+    })
+    rpc.handleHostRequest(
+      'capabilities.webviews.postMessage',
+      async ({ runtimeHandle, webviewId, message }) => {
+        this.webviews.postMessageToWebview(runtimeHandle, webviewId, message)
+        return {}
+      }
+    )
 
     rpc.handleHostRequest('capabilities.files.pickFile', async ({ runtimeHandle, input }) => ({
       grant: await this.files.pickFile(runtimeHandle, input)
@@ -316,6 +347,7 @@ export class ExtensionCapabilityGateway {
   detachRpc(): void {
     this.events.detachRpc()
     this.taskRuns.detachRpc()
+    this.webviews.detachRpc()
   }
 
   releaseRuntime(runtimeHandle: string): void {
@@ -324,6 +356,7 @@ export class ExtensionCapabilityGateway {
     this.notify.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
     this.taskRuns.releaseRuntime(runtimeHandle)
+    this.webviews.releaseRuntime(runtimeHandle)
   }
 
   releaseAll(): void {
@@ -332,6 +365,7 @@ export class ExtensionCapabilityGateway {
     this.notify.releaseAll()
     this.commands.releaseAll()
     this.taskRuns.releaseAll()
+    this.webviews.releaseAll()
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {

@@ -5,7 +5,7 @@ import type { ExtensionContributionSnapshot } from '@shared/extension'
 function createEmptySnapshot(): ExtensionContributionSnapshot {
   return {
     entityMenus: [],
-    settingsPanels: [],
+    cardActions: [],
     scraperProviders: [],
     deeplinkRoutes: [],
     themes: []
@@ -19,7 +19,7 @@ let refreshPromise: Promise<ExtensionContributionSnapshot> | null = null
 export const extensionContributionStore = {
   snapshot,
   entityMenus: computed(() => snapshot.value.entityMenus),
-  settingsPanels: computed(() => snapshot.value.settingsPanels),
+  cardActions: computed(() => snapshot.value.cardActions),
   scraperProviders: computed(() => snapshot.value.scraperProviders),
   deeplinkRoutes: computed(() => snapshot.value.deeplinkRoutes),
   themes: computed(() => snapshot.value.themes)

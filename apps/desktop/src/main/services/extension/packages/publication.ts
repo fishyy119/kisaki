@@ -14,6 +14,12 @@ export interface ExtensionPackagePublication {
   version: string
   buildId: string
   publishedAt: string
+  /**
+   * Origin of the Vite dev server delivering webview UI assets, when the
+   * publication declares `ui.mode === 'dev-server'`. Bundled UI assets
+   * otherwise serve from the package directory.
+   */
+  uiDevServerOrigin: string | null
 }
 
 interface ExtensionPackagePublicationDocument {
@@ -23,6 +29,7 @@ interface ExtensionPackagePublicationDocument {
   buildId?: unknown
   packagePath?: unknown
   publishedAt?: unknown
+  ui?: unknown
 }
 
 export async function readExtensionPackagePublication(
@@ -51,8 +58,46 @@ export async function readExtensionPackagePublication(
     extensionId,
     version: requirePointerString(document.version, 'version'),
     buildId: requirePointerString(document.buildId, 'buildId'),
-    publishedAt: requirePointerString(document.publishedAt, 'publishedAt')
+    publishedAt: requirePointerString(document.publishedAt, 'publishedAt'),
+    uiDevServerOrigin: resolvePointerUiDevServerOrigin(document.ui)
   }
+}
+
+function resolvePointerUiDevServerOrigin(value: unknown): string | null {
+  if (value === undefined) {
+    return null
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('current.json ui must be an object.')
+  }
+
+  const ui = value as { mode?: unknown; origin?: unknown }
+  if (ui.mode === 'bundled') {
+    return null
+  }
+
+  if (ui.mode !== 'dev-server') {
+    throw new Error('current.json ui.mode must be "bundled" or "dev-server".')
+  }
+
+  const origin = requirePointerString(ui.origin, 'ui.origin')
+  let parsed: URL
+  try {
+    parsed = new URL(origin)
+  } catch {
+    throw new Error('current.json ui.origin must be a valid URL.')
+  }
+
+  if (parsed.protocol !== 'http:' || !isLoopbackHostname(parsed.hostname)) {
+    throw new Error('current.json ui.origin must be a loopback http origin.')
+  }
+
+  return parsed.origin
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
 }
 
 function requirePointerExtensionId(

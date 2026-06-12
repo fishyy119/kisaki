@@ -28,6 +28,11 @@ export interface ExtensionManifest {
   version: string
   categories: readonly ExtensionCategory[]
   entry: string
+  /**
+   * Package-relative root directory of built webview UI assets, e.g. `dist/ui`.
+   * Required for the extension to open webviews.
+   */
+  ui?: string
   description?: string
   author?: string
   homepage?: string
@@ -47,6 +52,7 @@ const MANIFEST_KEYS = new Set<string>([
   'name',
   'version',
   'entry',
+  'ui',
   'description',
   'author',
   'homepage',
@@ -90,6 +96,11 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
     ...validateRequiredString(value.entry, '$.entry', {
       minLength: 1,
       valueMessage: 'Field must be a non-empty string.'
+    }),
+    ...validateOptionalString(value.ui, '$.ui', {
+      minLength: 1,
+      typeMessage: 'Field must be a string when provided.',
+      valueMessage: 'Field must be a non-empty string when provided.'
     }),
     ...validateOptionalString(value.description, '$.description', {
       typeMessage: 'Field must be a string when provided.'
@@ -237,6 +248,15 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
     })
   }
 
+  const normalizedUi =
+    manifest.ui === undefined ? undefined : normalizeExtensionPackagePath(manifest.ui)
+  if (manifest.ui !== undefined && !normalizedUi) {
+    issues.push({
+      path: '$.ui',
+      message: 'Path must be relative and stay inside the extension package root.'
+    })
+  }
+
   const normalizedIcon =
     manifest.icon === undefined ? undefined : normalizeExtensionPackagePath(manifest.icon)
   if (manifest.icon !== undefined && !normalizedIcon) {
@@ -250,10 +270,14 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
     return { manifest: null, issues }
   }
 
-  const { icon: _icon, ...manifestWithoutIcon } = manifest
+  const { ui: _ui, icon: _icon, ...manifestWithoutOptionalPaths } = manifest
   const normalizedManifest: ExtensionManifest = {
-    ...manifestWithoutIcon,
+    ...manifestWithoutOptionalPaths,
     entry: normalizedEntry
+  }
+
+  if (normalizedUi !== undefined && normalizedUi !== null) {
+    normalizedManifest.ui = normalizedUi
   }
 
   if (normalizedIcon !== undefined && normalizedIcon !== null) {
