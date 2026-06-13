@@ -12,6 +12,7 @@
     "check:extension-tooling": "tsx scripts/extension-tooling.ts check",
     "version:extension-tooling": "tsx scripts/extension-tooling.ts set-version",
     "build:extension-tooling": "tsx scripts/extension-tooling.ts build",
+    "verify:extension-tooling": "tsx scripts/extension-tooling.ts verify-output",
     "pack:extension-tooling": "tsx scripts/extension-tooling.ts pack",
     "publish:extension-tooling": "tsx scripts/extension-tooling.ts publish",
     "typecheck": "pnpm build:extension-tooling && pnpm -r --parallel typecheck",

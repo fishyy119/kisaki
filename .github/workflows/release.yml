@@ -169,6 +169,9 @@ jobs:
       - name: Build extension tooling
         run: pnpm build:extension-tooling
 
+      - name: Verify extension tooling outputs
+        run: pnpm verify:extension-tooling
+
       - name: Pack extension tooling packages
         run: pnpm pack:extension-tooling --out-dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
 

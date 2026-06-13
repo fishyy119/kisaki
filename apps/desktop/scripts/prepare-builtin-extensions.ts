@@ -31,7 +31,8 @@ const builtinExtensionsRoot = path.join(repoRoot, 'extensions')
 const extensionCliEntry = path.join(repoRoot, 'packages', 'extension-cli', 'src', 'index.ts')
 const extensionBuildPackageGroups = [
   ['extension-api'],
-  ['extension-registry', 'extension-sdk']
+  ['extension-registry', 'extension-sdk'],
+  ['extension-cli']
 ] as const
 const extensionDebugPackageNames = ['extension-api', 'extension-sdk'] as const
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'

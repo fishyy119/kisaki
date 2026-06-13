@@ -54,6 +54,34 @@ const toolingBuildPackageGroups = [
   ['@kisaki3/extension-registry', '@kisaki3/extension-sdk', 'create-kisaki-extension'],
   ['@kisaki3/extension-cli']
 ] as const
+const toolingOutputPaths = [
+  'packages/extension-api/dist/index.mjs',
+  'packages/extension-api/dist/index.d.mts',
+  'packages/extension-api/dist/index.cjs',
+  'packages/extension-api/dist/index.d.cts',
+  'packages/extension-registry/dist/index.mjs',
+  'packages/extension-registry/dist/index.d.mts',
+  'packages/extension-registry/dist/index.cjs',
+  'packages/extension-registry/dist/index.d.cts',
+  'packages/extension-registry/dist/node.mjs',
+  'packages/extension-registry/dist/node.d.mts',
+  'packages/extension-registry/dist/node.cjs',
+  'packages/extension-registry/dist/node.d.cts',
+  'packages/extension-sdk/dist/index.mjs',
+  'packages/extension-sdk/dist/index.d.mts',
+  'packages/extension-sdk/dist/index.cjs',
+  'packages/extension-sdk/dist/index.d.cts',
+  'packages/extension-sdk/dist/webview.mjs',
+  'packages/extension-sdk/dist/webview.d.mts',
+  'packages/extension-sdk/dist/webview.cjs',
+  'packages/extension-sdk/dist/webview.d.cts',
+  'packages/extension-ui-vue/dist/index.mjs',
+  'packages/extension-ui-vue/dist/index.d.ts',
+  'packages/extension-cli/dist/index.mjs',
+  'packages/extension-cli/dist/config.mjs',
+  'packages/extension-cli/dist/config.d.mts',
+  'packages/create-kisaki-extension/dist/index.mjs'
+] as const
 
 const templatePackagePath = 'packages/create-kisaki-extension/templates/extension/base/package.json'
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
@@ -82,6 +110,9 @@ async function main(): Promise<void> {
       break
     case 'build':
       await buildTooling()
+      break
+    case 'verify-output':
+      verifyToolingOutput()
       break
     case 'pack':
       packTooling(args)
@@ -165,6 +196,21 @@ async function buildTooling(): Promise<void> {
       })
     )
   }
+}
+
+function verifyToolingOutput(): void {
+  const missingPaths = toolingOutputPaths.filter(
+    (outputPath) => !existsSync(resolveRepo(outputPath))
+  )
+  if (missingPaths.length > 0) {
+    throw new Error(
+      `Missing extension tooling output files:\n${missingPaths
+        .map((outputPath) => `  - ${outputPath}`)
+        .join('\n')}`
+    )
+  }
+
+  console.log(`[extension-tooling] Verified ${toolingOutputPaths.length} output files.`)
 }
 
 function packTooling(args: readonly string[]): void {
@@ -546,6 +592,7 @@ function printUsage(receivedCommand: string | undefined): void {
   tsx scripts/extension-tooling.ts check [version]
   tsx scripts/extension-tooling.ts set-version <version>
   tsx scripts/extension-tooling.ts build
+  tsx scripts/extension-tooling.ts verify-output
   tsx scripts/extension-tooling.ts pack [--out-dir <dir>]
   tsx scripts/extension-tooling.ts publish [--dir <dir>] [--dry-run] [--tag <tag>]
   tsx scripts/extension-tooling.ts list`)

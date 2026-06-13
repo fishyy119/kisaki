@@ -69,18 +69,7 @@ jobs:
         run: pnpm build:extension-tooling
 
       - name: Verify extension tooling outputs
-        run: |
-          test -f packages/extension-api/dist/index.mjs
-          test -f packages/extension-api/dist/index.d.mts
-          test -f packages/extension-registry/dist/index.mjs
-          test -f packages/extension-registry/dist/node.mjs
-          test -f packages/extension-registry/dist/index.d.mts
-          test -f packages/extension-registry/dist/node.d.mts
-          test -f packages/extension-sdk/dist/index.mjs
-          test -f packages/extension-sdk/dist/index.d.mts
-          test -f packages/extension-cli/dist/index.mjs
-          test -f packages/create-kisaki-extension/dist/index.mjs
-          echo "All extension tooling outputs verified"
+        run: pnpm verify:extension-tooling
 
   # =============================================================================
   # Build App: Main Electron application (Windows only for now)
