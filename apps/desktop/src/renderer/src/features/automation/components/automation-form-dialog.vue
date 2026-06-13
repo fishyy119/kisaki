@@ -390,7 +390,7 @@ function parseOptionalTimezone(value: string): string | undefined {
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[72vh] overflow-auto scrollbar-thin">
+        <DialogBody class="max-h-[72vh] overflow-auto">
           <FieldGroup>
             <Field label="名称">
               <FieldContent>

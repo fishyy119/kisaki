@@ -165,7 +165,7 @@ async function handleSubmit() {
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto scrollbar-thin">
+          <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
             <FieldGroup>
               <Field>
                 <FieldLabel>刮削器配置</FieldLabel>

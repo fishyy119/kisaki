@@ -19,7 +19,7 @@ useStatisticsProvider()
     <StatisticsHeader />
 
     <!-- Main content - child routes render here -->
-    <div class="flex-1 min-h-0 overflow-auto p-4 scrollbar-thin">
+    <div class="flex-1 min-h-0 overflow-auto p-4">
       <RouterView />
     </div>
   </div>

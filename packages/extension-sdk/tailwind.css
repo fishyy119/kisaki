@@ -1,0 +1,86 @@
+/*
+ * Tailwind v4 bridge for Kisaki webview documents — the optional convenience
+ * layer that maps the mirrored app appearance onto Tailwind tokens.
+ *
+ * The webview client mirrors the full resolved app appearance onto the
+ * document root: semantic tokens as --kisaki-* variables, the base corner
+ * radius as --kisaki-radius, the app fonts as --kisaki-font-* stacks, and the
+ * mode as data-kisaki-theme. Importing this file after `tailwindcss` maps
+ * those values onto Tailwind tokens, so webview UI shares the app's semantic
+ * utility vocabulary (bg-background, text-muted-foreground, rounded-md, ...).
+ *
+ * This file does not include Tailwind itself, and is only needed by documents
+ * that use Tailwind. The framework-agnostic base layer lives separately in
+ * `@kisaki3/extension-sdk/base.css`.
+ *
+ * Usage:
+ *   @import 'tailwindcss';
+ *   @import '@kisaki3/extension-sdk/base.css';
+ *   @import '@kisaki3/extension-sdk/tailwind.css';
+ */
+@theme {
+  /* Background layers */
+  --color-background: var(--kisaki-background);
+  --color-foreground: var(--kisaki-foreground);
+  --color-surface: var(--kisaki-surface);
+  --color-surface-foreground: var(--kisaki-surface-foreground);
+  --color-card: var(--kisaki-card);
+  --color-card-foreground: var(--kisaki-card-foreground);
+  --color-popover: var(--kisaki-popover);
+  --color-popover-foreground: var(--kisaki-popover-foreground);
+  --color-dialog: var(--kisaki-dialog);
+  --color-dialog-foreground: var(--kisaki-dialog-foreground);
+
+  /* Actions & emphasis */
+  --color-primary: var(--kisaki-primary);
+  --color-primary-foreground: var(--kisaki-primary-foreground);
+  --color-secondary: var(--kisaki-secondary);
+  --color-secondary-foreground: var(--kisaki-secondary-foreground);
+  --color-muted: var(--kisaki-muted);
+  --color-muted-foreground: var(--kisaki-muted-foreground);
+  --color-accent: var(--kisaki-accent);
+  --color-accent-foreground: var(--kisaki-accent-foreground);
+
+  /* Inputs & outlines */
+  --color-input: var(--kisaki-input);
+  --color-input-foreground: var(--kisaki-input-foreground);
+  --color-border: var(--kisaki-border);
+  --color-ring: var(--kisaki-ring);
+
+  /* State colors */
+  --color-destructive: var(--kisaki-destructive);
+  --color-destructive-foreground: var(--kisaki-destructive-foreground);
+  --color-info: var(--kisaki-info);
+  --color-info-foreground: var(--kisaki-info-foreground);
+  --color-success: var(--kisaki-success);
+  --color-success-foreground: var(--kisaki-success-foreground);
+  --color-warning: var(--kisaki-warning);
+  --color-warning-foreground: var(--kisaki-warning-foreground);
+
+  /* Border radius scale derived from the app base radius */
+  --radius-sm: calc(var(--kisaki-radius, 6px) - 4px);
+  --radius-md: calc(var(--kisaki-radius, 6px) - 2px);
+  --radius-lg: var(--kisaki-radius, 6px);
+  --radius-xl: calc(var(--kisaki-radius, 6px) + 4px);
+
+  /* App fonts with system fallbacks until the faces load */
+  --font-sans: var(
+    --kisaki-font-sans,
+    ui-sans-serif,
+    system-ui,
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji'
+  );
+  --font-mono: var(
+    --kisaki-font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace
+  );
+}
+
+/* The webview client mirrors the mode as data-kisaki-theme on <html>. */
+@custom-variant dark (&:where([data-kisaki-theme='dark'], [data-kisaki-theme='dark'] *));

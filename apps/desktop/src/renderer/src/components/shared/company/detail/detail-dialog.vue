@@ -132,7 +132,7 @@ function handleRevealSpoilersConfirm() {
         <DialogHeader>
           <DialogTitle>{{ company.name }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="flex-1 min-h-0 overflow-auto scrollbar-thin p-4">
+        <DialogBody class="flex-1 min-h-0 overflow-auto p-4">
           <CompanyDetailContent />
         </DialogBody>
         <DialogFooter>

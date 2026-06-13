@@ -170,7 +170,7 @@ const canOpenGameDir = computed(() => {
         <DialogHeader>
           <DialogTitle>{{ game.name }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="flex-1 min-h-0 overflow-auto scrollbar-thin p-4">
+        <DialogBody class="flex-1 min-h-0 overflow-auto p-4">
           <GameDetailContent />
         </DialogBody>
         <DialogFooter>

@@ -241,7 +241,7 @@ async function handleSubmit() {
 
       <template v-else>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+          <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field orientation="horizontal">
                 <FieldLabel>启动时自动扫描</FieldLabel>
@@ -332,7 +332,7 @@ async function handleSubmit() {
 
                   <div
                     v-if="formData.ignoredNames.length > 0"
-                    class="flex flex-wrap gap-1.5 mt-1.5 max-h-32 overflow-auto scrollbar-thin pr-1"
+                    class="flex flex-wrap gap-1.5 mt-1.5 max-h-32 overflow-auto pr-1"
                   >
                     <Badge
                       v-for="name in formData.ignoredNames"

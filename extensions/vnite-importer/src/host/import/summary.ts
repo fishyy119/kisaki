@@ -34,16 +34,6 @@ export interface VniteImportExecutionSummary {
   diagnostics: readonly VniteImportDiagnostic[]
 }
 
-// Type alias keeps the implicit index signature so the summary satisfies the
-// JsonValue task-run output contract without widening property reads.
-export type VniteImportJobSummary = {
-  fileName: string
-  startedAt: number
-  finishedAt: number
-  counters: VniteImportExecutionCounters
-  diagnostics: readonly VniteImportDiagnostic[]
-}
-
 export function createVniteImportExecutionSummary(input: {
   graph: LibraryGraphResult
   snapshot: VniteBackupSnapshot
@@ -58,27 +48,6 @@ export function createVniteImportExecutionSummary(input: {
     counters: createVniteImportExecutionCounters(input.graph, diagnostics),
     diagnostics
   })
-}
-
-export function createVniteImportJobSummary(input: {
-  fileName: string
-  startedAt: number
-  executionSummary: VniteImportExecutionSummary
-  diagnostics?: readonly VniteImportDiagnostic[]
-}): VniteImportJobSummary {
-  const diagnostics = [...input.executionSummary.diagnostics, ...(input.diagnostics ?? [])]
-
-  return {
-    fileName: input.fileName,
-    startedAt: input.startedAt,
-    finishedAt: Date.now(),
-    counters: {
-      ...input.executionSummary.counters,
-      errors: diagnostics.filter((diagnostic) => diagnostic.level === 'error').length,
-      warnings: diagnostics.filter((diagnostic) => diagnostic.level === 'warning').length
-    },
-    diagnostics
-  }
 }
 
 export function createVniteImportExecutionCounters(

@@ -193,7 +193,7 @@ const displayScore = computed(() =>
         class="min-w-[180px]"
       >
         <template v-if="collectionsData.notContaining.length > 0">
-          <div class="max-h-[200px] overflow-auto scrollbar-thin">
+          <div class="max-h-[200px] overflow-auto">
             <component
               :is="props.components.Item"
               v-for="collection in collectionsData.notContaining"
@@ -245,7 +245,7 @@ const displayScore = computed(() =>
         :is="props.components.SubContent"
         class="min-w-[180px]"
       >
-        <div class="max-h-[200px] overflow-auto scrollbar-thin">
+        <div class="max-h-[200px] overflow-auto">
           <component
             :is="props.components.Item"
             v-for="collection in collectionsData.containing"

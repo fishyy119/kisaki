@@ -38,12 +38,12 @@ function reloadApp() {
       <div class="p-4 rounded-lg bg-muted space-y-2">
         <div>
           <h2 class="font-semibold text-sm mb-1">错误信息：</h2>
-          <pre class="text-xs overflow-auto scrollbar-thin">{{ error.message }}</pre>
+          <pre class="text-xs overflow-auto">{{ error.message }}</pre>
         </div>
 
         <div v-if="error.stack">
           <h2 class="font-semibold text-sm mb-1">堆栈跟踪：</h2>
-          <pre class="text-xs overflow-auto scrollbar-thin max-h-60">{{ error.stack }}</pre>
+          <pre class="text-xs overflow-auto max-h-60">{{ error.stack }}</pre>
         </div>
       </div>
 

@@ -29,11 +29,15 @@
         "default": "./dist/webview.cjs"
       }
     },
-    "./theme.css": "./theme.css"
+    "./base.css": "./base.css",
+    "./tailwind.css": "./tailwind.css",
+    "./preview.css": "./preview.css"
   },
   "files": [
     "dist",
-    "theme.css",
+    "base.css",
+    "tailwind.css",
+    "preview.css",
     "README.md"
   ],
   "scripts": {

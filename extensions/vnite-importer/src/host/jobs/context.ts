@@ -1,15 +1,21 @@
 import type {
   ExtensionLogger,
+  JsonObject,
   TaskRunHandle,
   TaskRunProgressUpdate,
-  TaskRunProgressWork,
+  TaskRunProgressWorkInput,
   TaskRunWarning
 } from '@kisaki3/extension-sdk'
-import { isTaskRunCancellation } from '@kisaki3/extension-sdk'
+import { createTaskRunProgressWork, isTaskRunCancellation } from '@kisaki3/extension-sdk'
 import type { VniteImportDiagnostic } from '../backup/types'
 import { VniteImportError, toSafeErrorMessage } from '../utils/errors'
 import type { VniteImportExecutorResult } from '../import/executor'
-import { createVniteImportJobSummary, type VniteImportJobSummary } from '../import/summary'
+import type { VniteImportRunEvents } from './events'
+import {
+  createVniteImportReport,
+  toFallbackCounters,
+  type VniteImportReport
+} from './report'
 
 export const VNITE_IMPORT_JOB_PHASES = {
   extracting: '正在解压备份包',
@@ -24,13 +30,17 @@ export const VNITE_IMPORT_JOB_PHASES = {
 
 export type VniteImportJobPhase = keyof typeof VNITE_IMPORT_JOB_PHASES
 
-type JobProgressWorkInput = Partial<
-  Pick<TaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
->
+/**
+ * Representative warnings forwarded to the task run result. The full
+ * diagnostic list lives in the extension's own report; task-run results are
+ * bounded summaries by contract.
+ */
+const RESULT_WARNING_LIMIT = 10
 
 export interface VniteImportJobRun {
   fileName: string
   run: TaskRunHandle
+  events: VniteImportRunEvents
 }
 
 interface VniteImportJobState {
@@ -42,11 +52,11 @@ interface VniteImportJobState {
 export class VniteImportJobController {
   constructor(
     private readonly state: VniteImportJobState,
-    private readonly run: TaskRunHandle
+    private readonly context: VniteImportJobRun
   ) {}
 
   get signal(): AbortSignal {
-    return this.run.signal
+    return this.context.run.signal
   }
 
   get diagnostics(): readonly VniteImportDiagnostic[] {
@@ -54,7 +64,7 @@ export class VniteImportJobController {
   }
 
   async checkpoint(): Promise<void> {
-    await this.run.checkpoint()
+    await this.context.run.checkpoint()
   }
 
   addDiagnostic(diagnostic: VniteImportDiagnostic): void {
@@ -80,7 +90,7 @@ export class VniteImportJobController {
     }
   }
 
-  async report(phase: VniteImportJobPhase, progress: JobProgressWorkInput = {}): Promise<void> {
+  async report(phase: VniteImportJobPhase, progress: TaskRunProgressWorkInput = {}): Promise<void> {
     const update: TaskRunProgressUpdate = {
       phase: {
         key: phase,
@@ -88,27 +98,38 @@ export class VniteImportJobController {
       },
       counters: this.state.counters
     }
-    const work = createProgressWork(progress)
+    const work = createTaskRunProgressWork(progress)
     if (work) {
       update.work = work
     }
 
-    await this.run.report(update)
+    await this.context.run.report(update)
+    this.context.events.emit({
+      type: 'progress',
+      runId: this.context.run.id,
+      phaseLabel: VNITE_IMPORT_JOB_PHASES[phase],
+      counters: { ...this.state.counters }
+    })
   }
 }
 
+/**
+ * Runs one import inside its task run: reports progress, finishes the run
+ * with a bounded result, and emits the full report as an in-process event.
+ */
 export async function runVniteImportJob(
   context: VniteImportJobRun,
   logger: ExtensionLogger | undefined,
   execute: (job: VniteImportJobController) => Promise<VniteImportExecutorResult>
-): Promise<VniteImportJobSummary> {
+): Promise<VniteImportReport> {
   const state: VniteImportJobState = {
     startedAt: Date.now(),
     counters: {},
     diagnostics: []
   }
-  const job = new VniteImportJobController(state, context.run)
+  const job = new VniteImportJobController(state, context)
 
+  let report: VniteImportReport
   try {
     await job.checkpoint()
     const execution = await execute(job)
@@ -118,117 +139,107 @@ export async function runVniteImportJob(
       total: execution.summary.counters.gamesTotal
     })
 
-    const summary = createVniteImportJobSummary({
+    report = createVniteImportReport({
+      runId: context.run.id,
+      status: 'completed',
       fileName: context.fileName,
       startedAt: state.startedAt,
-      executionSummary: execution.summary,
-      diagnostics: state.diagnostics
+      counters: execution.summary.counters,
+      diagnostics: [...execution.summary.diagnostics, ...state.diagnostics]
     })
-    await context.run.complete({
-      summary: createCompletedMessage(summary),
-      output: summary,
-      counters: { ...summary.counters },
-      warnings: toTaskRunWarnings(summary.diagnostics)
-    })
-    return summary
-  } catch (error) {
-    const summary = createFailedJobSummary(context.fileName, state, error)
-
-    if (isVniteImportCancellation(error, context.run.signal)) {
-      await job.report('cleanup', { indeterminate: true }).catch(() => undefined)
-      await context.run.cancel({
-        summary: 'Vnite 导入已取消。',
-        output: summary,
-        counters: { ...summary.counters },
-        warnings: toTaskRunWarnings(summary.diagnostics)
+    await finishRun(context, logger, () =>
+      context.run.complete({
+        summary: createCompletedMessage(report),
+        output: toTaskRunOutput(report),
+        counters: { ...report.counters },
+        warnings: toTaskRunWarnings(report.diagnostics)
       })
-      return summary
-    }
-
-    const message = toUserErrorMessage(error)
-    await context.run.fail(error, {
-      summary: message,
-      output: summary,
-      counters: { ...summary.counters },
-      warnings: toTaskRunWarnings(summary.diagnostics)
+    )
+  } catch (error) {
+    const cancelled = isVniteImportCancellation(error, context.run.signal)
+    report = createVniteImportReport({
+      runId: context.run.id,
+      status: cancelled ? 'cancelled' : 'failed',
+      fileName: context.fileName,
+      startedAt: state.startedAt,
+      counters: toFallbackCounters(state.counters),
+      diagnostics: cancelled
+        ? state.diagnostics
+        : [...state.diagnostics, toFailureDiagnostic(error)]
     })
-    logger?.warn('Vnite import job failed.', toSafeJobErrorLog(error))
-    return summary
+
+    if (cancelled) {
+      await job.report('cleanup', { indeterminate: true }).catch(() => undefined)
+      await finishRun(context, logger, () =>
+        context.run.cancel({
+          summary: 'Vnite 导入已取消。',
+          output: toTaskRunOutput(report),
+          counters: { ...report.counters },
+          warnings: toTaskRunWarnings(report.diagnostics)
+        })
+      )
+    } else {
+      await finishRun(context, logger, () =>
+        context.run.fail(error, {
+          summary: toUserErrorMessage(error),
+          output: toTaskRunOutput(report),
+          counters: { ...report.counters },
+          warnings: toTaskRunWarnings(report.diagnostics)
+        })
+      )
+      logger?.warn('Vnite import job failed.', toSafeJobErrorLog(error))
+    }
+  }
+
+  context.events.emit({ type: 'finished', report })
+  return report
+}
+
+/**
+ * Finishing the run must never lose the report: if the host rejects the
+ * result payload it also terminates the run with a minimal terminal state, so
+ * the failure is logged and the in-process report flow continues.
+ */
+async function finishRun(
+  context: VniteImportJobRun,
+  logger: ExtensionLogger | undefined,
+  finish: () => Promise<void>
+): Promise<void> {
+  try {
+    await finish()
+  } catch (error) {
+    logger?.warn('Vnite import task run result was rejected.', toSafeJobErrorLog(error))
   }
 }
 
-export function toTaskRunWarnings(
+function toTaskRunOutput(report: VniteImportReport): JsonObject {
+  return {
+    fileName: report.fileName,
+    status: report.status,
+    startedAt: report.startedAt,
+    finishedAt: report.finishedAt,
+    counters: { ...report.counters },
+    diagnosticsTotal: report.diagnosticsTotal
+  }
+}
+
+function toTaskRunWarnings(
   diagnostics: readonly VniteImportDiagnostic[]
 ): readonly TaskRunWarning[] {
   return diagnostics
     .filter((diagnostic) => diagnostic.level === 'warning')
+    .slice(0, RESULT_WARNING_LIMIT)
     .map((diagnostic) => ({
       code: diagnostic.code,
       message: diagnostic.message
     }))
 }
 
-function createProgressWork(progress: JobProgressWorkInput): TaskRunProgressWork | undefined {
-  const work: TaskRunProgressWork = {}
-  if (progress.current !== undefined) {
-    work.current = progress.current
-  }
-  if (progress.total !== undefined) {
-    work.total = progress.total
-  }
-  if (progress.current !== undefined || progress.total !== undefined) {
-    work.unit = 'item'
-  }
-  if (progress.ratePeriod !== undefined) {
-    work.ratePeriod = progress.ratePeriod
-  }
-  if (progress.indeterminate !== undefined) {
-    work.indeterminate = progress.indeterminate
-  }
-
-  return Object.keys(work).length > 0 ? work : undefined
+function createCompletedMessage(report: VniteImportReport): string {
+  return `Vnite 导入完成：新增 ${report.counters.gamesCreated} 个游戏，更新 ${report.counters.gamesUpdated} 个游戏。`
 }
 
-function createCompletedMessage(summary: VniteImportJobSummary): string {
-  return `Vnite 导入完成：新增 ${summary.counters.gamesCreated} 个游戏，更新 ${summary.counters.gamesUpdated} 个游戏。`
-}
-
-function createFailedJobSummary(
-  fileName: string,
-  state: VniteImportJobState,
-  error: unknown
-): VniteImportJobSummary {
-  const diagnostic = toFailureDiagnostic(error)
-  const diagnostics = diagnostic ? [...state.diagnostics, diagnostic] : state.diagnostics
-
-  return {
-    fileName,
-    startedAt: state.startedAt,
-    finishedAt: Date.now(),
-    counters: {
-      gamesTotal: state.counters.gamesTotal ?? 0,
-      gamesCreated: state.counters.gamesCreated ?? 0,
-      gamesUpdated: state.counters.gamesUpdated ?? 0,
-      gamesSkipped: state.counters.gamesSkipped ?? 0,
-      gamesFailed: state.counters.gamesFailed ?? 0,
-      collectionsCreated: state.counters.collectionsCreated ?? 0,
-      collectionsUpdated: state.counters.collectionsUpdated ?? 0,
-      attachmentsImported: state.counters.attachmentsImported ?? 0,
-      attachmentsFailed: state.counters.attachmentsFailed ?? 0,
-      completionCompleted: state.counters.completionCompleted ?? 0,
-      completionFailed: state.counters.completionFailed ?? 0,
-      errors: diagnostics.filter((item) => item.level === 'error').length,
-      warnings: diagnostics.filter((item) => item.level === 'warning').length
-    },
-    diagnostics
-  }
-}
-
-function toFailureDiagnostic(error: unknown): VniteImportDiagnostic | undefined {
-  if (isVniteImportCancellation(error)) {
-    return undefined
-  }
-
+function toFailureDiagnostic(error: unknown): VniteImportDiagnostic {
   return {
     level: 'error',
     code: error instanceof VniteImportError ? error.code : 'host_graph_failed',

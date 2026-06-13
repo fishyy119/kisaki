@@ -1,7 +1,11 @@
 /*
- * The webview client mirrors the active Kisaki theme as --kisaki-* CSS
- * variables; the SDK theme bridge maps them onto Tailwind color tokens so the
- * document uses the same semantic utilities as the app.
+ * The webview client mirrors the active Kisaki appearance as --kisaki-* CSS
+ * variables. base.css applies the shared base layer (typography, colors,
+ * scrollbars) so this document matches the app; theme.css maps the tokens
+ * onto Tailwind utilities. To use icons, add `@plugin "@iconify/tailwind4"`
+ * plus an icon set (e.g. `@iconify-json/mdi`) and write iconify utility
+ * classes of the form icon-[<set>--<name>].
  */
 @import 'tailwindcss';
-@import '@kisaki3/extension-sdk/theme.css';
+@import '@kisaki3/extension-sdk/base.css';
+@import '@kisaki3/extension-sdk/tailwind.css';

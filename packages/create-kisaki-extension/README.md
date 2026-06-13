@@ -10,10 +10,11 @@ npm create kisaki-extension my-extension
 
 The CLI prompts for extension id, display name, category, description, author,
 publish workflow, registry metadata, and git initialization. The `tool`
-category additionally prompts for the webview UI stack (vanilla TypeScript or
-Vue). Pass `--git` or `--no-git` to skip the git prompt. Pass
-`--github-single`, `--github-monorepo`, or `--manual` to skip the publish
-workflow prompt.
+category additionally prompts for the webview UI stack: Vue with the Kisaki UI
+kit (`@kisaki3/extension-ui-vue`, components matching the app design language),
+plain Vue, or vanilla TypeScript. Pass `--git` or `--no-git` to skip the git
+prompt. Pass `--github-single`, `--github-monorepo`, or `--manual` to skip the
+publish workflow prompt.
 
 Generated projects include `manifest.json`, `src/host/index.ts`, `README.md`,
 and npm scripts backed by the `kisx` CLI, plus engineering config out of the
@@ -22,8 +23,8 @@ tsconfigs (`tsconfig.host.json` Node-only, `tsconfig.ui.json` DOM-only),
 Prettier, `.editorconfig`, `.gitattributes`, and `.gitignore`. Projects with a webview UI also include
 `src/ui/main/index.html`, a `src/shared/contract.ts` RPC contract, Tailwind
 CSS wired through `kisx.config.ts`, and a `"ui": "./dist/ui"` manifest
-declaration (the Vue variant additionally adds `@vitejs/plugin-vue` and
-Vue-aware ESLint):
+declaration (the Vue variants additionally add `@vitejs/plugin-vue` and
+Vue-aware ESLint; the UI-kit variant also adds `@kisaki3/extension-ui-vue`):
 
 ```bash
 npm run build

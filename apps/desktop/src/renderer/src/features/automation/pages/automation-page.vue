@@ -382,7 +382,7 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
 
       <div
         v-else
-        class="h-full overflow-auto scrollbar-thin"
+        class="h-full overflow-auto"
       >
         <div
           class="sticky top-0 z-10 grid h-8 items-center gap-3 border-b border-border bg-background px-4 text-xs font-medium text-muted-foreground"

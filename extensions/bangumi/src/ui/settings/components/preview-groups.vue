@@ -4,6 +4,7 @@ row lists.
 Boundary: purely presentational over `BangumiPreviewGroupDto` data.
 -->
 <script setup lang="ts">
+import { Alert, Badge, type BadgeVariants } from '@kisaki3/extension-ui-vue'
 import type { BangumiJobPreviewTone, BangumiPreviewGroupDto } from '../../../shared/settings'
 
 interface Props {
@@ -12,21 +13,17 @@ interface Props {
 
 defineProps<Props>()
 
-function badgeClass(tone: BangumiJobPreviewTone): string {
-  if (tone === 'success') {
-    return 'bg-accent/20 text-foreground'
-  }
-
-  if (tone === 'danger') {
-    return 'bg-danger/15 text-danger'
-  }
-
-  return 'bg-muted text-muted-foreground'
+const BADGE_VARIANTS: Record<BangumiJobPreviewTone, BadgeVariants['variant']> = {
+  neutral: 'secondary',
+  info: 'default',
+  success: 'success',
+  warning: 'warning',
+  danger: 'destructive'
 }
 
 function rowCellClass(tone: BangumiJobPreviewTone, mutedByDefault: boolean): string {
   if (tone === 'danger') {
-    return 'text-danger'
+    return 'text-destructive'
   }
 
   return mutedByDefault ? 'text-muted-foreground' : ''
@@ -34,12 +31,7 @@ function rowCellClass(tone: BangumiJobPreviewTone, mutedByDefault: boolean): str
 </script>
 
 <template>
-  <div
-    v-if="groups.length === 0"
-    class="notice"
-  >
-    没有将要更改的条目
-  </div>
+  <Alert v-if="groups.length === 0">没有将要更改的条目</Alert>
   <div
     v-else
     class="flex max-h-[260px] flex-col gap-2 overflow-y-auto"
@@ -50,20 +42,19 @@ function rowCellClass(tone: BangumiJobPreviewTone, mutedByDefault: boolean): str
       class="rounded-md border border-border px-2.5 py-2"
     >
       <header class="flex items-center gap-2 text-xs">
-        <span class="font-semibold">{{ group.title }}</span>
-        <span
+        <span class="font-medium">{{ group.title }}</span>
+        <Badge
           v-for="badge in group.badges"
           :key="badge.label"
-          class="rounded-full px-1.5 py-px text-[11px]"
-          :class="badgeClass(badge.tone)"
+          :variant="BADGE_VARIANTS[badge.tone]"
         >
           {{ badge.label }}
-        </span>
+        </Badge>
         <a
           :href="group.link.href"
           target="_blank"
           rel="noreferrer"
-          class="ml-auto text-[11px] text-primary"
+          class="ml-auto text-[11px] text-primary hover:underline"
         >
           {{ group.link.label }}
         </a>

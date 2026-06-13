@@ -176,7 +176,7 @@ async function handleSetFavorite(isFavorite: boolean) {
     </ContextMenuSubTrigger>
     <ContextMenuSubContent class="min-w-[180px]">
       <template v-if="collectionsAddable.length > 0">
-        <div class="max-h-[240px] overflow-auto scrollbar-thin">
+        <div class="max-h-[240px] overflow-auto">
           <ContextMenuItem
             v-for="collection in collectionsAddable"
             :key="collection.id"
@@ -209,7 +209,7 @@ async function handleSetFavorite(isFavorite: boolean) {
     </ContextMenuSubTrigger>
     <ContextMenuSubContent class="min-w-[180px]">
       <template v-if="collectionsRemovable.length > 0">
-        <div class="max-h-[240px] overflow-auto scrollbar-thin">
+        <div class="max-h-[240px] overflow-auto">
           <ContextMenuItem
             v-for="collection in collectionsRemovable"
             :key="collection.id"

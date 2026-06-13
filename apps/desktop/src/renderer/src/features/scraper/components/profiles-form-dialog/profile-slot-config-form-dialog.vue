@@ -254,7 +254,7 @@ function handleSubmit() {
         <DialogTitle>配置: {{ props.slotName }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+        <DialogBody class="max-h-[60vh] overflow-auto">
           <FieldGroup>
             <Field>
               <FieldLabel>策略</FieldLabel>

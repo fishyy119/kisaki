@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import type { ExtensionScaffoldConfig } from './index'
+import type { ExtensionScaffoldConfig, ExtensionUiVariant } from './index'
 import { applyJsonPatch, isJsonPatchFile, resolvePatchTargetFileName } from './patches'
 
 export interface TemplateLayer {
@@ -66,9 +66,9 @@ export function createTemplateLayers(
     }
   ]
 
-  if (config.uiVariant !== 'none') {
+  for (const uiLayer of resolveUiVariantLayers(config.uiVariant)) {
     layers.push({
-      sourceDir: path.join(templateDir, 'extension', 'ui', config.uiVariant),
+      sourceDir: path.join(templateDir, 'extension', 'ui', uiLayer),
       targetDir: extensionTargetDir
     })
   }
@@ -84,6 +84,21 @@ export function createTemplateLayers(
 
     throw new Error(`Template layer not found: ${layer.sourceDir}`)
   })
+}
+
+/**
+ * Composite variants stack on their base template: `vue-kit` overlays the
+ * UI-kit demo document and dependency onto the plain Vue layer.
+ */
+function resolveUiVariantLayers(variant: ExtensionUiVariant): readonly string[] {
+  switch (variant) {
+    case 'none':
+      return []
+    case 'vue-kit':
+      return ['vue', 'vue-kit']
+    default:
+      return [variant]
+  }
 }
 
 export function copyTemplateLayer(layer: TemplateLayer, context: Map<string, string>): void {

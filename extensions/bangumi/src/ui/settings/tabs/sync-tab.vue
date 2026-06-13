@@ -1,10 +1,27 @@
 <!--
 Sync Tab edits auto-sync settings and runs changed/full sync jobs, including
-the full-sync preview modal.
+the full-sync preview dialog.
 Boundary: binds the shared settings form; job calls go through `host` RPC.
 -->
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Field,
+  FieldContent,
+  FieldGroup,
+  Input,
+  Label,
+  Spinner,
+  Switch
+} from '@kisaki3/extension-ui-vue'
 import type {
   BangumiAutoSyncItem,
   BangumiPreviewGroupDto,
@@ -12,8 +29,7 @@ import type {
   BangumiSyncDataItem
 } from '../../../shared/settings'
 import { settingsForm } from '../form'
-import { host, toErrorMessage } from '../rpc'
-import Modal from '../components/modal.vue'
+import { host, onHostPreviewProgress, toErrorMessage } from '../rpc'
 import PreviewGroups from '../components/preview-groups.vue'
 
 interface Props {
@@ -42,11 +58,26 @@ const syncing = ref(false)
 const fullSyncOpen = ref(false)
 const fullSyncBusy = ref<'preview' | 'run' | null>(null)
 const fullSyncPreview = ref<readonly BangumiPreviewGroupDto[] | null>(null)
+const previewProgress = ref<string | null>(null)
 const fullSyncForm = reactive({
   items: ['status', 'score'] as BangumiSyncDataItem[],
   updateExisting: true,
   clearRemoteScoreWhenEmpty: false,
   batchSize: 100
+})
+
+let stopProgressListener: (() => void) | null = null
+
+onMounted(() => {
+  stopProgressListener = onHostPreviewProgress((label) => {
+    if (fullSyncBusy.value === 'preview') {
+      previewProgress.value = label
+    }
+  })
+})
+
+onUnmounted(() => {
+  stopProgressListener?.()
 })
 
 function toggleAutoSyncItem(item: BangumiAutoSyncItem, checked: boolean): void {
@@ -77,6 +108,7 @@ function openFullSync(): void {
   )
   fullSyncForm.clearRemoteScoreWhenEmpty = settingsForm.clearRemoteScoreWhenEmpty
   fullSyncPreview.value = null
+  previewProgress.value = null
   fullSyncOpen.value = true
 }
 
@@ -92,12 +124,14 @@ function toggleFullSyncItem(item: BangumiSyncDataItem, checked: boolean): void {
 
 async function previewFullSync(): Promise<void> {
   fullSyncBusy.value = 'preview'
+  previewProgress.value = null
   try {
     fullSyncPreview.value = await host.previewFullSync({ ...fullSyncForm })
   } catch (error) {
     emit('error', toErrorMessage(error))
   } finally {
     fullSyncBusy.value = null
+    previewProgress.value = null
   }
 }
 
@@ -116,159 +150,157 @@ async function runFullSync(): Promise<void> {
 </script>
 
 <template>
-  <section>
-    <div class="field">
-      <div class="field-info">
-        <span class="field-label">自动同步</span>
-        <span class="field-hint">本地游戏变更后自动同步到 Bangumi。</span>
-      </div>
-      <div class="field-control">
-        <input
-          v-model="settingsForm.autoSyncEnabled"
-          type="checkbox"
-        />
-      </div>
-    </div>
+  <FieldGroup>
+    <Field
+      orientation="horizontal"
+      label="自动同步"
+      description="本地游戏变更后自动同步到 Bangumi。"
+    >
+      <Switch v-model="settingsForm.autoSyncEnabled" />
+    </Field>
 
-    <div class="field">
-      <div class="field-info">
-        <span class="field-label">同步项</span>
-      </div>
-      <div class="field-control check-group">
-        <label
+    <Field
+      orientation="horizontal"
+      label="同步项"
+    >
+      <FieldContent class="flex-row items-center gap-3">
+        <Label
           v-for="item in AUTO_SYNC_ITEMS"
           :key="item.value"
+          class="font-normal"
         >
-          <input
-            type="checkbox"
-            :checked="settingsForm.autoSyncItems.includes(item.value)"
+          <Checkbox
+            :model-value="settingsForm.autoSyncItems.includes(item.value)"
             :disabled="!settingsForm.autoSyncEnabled"
-            @change="toggleAutoSyncItem(item.value, ($event.target as HTMLInputElement).checked)"
+            @update:model-value="(checked) => toggleAutoSyncItem(item.value, checked === true)"
           />
           {{ item.label }}
-        </label>
-      </div>
-    </div>
+        </Label>
+      </FieldContent>
+    </Field>
 
-    <div class="field">
-      <div class="field-info">
-        <span class="field-label">允许删除远端评分</span>
-        <span class="field-hint">本地评分清空时同时清除 Bangumi 评分。</span>
-      </div>
-      <div class="field-control">
-        <input
-          v-model="settingsForm.clearRemoteScoreWhenEmpty"
-          type="checkbox"
-          :disabled="!settingsForm.autoSyncEnabled || !settingsForm.autoSyncItems.includes('score')"
-        />
-      </div>
-    </div>
+    <Field
+      orientation="horizontal"
+      label="允许删除远端评分"
+      description="本地评分清空时同时清除 Bangumi 评分。"
+    >
+      <Switch
+        v-model="settingsForm.clearRemoteScoreWhenEmpty"
+        :disabled="!settingsForm.autoSyncEnabled || !settingsForm.autoSyncItems.includes('score')"
+      />
+    </Field>
 
-    <div class="field">
-      <div class="field-info">
-        <span class="field-label">手动同步</span>
-        <span class="field-hint">同步运行期变更队列，或配置一次全量同步。</span>
-      </div>
-      <div class="field-control">
-        <button
+    <Field
+      orientation="horizontal"
+      label="手动同步"
+      description="同步运行期变更队列，或配置一次全量同步。"
+    >
+      <FieldContent class="flex-row items-center gap-2">
+        <Button
+          variant="outline"
           type="button"
           :disabled="syncing || overview.activeJobs.syncChangedItems"
           @click="runChangedSync"
         >
+          <Spinner v-if="syncing || overview.activeJobs.syncChangedItems" />
           立即同步
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          class="border-transparent bg-primary text-primary-foreground"
           @click="openFullSync"
         >
           配置全量同步
-        </button>
-      </div>
-    </div>
+        </Button>
+      </FieldContent>
+    </Field>
+  </FieldGroup>
 
-    <Modal
-      v-if="fullSyncOpen"
-      title="全量同步"
-      @close="fullSyncOpen = false"
-    >
-      <div class="field">
-        <div class="field-info">
-          <span class="field-label">同步数据</span>
-        </div>
-        <div class="field-control check-group">
-          <label
-            v-for="item in FULL_SYNC_ITEMS"
-            :key="item.value"
+  <Dialog v-model:open="fullSyncOpen">
+    <DialogContent class="max-w-xl">
+      <DialogHeader>
+        <DialogTitle>全量同步</DialogTitle>
+      </DialogHeader>
+      <DialogBody class="max-h-[60vh] overflow-y-auto">
+        <FieldGroup class="gap-4">
+          <Field
+            orientation="horizontal"
+            label="同步数据"
           >
-            <input
-              type="checkbox"
-              :checked="fullSyncForm.items.includes(item.value)"
-              @change="toggleFullSyncItem(item.value, ($event.target as HTMLInputElement).checked)"
+            <FieldContent class="flex-row items-center gap-3">
+              <Label
+                v-for="item in FULL_SYNC_ITEMS"
+                :key="item.value"
+                class="font-normal"
+              >
+                <Checkbox
+                  :model-value="fullSyncForm.items.includes(item.value)"
+                  @update:model-value="(checked) => toggleFullSyncItem(item.value, checked === true)"
+                />
+                {{ item.label }}
+              </Label>
+            </FieldContent>
+          </Field>
+
+          <Field
+            orientation="horizontal"
+            label="更新已有收藏"
+          >
+            <Switch v-model="fullSyncForm.updateExisting" />
+          </Field>
+
+          <Field
+            orientation="horizontal"
+            label="允许删除远端评分"
+          >
+            <Switch
+              v-model="fullSyncForm.clearRemoteScoreWhenEmpty"
+              :disabled="!fullSyncForm.updateExisting || !fullSyncForm.items.includes('score')"
             />
-            {{ item.label }}
-          </label>
-        </div>
-      </div>
-      <div class="field">
-        <div class="field-info">
-          <span class="field-label">更新已有收藏</span>
-        </div>
-        <div class="field-control">
-          <input
-            v-model="fullSyncForm.updateExisting"
-            type="checkbox"
-          />
-        </div>
-      </div>
-      <div class="field">
-        <div class="field-info">
-          <span class="field-label">允许删除远端评分</span>
-        </div>
-        <div class="field-control">
-          <input
-            v-model="fullSyncForm.clearRemoteScoreWhenEmpty"
-            type="checkbox"
-            :disabled="!fullSyncForm.updateExisting || !fullSyncForm.items.includes('score')"
-          />
-        </div>
-      </div>
-      <div class="field">
-        <div class="field-info">
-          <span class="field-label">批次大小</span>
-        </div>
-        <div class="field-control">
-          <input
-            v-model.number="fullSyncForm.batchSize"
-            type="number"
-            min="1"
-            max="500"
-          />
-        </div>
-      </div>
+          </Field>
 
-      <PreviewGroups
-        v-if="fullSyncPreview"
-        :groups="fullSyncPreview"
-      />
+          <Field
+            orientation="horizontal"
+            label="批次大小"
+          >
+            <Input
+              v-model.number="fullSyncForm.batchSize"
+              type="number"
+              min="1"
+              max="500"
+              class="w-24"
+            />
+          </Field>
 
-      <template #footer>
-        <button
+          <PreviewGroups
+            v-if="fullSyncPreview"
+            :groups="fullSyncPreview"
+          />
+        </FieldGroup>
+      </DialogBody>
+      <DialogFooter>
+        <span
+          v-if="fullSyncBusy === 'preview' && previewProgress"
+          class="mr-auto flex items-center gap-1.5 text-xs text-muted-foreground"
+        >
+          <Spinner class="size-3" />
+          {{ previewProgress }}
+        </span>
+        <Button
+          variant="outline"
           type="button"
           :disabled="fullSyncBusy !== null || overview.activeJobs.syncFull"
           @click="previewFullSync"
         >
-          {{ fullSyncBusy === 'preview' ? '正在预览...' : '预览将更改的游戏' }}
-        </button>
-        <button
+          {{ fullSyncBusy === 'preview' ? '正在预览…' : '预览将更改的游戏' }}
+        </Button>
+        <Button
           type="button"
-          class="border-transparent bg-primary text-primary-foreground"
           :disabled="fullSyncBusy !== null || overview.activeJobs.syncFull"
           @click="runFullSync"
         >
           执行同步
-        </button>
-      </template>
-    </Modal>
-  </section>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

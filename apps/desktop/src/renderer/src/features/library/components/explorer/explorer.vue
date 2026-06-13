@@ -25,7 +25,7 @@ provide('explorerScrollContainer', scrollContainerRef)
     <!-- Entity list -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 min-h-0 overflow-auto scrollbar-thin"
+      class="flex-1 min-h-0 overflow-auto"
     >
       <LibraryExplorerList />
     </div>

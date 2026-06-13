@@ -86,7 +86,7 @@ function handleCancel() {
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <FilterBuilder
             v-model="localFilter"
             :ui-spec="props.uiSpec"

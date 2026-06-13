@@ -13,7 +13,36 @@ import type { VniteBackupGame, VniteBackupSnapshot } from '../backup/types'
 import { createVniteGameNodeKey } from '../mapping'
 import { omitUndefined } from '../utils/object'
 import type { VnitePlayStatus } from '../vnite/models'
-import type { VniteImportPreviewExistingGame, VniteImportPreviewGame } from './store'
+import type { LibraryGraphResultAction } from '@kisaki3/extension-sdk'
+
+export interface VniteImportPreviewGame {
+  key: string
+  title: string
+  subtitle?: string
+  action: LibraryGraphResultAction
+  entityId?: string
+  existing?: VniteImportPreviewExistingGame
+  name?: string
+  originalName?: string
+  releaseDate?: string
+  developers?: string
+  publishers?: string
+  platforms?: string
+  genres?: string
+  tags?: string
+  collections?: string
+  playStatus?: string
+  playTime?: string
+  score?: string
+  localPath?: string
+  attachments?: string
+}
+
+export interface VniteImportPreviewExistingGame {
+  metadata?: string
+  activity?: string
+  organization?: string
+}
 
 type PreviewLibrary = Pick<
   LibraryCapability,

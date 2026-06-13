@@ -125,7 +125,7 @@ defineExpose({
 <template>
   <div
     ref="containerRef"
-    :class="cn(!props.scrollParent && 'overflow-auto scrollbar-thin', 'relative')"
+    :class="cn(!props.scrollParent && 'overflow-auto', 'relative')"
   >
     <slot
       v-if="props.items.length === 0"

@@ -185,7 +185,7 @@ watch(detailsOpen, (open) => {
   <div class="flex flex-col h-full">
     <ExtensionDiscoverPanelFilterBar />
 
-    <div class="flex-1 overflow-auto scrollbar-thin">
+    <div class="flex-1 overflow-auto">
       <template v-if="loading && displayedResults.length === 0">
         <div class="flex items-center justify-center h-48">
           <Spinner class="size-6" />

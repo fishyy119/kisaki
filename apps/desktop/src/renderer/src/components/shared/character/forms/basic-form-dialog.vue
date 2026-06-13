@@ -245,7 +245,7 @@ function handleCancel() {
           <DialogTitle>编辑基本信息</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+          <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field>
                 <FieldLabel>名称</FieldLabel>

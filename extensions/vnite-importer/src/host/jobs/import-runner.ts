@@ -1,4 +1,5 @@
 import type {
+  Disposable,
   ExtensionFileGrant,
   ExtensionLogger,
   TaskRunHandle,
@@ -36,7 +37,8 @@ import {
   type VniteMetadataCompletionSummary
 } from '../completion'
 import { runVniteImportJob, type VniteImportJobController, type VniteImportJobRun } from './context'
-import type { VniteImportJobSummary } from '../import/summary'
+import { VniteImportRunEvents, type VniteImportRunEvent } from './events'
+import type { VniteImportReport } from './report'
 
 export interface VniteImportJobRunnerDependencies {
   graph: LibraryGraphCapability
@@ -93,6 +95,7 @@ export class VniteImportJobRunner {
   private readonly workspaceManager: BackupWorkspaceManager
   private readonly executor: VniteImportExecutor
   private readonly completion: VniteMetadataCompletionRunner
+  private readonly events = new VniteImportRunEvents()
 
   constructor(private readonly deps: VniteImportJobRunnerDependencies) {
     this.workspaceManager = new BackupWorkspaceManager(deps.workspaceRoot)
@@ -198,14 +201,20 @@ export class VniteImportJobRunner {
     return { runId: run.id }
   }
 
-  async runImportFromGrant(
-    input: VniteImportRunInput,
-    run: TaskRunHandle
-  ): Promise<VniteImportJobSummary> {
+  /**
+   * Live run events for in-process consumers (wizard push, report
+   * persistence). Listeners must not throw.
+   */
+  onRunEvent(listener: (event: VniteImportRunEvent) => void): Disposable {
+    return this.events.subscribe(listener)
+  }
+
+  async runImportFromGrant(input: VniteImportRunInput, run: TaskRunHandle): Promise<VniteImportReport> {
     return await runVniteImportJob(
       {
         fileName: input.fileGrant.name,
-        run
+        run,
+        events: this.events
       } satisfies VniteImportJobRun,
       this.deps.logger,
       async (job) => await this.executeImport(input, job)

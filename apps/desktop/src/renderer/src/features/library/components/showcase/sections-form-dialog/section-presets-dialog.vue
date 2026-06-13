@@ -120,7 +120,7 @@ function handleCancel() {
       <DialogHeader>
         <DialogTitle>选择预设区块</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+      <DialogBody class="max-h-[60vh] overflow-auto">
         <template v-if="SHOWCASE_SECTION_PRESETS.length === 0">
           <p class="text-sm text-muted-foreground text-center py-8">暂无可用预设</p>
         </template>

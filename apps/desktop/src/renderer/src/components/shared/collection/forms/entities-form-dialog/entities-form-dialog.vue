@@ -365,7 +365,7 @@ const entityTypeModel = computed({
         <DialogHeader>
           <DialogTitle>编辑合集内容</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <!-- Entity type tabs -->
           <SegmentedControl
             v-model="entityTypeModel"

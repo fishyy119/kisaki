@@ -357,7 +357,7 @@ watch(
           </div>
 
           <!-- Column content -->
-          <div class="overflow-auto scrollbar-thin py-1 h-[50vh]">
+          <div class="overflow-auto py-1 h-[50vh]">
             <template v-if="getColumnItems(config).length === 0">
               <div class="px-2 py-4 text-xs text-muted-foreground text-center">
                 {{ debouncedQuery ? config.emptyText : '输入关键词搜索' }}

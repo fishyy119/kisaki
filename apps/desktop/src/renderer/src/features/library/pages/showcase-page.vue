@@ -75,7 +75,7 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
     <div
       v-else
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto scrollbar-thin"
+      class="flex-1 overflow-auto"
     >
       <LibraryShowcaseEmpty
         v-if="visibleSections.length === 0"

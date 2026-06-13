@@ -5,6 +5,14 @@ Boundary: renders `overview.automations`; creation goes through `host` RPC.
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
+import {
+  Badge,
+  Button,
+  Field,
+  FieldContent,
+  FieldGroup,
+  type BadgeVariants
+} from '@kisaki3/extension-ui-vue'
 import type {
   BangumiAutomationKind,
   BangumiAutomationStatus,
@@ -35,10 +43,10 @@ const STATUS_LABELS: Record<BangumiAutomationStatus, string> = {
   disabled: '已停用'
 }
 
-const STATUS_CLASSES: Record<BangumiAutomationStatus, string> = {
-  missing: 'text-muted-foreground',
-  enabled: 'text-accent',
-  disabled: 'text-danger'
+const STATUS_VARIANTS: Record<BangumiAutomationStatus, BadgeVariants['variant']> = {
+  missing: 'secondary',
+  enabled: 'success',
+  disabled: 'warning'
 }
 
 const creatingKind = ref<BangumiAutomationKind | null>(null)
@@ -57,31 +65,26 @@ async function create(kind: BangumiAutomationKind): Promise<void> {
 </script>
 
 <template>
-  <section>
-    <div
+  <FieldGroup>
+    <Field
       v-for="automation in props.overview.automations"
       :key="automation.kind"
-      class="field"
+      orientation="horizontal"
+      :label="AUTOMATION_LABELS[automation.kind]"
     >
-      <div class="field-info">
-        <span class="field-label">{{ AUTOMATION_LABELS[automation.kind] }}</span>
-      </div>
-      <div class="field-control">
-        <span
-          class="text-xs"
-          :class="STATUS_CLASSES[automation.status]"
-        >
+      <FieldContent class="flex-row items-center gap-2">
+        <Badge :variant="STATUS_VARIANTS[automation.status]">
           {{ STATUS_LABELS[automation.status] }}
-        </span>
-        <button
+        </Badge>
+        <Button
+          variant="outline"
           type="button"
-          class="border-transparent bg-primary text-primary-foreground"
           :disabled="automation.status !== 'missing' || creatingKind !== null"
           @click="create(automation.kind)"
         >
           创建
-        </button>
-      </div>
-    </div>
-  </section>
+        </Button>
+      </FieldContent>
+    </Field>
+  </FieldGroup>
 </template>

@@ -222,7 +222,7 @@ async function handleCopyProfileId() {
         <DialogTitle>{{ props.isNew ? '添加配置' : '编辑配置' }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
-        <DialogBody class="max-h-[70vh] overflow-auto scrollbar-thin">
+        <DialogBody class="max-h-[70vh] overflow-auto">
           <FieldGroup>
             <!-- Profile Name -->
             <Field>

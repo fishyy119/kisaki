@@ -23,9 +23,10 @@ npm run dev
 ## Webview UI
 
 The host entry opens documents with `kisaki.webviews.open()` and talks to them
-through `createWebviewRpc`. Documents import Tailwind plus the SDK theme
-bridge (`@kisaki3/extension-sdk/theme.css`), so they style with the same
-semantic utilities as the app. During `npm run dev`, webview documents serve
+through `createWebviewRpc`. Documents import Tailwind plus the SDK base layer
+(`@kisaki3/extension-sdk/base.css`) and Tailwind bridge
+(`@kisaki3/extension-sdk/tailwind.css`), so they style with the same semantic
+utilities as the app. During `npm run dev`, webview documents serve
 from a Vite dev server with full HMR; host entry changes republish the package
 and recycle the extension host.
 

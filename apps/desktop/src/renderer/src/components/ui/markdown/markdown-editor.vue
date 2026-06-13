@@ -281,7 +281,7 @@ watch(fullscreenOpen, async (open) => {
       <DialogHeader>
         <DialogTitle>预览</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[75vh] overflow-auto scrollbar-thin">
+      <DialogBody class="max-h-[75vh] overflow-auto">
         <MarkdownContent :content="model" />
       </DialogBody>
     </DialogContent>

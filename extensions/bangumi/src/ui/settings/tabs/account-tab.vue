@@ -5,6 +5,7 @@ Boundary: renders `overview.account` and emits refresh/error to the app shell.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Badge, Button, Field, FieldContent, FieldGroup } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import { host, toErrorMessage } from '../rpc'
 
@@ -73,57 +74,62 @@ function logout(): void {
 </script>
 
 <template>
-  <section>
-    <div class="field">
-      <div class="field-info">
-        <span class="field-label">登录状态</span>
-        <span
-          v-if="verifiedNickname"
-          class="field-hint"
-        >
-          账号验证成功：{{ verifiedNickname }}
-        </span>
-      </div>
-      <div class="field-control">
-        <span :class="account.loggedIn ? '' : 'text-muted-foreground'">{{ summary }}</span>
-      </div>
-    </div>
-
-    <div
-      v-if="expiresAtLabel"
-      class="field"
+  <FieldGroup>
+    <Field
+      orientation="horizontal"
+      label="登录状态"
+      :description="verifiedNickname ? `账号验证成功：${verifiedNickname}` : undefined"
     >
-      <div class="field-info">
-        <span class="field-label">凭据有效期</span>
-      </div>
-      <div class="field-control">
-        <span :class="account.expired ? 'text-danger' : ''">{{ expiresAtLabel }}</span>
-      </div>
-    </div>
+      <FieldContent class="flex-row items-center">
+        <span
+          class="text-sm"
+          :class="account.loggedIn ? '' : 'text-muted-foreground'"
+        >
+          {{ summary }}
+        </span>
+      </FieldContent>
+    </Field>
 
-    <div class="field">
-      <div class="field-info">
-        <span class="field-label">账号操作</span>
-        <span class="field-hint">登录通过浏览器完成，回调后自动刷新此页面。</span>
-      </div>
-      <div class="field-control">
-        <button
+    <Field
+      v-if="expiresAtLabel"
+      orientation="horizontal"
+      label="凭据有效期"
+    >
+      <FieldContent class="flex-row items-center gap-2">
+        <span class="text-sm">{{ expiresAtLabel }}</span>
+        <Badge
+          v-if="account.expired"
+          variant="destructive"
+        >
+          已过期
+        </Badge>
+      </FieldContent>
+    </Field>
+
+    <Field
+      orientation="horizontal"
+      label="账号操作"
+      description="登录通过浏览器完成，回调后自动刷新此页面。"
+    >
+      <FieldContent class="flex-row items-center gap-2">
+        <Button
           v-if="!account.loggedIn"
           type="button"
-          class="border-transparent bg-primary text-primary-foreground"
           :disabled="busyAction !== null"
           @click="login"
         >
           登录
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           type="button"
           :disabled="!account.hasToken || busyAction !== null"
           @click="verify"
         >
           验证账号
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           type="button"
           :disabled="
             !account.hasRefreshToken || busyAction !== null || overview.activeJobs.accountRefresh
@@ -131,17 +137,17 @@ function logout(): void {
           @click="refreshCredentials"
         >
           刷新凭据
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="account.loggedIn"
+          variant="destructive"
           type="button"
-          class="border-transparent bg-danger text-primary-foreground"
           :disabled="busyAction !== null"
           @click="logout"
         >
           退出
-        </button>
-      </div>
-    </div>
-  </section>
+        </Button>
+      </FieldContent>
+    </Field>
+  </FieldGroup>
 </template>

@@ -129,7 +129,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto scrollbar-thin">
+      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto">
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
             <div class="text-xs text-muted-foreground">命令</div>
@@ -182,7 +182,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
         <section class="space-y-2">
           <div class="text-xs font-medium text-muted-foreground">参数</div>
           <pre
-            class="max-h-48 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed text-foreground scrollbar-thin"
+            class="max-h-48 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed text-foreground"
             >{{ argsJson }}</pre
           >
         </section>
@@ -219,7 +219,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
               <div>耗时</div>
               <div>结果</div>
             </div>
-            <div class="max-h-80 divide-y divide-border/60 overflow-auto scrollbar-thin">
+            <div class="max-h-80 divide-y divide-border/60 overflow-auto">
               <div
                 v-for="row in historyRows"
                 :key="row.record.id"
@@ -291,7 +291,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
 
       <DialogBody
         v-if="selectedRunRecord"
-        class="max-h-[72vh] space-y-4 overflow-auto scrollbar-thin"
+        class="max-h-[72vh] space-y-4 overflow-auto"
       >
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
@@ -325,7 +325,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             {{ selectedRunResultLabel }}
           </div>
           <pre
-            class="max-h-[52vh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground scrollbar-thin"
+            class="max-h-[52vh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
             >{{ selectedRunResultText }}</pre
           >
         </section>

@@ -180,7 +180,7 @@ function diagnosticSeverityClass(severity: string): string {
         </div>
       </DialogHeader>
 
-      <DialogBody class="max-h-[65vh] overflow-auto scrollbar-thin space-y-5">
+      <DialogBody class="max-h-[65vh] overflow-auto space-y-5">
         <section class="space-y-2">
           <div class="text-sm font-medium">基础信息</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">

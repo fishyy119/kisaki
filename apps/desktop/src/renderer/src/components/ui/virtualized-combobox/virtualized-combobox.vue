@@ -329,7 +329,7 @@ function handleMouseMove() {
       <div
         ref="parentRef"
         :style="{ maxHeight: `${props.maxHeight}px` }"
-        class="overflow-x-hidden overflow-y-auto scrollbar-thin p-1"
+        class="overflow-x-hidden overflow-y-auto p-1"
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"
       >

@@ -9,7 +9,7 @@ export const EXTENSION_PUBLISH_WORKFLOWS = ['manual', 'github-single', 'github-m
 
 export type ExtensionPublishWorkflow = (typeof EXTENSION_PUBLISH_WORKFLOWS)[number]
 
-export const EXTENSION_UI_VARIANTS = ['none', 'vanilla', 'vue'] as const
+export const EXTENSION_UI_VARIANTS = ['none', 'vanilla', 'vue', 'vue-kit'] as const
 
 export type ExtensionUiVariant = (typeof EXTENSION_UI_VARIANTS)[number]
 

@@ -186,7 +186,7 @@ const entityTypeModel = computed({
 
         <DialogBody
           ref="dialogBodyRef"
-          class="flex-1 min-h-0 overflow-auto scrollbar-thin"
+          class="flex-1 min-h-0 overflow-auto"
         >
           <TagDetailContent
             :scroll-parent="dialogBodyRef?.$el"

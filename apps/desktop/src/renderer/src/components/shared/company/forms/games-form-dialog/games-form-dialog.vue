@@ -275,7 +275,7 @@ const deleteDialogOpen = computed({
         <DialogHeader>
           <DialogTitle>编辑相关游戏</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <div
             v-if="items.length === 0"
             class="text-sm text-muted-foreground text-center py-8"

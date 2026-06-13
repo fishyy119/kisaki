@@ -24,7 +24,8 @@ import {
   ExtensionPackageLayout,
   ExtensionPackageRecovery,
   ExtensionPackageVerifier,
-  ExtensionUiAssetServer
+  ExtensionUiAssetServer,
+  ExtensionWebviewFontServer
 } from './packages'
 import {
   ExtensionRepositoryFetcher,
@@ -117,6 +118,9 @@ export class ExtensionService implements IService {
         this.installations?.resolveWebviewUiSource(extensionId) ?? null
     })
     uiAssetServer.registerProtocolHandler()
+
+    const webviewFontServer = new ExtensionWebviewFontServer()
+    webviewFontServer.registerProtocolHandler()
 
     this.signers = new ExtensionSignerTrustManager({
       store: new ExtensionSignerTrustStore(dbService.client),

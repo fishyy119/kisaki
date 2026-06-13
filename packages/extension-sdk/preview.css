@@ -1,0 +1,85 @@
+/*
+ * Default --kisaki-* token values for standalone previews.
+ *
+ * In a real extension webview the host injects the resolved app appearance as
+ * inline `--kisaki-*` custom properties (which override this file), so the kit
+ * and base/tailwind layers render with the live theme. Outside the host —
+ * Storybook, a component gallery, a docs page — nothing injects them and
+ * components render unstyled. Import this file there to supply a neutral,
+ * on-brand default (light + dark) so previews are visible:
+ *
+ *   @import 'tailwindcss';
+ *   @import '@kisaki3/extension-sdk/preview.css';
+ *   @import '@kisaki3/extension-sdk/base.css';
+ *   @import '@kisaki3/extension-sdk/tailwind.css';
+ *
+ * Toggle dark mode with `data-kisaki-theme="dark"` on <html>. Do not ship this
+ * in a published extension; the host owns the real values at runtime.
+ */
+:root {
+  --kisaki-radius: 6px;
+
+  --kisaki-background: #f8fafc;
+  --kisaki-foreground: #0f172a;
+  --kisaki-surface: #f1f5f9;
+  --kisaki-surface-foreground: #020617;
+  --kisaki-card: transparent;
+  --kisaki-card-foreground: #020617;
+  --kisaki-popover: #f8fafc;
+  --kisaki-popover-foreground: #020617;
+  --kisaki-dialog: #f8fafc;
+  --kisaki-dialog-foreground: #020617;
+  --kisaki-primary: #3b82f6;
+  --kisaki-primary-foreground: #f8fafc;
+  --kisaki-secondary: #e2e8f0;
+  --kisaki-secondary-foreground: #475569;
+  --kisaki-muted: #e2e8f0;
+  --kisaki-muted-foreground: #64748b;
+  --kisaki-accent: #cbd5e1;
+  --kisaki-accent-foreground: #020617;
+  --kisaki-input: transparent;
+  --kisaki-input-foreground: #020617;
+  --kisaki-destructive: #ef4444;
+  --kisaki-destructive-foreground: #f8fafc;
+  --kisaki-info: #3b82f6;
+  --kisaki-info-foreground: #f8fafc;
+  --kisaki-success: #22c55e;
+  --kisaki-success-foreground: #f8fafc;
+  --kisaki-warning: #eab308;
+  --kisaki-warning-foreground: #0f172a;
+  --kisaki-border: #cbd5e1;
+  --kisaki-ring: #cbd5e1;
+}
+
+[data-kisaki-theme='dark'] {
+  --kisaki-background: #1e293b;
+  --kisaki-foreground: #e2e8f0;
+  --kisaki-surface: #1a2433;
+  --kisaki-surface-foreground: #e2e8f0;
+  --kisaki-card: #243044;
+  --kisaki-card-foreground: #e2e8f0;
+  --kisaki-popover: #2a3850;
+  --kisaki-popover-foreground: #e2e8f0;
+  --kisaki-dialog: #243044;
+  --kisaki-dialog-foreground: #e2e8f0;
+  --kisaki-primary: #3b82f6;
+  --kisaki-primary-foreground: #f8fafc;
+  --kisaki-secondary: #2a3850;
+  --kisaki-secondary-foreground: #cbd5e1;
+  --kisaki-muted: #2d3b54;
+  --kisaki-muted-foreground: #cbd5e1;
+  --kisaki-accent: #475569;
+  --kisaki-accent-foreground: #f8fafc;
+  --kisaki-input: #2a3850;
+  --kisaki-input-foreground: #e2e8f0;
+  --kisaki-destructive: #ef4444;
+  --kisaki-destructive-foreground: #f8fafc;
+  --kisaki-info: #3b82f6;
+  --kisaki-info-foreground: #f8fafc;
+  --kisaki-success: #22c55e;
+  --kisaki-success-foreground: #f8fafc;
+  --kisaki-warning: #eab308;
+  --kisaki-warning-foreground: #0f172a;
+  --kisaki-border: #3f4d63;
+  --kisaki-ring: #3b82f6;
+}

@@ -102,7 +102,7 @@ const metadata = computed(() => [
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto overflow-x-hidden scrollbar-thin">
+      <DialogBody class="max-h-[72vh] space-y-4 overflow-auto overflow-x-hidden">
         <section class="space-y-2">
           <div class="text-xs font-medium text-muted-foreground">结果</div>
           <div class="overflow-hidden rounded-md border border-border bg-muted/20">
@@ -166,7 +166,7 @@ const metadata = computed(() => [
                 输出
               </div>
               <pre
-                class="max-h-56 overflow-auto bg-background/40 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground scrollbar-thin"
+                class="max-h-56 overflow-auto bg-background/40 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
               >{{ outputPreview }}</pre>
             </div>
           </div>

@@ -162,7 +162,7 @@ watch(
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-        <DialogBody class="space-y-3 max-h-[70vh] overflow-y-auto scrollbar-thin">
+        <DialogBody class="space-y-3 max-h-[70vh] overflow-y-auto">
           <div class="rounded-md border border-border bg-muted/20 px-3 py-2 text-xs">
             <div class="flex items-center gap-2 min-w-0">
               <Icon

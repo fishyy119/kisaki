@@ -84,7 +84,7 @@ useEvent('db.deleted', ({ table, id }) => {
             {{ note.name }}
           </DialogTitle>
         </DialogHeader>
-        <DialogBody class="max-h-[70vh] overflow-auto scrollbar-thin space-y-4">
+        <DialogBody class="max-h-[70vh] overflow-auto space-y-4">
           <div
             v-if="coverUrl"
             class="rounded-lg overflow-hidden border bg-muted"

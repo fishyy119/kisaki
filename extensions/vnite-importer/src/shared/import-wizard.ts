@@ -119,7 +119,11 @@ export interface VniteRunDto {
   counters: Record<string, number>
 }
 
+export type VniteImportRunStatusDto = 'completed' | 'failed' | 'cancelled'
+
 export interface VniteDoneSummaryDto {
+  status: VniteImportRunStatusDto
+  fileName: string
   created: number
   updated: number
   completionCompleted: number
@@ -161,4 +165,11 @@ export interface VniteImportWizardHostFunctions {
   startImport(options: VniteImportOptionsForm): Promise<VniteWizardState>
 }
 
-export type VniteImportWizardUiFunctions = Record<string, never>
+/**
+ * Functions the wizard webview exposes to the extension host. The import job
+ * runs in this same host process, so live run progress is pushed straight
+ * into the document instead of being polled.
+ */
+export interface VniteImportWizardUiFunctions {
+  stateChanged(state: VniteWizardState): void
+}

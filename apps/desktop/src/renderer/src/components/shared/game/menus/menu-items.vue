@@ -228,7 +228,7 @@ async function handleOpenGameDir() {
         class="min-w-[180px]"
       >
         <template v-if="collectionsData.notContaining.length > 0">
-          <div class="max-h-[200px] overflow-auto scrollbar-thin">
+          <div class="max-h-[200px] overflow-auto">
             <component
               :is="props.components.Item"
               v-for="collection in collectionsData.notContaining"
@@ -280,7 +280,7 @@ async function handleOpenGameDir() {
         :is="props.components.SubContent"
         class="min-w-[180px]"
       >
-        <div class="max-h-[200px] overflow-auto scrollbar-thin">
+        <div class="max-h-[200px] overflow-auto">
           <component
             :is="props.components.Item"
             v-for="collection in collectionsData.containing"

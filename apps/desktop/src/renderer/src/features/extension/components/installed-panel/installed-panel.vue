@@ -224,7 +224,7 @@ function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
     />
 
     <!-- Extension Grid -->
-    <div class="flex-1 overflow-auto scrollbar-thin">
+    <div class="flex-1 overflow-auto">
       <template v-if="state === 'loading'">
         <div class="flex items-center justify-center h-48">
           <Spinner class="size-6" />

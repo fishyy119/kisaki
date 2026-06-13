@@ -41,7 +41,7 @@ const state = useRenderState(isLoading, null, scanners)
       <!-- Scanner list -->
       <div
         v-else
-        class="h-full overflow-auto scrollbar-thin"
+        class="h-full overflow-auto"
       >
         <!-- Table header -->
         <div

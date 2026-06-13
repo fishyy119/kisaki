@@ -8,6 +8,7 @@ import { TokenService } from './auth/token-service'
 import { TokenStore } from './auth/token-store'
 import { SettingsStore } from './config/store'
 import { registerBangumiJobCommands } from './jobs/commands'
+import { BangumiJobEvents } from './jobs/events'
 import { JobRunner } from './jobs/runner'
 import { createAnimeMediaDescriptor } from './media/anime/scope'
 import { createBookMediaDescriptor } from './media/book/scope'
@@ -73,6 +74,7 @@ export default defineExtension({
       syncSuppressor,
       logger: context.logger
     })
+    const jobEvents = new BangumiJobEvents()
 
     const oauthFlowRef: { current?: OAuthFlow } = {}
     const settingsUiRef: { current?: BangumiSettingsUiHandle } = {}
@@ -125,11 +127,13 @@ export default defineExtension({
     context.subscriptions.add(
       context.contributions.scraperProviders.game.register(new BangumiProvider(client))
     )
-    for (const registration of registerBangumiJobCommands(
-      context.contributions.commands,
-      jobRunner,
-      context.abortSignal
-    )) {
+    for (const registration of registerBangumiJobCommands({
+      commands: context.contributions.commands,
+      runner: jobRunner,
+      events: jobEvents,
+      signal: context.abortSignal,
+      logger: context.logger
+    })) {
       context.subscriptions.add(registration)
     }
     context.subscriptions.add(
@@ -147,9 +151,11 @@ export default defineExtension({
       oauthFlow,
       tokenService,
       jobRunner,
+      jobEvents,
       mediaRegistry,
       syncStateStore,
       syncQueueStore,
+      logger: context.logger,
       abortSignal: context.abortSignal
     })
   }

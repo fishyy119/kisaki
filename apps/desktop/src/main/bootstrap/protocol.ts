@@ -5,6 +5,7 @@
  * - attachment:// - Serves database attachments (images, backups)
  * - kisaki-extension-icon:// - Lazily proxies extension catalog icons
  * - kisaki-extension-ui:// - Serves bundled extension webview UI assets
+ * - kisaki-webview-font:// - Serves app fonts to extension webview documents
  * - kisaki:// - Deeplink protocol for external triggers
  *
  * Custom schemes must be registered before app.whenReady().
@@ -12,6 +13,7 @@
  */
 
 import { protocol } from 'electron'
+import { EXTENSION_WEBVIEW_FONT_SCHEME } from '@shared/extension'
 
 const ATTACHMENT_SCHEME = 'attachment'
 const EXTENSION_ICON_SCHEME = 'kisaki-extension-icon'
@@ -55,6 +57,19 @@ export function registerAppSchemes(): void {
         supportFetchAPI: true,
         bypassCSP: true,
         stream: true
+      }
+    },
+    {
+      scheme: EXTENSION_WEBVIEW_FONT_SCHEME,
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        bypassCSP: true,
+        stream: true,
+        // Webview documents load fonts cross-origin; @font-face requests are
+        // CORS-gated, so the scheme must participate in CORS.
+        corsEnabled: true
       }
     }
   ])

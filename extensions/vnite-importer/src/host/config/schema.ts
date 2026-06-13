@@ -67,10 +67,6 @@ export function normalizeVniteImporterSettings(value: unknown): VniteImporterSet
   }
 }
 
-export function isVniteImporterSettingsV1(value: unknown): value is VniteImporterSettingsV1 {
-  return JSON.stringify(value) === JSON.stringify(normalizeVniteImporterSettings(value))
-}
-
 function normalizeFieldSelection(
   value: unknown,
   defaults: VniteImportFieldSelection

@@ -117,6 +117,8 @@ export async function validateManifest(
         message: 'README.md is recommended for packaged extensions.'
       })
     }
+
+    await checkUiKitDependencies(project, warnings)
   }
 
   return {
@@ -124,6 +126,72 @@ export async function validateManifest(
     errors,
     warnings
   }
+}
+
+const UI_KIT_PACKAGE = '@kisaki3/extension-ui-vue'
+const ICONIFY_PLUGIN_PACKAGE = '@iconify/tailwind4'
+const ICONIFY_DATA_PACKAGES = ['@iconify-json/mdi', '@iconify/json']
+
+/**
+ * Warns when a project uses the UI kit without the iconify build setup. The
+ * kit renders icons via iconify mask classes (e.g. `icon-[mdi--close]`), which
+ * the consumer's Tailwind build only emits when the plugin and an icon-set
+ * data package are installed — otherwise the kit's icons silently render blank.
+ */
+async function checkUiKitDependencies(
+  project: ExtensionProject,
+  warnings: ValidationIssue[]
+): Promise<void> {
+  let packageJson: unknown
+  try {
+    packageJson = await readJsonFile(project.packageJsonPath)
+  } catch {
+    return
+  }
+
+  const dependencies = collectDependencyNames(packageJson)
+  if (!dependencies.has(UI_KIT_PACKAGE)) {
+    return
+  }
+
+  if (!dependencies.has(ICONIFY_PLUGIN_PACKAGE)) {
+    warnings.push({
+      path: 'package.json',
+      message: `${UI_KIT_PACKAGE} renders icons via iconify mask classes, but ${ICONIFY_PLUGIN_PACKAGE} is not installed. Add it and an icon set (e.g. @iconify-json/mdi), and register \`@plugin "${ICONIFY_PLUGIN_PACKAGE}"\` in the webview document CSS, or the kit icons render blank.`
+    })
+    return
+  }
+
+  if (!ICONIFY_DATA_PACKAGES.some((name) => dependencies.has(name))) {
+    warnings.push({
+      path: 'package.json',
+      message: `${UI_KIT_PACKAGE} uses mdi icons, but no iconify icon-set data package is installed. Add @iconify-json/mdi (or @iconify/json), or the kit icons render blank.`
+    })
+  }
+}
+
+function collectDependencyNames(packageJson: unknown): Set<string> {
+  const names = new Set<string>()
+  if (typeof packageJson !== 'object' || packageJson === null) {
+    return names
+  }
+
+  const record = packageJson as Record<string, unknown>
+  for (const field of [
+    'dependencies',
+    'devDependencies',
+    'peerDependencies',
+    'optionalDependencies'
+  ]) {
+    const group = record[field]
+    if (typeof group === 'object' && group !== null) {
+      for (const name of Object.keys(group)) {
+        names.add(name)
+      }
+    }
+  }
+
+  return names
 }
 
 /**

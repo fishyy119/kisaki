@@ -147,8 +147,11 @@ export interface BangumiSettingsHostFunctions {
 }
 
 /**
- * Functions the settings webview exposes to the extension host.
+ * Functions the settings webview exposes to the extension host. Jobs and
+ * previews run in this same host process, so refreshes and preview progress
+ * are pushed straight into the document.
  */
 export interface BangumiSettingsUiFunctions {
   refreshRequested(reason: string): void
+  previewProgress(label: string): void
 }

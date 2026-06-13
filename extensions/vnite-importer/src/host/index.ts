@@ -34,7 +34,6 @@ export default defineExtension({
       jobRunner,
       library: kisaki.library,
       files: kisaki.files,
-      notify: kisaki.notify,
       scrapers: kisaki.scrapers,
       taskRuns: kisaki.taskRuns,
       logger: context.logger,

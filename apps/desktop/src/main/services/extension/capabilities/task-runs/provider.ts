@@ -10,6 +10,7 @@ import {
   type TaskRunSnapshot as ExtensionTaskRunSnapshot
 } from '@kisaki3/extension-api'
 import type { CommandService } from '@main/services/command'
+import { createLogger } from '@main/log'
 import type { TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation, type TaskRunHandle } from '@main/services/task-run'
 import type { ExtensionHostRpcClient } from '../../runtime'
@@ -26,6 +27,8 @@ import {
   toActiveQuery,
   toHistoryQuery
 } from './validation'
+
+const log = createLogger('Extension')
 
 export interface ExtensionTaskRunsCapabilityProviderOptions {
   taskRun: TaskRunService
@@ -117,7 +120,10 @@ export class ExtensionTaskRunsCapabilityProvider {
     result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
   ): void {
     const record = this.requireTrackedRun(runtimeHandle, runId)
-    record.handle.complete(normalizeCompletionResult(result))
+    const normalized = this.normalizeResultOrFinishRun(record, runId, result, (validationError) =>
+      record.handle.fail(validationError)
+    )
+    record.handle.complete(normalized)
     this.trackedRuns.delete(runId)
   }
 
@@ -128,7 +134,11 @@ export class ExtensionTaskRunsCapabilityProvider {
     result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
   ): void {
     const record = this.requireTrackedRun(runtimeHandle, runId)
-    record.handle.fail(toFailureError(error), normalizeCompletionResult(result))
+    const failureError = toFailureError(error)
+    const normalized = this.normalizeResultOrFinishRun(record, runId, result, () =>
+      record.handle.fail(failureError)
+    )
+    record.handle.fail(failureError, normalized)
     this.trackedRuns.delete(runId)
   }
 
@@ -138,7 +148,10 @@ export class ExtensionTaskRunsCapabilityProvider {
     result?: Omit<ExtensionTaskRunResult, 'status' | 'error'>
   ): void {
     const record = this.requireTrackedRun(runtimeHandle, runId)
-    record.handle.cancel(normalizeCompletionResult(result))
+    const normalized = this.normalizeResultOrFinishRun(record, runId, result, () =>
+      record.handle.cancel()
+    )
+    record.handle.cancel(normalized)
     this.trackedRuns.delete(runId)
   }
 
@@ -212,6 +225,38 @@ export class ExtensionTaskRunsCapabilityProvider {
       [...this.trackedRuns.values()].map((run) => run.runtimeHandle)
     )) {
       this.releaseRuntime(runtimeHandle)
+    }
+  }
+
+  /**
+   * Normalizes a completion result. A rejected result must not leave the run
+   * active forever (active runs are memory-only and would linger as zombies),
+   * so on validation failure the run is finished through `finishWithoutResult`
+   * with the caller's intended terminal status and the validation error is
+   * rethrown to the extension.
+   */
+  private normalizeResultOrFinishRun(
+    record: TrackedExtensionTaskRun,
+    runId: string,
+    result: Omit<ExtensionTaskRunResult, 'status' | 'error'> | undefined,
+    finishWithoutResult: (validationError: Error) => void
+  ): ReturnType<typeof normalizeCompletionResult> {
+    try {
+      return normalizeCompletionResult(result)
+    } catch (error) {
+      log.warn('Extension task run result was rejected; finishing the run without it.', {
+        runId,
+        extensionId: record.extensionId,
+        message: error instanceof Error ? error.message : String(error)
+      })
+      try {
+        finishWithoutResult(
+          error instanceof Error ? error : new Error('Task run result was rejected.')
+        )
+      } finally {
+        this.trackedRuns.delete(runId)
+      }
+      throw error
     }
   }
 

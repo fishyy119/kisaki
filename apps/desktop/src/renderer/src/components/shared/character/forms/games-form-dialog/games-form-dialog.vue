@@ -318,7 +318,7 @@ function handleRevealSpoilersConfirm() {
         <DialogHeader>
           <DialogTitle>编辑登场游戏</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-4">
             <p
               v-if="items.length === 0"

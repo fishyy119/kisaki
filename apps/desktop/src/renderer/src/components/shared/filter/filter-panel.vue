@@ -67,7 +67,7 @@ function handleClear() {
         </div>
 
         <!-- Body - Scrollable -->
-        <div class="flex-1 overflow-auto scrollbar-thin p-4">
+        <div class="flex-1 overflow-auto p-4">
           <FilterBuilder
             v-model="model"
             :ui-spec="props.uiSpec"

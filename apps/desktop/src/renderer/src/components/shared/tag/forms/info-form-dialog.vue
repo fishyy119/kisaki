@@ -129,7 +129,7 @@ async function handleSubmit() {
           <DialogTitle>编辑标签</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+          <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field>
                 <FieldLabel>名称</FieldLabel>

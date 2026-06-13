@@ -115,7 +115,7 @@ function handleCancel() {
       <DialogHeader>
         <DialogTitle>选择预设规则</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+      <DialogBody class="max-h-[60vh] overflow-auto">
         <p
           v-if="availablePresets.length === 0"
           class="text-sm text-muted-foreground text-center py-8"

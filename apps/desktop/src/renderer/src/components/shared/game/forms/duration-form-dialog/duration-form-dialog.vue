@@ -284,7 +284,7 @@ const minutesModel = computed({
             <div class="px-4 py-2 text-sm font-medium text-muted-foreground border-b shrink-0">
               会话记录 ({{ sessions.length }})
             </div>
-            <div class="px-4 py-3 space-y-1 overflow-auto scrollbar-thin max-h-[40vh]">
+            <div class="px-4 py-3 space-y-1 overflow-auto max-h-[40vh]">
               <p
                 v-if="sessions.length === 0"
                 class="text-sm text-muted-foreground text-center py-6"

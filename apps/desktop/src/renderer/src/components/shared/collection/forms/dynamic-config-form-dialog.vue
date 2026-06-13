@@ -289,7 +289,7 @@ const sortDirectionModels = {
         </DialogTitle>
       </DialogHeader>
 
-      <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+      <DialogBody class="overflow-auto max-h-[60vh]">
         <div class="space-y-2">
           <div
             v-for="type in CONTENT_ENTITY_TYPES"

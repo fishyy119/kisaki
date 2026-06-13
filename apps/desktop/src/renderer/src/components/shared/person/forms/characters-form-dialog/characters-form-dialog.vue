@@ -318,7 +318,7 @@ function handleRevealSpoilersConfirm() {
         <DialogHeader>
           <DialogTitle>编辑配音角色</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-4">
             <p
               v-if="items.length === 0"

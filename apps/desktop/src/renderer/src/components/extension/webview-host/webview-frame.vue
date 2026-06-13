@@ -1,7 +1,7 @@
 <!--
 Extension Webview Frame hosts one webview session document in an iframe.
-Boundary: bootstrap injection, ready handshake, theme push, and message relay
-between the iframe document and main.
+Boundary: bootstrap injection, ready handshake, appearance push, and message
+relay between the iframe document and main.
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -22,7 +22,7 @@ import {
 } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { useThemeStore } from '@renderer/stores'
-import { readCurrentWebviewTheme } from './webview-theme'
+import { readCurrentWebviewAppearance } from './webview-theme'
 
 const log = createLogger('Extension')
 
@@ -67,7 +67,7 @@ watch(
   [resolvedTheme, activeThemeId],
   () => {
     if (ready.value) {
-      postCurrentTheme()
+      postCurrentAppearance()
     }
   },
   { flush: 'post' }
@@ -78,7 +78,7 @@ function buildDocumentSrc(session: ExtensionWebviewSessionInfo): string {
     webviewId: session.webviewId,
     extensionId: session.extensionId,
     params: session.params,
-    theme: readCurrentWebviewTheme(resolvedTheme.value)
+    appearance: readCurrentWebviewAppearance(resolvedTheme.value)
   }
   const url = new URL(session.documentUrl)
   url.searchParams.set(WEBVIEW_BOOTSTRAP_QUERY_PARAM, JSON.stringify(bootstrap))
@@ -102,7 +102,7 @@ function handleWindowMessage(event: MessageEvent): void {
   switch (envelope.type) {
     case 'kisaki-webview:ready':
       ready.value = true
-      postCurrentTheme()
+      postCurrentAppearance()
       void notifyWebviewReady(props.session.webviewId).catch((error) => {
         log.error('Failed to acknowledge webview readiness:', error)
       })
@@ -138,8 +138,11 @@ function postToFrame(envelope: WebviewEmbedderEnvelope): void {
   frame.value?.contentWindow?.postMessage(envelope, documentOrigin.value)
 }
 
-function postCurrentTheme(): void {
-  postToFrame({ type: 'kisaki-webview:theme', theme: readCurrentWebviewTheme(resolvedTheme.value) })
+function postCurrentAppearance(): void {
+  postToFrame({
+    type: 'kisaki-webview:appearance',
+    appearance: readCurrentWebviewAppearance(resolvedTheme.value)
+  })
 }
 </script>
 

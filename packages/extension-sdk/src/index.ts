@@ -8,6 +8,7 @@ export type {
   WebviewRpcRemote,
   WebviewRpcTransport
 } from './shared/webview-rpc'
+export { createTaskRunProgressWork, type TaskRunProgressWorkInput } from './task-runs'
 
 export function defineExtension(definition: ExtensionDefinition): ExtensionDefinition {
   return definition

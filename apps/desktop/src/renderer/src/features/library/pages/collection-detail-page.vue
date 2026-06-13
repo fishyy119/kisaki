@@ -277,7 +277,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     <!-- Main content -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto scrollbar-thin p-4"
+      class="flex-1 overflow-auto p-4"
     >
       <CollectionDetailContent
         :scroll-parent="scrollContainerRef"

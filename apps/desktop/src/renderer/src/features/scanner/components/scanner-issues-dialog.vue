@@ -292,7 +292,7 @@ useEvent('db.updated', (payload) => {
 
         <div
           v-else
-          class="min-h-0 flex-1 overflow-auto rounded-md border border-border scrollbar-thin"
+          class="min-h-0 flex-1 overflow-auto rounded-md border border-border"
         >
           <Table class="table-fixed">
             <TableHeader class="sticky top-0 z-10 bg-muted/60">

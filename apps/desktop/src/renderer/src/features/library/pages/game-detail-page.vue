@@ -370,7 +370,7 @@ const canOpenGameDir = computed(() => {
     </header>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-auto p-4 scrollbar-thin">
+    <div class="flex-1 overflow-auto p-4">
       <GameDetailContent />
     </div>
 

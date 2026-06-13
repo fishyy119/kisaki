@@ -188,14 +188,19 @@ function createPromptQuestions(parsed: ParsedArgs): PromptQuestion[] {
       initial: 0,
       choices: [
         {
-          title: 'Vanilla TypeScript',
-          value: 'vanilla',
-          description: 'Plain DOM webview document with minimal dependencies.'
+          title: 'Vue + Kisaki UI Kit',
+          value: 'vue-kit',
+          description: 'Vue with @kisaki3/extension-ui-vue components matching the app design.'
         },
         {
           title: 'Vue',
           value: 'vue',
-          description: 'Vue single-file-component webview app.'
+          description: 'Vue single-file-component webview app, plain Tailwind.'
+        },
+        {
+          title: 'Vanilla TypeScript',
+          value: 'vanilla',
+          description: 'Plain DOM webview document with minimal dependencies.'
         }
       ]
     },

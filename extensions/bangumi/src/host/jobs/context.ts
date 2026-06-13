@@ -1,9 +1,12 @@
 import {
+  createTaskRunProgressWork,
   isTaskRunCancellation,
   type ExtensionLogger,
+  type JsonObject,
   type TaskRunProgressUpdate,
-  type TaskRunProgressWork,
-  type TaskRunResult
+  type TaskRunProgressWorkInput,
+  type TaskRunResult,
+  type TaskRunWarning
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../api/client'
 import type { AccountService } from '../auth/account'
@@ -23,9 +26,12 @@ import {
 } from './summary'
 import { BangumiExtensionError } from '../utils/errors'
 
-type JobProgressWorkInput = Partial<
-  Pick<TaskRunProgressWork, 'current' | 'total' | 'ratePeriod' | 'indeterminate'>
->
+/**
+ * Representative failures forwarded to the task run result. The full error
+ * list stays on the in-process summary; task-run results are bounded
+ * summaries by contract.
+ */
+const RESULT_WARNING_LIMIT = 10
 
 export interface JobRunnerDependencies {
   settingsStore: SettingsStore
@@ -95,7 +101,7 @@ export class JobStateController {
     this.state.errors.push(createJobError(error, context))
   }
 
-  report(phase: string, label: string, progress: JobProgressWorkInput = {}): void {
+  report(phase: string, label: string, progress: TaskRunProgressWorkInput = {}): void {
     const update: TaskRunProgressUpdate = {
       phase: {
         key: phase,
@@ -103,33 +109,12 @@ export class JobStateController {
       },
       counters: this.state.counters
     }
-    const work = createProgressWork(progress)
+    const work = createTaskRunProgressWork(progress)
     if (work) {
       update.work = work
     }
     void this.run.report(update).catch(() => undefined)
   }
-}
-
-function createProgressWork(progress: JobProgressWorkInput): TaskRunProgressWork | undefined {
-  const work: TaskRunProgressWork = {}
-  if (progress.current !== undefined) {
-    work.current = progress.current
-  }
-  if (progress.total !== undefined) {
-    work.total = progress.total
-  }
-  if (progress.current !== undefined || progress.total !== undefined) {
-    work.unit = 'item'
-  }
-  if (progress.ratePeriod !== undefined) {
-    work.ratePeriod = progress.ratePeriod
-  }
-  if (progress.indeterminate !== undefined) {
-    work.indeterminate = progress.indeterminate
-  }
-
-  return Object.keys(work).length > 0 ? work : undefined
 }
 
 export async function runBangumiJob(
@@ -150,55 +135,95 @@ export async function runBangumiJob(
     await job.checkpoint()
     await execute(job)
     await job.checkpoint()
-    const summary = createBangumiJobSummary({
-      commandId: state.commandId,
-      startedAt: state.startedAt,
-      counters: state.counters,
-      previewGroups: state.previewGroups,
-      errors: state.errors
-    })
-    await context.run.complete({
-      summary: 'Bangumi job 已完成。',
-      output: summary,
-      counters: state.counters
-    })
+    const summary = createSummary(state)
+    await finishRun(logger, () =>
+      context.run.complete({
+        summary: 'Bangumi job 已完成。',
+        output: toTaskRunOutput(summary),
+        counters: state.counters,
+        warnings: toTaskRunWarnings(summary)
+      })
+    )
     return summary
   } catch (error) {
     if (isTaskRunCancellation(error) || isCancellationError(error) || context.run.signal.aborted) {
       job.report('cancelled', 'Bangumi job 已取消。', { indeterminate: true })
-      const summary = createBangumiJobSummary({
-        commandId: state.commandId,
-        startedAt: state.startedAt,
-        counters: state.counters,
-        previewGroups: state.previewGroups,
-        errors: state.errors
-      })
-      await context.run.cancel({
-        summary: 'Bangumi job 已取消。',
-        output: summary,
-        counters: state.counters
-      })
+      const summary = createSummary(state)
+      await finishRun(logger, () =>
+        context.run.cancel({
+          summary: 'Bangumi job 已取消。',
+          output: toTaskRunOutput(summary),
+          counters: state.counters,
+          warnings: toTaskRunWarnings(summary)
+        })
+      )
       return summary
     }
 
     state.errors.push(createJobError(error))
     const message = toUserErrorMessage(error)
     job.report('failed', message, { indeterminate: true })
-    const summary = createBangumiJobSummary({
-      commandId: state.commandId,
-      startedAt: state.startedAt,
-      counters: state.counters,
-      previewGroups: state.previewGroups,
-      errors: state.errors
-    })
-    await context.run.fail(error, {
-      summary: message,
-      output: summary,
-      counters: state.counters
-    })
+    const summary = createSummary(state)
+    await finishRun(logger, () =>
+      context.run.fail(error, {
+        summary: message,
+        output: toTaskRunOutput(summary),
+        counters: state.counters,
+        warnings: toTaskRunWarnings(summary)
+      })
+    )
     logger?.warn('Bangumi job failed.', toSafeErrorLog(error))
     return summary
   }
+}
+
+function createSummary(state: JobState): BangumiJobSummary {
+  return createBangumiJobSummary({
+    commandId: state.commandId,
+    startedAt: state.startedAt,
+    counters: state.counters,
+    previewGroups: state.previewGroups,
+    errors: state.errors
+  })
+}
+
+/**
+ * Finishing the run must never break the in-process summary flow: if the host
+ * rejects the result payload it also terminates the run with a minimal
+ * terminal state, so the rejection is only logged here.
+ */
+async function finishRun(
+  logger: ExtensionLogger | undefined,
+  finish: () => Promise<void>
+): Promise<void> {
+  try {
+    await finish()
+  } catch (error) {
+    logger?.warn('Bangumi task run result was rejected.', toSafeErrorLog(error))
+  }
+}
+
+/**
+ * Bounded task-run output: totals only. The full preview groups and error
+ * list stay on the in-process summary consumed by the settings webview.
+ */
+function toTaskRunOutput(summary: BangumiJobSummary): JsonObject {
+  return {
+    version: summary.version,
+    commandId: summary.commandId,
+    startedAt: summary.startedAt,
+    finishedAt: summary.finishedAt,
+    counters: summary.counters,
+    previewGroupsTotal: summary.previewGroups.length,
+    errorsTotal: summary.errors.length
+  }
+}
+
+function toTaskRunWarnings(summary: BangumiJobSummary): readonly TaskRunWarning[] {
+  return summary.errors.slice(0, RESULT_WARNING_LIMIT).map((error) => ({
+    code: error.code,
+    message: error.message
+  }))
 }
 
 function toUserErrorMessage(error: unknown): string {

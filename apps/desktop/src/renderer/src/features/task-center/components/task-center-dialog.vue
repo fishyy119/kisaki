@@ -221,7 +221,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 {{ error }}
               </div>
 
-              <div class="min-h-0 flex-1 overflow-auto overflow-x-hidden scrollbar-thin">
+              <div class="min-h-0 flex-1 overflow-auto overflow-x-hidden">
                 <div
                   v-if="filteredActiveRuns.length === 0"
                   class="flex h-full min-h-48 items-center justify-center text-sm text-muted-foreground"
@@ -278,7 +278,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 {{ error }}
               </div>
 
-              <div class="min-h-0 flex-1 overflow-auto overflow-x-hidden scrollbar-thin">
+              <div class="min-h-0 flex-1 overflow-auto overflow-x-hidden">
                 <div
                   v-if="filteredCompletedRuns.length === 0"
                   class="flex h-full min-h-48 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"

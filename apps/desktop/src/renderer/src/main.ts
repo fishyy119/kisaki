@@ -22,8 +22,11 @@ import {
   useTaskRunStore
 } from './stores'
 import { createLogger } from '@renderer/core/log'
+import { loadAppFonts } from './core/fonts'
 
 const log = createLogger('App')
+
+loadAppFonts()
 
 async function initMainWindowRenderer() {
   // ===========================================================================

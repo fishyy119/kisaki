@@ -35,7 +35,7 @@ const open = defineModel<boolean>('open', { required: true })
         </DialogDescription>
       </DialogHeader>
 
-      <DialogBody class="max-h-[70vh] overflow-auto scrollbar-thin">
+      <DialogBody class="max-h-[70vh] overflow-auto">
         <FieldGroup class="gap-4">
           <Field orientation="horizontal">
             <FieldLabel>扩展 ID</FieldLabel>

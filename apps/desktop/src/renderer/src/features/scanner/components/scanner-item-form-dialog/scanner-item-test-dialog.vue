@@ -131,7 +131,7 @@ function handleExclude(name: string) {
       <DialogHeader>
         <DialogTitle>扫描器配置测试</DialogTitle>
       </DialogHeader>
-      <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+      <DialogBody class="max-h-[60vh] overflow-auto">
         <!-- Config Summary -->
         <div class="flex text-xs items-center justify-between gap-4 text-muted-foreground pb-2">
           <div class="flex items-center gap-3 min-w-0">

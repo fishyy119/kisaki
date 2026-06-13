@@ -156,7 +156,7 @@ function handleCancel() {
         <DialogHeader>
           <DialogTitle>编辑相关链接</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
             <p
               v-if="sites.length === 0"

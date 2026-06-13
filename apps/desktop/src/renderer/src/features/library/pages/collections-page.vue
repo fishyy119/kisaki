@@ -144,7 +144,7 @@ function handleCollectionClick(collectionId: string) {
     <!-- Collection grid -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto scrollbar-thin p-4"
+      class="flex-1 overflow-auto p-4"
     >
       <!-- Empty state -->
       <div

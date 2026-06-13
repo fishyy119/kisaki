@@ -276,7 +276,7 @@ const personIdModel = computed({
         </TableHeader>
       </Table>
 
-      <div class="h-[20vh] overflow-auto scrollbar-thin">
+      <div class="h-[20vh] overflow-auto">
         <Empty
           v-if="!hasSearched"
           class="h-full border-0"

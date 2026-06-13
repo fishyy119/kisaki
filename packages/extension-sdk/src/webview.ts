@@ -2,11 +2,13 @@ import type {
   Disposable,
   JsonObject,
   JsonValue,
+  WebviewAppearance,
   WebviewBootstrapPayload,
   WebviewClient,
   WebviewClientEnvelope,
   WebviewEmbedderEnvelope,
-  WebviewTheme
+  WebviewTheme,
+  WebviewTypography
 } from '@kisaki3/extension-api'
 import { WEBVIEW_BOOTSTRAP_QUERY_PARAM, toJsonValue } from '@kisaki3/extension-api'
 
@@ -20,19 +22,26 @@ export type {
   Disposable,
   JsonObject,
   JsonValue,
+  WebviewAppearance,
   WebviewBootstrapPayload,
   WebviewClient,
-  WebviewTheme
+  WebviewTheme,
+  WebviewThemeTokenMap,
+  WebviewThemeTokenName,
+  WebviewTypography
 } from '@kisaki3/extension-api'
 
 interface WebviewClientConnection {
   readonly bootstrap: WebviewBootstrapPayload
   theme: WebviewTheme
+  typography: WebviewTypography
 }
 
 const messageListeners = new Set<(message: JsonValue) => void>()
 const themeListeners = new Set<(theme: WebviewTheme) => void>()
+const typographyListeners = new Set<(typography: WebviewTypography) => void>()
 const bufferedMessages: JsonValue[] = []
+const injectedFontStylesheets = new Map<string, HTMLLinkElement>()
 
 const connection = connect()
 
@@ -61,8 +70,12 @@ function isBootstrapPayload(value: unknown): value is WebviewBootstrapPayload {
     typeof value.extensionId === 'string' &&
     value.extensionId.length > 0 &&
     isRecord(value.params) &&
-    isWebviewTheme(value.theme)
+    isWebviewAppearance(value.appearance)
   )
+}
+
+function isWebviewAppearance(value: unknown): value is WebviewAppearance {
+  return isRecord(value) && isWebviewTheme(value.theme) && isWebviewTypography(value.typography)
 }
 
 function isWebviewTheme(value: unknown): value is WebviewTheme {
@@ -71,8 +84,24 @@ function isWebviewTheme(value: unknown): value is WebviewTheme {
   }
 
   return (
+    typeof value.radius === 'string' &&
     isRecord(value.tokens) &&
     Object.values(value.tokens).every((token) => typeof token === 'string')
+  )
+}
+
+function isWebviewTypography(value: unknown): value is WebviewTypography {
+  if (!isRecord(value) || typeof value.sans !== 'string' || typeof value.mono !== 'string') {
+    return false
+  }
+
+  return (
+    typeof value.baseSize === 'string' &&
+    typeof value.baseWeight === 'string' &&
+    typeof value.baseLineHeight === 'string' &&
+    typeof value.baseLetterSpacing === 'string' &&
+    Array.isArray(value.stylesheets) &&
+    value.stylesheets.every((stylesheet) => typeof stylesheet === 'string')
   )
 }
 
@@ -95,8 +124,8 @@ function toThemeCssVariableName(tokenName: string): string {
 
 /**
  * Mirrors the active app theme onto the document: semantic tokens become
- * `--kisaki-*` CSS variables and the mode lands on `data-kisaki-theme` plus
- * the standard `color-scheme`.
+ * `--kisaki-*` CSS variables, the radius lands on `--kisaki-radius`, and the
+ * mode lands on `data-kisaki-theme` plus the standard `color-scheme`.
  */
 function applyThemeToDocument(theme: WebviewTheme): void {
   const root = document.documentElement
@@ -104,8 +133,61 @@ function applyThemeToDocument(theme: WebviewTheme): void {
     root.style.setProperty(toThemeCssVariableName(tokenName), tokenValue)
   }
 
+  root.style.setProperty('--kisaki-radius', theme.radius)
   root.dataset.kisakiTheme = theme.mode
   root.style.colorScheme = theme.mode
+}
+
+/**
+ * Mirrors the resolved app typography onto the document: reconciles the font
+ * stylesheets (unicode-range sliced @font-face rules, so only used slices are
+ * fetched), the font stacks as `--kisaki-font-*`, and the base metrics as
+ * `--kisaki-text-*`. Faces use `swap` display, so text renders with fallbacks
+ * until they arrive; a missing stylesheet is cosmetic only.
+ */
+function applyTypographyToDocument(typography: WebviewTypography): void {
+  reconcileFontStylesheets(typography.stylesheets)
+
+  const root = document.documentElement
+  root.style.setProperty('--kisaki-font-sans', typography.sans)
+  root.style.setProperty('--kisaki-font-mono', typography.mono)
+  root.style.setProperty('--kisaki-text-size', typography.baseSize)
+  root.style.setProperty('--kisaki-text-weight', typography.baseWeight)
+  root.style.setProperty('--kisaki-text-line-height', typography.baseLineHeight)
+  root.style.setProperty('--kisaki-text-letter-spacing', typography.baseLetterSpacing)
+}
+
+/**
+ * Adds newly-declared font stylesheets and removes ones no longer present, so
+ * repeated appearance pushes never duplicate `<link>` elements (and a future
+ * custom-font change drops stale faces).
+ */
+function reconcileFontStylesheets(stylesheets: readonly string[]): void {
+  const head = document.head ?? document.documentElement
+  const next = new Set(stylesheets)
+
+  for (const [href, link] of injectedFontStylesheets) {
+    if (!next.has(href)) {
+      link.remove()
+      injectedFontStylesheets.delete(href)
+    }
+  }
+
+  for (const href of stylesheets) {
+    if (injectedFontStylesheets.has(href)) {
+      continue
+    }
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = href
+    head.appendChild(link)
+    injectedFontStylesheets.set(href, link)
+  }
+}
+
+function applyAppearanceToDocument(appearance: WebviewAppearance): void {
+  applyThemeToDocument(appearance.theme)
+  applyTypographyToDocument(appearance.typography)
 }
 
 function postToEmbedder(envelope: WebviewClientEnvelope): void {
@@ -135,7 +217,8 @@ function connect(): WebviewClientConnection | null {
 
   const state: WebviewClientConnection = {
     bootstrap,
-    theme: bootstrap.theme
+    theme: bootstrap.appearance.theme,
+    typography: bootstrap.appearance.typography
   }
 
   window.addEventListener('message', (event) => {
@@ -149,19 +232,41 @@ function connect(): WebviewClientConnection | null {
       return
     }
 
-    if (envelope.type === 'kisaki-webview:theme') {
-      state.theme = envelope.theme
-      applyThemeToDocument(envelope.theme)
-      for (const listener of themeListeners) {
-        listener(envelope.theme)
-      }
+    if (envelope.type === 'kisaki-webview:appearance') {
+      applyAppearance(state, envelope.appearance)
     }
   })
 
-  applyThemeToDocument(bootstrap.theme)
+  applyAppearanceToDocument(bootstrap.appearance)
   postToEmbedder({ type: 'kisaki-webview:ready', webviewId: bootstrap.webviewId })
 
   return state
+}
+
+/**
+ * Applies a pushed appearance and notifies only the listener groups whose
+ * slice actually changed, so a pure theme switch never wakes typography
+ * listeners and vice versa.
+ */
+function applyAppearance(state: WebviewClientConnection, appearance: WebviewAppearance): void {
+  const themeChanged = JSON.stringify(state.theme) !== JSON.stringify(appearance.theme)
+  const typographyChanged =
+    JSON.stringify(state.typography) !== JSON.stringify(appearance.typography)
+
+  state.theme = appearance.theme
+  state.typography = appearance.typography
+  applyAppearanceToDocument(appearance)
+
+  if (themeChanged) {
+    for (const listener of themeListeners) {
+      listener(appearance.theme)
+    }
+  }
+  if (typographyChanged) {
+    for (const listener of typographyListeners) {
+      listener(appearance.typography)
+    }
+  }
 }
 
 function requireConnection(): WebviewClientConnection {
@@ -193,12 +298,24 @@ export const webview: WebviewClient = {
   get theme(): WebviewTheme {
     return requireConnection().theme
   },
+  get typography(): WebviewTypography {
+    return requireConnection().typography
+  },
   onThemeChange(listener: (theme: WebviewTheme) => void): Disposable {
     requireConnection()
     themeListeners.add(listener)
     return {
       dispose() {
         themeListeners.delete(listener)
+      }
+    }
+  },
+  onTypographyChange(listener: (typography: WebviewTypography) => void): Disposable {
+    requireConnection()
+    typographyListeners.add(listener)
+    return {
+      dispose() {
+        typographyListeners.delete(listener)
       }
     }
   },

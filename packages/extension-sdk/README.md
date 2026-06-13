@@ -19,20 +19,29 @@ points use directly.
 
 Browser-side entry imported by webview documents:
 
-- `webview`, the in-document client: `params`, `theme`, `onThemeChange`,
-  `postMessage`, `onMessage`, and `close`. The client also mirrors the active
-  app theme as `--kisaki-*` CSS variables on the document root.
+- `webview`, the in-document client: `params`, `theme`, `typography`,
+  `onThemeChange`, `onTypographyChange`, `postMessage`, `onMessage`, and
+  `close`. The client mirrors the active app theme as `--kisaki-*` color/radius
+  variables and the resolved typography as `--kisaki-font-*` / `--kisaki-text-*`
+  variables on the document root, injecting the app font stylesheets.
 - `createWebviewRpc`, the same RPC sugar bound to the document side.
 
-### `@kisaki3/extension-sdk/theme.css`
+### `@kisaki3/extension-sdk/base.css`
 
-Tailwind v4 theme bridge for webview documents. It maps the mirrored
-`--kisaki-*` variables onto Tailwind color tokens so documents use the same
-semantic utilities as the app:
+Framework-agnostic base layer (reset, typography, selection, scrollbars) built
+from the mirrored `--kisaki-*` variables. Pure CSS — works with or without
+Tailwind; import it in every webview document.
+
+### `@kisaki3/extension-sdk/tailwind.css`
+
+Optional Tailwind v4 convenience layer (only for documents that use Tailwind).
+It maps the mirrored `--kisaki-*` variables onto Tailwind color tokens so
+documents use the same semantic utilities as the app:
 
 ```css
 @import 'tailwindcss';
-@import '@kisaki3/extension-sdk/theme.css';
+@import '@kisaki3/extension-sdk/base.css';
+@import '@kisaki3/extension-sdk/tailwind.css';
 ```
 
 ## Example

@@ -239,7 +239,7 @@ function handleCancel() {
           <DialogTitle>{{ isEditMode ? '编辑笔记' : '新建笔记' }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[80vh] overflow-auto scrollbar-thin">
+          <DialogBody class="space-y-4 max-h-[80vh] overflow-auto">
             <FieldGroup>
               <Field>
                 <FieldLabel>标题</FieldLabel>

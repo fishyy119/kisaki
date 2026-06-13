@@ -303,7 +303,7 @@ function getGlobalIndex(profile: ScraperProfile): number {
 
       <!-- Content -->
       <template v-else>
-        <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+        <DialogBody class="max-h-[60vh] overflow-auto">
           <p
             v-if="profiles.length === 0"
             class="text-sm text-muted-foreground text-center py-8"

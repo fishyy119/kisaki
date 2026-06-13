@@ -1,4 +1,3 @@
-import type { ThemeTokenMap } from '../contributions/themes'
 import type { Disposable, JsonObject, JsonValue } from '../shared'
 import type { ValidationIssue } from '../shared/validation'
 import { normalizeExtensionPackagePath } from '../manifest'
@@ -63,11 +62,110 @@ export interface WebviewsCapability {
 export type WebviewThemeMode = 'light' | 'dark'
 
 /**
- * Resolved semantic theme tokens pushed into webview documents.
+ * Full resolved semantic token vocabulary mirrored into webview documents.
+ * @remarks This is the webview *output* contract — the app resolves its active
+ * theme (including derived tokens) and mirrors every value. It is deliberately
+ * wider than the theme contribution *authoring* palette
+ * ({@link import('../contributions/themes').THEME_TOKEN_NAMES}), which stays a
+ * compact input from which the app derives the rest.
+ */
+export const WEBVIEW_THEME_TOKEN_NAMES = [
+  'background',
+  'foreground',
+  'surface',
+  'surfaceForeground',
+  'card',
+  'cardForeground',
+  'popover',
+  'popoverForeground',
+  'dialog',
+  'dialogForeground',
+  'primary',
+  'primaryForeground',
+  'secondary',
+  'secondaryForeground',
+  'muted',
+  'mutedForeground',
+  'accent',
+  'accentForeground',
+  'input',
+  'inputForeground',
+  'destructive',
+  'destructiveForeground',
+  'info',
+  'infoForeground',
+  'success',
+  'successForeground',
+  'warning',
+  'warningForeground',
+  'border',
+  'ring'
+] as const
+
+export type WebviewThemeTokenName = (typeof WEBVIEW_THEME_TOKEN_NAMES)[number]
+
+export type WebviewThemeTokenMap = Record<WebviewThemeTokenName, string>
+
+/**
+ * Resolved theme state pushed into webview documents. The webview client
+ * mirrors `tokens` as `--kisaki-<token>` CSS variables and `radius` as
+ * `--kisaki-radius` on the document root.
  */
 export interface WebviewTheme {
   mode: WebviewThemeMode
-  tokens: ThemeTokenMap
+  tokens: WebviewThemeTokenMap
+  /**
+   * Resolved base corner radius, e.g. `6px`.
+   */
+  radius: string
+}
+
+/**
+ * Resolved app typography mirrored into webview documents: the font faces,
+ * the semantic family stacks, and the base text metrics. The app serves
+ * unicode-range sliced font stylesheets with CORS enabled; the webview client
+ * injects them as `<link>` elements and mirrors the rest as `--kisaki-font-*`
+ * and `--kisaki-text-*` CSS variables on the document root.
+ */
+export interface WebviewTypography {
+  /**
+   * Absolute stylesheet URLs declaring the app font faces.
+   */
+  stylesheets: readonly string[]
+  /**
+   * Full CSS `font-family` stack for the sans slot, fallbacks included.
+   */
+  sans: string
+  /**
+   * Full CSS `font-family` stack for the mono slot, fallbacks included.
+   */
+  mono: string
+  /**
+   * Base `font-size`, e.g. `14px`. Anchors rem-based control metrics.
+   */
+  baseSize: string
+  /**
+   * Base `font-weight`, e.g. `450`.
+   */
+  baseWeight: string
+  /**
+   * Base `line-height`, e.g. `1.5`.
+   */
+  baseLineHeight: string
+  /**
+   * Base `letter-spacing`, e.g. `normal`.
+   */
+  baseLetterSpacing: string
+}
+
+/**
+ * Full resolved appearance the app hands to a webview document: the color
+ * theme and the typography. Delivered at bootstrap and re-pushed whenever the
+ * app appearance changes.
+ */
+export interface WebviewAppearance {
+  theme: WebviewTheme
+  typography: WebviewTypography
 }
 
 /**
@@ -84,7 +182,7 @@ export interface WebviewBootstrapPayload {
   webviewId: string
   extensionId: string
   params: JsonObject
-  theme: WebviewTheme
+  appearance: WebviewAppearance
 }
 
 /**
@@ -100,7 +198,7 @@ export type WebviewClientEnvelope =
  */
 export type WebviewEmbedderEnvelope =
   | { type: 'kisaki-webview:message'; message: JsonValue }
-  | { type: 'kisaki-webview:theme'; theme: WebviewTheme }
+  | { type: 'kisaki-webview:appearance'; appearance: WebviewAppearance }
 
 /**
  * In-document API implemented by `@kisaki3/extension-sdk/webview`.
@@ -110,7 +208,9 @@ export interface WebviewClient {
   readonly extensionId: string
   readonly params: JsonObject
   readonly theme: WebviewTheme
+  readonly typography: WebviewTypography
   onThemeChange(listener: (theme: WebviewTheme) => void): Disposable
+  onTypographyChange(listener: (typography: WebviewTypography) => void): Disposable
   postMessage(message: JsonValue): void
   onMessage(listener: (message: JsonValue) => void): Disposable
   close(): void

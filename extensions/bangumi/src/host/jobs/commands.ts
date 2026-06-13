@@ -2,6 +2,7 @@ import type {
   CommandContributionExecuteEvent,
   CommandRegistrar,
   Disposable,
+  ExtensionLogger,
   TaskRunHandle,
   JsonObject
 } from '@kisaki3/extension-sdk'
@@ -13,6 +14,7 @@ import {
   normalizeImportIndexArgs,
   normalizeImportCollectionsArgs
 } from './args'
+import type { BangumiJobEvents } from './events'
 import type { JobRunner } from './runner'
 import { BangumiExtensionError } from '../utils/errors'
 
@@ -26,11 +28,16 @@ export const BANGUMI_COMMAND_IDS = {
 
 export type BangumiCommandId = (typeof BANGUMI_COMMAND_IDS)[keyof typeof BANGUMI_COMMAND_IDS]
 
-export function registerBangumiJobCommands(
-  commands: CommandRegistrar,
-  runner: JobRunner,
+export interface BangumiJobCommandsInput {
+  commands: CommandRegistrar
+  runner: JobRunner
+  events: BangumiJobEvents
   signal: AbortSignal
-): readonly Disposable[] {
+  logger: ExtensionLogger
+}
+
+export function registerBangumiJobCommands(input: BangumiJobCommandsInput): readonly Disposable[] {
+  const { commands, runner, events, signal, logger } = input
   const registrations = [
     commands.register({
       id: BANGUMI_COMMAND_IDS.authRefresh,
@@ -48,6 +55,8 @@ export function registerBangumiJobCommands(
         return startBangumiTaskRun({
           event,
           signal,
+          events,
+          logger,
           operation: 'authRefresh',
           title: 'Bangumi 刷新凭据',
           description: '刷新 Bangumi token 并验证当前账号',
@@ -76,6 +85,8 @@ export function registerBangumiJobCommands(
         return startBangumiTaskRun({
           event,
           signal,
+          events,
+          logger,
           operation: 'sync.changedItems',
           title: 'Bangumi 同步变更条目',
           description: '同步扩展运行期队列中的本地条目变更',
@@ -112,6 +123,8 @@ export function registerBangumiJobCommands(
         return startBangumiTaskRun({
           event,
           signal,
+          events,
+          logger,
           operation: 'fullSync',
           title: 'Bangumi 全量同步',
           description: '扫描本地游戏并同步 Bangumi 收藏状态与评分',
@@ -154,6 +167,8 @@ export function registerBangumiJobCommands(
         return startBangumiTaskRun({
           event,
           signal,
+          events,
+          logger,
           operation: 'import.collections',
           title: 'Bangumi 导入我的收藏',
           description: '按媒体类型导入当前 Bangumi 用户收藏',
@@ -190,6 +205,8 @@ export function registerBangumiJobCommands(
         return startBangumiTaskRun({
           event,
           signal,
+          events,
+          logger,
           operation: 'import.index',
           title: 'Bangumi 导入目录',
           description: '按媒体类型导入指定 Bangumi 目录条目',
@@ -222,6 +239,8 @@ export function isBangumiCommandId(value: string): value is BangumiCommandId {
 async function startBangumiTaskRun(options: {
   event: CommandContributionExecuteEvent
   signal: AbortSignal
+  events: BangumiJobEvents
+  logger: ExtensionLogger
   operation: string
   title: string
   description: string
@@ -255,11 +274,22 @@ async function startBangumiTaskRun(options: {
     }
   })
 
-  void options.run(run).catch((error) => {
-    if (!isTaskRunCancellation(error)) {
-      void error
-    }
-  })
+  options.events.emit({ type: 'started', commandId: options.event.commandId })
+  void options
+    .run(run)
+    .catch((error: unknown) => {
+      // The job lifecycle finishes the run itself; anything surfacing here is
+      // a launcher-level defect worth logging.
+      if (!isTaskRunCancellation(error)) {
+        options.logger.warn('Bangumi job launcher failed.', {
+          commandId: options.event.commandId,
+          message: error instanceof Error ? error.message : String(error)
+        })
+      }
+    })
+    .finally(() => {
+      options.events.emit({ type: 'finished', commandId: options.event.commandId })
+    })
 
   return { runId: run.id }
 }

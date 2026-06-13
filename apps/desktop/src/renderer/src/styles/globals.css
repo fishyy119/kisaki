@@ -3,7 +3,6 @@
 @import 'vue-sonner/style.css';
 @plugin "@tailwindcss/typography";
 @plugin "@iconify/tailwind4";
-@plugin 'tailwind-scrollbar';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -66,23 +65,27 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-@font-face {
-  font-family: 'SourceHanSansVf';
-  src: url('@assets/fonts/SourceHanSans-VF.otf.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'SourceHanSansHwVf';
-  src: url('@assets/fonts/SourceHanSansHW-VF.otf.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-}
-
+/*
+ * App fonts are npm-managed Fontsource variable packages (Noto Sans SC +
+ * Noto Sans Mono), unicode-range sliced so documents decode only the ranges
+ * they use. The @font-face rules live in the package stylesheets loaded by
+ * `core/fonts.ts`; CJK glyphs in mono contexts fall back to the sans family.
+ *
+ * Base typography is expressed as variables (not hardcoded) so a future
+ * appearance setting can drive font/weight/size/spacing from one place; the
+ * webview theme bridge mirrors these resolved values to extension documents.
+ * The font stacks must stay in sync with EXTENSION_WEBVIEW_FONT_*_STACK in
+ * @shared/extension/webview-fonts (the bridge falls back to those constants).
+ */
 :root {
-  --font-sans: 'SourceHanSansVf';
-  --font-mono: 'SourceHanSansHwVf';
+  --font-sans: 'Noto Sans SC Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    'Noto Sans Mono Variable', 'Noto Sans SC Variable', ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+  --text-base-size: 14px;
+  --text-base-weight: 450;
+  --text-base-line-height: 1.5;
+  --text-base-letter-spacing: normal;
 }
 
 @layer base {
@@ -102,10 +105,33 @@
   }
 
   html {
-    font-weight: 450;
-    font-size: 14px;
-    line-height: 1.5;
-    @apply scrollbar-thumb-border scrollbar-track-transparent;
+    font-weight: var(--text-base-weight);
+    font-size: var(--text-base-size);
+    line-height: var(--text-base-line-height);
+    letter-spacing: var(--text-base-letter-spacing);
+    /* Thin neutral scrollbars applied globally (inherited standard properties)
+     * — pure CSS, no plugin; every scroll container is styled uniformly. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* WebKit/Blink scrollbar styling to match the standard properties above. */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 
   /* Focus styles handled by individual components */

@@ -260,7 +260,7 @@ function handleClose() {
           <DialogTitle>管理区块</DialogTitle>
         </DialogHeader>
 
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
             <template v-if="items.length === 0">
               <p class="text-sm text-muted-foreground text-center py-8">

@@ -38,6 +38,7 @@ const toolingPackages: readonly ToolingPackage[] = [
   { name: '@kisaki3/extension-api', dir: 'packages/extension-api' },
   { name: '@kisaki3/extension-registry', dir: 'packages/extension-registry' },
   { name: '@kisaki3/extension-sdk', dir: 'packages/extension-sdk' },
+  { name: '@kisaki3/extension-ui-vue', dir: 'packages/extension-ui-vue' },
   { name: '@kisaki3/extension-cli', dir: 'packages/extension-cli' },
   { name: 'create-kisaki-extension', dir: 'packages/create-kisaki-extension' }
 ]

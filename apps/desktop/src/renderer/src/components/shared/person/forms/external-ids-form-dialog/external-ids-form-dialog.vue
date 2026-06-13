@@ -216,7 +216,7 @@ function handleCancel() {
         <DialogHeader>
           <DialogTitle>管理外部ID</DialogTitle>
         </DialogHeader>
-        <DialogBody class="overflow-auto max-h-[60vh] scrollbar-thin">
+        <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
             <p
               v-if="items.length === 0"

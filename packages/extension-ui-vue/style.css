@@ -1,0 +1,19 @@
+/*
+ * Component layer for the Kisaki webview UI kit.
+ *
+ * The framework-agnostic base (reset, typography, selection, scrollbars) lives
+ * in `@kisaki3/extension-sdk/base.css` and the Tailwind token mapping in
+ * `@kisaki3/extension-sdk/tailwind.css`; the document imports both. This file
+ * adds only what the kit components need: the animation utilities they use and
+ * the Tailwind source that emits their classes.
+ *
+ * Import order in a webview document stylesheet:
+ *   @import 'tailwindcss';
+ *   @import '@kisaki3/extension-sdk/base.css';
+ *   @import '@kisaki3/extension-sdk/tailwind.css';
+ *   @import '@kisaki3/extension-ui-vue/style.css';
+ *   @plugin "@iconify/tailwind4"; // kit icons render via iconify mask classes
+ */
+@import 'tw-animate-css';
+
+@source "./dist";

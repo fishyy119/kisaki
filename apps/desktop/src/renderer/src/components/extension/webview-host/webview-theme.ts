@@ -1,30 +1,99 @@
-import { THEME_TOKEN_NAMES, type ThemeTokenMap, type WebviewTheme } from '@kisaki3/extension-api'
+import {
+  WEBVIEW_THEME_TOKEN_NAMES,
+  type WebviewAppearance,
+  type WebviewTheme,
+  type WebviewThemeTokenMap,
+  type WebviewThemeTokenName,
+  type WebviewTypography
+} from '@kisaki3/extension-api'
+import {
+  EXTENSION_WEBVIEW_FONT_MONO_STACK,
+  EXTENSION_WEBVIEW_FONT_SANS_STACK,
+  extensionWebviewFontStylesheetUrls
+} from '@shared/extension'
 
-const TOKEN_CSS_VARS: Record<(typeof THEME_TOKEN_NAMES)[number], string> = {
+const TOKEN_CSS_VARS: Record<WebviewThemeTokenName, string> = {
   background: '--background',
   foreground: '--foreground',
   surface: '--surface',
   surfaceForeground: '--surface-foreground',
+  card: '--card',
+  cardForeground: '--card-foreground',
+  popover: '--popover',
+  popoverForeground: '--popover-foreground',
+  dialog: '--dialog',
+  dialogForeground: '--dialog-foreground',
   primary: '--primary',
   primaryForeground: '--primary-foreground',
+  secondary: '--secondary',
+  secondaryForeground: '--secondary-foreground',
   muted: '--muted',
   mutedForeground: '--muted-foreground',
-  border: '--border',
   accent: '--accent',
-  danger: '--destructive'
+  accentForeground: '--accent-foreground',
+  input: '--input',
+  inputForeground: '--input-foreground',
+  destructive: '--destructive',
+  destructiveForeground: '--destructive-foreground',
+  info: '--info',
+  infoForeground: '--info-foreground',
+  success: '--success',
+  successForeground: '--success-foreground',
+  warning: '--warning',
+  warningForeground: '--warning-foreground',
+  border: '--border',
+  ring: '--ring'
 }
 
-/**
- * Reads the active semantic theme tokens from the document so webview
- * documents render with the same resolved palette as the app.
- */
-export function readCurrentWebviewTheme(mode: 'light' | 'dark'): WebviewTheme {
-  const styles = getComputedStyle(document.documentElement)
-  const tokens = {} as Record<keyof ThemeTokenMap, string>
+const DEFAULT_RADIUS = '6px'
 
-  for (const tokenName of THEME_TOKEN_NAMES) {
+const TYPOGRAPHY_DEFAULTS = {
+  baseSize: '14px',
+  baseWeight: '450',
+  baseLineHeight: '1.5',
+  baseLetterSpacing: 'normal'
+} as const
+
+/**
+ * Reads the full resolved appearance (theme + typography) from the document
+ * so webview documents render with the same palette, radius, fonts, and base
+ * metrics as the app. Reading live values means a future appearance setting
+ * flows to extensions with no bridge changes.
+ */
+export function readCurrentWebviewAppearance(mode: 'light' | 'dark'): WebviewAppearance {
+  const styles = getComputedStyle(document.documentElement)
+  return {
+    theme: readWebviewTheme(styles, mode),
+    typography: readWebviewTypography(styles)
+  }
+}
+
+function readWebviewTheme(styles: CSSStyleDeclaration, mode: 'light' | 'dark'): WebviewTheme {
+  const tokens = {} as WebviewThemeTokenMap
+  for (const tokenName of WEBVIEW_THEME_TOKEN_NAMES) {
     tokens[tokenName] = styles.getPropertyValue(TOKEN_CSS_VARS[tokenName]).trim()
   }
 
-  return { mode, tokens }
+  return {
+    mode,
+    tokens,
+    radius: styles.getPropertyValue('--radius').trim() || DEFAULT_RADIUS
+  }
+}
+
+function readWebviewTypography(styles: CSSStyleDeclaration): WebviewTypography {
+  return {
+    stylesheets: extensionWebviewFontStylesheetUrls(),
+    sans: styles.getPropertyValue('--font-sans').trim() || EXTENSION_WEBVIEW_FONT_SANS_STACK,
+    mono: styles.getPropertyValue('--font-mono').trim() || EXTENSION_WEBVIEW_FONT_MONO_STACK,
+    baseSize: styles.getPropertyValue('--text-base-size').trim() || TYPOGRAPHY_DEFAULTS.baseSize,
+    baseWeight:
+      styles.getPropertyValue('--text-base-weight').trim() || TYPOGRAPHY_DEFAULTS.baseWeight,
+    baseLineHeight:
+      styles.getPropertyValue('--text-base-line-height').trim() ||
+      TYPOGRAPHY_DEFAULTS.baseLineHeight,
+    baseLetterSpacing:
+      styles.getPropertyValue('--text-base-letter-spacing').trim() ||
+      TYPOGRAPHY_DEFAULTS.baseLetterSpacing
+  }
 }

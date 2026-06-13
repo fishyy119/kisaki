@@ -50,32 +50,12 @@ export function createBaseTheme(minHeight: string, maxHeight: string): Extension
       outline: 'none'
     },
     '.cm-scroller': {
+      // Scrollbars inherit the global thin neutral style from globals.css.
       fontFamily: 'inherit',
       lineHeight: '1.6',
       minHeight,
       maxHeight,
-      overflow: 'auto',
-
-      // tailwind-scrollbar: .scrollbar-thin
-      scrollbarWidth: 'thin',
-      scrollbarColor: 'var(--scrollbar-thumb, initial) var(--scrollbar-track, initial)'
-    },
-    '.cm-scroller::-webkit-scrollbar': {
-      display: 'block',
-      width: '8px',
-      height: '8px'
-    },
-    '.cm-scroller::-webkit-scrollbar-track': {
-      backgroundColor: 'var(--scrollbar-track)',
-      borderRadius: 'var(--scrollbar-track-radius)'
-    },
-    '.cm-scroller::-webkit-scrollbar-thumb': {
-      backgroundColor: 'var(--scrollbar-thumb)',
-      borderRadius: 'var(--scrollbar-thumb-radius)'
-    },
-    '.cm-scroller::-webkit-scrollbar-corner': {
-      backgroundColor: 'var(--scrollbar-corner)',
-      borderRadius: 'var(--scrollbar-corner-radius)'
+      overflow: 'auto'
     },
     '.cm-content': {
       padding: '8px 0',

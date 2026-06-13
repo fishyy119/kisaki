@@ -1,0 +1,34 @@
+import { kisaki } from '@kisaki3/extension-sdk'
+import type { BangumiActiveJobsState } from '../../shared/settings'
+import { BangumiExtensionError } from '../utils/errors'
+import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from './commands'
+
+export async function isBangumiCommandActive(commandId: BangumiCommandId): Promise<boolean> {
+  const runs = await kisaki.taskRuns.listActiveOwn({
+    subject: { type: 'command', id: commandId },
+    limit: 1
+  })
+  return runs.length > 0
+}
+
+export async function assertBangumiCommandIdle(commandId: BangumiCommandId): Promise<void> {
+  if (await isBangumiCommandActive(commandId)) {
+    throw new BangumiExtensionError(
+      'bangumi_job_running',
+      '该 Bangumi 任务正在运行，请先等待完成或取消。'
+    )
+  }
+}
+
+export async function resolveActiveBangumiJobs(): Promise<BangumiActiveJobsState> {
+  const [accountRefresh, syncChangedItems, syncFull, importCollections, importIndex] =
+    await Promise.all([
+      isBangumiCommandActive(BANGUMI_COMMAND_IDS.authRefresh),
+      isBangumiCommandActive(BANGUMI_COMMAND_IDS.syncChangedItems),
+      isBangumiCommandActive(BANGUMI_COMMAND_IDS.syncFull),
+      isBangumiCommandActive(BANGUMI_COMMAND_IDS.importCollections),
+      isBangumiCommandActive(BANGUMI_COMMAND_IDS.importIndex)
+    ])
+
+  return { accountRefresh, syncChangedItems, syncFull, importCollections, importIndex }
+}

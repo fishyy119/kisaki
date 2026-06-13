@@ -5,8 +5,10 @@ import type {
 } from '../../shared/settings'
 
 type RefreshListener = (reason: string) => void
+type PreviewProgressListener = (label: string) => void
 
 const refreshListeners = new Set<RefreshListener>()
+const previewProgressListeners = new Set<PreviewProgressListener>()
 
 export const host = createWebviewRpc<BangumiSettingsHostFunctions, BangumiSettingsUiFunctions>(
   webview,
@@ -14,6 +16,11 @@ export const host = createWebviewRpc<BangumiSettingsHostFunctions, BangumiSettin
     refreshRequested(reason) {
       for (const listener of refreshListeners) {
         listener(reason)
+      }
+    },
+    previewProgress(label) {
+      for (const listener of previewProgressListeners) {
+        listener(label)
       }
     }
   }
@@ -23,6 +30,13 @@ export function onHostRefreshRequested(listener: RefreshListener): () => void {
   refreshListeners.add(listener)
   return () => {
     refreshListeners.delete(listener)
+  }
+}
+
+export function onHostPreviewProgress(listener: PreviewProgressListener): () => void {
+  previewProgressListeners.add(listener)
+  return () => {
+    previewProgressListeners.delete(listener)
   }
 }
 

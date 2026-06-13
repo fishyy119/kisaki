@@ -299,7 +299,7 @@ const color = (d: RankingChartDatum) => d.fill
         <DialogHeader>
           <DialogTitle>排行榜</DialogTitle>
         </DialogHeader>
-        <DialogBody class="flex-1 overflow-y-auto scrollbar-thin">
+        <DialogBody class="flex-1 overflow-y-auto">
           <div :style="{ height: `${fullChartHeight}px` }">
             <ChartContainer :config="tooltipConfig">
               <VisXYContainer

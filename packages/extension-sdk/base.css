@@ -1,0 +1,96 @@
+/*
+ * Kisaki webview base layer — the framework-agnostic foundation every webview
+ * document inherits, independent of Tailwind.
+ *
+ * The continuity contract is pure CSS: the webview client injects the resolved
+ * app appearance as `--kisaki-*` custom properties (colors, radius, fonts, and
+ * base text metrics) at the document root, and this file applies them as the
+ * document's base styles. It uses only standard CSS (custom properties +
+ * `@layer base`), so any document gets the app's look — with or without
+ * Tailwind, with or without the UI kit.
+ *
+ * Tailwind documents additionally import `@kisaki3/extension-sdk/tailwind.css`
+ * (the convenience layer that maps `--kisaki-*` onto Tailwind tokens). The UI
+ * kit adds only component-level styles on top of this base.
+ *
+ * Usage (Tailwind document):
+ *   @import 'tailwindcss';
+ *   @import '@kisaki3/extension-sdk/base.css';
+ *   @import '@kisaki3/extension-sdk/tailwind.css';
+ */
+@layer base {
+  /* Tailwind v4 defaults borders to currentColor; align the default to the
+   * app border token (utilities like border-primary still win). */
+  * {
+    border-color: var(--kisaki-border);
+  }
+
+  /* Base typography mirrors the app's metric system: the --kisaki-text-*
+   * values come from the bridge, and the 14px/450/1.5 fallbacks match the app
+   * default so rem-based control sizes (text-sm, h-7) resolve identically. */
+  html {
+    font-weight: var(--kisaki-text-weight, 450);
+    font-size: var(--kisaki-text-size, 14px);
+    line-height: var(--kisaki-text-line-height, 1.5);
+    letter-spacing: var(--kisaki-text-letter-spacing, normal);
+    /* Thin neutral scrollbars (standard properties; inherited by descendants).
+     * Pure CSS, no plugin — the app applies the identical look globally. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--kisaki-border) transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--kisaki-background);
+    color: var(--kisaki-foreground);
+    font-family: var(
+      --kisaki-font-sans,
+      ui-sans-serif,
+      system-ui,
+      sans-serif,
+      'Apple Color Emoji',
+      'Segoe UI Emoji'
+    );
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  :focus-visible {
+    outline: none;
+  }
+
+  ::selection {
+    background: var(--kisaki-primary);
+    color: var(--kisaki-primary-foreground);
+  }
+
+  /* WebKit/Blink scrollbar styling to match the standard properties above. */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--kisaki-border);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}

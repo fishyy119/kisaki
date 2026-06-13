@@ -2,17 +2,18 @@ import {
   createWebviewRpc,
   kisaki,
   type ExtensionContext,
-  type WebviewHandle,
-  type WebviewRpcRemote
+  type WebviewHandle
 } from '@kisaki3/extension-sdk'
 import {
   BANGUMI_SETTINGS_ENTRY,
   type BangumiSettingsHostFunctions,
   type BangumiSettingsUiFunctions
 } from '../../shared/settings'
-import { createBangumiSettingsHostFunctions, type BangumiSettingsRuntime } from './host'
+import { createBangumiSettingsHostFunctions } from './host'
+import { BangumiSettingsSession } from './session'
+import type { BangumiSettingsRuntime } from './runtime'
 
-export type { BangumiSettingsRuntime } from './host'
+export type { BangumiSettingsRuntime } from './runtime'
 
 export interface BangumiSettingsUiHandle {
   notifyOauthCompleted(): void
@@ -20,14 +21,21 @@ export interface BangumiSettingsUiHandle {
 
 /**
  * Registers the settings card action and manages the singleton settings
- * webview session.
+ * webview session. Job lifecycle events push refreshes into the open
+ * document so account and active-job state stay live.
  */
 export function registerBangumiSettingsUi(
   context: ExtensionContext,
   runtime: BangumiSettingsRuntime
 ): BangumiSettingsUiHandle {
+  const session = new BangumiSettingsSession(runtime.logger)
   let current: WebviewHandle | null = null
-  let ui: WebviewRpcRemote<BangumiSettingsUiFunctions> | null = null
+
+  context.subscriptions.add(
+    runtime.jobEvents.subscribe((event) => {
+      session.pushRefresh(event.type === 'started' ? 'job-started' : 'job-finished')
+    })
+  )
 
   context.contributions.cardActions.register({
     id: 'settings',
@@ -46,19 +54,20 @@ export function registerBangumiSettingsUi(
       current = webview
       webview.onClose(() => {
         current = null
-        ui = null
+        session.detach()
       })
 
-      ui = createWebviewRpc<BangumiSettingsUiFunctions, BangumiSettingsHostFunctions>(
+      const remote = createWebviewRpc<BangumiSettingsUiFunctions, BangumiSettingsHostFunctions>(
         webview,
-        createBangumiSettingsHostFunctions(runtime)
+        createBangumiSettingsHostFunctions(runtime, session)
       )
+      session.attach(remote)
     }
   })
 
   return {
     notifyOauthCompleted() {
-      void ui?.refreshRequested('oauth-completed').catch(() => undefined)
+      session.pushRefresh('oauth-completed')
     }
   }
 }

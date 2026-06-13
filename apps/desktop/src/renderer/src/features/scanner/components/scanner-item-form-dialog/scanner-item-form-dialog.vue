@@ -290,7 +290,7 @@ async function openLink(link: { href: string }): Promise<void> {
 
       <template v-else>
         <Form @submit="handleSubmit">
-          <DialogBody class="max-h-[60vh] overflow-auto scrollbar-thin">
+          <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field label="名称">
                 <FieldContent>

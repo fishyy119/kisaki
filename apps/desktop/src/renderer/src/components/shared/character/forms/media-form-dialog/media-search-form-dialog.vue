@@ -195,7 +195,7 @@ watch(selectedProviderId, () => {
             </Button>
           </div>
 
-          <div class="overflow-auto max-h-[60vh] scrollbar-thin">
+          <div class="overflow-auto max-h-[60vh]">
             <div
               v-if="!hasSearched"
               class="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground"
