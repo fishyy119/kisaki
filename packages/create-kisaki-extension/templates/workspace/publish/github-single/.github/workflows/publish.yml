@@ -53,9 +53,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Enable pnpm
+        if: steps.detect.outputs.should_release == 'true'
+        run: corepack enable
+
       - name: Install dependencies
         if: steps.detect.outputs.should_release == 'true'
-        run: npm install
+        run: pnpm install --frozen-lockfile=false
 
       - name: Validate release metadata
         if: steps.detect.outputs.should_release == 'true'
@@ -83,11 +87,11 @@ jobs:
 
       - name: Build extension
         if: steps.detect.outputs.should_release == 'true'
-        run: npm run build
+        run: pnpm run build
 
       - name: Validate extension
         if: steps.detect.outputs.should_release == 'true'
-        run: npm run validate
+        run: pnpm run validate
 
       - name: Package extension
         if: steps.detect.outputs.should_release == 'true'
@@ -101,9 +105,9 @@ jobs:
             mkdir -p .keys
             printf '%s' "$SIGNING_KEY_JSON" > .keys/author.ed25519.json
             chmod 600 .keys/author.ed25519.json
-            npx --no-install kisx pack --out-dir artifacts --no-build --sign --key .keys/author.ed25519.json
+            pnpm exec kisx pack --out-dir artifacts --no-build --sign --key .keys/author.ed25519.json
           else
-            npx --no-install kisx pack --out-dir artifacts --no-build
+            pnpm exec kisx pack --out-dir artifacts --no-build
           fi
 
       - name: Collect package artifact
@@ -222,7 +226,7 @@ jobs:
           PUBLISHED_AT=$(git show -s --format=%cI "$GITHUB_SHA")
 
           if [ ! -f registry/manifest.json ]; then
-            npx --no-install kisx registry init \
+            pnpm exec kisx registry init \
               --out registry/manifest.json \
               --id "$REGISTRY_ID" \
               --name "$REGISTRY_NAME"
@@ -244,8 +248,8 @@ jobs:
             ADD_RELEASE_ARGS+=(--signature "$SIGNATURE_PATH")
           fi
 
-          npx --no-install kisx "${ADD_RELEASE_ARGS[@]}"
-          npx --no-install kisx registry validate registry/manifest.json
+          pnpm exec kisx "${ADD_RELEASE_ARGS[@]}"
+          pnpm exec kisx registry validate registry/manifest.json
 
       - name: Commit registry manifest
         if: steps.detect.outputs.should_release == 'true'

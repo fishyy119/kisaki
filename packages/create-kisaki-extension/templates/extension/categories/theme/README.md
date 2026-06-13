@@ -5,10 +5,10 @@
 ## Scripts
 
 ```bash
-npm run build
-npm run validate
-npm run pack
-npm run dev
+pnpm run build
+pnpm run validate
+pnpm run pack
+pnpm run dev
 ```
 
 ## Theme

@@ -19,7 +19,7 @@ built-in glyphs). Then assemble the webview document stylesheet:
 ```
 
 ```bash
-npm i -D @iconify/tailwind4 @iconify-json/mdi
+pnpm add -D @iconify/tailwind4 @iconify-json/mdi
 ```
 
 The kit relies on the semantic tokens (`--kisaki-*`) that the webview client

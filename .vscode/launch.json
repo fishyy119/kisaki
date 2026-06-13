@@ -13,6 +13,7 @@
       "runtimeArgs": ["--filter", "kisaki", "run", "dev", "--", "--sourcemap"],
       "autoAttachChildProcesses": true,
       "console": "internalConsole",
+      "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",
       "env": {
         "REMOTE_DEBUGGING_PORT": "9222"

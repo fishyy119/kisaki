@@ -57,6 +57,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Enable pnpm
+        if: steps.detect.outputs.should_release == 'true'
+        run: corepack enable
+
       - name: Validate release metadata
         if: steps.detect.outputs.should_release == 'true'
         shell: bash
@@ -97,17 +101,17 @@ jobs:
       - name: Install extension dependencies
         if: steps.detect.outputs.should_release == 'true'
         working-directory: ${{ steps.detect.outputs.extension_dir }}
-        run: npm install
+        run: pnpm install --frozen-lockfile=false
 
       - name: Build extension
         if: steps.detect.outputs.should_release == 'true'
         working-directory: ${{ steps.detect.outputs.extension_dir }}
-        run: npm run build
+        run: pnpm run build
 
       - name: Validate extension
         if: steps.detect.outputs.should_release == 'true'
         working-directory: ${{ steps.detect.outputs.extension_dir }}
-        run: npm run validate
+        run: pnpm run validate
 
       - name: Package extension
         if: steps.detect.outputs.should_release == 'true'
@@ -122,13 +126,13 @@ jobs:
             mkdir -p "$GITHUB_WORKSPACE/.keys"
             printf '%s' "$SIGNING_KEY_JSON" > "$GITHUB_WORKSPACE/.keys/author.ed25519.json"
             chmod 600 "$GITHUB_WORKSPACE/.keys/author.ed25519.json"
-            npx --no-install kisx pack \
+            pnpm exec kisx pack \
               --out-dir "$GITHUB_WORKSPACE/artifacts" \
               --no-build \
               --sign \
               --key "$GITHUB_WORKSPACE/.keys/author.ed25519.json"
           else
-            npx --no-install kisx pack --out-dir "$GITHUB_WORKSPACE/artifacts" --no-build
+            pnpm exec kisx pack --out-dir "$GITHUB_WORKSPACE/artifacts" --no-build
           fi
 
       - name: Collect package artifact
@@ -240,20 +244,15 @@ jobs:
           TAG="${{ steps.detect.outputs.tag }}"
           EXTENSION_ID="${{ steps.detect.outputs.extension_id }}"
           EXTENSION_DIR="${{ steps.detect.outputs.extension_dir }}"
-          KISX="$EXTENSION_DIR/node_modules/.bin/kisx"
+          KISX=(pnpm --dir "$EXTENSION_DIR" exec kisx)
           ARCHIVE_NAME="$EXTENSION_ID-$VERSION.kisx"
           ARCHIVE_PATH="${{ steps.artifact.outputs.archive_path }}"
           SIGNATURE_PATH="${{ steps.artifact.outputs.signature_path }}"
           ARTIFACT_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ARCHIVE_NAME}"
           PUBLISHED_AT=$(git show -s --format=%cI "$GITHUB_SHA")
 
-          if [ ! -x "$KISX" ]; then
-            echo "kisx was not installed for $EXTENSION_ID."
-            exit 1
-          fi
-
           if [ ! -f registry/manifest.json ]; then
-            "$KISX" registry init \
+            "${KISX[@]}" registry init \
               --out registry/manifest.json \
               --id "$REGISTRY_ID" \
               --name "$REGISTRY_NAME"
@@ -275,8 +274,8 @@ jobs:
             ADD_RELEASE_ARGS+=(--signature "$SIGNATURE_PATH")
           fi
 
-          "$KISX" "${ADD_RELEASE_ARGS[@]}"
-          "$KISX" registry validate registry/manifest.json
+          "${KISX[@]}" "${ADD_RELEASE_ARGS[@]}"
+          "${KISX[@]}" registry validate registry/manifest.json
 
       - name: Commit registry manifest
         if: steps.detect.outputs.should_release == 'true'

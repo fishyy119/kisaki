@@ -5,7 +5,7 @@ Scaffold a Kisaki extension project.
 ## Usage
 
 ```bash
-npm create kisaki-extension my-extension
+pnpm create kisaki-extension my-extension
 ```
 
 The CLI prompts for extension id, display name, category, description, author,
@@ -17,20 +17,22 @@ prompt. Pass `--github-single`, `--github-monorepo`, or `--manual` to skip the
 publish workflow prompt.
 
 Generated projects include `manifest.json`, `src/host/index.ts`, `README.md`,
-and npm scripts backed by the `kisx` CLI, plus engineering config out of the
-box: ESLint (flat config) with host/ui/shared import-boundary rules, per-layer
-tsconfigs (`tsconfig.host.json` Node-only, `tsconfig.ui.json` DOM-only),
-Prettier, `.editorconfig`, `.gitattributes`, and `.gitignore`. Projects with a webview UI also include
+and package scripts backed by the `kisx` CLI, plus engineering config out of the
+box: a pnpm `packageManager` declaration, ESLint (flat config) with host/ui/shared
+import-boundary rules, per-layer tsconfigs (`tsconfig.host.json` Node-only,
+`tsconfig.ui.json` DOM-only), Prettier, `.editorconfig`, `.gitattributes`,
+`.gitignore`, and a VS Code launch configuration for `pnpm run dev`. Projects
+with a webview UI also include
 `src/ui/main/index.html`, a `src/shared/contract.ts` RPC contract, Tailwind
 CSS wired through `kisx.config.ts`, and a `"ui": "./dist/ui"` manifest
 declaration (the Vue variants additionally add `@vitejs/plugin-vue` and
 Vue-aware ESLint; the UI-kit variant also adds `@kisaki3/extension-ui-vue`):
 
 ```bash
-npm run build
-npm run validate
-npm run pack
-npm run dev
+pnpm run build
+pnpm run validate
+pnpm run pack
+pnpm run dev
 ```
 
 The generated `engines.kisaki` value is the recommended Kisaki Extension API

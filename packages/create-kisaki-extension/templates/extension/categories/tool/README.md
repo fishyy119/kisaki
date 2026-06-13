@@ -5,10 +5,10 @@
 ## Scripts
 
 ```bash
-npm run build
-npm run validate
-npm run pack
-npm run dev
+pnpm run build
+pnpm run validate
+pnpm run pack
+pnpm run dev
 ```
 
 ## Project Layout
@@ -26,7 +26,7 @@ The host entry opens documents with `kisaki.webviews.open()` and talks to them
 through `createWebviewRpc`. Documents import Tailwind plus the SDK base layer
 (`@kisaki3/extension-sdk/base.css`) and Tailwind bridge
 (`@kisaki3/extension-sdk/tailwind.css`), so they style with the same semantic
-utilities as the app. During `npm run dev`, webview documents serve
+utilities as the app. During `pnpm run dev`, webview documents serve
 from a Vite dev server with full HMR; host entry changes republish the package
 and recycle the extension host.
 

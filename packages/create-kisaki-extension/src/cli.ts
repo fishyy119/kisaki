@@ -116,7 +116,7 @@ export async function runCreateExtensionCli(
   console.log(`  ${dim('$')} cd ${config.projectName}`)
   if (config.publishWorkflow === 'github-monorepo') {
     console.log(`  ${dim('$')} cd extensions/${config.extensionId}`)
-    console.log(`  ${dim('$')} npm install`)
+    console.log(`  ${dim('$')} pnpm install`)
     console.log(`  ${dim('$')} cd ../..`)
     console.log(`  ${dim('$')} git remote add origin <your-github-repo>`)
     console.log(`  ${dim('$')} git push -u origin main`)
@@ -125,14 +125,14 @@ export async function runCreateExtensionCli(
     )
     console.log(`  ${dim('$')} git push`)
   } else if (config.publishWorkflow === 'github-single') {
-    console.log(`  ${dim('$')} npm install`)
+    console.log(`  ${dim('$')} pnpm install`)
     console.log(`  ${dim('$')} git remote add origin <your-github-repo>`)
     console.log(`  ${dim('$')} git push -u origin main`)
     console.log(`  ${dim('$')} git commit --allow-empty -m "release: v0.0.1"`)
     console.log(`  ${dim('$')} git push`)
   } else {
-    console.log(`  ${dim('$')} npm install`)
-    console.log(`  ${dim('$')} npm run pack`)
+    console.log(`  ${dim('$')} pnpm install`)
+    console.log(`  ${dim('$')} pnpm run pack`)
   }
   console.log()
 }

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "__DESCRIPTION__",
   "type": "module",
+  "packageManager": "pnpm@11.2.2",
   "scripts": {
     "build": "kisx build",
     "dev": "kisx dev",

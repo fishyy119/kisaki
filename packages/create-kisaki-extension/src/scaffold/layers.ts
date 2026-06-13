@@ -143,8 +143,8 @@ function copyTemplateEntry(
 
 /**
  * Template dotfiles always ship with an underscore prefix and are renamed on
- * copy. This keeps them out of npm's hardcoded packaging exceptions (e.g.
- * `.gitignore` is never packed and is parsed as ignore rules) and prevents
+ * copy. This keeps them out of package publishing exceptions (e.g. `.gitignore`
+ * is never packed and is parsed as ignore rules) and prevents
  * template data from acting as live git/editor/formatter configuration for
  * the host repository.
  */
