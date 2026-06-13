@@ -8,6 +8,7 @@ const log = createLogger('Extension')
 export interface ExtensionDevelopmentWatchTarget {
   extensionId: string
   watchPaths: readonly string[]
+  ignoredPaths: readonly string[]
 }
 
 export type ExtensionDevelopmentChangeCallback = (extensionId: string) => Promise<void> | void
@@ -34,7 +35,10 @@ export class ExtensionDevelopmentWatcher {
   async updateTargets(targets: readonly ExtensionDevelopmentWatchTarget[]): Promise<void> {
     const normalizedTargets = normalizeTargets(targets)
     const nextSignature = normalizedTargets
-      .map((target) => `${target.extensionId}\0${target.watchPaths.join('\0')}`)
+      .map(
+        (target) =>
+          `${target.extensionId}\0${target.watchPaths.join('\0')}\0${target.ignoredPaths.join('\0')}`
+      )
       .join('\n')
 
     if (nextSignature === this.targetSignature) {
@@ -49,8 +53,13 @@ export class ExtensionDevelopmentWatcher {
       return
     }
 
+    const ignoredPaths = this.targets.flatMap((target) => target.ignoredPaths)
     this.watcher = watch([...new Set(this.targets.flatMap((target) => target.watchPaths))], {
-      ignored: isIgnoredExtensionWatchPath,
+      ignored: (filePath) =>
+        isIgnoredExtensionWatchPath(filePath) ||
+        ignoredPaths.some((ignoredPath) =>
+          isInsideOrEqualPath(ignoredPath, path.resolve(filePath))
+        ),
       ignoreInitial: true,
       persistent: true,
       depth: 8,
@@ -84,6 +93,14 @@ export class ExtensionDevelopmentWatcher {
     const absolutePath = path.resolve(filePath)
     const match = findTargetForPath(this.targets, absolutePath)
     if (!match) {
+      return
+    }
+
+    if (
+      match.target.ignoredPaths.some((ignoredPath) =>
+        isInsideOrEqualPath(ignoredPath, absolutePath)
+      )
+    ) {
       return
     }
 
@@ -124,6 +141,9 @@ function normalizeTargets(
     const watchPaths = [
       ...new Set(target.watchPaths.map((watchPath) => path.resolve(watchPath)))
     ].sort((left, right) => left.localeCompare(right))
+    const ignoredPaths = [
+      ...new Set(target.ignoredPaths.map((ignoredPath) => path.resolve(ignoredPath)))
+    ].sort((left, right) => left.localeCompare(right))
 
     if (watchPaths.length === 0) {
       continue
@@ -131,7 +151,8 @@ function normalizeTargets(
 
     byId.set(target.extensionId, {
       extensionId: target.extensionId,
-      watchPaths
+      watchPaths,
+      ignoredPaths
     })
   }
 

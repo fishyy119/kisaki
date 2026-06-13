@@ -12,6 +12,7 @@ import {
   registrySignCommand,
   registryValidateCommand
 } from './commands/registry'
+import { uiDevServerCommand } from './commands/ui-dev-server'
 import { validateCommand } from './commands/validate'
 
 export interface RunCliOptions {
@@ -34,6 +35,7 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
     .description('Build the current extension with Vite')
     .option('-p, --project <dir>', 'Extension project directory')
     .option('-w, --watch', 'Watch sources and rebuild on changes', false)
+    .option('--host-only', 'Build only the extension host bundle', false)
     .action(buildCommand)
 
   program
@@ -145,6 +147,12 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
       'Enable extension host inspector and break on start'
     )
     .action(devCommand)
+
+  program
+    .command('ui-dev-server')
+    .description('Serve extension webview UI with Vite HMR')
+    .option('-p, --project <dir>', 'Extension project directory')
+    .action(uiDevServerCommand)
 
   if (argv.length <= 2) {
     program.outputHelp()

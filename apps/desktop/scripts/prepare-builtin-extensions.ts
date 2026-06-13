@@ -11,7 +11,18 @@ interface BuiltinExtensionWatcher {
   readonly ready: Promise<void>
 }
 
+interface BuiltinExtensionUiDevServer {
+  readonly process: ChildProcess
+  readonly ready: Promise<BuiltinExtensionUiDevServerReady>
+}
+
+interface BuiltinExtensionUiDevServerReady {
+  readonly project: string
+  readonly origin: string
+}
+
 const kisxWatchReadyMessageType = 'kisx:watch-ready'
+const kisxUiDevServerReadyMessageType = 'kisx:ui-dev-server-ready'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const desktopRoot = path.resolve(scriptDir, '..')
@@ -79,13 +90,25 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
     )
   }
 
-  const watchers = projects.map((project) => spawnKisxBuildWatcher(project))
+  const uiProjects = await findBuiltinExtensionProjectsWithUi(projects)
+  const watchers = projects.map((project) => spawnKisxHostBuildWatcher(project))
+  const uiServers = uiProjects.map((project) => spawnKisxUiDevServer(project))
+  let uiServerOrigins = new Map<string, string>()
 
   try {
-    await waitForBuiltinExtensionWatchersReady(watchers)
+    const readyUiServers = await Promise.all([
+      waitForBuiltinExtensionWatchersReady(watchers),
+      waitForBuiltinExtensionUiDevServersReady(uiServers)
+    ]).then(([, origins]) => origins)
+    uiServerOrigins = new Map(
+      readyUiServers.map((server) => [path.resolve(server.project), server.origin])
+    )
   } catch (error) {
     for (const watcher of watchers) {
       terminateProcess(watcher.process)
+    }
+    for (const uiServer of uiServers) {
+      terminateProcess(uiServer.process)
     }
     throw error
   }
@@ -96,7 +119,15 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
     stdio: 'inherit',
     env: {
       ...process.env,
-      KISAKI_DEV_EXTENSIONS: JSON.stringify(projects.map((project) => ({ path: project })))
+      KISAKI_DEV_EXTENSIONS: JSON.stringify(
+        projects.map((project) => {
+          const uiDevServerOrigin = uiServerOrigins.get(path.resolve(project))
+          return {
+            path: project,
+            ...(uiDevServerOrigin ? { uiDevServerOrigin } : {})
+          }
+        })
+      )
     }
   })
 
@@ -110,6 +141,9 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
 
     for (const watcher of watchers) {
       terminateProcess(watcher.process)
+    }
+    for (const uiServer of uiServers) {
+      terminateProcess(uiServer.process)
     }
 
     terminateProcess(appProcess)
@@ -130,6 +164,14 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
     watcher.process.on('close', (code) => {
       if (!stopping && code !== 0 && code !== null) {
         console.error(`[builtin-extensions] Extension build watcher exited with code ${code}`)
+        stop(code)
+      }
+    })
+  }
+  for (const uiServer of uiServers) {
+    uiServer.process.on('close', (code) => {
+      if (!stopping && code !== 0 && code !== null) {
+        console.error(`[builtin-extensions] Extension UI dev server exited with code ${code}`)
         stop(code)
       }
     })
@@ -214,10 +256,10 @@ function runKisxOutput(projectDir: string, outputRoot: string): Promise<void> {
   )
 }
 
-function spawnKisxBuildWatcher(projectDir: string): BuiltinExtensionWatcher {
+function spawnKisxHostBuildWatcher(projectDir: string): BuiltinExtensionWatcher {
   const child = spawn(
     process.execPath,
-    createKisxCliArgs(['build', '--project', projectDir, '--watch']),
+    createKisxCliArgs(['build', '--project', projectDir, '--watch', '--host-only']),
     {
       cwd: desktopRoot,
       stdio: ['inherit', 'inherit', 'inherit', 'ipc']
@@ -230,6 +272,22 @@ function spawnKisxBuildWatcher(projectDir: string): BuiltinExtensionWatcher {
   }
 }
 
+function spawnKisxUiDevServer(projectDir: string): BuiltinExtensionUiDevServer {
+  const child = spawn(
+    process.execPath,
+    createKisxCliArgs(['ui-dev-server', '--project', projectDir]),
+    {
+      cwd: desktopRoot,
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc']
+    }
+  )
+
+  return {
+    process: child,
+    ready: waitForKisxUiDevServerReady(projectDir, child)
+  }
+}
+
 function createKisxCliArgs(args: readonly string[]): string[] {
   return ['--import', 'tsx', extensionCliEntry, ...args]
 }
@@ -238,6 +296,12 @@ async function waitForBuiltinExtensionWatchersReady(
   watchers: readonly BuiltinExtensionWatcher[]
 ): Promise<void> {
   await Promise.all(watchers.map((watcher) => watcher.ready))
+}
+
+async function waitForBuiltinExtensionUiDevServersReady(
+  servers: readonly BuiltinExtensionUiDevServer[]
+): Promise<readonly BuiltinExtensionUiDevServerReady[]> {
+  return await Promise.all(servers.map((server) => server.ready))
 }
 
 function waitForKisxWatcherReady(projectDir: string, child: ChildProcess): Promise<void> {
@@ -281,6 +345,50 @@ function waitForKisxWatcherReady(projectDir: string, child: ChildProcess): Promi
   })
 }
 
+function waitForKisxUiDevServerReady(
+  projectDir: string,
+  child: ChildProcess
+): Promise<BuiltinExtensionUiDevServerReady> {
+  return new Promise((resolve, reject) => {
+    const cleanup = (): void => {
+      child.off('message', handleMessage)
+      child.off('error', handleError)
+      child.off('close', handleClose)
+    }
+
+    const handleMessage = (message: unknown): void => {
+      if (!isKisxUiDevServerReadyMessage(message)) {
+        return
+      }
+
+      if (path.resolve(message.project) !== path.resolve(projectDir)) {
+        return
+      }
+
+      cleanup()
+      resolve({ project: message.project, origin: message.origin })
+    }
+
+    const handleError = (error: Error): void => {
+      cleanup()
+      reject(error)
+    }
+
+    const handleClose = (code: number | null): void => {
+      cleanup()
+      reject(
+        new Error(
+          `Built-in extension UI dev server for ${path.basename(projectDir)} exited before it was ready with code ${code ?? 'unknown'}.`
+        )
+      )
+    }
+
+    child.on('message', handleMessage)
+    child.on('error', handleError)
+    child.on('close', handleClose)
+  })
+}
+
 function isKisxWatchReadyMessage(
   message: unknown
 ): message is { readonly type: string; readonly project: string } {
@@ -292,6 +400,44 @@ function isKisxWatchReadyMessage(
     message.type === kisxWatchReadyMessageType &&
     typeof message.project === 'string'
   )
+}
+
+function isKisxUiDevServerReadyMessage(
+  message: unknown
+): message is { readonly type: string; readonly project: string; readonly origin: string } {
+  return (
+    typeof message === 'object' &&
+    message !== null &&
+    'type' in message &&
+    'project' in message &&
+    'origin' in message &&
+    message.type === kisxUiDevServerReadyMessageType &&
+    typeof message.project === 'string' &&
+    typeof message.origin === 'string'
+  )
+}
+
+async function findBuiltinExtensionProjectsWithUi(projects: readonly string[]): Promise<string[]> {
+  const uiProjects: string[] = []
+
+  for (const project of projects) {
+    if (await hasBuiltinExtensionUi(project)) {
+      uiProjects.push(project)
+    }
+  }
+
+  return uiProjects
+}
+
+async function hasBuiltinExtensionUi(projectDir: string): Promise<boolean> {
+  try {
+    const manifest = JSON.parse(
+      await readFile(path.join(projectDir, 'manifest.json'), 'utf8')
+    ) as Record<string, unknown>
+    return typeof manifest.ui === 'string' && manifest.ui.trim().length > 0
+  } catch {
+    return false
+  }
 }
 
 function runProcess(command: string, args: string[], cwd: string): Promise<void> {

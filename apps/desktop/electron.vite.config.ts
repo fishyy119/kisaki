@@ -2,6 +2,7 @@ import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
+import type { PluginOption } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import {
   EXTENSION_WEBVIEW_FONT_HOST,
@@ -21,6 +22,44 @@ const fontCopyTargets = EXTENSION_WEBVIEW_FONT_PACKAGES.flatMap((pkg) => {
     { src: resolve(packageDir, 'LICENSE').replaceAll('\\', '/'), dest }
   ]
 })
+
+function rendererContentSecurityPolicyPlugin(): PluginOption {
+  let allowDevelopmentWebviewOrigins = false
+
+  return {
+    name: 'kisaki-renderer-content-security-policy',
+    configResolved(config) {
+      allowDevelopmentWebviewOrigins = config.command === 'serve'
+    },
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'meta',
+          attrs: {
+            'http-equiv': 'Content-Security-Policy',
+            content: createRendererContentSecurityPolicy(allowDevelopmentWebviewOrigins)
+          },
+          injectTo: 'head'
+        }
+      ]
+    }
+  }
+}
+
+function createRendererContentSecurityPolicy(allowDevelopmentWebviewOrigins: boolean): string {
+  const frameSources = ["'self'", 'kisaki-extension-ui:']
+  if (allowDevelopmentWebviewOrigins) {
+    frameSources.push('http://127.0.0.1:*', 'http://localhost:*')
+  }
+
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: attachment: kisaki-extension-icon: https: http:",
+    `frame-src ${frameSources.join(' ')}`
+  ].join('; ')
+}
 
 export default defineConfig({
   main: {
@@ -59,7 +98,12 @@ export default defineConfig({
         }
       }
     },
-    plugins: [vue(), tailwindcss(), viteStaticCopy({ targets: fontCopyTargets })],
+    plugins: [
+      rendererContentSecurityPolicyPlugin(),
+      vue(),
+      tailwindcss(),
+      viteStaticCopy({ targets: fontCopyTargets })
+    ],
     server: {
       host: '127.0.0.1'
     }

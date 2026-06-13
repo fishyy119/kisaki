@@ -1,10 +1,16 @@
 import { logger } from '../logger'
 import { readValidManifest, resolveProject } from '../project'
-import { buildExtensionBundles, loadKisxConfig, watchExtensionBundles } from '../build'
+import {
+  buildExtensionBundles,
+  buildHostBundle,
+  loadKisxConfig,
+  watchExtensionBundles
+} from '../build'
 
 export interface BuildCommandOptions {
   project?: string
   watch?: boolean
+  hostOnly?: boolean
 }
 
 /**
@@ -18,10 +24,15 @@ export async function buildCommand(options: BuildCommandOptions = {}): Promise<v
   const config = await loadKisxConfig(project)
 
   if (options.watch) {
-    logger.heading('kisx build --watch', 'Watching extension bundles.')
+    logger.heading(
+      'kisx build --watch',
+      options.hostOnly ? 'Watching extension host bundle.' : 'Watching extension bundles.'
+    )
     logger.detail(`Project: ${project.rootDir}`)
 
-    const bundles = await watchExtensionBundles(project, manifest, config, { includeUi: true })
+    const bundles = await watchExtensionBundles(project, manifest, config, {
+      includeUi: !options.hostOnly
+    })
     await bundles.whenBuilt()
     logger.success('Extension bundles built. Watching for changes.')
     emitWatchReady(project.rootDir)
@@ -44,7 +55,11 @@ export async function buildCommand(options: BuildCommandOptions = {}): Promise<v
   }
 
   logger.heading('kisx build', 'Building extension with Vite.')
-  await buildExtensionBundles(project, manifest, config)
+  if (options.hostOnly) {
+    await buildHostBundle(project, manifest, config)
+  } else {
+    await buildExtensionBundles(project, manifest, config)
+  }
   await readValidManifest(project, { checkEntry: true })
   logger.success('Extension build completed.')
 }

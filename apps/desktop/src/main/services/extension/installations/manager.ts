@@ -27,7 +27,11 @@ import {
   resolveExtensionUiRootPath,
   validateExtensionFileExists
 } from '../packages'
-import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
+import {
+  isInsideOrEqualPath,
+  requireSafeExtensionId,
+  resolveInsideRoot
+} from '../shared/path-confinement'
 import { createExtensionRuntimeMetadata, type ExtensionInstalledEntry } from '../types'
 import { ExtensionInstallationStore } from './store'
 import { ExtensionInstallationView } from './view'
@@ -501,7 +505,7 @@ export class ExtensionInstallationManager {
         updatedAt: null,
         packagePath,
         manifestPath,
-        developmentReloadPath: resolveInsideRoot(packagePath, 'dist'),
+        developmentReloadPath: resolveExtensionHostReloadPath(packagePath, manifest.entry),
         uiDevServerOrigin: development.uiDevServerOrigin ?? null,
         dataPath,
         tempPath
@@ -574,7 +578,8 @@ export class ExtensionInstallationManager {
 
       targets.push({
         extensionId: metadata.id,
-        watchPaths: createDevelopmentWatchPaths(entry, developmentReloadPath)
+        watchPaths: createDevelopmentWatchPaths(entry, developmentReloadPath),
+        ignoredPaths: createDevelopmentIgnoredPaths(entry, developmentReloadPath)
       })
     }
 
@@ -648,6 +653,30 @@ function createDevelopmentWatchPaths(
   }
 
   return watchPaths
+}
+
+function createDevelopmentIgnoredPaths(
+  entry: ExtensionInstalledEntry,
+  developmentReloadPath: string
+): string[] {
+  if (!entry.manifest?.ui || !entry.uiDevServerOrigin) {
+    return []
+  }
+
+  const uiRootPath = resolveExtensionUiRootPath(entry.packagePath, entry.manifest.ui)
+  if (
+    path.resolve(uiRootPath) === path.resolve(developmentReloadPath) ||
+    !isInsideOrEqualPath(developmentReloadPath, uiRootPath)
+  ) {
+    return []
+  }
+
+  return [uiRootPath]
+}
+
+function resolveExtensionHostReloadPath(packagePath: string, entryPath: string): string {
+  const entryDir = path.posix.dirname(entryPath)
+  return entryDir === '.' ? packagePath : resolveExtensionFilePath(packagePath, entryDir)
 }
 
 function toExtensionInstalledRuntimeInfo(
