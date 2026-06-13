@@ -8,12 +8,14 @@ import { useRouter } from 'vue-router'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
+import { extensionDevelopmentStore } from '@renderer/core/extensions'
 import { ExtensionHeader, ExtensionInstallDialog } from '../components'
 
 const log = createLogger('Extension')
 const router = useRouter()
 const installDialogOpen = ref(false)
 const reloadingExtensionHost = ref(false)
+const { hasStaleExtensions, staleCount } = extensionDevelopmentStore
 
 async function handleInstalled() {
   await router.push({ name: 'extension-installed' })
@@ -53,6 +55,8 @@ async function handleReloadExtensionHost() {
     <!-- Page header -->
     <ExtensionHeader
       :reloading-extension-host="reloadingExtensionHost"
+      :has-pending-reload="hasStaleExtensions"
+      :pending-reload-count="staleCount"
       @open-install-dialog="installDialogOpen = true"
       @reload-extension-host="handleReloadExtensionHost"
     />

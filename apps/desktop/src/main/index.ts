@@ -42,19 +42,18 @@ function printCliHelp(): void {
   console.log('Options:')
   console.log('  -h, --help                 Show this help and exit')
   console.log('  -V, --version              Print version and exit')
-  console.log('      --dev-extension=<path> Load a local extension in the shared host')
   console.log('      --inspect-extension-host[=<host:port>]')
   console.log('                              Enable extension host inspector')
   console.log('      --inspect-brk-extension-host[=<host:port>]')
   console.log('                              Enable extension host inspector and break on start')
   console.log('')
+  console.log('Environment:')
+  console.log('  KISAKI_DEV_EXTENSIONS      JSON array of development extension entries')
+  console.log('')
   console.log('Examples:')
   console.log('  kisaki --version')
   console.log('  kisaki --help')
-  console.log('  kisaki --dev-extension="C:\\\\path\\\\to\\\\extension"')
-  console.log(
-    '  kisaki --dev-extension="C:\\\\path\\\\to\\\\extension" --inspect-extension-host=9339'
-  )
+  console.log('  kisaki --inspect-extension-host=9339')
 }
 
 const bootstrapArgs = getBootstrapArgs()
@@ -204,8 +203,12 @@ void (async () => {
     configureLogger()
     initializeLogger()
 
-    if (bootstrapArgs.devExtension) {
-      log.info('Dev extension requested.', { devExtension: bootstrapArgs.devExtension })
+    if (bootstrapArgs.developmentExtensions.length > 0) {
+      log.info('Development extensions requested.', {
+        developmentExtensions: bootstrapArgs.developmentExtensions.map(
+          (extension) => extension.path
+        )
+      })
     }
 
     if (bootstrapArgs.extensionHostInspect) {

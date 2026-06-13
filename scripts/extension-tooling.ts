@@ -49,6 +49,11 @@ const internalDependencies = new Map<string, readonly string[]>([
   ['@kisaki3/extension-cli', ['@kisaki3/extension-api', '@kisaki3/extension-registry']],
   ['create-kisaki-extension', ['@kisaki3/extension-api']]
 ])
+const toolingBuildPackageGroups = [
+  ['@kisaki3/extension-api', '@kisaki3/extension-ui-vue'],
+  ['@kisaki3/extension-registry', '@kisaki3/extension-sdk', 'create-kisaki-extension'],
+  ['@kisaki3/extension-cli']
+] as const
 
 const templatePackagePath = 'packages/create-kisaki-extension/templates/extension/base/package.json'
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
@@ -62,7 +67,12 @@ const semverPattern =
 
 const [command, ...args] = process.argv.slice(2)
 
-try {
+void main().catch((error: unknown) => {
+  console.error(`[extension-tooling] ${error instanceof Error ? error.message : String(error)}`)
+  process.exit(1)
+})
+
+async function main(): Promise<void> {
   switch (command) {
     case 'check':
       checkTooling(args[0])
@@ -71,7 +81,7 @@ try {
       setToolingVersion(requireVersionArgument(args[0]))
       break
     case 'build':
-      buildTooling()
+      await buildTooling()
       break
     case 'pack':
       packTooling(args)
@@ -86,9 +96,6 @@ try {
       printUsage(command)
       process.exit(command ? 1 : 0)
   }
-} catch (error) {
-  console.error(`[extension-tooling] ${error instanceof Error ? error.message : String(error)}`)
-  process.exit(1)
 }
 
 function checkTooling(expectedVersion?: string): void {
@@ -146,12 +153,17 @@ function publishTooling(args: readonly string[]): void {
   }
 }
 
-function buildTooling(): void {
+async function buildTooling(): Promise<void> {
   checkTooling()
 
-  for (const toolingPackage of toolingPackages) {
-    console.log(`[extension-tooling] Building ${toolingPackage.name}...`)
-    run('pnpm', ['run', 'build'], { cwd: packageDir(toolingPackage.dir) })
+  for (const packageGroup of toolingBuildPackageGroups) {
+    await Promise.all(
+      packageGroup.map((packageName) => {
+        const toolingPackage = requireToolingPackage(packageName)
+        console.log(`[extension-tooling] Building ${toolingPackage.name}...`)
+        return runAsync('pnpm', ['run', 'build'], { cwd: packageDir(toolingPackage.dir) })
+      })
+    )
   }
 }
 
@@ -183,6 +195,15 @@ function listToolingPackages(): void {
   for (const toolingPackage of toolingPackages) {
     console.log(toolingPackage.name)
   }
+}
+
+function requireToolingPackage(packageName: string): ToolingPackage {
+  const toolingPackage = toolingPackages.find((candidate) => candidate.name === packageName)
+  if (!toolingPackage) {
+    throw new Error(`Unknown extension tooling package: ${packageName}`)
+  }
+
+  return toolingPackage
 }
 
 function collectToolingProblems(expectedVersion: string): string[] {
@@ -487,6 +508,33 @@ function run(commandName: string, runArgs: readonly string[], options: RunOption
       `${commandName} ${runArgs.join(' ')} failed with exit code ${String(result.status)}.`
     )
   }
+}
+
+function runAsync(
+  commandName: string,
+  runArgs: readonly string[],
+  options: RunOptions = {}
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(commandName, runArgs, {
+      cwd: options.cwd ?? repoRoot,
+      stdio: 'inherit'
+    })
+
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      reject(
+        new Error(
+          `${commandName} ${runArgs.join(' ')} failed with exit code ${String(code ?? 'unknown')}.`
+        )
+      )
+    })
+  })
 }
 
 function printUsage(receivedCommand: string | undefined): void {

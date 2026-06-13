@@ -60,7 +60,7 @@ export interface WatchExtensionBundlesOptions {
 
 /**
  * Starts Vite watch builds for the extension bundles and exposes a combined
- * built-state signal for publication.
+ * built-state signal for development loops.
  */
 export async function watchExtensionBundles(
   project: ExtensionProject,

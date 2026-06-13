@@ -22,8 +22,6 @@ export interface ScannedExtensionPackage {
   directoryName: string
   packagePath: string
   manifestPath: string
-  developmentReloadPath: string | null
-  uiDevServerOrigin: string | null
   manifest: ExtensionManifest | null
   issues: readonly ValidationIssue[]
 }

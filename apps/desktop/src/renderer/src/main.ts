@@ -10,6 +10,7 @@ import { eventManager } from './core/event'
 import {
   refreshExtensionContributionSnapshot,
   setupExtensionContributionStore,
+  setupExtensionDevelopmentStore,
   setupExtensionWebviewNavigation,
   setupExtensionWebviewStore
 } from './core/extensions'
@@ -65,6 +66,9 @@ async function initMainWindowRenderer() {
     void refreshExtensionContributionSnapshot().catch((error) => {
       log.error('Failed to refresh contribution snapshot:', error)
     })
+
+    // Development extension change tracking (pending-reload nudges).
+    setupExtensionDevelopmentStore()
 
     // Extension webview session sync and page-surface navigation.
     setupExtensionWebviewStore()

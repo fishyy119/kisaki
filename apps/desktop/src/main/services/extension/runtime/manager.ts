@@ -67,10 +67,6 @@ export interface RuntimeReconcileOptions {
   forceReloadIds?: Iterable<string>
 }
 
-export interface RuntimeReloadOptions {
-  cause?: ExtensionRuntimeChangeCause
-}
-
 /**
  * Main-process facade for the shared extension host lifecycle.
  *
@@ -171,25 +167,6 @@ export class RuntimeManager {
       if (this.desiredExtensions.size === 0) {
         await this.stopHostLocked({ clearDesired: false })
       }
-    })
-  }
-
-  async reloadExtension(extensionId: string, options: RuntimeReloadOptions = {}): Promise<void> {
-    await this.mutex.runExclusive(async () => {
-      if (!this.desiredExtensions.has(extensionId)) {
-        throw new Error(`Extension "${extensionId}" is not desired in the runtime manager`)
-      }
-
-      await this.reconcileLocked({
-        cause: options.cause ?? 'user',
-        forceReloadIds: [extensionId]
-      })
-    })
-  }
-
-  async restartHost(): Promise<void> {
-    await this.mutex.runExclusive(async () => {
-      await this.restartHostLocked('user')
     })
   }
 
@@ -592,7 +569,7 @@ export class RuntimeManager {
   }
 
   private shouldRecycleHostLocked(forceReloadIds: ReadonlySet<string>): boolean {
-    if (!this.controller?.isRunning() || this.loadedExtensions.size === 0) {
+    if (!this.controller?.isRunning()) {
       return false
     }
 
@@ -600,6 +577,10 @@ export class RuntimeManager {
       if (this.desiredExtensions.has(extensionId)) {
         return true
       }
+    }
+
+    if (this.loadedExtensions.size === 0) {
+      return false
     }
 
     for (const [extensionId, metadata] of this.desiredExtensions) {
@@ -715,7 +696,6 @@ function toRecycleUnloadReason(cause: ExtensionRuntimeChangeCause): ExtensionUnl
   switch (cause) {
     case 'package-update':
       return 'update'
-    case 'development-file-change':
     case 'metadata-change':
     case 'user':
       return 'reload'

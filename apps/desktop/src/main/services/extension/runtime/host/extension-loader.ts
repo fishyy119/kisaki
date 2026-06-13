@@ -49,16 +49,12 @@ export class ExtensionLoader {
       abortSignal: abortController.signal
     })
     const entryPath = resolveExtensionFilePath(extension.extensionPath, parsed.manifest.entry)
-    const cacheBuster = `?t=${Date.now()}`
 
     let extensionModule: Record<string, unknown>
     try {
       extensionModule = await this.sdkBridge.runInExtensionContext(
         scope,
-        () =>
-          import(`${pathToFileURL(entryPath).href}${cacheBuster}`) as Promise<
-            Record<string, unknown>
-          >
+        () => import(pathToFileURL(entryPath).href) as Promise<Record<string, unknown>>
       )
     } catch (error) {
       abortController.abort()

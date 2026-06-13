@@ -600,7 +600,7 @@ runMutatingOperation:
   previous = requireUserInstalled(safeExtensionId)
   runtime.unloadExtension(safeExtensionId, 'disable')
   contributions.assertReleased(safeExtensionId, 'uninstall')
-  syncDevelopmentReloadWatcherTargets(...)
+  syncDevelopmentWatcherTargets(...)
   packageCommitter.removeActivePackage({
     operationId: randomUUID(),
     extensionId: safeExtensionId

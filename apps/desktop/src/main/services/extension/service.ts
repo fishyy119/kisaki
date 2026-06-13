@@ -32,7 +32,7 @@ import {
   ExtensionRepositoryManager,
   ExtensionRepositoryStore
 } from './repositories'
-import { ExtensionDevelopmentReloadWatcher } from './reload-watcher'
+import { ExtensionDevelopmentWatcher } from './development-watcher'
 import { RuntimeManager, type ExtensionRuntimeState } from './runtime'
 import { ExtensionSignerTrustManager, ExtensionSignerTrustStore } from './signers'
 import { ExtensionUpdateManager, ExtensionUpdatePlanner } from './updates'
@@ -71,7 +71,7 @@ export class ExtensionService implements IService {
 
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
-  private developmentReloadWatcher!: ExtensionDevelopmentReloadWatcher
+  private developmentWatcher!: ExtensionDevelopmentWatcher
   private packageCommitter!: ExtensionPackageCommitter
   private packageRecovery!: ExtensionPackageRecovery
   private contributionSnapshotEmitQueued = false
@@ -183,8 +183,8 @@ export class ExtensionService implements IService {
       onRuntimeStateChanged: (extensionId, state) =>
         this.emitRuntimeStateChanged(extensionId, state)
     })
-    this.developmentReloadWatcher = new ExtensionDevelopmentReloadWatcher(async (extensionId) => {
-      await this.installations.reloadRuntime(extensionId, 'development-file-change')
+    this.developmentWatcher = new ExtensionDevelopmentWatcher((extensionId) => {
+      this.installations.markDevelopmentChanged(extensionId)
     })
     this.installations = new ExtensionInstallationManager({
       layout,
@@ -192,12 +192,14 @@ export class ExtensionService implements IService {
       store: installationStore,
       runtime: this.runtime,
       contributions: this.contributions,
-      developmentReloadWatcher: this.developmentReloadWatcher,
+      developmentWatcher: this.developmentWatcher,
       packageCommitter: this.packageCommitter,
       event: container.get('event'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
-      onContributionSnapshotChanged: () => this.emitContributionSnapshotChanged()
+      onContributionSnapshotChanged: () => this.emitContributionSnapshotChanged(),
+      onDevelopmentStaleChanged: (extensionIds) =>
+        this.ipc.send('extension:development-stale-changed', { extensionIds })
     })
 
     this.installer = new ExtensionInstallerManager({
@@ -238,7 +240,7 @@ export class ExtensionService implements IService {
   }
 
   async dispose(): Promise<void> {
-    await this.developmentReloadWatcher.stop()
+    await this.developmentWatcher.stop()
     await this.runtime.shutdownHost()
   }
 

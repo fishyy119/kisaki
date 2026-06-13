@@ -56,7 +56,9 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpcVoid(() => service.installations.reload(extensionId))
   )
 
-  ipc.handle('extension:restart-host', async () => wrapIpcVoid(() => service.runtime.restartHost()))
+  ipc.handle('extension:restart-host', async () =>
+    wrapIpcVoid(() => service.installations.restartHost())
+  )
 
   ipc.handle('extension:get-installed-packages', async () =>
     wrapIpc(() => service.installations.listPackageInfo())

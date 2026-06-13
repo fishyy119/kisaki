@@ -9,8 +9,21 @@ import { h } from 'vue'
 import { toast, type ExternalToast } from 'vue-sonner'
 import { nanoid } from 'nanoid'
 import { ipcManager } from './ipc'
+import { createLogger } from './log'
 import type { NotifyAction, NotifyOptions, NotifyType, NotifyFunction } from '@shared/notify'
 
+type RendererNotifyActionHandler = (action: NotifyAction) => void | Promise<void>
+
+export interface RendererNotifyOptions extends NotifyOptions {
+  toastId?: string
+  onAction?: RendererNotifyActionHandler
+}
+
+export interface RendererNotifyFunction extends NotifyFunction {
+  (options: RendererNotifyOptions): void
+}
+
+const log = createLogger('Notify')
 const mainToastIds = new Set<string>()
 const suppressedClosedToastIds = new Set<string>()
 const LoadingToastIcon = () =>
@@ -43,9 +56,26 @@ function resolveToastType(options: NotifyOptions): NotifyType | undefined {
 
 function createToastAction(
   toastId: string | undefined,
-  action: NotifyAction | undefined
+  action: NotifyAction | undefined,
+  onAction: RendererNotifyActionHandler | undefined
 ): { label: string; onClick(event: MouseEvent): void } | undefined {
-  if (!toastId || !action) {
+  if (!action) {
+    return undefined
+  }
+
+  if (onAction) {
+    return {
+      label: action.label,
+      onClick(event) {
+        event.preventDefault()
+        void Promise.resolve(onAction(action)).catch((error) => {
+          log.warn('Notification action failed.', error)
+        })
+      }
+    }
+  }
+
+  if (!toastId) {
     return undefined
   }
 
@@ -61,12 +91,12 @@ function createToastAction(
   }
 }
 
-function createToastOptions(options: NotifyOptions, toastId?: string): ExternalToast {
+function createToastOptions(options: RendererNotifyOptions, toastId?: string): ExternalToast {
   return {
     id: toastId,
     description: options.message,
     duration: options.type === 'loading' ? (options.duration ?? Infinity) : options.duration,
-    action: createToastAction(toastId, options.action),
+    action: createToastAction(toastId, options.action, options.onAction),
     closeButton: options.closable !== false,
     dismissible: options.closable !== false,
     icon: options.type === 'loading' && options.closable !== false ? LoadingToastIcon : undefined,
@@ -74,7 +104,7 @@ function createToastOptions(options: NotifyOptions, toastId?: string): ExternalT
   }
 }
 
-function createNotify(): NotifyFunction {
+function createNotify(): RendererNotifyFunction {
   // Initialize IPC listeners for notifications from main process
   ipcManager.on('notify:show', (_, options) => {
     rememberMainToast(options.toastId)
@@ -99,18 +129,19 @@ function createNotify(): NotifyFunction {
   })
 
   // Create notify function
-  const notifyFn = ((options: NotifyOptions) => {
-    const target = options.target ?? 'toast'
+  const notifyFn = ((options: RendererNotifyOptions) => {
+    const notifyOptions = toNotifyOptions(options)
+    const target = notifyOptions.target ?? 'toast'
 
     if (target === 'native' || target === 'auto') {
       // Forward to main process for native/auto handling
-      ipcManager.send(target === 'native' ? 'notify:native' : 'notify:auto', options)
+      ipcManager.send(target === 'native' ? 'notify:native' : 'notify:auto', notifyOptions)
     } else {
       // Show toast directly
       const toastFn = getToastFn(options)
-      toastFn(options.title, createToastOptions(options))
+      toastFn(options.title, createToastOptions(options, options.toastId))
     }
-  }) as NotifyFunction
+  }) as RendererNotifyFunction
 
   notifyFn.success = (title, message?) => notifyFn({ title, message, type: 'success' })
   notifyFn.error = (title, message?) => notifyFn({ title, message, type: 'error' })
@@ -133,6 +164,18 @@ function createNotify(): NotifyFunction {
   }
 
   return notifyFn
+}
+
+function toNotifyOptions(options: RendererNotifyOptions): NotifyOptions {
+  return {
+    title: options.title,
+    ...(options.message !== undefined ? { message: options.message } : {}),
+    ...(options.type !== undefined ? { type: options.type } : {}),
+    ...(options.target !== undefined ? { target: options.target } : {}),
+    ...(options.duration !== undefined ? { duration: options.duration } : {}),
+    ...(options.action !== undefined ? { action: options.action } : {}),
+    ...(options.closable !== undefined ? { closable: options.closable } : {})
+  }
 }
 
 export const notify = createNotify()

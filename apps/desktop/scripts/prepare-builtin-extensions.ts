@@ -6,12 +6,22 @@ import spawn from 'cross-spawn'
 
 type BuildTarget = 'dev' | 'resources'
 
+interface BuiltinExtensionWatcher {
+  readonly process: ChildProcess
+  readonly ready: Promise<void>
+}
+
+const kisxWatchReadyMessageType = 'kisx:watch-ready'
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const desktopRoot = path.resolve(scriptDir, '..')
 const repoRoot = path.resolve(desktopRoot, '..', '..')
 const builtinExtensionsRoot = path.join(repoRoot, 'extensions')
 const extensionCliEntry = path.join(repoRoot, 'packages', 'extension-cli', 'src', 'index.ts')
-const extensionBuildPackageNames = ['extension-api', 'extension-registry', 'extension-sdk'] as const
+const extensionBuildPackageGroups = [
+  ['extension-api'],
+  ['extension-registry', 'extension-sdk']
+] as const
 const extensionDebugPackageNames = ['extension-api', 'extension-sdk'] as const
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
@@ -50,9 +60,7 @@ async function buildBuiltinExtensions(target: BuildTarget): Promise<void> {
   }
 
   console.log(`[builtin-extensions] Building ${projects.length} built-in extension(s)`)
-  for (const project of projects) {
-    await runKisxOutput(project, outputRoot, false, debugSources)
-  }
+  await Promise.all(projects.map((project) => runKisxOutput(project, outputRoot)))
 }
 
 async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]): Promise<void> {
@@ -60,20 +68,36 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
   await resetOutputRoot(outputRoot)
   await prepareExtensionDebugPackages(outputRoot, true)
 
-  if (projects.length > 0) {
-    console.log(`[builtin-extensions] Preparing ${projects.length} built-in extension(s)`)
-    for (const project of projects) {
-      await runKisxOutput(project, outputRoot, false, true)
-    }
-  } else {
+  if (projects.length === 0) {
     console.log(`[builtin-extensions] No built-in extensions found in ${builtinExtensionsRoot}`)
+  } else {
+    console.log(`[builtin-extensions] Building ${projects.length} built-in extension(s)`)
+    // Start from a clean dist so the readiness wait below only observes the fresh
+    // watch build, never stale output from a previous run.
+    await Promise.all(
+      projects.map((project) => rm(path.join(project, 'dist'), { recursive: true, force: true }))
+    )
   }
 
-  const watchers = projects.map((project) => spawnKisxOutputWatcher(project, outputRoot))
+  const watchers = projects.map((project) => spawnKisxBuildWatcher(project))
+
+  try {
+    await waitForBuiltinExtensionWatchersReady(watchers)
+  } catch (error) {
+    for (const watcher of watchers) {
+      terminateProcess(watcher.process)
+    }
+    throw error
+  }
+
   const [appCommand, ...appArgs] = childCommand
   const appProcess = spawn(appCommand, appArgs, {
     cwd: desktopRoot,
-    stdio: 'inherit'
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      KISAKI_DEV_EXTENSIONS: JSON.stringify(projects.map((project) => ({ path: project })))
+    }
   })
 
   let stopping = false
@@ -85,7 +109,7 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
     stopping = true
 
     for (const watcher of watchers) {
-      terminateProcess(watcher)
+      terminateProcess(watcher.process)
     }
 
     terminateProcess(appProcess)
@@ -103,9 +127,9 @@ async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]
   })
 
   for (const watcher of watchers) {
-    watcher.on('close', (code) => {
+    watcher.process.on('close', (code) => {
       if (!stopping && code !== 0 && code !== null) {
-        console.error(`[builtin-extensions] Extension output watcher exited with code ${code}`)
+        console.error(`[builtin-extensions] Extension build watcher exited with code ${code}`)
         stop(code)
       }
     })
@@ -156,8 +180,12 @@ async function prepareExtensionDebugPackages(
 }
 
 async function buildExtensionPackages(): Promise<void> {
-  for (const packageName of extensionBuildPackageNames) {
-    await runProcess(pnpmCommand, ['--filter', `@kisaki3/${packageName}`, 'build'], repoRoot)
+  for (const packageGroup of extensionBuildPackageGroups) {
+    await Promise.all(
+      packageGroup.map((packageName) =>
+        runProcess(pnpmCommand, ['--filter', `@kisaki3/${packageName}`, 'build'], repoRoot)
+      )
+    )
   }
 }
 
@@ -178,57 +206,92 @@ async function copyExtensionDebugPackages(
   }
 }
 
-function runKisxOutput(
-  projectDir: string,
-  outputRoot: string,
-  watch: boolean,
-  debugSources: boolean
-): Promise<void> {
+function runKisxOutput(projectDir: string, outputRoot: string): Promise<void> {
   return runProcess(
-    pnpmCommand,
-    createKisxOutputArgs(projectDir, outputRoot, watch, debugSources),
+    process.execPath,
+    createKisxCliArgs(['output', '--project', projectDir, '--out-dir', outputRoot]),
     desktopRoot
   )
 }
 
-function spawnKisxOutputWatcher(projectDir: string, outputRoot: string): ChildProcess {
-  return spawn(pnpmCommand, createKisxOutputArgs(projectDir, outputRoot, true, true, true), {
-    cwd: desktopRoot,
-    stdio: 'inherit'
+function spawnKisxBuildWatcher(projectDir: string): BuiltinExtensionWatcher {
+  const child = spawn(
+    process.execPath,
+    createKisxCliArgs(['build', '--project', projectDir, '--watch']),
+    {
+      cwd: desktopRoot,
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc']
+    }
+  )
+
+  return {
+    process: child,
+    ready: waitForKisxWatcherReady(projectDir, child)
+  }
+}
+
+function createKisxCliArgs(args: readonly string[]): string[] {
+  return ['--import', 'tsx', extensionCliEntry, ...args]
+}
+
+async function waitForBuiltinExtensionWatchersReady(
+  watchers: readonly BuiltinExtensionWatcher[]
+): Promise<void> {
+  await Promise.all(watchers.map((watcher) => watcher.ready))
+}
+
+function waitForKisxWatcherReady(projectDir: string, child: ChildProcess): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = (): void => {
+      child.off('message', handleMessage)
+      child.off('error', handleError)
+      child.off('close', handleClose)
+    }
+
+    const handleMessage = (message: unknown): void => {
+      if (!isKisxWatchReadyMessage(message)) {
+        return
+      }
+
+      if (path.resolve(message.project) !== path.resolve(projectDir)) {
+        return
+      }
+
+      cleanup()
+      resolve()
+    }
+
+    const handleError = (error: Error): void => {
+      cleanup()
+      reject(error)
+    }
+
+    const handleClose = (code: number | null): void => {
+      cleanup()
+      reject(
+        new Error(
+          `Built-in extension watcher for ${path.basename(projectDir)} exited before its first build with code ${code ?? 'unknown'}.`
+        )
+      )
+    }
+
+    child.on('message', handleMessage)
+    child.on('error', handleError)
+    child.on('close', handleClose)
   })
 }
 
-function createKisxOutputArgs(
-  projectDir: string,
-  outputRoot: string,
-  watch: boolean,
-  debugSources: boolean,
-  skipInitialBuild = false
-): string[] {
-  const args = [
-    'exec',
-    'tsx',
-    extensionCliEntry,
-    'output',
-    '--project',
-    projectDir,
-    '--out-dir',
-    outputRoot
-  ]
-
-  if (debugSources) {
-    args.push('--debug-sources')
-  }
-
-  if (watch) {
-    args.push('--watch')
-  }
-
-  if (skipInitialBuild) {
-    args.push('--skip-initial-build')
-  }
-
-  return args
+function isKisxWatchReadyMessage(
+  message: unknown
+): message is { readonly type: string; readonly project: string } {
+  return (
+    typeof message === 'object' &&
+    message !== null &&
+    'type' in message &&
+    'project' in message &&
+    message.type === kisxWatchReadyMessageType &&
+    typeof message.project === 'string'
+  )
 }
 
 function runProcess(command: string, args: string[], cwd: string): Promise<void> {

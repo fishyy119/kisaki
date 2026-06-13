@@ -1,4 +1,3 @@
-import type { ChildProcess } from 'node:child_process'
 import { CliError, logger } from '../logger'
 import { launchKisaki, type ExtensionHostInspectLaunchOptions } from '../launch'
 import { readValidManifest, resolveProject } from '../project'
@@ -6,52 +5,57 @@ import {
   discoverUiEntries,
   loadKisxConfig,
   startUiDevServer,
+  watchExtensionBundles,
+  type ExtensionBundleWatchSession,
   type ExtensionUiDevServer
 } from '../build'
-import { watchExtensionOutput, type ExtensionOutputWatchSession } from '../publication'
 
 export interface DevCommandOptions {
   kisaki: string
-  outDir: string
   inspectExtensionHost?: string | boolean
   inspectBrkExtensionHost?: string | boolean
 }
 
 /**
- * Runs the two-track development loop: host bundle changes republish the
- * package and recycle the extension host, while webview documents serve from
- * a Vite dev server with full HMR and never touch the host.
+ * Runs the development loop: the extension is loaded directly from its `dist/`
+ * output. Webview documents serve from a Vite dev server with full HMR, while
+ * host code changes are applied on demand through Kisaki's reload action.
  */
 export async function devCommand(options: DevCommandOptions): Promise<void> {
   const project = await resolveProject()
 
   logger.heading('kisx dev', 'Watching extension and launching Kisaki.')
   logger.detail(`Project: ${project.rootDir}`)
-  logger.detail(`Output: ${options.outDir}`)
 
   const manifest = await readValidManifest(project, { checkEntry: false, checkProjectFiles: true })
-  const config = await loadKisxConfig(project, { command: 'serve', mode: 'development' })
+  const buildConfig = await loadKisxConfig(project)
+  const serveConfig = await loadKisxConfig(project, { command: 'serve', mode: 'development' })
   const inspectOptions = resolveExtensionHostInspectOptions(options)
 
   let uiServer: ExtensionUiDevServer | null = null
   const uiEntries = await discoverUiEntries(project)
   if (manifest.ui && uiEntries.length > 0) {
-    uiServer = await startUiDevServer(project, config)
+    uiServer = await startUiDevServer(project, serveConfig)
     logger.detail(`UI dev server: ${uiServer.origin}`)
   }
 
-  const output = await watchExtensionOutput(project, {
-    outDir: options.outDir,
-    debugSources: true,
-    ...(uiServer === null ? {} : { ui: { mode: 'dev-server', origin: uiServer.origin } })
-  })
-  const ready = await output.ready
+  const bundles: ExtensionBundleWatchSession = await watchExtensionBundles(
+    project,
+    manifest,
+    buildConfig,
+    { includeUi: uiServer === null }
+  )
+  await bundles.whenBuilt()
 
-  const kisaki: ChildProcess = launchKisaki(ready.publicationPath, {
-    kisakiCommand: options.kisaki,
-    cwd: project.rootDir,
-    ...(inspectOptions === undefined ? {} : { extensionHostInspect: inspectOptions })
-  })
+  const kisaki = launchKisaki(
+    [{ path: project.rootDir, ...(uiServer ? { uiDevServerOrigin: uiServer.origin } : {}) }],
+    {
+      kisakiCommand: options.kisaki,
+      cwd: project.rootDir,
+      ...(inspectOptions === undefined ? {} : { extensionHostInspect: inspectOptions })
+    }
+  )
+
   let stopped = false
   const stop = (code = 0): void => {
     if (stopped) {
@@ -63,7 +67,7 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
       kisaki.kill()
     }
 
-    void shutdownAndExit(output, uiServer, code)
+    void shutdownAndExit(bundles, uiServer, code)
   }
 
   kisaki.on('error', (error) => {
@@ -77,11 +81,13 @@ export async function devCommand(options: DevCommandOptions): Promise<void> {
     }
   })
 
-  logger.success('Kisaki started with development extension output.')
+  logger.success('Kisaki started with development extension.')
   if (uiServer) {
     logger.detail(
-      'Webview UI changes hot-reload in place; host changes recycle the extension host.'
+      'Webview UI changes hot-reload in place; use Reload Process to apply host changes.'
     )
+  } else {
+    logger.detail('Edit and save, then use Reload Process in Kisaki to apply host changes.')
   }
 
   process.once('SIGINT', () => {
@@ -130,12 +136,12 @@ function readOptionalAddress(value: string | boolean | undefined): string | unde
 }
 
 async function shutdownAndExit(
-  output: ExtensionOutputWatchSession,
+  bundles: ExtensionBundleWatchSession,
   uiServer: ExtensionUiDevServer | null,
   code: number
 ): Promise<void> {
   try {
-    await output.close()
+    await bundles.close()
     await uiServer?.close()
   } catch (error) {
     if (error instanceof CliError) {

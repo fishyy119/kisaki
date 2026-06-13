@@ -1,72 +1,39 @@
 import path from 'node:path'
+import { mkdir, rm } from 'node:fs/promises'
 import { logger } from '../logger'
-import { resolveProject } from '../project'
-import { buildExtensionOutput, watchExtensionOutput } from '../publication'
+import { readValidManifest, resolveProject } from '../project'
+import { buildExtensionBundles, loadKisxConfig } from '../build'
+import { copyExtensionPackageFiles } from '../packaging'
 
 export interface OutputCommandOptions {
   outDir: string
   project?: string
-  watch?: boolean
-  debugSources?: boolean
-  skipInitialBuild?: boolean
 }
 
 /**
- * Builds or watch-builds an unpacked extension package directory.
+ * Builds the extension and writes a flat, unpacked package directory at
+ * `<outDir>/<id>/` (manifest + dist + assets + production dependencies). Used to
+ * stage built-in extensions into the app resources.
  */
 export async function outputCommand(options: OutputCommandOptions): Promise<void> {
   const project = await resolveProject(options.project)
 
-  if (options.watch) {
-    logger.heading('kisx output --watch', 'Watching extension package output.')
-    logger.detail(`Project: ${project.rootDir}`)
-    logger.detail(`Output: ${path.resolve(project.rootDir, options.outDir)}`)
-    if (options.debugSources) {
-      logger.detail('Debug source maps: enabled')
-    }
-    if (options.skipInitialBuild) {
-      logger.detail('Initial publish: skipped')
-    }
-
-    const session = await watchExtensionOutput(project, {
-      outDir: options.outDir,
-      ...(options.debugSources === undefined ? {} : { debugSources: options.debugSources }),
-      ...(options.skipInitialBuild === undefined
-        ? {}
-        : { skipInitialBuild: options.skipInitialBuild })
-    })
-    const result = await session.ready
-    logger.success(`Output ready at ${path.relative(project.rootDir, result.packagePath)}`)
-    logger.detail(`Publication: ${path.relative(project.rootDir, result.publicationPath)}`)
-
-    let stopped = false
-    const stop = (code = 0): void => {
-      if (stopped) {
-        return
-      }
-
-      stopped = true
-      void session.close().finally(() => process.exit(code))
-    }
-
-    process.once('SIGINT', () => stop(130))
-    process.once('SIGTERM', () => stop(143))
-
-    await new Promise<void>(() => undefined)
-    return
-  }
-
-  logger.heading('kisx output', 'Building extension package output.')
+  logger.heading('kisx output', 'Building unpacked extension package.')
   logger.detail(`Project: ${project.rootDir}`)
   logger.detail(`Output: ${path.resolve(project.rootDir, options.outDir)}`)
-  if (options.debugSources) {
-    logger.detail('Debug source maps: enabled')
-  }
 
-  const result = await buildExtensionOutput(project, {
-    outDir: options.outDir,
-    ...(options.debugSources === undefined ? {} : { debugSources: options.debugSources })
+  const manifest = await readValidManifest(project, { checkEntry: false, checkProjectFiles: true })
+  const config = await loadKisxConfig(project)
+  await buildExtensionBundles(project, manifest, config)
+  const builtManifest = await readValidManifest(project, {
+    checkEntry: true,
+    checkProjectFiles: true
   })
-  logger.success(`Output written to ${path.relative(project.rootDir, result.packagePath)}`)
-  logger.detail(`Publication: ${path.relative(project.rootDir, result.publicationPath)}`)
+
+  const packagePath = path.resolve(project.rootDir, options.outDir, builtManifest.id)
+  await rm(packagePath, { recursive: true, force: true })
+  await mkdir(packagePath, { recursive: true })
+  await copyExtensionPackageFiles(project, builtManifest, packagePath)
+
+  logger.success(`Output written to ${packagePath}`)
 }

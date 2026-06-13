@@ -63,6 +63,7 @@ import type {
   ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
   ExtensionCreateInstallPlanRequest,
+  ExtensionDevelopmentStaleChangedEvent,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
   ExtensionEntityMenuRefreshRequestedEvent,
@@ -557,6 +558,7 @@ export interface IpcRendererEvents {
   'extension:catalog-changed': []
   'extension:installations-changed': []
   'extension:runtime-state-changed': [event: ExtensionRuntimeStateChangedEvent]
+  'extension:development-stale-changed': [event: ExtensionDevelopmentStaleChangedEvent]
   'extension:automatic-update-run-changed': [state: ExtensionAutomaticUpdateRunState]
   'extension:trusted-signers-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]

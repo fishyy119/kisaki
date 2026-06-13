@@ -29,21 +29,22 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
     .description('CLI tools for Kisaki extension development')
     .version(options.version)
 
-  program.command('build').description('Build the current extension with Vite').action(buildCommand)
+  program
+    .command('build')
+    .description('Build the current extension with Vite')
+    .option('-p, --project <dir>', 'Extension project directory')
+    .option('-w, --watch', 'Watch sources and rebuild on changes', false)
+    .action(buildCommand)
 
   program
     .command('output')
-    .alias('dev-output')
-    .description('Build an unpacked extension package directory')
+    .description('Build a flat, unpacked extension package directory')
     .option('-p, --project <dir>', 'Extension project directory')
     .option(
       '-o, --out-dir <dir>',
       'Directory that will contain the extension package',
       'out/extensions'
     )
-    .option('--debug-sources', 'Rewrite copied source maps to workspace source paths', false)
-    .option('-w, --watch', 'Watch-build and keep the package output synchronized', false)
-    .option('--skip-initial-build', 'Start watch mode from the existing package output', false)
     .action(outputCommand)
 
   program
@@ -136,13 +137,8 @@ export async function runCli(argv = process.argv, options: RunCliOptions): Promi
 
   program
     .command('dev')
-    .description('Watch-build the extension and launch Kisaki with --dev-extension')
+    .description('Watch-build the extension and launch Kisaki with it loaded from source')
     .option('--kisaki <command>', 'Kisaki executable to launch', 'kisaki')
-    .option(
-      '-o, --out-dir <dir>',
-      'Directory for development package output',
-      '.kisaki/dev/extensions'
-    )
     .option('--inspect-extension-host [address]', 'Enable extension host inspector')
     .option(
       '--inspect-brk-extension-host [address]',

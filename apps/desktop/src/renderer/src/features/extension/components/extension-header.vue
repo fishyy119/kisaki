@@ -3,12 +3,15 @@ Extension Header renders extension manager navigation and actions.
 Boundary: emits commands and does not fetch extension data.
 -->
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 
 interface Props {
   reloadingExtensionHost?: boolean
+  hasPendingReload?: boolean
+  pendingReloadCount?: number
 }
 
 interface Emits {
@@ -17,11 +20,22 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  reloadingExtensionHost: false
+  reloadingExtensionHost: false,
+  hasPendingReload: false,
+  pendingReloadCount: 0
 })
 const emit = defineEmits<Emits>()
 
 const route = useRoute()
+
+const showPendingIndicator = computed(
+  () => props.hasPendingReload && !props.reloadingExtensionHost
+)
+const reloadButtonTitle = computed(() =>
+  props.hasPendingReload
+    ? `扩展代码已更新（${props.pendingReloadCount}），点击重载进程以应用`
+    : '重载扩展进程'
+)
 
 const navItems: {
   routeName:
@@ -105,15 +119,20 @@ function isRouteActive(routeName: string): boolean {
       <Button
         variant="outline"
         size="sm"
-        class="text-xs gap-1.5"
+        class="relative text-xs gap-1.5"
         :disabled="props.reloadingExtensionHost"
+        :title="reloadButtonTitle"
         @click="emit('reloadExtensionHost')"
       >
         <Icon
-          icon="icon-[mdi--restart]"
-          class="size-4"
+          :icon="props.reloadingExtensionHost ? 'icon-[mdi--loading]' : 'icon-[mdi--restart]'"
+          :class="props.reloadingExtensionHost ? 'size-4 animate-spin' : 'size-4'"
         />
         重载进程
+        <span
+          v-if="showPendingIndicator"
+          class="absolute -right-1 -top-1 size-2 rounded-full bg-warning ring-2 ring-surface"
+        />
       </Button>
 
       <!-- Install extension button -->

@@ -423,9 +423,7 @@ export class ExtensionInstallerManager {
     try {
       if (command.reason === 'update') {
         await this.runtime.unloadExtension(extensionId, 'update')
-        await this.installations.syncDevelopmentReloadWatcherTargets(
-          this.runtime.getDesiredExtensions()
-        )
+        await this.installations.syncDevelopmentWatcherTargets(this.runtime.getDesiredExtensions())
       }
 
       await this.packageCommitter.putActivePackage({

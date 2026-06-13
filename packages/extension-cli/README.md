@@ -22,6 +22,7 @@ copied into package output when present.
 ```bash
 kisx validate
 kisx build
+kisx build --watch
 kisx output
 kisx pack
 kisx key generate --out .keys/author.ed25519.json
@@ -37,18 +38,17 @@ kisx dev
   `engines.kisaki` Extension API compatibility range.
 - `kisx build` validates, builds the host entry and webview documents with
   Vite, and verifies the built entry.
-- `kisx output` publishes immutable unpacked package versions under
-  `out/extensions/<extension-id>/versions/<build-id>` and atomically updates
-  `out/extensions/<extension-id>/current.json`. Use `--watch` for synchronized
-  output driven by Vite watch builds; `dev-output` is an alias.
+- `kisx build --watch` keeps `dist/` up to date for direct development loading.
+- `kisx output` builds a flat unpacked package directory at
+  `out/extensions/<extension-id>` for built-in extension staging.
 - `kisx pack` writes a `.kisx` archive and prints size plus sha256.
 - `kisx key generate` creates an Ed25519 author signing key.
 - `kisx registry init|validate|add-release|digest|sign` manages static registry
   manifests and release artifacts.
-- `kisx dev` runs the two-track development loop and launches Kisaki with
-  `--dev-extension`: webview documents serve from a Vite dev server with full
-  HMR (published as `ui.mode = "dev-server"` in `current.json`), while host
-  entry changes republish the package and recycle the extension host.
+- `kisx dev` watch-builds the extension, launches Kisaki with development
+  extensions passed through `KISAKI_DEV_EXTENSIONS`, serves webview documents
+  from a Vite dev server when UI sources exist, and leaves host changes pending
+  until the developer uses Reload Process in Kisaki.
 
 ## Packaging
 

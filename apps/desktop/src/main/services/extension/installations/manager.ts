@@ -15,36 +15,26 @@ import type {
 import type { ExtensionRuntimeChangeCause, ExtensionRuntimeState, RuntimeManager } from '../runtime'
 import type { ExtensionContributionRegistry } from '../contributions'
 import type {
-  ExtensionDevelopmentReloadWatcher,
-  ExtensionDevelopmentReloadWatchTarget
-} from '../reload-watcher'
+  ExtensionDevelopmentWatcher,
+  ExtensionDevelopmentWatchTarget
+} from '../development-watcher'
 import {
   type ExtensionPackageCommitter,
   type ExtensionPackageLayout,
   type ExtensionWebviewUiSource,
-  readExtensionPackagePublication,
   readExtensionManifestFile,
   resolveExtensionFilePath,
   resolveExtensionUiRootPath,
-  validateInstalledExtensionPackage
+  validateExtensionFileExists
 } from '../packages'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
 import { createExtensionRuntimeMetadata, type ExtensionInstalledEntry } from '../types'
 import { ExtensionInstallationStore } from './store'
 import { ExtensionInstallationView } from './view'
 import { getBootstrapArgs } from '@main/bootstrap/args'
+import type { DevelopmentExtension } from '@shared/bootstrap'
 
 const log = createLogger('Extension')
-const DEVELOPMENT_RELOAD_READY_ATTEMPTS = 12
-const DEVELOPMENT_RELOAD_READY_DELAY_MS = 250
-
-interface ResolvedDevExtensionPackage {
-  packagePath: string
-  manifestPath: string
-  developmentReloadPath: string
-  uiDevServerOrigin: string | null
-  directoryName: string
-}
 
 export interface ExtensionInstallationManagerOptions {
   layout: ExtensionPackageLayout
@@ -52,12 +42,13 @@ export interface ExtensionInstallationManagerOptions {
   store: ExtensionInstallationStore
   runtime: RuntimeManager
   contributions: ExtensionContributionRegistry
-  developmentReloadWatcher: ExtensionDevelopmentReloadWatcher
+  developmentWatcher: ExtensionDevelopmentWatcher
   packageCommitter: ExtensionPackageCommitter
   event: EventService
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
   onContributionSnapshotChanged?: () => void
+  onDevelopmentStaleChanged?: (extensionIds: string[]) => void
 }
 
 export class ExtensionInstallationManager {
@@ -67,12 +58,14 @@ export class ExtensionInstallationManager {
   private readonly view: ExtensionInstallationView
   private readonly runtime: RuntimeManager
   private readonly contributions: ExtensionContributionRegistry
-  private readonly developmentReloadWatcher: ExtensionDevelopmentReloadWatcher
+  private readonly developmentWatcher: ExtensionDevelopmentWatcher
   private readonly packageCommitter: ExtensionPackageCommitter
   private readonly event: EventService
   private installedEntries: readonly ExtensionInstalledEntry[] = []
   private installedById = new Map<string, ExtensionInstalledEntry>()
-  private devExtensionEntry: ExtensionInstalledEntry | null = null
+  private devExtensionEntries = new Map<string, ExtensionInstalledEntry>()
+  /** Development extensions whose on-disk code is newer than what the host is running. */
+  private readonly developmentStaleIds = new Set<string>()
 
   constructor(private readonly options: ExtensionInstallationManagerOptions) {
     this.layout = options.layout
@@ -80,25 +73,26 @@ export class ExtensionInstallationManager {
     this.store = options.store
     this.runtime = options.runtime
     this.contributions = options.contributions
-    this.developmentReloadWatcher = options.developmentReloadWatcher
+    this.developmentWatcher = options.developmentWatcher
     this.packageCommitter = options.packageCommitter
     this.event = options.event
   }
 
   async init(): Promise<void> {
-    this.devExtensionEntry = await this.resolveDevExtension()
+    this.devExtensionEntries = await this.resolveDevelopmentExtensions()
     await this.refresh()
     await this.applyRuntimeState({ cause: 'startup' })
   }
 
   async refresh(): Promise<readonly ExtensionInstalledEntry[]> {
     const entries = await this.view.refresh()
-    this.installedEntries = this.devExtensionEntry
-      ? [
-          ...entries.filter((entry) => entry.id !== this.devExtensionEntry?.id),
-          this.devExtensionEntry
-        ]
-      : entries
+    this.installedEntries =
+      this.devExtensionEntries.size > 0
+        ? [
+            ...entries.filter((entry) => !this.devExtensionEntries.has(entry.id)),
+            ...this.devExtensionEntries.values()
+          ]
+        : entries
     this.installedById = new Map()
 
     for (const entry of this.installedEntries) {
@@ -278,7 +272,7 @@ export class ExtensionInstallationManager {
       try {
         await this.runtime.unloadExtension(safeExtensionId, 'disable')
         this.contributions.assertReleased(safeExtensionId, 'uninstall')
-        await this.syncDevelopmentReloadWatcherTargets(this.runtime.getDesiredExtensions())
+        await this.syncDevelopmentWatcherTargets(this.runtime.getDesiredExtensions())
         await this.packageCommitter.removeActivePackage({
           workspaceId: randomUUID(),
           extensionId: safeExtensionId
@@ -342,35 +336,67 @@ export class ExtensionInstallationManager {
     })
   }
 
+  /**
+   * Reloads a single extension's runtime by re-reading its package from disk and
+   * recycling the host so the latest code is loaded.
+   */
   async reload(extensionId: string): Promise<ExtensionInstalledEntry> {
     return this.options.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
-      await this.reloadRuntimeLocked(safeExtensionId, 'user')
+      this.devExtensionEntries = await this.resolveDevelopmentExtensions()
+      await this.refresh()
+      await this.applyRuntimeState({ cause: 'user', forceReloadIds: [safeExtensionId] })
       this.assertRuntimeReady(safeExtensionId, 'reload')
+      this.clearDevelopmentStale(safeExtensionId)
       return this.require(safeExtensionId)
     })
   }
 
-  async reloadRuntime(extensionId: string, cause: ExtensionRuntimeChangeCause): Promise<void> {
+  /**
+   * Restarts the extension host, re-reading every package from disk first so any
+   * pending development changes are applied. Backs the explicit reload action.
+   */
+  async restartHost(): Promise<void> {
     await this.options.runMutatingOperation(async () => {
-      await this.reloadRuntimeLocked(requireSafeExtensionId(extensionId), cause)
+      this.devExtensionEntries = await this.resolveDevelopmentExtensions()
+      await this.refresh()
+      await this.applyRuntimeState({ cause: 'user', forceReloadAll: true })
+      this.clearDevelopmentStale()
+      this.emitInstallationsChanged()
     })
+  }
+
+  /**
+   * Records that a development extension's built output changed on disk without
+   * reloading it. Surfaces the pending change to the renderer; applying it is a
+   * user action.
+   */
+  markDevelopmentChanged(extensionId: string): void {
+    const safeExtensionId = requireSafeExtensionId(extensionId)
+    if (!this.devExtensionEntries.has(safeExtensionId)) {
+      return
+    }
+
+    this.developmentStaleIds.add(safeExtensionId)
+    this.emitDevelopmentStaleChanged()
   }
 
   async applyRuntimeState(options: {
     cause: ExtensionRuntimeChangeCause
     forceReloadIds?: Iterable<string>
+    forceReloadAll?: boolean
   }): Promise<void> {
     const desired = this.buildDesiredRuntimeMap()
-    await this.runtime.reconcile(desired, options)
-    await this.syncDevelopmentReloadWatcherTargets(desired)
+    const forceReloadIds = options.forceReloadAll ? [...desired.keys()] : options.forceReloadIds
+    await this.runtime.reconcile(desired, { cause: options.cause, forceReloadIds })
+    await this.syncDevelopmentWatcherTargets(desired)
     this.options.onContributionSnapshotChanged?.()
   }
 
-  async syncDevelopmentReloadWatcherTargets(
+  async syncDevelopmentWatcherTargets(
     desired: ReadonlyMap<string, ExtensionRuntimeMetadata> | readonly ExtensionRuntimeMetadata[]
   ): Promise<void> {
-    await this.developmentReloadWatcher.updateTargets(this.createDevelopmentReloadTargets(desired))
+    await this.developmentWatcher.updateTargets(this.createDevelopmentWatchTargets(desired))
   }
 
   assertRuntimeReady(extensionId: string, operation: string): void {
@@ -406,49 +432,67 @@ export class ExtensionInstallationManager {
     )
   }
 
-  private async resolveDevExtension(
-    options: { logFailures?: boolean } = {}
-  ): Promise<ExtensionInstalledEntry | null> {
-    const logFailures = options.logFailures ?? true
-    const devExtensionPath = getBootstrapArgs().devExtension
-    if (!devExtensionPath) {
-      return null
+  /**
+   * Loads every requested development extension directly from its project root
+   * (manifest.json + built `dist/`), VS Code style. Invalid ones are skipped.
+   */
+  private async resolveDevelopmentExtensions(): Promise<Map<string, ExtensionInstalledEntry>> {
+    const entries = new Map<string, ExtensionInstalledEntry>()
+
+    for (const development of getBootstrapArgs().developmentExtensions) {
+      const entry = await this.resolveDevelopmentExtension(development)
+      if (entry) {
+        entries.set(entry.id, entry)
+      }
     }
 
+    return entries
+  }
+
+  private async resolveDevelopmentExtension(
+    development: DevelopmentExtension
+  ): Promise<ExtensionInstalledEntry | null> {
+    const packagePath = path.resolve(development.path)
+    const manifestPath = resolveInsideRoot(packagePath, 'manifest.json')
+
     try {
-      const resolvedPackage = await resolveDevExtensionPackage(devExtensionPath)
-      const { packagePath, manifestPath, developmentReloadPath, uiDevServerOrigin } =
-        resolvedPackage
       const parsed = await readExtensionManifestFile(manifestPath)
       if (!parsed.manifest) {
         throw new Error(parsed.issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
       }
 
-      const packageIssues = await validateInstalledExtensionPackage(packagePath, parsed.manifest)
-      if (packageIssues.length > 0) {
-        throw new Error(packageIssues.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
+      const { manifest } = parsed
+      const issues = await validateExtensionFileExists(packagePath, manifest.entry, '$.entry')
+      if (manifest.ui && !development.uiDevServerOrigin) {
+        issues.push(...(await validateExtensionFileExists(packagePath, manifest.ui, '$.ui')))
+      }
+      if (manifest.icon) {
+        issues.push(...(await validateExtensionFileExists(packagePath, manifest.icon, '$.icon')))
+      }
+      if (issues.length > 0) {
+        throw new Error(issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
       }
 
-      const dataPath = this.layout.dataPath(parsed.manifest.id)
-      const tempPath = this.layout.runtimeTempPath(parsed.manifest.id)
+      const dataPath = this.layout.dataPath(manifest.id)
+      const tempPath = this.layout.runtimeTempPath(manifest.id)
       await Promise.all([fse.ensureDir(dataPath), fse.ensureDir(tempPath)])
 
-      log.info('Registered dev extension override.', {
-        parsedManifestId: parsed.manifest.id,
+      log.info('Registered development extension.', {
+        extensionId: manifest.id,
         extensionPath: packagePath,
-        developmentReloadPath: developmentReloadPath
+        uiDevServerOrigin: development.uiDevServerOrigin ?? null
       })
 
       return {
-        builtin: false,
-        id: parsed.manifest.id,
-        directoryName: resolvedPackage.directoryName,
+        builtin: true,
+        id: manifest.id,
+        directoryName: path.basename(packagePath),
         status: 'ready',
-        manifest: parsed.manifest,
+        manifest,
         issues: [],
         enabled: true,
-        version: parsed.manifest.version,
-        categories: parsed.manifest.categories,
+        version: manifest.version,
+        categories: manifest.categories,
         source: null,
         updatePolicy: null,
         pinnedVersion: null,
@@ -457,85 +501,34 @@ export class ExtensionInstallationManager {
         updatedAt: null,
         packagePath,
         manifestPath,
-        developmentReloadPath,
-        uiDevServerOrigin,
+        developmentReloadPath: resolveInsideRoot(packagePath, 'dist'),
+        uiDevServerOrigin: development.uiDevServerOrigin ?? null,
         dataPath,
         tempPath
       }
     } catch (error) {
-      if (logFailures) {
-        log.error('Failed to load --dev-extension package:', error)
-      }
+      log.error('Failed to load development extension.', error, { extensionPath: packagePath })
       return null
     }
   }
 
-  private async reloadRuntimeLocked(
-    extensionId: string,
-    cause: ExtensionRuntimeChangeCause
-  ): Promise<void> {
-    const shouldApplyRuntimeState = await this.refreshForRuntimeReload(extensionId, cause)
-    if (!shouldApplyRuntimeState) {
-      return
-    }
-
-    await this.applyRuntimeState({
-      cause,
-      forceReloadIds: [extensionId]
-    })
+  private emitDevelopmentStaleChanged(): void {
+    this.options.onDevelopmentStaleChanged?.([...this.developmentStaleIds])
   }
 
-  private async refreshForRuntimeReload(
-    extensionId: string,
-    cause: ExtensionRuntimeChangeCause
-  ): Promise<boolean> {
-    if (cause !== 'development-file-change') {
-      this.devExtensionEntry = await this.resolveDevExtension()
-      await this.refresh()
-      return true
+  private clearDevelopmentStale(extensionId?: string): void {
+    if (extensionId) {
+      if (!this.developmentStaleIds.delete(extensionId)) {
+        return
+      }
+    } else {
+      if (this.developmentStaleIds.size === 0) {
+        return
+      }
+      this.developmentStaleIds.clear()
     }
 
-    return this.refreshUntilReloadTargetReady(extensionId)
-  }
-
-  private async refreshUntilReloadTargetReady(extensionId: string): Promise<boolean> {
-    const previousDevExtensionEntry = this.devExtensionEntry
-    const previousInstalledEntries = this.installedEntries
-    const previousInstalledById = this.installedById
-    let lastEntry: ExtensionInstalledEntry | undefined
-
-    for (let attempt = 1; attempt <= DEVELOPMENT_RELOAD_READY_ATTEMPTS; attempt += 1) {
-      this.devExtensionEntry = await this.resolveDevExtension({
-        logFailures: attempt === DEVELOPMENT_RELOAD_READY_ATTEMPTS
-      })
-      await this.refresh()
-
-      lastEntry = this.installedById.get(extensionId)
-      if (isRuntimeReadyEntry(lastEntry)) {
-        if (attempt > 1) {
-          log.info('Development extension package became ready after reload wait.', {
-            extensionId: extensionId,
-            attempt: attempt
-          })
-        }
-        return true
-      }
-
-      if (attempt < DEVELOPMENT_RELOAD_READY_ATTEMPTS) {
-        await delay(DEVELOPMENT_RELOAD_READY_DELAY_MS)
-      }
-    }
-
-    log.warn('Development extension package was not ready after reload wait.', {
-      extensionId: extensionId,
-      entryStatus: lastEntry?.status ?? 'missing',
-      issueCount: lastEntry?.issues.length ?? 0,
-      issues: lastEntry?.issues.slice(0, 3) ?? []
-    })
-    this.devExtensionEntry = previousDevExtensionEntry
-    this.installedEntries = previousInstalledEntries
-    this.installedById = previousInstalledById
-    return false
+    this.emitDevelopmentStaleChanged()
   }
 
   private buildDesiredRuntimeMap(): Map<string, ExtensionRuntimeMetadata> {
@@ -546,13 +539,11 @@ export class ExtensionInstallationManager {
         continue
       }
 
-      desired.set(entry.id, this.createInstalledRuntimeMetadata(entry))
-    }
-
-    if (this.devExtensionEntry?.manifest) {
       desired.set(
-        this.devExtensionEntry.id,
-        createExtensionRuntimeMetadata(this.devExtensionEntry, { mode: 'development' })
+        entry.id,
+        this.devExtensionEntries.has(entry.id)
+          ? createExtensionRuntimeMetadata(entry, { mode: 'development' })
+          : this.createInstalledRuntimeMetadata(entry)
       )
     }
 
@@ -565,10 +556,10 @@ export class ExtensionInstallationManager {
     })
   }
 
-  private createDevelopmentReloadTargets(
+  private createDevelopmentWatchTargets(
     desired: ReadonlyMap<string, ExtensionRuntimeMetadata> | readonly ExtensionRuntimeMetadata[]
-  ): ExtensionDevelopmentReloadWatchTarget[] {
-    const targets: ExtensionDevelopmentReloadWatchTarget[] = []
+  ): ExtensionDevelopmentWatchTarget[] {
+    const targets: ExtensionDevelopmentWatchTarget[] = []
 
     for (const metadata of desired.values()) {
       if (metadata.mode !== 'development') {
@@ -583,8 +574,7 @@ export class ExtensionInstallationManager {
 
       targets.push({
         extensionId: metadata.id,
-        extensionPath: metadata.extensionPath,
-        watchPath: developmentReloadPath
+        watchPaths: createDevelopmentWatchPaths(entry, developmentReloadPath)
       })
     }
 
@@ -618,31 +608,6 @@ export class ExtensionInstallationManager {
   }
 }
 
-async function resolveDevExtensionPackage(
-  devExtensionPath: string
-): Promise<ResolvedDevExtensionPackage> {
-  const developmentReloadPath = path.resolve(devExtensionPath)
-  const publication = await readExtensionPackagePublication(developmentReloadPath)
-
-  if (publication) {
-    return {
-      packagePath: publication.packagePath,
-      manifestPath: publication.manifestPath,
-      developmentReloadPath: publication.publicationPath,
-      uiDevServerOrigin: publication.uiDevServerOrigin,
-      directoryName: path.basename(publication.publicationPath)
-    }
-  }
-
-  return {
-    packagePath: developmentReloadPath,
-    manifestPath: resolveInsideRoot(developmentReloadPath, 'manifest.json'),
-    developmentReloadPath,
-    uiDevServerOrigin: null,
-    directoryName: path.basename(developmentReloadPath)
-  }
-}
-
 function toExtensionInstalledPackageInfo(
   entry: ExtensionInstalledEntry,
   runtimeState: ExtensionRuntimeState | null
@@ -672,6 +637,19 @@ function toExtensionInstalledPackageInfo(
   }
 }
 
+function createDevelopmentWatchPaths(
+  entry: ExtensionInstalledEntry,
+  developmentReloadPath: string
+): string[] {
+  const watchPaths = [developmentReloadPath, entry.manifestPath]
+
+  if (entry.manifest?.icon) {
+    watchPaths.push(resolveExtensionFilePath(entry.packagePath, entry.manifest.icon))
+  }
+
+  return watchPaths
+}
+
 function toExtensionInstalledRuntimeInfo(
   entry: ExtensionInstalledEntry,
   runtimeState: ExtensionRuntimeState | null
@@ -687,14 +665,4 @@ function toExtensionInstalledRuntimeInfo(
     runtimeError,
     runtimeDiagnostics
   }
-}
-
-function isRuntimeReadyEntry(
-  entry: ExtensionInstalledEntry | undefined
-): entry is ExtensionInstalledEntry {
-  return Boolean(entry?.enabled && entry.status === 'ready' && entry.manifest)
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
