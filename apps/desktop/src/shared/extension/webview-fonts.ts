@@ -1,12 +1,12 @@
 /**
- * App font delivery for the renderer and extension webview documents.
+ * App fonts for extension webview documents.
  *
  * Fonts are npm-managed Fontsource variable packages, sliced by unicode-range
- * with generated @font-face CSS. The renderer build copies each package's
- * stylesheet and slice files to `fonts/<dir>/` in the renderer output; the
- * renderer loads them relative to the document, and main serves the same
- * tree to webview documents over `kisaki-webview-font://fonts/<dir>/<path>`
- * with CORS enabled.
+ * with generated @font-face CSS. The app renderer loads them through its own
+ * CSS pipeline (a plain `@import` in globals.css). For webviews, the renderer
+ * build also copies each package's stylesheet and slice files to `fonts/<dir>/`
+ * in the renderer output, and main serves that tree to webview documents over
+ * `kisaki-webview-font://fonts/<dir>/<path>` with CORS enabled.
  */
 
 export const EXTENSION_WEBVIEW_FONT_SCHEME = 'kisaki-webview-font'
@@ -51,15 +51,6 @@ export const EXTENSION_WEBVIEW_FONT_SANS_STACK =
  */
 export const EXTENSION_WEBVIEW_FONT_MONO_STACK =
   "'Noto Sans Mono Variable', 'Noto Sans SC Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-
-/**
- * Document-relative stylesheet paths inside the renderer output.
- */
-export function appFontStylesheetPaths(): readonly string[] {
-  return EXTENSION_WEBVIEW_FONT_PACKAGES.map(
-    (pkg) => `${EXTENSION_WEBVIEW_FONT_HOST}/${pkg.dir}/${pkg.stylesheet}`
-  )
-}
 
 /**
  * Absolute stylesheet URLs served to webview documents.

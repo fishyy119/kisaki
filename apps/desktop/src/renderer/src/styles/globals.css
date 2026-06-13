@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'vue-sonner/style.css';
+@import '@fontsource-variable/noto-sans-sc';
+@import '@fontsource-variable/noto-sans-mono';
 @plugin "@tailwindcss/typography";
 @plugin "@iconify/tailwind4";
 
@@ -68,8 +70,9 @@
 /*
  * App fonts are npm-managed Fontsource variable packages (Noto Sans SC +
  * Noto Sans Mono), unicode-range sliced so documents decode only the ranges
- * they use. The @font-face rules live in the package stylesheets loaded by
- * `core/fonts.ts`; CJK glyphs in mono contexts fall back to the sans family.
+ * they use. The @font-face rules come from the package stylesheets imported at
+ * the top of this file; CJK glyphs in mono contexts fall back to the sans
+ * family. (Extension webviews get the same fonts over kisaki-webview-font://.)
  *
  * Base typography is expressed as variables (not hardcoded) so a future
  * appearance setting can drive font/weight/size/spacing from one place; the
@@ -89,8 +92,16 @@
 }
 
 @layer base {
+  /* Thin neutral scrollbars, applied uniformly to every scroll container.
+   * On this engine (Electron/Chromium) the standard scrollbar-* properties are
+   * honored and take precedence over ::-webkit-scrollbar, so we use them
+   * directly — this is exactly what the old tailwind-scrollbar plugin resolved
+   * to here. scrollbar-color inherits, but scrollbar-width does not, so it must
+   * land on * (not just html) to keep nested containers thin. */
   * {
     @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
 
   body {
@@ -109,29 +120,6 @@
     font-size: var(--text-base-size);
     line-height: var(--text-base-line-height);
     letter-spacing: var(--text-base-letter-spacing);
-    /* Thin neutral scrollbars applied globally (inherited standard properties)
-     * — pure CSS, no plugin; every scroll container is styled uniformly. */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-
-  /* WebKit/Blink scrollbar styling to match the standard properties above. */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: var(--border);
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent;
   }
 
   /* Focus styles handled by individual components */

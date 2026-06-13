@@ -20,9 +20,15 @@
  */
 @layer base {
   /* Tailwind v4 defaults borders to currentColor; align the default to the
-   * app border token (utilities like border-primary still win). */
+   * app border token (utilities like border-primary still win). The thin
+   * neutral scrollbar mirrors the app: on Chromium the standard scrollbar-*
+   * properties are honored and take precedence over ::-webkit-scrollbar.
+   * scrollbar-color inherits, but scrollbar-width does not, so it must land on
+   * * to keep nested containers thin. */
   * {
     border-color: var(--kisaki-border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--kisaki-border) transparent;
   }
 
   /* Base typography mirrors the app's metric system: the --kisaki-text-*
@@ -33,10 +39,6 @@
     font-size: var(--kisaki-text-size, 14px);
     line-height: var(--kisaki-text-line-height, 1.5);
     letter-spacing: var(--kisaki-text-letter-spacing, normal);
-    /* Thin neutral scrollbars (standard properties; inherited by descendants).
-     * Pure CSS, no plugin — the app applies the identical look globally. */
-    scrollbar-width: thin;
-    scrollbar-color: var(--kisaki-border) transparent;
   }
 
   body {
@@ -73,24 +75,5 @@
   ::selection {
     background: var(--kisaki-primary);
     color: var(--kisaki-primary-foreground);
-  }
-
-  /* WebKit/Blink scrollbar styling to match the standard properties above. */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: var(--kisaki-border);
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent;
   }
 }

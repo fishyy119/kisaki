@@ -9,9 +9,9 @@ import {
 } from './src/shared/extension/webview-fonts'
 
 // Fontsource packages are copied verbatim to fonts/<dir>/ in the renderer
-// output (served by the dev server middleware in development): the renderer
-// loads the stylesheets relative to the document and main serves the same
-// tree to extension webviews over kisaki-webview-font://.
+// output so main can serve the same stable tree to extension webviews over
+// kisaki-webview-font://. (The app renderer itself loads the fonts through its
+// own CSS pipeline via an @import in globals.css, not from this copy.)
 const fontCopyTargets = EXTENSION_WEBVIEW_FONT_PACKAGES.flatMap((pkg) => {
   const packageDir = resolve('node_modules', pkg.npmPackage)
   const dest = `${EXTENSION_WEBVIEW_FONT_HOST}/${pkg.dir}`

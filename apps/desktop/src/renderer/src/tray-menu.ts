@@ -5,9 +5,6 @@ import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import TrayMenu from './tray-menu.vue'
 import { useThemeStore } from './stores/theme'
-import { loadAppFonts } from './core/fonts'
-
-loadAppFonts()
 
 function initTrayMenuRenderer() {
   const app = createApp(TrayMenu)
