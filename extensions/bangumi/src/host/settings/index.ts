@@ -49,7 +49,7 @@ export function registerBangumiSettingsUi(
       const webview = await kisaki.webviews.open({
         entry: BANGUMI_SETTINGS_ENTRY,
         title: 'Bangumi 集成',
-        surface: { kind: 'dialog', size: 'lg' }
+        surface: { kind: 'dialog', size: 'xl' }
       })
       current = webview
       webview.onClose(() => {

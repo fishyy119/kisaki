@@ -1,24 +1,15 @@
-<!--
-Automation Tab shows the state of the built-in Bangumi automations and
-creates missing ones.
-Boundary: renders `overview.automations`; creation goes through `host` RPC.
--->
+<!-- Automation Tab creates recommended app-owned automations for Bangumi commands. -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import {
-  Badge,
-  Button,
-  Field,
-  FieldContent,
-  FieldGroup,
-  type BadgeVariants
-} from '@kisaki3/extension-ui-vue'
-import type {
-  BangumiAutomationKind,
-  BangumiAutomationStatus,
-  BangumiSettingsOverview
-} from '../../../shared/settings'
+import { Badge, Button, Icon, Spinner } from '@kisaki3/extension-ui-vue'
+import type { BangumiAutomationKind, BangumiSettingsOverview } from '../../../shared/settings'
 import { host, toErrorMessage } from '../rpc'
+import {
+  AUTOMATION_LABELS,
+  AUTOMATION_STATUS_LABELS,
+  AUTOMATION_STATUS_VARIANTS
+} from '../labels'
+import SettingsSection from '../components/settings-section.vue'
 
 interface Props {
   overview: BangumiSettingsOverview
@@ -27,26 +18,14 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'refresh'): void
-  (e: 'error', message: string): void
+  refresh: []
+  error: [message: string]
 }>()
 
-const AUTOMATION_LABELS: Record<BangumiAutomationKind, string> = {
-  'auth-refresh': '启动时刷新凭据',
-  'sync-changed': '启动后同步变更队列',
-  'sync-full-daily': '每日全量同步'
-}
-
-const STATUS_LABELS: Record<BangumiAutomationStatus, string> = {
-  missing: '未创建',
-  enabled: '已创建',
-  disabled: '已停用'
-}
-
-const STATUS_VARIANTS: Record<BangumiAutomationStatus, BadgeVariants['variant']> = {
-  missing: 'secondary',
-  enabled: 'success',
-  disabled: 'warning'
+const AUTOMATION_DESCRIPTIONS: Record<BangumiAutomationKind, string> = {
+  'auth-refresh': '应用启动时刷新并验证 Bangumi 凭据。',
+  'sync-changed': '应用启动后同步上次运行期积累的本地变更。',
+  'sync-full-daily': '每天凌晨执行一次游戏全量同步。'
 }
 
 const creatingKind = ref<BangumiAutomationKind | null>(null)
@@ -65,26 +44,45 @@ async function create(kind: BangumiAutomationKind): Promise<void> {
 </script>
 
 <template>
-  <FieldGroup>
-    <Field
-      v-for="automation in props.overview.automations"
-      :key="automation.kind"
-      orientation="horizontal"
-      :label="AUTOMATION_LABELS[automation.kind]"
-    >
-      <FieldContent class="flex-row items-center gap-2">
-        <Badge :variant="STATUS_VARIANTS[automation.status]">
-          {{ STATUS_LABELS[automation.status] }}
-        </Badge>
-        <Button
-          variant="outline"
-          type="button"
-          :disabled="automation.status !== 'missing' || creatingKind !== null"
-          @click="create(automation.kind)"
-        >
-          创建
-        </Button>
-      </FieldContent>
-    </Field>
-  </FieldGroup>
+  <SettingsSection
+    title="推荐自动化"
+    description="这里只创建 Bangumi 推荐模板；启停、触发条件和历史由主应用自动化页面负责。"
+  >
+    <div class="divide-y divide-border rounded-md border border-border">
+      <div
+        v-for="automation in props.overview.automations"
+        :key="automation.kind"
+        class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2"
+      >
+        <div class="min-w-0">
+          <div class="truncate text-sm font-medium">
+            {{ AUTOMATION_LABELS[automation.kind] }}
+          </div>
+          <div class="text-xs text-muted-foreground">
+            {{ AUTOMATION_DESCRIPTIONS[automation.kind] }}
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <Badge :variant="AUTOMATION_STATUS_VARIANTS[automation.status]">
+            {{ AUTOMATION_STATUS_LABELS[automation.status] }}
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            :disabled="automation.status !== 'missing' || creatingKind !== null"
+            @click="create(automation.kind)"
+          >
+            <Spinner v-if="creatingKind === automation.kind" />
+            <Icon
+              v-else
+              icon="icon-[mdi--plus]"
+              class="size-3.5"
+            />
+            创建
+          </Button>
+        </div>
+      </div>
+    </div>
+  </SettingsSection>
 </template>

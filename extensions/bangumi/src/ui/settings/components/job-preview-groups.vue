@@ -1,17 +1,17 @@
-<!--
-Preview Groups renders job preview output as grouped badge and before/after
-row lists.
-Boundary: purely presentational over `BangumiPreviewGroupDto` data.
--->
+<!-- Renders Bangumi job preview groups and opens external links through the host. -->
 <script setup lang="ts">
 import { Alert, Badge, type BadgeVariants } from '@kisaki3/extension-ui-vue'
 import type { BangumiJobPreviewTone, BangumiPreviewGroupDto } from '../../../shared/settings'
+import { host, toErrorMessage } from '../rpc'
 
 interface Props {
   groups: readonly BangumiPreviewGroupDto[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  error: [message: string]
+}>()
 
 const BADGE_VARIANTS: Record<BangumiJobPreviewTone, BadgeVariants['variant']> = {
   neutral: 'secondary',
@@ -28,21 +28,27 @@ function rowCellClass(tone: BangumiJobPreviewTone, mutedByDefault: boolean): str
 
   return mutedByDefault ? 'text-muted-foreground' : ''
 }
+
+function openExternalLink(url: string): void {
+  void host.openExternal(url).catch((error) => {
+    emit('error', toErrorMessage(error))
+  })
+}
 </script>
 
 <template>
-  <Alert v-if="groups.length === 0">没有将要更改的条目</Alert>
+  <Alert v-if="props.groups.length === 0">没有将要更改的条目</Alert>
   <div
     v-else
-    class="flex max-h-[260px] flex-col gap-2 overflow-y-auto"
+    class="rounded-md border border-border"
   >
     <article
-      v-for="group in groups"
+      v-for="group in props.groups"
       :key="group.id"
-      class="rounded-md border border-border px-2.5 py-2"
+      class="border-b border-border px-3 py-2 last:border-b-0"
     >
-      <header class="flex items-center gap-2 text-xs">
-        <span class="font-medium">{{ group.title }}</span>
+      <header class="flex min-w-0 items-center gap-2 text-xs">
+        <span class="min-w-0 truncate font-medium">{{ group.title }}</span>
         <Badge
           v-for="badge in group.badges"
           :key="badge.label"
@@ -52,16 +58,15 @@ function rowCellClass(tone: BangumiJobPreviewTone, mutedByDefault: boolean): str
         </Badge>
         <a
           :href="group.link.href"
-          target="_blank"
-          rel="noreferrer"
-          class="ml-auto text-[11px] text-primary hover:underline"
+          class="ml-auto shrink-0 rounded-sm text-[11px] text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          @click.prevent="openExternalLink(group.link.href)"
         >
           {{ group.link.label }}
         </a>
       </header>
       <table
         v-if="group.rows.length > 0"
-        class="mt-1.5 w-full border-collapse text-xs"
+        class="mt-1.5 w-full table-fixed border-collapse text-xs"
       >
         <tbody>
           <tr
@@ -69,25 +74,25 @@ function rowCellClass(tone: BangumiJobPreviewTone, mutedByDefault: boolean): str
             :key="index"
           >
             <td
-              class="py-0.5 pr-1.5 align-top whitespace-nowrap"
+              class="w-24 py-0.5 pr-2 align-top whitespace-nowrap"
               :class="rowCellClass(row.tone, true)"
             >
               {{ row.label }}
             </td>
             <td
-              class="py-0.5 pr-1.5 align-top line-through"
+              class="w-[34%] truncate py-0.5 pr-2 align-top line-through"
               :class="rowCellClass(row.tone, true)"
             >
               {{ row.before }}
             </td>
             <td
-              class="py-0.5 pr-1.5 align-top"
+              class="w-5 py-0.5 pr-2 align-top"
               :class="rowCellClass(row.tone, true)"
             >
               →
             </td>
             <td
-              class="py-0.5 align-top"
+              class="truncate py-0.5 align-top"
               :class="rowCellClass(row.tone, false)"
             >
               {{ row.after }}

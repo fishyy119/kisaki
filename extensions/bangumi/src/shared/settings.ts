@@ -128,6 +128,7 @@ export interface BangumiImportIndexFormArgs {
 export interface BangumiSettingsHostFunctions {
   getOverview(): Promise<BangumiSettingsOverview>
   saveSettings(form: BangumiSettingsFormState): Promise<void>
+  openExternal(url: string): Promise<void>
   login(): Promise<void>
   verifyAccount(): Promise<{ nickname: string }>
   refreshCredentials(): Promise<void>

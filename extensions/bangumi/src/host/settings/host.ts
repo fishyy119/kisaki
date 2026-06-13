@@ -37,6 +37,10 @@ export function createBangumiSettingsHostFunctions(
       await runtime.settingsStore.set(applyFormState(current, form))
     },
 
+    async openExternal(url: string): Promise<void> {
+      await kisaki.runtime.openExternal(url)
+    },
+
     async login(): Promise<void> {
       await runtime.oauthFlow.startLogin(runtime.abortSignal)
     },
