@@ -17,8 +17,8 @@ import type { LibraryGraphResultAction } from '@kisaki3/extension-sdk'
 
 export interface VniteImportPreviewGame {
   key: string
+  sourceGameId?: string
   title: string
-  subtitle?: string
   action: LibraryGraphResultAction
   entityId?: string
   existing?: VniteImportPreviewExistingGame
@@ -38,10 +38,15 @@ export interface VniteImportPreviewGame {
   attachments?: string
 }
 
+export interface VniteImportPreviewFieldValue {
+  label: string
+  value: string
+}
+
 export interface VniteImportPreviewExistingGame {
-  metadata?: string
-  activity?: string
-  organization?: string
+  metadata: readonly VniteImportPreviewFieldValue[]
+  activity: readonly VniteImportPreviewFieldValue[]
+  organization: readonly VniteImportPreviewFieldValue[]
 }
 
 type PreviewLibrary = Pick<
@@ -107,15 +112,11 @@ function createPreviewGame(input: {
   const record = game.doc.record
   const title = readGameTitle(game)
   const originalTitle = normalizeText(metadata.originalName)
-  const subtitle = formatParts([
-    originalTitle && originalTitle !== title ? `原名 ${originalTitle}` : undefined,
-    normalizeText(metadata.releaseDate) ? `发售 ${normalizeText(metadata.releaseDate)}` : undefined
-  ])
 
   return omitUndefined({
     key: input.key,
+    sourceGameId: game.id,
     title,
-    subtitle,
     action: input.action,
     entityId: input.entityId,
     existing: input.existing,
@@ -220,29 +221,33 @@ function createExistingGameSummary(
   }
 ): VniteImportPreviewExistingGame | undefined {
   const companies = getCompanyNamesByRole(relations, lookup.companies)
-  const existing = omitUndefined({
-    metadata: formatParts([
-      formatLabeledValue('名称', game.name),
-      formatLabeledValue('原名', game.originalName),
-      formatLabeledValue('发售', formatPartialDate(game.releaseDate)),
-      formatLabeledValue('开发', companies.developers),
-      formatLabeledValue('发行', companies.publishers)
+  const existing = {
+    metadata: createFieldValues([
+      ['名称', game.name],
+      ['原名', game.originalName],
+      ['发售日期', formatPartialDate(game.releaseDate)],
+      ['开发商', companies.developers],
+      ['发行商', companies.publishers]
     ]),
-    activity: formatParts([
-      toLibraryPlayStatusLabel(game.status),
-      formatLibraryScore(game.score),
-      formatDuration(game.totalDuration),
-      formatLabeledValue('最近', formatTimestampDate(game.lastActiveAt))
+    activity: createFieldValues([
+      ['游玩状态', toLibraryPlayStatusLabel(game.status)],
+      ['评分', formatLibraryScoreValue(game.score)],
+      ['游玩时长', formatDuration(game.totalDuration)],
+      ['最近游玩', formatTimestampDate(game.lastActiveAt)]
     ]),
-    organization: formatParts([
-      formatLabeledValue('合集', formatList(getCollectionNames(relations, lookup.collections), 4)),
-      formatLabeledValue('标签', formatList(getTagNames(relations, lookup.tags), 4)),
-      formatExistingMedia(game),
-      formatExistingPaths(game)
+    organization: createFieldValues([
+      ['合集', formatList(getCollectionNames(relations, lookup.collections), 4)],
+      ['标签', formatList(getTagNames(relations, lookup.tags), 4)],
+      ['媒体', formatExistingMediaCount(game)],
+      ['游戏目录', normalizeText(game.gameDirPath)],
+      ['启动路径', normalizeText(game.launcherPath)],
+      ['存档路径', normalizeText(game.savePath)]
     ])
-  })
+  }
 
-  return Object.keys(existing).length > 0 ? existing : undefined
+  return existing.metadata.length || existing.activity.length || existing.organization.length
+    ? existing
+    : undefined
 }
 
 function getCompanyNamesByRole(
@@ -358,15 +363,6 @@ function formatList(values: readonly string[] | undefined, maxItems = 3): string
   return `${normalized.slice(0, maxItems).join('、')} 等 ${normalized.length} 项`
 }
 
-function formatParts(parts: readonly (string | undefined)[]): string | undefined {
-  const normalized = parts.filter((part): part is string => !!part)
-  return normalized.length ? normalized.join(' / ') : undefined
-}
-
-function formatLabeledValue(label: string, value: string | undefined): string | undefined {
-  return value ? `${label} ${value}` : undefined
-}
-
 function toPlayStatusLabel(status: VnitePlayStatus): string {
   switch (status) {
     case 'playing':
@@ -423,19 +419,19 @@ function formatScore(score: number): string | undefined {
     return undefined
   }
 
-  return `评分 ${Number.isInteger(score) ? String(score) : score.toFixed(1)}`
+  return Number.isInteger(score) ? String(score) : score.toFixed(1)
 }
 
 function formatAttachmentCount(count: number): string | undefined {
   return count > 0 ? `${count} 个附件` : undefined
 }
 
-function formatLibraryScore(score: number | null | undefined): string | undefined {
+function formatLibraryScoreValue(score: number | null | undefined): string | undefined {
   if (score === null || score === undefined || !Number.isFinite(score) || score < 0) {
     return undefined
   }
 
-  return `评分 ${(score / 10).toFixed(1)}`
+  return (score / 10).toFixed(1)
 }
 
 function formatPartialDate(value: PartialDate | undefined): string | undefined {
@@ -443,11 +439,13 @@ function formatPartialDate(value: PartialDate | undefined): string | undefined {
     return undefined
   }
 
-  return formatParts([
+  const parts = [
     formatDatePart(value.year, 4),
     formatDatePart(value.month, 2),
     formatDatePart(value.day, 2)
-  ])?.replaceAll(' / ', '-')
+  ].filter(isString)
+
+  return parts.length ? parts.join('-') : undefined
 }
 
 function formatDatePart(value: number | undefined, length: number): string | undefined {
@@ -475,7 +473,7 @@ function formatTimestampDate(value: number | null | undefined): string | undefin
   ].join('-')
 }
 
-function formatExistingMedia(game: LibraryGame): string | undefined {
+function formatExistingMediaCount(game: LibraryGame): string | undefined {
   const assetCount = [game.coverFile, game.backdropFile, game.logoFile, game.iconFile].filter(
     isString
   ).length
@@ -483,17 +481,15 @@ function formatExistingMedia(game: LibraryGame): string | undefined {
   const backupCount = game.saveBackups?.length ?? 0
   const total = assetCount + inlineFileCount + backupCount
 
-  return total > 0 ? `媒体 ${total} 项` : undefined
-}
-
-function formatExistingPaths(game: LibraryGame): string | undefined {
-  return formatParts([
-    formatLabeledValue('游戏目录', normalizeText(game.gameDirPath)),
-    formatLabeledValue('启动', normalizeText(game.launcherPath)),
-    formatLabeledValue('存档', normalizeText(game.savePath))
-  ])
+  return total > 0 ? `${total} 项` : undefined
 }
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function createFieldValues(
+  entries: readonly (readonly [label: string, value: string | undefined])[]
+): readonly VniteImportPreviewFieldValue[] {
+  return entries.flatMap(([label, value]) => (value ? [{ label, value }] : []))
 }

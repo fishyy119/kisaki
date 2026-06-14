@@ -27,8 +27,10 @@ const open = defineModel<boolean>('open', { required: true })
 
 function levelVariant(level: string): BadgeVariants['variant'] {
   switch (level) {
+    case '错误':
     case 'Error':
       return 'destructive'
+    case '警告':
     case 'Warning':
       return 'warning'
     default:
@@ -39,7 +41,7 @@ function levelVariant(level: string): BadgeVariants['variant'] {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-2xl">
+    <DialogContent class="max-w-3xl">
       <DialogHeader>
         <DialogTitle>
           {{

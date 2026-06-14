@@ -118,3 +118,18 @@ export function countSelectedFields(selection: VniteImportFieldSelection): numbe
 export function countTotalFields(): number {
   return VNITE_FIELD_GROUPS.reduce((sum, group) => sum + group.items.length, 0)
 }
+
+export function cloneFieldSelection(
+  selection: VniteImportFieldSelection
+): VniteImportFieldSelection {
+  return {
+    core: { ...selection.core },
+    local: { ...selection.local },
+    activity: { ...selection.activity },
+    organization: { ...selection.organization },
+    credits: { ...selection.credits },
+    media: { ...selection.media },
+    saves: { ...selection.saves },
+    memories: { ...selection.memories }
+  }
+}

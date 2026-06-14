@@ -1,7 +1,10 @@
-<!-- Step 5: final report summary recorded by the extension host. -->
+<!--
+Done Step renders the final import report summary.
+Boundary: pure presentation; starting another import is handled by app.vue.
+-->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Alert, Button, Field, FieldContent } from '@kisaki3/extension-ui-vue'
+import { Alert, Button, Icon } from '@kisaki3/extension-ui-vue'
 import type { VniteDoneSummaryDto } from '../../../shared/import-wizard'
 import StatCards, { type StatCard } from './stat-cards.vue'
 
@@ -36,9 +39,10 @@ const stats = computed<readonly StatCard[]>(() => {
   }
 
   return [
-    { label: '新增', value: summary.created },
+    { label: '新增', value: summary.created, tone: 'success' },
     { label: '更新', value: summary.updated },
     { label: '补全成功', value: summary.completionCompleted },
+    { label: '补全失败', value: summary.completionFailed, tone: 'warning' },
     { label: '错误', value: summary.errors, tone: 'destructive' },
     { label: '警告', value: summary.warnings, tone: 'warning' }
   ]
@@ -57,23 +61,34 @@ const stats = computed<readonly StatCard[]>(() => {
 
       <StatCards :stats="stats" />
 
-      <Field
-        v-if="props.diagnosticsTotal > 0"
-        orientation="horizontal"
-        label="诊断"
-        :description="`需要处理 ${props.diagnosticsTotal} 项。`"
-      >
-        <FieldContent class="flex-row items-center">
+      <section class="rounded-md border border-border">
+        <div class="flex items-center justify-between gap-3 px-3 py-2">
+          <div class="min-w-0">
+            <h3 class="text-sm font-medium">诊断</h3>
+            <p class="text-xs text-muted-foreground">
+              {{
+                props.diagnosticsTotal > 0
+                  ? `需要处理 ${props.diagnosticsTotal} 项`
+                  : '没有需要处理的诊断'
+              }}
+            </p>
+          </div>
           <Button
+            v-if="props.diagnosticsTotal > 0"
             variant="outline"
             type="button"
             @click="emit('openDiagnostics')"
           >
+            <Icon
+              icon="icon-[mdi--text-search]"
+              class="size-3.5"
+            />
             查看诊断
           </Button>
-        </FieldContent>
-      </Field>
+        </div>
+      </section>
     </template>
+
     <Alert v-else>导入任务已结束。</Alert>
   </div>
 </template>

@@ -1,4 +1,4 @@
-import type { Disposable } from '@kisaki3/extension-sdk'
+import type { Disposable, TaskRunProgressWork } from '@kisaki3/extension-sdk'
 import type { VniteImportReport } from './report'
 
 /**
@@ -10,7 +10,9 @@ export type VniteImportRunEvent =
   | {
       type: 'progress'
       runId: string
+      phaseKey: string
       phaseLabel: string
+      work?: TaskRunProgressWork
       counters: Readonly<Record<string, number>>
     }
   | {

@@ -1,8 +1,15 @@
-<!-- Numbered wizard step header rendered from the host-owned step order. -->
+<!--
+Step Indicator renders the import workflow rail for the dialog workspace.
+Boundary: presentation only; navigation and permissions stay in the app root.
+-->
 <script setup lang="ts">
+import { Icon } from '@kisaki3/extension-ui-vue'
+
 interface StepItem {
   key: string
   label: string
+  description: string
+  icon: string
 }
 
 interface Props {
@@ -14,50 +21,47 @@ const props = defineProps<Props>()
 </script>
 
 <template>
-  <ol class="flex items-center gap-2 text-xs">
+  <ol class="space-y-1">
     <li
       v-for="(step, index) in props.steps"
       :key="step.key"
-      class="flex items-center gap-2"
     >
-      <span
-        v-if="index > 0"
-        class="h-px w-4 bg-border"
-        aria-hidden="true"
-      />
-      <span
-        class="flex items-center gap-1.5"
+      <div
+        class="flex items-start gap-2 rounded-md px-2 py-2"
         :class="
           index === props.currentIndex
-            ? 'font-medium text-primary'
+            ? 'bg-accent text-accent-foreground'
             : index < props.currentIndex
               ? 'text-foreground'
               : 'text-muted-foreground'
         "
       >
         <span
-          class="flex size-4 items-center justify-center rounded-full border text-[10px] leading-none"
+          class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border"
           :class="
             index < props.currentIndex
               ? 'border-primary bg-primary text-primary-foreground'
-              : index === props.currentIndex
-                ? 'border-primary text-primary'
-                : 'border-border'
+            : index === props.currentIndex
+              ? 'border-primary text-primary'
+              : 'border-border'
           "
         >
-          <svg
+          <Icon
             v-if="index < props.currentIndex"
-            class="size-2.5"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M21 7 9 19l-5.5-5.5 1.41-1.41L9 16.17 19.59 5.59 21 7Z" />
-          </svg>
-          <template v-else>{{ index + 1 }}</template>
+            icon="icon-[mdi--check]"
+            class="size-3.5"
+          />
+          <Icon
+            v-else
+            :icon="step.icon"
+            class="size-3.5"
+          />
         </span>
-        {{ step.label }}
-      </span>
+        <span class="min-w-0">
+          <span class="block truncate text-sm font-medium">{{ step.label }}</span>
+          <span class="block truncate text-xs text-muted-foreground">{{ step.description }}</span>
+        </span>
+      </div>
     </li>
   </ol>
 </template>

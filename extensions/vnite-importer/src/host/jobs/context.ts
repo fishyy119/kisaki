@@ -107,7 +107,9 @@ export class VniteImportJobController {
     this.context.events.emit({
       type: 'progress',
       runId: this.context.run.id,
+      phaseKey: phase,
       phaseLabel: VNITE_IMPORT_JOB_PHASES[phase],
+      ...(work ? { work: { ...work } } : {}),
       counters: { ...this.state.counters }
     })
   }

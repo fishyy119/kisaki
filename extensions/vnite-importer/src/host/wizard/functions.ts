@@ -1,5 +1,6 @@
 import type { ExtensionFileGrant } from '@kisaki3/extension-sdk'
 import type {
+  VniteImportFieldSelection,
   VniteImportOptionsForm,
   VniteImportWizardHostFunctions,
   VniteWizardState
@@ -35,10 +36,22 @@ export function createVniteImportWizardFunctions(
       })
 
       if (grant) {
+        let analysis
+        try {
+          analysis = await runtime.jobRunner.analyzeFromGrant({
+            fileGrant: grant,
+            requestId: createRequestId()
+          })
+        } catch (error) {
+          await releaseGrant(runtime, grant.grantId)
+          throw error
+        }
+
         const flow = await runtime.flowStore.get()
         if (flow.file && flow.file.grantId !== grant.grantId) {
           await releaseGrant(runtime, flow.file.grantId)
         }
+        session.analysis = analysis
         session.clearPreview()
         await runtime.flowStore.setFileGrant(grant, 'pickBackup')
       }
@@ -63,21 +76,10 @@ export function createVniteImportWizardFunctions(
       return await refresh()
     },
 
-    async saveFieldSelection(selection) {
-      await runtime.settingsStore.update((settings) => ({
-        ...settings,
-        defaults: {
-          ...settings.defaults,
-          fieldSelection: selection
-        }
-      }))
-      return await refresh()
-    },
-
-    async generatePreview(options) {
+    async generatePreview(options, fieldSelection) {
       const flow = await runtime.flowStore.get()
       const fileGrant = requireFileGrant(flow.file)
-      const settings = await persistOptions(runtime, options)
+      const settings = await persistOptions(runtime, options, fieldSelection)
       validateCompletionOptions(options)
 
       const result = await runtime.jobRunner.previewFromGrant({
@@ -97,15 +99,25 @@ export function createVniteImportWizardFunctions(
           library: runtime.library
         })
       }
+      session.resetPreviewQuery()
       await runtime.flowStore.setStep('preview')
 
       return await refresh()
     },
 
-    async startImport(options) {
+    async setPreviewQuery(query) {
+      if (!session.preview) {
+        throw new Error('请先生成写入预览。')
+      }
+
+      session.setPreviewQuery(query)
+      return await refresh()
+    },
+
+    async startImport(options, fieldSelection) {
       const flow = await runtime.flowStore.get()
       const fileGrant = requireFileGrant(flow.file)
-      const settings = await persistOptions(runtime, options)
+      const settings = await persistOptions(runtime, options, fieldSelection)
       validateCompletionOptions(options)
 
       const result = await runtime.jobRunner.startImportFromGrant({
@@ -123,6 +135,15 @@ export function createVniteImportWizardFunctions(
       })
       await runtime.flowStore.setActiveRun(result.runId)
       session.clearPreview()
+
+      return await refresh()
+    },
+
+    async cancelImport() {
+      const flow = await runtime.flowStore.get()
+      if (flow.activeRunId) {
+        await runtime.taskRuns.cancelOwn(flow.activeRunId)
+      }
 
       return await refresh()
     }
@@ -156,6 +177,7 @@ async function resetTransientFlow(
   if (flow.file) {
     await releaseGrant(runtime, flow.file.grantId)
   }
+  session.clearAnalysis()
   session.clearPreview()
   await runtime.flowStore.reset()
 }
@@ -170,12 +192,14 @@ async function releaseGrant(runtime: VniteImportWizardRuntime, grantId: string):
 
 async function persistOptions(
   runtime: VniteImportWizardRuntime,
-  options: VniteImportOptionsForm
+  options: VniteImportOptionsForm,
+  fieldSelection?: VniteImportFieldSelection
 ): Promise<VniteImporterSettingsV1> {
   return await runtime.settingsStore.update((settings) => ({
     ...settings,
     defaults: omitUndefined({
       ...settings.defaults,
+      fieldSelection: fieldSelection ?? settings.defaults.fieldSelection,
       conflictMode: options.conflictMode,
       completeMetadata: options.completeMetadata,
       completionSurfacePreset: options.completionSurfacePreset,

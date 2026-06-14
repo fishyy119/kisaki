@@ -34,6 +34,20 @@ export interface VniteImportExecutionSummary {
   diagnostics: readonly VniteImportDiagnostic[]
 }
 
+const GRAPH_GAME_PATH_CONFLICT_PATTERN =
+  /^External IDs resolve to game "([^"]+)", but local path resolves to game "([^"]+)"\.$/
+const GRAPH_EXTERNAL_ID_ENTITY_CONFLICT_PATTERN =
+  /^External IDs on this graph node resolve to different existing (game|company|person) entities: (.+)\.$/
+const GRAPH_EXTERNAL_ID_UNAVAILABLE_PATTERN =
+  /^External IDs on this graph node resolve to unavailable existing (game|company|person) entities: (.+)\.$/
+const GRAPH_INCOMING_EXTERNAL_ID_CONFLICT_PATTERN =
+  /^External ID (.+) is assigned to multiple (game|company|person) nodes in this import: (.+)\.$/
+const GRAPH_EXTERNAL_ID_WRITE_CONFLICT_PATTERN =
+  /^External IDs on this graph node cannot be written because they already belong to other existing (game|company|person) entities: (.+)\.$/
+const GRAPH_EXISTING_NAME_PATTERN = /^Matched an existing (collection|tag) by name\.$/
+const GRAPH_EXISTING_EXTERNAL_ID_PATTERN =
+  /^Matched an existing (game|company|person) by external id\.$/
+
 export function createVniteImportExecutionSummary(input: {
   graph: LibraryGraphResult
   snapshot: VniteBackupSnapshot
@@ -137,11 +151,89 @@ function toVniteImportDiagnostic(
   return omitUndefined({
     level: diagnostic.level,
     code: diagnostic.code,
-    message: diagnostic.message,
+    message: toLocalizedDiagnosticMessage(diagnostic),
     itemKey: diagnostic.nodeKey,
     vniteGameId: game?.id,
     vniteGameName: game ? readGameName(game) : undefined
   })
+}
+
+function toLocalizedDiagnosticMessage(diagnostic: LibraryGraphDiagnostic): string {
+  const message = diagnostic.message
+
+  if (message === 'Attachment file was not found.') {
+    return '附件文件不存在。'
+  }
+
+  if (message === 'Attachment path does not point to a file.') {
+    return '附件路径不是文件。'
+  }
+
+  if (message === 'Matched an existing game by local path.') {
+    return '已通过本地路径匹配到现有游戏。'
+  }
+
+  if (message === 'Note nodes require a media-note edge.') {
+    return '笔记节点缺少所属游戏关系。'
+  }
+
+  if (message === 'Session nodes require a media-session edge.') {
+    return '游玩记录节点缺少所属游戏关系。'
+  }
+
+  const gamePathConflict = GRAPH_GAME_PATH_CONFLICT_PATTERN.exec(message)
+  if (gamePathConflict) {
+    return `外部 ID 匹配到现有游戏 "${gamePathConflict[1]}"，但本地路径匹配到现有游戏 "${gamePathConflict[2]}"。`
+  }
+
+  const entityConflict = GRAPH_EXTERNAL_ID_ENTITY_CONFLICT_PATTERN.exec(message)
+  if (entityConflict) {
+    return `该项目的外部 ID 指向多个现有${toEntityLabel(entityConflict[1])}：${entityConflict[2]}。`
+  }
+
+  const unavailable = GRAPH_EXTERNAL_ID_UNAVAILABLE_PATTERN.exec(message)
+  if (unavailable) {
+    return `该项目的外部 ID 指向无法读取的现有${toEntityLabel(unavailable[1])}：${unavailable[2]}。`
+  }
+
+  const incomingConflict = GRAPH_INCOMING_EXTERNAL_ID_CONFLICT_PATTERN.exec(message)
+  if (incomingConflict) {
+    return `外部 ID ${incomingConflict[1]} 在本次导入中被多个${toEntityLabel(incomingConflict[2])}项目使用：${incomingConflict[3]}。`
+  }
+
+  const writeConflict = GRAPH_EXTERNAL_ID_WRITE_CONFLICT_PATTERN.exec(message)
+  if (writeConflict) {
+    return `该项目的外部 ID 无法写入，因为它们已属于其他现有${toEntityLabel(writeConflict[1])}：${writeConflict[2]}。`
+  }
+
+  const nameMatch = GRAPH_EXISTING_NAME_PATTERN.exec(message)
+  if (nameMatch) {
+    return `已通过名称匹配到现有${toEntityLabel(nameMatch[1])}。`
+  }
+
+  const externalIdMatch = GRAPH_EXISTING_EXTERNAL_ID_PATTERN.exec(message)
+  if (externalIdMatch) {
+    return `已通过外部 ID 匹配到现有${toEntityLabel(externalIdMatch[1])}。`
+  }
+
+  return message
+}
+
+function toEntityLabel(label: string): string {
+  switch (label) {
+    case 'game':
+      return '游戏'
+    case 'company':
+      return '公司'
+    case 'person':
+      return '人员'
+    case 'collection':
+      return '合集'
+    case 'tag':
+      return '标签'
+    default:
+      return '项目'
+  }
 }
 
 function resolveGameFromNodeKey(

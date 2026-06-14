@@ -1,5 +1,10 @@
 import type { ExtensionLogger, WebviewRpcRemote } from '@kisaki3/extension-sdk'
-import type { VniteImportWizardUiFunctions, VniteWizardState } from '../../shared/import-wizard'
+import type {
+  VniteImportWizardUiFunctions,
+  VnitePreviewQueryDto,
+  VniteWizardState
+} from '../../shared/import-wizard'
+import { VNITE_PREVIEW_DEFAULT_PAGE_SIZE } from '../../shared/import-wizard'
 import type { VniteBackupAnalysisSummary } from '../backup/types'
 import type { VniteImportExecutionSummary } from '../import/summary'
 import type { VniteImportRunEvent } from '../jobs/events'
@@ -29,7 +34,9 @@ export interface VniteWizardPreview {
  * recomputing the full state.
  */
 export class VniteWizardSession {
+  analysis: VniteBackupAnalysisSummary | null = null
   preview: VniteWizardPreview | null = null
+  previewQuery: VnitePreviewQueryDto = createDefaultPreviewQuery()
 
   private remote: WebviewRpcRemote<VniteImportWizardUiFunctions> | null = null
   private lastState: VniteWizardState | null = null
@@ -50,6 +57,19 @@ export class VniteWizardSession {
 
   clearPreview(): void {
     this.preview = null
+    this.previewQuery = createDefaultPreviewQuery()
+  }
+
+  clearAnalysis(): void {
+    this.analysis = null
+  }
+
+  resetPreviewQuery(): void {
+    this.previewQuery = createDefaultPreviewQuery()
+  }
+
+  setPreviewQuery(query: VnitePreviewQueryDto): void {
+    this.previewQuery = query
   }
 
   /**
@@ -96,6 +116,7 @@ export class VniteWizardSession {
 
   dispose(): void {
     this.detach()
+    this.analysis = null
     this.preview = null
   }
 
@@ -109,8 +130,11 @@ export class VniteWizardSession {
       step: 'running',
       run: {
         status: 'running',
+        phaseKey: event.phaseKey,
         phaseLabel: event.phaseLabel,
-        counters: { ...event.counters }
+        work: event.work ? { ...event.work } : null,
+        counters: { ...event.counters },
+        canCancel: true
       }
     })
   }
@@ -121,5 +145,14 @@ export class VniteWizardSession {
       this.progressTimer = null
     }
     this.pendingProgress = null
+  }
+}
+
+function createDefaultPreviewQuery(): VnitePreviewQueryDto {
+  return {
+    action: 'all',
+    search: '',
+    page: 1,
+    pageSize: VNITE_PREVIEW_DEFAULT_PAGE_SIZE
   }
 }

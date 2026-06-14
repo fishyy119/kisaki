@@ -89,34 +89,114 @@ export interface VnitePreviewSummaryDto {
   warnings: number
 }
 
-export interface VnitePreviewUpdateRowDto {
-  label: string
-  before: string
-  after: string
+export interface VniteDiagnosticCountDto {
+  errors: number
+  warnings: number
+  infos: number
 }
 
-export interface VnitePreviewUpdateGroupDto {
+export interface VniteBackupCoverageDto {
+  key: string
+  label: string
+  present: number
+  total: number
+  percent: number
+}
+
+export interface VniteBackupAnalysisDto {
+  createdAt: number
+  fileName: string
+  sizeBytes: number
+  gamesTotal: number
+  localGamesTotal: number
+  collectionsTotal: number
+  collectionLinksTotal: number
+  attachmentsTotal: number
+  playedGamesTotal: number
+  scoredGamesTotal: number
+  saveGamesTotal: number
+  memoryGamesTotal: number
+  diagnostics: VniteDiagnosticCountDto
+  coverage: readonly VniteBackupCoverageDto[]
+}
+
+export type VnitePreviewActionDto = 'create' | 'update' | 'skip' | 'fail'
+
+export type VnitePreviewActionFilterDto = 'all' | VnitePreviewActionDto
+
+export const VNITE_PREVIEW_DEFAULT_PAGE_SIZE = 50
+
+export type VnitePreviewSectionKeyDto = 'metadata' | 'activity' | 'organization'
+
+export interface VnitePreviewFieldDto {
+  label: string
+  value: string
+}
+
+export interface VnitePreviewSectionDto {
+  key: VnitePreviewSectionKeyDto
+  label: string
+  current: readonly VnitePreviewFieldDto[]
+  incoming: readonly VnitePreviewFieldDto[]
+}
+
+export interface VniteDiagnosticRowDto {
+  level: string
+  subject: string
+  message: string
+}
+
+export interface VnitePreviewRowDto {
   id: string
   title: string
-  rows: readonly VnitePreviewUpdateRowDto[]
+  action: VnitePreviewActionDto
+  sections: readonly VnitePreviewSectionDto[]
+  diagnostics: VniteDiagnosticCountDto
+  diagnosticRows: readonly VniteDiagnosticRowDto[]
+}
+
+export interface VnitePreviewQueryDto {
+  action: VnitePreviewActionFilterDto
+  search: string
+  page: number
+  pageSize: number
+}
+
+export interface VnitePreviewPaginationDto {
+  page: number
+  pageSize: number
+  pagesTotal: number
+  allRowsTotal: number
+  filteredRowsTotal: number
+  firstRow: number
+  lastRow: number
 }
 
 export interface VnitePreviewDto {
   summary: VnitePreviewSummaryDto
-  writePlan: readonly string[]
-  writePlanTotal: number
-  updates: readonly VnitePreviewUpdateGroupDto[]
-  updatesTotal: number
+  query: VnitePreviewQueryDto
+  pagination: VnitePreviewPaginationDto
+  rows: readonly VnitePreviewRowDto[]
+}
+
+export interface VniteRunWorkDto {
+  current?: number
+  total?: number
+  percent?: number
+  indeterminate?: boolean
 }
 
 export interface VniteRunDto {
   status: TaskRunStatus
+  phaseKey: string | null
   /**
    * Current phase label reported by the import job, when available. The UI
    * owns the fallback wording for bare statuses.
    */
   phaseLabel: string | null
+  work: VniteRunWorkDto | null
   counters: Record<string, number>
+  canCancel: boolean
 }
 
 export type VniteImportRunStatusDto = 'completed' | 'failed' | 'cancelled'
@@ -132,15 +212,10 @@ export interface VniteDoneSummaryDto {
   warnings: number
 }
 
-export interface VniteDiagnosticRowDto {
-  level: string
-  subject: string
-  message: string
-}
-
 export interface VniteWizardState {
   step: VniteImportStep
   file: { name: string; sizeBytes: number } | null
+  analysis: VniteBackupAnalysisDto | null
   options: VniteImportOptionsForm
   fieldSelection: VniteImportFieldSelection
   profiles: readonly { value: string; label: string }[]
@@ -160,9 +235,16 @@ export interface VniteImportWizardHostFunctions {
   goToConfig(): Promise<VniteWizardState>
   backToConfig(): Promise<VniteWizardState>
   resetFlow(): Promise<VniteWizardState>
-  saveFieldSelection(selection: VniteImportFieldSelection): Promise<VniteWizardState>
-  generatePreview(options: VniteImportOptionsForm): Promise<VniteWizardState>
-  startImport(options: VniteImportOptionsForm): Promise<VniteWizardState>
+  generatePreview(
+    options: VniteImportOptionsForm,
+    fieldSelection: VniteImportFieldSelection
+  ): Promise<VniteWizardState>
+  setPreviewQuery(query: VnitePreviewQueryDto): Promise<VniteWizardState>
+  startImport(
+    options: VniteImportOptionsForm,
+    fieldSelection: VniteImportFieldSelection
+  ): Promise<VniteWizardState>
+  cancelImport(): Promise<VniteWizardState>
 }
 
 /**

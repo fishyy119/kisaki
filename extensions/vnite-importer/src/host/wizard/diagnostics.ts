@@ -77,12 +77,12 @@ function toDiagnosticSubject(diagnostic: VniteImportDiagnostic): string {
 function toDiagnosticLevelLabel(level: string): string {
   switch (level) {
     case 'warning':
-      return 'Warning'
+      return '警告'
     case 'error':
-      return 'Error'
+      return '错误'
     case 'info':
     default:
-      return 'Info'
+      return '信息'
   }
 }
 
