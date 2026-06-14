@@ -5,9 +5,16 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import path from 'node:path'
 import spawn from 'cross-spawn'
 
-interface ToolingPackage {
+interface ExtensionToolingPackage {
   readonly name: string
   readonly dir: string
+}
+
+interface ExtensionToolingManifest {
+  readonly packages: readonly ExtensionToolingPackage[]
+  readonly internalDependencies: Record<string, readonly string[]>
+  readonly buildPackageGroups: readonly (readonly string[])[]
+  readonly outputPaths: readonly string[]
 }
 
 interface PackageJson {
@@ -33,55 +40,13 @@ interface RunOptions {
 }
 
 const repoRoot = findRepoRoot(process.cwd())
-
-const toolingPackages: readonly ToolingPackage[] = [
-  { name: '@kisaki3/extension-api', dir: 'packages/extension-api' },
-  { name: '@kisaki3/extension-registry', dir: 'packages/extension-registry' },
-  { name: '@kisaki3/extension-sdk', dir: 'packages/extension-sdk' },
-  { name: '@kisaki3/extension-ui-vue', dir: 'packages/extension-ui-vue' },
-  { name: '@kisaki3/extension-cli', dir: 'packages/extension-cli' },
-  { name: 'create-kisaki-extension', dir: 'packages/create-kisaki-extension' }
-]
-
-const internalDependencies = new Map<string, readonly string[]>([
-  ['@kisaki3/extension-registry', ['@kisaki3/extension-api']],
-  ['@kisaki3/extension-sdk', ['@kisaki3/extension-api']],
-  ['@kisaki3/extension-cli', ['@kisaki3/extension-api', '@kisaki3/extension-registry']],
-  ['create-kisaki-extension', ['@kisaki3/extension-api']]
-])
-const toolingBuildPackageGroups = [
-  ['@kisaki3/extension-api', '@kisaki3/extension-ui-vue'],
-  ['@kisaki3/extension-registry', '@kisaki3/extension-sdk', 'create-kisaki-extension'],
-  ['@kisaki3/extension-cli']
-] as const
-const toolingOutputPaths = [
-  'packages/extension-api/dist/index.mjs',
-  'packages/extension-api/dist/index.d.mts',
-  'packages/extension-api/dist/index.cjs',
-  'packages/extension-api/dist/index.d.cts',
-  'packages/extension-registry/dist/index.mjs',
-  'packages/extension-registry/dist/index.d.mts',
-  'packages/extension-registry/dist/index.cjs',
-  'packages/extension-registry/dist/index.d.cts',
-  'packages/extension-registry/dist/node.mjs',
-  'packages/extension-registry/dist/node.d.mts',
-  'packages/extension-registry/dist/node.cjs',
-  'packages/extension-registry/dist/node.d.cts',
-  'packages/extension-sdk/dist/index.mjs',
-  'packages/extension-sdk/dist/index.d.mts',
-  'packages/extension-sdk/dist/index.cjs',
-  'packages/extension-sdk/dist/index.d.cts',
-  'packages/extension-sdk/dist/webview.mjs',
-  'packages/extension-sdk/dist/webview.d.mts',
-  'packages/extension-sdk/dist/webview.cjs',
-  'packages/extension-sdk/dist/webview.d.cts',
-  'packages/extension-ui-vue/dist/index.mjs',
-  'packages/extension-ui-vue/dist/index.d.ts',
-  'packages/extension-cli/dist/index.mjs',
-  'packages/extension-cli/dist/config.mjs',
-  'packages/extension-cli/dist/config.d.mts',
-  'packages/create-kisaki-extension/dist/index.mjs'
-] as const
+const toolingManifest = readJson<ExtensionToolingManifest>(
+  'packages/extension-tooling-manifest.json'
+)
+const extensionToolingPackages = toolingManifest.packages
+const extensionToolingInternalDependencies = toolingManifest.internalDependencies
+const extensionToolingBuildPackageGroups = toolingManifest.buildPackageGroups
+const extensionToolingOutputPaths = toolingManifest.outputPaths
 
 const templatePackagePath = 'packages/create-kisaki-extension/templates/extension/base/package.json'
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
@@ -148,7 +113,7 @@ function checkTooling(expectedVersion?: string): void {
 function setToolingVersion(version: string): void {
   assertSemver(version)
 
-  for (const toolingPackage of toolingPackages) {
+  for (const toolingPackage of extensionToolingPackages) {
     const packageJsonPath = packagePath(toolingPackage.dir)
     const packageJson = readJson(packageJsonPath)
     packageJson.version = version
@@ -187,7 +152,7 @@ function publishTooling(args: readonly string[]): void {
 async function buildTooling(): Promise<void> {
   checkTooling()
 
-  for (const packageGroup of toolingBuildPackageGroups) {
+  for (const packageGroup of extensionToolingBuildPackageGroups) {
     await Promise.all(
       packageGroup.map((packageName) => {
         const toolingPackage = requireToolingPackage(packageName)
@@ -199,7 +164,7 @@ async function buildTooling(): Promise<void> {
 }
 
 function verifyToolingOutput(): void {
-  const missingPaths = toolingOutputPaths.filter(
+  const missingPaths = extensionToolingOutputPaths.filter(
     (outputPath) => !existsSync(resolveRepo(outputPath))
   )
   if (missingPaths.length > 0) {
@@ -210,7 +175,7 @@ function verifyToolingOutput(): void {
     )
   }
 
-  console.log(`[extension-tooling] Verified ${toolingOutputPaths.length} output files.`)
+  console.log(`[extension-tooling] Verified ${extensionToolingOutputPaths.length} output files.`)
 }
 
 function packTooling(args: readonly string[]): void {
@@ -224,7 +189,7 @@ function packTooling(args: readonly string[]): void {
 
   console.log(`[extension-tooling] Packing ${version} into ${path.relative(repoRoot, outDir)}.`)
 
-  for (const toolingPackage of toolingPackages) {
+  for (const toolingPackage of extensionToolingPackages) {
     console.log(`[extension-tooling] Packing ${toolingPackage.name}...`)
     run('pnpm', ['pack', '--pack-destination', outDir], {
       cwd: packageDir(toolingPackage.dir)
@@ -238,13 +203,15 @@ function packTooling(args: readonly string[]): void {
 }
 
 function listToolingPackages(): void {
-  for (const toolingPackage of toolingPackages) {
+  for (const toolingPackage of extensionToolingPackages) {
     console.log(toolingPackage.name)
   }
 }
 
-function requireToolingPackage(packageName: string): ToolingPackage {
-  const toolingPackage = toolingPackages.find((candidate) => candidate.name === packageName)
+function requireToolingPackage(packageName: string): ExtensionToolingPackage {
+  const toolingPackage = extensionToolingPackages.find(
+    (candidate) => candidate.name === packageName
+  )
   if (!toolingPackage) {
     throw new Error(`Unknown extension tooling package: ${packageName}`)
   }
@@ -255,7 +222,7 @@ function requireToolingPackage(packageName: string): ToolingPackage {
 function collectToolingProblems(expectedVersion: string): string[] {
   const problems: string[] = []
 
-  for (const toolingPackage of toolingPackages) {
+  for (const toolingPackage of extensionToolingPackages) {
     const packageJson = readJson(packagePath(toolingPackage.dir))
     if (packageJson.name !== toolingPackage.name) {
       problems.push(`${toolingPackage.dir}/package.json name must be ${toolingPackage.name}.`)
@@ -267,7 +234,7 @@ function collectToolingProblems(expectedVersion: string): string[] {
       )
     }
 
-    const dependencyNames = internalDependencies.get(toolingPackage.name) ?? []
+    const dependencyNames = extensionToolingInternalDependencies[toolingPackage.name] ?? []
     for (const dependencyName of dependencyNames) {
       const dependencyVersion = packageJson.dependencies?.[dependencyName]
       if (dependencyVersion !== 'workspace:*') {
@@ -310,7 +277,7 @@ function collectToolingProblems(expectedVersion: string): string[] {
 function getToolingVersion(): string {
   const versions = new Map<string, unknown>()
 
-  for (const toolingPackage of toolingPackages) {
+  for (const toolingPackage of extensionToolingPackages) {
     const packageJson = readJson(packagePath(toolingPackage.dir))
     versions.set(toolingPackage.name, packageJson.version)
   }
@@ -452,7 +419,7 @@ interface ToolingTarball {
 }
 
 function collectToolingTarballs(version: string, outDir: string): ToolingTarball[] {
-  return toolingPackages.map((toolingPackage) => {
+  return extensionToolingPackages.map((toolingPackage) => {
     const fileName = getTarballFileName(toolingPackage.name, version)
     const filePath = path.join(outDir, fileName)
 
@@ -481,7 +448,7 @@ function writeChecksums(outDir: string, tarballs: readonly ToolingTarball[]): vo
 }
 
 function writePackageList(outDir: string, version: string): void {
-  const packageLines = toolingPackages
+  const packageLines = extensionToolingPackages
     .map((toolingPackage) => {
       const packageUrl = `https://www.npmjs.com/package/${toolingPackage.name}/v/${version}`
       return `- [${toolingPackage.name}@${version}](${packageUrl})`
@@ -496,7 +463,8 @@ function writePackageList(outDir: string, version: string): void {
 }
 
 function sha256File(filePath: string): string {
-  return createHash('sha256').update(readFileSync(filePath)).digest('hex')
+  const data = new Uint8Array(readFileSync(filePath))
+  return createHash('sha256').update(data).digest('hex')
 }
 
 function readJson<T = PackageJson>(relativePath: string): T {

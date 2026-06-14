@@ -1,10 +1,29 @@
 import type { ChildProcess } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { access, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import spawn from 'cross-spawn'
 
 type BuildTarget = 'dev' | 'resources'
+
+interface ExtensionToolingPackage {
+  readonly name: string
+  readonly dir: string
+}
+
+interface ExtensionToolingManifest {
+  readonly packages: readonly ExtensionToolingPackage[]
+  readonly internalDependencies: Record<string, readonly string[]>
+  readonly buildPackageGroups: readonly (readonly string[])[]
+}
+
+interface BuiltinExtensionPackageJson {
+  readonly dependencies?: Record<string, string>
+  readonly devDependencies?: Record<string, string>
+  readonly optionalDependencies?: Record<string, string>
+  readonly peerDependencies?: Record<string, string>
+}
 
 interface BuiltinExtensionWatcher {
   readonly process: ChildProcess
@@ -29,12 +48,17 @@ const desktopRoot = path.resolve(scriptDir, '..')
 const repoRoot = path.resolve(desktopRoot, '..', '..')
 const builtinExtensionsRoot = path.join(repoRoot, 'extensions')
 const extensionCliEntry = path.join(repoRoot, 'packages', 'extension-cli', 'src', 'index.ts')
-const extensionBuildPackageGroups = [
-  ['extension-api'],
-  ['extension-registry', 'extension-sdk'],
-  ['extension-cli']
+const extensionToolingManifest = readExtensionToolingManifest()
+const extensionDebugPackageNames = ['@kisaki3/extension-api', '@kisaki3/extension-sdk'] as const
+const extensionPackageDependencyFields = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies'
 ] as const
-const extensionDebugPackageNames = ['extension-api', 'extension-sdk'] as const
+const extensionToolingPackagesByName = new Map(
+  extensionToolingManifest.packages.map((toolingPackage) => [toolingPackage.name, toolingPackage])
+)
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
 async function main(): Promise<void> {
@@ -64,7 +88,7 @@ async function buildBuiltinExtensions(target: BuildTarget): Promise<void> {
   const debugSources = target === 'dev'
   const projects = await findBuiltinExtensionProjects()
   await resetOutputRoot(outputRoot)
-  await prepareExtensionDebugPackages(outputRoot, debugSources)
+  await prepareExtensionDebugPackages(outputRoot, debugSources, projects)
 
   if (projects.length === 0) {
     console.log(`[builtin-extensions] No built-in extensions found in ${builtinExtensionsRoot}`)
@@ -78,7 +102,7 @@ async function buildBuiltinExtensions(target: BuildTarget): Promise<void> {
 async function watchBuiltinExtensions(outputRoot: string, childCommand: string[]): Promise<void> {
   const projects = await findBuiltinExtensionProjects()
   await resetOutputRoot(outputRoot)
-  await prepareExtensionDebugPackages(outputRoot, true)
+  await prepareExtensionDebugPackages(outputRoot, true, projects)
 
   if (projects.length === 0) {
     console.log(`[builtin-extensions] No built-in extensions found in ${builtinExtensionsRoot}`)
@@ -216,20 +240,91 @@ async function resetOutputRoot(outputRoot: string): Promise<void> {
 
 async function prepareExtensionDebugPackages(
   outputRoot: string,
-  debugSources: boolean
+  debugSources: boolean,
+  projects: readonly string[]
 ): Promise<void> {
-  await buildExtensionPackages()
+  await buildExtensionPackages(projects)
   await copyExtensionDebugPackages(resolveDebugPackagesRoot(outputRoot), debugSources)
 }
 
-async function buildExtensionPackages(): Promise<void> {
-  for (const packageGroup of extensionBuildPackageGroups) {
+async function buildExtensionPackages(projects: readonly string[]): Promise<void> {
+  const packageNames = await collectRequiredExtensionToolingPackages(projects)
+  const packageGroups = resolveExtensionToolingBuildGroups(packageNames)
+
+  for (const packageGroup of packageGroups) {
     await Promise.all(
       packageGroup.map((packageName) =>
-        runProcess(pnpmCommand, ['--filter', `@kisaki3/${packageName}`, 'build'], repoRoot)
+        runProcess(pnpmCommand, ['--filter', packageName, 'build'], repoRoot)
       )
     )
   }
+}
+
+async function collectRequiredExtensionToolingPackages(
+  projects: readonly string[]
+): Promise<Set<string>> {
+  const packageNames = new Set<string>()
+
+  for (const packageName of extensionDebugPackageNames) {
+    addExtensionToolingPackageWithDependencies(packageNames, packageName)
+  }
+
+  for (const project of projects) {
+    const packageJson = JSON.parse(
+      await readFile(path.join(project, 'package.json'), 'utf8')
+    ) as BuiltinExtensionPackageJson
+
+    for (const dependencyField of extensionPackageDependencyFields) {
+      const dependencies = packageJson[dependencyField]
+      if (!dependencies) {
+        continue
+      }
+
+      for (const [packageName, versionRange] of Object.entries(dependencies)) {
+        if (versionRange === 'workspace:*' && extensionToolingPackagesByName.has(packageName)) {
+          addExtensionToolingPackageWithDependencies(packageNames, packageName)
+        }
+      }
+    }
+  }
+
+  return packageNames
+}
+
+function addExtensionToolingPackageWithDependencies(
+  packageNames: Set<string>,
+  packageName: string
+): void {
+  if (packageNames.has(packageName)) {
+    return
+  }
+
+  packageNames.add(packageName)
+
+  for (const dependencyName of extensionToolingManifest.internalDependencies[packageName] ?? []) {
+    addExtensionToolingPackageWithDependencies(packageNames, dependencyName)
+  }
+}
+
+function resolveExtensionToolingBuildGroups(
+  packageNames: ReadonlySet<string>
+): readonly (readonly string[])[] {
+  const packageGroups: string[][] = extensionToolingManifest.buildPackageGroups
+    .map((packageGroup) => [...packageGroup].filter((packageName) => packageNames.has(packageName)))
+    .filter((packageGroup) => packageGroup.length > 0)
+
+  const groupedPackageNames = new Set(packageGroups.flat())
+  const missingPackageNames = [...packageNames].filter(
+    (packageName) => !groupedPackageNames.has(packageName)
+  )
+
+  if (missingPackageNames.length > 0) {
+    throw new Error(
+      `Missing extension tooling build group for package(s): ${missingPackageNames.join(', ')}`
+    )
+  }
+
+  return packageGroups
 }
 
 async function copyExtensionDebugPackages(
@@ -239,14 +334,29 @@ async function copyExtensionDebugPackages(
   await rm(debugPackagesRoot, { recursive: true, force: true })
 
   for (const packageName of extensionDebugPackageNames) {
-    const sourceDir = path.join(repoRoot, 'packages', packageName, 'dist')
-    const targetDir = path.join(debugPackagesRoot, packageName, 'dist')
+    const toolingPackage = requireExtensionToolingPackage(packageName)
+    const sourceDir = path.join(repoRoot, toolingPackage.dir, 'dist')
+    const targetDir = path.join(debugPackagesRoot, path.basename(toolingPackage.dir), 'dist')
     await mkdir(path.dirname(targetDir), { recursive: true })
     await cp(sourceDir, targetDir, { recursive: true })
     if (debugSources) {
       await rewriteCopiedDistSourceMaps(sourceDir, targetDir)
     }
   }
+}
+
+function requireExtensionToolingPackage(packageName: string): ExtensionToolingPackage {
+  const toolingPackage = extensionToolingPackagesByName.get(packageName)
+  if (!toolingPackage) {
+    throw new Error(`Unknown extension tooling package: ${packageName}`)
+  }
+
+  return toolingPackage
+}
+
+function readExtensionToolingManifest(): ExtensionToolingManifest {
+  const manifestPath = path.join(repoRoot, 'packages', 'extension-tooling-manifest.json')
+  return JSON.parse(readFileSync(manifestPath, 'utf8')) as ExtensionToolingManifest
 }
 
 function runKisxOutput(projectDir: string, outputRoot: string): Promise<void> {
