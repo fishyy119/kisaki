@@ -55,7 +55,7 @@ export function registerVniteImportWizard(
       const webview = await kisaki.webviews.open({
         entry: VNITE_IMPORT_WIZARD_ENTRY,
         title: 'Vnite 导入',
-        surface: { kind: 'dialog', size: 'lg' }
+        surface: { kind: 'dialog', size: '2xl' }
       })
       current = webview
       webview.onClose(() => {

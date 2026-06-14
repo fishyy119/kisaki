@@ -21,6 +21,7 @@ const DIALOG_SIZE_CLASSES: Record<WebviewDialogSize, { width: string; height: st
   md: { width: 'max-w-2xl', height: 'h-[60vh]' },
   lg: { width: 'max-w-4xl', height: 'h-[70vh]' },
   xl: { width: 'max-w-5xl', height: 'h-[76vh]' },
+  '2xl': { width: 'max-w-6xl', height: 'h-[82vh]' },
   full: { width: 'max-w-[92vw]', height: 'h-[84vh]' }
 }
 

@@ -9,7 +9,7 @@ import {
   validateUnknownKeys
 } from '../shared/validation'
 
-export const WEBVIEW_DIALOG_SIZES = ['sm', 'md', 'lg', 'xl', 'full'] as const
+export const WEBVIEW_DIALOG_SIZES = ['sm', 'md', 'lg', 'xl', '2xl', 'full'] as const
 
 export type WebviewDialogSize = (typeof WEBVIEW_DIALOG_SIZES)[number]
 
