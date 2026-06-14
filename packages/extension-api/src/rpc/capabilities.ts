@@ -403,6 +403,10 @@ export type HostToMainCapabilityRpcRequestMap = {
     TaskRunScopedRequest,
     { run: TaskRunSnapshot | null }
   >
+  'capabilities.taskRuns.cancelOwn': RpcMethodDefinition<
+    TaskRunScopedRequest,
+    { cancelled: boolean }
+  >
   'capabilities.taskRuns.waitOwn': RpcMethodDefinition<
     TaskRunScopedRequest,
     { run: TaskRunSnapshot }

@@ -339,6 +339,9 @@ export class ExtensionCapabilityGateway {
         run: this.taskRuns.getHistoryOwn(runtimeHandle, runId)
       })
     )
+    rpc.handleHostRequest('capabilities.taskRuns.cancelOwn', async ({ runtimeHandle, runId }) => ({
+      cancelled: this.taskRuns.cancelOwn(runtimeHandle, runId)
+    }))
     rpc.handleHostRequest('capabilities.taskRuns.waitOwn', async ({ runtimeHandle, runId }) => ({
       run: await this.taskRuns.waitOwn(runtimeHandle, runId)
     }))

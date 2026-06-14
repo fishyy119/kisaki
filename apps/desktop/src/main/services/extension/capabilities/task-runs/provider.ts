@@ -193,6 +193,16 @@ export class ExtensionTaskRunsCapabilityProvider {
       : null
   }
 
+  cancelOwn(runtimeHandle: string, runId: string): boolean {
+    const metadata = this.requireRuntime(runtimeHandle)
+    const run = this.options.taskRun.runs.get(runId)
+    if (!run || !isOwnExtensionTaskRun(run, metadata.id)) {
+      return false
+    }
+
+    return this.options.taskRun.runs.cancel(runId)
+  }
+
   async waitOwn(runtimeHandle: string, runId: string): Promise<ExtensionTaskRunSnapshot> {
     const metadata = this.requireRuntime(runtimeHandle)
     const active = this.options.taskRun.runs.get(runId)

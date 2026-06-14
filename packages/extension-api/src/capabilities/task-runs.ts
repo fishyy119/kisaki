@@ -200,5 +200,6 @@ export interface TaskRunsCapability {
   listHistoryOwn(query?: TaskRunHistoryListQuery): Promise<readonly TaskRunSnapshot[]>
   getActiveOwn(runId: string): Promise<TaskRunSnapshot | null>
   getHistoryOwn(runId: string): Promise<TaskRunSnapshot | null>
+  cancelOwn(runId: string): Promise<boolean>
   waitOwn(runId: string): Promise<TaskRunSnapshot>
 }

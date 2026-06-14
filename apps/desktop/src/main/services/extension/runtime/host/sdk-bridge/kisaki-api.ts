@@ -542,6 +542,12 @@ export function createKisakiApi(
             runId
           })
         ).run,
+      cancelOwn: async (runId) =>
+        (
+          await requestMain('capabilities.taskRuns.cancelOwn', {
+            runId
+          })
+        ).cancelled,
       waitOwn: async (runId) =>
         (
           await requestMain('capabilities.taskRuns.waitOwn', {
