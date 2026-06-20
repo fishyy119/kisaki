@@ -3,7 +3,8 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import spawn from 'cross-spawn'
+import { publishToolingTarballs, type ToolingTarball } from './extension-tooling/npm-publish'
+import { run, runAsync } from './extension-tooling/process'
 
 interface ExtensionToolingPackage {
   readonly name: string
@@ -27,16 +28,13 @@ interface PackageJson {
 
 interface PublishOptions {
   dryRun: boolean
+  provenance: boolean
   dir?: string
   tag?: string
 }
 
 interface PackOptions {
   outDir?: string
-}
-
-interface RunOptions {
-  cwd?: string
 }
 
 const repoRoot = findRepoRoot(process.cwd())
@@ -87,7 +85,7 @@ async function main(): Promise<void> {
       packTooling(args)
       break
     case 'publish':
-      publishTooling(args)
+      await publishTooling(args)
       break
     case 'list':
       listToolingPackages()
@@ -128,7 +126,7 @@ function setToolingVersion(version: string): void {
   checkTooling(version)
 }
 
-function publishTooling(args: readonly string[]): void {
+async function publishTooling(args: readonly string[]): Promise<void> {
   const options = parsePublishOptions(args)
   const version = getToolingVersion()
   checkTooling(version)
@@ -141,16 +139,12 @@ function publishTooling(args: readonly string[]): void {
     `[extension-tooling] Publishing ${version} from ${path.relative(repoRoot, outDir)} with npm dist-tag "${tag}"${options.dryRun ? ' (dry run)' : ''}.`
   )
 
-  for (const tarball of tarballs) {
-    console.log(`[extension-tooling] Publishing ${tarball.packageName}...`)
-    const publishArgs = ['publish', tarball.filePath, '--access', 'public', '--tag', tag]
-
-    if (options.dryRun) {
-      publishArgs.push('--dry-run')
-    }
-
-    run('npm', publishArgs)
-  }
+  await publishToolingTarballs(repoRoot, tarballs, {
+    version,
+    tag,
+    dryRun: options.dryRun,
+    provenance: options.provenance
+  })
 }
 
 async function buildTooling(): Promise<void> {
@@ -161,7 +155,9 @@ async function buildTooling(): Promise<void> {
       packageGroup.map((packageName) => {
         const toolingPackage = requireToolingPackage(packageName)
         console.log(`[extension-tooling] Building ${toolingPackage.name}...`)
-        return runAsync('pnpm', ['run', 'build'], { cwd: packageDir(toolingPackage.dir) })
+        return runAsync('pnpm', ['run', 'build'], repoRoot, {
+          cwd: packageDir(toolingPackage.dir)
+        })
       })
     )
   }
@@ -195,7 +191,7 @@ function packTooling(args: readonly string[]): void {
 
   for (const toolingPackage of extensionToolingPackages) {
     console.log(`[extension-tooling] Packing ${toolingPackage.name}...`)
-    run('pnpm', ['pack', '--pack-destination', outDir], {
+    run('pnpm', ['pack', '--pack-destination', outDir], repoRoot, {
       cwd: packageDir(toolingPackage.dir)
     })
   }
@@ -224,7 +220,8 @@ function requireToolingPackage(packageName: string): ExtensionToolingPackage {
 }
 
 function collectToolingProblems(expectedVersion: string): string[] {
-  const problems: string[] = []
+  const problems = collectToolingManifestProblems()
+  const toolingPackageNames = new Set(extensionToolingPackages.map(({ name }) => name))
 
   for (const toolingPackage of extensionToolingPackages) {
     const packageJson = readJson(packagePath(toolingPackage.dir))
@@ -238,14 +235,27 @@ function collectToolingProblems(expectedVersion: string): string[] {
       )
     }
 
-    const dependencyNames = extensionToolingInternalDependencies[toolingPackage.name] ?? []
-    for (const dependencyName of dependencyNames) {
+    const declaredInternalDependencies = Object.keys(packageJson.dependencies ?? {}).filter(
+      (dependencyName) => toolingPackageNames.has(dependencyName)
+    )
+    const manifestInternalDependencies =
+      extensionToolingInternalDependencies[toolingPackage.name] ?? []
+
+    for (const dependencyName of manifestInternalDependencies) {
       const dependencyVersion = packageJson.dependencies?.[dependencyName]
       if (dependencyVersion !== 'workspace:*') {
         problems.push(
           `${toolingPackage.name} must depend on ${dependencyName} with "workspace:*", found ${String(
             dependencyVersion
           )}.`
+        )
+      }
+    }
+
+    for (const dependencyName of declaredInternalDependencies) {
+      if (!manifestInternalDependencies.includes(dependencyName)) {
+        problems.push(
+          `${toolingPackage.name} dependency ${dependencyName} is missing from extension-tooling-manifest.json.`
         )
       }
     }
@@ -273,6 +283,114 @@ function collectToolingProblems(expectedVersion: string): string[] {
     problems.push(
       `${extensionApiVersionPath} must export EXTENSION_API_VERSION ${expectedVersion}.`
     )
+  }
+
+  return problems
+}
+
+function collectToolingManifestProblems(): string[] {
+  const problems: string[] = []
+  const packageIndexes = new Map<string, number>()
+  const packageDirs = new Set<string>()
+
+  for (const [index, toolingPackage] of extensionToolingPackages.entries()) {
+    if (packageIndexes.has(toolingPackage.name)) {
+      problems.push(`Duplicate tooling package name: ${toolingPackage.name}.`)
+    } else {
+      packageIndexes.set(toolingPackage.name, index)
+    }
+
+    if (packageDirs.has(toolingPackage.dir)) {
+      problems.push(`Duplicate tooling package directory: ${toolingPackage.dir}.`)
+    } else {
+      packageDirs.add(toolingPackage.dir)
+    }
+  }
+
+  for (const [packageName, dependencyNames] of Object.entries(
+    extensionToolingInternalDependencies
+  )) {
+    const packageIndex = packageIndexes.get(packageName)
+    if (packageIndex === undefined) {
+      problems.push(`Internal dependency metadata references unknown package ${packageName}.`)
+      continue
+    }
+
+    const seenDependencies = new Set<string>()
+    for (const dependencyName of dependencyNames) {
+      if (seenDependencies.has(dependencyName)) {
+        problems.push(`${packageName} lists duplicate internal dependency ${dependencyName}.`)
+        continue
+      }
+      seenDependencies.add(dependencyName)
+
+      const dependencyIndex = packageIndexes.get(dependencyName)
+      if (dependencyIndex === undefined) {
+        problems.push(`${packageName} references unknown internal dependency ${dependencyName}.`)
+      } else if (dependencyIndex >= packageIndex) {
+        problems.push(
+          `${dependencyName} must appear before dependent package ${packageName} in publish order.`
+        )
+      }
+    }
+  }
+
+  const buildGroupIndexes = new Map<string, number>()
+  for (const [groupIndex, packageGroup] of extensionToolingBuildPackageGroups.entries()) {
+    for (const packageName of packageGroup) {
+      if (!packageIndexes.has(packageName)) {
+        problems.push(`Build group ${groupIndex + 1} references unknown package ${packageName}.`)
+      } else if (buildGroupIndexes.has(packageName)) {
+        problems.push(`${packageName} appears in more than one build group.`)
+      } else {
+        buildGroupIndexes.set(packageName, groupIndex)
+      }
+    }
+  }
+
+  for (const packageName of packageIndexes.keys()) {
+    if (!buildGroupIndexes.has(packageName)) {
+      problems.push(`${packageName} is missing from buildPackageGroups.`)
+    }
+  }
+
+  for (const [packageName, dependencyNames] of Object.entries(
+    extensionToolingInternalDependencies
+  )) {
+    const packageGroupIndex = buildGroupIndexes.get(packageName)
+    if (packageGroupIndex === undefined) {
+      continue
+    }
+
+    for (const dependencyName of dependencyNames) {
+      const dependencyGroupIndex = buildGroupIndexes.get(dependencyName)
+      if (dependencyGroupIndex !== undefined && dependencyGroupIndex >= packageGroupIndex) {
+        problems.push(`${dependencyName} must build before dependent package ${packageName}.`)
+      }
+    }
+  }
+
+  const seenOutputPaths = new Set<string>()
+  const packagesWithOutput = new Set<string>()
+  for (const outputPath of extensionToolingOutputPaths) {
+    if (seenOutputPaths.has(outputPath)) {
+      problems.push(`Duplicate tooling output path: ${outputPath}.`)
+      continue
+    }
+    seenOutputPaths.add(outputPath)
+
+    const owner = extensionToolingPackages.find(({ dir }) => outputPath.startsWith(`${dir}/`))
+    if (!owner) {
+      problems.push(`Tooling output path is outside a tooling package: ${outputPath}.`)
+    } else {
+      packagesWithOutput.add(owner.name)
+    }
+  }
+
+  for (const packageName of packageIndexes.keys()) {
+    if (!packagesWithOutput.has(packageName)) {
+      problems.push(`${packageName} has no required output path.`)
+    }
   }
 
   return problems
@@ -306,13 +424,18 @@ function updateExtensionApiVersion(version: string): void {
 }
 
 function parsePublishOptions(args: readonly string[]): PublishOptions {
-  const options: PublishOptions = { dryRun: false }
+  const options: PublishOptions = { dryRun: false, provenance: false }
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
 
     if (arg === '--dry-run') {
       options.dryRun = true
+      continue
+    }
+
+    if (arg === '--provenance') {
+      options.provenance = true
       continue
     }
 
@@ -416,12 +539,6 @@ function resolveReleaseOutputDir(version: string, customDir?: string): string {
   return fullPath
 }
 
-interface ToolingTarball {
-  readonly packageName: string
-  readonly fileName: string
-  readonly filePath: string
-}
-
 function collectToolingTarballs(version: string, outDir: string): ToolingTarball[] {
   return extensionToolingPackages.map((toolingPackage) => {
     const fileName = getTarballFileName(toolingPackage.name, version)
@@ -511,50 +628,6 @@ function findRepoRoot(startDir: string): string {
   }
 }
 
-function run(commandName: string, runArgs: readonly string[], options: RunOptions = {}): void {
-  const result = spawn.sync(commandName, runArgs, {
-    cwd: options.cwd ?? repoRoot,
-    stdio: 'inherit'
-  })
-
-  if (result.error) {
-    throw result.error
-  }
-
-  if (result.status !== 0) {
-    throw new Error(
-      `${commandName} ${runArgs.join(' ')} failed with exit code ${String(result.status)}.`
-    )
-  }
-}
-
-function runAsync(
-  commandName: string,
-  runArgs: readonly string[],
-  options: RunOptions = {}
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(commandName, runArgs, {
-      cwd: options.cwd ?? repoRoot,
-      stdio: 'inherit'
-    })
-
-    child.on('error', reject)
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve()
-        return
-      }
-
-      reject(
-        new Error(
-          `${commandName} ${runArgs.join(' ')} failed with exit code ${String(code ?? 'unknown')}.`
-        )
-      )
-    })
-  })
-}
-
 function printUsage(receivedCommand: string | undefined): void {
   if (receivedCommand) {
     console.error(`[extension-tooling] Unknown command: ${receivedCommand}`)
@@ -566,6 +639,6 @@ function printUsage(receivedCommand: string | undefined): void {
   tsx scripts/extension-tooling.ts build
   tsx scripts/extension-tooling.ts verify-output
   tsx scripts/extension-tooling.ts pack [--out-dir <dir>]
-  tsx scripts/extension-tooling.ts publish [--dir <dir>] [--dry-run] [--tag <tag>]
+  tsx scripts/extension-tooling.ts publish [--dir <dir>] [--dry-run] [--provenance] [--tag <tag>]
   tsx scripts/extension-tooling.ts list`)
 }

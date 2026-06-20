@@ -4,8 +4,17 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: '24'
+  NPM_VERSION: '11.17.0'
   PNPM_VERSION: '11.2.2'
   VITE_BANGUMI_API_ACCESS_TOKEN: ${{ secrets.VITE_BANGUMI_API_ACCESS_TOKEN }}
   VITE_YMGAL_API_CLIENT_ID: ${{ secrets.VITE_YMGAL_API_CLIENT_ID }}
@@ -17,6 +26,7 @@ jobs:
   detect:
     name: Detect Release
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       should_release: ${{ steps.parse.outputs.should_release }}
       target: ${{ steps.parse.outputs.target }}
@@ -25,9 +35,10 @@ jobs:
       tag_prefix: ${{ steps.parse.outputs.tag_prefix }}
       release_name: ${{ steps.parse.outputs.release_name }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 2
+          persist-credentials: false
 
       - name: Parse commit message
         id: parse
@@ -70,8 +81,29 @@ jobs:
     needs: detect
     if: needs.detect.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.detect.outputs.tag }}
+        run: |
+          if git rev-parse --verify --quiet "refs/tags/$RELEASE_TAG" >/dev/null; then
+            TAG_COMMIT=$(git rev-list -n 1 "$RELEASE_TAG")
+            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+              echo "Tag $RELEASE_TAG already points to $TAG_COMMIT, expected $GITHUB_SHA."
+              exit 1
+            fi
+
+            echo "Tag $RELEASE_TAG already identifies this release commit."
+          else
+            echo "Tag $RELEASE_TAG is available."
+          fi
 
       - name: Validate changelog files
         shell: bash
@@ -81,14 +113,29 @@ jobs:
           CHANGELOG_DIR="changelog/$TARGET/v$VERSION"
           REQUIRED_LOCALES=("zh-Hans" "en" "ja")
           MISSING_FILES=()
-          EMPTY_FILES=()
+          INVALID_FILES=()
+
+          case "$TARGET" in
+            desktop)
+              EXPECTED_TITLE="# Kisaki v$VERSION"
+              ;;
+            extension-tooling)
+              EXPECTED_TITLE="# Kisaki Extension Tooling v$VERSION"
+              ;;
+          esac
 
           for locale in "${REQUIRED_LOCALES[@]}"; do
             file="$CHANGELOG_DIR/$locale.md"
             if [[ ! -f "$file" ]]; then
               MISSING_FILES+=("$file")
-            elif [[ ! -s "$file" ]]; then
-              EMPTY_FILES+=("$file")
+              continue
+            fi
+
+            FIRST_LINE=$(head -n 1 "$file" | tr -d '\r')
+            if [[ "$FIRST_LINE" != "$EXPECTED_TITLE" ]] ||
+              ! grep -q '[^[:space:]]' "$file" ||
+              grep -Eiq '(^|[^[:alnum:]])(TBD|TODO)([^[:alnum:]]|$)|^[[:space:]]*[-*][[:space:]]*(\.\.\.|……)[[:space:]]*$' "$file"; then
+              INVALID_FILES+=("$file")
             fi
           done
 
@@ -98,9 +145,17 @@ jobs:
             exit 1
           fi
 
-          if [[ ${#EMPTY_FILES[@]} -gt 0 ]]; then
-            echo "Empty changelog files are not allowed for $TARGET v$VERSION:"
-            printf '  - %s\n' "${EMPTY_FILES[@]}"
+          if [[ ${#INVALID_FILES[@]} -gt 0 ]]; then
+            echo "Invalid title, empty content, or placeholder text in changelog files:"
+            printf '  - %s\n' "${INVALID_FILES[@]}"
+            exit 1
+          fi
+
+          mapfile -t CHANGELOG_FILES < <(find "$CHANGELOG_DIR" -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sort)
+          EXPECTED_FILES=("en.md" "ja.md" "zh-Hans.md")
+          if [[ "${CHANGELOG_FILES[*]}" != "${EXPECTED_FILES[*]}" ]]; then
+            echo "Changelog directory must contain exactly: ${EXPECTED_FILES[*]}"
+            printf 'Found: %s\n' "${CHANGELOG_FILES[*]:-(none)}"
             exit 1
           fi
 
@@ -111,14 +166,17 @@ jobs:
     needs: [detect, validate-release]
     if: needs.detect.outputs.target == 'desktop'
     runs-on: windows-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -130,7 +188,7 @@ jobs:
         run: pnpm build:win
 
       - name: Upload desktop artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-desktop-windows
           path: |
@@ -138,27 +196,34 @@ jobs:
             apps/desktop/dist/*.blockmap
             apps/desktop/dist/latest.yml
           if-no-files-found: error
+          overwrite: true
 
   release-extension-tooling:
     name: Build And Publish Extension Tooling
     needs: [detect, validate-release]
     if: needs.detect.outputs.target == 'extension-tooling'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pinned npm CLI
+        run: npm install --global npm@${{ env.NPM_VERSION }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -175,8 +240,11 @@ jobs:
       - name: Pack extension tooling packages
         run: pnpm pack:extension-tooling --out-dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
 
+      - name: Verify extension tooling tarballs
+        run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}" --dry-run
+
       - name: Upload extension tooling artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-extension-tooling-packages
           path: |
@@ -184,9 +252,12 @@ jobs:
             .release/extension-tooling/v${{ needs.detect.outputs.version }}/SHA256SUMS
             .release/extension-tooling/v${{ needs.detect.outputs.version }}/PACKAGES.md
           if-no-files-found: error
+          overwrite: true
 
       - name: Publish extension tooling packages
-        run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
+        run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}" --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-github-release:
     name: Publish GitHub Release
@@ -197,19 +268,25 @@ jobs:
       needs.validate-release.result == 'success' &&
       (needs.release-desktop.result == 'success' || needs.release-extension-tooling.result == 'success')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: artifacts
           pattern: release-${{ needs.detect.outputs.target }}-*
           merge-multiple: true
+
+      - name: Verify extension tooling release artifacts
+        if: needs.detect.outputs.target == 'extension-tooling'
+        shell: bash
+        run: cd artifacts && sha256sum --check SHA256SUMS
 
       - name: Find previous release tag
         id: previous_tag
@@ -264,18 +341,33 @@ jobs:
             fi
           } > release-body.md
 
-      - name: Create Git tag
+      - name: Ensure Git tag
         shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.detect.outputs.tag }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ needs.detect.outputs.tag }}"
-          git push origin "${{ needs.detect.outputs.tag }}"
+          git fetch --force --tags origin
+
+          if git rev-parse --verify --quiet "refs/tags/$RELEASE_TAG" >/dev/null; then
+            TAG_COMMIT=$(git rev-list -n 1 "$RELEASE_TAG")
+            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+              echo "Tag $RELEASE_TAG already points to $TAG_COMMIT, expected $GITHUB_SHA."
+              exit 1
+            fi
+
+            echo "Reusing tag $RELEASE_TAG at $GITHUB_SHA."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$RELEASE_TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@7c4723f7a335432393329f8f1c564994ce50185d # v3
         with:
           tag_name: ${{ needs.detect.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: ${{ needs.detect.outputs.release_name }}
           body_path: release-body.md
           files: |
@@ -284,7 +376,9 @@ jobs:
             artifacts/latest.yml
             artifacts/*.tgz
             artifacts/SHA256SUMS
+            artifacts/PACKAGES.md
           fail_on_unmatched_files: false
+          overwrite_files: true
           draft: false
           prerelease: ${{ contains(needs.detect.outputs.version, '-') }}
           make_latest: ${{ needs.detect.outputs.target == 'desktop' && !contains(needs.detect.outputs.version, '-') }}
