@@ -30,8 +30,9 @@ pnpm build:extension-tooling
 pnpm publish:extension-tooling --dry-run
 ```
 
-`scripts/extension-tooling.ts` owns the package list, version checks, version bumping, and
-npm publish order. It verifies:
+`packages/extension-tooling-manifest.json` is the source of truth for the package list, dependency
+order, build groups, and required outputs. `scripts/extension-tooling/` keeps the command entry,
+contract checks, build, packing, and publishing flows in separate modules. It verifies:
 
 - every tooling package has the same `package.json` version
 - internal workspace dependencies use `workspace:*`
@@ -43,7 +44,7 @@ npm publish order. It verifies:
 
 `publish:extension-tooling --dry-run` runs npm's package-content checks for every tarball without
 changing the registry. It forces past existing-version protection only inside npm's dry-run mode so
-all lockstep packages are checked. A real publish performs registry preflight and verification as
+all lockstep packages are checked. A real publish performs registry preflight before publishing as
 described below.
 
 ## Release Commit
@@ -81,8 +82,8 @@ An extension tooling release runs in this order:
 7. Every tarball passes an npm publish dry-run before the tarballs, `SHA256SUMS`, and `PACKAGES.md`
    are saved as an overwrite-safe GitHub Actions artifact.
 8. npm preflight checks every `package@version` before the first missing package is published.
-9. Missing packages are published in manifest dependency order and read back from npm to verify
-   their SHA-512 integrity.
+9. Missing packages are published in manifest dependency order. A successful npm command completes
+   each package.
 10. Only after npm publishing succeeds does the workflow download the release artifacts, verify
     `SHA256SUMS`, create or reuse the Git tag, and create or update the GitHub Release.
 
@@ -112,18 +113,15 @@ attestations for the GitHub-built artifacts.
 npm does not provide an atomic transaction spanning several packages. The publish script makes the
 multi-package operation safely repeatable:
 
-| Registry state for `package@version`                                    | Result                                                            |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Version is missing                                                      | Publish it, then verify its registry integrity.                   |
-| Version exists and SHA-512 matches the local tarball                    | Skip it as an already completed step.                             |
-| Version exists but SHA-512 differs                                      | Stop before publishing any missing package; choose a new version. |
-| Publish command fails but the matching tarball reached npm              | Treat the package as published and continue.                      |
-| Publish or registry verification fails and the version is still missing | Fail the job; fix the cause and rerun the same workflow.          |
+| Registry state for `package@version`                 | Result                                                            |
+| ---------------------------------------------------- | ----------------------------------------------------------------- |
+| Version is missing                                   | Publish it.                                                       |
+| Version exists and SHA-512 matches the local tarball | Skip it as an already completed step.                             |
+| Version exists but SHA-512 differs                   | Stop before publishing any missing package; choose a new version. |
+| Publish command fails                                | Stop the job and rerun the same workflow after fixing the cause.  |
 
-This means an expired or under-scoped token can fail when the first new package is reached without
-making the release unrecoverable. Packages published earlier in the run remain immutable; after the
-token is updated, rerunning the failed workflow skips their identical versions and resumes with the
-missing packages.
+A failed publish stops immediately. On rerun, preflight skips identical immutable versions and
+resumes with the missing packages.
 
 ## GitHub Release Retry Rules
 
@@ -144,16 +142,16 @@ replaces incomplete assets.
 
 ## Common Cases
 
-| Case                                    | npm result                                                              | GitHub result                                                         |
-| --------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Ordinary non-release push               | No npm work.                                                            | No tag or Release.                                                    |
-| Normal tooling release                  | Publish every tooling package at the new version in dependency order.   | Create one `extension-tooling-vX.Y.Z` tag and Release.                |
-| First release containing a new package  | Existing packages use OIDC; the new package can use `NPM_TOKEN`.        | Same single tooling tag and Release after every package succeeds.     |
-| Retry after partial npm publication     | Verify and skip identical versions, then publish the missing remainder. | Created only after npm becomes complete.                              |
-| Existing version has different contents | Abort preflight; npm versions are immutable.                            | No tag or Release.                                                    |
-| Retry after GitHub Release failure      | Skip all matching npm versions.                                         | Reuse the tag and update the Release/assets.                          |
-| Prerelease version                      | Publish using the derived prerelease/experimental npm dist-tag.         | Mark the GitHub Release as a prerelease.                              |
-| Desktop release commit                  | No extension tooling npm work.                                          | Build desktop artifacts and use the independent `desktop-vX.Y.Z` tag. |
+| Case                                    | npm result                                                                 | GitHub result                                                         |
+| --------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Ordinary non-release push               | No npm work.                                                               | No tag or Release.                                                    |
+| Normal tooling release                  | Publish every tooling package at the new version in dependency order.      | Create one `extension-tooling-vX.Y.Z` tag and Release.                |
+| First release containing a new package  | Existing packages use OIDC; the new package can use `NPM_TOKEN`.           | Same single tooling tag and Release after every package succeeds.     |
+| Retry after partial npm publication     | Preflight and skip identical versions, then publish the missing remainder. | Created only after npm becomes complete.                              |
+| Existing version has different contents | Abort preflight; npm versions are immutable.                               | No tag or Release.                                                    |
+| Retry after GitHub Release failure      | Skip all matching npm versions.                                            | Reuse the tag and update the Release/assets.                          |
+| Prerelease version                      | Publish using the derived prerelease/experimental npm dist-tag.            | Mark the GitHub Release as a prerelease.                              |
+| Desktop release commit                  | No extension tooling npm work.                                             | Build desktop artifacts and use the independent `desktop-vX.Y.Z` tag. |
 
 ## Adding A Tooling Package
 

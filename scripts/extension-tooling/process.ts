@@ -1,23 +1,14 @@
 import spawn from 'cross-spawn'
 
-interface RunOptions {
-  readonly cwd?: string
-}
-
 export interface CapturedRunResult {
   readonly status: number | null
   readonly stdout: string
   readonly stderr: string
 }
 
-export function run(
-  commandName: string,
-  runArgs: readonly string[],
-  defaultCwd: string,
-  options: RunOptions = {}
-): void {
+export function run(commandName: string, runArgs: readonly string[], cwd: string): void {
   const result = spawn.sync(commandName, runArgs, {
-    cwd: options.cwd ?? defaultCwd,
+    cwd,
     stdio: 'inherit'
   })
 
@@ -35,11 +26,10 @@ export function run(
 export function runCapture(
   commandName: string,
   runArgs: readonly string[],
-  defaultCwd: string,
-  options: RunOptions = {}
+  cwd: string
 ): CapturedRunResult {
   const result = spawn.sync(commandName, runArgs, {
-    cwd: options.cwd ?? defaultCwd,
+    cwd,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe']
   })
@@ -58,12 +48,11 @@ export function runCapture(
 export function runAsync(
   commandName: string,
   runArgs: readonly string[],
-  defaultCwd: string,
-  options: RunOptions = {}
+  cwd: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(commandName, runArgs, {
-      cwd: options.cwd ?? defaultCwd,
+      cwd,
       stdio: 'inherit'
     })
 
