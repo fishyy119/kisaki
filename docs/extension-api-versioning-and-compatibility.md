@@ -83,12 +83,13 @@ Kisaki 扩展兼容性以扩展 API 版本为准，不以主应用产品版本�
 - `@kisaki3/extension-api`
 - `@kisaki3/extension-registry`
 - `@kisaki3/extension-sdk`
+- `@kisaki3/extension-ui-vue`
 - `@kisaki3/extension-cli`
 - `create-kisaki-extension`
 
 这些包继续作为一个工具链套件锁步发布。锁步发布是发布工程策略，不改变 API 兼容事实源：扩展兼容仍以 `@kisaki3/extension-api` 版本为准。
 
-CLI、SDK、registry tooling 和脚手架可以因为自身修复导致工具链版本 bump。只要 `extension-api` 公共契约没有破坏，就按 API 版本语义正常 bump patch 或 minor。
+CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致工具链版本 bump。只要 `extension-api` 公共契约没有破坏，就按 API 版本语义正常 bump patch 或 minor。
 
 ### 扩展包版本
 

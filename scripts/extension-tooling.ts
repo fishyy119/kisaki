@@ -48,12 +48,16 @@ const extensionToolingInternalDependencies = toolingManifest.internalDependencie
 const extensionToolingBuildPackageGroups = toolingManifest.buildPackageGroups
 const extensionToolingOutputPaths = toolingManifest.outputPaths
 
-const templatePackagePath = 'packages/create-kisaki-extension/templates/extension/base/package.json'
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
-const templateDependencyNames = [
-  '@kisaki3/extension-api',
-  '@kisaki3/extension-sdk',
-  '@kisaki3/extension-cli'
+const templateDependencyContracts = [
+  {
+    path: 'packages/create-kisaki-extension/templates/extension/base/package.json',
+    dependencyNames: ['@kisaki3/extension-api', '@kisaki3/extension-sdk', '@kisaki3/extension-cli']
+  },
+  {
+    path: 'packages/create-kisaki-extension/templates/extension/ui/vue-kit/package.patch.json',
+    dependencyNames: ['@kisaki3/extension-ui-vue']
+  }
 ] as const
 const semverPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
@@ -247,15 +251,15 @@ function collectToolingProblems(expectedVersion: string): string[] {
     }
   }
 
-  if (existsSync(resolveRepo(templatePackagePath))) {
-    const templatePackage = readJson(templatePackagePath)
-    for (const dependencyName of templateDependencyNames) {
+  for (const contract of templateDependencyContracts) {
+    const templatePackage = readJson(contract.path)
+    for (const dependencyName of contract.dependencyNames) {
       const actual =
         templatePackage.dependencies?.[dependencyName] ??
         templatePackage.devDependencies?.[dependencyName]
       if (actual !== '^__TOOLING_VERSION__') {
         problems.push(
-          `${templatePackagePath} must use "^__TOOLING_VERSION__" for ${dependencyName}, found ${String(
+          `${contract.path} must use "^__TOOLING_VERSION__" for ${dependencyName}, found ${String(
             actual
           )}.`
         )

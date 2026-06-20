@@ -7,10 +7,11 @@ own independent version.
 
 These packages always share the same version and are published together:
 
-- `@kisaki/extension-api`
-- `@kisaki/extension-registry`
-- `@kisaki/extension-sdk`
-- `@kisaki/extension-cli`
+- `@kisaki3/extension-api`
+- `@kisaki3/extension-registry`
+- `@kisaki3/extension-sdk`
+- `@kisaki3/extension-ui-vue`
+- `@kisaki3/extension-cli`
 - `create-kisaki-extension`
 
 Do not create package-specific release targets for these packages. The user-facing unit is
@@ -32,6 +33,7 @@ npm publish order. It verifies:
 - internal workspace dependencies use `workspace:*`
 - `EXTENSION_API_VERSION` matches the tooling version
 - extension scaffold dependencies are injected with `__TOOLING_VERSION__`
+- the Vue UI kit scaffold dependency is injected with `__TOOLING_VERSION__`
 - extension scaffold manifests derive their `engines.kisaki` default from the
   current Extension API version
 
