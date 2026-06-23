@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+/** Reads the installed scaffold package version for templates and CLI output. */
 export function readPackageVersion(): string {
   const packageDir = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..')
   const packageJsonPath = path.join(packageDir, 'package.json')

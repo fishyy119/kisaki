@@ -6,14 +6,19 @@ import {
   normalizeExtensionPackagePath,
   parseExtensionManifest
 } from '@kisaki3/extension-api'
+import { CliError } from '../errors'
+import { BUNDLED_EXTENSION_PACKAGES } from './dependencies'
 import type { ExtensionProject } from './model'
 import { pathExists, readJsonFile, resolvePackageFile } from './model'
 
+/** Controls filesystem checks performed alongside manifest schema validation. */
 export interface ManifestValidationOptions {
-  checkEntry?: boolean
+  checkBuiltEntry?: boolean
+  checkBuiltUi?: boolean
   checkProjectFiles?: boolean
 }
 
+/** Parsed manifest plus actionable project errors and warnings. */
 export interface ManifestValidationResult {
   manifest: ExtensionManifest | null
   errors: ValidationIssue[]
@@ -68,7 +73,7 @@ export async function validateManifest(
   }
 
   const entryPath = validateRelativeFilePath(project, manifest.entry, '$.entry', errors)
-  if (options.checkEntry && entryPath && !(await pathExists(entryPath))) {
+  if (options.checkBuiltEntry && entryPath && !(await pathExists(entryPath))) {
     errors.push({
       path: '$.entry',
       message: 'Referenced entry file does not exist. Run kisx build first.'
@@ -77,7 +82,7 @@ export async function validateManifest(
 
   if (manifest.ui) {
     const uiPath = validateRelativeFilePath(project, manifest.ui, '$.ui', errors)
-    if (options.checkEntry && uiPath && !(await pathExists(uiPath))) {
+    if (options.checkBuiltUi && uiPath && !(await pathExists(uiPath))) {
       errors.push({
         path: '$.ui',
         message: 'Referenced ui directory does not exist. Run kisx build first.'
@@ -98,6 +103,12 @@ export async function validateManifest(
   if (options.checkProjectFiles) {
     if (!(await pathExists(project.packageJsonPath))) {
       errors.push({ path: 'package.json', message: 'package.json is required.' })
+    } else {
+      const packageJson = await readProjectPackageJson(project, errors)
+      if (packageJson) {
+        validateProjectPackageJson(packageJson, errors)
+        checkUiKitDependencies(packageJson, warnings)
+      }
     }
 
     if (!(await pathExists(project.tsconfigPath))) {
@@ -117,8 +128,6 @@ export async function validateManifest(
         message: 'README.md is recommended for packaged extensions.'
       })
     }
-
-    await checkUiKitDependencies(project, warnings)
   }
 
   return {
@@ -138,17 +147,7 @@ const ICONIFY_DATA_PACKAGES = ['@iconify-json/mdi', '@iconify/json']
  * the consumer's Tailwind build only emits when the plugin and an icon-set
  * data package are installed — otherwise the kit's icons silently render blank.
  */
-async function checkUiKitDependencies(
-  project: ExtensionProject,
-  warnings: ValidationIssue[]
-): Promise<void> {
-  let packageJson: unknown
-  try {
-    packageJson = await readJsonFile(project.packageJsonPath)
-  } catch {
-    return
-  }
-
+function checkUiKitDependencies(packageJson: unknown, warnings: ValidationIssue[]): void {
   const dependencies = collectDependencyNames(packageJson)
   if (!dependencies.has(UI_KIT_PACKAGE)) {
     return
@@ -168,6 +167,95 @@ async function checkUiKitDependencies(
       message: `${UI_KIT_PACKAGE} uses mdi icons, but no iconify icon-set data package is installed. Add @iconify-json/mdi (or @iconify/json), or the kit icons render blank.`
     })
   }
+}
+
+async function readProjectPackageJson(
+  project: ExtensionProject,
+  errors: ValidationIssue[]
+): Promise<unknown | null> {
+  try {
+    return await readJsonFile(project.packageJsonPath)
+  } catch {
+    errors.push({ path: 'package.json', message: 'package.json must contain valid JSON.' })
+    return null
+  }
+}
+
+function validateProjectPackageJson(packageJson: unknown, errors: ValidationIssue[]): void {
+  if (!packageJson || typeof packageJson !== 'object' || Array.isArray(packageJson)) {
+    errors.push({ path: 'package.json', message: 'package.json must contain a JSON object.' })
+    return
+  }
+
+  const record = packageJson as Record<string, unknown>
+  if (typeof record.name !== 'string' || !matchesPackageNameFormat(record.name)) {
+    errors.push({
+      path: 'package.json#name',
+      message: 'name must be a lowercase npm package name.'
+    })
+  }
+  if (record.private !== true) {
+    errors.push({ path: 'package.json#private', message: 'Extension packages must be private.' })
+  }
+  if ('version' in record) {
+    errors.push({
+      path: 'package.json#version',
+      message:
+        'Remove package.json version; manifest.json is the extension version source of truth.'
+    })
+  }
+
+  validateRuntimeDependencies(record, errors)
+}
+
+function validateRuntimeDependencies(
+  packageJson: Record<string, unknown>,
+  errors: ValidationIssue[]
+): void {
+  for (const field of ['dependencies', 'optionalDependencies']) {
+    const dependencies = packageJson[field]
+    if (dependencies === undefined) {
+      continue
+    }
+    if (!dependencies || typeof dependencies !== 'object' || Array.isArray(dependencies)) {
+      errors.push({ path: `package.json#${field}`, message: `${field} must be a JSON object.` })
+      continue
+    }
+    for (const [name, spec] of Object.entries(dependencies)) {
+      if (!matchesPackageNameFormat(name)) {
+        errors.push({
+          path: `package.json#${field}.${name}`,
+          message: 'Dependency name must be a lowercase npm package name.'
+        })
+        continue
+      }
+      if (typeof spec !== 'string' || !spec.trim()) {
+        errors.push({
+          path: `package.json#${field}.${name}`,
+          message: 'Dependency version must be a non-empty string.'
+        })
+        continue
+      }
+      if (BUNDLED_EXTENSION_PACKAGES.has(name)) {
+        errors.push({
+          path: `package.json#${field}.${name}`,
+          message: `${name} is bundled into the host output and must be declared in devDependencies, not ${field}.`
+        })
+        continue
+      }
+      if (spec.startsWith('workspace:')) {
+        errors.push({
+          path: `package.json#${field}.${name}`,
+          message:
+            'Runtime workspace dependencies cannot be packaged; publish with a concrete version, or bundle the dependency into the host output and move it to devDependencies.'
+        })
+      }
+    }
+  }
+}
+
+function matchesPackageNameFormat(value: string): boolean {
+  return value.length <= 214 && /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(value)
 }
 
 function collectDependencyNames(packageJson: unknown): Set<string> {
@@ -203,7 +291,7 @@ export async function readValidManifest(
 ): Promise<ExtensionManifest> {
   const result = await validateManifest(project, options)
   if (!result.manifest) {
-    throw new Error(result.errors.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
+    throw new CliError(result.errors.map((issue) => `${issue.path}: ${issue.message}`).join('\n'))
   }
 
   return result.manifest

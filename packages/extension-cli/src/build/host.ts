@@ -3,11 +3,8 @@ import type { RollupWatcher } from 'rollup'
 import { build, mergeConfig, type InlineConfig } from 'vite'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type { KisxConfig } from '../config'
-import { CliError } from '../logger'
-import type { ExtensionProject } from '../project'
-import { pathExists } from '../project'
-
-const HOST_BUNDLED_PACKAGES = ['@kisaki3/extension-sdk', '@kisaki3/extension-api']
+import { CliError } from '../errors'
+import { pathExists, readExtensionRuntimeDependencies, type ExtensionProject } from '../project'
 
 export interface HostBuildOptions {
   watch?: boolean
@@ -40,6 +37,7 @@ async function createHostInlineConfig(
     throw new CliError('Host entry source src/host/index.ts was not found.')
   }
 
+  const runtimeDependencies = await readExtensionRuntimeDependencies(project)
   const entryFileName = path.posix.basename(manifest.entry)
   const outDir = path.posix.dirname(manifest.entry)
   const format = entryFileName.endsWith('.cjs') ? 'cjs' : 'es'
@@ -66,7 +64,8 @@ async function createHostInlineConfig(
     },
     ssr: {
       target: 'node',
-      noExternal: HOST_BUNDLED_PACKAGES
+      external: runtimeDependencies.map((dependency) => dependency.name),
+      noExternal: true
     }
   }
 

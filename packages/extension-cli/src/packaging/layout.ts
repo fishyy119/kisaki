@@ -1,23 +1,21 @@
 import path from 'node:path'
 import { cp, mkdir, readdir, readFile, realpath } from 'node:fs/promises'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
-import { CliError } from '../logger'
-import type { ExtensionProject } from '../project'
-import { pathExists, resolvePackageFile } from '../project'
+import { CliError } from '../errors'
+import {
+  pathExists,
+  readExtensionRuntimeDependencies,
+  resolvePackageFile,
+  type ExtensionRuntimeDependency,
+  type ExtensionProject
+} from '../project'
 
 const NODE_MODULES_DIR = 'node_modules'
 const PUBLISH_ARTIFACT_EXTENSIONS = new Set(['.kisx', '.sig'])
-const WORKSPACE_DEPENDENCY_PREFIX = 'workspace:'
 
 interface PackageJson {
   dependencies?: Record<string, unknown>
   optionalDependencies?: Record<string, unknown>
-}
-
-interface RuntimeDependency {
-  name: string
-  optional: boolean
-  spec: string
 }
 
 interface DependencyCopyContext {
@@ -34,11 +32,13 @@ interface CopyDependencyTreeInput {
   context: DependencyCopyContext
 }
 
+/** One source file and its normalized path inside an extension package. */
 export interface ExtensionPackageFileEntry {
   readonly filePath: string
   readonly packagePath: string
 }
 
+/** Materializes the validated extension package layout in a target directory. */
 export async function copyExtensionPackageFiles(
   project: ExtensionProject,
   manifest: ExtensionManifest,
@@ -50,6 +50,7 @@ export async function copyExtensionPackageFiles(
   await copyProductionDependencies(project, packagePath)
 }
 
+/** Collects package files in deterministic archive order. */
 export async function collectExtensionPackageFileEntries(
   packageRoot: string
 ): Promise<readonly ExtensionPackageFileEntry[]> {
@@ -81,8 +82,7 @@ async function copyProductionDependencies(
   project: ExtensionProject,
   packagePath: string
 ): Promise<void> {
-  const packageJson = await readPackageJson(project.packageJsonPath)
-  const dependencies = readProjectRuntimeDependencies(packageJson)
+  const dependencies = await readExtensionRuntimeDependencies(project)
 
   if (dependencies.length === 0) {
     return
@@ -182,25 +182,21 @@ async function resolveInstalledPackageDir(
   }
 }
 
-function readProjectRuntimeDependencies(packageJson: PackageJson): readonly RuntimeDependency[] {
-  return readRuntimeDependencies(packageJson).filter(
-    (dependency) => !dependency.spec.startsWith(WORKSPACE_DEPENDENCY_PREFIX)
-  )
-}
-
-function readPackageRuntimeDependencies(packageJson: PackageJson): readonly RuntimeDependency[] {
+function readPackageRuntimeDependencies(
+  packageJson: PackageJson
+): readonly ExtensionRuntimeDependency[] {
   return readRuntimeDependencies(packageJson)
 }
 
-function readRuntimeDependencies(packageJson: PackageJson): readonly RuntimeDependency[] {
-  const dependencies = new Map<string, RuntimeDependency>()
+function readRuntimeDependencies(packageJson: PackageJson): readonly ExtensionRuntimeDependency[] {
+  const dependencies = new Map<string, ExtensionRuntimeDependency>()
   addRuntimeDependencies(dependencies, packageJson.dependencies, false)
   addRuntimeDependencies(dependencies, packageJson.optionalDependencies, true)
   return [...dependencies.values()].toSorted((left, right) => compareStrings(left.name, right.name))
 }
 
 function addRuntimeDependencies(
-  dependencies: Map<string, RuntimeDependency>,
+  dependencies: Map<string, ExtensionRuntimeDependency>,
   values: Record<string, unknown> | undefined,
   optional: boolean
 ): void {
@@ -242,6 +238,9 @@ function shouldCopyPackagePath(packageRoot: string, sourcePath: string): boolean
 }
 
 function getPackageNamePathSegments(packageName: string): readonly string[] {
+  if (!/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(packageName)) {
+    throw new CliError(`Invalid runtime dependency package name: ${packageName}`)
+  }
   const segments = packageName.split('/')
 
   if (packageName.startsWith('@')) {

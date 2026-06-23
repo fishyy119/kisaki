@@ -67,8 +67,8 @@ media/game/adapter.ts
 
 `extensions/bangumi` 是标准内置扩展项目：
 
-- dev: `apps/desktop/scripts/prepare-builtin-extensions.ts watch` 调用 `kisx output` 写入 `apps/desktop/out/extensions`。
-- build: `prepare-builtin-extensions.ts build --target=resources` 写入 `apps/desktop/resources/extensions`。
+- dev: `apps/desktop/tools/builtin-extensions/cli.ts watch` 调用 `kisx output` 写入 `apps/desktop/out/extensions`。
+- build: `apps/desktop/tools/builtin-extensions/cli.ts build --target=resources` 写入 `apps/desktop/resources/extensions`。
 - manifest entry 继续指向 `./dist/index.mjs`。
 - manifest categories 保持 `["scraper", "integration"]`。
 - package scripts 保持 `kisx build`、`kisx validate`、`kisx pack`、`tsc --noEmit`。

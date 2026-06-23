@@ -1,8 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import type { ExtensionScaffoldConfig, ExtensionUiVariant } from './index'
-import { applyJsonPatch, isJsonPatchFile, resolvePatchTargetFileName } from './patches'
+import type { ExtensionWebview } from '../extension-options'
+import type { ExtensionScaffoldConfig } from './model'
+import { applyJsonPatch, matchesJsonPatchFileName, resolvePatchTargetFileName } from './patches'
 
+/** One ordered template source and its materialization destination. */
 export interface TemplateLayer {
   sourceDir: string
   targetDir: string
@@ -11,42 +13,43 @@ export interface TemplateLayer {
 
 const TEMPLATE_KEYS = [
   'PROJECT_NAME',
+  'WORKSPACE_PACKAGE_NAME',
   'PACKAGE_NAME',
   'EXTENSION_ID',
   'EXTENSION_NAME',
   'DESCRIPTION',
   'AUTHOR',
-  'CATEGORY',
+  'CATEGORIES_LABEL',
+  'STARTER',
+  'STARTER_MODULE',
+  'WEBVIEW',
   'TOOLING_VERSION',
   'EXTENSION_API_RANGE',
+  'NODE_VERSION',
+  'PACKAGE_MANAGER',
+  'GENERATED_AT',
   'REGISTRY_ID',
   'REGISTRY_NAME',
   'PUBLISH_SECTION'
 ] as const
 
 type TemplateKey = (typeof TEMPLATE_KEYS)[number]
-
-type TemplateRenderMode = 'raw' | 'jsonStringContent' | 'templateStringContent'
+type TemplateRenderMode = 'raw' | 'htmlTextContent' | 'jsonStringContent' | 'templateStringContent'
 
 const TEMPLATE_TOKEN_PATTERN = createTemplateTokenPattern()
 
-export function resolveExtensionTargetDir(
-  targetDir: string,
-  config: ExtensionScaffoldConfig
-): string {
-  return config.publishWorkflow === 'github-monorepo'
-    ? path.join(targetDir, 'extensions', config.extensionId)
-    : targetDir
-}
-
-export function createTemplateLayers(
+/** Creates all workspace and extension layers for a new repository. */
+export function createRepositoryTemplateLayers(
   templateDir: string,
   targetDir: string,
   config: ExtensionScaffoldConfig
 ): TemplateLayer[] {
-  const extensionTargetDir = resolveExtensionTargetDir(targetDir, config)
+  const extensionTargetDir =
+    config.publishWorkflow === 'github-monorepo'
+      ? path.join(targetDir, 'extensions', config.extensionId)
+      : targetDir
 
-  const layers: TemplateLayer[] = [
+  return resolveTemplateLayers([
     {
       sourceDir: path.join(templateDir, 'workspace', 'base'),
       targetDir
@@ -56,23 +59,119 @@ export function createTemplateLayers(
       targetDir,
       optional: true
     },
+    ...createExtensionTemplateLayers(templateDir, extensionTargetDir, config)
+  ])
+}
+
+/** Creates composable base, starter, UI, and publishing layers for one extension. */
+export function createExtensionTemplateLayers(
+  templateDir: string,
+  targetDir: string,
+  config: ExtensionScaffoldConfig
+): TemplateLayer[] {
+  const layers: TemplateLayer[] = [
     {
       sourceDir: path.join(templateDir, 'extension', 'base'),
-      targetDir: extensionTargetDir
+      targetDir
     },
     {
-      sourceDir: path.join(templateDir, 'extension', 'categories', config.category),
-      targetDir: extensionTargetDir
+      sourceDir: path.join(templateDir, 'extension', 'starters', config.starter),
+      targetDir
     }
   ]
 
-  for (const uiLayer of resolveUiVariantLayers(config.uiVariant)) {
-    layers.push({
-      sourceDir: path.join(templateDir, 'extension', 'ui', uiLayer),
-      targetDir: extensionTargetDir
-    })
+  if (config.webview !== 'none') {
+    for (const webviewLayer of resolveWebviewLayers(config.webview)) {
+      layers.push({
+        sourceDir: path.join(templateDir, 'extension', 'webview', webviewLayer),
+        targetDir
+      })
+    }
   }
 
+  return resolveTemplateLayers(layers)
+}
+
+/** Copies one token-rendered template layer into its target. */
+export function copyTemplateLayer(layer: TemplateLayer, context: Map<string, string>): void {
+  mkdirSync(layer.targetDir, { recursive: true })
+
+  for (const entry of readdirSync(layer.sourceDir)) {
+    copyTemplateEntry(path.join(layer.sourceDir, entry), path.join(layer.targetDir, entry), context)
+  }
+}
+
+/** Creates escaped token replacements for one extension configuration. */
+export function createTemplateContext(
+  templateDir: string,
+  config: ExtensionScaffoldConfig
+): Map<string, string> {
+  const values: Record<TemplateKey, string> = {
+    PROJECT_NAME: config.projectName,
+    WORKSPACE_PACKAGE_NAME: config.workspacePackageName,
+    PACKAGE_NAME: config.packageName,
+    EXTENSION_ID: config.extensionId,
+    EXTENSION_NAME: config.extensionName,
+    DESCRIPTION: config.description,
+    AUTHOR: config.author ?? '',
+    CATEGORIES_LABEL: config.categories.join(', '),
+    STARTER: config.starter,
+    STARTER_MODULE: config.starter,
+    WEBVIEW: config.webview,
+    TOOLING_VERSION: config.toolingVersion,
+    EXTENSION_API_RANGE: config.extensionApiRange,
+    NODE_VERSION: config.nodeVersion,
+    PACKAGE_MANAGER: config.packageManager,
+    GENERATED_AT: new Date().toISOString(),
+    REGISTRY_ID: config.registryId,
+    REGISTRY_NAME: config.registryName,
+    PUBLISH_SECTION: ''
+  }
+  const context = new Map<string, string>()
+
+  for (const [key, value] of Object.entries(values)) {
+    context.set(`__${key}__`, value)
+    context.set(`{{${key}}}`, value)
+  }
+
+  const publishSection = readPublishSection(templateDir, config, context)
+  context.set('__PUBLISH_SECTION__', publishSection)
+  context.set('{{PUBLISH_SECTION}}', publishSection)
+  return context
+}
+
+/** Removes optional empty metadata after all JSON layers have been merged. */
+export function finalizeExtensionTemplate(
+  extensionDir: string,
+  config: ExtensionScaffoldConfig
+): void {
+  const manifestPath = path.join(extensionDir, 'manifest.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
+  manifest.categories = config.categories
+  if (!config.author) {
+    delete manifest.author
+  }
+  writeFileSync(manifestPath, formatExtensionManifest(manifest, config.categories))
+}
+
+function formatExtensionManifest(
+  manifest: Record<string, unknown>,
+  categories: ExtensionScaffoldConfig['categories']
+): string {
+  const formattedCategories = `[${categories.map((category) => JSON.stringify(category)).join(', ')}]`
+  const expandedCategories = JSON.stringify(categories, null, 2).replace(/\n/g, '\n  ')
+  const document = JSON.stringify(manifest, null, 2).replace(
+    `  "categories": ${expandedCategories}`,
+    `  "categories": ${formattedCategories}`
+  )
+  return `${document}\n`
+}
+
+function resolveWebviewLayers(webview: Exclude<ExtensionWebview, 'none'>): readonly string[] {
+  return webview === 'vue-kit' ? ['base', 'vue', 'vue-kit'] : ['base', webview]
+}
+
+function resolveTemplateLayers(layers: readonly TemplateLayer[]): TemplateLayer[] {
   return layers.filter((layer) => {
     if (existsSync(layer.sourceDir)) {
       return true
@@ -84,29 +183,6 @@ export function createTemplateLayers(
 
     throw new Error(`Template layer not found: ${layer.sourceDir}`)
   })
-}
-
-/**
- * Composite variants stack on their base template: `vue-kit` overlays the
- * UI-kit demo document and dependency onto the plain Vue layer.
- */
-function resolveUiVariantLayers(variant: ExtensionUiVariant): readonly string[] {
-  switch (variant) {
-    case 'none':
-      return []
-    case 'vue-kit':
-      return ['vue', 'vue-kit']
-    default:
-      return [variant]
-  }
-}
-
-export function copyTemplateLayer(layer: TemplateLayer, context: Map<string, string>): void {
-  mkdirSync(layer.targetDir, { recursive: true })
-
-  for (const entry of readdirSync(layer.sourceDir)) {
-    copyTemplateEntry(path.join(layer.sourceDir, entry), path.join(layer.targetDir, entry), context)
-  }
 }
 
 function copyTemplateEntry(
@@ -125,29 +201,22 @@ function copyTemplateEntry(
     return
   }
 
-  if (isJsonPatchFile(sourceName)) {
+  if (matchesJsonPatchFileName(sourceName)) {
     const patchTargetPath = path.join(
       path.dirname(targetPath),
       resolvePatchTargetFileName(sourceName)
     )
-    const renderedPatch = applyTemplate(readFileSync(sourcePath, 'utf-8'), context, patchTargetPath)
+    const renderedPatch = applyTemplate(readFileSync(sourcePath, 'utf8'), context, patchTargetPath)
     applyJsonPatch(patchTargetPath, renderedPatch)
     return
   }
 
   const targetEntryPath = path.join(path.dirname(targetPath), resolveTargetFileName(sourceName))
   mkdirSync(path.dirname(targetEntryPath), { recursive: true })
-  const content = applyTemplate(readFileSync(sourcePath, 'utf-8'), context, targetEntryPath)
+  const content = applyTemplate(readFileSync(sourcePath, 'utf8'), context, targetEntryPath)
   writeFileSync(targetEntryPath, content)
 }
 
-/**
- * Template dotfiles always ship with an underscore prefix and are renamed on
- * copy. This keeps them out of package publishing exceptions (e.g. `.gitignore`
- * is never packed and is parsed as ignore rules) and prevents
- * template data from acting as live git/editor/formatter configuration for
- * the host repository.
- */
 const TEMPLATE_FILE_RENAMES: Readonly<Record<string, string>> = {
   _editorconfig: '.editorconfig',
   _gitattributes: '.gitattributes',
@@ -158,38 +227,6 @@ const TEMPLATE_FILE_RENAMES: Readonly<Record<string, string>> = {
 
 function resolveTargetFileName(sourceName: string): string {
   return TEMPLATE_FILE_RENAMES[sourceName] ?? sourceName
-}
-
-export function createTemplateContext(
-  templateDir: string,
-  config: ExtensionScaffoldConfig
-): Map<string, string> {
-  const values: Record<TemplateKey, string> = {
-    PROJECT_NAME: config.projectName,
-    PACKAGE_NAME: config.packageName,
-    EXTENSION_ID: config.extensionId,
-    EXTENSION_NAME: config.extensionName,
-    DESCRIPTION: config.description,
-    AUTHOR: config.author,
-    CATEGORY: config.category,
-    TOOLING_VERSION: config.toolingVersion,
-    EXTENSION_API_RANGE: config.extensionApiRange,
-    REGISTRY_ID: config.registryId,
-    REGISTRY_NAME: config.registryName,
-    PUBLISH_SECTION: ''
-  }
-  const context = new Map<string, string>()
-
-  for (const [key, value] of Object.entries(values)) {
-    context.set(`__${key}__`, value)
-    context.set(`{{${key}}}`, value)
-  }
-
-  const publishSection = readPublishSection(templateDir, config, context)
-  context.set('__PUBLISH_SECTION__', publishSection)
-  context.set('{{PUBLISH_SECTION}}', publishSection)
-
-  return context
 }
 
 function readPublishSection(
@@ -204,12 +241,9 @@ function readPublishSection(
     config.publishWorkflow,
     'PUBLISH.md'
   )
-
-  if (!existsSync(sectionPath)) {
-    return ''
-  }
-
-  return applyTemplate(readFileSync(sectionPath, 'utf-8').trimEnd(), context, sectionPath)
+  return existsSync(sectionPath)
+    ? applyTemplate(readFileSync(sectionPath, 'utf8').trimEnd(), context, sectionPath)
+    : ''
 }
 
 function createTemplateTokenPattern(): RegExp {
@@ -218,54 +252,41 @@ function createTemplateTokenPattern(): RegExp {
 }
 
 function applyTemplate(content: string, context: Map<string, string>, targetPath: string): string {
-  const replacements = formatTemplateReplacements(context, getTemplateRenderMode(targetPath))
-
-  return content.replace(TEMPLATE_TOKEN_PATTERN, (token) => replacements.get(token) ?? token)
-}
-
-function formatTemplateReplacements(
-  context: Map<string, string>,
-  mode: TemplateRenderMode
-): Map<string, string> {
-  const replacements = new Map<string, string>()
-
-  for (const [token, value] of context) {
-    replacements.set(token, formatTemplateValue(value, mode))
-  }
-
-  return replacements
+  const renderMode = getTemplateRenderMode(targetPath)
+  return content.replace(TEMPLATE_TOKEN_PATTERN, (token) => {
+    const value = context.get(token) ?? token
+    return formatTemplateValue(value, renderMode)
+  })
 }
 
 function getTemplateRenderMode(targetPath: string): TemplateRenderMode {
   const extension = path.extname(targetPath)
-
   if (extension === '.json' || extension === '.yml' || extension === '.yaml') {
     return 'jsonStringContent'
   }
-
+  if (extension === '.html') {
+    return 'htmlTextContent'
+  }
   if (['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue'].includes(extension)) {
     return 'templateStringContent'
   }
-
   return 'raw'
 }
 
 function formatTemplateValue(value: string, mode: TemplateRenderMode): string {
+  if (mode === 'htmlTextContent') {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
   if (mode === 'jsonStringContent') {
-    return toJsonStringContent(value)
+    return JSON.stringify(value).slice(1, -1)
   }
-
   if (mode === 'templateStringContent') {
-    return toTemplateStringContent(value)
+    return JSON.stringify(value).slice(1, -1).replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
   }
-
   return value
-}
-
-function toJsonStringContent(value: string): string {
-  return JSON.stringify(value).slice(1, -1)
-}
-
-function toTemplateStringContent(value: string): string {
-  return JSON.stringify(value).slice(1, -1).replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
 }

@@ -1,6 +1,6 @@
 import { loadConfigFromFile, type ConfigEnv } from 'vite'
 import type { KisxConfig } from '../config'
-import { CliError } from '../logger'
+import { CliError } from '../errors'
 import type { ExtensionProject } from '../project'
 import { pathExists } from '../project'
 

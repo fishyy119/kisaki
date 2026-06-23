@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { createWriteStream } from 'node:fs'
-import { mkdir, rm } from 'node:fs/promises'
+import { once } from 'node:events'
+import { mkdir, readFile, rm } from 'node:fs/promises'
 import archiver from 'archiver'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type { ExtensionProject } from '../project'
@@ -39,24 +40,41 @@ export async function createKisxArchive(
   }
 }
 
-function writeArchive(
+async function writeArchive(
   archivePath: string,
   entries: readonly { filePath: string; packagePath: string }[]
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const output = createWriteStream(archivePath)
-    const archive = archiver('zip', { zlib: { level: 9 } })
+  const output = createWriteStream(archivePath)
+  const archive = archiver('zip', { zlib: { level: 9 } })
+  const completed = new Promise<void>((resolve, reject) => {
+    output.once('close', resolve)
+    output.once('error', (error) => {
+      archive.abort()
+      reject(error)
+    })
+    archive.once('error', reject)
+  })
 
-    output.on('close', () => resolve(archivePath))
-    output.on('error', reject)
-    archive.on('error', reject)
+  archive.pipe(output)
 
-    archive.pipe(output)
-
+  try {
     for (const entry of entries) {
-      archive.file(entry.filePath, { name: entry.packagePath, date: ARCHIVE_ENTRY_DATE })
+      const processed = once(archive, 'entry')
+      archive.append(await readFile(entry.filePath), {
+        name: entry.packagePath,
+        date: ARCHIVE_ENTRY_DATE,
+        mode: 0o644
+      })
+      await Promise.race([processed, completed])
     }
 
-    void archive.finalize().catch(reject)
-  })
+    await archive.finalize()
+    await completed
+    return archivePath
+  } catch (error) {
+    archive.abort()
+    output.destroy()
+    await rm(archivePath, { force: true })
+    throw error
+  }
 }

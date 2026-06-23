@@ -3,7 +3,7 @@
   "include": [
     "env.d.ts",
     "electron.vite.config.*",
-    "scripts/**/*",
+    "tools/**/*",
     "src/main/**/*",
     "src/main/**/*.json",
     "src/preload/**/*",

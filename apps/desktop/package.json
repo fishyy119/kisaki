@@ -6,9 +6,9 @@
   "author": "ximu",
   "homepage": "https://github.com/ximu3/kisaki",
   "scripts": {
-    "dev": "tsx scripts/prepare-builtin-extensions.ts watch -- electron-vite dev",
-    "start": "tsx scripts/prepare-builtin-extensions.ts build --target=dev && electron-vite preview",
-    "build": "tsx scripts/prepare-builtin-extensions.ts build --target=resources && pnpm run typecheck && electron-vite build",
+    "dev": "tsx tools/builtin-extensions/cli.ts watch -- electron-vite dev",
+    "start": "tsx tools/builtin-extensions/cli.ts build --target=dev && electron-vite preview",
+    "build": "tsx tools/builtin-extensions/cli.ts build --target=resources && pnpm run typecheck && electron-vite build",
     "build:unpack": "pnpm run build && electron-builder --dir",
     "build:win:unpack": "pnpm run build && electron-builder --win --dir",
     "build:win": "pnpm run build && electron-builder --win --publish never",

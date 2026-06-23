@@ -5,7 +5,8 @@ import { stat } from 'node:fs/promises'
 import path from 'node:path'
 import AdmZip from 'adm-zip'
 import { parseExtensionManifest, type ExtensionManifest } from '@kisaki3/extension-api'
-import { CliError } from '../logger'
+import { CliError } from '../errors'
+import { formatValidationIssues } from '../validation'
 
 export interface KisxPackageInfo {
   archivePath: string
@@ -84,7 +85,7 @@ function readKisxArchiveManifest(archivePath: string): ExtensionManifest {
 
   const parsed = parseExtensionManifest(rawManifest)
   if (!parsed.manifest) {
-    throw new CliError(formatIssues('Package manifest is invalid.', parsed.issues))
+    throw new CliError(formatValidationIssues('Package manifest is invalid.', parsed.issues))
   }
 
   if (!zip.getEntry(parsed.manifest.entry)) {
@@ -96,8 +97,4 @@ function readKisxArchiveManifest(archivePath: string): ExtensionManifest {
   }
 
   return parsed.manifest
-}
-
-function formatIssues(title: string, issues: readonly { path: string; message: string }[]): string {
-  return [title, ...issues.map((issue) => `${issue.path}: ${issue.message}`)].join('\n')
 }

@@ -1,7 +1,5 @@
 import { bold, cyan, dim, green, red, yellow } from 'kolorist'
 
-export class CliError extends Error {}
-
 export interface PrintableIssue {
   path?: string
   message: string
@@ -19,10 +17,6 @@ export const logger = {
 
   detail(message: string): void {
     console.log(dim(`  ${message}`))
-  },
-
-  info(message: string): void {
-    console.log(cyan('[info]') + ` ${message}`)
   },
 
   success(message: string): void {

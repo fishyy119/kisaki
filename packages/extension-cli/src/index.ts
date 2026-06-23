@@ -1,5 +1,6 @@
-import { runCli } from './cli'
-import { CliError, logger } from './logger'
+import { runCli } from './cli/program'
+import { CliError } from './errors'
+import { logger } from './logger'
 import { readPackageVersion } from './version'
 
 void runCli(process.argv, { version: readPackageVersion() }).catch((error: unknown) => {

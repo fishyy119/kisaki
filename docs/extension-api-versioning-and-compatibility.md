@@ -605,7 +605,7 @@ API 兼容只回答“这个扩展声明的 API 范围是否包含当前宿主 A
 
 ### Tooling
 
-- `scripts/extension-tooling/cli.ts` 继续校验 `EXTENSION_API_VERSION`。
+- `tools/extension-tooling/cli.ts` 继续校验 `EXTENSION_API_VERSION`。
 - `kisx validate` 增加官方推荐范围 warning。
 - `create-kisaki-extension` 根据 API 版本阶段生成默认 range。
 - 发布脚本支持 `experimental`、`alpha`、`beta`、`rc`、`latest` dist-tag。

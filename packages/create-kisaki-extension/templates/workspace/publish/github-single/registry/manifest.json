@@ -1,0 +1,9 @@
+{
+  "$schema": "https://kisaki.me/schemas/extension-registry.schema.json",
+  "schemaVersion": 1,
+  "id": "__REGISTRY_ID__",
+  "name": "__REGISTRY_NAME__",
+  "updatedAt": "__GENERATED_AT__",
+  "signingKeys": [],
+  "packages": []
+}

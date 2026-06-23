@@ -16,6 +16,9 @@
     "templates",
     "README.md"
   ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
@@ -27,6 +30,7 @@
   },
   "dependencies": {
     "@kisaki3/extension-api": "workspace:*",
+    "commander": "^13.1.0",
     "cross-spawn": "^7.0.6",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2"

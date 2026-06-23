@@ -5,7 +5,7 @@
       "name": "Run Kisaki Extension",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceFolder}/extensions/__EXTENSION_ID__",
+      "cwd": "${workspaceFolder}/extensions/${input:extensionId}",
       "runtimeExecutable": "pnpm",
       "windows": {
         "runtimeExecutable": "pnpm.cmd"
@@ -15,6 +15,14 @@
       "console": "internalConsole",
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "extensionId",
+      "type": "promptString",
+      "description": "Extension ID to run",
+      "default": "__EXTENSION_ID__"
     }
   ]
 }

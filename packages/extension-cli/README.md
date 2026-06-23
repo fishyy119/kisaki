@@ -22,8 +22,8 @@ copied into package output when present.
 ```bash
 kisx validate
 kisx build
+kisx --project extensions/example.extension build
 kisx build --watch
-kisx output
 kisx pack
 kisx key generate --out .keys/author.ed25519.json
 kisx registry init
@@ -36,11 +36,10 @@ kisx dev
 
 - `kisx validate` checks the manifest, required project files, and
   `engines.kisaki` Extension API compatibility range.
+- `--project <dir>` is a global option shared by every project-bound command.
 - `kisx build` validates, builds the host entry and webview documents with
   Vite, and verifies the built entry.
 - `kisx build --watch` keeps `dist/` up to date for direct development loading.
-- `kisx output` builds a flat unpacked package directory at
-  `out/extensions/<extension-id>` for built-in extension staging.
 - `kisx pack` writes a `.kisx` archive and prints size plus sha256.
 - `kisx key generate` creates an Ed25519 author signing key.
 - `kisx registry init|validate|add-release|digest|sign` manages static registry
@@ -67,6 +66,10 @@ kisx pack --out-dir artifacts --sign --key .keys/author.ed25519.json --target an
 The signature covers extension id, version, `engines.kisaki`, artifact target,
 size, and sha256. Artifact URLs are not signed so mirrors can change.
 `engines.kisaki` is an Extension API version range, not a desktop app version.
+The host bundle includes `@kisaki3/extension-sdk` and
+`@kisaki3/extension-api`; extension projects keep both packages in
+`devDependencies`. Only genuine external runtime dependencies are copied into
+the `.kisx` package.
 
 ## Registry Flow
 
@@ -91,3 +94,17 @@ manifest and must match it exactly.
 
 For local testing only, `registry validate` and `registry add-release` accept
 `--allow-insecure-local-urls` for `file:` and localhost artifact URLs.
+
+## Command Architecture
+
+The CLI has three explicit layers:
+
+- `src/cli/commands/` contains only Commander declarations and argument-to-input
+  adaptation. It has one file per top-level command.
+- `src/cli/actions/` contains CLI workflows, lifecycle handling, and terminal
+  reporting. Action files never import Commander.
+- `src/build/`, `src/packaging/`, `src/project/`, and `src/registry/` own reusable
+  capabilities and business rules. They never import the CLI layer.
+
+`src/cli/program.ts` only configures the root program and composes command
+factories. Dependencies point in one direction: commands to actions to domain.

@@ -25,7 +25,7 @@ import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
 } from '@kisaki3/extension-registry/node'
-import { CliError } from '../logger'
+import { CliError } from '../errors'
 
 export const EXTENSION_SIGNING_KEY_FILE_KIND = 'kisaki-extension-signing-key'
 export const EXTENSION_ARTIFACT_SIGNATURE_FILE_KIND = 'kisaki-extension-artifact-signature-file'

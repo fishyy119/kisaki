@@ -1,83 +1,98 @@
 # create-kisaki-extension
 
-Scaffold a Kisaki extension project.
+Creates standalone Kisaki extension repositories and adds projects to generated
+extension monorepositories.
 
-## Usage
-
-```bash
-pnpm create kisaki-extension my-extension
-```
-
-The CLI prompts for extension id, display name, category, description, author,
-publish workflow, registry metadata, and git initialization. The `tool`
-category additionally prompts for the webview UI stack: Vue with the Kisaki UI
-kit (`@kisaki3/extension-ui-vue`, components matching the app design language),
-plain Vue, or vanilla TypeScript. Pass `--git` or `--no-git` to skip the git
-prompt. Pass `--github-single`, `--github-monorepo`, or `--manual` to skip the
-publish workflow prompt.
-
-Generated projects include `manifest.json`, `src/host/index.ts`, `README.md`,
-and package scripts backed by the `kisx` CLI, plus engineering config out of the
-box: a pnpm `packageManager` declaration, ESLint (flat config) with host/ui/shared
-import-boundary rules, per-layer tsconfigs (`tsconfig.host.json` Node-only,
-`tsconfig.ui.json` DOM-only), Prettier, `.editorconfig`, `.gitattributes`,
-`.gitignore`, and a VS Code launch configuration for `pnpm run dev`. Projects
-with a webview UI also include
-`src/ui/main/index.html`, a `src/shared/contract.ts` RPC contract, Tailwind
-CSS wired through `kisx.config.ts`, and a `"ui": "./dist/ui"` manifest
-declaration (the Vue variants additionally add `@vitejs/plugin-vue` and
-Vue-aware ESLint; the UI-kit variant also adds `@kisaki3/extension-ui-vue`):
+## Create A Repository
 
 ```bash
-pnpm run build
-pnpm run validate
-pnpm run pack
-pnpm run dev
+pnpm create kisaki-extension init my-extension
 ```
 
-The generated `engines.kisaki` value is the recommended Kisaki Extension API
-range for the scaffolded tooling version.
+The interactive flow resolves three independent choices:
 
-## Template Layers
+- categories are manifest discovery metadata and support multiple values;
+- the starter selects sample host behavior (`minimal`, `integration`,
+  `scraper`, `theme`, or `tool`);
+- the webview implementation selects `none`, `vanilla`, `vue`, or `vue-kit`.
 
-Scaffolding is composed from small template layers instead of one mixed
-template:
+Use `--yes` with explicit flags for automation:
+
+```bash
+pnpm create kisaki-extension init my-extensions \
+  --publish github-monorepo \
+  --extension-id example.integration \
+  --package-name @example/integration \
+  --extension-name "Example Integration" \
+  --categories integration,tool \
+  --starter integration \
+  --webview vue-kit \
+  --author Example \
+  --yes
+```
+
+Dependencies are installed by default. `--no-install` skips installation,
+`--no-git` skips Git initialization, and `--commit` creates a commit only after
+generation and installation succeed.
+
+## Add An Extension
+
+From a generated GitHub extension monorepository:
+
+```bash
+pnpm create kisaki-extension add example.theme \
+  --package-name @example/theme \
+  --categories theme \
+  --starter theme \
+  --webview none
+```
+
+`add` atomically creates `extensions/<extension-id>`, rebuilds the marked
+README extension list, and refreshes the shared lockfile. Use `--workspace`
+when invoking it outside the repository root.
+
+## Generated Engineering Baseline
+
+Generated projects include:
+
+- private packages with `manifest.json` as the only extension version source;
+- bundled Extension SDK/API development dependencies without duplicate runtime
+  package copies;
+- strict host/UI/shared TypeScript and ESLint boundaries;
+- Prettier, EditorConfig, Git attributes, MIT license, and pnpm workspace
+  boundaries;
+- Vite-based `kisx` build, validation, development, and packaging scripts;
+- frozen-lockfile CI and release-commit-driven signed GitHub releases;
+- a static registry manifest updated through `kisx registry` commands.
+
+The generated `engines.kisaki` value uses the recommended Extension API range
+for the scaffold tooling version.
+
+## Template Model
+
+Templates are composable layers:
 
 - `templates/workspace/base`
 - `templates/workspace/publish/<workflow>`
 - `templates/extension/base`
-- `templates/extension/categories/<category>`
-- `templates/extension/ui/<variant>` (webview UI, when applicable)
-- `templates/extension/publish/<workflow>`
+- `templates/extension/starters/<starter>`
+- `templates/extension/webview/base` when a webview is selected
+- `templates/extension/webview/<implementation>`
 
-Layers copy token-rendered files. A layer file named `<name>.patch.json` is
-not copied; it deep-merges into the `<name>.json` produced by earlier layers
-(objects merge recursively, arrays and scalars replace). UI variants use this
-to add their manifest `ui` field and dependencies as template data instead of
-hardcoding them in scaffold code.
+Files named `<name>.patch.json` deep-merge into JSON produced by earlier layers.
+Objects merge recursively; arrays and scalar values replace. Template tokens
+are escaped according to JSON/YAML, TypeScript, Vue, or raw text context.
 
-For example, choosing `theme` and `GitHub single extension` combines the
-workspace base, GitHub single workflow, extension base, theme files, and GitHub
-publish README section. Choosing `GitHub extension monorepo` writes the
-extension under `extensions/<extension-id>` and keeps the registry workflow at
-the repository root.
+GitHub releases require `KISAKI_EXTENSION_SIGNING_KEY`. Push a commit named
+`release(<extension-id>): v<semver>`; CI validates it and creates the
+`<extension-id>-v<semver>` tag.
 
-When the GitHub publish workflow is selected, the project also includes
-`.github/workflows/publish.yml`.
+## Command Architecture
 
-Single-extension repositories use root project files and release commits such
-as `release: v0.0.1`.
+The scaffold CLI follows the same one-way layering as `kisx`:
 
-Extension monorepositories place the initial extension under
-`extensions/<extension-id>` and use scoped release commits such as
-`release(example.extension): v0.0.1`; tags are written as
-`example.extension-v0.0.1`.
+- `src/cli/commands/` contains Commander declarations only;
+- `src/cli/actions/` owns interactive workflows and terminal reporting;
+- `src/scaffold/` and `src/extension-input.ts` own reusable generation rules.
 
-Both GitHub workflows package the selected extension, upload a GitHub Release
-asset, and update `registry/manifest.json`. The workflow commits the updated
-registry manifest back to `main`, so authors should pull or rebase after a
-successful release.
-
-GitHub release jobs are designed to be rerun safely: an existing tag for the
-same release commit is reused, release assets are uploaded with replacement,
-and registry updates are applied from the latest `main`.
+Dependencies flow from commands to actions to domain modules.

@@ -3,10 +3,12 @@ import path from 'node:path'
 
 const JSON_PATCH_SUFFIX = '.patch.json'
 
-export function isJsonPatchFile(fileName: string): boolean {
+/** Returns whether a template file is a JSON merge patch. */
+export function matchesJsonPatchFileName(fileName: string): boolean {
   return fileName.endsWith(JSON_PATCH_SUFFIX)
 }
 
+/** Resolves the generated JSON file targeted by a template merge patch. */
 export function resolvePatchTargetFileName(patchFileName: string): string {
   return `${patchFileName.slice(0, -JSON_PATCH_SUFFIX.length)}.json`
 }

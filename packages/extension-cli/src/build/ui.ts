@@ -4,23 +4,17 @@ import type { RollupWatcher } from 'rollup'
 import { build, createServer, mergeConfig, type InlineConfig, type ViteDevServer } from 'vite'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type { KisxConfig } from '../config'
-import { CliError } from '../logger'
+import { CliError } from '../errors'
 import type { ExtensionProject } from '../project'
 import { pathExists } from '../project'
 
 const UI_ENTRY_FILE = 'index.html'
-const UI_ENTRY_MAX_DEPTH = 4
 // Normalized form compared against parsed manifests; manifests declare the
 // official package-relative style with a ./ prefix.
 const EXPECTED_MANIFEST_UI_ROOT = 'dist/ui'
 const MANIFEST_UI_DECLARATION = './dist/ui'
 
 export interface ExtensionUiEntry {
-  /**
-   * Rollup input name and ui-root-relative directory, e.g. `settings`.
-   * The root entry uses `index`.
-   */
-  name: string
   htmlPath: string
   /**
    * Document path relative to the manifest `ui` root, e.g. `settings/index.html`.
@@ -48,7 +42,7 @@ export async function discoverUiEntries(
   }
 
   const entries: ExtensionUiEntry[] = []
-  await collectUiEntries(project.uiSourceDir, '', 0, entries)
+  await collectUiEntries(project.uiSourceDir, '', entries)
   return entries.toSorted((left, right) =>
     left.documentPath.localeCompare(right.documentPath, 'en')
   )
@@ -127,7 +121,7 @@ function createUiBuildConfig(
   config: KisxConfig,
   options: UiBuildOptions
 ): InlineConfig {
-  const input = Object.fromEntries(entries.map((entry) => [entry.name, entry.htmlPath]))
+  const input = entries.map((entry) => entry.htmlPath)
 
   const base: InlineConfig = {
     configFile: false,
@@ -160,7 +154,6 @@ function resolveDevServerOrigin(server: ViteDevServer): string {
 async function collectUiEntries(
   currentDir: string,
   relativeDir: string,
-  depth: number,
   entries: ExtensionUiEntry[]
 ): Promise<void> {
   const dirents = await readdir(currentDir, { withFileTypes: true })
@@ -168,18 +161,16 @@ async function collectUiEntries(
   for (const dirent of dirents) {
     if (dirent.isFile() && dirent.name === UI_ENTRY_FILE) {
       entries.push({
-        name: relativeDir === '' ? 'index' : relativeDir.replaceAll('/', '-'),
         htmlPath: path.join(currentDir, dirent.name),
         documentPath: relativeDir === '' ? UI_ENTRY_FILE : `${relativeDir}/${UI_ENTRY_FILE}`
       })
       continue
     }
 
-    if (dirent.isDirectory() && depth < UI_ENTRY_MAX_DEPTH && !dirent.name.startsWith('.')) {
+    if (dirent.isDirectory() && !dirent.name.startsWith('.')) {
       await collectUiEntries(
         path.join(currentDir, dirent.name),
         relativeDir === '' ? dirent.name : `${relativeDir}/${dirent.name}`,
-        depth + 1,
         entries
       )
     }

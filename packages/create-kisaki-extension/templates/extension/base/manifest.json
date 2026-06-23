@@ -3,7 +3,7 @@
   "id": "__EXTENSION_ID__",
   "name": "__EXTENSION_NAME__",
   "version": "0.0.1",
-  "categories": ["__CATEGORY__"],
+  "categories": [],
   "entry": "./dist/index.mjs",
   "description": "__DESCRIPTION__",
   "author": "__AUTHOR__",

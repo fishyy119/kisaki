@@ -1,0 +1,23 @@
+{
+  "name": "__WORKSPACE_PACKAGE_NAME__",
+  "private": true,
+  "description": "__REGISTRY_NAME__ extension monorepository.",
+  "packageManager": "__PACKAGE_MANAGER__",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r --if-present run build",
+    "validate": "pnpm -r --if-present run validate",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build && pnpm run validate"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4"
+  }
+}

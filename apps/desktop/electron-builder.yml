@@ -6,7 +6,7 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!dev/*'
-  - '!scripts/*'
+  - '!tools/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!eslint.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'

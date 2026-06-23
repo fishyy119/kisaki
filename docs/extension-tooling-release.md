@@ -31,14 +31,16 @@ pnpm publish:extension-tooling --dry-run
 ```
 
 `packages/extension-tooling-manifest.json` is the source of truth for the package list, dependency
-order, build groups, and required outputs. `scripts/extension-tooling/` keeps the command entry,
+order, build groups, and required outputs. `tools/extension-tooling/` keeps the command entry,
 contract checks, build, packing, and publishing flows in separate modules. It verifies:
 
 - every tooling package has the same `package.json` version
 - internal workspace dependencies use `workspace:*`
 - `EXTENSION_API_VERSION` matches the tooling version
-- extension scaffold dependencies are injected with `__TOOLING_VERSION__`
-- the Vue UI kit scaffold dependency is injected with `__TOOLING_VERSION__`
+- bundled extension scaffold packages are injected into `devDependencies` with
+  `__TOOLING_VERSION__`
+- the Vue UI kit scaffold package is injected into `devDependencies` with
+  `__TOOLING_VERSION__`
 - extension scaffold manifests derive their `engines.kisaki` default from the
   current Extension API version
 

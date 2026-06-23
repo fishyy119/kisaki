@@ -2,33 +2,54 @@
 
 Kisaki extension registry repository.
 
+## Development
+
+Install all extension dependencies from the repository root and run the same
+checks as CI:
+
+```bash
+pnpm install
+pnpm run check
+```
+
+The root workspace owns the shared `pnpm-lock.yaml`. Each extension remains an
+independent project under `extensions/<extension-id>`.
+
 ## Extensions
 
-- `{{EXTENSION_ID}}` - `extensions/{{EXTENSION_ID}}`
+<!-- extensions:start -->
+
+- `{{EXTENSION_ID}}` — {{EXTENSION_NAME}} (`extensions/{{EXTENSION_ID}}`)
+<!-- extensions:end -->
 
 ## Add Extensions
 
-Create each extension as its own project under `extensions/<extension-id>`.
-Every extension keeps its own `manifest.json`, `package.json`, source files,
-and dependencies.
+Run the scaffold from the repository root. It generates the extension,
+refreshes this list, installs the shared lockfile, and leaves the changes ready
+for review:
+
+```bash
+pnpm create kisaki-extension add
+```
 
 ## Publish
 
-Publish an extension by updating that extension's `manifest.json` version and
-pushing a scoped release commit from the repository root:
+Publish an extension by updating its `manifest.json` and pushing a scoped
+release commit from the repository root:
 
 ```bash
-git commit --allow-empty -m "release({{EXTENSION_ID}}): v0.0.1"
+git commit -m "release({{EXTENSION_ID}}): v0.0.1"
 git push origin main
 ```
 
-The workflow packages only the scoped extension, creates tag
-`{{EXTENSION_ID}}-v0.0.1`, uploads the `.kisx` package to a GitHub Release, and
-updates `registry/manifest.json` without removing other extension packages.
+The workflow validates the commit scope and manifest version, creates tag
+`{{EXTENSION_ID}}-v0.0.1`, packages only the scoped extension, uploads the
+signed `.kisx` package, and updates `registry/manifest.json` without removing
+other extension packages.
 
-If a release job fails after creating the tag or release, rerun the same job.
-The workflow reuses the tag when it points to the same release commit, replaces
-release assets, and updates the registry from the latest `main`.
+If a release job fails, rerun the same job. The workflow reuses the existing
+GitHub Release, replaces its assets, and updates the registry from the latest
+`main`.
 
 The workflow commits the updated registry manifest back to `main`. After a
 successful release, pull or rebase before continuing local work:
@@ -43,5 +64,5 @@ Registry URL:
 https://raw.githubusercontent.com/<owner>/<repo>/main/registry/manifest.json
 ```
 
-For signed releases, create a local key with `kisx key generate` and store the
-entire key file JSON in the `KISAKI_EXTENSION_SIGNING_KEY` repository secret.
+Generate a signing key with `kisx key generate` and store the entire key file
+JSON in the required `KISAKI_EXTENSION_SIGNING_KEY` repository secret.
