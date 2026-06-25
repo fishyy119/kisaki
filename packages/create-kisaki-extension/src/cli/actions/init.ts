@@ -2,7 +2,12 @@ import path from 'node:path'
 import { isExtensionIdentifier } from '@kisaki3/extension-api'
 import prompts from 'prompts'
 import { ScaffoldCancelledError, ScaffoldCliError } from '../../errors'
-import { EXTENSION_PUBLISH_WORKFLOWS, type ExtensionPublishWorkflow } from '../../extension-options'
+import {
+  EXTENSION_PUBLISH_PROVIDERS,
+  EXTENSION_REPOSITORY_LAYOUTS,
+  type ExtensionPublishProvider,
+  type ExtensionRepositoryLayout
+} from '../../extension-options'
 import { resolveExtensionConfig, type ExtensionInputOptions } from '../../extension-input'
 import {
   commitGitChanges,
@@ -19,7 +24,8 @@ import { printCreated } from './output'
 
 /** Input accepted by the repository initialization action. */
 export interface InitOptions extends ExtensionInputOptions {
-  publish?: string
+  layout?: string
+  provider?: string
   registryId?: string
   registryName?: string
   git: boolean
@@ -45,7 +51,8 @@ export async function runInit(
   if (!matchesProjectNameFormat(projectName)) {
     throw new ScaffoldCliError('Project directory name is invalid.')
   }
-  const publishWorkflow = await resolvePublishWorkflow(options.publish, options.yes === true)
+  const repositoryLayout = await resolveRepositoryLayout(options.layout, options.yes === true)
+  const publishProvider = await resolvePublishProvider(options.provider, options.yes === true)
   const targetDir = target.targetDir
   const registryId = options.registryId ?? toExtensionId(`${projectName}.registry`)
   if (!isExtensionIdentifier(registryId)) {
@@ -56,7 +63,8 @@ export async function runInit(
   const config = await resolveExtensionConfig({
     projectName,
     workspacePackageName: toPackageName(projectName),
-    publishWorkflow,
+    repositoryLayout,
+    publishProvider,
     registryId,
     registryName,
     toolingVersion: context.toolingVersion,
@@ -113,26 +121,56 @@ async function resolveTarget(
   }
 }
 
-async function resolvePublishWorkflow(
+async function resolveRepositoryLayout(
   value: string | undefined,
   yes: boolean
-): Promise<ExtensionPublishWorkflow> {
+): Promise<ExtensionRepositoryLayout> {
   if (value !== undefined) {
-    return requirePublishWorkflow(value)
+    return requireRepositoryLayout(value)
   }
   if (yes) {
-    return 'github-single'
+    return 'single'
   }
 
   const response = await prompts(
     {
       type: 'select',
-      name: 'publish',
-      message: 'Repository layout and publishing:',
+      name: 'layout',
+      message: 'Repository layout:',
       initial: 0,
       choices: [
-        { title: 'GitHub single extension', value: 'github-single' },
-        { title: 'GitHub extension monorepo', value: 'github-monorepo' },
+        { title: 'Single extension', value: 'single' },
+        { title: 'Extension monorepo', value: 'monorepo' }
+      ]
+    },
+    {
+      onCancel: () => {
+        throw new ScaffoldCancelledError()
+      }
+    }
+  )
+  return requireRepositoryLayout(response.layout)
+}
+
+async function resolvePublishProvider(
+  value: string | undefined,
+  yes: boolean
+): Promise<ExtensionPublishProvider> {
+  if (value !== undefined) {
+    return requirePublishProvider(value)
+  }
+  if (yes) {
+    return 'github'
+  }
+
+  const response = await prompts(
+    {
+      type: 'select',
+      name: 'provider',
+      message: 'Release provider:',
+      initial: 0,
+      choices: [
+        { title: 'GitHub Releases and registry workflow', value: 'github' },
         { title: 'Manual or custom hosting', value: 'manual' }
       ]
     },
@@ -142,12 +180,19 @@ async function resolvePublishWorkflow(
       }
     }
   )
-  return requirePublishWorkflow(response.publish)
+  return requirePublishProvider(response.provider)
 }
 
-function requirePublishWorkflow(value: string): ExtensionPublishWorkflow {
-  if (!(EXTENSION_PUBLISH_WORKFLOWS as readonly string[]).includes(value)) {
-    throw new ScaffoldCliError(`Unknown publish workflow: ${value}`)
+function requireRepositoryLayout(value: string): ExtensionRepositoryLayout {
+  if (!(EXTENSION_REPOSITORY_LAYOUTS as readonly string[]).includes(value)) {
+    throw new ScaffoldCliError(`Unknown repository layout: ${value}`)
   }
-  return value as ExtensionPublishWorkflow
+  return value as ExtensionRepositoryLayout
+}
+
+function requirePublishProvider(value: string): ExtensionPublishProvider {
+  if (!(EXTENSION_PUBLISH_PROVIDERS as readonly string[]).includes(value)) {
+    throw new ScaffoldCliError(`Unknown release provider: ${value}`)
+  }
+  return value as ExtensionPublishProvider
 }

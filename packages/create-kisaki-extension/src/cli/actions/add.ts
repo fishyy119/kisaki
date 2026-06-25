@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { isExtensionIdentifier } from '@kisaki3/extension-api'
 import { ScaffoldCliError } from '../../errors'
@@ -7,21 +6,11 @@ import {
   commitGitPaths,
   installDependencies,
   matchesGitRepository,
-  scaffoldWorkspaceExtension,
-  validateExtensionWorkspace
+  readExtensionWorkspace,
+  scaffoldWorkspaceExtension
 } from '../../scaffold'
 import type { ScaffoldCliContext } from '../context'
 import { printCreated } from './output'
-
-interface WorkspacePackageJson {
-  name?: string
-  packageManager?: string
-}
-
-interface RegistryManifest {
-  id?: string
-  name?: string
-}
 
 /** Input accepted by the action that adds a workspace extension. */
 export interface AddOptions extends ExtensionInputOptions {
@@ -41,15 +30,8 @@ export async function runAdd(
   }
 
   const workspaceDir = path.resolve(options.workspace)
-  validateExtensionWorkspace(workspaceDir)
-  const packageJson = readJson<WorkspacePackageJson>(path.join(workspaceDir, 'package.json'))
-  const registry = readJson<RegistryManifest>(path.join(workspaceDir, 'registry', 'manifest.json'))
-  if (!packageJson.name || !packageJson.packageManager) {
-    throw new ScaffoldCliError(
-      'Workspace package.json must declare name and packageManager fields.'
-    )
-  }
-  if (!registry.id || !isExtensionIdentifier(registry.id) || !registry.name?.trim()) {
+  const workspace = readExtensionWorkspace(workspaceDir)
+  if (!isExtensionIdentifier(workspace.registryId) || !workspace.registryName.trim()) {
     throw new ScaffoldCliError(
       'Registry manifest must declare a valid lowercase id and non-empty name.'
     )
@@ -58,12 +40,13 @@ export async function runAdd(
   const projectName = extensionId ?? options.extensionId ?? 'my-kisaki-extension'
   const config = await resolveExtensionConfig({
     projectName,
-    workspacePackageName: packageJson.name,
-    publishWorkflow: 'github-monorepo',
-    registryId: registry.id,
-    registryName: registry.name,
+    workspacePackageName: workspace.packageName,
+    repositoryLayout: 'monorepo',
+    publishProvider: workspace.publishProvider,
+    registryId: workspace.registryId,
+    registryName: workspace.registryName,
     toolingVersion: context.toolingVersion,
-    packageManager: packageJson.packageManager,
+    packageManager: workspace.packageManager,
     input: { ...options, ...(extensionId ? { extensionId } : {}) }
   })
 
@@ -88,13 +71,4 @@ export async function runAdd(
   }
 
   printCreated(targetDir, options.install)
-}
-
-function readJson<T>(filePath: string): T {
-  try {
-    return JSON.parse(readFileSync(filePath, 'utf8')) as T
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : 'unknown error'
-    throw new ScaffoldCliError(`Could not read ${filePath}: ${detail}`)
-  }
 }

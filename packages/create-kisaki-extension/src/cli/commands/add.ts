@@ -10,7 +10,7 @@ export function createAddCommand(context: ScaffoldCliContext): Command {
     .argument('[extension-id]', 'Extension identifier')
     .option('-w, --workspace <dir>', 'Extension monorepository root', '.')
     .option('--extension-id <id>', 'Stable extension identifier')
-    .option('--package-name <name>', 'Private workspace package name')
+    .option('--package-name <name>', 'Extension npm package name')
     .option('--extension-name <name>', 'User-facing extension name')
     .option('--categories <items>', 'Comma-separated extension categories', parseList)
     .addOption(

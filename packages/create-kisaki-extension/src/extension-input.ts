@@ -10,7 +10,8 @@ import { ScaffoldCancelledError, ScaffoldCliError } from './errors'
 import {
   EXTENSION_STARTERS,
   EXTENSION_WEBVIEWS,
-  type ExtensionPublishWorkflow,
+  type ExtensionPublishProvider,
+  type ExtensionRepositoryLayout,
   type ExtensionStarter,
   type ExtensionWebview
 } from './extension-options'
@@ -42,7 +43,8 @@ export interface ExtensionInputOptions {
 export interface ResolveExtensionConfigOptions {
   projectName: string
   workspacePackageName: string
-  publishWorkflow: ExtensionPublishWorkflow
+  repositoryLayout: ExtensionRepositoryLayout
+  publishProvider: ExtensionPublishProvider
   registryId: string
   registryName: string
   toolingVersion: string
@@ -56,7 +58,8 @@ type PromptQuestion = prompts.PromptObject
 export async function resolveExtensionConfig(
   options: ResolveExtensionConfigOptions
 ): Promise<ExtensionScaffoldConfig> {
-  const defaults = createDefaults(options)
+  const extensionId = await resolveExtensionId(options)
+  const defaults = createDefaults(extensionId)
   const response = options.input.yes
     ? {}
     : await prompts(createQuestions(options.input, defaults), {
@@ -65,7 +68,6 @@ export async function resolveExtensionConfig(
         }
       })
 
-  const extensionId = readString(options.input.extensionId ?? response.extensionId, defaults.id)
   const packageName = readString(
     options.input.packageName ?? response.packageName,
     defaults.packageName
@@ -85,9 +87,6 @@ export async function resolveExtensionConfig(
   )
   const author = readOptionalString(options.input.author ?? response.author ?? defaults.author)
 
-  if (!isExtensionIdentifier(extensionId)) {
-    throw new ScaffoldCliError('Extension ID must use lowercase dot-separated segments.')
-  }
   if (!matchesPackageNameFormat(packageName)) {
     throw new ScaffoldCliError('Package name is not a valid lowercase npm package name.')
   }
@@ -110,14 +109,43 @@ export async function resolveExtensionConfig(
     extensionApiRange: getRecommendedExtensionApiRange(EXTENSION_API_VERSION),
     nodeVersion: DEFAULT_NODE_VERSION,
     packageManager: options.packageManager ?? DEFAULT_PACKAGE_MANAGER,
-    publishWorkflow: options.publishWorkflow,
+    repositoryLayout: options.repositoryLayout,
+    publishProvider: options.publishProvider,
     registryId: options.registryId,
     registryName: options.registryName
   }
 }
 
-function createDefaults(options: ResolveExtensionConfigOptions): {
-  id: string
+async function resolveExtensionId(options: ResolveExtensionConfigOptions): Promise<string> {
+  const defaultValue = toExtensionId(options.projectName)
+  let value = options.input.extensionId
+  if (value === undefined && !options.input.yes) {
+    const response = await prompts(
+      {
+        type: 'text',
+        name: 'extensionId',
+        message: 'Extension ID:',
+        initial: defaultValue,
+        validate: (answer: string) =>
+          isExtensionIdentifier(answer) ? true : 'Use lowercase dot-separated segments.'
+      },
+      {
+        onCancel: () => {
+          throw new ScaffoldCancelledError()
+        }
+      }
+    )
+    value = response.extensionId
+  }
+  const extensionId = readString(value, defaultValue)
+
+  if (!isExtensionIdentifier(extensionId)) {
+    throw new ScaffoldCliError('Extension ID must use lowercase dot-separated segments.')
+  }
+  return extensionId
+}
+
+function createDefaults(extensionId: string): {
   packageName: string
   name: string
   categories: readonly ExtensionCategory[]
@@ -126,13 +154,10 @@ function createDefaults(options: ResolveExtensionConfigOptions): {
   description: string
   author?: string
 } {
-  const id = toExtensionId(options.projectName)
   const gitUserName = readGitUserName()
   return {
-    id,
-    packageName:
-      options.publishWorkflow === 'github-monorepo' ? id : toPackageName(options.projectName),
-    name: toDisplayName(id),
+    packageName: toPackageName(extensionId),
+    name: toDisplayName(extensionId),
     categories: ['tool'],
     starter: 'tool',
     webview: 'none',
@@ -146,16 +171,6 @@ function createQuestions(
   defaults: ReturnType<typeof createDefaults>
 ): PromptQuestion[] {
   const questions: PromptQuestion[] = []
-  if (input.extensionId === undefined) {
-    questions.push({
-      type: 'text',
-      name: 'extensionId',
-      message: 'Extension ID:',
-      initial: defaults.id,
-      validate: (value: string) =>
-        isExtensionIdentifier(value) ? true : 'Use lowercase dot-separated segments.'
-    })
-  }
   if (input.packageName === undefined) {
     questions.push({
       type: 'text',

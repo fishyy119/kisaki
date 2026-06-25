@@ -1,6 +1,7 @@
 import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type {
-  ExtensionPublishWorkflow,
+  ExtensionPublishProvider,
+  ExtensionRepositoryLayout,
   ExtensionStarter,
   ExtensionWebview
 } from '../extension-options'
@@ -21,7 +22,8 @@ export interface ExtensionScaffoldConfig {
   extensionApiRange: string
   nodeVersion: string
   packageManager: string
-  publishWorkflow: ExtensionPublishWorkflow
+  repositoryLayout: ExtensionRepositoryLayout
+  publishProvider: ExtensionPublishProvider
   registryId: string
   registryName: string
 }

@@ -20,4 +20,4 @@ export {
 } from './git'
 export { installDependencies } from './package-manager'
 export { DEFAULT_NODE_VERSION, DEFAULT_PACKAGE_MANAGER } from './toolchain'
-export { validateExtensionWorkspace } from './workspace'
+export { readExtensionWorkspace, type ExtensionWorkspace } from './workspace'

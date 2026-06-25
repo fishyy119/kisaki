@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "patches": [
+    {
+      "op": "json.merge",
+      "target": "manifest.json",
+      "source": "patches/manifest.json"
+    },
+    {
+      "op": "json.merge",
+      "target": "tsconfig.json",
+      "source": "patches/tsconfig.json"
+    }
+  ]
+}

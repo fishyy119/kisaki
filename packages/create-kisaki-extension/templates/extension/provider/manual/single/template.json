@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "patches": [
+    {
+      "op": "text.slot",
+      "target": "README.md",
+      "slot": "PUBLISH_SECTION",
+      "source": "patches/publish.md"
+    }
+  ]
+}

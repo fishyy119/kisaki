@@ -1,8 +1,11 @@
 import { existsSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import type { ExtensionPublishProvider } from '../extension-options'
+import { EXTENSION_PUBLISH_PROVIDERS } from '../extension-options'
 
 const EXTENSIONS_START_MARKER = '<!-- extensions:start -->'
 const EXTENSIONS_END_MARKER = '<!-- extensions:end -->'
+const WORKSPACE_CONFIG_FILE = 'kisaki-extension-workspace.json'
 
 interface WorkspaceExtensionEntry {
   id: string
@@ -15,8 +18,27 @@ interface WorkspacePackageJson {
   private?: unknown
 }
 
-/** Validates the generated monorepository boundary required by the add command. */
-export function validateExtensionWorkspace(workspaceDir: string): void {
+interface RegistryManifest {
+  id?: unknown
+  name?: unknown
+}
+
+interface ExtensionWorkspaceConfig {
+  layout?: unknown
+  provider?: unknown
+}
+
+/** Validated metadata for a generated extension monorepository. */
+export interface ExtensionWorkspace {
+  packageName: string
+  packageManager: string
+  publishProvider: ExtensionPublishProvider
+  registryId: string
+  registryName: string
+}
+
+/** Reads and validates the generated monorepository boundary required by add. */
+export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace {
   for (const relativePath of ['package.json', 'pnpm-workspace.yaml', 'extensions', 'README.md']) {
     if (!existsSync(path.join(workspaceDir, relativePath))) {
       throw new Error(`Not a Kisaki extension workspace: missing ${relativePath}.`)
@@ -40,6 +62,17 @@ export function validateExtensionWorkspace(workspaceDir: string): void {
     )
   }
 
+  const workspaceConfig = readWorkspaceConfig(path.join(workspaceDir, WORKSPACE_CONFIG_FILE))
+  if (workspaceConfig.layout !== 'monorepo') {
+    throw new Error('Not a Kisaki extension workspace: layout must be "monorepo".')
+  }
+  if (
+    typeof workspaceConfig.provider !== 'string' ||
+    !(EXTENSION_PUBLISH_PROVIDERS as readonly string[]).includes(workspaceConfig.provider)
+  ) {
+    throw new Error('Not a Kisaki extension workspace: provider is unsupported.')
+  }
+
   const workspaceDefinition = readFileSync(path.join(workspaceDir, 'pnpm-workspace.yaml'), 'utf8')
   if (!/^\s*-\s+['"]?extensions\/\*['"]?\s*$/mu.test(workspaceDefinition)) {
     throw new Error(
@@ -52,6 +85,19 @@ export function validateExtensionWorkspace(workspaceDir: string): void {
   if (!content.includes(EXTENSIONS_START_MARKER) || !content.includes(EXTENSIONS_END_MARKER)) {
     throw new Error('Workspace README.md is missing the generated extension-list markers.')
   }
+
+  const registry = readRegistryManifest(path.join(workspaceDir, 'registry', 'manifest.json'))
+  if (typeof registry.id !== 'string' || typeof registry.name !== 'string') {
+    throw new Error('Registry manifest must declare string id and name fields.')
+  }
+
+  return {
+    packageName: packageJson.name,
+    packageManager: packageJson.packageManager,
+    publishProvider: workspaceConfig.provider as ExtensionPublishProvider,
+    registryId: registry.id,
+    registryName: registry.name
+  }
 }
 
 function readWorkspacePackageJson(filePath: string): WorkspacePackageJson {
@@ -60,6 +106,24 @@ function readWorkspacePackageJson(filePath: string): WorkspacePackageJson {
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'unknown error'
     throw new Error(`Could not read workspace package.json: ${detail}`)
+  }
+}
+
+function readWorkspaceConfig(filePath: string): ExtensionWorkspaceConfig {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8')) as ExtensionWorkspaceConfig
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'unknown error'
+    throw new Error(`Could not read ${WORKSPACE_CONFIG_FILE}: ${detail}`)
+  }
+}
+
+function readRegistryManifest(filePath: string): RegistryManifest {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8')) as RegistryManifest
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'unknown error'
+    throw new Error(`Could not read registry manifest: ${detail}`)
   }
 }
 

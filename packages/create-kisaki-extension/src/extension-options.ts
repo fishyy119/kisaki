@@ -1,8 +1,14 @@
-/** Repository layouts and release workflows supported by the scaffold. */
-export const EXTENSION_PUBLISH_WORKFLOWS = ['manual', 'github-single', 'github-monorepo'] as const
+/** Repository layouts supported by the scaffold. */
+export const EXTENSION_REPOSITORY_LAYOUTS = ['single', 'monorepo'] as const
 
-/** A supported repository layout and release workflow. */
-export type ExtensionPublishWorkflow = (typeof EXTENSION_PUBLISH_WORKFLOWS)[number]
+/** A supported repository layout. */
+export type ExtensionRepositoryLayout = (typeof EXTENSION_REPOSITORY_LAYOUTS)[number]
+
+/** Release providers supported by the scaffold. */
+export const EXTENSION_PUBLISH_PROVIDERS = ['manual', 'github'] as const
+
+/** A supported release provider. */
+export type ExtensionPublishProvider = (typeof EXTENSION_PUBLISH_PROVIDERS)[number]
 
 /** Webview implementations that can be composed with any host starter. */
 export const EXTENSION_WEBVIEWS = ['none', 'vanilla', 'vue', 'vue-kit'] as const

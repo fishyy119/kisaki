@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "patches": [
+    {
+      "op": "json.merge",
+      "target": "package.json",
+      "source": "patches/package.json"
+    }
+  ]
+}

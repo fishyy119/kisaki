@@ -14,7 +14,7 @@ import type {
   ScaffoldRepositoryOptions,
   ScaffoldWorkspaceExtensionOptions
 } from './model'
-import { updateWorkspaceExtensionList, validateExtensionWorkspace } from './workspace'
+import { readExtensionWorkspace, updateWorkspaceExtensionList } from './workspace'
 
 /**
  * Creates a repository through a sibling staging directory and publishes it
@@ -27,7 +27,6 @@ export function scaffoldRepository(options: ScaffoldRepositoryOptions): void {
   try {
     materializeLayers(
       createRepositoryTemplateLayers(options.templateDir, stagingDir, options.config),
-      options.templateDir,
       options.config
     )
     finalizeGeneratedExtension(stagingDir, options.config)
@@ -40,7 +39,7 @@ export function scaffoldRepository(options: ScaffoldRepositoryOptions): void {
 
 /** Adds one extension atomically to an existing extension monorepository. */
 export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOptions): string {
-  validateExtensionWorkspace(options.workspaceDir)
+  readExtensionWorkspace(options.workspaceDir)
   if (!existsSync(options.templateDir)) {
     throw new Error(`Template directory not found: ${options.templateDir}`)
   }
@@ -57,7 +56,6 @@ export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOp
   try {
     materializeLayers(
       createExtensionTemplateLayers(options.templateDir, stagingDir, options.config),
-      options.templateDir,
       options.config
     )
     finalizeExtensionTemplate(stagingDir, options.config)
@@ -73,10 +71,9 @@ export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOp
 
 function materializeLayers(
   layers: readonly TemplateLayer[],
-  templateDir: string,
   config: ExtensionScaffoldConfig
 ): void {
-  const context = createTemplateContext(templateDir, config)
+  const context = createTemplateContext(config)
   for (const layer of layers) {
     copyTemplateLayer(layer, context)
   }
@@ -84,7 +81,7 @@ function materializeLayers(
 
 function finalizeGeneratedExtension(repositoryDir: string, config: ExtensionScaffoldConfig): void {
   const extensionDir =
-    config.publishWorkflow === 'github-monorepo'
+    config.repositoryLayout === 'monorepo'
       ? path.join(repositoryDir, 'extensions', config.extensionId)
       : repositoryDir
   finalizeExtensionTemplate(extensionDir, config)

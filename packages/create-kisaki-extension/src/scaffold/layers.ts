@@ -2,7 +2,12 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from 'node:path'
 import type { ExtensionWebview } from '../extension-options'
 import type { ExtensionScaffoldConfig } from './model'
-import { applyJsonPatch, matchesJsonPatchFileName, resolvePatchTargetFileName } from './patches'
+import {
+  applyTemplateMergeManifest,
+  getTemplateMergeSourcePaths,
+  readTemplateMergeManifest,
+  TEMPLATE_MANIFEST_FILE
+} from './merge'
 
 /** One ordered template source and its materialization destination. */
 export interface TemplateLayer {
@@ -27,10 +32,11 @@ const TEMPLATE_KEYS = [
   'EXTENSION_API_RANGE',
   'NODE_VERSION',
   'PACKAGE_MANAGER',
+  'REPOSITORY_LAYOUT',
+  'PUBLISH_PROVIDER',
   'GENERATED_AT',
   'REGISTRY_ID',
-  'REGISTRY_NAME',
-  'PUBLISH_SECTION'
+  'REGISTRY_NAME'
 ] as const
 
 type TemplateKey = (typeof TEMPLATE_KEYS)[number]
@@ -45,7 +51,7 @@ export function createRepositoryTemplateLayers(
   config: ExtensionScaffoldConfig
 ): TemplateLayer[] {
   const extensionTargetDir =
-    config.publishWorkflow === 'github-monorepo'
+    config.repositoryLayout === 'monorepo'
       ? path.join(targetDir, 'extensions', config.extensionId)
       : targetDir
 
@@ -55,7 +61,17 @@ export function createRepositoryTemplateLayers(
       targetDir
     },
     {
-      sourceDir: path.join(templateDir, 'workspace', 'publish', config.publishWorkflow),
+      sourceDir: path.join(templateDir, 'workspace', 'layout', config.repositoryLayout),
+      targetDir
+    },
+    {
+      sourceDir: path.join(
+        templateDir,
+        'workspace',
+        'provider',
+        config.publishProvider,
+        config.repositoryLayout
+      ),
       targetDir,
       optional: true
     },
@@ -88,6 +104,17 @@ export function createExtensionTemplateLayers(
       })
     }
   }
+  layers.push({
+    sourceDir: path.join(
+      templateDir,
+      'extension',
+      'provider',
+      config.publishProvider,
+      config.repositoryLayout
+    ),
+    targetDir,
+    optional: true
+  })
 
   return resolveTemplateLayers(layers)
 }
@@ -95,17 +122,28 @@ export function createExtensionTemplateLayers(
 /** Copies one token-rendered template layer into its target. */
 export function copyTemplateLayer(layer: TemplateLayer, context: Map<string, string>): void {
   mkdirSync(layer.targetDir, { recursive: true })
+  const manifest = readTemplateMergeManifest(layer.sourceDir)
+  const mergeSourcePaths = getTemplateMergeSourcePaths(manifest)
 
   for (const entry of readdirSync(layer.sourceDir)) {
-    copyTemplateEntry(path.join(layer.sourceDir, entry), path.join(layer.targetDir, entry), context)
+    copyTemplateEntry({
+      sourcePath: path.join(layer.sourceDir, entry),
+      targetPath: path.join(layer.targetDir, entry),
+      relativeSourcePath: entry,
+      context,
+      mergeSourcePaths
+    })
   }
+
+  applyTemplateMergeManifest(manifest, {
+    sourceDir: layer.sourceDir,
+    targetDir: layer.targetDir,
+    renderTemplate: (content, targetPath) => applyTemplate(content, context, targetPath)
+  })
 }
 
 /** Creates escaped token replacements for one extension configuration. */
-export function createTemplateContext(
-  templateDir: string,
-  config: ExtensionScaffoldConfig
-): Map<string, string> {
+export function createTemplateContext(config: ExtensionScaffoldConfig): Map<string, string> {
   const values: Record<TemplateKey, string> = {
     PROJECT_NAME: config.projectName,
     WORKSPACE_PACKAGE_NAME: config.workspacePackageName,
@@ -122,21 +160,16 @@ export function createTemplateContext(
     EXTENSION_API_RANGE: config.extensionApiRange,
     NODE_VERSION: config.nodeVersion,
     PACKAGE_MANAGER: config.packageManager,
+    REPOSITORY_LAYOUT: config.repositoryLayout,
+    PUBLISH_PROVIDER: config.publishProvider,
     GENERATED_AT: new Date().toISOString(),
     REGISTRY_ID: config.registryId,
-    REGISTRY_NAME: config.registryName,
-    PUBLISH_SECTION: ''
+    REGISTRY_NAME: config.registryName
   }
   const context = new Map<string, string>()
-
   for (const [key, value] of Object.entries(values)) {
     context.set(`__${key}__`, value)
-    context.set(`{{${key}}}`, value)
   }
-
-  const publishSection = readPublishSection(templateDir, config, context)
-  context.set('__PUBLISH_SECTION__', publishSection)
-  context.set('{{PUBLISH_SECTION}}', publishSection)
   return context
 }
 
@@ -185,29 +218,33 @@ function resolveTemplateLayers(layers: readonly TemplateLayer[]): TemplateLayer[
   })
 }
 
-function copyTemplateEntry(
-  sourcePath: string,
-  targetPath: string,
+interface CopyTemplateEntryOptions {
+  sourcePath: string
+  targetPath: string
+  relativeSourcePath: string
   context: Map<string, string>
-): void {
+  mergeSourcePaths: ReadonlySet<string>
+}
+
+function copyTemplateEntry(options: CopyTemplateEntryOptions): void {
+  const { sourcePath, targetPath, relativeSourcePath, context, mergeSourcePaths } = options
   const entryStats = statSync(sourcePath)
   const sourceName = path.basename(targetPath)
 
-  if (entryStats.isDirectory()) {
-    mkdirSync(targetPath, { recursive: true })
-    for (const entry of readdirSync(sourcePath)) {
-      copyTemplateEntry(path.join(sourcePath, entry), path.join(targetPath, entry), context)
-    }
+  if (relativeSourcePath === TEMPLATE_MANIFEST_FILE || mergeSourcePaths.has(relativeSourcePath)) {
     return
   }
 
-  if (matchesJsonPatchFileName(sourceName)) {
-    const patchTargetPath = path.join(
-      path.dirname(targetPath),
-      resolvePatchTargetFileName(sourceName)
-    )
-    const renderedPatch = applyTemplate(readFileSync(sourcePath, 'utf8'), context, patchTargetPath)
-    applyJsonPatch(patchTargetPath, renderedPatch)
+  if (entryStats.isDirectory()) {
+    for (const entry of readdirSync(sourcePath)) {
+      copyTemplateEntry({
+        sourcePath: path.join(sourcePath, entry),
+        targetPath: path.join(targetPath, entry),
+        relativeSourcePath: path.posix.join(relativeSourcePath, entry),
+        context,
+        mergeSourcePaths
+      })
+    }
     return
   }
 
@@ -229,26 +266,9 @@ function resolveTargetFileName(sourceName: string): string {
   return TEMPLATE_FILE_RENAMES[sourceName] ?? sourceName
 }
 
-function readPublishSection(
-  templateDir: string,
-  config: ExtensionScaffoldConfig,
-  context: Map<string, string>
-): string {
-  const sectionPath = path.join(
-    templateDir,
-    'extension',
-    'publish',
-    config.publishWorkflow,
-    'PUBLISH.md'
-  )
-  return existsSync(sectionPath)
-    ? applyTemplate(readFileSync(sectionPath, 'utf8').trimEnd(), context, sectionPath)
-    : ''
-}
-
 function createTemplateTokenPattern(): RegExp {
   const keys = TEMPLATE_KEYS.join('|')
-  return new RegExp(`__(?:${keys})__|\\{\\{(?:${keys})\\}\\}`, 'g')
+  return new RegExp(`__(?:${keys})__`, 'g')
 }
 
 function applyTemplate(content: string, context: Map<string, string>, targetPath: string): string {

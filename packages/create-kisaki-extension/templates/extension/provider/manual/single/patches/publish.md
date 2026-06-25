@@ -1,7 +1,6 @@
 ## Publish
 
 ```bash
-kisx registry init --out registry/manifest.json --id "__REGISTRY_ID__" --name "__REGISTRY_NAME__"
 kisx registry add-release artifacts/__EXTENSION_ID__-0.0.1.kisx \
   --manifest registry/manifest.json \
   --url https://example.com/extensions/__EXTENSION_ID__-0.0.1.kisx

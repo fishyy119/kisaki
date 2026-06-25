@@ -9,18 +9,26 @@ extension monorepositories.
 pnpm create kisaki-extension init my-extension
 ```
 
-The interactive flow resolves three independent choices:
+The interactive flow resolves five independent choices:
 
+- the repository layout selects a single extension repository or an extension
+  monorepository;
+- the release provider selects manual/custom hosting or GitHub Releases;
 - categories are manifest discovery metadata and support multiple values;
 - the starter selects sample host behavior (`minimal`, `integration`,
   `scraper`, `theme`, or `tool`);
 - the webview implementation selects `none`, `vanilla`, `vue`, or `vue-kit`.
 
+The final extension ID is the source for the default package and display names.
+Use `--package-name` or `--extension-name` only when the generated defaults need
+an explicit override.
+
 Use `--yes` with explicit flags for automation:
 
 ```bash
 pnpm create kisaki-extension init my-extensions \
-  --publish github-monorepo \
+  --layout monorepo \
+  --provider github \
   --extension-id example.integration \
   --package-name @example/integration \
   --extension-name "Example Integration" \
@@ -37,7 +45,7 @@ generation and installation succeed.
 
 ## Add An Extension
 
-From a generated GitHub extension monorepository:
+From any generated extension monorepository:
 
 ```bash
 pnpm create kisaki-extension add example.theme \
@@ -48,8 +56,9 @@ pnpm create kisaki-extension add example.theme \
 ```
 
 `add` atomically creates `extensions/<extension-id>`, rebuilds the marked
-README extension list, and refreshes the shared lockfile. Use `--workspace`
-when invoking it outside the repository root.
+README extension list, uses the monorepo's release provider, and refreshes the
+shared lockfile. Use `--workspace` when invoking it outside the repository
+root.
 
 ## Generated Engineering Baseline
 
@@ -62,8 +71,8 @@ Generated projects include:
 - Prettier, EditorConfig, Git attributes, MIT license, and pnpm workspace
   boundaries;
 - Vite-based `kisx` build, validation, development, and packaging scripts;
-- frozen-lockfile CI and release-commit-driven signed GitHub releases;
-- a static registry manifest updated through `kisx registry` commands.
+- a static registry manifest updated through `kisx registry` commands;
+- GitHub CI and signed release workflows when the GitHub provider is selected.
 
 The generated `engines.kisaki` value uses the recommended Extension API range
 for the scaffold tooling version.
@@ -73,15 +82,37 @@ for the scaffold tooling version.
 Templates are composable layers:
 
 - `templates/workspace/base`
-- `templates/workspace/publish/<workflow>`
+- `templates/workspace/layout/<layout>`
+- `templates/workspace/provider/<provider>/<layout>`
 - `templates/extension/base`
 - `templates/extension/starters/<starter>`
 - `templates/extension/webview/base` when a webview is selected
 - `templates/extension/webview/<implementation>`
+- `templates/extension/provider/<provider>/<layout>`
 
-Files named `<name>.patch.json` deep-merge into JSON produced by earlier layers.
-Objects merge recursively; arrays and scalar values replace. Template tokens
-are escaped according to JSON/YAML, TypeScript, Vue, or raw text context.
+Layer files are copied after token rendering. A layer can also declare
+`template.json` merge operations:
+
+```json
+{
+  "version": 1,
+  "patches": [
+    { "op": "json.merge", "target": "package.json", "source": "patches/package.json" },
+    {
+      "op": "text.slot",
+      "target": "README.md",
+      "slot": "PUBLISH_SECTION",
+      "source": "patches/publish.md"
+    }
+  ]
+}
+```
+
+`json.merge` recursively merges objects into files produced by earlier layers;
+arrays and scalar values replace. `text.slot` replaces exactly one
+`{{SLOT_NAME}}` or `__SLOT_NAME__` marker. Patch sources are rendered but not
+copied. Template tokens are escaped according to JSON/YAML, TypeScript, Vue, or
+raw text context.
 
 GitHub releases require `KISAKI_EXTENSION_SIGNING_KEY`. Push a commit named
 `release(<extension-id>): v<semver>`; CI validates it and creates the

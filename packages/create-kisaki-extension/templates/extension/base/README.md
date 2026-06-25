@@ -1,11 +1,11 @@
-# {{EXTENSION_NAME}}
+# **EXTENSION_NAME**
 
-{{DESCRIPTION}}
+**DESCRIPTION**
 
 ## Metadata
 
-- Extension ID: `{{EXTENSION_ID}}`
-- Categories: {{CATEGORIES_LABEL}}
+- Extension ID: `__EXTENSION_ID__`
+- Categories: **CATEGORIES_LABEL**
 - Starter: `__STARTER__`
 - Webview: `__WEBVIEW__`
 
@@ -32,4 +32,4 @@ pnpm run dev
 pnpm run pack
 ```
 
-{{PUBLISH_SECTION}}
+**PUBLISH_SECTION**
