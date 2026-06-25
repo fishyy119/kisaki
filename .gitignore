@@ -6,15 +6,11 @@ apps/desktop/resources/extensions
 .eslintcache
 *.log*
 dev
-.temp
-.tmp-shadcn-vue
+.tmp/
 .env
 .env.*
 !.env.example
 .codex
 .claude
 CLAUDE.md
-AGENTS.md
-tmp
-.release
 .cursor

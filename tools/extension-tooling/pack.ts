@@ -48,7 +48,7 @@ export function resolveReleaseDirectory(
   version: string,
   customDir?: string
 ): string {
-  const outputDir = customDir ?? path.join('.release', 'extension-tooling', `v${version}`)
+  const outputDir = customDir ?? path.join('.tmp', 'release', 'extension-tooling', `v${version}`)
   const fullPath = path.resolve(workspace.root, outputDir)
   const relativePath = path.relative(workspace.root, fullPath)
 

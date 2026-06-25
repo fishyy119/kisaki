@@ -252,24 +252,24 @@ jobs:
         run: pnpm verify:extension-tooling
 
       - name: Pack extension tooling packages
-        run: pnpm pack:extension-tooling --out-dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}"
+        run: pnpm pack:extension-tooling --out-dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}"
 
       - name: Verify extension tooling tarballs
-        run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}" --dry-run
+        run: pnpm publish:extension-tooling --dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" --dry-run
 
       - name: Upload extension tooling artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-extension-tooling-packages
           path: |
-            .release/extension-tooling/v${{ needs.detect.outputs.version }}/*.tgz
-            .release/extension-tooling/v${{ needs.detect.outputs.version }}/SHA256SUMS
-            .release/extension-tooling/v${{ needs.detect.outputs.version }}/PACKAGES.md
+            .tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}/*.tgz
+            .tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}/SHA256SUMS
+            .tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}/PACKAGES.md
           if-no-files-found: error
           overwrite: true
 
       - name: Publish extension tooling packages
-        run: pnpm publish:extension-tooling --dir ".release/extension-tooling/v${{ needs.detect.outputs.version }}" --provenance
+        run: pnpm publish:extension-tooling --dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
