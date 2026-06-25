@@ -1,6 +1,7 @@
 node_modules
 dist
 out
+apps/desktop/resources/extensions
 .DS_Store
 .eslintcache
 *.log*
