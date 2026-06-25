@@ -14,7 +14,7 @@
 
 ## Fixes
 
-- Fixed inconsistent `experimental` and `latest` dist-tags during 0.x tooling releases
+- Fixed stale default installs during 0.x tooling releases
 - Fixed GitHub Releases being created or updated after failed npm publishing
 
 ## Improvements
@@ -22,4 +22,4 @@
 - Improved scaffold structure, supporting independent composition of repository layout and release provider
 - Improved the template merge protocol with `template.json` declarations for `json.merge` and `text.slot`
 - Optimized `kisx pack` archives to copy only external runtime dependencies that must ship in `.kisx`
-- Improved lockstep tooling releases with unified version checks, builds, output verification, packing, and npm publish preflight
+- Improved lockstep tooling releases with unified version checks, builds, output verification, packing, and npm publish dry-run validation

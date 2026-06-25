@@ -1,11 +1,11 @@
 # Extension Tooling Release
 
-Kisaki extension tooling is released as one lockstep version. The desktop app keeps its
-own independent version.
+Kisaki extension tooling is released as one lockstep version. The desktop app keeps its own
+independent version.
 
 ## Version Boundary
 
-These packages always share the same version and are published together:
+These packages always share the same version and are released together:
 
 - `@kisaki3/extension-api`
 - `@kisaki3/extension-registry`
@@ -14,57 +14,71 @@ These packages always share the same version and are published together:
 - `@kisaki3/extension-cli`
 - `create-kisaki-extension`
 
-Do not create package-specific release targets for these packages. The user-facing unit is
-the extension tooling suite, not each package in isolation.
+Do not create package-specific release targets for these packages. The reader-facing unit is the
+extension tooling suite, not each package in isolation.
 
-Every release assigns the new tooling version to all packages and publishes every package
-whose exact tarball is not already present on npm. A change that primarily affects one package,
-including adding a new package, does not create a package-specific release.
+Every release assigns the new tooling version to all packages, builds every package, creates one
+canonical set of tarballs, verifies the uploaded artifact checksums, runs `npm publish --dry-run`
+inside the publish command, publishes the same tarballs with one derived npm dist-tag, and only then
+creates the GitHub Release.
 
 ## Commands
 
 ```bash
-pnpm version:extension-tooling 0.0.2
-pnpm check:extension-tooling 0.0.2
+pnpm version:extension-tooling 0.0.4
+pnpm check:extension-tooling 0.0.4
 pnpm build:extension-tooling
-pnpm publish:extension-tooling --dry-run
+pnpm verify:extension-tooling
+pnpm pack:extension-tooling --out-dir .tmp/release/extension-tooling/v0.0.4
+pnpm publish:extension-tooling --dir .tmp/release/extension-tooling/v0.0.4 --provenance
 ```
 
-`packages/extension-tooling-manifest.json` is the source of truth for the package list, dependency
-order, build groups, and required outputs. `tools/extension-tooling/` keeps the command entry,
-contract checks, build, packing, and publishing flows in separate modules. It verifies:
+`packages/extension-tooling-manifest.json` is the source of truth for package list, dependency
+order, build groups, and required outputs. `tools/extension-tooling/` keeps command routing,
+contract checks, build, packing, publish dry-run, and publishing in separate modules. The
+side-effecting `publish:extension-tooling` command always runs `npm publish --dry-run` before
+mutating npm.
+
+The contract verifies:
 
 - every tooling package has the same `package.json` version
 - internal workspace dependencies use `workspace:*`
 - `EXTENSION_API_VERSION` matches the tooling version
-- bundled extension scaffold packages are injected into `devDependencies` with
-  `__TOOLING_VERSION__`
-- the Vue UI kit scaffold package is injected into `devDependencies` with
-  `__TOOLING_VERSION__`
-- extension scaffold manifests derive their `engines.kisaki` default from the
-  current Extension API version
+- scaffold packages receive tooling dependencies through `__TOOLING_VERSION__`
+- extension scaffold manifests derive their `engines.kisaki` default from the current Extension API
+  version
 
-`publish:extension-tooling --dry-run` runs npm's package-content checks for every tarball without
-changing the registry. It forces past existing-version protection only inside npm's dry-run mode so
-all lockstep packages are checked. A real publish performs registry preflight before publishing as
-described below.
+## Canonical Tarballs
+
+`pnpm pack:extension-tooling` is the only step allowed to create release tarballs. After each
+`pnpm pack`, the tooling rewrites the packed `package/package.json` and sorts dependency map keys
+before checksums are generated. This prevents meaningless SHA changes from package manager key-order
+differences, especially after `workspace:*` dependencies are rewritten to the release version.
+
+The workflow uploads this canonical `.tgz` set as `release-extension-tooling-packages`. Every later
+step downloads and verifies the same artifact with `SHA256SUMS`; retrying publish or GitHub Release
+steps must never rebuild or repack the packages.
 
 ## Release Commit
 
 ```text
-release(extension-tooling): v0.0.2
+release(extension-tooling): v0.0.4
 ```
 
-The GitHub workflow validates the committed version, builds all tooling packages, publishes
-them in dependency order, and creates one tag:
+The GitHub workflow validates the committed version and changelogs, builds canonical artifacts,
+publishes those artifacts through a command that first runs `npm publish --dry-run`, and creates one
+Git tag:
 
 ```text
-extension-tooling-v0.0.2
+extension-tooling-v0.0.4
 ```
 
-The publish script derives the npm dist-tag from the Extension API version stage:
-`0.y.z` uses `experimental`, prereleases use `alpha`, `beta`, or `rc`, and stable
-versions use `latest`.
+The npm dist-tag is derived from the SemVer version itself: plain versions, including `0.x`, publish
+to `latest`; prereleases publish to `alpha`, `beta`, or `rc` when the prerelease identifier starts
+with that stage. Other prerelease identifiers publish to `experimental`.
+
+GitHub Release prerelease status follows the same SemVer prerelease rule as the desktop app. Only
+stable desktop releases are marked as the repository's latest GitHub Release.
 
 ## Release Pipeline
 
@@ -73,62 +87,57 @@ An extension tooling release runs in this order:
 1. A push to `main` whose first commit-message line is
    `release(extension-tooling): vX.Y.Z` selects the extension tooling target.
 2. The target tag must be unused or already point at the same release commit; a conflicting tag
-   stops the workflow before npm can be changed.
+   stops the workflow before npm is touched.
 3. The workflow requires non-empty `zh-Hans.md`, `en.md`, and `ja.md` changelogs under
    `changelog/extension-tooling/vX.Y.Z/`.
-4. The manifest must define each package exactly once, keep dependency-safe publish/build order,
-   cover every package with a build group and output path, and match workspace dependencies.
-5. The committed package versions and `EXTENSION_API_VERSION` must equal `X.Y.Z`.
-6. All tooling packages are built, their declared outputs are verified, and all tarballs are
-   created before npm is mutated.
-7. Every tarball passes an npm publish dry-run before the tarballs, `SHA256SUMS`, and `PACKAGES.md`
-   are saved as an overwrite-safe GitHub Actions artifact.
-8. npm preflight checks every `package@version` before the first missing package is published.
-9. Missing packages are published in manifest dependency order. A successful npm command completes
-   each package.
-10. Only after npm publishing succeeds does the workflow download the release artifacts, verify
-    `SHA256SUMS`, create or reuse the Git tag, and create or update the GitHub Release.
+4. The committed package versions and `EXTENSION_API_VERSION` must equal `X.Y.Z`.
+5. All tooling packages are built, their declared outputs are verified, and canonical tarballs are
+   created once.
+6. The build job uploads the canonical tarballs, `SHA256SUMS`, and `PACKAGES.md` as one release
+   artifact.
+7. The publish job downloads the original artifact, verifies `SHA256SUMS`, checks existing npm
+   versions for matching SHA-512 integrity, runs `npm publish --dry-run` for every missing package
+   version, then runs `npm publish --provenance`.
+8. Already-published package versions are skipped only when npm reports the same SHA-512 integrity;
+   a different integrity stops the release and requires a new tooling version.
+9. After npm publishing succeeds, the workflow creates or reuses the Git tag and creates or updates
+   the GitHub Release with the same artifacts.
 
 The workflow serializes release runs on `main` and queues pending pushes instead of replacing them;
 a later push cannot cancel an active or already queued release.
 
 ## npm Authentication
 
-The release job always enables both authentication paths:
+The publish dry-run uses `npm publish --dry-run` only. It does not mutate the registry and the
+workflow does not call `npm stage publish` or `npm stage approve`.
 
-- Trusted Publishing through GitHub Actions OIDC is the normal path for packages that already
-  trust `.github/workflows/release.yml`.
-- The `NPM_TOKEN` repository secret is a permanent fallback. It must be a granular token with
-  publish access to the `@kisaki3` scope and bypass-2FA permission appropriate for CI.
+`npm stage approve` is intentionally not part of this automated pipeline: npm requires maintainer
+proof-of-presence and 2FA for staged package approval. For this repository, direct publish dry-run is
+the validation surface because it matches the final publish command without creating staged package
+state.
 
-The pinned npm CLI tries OIDC first and can fall back to `NPM_TOKEN`. When a new tooling package is
-added, update or replace `NPM_TOKEN` so it can create that package. After its first publication,
-configure the same GitHub workflow as the package's Trusted Publisher. The token fallback remains
-configured for future packages.
+Publishing uses npm trusted publishing through GitHub Actions OIDC. Each package must trust
+`.github/workflows/release.yml` and grant `npm publish`. The automated release workflow does not use
+long-lived npm access tokens; temporary tokens are reserved for explicit manual recovery work.
 
-The npm CLI is pinned in the release workflow because Trusted Publishing requires npm 11.5.1 or
-newer. Scoped packages are always published with `--access public`, and CI requests npm provenance
-attestations for the GitHub-built artifacts.
+Trusted publishing requires a current npm CLI and Node runtime. The release workflow pins npm to a
+compatible version.
 
-## npm Retry And Collision Rules
+## Retry And Collision Rules
 
-npm does not provide an atomic transaction spanning several packages. The publish script makes the
-multi-package operation safely repeatable:
+npm package versions are immutable. The release process is repeatable by reusing canonical artifacts,
+not by rebuilding tarballs.
 
-| Registry state for `package@version`                 | Result                                                            |
-| ---------------------------------------------------- | ----------------------------------------------------------------- |
-| Version is missing                                   | Publish it.                                                       |
-| Version exists and SHA-512 matches the local tarball | Skip it as an already completed step.                             |
-| Version exists but SHA-512 differs                   | Stop before publishing any missing package; choose a new version. |
-| Publish command fails                                | Stop the job and rerun the same workflow after fixing the cause.  |
-
-A failed publish stops immediately. On rerun, preflight skips identical immutable versions and
-resumes with the missing packages.
+| State                                       | Result                                                               |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| Version is missing                          | Dry-run with `npm publish --dry-run`, then publish tarball.          |
+| Version exists and SHA-512 matches artifact | Skip publish and continue GitHub Release steps.                      |
+| Version exists but SHA-512 differs          | Stop; choose a new tooling version.                                  |
+| Publish fails after some packages succeed   | Rerun; matching package versions are skipped and missing ones retry. |
 
 ## GitHub Release Retry Rules
 
-The GitHub tag and Release are downstream of a successful target build. For extension tooling, npm
-must be complete before either is created.
+The GitHub tag and Release are downstream of npm publish.
 
 | GitHub state                             | Result                                                |
 | ---------------------------------------- | ----------------------------------------------------- |
@@ -138,22 +147,9 @@ must be complete before either is created.
 | Release is missing                       | Create it from the validated changelog and artifacts. |
 | Release already exists                   | Update its body and overwrite same-named assets.      |
 
-If npm succeeds but Git tag or GitHub Release creation fails, rerun the same workflow. npm preflight
-skips the matching packages, the tag step safely creates or reuses the tag, and the Release action
-replaces incomplete assets.
-
-## Common Cases
-
-| Case                                    | npm result                                                                 | GitHub result                                                         |
-| --------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Ordinary non-release push               | No npm work.                                                               | No tag or Release.                                                    |
-| Normal tooling release                  | Publish every tooling package at the new version in dependency order.      | Create one `extension-tooling-vX.Y.Z` tag and Release.                |
-| First release containing a new package  | Existing packages use OIDC; the new package can use `NPM_TOKEN`.           | Same single tooling tag and Release after every package succeeds.     |
-| Retry after partial npm publication     | Preflight and skip identical versions, then publish the missing remainder. | Created only after npm becomes complete.                              |
-| Existing version has different contents | Abort preflight; npm versions are immutable.                               | No tag or Release.                                                    |
-| Retry after GitHub Release failure      | Skip all matching npm versions.                                            | Reuse the tag and update the Release/assets.                          |
-| Prerelease version                      | Publish using the derived prerelease/experimental npm dist-tag.            | Mark the GitHub Release as a prerelease.                              |
-| Desktop release commit                  | No extension tooling npm work.                                             | Build desktop artifacts and use the independent `desktop-vX.Y.Z` tag. |
+If npm publish succeeds but Git tag or GitHub Release creation fails, rerun the same workflow. The
+publish job verifies matching npm versions, skips already-published tarballs, and the Release job
+reuses the original uploaded artifacts.
 
 ## Adding A Tooling Package
 
@@ -162,11 +158,11 @@ Before its first lockstep release:
 1. Add it to `packages/extension-tooling-manifest.json` in dependency-safe publish order.
 2. Add its internal workspace dependencies, build group, and required output paths.
 3. Give it the current development version and include any scaffold version-token contracts.
-4. Ensure the `NPM_TOKEN` secret can create and publish the new scoped package.
-5. Run build, output verification, pack, and publish dry-run locally.
-6. Bump every tooling package and `EXTENSION_API_VERSION` to the next new suite version; adding a
-   package never backfills or mutates the previous GitHub Release.
-7. After the first npm publication, configure `release.yml` as the new package's Trusted Publisher.
+4. Confirm `npm publish --dry-run` passes for the new package.
+5. Configure `.github/workflows/release.yml` as the package trusted publisher with permission for
+   `npm publish`.
+6. Run build, output verification, and pack locally.
+7. Bump every tooling package and `EXTENSION_API_VERSION` to the next suite version.
 
-All GitHub Actions used by CI and release workflows are pinned to immutable commit SHAs.
-Dependabot checks those pins weekly and proposes reviewed updates.
+All GitHub Actions used by CI and release workflows are pinned to immutable commit SHAs. Dependabot
+checks those pins weekly and proposes reviewed updates.

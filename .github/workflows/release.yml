@@ -68,7 +68,7 @@ jobs:
             IS_PRERELEASE=false
             MAKE_LATEST=false
 
-            if [[ "$TARGET" = "desktop" && "$VERSION" == *-* ]]; then
+            if [[ "$VERSION" == *-* ]]; then
               IS_PRERELEASE=true
             fi
 
@@ -193,7 +193,7 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          package-manager-cache: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -212,15 +212,14 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-  release-extension-tooling:
-    name: Build And Publish Extension Tooling
+  build-extension-tooling-release:
+    name: Build Extension Tooling Release Packages
     needs: [detect, validate-release]
     if: needs.detect.outputs.target == 'extension-tooling'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -233,7 +232,7 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          package-manager-cache: false
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install pinned npm CLI
@@ -254,9 +253,6 @@ jobs:
       - name: Pack extension tooling packages
         run: pnpm pack:extension-tooling --out-dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}"
 
-      - name: Verify extension tooling tarballs
-        run: pnpm publish:extension-tooling --dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" --dry-run
-
       - name: Upload extension tooling artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -268,10 +264,47 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
+  release-extension-tooling:
+    name: Publish Extension Tooling To npm
+    needs: [detect, build-extension-tooling-release]
+    if: needs.detect.outputs.target == 'extension-tooling'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pinned npm CLI
+        run: npm install --global npm@${{ env.NPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download extension tooling artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-extension-tooling-packages
+          path: .tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}
+
+      - name: Verify extension tooling artifact checksums
+        run: cd ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" && sha256sum --check SHA256SUMS
+
       - name: Publish extension tooling packages
         run: pnpm publish:extension-tooling --dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-github-release:
     name: Publish GitHub Release

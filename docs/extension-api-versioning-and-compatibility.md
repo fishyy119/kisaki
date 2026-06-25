@@ -147,13 +147,13 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 
 ### 总表
 
-| API 版本形态    | 阶段     | 官方兼容承诺    | 官方推荐 `engines.kisaki` | 推荐 dist-tag  |
-| --------------- | -------- | --------------- | ------------------------- | -------------- |
-| `0.y.z`         | 内部实验 | 只承诺严格等于  | `=0.y.z`                  | `experimental` |
-| `N.M.P-alpha.n` | 实验线   | 只承诺严格等于  | `=N.M.P-alpha.n`          | `alpha`        |
-| `N.M.P-beta.n`  | 验证线   | 只承诺严格等于  | `=N.M.P-beta.n`           | `beta`         |
-| `N.M.P-rc.n`    | 候选线   | rc 内部向后兼容 | `>=N.M.P-rc.1 <N.M.P`     | `rc`           |
-| `N.M.P`         | 稳定线   | 严格 SemVer     | `^N.M.P`                  | `latest`       |
+| API 版本形态    | 阶段     | 官方兼容承诺    | 官方推荐 `engines.kisaki` | 推荐 dist-tag |
+| --------------- | -------- | --------------- | ------------------------- | ------------- |
+| `0.y.z`         | 早期开发 | 只承诺严格等于  | `=0.y.z`                  | `latest`      |
+| `N.M.P-alpha.n` | 实验线   | 只承诺严格等于  | `=N.M.P-alpha.n`          | `alpha`       |
+| `N.M.P-beta.n`  | 验证线   | 只承诺严格等于  | `=N.M.P-beta.n`           | `beta`        |
+| `N.M.P-rc.n`    | 候选线   | rc 内部向后兼容 | `>=N.M.P-rc.1 <N.M.P`     | `rc`          |
+| `N.M.P`         | 稳定线   | 严格 SemVer     | `^N.M.P`                  | `latest`      |
 
 `N.M.P` 是目标稳定版本。对于破坏性大版本，目标通常是 `N.0.0`，例如 `2.0.0-alpha.1`、`2.0.0-beta.1`、`2.0.0-rc.1`、`2.0.0`。
 
@@ -373,13 +373,13 @@ semver.satisfies(apiVersion, enginesKisakiRange, { includePrerelease: true })
 
 推荐 dist-tag：
 
-- `0.y.z` 发布到 `experimental`。
+- 普通版本发布到 `latest`，包括 `0.y.z`。
 - `alpha` 发布到 `alpha`。
 - `beta` 发布到 `beta`。
 - `rc` 发布到 `rc`。
-- stable 发布到 `latest`。
+- 其它需要明确实验语义的 prerelease 发布到 `experimental`。
 
-如果 npm 发布流程暂时只支持 `next` 和 `latest`，应以本文为目标调整，而不是让 `next` 成为长期语义事实源。
+`0.y.z` 仍然只承诺严格等于，不因为发布到 `latest` 而获得稳定 SemVer 兼容承诺。
 
 ### CLI 与脚手架
 
@@ -472,7 +472,7 @@ Registry 不根据主应用版本过滤扩展。
 每次 Extension API 发布必须标注：
 
 - API version。
-- 阶段：experimental、alpha、beta、rc、stable。
+- 阶段：early、experimental、alpha、beta、rc、stable。
 - 是否破坏公共契约。
 - 新增 API。
 - 删除 API。
@@ -608,7 +608,8 @@ API 兼容只回答“这个扩展声明的 API 范围是否包含当前宿主 A
 - `tools/extension-tooling/cli.ts` 继续校验 `EXTENSION_API_VERSION`。
 - `kisx validate` 增加官方推荐范围 warning。
 - `create-kisaki-extension` 根据 API 版本阶段生成默认 range。
-- 发布脚本支持 `experimental`、`alpha`、`beta`、`rc`、`latest` dist-tag。
+- 发布脚本根据 SemVer 自动选择 `latest`、`alpha`、`beta`、`rc` 或 `experimental`
+  dist-tag。
 
 ### Documentation
 
@@ -644,7 +645,7 @@ pnpm --filter @kisaki3/extension-api lint
 
 | 当前 API 版本   | 扩展声明              | 是否兼容 | 说明                    |
 | --------------- | --------------------- | -------- | ----------------------- |
-| `0.4.0`         | `=0.4.0`              | 是       | experimental 精确匹配   |
+| `0.4.0`         | `=0.4.0`              | 是       | early 精确匹配          |
 | `0.4.1`         | `=0.4.0`              | 否       | `0.*` 无 patch 兼容承诺 |
 | `2.0.0-alpha.3` | `=2.0.0-alpha.3`      | 是       | alpha 精确匹配          |
 | `2.0.0-alpha.4` | `=2.0.0-alpha.3`      | 否       | alpha 内部无兼容承诺    |

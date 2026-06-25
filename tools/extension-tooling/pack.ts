@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import path from 'node:path'
 import { checkTooling, getToolingVersion } from './contract'
 import { run } from './process'
+import { canonicalizePackageTarball } from './tarball'
 import { getPackageDirectory, type ToolingWorkspace } from './workspace'
 
 export interface ToolingTarball {
@@ -35,6 +36,7 @@ export function packTooling(workspace: ToolingWorkspace, args: readonly string[]
       ['pack', '--pack-destination', outDir],
       getPackageDirectory(workspace, toolingPackage)
     )
+    canonicalizePackageTarball(path.join(outDir, getTarballFileName(toolingPackage.name, version)))
   }
 
   const tarballs = collectToolingTarballs(workspace, version, outDir)

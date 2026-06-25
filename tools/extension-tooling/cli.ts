@@ -77,6 +77,6 @@ function printUsage(receivedCommand: string | undefined): void {
   tsx tools/extension-tooling/cli.ts build
   tsx tools/extension-tooling/cli.ts verify-output
   tsx tools/extension-tooling/cli.ts pack [--out-dir <dir>]
-  tsx tools/extension-tooling/cli.ts publish [--dir <dir>] [--dry-run] [--provenance] [--tag <tag>]
+  tsx tools/extension-tooling/cli.ts publish [--dir <dir>] [--provenance]
   tsx tools/extension-tooling/cli.ts list`)
 }

@@ -110,7 +110,8 @@ pnpm format                 # Format all
 pnpm check:extension-tooling       # Verify lockstep tooling version contract
 pnpm version:extension-tooling 0.0.2
 pnpm build:extension-tooling       # Build API, registry, SDK, CLI, and scaffold
-pnpm publish:extension-tooling     # Publish all extension tooling packages in order
+pnpm pack:extension-tooling        # Create canonical extension tooling tarballs
+pnpm publish:extension-tooling     # Publish canonical tarballs with the derived npm dist-tag
 ```
 
 ### Script Routing
@@ -128,14 +129,16 @@ Root scripts use `--filter`:
 
 Extension tooling packages use a single lockstep version:
 
-- `@kisaki/extension-api`
-- `@kisaki/extension-registry`
-- `@kisaki/extension-sdk`
-- `@kisaki/extension-cli`
+- `@kisaki3/extension-api`
+- `@kisaki3/extension-registry`
+- `@kisaki3/extension-sdk`
+- `@kisaki3/extension-ui-vue`
+- `@kisaki3/extension-cli`
 - `create-kisaki-extension`
 
-`tools/extension-tooling/cli.ts` owns the version contract, version bump helper, and npm
-publish order. Do not add package-specific release jobs for these packages.
+`tools/extension-tooling/cli.ts` owns the version contract, version bump helper, canonical tarball
+packing, publish dry-run, npm publishing, and dist-tag derivation. Do not add
+package-specific release jobs for these packages.
 
 Contract and tooling pipeline:
 

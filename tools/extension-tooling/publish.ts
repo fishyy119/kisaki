@@ -7,10 +7,15 @@ import { run, runCapture } from './process'
 import type { ToolingWorkspace } from './workspace'
 
 interface PublishOptions {
-  dryRun: boolean
   provenance: boolean
   dir?: string
-  tag?: string
+}
+
+interface ReleaseContext {
+  readonly version: string
+  readonly tag: string
+  readonly outDir: string
+  readonly tarballs: readonly ToolingTarball[]
 }
 
 interface ToolingPublishState {
@@ -20,55 +25,38 @@ interface ToolingPublishState {
 
 export function publishTooling(workspace: ToolingWorkspace, args: readonly string[]): void {
   const options = parsePublishOptions(args)
-  const version = getToolingVersion(workspace)
-  checkTooling(workspace, version)
-
-  const tag = options.tag ?? getDefaultDistTag(version)
-  const additionalTags = options.tag === undefined ? getAdditionalDistTags(version, tag) : []
-  const outDir = resolveReleaseDirectory(workspace, version, options.dir)
-  const tarballs = collectToolingTarballs(workspace, version, outDir)
-  const tagSummary = [tag, ...additionalTags].map((distTag) => `"${distTag}"`).join(', ')
+  const context = loadReleaseContext(workspace, options)
 
   console.log(
-    `[extension-tooling] Publishing ${version} from ${path.relative(workspace.root, outDir)} with npm dist-tag ${tagSummary}${options.dryRun ? ' (dry run)' : ''}.`
+    `[extension-tooling] Publishing ${context.version} from ${path.relative(
+      workspace.root,
+      context.outDir
+    )} with npm dist-tag "${context.tag}".`
   )
 
-  if (options.dryRun) {
-    verifyPackageContents(workspace, tarballs, tag)
-    return
-  }
-
-  publishTarballs(workspace, tarballs, {
-    version,
-    tag,
-    additionalTags,
-    provenance: options.provenance
-  })
-}
-
-function publishTarballs(
-  workspace: ToolingWorkspace,
-  tarballs: readonly ToolingTarball[],
-  options: {
-    readonly version: string
-    readonly tag: string
-    readonly additionalTags: readonly string[]
-    readonly provenance: boolean
-  }
-): void {
-  const publishStates = preflightPublish(workspace, tarballs, options.version)
+  const publishStates = inspectPublishedTarballs(workspace, context.tarballs, context.version)
+  const missingTarballs = getMissingTarballs(publishStates)
   let publishedCount = 0
+  let skippedCount = 0
+
+  if (missingTarballs.length > 0) {
+    console.log(
+      `[extension-tooling] Running npm publish dry-run for ${missingTarballs.length} package(s) before publishing.`
+    )
+    verifyPublishPackageContents(workspace, missingTarballs, context.tag)
+  }
 
   for (const { tarball, alreadyPublished } of publishStates) {
     if (alreadyPublished) {
       console.log(
-        `[extension-tooling] Skipping ${tarball.packageName}@${options.version}; npm already has the identical tarball.`
+        `[extension-tooling] Skipping ${tarball.packageName}@${context.version}; npm already has the identical tarball.`
       )
+      skippedCount += 1
       continue
     }
 
     console.log(`[extension-tooling] Publishing ${tarball.packageName}...`)
-    const publishArgs = ['publish', tarball.filePath, '--access', 'public', '--tag', options.tag]
+    const publishArgs = ['publish', tarball.filePath, '--access', 'public', '--tag', context.tag]
     if (options.provenance) {
       publishArgs.push('--provenance')
     }
@@ -77,44 +65,31 @@ function publishTarballs(
     publishedCount += 1
   }
 
-  syncPublishedDistTags(workspace, tarballs, {
-    version: options.version,
-    tags: [options.tag, ...options.additionalTags]
-  })
-
   console.log(
-    `[extension-tooling] npm release ${options.version} is complete (${publishedCount} published, ${publishStates.length - publishedCount} already present).`
+    `[extension-tooling] npm release ${context.version} is published (${publishedCount} published, ${skippedCount} already published).`
   )
 }
 
-function syncPublishedDistTags(
+function loadReleaseContext(
   workspace: ToolingWorkspace,
-  tarballs: readonly ToolingTarball[],
-  options: { readonly version: string; readonly tags: readonly string[] }
-): void {
-  console.log(`[extension-tooling] Syncing npm dist-tags: ${options.tags.join(', ')}.`)
+  options: { readonly dir?: string }
+): ReleaseContext {
+  const version = getToolingVersion(workspace)
+  checkTooling(workspace, version)
 
-  for (const tarball of tarballs) {
-    const currentTags = getPublishedDistTags(workspace, tarball.packageName)
+  const tag = derivePublishDistTag(version)
+  const outDir = resolveReleaseDirectory(workspace, version, options.dir)
+  const tarballs = collectToolingTarballs(workspace, version, outDir)
 
-    for (const tag of options.tags) {
-      if (currentTags[tag] === options.version) {
-        continue
-      }
-
-      console.log(
-        `[extension-tooling] Setting ${tarball.packageName}@${tag} to ${options.version}.`
-      )
-      run(
-        'npm',
-        ['dist-tag', 'add', `${tarball.packageName}@${options.version}`, tag],
-        workspace.root
-      )
-    }
+  return {
+    version,
+    tag,
+    outDir,
+    tarballs
   }
 }
 
-function verifyPackageContents(
+function verifyPublishPackageContents(
   workspace: ToolingWorkspace,
   tarballs: readonly ToolingTarball[],
   tag: string
@@ -123,18 +98,18 @@ function verifyPackageContents(
     console.log(`[extension-tooling] Checking ${tarball.packageName} package contents...`)
     run(
       'npm',
-      ['publish', tarball.filePath, '--access', 'public', '--tag', tag, '--dry-run', '--force'],
+      ['publish', tarball.filePath, '--access', 'public', '--tag', tag, '--dry-run'],
       workspace.root
     )
   }
 }
 
-function preflightPublish(
+function inspectPublishedTarballs(
   workspace: ToolingWorkspace,
   tarballs: readonly ToolingTarball[],
   version: string
 ): ToolingPublishState[] {
-  console.log('[extension-tooling] Preflighting npm package versions...')
+  console.log('[extension-tooling] Checking npm package versions...')
 
   return tarballs.map((tarball) => {
     const localIntegrity = sha512Integrity(tarball.filePath)
@@ -151,6 +126,10 @@ function preflightPublish(
       alreadyPublished: publishedIntegrity === localIntegrity
     }
   })
+}
+
+function getMissingTarballs(publishStates: readonly ToolingPublishState[]): ToolingTarball[] {
+  return publishStates.filter((state) => !state.alreadyPublished).map((state) => state.tarball)
 }
 
 function getPublishedIntegrity(
@@ -190,67 +169,24 @@ function getPublishedIntegrity(
   )
 }
 
-function getPublishedDistTags(
-  workspace: ToolingWorkspace,
-  packageName: string
-): Record<string, string> {
-  const result = runCapture(
-    'npm',
-    ['view', packageName, 'dist-tags', '--json', '--prefer-online'],
-    workspace.root
-  )
-
-  if (result.status !== 0) {
-    throw new Error(
-      `Failed to query npm dist-tags for ${packageName} (exit code ${String(result.status ?? 'unknown')}).`
-    )
-  }
-
-  let distTags: unknown
-  try {
-    distTags = JSON.parse(result.stdout.trim())
-  } catch {
-    throw new Error(`npm returned invalid dist-tag metadata for ${packageName}.`)
-  }
-
-  if (distTags === null || typeof distTags !== 'object' || Array.isArray(distTags)) {
-    throw new Error(`npm returned invalid dist-tag metadata for ${packageName}.`)
-  }
-
-  return Object.fromEntries(
-    Object.entries(distTags).filter(
-      (entry): entry is [string, string] => typeof entry[1] === 'string'
-    )
-  )
-}
-
 function parsePublishOptions(args: readonly string[]): PublishOptions {
-  const options: PublishOptions = { dryRun: false, provenance: false }
+  const options: PublishOptions = { provenance: false }
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
-
-    if (arg === '--dry-run') {
-      options.dryRun = true
-      continue
-    }
 
     if (arg === '--provenance') {
       options.provenance = true
       continue
     }
 
-    if (arg === '--tag' || arg === '--dir') {
+    if (arg === '--dir') {
       const value = args[index + 1]
       if (!value) {
         throw new Error(`${arg} requires a value.`)
       }
 
-      if (arg === '--tag') {
-        options.tag = value
-      } else {
-        options.dir = value
-      }
+      options.dir = value
       index += 1
       continue
     }
@@ -261,12 +197,8 @@ function parsePublishOptions(args: readonly string[]): PublishOptions {
   return options
 }
 
-function getDefaultDistTag(version: string): string {
-  const [core, prerelease] = version.split('-', 2)
-  if (core.startsWith('0.')) {
-    return 'experimental'
-  }
-
+function derivePublishDistTag(version: string): string {
+  const [, prerelease] = version.split('-', 2)
   if (!prerelease) {
     return 'latest'
   }
@@ -277,18 +209,6 @@ function getDefaultDistTag(version: string): string {
   }
 
   return 'experimental'
-}
-
-function getAdditionalDistTags(version: string, primaryTag: string): string[] {
-  const [core, prerelease] = version.split('-', 2)
-
-  // npmjs.org does not allow removing "latest". During 0.x, keep it as a default-install
-  // alias for the newest plain experimental release so it never points at stale tooling.
-  if (core.startsWith('0.') && !prerelease && primaryTag !== 'latest') {
-    return ['latest']
-  }
-
-  return []
 }
 
 function sha512Integrity(filePath: string): string {

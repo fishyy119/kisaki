@@ -33,6 +33,7 @@
     "jiti": "^2.6.1",
     "lefthook": "^2.0.12",
     "prettier": "^3.7.4",
+    "tar": "7.5.9",
     "tsdown": "^0.19.0",
     "tsx": "^4.20.6",
     "typescript-eslint": "^8.49.0"
