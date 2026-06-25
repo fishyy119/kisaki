@@ -26,7 +26,7 @@ const templateDependencyContracts = [
     ]
   },
   {
-    path: 'packages/create-kisaki-extension/templates/extension/webview/vue-kit/package.patch.json',
+    path: 'packages/create-kisaki-extension/templates/extension/webview/vue-kit/patches/package.json',
     devDependencyNames: ['@kisaki3/extension-ui-vue']
   }
 ] as const
