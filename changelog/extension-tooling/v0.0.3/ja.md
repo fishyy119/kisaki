@@ -2,23 +2,24 @@
 
 ## 破壊的変更
 
-- `create-kisaki-extension` はサブコマンド形式になりました。リポジトリ作成には `pnpm create kisaki-extension init <dir>` を使ってください。
-- `--publish` を廃止し、`--layout single|monorepo` と `--provider manual|github` でリポジトリ構成とリリース提供元を別々に選びます。
-- `kisx validate` は `private: true` を必須とし、拡張バージョンは `manifest.json` のみを正とします。
-- Kisaki ツールチェーンパッケージは `devDependencies` に置きます。`dependencies` と `optionalDependencies` は `.kisx` に同梱する外部ランタイム依存のみに使います。
+- `create-kisaki-extension` をサブコマンド形式に変更し、リポジトリ作成には `pnpm create kisaki-extension init <dir>` が必要
+- `--publish` を削除し、`--layout single|monorepo` と `--provider manual|github` でリポジトリ構成とリリース方法を個別に選択
+- 拡張パッケージの `private: true` 宣言を必須化し、拡張バージョンは `manifest.json` を参照
+- Kisaki ツールチェーンパッケージは `devDependencies` に配置し、`.kisx` に同梱する外部ランタイム依存のみを `dependencies` または `optionalDependencies` に保持
 
 ## 新機能
 
-- `create-kisaki-extension add` は生成済みの monorepo に拡張を追加し、リリース提供元を引き継ぎます。
-- `kisx --project <dir>` で任意のディレクトリから build、validate、pack、dev を実行できます。
-
-## 改善
-
-- スキャフォールドのレイヤーを再構成し、構成とリリース提供元を直交して組み合わせられるようにしました。テンプレートのマージは明示的な `template.json` プロトコル（`json.merge` / `text.slot`）に移行しました。
-- `kisx pack` は外部ランタイム依存のみをコピーし、host 出力にバンドルされる SDK/API パッケージはアーカイブに含めません。
-- ロックステップのツールチェーンリリースで、バージョン検査、ビルド、出力検証、パッケージ作成、npm 公開前チェックを一元化しました。
+- `create-kisaki-extension add` を追加し、生成済みの monorepo に拡張機能を追加可能
+- `kisx --project <dir>` を追加し、任意のディレクトリから build、validate、pack、dev を実行可能
 
 ## 修正
 
-- 0.x ツールチェーンリリースで `experimental` と `latest` の dist-tag を同期します。
-- GitHub Release は npm 公開の成功後にのみ作成・更新し、公開チャネルのずれを防ぎます。
+- 0.x ツールチェーンリリースで `experimental` と `latest` の dist-tag が一致しない問題を修正
+- npm 公開失敗後も GitHub Release が作成または更新されることがある問題を修正
+
+## 改善
+
+- スキャフォールド構造を改善し、リポジトリ構成とリリース方法の独立した組み合わせに対応
+- テンプレートマージプロトコルを改善し、`template.json` で `json.merge` と `text.slot` を宣言
+- `kisx pack` のアーカイブ内容を最適化し、`.kisx` に同梱する外部ランタイム依存のみをコピー
+- ツールチェーンのロックステップリリースを改善し、バージョン検査、ビルド、出力検証、パッケージ作成、npm 公開前チェックを統一

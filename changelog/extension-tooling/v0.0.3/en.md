@@ -2,23 +2,24 @@
 
 ## Breaking Changes
 
-- `create-kisaki-extension` now uses subcommands; create repositories with `pnpm create kisaki-extension init <dir>`.
-- `--publish` is removed; use `--layout single|monorepo` and `--provider manual|github` to choose repository layout and release provider separately.
-- `kisx validate` now requires `private: true` and treats `manifest.json` as the sole source of the extension version.
-- Kisaki tooling packages belong in `devDependencies`; `dependencies` and `optionalDependencies` are reserved for external runtime packages that must ship in the `.kisx`.
+- Changed `create-kisaki-extension` to use subcommands; create repositories with `pnpm create kisaki-extension init <dir>`
+- Removed `--publish` in favor of `--layout single|monorepo` and `--provider manual|github` for choosing repository layout and release provider separately
+- Required extension packages to declare `private: true`, with extension versions sourced from `manifest.json`
+- Required Kisaki tooling packages in `devDependencies`, with external runtime dependencies shipped in `.kisx` kept in `dependencies` or `optionalDependencies`
 
 ## Features
 
-- `create-kisaki-extension add` appends an extension to a generated monorepo, inheriting its release provider.
-- `kisx --project <dir>` runs build, validate, pack, and dev from any directory.
-
-## Improvements
-
-- Scaffold layers recomposed so layout and release provider combine orthogonally; template merging moves to an explicit `template.json` protocol (`json.merge` / `text.slot`).
-- `kisx pack` copies only external runtime dependencies; SDK/API packages bundled into the host output no longer enter the archive.
-- Lockstep tooling releases unify version checks, build, output verification, packing, and npm publish preflight.
+- Added `create-kisaki-extension add` for appending extensions to generated monorepos
+- Added `kisx --project <dir>` support for running build, validate, pack, and dev from any directory
 
 ## Fixes
 
-- 0.x tooling releases now keep `experimental` and `latest` dist-tags in sync.
-- GitHub Releases are created or updated only after npm publishing succeeds, preventing channel drift.
+- Fixed inconsistent `experimental` and `latest` dist-tags during 0.x tooling releases
+- Fixed GitHub Releases being created or updated after failed npm publishing
+
+## Improvements
+
+- Improved scaffold structure, supporting independent composition of repository layout and release provider
+- Improved the template merge protocol with `template.json` declarations for `json.merge` and `text.slot`
+- Optimized `kisx pack` archives to copy only external runtime dependencies that must ship in `.kisx`
+- Improved lockstep tooling releases with unified version checks, builds, output verification, packing, and npm publish preflight

@@ -68,6 +68,21 @@ the remaining sections in this order:
 7. Keep `Highlights` short. Do not repeat every detailed section there.
 8. Do not include internal-only refactors unless they affect users, extension authors, release artifacts, or compatibility.
 
+## Entry Wording
+
+1. Keep bullets short, result-oriented, and consistent with the existing desktop changelogs.
+2. Prefer action prefixes instead of explanatory sentences.
+   - `zh-Hans`: `新增`, `支持`, `修复`, `改进`, `优化`, `重构`, `调整`, `移除`, `要求`
+   - `en`: `Added`, `Supported`, `Fixed`, `Improved`, `Optimized`, `Refactored`, `Changed`, `Removed`, `Required`
+   - `ja`: `追加`, `対応`, `修正`, `改善`, `最適化`, `再構成`, `変更`, `削除`, `必須化`
+3. For `zh-Hans`, omit terminal punctuation for short bullets, matching the desktop release notes.
+4. Use scope prefixes only when they make the reader impact clearer. Prefer public surfaces such as
+   `Extension CLI`, `Scaffold`, `Pack`, `Release`, or their localized equivalents; do not prefix every
+   bullet and do not use internal package names as routine prefixes.
+5. Do not use colon-led fragments when a normal action sentence is clearer. For example, prefer
+   `新增 kisx --project <dir>，支持从任意目录运行 build、validate、pack 和 dev` over
+   `kisx --project <dir>：从任意目录运行 build、validate、pack、dev`.
+
 ## Writing Rules
 
 1. Version folder must match release version exactly (`vX.Y.Z`).
