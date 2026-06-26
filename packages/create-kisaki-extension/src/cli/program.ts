@@ -30,7 +30,7 @@ function routeImplicitCommand(argv: string[]): string[] {
 
   const command = matchesExtensionWorkspace(process.cwd()) ? 'add' : 'init'
   if (command === 'add') {
-    cliOutput.detail(`Detected Kisaki extension monorepository: ${process.cwd()}`)
+    cliOutput.detail(`Detected Kisaki extension workspace: ${process.cwd()}`)
     cliOutput.detail('Adding a new extension.')
   }
   return [argv[0] ?? 'node', argv[1] ?? 'create-kisaki-extension', command, ...args]

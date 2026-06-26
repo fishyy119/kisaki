@@ -4,8 +4,9 @@ import path from 'node:path'
 import {
   copyTemplateLayer,
   createExtensionTemplateLayers,
+  createExtensionTemplateContext,
   createRepositoryTemplateLayers,
-  createTemplateContext,
+  createRepositoryTemplateContext,
   finalizeExtensionTemplate,
   type TemplateLayer
 } from './layers'
@@ -26,10 +27,15 @@ export function scaffoldRepository(options: ScaffoldRepositoryOptions): void {
 
   try {
     materializeLayers(
-      createRepositoryTemplateLayers(options.templateDir, stagingDir, options.config),
-      options.config
+      createRepositoryTemplateLayers(
+        options.templateDir,
+        stagingDir,
+        options.repository,
+        options.extension
+      ),
+      createRepositoryTemplateContext(options.repository, options.extension)
     )
-    finalizeGeneratedExtension(stagingDir, options.config)
+    finalizeGeneratedExtension(stagingDir, options.extension)
     publishStagingDirectory(stagingDir, options.targetDir)
   } catch (error) {
     rmSync(stagingDir, { recursive: true, force: true })
@@ -37,7 +43,7 @@ export function scaffoldRepository(options: ScaffoldRepositoryOptions): void {
   }
 }
 
-/** Adds one extension atomically to an existing extension monorepository. */
+/** Adds one extension atomically to an existing extension workspace. */
 export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOptions): string {
   readExtensionWorkspace(options.workspaceDir)
   if (!existsSync(options.templateDir)) {
@@ -45,7 +51,7 @@ export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOp
   }
 
   const extensionsDir = path.join(options.workspaceDir, 'extensions')
-  const targetDir = path.join(extensionsDir, options.config.extensionId)
+  const targetDir = path.join(extensionsDir, options.extension.extensionId)
   if (existsSync(targetDir)) {
     throw new Error(`Extension directory already exists: ${targetDir}`)
   }
@@ -55,10 +61,10 @@ export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOp
 
   try {
     materializeLayers(
-      createExtensionTemplateLayers(options.templateDir, stagingDir, options.config),
-      options.config
+      createExtensionTemplateLayers(options.templateDir, stagingDir, options.extension),
+      createExtensionTemplateContext(options.extension)
     )
-    finalizeExtensionTemplate(stagingDir, options.config)
+    finalizeExtensionTemplate(stagingDir, options.extension)
     publishStagingDirectory(stagingDir, targetDir)
     updateWorkspaceExtensionList(options.workspaceDir)
     return targetDir
@@ -69,21 +75,14 @@ export function scaffoldWorkspaceExtension(options: ScaffoldWorkspaceExtensionOp
   }
 }
 
-function materializeLayers(
-  layers: readonly TemplateLayer[],
-  config: ExtensionScaffoldConfig
-): void {
-  const context = createTemplateContext(config)
+function materializeLayers(layers: readonly TemplateLayer[], context: Map<string, string>): void {
   for (const layer of layers) {
     copyTemplateLayer(layer, context)
   }
 }
 
 function finalizeGeneratedExtension(repositoryDir: string, config: ExtensionScaffoldConfig): void {
-  const extensionDir =
-    config.repositoryLayout === 'monorepo'
-      ? path.join(repositoryDir, 'extensions', config.extensionId)
-      : repositoryDir
+  const extensionDir = path.join(repositoryDir, 'extensions', config.extensionId)
   finalizeExtensionTemplate(extensionDir, config)
 }
 

@@ -1,9 +1,3 @@
-/** Repository layouts supported by the scaffold. */
-export const EXTENSION_REPOSITORY_LAYOUTS = ['single', 'monorepo'] as const
-
-/** A supported repository layout. */
-export type ExtensionRepositoryLayout = (typeof EXTENSION_REPOSITORY_LAYOUTS)[number]
-
 /** Release providers supported by the scaffold. */
 export const EXTENSION_PUBLISH_PROVIDERS = ['manual', 'github'] as const
 
@@ -39,13 +33,6 @@ export interface OptionChoiceMetadata<T extends string> {
   label: string
 }
 
-/** Repository layout options shown during interactive scaffolding. */
-export const REPOSITORY_LAYOUT_OPTIONS: readonly OptionChoiceMetadata<ExtensionRepositoryLayout>[] =
-  [
-    { value: 'single', label: 'Single extension' },
-    { value: 'monorepo', label: 'Extension monorepo' }
-  ]
-
 /** Release provider options shown during interactive scaffolding. */
 export const PUBLISH_PROVIDER_OPTIONS: readonly OptionChoiceMetadata<ExtensionPublishProvider>[] = [
   { value: 'github', label: 'GitHub Releases' },
@@ -69,16 +56,11 @@ export const WEBVIEW_ADDON_OPTIONS: readonly OptionChoiceMetadata<ExtensionWebvi
   { value: 'kisaki-ui-vue', label: 'Kisaki UI Vue' }
 ]
 
-/** Default repository layout when no choice is provided. */
-export const DEFAULT_REPOSITORY_LAYOUT: ExtensionRepositoryLayout = 'single'
-
 /** Default release provider when no choice is provided. */
 export const DEFAULT_PUBLISH_PROVIDER: ExtensionPublishProvider = 'github'
 
-/** Default project directory name when no target is provided. */
-export const DEFAULT_PROJECT_NAME = 'my-kisaki-extension'
+/** Default repository directory name when no target is provided. */
+export const DEFAULT_REPOSITORY_NAME = 'my-kisaki-extension'
 
-/** Formats a webview addon identifier as a human-readable label. */
-export function formatWebviewAddonLabel(addon: ExtensionWebviewAddon): string {
-  return addon === 'kisaki-ui-vue' ? 'Kisaki UI Vue' : addon
-}
+/** Default extension identifier when no extension id source is provided. */
+export const DEFAULT_EXTENSION_ID = 'my-kisaki-extension'

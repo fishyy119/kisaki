@@ -1,4 +1,4 @@
-## Publish From The Monorepo
+## Publish With GitHub
 
 This extension lives in `extensions/{{EXTENSION_ID}}` and is published by the
 repository root workflow. Push a scoped release commit:

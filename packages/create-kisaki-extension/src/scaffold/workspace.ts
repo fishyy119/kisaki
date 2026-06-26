@@ -24,20 +24,16 @@ interface RegistryManifest {
 }
 
 interface ExtensionWorkspaceConfig {
-  layout?: unknown
   provider?: unknown
 }
 
-/** Validated metadata for a generated extension monorepository. */
+/** Validated metadata for a generated extension workspace. */
 export interface ExtensionWorkspace {
-  packageName: string
   packageManager: string
   publishProvider: ExtensionPublishProvider
-  registryId: string
-  registryName: string
 }
 
-/** Returns true only for generated Kisaki extension monorepositories. */
+/** Returns true only for generated Kisaki extension workspaces. */
 export function matchesExtensionWorkspace(workspaceDir: string): boolean {
   try {
     readExtensionWorkspace(workspaceDir)
@@ -47,7 +43,7 @@ export function matchesExtensionWorkspace(workspaceDir: string): boolean {
   }
 }
 
-/** Reads and validates the generated monorepository boundary required by add. */
+/** Reads and validates the generated workspace boundary required by add. */
 export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace {
   for (const relativePath of ['package.json', 'pnpm-workspace.yaml', 'extensions', 'README.md']) {
     if (!existsSync(path.join(workspaceDir, relativePath))) {
@@ -73,9 +69,6 @@ export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace
   }
 
   const workspaceConfig = readWorkspaceConfig(path.join(workspaceDir, WORKSPACE_CONFIG_FILE))
-  if (workspaceConfig.layout !== 'monorepo') {
-    throw new Error('Not a Kisaki extension workspace: layout must be "monorepo".')
-  }
   if (
     typeof workspaceConfig.provider !== 'string' ||
     !(EXTENSION_PUBLISH_PROVIDERS as readonly string[]).includes(workspaceConfig.provider)
@@ -102,11 +95,8 @@ export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace
   }
 
   return {
-    packageName: packageJson.name,
     packageManager: packageJson.packageManager,
-    publishProvider: workspaceConfig.provider as ExtensionPublishProvider,
-    registryId: registry.id,
-    registryName: registry.name
+    publishProvider: workspaceConfig.provider as ExtensionPublishProvider
   }
 }
 
@@ -143,7 +133,7 @@ export function updateWorkspaceExtensionList(workspaceDir: string): void {
   const original = readFileSync(readmePath, 'utf8')
   const entries = readWorkspaceExtensions(path.join(workspaceDir, 'extensions'))
   const list = entries
-    .map((entry) => `- \`${entry.id}\` — ${entry.name} (\`extensions/${entry.id}\`)`)
+    .map((entry) => `- \`${entry.id}\` - ${entry.name} (\`extensions/${entry.id}\`)`)
     .join('\n')
   const replacement = `${EXTENSIONS_START_MARKER}\n\n${list}\n${EXTENSIONS_END_MARKER}`
   const pattern = new RegExp(`${EXTENSIONS_START_MARKER}[\\s\\S]*?${EXTENSIONS_END_MARKER}`)

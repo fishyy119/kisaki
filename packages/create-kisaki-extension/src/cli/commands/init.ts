@@ -1,7 +1,6 @@
 import { Command, Option } from 'commander'
 import {
   EXTENSION_PUBLISH_PROVIDERS,
-  EXTENSION_REPOSITORY_LAYOUTS,
   EXTENSION_STARTERS,
   EXTENSION_WEBVIEW_ADDONS,
   EXTENSION_WEBVIEW_FRAMEWORKS
@@ -16,21 +15,16 @@ export function createInitCommand(context: ScaffoldCliContext): Command {
     .description('Create a new extension repository')
     .argument('[directory]', 'Repository directory')
     .addOption(
-      new Option('--layout <layout>', 'Repository layout').choices([
-        ...EXTENSION_REPOSITORY_LAYOUTS
-      ])
-    )
-    .addOption(
       new Option('--provider <provider>', 'Release provider').choices([
         ...EXTENSION_PUBLISH_PROVIDERS
       ])
     )
     .option('--registry-id <id>', 'Extension registry identifier')
-    .option('--registry-name <name>', 'Extension registry display name')
+    .option('--registry-name <name>', 'Extension registry name')
+    .option('--registry-description <text>', 'Extension registry description')
     .option('--no-git', 'Do not initialize a Git repository')
     .option('--extension-id <id>', 'Stable extension identifier')
-    .option('--package-name <name>', 'Extension npm package name')
-    .option('--extension-name <name>', 'User-facing extension name')
+    .option('--extension-name <name>', 'Extension name')
     .option('--categories <items>', 'Comma-separated extension categories', parseList)
     .addOption(
       new Option('--starter <starter>', 'Generated host implementation starter').choices([

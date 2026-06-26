@@ -1,10 +1,5 @@
+import { EXTENSION_CATEGORIES, type ExtensionCategory } from '@kisaki3/extension-api'
 import {
-  EXTENSION_CATEGORIES,
-  isExtensionIdentifier,
-  type ExtensionCategory
-} from '@kisaki3/extension-api'
-import {
-  createDefaultExtensionId,
   createExtensionDefaults,
   createExtensionScaffoldConfig,
   type ExtensionInputOptions
@@ -13,19 +8,14 @@ import {
   STARTER_OPTIONS,
   WEBVIEW_ADDON_OPTIONS,
   WEBVIEW_FRAMEWORK_OPTIONS,
-  type ExtensionPublishProvider,
-  type ExtensionRepositoryLayout
+  type ExtensionPublishProvider
 } from '../extension-options'
-import { matchesPackageNameFormat, type ExtensionScaffoldConfig } from '../scaffold'
+import { matchesExtensionIdFormat, type ExtensionScaffoldConfig } from '../scaffold'
 import type { PromptChoice, ScaffoldPromptUi } from './tui/prompts'
 
 interface CollectExtensionConfigOptions {
-  projectName: string
-  workspacePackageName: string
-  repositoryLayout: ExtensionRepositoryLayout
+  defaultExtensionId: string
   publishProvider: ExtensionPublishProvider
-  registryId: string
-  registryName: string
   toolingVersion: string
   packageManager?: string
   input: ExtensionInputOptions
@@ -39,27 +29,15 @@ export async function collectExtensionConfig(
   const yes = options.input.yes === true
   const extensionId = await resolveExtensionId(options, yes)
   const defaults = createExtensionDefaults(extensionId)
-  const packageName = await resolveText({
-    value: options.input.packageName,
-    yes,
-    fallback: defaults.packageName,
-    prompt: () =>
-      options.prompts.text({
-        message: 'Package name',
-        initial: defaults.packageName,
-        validate: (value) =>
-          matchesPackageNameFormat(value) ? true : 'Use a lowercase npm package name.'
-      })
-  })
   const extensionName = await resolveText({
     value: options.input.extensionName,
     yes,
     fallback: defaults.extensionName,
     prompt: () =>
       options.prompts.text({
-        message: 'Display name',
+        message: 'Extension name',
         initial: defaults.extensionName,
-        validate: (value) => (value.trim() ? true : 'Display name is required.')
+        validate: (value) => (value.trim() ? true : 'Extension name is required.')
       })
   })
   const categories = await resolveCategories(options, yes, defaults.categories)
@@ -86,14 +64,14 @@ export async function collectExtensionConfig(
       })
   })
   const webviewAddons = await resolveWebviewAddons(options, webviewFramework, yes)
-  const description = await resolveText({
+  const extensionDescription = await resolveText({
     value: options.input.description,
     yes,
-    fallback: defaults.description,
+    fallback: defaults.extensionDescription,
     prompt: () =>
       options.prompts.text({
-        message: 'Description',
-        initial: defaults.description
+        message: 'Extension description',
+        initial: defaults.extensionDescription
       })
   })
   const author = await resolveOptionalText({
@@ -108,22 +86,16 @@ export async function collectExtensionConfig(
   })
 
   const configOptions = {
-    projectName: options.projectName,
-    workspacePackageName: options.workspacePackageName,
-    repositoryLayout: options.repositoryLayout,
     publishProvider: options.publishProvider,
-    registryId: options.registryId,
-    registryName: options.registryName,
     toolingVersion: options.toolingVersion,
     input: {
       extensionId,
-      packageName,
       extensionName,
       categories,
       starter,
       webviewFramework,
       webviewAddons,
-      description,
+      extensionDescription,
       ...(author ? { author } : {})
     }
   }
@@ -138,7 +110,7 @@ async function resolveExtensionId(
   options: CollectExtensionConfigOptions,
   yes: boolean
 ): Promise<string> {
-  const fallback = createDefaultExtensionId(options.projectName)
+  const fallback = options.defaultExtensionId
   return resolveText({
     value: options.input.extensionId,
     yes,
@@ -148,7 +120,7 @@ async function resolveExtensionId(
         message: 'Extension ID',
         initial: fallback,
         validate: (answer) =>
-          isExtensionIdentifier(answer) ? true : 'Use lowercase dot-separated segments.'
+          matchesExtensionIdFormat(answer) ? true : 'Use lowercase dot-separated segments.'
       })
   })
 }
@@ -222,12 +194,13 @@ async function resolveOptionalText(
   options: ResolveOptionalTextOptions
 ): Promise<string | undefined> {
   if (options.value !== undefined) {
-    return options.value
+    return options.value.trim() ? options.value.trim() : undefined
   }
   if (options.yes) {
     return options.fallback
   }
-  return options.prompt()
+  const answer = await options.prompt()
+  return answer.trim() ? answer.trim() : undefined
 }
 
 function toPromptChoices<T extends string>(

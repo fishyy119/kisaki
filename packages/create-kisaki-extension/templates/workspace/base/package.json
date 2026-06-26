@@ -1,10 +1,10 @@
 {
   "name": "{{WORKSPACE_PACKAGE_NAME}}",
   "private": true,
-  "description": "{{REGISTRY_NAME}} extension monorepository.",
-  "packageManager": "{{PACKAGE_MANAGER}}",
+  "description": "{{WORKSPACE_PACKAGE_DESCRIPTION}}",
+  "packageManager": "{{WORKSPACE_PACKAGE_MANAGER}}",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "{{WORKSPACE_NODE_ENGINE_RANGE}}"
   },
   "license": "MIT",
   "scripts": {

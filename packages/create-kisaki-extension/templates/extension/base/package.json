@@ -1,11 +1,11 @@
 {
-  "name": "{{PACKAGE_NAME}}",
+  "name": "{{EXTENSION_PACKAGE_NAME}}",
   "private": true,
-  "description": "{{DESCRIPTION}}",
+  "description": "{{EXTENSION_PACKAGE_DESCRIPTION}}",
   "type": "module",
-  "packageManager": "{{PACKAGE_MANAGER}}",
+  "packageManager": "{{EXTENSION_PACKAGE_MANAGER}}",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "{{EXTENSION_NODE_ENGINE_RANGE}}"
   },
   "scripts": {
     "build": "kisx build",
@@ -20,9 +20,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@kisaki3/extension-api": "^{{TOOLING_VERSION}}",
-    "@kisaki3/extension-cli": "^{{TOOLING_VERSION}}",
-    "@kisaki3/extension-sdk": "^{{TOOLING_VERSION}}",
+    "@kisaki3/extension-api": "^{{KISAKI_TOOLING_VERSION}}",
+    "@kisaki3/extension-cli": "^{{KISAKI_TOOLING_VERSION}}",
+    "@kisaki3/extension-sdk": "^{{KISAKI_TOOLING_VERSION}}",
     "@types/node": "^22.19.1",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",

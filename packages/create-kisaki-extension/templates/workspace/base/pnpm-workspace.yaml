@@ -1,0 +1,13 @@
+packages:
+  - 'extensions/*'
+
+allowBuilds:
+  esbuild: true
+  vue-demi: true
+
+minimumReleaseAgeExclude:
+  - '@kisaki3/extension-api@{{KISAKI_TOOLING_VERSION}}'
+  - '@kisaki3/extension-cli@{{KISAKI_TOOLING_VERSION}}'
+  - '@kisaki3/extension-registry@{{KISAKI_TOOLING_VERSION}}'
+  - '@kisaki3/extension-sdk@{{KISAKI_TOOLING_VERSION}}'
+  - '@kisaki3/extension-ui-vue@{{KISAKI_TOOLING_VERSION}}'

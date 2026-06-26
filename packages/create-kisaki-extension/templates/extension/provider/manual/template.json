@@ -4,7 +4,7 @@
     {
       "op": "text.slot",
       "target": "README.md",
-      "slot": "PUBLISH_SECTION",
+      "slot": "EXTENSION_PUBLISH_SECTION",
       "source": "patches/publish.md"
     }
   ]

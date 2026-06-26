@@ -1,5 +1,5 @@
 import { defineExtension } from '@kisaki3/extension-sdk'
-import { activateStarter } from './{{STARTER_MODULE}}'
+import { activateStarter } from './{{EXTENSION_STARTER_MODULE}}'
 
 const extensionName = `{{EXTENSION_NAME}}`
 

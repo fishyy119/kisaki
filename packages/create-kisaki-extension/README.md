@@ -1,7 +1,7 @@
 # create-kisaki-extension
 
-Creates standalone Kisaki extension repositories and adds projects to generated
-extension monorepositories.
+Creates Kisaki extension repositories and adds projects to generated extension
+workspaces.
 
 ## Create A Repository
 
@@ -9,10 +9,11 @@ extension monorepositories.
 pnpm create kisaki-extension my-extension
 ```
 
-The interactive flow resolves the repository, extension, and webview choices:
+The interactive flow resolves author-facing registry, extension, and webview
+choices:
 
-- the repository layout selects a single extension repository or an extension
-  monorepository;
+- the registry id/name/description becomes the durable registry manifest
+  metadata; generated workspace package metadata is derived from it;
 - the release provider selects manual/custom hosting or GitHub Releases;
 - categories are manifest discovery metadata and support multiple values;
 - the starter selects sample host behavior (`minimal`, `integration`,
@@ -21,22 +22,31 @@ The interactive flow resolves the repository, extension, and webview choices:
 - webview addons select optional framework-specific layers such as
   `kisaki-ui-vue`.
 
-When no subcommand is provided, the scaffold detects generated Kisaki extension
-monorepositories and runs `add`; otherwise it runs `init`. Explicit `init` and
-`add` commands always take precedence.
+Every generated repository is a single workspace shape: a workspace root with
+a registry manifest and an `extensions/` directory. A repository that hosts one
+extension is just a workspace with one entry under `extensions/`, so `add`
+works from the start.
 
-The final extension ID is the source for the default package and display names.
-Use `--package-name` or `--extension-name` only when the generated defaults need
-an explicit override.
+When no subcommand is provided, the scaffold detects generated Kisaki extension
+workspaces and runs `add`; otherwise it runs `init`. Explicit `init` and `add`
+commands always take precedence.
+
+Registry and extension package names are derived from their stable IDs. The
+scaffold does not ask for package names unless a future target format truly
+needs that choice. Override the user-facing extension name with
+`--extension-name` when the generated name is not specific enough. Override
+registry metadata with `--registry-id`, `--registry-name`, or
+`--registry-description`.
 
 Use `--yes` with explicit flags for automation:
 
 ```bash
 pnpm create kisaki-extension init my-extensions \
-  --layout monorepo \
   --provider github \
+  --registry-id example \
+  --registry-name "Example" \
+  --registry-description "Kisaki extensions maintained by Example." \
   --extension-id example.integration \
-  --package-name @example/integration \
   --extension-name "Example Integration" \
   --categories integration,tool \
   --starter integration \
@@ -52,18 +62,17 @@ generation and installation succeed.
 
 ## Add An Extension
 
-From any generated extension monorepository:
+From any generated extension workspace:
 
 ```bash
 pnpm create kisaki-extension add example.theme \
-  --package-name @example/theme \
   --categories theme \
   --starter theme \
   --webview none
 ```
 
 `add` atomically creates `extensions/<extension-id>`, rebuilds the marked
-README extension list, uses the monorepo's release provider, and refreshes the
+README extension list, uses the workspace's release provider, and refreshes the
 shared lockfile. Use `--workspace` when invoking it outside the repository
 root.
 
@@ -89,14 +98,13 @@ for the scaffold tooling version.
 Templates are composable layers:
 
 - `templates/workspace/base`
-- `templates/workspace/layout/<layout>`
-- `templates/workspace/provider/<provider>/<layout>`
+- `templates/workspace/provider/<provider>`
 - `templates/extension/base`
 - `templates/extension/starters/<starter>`
 - `templates/extension/webview/base` when a webview is selected
 - `templates/extension/webview/frameworks/<framework>`
 - `templates/extension/webview/addons/<addon>`
-- `templates/extension/provider/<provider>/<layout>`
+- `templates/extension/provider/<provider>`
 
 Layer files are copied after token rendering. A layer can also declare
 `template.json` merge operations:
@@ -109,7 +117,7 @@ Layer files are copied after token rendering. A layer can also declare
     {
       "op": "text.slot",
       "target": "README.md",
-      "slot": "PUBLISH_SECTION",
+      "slot": "EXTENSION_PUBLISH_SECTION",
       "source": "patches/publish.md"
     }
   ]
@@ -121,6 +129,12 @@ arrays and scalar values replace. `text.slot` replaces exactly one
 `{{SLOT_NAME}}` marker. Patch sources are rendered but not copied. Template
 tokens use `{{UPPER_SNAKE_CASE}}` and are escaped according to JSON/YAML,
 TypeScript, Vue, HTML, or raw text context.
+
+Template data flows in three layers: interactive options collect author-facing
+intent, scaffold configuration validates that intent and derives technical
+values such as package names, and template tokens describe the generated field
+they write to, such as `WORKSPACE_PACKAGE_DESCRIPTION` or
+`EXTENSION_MANIFEST_DESCRIPTION`.
 
 GitHub releases require `KISAKI_EXTENSION_SIGNING_KEY`. Push a commit named
 `release(<extension-id>): v<semver>`; CI validates it and creates the

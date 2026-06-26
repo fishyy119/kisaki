@@ -1,13 +1,13 @@
 {
   "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
-  "id": "{{EXTENSION_ID}}",
-  "name": "{{EXTENSION_NAME}}",
+  "id": "{{EXTENSION_MANIFEST_ID}}",
+  "name": "{{EXTENSION_MANIFEST_NAME}}",
   "version": "0.0.1",
   "categories": [],
   "entry": "./dist/index.mjs",
-  "description": "{{DESCRIPTION}}",
-  "author": "{{AUTHOR}}",
+  "description": "{{EXTENSION_MANIFEST_DESCRIPTION}}",
+  "author": "{{EXTENSION_MANIFEST_AUTHOR}}",
   "engines": {
-    "kisaki": "{{EXTENSION_API_RANGE}}"
+    "kisaki": "{{EXTENSION_MANIFEST_KISAKI_ENGINE_RANGE}}"
   }
 }

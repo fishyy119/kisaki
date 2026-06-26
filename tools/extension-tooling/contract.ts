@@ -16,6 +16,7 @@ interface PackageJson {
 }
 
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
+const templateToolingVersionRange = '^{{KISAKI_TOOLING_VERSION}}'
 const templateDependencyContracts = [
   {
     path: 'packages/create-kisaki-extension/templates/extension/base/package.json',
@@ -144,9 +145,9 @@ function collectToolingProblems(workspace: ToolingWorkspace, expectedVersion: st
     const templatePackage = readWorkspaceJson<PackageJson>(workspace, contract.path)
     for (const dependencyName of contract.devDependencyNames) {
       const actual = templatePackage.devDependencies?.[dependencyName]
-      if (actual !== '^{{TOOLING_VERSION}}') {
+      if (actual !== templateToolingVersionRange) {
         problems.push(
-          `${contract.path} must declare ${dependencyName} in devDependencies with "^{{TOOLING_VERSION}}", found ${String(actual)}.`
+          `${contract.path} must declare ${dependencyName} in devDependencies with "${templateToolingVersionRange}", found ${String(actual)}.`
         )
       }
       if (templatePackage.dependencies?.[dependencyName] !== undefined) {

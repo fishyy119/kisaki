@@ -2,7 +2,6 @@ import {
   EXTENSION_API_VERSION,
   EXTENSION_CATEGORIES,
   getRecommendedExtensionApiRange,
-  isExtensionIdentifier,
   type ExtensionCategory
 } from '@kisaki3/extension-api'
 import { ScaffoldCliError } from './errors'
@@ -11,26 +10,28 @@ import {
   EXTENSION_WEBVIEW_ADDONS,
   EXTENSION_WEBVIEW_FRAMEWORKS,
   type ExtensionPublishProvider,
-  type ExtensionRepositoryLayout,
   type ExtensionStarter,
   type ExtensionWebviewAddon,
   type ExtensionWebviewFramework
 } from './extension-options'
 import {
-  DEFAULT_NODE_VERSION,
+  DEFAULT_NODE_ENGINE_RANGE,
   DEFAULT_PACKAGE_MANAGER,
+  matchesExtensionIdFormat,
   matchesPackageNameFormat,
+  matchesRegistryIdFormat,
   readGitUserName,
-  toDisplayName,
   toExtensionId,
   toPackageName,
-  type ExtensionScaffoldConfig
+  toReadableName,
+  toRegistryId,
+  type ExtensionScaffoldConfig,
+  type RepositoryScaffoldConfig
 } from './scaffold'
 
-/** Optional command flags supplied before interactive defaults are resolved. */
+/** Optional author intent supplied before interactive defaults are resolved. */
 export interface ExtensionInputOptions {
   extensionId?: string
-  packageName?: string
   extensionName?: string
   categories?: readonly string[]
   starter?: string
@@ -41,89 +42,161 @@ export interface ExtensionInputOptions {
   yes?: boolean
 }
 
+/** Optional registry intent collected only by repository initialization. */
+export interface RegistryInputOptions {
+  registryId?: string
+  registryName?: string
+  registryDescription?: string
+}
+
+/** Resolved registry identity before generated package metadata is derived. */
+export interface ResolvedRegistryInput {
+  registryId: string
+  registryName: string
+  registryDescription: string
+}
+
 /** Fully resolved author choices for one generated extension. */
 export interface ResolvedExtensionInput {
   extensionId: string
-  packageName: string
   extensionName: string
   categories: readonly string[]
   starter: string
   webviewFramework: string
   webviewAddons: readonly string[]
-  description: string
+  extensionDescription: string
   author?: string
 }
 
 /** Defaults derived from a validated extension identifier. */
 export interface ExtensionInputDefaults {
-  packageName: string
   extensionName: string
   categories: readonly ExtensionCategory[]
   starter: ExtensionStarter
   webviewFramework: ExtensionWebviewFramework
   webviewAddons: readonly ExtensionWebviewAddon[]
-  description: string
+  extensionDescription: string
   author?: string
 }
 
-/** Context needed to turn resolved author input into a scaffold configuration. */
-export interface CreateExtensionConfigOptions {
-  projectName: string
-  workspacePackageName: string
-  repositoryLayout: ExtensionRepositoryLayout
+/** Context needed to turn resolved registry input into scaffold configuration. */
+export interface CreateRepositoryConfigOptions {
   publishProvider: ExtensionPublishProvider
-  registryId: string
-  registryName: string
+  toolingVersion: string
+  packageManager?: string
+  input: ResolvedRegistryInput
+}
+
+/** Context needed to turn resolved extension input into scaffold configuration. */
+export interface CreateExtensionConfigOptions {
+  publishProvider: ExtensionPublishProvider
   toolingVersion: string
   packageManager?: string
   input: ResolvedExtensionInput
 }
 
-/** Creates the default extension identifier for a project name. */
-export function createDefaultExtensionId(projectName: string): string {
-  return toExtensionId(projectName)
+/** Creates the default registry identifier for a repository directory name. */
+export function createDefaultRegistryId(repositoryName: string): string {
+  return toRegistryId(repositoryName)
+}
+
+/** Creates the default registry name for a repository directory name. */
+export function createDefaultRegistryName(repositoryName: string): string {
+  return toReadableName(repositoryName)
+}
+
+/** Creates the default registry summary from the resolved registry name. */
+export function createDefaultRegistryDescription(registryName: string): string {
+  return `Kisaki extension registry for ${registryName}.`
+}
+
+/** Creates the default extension identifier for a repository or extension name. */
+export function createDefaultExtensionId(value: string): string {
+  return toExtensionId(value)
 }
 
 /** Creates author-facing defaults after the extension id has been chosen. */
 export function createExtensionDefaults(extensionId: string): ExtensionInputDefaults {
   const gitUserName = readGitUserName()
   return {
-    packageName: toPackageName(extensionId),
-    extensionName: toDisplayName(extensionId),
+    extensionName: toReadableName(extensionId),
     categories: ['tool'],
     starter: 'tool',
     webviewFramework: 'none',
     webviewAddons: [],
-    description: 'A Kisaki extension.',
+    extensionDescription: 'A Kisaki extension.',
     ...(gitUserName ? { author: gitUserName } : {})
   }
 }
 
-/** Validates resolved input and creates the complete scaffold configuration. */
+/** Validates registry input and derives generated workspace metadata. */
+export function createRepositoryScaffoldConfig(
+  options: CreateRepositoryConfigOptions
+): RepositoryScaffoldConfig {
+  const registryId = requireRegistryId(
+    options.input.registryId,
+    'Registry ID is required.',
+    'Registry ID must use lowercase dot-separated segments.'
+  )
+  const registryName = readString(options.input.registryName, 'Registry name is required.')
+  const registryDescription = readString(
+    options.input.registryDescription,
+    'Registry description is required.'
+  )
+  const workspacePackageName = toPackageName(registryId)
+  const workspacePackageDescription = registryDescription
+
+  if (!matchesPackageNameFormat(workspacePackageName)) {
+    throw new ScaffoldCliError(
+      'Derived workspace package name is not a valid lowercase npm package name.'
+    )
+  }
+
+  return {
+    registryId,
+    registryName,
+    registryDescription,
+    workspacePackageName,
+    workspacePackageDescription,
+    toolingVersion: options.toolingVersion,
+    nodeEngineRange: DEFAULT_NODE_ENGINE_RANGE,
+    packageManager: options.packageManager ?? DEFAULT_PACKAGE_MANAGER,
+    publishProvider: options.publishProvider
+  }
+}
+
+/** Validates resolved input and creates the complete extension scaffold config. */
 export function createExtensionScaffoldConfig(
   options: CreateExtensionConfigOptions
 ): ExtensionScaffoldConfig {
-  const extensionId = requireExtensionId(options.input.extensionId)
-  const packageName = readString(options.input.packageName, 'Package name is required.')
-  const extensionName = readString(options.input.extensionName, 'Display name is required.')
+  const extensionId = requireExtensionId(
+    options.input.extensionId,
+    'Extension ID is required.',
+    'Extension ID must use lowercase dot-separated segments.'
+  )
+  const extensionPackageName = toPackageName(extensionId)
+  const extensionName = readString(options.input.extensionName, 'Extension name is required.')
   const categories = requireCategories(options.input.categories)
   const starter = requireStarter(options.input.starter)
   const webviewFramework = requireWebviewFramework(options.input.webviewFramework)
   const webviewAddons = requireWebviewAddons(options.input.webviewAddons, webviewFramework)
-  const description = readString(options.input.description, 'Description is required.')
+  const extensionDescription = readString(
+    options.input.extensionDescription,
+    'Extension description is required.'
+  )
   const author = readOptionalString(options.input.author)
 
-  if (!matchesPackageNameFormat(packageName)) {
-    throw new ScaffoldCliError('Package name is not a valid lowercase npm package name.')
+  if (!matchesPackageNameFormat(extensionPackageName)) {
+    throw new ScaffoldCliError(
+      'Derived extension package name is not a valid lowercase npm package name.'
+    )
   }
 
   return {
-    projectName: options.projectName,
-    workspacePackageName: options.workspacePackageName,
-    packageName,
+    extensionPackageName,
     extensionId,
     extensionName,
-    description,
+    extensionDescription,
     ...(author ? { author } : {}),
     categories,
     starter,
@@ -131,21 +204,31 @@ export function createExtensionScaffoldConfig(
     webviewAddons,
     toolingVersion: options.toolingVersion,
     extensionApiRange: getRecommendedExtensionApiRange(EXTENSION_API_VERSION),
-    nodeVersion: DEFAULT_NODE_VERSION,
+    nodeEngineRange: DEFAULT_NODE_ENGINE_RANGE,
     packageManager: options.packageManager ?? DEFAULT_PACKAGE_MANAGER,
-    repositoryLayout: options.repositoryLayout,
-    publishProvider: options.publishProvider,
-    registryId: options.registryId,
-    registryName: options.registryName
+    publishProvider: options.publishProvider
   }
 }
 
-function requireExtensionId(value: string): string {
-  const extensionId = readString(value, 'Extension ID is required.')
-  if (!isExtensionIdentifier(extensionId)) {
-    throw new ScaffoldCliError('Extension ID must use lowercase dot-separated segments.')
+function requireRegistryId(value: string, missingMessage: string, invalidMessage: string): string {
+  return requireIdFormat(value, matchesRegistryIdFormat, missingMessage, invalidMessage)
+}
+
+function requireExtensionId(value: string, missingMessage: string, invalidMessage: string): string {
+  return requireIdFormat(value, matchesExtensionIdFormat, missingMessage, invalidMessage)
+}
+
+function requireIdFormat(
+  value: string,
+  matchesFormat: (value: string) => boolean,
+  missingMessage: string,
+  invalidMessage: string
+): string {
+  const identifier = readString(value, missingMessage)
+  if (!matchesFormat(identifier)) {
+    throw new ScaffoldCliError(invalidMessage)
   }
-  return extensionId
+  return identifier
 }
 
 function requireCategories(values: readonly string[]): readonly ExtensionCategory[] {

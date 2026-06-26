@@ -1,15 +1,19 @@
 export { scaffoldRepository, scaffoldWorkspaceExtension } from './generator'
 export {
   type ExtensionScaffoldConfig,
+  type RepositoryScaffoldConfig,
   type ScaffoldRepositoryOptions,
   type ScaffoldWorkspaceExtensionOptions
 } from './model'
 export {
+  matchesExtensionIdFormat,
   matchesPackageNameFormat,
-  matchesProjectNameFormat,
-  toDisplayName,
+  matchesRepositoryNameFormat,
+  matchesRegistryIdFormat,
   toExtensionId,
-  toPackageName
+  toPackageName,
+  toReadableName,
+  toRegistryId
 } from './names'
 export {
   commitGitChanges,
@@ -19,7 +23,7 @@ export {
   readGitUserName
 } from './git'
 export { installDependencies } from './package-manager'
-export { DEFAULT_NODE_VERSION, DEFAULT_PACKAGE_MANAGER } from './toolchain'
+export { DEFAULT_NODE_ENGINE_RANGE, DEFAULT_PACKAGE_MANAGER } from './toolchain'
 export {
   matchesExtensionWorkspace,
   readExtensionWorkspace,

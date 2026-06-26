@@ -1,11 +1,11 @@
 import { isExtensionIdentifier } from '@kisaki3/extension-api'
 
-/** Checks a filesystem-safe scaffold directory name. */
-export function matchesProjectNameFormat(value: string): boolean {
+/** Checks a filesystem-safe repository directory name. */
+export function matchesRepositoryNameFormat(value: string): boolean {
   return /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(value.trim())
 }
 
-/** Normalizes a directory or extension id into an unscoped package name. */
+/** Normalizes an identifier-like value into an unscoped package name. */
 export function toPackageName(value: string): string {
   return value
     .trim()
@@ -24,8 +24,27 @@ export function matchesPackageNameFormat(value: string): boolean {
   )
 }
 
-/** Normalizes free-form text into a valid extension identifier. */
+/** Checks a registry manifest id. */
+export function matchesRegistryIdFormat(value: string): boolean {
+  return matchesKisakiIdentifierFormat(value)
+}
+
+/** Checks an extension manifest id. */
+export function matchesExtensionIdFormat(value: string): boolean {
+  return matchesKisakiIdentifierFormat(value)
+}
+
+/** Normalizes free-form text into a registry manifest id. */
+export function toRegistryId(value: string): string {
+  return toKisakiIdentifier(value)
+}
+
+/** Normalizes free-form text into an extension manifest id. */
 export function toExtensionId(value: string): string {
+  return toKisakiIdentifier(value)
+}
+
+function toKisakiIdentifier(value: string): string {
   const normalized = value
     .trim()
     .toLowerCase()
@@ -36,14 +55,18 @@ export function toExtensionId(value: string): string {
     .filter(Boolean)
     .join('.')
 
-  if (isExtensionIdentifier(normalized)) {
+  if (matchesKisakiIdentifierFormat(normalized)) {
     return normalized
   }
 
   return 'my-kisaki-extension'
 }
 
-/** Converts an identifier-like value into a readable display name. */
-export function toDisplayName(value: string): string {
+function matchesKisakiIdentifierFormat(value: string): boolean {
+  return isExtensionIdentifier(value)
+}
+
+/** Converts an identifier-like value into a readable name. */
+export function toReadableName(value: string): string {
   return value.replace(/[._-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 }

@@ -1,6 +1,6 @@
-# {{REGISTRY_NAME}}
+# {{WORKSPACE_README_TITLE}}
 
-Kisaki extension registry repository.
+{{WORKSPACE_README_DESCRIPTION}}
 
 ## Development
 

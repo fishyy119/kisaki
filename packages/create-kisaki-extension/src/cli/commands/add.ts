@@ -8,15 +8,14 @@ import { runAdd, type AddOptions } from '../actions/add'
 import type { ScaffoldCliContext } from '../context'
 import { collectList, normalizeWebviewAddons, parseList } from './options'
 
-/** Creates the command that adds an extension to a generated monorepository. */
+/** Creates the command that adds an extension to a generated workspace. */
 export function createAddCommand(context: ScaffoldCliContext): Command {
   return new Command('add')
-    .description('Add an extension to an existing extension monorepository')
+    .description('Add an extension to an existing extension workspace')
     .argument('[extension-id]', 'Extension identifier')
-    .option('-w, --workspace <dir>', 'Extension monorepository root', '.')
+    .option('-w, --workspace <dir>', 'Extension workspace root', '.')
     .option('--extension-id <id>', 'Stable extension identifier')
-    .option('--package-name <name>', 'Extension npm package name')
-    .option('--extension-name <name>', 'User-facing extension name')
+    .option('--extension-name <name>', 'Extension name')
     .option('--categories <items>', 'Comma-separated extension categories', parseList)
     .addOption(
       new Option('--starter <starter>', 'Generated host implementation starter').choices([

@@ -1,11 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import {
-  formatWebviewAddonLabel,
+  WEBVIEW_ADDON_OPTIONS,
+  WEBVIEW_FRAMEWORK_OPTIONS,
   type ExtensionWebviewAddon,
   type ExtensionWebviewFramework
 } from '../extension-options'
-import type { ExtensionScaffoldConfig } from './model'
+import type { ExtensionScaffoldConfig, RepositoryScaffoldConfig } from './model'
 import {
   applyTemplateMergeManifest,
   getTemplateMergeSourcePaths,
@@ -21,28 +22,36 @@ export interface TemplateLayer {
 }
 
 const TEMPLATE_KEYS = [
-  'PROJECT_NAME',
   'WORKSPACE_PACKAGE_NAME',
-  'PACKAGE_NAME',
+  'WORKSPACE_PACKAGE_DESCRIPTION',
+  'WORKSPACE_PACKAGE_MANAGER',
+  'WORKSPACE_NODE_ENGINE_RANGE',
+  'EXTENSION_PACKAGE_NAME',
+  'EXTENSION_PACKAGE_DESCRIPTION',
+  'EXTENSION_PACKAGE_MANAGER',
+  'EXTENSION_NODE_ENGINE_RANGE',
   'EXTENSION_ID',
   'EXTENSION_NAME',
-  'DESCRIPTION',
-  'AUTHOR',
-  'CATEGORIES_LABEL',
-  'STARTER',
-  'STARTER_MODULE',
-  'WEBVIEW_FRAMEWORK',
-  'WEBVIEW_LABEL',
-  'WEBVIEW_ADDONS_LABEL',
-  'TOOLING_VERSION',
-  'EXTENSION_API_RANGE',
-  'NODE_VERSION',
-  'PACKAGE_MANAGER',
-  'REPOSITORY_LAYOUT',
-  'PUBLISH_PROVIDER',
-  'GENERATED_AT',
-  'REGISTRY_ID',
-  'REGISTRY_NAME'
+  'EXTENSION_README_TITLE',
+  'EXTENSION_README_DESCRIPTION',
+  'EXTENSION_MANIFEST_ID',
+  'EXTENSION_MANIFEST_NAME',
+  'EXTENSION_MANIFEST_DESCRIPTION',
+  'EXTENSION_MANIFEST_AUTHOR',
+  'EXTENSION_MANIFEST_KISAKI_ENGINE_RANGE',
+  'EXTENSION_CATEGORIES_LABEL',
+  'EXTENSION_STARTER',
+  'EXTENSION_STARTER_MODULE',
+  'EXTENSION_WEBVIEW_LABEL',
+  'EXTENSION_WEBVIEW_ADDONS_LABEL',
+  'KISAKI_TOOLING_VERSION',
+  'WORKSPACE_PUBLISH_PROVIDER',
+  'WORKSPACE_README_TITLE',
+  'WORKSPACE_README_DESCRIPTION',
+  'REGISTRY_MANIFEST_ID',
+  'REGISTRY_MANIFEST_NAME',
+  'REGISTRY_MANIFEST_DESCRIPTION',
+  'REGISTRY_MANIFEST_UPDATED_AT'
 ] as const
 
 type TemplateKey = (typeof TEMPLATE_KEYS)[number]
@@ -54,12 +63,10 @@ const TEMPLATE_TOKEN_PATTERN = createTemplateTokenPattern()
 export function createRepositoryTemplateLayers(
   templateDir: string,
   targetDir: string,
-  config: ExtensionScaffoldConfig
+  repository: RepositoryScaffoldConfig,
+  extension: ExtensionScaffoldConfig
 ): TemplateLayer[] {
-  const extensionTargetDir =
-    config.repositoryLayout === 'monorepo'
-      ? path.join(targetDir, 'extensions', config.extensionId)
-      : targetDir
+  const extensionTargetDir = path.join(targetDir, 'extensions', extension.extensionId)
 
   return resolveTemplateLayers([
     {
@@ -67,21 +74,11 @@ export function createRepositoryTemplateLayers(
       targetDir
     },
     {
-      sourceDir: path.join(templateDir, 'workspace', 'layout', config.repositoryLayout),
-      targetDir
-    },
-    {
-      sourceDir: path.join(
-        templateDir,
-        'workspace',
-        'provider',
-        config.publishProvider,
-        config.repositoryLayout
-      ),
+      sourceDir: path.join(templateDir, 'workspace', 'provider', repository.publishProvider),
       targetDir,
       optional: true
     },
-    ...createExtensionTemplateLayers(templateDir, extensionTargetDir, config)
+    ...createExtensionTemplateLayers(templateDir, extensionTargetDir, extension)
   ])
 }
 
@@ -111,13 +108,7 @@ export function createExtensionTemplateLayers(
     }
   }
   layers.push({
-    sourceDir: path.join(
-      templateDir,
-      'extension',
-      'provider',
-      config.publishProvider,
-      config.repositoryLayout
-    ),
+    sourceDir: path.join(templateDir, 'extension', 'provider', config.publishProvider),
     targetDir,
     optional: true
   })
@@ -148,35 +139,67 @@ export function copyTemplateLayer(layer: TemplateLayer, context: Map<string, str
   })
 }
 
-/** Creates escaped token replacements for one extension configuration. */
-export function createTemplateContext(config: ExtensionScaffoldConfig): Map<string, string> {
-  const values: Record<TemplateKey, string> = {
-    PROJECT_NAME: config.projectName,
-    WORKSPACE_PACKAGE_NAME: config.workspacePackageName,
-    PACKAGE_NAME: config.packageName,
+/** Creates escaped token replacements for repository and initial extension layers. */
+export function createRepositoryTemplateContext(
+  repository: RepositoryScaffoldConfig,
+  extension: ExtensionScaffoldConfig
+): Map<string, string> {
+  return createTemplateContext({
+    ...createExtensionTemplateValues(extension),
+    WORKSPACE_PACKAGE_NAME: repository.workspacePackageName,
+    WORKSPACE_PACKAGE_DESCRIPTION: repository.workspacePackageDescription,
+    WORKSPACE_PACKAGE_MANAGER: repository.packageManager,
+    WORKSPACE_NODE_ENGINE_RANGE: repository.nodeEngineRange,
+    WORKSPACE_PUBLISH_PROVIDER: repository.publishProvider,
+    WORKSPACE_README_TITLE: repository.registryName,
+    WORKSPACE_README_DESCRIPTION: repository.registryDescription,
+    REGISTRY_MANIFEST_ID: repository.registryId,
+    REGISTRY_MANIFEST_NAME: repository.registryName,
+    REGISTRY_MANIFEST_DESCRIPTION: repository.registryDescription,
+    REGISTRY_MANIFEST_UPDATED_AT: new Date().toISOString(),
+    KISAKI_TOOLING_VERSION: repository.toolingVersion
+  })
+}
+
+/** Creates escaped token replacements for one extension project. */
+export function createExtensionTemplateContext(
+  config: ExtensionScaffoldConfig
+): Map<string, string> {
+  return createTemplateContext(createExtensionTemplateValues(config))
+}
+
+function createExtensionTemplateValues(
+  config: ExtensionScaffoldConfig
+): Partial<Record<TemplateKey, string>> {
+  return {
+    EXTENSION_PACKAGE_NAME: config.extensionPackageName,
+    EXTENSION_PACKAGE_DESCRIPTION: config.extensionDescription,
+    EXTENSION_PACKAGE_MANAGER: config.packageManager,
+    EXTENSION_NODE_ENGINE_RANGE: config.nodeEngineRange,
     EXTENSION_ID: config.extensionId,
     EXTENSION_NAME: config.extensionName,
-    DESCRIPTION: config.description,
-    AUTHOR: config.author ?? '',
-    CATEGORIES_LABEL: config.categories.join(', '),
-    STARTER: config.starter,
-    STARTER_MODULE: config.starter,
-    WEBVIEW_FRAMEWORK: config.webviewFramework,
-    WEBVIEW_LABEL: toWebviewLabel(config),
-    WEBVIEW_ADDONS_LABEL: toWebviewAddonsLabel(config.webviewAddons),
-    TOOLING_VERSION: config.toolingVersion,
-    EXTENSION_API_RANGE: config.extensionApiRange,
-    NODE_VERSION: config.nodeVersion,
-    PACKAGE_MANAGER: config.packageManager,
-    REPOSITORY_LAYOUT: config.repositoryLayout,
-    PUBLISH_PROVIDER: config.publishProvider,
-    GENERATED_AT: new Date().toISOString(),
-    REGISTRY_ID: config.registryId,
-    REGISTRY_NAME: config.registryName
+    EXTENSION_README_TITLE: config.extensionName,
+    EXTENSION_README_DESCRIPTION: config.extensionDescription,
+    EXTENSION_MANIFEST_ID: config.extensionId,
+    EXTENSION_MANIFEST_NAME: config.extensionName,
+    EXTENSION_MANIFEST_DESCRIPTION: config.extensionDescription,
+    EXTENSION_MANIFEST_AUTHOR: config.author ?? '',
+    EXTENSION_MANIFEST_KISAKI_ENGINE_RANGE: config.extensionApiRange,
+    EXTENSION_CATEGORIES_LABEL: config.categories.join(', '),
+    EXTENSION_STARTER: config.starter,
+    EXTENSION_STARTER_MODULE: config.starter,
+    EXTENSION_WEBVIEW_LABEL: toWebviewLabel(config.webviewFramework),
+    EXTENSION_WEBVIEW_ADDONS_LABEL: toWebviewAddonsLabel(config.webviewAddons),
+    KISAKI_TOOLING_VERSION: config.toolingVersion
   }
+}
+
+function createTemplateContext(values: Partial<Record<TemplateKey, string>>): Map<string, string> {
   const context = new Map<string, string>()
   for (const [key, value] of Object.entries(values)) {
-    context.set(`{{${key}}}`, value)
+    if (value !== undefined) {
+      context.set(`{{${key}}}`, value)
+    }
   }
   return context
 }
@@ -217,21 +240,22 @@ function resolveWebviewLayers(config: ExtensionScaffoldConfig): readonly string[
   ]
 }
 
-function toWebviewLabel(config: ExtensionScaffoldConfig): string {
-  if (config.webviewFramework === 'none') {
-    return 'None'
-  }
-  if (config.webviewFramework === 'vanilla') {
-    return 'Vanilla'
-  }
-  return 'Vue'
+function toWebviewLabel(framework: ExtensionWebviewFramework): string {
+  return getOptionLabel(WEBVIEW_FRAMEWORK_OPTIONS, framework)
 }
 
 function toWebviewAddonsLabel(addons: readonly ExtensionWebviewAddon[]): string {
   if (addons.length === 0) {
     return 'None'
   }
-  return addons.map(formatWebviewAddonLabel).join(', ')
+  return addons.map((addon) => getOptionLabel(WEBVIEW_ADDON_OPTIONS, addon)).join(', ')
+}
+
+function getOptionLabel<T extends string>(
+  options: readonly { value: T; label: string }[],
+  value: T
+): string {
+  return options.find((option) => option.value === value)?.label ?? value
 }
 
 function resolveTemplateLayers(layers: readonly TemplateLayer[]): TemplateLayer[] {
