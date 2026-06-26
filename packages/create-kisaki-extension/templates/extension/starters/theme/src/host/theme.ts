@@ -1,6 +1,6 @@
 import type { ExtensionContext } from '@kisaki3/extension-sdk'
 
-const themeName = `__EXTENSION_NAME__`
+const themeName = `{{EXTENSION_NAME}}`
 
 /** Registers a light and dark semantic-token theme. */
 export function activateStarter(context: ExtensionContext): void {

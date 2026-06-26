@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import type { ExtensionWebview } from '../extension-options'
+import {
+  formatWebviewAddonLabel,
+  type ExtensionWebviewAddon,
+  type ExtensionWebviewFramework
+} from '../extension-options'
 import type { ExtensionScaffoldConfig } from './model'
 import {
   applyTemplateMergeManifest,
@@ -27,7 +31,9 @@ const TEMPLATE_KEYS = [
   'CATEGORIES_LABEL',
   'STARTER',
   'STARTER_MODULE',
-  'WEBVIEW',
+  'WEBVIEW_FRAMEWORK',
+  'WEBVIEW_LABEL',
+  'WEBVIEW_ADDONS_LABEL',
   'TOOLING_VERSION',
   'EXTENSION_API_RANGE',
   'NODE_VERSION',
@@ -96,8 +102,8 @@ export function createExtensionTemplateLayers(
     }
   ]
 
-  if (config.webview !== 'none') {
-    for (const webviewLayer of resolveWebviewLayers(config.webview)) {
+  if (config.webviewFramework !== 'none') {
+    for (const webviewLayer of resolveWebviewLayers(config)) {
       layers.push({
         sourceDir: path.join(templateDir, 'extension', 'webview', webviewLayer),
         targetDir
@@ -155,7 +161,9 @@ export function createTemplateContext(config: ExtensionScaffoldConfig): Map<stri
     CATEGORIES_LABEL: config.categories.join(', '),
     STARTER: config.starter,
     STARTER_MODULE: config.starter,
-    WEBVIEW: config.webview,
+    WEBVIEW_FRAMEWORK: config.webviewFramework,
+    WEBVIEW_LABEL: toWebviewLabel(config),
+    WEBVIEW_ADDONS_LABEL: toWebviewAddonsLabel(config.webviewAddons),
     TOOLING_VERSION: config.toolingVersion,
     EXTENSION_API_RANGE: config.extensionApiRange,
     NODE_VERSION: config.nodeVersion,
@@ -168,7 +176,7 @@ export function createTemplateContext(config: ExtensionScaffoldConfig): Map<stri
   }
   const context = new Map<string, string>()
   for (const [key, value] of Object.entries(values)) {
-    context.set(`__${key}__`, value)
+    context.set(`{{${key}}}`, value)
   }
   return context
 }
@@ -200,8 +208,30 @@ function formatExtensionManifest(
   return `${document}\n`
 }
 
-function resolveWebviewLayers(webview: Exclude<ExtensionWebview, 'none'>): readonly string[] {
-  return webview === 'vue-kit' ? ['base', 'vue', 'vue-kit'] : ['base', webview]
+function resolveWebviewLayers(config: ExtensionScaffoldConfig): readonly string[] {
+  const framework = config.webviewFramework as Exclude<ExtensionWebviewFramework, 'none'>
+  return [
+    'base',
+    path.posix.join('frameworks', framework),
+    ...config.webviewAddons.map((addon) => path.posix.join('addons', addon))
+  ]
+}
+
+function toWebviewLabel(config: ExtensionScaffoldConfig): string {
+  if (config.webviewFramework === 'none') {
+    return 'None'
+  }
+  if (config.webviewFramework === 'vanilla') {
+    return 'Vanilla'
+  }
+  return 'Vue'
+}
+
+function toWebviewAddonsLabel(addons: readonly ExtensionWebviewAddon[]): string {
+  if (addons.length === 0) {
+    return 'None'
+  }
+  return addons.map(formatWebviewAddonLabel).join(', ')
 }
 
 function resolveTemplateLayers(layers: readonly TemplateLayer[]): TemplateLayer[] {
@@ -268,7 +298,7 @@ function resolveTargetFileName(sourceName: string): string {
 
 function createTemplateTokenPattern(): RegExp {
   const keys = TEMPLATE_KEYS.join('|')
-  return new RegExp(`__(?:${keys})__`, 'g')
+  return new RegExp(`\\{\\{(?:${keys})\\}\\}`, 'g')
 }
 
 function applyTemplate(content: string, context: Map<string, string>, targetPath: string): string {

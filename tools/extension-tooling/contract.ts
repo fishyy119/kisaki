@@ -26,7 +26,7 @@ const templateDependencyContracts = [
     ]
   },
   {
-    path: 'packages/create-kisaki-extension/templates/extension/webview/vue-kit/patches/package.json',
+    path: 'packages/create-kisaki-extension/templates/extension/webview/addons/kisaki-ui-vue/patches/package.json',
     devDependencyNames: ['@kisaki3/extension-ui-vue']
   }
 ] as const
@@ -144,9 +144,9 @@ function collectToolingProblems(workspace: ToolingWorkspace, expectedVersion: st
     const templatePackage = readWorkspaceJson<PackageJson>(workspace, contract.path)
     for (const dependencyName of contract.devDependencyNames) {
       const actual = templatePackage.devDependencies?.[dependencyName]
-      if (actual !== '^__TOOLING_VERSION__') {
+      if (actual !== '^{{TOOLING_VERSION}}') {
         problems.push(
-          `${contract.path} must declare ${dependencyName} in devDependencies with "^__TOOLING_VERSION__", found ${String(actual)}.`
+          `${contract.path} must declare ${dependencyName} in devDependencies with "^{{TOOLING_VERSION}}", found ${String(actual)}.`
         )
       }
       if (templatePackage.dependencies?.[dependencyName] !== undefined) {

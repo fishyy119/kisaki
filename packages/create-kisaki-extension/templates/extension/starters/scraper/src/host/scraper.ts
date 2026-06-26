@@ -10,8 +10,8 @@ import {
   type ScraperLookup
 } from '@kisaki3/extension-sdk'
 
-const extensionName = `__EXTENSION_NAME__`
-const sourceId = `__EXTENSION_ID__`
+const extensionName = `{{EXTENSION_NAME}}`
+const sourceId = `{{EXTENSION_ID}}`
 
 const sampleGames: readonly GameSearchResult[] = [
   {

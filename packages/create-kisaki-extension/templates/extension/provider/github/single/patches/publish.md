@@ -4,12 +4,12 @@ This project includes a release-commit-driven GitHub Actions workflow. Update
 `manifest.json`, then push a scoped release commit:
 
 ```bash
-git commit -m "release(__EXTENSION_ID__): v0.0.1"
+git commit -m "release({{EXTENSION_ID}}): v0.0.1"
 git push origin main
 ```
 
 The workflow validates the commit scope and manifest version, creates tag
-`__EXTENSION_ID__-v0.0.1`, packages the extension, uploads the signed `.kisx`
+`{{EXTENSION_ID}}-v0.0.1`, packages the extension, uploads the signed `.kisx`
 package to a GitHub Release, and updates `registry/manifest.json`. Existing
 registry packages are preserved, so the same manifest can host multiple
 extensions.

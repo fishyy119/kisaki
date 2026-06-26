@@ -1,14 +1,16 @@
 import path from 'node:path'
 import { isExtensionIdentifier } from '@kisaki3/extension-api'
-import prompts from 'prompts'
-import { ScaffoldCancelledError, ScaffoldCliError } from '../../errors'
+import { ScaffoldCliError } from '../../errors'
 import {
-  EXTENSION_PUBLISH_PROVIDERS,
-  EXTENSION_REPOSITORY_LAYOUTS,
-  type ExtensionPublishProvider,
-  type ExtensionRepositoryLayout
+  DEFAULT_PROJECT_NAME,
+  DEFAULT_PUBLISH_PROVIDER,
+  DEFAULT_REPOSITORY_LAYOUT,
+  PUBLISH_PROVIDER_OPTIONS,
+  REPOSITORY_LAYOUT_OPTIONS,
+  type OptionChoiceMetadata
 } from '../../extension-options'
-import { resolveExtensionConfig, type ExtensionInputOptions } from '../../extension-input'
+import type { ExtensionInputOptions } from '../../extension-input'
+import type { ScaffoldPromptUi } from '../tui/prompts'
 import {
   commitGitChanges,
   initializeGitRepository,
@@ -20,7 +22,8 @@ import {
   toPackageName
 } from '../../scaffold'
 import type { ScaffoldCliContext } from '../context'
-import { printCreated } from './output'
+import { cliOutput, printCreated } from '../tui/output'
+import { collectExtensionConfig } from '../wizard'
 
 /** Input accepted by the repository initialization action. */
 export interface InitOptions extends ExtensionInputOptions {
@@ -39,6 +42,7 @@ export async function runInit(
   options: InitOptions,
   context: ScaffoldCliContext
 ): Promise<void> {
+  cliOutput.heading('kisaki-extension init', 'Creating a new Kisaki extension repository.')
   if (options.commit && !options.git) {
     throw new ScaffoldCliError('--commit requires Git initialization.')
   }
@@ -46,13 +50,29 @@ export async function runInit(
     throw new ScaffoldCliError('--commit requires dependency installation.')
   }
 
-  const target = await resolveTarget(directory, options.yes === true)
+  const target = await resolveTarget(directory, options.yes === true, context)
   const projectName = target.projectName
   if (!matchesProjectNameFormat(projectName)) {
     throw new ScaffoldCliError('Project directory name is invalid.')
   }
-  const repositoryLayout = await resolveRepositoryLayout(options.layout, options.yes === true)
-  const publishProvider = await resolvePublishProvider(options.provider, options.yes === true)
+  const repositoryLayout = await resolveEnumChoice({
+    value: options.layout,
+    yes: options.yes === true,
+    options: REPOSITORY_LAYOUT_OPTIONS,
+    fallback: DEFAULT_REPOSITORY_LAYOUT,
+    prompts: context.prompts,
+    message: 'Repository layout',
+    errorMessage: 'Unknown repository layout'
+  })
+  const publishProvider = await resolveEnumChoice({
+    value: options.provider,
+    yes: options.yes === true,
+    options: PUBLISH_PROVIDER_OPTIONS,
+    fallback: DEFAULT_PUBLISH_PROVIDER,
+    prompts: context.prompts,
+    message: 'Release provider',
+    errorMessage: 'Unknown release provider'
+  })
   const targetDir = target.targetDir
   const registryId = options.registryId ?? toExtensionId(`${projectName}.registry`)
   if (!isExtensionIdentifier(registryId)) {
@@ -60,7 +80,7 @@ export async function runInit(
   }
   const registryName = options.registryName ?? `${toDisplayName(projectName)} Extensions`
 
-  const config = await resolveExtensionConfig({
+  const config = await collectExtensionConfig({
     projectName,
     workspacePackageName: toPackageName(projectName),
     repositoryLayout,
@@ -68,7 +88,8 @@ export async function runInit(
     registryId,
     registryName,
     toolingVersion: context.toolingVersion,
-    input: options
+    input: options,
+    prompts: context.prompts
   })
 
   scaffoldRepository({ config, templateDir: context.templateDir, targetDir })
@@ -87,7 +108,8 @@ export async function runInit(
 
 async function resolveTarget(
   directory: string | undefined,
-  yes: boolean
+  yes: boolean,
+  context: ScaffoldCliContext
 ): Promise<{ projectName: string; targetDir: string }> {
   if (directory) {
     const targetDir = path.resolve(directory)
@@ -95,104 +117,67 @@ async function resolveTarget(
   }
   if (yes) {
     return {
-      projectName: 'my-kisaki-extension',
-      targetDir: path.resolve('my-kisaki-extension')
+      projectName: DEFAULT_PROJECT_NAME,
+      targetDir: path.resolve(DEFAULT_PROJECT_NAME)
     }
   }
 
-  const response = await prompts(
-    {
-      type: 'text',
-      name: 'projectName',
-      message: 'Project directory:',
-      initial: 'my-kisaki-extension',
-      validate: (value: string) =>
-        matchesProjectNameFormat(value) ? true : 'Use a filesystem-safe directory name.'
-    },
-    {
-      onCancel: () => {
-        throw new ScaffoldCancelledError()
-      }
-    }
-  )
+  const projectName = await context.prompts.text({
+    message: 'Project directory',
+    initial: DEFAULT_PROJECT_NAME,
+    validate: (value) =>
+      matchesProjectNameFormat(value) ? true : 'Use a filesystem-safe directory name.'
+  })
   return {
-    projectName: response.projectName,
-    targetDir: path.resolve(response.projectName)
+    projectName,
+    targetDir: path.resolve(projectName)
   }
 }
 
-async function resolveRepositoryLayout(
-  value: string | undefined,
+interface ResolveEnumChoiceOptions<T extends string> {
+  value: string | undefined
   yes: boolean
-): Promise<ExtensionRepositoryLayout> {
-  if (value !== undefined) {
-    return requireRepositoryLayout(value)
-  }
-  if (yes) {
-    return 'single'
-  }
-
-  const response = await prompts(
-    {
-      type: 'select',
-      name: 'layout',
-      message: 'Repository layout:',
-      initial: 0,
-      choices: [
-        { title: 'Single extension', value: 'single' },
-        { title: 'Extension monorepo', value: 'monorepo' }
-      ]
-    },
-    {
-      onCancel: () => {
-        throw new ScaffoldCancelledError()
-      }
-    }
-  )
-  return requireRepositoryLayout(response.layout)
+  options: readonly OptionChoiceMetadata<T>[]
+  fallback: T
+  prompts: ScaffoldPromptUi
+  message: string
+  errorMessage: string
 }
 
-async function resolvePublishProvider(
-  value: string | undefined,
-  yes: boolean
-): Promise<ExtensionPublishProvider> {
-  if (value !== undefined) {
-    return requirePublishProvider(value)
+/**
+ * Resolves one enumerated choice from an explicit flag, a default, or an
+ * interactive prompt. Validates any explicit or prompted answer against the
+ * accepted option values before returning it.
+ */
+async function resolveEnumChoice<T extends string>(
+  options: ResolveEnumChoiceOptions<T>
+): Promise<T> {
+  if (options.value !== undefined) {
+    return requireEnumChoice(options.value, options.options, options.errorMessage)
   }
-  if (yes) {
-    return 'github'
+  if (options.yes) {
+    return options.fallback
   }
 
-  const response = await prompts(
-    {
-      type: 'select',
-      name: 'provider',
-      message: 'Release provider:',
-      initial: 0,
-      choices: [
-        { title: 'GitHub Releases and registry workflow', value: 'github' },
-        { title: 'Manual or custom hosting', value: 'manual' }
-      ]
-    },
-    {
-      onCancel: () => {
-        throw new ScaffoldCancelledError()
-      }
-    }
-  )
-  return requirePublishProvider(response.provider)
+  const answer = await options.prompts.select({
+    message: options.message,
+    initial: options.fallback,
+    choices: options.options.map((option) => ({
+      value: option.value,
+      label: option.label
+    }))
+  })
+  return requireEnumChoice(answer, options.options, options.errorMessage)
 }
 
-function requireRepositoryLayout(value: string): ExtensionRepositoryLayout {
-  if (!(EXTENSION_REPOSITORY_LAYOUTS as readonly string[]).includes(value)) {
-    throw new ScaffoldCliError(`Unknown repository layout: ${value}`)
+function requireEnumChoice<T extends string>(
+  value: string,
+  options: readonly OptionChoiceMetadata<T>[],
+  errorMessage: string
+): T {
+  const match = options.find((option) => option.value === value)
+  if (!match) {
+    throw new ScaffoldCliError(`${errorMessage}: ${value}`)
   }
-  return value as ExtensionRepositoryLayout
-}
-
-function requirePublishProvider(value: string): ExtensionPublishProvider {
-  if (!(EXTENSION_PUBLISH_PROVIDERS as readonly string[]).includes(value)) {
-    throw new ScaffoldCliError(`Unknown release provider: ${value}`)
-  }
-  return value as ExtensionPublishProvider
+  return match.value
 }

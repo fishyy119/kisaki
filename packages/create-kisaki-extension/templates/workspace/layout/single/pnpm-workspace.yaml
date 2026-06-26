@@ -6,8 +6,8 @@ allowBuilds:
   vue-demi: true
 
 minimumReleaseAgeExclude:
-  - '@kisaki3/extension-api@__TOOLING_VERSION__'
-  - '@kisaki3/extension-cli@__TOOLING_VERSION__'
-  - '@kisaki3/extension-registry@__TOOLING_VERSION__'
-  - '@kisaki3/extension-sdk@__TOOLING_VERSION__'
-  - '@kisaki3/extension-ui-vue@__TOOLING_VERSION__'
+  - '@kisaki3/extension-api@{{TOOLING_VERSION}}'
+  - '@kisaki3/extension-cli@{{TOOLING_VERSION}}'
+  - '@kisaki3/extension-registry@{{TOOLING_VERSION}}'
+  - '@kisaki3/extension-sdk@{{TOOLING_VERSION}}'
+  - '@kisaki3/extension-ui-vue@{{TOOLING_VERSION}}'

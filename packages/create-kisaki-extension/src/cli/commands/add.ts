@@ -1,7 +1,12 @@
 import { Command, Option } from 'commander'
-import { EXTENSION_STARTERS, EXTENSION_WEBVIEWS } from '../../extension-options'
+import {
+  EXTENSION_STARTERS,
+  EXTENSION_WEBVIEW_ADDONS,
+  EXTENSION_WEBVIEW_FRAMEWORKS
+} from '../../extension-options'
 import { runAdd, type AddOptions } from '../actions/add'
 import type { ScaffoldCliContext } from '../context'
+import { collectList, normalizeWebviewAddons, parseList } from './options'
 
 /** Creates the command that adds an extension to a generated monorepository. */
 export function createAddCommand(context: ScaffoldCliContext): Command {
@@ -19,23 +24,25 @@ export function createAddCommand(context: ScaffoldCliContext): Command {
       ])
     )
     .addOption(
-      new Option('--webview <implementation>', 'Generated webview implementation').choices([
-        ...EXTENSION_WEBVIEWS
+      new Option('--webview <framework>', 'Generated webview framework').choices([
+        ...EXTENSION_WEBVIEW_FRAMEWORKS
       ])
+    )
+    .option(
+      '--webview-addon <addon>',
+      `Generated webview addon; repeat or comma-separate (${EXTENSION_WEBVIEW_ADDONS.join(', ')})`,
+      collectList
     )
     .option('--description <text>', 'Extension description')
     .option('--author <name>', 'Extension author')
     .option('--no-install', 'Do not install dependencies')
     .option('--commit', 'Commit generated files after successful installation', false)
     .option('-y, --yes', 'Use defaults for omitted values', false)
-    .action((extensionId: string | undefined, options: AddOptions) =>
-      runAdd(extensionId, options, context)
+    .action((extensionId: string | undefined, options: AddCommandOptions) =>
+      runAdd(extensionId, normalizeWebviewAddons(options), context)
     )
 }
 
-function parseList(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+interface AddCommandOptions extends AddOptions {
+  webviewAddon?: string[]
 }

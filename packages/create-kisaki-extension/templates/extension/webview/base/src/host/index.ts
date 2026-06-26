@@ -1,8 +1,8 @@
 import { defineExtension } from '@kisaki3/extension-sdk'
-import { activateStarter } from './__STARTER_MODULE__'
+import { activateStarter } from './{{STARTER_MODULE}}'
 import { registerWebview } from './webview'
 
-const extensionName = `__EXTENSION_NAME__`
+const extensionName = `{{EXTENSION_NAME}}`
 
 export default defineExtension({
   async activate(context) {

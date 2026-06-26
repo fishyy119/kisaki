@@ -37,6 +37,16 @@ export interface ExtensionWorkspace {
   registryName: string
 }
 
+/** Returns true only for generated Kisaki extension monorepositories. */
+export function matchesExtensionWorkspace(workspaceDir: string): boolean {
+  try {
+    readExtensionWorkspace(workspaceDir)
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Reads and validates the generated monorepository boundary required by add. */
 export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace {
   for (const relativePath of ['package.json', 'pnpm-workspace.yaml', 'extensions', 'README.md']) {

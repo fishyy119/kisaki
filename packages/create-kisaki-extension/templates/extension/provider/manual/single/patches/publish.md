@@ -1,9 +1,9 @@
 ## Publish
 
 ```bash
-kisx registry add-release artifacts/__EXTENSION_ID__-0.0.1.kisx \
+kisx registry add-release artifacts/{{EXTENSION_ID}}-0.0.1.kisx \
   --manifest registry/manifest.json \
-  --url https://example.com/extensions/__EXTENSION_ID__-0.0.1.kisx
+  --url https://example.com/extensions/{{EXTENSION_ID}}-0.0.1.kisx
 kisx registry validate registry/manifest.json
 ```
 
@@ -21,8 +21,8 @@ For signed releases:
 ```bash
 kisx key generate --out .keys/author.ed25519.json
 kisx pack --sign --key .keys/author.ed25519.json
-kisx registry add-release artifacts/__EXTENSION_ID__-0.0.1.kisx \
+kisx registry add-release artifacts/{{EXTENSION_ID}}-0.0.1.kisx \
   --manifest registry/manifest.json \
-  --url https://example.com/extensions/__EXTENSION_ID__-0.0.1.kisx \
-  --signature artifacts/__EXTENSION_ID__-0.0.1.sig
+  --url https://example.com/extensions/{{EXTENSION_ID}}-0.0.1.kisx \
+  --signature artifacts/{{EXTENSION_ID}}-0.0.1.sig
 ```

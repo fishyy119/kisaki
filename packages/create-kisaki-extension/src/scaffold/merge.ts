@@ -173,7 +173,7 @@ function applyTextSlotPatch(patch: TextSlotPatch, options: ApplyTemplateMergeOpt
   }
 
   const targetContent = readFileSync(targetPath, 'utf8')
-  const token = `__${patch.slot}__`
+  const token = `{{${patch.slot}}}`
   const tokenCount = countOccurrences(targetContent, token)
   if (tokenCount !== 1) {
     throw new Error(

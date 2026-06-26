@@ -1,15 +1,15 @@
 ## Publish From The Monorepo
 
-This extension lives in `extensions/__EXTENSION_ID__` and is published by the
+This extension lives in `extensions/{{EXTENSION_ID}}` and is published by the
 repository root workflow. Push a scoped release commit:
 
 ```bash
-git commit -m "release(__EXTENSION_ID__): v0.0.1"
+git commit -m "release({{EXTENSION_ID}}): v0.0.1"
 git push origin main
 ```
 
 The workflow validates this extension's manifest id and version, packages only
-this extension, creates tag `__EXTENSION_ID__-v0.0.1` and its GitHub Release,
+this extension, creates tag `{{EXTENSION_ID}}-v0.0.1` and its GitHub Release,
 uploads the signed `.kisx` package, and updates the shared
 `registry/manifest.json`.
 

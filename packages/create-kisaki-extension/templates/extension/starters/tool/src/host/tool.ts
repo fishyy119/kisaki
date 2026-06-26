@@ -1,6 +1,6 @@
 import { kisaki, type ExtensionContext } from '@kisaki3/extension-sdk'
 
-const extensionName = `__EXTENSION_NAME__`
+const extensionName = `{{EXTENSION_NAME}}`
 
 /** Registers a sample extension-card action. */
 export function activateStarter(context: ExtensionContext): void {

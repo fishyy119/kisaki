@@ -6,7 +6,7 @@ import {
 } from '@kisaki3/extension-sdk'
 import type { HostFunctions, UiFunctions } from '../shared/contract'
 
-const extensionName = `__EXTENSION_NAME__`
+const extensionName = `{{EXTENSION_NAME}}`
 
 /** Registers the sample webview card action. */
 export function registerWebview(context: ExtensionContext): void {

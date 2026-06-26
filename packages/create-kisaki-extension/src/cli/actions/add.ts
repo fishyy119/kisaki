@@ -1,7 +1,8 @@
 import path from 'node:path'
 import { isExtensionIdentifier } from '@kisaki3/extension-api'
 import { ScaffoldCliError } from '../../errors'
-import { resolveExtensionConfig, type ExtensionInputOptions } from '../../extension-input'
+import { DEFAULT_PROJECT_NAME } from '../../extension-options'
+import type { ExtensionInputOptions } from '../../extension-input'
 import {
   commitGitPaths,
   installDependencies,
@@ -10,7 +11,8 @@ import {
   scaffoldWorkspaceExtension
 } from '../../scaffold'
 import type { ScaffoldCliContext } from '../context'
-import { printCreated } from './output'
+import { cliOutput, printCreated } from '../tui/output'
+import { collectExtensionConfig } from '../wizard'
 
 /** Input accepted by the action that adds a workspace extension. */
 export interface AddOptions extends ExtensionInputOptions {
@@ -25,6 +27,7 @@ export async function runAdd(
   options: AddOptions,
   context: ScaffoldCliContext
 ): Promise<void> {
+  cliOutput.heading('kisaki-extension add', 'Adding an extension to an existing monorepository.')
   if (options.commit && !options.install) {
     throw new ScaffoldCliError('--commit requires dependency installation.')
   }
@@ -37,8 +40,8 @@ export async function runAdd(
     )
   }
 
-  const projectName = extensionId ?? options.extensionId ?? 'my-kisaki-extension'
-  const config = await resolveExtensionConfig({
+  const projectName = extensionId ?? options.extensionId ?? DEFAULT_PROJECT_NAME
+  const config = await collectExtensionConfig({
     projectName,
     workspacePackageName: workspace.packageName,
     repositoryLayout: 'monorepo',
@@ -47,7 +50,8 @@ export async function runAdd(
     registryName: workspace.registryName,
     toolingVersion: context.toolingVersion,
     packageManager: workspace.packageManager,
-    input: { ...options, ...(extensionId ? { extensionId } : {}) }
+    input: { ...options, ...(extensionId ? { extensionId } : {}) },
+    prompts: context.prompts
   })
 
   if (options.commit && !matchesGitRepository(workspaceDir)) {

@@ -1,8 +1,8 @@
 {
-  "name": "__WORKSPACE_PACKAGE_NAME__",
+  "name": "{{WORKSPACE_PACKAGE_NAME}}",
   "private": true,
-  "description": "__REGISTRY_NAME__ extension monorepository.",
-  "packageManager": "__PACKAGE_MANAGER__",
+  "description": "{{REGISTRY_NAME}} extension monorepository.",
+  "packageManager": "{{PACKAGE_MANAGER}}",
   "engines": {
     "node": ">=22.12.0"
   },

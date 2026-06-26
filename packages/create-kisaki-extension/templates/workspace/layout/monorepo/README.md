@@ -1,4 +1,4 @@
-# **REGISTRY_NAME**
+# {{REGISTRY_NAME}}
 
 Kisaki extension registry repository.
 
@@ -19,7 +19,7 @@ independent project under `extensions/<extension-id>`.
 
 <!-- extensions:start -->
 
-- `__EXTENSION_ID__` — **EXTENSION_NAME** (`extensions/__EXTENSION_ID__`)
+- `{{EXTENSION_ID}}` - {{EXTENSION_NAME}} (`extensions/{{EXTENSION_ID}}`)
 <!-- extensions:end -->
 
 ## Add Extensions
@@ -34,4 +34,4 @@ pnpm create kisaki-extension add
 
 ## Publish
 
-**WORKSPACE_PUBLISH_SECTION**
+{{WORKSPACE_PUBLISH_SECTION}}

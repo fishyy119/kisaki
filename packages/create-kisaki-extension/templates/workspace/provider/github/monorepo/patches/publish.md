@@ -2,12 +2,12 @@ Publish an extension by updating its `manifest.json` and pushing a scoped
 release commit from the repository root:
 
 ```bash
-git commit -m "release(__EXTENSION_ID__): v0.0.1"
+git commit -m "release({{EXTENSION_ID}}): v0.0.1"
 git push origin main
 ```
 
 The workflow validates the commit scope and manifest version, creates tag
-`__EXTENSION_ID__-v0.0.1`, packages only the scoped extension, uploads the
+`{{EXTENSION_ID}}-v0.0.1`, packages only the scoped extension, uploads the
 signed `.kisx` package, and updates `registry/manifest.json` without removing
 other extension packages.
 

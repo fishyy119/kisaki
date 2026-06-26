@@ -3,10 +3,12 @@ import {
   EXTENSION_PUBLISH_PROVIDERS,
   EXTENSION_REPOSITORY_LAYOUTS,
   EXTENSION_STARTERS,
-  EXTENSION_WEBVIEWS
+  EXTENSION_WEBVIEW_ADDONS,
+  EXTENSION_WEBVIEW_FRAMEWORKS
 } from '../../extension-options'
 import { runInit, type InitOptions } from '../actions/init'
 import type { ScaffoldCliContext } from '../context'
+import { collectList, normalizeWebviewAddons, parseList } from './options'
 
 /** Creates the command that initializes a new extension repository. */
 export function createInitCommand(context: ScaffoldCliContext): Command {
@@ -36,23 +38,25 @@ export function createInitCommand(context: ScaffoldCliContext): Command {
       ])
     )
     .addOption(
-      new Option('--webview <implementation>', 'Generated webview implementation').choices([
-        ...EXTENSION_WEBVIEWS
+      new Option('--webview <framework>', 'Generated webview framework').choices([
+        ...EXTENSION_WEBVIEW_FRAMEWORKS
       ])
+    )
+    .option(
+      '--webview-addon <addon>',
+      `Generated webview addon; repeat or comma-separate (${EXTENSION_WEBVIEW_ADDONS.join(', ')})`,
+      collectList
     )
     .option('--description <text>', 'Extension description')
     .option('--author <name>', 'Extension author')
     .option('--no-install', 'Do not install dependencies')
     .option('--commit', 'Commit generated files after successful installation', false)
     .option('-y, --yes', 'Use defaults for omitted values', false)
-    .action((directory: string | undefined, options: InitOptions) =>
-      runInit(directory, options, context)
+    .action((directory: string | undefined, options: InitCommandOptions) =>
+      runInit(directory, normalizeWebviewAddons(options), context)
     )
 }
 
-function parseList(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+interface InitCommandOptions extends InitOptions {
+  webviewAddon?: string[]
 }

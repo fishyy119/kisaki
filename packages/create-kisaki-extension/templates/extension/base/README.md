@@ -1,13 +1,14 @@
-# **EXTENSION_NAME**
+# {{EXTENSION_NAME}}
 
-**DESCRIPTION**
+{{DESCRIPTION}}
 
 ## Metadata
 
-- Extension ID: `__EXTENSION_ID__`
-- Categories: **CATEGORIES_LABEL**
-- Starter: `__STARTER__`
-- Webview: `__WEBVIEW__`
+- Extension ID: `{{EXTENSION_ID}}`
+- Categories: {{CATEGORIES_LABEL}}
+- Starter: `{{STARTER}}`
+- Webview: {{WEBVIEW_LABEL}}
+- Webview addons: {{WEBVIEW_ADDONS_LABEL}}
 
 ## Project Layout
 
@@ -32,4 +33,4 @@ pnpm run dev
 pnpm run pack
 ```
 
-**PUBLISH_SECTION**
+{{PUBLISH_SECTION}}

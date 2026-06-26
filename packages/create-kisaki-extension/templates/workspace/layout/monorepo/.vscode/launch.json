@@ -22,7 +22,7 @@
       "id": "extensionId",
       "type": "promptString",
       "description": "Extension ID to run",
-      "default": "__EXTENSION_ID__"
+      "default": "{{EXTENSION_ID}}"
     }
   ]
 }

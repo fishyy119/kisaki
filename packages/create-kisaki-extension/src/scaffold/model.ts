@@ -3,7 +3,8 @@ import type {
   ExtensionPublishProvider,
   ExtensionRepositoryLayout,
   ExtensionStarter,
-  ExtensionWebview
+  ExtensionWebviewAddon,
+  ExtensionWebviewFramework
 } from '../extension-options'
 
 /** Complete, validated inputs for one generated extension project. */
@@ -17,7 +18,8 @@ export interface ExtensionScaffoldConfig {
   author?: string
   categories: readonly ExtensionCategory[]
   starter: ExtensionStarter
-  webview: ExtensionWebview
+  webviewFramework: ExtensionWebviewFramework
+  webviewAddons: readonly ExtensionWebviewAddon[]
   toolingVersion: string
   extensionApiRange: string
   nodeVersion: string
