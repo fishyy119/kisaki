@@ -14,7 +14,7 @@ choices:
 
 - the registry id/name/description becomes the durable registry manifest
   metadata; generated workspace package metadata is derived from it;
-- the release provider selects manual/custom hosting or GitHub Releases;
+- the publish provider selects manual hosting or GitHub Release automation;
 - categories are manifest discovery metadata and support multiple values;
 - the starter selects sample host behavior (`minimal`, `integration`,
   `scraper`, `theme`, or `tool`);
@@ -72,7 +72,7 @@ pnpm create kisaki-extension add example.theme \
 ```
 
 `add` atomically creates `extensions/<extension-id>`, rebuilds the marked
-README extension list, uses the workspace's release provider, and refreshes the
+README extension list, uses the workspace's publish provider, and refreshes the
 shared lockfile. Use `--workspace` when invoking it outside the repository
 root.
 
@@ -88,7 +88,7 @@ Generated projects include:
   boundaries;
 - Vite-based `kisx` build, validation, development, and packaging scripts;
 - a static registry manifest updated through `kisx registry` commands;
-- GitHub CI and signed release workflows when the GitHub provider is selected.
+- GitHub CI and signed publish workflows when the GitHub provider is selected.
 
 The generated `engines.kisaki` value uses the recommended Extension API range
 for the scaffold tooling version.
@@ -136,8 +136,8 @@ values such as package names, and template tokens describe the generated field
 they write to, such as `WORKSPACE_PACKAGE_DESCRIPTION` or
 `EXTENSION_MANIFEST_DESCRIPTION`.
 
-GitHub releases require `KISAKI_EXTENSION_SIGNING_KEY`. Push a commit named
-`release(<extension-id>): v<semver>`; CI validates it and creates the
+GitHub publishing requires `KISAKI_EXTENSION_SIGNING_KEY`. Push a commit named
+`publish(<extension-id>): v<semver>`; CI validates it and creates the
 `<extension-id>-v<semver>` tag.
 
 ## Command Architecture

@@ -73,11 +73,61 @@ export interface ExtensionRegistryReleaseChangelog {
   readonly url?: string
 }
 
+export interface ExtensionRegistryReleaseYank {
+  readonly at: string
+  readonly reason?: string
+}
+
 export interface ExtensionRegistryRelease {
   readonly version: string
   readonly publishedAt: string
   readonly engines: ExtensionRegistryReleaseEngines
   readonly changelog?: ExtensionRegistryReleaseChangelog
-  readonly yanked?: boolean
+  readonly yanked?: ExtensionRegistryReleaseYank
   readonly artifacts: readonly ExtensionRegistryArtifact[]
+}
+
+/** Metadata used to create an empty extension registry manifest. */
+export interface CreateExtensionRegistryManifestInput {
+  id: string
+  name: string
+  description?: string
+  homepage?: string
+  updatedAt?: string
+}
+
+/** Creates the canonical empty extension registry manifest. */
+export function createExtensionRegistryManifest(
+  input: CreateExtensionRegistryManifestInput
+): ExtensionRegistryManifest {
+  return compactExtensionRegistryManifest({
+    $schema: EXTENSION_REGISTRY_SCHEMA_URL,
+    schemaVersion: EXTENSION_REGISTRY_SCHEMA_VERSION,
+    id: input.id,
+    name: input.name,
+    description: input.description,
+    homepage: input.homepage,
+    updatedAt: input.updatedAt ?? new Date().toISOString(),
+    signingKeys: [],
+    packages: []
+  })
+}
+
+/** Recursively removes undefined fields from registry JSON objects. */
+export function compactExtensionRegistryManifest(manifest: unknown): ExtensionRegistryManifest {
+  return removeUndefined(manifest) as ExtensionRegistryManifest
+}
+
+function removeUndefined(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(removeUndefined)
+  }
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, removeUndefined(entry)])
+  )
 }

@@ -59,6 +59,10 @@ export async function watchBuiltinExtensions(
   }
 
   const [appCommand, ...appArgs] = childCommand
+  if (!appCommand) {
+    throw new Error('watch requires a command to run.')
+  }
+
   const appProcess = spawn(appCommand, appArgs, {
     cwd: context.desktopRoot,
     stdio: 'inherit',

@@ -42,53 +42,21 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Parse commit message
         id: parse
-        shell: bash
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
-
-          if [[ "$FIRST_LINE" =~ ^release\((desktop|extension-tooling)\):\ v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]]; then
-            TARGET="${BASH_REMATCH[1]}"
-            VERSION="${BASH_REMATCH[2]}"
-
-            case "$TARGET" in
-              desktop)
-                TAG_PREFIX="desktop-v"
-                RELEASE_NAME="Kisaki v$VERSION"
-                ;;
-              extension-tooling)
-                TAG_PREFIX="extension-tooling-v"
-                RELEASE_NAME="Kisaki Extension Tooling v$VERSION"
-                ;;
-            esac
-
-            TAG="$TAG_PREFIX$VERSION"
-            IS_PRERELEASE=false
-            MAKE_LATEST=false
-
-            if [[ "$VERSION" == *-* ]]; then
-              IS_PRERELEASE=true
-            fi
-
-            if [[ "$TARGET" = "desktop" && "$IS_PRERELEASE" = "false" ]]; then
-              MAKE_LATEST=true
-            fi
-
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-            echo "tag_prefix=$TAG_PREFIX" >> "$GITHUB_OUTPUT"
-            echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
-            echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
-            echo "make_latest=$MAKE_LATEST" >> "$GITHUB_OUTPUT"
-            echo "Detected release: $TARGET v$VERSION (prerelease=$IS_PRERELEASE, make_latest=$MAKE_LATEST)"
-          else
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "No release commit detected"
-          fi
+        run: pnpm exec tsx .github/scripts/release/detect.ts
 
   validate-release:
     name: Validate Release Metadata
@@ -102,78 +70,24 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate release tag
-        shell: bash
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release metadata
         env:
+          RELEASE_TARGET: ${{ needs.detect.outputs.target }}
+          RELEASE_VERSION: ${{ needs.detect.outputs.version }}
           RELEASE_TAG: ${{ needs.detect.outputs.tag }}
-        run: |
-          if git rev-parse --verify --quiet "refs/tags/$RELEASE_TAG" >/dev/null; then
-            TAG_COMMIT=$(git rev-list -n 1 "$RELEASE_TAG")
-            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
-              echo "Tag $RELEASE_TAG already points to $TAG_COMMIT, expected $GITHUB_SHA."
-              exit 1
-            fi
-
-            echo "Tag $RELEASE_TAG already identifies this release commit."
-          else
-            echo "Tag $RELEASE_TAG is available."
-          fi
-
-      - name: Validate changelog files
-        shell: bash
-        run: |
-          TARGET="${{ needs.detect.outputs.target }}"
-          VERSION="${{ needs.detect.outputs.version }}"
-          CHANGELOG_DIR="changelog/$TARGET/v$VERSION"
-          REQUIRED_LOCALES=("zh-Hans" "en" "ja")
-          MISSING_FILES=()
-          INVALID_FILES=()
-
-          case "$TARGET" in
-            desktop)
-              EXPECTED_TITLE="# Kisaki v$VERSION"
-              ;;
-            extension-tooling)
-              EXPECTED_TITLE="# Kisaki Extension Tooling v$VERSION"
-              ;;
-          esac
-
-          for locale in "${REQUIRED_LOCALES[@]}"; do
-            file="$CHANGELOG_DIR/$locale.md"
-            if [[ ! -f "$file" ]]; then
-              MISSING_FILES+=("$file")
-              continue
-            fi
-
-            FIRST_LINE=$(head -n 1 "$file" | tr -d '\r')
-            if [[ "$FIRST_LINE" != "$EXPECTED_TITLE" ]] ||
-              ! grep -q '[^[:space:]]' "$file" ||
-              grep -Eiq '(^|[^[:alnum:]])(TBD|TODO)([^[:alnum:]]|$)|^[[:space:]]*[-*][[:space:]]*(\.\.\.|……)[[:space:]]*$' "$file"; then
-              INVALID_FILES+=("$file")
-            fi
-          done
-
-          if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
-            echo "Missing required changelog files for $TARGET v$VERSION:"
-            printf '  - %s\n' "${MISSING_FILES[@]}"
-            exit 1
-          fi
-
-          if [[ ${#INVALID_FILES[@]} -gt 0 ]]; then
-            echo "Invalid title, empty content, or placeholder text in changelog files:"
-            printf '  - %s\n' "${INVALID_FILES[@]}"
-            exit 1
-          fi
-
-          mapfile -t CHANGELOG_FILES < <(find "$CHANGELOG_DIR" -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sort)
-          EXPECTED_FILES=("en.md" "ja.md" "zh-Hans.md")
-          if [[ "${CHANGELOG_FILES[*]}" != "${EXPECTED_FILES[*]}" ]]; then
-            echo "Changelog directory must contain exactly: ${EXPECTED_FILES[*]}"
-            printf 'Found: %s\n' "${CHANGELOG_FILES[*]:-(none)}"
-            exit 1
-          fi
-
-          echo "Verified changelog files for $TARGET v$VERSION."
+        run: pnpm exec tsx .github/scripts/release/validate.ts
 
   release-desktop:
     name: Build Desktop Release Artifacts
@@ -251,7 +165,7 @@ jobs:
         run: pnpm verify:extension-tooling
 
       - name: Pack extension tooling packages
-        run: pnpm pack:extension-tooling --out-dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}"
+        run: pnpm exec tsx .github/scripts/release/targets/extension-tooling/pack.ts --out-dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}"
 
       - name: Upload extension tooling artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -301,10 +215,12 @@ jobs:
           path: .tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}
 
       - name: Verify extension tooling artifact checksums
-        run: cd ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" && sha256sum --check SHA256SUMS
+        env:
+          RELEASE_ARTIFACT_DIR: .tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}
+        run: pnpm exec tsx .github/scripts/release/checksums.ts
 
       - name: Publish extension tooling packages
-        run: pnpm publish:extension-tooling --dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" --provenance
+        run: pnpm exec tsx .github/scripts/release/targets/extension-tooling/publish.ts --dir ".tmp/release/extension-tooling/v${{ needs.detect.outputs.version }}" --provenance
 
   publish-github-release:
     name: Publish GitHub Release
@@ -323,6 +239,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Download release artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -332,83 +260,29 @@ jobs:
 
       - name: Verify extension tooling release artifacts
         if: needs.detect.outputs.target == 'extension-tooling'
-        shell: bash
-        run: cd artifacts && sha256sum --check SHA256SUMS
+        env:
+          RELEASE_ARTIFACT_DIR: artifacts
+        run: pnpm exec tsx .github/scripts/release/checksums.ts
 
       - name: Find previous release tag
         id: previous_tag
-        shell: bash
-        run: |
-          TAG="${{ needs.detect.outputs.tag }}"
-          TAG_PREFIX="${{ needs.detect.outputs.tag_prefix }}"
-          PREVIOUS_TAG=$(git tag --list "$TAG_PREFIX*" --sort=-v:refname | grep -F -x -v "$TAG" | head -n 1 || true)
-          echo "tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
-
-          if [ -n "$PREVIOUS_TAG" ]; then
-            echo "Found previous release tag: $PREVIOUS_TAG"
-          else
-            echo "No previous release tag found"
-          fi
+        env:
+          RELEASE_TAG: ${{ needs.detect.outputs.tag }}
+          RELEASE_TAG_PREFIX: ${{ needs.detect.outputs.tag_prefix }}
+        run: pnpm exec tsx .github/scripts/release/previous-tag.ts
 
       - name: Build release body
-        shell: bash
         env:
           PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
           RELEASE_TARGET: ${{ needs.detect.outputs.target }}
           RELEASE_VERSION: ${{ needs.detect.outputs.version }}
           RELEASE_TAG: ${{ needs.detect.outputs.tag }}
-        run: |
-          REPO_URL="https://github.com/${{ github.repository }}"
-          CHANGELOG_BASE="$REPO_URL/blob/$RELEASE_TAG/changelog/$RELEASE_TARGET/v$RELEASE_VERSION"
-
-          {
-            echo "## Changelog"
-            echo
-            echo "- [简体中文]($CHANGELOG_BASE/zh-Hans.md)"
-            echo "- [English]($CHANGELOG_BASE/en.md)"
-            echo "- [日本語]($CHANGELOG_BASE/ja.md)"
-            echo
-
-            if [ "$RELEASE_TARGET" = "extension-tooling" ]; then
-              cat artifacts/PACKAGES.md
-              echo
-              echo "## Assets"
-              echo
-              echo "- npm package tarballs are attached to this release."
-              echo '- SHA256 checksums are available in `SHA256SUMS`.'
-              echo
-            fi
-
-            if [ -n "$PREVIOUS_TAG" ]; then
-              printf '**Full Changelog**: [`%s...%s`](%s/compare/%s...%s)\n' \
-                "$PREVIOUS_TAG" "$RELEASE_TAG" "$REPO_URL" "$PREVIOUS_TAG" "$RELEASE_TAG"
-            else
-              printf '**Full Changelog**: [`View commits for %s`](%s/commits/%s)\n' \
-                "$RELEASE_TAG" "$REPO_URL" "$RELEASE_TAG"
-            fi
-          } > release-body.md
+        run: pnpm exec tsx .github/scripts/release/body.ts
 
       - name: Ensure Git tag
-        shell: bash
         env:
           RELEASE_TAG: ${{ needs.detect.outputs.tag }}
-        run: |
-          git fetch --force --tags origin
-
-          if git rev-parse --verify --quiet "refs/tags/$RELEASE_TAG" >/dev/null; then
-            TAG_COMMIT=$(git rev-list -n 1 "$RELEASE_TAG")
-            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
-              echo "Tag $RELEASE_TAG already points to $TAG_COMMIT, expected $GITHUB_SHA."
-              exit 1
-            fi
-
-            echo "Reusing tag $RELEASE_TAG at $GITHUB_SHA."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag "$RELEASE_TAG" "$GITHUB_SHA"
-            git push origin "refs/tags/$RELEASE_TAG"
-          fi
+        run: pnpm exec tsx .github/scripts/release/tag.ts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3

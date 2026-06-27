@@ -15,7 +15,7 @@ export function createInitCommand(context: ScaffoldCliContext): Command {
     .description('Create a new extension repository')
     .argument('[directory]', 'Repository directory')
     .addOption(
-      new Option('--provider <provider>', 'Release provider').choices([
+      new Option('--provider <provider>', 'Publish provider').choices([
         ...EXTENSION_PUBLISH_PROVIDERS
       ])
     )

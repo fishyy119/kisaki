@@ -2,8 +2,6 @@
 
 import { buildTooling, verifyToolingOutput } from './build'
 import { checkTooling, parseToolingVersionArgument, setToolingVersion } from './contract'
-import { packTooling } from './pack'
-import { publishTooling } from './publish'
 import { loadToolingWorkspace, type ToolingPackage } from './workspace'
 
 const [command, ...args] = process.argv.slice(2)
@@ -23,7 +21,7 @@ async function main(): Promise<void> {
       return
     case 'set-version':
       assertArgumentCount(command, args, 1, 1)
-      setToolingVersion(workspace, parseToolingVersionArgument(args[0]))
+      setToolingVersion(workspace, parseToolingVersionArgument(requireArgument(args, 0)))
       return
     case 'build':
       assertArgumentCount(command, args, 0, 0)
@@ -33,12 +31,6 @@ async function main(): Promise<void> {
       assertArgumentCount(command, args, 0, 0)
       verifyToolingOutput(workspace)
       return
-    case 'pack':
-      packTooling(workspace, args)
-      return
-    case 'publish':
-      publishTooling(workspace, args)
-      return
     case 'list':
       assertArgumentCount(command, args, 0, 0)
       listToolingPackages(workspace.manifest.packages)
@@ -47,6 +39,14 @@ async function main(): Promise<void> {
       printUsage(command)
       process.exitCode = command ? 1 : 0
   }
+}
+
+function requireArgument(args: readonly string[], index: number): string {
+  const value = args[index]
+  if (value === undefined) {
+    throw new Error('Missing required argument.')
+  }
+  return value
 }
 
 function assertArgumentCount(
@@ -76,7 +76,5 @@ function printUsage(receivedCommand: string | undefined): void {
   tsx tools/extension-tooling/cli.ts set-version <version>
   tsx tools/extension-tooling/cli.ts build
   tsx tools/extension-tooling/cli.ts verify-output
-  tsx tools/extension-tooling/cli.ts pack [--out-dir <dir>]
-  tsx tools/extension-tooling/cli.ts publish [--dir <dir>] [--provenance]
   tsx tools/extension-tooling/cli.ts list`)
 }

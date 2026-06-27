@@ -162,7 +162,6 @@ packages/extension-registry/src/registry/integrity.ts
             "text": "Improve matching and settings.",
             "url": "https://example.com/bangumi/releases/1.2.0"
           },
-          "yanked": false,
           "artifacts": [
             {
               "target": "any",
@@ -210,7 +209,7 @@ Release：
 - preview release 的 prerelease 前缀只允许 `alpha`、`beta`、`rc`、`nightly`。需要发布测试版、候选版或 nightly 时，必须发布新的 semver prerelease version。
 - `engines.kisaki` 必须是 semver range。
 - `publishedAt` 必须是 ISO 8601 UTC 时间。
-- `yanked: true` 表示不再用于新安装和自动更新，但已安装版本仍可显示来源。
+- 缺省 `yanked` 表示该 release 可用于新安装和更新；存在时使用 `{ "at": "<ISO UTC>", "reason"?: "<text>" }`，表示该 release 已撤回，不再用于新安装和自动更新，但已安装版本仍可显示来源。
 - `artifacts` 至少包含一个 artifact；同一 release 内每个 `target` 只能出现一次。
 - release 在 manifest 中不需要人工维护 id；客户端使用规范化 release identity 的 `sha256` 作为 `releaseDigest`，并把它作为本地 `releaseId`。
 - `releaseDigest` 只标识可安装内容和安装策略相关身份，不标识仓库展示元数据。参与 digest 的字段固定为：`schemaVersion`、`packageId`、`version`、`engines.kisaki`、每个 artifact 的 `target`、`size`、`sha256`、签名算法、signer fingerprint 和 signature value。`repositoryId`、`repositoryUrl`、artifact `url`、`publishedAt`、`changelog`、`yanked`、package 展示字段不参与 digest。
@@ -248,7 +247,7 @@ Artifact：
 
 候选 release 必须同时满足：
 
-- `release.yanked !== true`，除非用户明确选择安装已撤回版本。
+- `release.yanked === undefined`，除非用户明确选择安装已撤回版本。
 - `semver.satisfies(EXTENSION_API_VERSION, release.engines.kisaki)`。
 - 存在与当前平台匹配的 artifact；优先精确平台，后退到 `any`。
 - artifact 完整性字段齐全。

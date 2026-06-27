@@ -366,6 +366,9 @@ importers:
       '@kisaki3/extension-api':
         specifier: workspace:*
         version: link:../extension-api
+      '@kisaki3/extension-registry':
+        specifier: workspace:*
+        version: link:../extension-registry
       commander:
         specifier: ^13.1.0
         version: 13.1.0

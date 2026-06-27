@@ -18,6 +18,9 @@
     "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build && pnpm run validate"
   },
   "devDependencies": {
-    "prettier": "^3.7.4"
+    "@types/node": "^22.19.1",
+    "prettier": "^3.7.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }

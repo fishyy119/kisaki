@@ -29,31 +29,33 @@ pnpm version:extension-tooling 0.0.4
 pnpm check:extension-tooling 0.0.4
 pnpm build:extension-tooling
 pnpm verify:extension-tooling
-pnpm pack:extension-tooling --out-dir .tmp/release/extension-tooling/v0.0.4
-pnpm publish:extension-tooling --dir .tmp/release/extension-tooling/v0.0.4 --provenance
+pnpm exec tsx .github/scripts/release/targets/extension-tooling/pack.ts --out-dir .tmp/release/extension-tooling/v0.0.4
+pnpm exec tsx .github/scripts/release/targets/extension-tooling/publish.ts --dir .tmp/release/extension-tooling/v0.0.4 --provenance
 ```
 
 `packages/extension-tooling-manifest.json` is the source of truth for package list, dependency
-order, build groups, and required outputs. `tools/extension-tooling/` keeps command routing,
-contract checks, build, packing, publish dry-run, and publishing in separate modules. The
-side-effecting `publish:extension-tooling` command always runs `npm publish --dry-run` before
-mutating npm.
+order, build groups, and required outputs. `tools/extension-tooling/` owns the tooling suite's
+version contract, version bump, build order, output verification, and package listing. GitHub
+release-only packaging and npm publishing live under
+`.github/scripts/release/targets/extension-tooling/`. The side-effecting publish script always runs
+`npm publish --dry-run` before mutating npm.
 
 The contract verifies:
 
 - every tooling package has the same `package.json` version
 - internal workspace dependencies use `workspace:*`
 - `EXTENSION_API_VERSION` matches the tooling version
-- scaffold packages receive tooling dependencies through `__TOOLING_VERSION__`
+- scaffold packages receive tooling dependencies through `{{KISAKI_TOOLING_VERSION}}`
 - extension scaffold manifests derive their `engines.kisaki` default from the current Extension API
   version
 
 ## Canonical Tarballs
 
-`pnpm pack:extension-tooling` is the only step allowed to create release tarballs. After each
-`pnpm pack`, the tooling rewrites the packed `package/package.json` and sorts dependency map keys
-before checksums are generated. This prevents meaningless SHA changes from package manager key-order
-differences, especially after `workspace:*` dependencies are rewritten to the release version.
+`.github/scripts/release/targets/extension-tooling/pack.ts` is the only step allowed to create
+release tarballs. After each `pnpm pack`, the workflow-owned script rewrites the packed
+`package/package.json` and sorts dependency map keys before checksums are generated. This prevents
+meaningless SHA changes from package manager key-order differences, especially after `workspace:*`
+dependencies are rewritten to the release version.
 
 The workflow uploads this canonical `.tgz` set as `release-extension-tooling-packages`. Every later
 step downloads and verifies the same artifact with `SHA256SUMS`; retrying publish or GitHub Release

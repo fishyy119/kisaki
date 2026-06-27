@@ -193,7 +193,7 @@ function createRepositoryRisks(
   const risks: ExtensionInstallRiskInfo[] = []
   const releaseKind = getExtensionRegistryReleaseKind(candidate.release.version)
 
-  if (candidate.release.yanked === true) {
+  if (candidate.release.yanked !== undefined) {
     risks.push(
       createRisk('yanked-release', 'danger', 'This release has been withdrawn by the repository.')
     )
@@ -299,7 +299,7 @@ function toReleaseInfo(
     publishedAt: candidate.release.publishedAt,
     engines: candidate.release.engines,
     changelog: candidate.release.changelog,
-    yanked: candidate.release.yanked === true,
+    yanked: candidate.release.yanked !== undefined,
     compatible: true,
     repositoryCount: 1,
     repositoryId: source.repositoryId,

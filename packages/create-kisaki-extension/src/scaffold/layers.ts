@@ -47,11 +47,7 @@ const TEMPLATE_KEYS = [
   'KISAKI_TOOLING_VERSION',
   'WORKSPACE_PUBLISH_PROVIDER',
   'WORKSPACE_README_TITLE',
-  'WORKSPACE_README_DESCRIPTION',
-  'REGISTRY_MANIFEST_ID',
-  'REGISTRY_MANIFEST_NAME',
-  'REGISTRY_MANIFEST_DESCRIPTION',
-  'REGISTRY_MANIFEST_UPDATED_AT'
+  'WORKSPACE_README_DESCRIPTION'
 ] as const
 
 type TemplateKey = (typeof TEMPLATE_KEYS)[number]
@@ -153,10 +149,6 @@ export function createRepositoryTemplateContext(
     WORKSPACE_PUBLISH_PROVIDER: repository.publishProvider,
     WORKSPACE_README_TITLE: repository.registryName,
     WORKSPACE_README_DESCRIPTION: repository.registryDescription,
-    REGISTRY_MANIFEST_ID: repository.registryId,
-    REGISTRY_MANIFEST_NAME: repository.registryName,
-    REGISTRY_MANIFEST_DESCRIPTION: repository.registryDescription,
-    REGISTRY_MANIFEST_UPDATED_AT: new Date().toISOString(),
     KISAKI_TOOLING_VERSION: repository.toolingVersion
   })
 }

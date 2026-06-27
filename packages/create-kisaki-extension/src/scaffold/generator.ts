@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { createExtensionRegistryManifest } from '@kisaki3/extension-registry'
 import {
   copyTemplateLayer,
   createExtensionTemplateLayers,
@@ -12,6 +13,7 @@ import {
 } from './layers'
 import type {
   ExtensionScaffoldConfig,
+  RepositoryScaffoldConfig,
   ScaffoldRepositoryOptions,
   ScaffoldWorkspaceExtensionOptions
 } from './model'
@@ -35,6 +37,7 @@ export function scaffoldRepository(options: ScaffoldRepositoryOptions): void {
       ),
       createRepositoryTemplateContext(options.repository, options.extension)
     )
+    finalizeGeneratedRegistryManifest(stagingDir, options.repository)
     finalizeGeneratedExtension(stagingDir, options.extension)
     publishStagingDirectory(stagingDir, options.targetDir)
   } catch (error) {
@@ -84,6 +87,26 @@ function materializeLayers(layers: readonly TemplateLayer[], context: Map<string
 function finalizeGeneratedExtension(repositoryDir: string, config: ExtensionScaffoldConfig): void {
   const extensionDir = path.join(repositoryDir, 'extensions', config.extensionId)
   finalizeExtensionTemplate(extensionDir, config)
+}
+
+function finalizeGeneratedRegistryManifest(
+  repositoryDir: string,
+  config: RepositoryScaffoldConfig
+): void {
+  const registryDir = path.join(repositoryDir, 'registry')
+  mkdirSync(registryDir, { recursive: true })
+  writeFileSync(
+    path.join(registryDir, 'manifest.json'),
+    `${JSON.stringify(
+      createExtensionRegistryManifest({
+        id: config.registryId,
+        name: config.registryName,
+        description: config.registryDescription
+      }),
+      null,
+      2
+    )}\n`
+  )
 }
 
 function assertTemplateAndTarget(templateDir: string, targetDir: string): void {

@@ -50,7 +50,7 @@ pnpm build:win:unpack  # Windows unpacked only
 
 ### Build Stages
 
-1. **Built-in extensions**: `tools/builtin-extensions/cli.ts build --target=resources` → `resources/extensions`
+1. **Built-in extensions**: `apps/desktop/tools/builtin-extensions/cli.ts build --target=resources` → `resources/extensions`
 2. **TypeScript check**: `vue-tsc --noEmit`
 3. **Vite build**: `electron-vite build` → `out/` (main/preload/renderer)
 4. **Package**: `electron-builder` → `dist/`
@@ -110,8 +110,6 @@ pnpm format                 # Format all
 pnpm check:extension-tooling       # Verify lockstep tooling version contract
 pnpm version:extension-tooling 0.0.2
 pnpm build:extension-tooling       # Build API, registry, SDK, CLI, and scaffold
-pnpm pack:extension-tooling        # Create canonical extension tooling tarballs
-pnpm publish:extension-tooling     # Publish canonical tarballs with the derived npm dist-tag
 ```
 
 ### Script Routing
@@ -136,9 +134,11 @@ Extension tooling packages use a single lockstep version:
 - `@kisaki3/extension-cli`
 - `create-kisaki-extension`
 
-`tools/extension-tooling/cli.ts` owns the version contract, version bump helper, canonical tarball
-packing, publish dry-run, npm publishing, and dist-tag derivation. Do not add
-package-specific release jobs for these packages.
+`tools/extension-tooling/cli.ts` owns the version contract, version bump helper, build ordering,
+output verification, and package listing. Extension tooling release tarball creation and npm
+publishing are GitHub release workflow implementation details under
+`.github/scripts/release/targets/extension-tooling/`. Do not add package-specific release jobs for
+these packages.
 
 Contract and tooling pipeline:
 

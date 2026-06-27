@@ -149,7 +149,7 @@ async function resolvePublishProvider(options: {
   }
 
   const answer = await options.prompts.select({
-    message: 'Release provider',
+    message: 'Publish provider',
     initial: DEFAULT_PUBLISH_PROVIDER,
     choices: PUBLISH_PROVIDER_OPTIONS.map((option) => ({
       value: option.value,
@@ -162,7 +162,7 @@ async function resolvePublishProvider(options: {
 function requirePublishProvider(value: string): ExtensionPublishProvider {
   const match = PUBLISH_PROVIDER_OPTIONS.find((option) => option.value === value)
   if (!match) {
-    throw new ScaffoldCliError(`Unknown release provider: ${value}`)
+    throw new ScaffoldCliError(`Unknown publish provider: ${value}`)
   }
   return match.value
 }

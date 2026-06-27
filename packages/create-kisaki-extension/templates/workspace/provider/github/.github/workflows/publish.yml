@@ -11,15 +11,12 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  NODE_VERSION: '{{NODE_VERSION}}'
-
 jobs:
   detect:
-    name: Detect Release
+    name: Detect Publish
     runs-on: ubuntu-latest
     outputs:
-      should_release: ${{ steps.parse.outputs.should_release }}
+      should_publish: ${{ steps.parse.outputs.should_publish }}
       extension_id: ${{ steps.parse.outputs.extension_id }}
       extension_dir: ${{ steps.parse.outputs.extension_dir }}
       version: ${{ steps.parse.outputs.version }}
@@ -30,31 +27,27 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
-      - name: Parse release commit
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22.12.0
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck publish scripts
+        run: pnpm exec tsc --noEmit -p tsconfig.json
+
+      - name: Parse publish commit
         id: parse
-        shell: bash
-        run: |
-          FIRST_LINE=$(git log -1 --pretty=%s)
-
-          if [[ "$FIRST_LINE" =~ ^release\(([a-z0-9][a-z0-9.-]*)\):\ v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]]; then
-            EXTENSION_ID="${BASH_REMATCH[1]}"
-            VERSION="${BASH_REMATCH[2]}"
-
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-            echo "extension_id=$EXTENSION_ID" >> "$GITHUB_OUTPUT"
-            echo "extension_dir=extensions/$EXTENSION_ID" >> "$GITHUB_OUTPUT"
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-            echo "tag=$EXTENSION_ID-v$VERSION" >> "$GITHUB_OUTPUT"
-            echo "Detected extension release $EXTENSION_ID@$VERSION."
-          else
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "No extension release commit detected."
-          fi
+        run: pnpm exec tsx .github/scripts/publish/detect.ts
 
   publish:
     name: Publish Extension
     needs: detect
-    if: needs.detect.outputs.should_release == 'true'
+    if: needs.detect.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -65,173 +58,66 @@ jobs:
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 22.12.0
 
       - name: Enable pnpm
         run: corepack enable
 
-      - name: Validate release metadata
-        shell: bash
-        run: |
-          EXTENSION_ID="${{ needs.detect.outputs.extension_id }}"
-          EXTENSION_DIR="${{ needs.detect.outputs.extension_dir }}"
-          VERSION="${{ needs.detect.outputs.version }}"
-          TAG="${{ needs.detect.outputs.tag }}"
-
-          if [ ! -f "$EXTENSION_DIR/manifest.json" ]; then
-            echo "Extension manifest not found: $EXTENSION_DIR/manifest.json"
-            exit 1
-          fi
-
-          MANIFEST_ID=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).id)" "$EXTENSION_DIR/manifest.json")
-          MANIFEST_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).version)" "$EXTENSION_DIR/manifest.json")
-
-          if [ "$MANIFEST_ID" != "$EXTENSION_ID" ]; then
-            echo "manifest.json id ($MANIFEST_ID) must match release commit scope ($EXTENSION_ID)."
-            exit 1
-          fi
-
-          if [ "$MANIFEST_VERSION" != "$VERSION" ]; then
-            echo "manifest.json version ($MANIFEST_VERSION) must match release commit version ($VERSION)."
-            exit 1
-          fi
-
-          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
-            TAG_SHA=$(git rev-list -n 1 "$TAG")
-            if [ "$TAG_SHA" != "$GITHUB_SHA" ]; then
-              echo "Tag $TAG already points to $TAG_SHA, expected $GITHUB_SHA."
-              exit 1
-            fi
-          fi
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate publish metadata
+        env:
+          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
+          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
+          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
+          PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
+        run: pnpm exec tsx .github/scripts/publish/verify.ts
 
       - name: Check extension
         working-directory: ${{ needs.detect.outputs.extension_dir }}
         run: pnpm run check
 
       - name: Package signed extension
-        working-directory: ${{ needs.detect.outputs.extension_dir }}
-        shell: bash
         env:
+          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
           SIGNING_KEY_JSON: ${{ secrets.KISAKI_EXTENSION_SIGNING_KEY }}
-        run: |
-          if [ -z "$SIGNING_KEY_JSON" ]; then
-            echo "KISAKI_EXTENSION_SIGNING_KEY is required for GitHub releases."
-            exit 1
-          fi
-
-          mkdir -p "$GITHUB_WORKSPACE/artifacts" "$GITHUB_WORKSPACE/.keys"
-          printf '%s' "$SIGNING_KEY_JSON" > "$GITHUB_WORKSPACE/.keys/author.ed25519.json"
-          chmod 600 "$GITHUB_WORKSPACE/.keys/author.ed25519.json"
-          pnpm exec kisx pack \
-            --out-dir "$GITHUB_WORKSPACE/artifacts" \
-            --no-build \
-            --sign \
-            --key "$GITHUB_WORKSPACE/.keys/author.ed25519.json"
+        run: pnpm exec tsx .github/scripts/publish/package.ts
 
       - name: Resolve package artifacts
         id: artifact
-        shell: bash
-        run: |
-          EXTENSION_ID="${{ needs.detect.outputs.extension_id }}"
-          VERSION="${{ needs.detect.outputs.version }}"
-          ARCHIVE_PATH="$GITHUB_WORKSPACE/artifacts/$EXTENSION_ID-$VERSION.kisx"
-          SIGNATURE_PATH="$GITHUB_WORKSPACE/artifacts/$EXTENSION_ID-$VERSION.sig"
+        env:
+          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
+          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
+        run: pnpm exec tsx .github/scripts/publish/artifacts.ts
 
-          for FILE in "$ARCHIVE_PATH" "$SIGNATURE_PATH"; do
-            if [ ! -f "$FILE" ]; then
-              echo "Missing release artifact: $FILE"
-              exit 1
-            fi
-          done
-
-          echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
-          echo "signature_path=$SIGNATURE_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Ensure release tag
-        shell: bash
-        run: |
-          TAG="${{ needs.detect.outputs.tag }}"
-
-          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
-            echo "Reusing tag $TAG at $GITHUB_SHA."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag "$TAG" "$GITHUB_SHA"
-            git push origin "refs/tags/$TAG"
-          fi
+      - name: Ensure publish tag
+        env:
+          PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
+        run: pnpm exec tsx .github/scripts/publish/tag.ts
 
       - name: Publish GitHub Release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="${{ needs.detect.outputs.tag }}"
-          EXTENSION_ID="${{ needs.detect.outputs.extension_id }}"
-          VERSION="${{ needs.detect.outputs.version }}"
-          ARCHIVE_PATH="${{ steps.artifact.outputs.archive_path }}"
-          SIGNATURE_PATH="${{ steps.artifact.outputs.signature_path }}"
-
-          RELEASE_ARGS=(
-            release
-            create
-            "$TAG"
-            --target
-            "$GITHUB_SHA"
-            --title
-            "$EXTENSION_ID v$VERSION"
-            --notes
-            "Kisaki extension release \`$EXTENSION_ID@$VERSION\`."
-          )
-
-          if [[ "$VERSION" == *-* ]]; then
-            RELEASE_ARGS+=(--prerelease)
-          fi
-
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh "${RELEASE_ARGS[@]}"
-          fi
-
-          gh release upload "$TAG" "$ARCHIVE_PATH" "$SIGNATURE_PATH" --clobber
+          PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
+          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
+          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
+          ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
+          SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}
+        run: pnpm exec tsx .github/scripts/publish/github-release.ts
 
       - name: Update registry manifest
-        shell: bash
-        run: |
-          EXTENSION_ID="${{ needs.detect.outputs.extension_id }}"
-          EXTENSION_DIR="${{ needs.detect.outputs.extension_dir }}"
-          VERSION="${{ needs.detect.outputs.version }}"
-          TAG="${{ needs.detect.outputs.tag }}"
-          ARCHIVE_PATH="${{ steps.artifact.outputs.archive_path }}"
-          SIGNATURE_PATH="${{ steps.artifact.outputs.signature_path }}"
-          ARTIFACT_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${EXTENSION_ID}-${VERSION}.kisx"
-          PUBLISHED_AT=$(git show -s --format=%cI "$GITHUB_SHA")
-          REGISTRY_MANIFEST="$GITHUB_WORKSPACE/registry/manifest.json"
-          KISX=(pnpm --dir "$EXTENSION_DIR" exec kisx)
-
-          git fetch origin main
-          git checkout -B publish-registry origin/main
-
-          "${KISX[@]}" registry add-release "$ARCHIVE_PATH" \
-            --manifest "$REGISTRY_MANIFEST" \
-            --url "$ARTIFACT_URL" \
-            --published-at "$PUBLISHED_AT" \
-            --signature "$SIGNATURE_PATH"
-          "${KISX[@]}" registry validate "$REGISTRY_MANIFEST"
+        env:
+          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
+          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
+          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
+          PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
+          ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
+          SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}
+        run: pnpm exec tsx .github/scripts/publish/update-registry.ts
 
       - name: Commit registry manifest
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add registry/manifest.json
-
-          if git diff --cached --quiet; then
-            echo "Registry manifest is already up to date."
-            exit 0
-          fi
-
-          git commit -m "chore(registry): publish ${{ needs.detect.outputs.extension_id }} v${{ needs.detect.outputs.version }} [skip ci]"
-          git push origin HEAD:main
+        env:
+          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
+          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
+        run: pnpm exec tsx .github/scripts/publish/commit-registry.ts

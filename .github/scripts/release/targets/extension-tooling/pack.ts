@@ -1,15 +1,31 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { checkTooling, getToolingVersion } from './contract'
-import { run } from './process'
+import { pathToFileURL } from 'node:url'
+import { checkTooling, getToolingVersion } from '../../../../../tools/extension-tooling/contract'
+import { run } from '../../../../../tools/extension-tooling/process'
+import {
+  getPackageDirectory,
+  loadToolingWorkspace,
+  type ToolingWorkspace
+} from '../../../../../tools/extension-tooling/workspace'
 import { canonicalizePackageTarball } from './tarball'
-import { getPackageDirectory, type ToolingWorkspace } from './workspace'
 
 export interface ToolingTarball {
   readonly packageName: string
   readonly fileName: string
   readonly filePath: string
+}
+
+if (isMainModule()) {
+  void main().catch((error: unknown) => {
+    console.error(`[extension-tooling] ${error instanceof Error ? error.message : String(error)}`)
+    process.exitCode = 1
+  })
+}
+
+async function main(): Promise<void> {
+  packTooling(loadToolingWorkspace(process.cwd()), process.argv.slice(2))
 }
 
 interface PackOptions {
@@ -137,4 +153,9 @@ function writePackageList(workspace: ToolingWorkspace, outDir: string, version: 
 function sha256File(filePath: string): string {
   const data = new Uint8Array(readFileSync(filePath))
   return createHash('sha256').update(data).digest('hex')
+}
+
+function isMainModule(): boolean {
+  const entryPath = process.argv[1]
+  return entryPath !== undefined && import.meta.url === pathToFileURL(path.resolve(entryPath)).href
 }

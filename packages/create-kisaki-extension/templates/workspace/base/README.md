@@ -4,13 +4,16 @@
 
 ## Development
 
-Install all extension dependencies from the repository root and run the same
-checks as CI:
+Install all extension dependencies from the repository root and run the project
+checks:
 
 ```bash
 pnpm install
 pnpm run check
 ```
+
+GitHub CI also typechecks workflow-owned scripts before running the project
+checks.
 
 The root workspace owns the shared `pnpm-lock.yaml`. Each extension remains an
 independent project under `extensions/<extension-id>`.

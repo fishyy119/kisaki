@@ -11,11 +11,6 @@ import {
   compareSigningKeys
 } from './model'
 
-/** Recursively removes undefined fields from a registry manifest. */
-export function compactRegistryManifest(manifest: unknown): ExtensionRegistryManifest {
-  return removeUndefined(manifest) as ExtensionRegistryManifest
-}
-
 /** Recursively removes undefined fields from a registry package. */
 export function compactRegistryPackage(registryPackage: unknown): ExtensionRegistryPackage {
   return removeUndefined(registryPackage) as ExtensionRegistryPackage

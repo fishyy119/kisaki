@@ -3,7 +3,9 @@ import { runAddRelease } from '../actions/registry/add-release'
 import { runDigest } from '../actions/registry/digest'
 import { runInit } from '../actions/registry/init'
 import { runSign } from '../actions/registry/sign'
+import { runUnyank } from '../actions/registry/unyank'
 import { runValidate } from '../actions/registry/validate'
+import { runYank } from '../actions/registry/yank'
 
 /** Creates the extension registry command group. */
 export function createRegistryCommand(): Command {
@@ -59,6 +61,31 @@ export function createRegistryCommand(): Command {
     .description('Print size and sha256 digest for a .kisx package')
     .argument('<package>', '.kisx package path')
     .action(runDigest)
+
+  command
+    .command('yank')
+    .description('Withdraw a registry release without deleting it')
+    .argument('<release>', '<extension-id>@<version>')
+    .requiredOption('--manifest <manifest>', 'Registry manifest path')
+    .option('--reason <text>', 'Reason shown to repository maintainers')
+    .option(
+      '--allow-insecure-local-urls',
+      'Allow file: and localhost URLs for local testing',
+      false
+    )
+    .action(runYank)
+
+  command
+    .command('unyank')
+    .description('Restore a previously withdrawn registry release')
+    .argument('<release>', '<extension-id>@<version>')
+    .requiredOption('--manifest <manifest>', 'Registry manifest path')
+    .option(
+      '--allow-insecure-local-urls',
+      'Allow file: and localhost URLs for local testing',
+      false
+    )
+    .action(runUnyank)
 
   command
     .command('sign')

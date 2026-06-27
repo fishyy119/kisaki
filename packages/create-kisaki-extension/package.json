@@ -31,6 +31,7 @@
   "dependencies": {
     "@clack/prompts": "^1.6.0",
     "@kisaki3/extension-api": "workspace:*",
+    "@kisaki3/extension-registry": "workspace:*",
     "commander": "^13.1.0",
     "cross-spawn": "^7.0.6",
     "kolorist": "^1.8.0"

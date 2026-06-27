@@ -1,7 +1,7 @@
-/** Release providers supported by the scaffold. */
+/** Publish providers supported by the scaffold. */
 export const EXTENSION_PUBLISH_PROVIDERS = ['manual', 'github'] as const
 
-/** A supported release provider. */
+/** A supported publish provider. */
 export type ExtensionPublishProvider = (typeof EXTENSION_PUBLISH_PROVIDERS)[number]
 
 /** Webview frameworks that can be composed with any host starter. */
@@ -33,7 +33,7 @@ export interface OptionChoiceMetadata<T extends string> {
   label: string
 }
 
-/** Release provider options shown during interactive scaffolding. */
+/** Publish provider options shown during interactive scaffolding. */
 export const PUBLISH_PROVIDER_OPTIONS: readonly OptionChoiceMetadata<ExtensionPublishProvider>[] = [
   { value: 'github', label: 'GitHub Releases' },
   { value: 'manual', label: 'Manual hosting' }
@@ -56,7 +56,7 @@ export const WEBVIEW_ADDON_OPTIONS: readonly OptionChoiceMetadata<ExtensionWebvi
   { value: 'kisaki-ui-vue', label: 'Kisaki UI Vue' }
 ]
 
-/** Default release provider when no choice is provided. */
+/** Default publish provider when no choice is provided. */
 export const DEFAULT_PUBLISH_PROVIDER: ExtensionPublishProvider = 'github'
 
 /** Default repository directory name when no target is provided. */

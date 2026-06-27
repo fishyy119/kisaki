@@ -3,7 +3,6 @@ import { isExtensionCategory, validateExtensionIdentifier } from '@kisaki3/exten
 import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,
-  validateOptionalBoolean,
   validateOptionalString,
   validateRequiredArray,
   validateRequiredEnumString,
@@ -66,6 +65,7 @@ const RELEASE_KEYS = new Set([
 ])
 const RELEASE_ENGINES_KEYS = new Set(['kisaki'])
 const CHANGELOG_KEYS = new Set(['text', 'url'])
+const YANK_KEYS = new Set(['at', 'reason'])
 const ARTIFACT_KEYS = new Set(['target', 'url', 'size', 'sha256', 'signature'])
 const SIGNATURE_KEYS = new Set(['keyId', 'algorithm', 'value'])
 
@@ -415,14 +415,16 @@ function validateRelease(
       trim: true,
       valueMessage: 'Release version must be a non-empty string.'
     }),
-    ...validateRequiredIsoUtcString(value.publishedAt, `${path}.publishedAt`),
-    ...validateOptionalBoolean(value.yanked, `${path}.yanked`)
+    ...validateRequiredIsoUtcString(value.publishedAt, `${path}.publishedAt`)
   )
 
   issues.push(...validateReleaseEngines(value.engines, `${path}.engines`))
 
   if (value.changelog !== undefined) {
     issues.push(...validateReleaseChangelog(value.changelog, `${path}.changelog`))
+  }
+  if (value.yanked !== undefined) {
+    issues.push(...validateReleaseYank(value.yanked, `${path}.yanked`))
   }
 
   const artifacts = value.artifacts
@@ -500,6 +502,32 @@ function validateReleaseChangelog(value: unknown, path: string): ValidationIssue
       path,
       message: 'changelog must include text or url.'
     })
+  }
+
+  return issues
+}
+
+function validateReleaseYank(value: unknown, path: string): ValidationIssue[] {
+  const issues: ValidationIssue[] = []
+
+  if (!isPlainObject(value)) {
+    return [{ path, message: 'yanked must be an object.' }]
+  }
+
+  issues.push(
+    ...validateUnknownKeysWithMessage(value, YANK_KEYS, path, 'Unknown yanked field.'),
+    ...validateRequiredIsoUtcString(value.at, `${path}.at`)
+  )
+
+  if (value.reason !== undefined) {
+    issues.push(
+      ...validateOptionalString(value.reason, `${path}.reason`, {
+        minLength: 1,
+        trim: true,
+        typeMessage: 'yanked.reason must be a string when provided.',
+        valueMessage: 'yanked.reason must be a non-empty string when provided.'
+      })
+    )
   }
 
   return issues

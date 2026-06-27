@@ -42,6 +42,7 @@ export interface ExtensionLocalFileInstallationSource {
 }
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
+const ISO_UTC_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
 const SUPPORTED_SCHEMA_VERSION = 1 satisfies ExtensionRegistrySchemaVersion
 
 export function parseExtensionInstallationSource(
@@ -202,16 +203,14 @@ function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistry
   const artifacts = value.artifacts.map(parseSnapshotArtifact)
   const changelog =
     value.changelog === undefined ? undefined : parseReleaseChangelog(value.changelog)
+  const yanked = value.yanked === undefined ? undefined : parseReleaseYank(value.yanked)
   if (
     !engines ||
     artifacts.length === 0 ||
     artifacts.some((artifact) => !artifact) ||
-    changelog === null
+    changelog === null ||
+    yanked === null
   ) {
-    return null
-  }
-
-  if (value.yanked !== undefined && typeof value.yanked !== 'boolean') {
     return null
   }
 
@@ -220,7 +219,7 @@ function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistry
     publishedAt: value.publishedAt,
     engines,
     ...(changelog ? { changelog } : {}),
-    ...(value.yanked !== undefined ? { yanked: value.yanked } : {}),
+    ...(yanked ? { yanked } : {}),
     artifacts: artifacts as ExtensionRegistryArtifact[]
   }
 }
@@ -253,6 +252,21 @@ function parseReleaseChangelog(value: unknown): ExtensionRegistryRelease['change
   return {
     ...(value.text ? { text: value.text } : {}),
     ...(value.url ? { url: value.url } : {})
+  }
+}
+
+function parseReleaseYank(value: unknown): ExtensionRegistryRelease['yanked'] | null {
+  if (!isPlainRecord(value) || !isIsoUtcDateString(value.at)) {
+    return null
+  }
+
+  if (value.reason !== undefined && !isNonEmptyString(value.reason)) {
+    return null
+  }
+
+  return {
+    at: value.at,
+    ...(value.reason ? { reason: value.reason } : {})
   }
 }
 
@@ -367,4 +381,21 @@ function isValidUrl(value: unknown): value is string {
   } catch {
     return false
   }
+}
+
+function isIsoUtcDateString(value: unknown): value is string {
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const match = ISO_UTC_PATTERN.exec(value)
+  if (!match) {
+    return false
+  }
+
+  const fraction = match[7] ?? ''
+  const normalized = `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}.${fraction.padEnd(3, '0')}Z`
+  const parsed = new Date(value)
+
+  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString() === normalized
 }

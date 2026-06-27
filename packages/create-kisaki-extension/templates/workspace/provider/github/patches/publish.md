@@ -1,8 +1,8 @@
 Publish an extension by updating its `manifest.json` and pushing a scoped
-release commit from the repository root:
+publish commit from the repository root:
 
 ```bash
-git commit -m "release(<extension-id>): v0.0.1"
+git commit -m "publish(<extension-id>): v0.0.1"
 git push origin main
 ```
 
@@ -11,12 +11,12 @@ The workflow validates the commit scope and manifest version, creates tag
 signed `.kisx` package, and updates `registry/manifest.json` without removing
 other extension packages.
 
-If a release job fails, rerun the same job. The workflow reuses the existing
+If a publish job fails, rerun the same job. The workflow reuses the existing
 GitHub Release, replaces its assets, and updates the registry from the latest
 `main`.
 
 The workflow commits the updated registry manifest back to `main`. After a
-successful release, pull or rebase before continuing local work:
+successful publish, pull or rebase before continuing local work:
 
 ```bash
 git pull --rebase

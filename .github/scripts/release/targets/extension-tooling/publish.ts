@@ -1,10 +1,14 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { checkTooling, getToolingVersion } from './contract'
+import { pathToFileURL } from 'node:url'
+import { checkTooling, getToolingVersion } from '../../../../../tools/extension-tooling/contract'
+import { run, runCapture } from '../../../../../tools/extension-tooling/process'
+import {
+  loadToolingWorkspace,
+  type ToolingWorkspace
+} from '../../../../../tools/extension-tooling/workspace'
 import { collectToolingTarballs, resolveReleaseDirectory, type ToolingTarball } from './pack'
-import { run, runCapture } from './process'
-import type { ToolingWorkspace } from './workspace'
 
 interface PublishOptions {
   provenance: boolean
@@ -21,6 +25,17 @@ interface ReleaseContext {
 interface ToolingPublishState {
   readonly tarball: ToolingTarball
   readonly alreadyPublished: boolean
+}
+
+if (isMainModule()) {
+  void main().catch((error: unknown) => {
+    console.error(`[extension-tooling] ${error instanceof Error ? error.message : String(error)}`)
+    process.exitCode = 1
+  })
+}
+
+async function main(): Promise<void> {
+  publishTooling(loadToolingWorkspace(process.cwd()), process.argv.slice(2))
 }
 
 export function publishTooling(workspace: ToolingWorkspace, args: readonly string[]): void {
@@ -214,4 +229,9 @@ function derivePublishDistTag(version: string): string {
 function sha512Integrity(filePath: string): string {
   const data = new Uint8Array(readFileSync(filePath))
   return `sha512-${createHash('sha512').update(data).digest('base64')}`
+}
+
+function isMainModule(): boolean {
+  const entryPath = process.argv[1]
+  return entryPath !== undefined && import.meta.url === pathToFileURL(path.resolve(entryPath)).href
 }

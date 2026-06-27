@@ -87,7 +87,7 @@ export function collectInstallCandidates(
       ) {
         continue
       }
-      if (!options.includeYanked && release.yanked === true) {
+      if (!options.includeYanked && release.yanked !== undefined) {
         continue
       }
 
@@ -126,7 +126,7 @@ export function compareInstallCandidates(
       isReleaseCompatible(left.release, apiVersion),
       isReleaseCompatible(right.release, apiVersion)
     ) ||
-    compareBooleans(left.release.yanked !== true, right.release.yanked !== true) ||
+    compareBooleans(left.release.yanked === undefined, right.release.yanked === undefined) ||
     compareBooleans(
       getExtensionRegistryReleaseKind(left.release.version) === 'stable',
       getExtensionRegistryReleaseKind(right.release.version) === 'stable'

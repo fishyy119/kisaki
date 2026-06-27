@@ -210,7 +210,7 @@
           "$ref": "#/$defs/changelog"
         },
         "yanked": {
-          "type": "boolean"
+          "$ref": "#/$defs/yank"
         },
         "artifacts": {
           "type": "array",
@@ -243,6 +243,20 @@
         "url": {
           "type": "string",
           "format": "uri"
+        }
+      }
+    },
+    "yank": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at"],
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/isoUtcDateTime"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

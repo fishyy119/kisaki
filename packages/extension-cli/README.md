@@ -30,6 +30,8 @@ kisx registry init
 kisx registry add-release artifacts/example-0.0.1.kisx \
   --manifest registry/manifest.json \
   --url https://example.com/extensions/example-0.0.1.kisx
+kisx registry yank example.extension@0.0.1 --manifest registry/manifest.json --reason "Broken package"
+kisx registry unyank example.extension@0.0.1 --manifest registry/manifest.json
 kisx registry validate registry/manifest.json
 kisx dev
 ```
@@ -42,8 +44,8 @@ kisx dev
 - `kisx build --watch` keeps `dist/` up to date for direct development loading.
 - `kisx pack` writes a `.kisx` archive and prints size plus sha256.
 - `kisx key generate` creates an Ed25519 author signing key.
-- `kisx registry init|validate|add-release|digest|sign` manages static registry
-  manifests and release artifacts.
+- `kisx registry init|validate|add-release|yank|unyank|digest|sign` manages
+  static registry manifests and release artifacts.
 - `kisx dev` watch-builds the extension, launches Kisaki with development
   extensions passed through `KISAKI_DEV_EXTENSIONS`, serves webview documents
   from a Vite dev server when UI sources exist, and leaves host changes pending
@@ -92,8 +94,10 @@ artifact targets under the same release version.
 The registry release `engines.kisaki` range is copied from the packaged
 manifest and must match it exactly.
 
-For local testing only, `registry validate` and `registry add-release` accept
+For local testing only, registry commands that read artifact URLs accept
 `--allow-insecure-local-urls` for `file:` and localhost artifact URLs.
+Use `registry yank <extension-id>@<version>` to withdraw a broken release while
+preserving registry history; `registry unyank` restores it.
 
 ## Command Architecture
 
