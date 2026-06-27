@@ -106,6 +106,10 @@ Templates are composable layers:
 - `templates/extension/webview/addons/<addon>`
 - `templates/extension/provider/<provider>`
 
+`kisx.config.ts` belongs to the selected webview framework layer because it
+declares framework-specific Vite plugins. Host-only extensions use the kisx
+defaults and do not receive an empty config file.
+
 Layer files are copied after token rendering. A layer can also declare
 `template.json` merge operations:
 

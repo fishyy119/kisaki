@@ -69,5 +69,5 @@ async function createHostInlineConfig(
     }
   }
 
-  return config.entry ? mergeConfig(base, config.entry) : base
+  return config.host ? mergeConfig(base, config.host) : base
 }

@@ -12,10 +12,11 @@ runtime topology:
 - `src/shared/` — RPC contracts and DTOs imported by both sides (never imports
   from `host` or `ui`)
 
-An optional `kisx.config.ts` exports `{ entry?, ui? }` Vite user configs merged
-over the kisx defaults (for example to add `@vitejs/plugin-vue` and
-`@tailwindcss/vite` for the `ui` build). `README.md` and the manifest icon are
-copied into package output when present.
+An optional `kisx.config.ts` exports `{ host?, ui? }` Vite user configs for the
+Node host and webview build targets. Each target config is merged over the kisx
+defaults. For example, the `ui` config can add `@vitejs/plugin-vue` and
+`@tailwindcss/vite`. `README.md` and the manifest icon are copied into package
+output when present.
 
 ## Commands
 
