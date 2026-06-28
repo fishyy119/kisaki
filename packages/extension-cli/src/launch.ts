@@ -36,18 +36,25 @@ export function launchKisaki(
     args.push(inspectArg)
   }
 
+  const environment = { ...process.env }
+
+  // Parent Node flags belong to pnpm/kisx, not to the Electron application.
+  // In particular, VS Code auto-attach injects a require hook through these
+  // variables, which packaged Electron rejects and propagates to every child.
+  // Extension host debugging uses the explicit inspect argument above.
+  delete environment.NODE_OPTIONS
+  delete environment.VSCODE_INSPECTOR_OPTIONS
+  environment[DEVELOPMENT_EXTENSIONS_ENV] = JSON.stringify(
+    developmentExtensions.map((extension) => ({
+      path: extension.path,
+      ...(extension.uiDevServerOrigin ? { uiDevServerOrigin: extension.uiDevServerOrigin } : {})
+    }))
+  )
+
   return spawn(options.kisakiCommand, args, {
     cwd: options.cwd ?? process.cwd(),
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      [DEVELOPMENT_EXTENSIONS_ENV]: JSON.stringify(
-        developmentExtensions.map((extension) => ({
-          path: extension.path,
-          ...(extension.uiDevServerOrigin ? { uiDevServerOrigin: extension.uiDevServerOrigin } : {})
-        }))
-      )
-    }
+    env: environment
   })
 }
 

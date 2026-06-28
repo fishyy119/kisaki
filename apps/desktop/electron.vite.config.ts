@@ -24,20 +24,15 @@ const fontCopyTargets = EXTENSION_WEBVIEW_FONT_PACKAGES.flatMap((pkg) => {
 })
 
 function rendererContentSecurityPolicyPlugin(): PluginOption {
-  let allowDevelopmentWebviewOrigins = false
-
   return {
     name: 'kisaki-renderer-content-security-policy',
-    configResolved(config) {
-      allowDevelopmentWebviewOrigins = config.command === 'serve'
-    },
     transformIndexHtml() {
       return [
         {
           tag: 'meta',
           attrs: {
             'http-equiv': 'Content-Security-Policy',
-            content: createRendererContentSecurityPolicy(allowDevelopmentWebviewOrigins)
+            content: createRendererContentSecurityPolicy()
           },
           injectTo: 'head'
         }
@@ -46,18 +41,13 @@ function rendererContentSecurityPolicyPlugin(): PluginOption {
   }
 }
 
-function createRendererContentSecurityPolicy(allowDevelopmentWebviewOrigins: boolean): string {
-  const frameSources = ["'self'", 'kisaki-extension-ui:']
-  if (allowDevelopmentWebviewOrigins) {
-    frameSources.push('http://127.0.0.1:*', 'http://localhost:*')
-  }
-
+function createRendererContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: attachment: kisaki-extension-icon: https: http:",
-    `frame-src ${frameSources.join(' ')}`
+    "frame-src 'self' kisaki-extension-ui:"
   ].join('; ')
 }
 

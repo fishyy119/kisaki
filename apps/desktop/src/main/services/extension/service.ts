@@ -156,9 +156,7 @@ export class ExtensionService implements IService {
       taskRun: container.get('task-run'),
       resolveRuntimeHandle: (runtimeHandle) =>
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
-      resolveWebviewUiSource: (extensionId) =>
-        this.installations?.resolveWebviewUiSource(extensionId) ?? null,
-      buildWebviewPackageDocumentUrl: (extensionId, entry) =>
+      resolveWebviewDocumentUrl: (extensionId, entry) =>
         uiAssetServer.documentUrl(extensionId, entry),
       onWebviewSessionsChanged: (sessions) =>
         this.ipc.send('extension:webview-sessions-changed', sessions),

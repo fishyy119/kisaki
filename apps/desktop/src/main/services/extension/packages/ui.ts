@@ -8,6 +8,15 @@ import { createProtocolHandlerSlot } from '../shared/protocol-slot'
 
 const log = createLogger('Extension')
 
+const DEVELOPMENT_PROXY_REQUEST_HEADERS = [
+  'accept',
+  'accept-language',
+  'cache-control',
+  'if-modified-since',
+  'if-none-match',
+  'range'
+] as const
+
 const extensionUiProtocolSlot = createProtocolHandlerSlot(
   EXTENSION_UI_SCHEME,
   'Extension UI service unavailable'
@@ -25,9 +34,11 @@ export interface ExtensionUiAssetServerOptions {
 }
 
 /**
- * Serves bundled webview UI assets from installed extension packages over the
- * `kisaki-extension-ui://<extension-id>/<path>` scheme. Each extension gets
- * its own origin; paths are confined to the manifest `ui` root.
+ * Serves every webview document through the app-owned
+ * `kisaki-extension-ui://<extension-id>/<path>` scheme. Package assets are
+ * confined to the manifest `ui` root; development assets are proxied to the
+ * extension's validated loopback Vite server. The renderer therefore keeps
+ * one CSP-safe URL and origin model in every environment.
  */
 export class ExtensionUiAssetServer {
   constructor(private readonly options: ExtensionUiAssetServerOptions) {}
@@ -36,17 +47,31 @@ export class ExtensionUiAssetServer {
     extensionUiProtocolSlot.activate((request) => this.serveRequest(request))
   }
 
-  documentUrl(extensionId: string, entry: string): string {
-    return `${EXTENSION_UI_SCHEME}://${extensionId}/${entry}`
+  documentUrl(extensionId: string, entry: string): string | null {
+    const source = this.options.resolveUiSource(extensionId)
+    if (!source) {
+      return null
+    }
+
+    const safeExtensionId = requireSafeExtensionId(extensionId)
+    const url = new URL(`${EXTENSION_UI_SCHEME}://${safeExtensionId}/`)
+    url.pathname = `/${entry}`
+    return url.toString()
   }
 
   private async serveRequest(request: Request): Promise<Response> {
+    let extensionId: string | null = null
+
     try {
       const url = new URL(request.url)
-      const extensionId = requireSafeExtensionId(url.hostname)
+      extensionId = requireSafeExtensionId(url.hostname)
       const source = this.options.resolveUiSource(extensionId)
-      if (!source || source.kind !== 'package') {
+      if (!source || !matchesUiProtocolOrigin(url)) {
         return new Response('Extension UI assets not available', { status: 404 })
+      }
+
+      if (source.kind === 'dev-server') {
+        return await proxyDevelopmentAsset(request, url, source.origin)
       }
 
       const segments = decodeURIComponent(url.pathname).split('/').filter(Boolean)
@@ -61,10 +86,49 @@ export class ExtensionUiAssetServer {
 
       return await net.fetch(pathToFileURL(filePath).toString())
     } catch (error) {
-      log.warn('Failed to serve extension UI asset:', error, { url: request.url })
+      log.warn('Failed to serve extension UI asset.', error, { extensionId })
       return new Response('Failed to load extension UI asset', { status: 500 })
     }
   }
+}
+
+function matchesUiProtocolOrigin(url: URL): boolean {
+  return !url.username && !url.password && url.port === ''
+}
+
+async function proxyDevelopmentAsset(
+  request: Request,
+  requestUrl: URL,
+  origin: string
+): Promise<Response> {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return new Response('Extension UI request method not allowed', {
+      status: 405,
+      headers: { Allow: 'GET, HEAD' }
+    })
+  }
+
+  const targetUrl = new URL(origin)
+  targetUrl.pathname = requestUrl.pathname
+  targetUrl.search = requestUrl.search
+
+  return await net.fetch(targetUrl.toString(), {
+    method: request.method,
+    headers: pickDevelopmentProxyHeaders(request.headers)
+  })
+}
+
+function pickDevelopmentProxyHeaders(source: Headers): Headers {
+  const headers = new Headers()
+
+  for (const name of DEVELOPMENT_PROXY_REQUEST_HEADERS) {
+    const value = source.get(name)
+    if (value !== null) {
+      headers.set(name, value)
+    }
+  }
+
+  return headers
 }
 
 export function resolveExtensionUiRootPath(packagePath: string, uiRoot: string): string {

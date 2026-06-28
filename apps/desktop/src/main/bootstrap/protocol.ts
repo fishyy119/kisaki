@@ -4,7 +4,7 @@
  * Registers custom schemes for the application:
  * - attachment:// - Serves database attachments (images, backups)
  * - kisaki-extension-icon:// - Lazily proxies extension catalog icons
- * - kisaki-extension-ui:// - Serves bundled extension webview UI assets
+ * - kisaki-extension-ui:// - Serves packaged and proxied development extension UI assets
  * - kisaki-webview-font:// - Serves app fonts to extension webview documents
  * - kisaki:// - Deeplink protocol for external triggers
  *
@@ -55,6 +55,8 @@ export function registerAppSchemes(): void {
         standard: true,
         secure: true,
         supportFetchAPI: true,
+        // Extension documents run inside a sandboxed, extension-scoped iframe
+        // and must execute independently from the app renderer's CSP.
         bypassCSP: true,
         stream: true
       }

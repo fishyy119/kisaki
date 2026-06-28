@@ -11,15 +11,13 @@ import {
 } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import type { ExtensionWebviewMessageEvent, ExtensionWebviewSessionInfo } from '@shared/extension'
-import type { ExtensionWebviewUiSource } from '../packages'
 import type { ExtensionHostRpcClient } from '../runtime'
 
 const log = createLogger('Extension')
 
 export interface ExtensionWebviewsCapabilityProviderOptions {
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
-  resolveUiSource(extensionId: string): ExtensionWebviewUiSource | null
-  buildPackageDocumentUrl(extensionId: string, entry: string): string
+  resolveDocumentUrl(extensionId: string, entry: string): string | null
   onSessionsChanged(sessions: readonly ExtensionWebviewSessionInfo[]): void
   onWebviewMessage(event: ExtensionWebviewMessageEvent): void
 }
@@ -68,8 +66,8 @@ export class ExtensionWebviewsCapabilityProvider {
       throw createValidationError('Webview entry must stay inside the manifest ui root.')
     }
 
-    const source = this.options.resolveUiSource(metadata.id)
-    if (!source) {
+    const documentUrl = this.options.resolveDocumentUrl(metadata.id, entry)
+    if (!documentUrl) {
       throw createValidationError(
         `Extension "${metadata.id}" cannot open webviews because its manifest does not declare a ui root.`
       )
@@ -84,7 +82,7 @@ export class ExtensionWebviewsCapabilityProvider {
         surface: options.surface,
         entry,
         params: options.params ?? {},
-        documentUrl: this.buildDocumentUrl(source, metadata.id, entry),
+        documentUrl,
         openedAt: Date.now()
       },
       runtimeHandle,
@@ -204,18 +202,6 @@ export class ExtensionWebviewsCapabilityProvider {
       webviewId: session.info.webviewId
     })
     this.notifySessionsChanged()
-  }
-
-  private buildDocumentUrl(
-    source: ExtensionWebviewUiSource,
-    extensionId: string,
-    entry: string
-  ): string {
-    if (source.kind === 'dev-server') {
-      return `${source.origin}/${entry}`
-    }
-
-    return this.options.buildPackageDocumentUrl(extensionId, entry)
   }
 
   private notifySessionsChanged(): void {

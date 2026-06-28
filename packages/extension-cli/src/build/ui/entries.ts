@@ -1,12 +1,9 @@
 import path from 'node:path'
 import { readdir } from 'node:fs/promises'
-import type { RollupWatcher } from 'rollup'
-import { build, createServer, mergeConfig, type InlineConfig, type ViteDevServer } from 'vite'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
-import type { KisxConfig } from '../config'
-import { CliError } from '../errors'
-import type { ExtensionProject } from '../project'
-import { pathExists } from '../project'
+import { CliError } from '../../errors'
+import type { ExtensionProject } from '../../project'
+import { pathExists } from '../../project'
 
 const UI_ENTRY_FILE = 'index.html'
 // Normalized form compared against parsed manifests; manifests declare the
@@ -20,15 +17,6 @@ export interface ExtensionUiEntry {
    * Document path relative to the manifest `ui` root, e.g. `settings/index.html`.
    */
   documentPath: string
-}
-
-export interface UiBuildOptions {
-  watch?: boolean
-}
-
-export interface ExtensionUiDevServer {
-  origin: string
-  close(): Promise<void>
 }
 
 /**
@@ -72,83 +60,6 @@ export function assertUiConsistency(
       `manifest.json "ui" must be "${MANIFEST_UI_DECLARATION}"; kisx emits webview assets there.`
     )
   }
-}
-
-/**
- * Builds the webview document bundles into dist/ui.
- */
-export async function buildUiBundle(
-  project: ExtensionProject,
-  entries: readonly ExtensionUiEntry[],
-  config: KisxConfig,
-  options: UiBuildOptions = {}
-): Promise<RollupWatcher | null> {
-  const result = await build(createUiBuildConfig(project, entries, config, options))
-  return options.watch ? (result as RollupWatcher) : null
-}
-
-/**
- * Starts the Vite dev server delivering webview documents with HMR. Documents
- * resolve at `<origin>/<entry>` exactly like bundled `dist/ui/<entry>` paths.
- */
-export async function startUiDevServer(
-  project: ExtensionProject,
-  config: KisxConfig
-): Promise<ExtensionUiDevServer> {
-  const base: InlineConfig = {
-    configFile: false,
-    root: project.uiSourceDir,
-    appType: 'mpa',
-    logLevel: 'warn',
-    clearScreen: false,
-    server: {
-      host: '127.0.0.1'
-    }
-  }
-
-  const server = await createServer(config.ui ? mergeConfig(base, config.ui) : base)
-  await server.listen()
-
-  return {
-    origin: resolveDevServerOrigin(server),
-    close: () => server.close()
-  }
-}
-
-function createUiBuildConfig(
-  project: ExtensionProject,
-  entries: readonly ExtensionUiEntry[],
-  config: KisxConfig,
-  options: UiBuildOptions
-): InlineConfig {
-  const input = entries.map((entry) => entry.htmlPath)
-
-  const base: InlineConfig = {
-    configFile: false,
-    root: project.uiSourceDir,
-    appType: 'mpa',
-    logLevel: 'warn',
-    clearScreen: false,
-    build: {
-      outDir: path.join(project.distDir, 'ui'),
-      emptyOutDir: false,
-      sourcemap: true,
-      rollupOptions: { input },
-      watch: options.watch ? {} : null
-    }
-  }
-
-  return config.ui ? mergeConfig(base, config.ui) : base
-}
-
-function resolveDevServerOrigin(server: ViteDevServer): string {
-  const address = server.httpServer?.address()
-  if (!address || typeof address === 'string') {
-    throw new CliError('UI dev server did not expose a listening address.')
-  }
-
-  const hostname = address.address === '::1' ? '[::1]' : address.address
-  return `http://${hostname}:${address.port}`
 }
 
 async function collectUiEntries(

@@ -48,9 +48,11 @@ kisx dev
 - `kisx registry init|validate|add-release|yank|unyank|digest|sign` manages
   static registry manifests and release artifacts.
 - `kisx dev` watch-builds the extension, launches Kisaki with development
-  extensions passed through `KISAKI_DEV_EXTENSIONS`, serves webview documents
-  from a Vite dev server when UI sources exist, and leaves host changes pending
-  until the developer uses Reload Process in Kisaki.
+  extensions passed through `KISAKI_DEV_EXTENSIONS`, and serves webview sources
+  from an OS-assigned loopback Vite server. Kisaki proxies those assets through
+  its fixed extension UI protocol, so development and packaged webviews share
+  one renderer security boundary while UI HMR remains available. Host changes
+  stay pending until the developer uses Reload Process in Kisaki.
 
 ## Packaging
 

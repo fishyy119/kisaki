@@ -530,9 +530,10 @@ export interface ExtensionCardActionRunRequest {
 }
 
 /**
- * One open webview session as projected to the renderer. The renderer mounts
- * an iframe at `documentUrl` (appending the bootstrap query) inside the
- * surface container and relays messages through main.
+ * One open webview session as projected to the renderer. `documentUrl` always
+ * uses the app-owned extension UI protocol, regardless of whether main serves
+ * package files or proxies a development server. The renderer appends the
+ * bootstrap query, mounts the iframe, and relays messages through main.
  */
 export interface ExtensionWebviewSessionInfo {
   webviewId: string

@@ -9,7 +9,6 @@ import type { NotifyService } from '@main/services/notify'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunService } from '@main/services/task-run'
 import type { ExtensionWebviewMessageEvent, ExtensionWebviewSessionInfo } from '@shared/extension'
-import type { ExtensionWebviewUiSource } from '../packages'
 import type { ExtensionHostRpcClient } from '../runtime'
 import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
@@ -35,8 +34,7 @@ export interface ExtensionCapabilityGatewayOptions {
   scraper: ScraperService
   taskRun: TaskRunService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
-  resolveWebviewUiSource(extensionId: string): ExtensionWebviewUiSource | null
-  buildWebviewPackageDocumentUrl(extensionId: string, entry: string): string
+  resolveWebviewDocumentUrl(extensionId: string, entry: string): string | null
   onWebviewSessionsChanged(sessions: readonly ExtensionWebviewSessionInfo[]): void
   onWebviewMessage(event: ExtensionWebviewMessageEvent): void
 }
@@ -102,8 +100,7 @@ export class ExtensionCapabilityGateway {
     })
     this.webviews = new ExtensionWebviewsCapabilityProvider({
       resolveRuntimeHandle: options.resolveRuntimeHandle,
-      resolveUiSource: options.resolveWebviewUiSource,
-      buildPackageDocumentUrl: options.buildWebviewPackageDocumentUrl,
+      resolveDocumentUrl: options.resolveWebviewDocumentUrl,
       onSessionsChanged: options.onWebviewSessionsChanged,
       onWebviewMessage: options.onWebviewMessage
     })
