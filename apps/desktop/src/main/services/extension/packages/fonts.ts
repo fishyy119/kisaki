@@ -2,7 +2,11 @@ import path from 'node:path'
 import fse from 'fs-extra'
 import { app } from 'electron'
 import { createLogger } from '@main/log'
-import { EXTENSION_WEBVIEW_FONT_PACKAGES, EXTENSION_WEBVIEW_FONT_SCHEME } from '@shared/extension'
+import {
+  EXTENSION_WEBVIEW_FONT_PACKAGES,
+  EXTENSION_WEBVIEW_FONT_RESOURCE_DIR,
+  EXTENSION_WEBVIEW_FONT_SCHEME
+} from '@shared/extension'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import { createProtocolHandlerSlot } from '../shared/protocol-slot'
 
@@ -36,16 +40,11 @@ export class ExtensionWebviewFontServer {
   private readonly rootsByDir: ReadonlyMap<string, string>
 
   constructor() {
-    // The renderer build copies the packages to renderer-output fonts/<dir>;
-    // the dev-server renderer serves them from middleware only, so dev mode
-    // reads the npm packages directly.
-    const devMode = Boolean(process.env['ELECTRON_RENDERER_URL'])
+    const resourceRoot = resolveWebviewFontResourceRoot()
     this.rootsByDir = new Map(
       EXTENSION_WEBVIEW_FONT_PACKAGES.map((pkg) => [
         pkg.dir,
-        devMode
-          ? path.join(app.getAppPath(), 'node_modules', ...pkg.npmPackage.split('/'))
-          : path.join(__dirname, '..', 'renderer', 'fonts', pkg.dir)
+        resolveInsideRoot(resourceRoot, pkg.dir)
       ])
     )
   }
@@ -83,4 +82,12 @@ export class ExtensionWebviewFontServer {
       return new Response('Failed to load webview font asset', { status: 500 })
     }
   }
+}
+
+function resolveWebviewFontResourceRoot(): string {
+  const resourcesRoot = app.isPackaged
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
+    : path.join(app.getAppPath(), 'resources')
+
+  return resolveInsideRoot(resourcesRoot, EXTENSION_WEBVIEW_FONT_RESOURCE_DIR)
 }
