@@ -2,19 +2,28 @@ import semver from 'semver'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
+  ExtensionRegistryLocalizedDocumentSet,
   ExtensionRegistryManifest,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease,
   ExtensionRegistrySigningKey
 } from '@kisaki3/extension-registry'
 
-/** Creates the short registry summary for an extension package. */
-export function createPackageSummary(manifest: ExtensionManifest): string {
+const DEFAULT_REGISTRY_LOCALE = 'en'
+
+/** Creates the fallback registry description for an extension package. */
+export function createPackageDescription(
+  manifest: ExtensionManifest
+): ExtensionRegistryLocalizedDocumentSet {
   const description = manifest.description?.trim()
-  if (!description) {
-    return manifest.name
+  return {
+    defaultLocale: DEFAULT_REGISTRY_LOCALE,
+    locales: {
+      [DEFAULT_REGISTRY_LOCALE]: {
+        summary: description || manifest.name
+      }
+    }
   }
-  return description.length > 160 ? `${description.slice(0, 157)}...` : description
 }
 
 /** Compares registry packages by stable identifier. */

@@ -11,6 +11,18 @@ The workflow validates the commit scope and manifest version, creates tag
 signed `.kisx` package, and updates `registry/manifest.json` without removing
 other extension packages.
 
+Optional release changelogs live under the extension directory. The workflow
+uses the default locale entry for GitHub Release notes and writes all locale
+entries into the registry release:
+
+```text
+extensions/<extension-id>/changelogs/0.0.1/en.md
+extensions/<extension-id>/changelogs/0.0.1/zh-Hans.md
+```
+
+The first non-empty line is the changelog summary. The remaining Markdown is
+the changelog body.
+
 If a publish job fails, rerun the same job. The workflow reuses the existing
 GitHub Release, replaces its assets, and updates the registry from the latest
 `main`.

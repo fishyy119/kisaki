@@ -363,7 +363,7 @@ export class ExtensionRepositoryManager {
 
   private rebuildCatalog(): void {
     this.catalog = this.aggregator.aggregate(this.listCatalogRepositories())
-    this.iconManager.setAvailableIcons(collectCatalogIcons(this.catalog))
+    this.iconManager.setAvailableIcons('catalog', collectCatalogIcons(this.catalog))
   }
 
   private toRepositoryInfo(row: ExtensionRepositoryRow): ExtensionRepositoryInfo {

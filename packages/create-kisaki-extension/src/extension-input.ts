@@ -105,7 +105,7 @@ export function createDefaultRegistryName(repositoryName: string): string {
   return toReadableName(repositoryName)
 }
 
-/** Creates the default registry summary from the resolved registry name. */
+/** Creates the default registry description from the resolved registry name. */
 export function createDefaultRegistryDescription(registryName: string): string {
   return `Kisaki extension registry for ${registryName}.`
 }

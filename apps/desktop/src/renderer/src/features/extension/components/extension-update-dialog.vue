@@ -7,6 +7,7 @@ import { computed, ref } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Switch } from '@renderer/components/ui/switch'
+import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import {
   Dialog,
@@ -21,6 +22,7 @@ import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { useTaskRunStore } from '@renderer/stores'
+import { selectLocalizedDocument } from '../utils/localized-document'
 import type { ExtensionInstalledPackageInfo, ExtensionUpdateInfo } from '@shared/extension'
 
 interface Props {
@@ -58,6 +60,7 @@ const signerTone = computed(() =>
   props.updateInfo.signer?.status === 'trusted' ? 'text-emerald-600' : 'text-amber-600'
 )
 const repositoryLabel = computed(() => props.updateInfo.repository?.name ?? '未知仓库')
+const changelog = computed(() => selectLocalizedDocument(props.updateInfo.release?.changelog))
 const canTrustSigner = computed(() => {
   const signer = props.updateInfo.signer
   return Boolean(signer?.fingerprint && signer.status !== 'trusted' && signer.status !== 'unsigned')
@@ -128,7 +131,6 @@ async function handleCancel() {
     cancelling.value = false
   }
 }
-
 </script>
 
 <template>
@@ -164,10 +166,15 @@ async function handleCancel() {
           </FieldGroup>
 
           <div
-            v-if="props.updateInfo.release?.changelog?.text"
-            class="text-foreground"
+            v-if="changelog"
+            class="space-y-1 text-foreground"
           >
-            {{ props.updateInfo.release.changelog.text }}
+            <p>{{ changelog.summary }}</p>
+            <MarkdownContent
+              v-if="changelog.body"
+              :content="changelog.body"
+              class="text-muted-foreground prose-p:my-0"
+            />
           </div>
         </div>
 

@@ -7,6 +7,12 @@ import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
+import { MarkdownContent } from '@renderer/components/ui/markdown'
+import {
+  getLocalizedBody,
+  getLocalizedSummary,
+  selectLocalizedDocument
+} from '../../utils/localized-document'
 import {
   Dialog,
   DialogBody,
@@ -37,6 +43,8 @@ const open = defineModel<boolean>('open', { required: true })
 
 const iconError = ref(false)
 const sortedReleases = computed(() => [...props.extension.releases])
+const descriptionSummary = computed(() => getLocalizedSummary(props.extension.description))
+const descriptionBody = computed(() => getLocalizedBody(props.extension.description))
 
 watch(
   () => props.extension.iconUrl,
@@ -105,6 +113,14 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
   const count = release.sources.length || release.repositoryCount
   return `${count} 个来源`
 }
+
+function getReleaseChangelogSummary(release: ExtensionCatalogReleaseInfo): string {
+  return selectLocalizedDocument(release.changelog)?.summary ?? ''
+}
+
+function getReleaseChangelogBody(release: ExtensionCatalogReleaseInfo): string | null {
+  return selectLocalizedDocument(release.changelog)?.body ?? null
+}
 </script>
 
 <template>
@@ -127,7 +143,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
           <div class="min-w-0 flex-1">
             <DialogTitle>{{ props.extension.name }}</DialogTitle>
             <DialogDescription class="mt-1">
-              {{ props.extension.summary }}
+              {{ descriptionSummary }}
             </DialogDescription>
           </div>
         </div>
@@ -172,10 +188,13 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
         </section>
 
         <section
-          v-if="props.extension.description"
-          class="text-xs text-muted-foreground leading-relaxed"
+          v-if="descriptionBody"
+          class="text-xs text-muted-foreground"
         >
-          {{ props.extension.description }}
+          <MarkdownContent
+            :content="descriptionBody"
+            class="text-muted-foreground"
+          />
         </section>
 
         <section class="space-y-2">
@@ -240,12 +259,17 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                   <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
                 </div>
 
-                <p
-                  v-if="release.changelog?.text"
-                  class="text-xs text-muted-foreground line-clamp-2"
+                <div
+                  v-if="getReleaseChangelogSummary(release)"
+                  class="space-y-1 text-xs text-muted-foreground"
                 >
-                  {{ release.changelog.text }}
-                </p>
+                  <p class="line-clamp-2">{{ getReleaseChangelogSummary(release) }}</p>
+                  <MarkdownContent
+                    v-if="getReleaseChangelogBody(release)"
+                    :content="getReleaseChangelogBody(release) ?? ''"
+                    class="text-muted-foreground prose-p:my-0 line-clamp-3"
+                  />
+                </div>
               </div>
 
               <div class="flex items-start">

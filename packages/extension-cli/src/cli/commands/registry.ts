@@ -42,8 +42,9 @@ export function createRegistryCommand(): Command {
     .option('--signature <sig-file>', 'Artifact signature JSON file from kisx pack --sign')
     .option('--target <target>', 'Artifact target', 'any')
     .option('--published-at <iso-date>', 'Release publication timestamp')
-    .option('--changelog <text>', 'Release changelog text')
-    .option('--changelog-url <url>', 'Release changelog URL')
+    .option('--release-page <url>', 'Release page URL')
+    .option('--changelogs <dir>', 'Release changelog directory containing <locale>.md files')
+    .option('--default-locale <locale>', 'Default locale for --changelogs')
     .option(
       '--replace',
       'Replace an existing artifact with the same package version and target',

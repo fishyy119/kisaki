@@ -14,6 +14,7 @@ import { useAsyncData, useRenderState } from '@renderer/composables'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
+import { collectLocalizedDocumentText } from '../../utils/localized-document'
 import type {
   ExtensionAutomaticUpdateRunState,
   ExtensionRuntimeStateChangedEvent,
@@ -157,7 +158,7 @@ const filteredExtensions = computed(() => {
     result = result.filter(
       (p) =>
         p.name.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query) ||
+        collectLocalizedDocumentText(p.description).toLowerCase().includes(query) ||
         p.author?.toLowerCase().includes(query)
     )
   }

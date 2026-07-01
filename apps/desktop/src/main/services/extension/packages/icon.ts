@@ -26,6 +26,7 @@ const extensionIconProtocolSlot = createProtocolHandlerSlot(
 export class ExtensionIconManager {
   readonly cacheDir: string
   private iconsByCacheKey = new Map<string, ExtensionRegistryPackageIcon>()
+  private readonly iconSources = new Map<string, Map<string, ExtensionRegistryPackageIcon>>()
   private readonly downloadsByCacheKey = new Map<string, Promise<string>>()
   private readonly verifiedCacheKeys = new Set<string>()
 
@@ -40,16 +41,24 @@ export class ExtensionIconManager {
     extensionIconProtocolSlot.activate((request) => this.serveIconRequest(request))
   }
 
-  setAvailableIcons(icons: Iterable<ExtensionRegistryPackageIcon | null | undefined>): void {
-    const nextIcons = new Map<string, ExtensionRegistryPackageIcon>()
+  setAvailableIcons(
+    source: string,
+    icons: Iterable<ExtensionRegistryPackageIcon | null | undefined>
+  ): void {
+    const sourceIcons = new Map<string, ExtensionRegistryPackageIcon>()
     for (const icon of icons) {
       if (!icon) {
         continue
       }
-      nextIcons.set(this.cacheKey(icon), icon)
+      sourceIcons.set(this.cacheKey(icon), icon)
     }
 
-    this.iconsByCacheKey = nextIcons
+    if (sourceIcons.size === 0) {
+      this.iconSources.delete(source)
+    } else {
+      this.iconSources.set(source, sourceIcons)
+    }
+    this.rebuildAvailableIcons()
   }
 
   getIconUrl(icon: ExtensionRegistryPackageIcon | null | undefined): string | null {
@@ -175,6 +184,16 @@ export class ExtensionIconManager {
 
   private cachePath(icon: ExtensionRegistryPackageIcon): string {
     return resolveInsideRoot(this.cacheDir, `${this.cacheKey(icon)}${getIconExtension(icon.url)}`)
+  }
+
+  private rebuildAvailableIcons(): void {
+    const nextIcons = new Map<string, ExtensionRegistryPackageIcon>()
+    for (const sourceIcons of this.iconSources.values()) {
+      for (const [cacheKey, icon] of sourceIcons) {
+        nextIcons.set(cacheKey, icon)
+      }
+    }
+    this.iconsByCacheKey = nextIcons
   }
 }
 

@@ -24,6 +24,7 @@ import type {
 } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifactTarget,
+  ExtensionRegistryLocalizedDocumentSet,
   ExtensionRegistryReleaseKind,
   ExtensionRegistryReleaseEngines,
   ExtensionRegistrySigningAlgorithm
@@ -45,7 +46,7 @@ export interface ExtensionInstalledPackageInfo extends ExtensionInstalledRuntime
   id: string
   name: string
   version: string | null
-  description?: string
+  description?: ExtensionRegistryLocalizedDocumentSet
   author?: string
   homepage?: string
   iconUrl?: string
@@ -194,8 +195,7 @@ export interface ExtensionCatalogSearchResult {
 export interface ExtensionCatalogPackageInfo {
   id: string
   name: string
-  summary: string
-  description?: string
+  description: ExtensionRegistryLocalizedDocumentSet
   categories: readonly ExtensionCategory[]
   keywords: readonly string[]
   owner?: {
@@ -228,10 +228,8 @@ export interface ExtensionCatalogReleaseInfo {
   releaseKind: ExtensionRegistryReleaseKind
   publishedAt: string
   engines: ExtensionRegistryReleaseEngines
-  changelog?: {
-    text?: string
-    url?: string
-  }
+  releasePage?: string
+  changelog?: ExtensionRegistryLocalizedDocumentSet
   yanked: boolean
   compatible: boolean
   repositoryCount: number
@@ -376,7 +374,7 @@ export interface ExtensionInstallPlanRepositoryInfo {
 export interface ExtensionInstallPlanPackageInfo {
   id: string
   name: string
-  summary?: string
+  description?: ExtensionRegistryLocalizedDocumentSet | null
   currentVersion: string | null
   targetVersion: string
   releaseKind: ExtensionRegistryReleaseKind

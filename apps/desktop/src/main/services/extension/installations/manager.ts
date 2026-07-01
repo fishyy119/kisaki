@@ -5,6 +5,10 @@ import { app } from 'electron'
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
 import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
+import type {
+  ExtensionRegistryLocalizedDocumentSet,
+  ExtensionRegistryPackageIcon
+} from '@kisaki3/extension-registry'
 import type { EventService } from '@main/services/event'
 import type {
   ExtensionInstalledPackageInfo,
@@ -20,6 +24,7 @@ import type {
 } from '../development-watcher'
 import {
   type ExtensionPackageCommitter,
+  type ExtensionIconManager,
   type ExtensionPackageLayout,
   type ExtensionWebviewUiSource,
   readExtensionManifestFile,
@@ -48,6 +53,7 @@ export interface ExtensionInstallationManagerOptions {
   contributions: ExtensionContributionRegistry
   developmentWatcher: ExtensionDevelopmentWatcher
   packageCommitter: ExtensionPackageCommitter
+  iconManager: ExtensionIconManager
   event: EventService
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
@@ -64,6 +70,7 @@ export class ExtensionInstallationManager {
   private readonly contributions: ExtensionContributionRegistry
   private readonly developmentWatcher: ExtensionDevelopmentWatcher
   private readonly packageCommitter: ExtensionPackageCommitter
+  private readonly iconManager: ExtensionIconManager
   private readonly event: EventService
   private installedEntries: readonly ExtensionInstalledEntry[] = []
   private installedById = new Map<string, ExtensionInstalledEntry>()
@@ -79,6 +86,7 @@ export class ExtensionInstallationManager {
     this.contributions = options.contributions
     this.developmentWatcher = options.developmentWatcher
     this.packageCommitter = options.packageCommitter
+    this.iconManager = options.iconManager
     this.event = options.event
   }
 
@@ -105,6 +113,11 @@ export class ExtensionInstallationManager {
       }
     }
 
+    this.iconManager.setAvailableIcons(
+      'installed',
+      collectInstalledSnapshotIcons(this.installedEntries)
+    )
+
     return this.installedEntries
   }
 
@@ -115,7 +128,9 @@ export class ExtensionInstallationManager {
   async listPackageInfo(): Promise<ExtensionInstalledPackageInfo[]> {
     await this.refresh()
     return this.installedEntries.map((entry) =>
-      toExtensionInstalledPackageInfo(entry, this.getRuntimeState(entry.id))
+      toExtensionInstalledPackageInfo(entry, this.getRuntimeState(entry.id), (icon) =>
+        this.iconManager.getIconUrl(icon)
+      )
     )
   }
 
@@ -615,21 +630,27 @@ export class ExtensionInstallationManager {
 
 function toExtensionInstalledPackageInfo(
   entry: ExtensionInstalledEntry,
-  runtimeState: ExtensionRuntimeState | null
+  runtimeState: ExtensionRuntimeState | null,
+  resolveRegistryIconUrl: (icon: ExtensionRegistryPackageIcon | null | undefined) => string | null
 ): ExtensionInstalledPackageInfo {
+  const repositoryPackage =
+    entry.source?.kind === 'repository' ? entry.source.snapshot.package : null
+  const registryIconUrl = resolveRegistryIconUrl(repositoryPackage?.icon ?? null)
   return {
     ...toExtensionInstalledRuntimeInfo(entry, runtimeState),
     builtin: entry.builtin,
     id: entry.id,
-    name: entry.manifest?.name ?? entry.id,
+    name: repositoryPackage?.name ?? entry.manifest?.name ?? entry.id,
     version: entry.version,
-    description: entry.manifest?.description,
-    author: entry.manifest?.author,
-    homepage: entry.manifest?.homepage,
-    iconUrl: entry.manifest?.icon
-      ? pathToFileURL(resolveExtensionFilePath(entry.packagePath, entry.manifest.icon)).toString()
-      : undefined,
-    categories: entry.categories,
+    description: repositoryPackage?.description ?? createManifestDescription(entry.manifest),
+    author: repositoryPackage?.owner?.name ?? entry.manifest?.author,
+    homepage: repositoryPackage?.homepage ?? entry.manifest?.homepage,
+    iconUrl:
+      registryIconUrl ??
+      (entry.manifest?.icon
+        ? pathToFileURL(resolveExtensionFilePath(entry.packagePath, entry.manifest.icon)).toString()
+        : undefined),
+    categories: repositoryPackage?.categories ?? entry.categories,
     enabled: entry.enabled,
     status: entry.status,
     installationSource: entry.source,
@@ -639,6 +660,31 @@ function toExtensionInstalledPackageInfo(
     installedAt: entry.installedAt,
     directory: entry.packagePath,
     issues: entry.issues
+  }
+}
+
+function collectInstalledSnapshotIcons(
+  entries: readonly ExtensionInstalledEntry[]
+): readonly ExtensionRegistryPackageIcon[] {
+  return entries.flatMap((entry) => {
+    const icon = entry.source?.kind === 'repository' ? entry.source.snapshot.package.icon : null
+    return icon ? [icon] : []
+  })
+}
+
+function createManifestDescription(
+  manifest: ExtensionInstalledEntry['manifest']
+): ExtensionRegistryLocalizedDocumentSet | undefined {
+  const summary = manifest?.description?.trim()
+  if (!summary) {
+    return undefined
+  }
+
+  return {
+    defaultLocale: 'en',
+    locales: {
+      en: { summary }
+    }
   }
 }
 

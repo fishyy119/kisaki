@@ -13,6 +13,16 @@ this extension, creates tag `{{EXTENSION_ID}}-v0.0.1` and its GitHub Release,
 uploads the signed `.kisx` package, and updates the shared
 `registry/manifest.json`.
 
+Optional release changelogs live in this extension directory:
+
+```text
+extensions/{{EXTENSION_ID}}/changelogs/0.0.1/en.md
+extensions/{{EXTENSION_ID}}/changelogs/0.0.1/zh-Hans.md
+```
+
+The first non-empty line is the changelog summary. The remaining Markdown is
+the changelog body.
+
 If a publish job fails, rerun the same job. The workflow reuses the existing
 GitHub Release, replaces its assets, and updates the registry from the latest
 `main`.

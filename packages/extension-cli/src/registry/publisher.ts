@@ -1,5 +1,8 @@
 import path from 'node:path'
-import type { ExtensionRegistryArtifactTarget } from '@kisaki3/extension-registry'
+import type {
+  ExtensionRegistryArtifactTarget,
+  ExtensionRegistryLocalizedDocumentSet
+} from '@kisaki3/extension-registry'
 import { createExtensionRegistryReleaseDigest } from '@kisaki3/extension-registry/node'
 import { inspectKisxPackage } from '../packaging'
 import { readRegistryManifestFile, writeJsonDocument } from './document'
@@ -16,8 +19,8 @@ export interface PublishRegistryReleaseInput extends RegistryManifestValidationO
   signaturePath?: string
   target: ExtensionRegistryArtifactTarget
   publishedAt?: string
-  changelog?: string
-  changelogUrl?: string
+  releasePage?: string
+  changelog?: ExtensionRegistryLocalizedDocumentSet
   replace?: boolean
 }
 

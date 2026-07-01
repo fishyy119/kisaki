@@ -69,7 +69,7 @@ export class ExtensionInstallPlanner {
       package: {
         id: candidate.registryPackage.id,
         name: candidate.registryPackage.name,
-        summary: candidate.registryPackage.summary,
+        description: candidate.registryPackage.description,
         currentVersion: existing?.version ?? null,
         targetVersion: candidate.release.version,
         releaseKind: release.releaseKind
@@ -298,6 +298,7 @@ function toReleaseInfo(
     releaseKind: getExtensionRegistryReleaseKind(candidate.release.version),
     publishedAt: candidate.release.publishedAt,
     engines: candidate.release.engines,
+    releasePage: candidate.release.releasePage,
     changelog: candidate.release.changelog,
     yanked: candidate.release.yanked !== undefined,
     compatible: true,
@@ -376,7 +377,7 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
     package: {
       id: plan.package.id,
       name: plan.package.name,
-      summary: plan.package.summary ?? null,
+      description: plan.package.description ?? null,
       currentVersion: plan.package.currentVersion,
       targetVersion: plan.package.targetVersion,
       releaseKind: plan.package.releaseKind
@@ -399,12 +400,8 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
           engines: {
             kisaki: plan.release.engines.kisaki
           },
-          changelog: plan.release.changelog
-            ? {
-                text: plan.release.changelog.text ?? null,
-                url: plan.release.changelog.url ?? null
-              }
-            : null,
+          releasePage: plan.release.releasePage ?? null,
+          changelog: plan.release.changelog ?? null,
           yanked: plan.release.yanked,
           compatible: plan.release.compatible,
           repositoryId: plan.release.repositoryId,

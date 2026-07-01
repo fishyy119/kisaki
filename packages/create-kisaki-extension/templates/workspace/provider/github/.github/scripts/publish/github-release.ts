@@ -1,11 +1,15 @@
 import { commandSucceeds, readRequiredEnv, run } from './common'
+import { createDefaultReleaseNotes, readReleaseChangelog } from './changelog'
 
 const tag = readRequiredEnv('PUBLISH_TAG')
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
+const extensionDir = readRequiredEnv('PUBLISH_EXTENSION_DIR')
 const version = readRequiredEnv('PUBLISH_VERSION')
 const archivePath = readRequiredEnv('ARCHIVE_PATH')
 const signaturePath = readRequiredEnv('SIGNATURE_PATH')
 const commitSha = readRequiredEnv('GITHUB_SHA')
+const changelog = readReleaseChangelog(extensionDir, version)
+const releaseNotes = changelog?.releaseNotes ?? createDefaultReleaseNotes(extensionId, version)
 
 readRequiredEnv('GH_TOKEN')
 
@@ -19,7 +23,7 @@ if (!commandSucceeds('gh', ['release', 'view', tag])) {
     '--title',
     `${extensionId} v${version}`,
     '--notes',
-    `Kisaki extension package \`${extensionId}@${version}\`.`
+    releaseNotes
   ]
   if (version.includes('-')) {
     args.push('--prerelease')

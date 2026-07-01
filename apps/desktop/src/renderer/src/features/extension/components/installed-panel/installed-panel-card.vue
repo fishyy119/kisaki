@@ -20,6 +20,7 @@ import {
   extensionContributionStore,
   refreshExtensionContributionSnapshot
 } from '@renderer/core/extensions'
+import { getLocalizedSummary } from '../../utils/localized-document'
 import type {
   ExtensionCardActionRegistrationInfo,
   ExtensionInstalledPackageInfo,
@@ -56,6 +57,7 @@ const cardActions = computed(() =>
 )
 
 const iconUrl = computed(() => props.extension.iconUrl)
+const description = computed(() => getLocalizedSummary(props.extension.description, '无描述'))
 const versionLabel = computed(() =>
   props.extension.version ? `v${props.extension.version}` : '未知版本'
 )
@@ -244,7 +246,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.extension.description || '无描述' }}
+      {{ description }}
     </p>
 
     <!-- Footer -->

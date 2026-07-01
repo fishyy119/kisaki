@@ -6,6 +6,7 @@ Boundary: no mutations; includes provenance and verification metadata for troubl
 import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { MarkdownContent } from '@renderer/components/ui/markdown'
 import {
   Dialog,
   DialogBody,
@@ -17,6 +18,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import type { ExtensionInstalledPackageInfo } from '@shared/extension'
 import { EXTENSION_CATEGORIES } from '../../types/constants'
+import { getLocalizedBody, getLocalizedSummary } from '../../utils/localized-document'
 
 interface Props {
   extension: ExtensionInstalledPackageInfo
@@ -27,6 +29,8 @@ const open = defineModel<boolean>('open', { required: true })
 const iconError = ref(false)
 
 const iconUrl = computed(() => props.extension.iconUrl)
+const descriptionSummary = computed(() => getLocalizedSummary(props.extension.description))
+const descriptionBody = computed(() => getLocalizedBody(props.extension.description))
 const repositorySource = computed(() =>
   props.extension.installationSource?.kind === 'repository'
     ? props.extension.installationSource
@@ -171,10 +175,10 @@ function diagnosticSeverityClass(severity: string): string {
           <div class="min-w-0 flex-1">
             <DialogTitle>{{ props.extension.name }}</DialogTitle>
             <DialogDescription
-              v-if="props.extension.description"
+              v-if="descriptionSummary"
               class="mt-1"
             >
-              {{ props.extension.description }}
+              {{ descriptionSummary }}
             </DialogDescription>
           </div>
         </div>
@@ -224,6 +228,17 @@ function diagnosticSeverityClass(severity: string): string {
               </dd>
             </div>
           </dl>
+        </section>
+
+        <section
+          v-if="descriptionBody"
+          class="space-y-2 text-xs text-muted-foreground"
+        >
+          <div class="text-sm font-medium text-foreground">描述</div>
+          <MarkdownContent
+            :content="descriptionBody"
+            class="text-muted-foreground"
+          />
         </section>
 
         <section class="space-y-2">

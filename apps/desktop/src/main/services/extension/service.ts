@@ -192,6 +192,7 @@ export class ExtensionService implements IService {
       contributions: this.contributions,
       developmentWatcher: this.developmentWatcher,
       packageCommitter: this.packageCommitter,
+      iconManager,
       event: container.get('event'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),

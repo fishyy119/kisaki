@@ -1,6 +1,7 @@
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
+  ExtensionRegistryLocalizedDocumentSet,
   ExtensionRegistryManifest,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease,
@@ -19,14 +20,14 @@ import {
   areRegistryManifestsEquivalent,
   compareRegistryArtifacts,
   compareRegistryReleases,
-  createPackageSummary
+  createPackageDescription
 } from './model'
 
 /** Release metadata supplied independently from the packaged extension. */
 export interface CreateRegistryReleaseOptions {
   publishedAt?: string
-  changelog?: string
-  changelogUrl?: string
+  releasePage?: string
+  changelog?: ExtensionRegistryLocalizedDocumentSet
 }
 
 /** Builds a registry release from a validated package manifest and artifact. */
@@ -45,10 +46,8 @@ export function createRegistryRelease(
     version: manifest.version,
     publishedAt: options.publishedAt ?? new Date().toISOString(),
     engines: { kisaki: kisakiRange },
-    changelog:
-      options.changelog || options.changelogUrl
-        ? { text: options.changelog, url: options.changelogUrl }
-        : undefined,
+    releasePage: options.releasePage,
+    changelog: options.changelog,
     artifacts: [artifact]
   })
 }
@@ -118,8 +117,7 @@ function createRegistryPackage(manifest: ExtensionManifest): ExtensionRegistryPa
   return compactRegistryPackage({
     id: manifest.id,
     name: manifest.name,
-    summary: createPackageSummary(manifest),
-    description: manifest.description,
+    description: createPackageDescription(manifest),
     categories: manifest.categories,
     keywords: manifest.keywords,
     owner: manifest.author ? { name: manifest.author } : undefined,
@@ -146,13 +144,17 @@ function mergeRegistryRelease(input: {
   )
   if (artifactIndex >= 0) {
     const existingArtifact = input.existing.artifacts[artifactIndex]
+    const artifactChanged = !areRegistryArtifactsEqual(existingArtifact, incomingArtifact)
     const changelogChanged =
       input.incoming.changelog !== undefined &&
       JSON.stringify(input.incoming.changelog) !== JSON.stringify(input.existing.changelog)
-    if (areRegistryArtifactsEqual(existingArtifact, incomingArtifact) && !changelogChanged) {
+    const releasePageChanged =
+      input.incoming.releasePage !== undefined &&
+      input.incoming.releasePage !== input.existing.releasePage
+    if (!artifactChanged && !changelogChanged && !releasePageChanged) {
       return input.existing
     }
-    if (!input.replace) {
+    if (artifactChanged && !input.replace) {
       throw new CliError(
         `${input.packageId}@${input.incoming.version} already has artifact target "${incomingArtifact.target}". Use --replace to overwrite it.`
       )
@@ -168,6 +170,7 @@ function mergeRegistryRelease(input: {
   return compactRegistryRelease({
     ...input.existing,
     publishedAt: input.replace ? input.incoming.publishedAt : input.existing.publishedAt,
+    releasePage: input.incoming.releasePage ?? input.existing.releasePage,
     changelog: input.incoming.changelog ?? input.existing.changelog,
     artifacts: artifacts.toSorted(compareRegistryArtifacts)
   })

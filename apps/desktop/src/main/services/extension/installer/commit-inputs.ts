@@ -11,7 +11,27 @@ export function createRepositoryInstallationSnapshot(
     signingKeys: candidate.manifest.signingKeys,
     package: {
       id: candidate.registryPackage.id,
-      categories: candidate.registryPackage.categories
+      name: candidate.registryPackage.name,
+      description: candidate.registryPackage.description,
+      categories: candidate.registryPackage.categories,
+      ...(candidate.registryPackage.keywords === undefined
+        ? {}
+        : { keywords: candidate.registryPackage.keywords }),
+      ...(candidate.registryPackage.owner === undefined
+        ? {}
+        : { owner: candidate.registryPackage.owner }),
+      ...(candidate.registryPackage.homepage === undefined
+        ? {}
+        : { homepage: candidate.registryPackage.homepage }),
+      ...(candidate.registryPackage.repository === undefined
+        ? {}
+        : { repository: candidate.registryPackage.repository }),
+      ...(candidate.registryPackage.license === undefined
+        ? {}
+        : { license: candidate.registryPackage.license }),
+      ...(candidate.registryPackage.icon === undefined
+        ? {}
+        : { icon: candidate.registryPackage.icon })
     },
     release: candidate.release
   }
