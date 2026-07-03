@@ -7,5 +7,12 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "tsdown.config.ts"]
+  "include": [
+    "src/**/*",
+    "tsdown.config.ts",
+    "templates/workspace/base/eslint.config.ts",
+    "templates/workspace/base/tools/**/*.ts",
+    "templates/workspace/publish-provider/github/.github/scripts/**/*.ts",
+    "templates/extension/base/eslint.config.ts"
+  ]
 }

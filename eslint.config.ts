@@ -3,6 +3,8 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
 
+const tsconfigRootDir = toFileDirectoryPath(import.meta.url)
+
 /**
  * Base ESLint configuration for the monorepo.
  * Package-specific configs should import and extend this,
@@ -24,7 +26,7 @@ export const baseConfig = defineConfig([
     files: ['**/*.{ts,tsx,mts,vue}'],
     languageOptions: {
       parserOptions: {
-        tsconfigRootDir: import.meta.dirname
+        tsconfigRootDir
       }
     },
     rules: {
@@ -47,3 +49,10 @@ export const baseConfig = defineConfig([
 ])
 
 export default baseConfig
+
+function toFileDirectoryPath(url: string): string {
+  return decodeURIComponent(url)
+    .replace(/^file:\/\/\/([A-Za-z]:)/, '$1')
+    .replace(/^file:\/\//, '')
+    .replace(/\/[^/]*$/, '')
+}

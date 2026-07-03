@@ -3,10 +3,20 @@ import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
 
+const tsconfigRootDir = toFileDirectoryPath(import.meta.url)
+
 export default defineConfig([
   { ignores: ['dist/', 'artifacts/', '.kisaki/'] },
   eslint.configs.recommended,
   tseslint.configs.recommended,
+  {
+    files: ['**/*.{ts,tsx,mts,js,mjs,cjs}'],
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir
+      }
+    }
+  },
   {
     files: ['src/host/**'],
     rules: {
@@ -57,3 +67,10 @@ export default defineConfig([
   },
   prettier
 ])
+
+function toFileDirectoryPath(url: string): string {
+  return decodeURIComponent(url)
+    .replace(/^file:\/\/\/([A-Za-z]:)/, '$1')
+    .replace(/^file:\/\//, '')
+    .replace(/\/[^/]*$/, '')
+}
