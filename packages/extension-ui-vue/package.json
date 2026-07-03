@@ -1,6 +1,6 @@
 {
   "name": "@kisaki3/extension-ui-vue",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Vue UI kit for Kisaki extension webview documents",
   "repository": {
     "type": "git",
