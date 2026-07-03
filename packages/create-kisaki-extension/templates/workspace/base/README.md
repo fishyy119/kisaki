@@ -12,8 +12,9 @@ pnpm install
 pnpm run check
 ```
 
-GitHub CI also typechecks workflow-owned scripts before running the project
-checks.
+The root workspace checks workflow and tool scripts alongside extension
+projects. Git hooks are installed automatically when the repository has Git
+metadata.
 
 The root workspace owns the shared `pnpm-lock.yaml`. Each extension remains an
 independent project under `extensions/<extension-id>`.

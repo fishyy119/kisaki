@@ -13,6 +13,7 @@
     "validate": "kisx validate",
     "pack": "kisx pack",
     "lint": "eslint .",
+    "lint:fix": "eslint --cache --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false",

@@ -80,6 +80,8 @@ Generated projects include:
   package copies;
 - a root workspace `kisx` install and `pnpm run key:generate` command for the
   repository signing key;
+- root TypeScript, ESLint, Prettier, and Lefthook wiring for workflow scripts,
+  tooling scripts, and extension packages;
 - strict host/UI/shared TypeScript and ESLint boundaries;
 - Prettier, EditorConfig, Git attributes, MIT license, and pnpm workspace
   boundaries;

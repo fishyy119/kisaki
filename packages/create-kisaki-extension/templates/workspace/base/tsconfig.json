@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": [".github/scripts/**/*.ts", "tools/**/*.ts"]
+  "include": [".github/scripts/**/*.ts", "tools/**/*.ts", "eslint.config.ts"]
 }

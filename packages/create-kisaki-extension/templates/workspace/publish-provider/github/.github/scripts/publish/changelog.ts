@@ -83,7 +83,12 @@ function readChangelogMarkdown(filePath: string): LocalizedDocument {
     throw new Error(`Changelog file must start with a summary: ${filePath}`)
   }
 
-  const summary = normalizeSummary(lines[summaryIndex])
+  const summaryLine = lines[summaryIndex]
+  if (summaryLine === undefined) {
+    throw new Error(`Changelog file must start with a summary: ${filePath}`)
+  }
+
+  const summary = normalizeSummary(summaryLine)
   const body = lines
     .slice(summaryIndex + 1)
     .join('\n')

@@ -1,18 +1,23 @@
-Each extension is packaged from its own directory. Upload the `.kisx` package
-to your hosting provider, then add the published artifact URL to the shared
+Package extensions from the repository root. Upload the `.kisx` package to
+your hosting provider, then add the published artifact URL to the shared
 registry manifest:
 
 ```bash
-pnpm --dir extensions/<extension-id> run pack
-pnpm --dir extensions/<extension-id> exec kisx registry add-release \
+pnpm exec kisx --project extensions/<extension-id> pack --out-dir artifacts
+pnpm exec kisx registry add-release \
   artifacts/<extension-id>-0.0.1.kisx \
-  --manifest ../../registry/manifest.json \
+  --manifest registry/manifest.json \
   --url https://example.com/extensions/<extension-id>-0.0.1.kisx \
   --release-page https://example.com/extensions/<extension-id>/releases/0.0.1 \
-  --changelogs changelogs/0.0.1 \
+  --changelogs extensions/<extension-id>/changelogs/0.0.1 \
   --default-locale en
-pnpm --dir extensions/<extension-id> exec kisx registry validate ../../registry/manifest.json
+pnpm exec kisx registry validate registry/manifest.json
 ```
+
+For signed manual releases, generate the repository key with
+`pnpm run key:generate`, package with
+`--sign --key .keys/author.ed25519.json`, and pass the generated `.sig` file to
+`kisx registry add-release --signature`.
 
 Release changelogs are localized Markdown files under the extension directory:
 
