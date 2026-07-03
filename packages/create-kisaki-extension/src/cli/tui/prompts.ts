@@ -42,16 +42,15 @@ export interface ScaffoldPromptUi {
 export function createPromptUi(): ScaffoldPromptUi {
   return {
     async text(options) {
-      // The default is shown as a dim placeholder that vanishes on the first
-      // keystroke; submitting an empty field falls back to defaultValue so the
-      // caller still receives the suggested value without typing it.
+      // Keep placeholder and submit behavior aligned even after the user types
+      // and deletes the input back to an empty field.
       const answer = await text({
         message: options.message,
         placeholder: options.initial,
         defaultValue: options.initial,
-        ...optionalValidate(options.validate)
+        ...optionalValidate(options.initial, options.validate)
       })
-      return requireAnswer(answer, options.message)
+      return normalizeTextAnswer(requireAnswer(answer, options.message), options.initial)
     },
 
     async select<T extends string>(options: SelectPromptOptions<T>): Promise<T> {
@@ -104,18 +103,26 @@ function toClackOptions<T extends string>(choices: readonly PromptChoice<T>[]): 
  * Returns a spreadable fragment so the optional `validate` field is omitted
  * entirely when no validator is supplied (required by exactOptionalPropertyTypes).
  */
-function optionalValidate(validate?: (value: string) => boolean | string): {
-  validate: (value: string | undefined) => string | undefined
+function optionalValidate(
+  initial: string,
+  validate?: (value: string) => boolean | string
+): {
+  validate?: (value: string | undefined) => string | undefined
 } {
+  if (!validate) {
+    return {}
+  }
+
   return {
     validate: (value) => {
-      if (!validate || value === undefined) {
-        return undefined
-      }
-      const result = validate(value)
+      const result = validate(normalizeTextAnswer(value ?? '', initial))
       return typeof result === 'string' ? result : undefined
     }
   }
+}
+
+function normalizeTextAnswer(value: string, initial: string): string {
+  return value === '' ? initial : value
 }
 
 /** Unwraps a @clack answer, throwing a cancellation error on the cancel symbol. */
