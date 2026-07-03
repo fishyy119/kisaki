@@ -18,6 +18,13 @@ checks.
 The root workspace owns the shared `pnpm-lock.yaml`. Each extension remains an
 independent project under `extensions/<extension-id>`.
 
+The root workspace also owns the repository signing key used for published
+extension artifacts:
+
+```bash
+pnpm run key:generate
+```
+
 ## Extensions
 
 <!-- extensions:start -->

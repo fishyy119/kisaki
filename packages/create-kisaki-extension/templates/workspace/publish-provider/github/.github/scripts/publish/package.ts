@@ -14,8 +14,16 @@ mkdirSync(keyDir, { recursive: true })
 writeFileSync(keyPath, signingKeyJson)
 chmodSync(keyPath, 0o600)
 
-run(
-  'pnpm',
-  ['exec', 'kisx', 'pack', '--out-dir', artifactsDir, '--no-build', '--sign', '--key', keyPath],
-  { cwd: extensionDir }
-)
+run('pnpm', [
+  'exec',
+  'kisx',
+  '--project',
+  extensionDir,
+  'pack',
+  '--out-dir',
+  artifactsDir,
+  '--no-build',
+  '--sign',
+  '--key',
+  keyPath
+])

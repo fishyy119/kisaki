@@ -15,9 +15,11 @@
     "test": "pnpm -r --if-present run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "key:generate": "kisx key generate --out .keys/author.ed25519.json",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build && pnpm run validate"
   },
   "devDependencies": {
+    "@kisaki3/extension-cli": "^{{KISAKI_TOOLING_VERSION}}",
     "@types/node": "{{NODE_TYPES_VERSION}}",
     "prettier": "^3.7.4",
     "tsx": "^4.20.6",

@@ -78,6 +78,8 @@ Generated projects include:
 - private packages with `manifest.json` as the only extension version source;
 - bundled Extension SDK/API development dependencies without duplicate runtime
   package copies;
+- a root workspace `kisx` install and `pnpm run key:generate` command for the
+  repository signing key;
 - strict host/UI/shared TypeScript and ESLint boundaries;
 - Prettier, EditorConfig, Git attributes, MIT license, and pnpm workspace
   boundaries;
@@ -136,7 +138,9 @@ values such as package names, and template tokens describe the generated field
 they write to, such as `WORKSPACE_PACKAGE_DESCRIPTION` or
 `EXTENSION_MANIFEST_DESCRIPTION`.
 
-GitHub publishing requires `KISAKI_EXTENSION_SIGNING_KEY`. Push a commit named
+GitHub publishing requires `KISAKI_EXTENSION_SIGNING_KEY`. Generate the
+repository signing key from the workspace root with `pnpm run key:generate`,
+store `.keys/author.ed25519.json` as that secret, and push a commit named
 `publish(<extension-id>): v<semver>`; CI validates it and creates the
 `<extension-id>-v<semver>` tag.
 

@@ -27,8 +27,11 @@ If a publish job fails, rerun the same job. The workflow reuses the existing
 GitHub Release, replaces its assets, and updates the registry from the latest
 `main`.
 
-The workflow requires the repository signing-key secret and commits the updated
-registry manifest back to `main`. After a
+The workflow requires the repository signing-key secret. Generate it from the
+workspace root with `pnpm run key:generate`, then store the entire
+`.keys/author.ed25519.json` file JSON in `KISAKI_EXTENSION_SIGNING_KEY`.
+
+The workflow commits the updated registry manifest back to `main`. After a
 successful publish, pull or rebase before continuing local work:
 
 ```bash

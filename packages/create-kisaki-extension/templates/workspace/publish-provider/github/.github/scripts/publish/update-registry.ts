@@ -15,13 +15,11 @@ const registryManifestPath = path.join(workspaceDir, 'registry', 'manifest.json'
 const artifactUrl = `https://github.com/${repository}/releases/download/${tag}/${extensionId}-${version}.kisx`
 const releasePage = `https://github.com/${repository}/releases/tag/${tag}`
 const publishedAt = readCommand('git', ['show', '-s', '--format=%cI', commitSha])
-const kisx = ['--dir', extensionDir, 'exec', 'kisx'] as const
 const changelog = readReleaseChangelog(extensionDir, version)
 
 run('git', ['fetch', 'origin', 'main'])
 run('git', ['checkout', '-B', 'publish-registry', 'origin/main'])
 const addReleaseArgs = [
-  ...kisx,
   'registry',
   'add-release',
   archivePath,
@@ -44,5 +42,5 @@ if (changelog) {
     changelog.defaultLocale
   )
 }
-run('pnpm', addReleaseArgs)
-run('pnpm', [...kisx, 'registry', 'validate', registryManifestPath])
+run('pnpm', ['exec', 'kisx', ...addReleaseArgs])
+run('pnpm', ['exec', 'kisx', 'registry', 'validate', registryManifestPath])

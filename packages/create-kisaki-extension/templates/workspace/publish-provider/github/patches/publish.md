@@ -40,5 +40,11 @@ Registry URL:
 https://raw.githubusercontent.com/<owner>/<repo>/main/registry/manifest.json
 ```
 
-Generate a signing key with `kisx key generate` and store the entire key file
-JSON in the required `KISAKI_EXTENSION_SIGNING_KEY` repository secret.
+Generate the repository signing key from the workspace root:
+
+```bash
+pnpm run key:generate
+```
+
+Store the entire `.keys/author.ed25519.json` file JSON in the required
+`KISAKI_EXTENSION_SIGNING_KEY` repository secret.
