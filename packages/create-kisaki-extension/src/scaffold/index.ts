@@ -23,5 +23,11 @@ export {
   readGitUserName
 } from './git'
 export { installDependencies } from './package-manager'
-export { DEFAULT_NODE_ENGINE_RANGE, DEFAULT_PACKAGE_MANAGER } from './toolchain'
+export {
+  DEFAULT_NODE_ENGINE_RANGE,
+  DEFAULT_NODE_TYPES_VERSION,
+  DEFAULT_NODE_VERSION,
+  DEFAULT_PACKAGE_MANAGER,
+  DEFAULT_PNPM_VERSION
+} from './toolchain'
 export { readExtensionWorkspace, type ExtensionWorkspace } from './workspace'

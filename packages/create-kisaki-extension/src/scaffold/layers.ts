@@ -13,6 +13,7 @@ import {
   readTemplateMergeManifest,
   TEMPLATE_MANIFEST_FILE
 } from './merge'
+import { DEFAULT_NODE_TYPES_VERSION, DEFAULT_NODE_VERSION, DEFAULT_PNPM_VERSION } from './toolchain'
 
 /** One ordered template source and its materialization destination. */
 export interface TemplateLayer {
@@ -25,7 +26,10 @@ const TEMPLATE_KEYS = [
   'WORKSPACE_PACKAGE_NAME',
   'WORKSPACE_PACKAGE_DESCRIPTION',
   'WORKSPACE_PACKAGE_MANAGER',
+  'WORKSPACE_PNPM_VERSION',
   'WORKSPACE_NODE_ENGINE_RANGE',
+  'NODE_VERSION',
+  'NODE_TYPES_VERSION',
   'EXTENSION_PACKAGE_NAME',
   'EXTENSION_PACKAGE_DESCRIPTION',
   'EXTENSION_PACKAGE_MANAGER',
@@ -144,7 +148,10 @@ export function createRepositoryTemplateContext(
     WORKSPACE_PACKAGE_NAME: repository.workspacePackageName,
     WORKSPACE_PACKAGE_DESCRIPTION: repository.workspacePackageDescription,
     WORKSPACE_PACKAGE_MANAGER: repository.packageManager,
+    WORKSPACE_PNPM_VERSION: DEFAULT_PNPM_VERSION,
     WORKSPACE_NODE_ENGINE_RANGE: repository.nodeEngineRange,
+    NODE_VERSION: DEFAULT_NODE_VERSION,
+    NODE_TYPES_VERSION: DEFAULT_NODE_TYPES_VERSION,
     WORKSPACE_PUBLISH_PROVIDER: repository.publishProvider,
     WORKSPACE_README_TITLE: repository.registryName,
     WORKSPACE_README_DESCRIPTION: repository.registryDescription,
@@ -167,6 +174,7 @@ function createExtensionTemplateValues(
     EXTENSION_PACKAGE_DESCRIPTION: config.extensionDescription,
     EXTENSION_PACKAGE_MANAGER: config.packageManager,
     EXTENSION_NODE_ENGINE_RANGE: config.nodeEngineRange,
+    NODE_TYPES_VERSION: DEFAULT_NODE_TYPES_VERSION,
     EXTENSION_ID: config.extensionId,
     EXTENSION_NAME: config.extensionName,
     EXTENSION_README_TITLE: config.extensionName,
