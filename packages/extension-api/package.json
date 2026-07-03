@@ -1,6 +1,6 @@
 {
   "name": "@kisaki3/extension-api",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Public contracts for the Kisaki extension system",
   "repository": {
     "type": "git",
