@@ -4,9 +4,7 @@ import {
   createDefaultRegistryDescription,
   createDefaultRegistryId,
   createDefaultRegistryName,
-  createDefaultExtensionId,
   createRepositoryScaffoldConfig,
-  type ExtensionInputOptions,
   type RegistryInputOptions,
   type ResolvedRegistryInput
 } from '../../extension-input'
@@ -27,14 +25,14 @@ import {
 } from '../../scaffold'
 import type { ScaffoldCliContext } from '../context'
 import { cliOutput, printCreated } from '../tui/output'
-import { collectExtensionConfig } from '../wizard'
 
 /** Input accepted by the repository initialization action. */
-export interface InitOptions extends ExtensionInputOptions, RegistryInputOptions {
-  provider?: string
+export interface InitOptions extends RegistryInputOptions {
+  publishProvider?: string
   git: boolean
   install: boolean
   commit?: boolean
+  yes?: boolean
 }
 
 /** Creates a new Kisaki extension repository. */
@@ -51,16 +49,18 @@ export async function runInit(
     throw new ScaffoldCliError('--commit requires dependency installation.')
   }
 
+  printPromptSection('Workspace', options.yes === true)
   const target = await resolveTarget(directory, options.yes === true, context)
   const repositoryName = target.repositoryName
   if (!matchesRepositoryNameFormat(repositoryName)) {
     throw new ScaffoldCliError('Repository directory name is invalid.')
   }
   const publishProvider = await resolvePublishProvider({
-    value: options.provider,
+    value: options.publishProvider,
     yes: options.yes === true,
     prompts: context.prompts
   })
+  printPromptSection('Registry', options.yes === true)
   const repository = createRepositoryScaffoldConfig({
     publishProvider,
     toolingVersion: context.toolingVersion,
@@ -72,18 +72,8 @@ export async function runInit(
     })
   })
 
-  const extension = await collectExtensionConfig({
-    defaultExtensionId: createDefaultExtensionId(repositoryName),
-    publishProvider,
-    toolingVersion: context.toolingVersion,
-    packageManager: repository.packageManager,
-    input: options,
-    prompts: context.prompts
-  })
-
   scaffoldRepository({
     repository,
-    extension,
     templateDir: context.templateDir,
     targetDir: target.targetDir
   })
@@ -98,6 +88,7 @@ export async function runInit(
   }
 
   printCreated(target.targetDir, options.install)
+  printNextStep(target.targetDir)
 }
 
 async function collectRegistryMetadata(
@@ -223,4 +214,17 @@ async function resolveRegistryField(options: ResolveRegistryFieldOptions): Promi
     initial: options.fallback,
     ...(options.validate ? { validate: options.validate } : {})
   })
+}
+
+function printPromptSection(title: string, yes: boolean): void {
+  if (!yes) {
+    cliOutput.detail(title)
+  }
+}
+
+function printNextStep(targetDir: string): void {
+  cliOutput.detail('Next:')
+  cliOutput.detail(`cd "${targetDir}"`)
+  cliOutput.detail('pnpm create kisaki-extension add <extension-id>')
+  console.log()
 }

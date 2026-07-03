@@ -14,7 +14,7 @@ import { cliOutput, printCreated } from '../tui/output'
 import { collectExtensionConfig } from '../wizard'
 
 /** Input accepted by the action that adds a workspace extension. */
-export interface AddOptions extends ExtensionInputOptions {
+export interface AddOptions extends Omit<ExtensionInputOptions, 'extensionId'> {
   workspace: string
   install: boolean
   commit?: boolean
@@ -34,9 +34,7 @@ export async function runAdd(
   const workspaceDir = path.resolve(options.workspace)
   const workspace = readExtensionWorkspace(workspaceDir)
 
-  const defaultExtensionId = createDefaultExtensionId(
-    extensionId ?? options.extensionId ?? DEFAULT_EXTENSION_ID
-  )
+  const defaultExtensionId = createDefaultExtensionId(extensionId ?? DEFAULT_EXTENSION_ID)
   const extension = await collectExtensionConfig({
     defaultExtensionId,
     publishProvider: workspace.publishProvider,

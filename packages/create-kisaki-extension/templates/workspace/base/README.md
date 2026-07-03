@@ -22,7 +22,6 @@ independent project under `extensions/<extension-id>`.
 
 <!-- extensions:start -->
 
-- `{{EXTENSION_ID}}` - {{EXTENSION_NAME}} (`extensions/{{EXTENSION_ID}}`)
 <!-- extensions:end -->
 
 ## Add Extensions
@@ -32,7 +31,7 @@ refreshes this list, installs the shared lockfile, and leaves the changes ready
 for review:
 
 ```bash
-pnpm create kisaki-extension add
+pnpm create kisaki-extension add <extension-id>
 ```
 
 ## Publish

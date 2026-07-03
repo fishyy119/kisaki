@@ -11,6 +11,7 @@ import {
   type ExtensionPublishProvider
 } from '../extension-options'
 import { matchesExtensionIdFormat, type ExtensionScaffoldConfig } from '../scaffold'
+import { cliOutput } from './tui/output'
 import type { PromptChoice, ScaffoldPromptUi } from './tui/prompts'
 
 interface CollectExtensionConfigOptions {
@@ -27,6 +28,7 @@ export async function collectExtensionConfig(
   options: CollectExtensionConfigOptions
 ): Promise<ExtensionScaffoldConfig> {
   const yes = options.input.yes === true
+  printPromptSection('Extension identity', yes)
   const extensionId = await resolveExtensionId(options, yes)
   const defaults = createExtensionDefaults(extensionId)
   const extensionName = await resolveText({
@@ -40,6 +42,7 @@ export async function collectExtensionConfig(
         validate: (value) => (value.trim() ? true : 'Extension name is required.')
       })
   })
+  printPromptSection('Extension shape', yes)
   const categories = await resolveCategories(options, yes, defaults.categories)
   const starter = await resolveText({
     value: options.input.starter,
@@ -64,6 +67,7 @@ export async function collectExtensionConfig(
       })
   })
   const webviewAddons = await resolveWebviewAddons(options, webviewFramework, yes)
+  printPromptSection('Extension metadata', yes)
   const extensionDescription = await resolveText({
     value: options.input.description,
     yes,
@@ -210,4 +214,10 @@ function toPromptChoices<T extends string>(
     value: option.value,
     label: option.label
   }))
+}
+
+function printPromptSection(title: string, yes: boolean): void {
+  if (!yes) {
+    cliOutput.detail(title)
+  }
 }

@@ -55,26 +55,27 @@ type TemplateRenderMode = 'raw' | 'htmlTextContent' | 'jsonStringContent' | 'tem
 
 const TEMPLATE_TOKEN_PATTERN = createTemplateTokenPattern()
 
-/** Creates all workspace and extension layers for a new repository. */
+/** Creates all workspace layers for a new repository. */
 export function createRepositoryTemplateLayers(
   templateDir: string,
   targetDir: string,
-  repository: RepositoryScaffoldConfig,
-  extension: ExtensionScaffoldConfig
+  repository: RepositoryScaffoldConfig
 ): TemplateLayer[] {
-  const extensionTargetDir = path.join(targetDir, 'extensions', extension.extensionId)
-
   return resolveTemplateLayers([
     {
       sourceDir: path.join(templateDir, 'workspace', 'base'),
       targetDir
     },
     {
-      sourceDir: path.join(templateDir, 'workspace', 'provider', repository.publishProvider),
+      sourceDir: path.join(
+        templateDir,
+        'workspace',
+        'publish-provider',
+        repository.publishProvider
+      ),
       targetDir,
       optional: true
-    },
-    ...createExtensionTemplateLayers(templateDir, extensionTargetDir, extension)
+    }
   ])
 }
 
@@ -104,7 +105,7 @@ export function createExtensionTemplateLayers(
     }
   }
   layers.push({
-    sourceDir: path.join(templateDir, 'extension', 'provider', config.publishProvider),
+    sourceDir: path.join(templateDir, 'extension', 'publish-provider', config.publishProvider),
     targetDir,
     optional: true
   })
@@ -135,13 +136,11 @@ export function copyTemplateLayer(layer: TemplateLayer, context: Map<string, str
   })
 }
 
-/** Creates escaped token replacements for repository and initial extension layers. */
+/** Creates escaped token replacements for repository workspace layers. */
 export function createRepositoryTemplateContext(
-  repository: RepositoryScaffoldConfig,
-  extension: ExtensionScaffoldConfig
+  repository: RepositoryScaffoldConfig
 ): Map<string, string> {
   return createTemplateContext({
-    ...createExtensionTemplateValues(extension),
     WORKSPACE_PACKAGE_NAME: repository.workspacePackageName,
     WORKSPACE_PACKAGE_DESCRIPTION: repository.workspacePackageDescription,
     WORKSPACE_PACKAGE_MANAGER: repository.packageManager,

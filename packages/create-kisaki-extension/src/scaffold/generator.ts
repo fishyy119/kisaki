@@ -12,7 +12,6 @@ import {
   type TemplateLayer
 } from './layers'
 import type {
-  ExtensionScaffoldConfig,
   RepositoryScaffoldConfig,
   ScaffoldRepositoryOptions,
   ScaffoldWorkspaceExtensionOptions
@@ -29,16 +28,10 @@ export function scaffoldRepository(options: ScaffoldRepositoryOptions): void {
 
   try {
     materializeLayers(
-      createRepositoryTemplateLayers(
-        options.templateDir,
-        stagingDir,
-        options.repository,
-        options.extension
-      ),
-      createRepositoryTemplateContext(options.repository, options.extension)
+      createRepositoryTemplateLayers(options.templateDir, stagingDir, options.repository),
+      createRepositoryTemplateContext(options.repository)
     )
     finalizeGeneratedRegistryManifest(stagingDir, options.repository)
-    finalizeGeneratedExtension(stagingDir, options.extension)
     publishStagingDirectory(stagingDir, options.targetDir)
   } catch (error) {
     rmSync(stagingDir, { recursive: true, force: true })
@@ -82,11 +75,6 @@ function materializeLayers(layers: readonly TemplateLayer[], context: Map<string
   for (const layer of layers) {
     copyTemplateLayer(layer, context)
   }
-}
-
-function finalizeGeneratedExtension(repositoryDir: string, config: ExtensionScaffoldConfig): void {
-  const extensionDir = path.join(repositoryDir, 'extensions', config.extensionId)
-  finalizeExtensionTemplate(extensionDir, config)
 }
 
 function finalizeGeneratedRegistryManifest(

@@ -9,50 +9,33 @@ workspaces.
 pnpm create kisaki-extension my-extension
 ```
 
-The interactive flow resolves author-facing registry, extension, and webview
-choices:
+The interactive `init` flow resolves workspace and registry choices only:
 
 - the registry id/name/description becomes the durable registry manifest
   metadata; generated workspace package metadata is derived from it;
-- the publish provider selects manual hosting or GitHub Release automation;
-- categories are manifest discovery metadata and support multiple values;
-- the starter selects sample host behavior (`minimal`, `integration`,
-  `scraper`, `theme`, or `tool`);
-- the webview framework selects `none`, `vanilla`, or `vue`;
-- webview addons select optional framework-specific layers such as
-  `kisaki-ui-vue`.
+- the publish provider selects manual hosting or GitHub Release automation.
 
 Every generated repository is a single workspace shape: a workspace root with
-a registry manifest and an `extensions/` directory. A repository that hosts one
-extension is just a workspace with one entry under `extensions/`, so `add`
-works from the start.
+a registry manifest and an `extensions/` directory. Add extensions explicitly
+with the `add` command after the workspace exists.
 
 When no subcommand is provided, the scaffold detects generated Kisaki extension
 workspaces and runs `add`; otherwise it runs `init`. Explicit `init` and `add`
 commands always take precedence.
 
-Registry and extension package names are derived from their stable IDs. The
-scaffold does not ask for package names unless a future target format truly
-needs that choice. Override the user-facing extension name with
-`--extension-name` when the generated name is not specific enough. Override
-registry metadata with `--registry-id`, `--registry-name`, or
+Registry package names are derived from stable registry IDs. The scaffold does
+not ask for package names unless a future target format truly needs that
+choice. Override registry metadata with `--registry-id`, `--registry-name`, or
 `--registry-description`.
 
 Use `--yes` with explicit flags for automation:
 
 ```bash
 pnpm create kisaki-extension init my-extensions \
-  --provider github \
+  --publish-provider github \
   --registry-id example \
   --registry-name "Example" \
   --registry-description "Kisaki extensions maintained by Example." \
-  --extension-id example.integration \
-  --extension-name "Example Integration" \
-  --categories integration,tool \
-  --starter integration \
-  --webview vue \
-  --webview-addon kisaki-ui-vue \
-  --author Example \
   --yes
 ```
 
@@ -66,15 +49,27 @@ From any generated extension workspace:
 
 ```bash
 pnpm create kisaki-extension add example.theme \
+  --name "Example Theme" \
+  --description "Adds an example theme." \
   --categories theme \
   --starter theme \
   --webview none
 ```
 
-`add` atomically creates `extensions/<extension-id>`, rebuilds the marked
-README extension list, uses the workspace's publish provider, and refreshes the
-shared lockfile. Use `--workspace` when invoking it outside the repository
-root.
+The interactive `add` flow resolves extension choices:
+
+- the extension ID/name/description becomes the generated manifest and package
+  metadata;
+- categories are manifest discovery metadata and support multiple values;
+- the starter selects sample host behavior (`minimal`, `integration`,
+  `scraper`, `theme`, or `tool`);
+- the webview framework selects `none`, `vanilla`, or `vue`;
+- webview addons select optional framework-specific layers such as
+  `kisaki-ui-vue`.
+
+`add` atomically creates `extensions/<extension-id>`, rebuilds the marked README
+extension list, uses the workspace's publish provider, and refreshes the shared
+lockfile. Use `--workspace` when invoking it outside the repository root.
 
 ## Generated Engineering Baseline
 
@@ -88,7 +83,8 @@ Generated projects include:
   boundaries;
 - Vite-based `kisx` build, validation, development, and packaging scripts;
 - a static registry manifest updated through `kisx registry` commands;
-- GitHub CI and signed publish workflows when the GitHub provider is selected.
+- GitHub CI and signed publish workflows when the GitHub publish provider is
+  selected.
 
 The generated `engines.kisaki` value uses the recommended Extension API range
 for the scaffold tooling version.
@@ -98,13 +94,13 @@ for the scaffold tooling version.
 Templates are composable layers:
 
 - `templates/workspace/base`
-- `templates/workspace/provider/<provider>`
+- `templates/workspace/publish-provider/<publish-provider>`
 - `templates/extension/base`
 - `templates/extension/starters/<starter>`
 - `templates/extension/webview/base` when a webview is selected
 - `templates/extension/webview/frameworks/<framework>`
 - `templates/extension/webview/addons/<addon>`
-- `templates/extension/provider/<provider>`
+- `templates/extension/publish-provider/<publish-provider>`
 
 `kisx.config.ts` belongs to the selected webview framework layer because it
 declares framework-specific Vite plugins. Host-only extensions use the kisx

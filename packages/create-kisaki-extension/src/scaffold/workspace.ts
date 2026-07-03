@@ -24,23 +24,13 @@ interface RegistryManifest {
 }
 
 interface ExtensionWorkspaceConfig {
-  provider?: unknown
+  publishProvider?: unknown
 }
 
 /** Validated metadata for a generated extension workspace. */
 export interface ExtensionWorkspace {
   packageManager: string
   publishProvider: ExtensionPublishProvider
-}
-
-/** Returns true only for generated Kisaki extension workspaces. */
-export function matchesExtensionWorkspace(workspaceDir: string): boolean {
-  try {
-    readExtensionWorkspace(workspaceDir)
-    return true
-  } catch {
-    return false
-  }
 }
 
 /** Reads and validates the generated workspace boundary required by add. */
@@ -69,11 +59,13 @@ export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace
   }
 
   const workspaceConfig = readWorkspaceConfig(path.join(workspaceDir, WORKSPACE_CONFIG_FILE))
+  if (typeof workspaceConfig.publishProvider !== 'string') {
+    throw new Error('Not a Kisaki extension workspace: publishProvider is missing.')
+  }
   if (
-    typeof workspaceConfig.provider !== 'string' ||
-    !(EXTENSION_PUBLISH_PROVIDERS as readonly string[]).includes(workspaceConfig.provider)
+    !(EXTENSION_PUBLISH_PROVIDERS as readonly string[]).includes(workspaceConfig.publishProvider)
   ) {
-    throw new Error('Not a Kisaki extension workspace: provider is unsupported.')
+    throw new Error('Not a Kisaki extension workspace: publishProvider is unsupported.')
   }
 
   const workspaceDefinition = readFileSync(path.join(workspaceDir, 'pnpm-workspace.yaml'), 'utf8')
@@ -96,7 +88,7 @@ export function readExtensionWorkspace(workspaceDir: string): ExtensionWorkspace
 
   return {
     packageManager: packageJson.packageManager,
-    publishProvider: workspaceConfig.provider as ExtensionPublishProvider
+    publishProvider: workspaceConfig.publishProvider as ExtensionPublishProvider
   }
 }
 

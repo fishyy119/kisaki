@@ -40,7 +40,6 @@ export interface ExtensionScaffoldConfig {
 /** Inputs for creating a new extension repository. */
 export interface ScaffoldRepositoryOptions {
   repository: RepositoryScaffoldConfig
-  extension: ExtensionScaffoldConfig
   templateDir: string
   targetDir: string
 }

@@ -14,8 +14,7 @@ export function createAddCommand(context: ScaffoldCliContext): Command {
     .description('Add an extension to an existing extension workspace')
     .argument('[extension-id]', 'Extension identifier')
     .option('-w, --workspace <dir>', 'Extension workspace root', '.')
-    .option('--extension-id <id>', 'Stable extension identifier')
-    .option('--extension-name <name>', 'Extension name')
+    .option('--name <name>', 'Extension name')
     .option('--categories <items>', 'Comma-separated extension categories', parseList)
     .addOption(
       new Option('--starter <starter>', 'Generated host implementation starter').choices([
@@ -38,10 +37,16 @@ export function createAddCommand(context: ScaffoldCliContext): Command {
     .option('--commit', 'Commit generated files after successful installation', false)
     .option('-y, --yes', 'Use defaults for omitted values', false)
     .action((extensionId: string | undefined, options: AddCommandOptions) =>
-      runAdd(extensionId, normalizeWebviewAddons(options), context)
+      runAdd(extensionId, normalizeAddOptions(options), context)
     )
 }
 
-interface AddCommandOptions extends AddOptions {
+interface AddCommandOptions extends Omit<AddOptions, 'extensionName' | 'webviewAddons'> {
+  name?: string
   webviewAddon?: string[]
+}
+
+function normalizeAddOptions(options: AddCommandOptions): AddOptions {
+  const { name, ...normalized } = normalizeWebviewAddons(options)
+  return name ? { ...normalized, extensionName: name } : normalized
 }
