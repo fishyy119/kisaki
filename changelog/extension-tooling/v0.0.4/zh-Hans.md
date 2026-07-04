@@ -11,7 +11,7 @@
 ## 迁移说明
 
 - 调整旧 `kisx.config.ts`，将 `entry` 配置改名为 `host`
-- 更新 registry manifest 的描述、changelog 与 yanked 字段结构后再发布或校验
+- 要求发布或校验前更新 registry manifest 的描述、changelog 与 yanked 字段结构
 
 ## 新功能
 

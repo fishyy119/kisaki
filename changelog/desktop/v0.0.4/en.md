@@ -2,7 +2,7 @@
 
 ## Highlights
 
-- Reworked the extension system
+- Refactored the extension system
 - Added a distributed extension repository system
 - Added the built-in Bangumi integration extension with automatic game status sync and collection/catalog import
 

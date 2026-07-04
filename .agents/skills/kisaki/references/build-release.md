@@ -221,3 +221,4 @@ Tools used:
 - [Architecture](architecture.md) - Bootstrap sequence
 - [Data Layer](data-layer.md) - Migration packaging
 - [Extension System](extension-system.md) - Extension tooling
+- [Changelog](changelog.md) - Release changelog writing contract

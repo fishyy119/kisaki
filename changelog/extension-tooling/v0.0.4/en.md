@@ -11,7 +11,7 @@
 ## Migration Notes
 
 - Changed existing `kisx.config.ts` files by renaming `entry` to `host`
-- Update registry manifest description, changelog, and yanked fields before publishing or validating
+- Required registry manifest description, changelog, and yanked field updates before publishing or validating
 
 ## Features
 

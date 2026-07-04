@@ -53,6 +53,7 @@ Load the relevant reference based on your task:
 | Extension System          | [extension-system.md](references/extension-system.md) | Extension runtime, service architecture, main/renderer/IPC naming, SDK, packaging, contribution points |
 | Extension API Contracts   | [extension-api.md](references/extension-api.md)       | Public extension API type architecture, naming, DTO, validation, and RPC rules                         |
 | Build & Release           | [build-release.md](references/build-release.md)       | Building, packaging, NSIS, monorepo scripts                                                            |
+| Changelog                 | [changelog.md](references/changelog.md)               | Release changelog file structure, section classification, writing rules, and entry wording             |
 | Coding Conventions        | [conventions.md](references/conventions.md)           | Async patterns, error handling, comments, i18n                                                         |
 
 ## Quick Search

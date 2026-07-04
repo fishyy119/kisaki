@@ -15,7 +15,7 @@
 ## 移行メモ
 
 - 必須化 拡張機能のインストールまたは公開前に、ローカルと CI の Node.js ランタイムを 24 以降へ更新
-- GitHub provider を使う生成リポジトリでは、manifest のバージョン更新をコミットして `main` に push した後、`<extension-id>-v<semver>` tag を push。公開失敗後は同じ tag を修正済みコミットへ移動して再 push 可能
+- 必須化 GitHub provider を使う生成リポジトリでの公開手順、manifest のバージョン更新をコミットして `main` に push した後、`<extension-id>-v<semver>` tag を push。公開失敗後は同じ tag を修正済みコミットへ移動して再 push 可能
 
 ## 新機能
 

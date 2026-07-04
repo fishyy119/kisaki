@@ -3,19 +3,19 @@
 ## 重点
 
 - 修复 GitHub provider 发布流程，先完成 registry 校验再创建 GitHub Release
-- 将生成的 GitHub provider 发布流程改为基于 `<extension-id>-v<semver>` tag，不再依赖提交信息
+- 调整生成的 GitHub provider 发布流程，改为基于 `<extension-id>-v<semver>` tag，不再依赖提交信息
 - 要求扩展工具链和生成项目使用 Node.js 24 或更高版本
 - 改进生成 workspace 的 Git hooks，提交时只修复暂存文件，推送前运行完整 workspace 检查
 
 ## 破坏性变更
 
 - 要求扩展工具链包、脚手架生成项目和生成的 GitHub workflow 使用 Node.js 24 或更高版本
-- 生成的 GitHub provider 发布 workflow 不再识别 `publish(<extension-id>): v<semver>` 提交信息，发布入口改为 `<extension-id>-v<semver>` tag
+- 调整生成的 GitHub provider 发布 workflow，不再识别 `publish(<extension-id>): v<semver>` 提交信息，发布入口改为 `<extension-id>-v<semver>` tag
 
 ## 迁移说明
 
 - 要求在安装或发布扩展前，将本地和 CI 的 Node.js 运行时更新到 24 或更高版本
-- 使用 GitHub provider 的生成仓库发布扩展时，先提交 manifest 版本更新并推送 `main`，再推送 `<extension-id>-v<semver>` tag；发布失败后可以将同名 tag 移到修复后的提交并重新推送
+- 要求使用 GitHub provider 的生成仓库发布扩展时，先提交 manifest 版本更新并推送 `main`，再推送 `<extension-id>-v<semver>` tag；发布失败后可以将同名 tag 移到修复后的提交并重新推送
 
 ## 新功能
 
