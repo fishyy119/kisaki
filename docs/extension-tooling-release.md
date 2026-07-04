@@ -61,19 +61,15 @@ The workflow uploads this canonical `.tgz` set as `release-extension-tooling-pac
 step downloads and verifies the same artifact with `SHA256SUMS`; retrying publish or GitHub Release
 steps must never rebuild or repack the packages.
 
-## Release Commit
-
-```text
-release(extension-tooling): v0.0.4
-```
-
-The GitHub workflow validates the committed version and changelogs, builds canonical artifacts,
-publishes those artifacts through a command that first runs `npm publish --dry-run`, and creates one
-Git tag:
+## Release Tag
 
 ```text
 extension-tooling-v0.0.4
 ```
+
+The GitHub workflow is triggered by the tag. It validates the committed version and changelogs at
+that tag, builds canonical artifacts, and publishes those artifacts through a command that first
+runs `npm publish --dry-run`.
 
 The npm dist-tag is derived from the SemVer version itself: plain versions, including `0.x`, publish
 to `latest`; prereleases publish to `alpha`, `beta`, or `rc` when the prerelease identifier starts
@@ -86,10 +82,10 @@ stable desktop releases are marked as the repository's latest GitHub Release.
 
 An extension tooling release runs in this order:
 
-1. A push to `main` whose first commit-message line is
-   `release(extension-tooling): vX.Y.Z` selects the extension tooling target.
-2. The target tag must be unused or already point at the same release commit; a conflicting tag
-   stops the workflow before npm is touched.
+1. Push the version/changelog commit to `main`, then push `extension-tooling-vX.Y.Z` pointing at
+   that commit. The tag selects the extension tooling target and version.
+2. The workflow checks out the tag and verifies the tag still identifies the checked out commit
+   before npm is touched.
 3. The workflow requires non-empty `zh-Hans.md`, `en.md`, and `ja.md` changelogs under
    `changelog/extension-tooling/vX.Y.Z/`.
 4. The committed package versions and `EXTENSION_API_VERSION` must equal `X.Y.Z`.
@@ -102,11 +98,11 @@ An extension tooling release runs in this order:
    version, then runs `npm publish --provenance`.
 8. Already-published package versions are skipped only when npm reports the same SHA-512 integrity;
    a different integrity stops the release and requires a new tooling version.
-9. After npm publishing succeeds, the workflow creates or reuses the Git tag and creates or updates
-   the GitHub Release with the same artifacts.
+9. After npm publishing succeeds, the workflow creates or updates the GitHub Release for the same
+   tag with the same artifacts.
 
-The workflow serializes release runs on `main` and queues pending pushes instead of replacing them;
-a later push cannot cancel an active or already queued release.
+The workflow serializes release runs per tag and queues pending reruns instead of replacing them; a
+later push of the same tag cannot cancel an active or already queued release.
 
 ## npm Authentication
 
@@ -141,17 +137,17 @@ not by rebuilding tarballs.
 
 The GitHub tag and Release are downstream of npm publish.
 
-| GitHub state                             | Result                                                |
-| ---------------------------------------- | ----------------------------------------------------- |
-| Tag is missing                           | Create it at the release commit.                      |
-| Tag already points at the release commit | Reuse it.                                             |
-| Tag points at another commit             | Fail without moving the tag.                          |
-| Release is missing                       | Create it from the validated changelog and artifacts. |
-| Release already exists                   | Update its body and overwrite same-named assets.      |
+| GitHub state           | Result                                                |
+| ---------------------- | ----------------------------------------------------- |
+| Tag exists             | Create or update the release for that tag.            |
+| Tag is missing         | Fail; publish starts from an explicit tag.            |
+| Release is missing     | Create it from the validated changelog and artifacts. |
+| Release already exists | Update its body and overwrite same-named assets.      |
 
-If npm publish succeeds but Git tag or GitHub Release creation fails, rerun the same workflow. The
-publish job verifies matching npm versions, skips already-published tarballs, and the Release job
-reuses the original uploaded artifacts.
+If npm publish succeeds but GitHub Release creation fails, rerun the same workflow. The publish job
+verifies matching npm versions, skips already-published tarballs, and the Release job reuses the
+original uploaded artifacts. If the source commit needs a fix before publish completes, move
+`extension-tooling-vX.Y.Z` to the corrected commit and push the tag again.
 
 ## Adding A Tooling Package
 

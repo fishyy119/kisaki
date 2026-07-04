@@ -243,7 +243,7 @@ For a new contribution point:
   - `pnpm check:extension-tooling`
   - `pnpm version:extension-tooling <version>`
   - `pnpm build:extension-tooling`
-- Extension tooling packages are released as one lockstep version with `release(extension-tooling): vX.Y.Z`; do not publish `extension-api`, `extension-registry`, `extension-sdk`, `extension-cli`, or `create-kisaki-extension` independently.
+- Extension tooling packages are released as one lockstep version with `extension-tooling-vX.Y.Z`; do not publish `extension-api`, `extension-registry`, `extension-sdk`, `extension-cli`, or `create-kisaki-extension` independently.
 
 Registry publishing flow:
 

@@ -146,10 +146,11 @@ Contract and tooling pipeline:
 pnpm build:extension-tooling    # extension-api + extension-registry + extension-sdk + extension-cli + scaffold
 ```
 
-Release commit format:
+Release tags:
 
 ```text
-release(extension-tooling): v0.0.2
+desktop-v0.0.2
+extension-tooling-v0.0.2
 ```
 
 Tools used:
