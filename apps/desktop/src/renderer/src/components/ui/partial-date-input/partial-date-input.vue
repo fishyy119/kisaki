@@ -2,7 +2,11 @@
 import type { HTMLAttributes } from 'vue'
 import { computed, ref, watch } from 'vue'
 import type { PartialDate } from '@shared/db'
-import type { PartialDateInputExpose, PartialDateInputMessages, PartialDateInputValidationResult } from './types'
+import type {
+  PartialDateInputExpose,
+  PartialDateInputMessages,
+  PartialDateInputValidationResult
+} from './types'
 import { cn } from '@renderer/utils'
 import { Input } from '@renderer/components/ui/input'
 
@@ -90,7 +94,11 @@ function validateFromRaw(): PartialDateInputValidationResult {
   const month = parseIntegerField(rawMonth.value)
   const day = parseIntegerField(rawDay.value)
 
-  if ((hasYearInput && year === undefined) || (hasMonthInput && month === undefined) || (hasDayInput && day === undefined)) {
+  if (
+    (hasYearInput && year === undefined) ||
+    (hasMonthInput && month === undefined) ||
+    (hasDayInput && day === undefined)
+  ) {
     return { valid: false, value: null, errorText: messageTexts.value.invalidIntegerText }
   }
 

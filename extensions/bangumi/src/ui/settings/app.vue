@@ -15,12 +15,7 @@ import {
   TabsTrigger
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsFormState, BangumiSettingsOverview } from '../../shared/settings'
-import {
-  applySettingsForm,
-  settingsFormsEqual,
-  settingsForm,
-  snapshotSettingsForm
-} from './form'
+import { applySettingsForm, settingsFormsEqual, settingsForm, snapshotSettingsForm } from './form'
 import { host, onHostRefreshRequested, toErrorMessage } from './rpc'
 import OverviewTab from './tabs/overview-tab.vue'
 import AccountTab from './tabs/account-tab.vue'

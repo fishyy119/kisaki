@@ -64,7 +64,10 @@ const emit = defineEmits<{
 }>()
 
 // Form state
-type FormData = Pick<GameLinkItem, 'gameId' | 'gameName' | 'gameCover' | 'type' | 'note' | 'isSpoiler'>
+type FormData = Pick<
+  GameLinkItem,
+  'gameId' | 'gameName' | 'gameCover' | 'type' | 'note' | 'isSpoiler'
+>
 
 const formData = ref<FormData>({
   gameId: '',
@@ -190,9 +193,7 @@ function handleCancel() {
             <Field orientation="horizontal">
               <FieldLabel>包含剧透</FieldLabel>
               <FieldContent>
-                <Checkbox
-                  v-model="formData.isSpoiler"
-                />
+                <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
             </Field>
           </FieldGroup>

@@ -13,11 +13,9 @@ export const AUTOMATION_STATUS_LABELS: Record<BangumiAutomationStatus, string> =
   disabled: '已停用'
 }
 
-export const AUTOMATION_STATUS_VARIANTS: Record<
-  BangumiAutomationStatus,
-  BadgeVariants['variant']
-> = {
-  missing: 'secondary',
-  enabled: 'success',
-  disabled: 'warning'
-}
+export const AUTOMATION_STATUS_VARIANTS: Record<BangumiAutomationStatus, BadgeVariants['variant']> =
+  {
+    missing: 'secondary',
+    enabled: 'success',
+    disabled: 'warning'
+  }

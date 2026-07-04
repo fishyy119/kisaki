@@ -97,7 +97,8 @@ const canNavigateNext = computed(() => {
 // Check if route is active
 function isRouteActive(routeName: string): boolean {
   const currentRouteName = route.name
-  if (!currentRouteName || typeof currentRouteName !== 'string') return routeName === 'statistics-overview'
+  if (!currentRouteName || typeof currentRouteName !== 'string')
+    return routeName === 'statistics-overview'
   return currentRouteName === routeName
 }
 </script>

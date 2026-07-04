@@ -113,7 +113,10 @@ function normalizedToPx(n: NormalizedCropRegion, stage: { width: number; height:
   }
 }
 
-function pxToNormalized(px: RectPx, stage: { width: number; height: number }): NormalizedCropRegion {
+function pxToNormalized(
+  px: RectPx,
+  stage: { width: number; height: number }
+): NormalizedCropRegion {
   return {
     x: px.x / stage.width,
     y: px.y / stage.height,
@@ -122,7 +125,11 @@ function pxToNormalized(px: RectPx, stage: { width: number; height: number }): N
   }
 }
 
-function clampRectToStage(rect: RectPx, stage: { width: number; height: number }, minSizePx: number) {
+function clampRectToStage(
+  rect: RectPx,
+  stage: { width: number; height: number },
+  minSizePx: number
+) {
   const width = clamp(rect.width, minSizePx, stage.width)
   const height = clamp(rect.height, minSizePx, stage.height)
   const x = clamp(rect.x, 0, Math.max(0, stage.width - width))
@@ -173,9 +180,11 @@ function fitCropToAspectKeepingCenterPx(
   const candidateFromHeight = { width: rect0.height * ratio, height: rect0.height }
 
   const diffWidth =
-    Math.abs(candidateFromWidth.width - rect0.width) + Math.abs(candidateFromWidth.height - rect0.height)
+    Math.abs(candidateFromWidth.width - rect0.width) +
+    Math.abs(candidateFromWidth.height - rect0.height)
   const diffHeight =
-    Math.abs(candidateFromHeight.width - rect0.width) + Math.abs(candidateFromHeight.height - rect0.height)
+    Math.abs(candidateFromHeight.width - rect0.width) +
+    Math.abs(candidateFromHeight.height - rect0.height)
 
   let width = (diffWidth <= diffHeight ? candidateFromWidth : candidateFromHeight).width
   let height = width / ratio
@@ -203,7 +212,11 @@ function fitCropToAspectKeepingCenterPx(
   return normalizeCropRegion(pxToNormalized(rect, stage))
 }
 
-function startInteraction(e: PointerEvent, nextMode: Exclude<InteractionMode, 'idle'>, handle?: ResizeHandle) {
+function startInteraction(
+  e: PointerEvent,
+  nextMode: Exclude<InteractionMode, 'idle'>,
+  handle?: ResizeHandle
+) {
   if (!imageLoaded.value) return
   const stage = getStageSizeOrNull()
   if (!stage) return
@@ -327,14 +340,8 @@ function applyResizeAspect(
   const width0 = cropStartPx.value.width
   const height0 = cropStartPx.value.height
 
-  const targetW =
-    handle === 'se' || handle === 'ne'
-      ? width0 + deltaPx.dx
-      : width0 - deltaPx.dx
-  const targetH =
-    handle === 'se' || handle === 'sw'
-      ? height0 + deltaPx.dy
-      : height0 - deltaPx.dy
+  const targetW = handle === 'se' || handle === 'ne' ? width0 + deltaPx.dx : width0 - deltaPx.dx
+  const targetH = handle === 'se' || handle === 'sw' ? height0 + deltaPx.dy : height0 - deltaPx.dy
 
   const denom = ratio * ratio + 1
   const projectedW = (targetW * ratio * ratio + targetH * ratio) / denom
@@ -535,7 +542,9 @@ onBeforeUnmount(() => {
         <!-- Aspect ratio control -->
         <div class="flex items-center gap-3 text-xs">
           <template v-if="props.aspectRatio && props.allowFreeAspect">
-            <span class="text-muted-foreground">推荐比例: {{ props.aspectLabel ?? props.aspectRatio }}</span>
+            <span class="text-muted-foreground"
+              >推荐比例: {{ props.aspectLabel ?? props.aspectRatio }}</span
+            >
             <label class="flex items-center gap-1.5 cursor-pointer">
               <Switch
                 v-model="lockAspect"
@@ -547,7 +556,9 @@ onBeforeUnmount(() => {
             </label>
           </template>
           <template v-else-if="props.aspectRatio">
-            <span class="text-muted-foreground">固定比例: {{ props.aspectLabel ?? props.aspectRatio }}</span>
+            <span class="text-muted-foreground"
+              >固定比例: {{ props.aspectLabel ?? props.aspectRatio }}</span
+            >
           </template>
           <span
             v-else
@@ -558,7 +569,9 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Crop area -->
-        <div class="crop-container relative w-full max-h-[400px] flex items-center justify-center bg-muted/50 rounded-lg overflow-hidden">
+        <div
+          class="crop-container relative w-full max-h-[400px] flex items-center justify-center bg-muted/50 rounded-lg overflow-hidden"
+        >
           <div
             ref="stageRef"
             class="relative inline-block max-w-full"
@@ -567,7 +580,9 @@ onBeforeUnmount(() => {
               ref="imgRef"
               :src="props.src"
               alt="Crop preview"
-              :class="cn('block max-h-[400px] max-w-full w-auto select-none', !imageLoaded && 'invisible')"
+              :class="
+                cn('block max-h-[400px] max-w-full w-auto select-none', !imageLoaded && 'invisible')
+              "
               crossorigin="anonymous"
               draggable="false"
               @dragstart.prevent

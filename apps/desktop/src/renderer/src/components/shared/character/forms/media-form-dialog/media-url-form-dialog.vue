@@ -105,7 +105,9 @@ function handleClose() {
     <DialogContent class="max-w-lg">
       <DialogHeader>
         <DialogTitle>从链接导入{{ MEDIA_TYPE_LABEL[props.mediaType] }}</DialogTitle>
-        <DialogDescription>输入图片 URL 以导入{{ MEDIA_TYPE_LABEL[props.mediaType] }}</DialogDescription>
+        <DialogDescription
+          >输入图片 URL 以导入{{ MEDIA_TYPE_LABEL[props.mediaType] }}</DialogDescription
+        >
       </DialogHeader>
 
       <DialogBody class="space-y-4">

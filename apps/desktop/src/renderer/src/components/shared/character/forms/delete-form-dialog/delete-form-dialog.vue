@@ -25,18 +25,12 @@ const emit = defineEmits<{
 
 const entityIds = computed(() => (props.characterId ? [props.characterId] : []))
 
-const {
-  data,
-  isLoading,
-  firstName,
-  relatedOptions,
-  selectedRelatedTypes,
-  deleteSelectedEntities
-} = useEntityDelete({
-  entityType: 'character',
-  entityIds,
-  open
-})
+const { data, isLoading, firstName, relatedOptions, selectedRelatedTypes, deleteSelectedEntities } =
+  useEntityDelete({
+    entityType: 'character',
+    entityIds,
+    open
+  })
 
 async function handleConfirm() {
   try {

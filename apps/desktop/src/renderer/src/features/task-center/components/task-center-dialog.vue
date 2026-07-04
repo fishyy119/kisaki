@@ -27,7 +27,8 @@ import {
 const open = defineModel<boolean>('open', { required: true })
 
 const store = useTaskRunStore()
-const { activeRuns, completedRuns, activeCount, completedCount, refreshing, error } = storeToRefs(store)
+const { activeRuns, completedRuns, activeCount, completedCount, refreshing, error } =
+  storeToRefs(store)
 
 const selectedTab = ref<TaskCenterTab>('active')
 const activeDetailsDialogOpen = ref(false)
@@ -121,7 +122,10 @@ async function handleRefresh(): Promise<void> {
   try {
     await store.refresh()
   } catch (refreshError) {
-    notify.error('刷新任务中心失败', refreshError instanceof Error ? refreshError.message : String(refreshError))
+    notify.error(
+      '刷新任务中心失败',
+      refreshError instanceof Error ? refreshError.message : String(refreshError)
+    )
   }
 }
 
@@ -130,7 +134,10 @@ async function handleClearCompleted(): Promise<void> {
   try {
     await store.clearCompleted()
   } catch (clearError) {
-    notify.error('清理任务记录失败', clearError instanceof Error ? clearError.message : String(clearError))
+    notify.error(
+      '清理任务记录失败',
+      clearError instanceof Error ? clearError.message : String(clearError)
+    )
   } finally {
     clearing.value = false
   }
@@ -143,7 +150,10 @@ async function handleDeleteCompleted(run: TaskRun): Promise<void> {
       completedDetailsDialogOpen.value = false
     }
   } catch (deleteError) {
-    notify.error('删除任务记录失败', deleteError instanceof Error ? deleteError.message : String(deleteError))
+    notify.error(
+      '删除任务记录失败',
+      deleteError instanceof Error ? deleteError.message : String(deleteError)
+    )
   }
 }
 
@@ -154,7 +164,10 @@ async function handlePause(run: TaskRun): Promise<void> {
       notify.info('任务暂时不能暂停')
     }
   } catch (pauseError) {
-    notify.error('暂停任务失败', pauseError instanceof Error ? pauseError.message : String(pauseError))
+    notify.error(
+      '暂停任务失败',
+      pauseError instanceof Error ? pauseError.message : String(pauseError)
+    )
   }
 }
 
@@ -165,7 +178,10 @@ async function handleResume(run: TaskRun): Promise<void> {
       notify.info('任务暂时不能继续')
     }
   } catch (resumeError) {
-    notify.error('继续任务失败', resumeError instanceof Error ? resumeError.message : String(resumeError))
+    notify.error(
+      '继续任务失败',
+      resumeError instanceof Error ? resumeError.message : String(resumeError)
+    )
   }
 }
 
@@ -176,7 +192,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
       notify.info('任务已结束或不可取消')
     }
   } catch (cancelError) {
-    notify.error('取消任务失败', cancelError instanceof Error ? cancelError.message : String(cancelError))
+    notify.error(
+      '取消任务失败',
+      cancelError instanceof Error ? cancelError.message : String(cancelError)
+    )
   }
 }
 </script>

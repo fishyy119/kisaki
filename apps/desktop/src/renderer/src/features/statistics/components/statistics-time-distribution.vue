@@ -8,7 +8,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useStatistics } from '../composables'
-import { TimeDistributionChart, type DistributionType } from '@renderer/components/ui/time-distribution-chart'
+import {
+  TimeDistributionChart,
+  type DistributionType
+} from '@renderer/components/ui/time-distribution-chart'
 import {
   aggregateByLocalDayOfMonth,
   aggregateByLocalHour,

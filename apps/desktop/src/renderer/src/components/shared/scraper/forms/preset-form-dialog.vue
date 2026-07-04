@@ -98,21 +98,21 @@ function createSelectedModel(presetId: string) {
 function handleAdd() {
   if (selectedIds.value.size === 0) return
 
-  const profilesToAdd: ScraperProfile[] = filteredPresets.value.filter((p) =>
-    selectedIds.value.has(p.id)
-  ).map((preset, index) => ({
-    id: nanoid(),
-    name: preset.name,
-    description: preset.description,
-    mediaType: preset.mediaType,
-    sourcePresetId: preset.id,
-    searchProviderId: preset.searchProviderId,
-    defaultLocale: preset.defaultLocale || null,
-    slotConfigs: preset.slotConfigs,
-    order: index,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }))
+  const profilesToAdd: ScraperProfile[] = filteredPresets.value
+    .filter((p) => selectedIds.value.has(p.id))
+    .map((preset, index) => ({
+      id: nanoid(),
+      name: preset.name,
+      description: preset.description,
+      mediaType: preset.mediaType,
+      sourcePresetId: preset.id,
+      searchProviderId: preset.searchProviderId,
+      defaultLocale: preset.defaultLocale || null,
+      slotConfigs: preset.slotConfigs,
+      order: index,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }))
 
   props.onAdd(profilesToAdd)
   selectedIds.value = new Set()

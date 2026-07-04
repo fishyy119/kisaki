@@ -9,7 +9,10 @@ import { attachment } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { characters } from '@shared/db'
-import { ImageCropperDialog, type CropConfirmPayload } from '@renderer/components/ui/image-cropper-dialog'
+import {
+  ImageCropperDialog,
+  type CropConfirmPayload
+} from '@renderer/components/ui/image-cropper-dialog'
 
 type CharacterMediaType = 'photo'
 

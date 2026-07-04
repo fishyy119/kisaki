@@ -128,7 +128,7 @@ function handleCancel() {
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
-            <FieldGroup>
+          <FieldGroup>
             <Field>
               <FieldLabel>标签</FieldLabel>
               <FieldContent>
@@ -151,9 +151,7 @@ function handleCancel() {
             <Field orientation="horizontal">
               <FieldLabel>包含剧透</FieldLabel>
               <FieldContent>
-                <Checkbox
-                  v-model="formData.isSpoiler"
-                />
+                <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
             </Field>
           </FieldGroup>

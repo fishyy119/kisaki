@@ -4,11 +4,7 @@ import { ref } from 'vue'
 import { Badge, Button, Icon, Spinner } from '@kisaki3/extension-ui-vue'
 import type { BangumiAutomationKind, BangumiSettingsOverview } from '../../../shared/settings'
 import { host, toErrorMessage } from '../rpc'
-import {
-  AUTOMATION_LABELS,
-  AUTOMATION_STATUS_LABELS,
-  AUTOMATION_STATUS_VARIANTS
-} from '../labels'
+import { AUTOMATION_LABELS, AUTOMATION_STATUS_LABELS, AUTOMATION_STATUS_VARIANTS } from '../labels'
 import SettingsSection from '../components/settings-section.vue'
 
 interface Props {

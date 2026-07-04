@@ -172,7 +172,9 @@ function snapshotArgs(): FullSyncForm {
               >
                 <Checkbox
                   :model-value="fullSyncForm.items.includes(item.value)"
-                  @update:model-value="(checked) => toggleFullSyncItem(item.value, checked === true)"
+                  @update:model-value="
+                    (checked) => toggleFullSyncItem(item.value, checked === true)
+                  "
                 />
                 {{ item.label }}
               </Label>

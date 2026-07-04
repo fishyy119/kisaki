@@ -19,10 +19,7 @@ import { cn } from '@renderer/utils'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'
-import {
-  getScraperProviderDisplay,
-  type ScraperProviderInfo
-} from './provider-display'
+import { getScraperProviderDisplay, type ScraperProviderInfo } from './provider-display'
 
 interface Props {
   /** Which entity type this provider list is for (default: game) */
@@ -114,11 +111,7 @@ const selectedFallbackProvider = computed(() => {
     return null
   }
 
-  return getScraperProviderDisplay(
-    model.value,
-    providers.value ?? [],
-    props.requiredCapabilities
-  )
+  return getScraperProviderDisplay(model.value, providers.value ?? [], props.requiredCapabilities)
 })
 
 const selectedProviderLabel = computed(() => {

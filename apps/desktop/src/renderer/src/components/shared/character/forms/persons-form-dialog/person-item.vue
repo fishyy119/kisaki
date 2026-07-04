@@ -40,9 +40,7 @@ const displayNote = computed(() =>
     <div class="shrink-0">
       <div class="size-10 rounded-md bg-muted flex items-center justify-center">
         <Icon
-          :icon="
-            spoilerHidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('person')
-          "
+          :icon="spoilerHidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('person')"
           class="size-5 text-muted-foreground"
         />
       </div>

@@ -49,7 +49,7 @@ const emit = defineEmits<{
     "
   >
     <div class="shrink-0 size-10 rounded-md bg-muted flex items-center justify-center">
-          <span
+      <span
         :class="
           cn(
             'size-5 text-muted-foreground',

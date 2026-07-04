@@ -179,7 +179,9 @@ watch(
   { immediate: true }
 )
 
-const existingProviderIds = computed(() => formData.value.providers.map((entry) => entry.providerId))
+const existingProviderIds = computed(() =>
+  formData.value.providers.map((entry) => entry.providerId)
+)
 
 const availableProviders = computed(() => props.providersByType[props.entityType] ?? [])
 
@@ -187,9 +189,7 @@ const providerRows = computed<ProviderRow[]>(() =>
   formData.value.providers.map((entry, index) => ({
     entry,
     index,
-    display: getScraperProviderDisplay(entry.providerId, availableProviders.value, [
-      props.slotType
-    ])
+    display: getScraperProviderDisplay(entry.providerId, availableProviders.value, [props.slotType])
   }))
 )
 
@@ -338,7 +338,9 @@ function handleSubmit() {
                         </Badge>
                       </div>
                       <div
-                        v-if="row.display.description && row.display.description !== row.display.label"
+                        v-if="
+                          row.display.description && row.display.description !== row.display.label
+                        "
                         class="truncate text-xs text-muted-foreground"
                       >
                         {{ row.display.description }}

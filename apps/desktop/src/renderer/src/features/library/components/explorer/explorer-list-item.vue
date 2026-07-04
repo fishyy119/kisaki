@@ -11,7 +11,10 @@ import { RouterLink, useRoute, type LocationQuery } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { GameContextMenu, GameBatchContextMenu } from '@renderer/components/shared/game'
-import { CharacterContextMenu, CharacterBatchContextMenu } from '@renderer/components/shared/character'
+import {
+  CharacterContextMenu,
+  CharacterBatchContextMenu
+} from '@renderer/components/shared/character'
 import { PersonContextMenu, PersonBatchContextMenu } from '@renderer/components/shared/person'
 import { CompanyContextMenu, CompanyBatchContextMenu } from '@renderer/components/shared/company'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
@@ -199,11 +202,7 @@ function handleClick(e: MouseEvent) {
   <component
     :is="useBatchMenu ? CharacterBatchContextMenu : CharacterContextMenu"
     v-else-if="props.entityType === 'character'"
-    v-bind="
-      useBatchMenu
-        ? { characterIds: selectedEntityIds }
-        : { characterId: props.entity.id }
-    "
+    v-bind="useBatchMenu ? { characterIds: selectedEntityIds } : { characterId: props.entity.id }"
     @deleted="store.clearSelection()"
   >
     <RouterLink

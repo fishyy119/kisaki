@@ -13,7 +13,10 @@ import {
   aggregateByLocalHour,
   aggregateByLocalWeekdayMondayFirst
 } from '@renderer/utils/statistics'
-import { TimeDistributionChart, type DistributionType } from '@renderer/components/ui/time-distribution-chart'
+import {
+  TimeDistributionChart,
+  type DistributionType
+} from '@renderer/components/ui/time-distribution-chart'
 
 interface Props {
   sessions: GameSession[]

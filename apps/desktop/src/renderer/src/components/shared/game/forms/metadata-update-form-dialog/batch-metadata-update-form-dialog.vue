@@ -169,160 +169,160 @@ async function handleSubmit() {
       </DialogHeader>
 
       <Form @submit="handleSubmit">
-          <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
-            <FieldGroup>
-              <Field>
-                <FieldLabel>刮削器配置</FieldLabel>
-                <FieldContent>
-                  <ScraperProfileSelect
-                    v-model="profileId"
-                    media-type="game"
-                  />
-                </FieldContent>
-              </Field>
-            </FieldGroup>
-
-            <FieldGroup>
-              <Field>
-                <FieldLabel>更新项</FieldLabel>
-                <FieldContent>
-                  <div class="flex items-center gap-2 pb-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      :disabled="isSubmitting"
-                      @click="handleSelectAllSurfaces"
-                    >
-                      全选
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      :disabled="isSubmitting"
-                      @click="handleSelectNoSurfaces"
-                    >
-                      全不选
-                    </Button>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-x-6 gap-y-2">
-                    <div
-                      v-for="surface in GAME_UPDATE_SURFACE_KEYS"
-                      :key="surface"
-                      class="flex items-center gap-2"
-                    >
-                      <Checkbox
-                        :id="`core-surface-${surface}`"
-                        :model-value="selectedSurfaces.includes(surface)"
-                        :disabled="isSubmitting"
-                        @update:model-value="(value) => toggleSurface(surface, !!value)"
-                      />
-                      <Label
-                        :for="`core-surface-${surface}`"
-                        class="text-sm font-normal cursor-pointer"
-                      >
-                        {{ SURFACE_LABELS[surface] }}
-                      </Label>
-                    </div>
-                  </div>
-                </FieldContent>
-              </Field>
-
-              <Field>
-                <FieldLabel>单值策略</FieldLabel>
-                <FieldContent>
-                  <Select
-                    v-model="singularUpdate"
-                    :disabled="isSubmitting"
-                  >
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择单值策略..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ifMissing">仅缺失时写入</SelectItem>
-                      <SelectItem value="overwrite">覆盖现有值</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FieldContent>
-                <FieldDescription>
-                  {{
-                    singularUpdate === 'ifMissing'
-                      ? '仅在当前值缺失时写入新值'
-                      : '如存在可用新值，则覆盖当前值'
-                  }}
-                </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel>集合策略</FieldLabel>
-                <FieldContent>
-                  <Select
-                    v-model="collectionUpdate"
-                    :disabled="isSubmitting"
-                  >
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择集合策略..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="merge">合并追加</SelectItem>
-                      <SelectItem value="replace">整体替换</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FieldContent>
-                <FieldDescription>
-                  {{
-                    collectionUpdate === 'merge'
-                      ? '保留现有内容，并追加新增内容'
-                      : '以新内容整体替换当前内容'
-                  }}
-                </FieldDescription>
-              </Field>
-
-              <Field orientation="horizontal">
-                <FieldLabel>使用当前外部 ID 辅助定位</FieldLabel>
-                <FieldContent>
-                  <Checkbox
-                    id="use-current-external-ids"
-                    v-model="useCurrentExternalIdsAsKnownIds"
-                    :disabled="isSubmitting"
-                  />
-                </FieldContent>
-                <FieldDescription>若当前条目可能对应错误目标，请勿启用此项。</FieldDescription>
-              </Field>
-            </FieldGroup>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              :disabled="isSubmitting"
-              @click="open = false"
-            >
-              关闭
-            </Button>
-            <Button
-              type="submit"
-              :disabled="!canSubmit"
-            >
-              <template v-if="isSubmitting">
-                <Icon
-                  icon="icon-[mdi--loading]"
-                  class="size-4 animate-spin"
+        <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
+          <FieldGroup>
+            <Field>
+              <FieldLabel>刮削器配置</FieldLabel>
+              <FieldContent>
+                <ScraperProfileSelect
+                  v-model="profileId"
+                  media-type="game"
                 />
-                更新中...
-              </template>
-              <template v-else>
-                <Icon
-                  icon="icon-[mdi--refresh]"
-                  class="size-4"
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+
+          <FieldGroup>
+            <Field>
+              <FieldLabel>更新项</FieldLabel>
+              <FieldContent>
+                <div class="flex items-center gap-2 pb-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="isSubmitting"
+                    @click="handleSelectAllSurfaces"
+                  >
+                    全选
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="isSubmitting"
+                    @click="handleSelectNoSurfaces"
+                  >
+                    全不选
+                  </Button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+                  <div
+                    v-for="surface in GAME_UPDATE_SURFACE_KEYS"
+                    :key="surface"
+                    class="flex items-center gap-2"
+                  >
+                    <Checkbox
+                      :id="`core-surface-${surface}`"
+                      :model-value="selectedSurfaces.includes(surface)"
+                      :disabled="isSubmitting"
+                      @update:model-value="(value) => toggleSurface(surface, !!value)"
+                    />
+                    <Label
+                      :for="`core-surface-${surface}`"
+                      class="text-sm font-normal cursor-pointer"
+                    >
+                      {{ SURFACE_LABELS[surface] }}
+                    </Label>
+                  </div>
+                </div>
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>单值策略</FieldLabel>
+              <FieldContent>
+                <Select
+                  v-model="singularUpdate"
+                  :disabled="isSubmitting"
+                >
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="选择单值策略..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ifMissing">仅缺失时写入</SelectItem>
+                    <SelectItem value="overwrite">覆盖现有值</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+              <FieldDescription>
+                {{
+                  singularUpdate === 'ifMissing'
+                    ? '仅在当前值缺失时写入新值'
+                    : '如存在可用新值，则覆盖当前值'
+                }}
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel>集合策略</FieldLabel>
+              <FieldContent>
+                <Select
+                  v-model="collectionUpdate"
+                  :disabled="isSubmitting"
+                >
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="选择集合策略..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="merge">合并追加</SelectItem>
+                    <SelectItem value="replace">整体替换</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+              <FieldDescription>
+                {{
+                  collectionUpdate === 'merge'
+                    ? '保留现有内容，并追加新增内容'
+                    : '以新内容整体替换当前内容'
+                }}
+              </FieldDescription>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel>使用当前外部 ID 辅助定位</FieldLabel>
+              <FieldContent>
+                <Checkbox
+                  id="use-current-external-ids"
+                  v-model="useCurrentExternalIdsAsKnownIds"
+                  :disabled="isSubmitting"
                 />
-                更新
-              </template>
-            </Button>
-          </DialogFooter>
+              </FieldContent>
+              <FieldDescription>若当前条目可能对应错误目标，请勿启用此项。</FieldDescription>
+            </Field>
+          </FieldGroup>
+        </DialogBody>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            :disabled="isSubmitting"
+            @click="open = false"
+          >
+            关闭
+          </Button>
+          <Button
+            type="submit"
+            :disabled="!canSubmit"
+          >
+            <template v-if="isSubmitting">
+              <Icon
+                icon="icon-[mdi--loading]"
+                class="size-4 animate-spin"
+              />
+              更新中...
+            </template>
+            <template v-else>
+              <Icon
+                icon="icon-[mdi--refresh]"
+                class="size-4"
+              />
+              更新
+            </template>
+          </Button>
+        </DialogFooter>
       </Form>
     </DialogContent>
   </Dialog>

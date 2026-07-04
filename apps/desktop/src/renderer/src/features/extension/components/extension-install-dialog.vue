@@ -277,7 +277,6 @@ function formatBytes(value: number | undefined): string {
 
   return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
 }
-
 </script>
 
 <template>

@@ -148,9 +148,7 @@ function handleCancel() {
             <Field orientation="horizontal">
               <FieldLabel>包含剧透</FieldLabel>
               <FieldContent>
-                <Checkbox
-                  v-model="formData.isSpoiler"
-                />
+                <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
             </Field>
           </FieldGroup>

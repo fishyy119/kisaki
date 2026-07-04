@@ -1,7 +1,15 @@
 <!-- Import Tab offers source selection; source-specific options live in flow dialogs. -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Alert, Button, Field, FieldContent, FieldGroup, Icon, Input } from '@kisaki3/extension-ui-vue'
+import {
+  Alert,
+  Button,
+  Field,
+  FieldContent,
+  FieldGroup,
+  Icon,
+  Input
+} from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import SettingsSection from '../components/settings-section.vue'
 import ImportCollectionsDialog from '../flows/import-collections-dialog.vue'

@@ -30,7 +30,7 @@ const entityTypeModel = computed({
     v-model="entityTypeModel"
     class="w-full"
   >
-  <SegmentedControlItem
+    <SegmentedControlItem
       v-for="type in ENTITY_TABS"
       :key="type"
       :value="type"

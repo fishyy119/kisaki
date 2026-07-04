@@ -166,9 +166,7 @@ function handleCancel() {
               <FieldLabel>角色类型</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.type">
-                  <SelectTrigger
-                    class="w-full"
-                  >
+                  <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -195,9 +193,7 @@ function handleCancel() {
             <Field orientation="horizontal">
               <FieldLabel>包含剧透</FieldLabel>
               <FieldContent>
-                <Checkbox
-                  v-model="formData.isSpoiler"
-                />
+                <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
             </Field>
           </FieldGroup>

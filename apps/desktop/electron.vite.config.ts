@@ -69,11 +69,7 @@ export default defineConfig({
         }
       }
     },
-    plugins: [
-      rendererContentSecurityPolicyPlugin(),
-      vue(),
-      tailwindcss()
-    ],
+    plugins: [rendererContentSecurityPolicyPlugin(), vue(), tailwindcss()],
     server: {
       host: '127.0.0.1'
     }

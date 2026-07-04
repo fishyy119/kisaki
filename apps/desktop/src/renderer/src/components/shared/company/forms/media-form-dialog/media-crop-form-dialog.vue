@@ -9,7 +9,10 @@ import { attachment } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { companies } from '@shared/db'
-import { ImageCropperDialog, type CropConfirmPayload } from '@renderer/components/ui/image-cropper-dialog'
+import {
+  ImageCropperDialog,
+  type CropConfirmPayload
+} from '@renderer/components/ui/image-cropper-dialog'
 
 type CompanyMediaType = 'logo'
 
@@ -25,7 +28,9 @@ const open = defineModel<boolean>('open', { required: true })
 
 const isCropping = ref(false)
 
-const imageSrc = computed(() => `attachment://companies/${props.companyId}/${props.currentFileName}`)
+const imageSrc = computed(
+  () => `attachment://companies/${props.companyId}/${props.currentFileName}`
+)
 const MEDIA_TYPE_LABEL: Record<CompanyMediaType, string> = {
   logo: 'Logo'
 }

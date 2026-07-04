@@ -60,9 +60,7 @@ const displayNote = computed(() =>
       v-else
       class="shrink-0"
     >
-      <div
-        class="size-10 rounded-md bg-muted flex items-center justify-center"
-      >
+      <div class="size-10 rounded-md bg-muted flex items-center justify-center">
         <Icon
           :icon="spoilerHidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('game')"
           class="size-5 text-muted-foreground"

@@ -21,18 +21,12 @@ const open = defineModel<boolean>('open', { required: true })
 
 const entityIds = computed(() => (props.tagId ? [props.tagId] : []))
 
-const {
-  data,
-  isLoading,
-  firstName,
-  relatedOptions,
-  selectedRelatedTypes,
-  deleteSelectedEntities
-} = useEntityDelete({
-  entityType: 'tag',
-  entityIds,
-  open
-})
+const { data, isLoading, firstName, relatedOptions, selectedRelatedTypes, deleteSelectedEntities } =
+  useEntityDelete({
+    entityType: 'tag',
+    entityIds,
+    open
+  })
 
 async function handleConfirm() {
   try {

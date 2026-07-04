@@ -28,9 +28,7 @@ const emit = defineEmits<Emits>()
 
 const route = useRoute()
 
-const showPendingIndicator = computed(
-  () => props.hasPendingReload && !props.reloadingExtensionHost
-)
+const showPendingIndicator = computed(() => props.hasPendingReload && !props.reloadingExtensionHost)
 const reloadButtonTitle = computed(() =>
   props.hasPendingReload
     ? `扩展代码已更新（${props.pendingReloadCount}），点击重载进程以应用`

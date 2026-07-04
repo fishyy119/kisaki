@@ -90,40 +90,40 @@ function handleAddScanner() {
           class="gap-2"
           @select="handleAddGame"
         >
-            <Icon
-              :icon="getEntityIcon('game')"
-              class="size-4"
-            />
+          <Icon
+            :icon="getEntityIcon('game')"
+            class="size-4"
+          />
           <span>添加游戏</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
           @select="handleAddCharacter"
         >
-            <Icon
-              :icon="getEntityIcon('character')"
-              class="size-4"
-            />
+          <Icon
+            :icon="getEntityIcon('character')"
+            class="size-4"
+          />
           <span>添加角色</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
           @select="handleAddPerson"
         >
-            <Icon
-              :icon="getEntityIcon('person')"
-              class="size-4"
-            />
+          <Icon
+            :icon="getEntityIcon('person')"
+            class="size-4"
+          />
           <span>添加人物</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
           @select="handleAddCompany"
         >
-            <Icon
-              :icon="getEntityIcon('company')"
-              class="size-4"
-            />
+          <Icon
+            :icon="getEntityIcon('company')"
+            class="size-4"
+          />
           <span>添加公司</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

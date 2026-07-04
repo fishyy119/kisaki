@@ -91,9 +91,7 @@ function handleCancel() {
             <Field>
               <FieldLabel>锁定备份</FieldLabel>
               <FieldContent>
-                <Switch
-                  v-model="formData.locked"
-                />
+                <Switch v-model="formData.locked" />
               </FieldContent>
               <FieldDescription>锁定后不会被自动清理</FieldDescription>
             </Field>

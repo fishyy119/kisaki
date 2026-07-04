@@ -11,7 +11,10 @@ import { notify } from '@renderer/core/notify'
 import type { GameMediaType } from '@shared/attachment'
 import { GAME_MEDIA_TYPE_TO_FIELD } from '@shared/attachment'
 import { games } from '@shared/db'
-import { ImageCropperDialog, type CropConfirmPayload } from '@renderer/components/ui/image-cropper-dialog'
+import {
+  ImageCropperDialog,
+  type CropConfirmPayload
+} from '@renderer/components/ui/image-cropper-dialog'
 
 interface Props {
   gameId: string

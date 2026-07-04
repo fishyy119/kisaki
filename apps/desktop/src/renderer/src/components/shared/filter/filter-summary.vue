@@ -29,7 +29,10 @@ const emit = defineEmits<{
 const activeCount = computed(() => countActiveFilters(props.filter))
 const fieldByKey = computed(() => new Map(props.uiSpec.fields.map((f) => [f.key, f])))
 
-function formatValue(field: FilterUiFieldDef, value: unknown): { value: string; mode?: string } | null {
+function formatValue(
+  field: FilterUiFieldDef,
+  value: unknown
+): { value: string; mode?: string } | null {
   if (value === null || value === undefined) return null
 
   if (field.control === 'boolean') {
@@ -51,7 +54,8 @@ function formatValue(field: FilterUiFieldDef, value: unknown): { value: string; 
 
   if (field.control === 'numberRange') {
     const range = value as NumberRangeValue
-    if (range.min !== undefined && range.max !== undefined) return { value: `${range.min}-${range.max}` }
+    if (range.min !== undefined && range.max !== undefined)
+      return { value: `${range.min}-${range.max}` }
     if (range.min !== undefined) return { value: `≥ ${range.min}` }
     if (range.max !== undefined) return { value: `≤ ${range.max}` }
     return null

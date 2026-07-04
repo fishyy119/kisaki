@@ -72,14 +72,7 @@
     'Apple Color Emoji',
     'Segoe UI Emoji'
   );
-  --font-mono: var(
-    --kisaki-font-mono,
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Consolas,
-    monospace
-  );
+  --font-mono: var(--kisaki-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
 }
 
 /* The webview client mirrors the mode as data-kisaki-theme on <html>. */

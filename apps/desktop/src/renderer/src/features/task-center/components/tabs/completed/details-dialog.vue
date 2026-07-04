@@ -167,7 +167,8 @@ const metadata = computed(() => [
               </div>
               <pre
                 class="max-h-56 overflow-auto bg-background/40 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
-              >{{ outputPreview }}</pre>
+                >{{ outputPreview }}</pre
+              >
             </div>
           </div>
         </section>

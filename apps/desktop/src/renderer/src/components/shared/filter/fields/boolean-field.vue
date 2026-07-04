@@ -20,7 +20,8 @@ const filterModel = defineModel<FilterState>({ required: true })
 
 // Computed for the field's value within the FilterState
 const fieldValue = computed({
-  get: () => (getFilterValue(filterModel.value, props.field.key) as boolean | undefined) ?? undefined,
+  get: () =>
+    (getFilterValue(filterModel.value, props.field.key) as boolean | undefined) ?? undefined,
   set: (value) => {
     // Only true is meaningful, false/undefined both mean "no filter"
     const cleanValue = value === true ? true : undefined

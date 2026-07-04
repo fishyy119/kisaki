@@ -12,7 +12,8 @@ const rendererImportBoundaryPatterns = [
   },
   {
     group: ['@renderer/components/shared/*/*'],
-    message: 'Import shared modules only from first-level boundary: @renderer/components/shared/<domain>.'
+    message:
+      'Import shared modules only from first-level boundary: @renderer/components/shared/<domain>.'
   },
   {
     group: ['@renderer/features/*/*'],

@@ -98,9 +98,7 @@ const canCancel = computed(
     </div>
 
     <div class="min-w-0">
-      <TaskRunProgress
-        :run="props.run"
-      />
+      <TaskRunProgress :run="props.run" />
     </div>
 
     <div class="flex min-w-0 items-center">
