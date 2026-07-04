@@ -78,6 +78,8 @@ old internal shapes.
 ## Code Organization
 
 - Follow existing module boundaries and naming rules before adding abstractions.
+- Keep code style clean, clear, unified, modern, and aligned with project standards; implement
+  changes thoroughly, without backward-compatibility shims, legacy fallbacks, or redundant code.
 - Treat folders as either category organization or coupled module splits. Do not add facade entries
   or `index.ts` files just for symmetry.
 - Use concise responsibility names such as `manager.ts`, `coordinator.ts`, `gateway.ts`,
