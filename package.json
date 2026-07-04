@@ -21,6 +21,7 @@
     "lint:fix": "pnpm -r --parallel lint:fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check",
     "clean": "pnpm -r --parallel clean",
     "prepare": "lefthook install"
   },

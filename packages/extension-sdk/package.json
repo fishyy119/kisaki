@@ -50,6 +50,7 @@
     "lint:fix": "eslint --cache --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check",
     "clean": "rimraf dist"
   },
   "dependencies": {

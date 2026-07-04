@@ -11,8 +11,12 @@
     "dev": "kisx dev",
     "validate": "kisx validate",
     "pack": "kisx pack",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false && vue-tsc --noEmit -p tsconfig.ui.json --composite false"
+    "lint": "eslint --cache .",
+    "lint:fix": "eslint --cache --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit -p tsconfig.host.json --composite false && vue-tsc --noEmit -p tsconfig.ui.json --composite false",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run build && pnpm run validate"
   },
   "devDependencies": {
     "@iconify-json/mdi": "^1.2.3",
