@@ -83,8 +83,8 @@ function handleInstall() {
     </div>
 
     <!-- Meta -->
-    <div class="mb-2 min-w-0">
-      <span class="text-xs text-muted-foreground truncate">{{ ownerLabel }}</span>
+    <div class="mb-2 min-w-0 text-xs text-muted-foreground">
+      <div class="truncate">{{ ownerLabel }}</div>
     </div>
 
     <!-- Description -->
