@@ -1,6 +1,6 @@
 {
   "name": "@kisaki3/extension-sdk",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Authoring SDK for the Kisaki extension system",
   "repository": {
     "type": "git",
