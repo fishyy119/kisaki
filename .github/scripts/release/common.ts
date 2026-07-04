@@ -70,8 +70,3 @@ export function writeGithubOutput(values: Record<string, string | boolean>): voi
     }
   }
 }
-
-export function configureGitHubActionsAuthor(): void {
-  run('git', ['config', 'user.name', 'github-actions[bot]'])
-  run('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
-}

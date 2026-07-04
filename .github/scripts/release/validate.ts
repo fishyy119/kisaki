@@ -10,23 +10,22 @@ const PLACEHOLDER_PATTERN =
 const target = readReleaseTarget()
 const version = readRequiredEnv('RELEASE_VERSION')
 const tag = readRequiredEnv('RELEASE_TAG')
-const commitSha = readRequiredEnv('GITHUB_SHA')
 
-validateReleaseTag(tag, commitSha)
+validateReleaseTag(tag)
 validateChangelogFiles(target, version)
 
-function validateReleaseTag(releaseTag: string, expectedSha: string): void {
+function validateReleaseTag(releaseTag: string): void {
   if (!commandSucceeds('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${releaseTag}`])) {
-    console.log(`Tag ${releaseTag} is available.`)
-    return
+    throw new Error(`Release tag does not exist: ${releaseTag}.`)
   }
 
   const tagCommit = readCommand('git', ['rev-list', '-n', '1', releaseTag])
-  if (tagCommit !== expectedSha) {
-    throw new Error(`Tag ${releaseTag} points to ${tagCommit}, expected ${expectedSha}.`)
+  const headCommit = readCommand('git', ['rev-parse', 'HEAD'])
+  if (tagCommit !== headCommit) {
+    throw new Error(`Tag ${releaseTag} points to ${tagCommit}, but checkout is ${headCommit}.`)
   }
 
-  console.log(`Tag ${releaseTag} already identifies this release commit.`)
+  console.log(`Verified release tag ${releaseTag} at ${headCommit}.`)
 }
 
 function validateChangelogFiles(releaseTarget: ReleaseTarget, releaseVersion: string): void {

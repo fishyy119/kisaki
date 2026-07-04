@@ -2,12 +2,19 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'desktop-v*'
+      - 'extension-tooling-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build, such as desktop-v0.0.4 or extension-tooling-v0.0.7.'
+        required: true
+        type: string
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   cancel-in-progress: false
-  queue: max
 
 permissions:
   contents: read
@@ -24,11 +31,10 @@ env:
 
 jobs:
   detect:
-    name: Detect Release
+    name: Read Release Tag
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      should_release: ${{ steps.parse.outputs.should_release }}
       target: ${{ steps.parse.outputs.target }}
       version: ${{ steps.parse.outputs.version }}
       tag: ${{ steps.parse.outputs.tag }}
@@ -39,7 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 2
           persist-credentials: false
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -54,19 +59,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Parse commit message
+      - name: Parse release tag
         id: parse
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: pnpm exec tsx .github/scripts/release/detect.ts
 
   validate-release:
     name: Validate Release Metadata
     needs: detect
-    if: needs.detect.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.detect.outputs.tag }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -98,6 +105,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.detect.outputs.tag }}
           persist-credentials: false
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -137,6 +145,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.detect.outputs.tag }}
           persist-credentials: false
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -190,6 +199,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.detect.outputs.tag }}
           persist-credentials: false
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -227,7 +237,6 @@ jobs:
     needs: [detect, validate-release, release-desktop, release-extension-tooling]
     if: >-
       always() &&
-      needs.detect.outputs.should_release == 'true' &&
       needs.validate-release.result == 'success' &&
       (needs.release-desktop.result == 'success' || needs.release-extension-tooling.result == 'success')
     runs-on: ubuntu-latest
@@ -237,6 +246,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.detect.outputs.tag }}
           fetch-depth: 0
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -279,16 +289,10 @@ jobs:
           RELEASE_TAG: ${{ needs.detect.outputs.tag }}
         run: pnpm exec tsx .github/scripts/release/body.ts
 
-      - name: Ensure Git tag
-        env:
-          RELEASE_TAG: ${{ needs.detect.outputs.tag }}
-        run: pnpm exec tsx .github/scripts/release/tag.ts
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
           tag_name: ${{ needs.detect.outputs.tag }}
-          target_commitish: ${{ github.sha }}
           name: ${{ needs.detect.outputs.release_name }}
           body_path: release-body.md
           files: |
