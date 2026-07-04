@@ -102,10 +102,15 @@ jobs:
           PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
         run: pnpm exec tsx .github/scripts/publish/artifacts.ts
 
-      - name: Ensure publish tag
+      - name: Update registry manifest
         env:
           PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
-        run: pnpm exec tsx .github/scripts/publish/tag.ts
+          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
+          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
+          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
+          ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
+          SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}
+        run: pnpm exec tsx .github/scripts/publish/update-registry.ts
 
       - name: Publish GitHub Release
         env:
@@ -117,16 +122,6 @@ jobs:
           ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
           SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}
         run: pnpm exec tsx .github/scripts/publish/github-release.ts
-
-      - name: Update registry manifest
-        env:
-          PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
-          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
-          PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
-          PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
-          ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
-          SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}
-        run: pnpm exec tsx .github/scripts/publish/update-registry.ts
 
       - name: Commit registry manifest
         env:

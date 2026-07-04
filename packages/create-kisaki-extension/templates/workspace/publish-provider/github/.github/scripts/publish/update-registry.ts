@@ -14,7 +14,9 @@ const workspaceDir = readRequiredEnv('GITHUB_WORKSPACE')
 const registryManifestPath = path.join(workspaceDir, 'registry', 'manifest.json')
 const artifactUrl = `https://github.com/${repository}/releases/download/${tag}/${extensionId}-${version}.kisx`
 const releasePage = `https://github.com/${repository}/releases/tag/${tag}`
-const publishedAt = readCommand('git', ['show', '-s', '--format=%cI', commitSha])
+const publishedAt = new Date(
+  readCommand('git', ['show', '-s', '--format=%cI', commitSha])
+).toISOString()
 const changelog = readReleaseChangelog(extensionDir, version)
 
 run('git', ['fetch', 'origin', 'main'])

@@ -9,9 +9,9 @@ git push origin main
 ```
 
 The workflow validates this extension's manifest id and version, packages only
-this extension, creates tag `{{EXTENSION_ID}}-v0.0.1` and its GitHub Release,
-uploads the signed `.kisx` package, and updates the shared
-`registry/manifest.json`.
+this extension, updates and validates the shared `registry/manifest.json`,
+creates tag `{{EXTENSION_ID}}-v0.0.1` with its GitHub Release, and uploads the
+signed `.kisx` package.
 
 Optional release changelogs live in this extension directory:
 
@@ -23,9 +23,10 @@ extensions/{{EXTENSION_ID}}/changelogs/0.0.1/zh-Hans.md
 The first non-empty line is the changelog summary. The remaining Markdown is
 the changelog body.
 
-If a publish job fails, rerun the same job. The workflow reuses the existing
-GitHub Release, replaces its assets, and updates the registry from the latest
-`main`.
+If a publish job fails before the GitHub Release step, fix the issue and rerun
+the job. If it fails after the GitHub Release step, rerun the same job; the
+workflow reuses the existing release, replaces its assets, and updates the
+registry from the latest `main`.
 
 The workflow requires the repository signing-key secret. Generate it from the
 workspace root with `pnpm run key:generate`, then store the entire
