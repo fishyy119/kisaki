@@ -18,12 +18,20 @@ uses the default locale entry for GitHub Release notes and writes all locale
 entries into the registry release:
 
 ```text
-extensions/<extension-id>/changelogs/0.0.1/en.md
-extensions/<extension-id>/changelogs/0.0.1/zh-Hans.md
+extensions/<extension-id>/changelogs/v0.0.1/en.md
+extensions/<extension-id>/changelogs/v0.0.1/zh-Hans.md
 ```
 
-The first non-empty line is the changelog summary. The remaining Markdown is
-the changelog body.
+Each file declares its registry summary in top front matter. The remaining
+Markdown is the changelog body:
+
+```md
+---
+summary: Added the first public release.
+---
+
+Describe the release in more detail.
+```
 
 If a publish job fails, fix the issue, move the same tag to the corrected
 commit, and push the tag again:

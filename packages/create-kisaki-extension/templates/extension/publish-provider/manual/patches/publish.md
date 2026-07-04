@@ -11,7 +11,7 @@ pnpm exec kisx registry add-release \
   --manifest registry/manifest.json \
   --url https://example.com/extensions/{{EXTENSION_ID}}-0.0.1.kisx \
   --release-page https://example.com/extensions/{{EXTENSION_ID}}/releases/0.0.1 \
-  --changelogs extensions/{{EXTENSION_ID}}/changelogs/0.0.1 \
+  --changelogs extensions/{{EXTENSION_ID}}/changelogs/v0.0.1 \
   --default-locale en
 ```
 
@@ -23,9 +23,17 @@ For signed manual releases, generate the repository key with
 Release changelogs are localized Markdown files under this extension directory:
 
 ```text
-extensions/{{EXTENSION_ID}}/changelogs/0.0.1/en.md
-extensions/{{EXTENSION_ID}}/changelogs/0.0.1/zh-Hans.md
+extensions/{{EXTENSION_ID}}/changelogs/v0.0.1/en.md
+extensions/{{EXTENSION_ID}}/changelogs/v0.0.1/zh-Hans.md
 ```
 
-The first non-empty line is the changelog summary. The remaining Markdown is
-the changelog body.
+Each file declares its registry summary in top front matter. The remaining
+Markdown is the changelog body:
+
+```md
+---
+summary: Added the first public release.
+---
+
+Describe the release in more detail.
+```

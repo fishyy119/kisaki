@@ -43,7 +43,10 @@ export function createRegistryCommand(): Command {
     .option('--target <target>', 'Artifact target', 'any')
     .option('--published-at <iso-date>', 'Release publication timestamp')
     .option('--release-page <url>', 'Release page URL')
-    .option('--changelogs <dir>', 'Release changelog directory containing <locale>.md files')
+    .option(
+      '--changelogs <dir>',
+      'Release changelog directory containing <locale>.md files with summary front matter'
+    )
     .option('--default-locale <locale>', 'Default locale for --changelogs')
     .option(
       '--replace',
