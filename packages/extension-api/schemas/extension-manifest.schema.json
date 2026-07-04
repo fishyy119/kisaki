@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://kisaki.me/schemas/extension-manifest.schema.json",
   "title": "Kisaki Extension Manifest",
   "type": "object",
   "additionalProperties": false,

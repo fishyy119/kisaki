@@ -26,6 +26,13 @@ The registry schema is exported at:
 "./schemas/extension-registry.schema.json"
 ```
 
+For a repository manifest stored at `registry/manifest.json`, reference the local
+package schema:
+
+```json
+"$schema": "../node_modules/@kisaki3/extension-registry/schemas/extension-registry.schema.json"
+```
+
 ## Node Export
 
 `@kisaki3/extension-registry/node` exports sha256 release digest helpers, canonical

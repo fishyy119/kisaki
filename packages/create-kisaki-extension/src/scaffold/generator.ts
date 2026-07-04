@@ -18,6 +18,9 @@ import type {
 } from './model'
 import { readExtensionWorkspace, updateWorkspaceExtensionList } from './workspace'
 
+const GENERATED_REGISTRY_SCHEMA_REFERENCE =
+  '../node_modules/@kisaki3/extension-registry/schemas/extension-registry.schema.json'
+
 /**
  * Creates a repository through a sibling staging directory and publishes it
  * with one final rename, so template failures never leave a partial target.
@@ -87,6 +90,7 @@ function finalizeGeneratedRegistryManifest(
     path.join(registryDir, 'manifest.json'),
     `${JSON.stringify(
       createExtensionRegistryManifest({
+        $schema: GENERATED_REGISTRY_SCHEMA_REFERENCE,
         id: config.registryId,
         name: config.registryName,
         description: config.registryDescription

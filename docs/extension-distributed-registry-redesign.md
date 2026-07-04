@@ -118,7 +118,7 @@ packages/extension-registry/src/registry/integrity.ts
 
 ```json
 {
-  "$schema": "https://kisaki.me/schemas/extension-registry.schema.json",
+  "$schema": "../node_modules/@kisaki3/extension-registry/schemas/extension-registry.schema.json",
   "schemaVersion": 1,
   "id": "kisaki.extensions",
   "name": "Kisaki Extensions",

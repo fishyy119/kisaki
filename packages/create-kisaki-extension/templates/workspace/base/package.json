@@ -23,6 +23,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@kisaki3/extension-cli": "^{{KISAKI_TOOLING_VERSION}}",
+    "@kisaki3/extension-registry": "^{{KISAKI_TOOLING_VERSION}}",
     "@types/node": "{{NODE_TYPES_VERSION}}",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",

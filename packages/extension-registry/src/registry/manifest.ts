@@ -1,8 +1,6 @@
 import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type { ExtensionRegistryArtifact } from './artifact'
 
-export const EXTENSION_REGISTRY_SCHEMA_URL =
-  'https://kisaki.me/schemas/extension-registry.schema.json'
 export const EXTENSION_REGISTRY_SCHEMA_VERSION = 1
 
 export const EXTENSION_REGISTRY_SIGNING_ALGORITHMS = ['ed25519'] as const
@@ -94,6 +92,7 @@ export interface ExtensionRegistryRelease {
 
 /** Metadata used to create an empty extension registry manifest. */
 export interface CreateExtensionRegistryManifestInput {
+  $schema?: string
   id: string
   name: string
   description?: string
@@ -106,7 +105,7 @@ export function createExtensionRegistryManifest(
   input: CreateExtensionRegistryManifestInput
 ): ExtensionRegistryManifest {
   return compactExtensionRegistryManifest({
-    $schema: EXTENSION_REGISTRY_SCHEMA_URL,
+    $schema: input.$schema,
     schemaVersion: EXTENSION_REGISTRY_SCHEMA_VERSION,
     id: input.id,
     name: input.name,
