@@ -16,10 +16,15 @@ import RepositoryDetailsDialog from './repository-details-dialog.vue'
 import RepositoryPanelRow from './repository-panel-row.vue'
 import RepositoryRemoveDialog from './repository-remove-dialog.vue'
 import type { RepositoryAddRequest } from './types'
-import { OFFICIAL_EXTENSION_REPOSITORY_URL, type ExtensionRepositoryInfo } from '@shared/extension'
+import {
+  OFFICIAL_EXTENSION_REPOSITORY_NAME,
+  OFFICIAL_EXTENSION_REPOSITORY_URL,
+  type ExtensionRepositoryInfo
+} from '@shared/extension'
 
 const addDialogOpen = ref(false)
 const submitting = ref(false)
+const addingOfficialRepository = ref(false)
 const startingRefreshAll = ref(false)
 const busyRepositoryIds = ref(new Set<string>())
 const detailsDialogOpen = ref(false)
@@ -110,6 +115,25 @@ async function handleAddRepository(request: RepositoryAddRequest) {
     notify.error('添加仓库失败', err instanceof Error ? err.message : String(err))
   } finally {
     submitting.value = false
+  }
+}
+
+async function handleAddOfficialRepository() {
+  addingOfficialRepository.value = true
+  try {
+    await ipcManager
+      .invoke('extension:add-repository', {
+        url: OFFICIAL_EXTENSION_REPOSITORY_URL,
+        name: OFFICIAL_EXTENSION_REPOSITORY_NAME
+      })
+      .then(unwrapIpcData)
+
+    notify.success('官方仓库已添加')
+    refetch()
+  } catch (err) {
+    notify.error('添加官方仓库失败', err instanceof Error ? err.message : String(err))
+  } finally {
+    addingOfficialRepository.value = false
   }
 }
 
@@ -260,14 +284,19 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
         />
         刷新全部
       </Button>
-      <!-- Official repository publishing is not available yet. Keep this visible but inactive. -->
       <Button
         v-if="!hasOfficialRepository"
         variant="outline"
         size="sm"
-        disabled
+        :disabled="addingOfficialRepository"
+        @click="handleAddOfficialRepository"
       >
+        <Spinner
+          v-if="addingOfficialRepository"
+          class="size-4"
+        />
         <Icon
+          v-else
           icon="icon-[mdi--shield-plus-outline]"
           class="size-4"
         />
