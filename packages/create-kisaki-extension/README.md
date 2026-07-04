@@ -142,9 +142,10 @@ they write to, such as `WORKSPACE_PACKAGE_DESCRIPTION` or
 
 GitHub publishing requires `KISAKI_EXTENSION_SIGNING_KEY`. Generate the
 repository signing key from the workspace root with `pnpm run key:generate`,
-store `.keys/author.ed25519.json` as that secret, and push a commit named
-`publish(<extension-id>): v<semver>`; CI validates it and creates the
-`<extension-id>-v<semver>` tag.
+store `.keys/author.ed25519.json` as that secret, and push a publish tag named
+`<extension-id>-v<semver>` after the manifest version is committed. The
+workflow validates the tag against the extension manifest and can be rerun by
+moving the same tag to a corrected commit.
 
 ## Command Architecture
 

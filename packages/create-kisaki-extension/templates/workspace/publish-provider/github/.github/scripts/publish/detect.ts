@@ -1,25 +1,21 @@
-import { readCommand, writeGithubOutput } from './common'
+import { readRequiredEnv, writeGithubOutput } from './common'
 
-const PUBLISH_SUBJECT_PATTERN =
-  /^publish\(([a-z0-9][a-z0-9.-]*)\): v([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$/
+const PUBLISH_TAG_PATTERN = /^([a-z0-9][a-z0-9.-]*)-v([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$/
 
-const subject = readCommand('git', ['log', '-1', '--pretty=%s'])
-const match = PUBLISH_SUBJECT_PATTERN.exec(subject)
+const tag = readRequiredEnv('PUBLISH_TAG')
+const match = PUBLISH_TAG_PATTERN.exec(tag)
 
 if (!match) {
-  writeGithubOutput({ should_publish: false })
-  console.log('No extension publish commit detected.')
-  process.exit(0)
+  throw new Error(`Invalid publish tag "${tag}". Expected <extension-id>-v<semver>.`)
 }
 
 const extensionId = match[1]!
 const version = match[2]!
 
 writeGithubOutput({
-  should_publish: true,
   extension_id: extensionId,
   extension_dir: `extensions/${extensionId}`,
   version,
-  tag: `${extensionId}-v${version}`
+  tag
 })
-console.log(`Detected extension publish ${extensionId}@${version}.`)
+console.log(`Detected extension publish tag ${tag} (${extensionId}@${version}).`)

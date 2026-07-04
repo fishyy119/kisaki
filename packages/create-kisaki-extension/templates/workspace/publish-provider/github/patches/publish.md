@@ -1,15 +1,17 @@
-Publish an extension by updating its `manifest.json` and pushing a scoped
-publish commit from the repository root:
+Publish an extension by updating its `manifest.json`, committing the change,
+and pushing a scoped publish tag from the repository root:
 
 ```bash
-git commit -m "publish(<extension-id>): v0.0.1"
 git push origin main
+git tag <extension-id>-v0.0.1
+git push origin <extension-id>-v0.0.1
 ```
 
-The workflow validates the commit scope and manifest version, packages only
-the scoped extension, updates and validates `registry/manifest.json`, creates
-the GitHub Release tag `<extension-id>-v0.0.1`, and uploads the signed `.kisx`
-package without removing other extension packages.
+The workflow parses the tag, validates the matching manifest id and version,
+packages only the tagged extension source, updates and validates
+`registry/manifest.json`, and uploads the signed `.kisx` package to the
+GitHub Release for `<extension-id>-v0.0.1` without removing other extension
+packages.
 
 Optional release changelogs live under the extension directory. The workflow
 uses the default locale entry for GitHub Release notes and writes all locale
@@ -23,10 +25,17 @@ extensions/<extension-id>/changelogs/0.0.1/zh-Hans.md
 The first non-empty line is the changelog summary. The remaining Markdown is
 the changelog body.
 
-If a publish job fails before the GitHub Release step, fix the issue and rerun
-the job. If it fails after the GitHub Release step, rerun the same job; the
-workflow reuses the existing release, replaces its assets, and updates the
-registry from the latest `main`.
+If a publish job fails, fix the issue, move the same tag to the corrected
+commit, and push the tag again:
+
+```bash
+git tag -f <extension-id>-v0.0.1
+git push --force origin <extension-id>-v0.0.1
+```
+
+The workflow reuses the existing release, replaces its assets, and updates the
+registry from the latest `main`. You can also run the workflow manually and
+enter the publish tag.
 
 The workflow commits the updated registry manifest back to `main`. After a
 successful publish, pull or rebase before continuing local work:

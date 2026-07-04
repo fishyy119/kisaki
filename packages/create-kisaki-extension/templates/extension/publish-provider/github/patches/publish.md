@@ -1,17 +1,18 @@
 ## Publish With GitHub
 
 This extension lives in `extensions/{{EXTENSION_ID}}` and is published by the
-repository root workflow. Push a scoped publish commit:
+repository root workflow. Commit the manifest update, then push a publish tag:
 
 ```bash
-git commit -m "publish({{EXTENSION_ID}}): v0.0.1"
 git push origin main
+git tag {{EXTENSION_ID}}-v0.0.1
+git push origin {{EXTENSION_ID}}-v0.0.1
 ```
 
-The workflow validates this extension's manifest id and version, packages only
-this extension, updates and validates the shared `registry/manifest.json`,
-creates tag `{{EXTENSION_ID}}-v0.0.1` with its GitHub Release, and uploads the
-signed `.kisx` package.
+The workflow parses the tag, validates this extension's manifest id and
+version, packages only the tagged source, updates and validates the shared
+`registry/manifest.json`, and uploads the signed `.kisx` package to the
+GitHub Release for `{{EXTENSION_ID}}-v0.0.1`.
 
 Optional release changelogs live in this extension directory:
 
@@ -23,10 +24,17 @@ extensions/{{EXTENSION_ID}}/changelogs/0.0.1/zh-Hans.md
 The first non-empty line is the changelog summary. The remaining Markdown is
 the changelog body.
 
-If a publish job fails before the GitHub Release step, fix the issue and rerun
-the job. If it fails after the GitHub Release step, rerun the same job; the
-workflow reuses the existing release, replaces its assets, and updates the
-registry from the latest `main`.
+If a publish job fails, fix the issue, move the same tag to the corrected
+commit, and push the tag again:
+
+```bash
+git tag -f {{EXTENSION_ID}}-v0.0.1
+git push --force origin {{EXTENSION_ID}}-v0.0.1
+```
+
+The workflow reuses the existing release, replaces its assets, and updates the
+registry from the latest `main`. You can also run the workflow manually and
+enter the publish tag.
 
 The workflow requires the repository signing-key secret. Generate it from the
 workspace root with `pnpm run key:generate`, then store the entire

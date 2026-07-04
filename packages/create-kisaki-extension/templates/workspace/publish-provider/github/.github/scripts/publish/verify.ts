@@ -12,7 +12,6 @@ const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
 const extensionDir = resolveWorkspacePath(readRequiredEnv('PUBLISH_EXTENSION_DIR'))
 const version = readRequiredEnv('PUBLISH_VERSION')
 const tag = readRequiredEnv('PUBLISH_TAG')
-const commitSha = readRequiredEnv('GITHUB_SHA')
 const manifestPath = `${extensionDir}/manifest.json`
 
 ensureFile(manifestPath)
@@ -33,9 +32,12 @@ if (manifestVersion !== version) {
 
 if (commandSucceeds('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`])) {
   const tagSha = readCommand('git', ['rev-list', '-n', '1', tag])
-  if (tagSha !== commitSha) {
-    throw new Error(`Tag ${tag} points to ${tagSha}, expected ${commitSha}.`)
+  const headSha = readCommand('git', ['rev-parse', 'HEAD'])
+  if (tagSha !== headSha) {
+    throw new Error(`Tag ${tag} points to ${tagSha}, but checkout is ${headSha}.`)
   }
+} else {
+  throw new Error(`Publish tag does not exist: ${tag}.`)
 }
 
 console.log(`Verified publish metadata for ${extensionId}@${version}.`)

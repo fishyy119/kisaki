@@ -2,7 +2,14 @@ name: Publish Extension
 
 on:
   push:
-    branches: [main]
+    tags:
+      - '*-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Publish tag to build, such as my.extension-v0.0.1.'
+        required: true
+        type: string
 
 concurrency:
   group: publish-extension-registry-${{ github.repository }}
@@ -17,11 +24,10 @@ env:
 
 jobs:
   detect:
-    name: Detect Publish
+    name: Read Publish Tag
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      should_publish: ${{ steps.parse.outputs.should_publish }}
       extension_id: ${{ steps.parse.outputs.extension_id }}
       extension_dir: ${{ steps.parse.outputs.extension_dir }}
       version: ${{ steps.parse.outputs.version }}
@@ -47,14 +53,15 @@ jobs:
       - name: Typecheck workflow scripts
         run: pnpm exec tsc --noEmit -p tsconfig.json
 
-      - name: Parse publish commit
+      - name: Parse publish tag
         id: parse
+        env:
+          PUBLISH_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: pnpm exec tsx .github/scripts/publish/detect.ts
 
   publish:
     name: Publish Extension
     needs: detect
-    if: needs.detect.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -62,6 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ needs.detect.outputs.tag }}
           fetch-depth: 0
           persist-credentials: true
 
