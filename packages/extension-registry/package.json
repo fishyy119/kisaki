@@ -1,6 +1,6 @@
 {
   "name": "@kisaki3/extension-registry",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Distributed registry contracts and tooling for Kisaki extensions",
   "repository": {
     "type": "git",

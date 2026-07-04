@@ -1,6 +1,6 @@
 {
   "name": "@kisaki3/extension-cli",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "CLI tools for Kisaki extension development",
   "repository": {
     "type": "git",
