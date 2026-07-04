@@ -16,7 +16,7 @@ Use the package root for browser-safe registry types and helpers. Use
   prerelease prefix checks.
 - Artifact signature payload helpers.
 
-Release `engines.kisaki` values are Kisaki Extension API version ranges. Registry
+Release `engines.kisakiExtensionApi` values are Kisaki Extension API version ranges. Registry
 catalog compatibility must compare the current `@kisaki3/extension-api` version
 against that range, not the desktop application product version.
 

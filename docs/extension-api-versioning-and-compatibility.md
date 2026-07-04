@@ -2,13 +2,13 @@
 
 本文定义 Kisaki 扩展 API、扩展工具链、扩展清单、注册表和主应用之间的版本关系与兼容策略。
 
-本设计不考虑向后兼容：现有 `engines.kisaki` 语义、当前 `>=` 兼容判断、脚手架默认范围、注册表候选过滤和安装校验都可以按本文目标直接调整，不保留旧判断、兼容别名或双轨过渡。
+本设计不考虑向后兼容：现有兼容声明语义、当前 `>=` 兼容判断、脚手架默认范围、注册表候选过滤和安装校验都可以按本文目标直接调整，不保留旧判断、兼容别名或双轨过渡。
 
 ## 核心结论
 
 Kisaki 扩展兼容性以扩展 API 版本为准，不以主应用产品版本为准。
 
-`engines.kisaki` 保留为扩展清单中的兼容声明字段，但它的语义是：
+`engines.kisakiExtensionApi` 作为扩展清单中的兼容声明字段，它的语义是：
 
 ```text
 扩展要求的 Kisaki Extension API 版本范围
@@ -20,7 +20,7 @@ Kisaki 扩展兼容性以扩展 API 版本为准，不以主应用产品版本�
 扩展要求的 Kisaki 桌面应用产品版本范围
 ```
 
-官方只承诺版本号语义下的 API 契约兼容。实际某个扩展能运行的版本范围可以比官方承诺更宽，但这部分由扩展作者自行判断、测试、声明和适配。宿主只相信扩展 `manifest.json` 中的 `engines.kisaki`，不替扩展作者推断兼容范围。
+官方只承诺版本号语义下的 API 契约兼容。实际某个扩展能运行的版本范围可以比官方承诺更宽，但这部分由扩展作者自行判断、测试、声明和适配。宿主只相信扩展 `manifest.json` 中的 `engines.kisakiExtensionApi`，不替扩展作者推断兼容范围。
 
 一句话规则：
 
@@ -32,7 +32,7 @@ Kisaki 扩展兼容性以扩展 API 版本为准，不以主应用产品版本�
 
 - 将扩展 API 版本从 Kisaki 主应用版本中彻底独立出来。
 - 明确 API 版本、主应用版本、工具链版本、扩展版本、注册表 schema 版本和 RPC 协议版本的边界。
-- 让兼容判断只依赖 `@kisaki3/extension-api` 版本和 `engines.kisaki` 范围。
+- 让兼容判断只依赖 `@kisaki3/extension-api` 版本和 `engines.kisakiExtensionApi` 范围。
 - 建立统一的实验版、预发布版、候选版和稳定版策略。
 - 允许扩展作者声明比官方承诺更宽的实际支持范围。
 - 让 CLI、脚手架、注册表、安装校验、发现目录和运行时暴露同一套版本语义。
@@ -42,7 +42,7 @@ Kisaki 扩展兼容性以扩展 API 版本为准，不以主应用产品版本�
 - 不承诺任意具体扩展在某个主应用版本上一定可运行。
 - 不让主应用产品版本参与扩展兼容判断。
 - 不通过宿主静态分析扩展代码来推断兼容范围。
-- 不为旧 `engines.kisaki` 产品版本语义提供迁移或兼容逻辑。
+- 不为旧产品版本语义提供迁移或兼容逻辑。
 - 不把 registry `schemaVersion`、RPC protocol version 或扩展自身版本混入 API 兼容策略。
 
 ## 版本边界
@@ -119,14 +119,14 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 
 ## 事实源
 
-| 事项                  | 事实源                                | 说明                       |
-| --------------------- | ------------------------------------- | -------------------------- |
-| 当前扩展 API 版本     | `packages/extension-api/package.json` | 唯一官方事实源             |
-| 运行时暴露的 API 版本 | `EXTENSION_API_VERSION`               | 由 API 包版本生成或校验    |
-| 扩展要求的 API 范围   | `manifest.json` 的 `engines.kisaki`   | 扩展作者事实源             |
-| 主应用产品版本        | `apps/desktop/package.json`           | 不参与扩展兼容             |
-| 注册表 schema         | `schemaVersion`                       | 只约束 repository manifest |
-| RPC 内部协议          | `EXTENSION_RPC_PROTOCOL_VERSION`      | 只约束 main/host 握手      |
+| 事项                  | 事实源                                          | 说明                       |
+| --------------------- | ----------------------------------------------- | -------------------------- |
+| 当前扩展 API 版本     | `packages/extension-api/package.json`           | 唯一官方事实源             |
+| 运行时暴露的 API 版本 | `EXTENSION_API_VERSION`                         | 由 API 包版本生成或校验    |
+| 扩展要求的 API 范围   | `manifest.json` 的 `engines.kisakiExtensionApi` | 扩展作者事实源             |
+| 主应用产品版本        | `apps/desktop/package.json`                     | 不参与扩展兼容             |
+| 注册表 schema         | `schemaVersion`                                 | 只约束 repository manifest |
+| RPC 内部协议          | `EXTENSION_RPC_PROTOCOL_VERSION`                | 只约束 main/host 握手      |
 
 ## 官方兼容承诺
 
@@ -147,13 +147,13 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 
 ### 总表
 
-| API 版本形态    | 阶段     | 官方兼容承诺    | 官方推荐 `engines.kisaki` | 推荐 dist-tag |
-| --------------- | -------- | --------------- | ------------------------- | ------------- |
-| `0.y.z`         | 早期开发 | 只承诺严格等于  | `=0.y.z`                  | `latest`      |
-| `N.M.P-alpha.n` | 实验线   | 只承诺严格等于  | `=N.M.P-alpha.n`          | `alpha`       |
-| `N.M.P-beta.n`  | 验证线   | 只承诺严格等于  | `=N.M.P-beta.n`           | `beta`        |
-| `N.M.P-rc.n`    | 候选线   | rc 内部向后兼容 | `>=N.M.P-rc.1 <N.M.P`     | `rc`          |
-| `N.M.P`         | 稳定线   | 严格 SemVer     | `^N.M.P`                  | `latest`      |
+| API 版本形态    | 阶段     | 官方兼容承诺    | 官方推荐 `engines.kisakiExtensionApi` | 推荐 dist-tag |
+| --------------- | -------- | --------------- | ------------------------------------- | ------------- |
+| `0.y.z`         | 早期开发 | 只承诺严格等于  | `=0.y.z`                              | `latest`      |
+| `N.M.P-alpha.n` | 实验线   | 只承诺严格等于  | `=N.M.P-alpha.n`                      | `alpha`       |
+| `N.M.P-beta.n`  | 验证线   | 只承诺严格等于  | `=N.M.P-beta.n`                       | `beta`        |
+| `N.M.P-rc.n`    | 候选线   | rc 内部向后兼容 | `>=N.M.P-rc.1 <N.M.P`                 | `rc`          |
+| `N.M.P`         | 稳定线   | 严格 SemVer     | `^N.M.P`                              | `latest`      |
 
 `N.M.P` 是目标稳定版本。对于破坏性大版本，目标通常是 `N.0.0`，例如 `2.0.0-alpha.1`、`2.0.0-beta.1`、`2.0.0-rc.1`、`2.0.0`。
 
@@ -176,7 +176,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": "=0.4.0"
+    "kisakiExtensionApi": "=0.4.0"
   }
 }
 ```
@@ -199,7 +199,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": "=2.0.0-alpha.3"
+    "kisakiExtensionApi": "=2.0.0-alpha.3"
   }
 }
 ```
@@ -220,7 +220,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": "=2.0.0-beta.2"
+    "kisakiExtensionApi": "=2.0.0-beta.2"
   }
 }
 ```
@@ -241,7 +241,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": ">=2.0.0-rc.1 <2.0.0"
+    "kisakiExtensionApi": ">=2.0.0-rc.1 <2.0.0"
   }
 }
 ```
@@ -264,7 +264,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": "^2.0.0"
+    "kisakiExtensionApi": "^2.0.0"
   }
 }
 ```
@@ -280,7 +280,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": "^2.1.0"
+    "kisakiExtensionApi": "^2.1.0"
   }
 }
 ```
@@ -290,7 +290,7 @@ CLI、SDK、UI kit、registry tooling 和脚手架可以因为自身修复导致
 ```json
 {
   "engines": {
-    "kisaki": ">=2.1.0 <4.0.0"
+    "kisakiExtensionApi": ">=2.1.0 <4.0.0"
   }
 }
 ```
@@ -310,16 +310,16 @@ if (semver.satisfies(info.apiVersion, '^2.1.0')) {
 宿主不检查这些分支是否存在，也不检查扩展是否真正适配。宿主只做一件事：
 
 ```ts
-semver.satisfies(currentApiVersion, manifest.engines.kisaki)
+semver.satisfies(currentApiVersion, manifest.engines.kisakiExtensionApi)
 ```
 
-## `engines.kisaki` 规则
+## `engines.kisakiExtensionApi` 规则
 
-`engines.kisaki` 必须是 semver range。
+`engines.kisakiExtensionApi` 必须是 semver range。
 
 硬规则：
 
-- 字段名继续使用 `engines.kisaki`。
+- 字段名为 `engines.kisakiExtensionApi`。
 - 字段值必须能被 `semver.validRange(...)` 接受。
 - 安装、发现、更新和本地包加载都必须使用当前 Extension API 版本做判断。
 - 不允许再用 `app.getVersion()` 判断扩展兼容。
@@ -347,13 +347,15 @@ semver.satisfies(currentApiVersion, manifest.engines.kisaki)
 推荐实现形态：
 
 ```ts
-semver.satisfies(apiVersion, enginesKisakiRange)
+semver.satisfies(apiVersion, enginesKisakiExtensionApiExtensionApiRange)
 ```
 
 不要写：
 
 ```ts
-semver.satisfies(apiVersion, enginesKisakiRange, { includePrerelease: true })
+semver.satisfies(apiVersion, enginesKisakiExtensionApiExtensionApiRange, {
+  includePrerelease: true
+})
 ```
 
 ## 工具链策略
@@ -395,7 +397,7 @@ semver.satisfies(apiVersion, enginesKisakiRange, { includePrerelease: true })
 
 `kisx validate` 应做两层检查：
 
-- 错误：`engines.kisaki` 缺失、不是合法 semver range，或包发布时 manifest 与 registry release 不一致。
+- 错误：`engines.kisakiExtensionApi` 缺失、不是合法 semver range，或包发布时 manifest 与 registry release 不一致。
 - 警告：范围超出官方推荐承诺，例如 alpha/beta 使用跨版本范围、stable 使用无上界 `>=`。
 
 警告不阻止扩展作者声明更宽实际支持范围。
@@ -418,7 +420,7 @@ semver.satisfies(apiVersion, enginesKisakiRange, { includePrerelease: true })
 
 ```text
 currentApiVersion = EXTENSION_API_VERSION
-requiredRange = manifest.engines.kisaki 或 registry release engines.kisaki
+requiredRange = manifest.engines.kisakiExtensionApi 或 registry release engines.kisakiExtensionApi
 ```
 
 判断规则：
@@ -431,7 +433,7 @@ semver.satisfies(currentApiVersion, requiredRange)
 
 ## 注册表策略
 
-Registry release 的 `engines.kisaki` 与扩展包 manifest 的 `engines.kisaki` 必须一致。
+Registry release 的 `engines.kisakiExtensionApi` 与扩展包 manifest 的 `engines.kisakiExtensionApi` 必须一致。
 
 原因：
 
@@ -442,7 +444,7 @@ Registry release 的 `engines.kisaki` 与扩展包 manifest 的 `engines.kisaki`
 注册表兼容判断使用 API 版本：
 
 ```text
-release.compatible = semver.satisfies(currentApiVersion, release.engines.kisaki)
+release.compatible = semver.satisfies(currentApiVersion, release.engines.kisakiExtensionApi)
 ```
 
 Registry 不根据主应用版本过滤扩展。
@@ -452,7 +454,7 @@ Registry 不根据主应用版本过滤扩展。
 扩展更新选择需要同时考虑两个维度：
 
 - 扩展包版本是否更新。
-- 候选 release 的 `engines.kisaki` 是否满足当前 API 版本。
+- 候选 release 的 `engines.kisakiExtensionApi` 是否满足当前 API 版本。
 
 扩展包的 stable/preview release kind 与 Extension API 的 stable/prerelease 版本阶段是两个概念，不应混淆。
 
@@ -463,7 +465,7 @@ Registry 不根据主应用版本过滤扩展。
 - 是否接收扩展包 preview release 由扩展安装状态或用户更新策略决定。
 - 如果主应用内置的是 prerelease API，只有显式声明匹配该 API prerelease 的扩展才会被视为兼容。
 
-宿主不得因为“看起来可能兼容”而安装 `engines.kisaki` 不满足的 release。
+宿主不得因为“看起来可能兼容”而安装 `engines.kisakiExtensionApi` 不满足的 release。
 
 ## Changelog 策略
 
@@ -556,7 +558,7 @@ interface RuntimeInfo {
 
 兼容判断不是安全授权。
 
-即使 `engines.kisaki` 满足当前 API 版本，宿主仍必须执行：
+即使 `engines.kisakiExtensionApi` 满足当前 API 版本，宿主仍必须执行：
 
 - 包路径限制。
 - `.kisx` sha256 校验。
@@ -574,7 +576,7 @@ API 兼容只回答“这个扩展声明的 API 范围是否包含当前宿主 A
 
 - `Kisaki Extension API version`
 - `扩展 API 版本`
-- `engines.kisaki`
+- `engines.kisakiExtensionApi`
 - `API compatibility range`
 - `API 兼容范围`
 
@@ -584,7 +586,7 @@ API 兼容只回答“这个扩展声明的 API 范围是否包含当前宿主 A
 - `当前扩展 API：2.1.0`
 - `不兼容当前扩展 API`
 
-不要把 `engines.kisaki` 展示成“需要 Kisaki 版本”，避免用户误以为它比较的是桌面应用版本。
+不要把 `engines.kisakiExtensionApi` 展示成“需要 Kisaki 版本”，避免用户误以为它比较的是桌面应用版本。
 
 ## 实施要求
 
@@ -593,11 +595,11 @@ API 兼容只回答“这个扩展声明的 API 范围是否包含当前宿主 A
 - `ExtensionManifestEngines.kisaki` 保留。
 - schema description 改为 Extension API version range。
 - manifest README 示例不再使用裸 `>=`。
-- registry release `engines.kisaki` 说明改为 Extension API version range。
+- registry release `engines.kisakiExtensionApi` 说明改为 Extension API version range。
 
 ### Main Process
 
-- 替换所有 `semver.satisfies(app.getVersion(), engines.kisaki)`。
+- 替换所有 `semver.satisfies(app.getVersion(), engines.kisakiExtensionApi)`。
 - catalog aggregation 使用 `EXTENSION_API_VERSION`。
 - install candidate selection 使用 `EXTENSION_API_VERSION`。
 - archive/package verifier 使用 `EXTENSION_API_VERSION`。
@@ -616,7 +618,7 @@ API 兼容只回答“这个扩展声明的 API 范围是否包含当前宿主 A
 - `packages/extension-api/README.md` 更新 manifest 语义。
 - `packages/extension-cli/README.md` 更新签名和 registry 发布说明。
 - 扩展作者文档增加版本阶段和推荐 range 表。
-- 用户界面文案避免把 `engines.kisaki` 说成主应用版本。
+- 用户界面文案避免把 `engines.kisakiExtensionApi` 说成主应用版本。
 
 ## 验收搜索
 
@@ -661,7 +663,7 @@ pnpm --filter @kisaki3/extension-api lint
 
 1. 主应用版本是产品版本，不是扩展 API 版本。
 2. `@kisaki3/extension-api` 包版本是扩展 API 版本事实源。
-3. `engines.kisaki` 是扩展作者声明的 Extension API range。
+3. `engines.kisakiExtensionApi` 是扩展作者声明的 Extension API range。
 4. 官方兼容策略是保守承诺，不是运行上限。
 5. 扩展作者可以声明更宽范围，但风险和适配逻辑归扩展作者。
 6. `0.y.z`、alpha、beta 只承诺严格等于。

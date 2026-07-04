@@ -143,7 +143,7 @@ export function isReleaseCompatible(
   release: Pick<ExtensionRegistryRelease, 'engines'>,
   apiVersion: string
 ): boolean {
-  return semver.satisfies(apiVersion, release.engines.kisaki)
+  return semver.satisfies(apiVersion, release.engines.kisakiExtensionApi)
 }
 
 function compareBooleans(left: boolean, right: boolean): number {

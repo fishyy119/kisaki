@@ -70,9 +70,9 @@
     "engines": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kisaki"],
+      "required": ["kisakiExtensionApi"],
       "properties": {
-        "kisaki": {
+        "kisakiExtensionApi": {
           "type": "string",
           "minLength": 1,
           "pattern": "^(?=.*\\S)[0-9A-Za-zvVxX*~^<>=|.\\-+\\s]+$",

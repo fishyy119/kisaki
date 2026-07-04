@@ -326,7 +326,7 @@ function diagnosticSeverityClass(severity: string): string {
               </div>
               <div class="min-w-0">
                 <dt class="text-muted-foreground">扩展 API</dt>
-                <dd>{{ repositorySource.snapshot.release.engines.kisaki }}</dd>
+                <dd>{{ repositorySource.snapshot.release.engines.kisakiExtensionApi }}</dd>
               </div>
             </template>
             <template v-else-if="localFileSource">

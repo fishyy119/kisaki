@@ -63,7 +63,7 @@ const RELEASE_KEYS = new Set([
   'yanked',
   'artifacts'
 ])
-const RELEASE_ENGINES_KEYS = new Set(['kisaki'])
+const RELEASE_ENGINES_KEYS = new Set(['kisakiExtensionApi'])
 const LOCALIZED_DOCUMENT_SET_KEYS = new Set(['defaultLocale', 'locales'])
 const LOCALIZED_DOCUMENT_KEYS = new Set(['summary', 'body'])
 const YANK_KEYS = new Set(['at', 'reason'])
@@ -192,10 +192,10 @@ export function validateExtensionRegistryManifestSemver(
         })
       }
 
-      if (!semver.validRange(release.engines.kisaki)) {
+      if (!semver.validRange(release.engines.kisakiExtensionApi)) {
         issues.push({
-          path: `${releasePath}.engines.kisaki`,
-          message: 'engines.kisaki must be a valid Extension API semver range.'
+          path: `${releasePath}.engines.kisakiExtensionApi`,
+          message: 'engines.kisakiExtensionApi must be a valid Extension API semver range.'
         })
       }
     }
@@ -465,10 +465,10 @@ function validateReleaseEngines(value: unknown, path: string): ValidationIssue[]
       path,
       'Unknown release engines field.'
     ),
-    ...validateRequiredString(value.kisaki, `${path}.kisaki`, {
+    ...validateRequiredString(value.kisakiExtensionApi, `${path}.kisakiExtensionApi`, {
       minLength: 1,
       trim: true,
-      valueMessage: 'engines.kisaki must be a non-empty string.'
+      valueMessage: 'engines.kisakiExtensionApi must be a non-empty string.'
     })
   )
 

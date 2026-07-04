@@ -263,9 +263,9 @@
     "releaseEngines": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kisaki"],
+      "required": ["kisakiExtensionApi"],
       "properties": {
-        "kisaki": {
+        "kisakiExtensionApi": {
           "$ref": "#/$defs/semverRange"
         }
       }

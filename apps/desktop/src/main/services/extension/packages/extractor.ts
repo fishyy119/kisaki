@@ -67,8 +67,9 @@ export class ExtensionPackageExtractor {
           extensionId: input.expectedIdentity?.extensionId ?? input.registryPackage?.id,
           version: input.expectedIdentity?.version ?? input.registryRelease?.version,
           categories: input.expectedIdentity?.categories ?? input.registryPackage?.categories,
-          enginesKisaki:
-            input.expectedIdentity?.enginesKisaki ?? input.registryRelease?.engines.kisaki
+          enginesKisakiExtensionApi:
+            input.expectedIdentity?.enginesKisakiExtensionApi ??
+            input.registryRelease?.engines.kisakiExtensionApi
         }
       })
 

@@ -18,7 +18,7 @@ export const EXTENSION_ENTRY_FILE_EXTENSIONS = ['.mjs', '.cjs'] as const
 export type ExtensionEntryFileExtension = (typeof EXTENSION_ENTRY_FILE_EXTENSIONS)[number]
 
 export interface ExtensionManifestEngines {
-  kisaki: string
+  kisakiExtensionApi: string
 }
 
 export interface ExtensionManifest {
@@ -191,8 +191,9 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
   const engines = value.engines
   if (engines === undefined) {
     issues.push({
-      path: '$.engines.kisaki',
-      message: 'engines.kisaki is required and must declare an Extension API version range.'
+      path: '$.engines.kisakiExtensionApi',
+      message:
+        'engines.kisakiExtensionApi is required and must declare an Extension API version range.'
     })
   } else if (!isPlainObject(engines)) {
     issues.push({
@@ -201,7 +202,7 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
     })
   } else {
     for (const key of Object.keys(engines)) {
-      if (key !== 'kisaki') {
+      if (key !== 'kisakiExtensionApi') {
         issues.push({
           path: `$.engines.${key}`,
           message: 'Unknown engines field.'
@@ -210,10 +211,10 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
     }
 
     issues.push(
-      ...validateRequiredString(engines.kisaki, '$.engines.kisaki', {
+      ...validateRequiredString(engines.kisakiExtensionApi, '$.engines.kisakiExtensionApi', {
         minLength: 1,
-        typeMessage: 'engines.kisaki must be a string.',
-        valueMessage: 'engines.kisaki must be a non-empty Extension API range.'
+        typeMessage: 'engines.kisakiExtensionApi must be a string.',
+        valueMessage: 'engines.kisakiExtensionApi must be a non-empty Extension API range.'
       })
     )
   }
@@ -306,10 +307,10 @@ export function validateExtensionManifestSemver(
     })
   }
 
-  if (!semver.validRange(manifest.engines.kisaki)) {
+  if (!semver.validRange(manifest.engines.kisakiExtensionApi)) {
     issues.push({
-      path: '$.engines.kisaki',
-      message: 'engines.kisaki must be a valid Extension API semver range.'
+      path: '$.engines.kisakiExtensionApi',
+      message: 'engines.kisakiExtensionApi must be a valid Extension API semver range.'
     })
   }
 

@@ -398,7 +398,7 @@ function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): st
           releaseKind: plan.release.releaseKind,
           publishedAt: plan.release.publishedAt,
           engines: {
-            kisaki: plan.release.engines.kisaki
+            kisakiExtensionApi: plan.release.engines.kisakiExtensionApi
           },
           releasePage: plan.release.releasePage ?? null,
           changelog: plan.release.changelog ?? null,

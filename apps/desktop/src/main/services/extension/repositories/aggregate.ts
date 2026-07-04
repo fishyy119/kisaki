@@ -213,7 +213,7 @@ function toReleaseInfo(input: {
     releasePage: input.release.releasePage,
     changelog: input.release.changelog,
     yanked: input.release.yanked !== undefined,
-    compatible: semver.satisfies(input.apiVersion, input.release.engines.kisaki),
+    compatible: semver.satisfies(input.apiVersion, input.release.engines.kisakiExtensionApi),
     repositoryCount: 1,
     repositoryId: source.repositoryId,
     repositoryName: source.repositoryName,

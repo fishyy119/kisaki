@@ -11,6 +11,6 @@
   "homepage": "https://bgm.tv",
   "keywords": ["bangumi", "scraper", "game", "anime", "book", "music"],
   "engines": {
-    "kisaki": "=0.0.2"
+    "kisakiExtensionApi": "=0.0.7"
   }
 }

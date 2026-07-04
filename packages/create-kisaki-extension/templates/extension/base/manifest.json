@@ -8,6 +8,6 @@
   "description": "{{EXTENSION_MANIFEST_DESCRIPTION}}",
   "author": "{{EXTENSION_MANIFEST_AUTHOR}}",
   "engines": {
-    "kisaki": "{{EXTENSION_MANIFEST_KISAKI_ENGINE_RANGE}}"
+    "kisakiExtensionApi": "{{EXTENSION_MANIFEST_KISAKI_EXTENSION_API_RANGE}}"
   }
 }

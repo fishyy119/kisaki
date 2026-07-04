@@ -56,17 +56,18 @@ export async function validateManifest(
 
   const manifest = parsed.manifest
 
-  const kisakiApiRange = manifest.engines.kisaki.trim()
-  if (!kisakiApiRange) {
+  const kisakiExtensionApiRange = manifest.engines.kisakiExtensionApi.trim()
+  if (!kisakiExtensionApiRange) {
     errors.push({
-      path: '$.engines.kisaki',
-      message: 'engines.kisaki is required and must declare an Extension API version range.'
+      path: '$.engines.kisakiExtensionApi',
+      message:
+        'engines.kisakiExtensionApi is required and must declare an Extension API version range.'
     })
   } else {
     const recommendedRange = getRecommendedExtensionApiRange(EXTENSION_API_VERSION)
-    if (!semver.subset(kisakiApiRange, recommendedRange, { includePrerelease: true })) {
+    if (!semver.subset(kisakiExtensionApiRange, recommendedRange, { includePrerelease: true })) {
       warnings.push({
-        path: '$.engines.kisaki',
+        path: '$.engines.kisakiExtensionApi',
         message: `Range extends beyond the official Extension API compatibility recommendation for ${EXTENSION_API_VERSION}; recommended range is ${recommendedRange}.`
       })
     }

@@ -269,12 +269,12 @@ function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistry
 function parseReleaseEngines(
   value: Record<string, unknown>
 ): ExtensionRegistryRelease['engines'] | null {
-  if (!isNonEmptyString(value.kisaki)) {
+  if (!isNonEmptyString(value.kisakiExtensionApi)) {
     return null
   }
 
   return {
-    kisaki: value.kisaki
+    kisakiExtensionApi: value.kisakiExtensionApi
   }
 }
 

@@ -36,16 +36,16 @@ export function createRegistryRelease(
   artifact: ExtensionRegistryArtifact,
   options: CreateRegistryReleaseOptions
 ): ExtensionRegistryRelease {
-  const kisakiRange = manifest.engines.kisaki.trim()
-  if (!kisakiRange) {
+  const kisakiExtensionApiRange = manifest.engines.kisakiExtensionApi.trim()
+  if (!kisakiExtensionApiRange) {
     throw new CliError(
-      'manifest.json must include engines.kisaki Extension API range before publishing a release.'
+      'manifest.json must include engines.kisakiExtensionApi before publishing a release.'
     )
   }
   return compactRegistryRelease({
     version: manifest.version,
     publishedAt: options.publishedAt ?? new Date().toISOString(),
-    engines: { kisaki: kisakiRange },
+    engines: { kisakiExtensionApi: kisakiExtensionApiRange },
     releasePage: options.releasePage,
     changelog: options.changelog,
     artifacts: [artifact]
@@ -132,9 +132,12 @@ function mergeRegistryRelease(input: {
   incoming: ExtensionRegistryRelease
   replace?: boolean
 }): ExtensionRegistryRelease {
-  if (input.existing.engines.kisaki.trim() !== input.incoming.engines.kisaki.trim()) {
+  if (
+    input.existing.engines.kisakiExtensionApi.trim() !==
+    input.incoming.engines.kisakiExtensionApi.trim()
+  ) {
     throw new CliError(
-      `${input.packageId}@${input.incoming.version} already exists with a different engines.kisaki range. Publish a new semver version.`
+      `${input.packageId}@${input.incoming.version} already exists with a different engines.kisakiExtensionApi range. Publish a new semver version.`
     )
   }
 

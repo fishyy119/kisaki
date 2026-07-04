@@ -56,7 +56,7 @@ export function createExtensionRegistryReleaseDigestPayload(
     packageId: registryPackage.id,
     version: release.version,
     engines: {
-      kisaki: release.engines.kisaki.trim()
+      kisakiExtensionApi: release.engines.kisakiExtensionApi.trim()
     },
     artifacts: artifacts.toSorted(compareReleaseDigestArtifacts)
   }

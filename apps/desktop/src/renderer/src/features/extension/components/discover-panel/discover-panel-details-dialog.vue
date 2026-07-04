@@ -255,7 +255,7 @@ function getReleaseChangelogBody(release: ExtensionCatalogReleaseInfo): string |
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <div>来源：{{ formatReleaseSourceCount(release) }}</div>
                   <div>发布时间：{{ formatDate(release.publishedAt) }}</div>
-                  <div>扩展 API：{{ release.engines.kisaki }}</div>
+                  <div>扩展 API：{{ release.engines.kisakiExtensionApi }}</div>
                   <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
                 </div>
 

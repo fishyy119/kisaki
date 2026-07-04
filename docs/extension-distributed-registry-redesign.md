@@ -156,7 +156,7 @@ packages/extension-registry/src/registry/integrity.ts
           "version": "1.2.0",
           "publishedAt": "2026-05-10T00:00:00.000Z",
           "engines": {
-            "kisaki": ">=0.0.3 <0.1.0"
+            "kisakiExtensionApi": ">=0.0.3 <0.1.0"
           },
           "changelog": {
             "text": "Improve matching and settings.",
@@ -207,12 +207,12 @@ Release：
 - `version` 必须是 semver，并且在同一 package 的 release 列表中唯一。`version` 是发布身份；beta、nightly、rc 等非稳定版本必须使用 semver prerelease 后缀，例如 `1.3.0-beta.1`、`1.3.0-nightly.4`。
 - release kind 不写入 manifest，而是由 `version` 派生：没有 prerelease 后缀的是 `stable`；带 prerelease 后缀的是 `preview`。
 - preview release 的 prerelease 前缀只允许 `alpha`、`beta`、`rc`、`nightly`。需要发布测试版、候选版或 nightly 时，必须发布新的 semver prerelease version。
-- `engines.kisaki` 必须是 semver range。
+- `engines.kisakiExtensionApi` 必须是 semver range。
 - `publishedAt` 必须是 ISO 8601 UTC 时间。
 - 缺省 `yanked` 表示该 release 可用于新安装和更新；存在时使用 `{ "at": "<ISO UTC>", "reason"?: "<text>" }`，表示该 release 已撤回，不再用于新安装和自动更新，但已安装版本仍可显示来源。
 - `artifacts` 至少包含一个 artifact；同一 release 内每个 `target` 只能出现一次。
 - release 在 manifest 中不需要人工维护 id；客户端使用规范化 release identity 的 `sha256` 作为 `releaseDigest`，并把它作为本地 `releaseId`。
-- `releaseDigest` 只标识可安装内容和安装策略相关身份，不标识仓库展示元数据。参与 digest 的字段固定为：`schemaVersion`、`packageId`、`version`、`engines.kisaki`、每个 artifact 的 `target`、`size`、`sha256`、签名算法、signer fingerprint 和 signature value。`repositoryId`、`repositoryUrl`、artifact `url`、`publishedAt`、`changelog`、`yanked`、package 展示字段不参与 digest。
+- `releaseDigest` 只标识可安装内容和安装策略相关身份，不标识仓库展示元数据。参与 digest 的字段固定为：`schemaVersion`、`packageId`、`version`、`engines.kisakiExtensionApi`、每个 artifact 的 `target`、`size`、`sha256`、签名算法、signer fingerprint 和 signature value。`repositoryId`、`repositoryUrl`、artifact `url`、`publishedAt`、`changelog`、`yanked`、package 展示字段不参与 digest。
 - 规范化 JSON 使用稳定规则：对象 key 按字典序排序，数组按协议语义排序；artifact 数组按 `target`、`sha256`、signer fingerprint 排序；所有字符串保留原值但去除协议明确要求去除的首尾空白；缺省可选字段不写入 canonical payload。
 
 Artifact：
@@ -233,7 +233,7 @@ Artifact：
   "extensionId": "bangumi",
   "version": "1.2.0",
   "engines": {
-    "kisaki": ">=0.0.3 <0.1.0"
+    "kisakiExtensionApi": ">=0.0.3 <0.1.0"
   },
   "target": "any",
   "size": 123456,
@@ -248,7 +248,7 @@ Artifact：
 候选 release 必须同时满足：
 
 - `release.yanked === undefined`，除非用户明确选择安装已撤回版本。
-- `semver.satisfies(EXTENSION_API_VERSION, release.engines.kisaki)`。
+- `semver.satisfies(EXTENSION_API_VERSION, release.engines.kisakiExtensionApi)`。
 - 存在与当前平台匹配的 artifact；优先精确平台，后退到 `any`。
 - artifact 完整性字段齐全。
 - release 所在仓库状态为 `enabled`。
@@ -337,7 +337,7 @@ export interface ExtensionSignerTrust {
 - `id` 必须完全一致。
 - `version` 必须完全一致。
 - `categories` 必须与 registry package 的 `categories` 作为集合完全一致；比较前去重并按字典序排序，数组原始顺序不参与判断。
-- `engines.kisaki` 必须与 registry release 中的 `engines.kisaki` 去除首尾空白后完全一致；v1 不做 semver range 子集判断。
+- `engines.kisakiExtensionApi` 必须与 registry release 中的 `engines.kisakiExtensionApi` 去除首尾空白后完全一致；v1 不做 semver range 子集判断。
 
 11. `entry` 文件必须存在；包内 manifest 声明了 `icon` 时，该 icon 文件必须存在。
 
@@ -635,7 +635,7 @@ registry/
 
 `@kisaki/extension-registry` 导出 browser-safe 的 registry manifest、artifact 类型、validation 和 artifact target 选择。`@kisaki/extension-registry/node` 导出依赖 `node:crypto` / `node:buffer` 的 digest、canonical JSON 和 signer fingerprint helper。`@kisaki/extension-api` 不再导出 registry 协议，避免 extension runtime API 与分发仓库工具耦合。
 
-`artifact.ts` 只处理 artifact 层职责：artifact target 类型、当前平台 target、精确 target 与 `any` 的优先级选择，以及 artifact signature payload 生成。artifact URL、size、sha256、signature 结构校验放在 `validation.ts`；release `engines.kisaki`、release kind 派生、yanked、pin、signer trust 和更新候选排序不放在这里。
+`artifact.ts` 只处理 artifact 层职责：artifact target 类型、当前平台 target、精确 target 与 `any` 的优先级选择，以及 artifact signature payload 生成。artifact URL、size、sha256、signature 结构校验放在 `validation.ts`；release `engines.kisakiExtensionApi`、release kind 派生、yanked、pin、signer trust 和更新候选排序不放在这里。
 
 `integrity.ts` 只处理协议级完整性标识：canonical JSON、release digest payload、release digest 和 signer fingerprint。它不负责下载校验、签名验签、signer trust 判断或安装安全决策。
 
@@ -1103,14 +1103,14 @@ kisx registry validate registry/manifest.json
 `registry add-release` 自动完成：
 
 - 读取 `.kisx` 内的 `manifest.json`。
-- 提取 `id`、`name`、`version`、`description`、`categories`、`keywords`、`engines.kisaki`。
+- 提取 `id`、`name`、`version`、`description`、`categories`、`keywords`、`engines.kisakiExtensionApi`。
 - 计算 `.kisx` 的 `sha256` 和 size。
 - 读取可选 signature，并把 public key 信息写入 `signingKeys`。
 - 如果 manifest 中没有该 package，则创建 package。
 - 如果 package 已存在且没有相同 version，则追加 release。
-- 如果同一 package 已存在相同 version，要求 `engines.kisaki` 与既有 release 完全一致；不同平台 artifact 可以追加到同一 release。
+- 如果同一 package 已存在相同 version，要求 `engines.kisakiExtensionApi` 与既有 release 完全一致；不同平台 artifact 可以追加到同一 release。
 - 如果同一 release 已存在相同 artifact target，默认拒绝，除非传 `--replace` 替换该 target 的 artifact。
-- 如果想发布 beta、nightly 或新的兼容范围，必须发布新的 semver version，而不是复用既有 version 更换 release kind 或 `engines.kisaki`。
+- 如果想发布 beta、nightly 或新的兼容范围，必须发布新的 semver version，而不是复用既有 version 更换 release kind 或 `engines.kisakiExtensionApi`。
 - 输出可部署的静态 `manifest.json`。
 
 CLI 输出：

@@ -37,7 +37,7 @@ A minimal runtime manifest:
   "entry": "./dist/index.mjs",
   "description": "Adds an example command.",
   "engines": {
-    "kisaki": "=0.0.1"
+    "kisakiExtensionApi": "=0.0.1"
   }
 }
 ```
@@ -48,14 +48,14 @@ Manifest rules:
 - `version` must be semver.
 - `categories` must use `scraper`, `tool`, `theme`, or `integration`.
 - `entry` and optional `icon` are package-relative paths inside the package root.
-- `engines.kisaki` is the Kisaki Extension API version range required by the
+- `engines.kisakiExtensionApi` is the Kisaki Extension API version range required by the
   extension. Registry publishing requires it.
 - Unknown manifest fields are rejected.
 
 For API `0.y.z`, alpha, and beta versions, the recommended range is an exact
 match such as `=0.0.1`. Stable API versions use caret ranges such as `^2.0.0`.
 
-Recommended `engines.kisaki` ranges:
+Recommended `engines.kisakiExtensionApi` ranges:
 
 | Extension API version | Recommended range     |
 | --------------------- | --------------------- |

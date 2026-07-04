@@ -73,7 +73,7 @@ export function createExtensionRegistryArtifactSignaturePayload(
     extensionId,
     version: release.version,
     engines: {
-      kisaki: release.engines.kisaki.trim()
+      kisakiExtensionApi: release.engines.kisakiExtensionApi.trim()
     },
     target: artifact.target,
     size: artifact.size,

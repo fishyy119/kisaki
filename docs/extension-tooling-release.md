@@ -46,7 +46,7 @@ The contract verifies:
 - internal workspace dependencies use `workspace:*`
 - `EXTENSION_API_VERSION` matches the tooling version
 - scaffold packages receive tooling dependencies through `{{KISAKI_TOOLING_VERSION}}`
-- extension scaffold manifests derive their `engines.kisaki` default from the current Extension API
+- extension scaffold manifests derive their `engines.kisakiExtensionApi` default from the current Extension API
   version
 
 ## Canonical Tarballs

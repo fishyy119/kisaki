@@ -62,7 +62,7 @@ export interface ExtensionPackageExpectedIdentity {
   extensionId?: string
   version?: string
   categories?: readonly ExtensionCategory[]
-  enginesKisaki?: string
+  enginesKisakiExtensionApi?: string
 }
 
 export interface VerifyExtensionPackageArchiveInput {
@@ -72,7 +72,7 @@ export interface VerifyExtensionPackageArchiveInput {
   registryPackage?: Pick<ExtensionRegistryPackage, 'id' | 'categories'>
   registryRelease?: Pick<ExtensionRegistryRelease, 'version' | 'engines'>
   signingKeys?: readonly ExtensionRegistrySigningKey[]
-  allowIncompatibleKisaki?: boolean
+  allowIncompatibleExtensionApi?: boolean
   signal?: AbortSignal
 }
 
@@ -119,13 +119,14 @@ export class ExtensionPackageVerifier {
         extensionId: input.expectedIdentity?.extensionId ?? input.registryPackage?.id,
         version: input.expectedIdentity?.version ?? input.registryRelease?.version,
         categories: input.expectedIdentity?.categories ?? input.registryPackage?.categories,
-        enginesKisaki:
-          input.expectedIdentity?.enginesKisaki ?? input.registryRelease?.engines.kisaki
+        enginesKisakiExtensionApi:
+          input.expectedIdentity?.enginesKisakiExtensionApi ??
+          input.registryRelease?.engines.kisakiExtensionApi
       })
 
-      if (!input.allowIncompatibleKisaki) {
-        verifyKisakiCompatibility(archiveInfo.manifest.engines.kisaki)
-        verifyKisakiCompatibility(input.registryRelease?.engines.kisaki)
+      if (!input.allowIncompatibleExtensionApi) {
+        verifyExtensionApiCompatibility(archiveInfo.manifest.engines.kisakiExtensionApi)
+        verifyExtensionApiCompatibility(input.registryRelease?.engines.kisakiExtensionApi)
       }
 
       const signature = input.expectedArtifact?.signature
@@ -164,7 +165,7 @@ export class ExtensionPackageVerifier {
       }
 
       verifyManifestIdentity(parsed.manifest, input.expectedIdentity)
-      verifyKisakiCompatibility(parsed.manifest.engines.kisaki)
+      verifyExtensionApiCompatibility(parsed.manifest.engines.kisakiExtensionApi)
 
       const issues = await validateInstalledExtensionPackage(input.packageDir, parsed.manifest)
       if (issues.length > 0) {
@@ -375,14 +376,14 @@ function verifyManifestIdentity(
   }
 
   if (
-    expected.enginesKisaki !== undefined &&
-    manifest.engines.kisaki.trim() !== expected.enginesKisaki.trim()
+    expected.enginesKisakiExtensionApi !== undefined &&
+    manifest.engines.kisakiExtensionApi.trim() !== expected.enginesKisakiExtensionApi.trim()
   ) {
-    throw new Error('Package engines.kisaki does not match the registry release.')
+    throw new Error('Package engines.kisakiExtensionApi does not match the registry release.')
   }
 }
 
-function verifyKisakiCompatibility(range: string | undefined): void {
+function verifyExtensionApiCompatibility(range: string | undefined): void {
   if (!range) {
     return
   }

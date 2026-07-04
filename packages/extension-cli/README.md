@@ -41,7 +41,7 @@ kisx dev
 ```
 
 - `kisx validate` checks the manifest, required project files, and
-  `engines.kisaki` Extension API compatibility range.
+  `engines.kisakiExtensionApi` Extension API compatibility range.
 - `--project <dir>` is a global option shared by every project-bound command.
 - `kisx build` validates, builds the host entry and webview documents with
   Vite, and verifies the built entry.
@@ -71,9 +71,9 @@ kisx key generate --out .keys/author.ed25519.json
 kisx pack --out-dir artifacts --sign --key .keys/author.ed25519.json --target any
 ```
 
-The signature covers extension id, version, `engines.kisaki`, artifact target,
+The signature covers extension id, version, `engines.kisakiExtensionApi`, artifact target,
 size, and sha256. Artifact URLs are not signed so mirrors can change.
-`engines.kisaki` is an Extension API version range, not a desktop app version.
+`engines.kisakiExtensionApi` is an Extension API version range, not a desktop app version.
 The host bundle includes `@kisaki3/extension-sdk` and
 `@kisaki3/extension-api`; extension projects keep both packages in
 `devDependencies`. Only genuine external runtime dependencies are copied into
@@ -102,7 +102,7 @@ line is the changelog summary; the remaining Markdown is the changelog body.
 Stable releases use plain semver versions. Preview releases use semver prerelease
 prefixes such as `alpha`, `beta`, `rc`, or `nightly`. Platform builds are separate
 artifact targets under the same release version.
-The registry release `engines.kisaki` range is copied from the packaged
+The registry release `engines.kisakiExtensionApi` range is copied from the packaged
 manifest and must match it exactly.
 
 For local testing only, registry commands that read artifact URLs accept

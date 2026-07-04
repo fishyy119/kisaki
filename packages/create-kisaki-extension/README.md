@@ -90,7 +90,7 @@ Generated projects include:
 - GitHub CI and signed publish workflows when the GitHub publish provider is
   selected.
 
-The generated `engines.kisaki` value uses the recommended Extension API range
+The generated `engines.kisakiExtensionApi` value uses the recommended Extension API range
 for the scaffold tooling version.
 
 ## Template Model

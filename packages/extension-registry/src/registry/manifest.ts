@@ -74,7 +74,7 @@ export interface ExtensionRegistryPackage {
 }
 
 export interface ExtensionRegistryReleaseEngines {
-  readonly kisaki: string
+  readonly kisakiExtensionApi: string
 }
 
 export interface ExtensionRegistryReleaseYank {
