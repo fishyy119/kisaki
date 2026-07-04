@@ -13,25 +13,28 @@ import {
 import type {
   ExtensionCatalogArtifactInfo,
   ExtensionCatalogReleaseInfo,
-  ExtensionCreateRepositoryInstallPlanRequest,
-  ExtensionInstallPlan,
-  ExtensionInstallPlanSignerInfo,
-  ExtensionInstallRiskCode,
-  ExtensionInstallRiskInfo
+  ExtensionCreateRepositoryReleasePlanRequest,
+  ExtensionReleaseAction,
+  ExtensionReleasePlan,
+  ExtensionReleasePlanSignerInfo,
+  ExtensionReleaseRiskCode,
+  ExtensionReleaseRiskInfo
 } from '@shared/extension'
 import type { ExtensionInstallationRow } from '@shared/db'
 import type { ExtensionRepositoryInstallCandidate } from '../repositories'
-import { ExtensionInstallationStore } from '../installations'
-import { ExtensionRepositoryManager } from '../repositories'
+import type { ExtensionInstallationStore } from '../installations'
+import type { ExtensionRepositoryManager } from '../repositories'
 import type { ExtensionSignerTrustManager } from '../signers'
+import type { ExtensionInstalledEntry } from '../types'
 
-export interface ExtensionInstallPlannerOptions {
+export interface ExtensionReleasePlannerOptions {
   repositories: ExtensionRepositoryManager
   installations: ExtensionInstallationStore
   signers: ExtensionSignerTrustManager
+  getInstalledEntry(extensionId: string): ExtensionInstalledEntry | null
 }
 
-export interface LocalExtensionInstallPlanInput {
+export interface LocalExtensionReleasePlanInput {
   filePath: string
   extensionId: string
   name: string
@@ -40,37 +43,48 @@ export interface LocalExtensionInstallPlanInput {
   artifactSha256: string
 }
 
-type CreateExtensionInstallPlanInput = Omit<ExtensionInstallPlan, 'fingerprint'>
+type CreateExtensionReleasePlanInput = Omit<ExtensionReleasePlan, 'fingerprint'>
 
-export class ExtensionInstallPlanner {
-  constructor(private readonly options: ExtensionInstallPlannerOptions) {}
+export class ExtensionReleasePlanner {
+  constructor(private readonly options: ExtensionReleasePlannerOptions) {}
 
-  createRepositoryPlan(request: ExtensionCreateRepositoryInstallPlanRequest): ExtensionInstallPlan {
+  createRepositoryPlan(request: ExtensionCreateRepositoryReleasePlanRequest): ExtensionReleasePlan {
     const candidate = this.options.repositories.resolveInstallCandidate(request)
     return this.createRepositoryPlanForCandidate(candidate)
   }
 
   createRepositoryPlanForCandidate(
     candidate: ExtensionRepositoryInstallCandidate
-  ): ExtensionInstallPlan {
-    const existing = this.options.installations.get(candidate.registryPackage.id)
-    const signer = this.createSignerInfo(candidate, existing)
+  ): ExtensionReleasePlan {
+    const installation = this.options.installations.get(candidate.registryPackage.id)
+    const activeEntry = this.options.getInstalledEntry(candidate.registryPackage.id)
+    const currentVersion = activeEntry?.version ?? installation?.version ?? null
+    const action = resolveReleaseAction(candidate.release.version, currentVersion)
+    const signer = this.createSignerInfo(candidate, installation)
     const artifact = toArtifactInfo(candidate.manifest, candidate.artifact)
     const release = toReleaseInfo(candidate, artifact)
     const includePreviewUpdates = getDefaultIncludePreviewUpdates(
-      existing,
+      installation,
       candidate.release.version
     )
-    const risks = createRepositoryRisks(candidate, existing, signer, includePreviewUpdates)
+    const risks = createRepositoryRisks({
+      candidate,
+      installation,
+      currentVersion,
+      action,
+      signer,
+      includePreviewUpdates
+    })
 
-    return createInstallPlan({
+    return createReleasePlan({
       id: `${candidate.registryPackage.id}:${candidate.releaseDigest}`,
+      action,
       sourceKind: 'repository',
       package: {
         id: candidate.registryPackage.id,
         name: candidate.registryPackage.name,
         description: candidate.registryPackage.description,
-        currentVersion: existing?.version ?? null,
+        currentVersion,
         targetVersion: candidate.release.version,
         releaseKind: release.releaseKind
       },
@@ -85,47 +99,34 @@ export class ExtensionInstallPlanner {
       localFile: null,
       signer,
       risks,
-      defaultEnabled: existing?.enabled ?? true,
-      updatePolicy: existing?.updatePolicy ?? 'manual',
+      defaultEnabled: installation?.enabled ?? activeEntry?.enabled ?? true,
+      updatePolicy: installation?.updatePolicy ?? 'manual',
       includePreviewUpdates
     })
   }
 
-  createLocalImportPlan(input: LocalExtensionInstallPlanInput): ExtensionInstallPlan {
-    const existing = this.options.installations.get(input.extensionId)
+  createLocalFilePlan(input: LocalExtensionReleasePlanInput): ExtensionReleasePlan {
+    const installation = this.options.installations.get(input.extensionId)
+    const activeEntry = this.options.getInstalledEntry(input.extensionId)
+    const currentVersion = activeEntry?.version ?? installation?.version ?? null
+    const action = resolveReleaseAction(input.version, currentVersion)
     const risks = [
       createRisk(
         'local-unsigned',
         'warning',
         'Local extension packages are not signed by a trusted repository signer.'
-      )
+      ),
+      ...createVersionRisks(action, input.version, currentVersion)
     ]
 
-    if (existing?.version === input.version) {
-      risks.push(
-        createRisk(
-          'same-version',
-          'info',
-          `Version ${input.version} is already installed and will be replaced.`
-        )
-      )
-    } else if (isDowngrade(input.version, existing?.version)) {
-      risks.push(
-        createRisk(
-          'downgrade',
-          'warning',
-          `This installs ${input.version}, which is older than the current ${existing?.version}.`
-        )
-      )
-    }
-
-    return createInstallPlan({
+    return createReleasePlan({
       id: `${input.extensionId}:local-file`,
+      action,
       sourceKind: 'local-file',
       package: {
         id: input.extensionId,
         name: input.name,
-        currentVersion: existing?.version ?? null,
+        currentVersion,
         targetVersion: input.version,
         releaseKind: getExtensionRegistryReleaseKind(input.version)
       },
@@ -142,7 +143,7 @@ export class ExtensionInstallPlanner {
         trusted: false
       },
       risks,
-      defaultEnabled: existing?.enabled ?? true,
+      defaultEnabled: installation?.enabled ?? activeEntry?.enabled ?? true,
       updatePolicy: 'manual',
       includePreviewUpdates: false
     })
@@ -151,7 +152,7 @@ export class ExtensionInstallPlanner {
   private createSignerInfo(
     candidate: ExtensionRepositoryInstallCandidate,
     existing: ExtensionInstallationRow | null
-  ): ExtensionInstallPlanSignerInfo {
+  ): ExtensionReleasePlanSignerInfo {
     const signature = candidate.artifact.signature
     if (!signature) {
       return {
@@ -184,16 +185,37 @@ export class ExtensionInstallPlanner {
   }
 }
 
-function createRepositoryRisks(
-  candidate: ExtensionRepositoryInstallCandidate,
-  existing: ExtensionInstallationRow | null,
-  signer: ExtensionInstallPlanSignerInfo,
-  includePreviewUpdates: boolean
-): ExtensionInstallRiskInfo[] {
-  const risks: ExtensionInstallRiskInfo[] = []
-  const releaseKind = getExtensionRegistryReleaseKind(candidate.release.version)
+function resolveReleaseAction(
+  targetVersion: string,
+  currentVersion: string | null
+): ExtensionReleaseAction {
+  if (!currentVersion) {
+    return 'install'
+  }
 
-  if (candidate.release.yanked !== undefined) {
+  if (currentVersion === targetVersion) {
+    return 'reinstall'
+  }
+
+  if (semver.valid(currentVersion) && semver.valid(targetVersion)) {
+    return semver.gt(targetVersion, currentVersion) ? 'update' : 'downgrade'
+  }
+
+  return 'update'
+}
+
+function createRepositoryRisks(input: {
+  candidate: ExtensionRepositoryInstallCandidate
+  installation: ExtensionInstallationRow | null
+  currentVersion: string | null
+  action: ExtensionReleaseAction
+  signer: ExtensionReleasePlanSignerInfo
+  includePreviewUpdates: boolean
+}): ExtensionReleaseRiskInfo[] {
+  const risks: ExtensionReleaseRiskInfo[] = []
+  const releaseKind = getExtensionRegistryReleaseKind(input.candidate.release.version)
+
+  if (input.candidate.release.yanked !== undefined) {
     risks.push(
       createRisk('yanked-release', 'danger', 'This release has been withdrawn by the repository.')
     )
@@ -204,42 +226,31 @@ function createRepositoryRisks(
       createRisk(
         'preview-release',
         'warning',
-        'This installs a preview release identified by a semver prerelease version.'
+        'This applies a preview release identified by a semver prerelease version.'
       )
     )
   }
 
-  if (existing?.version === candidate.release.version) {
-    risks.push(
-      createRisk(
-        'same-version',
-        'info',
-        `Version ${candidate.release.version} is already installed and will be replaced.`
-      )
-    )
-  } else if (isDowngrade(candidate.release.version, existing?.version)) {
-    risks.push(
-      createRisk(
-        'downgrade',
-        'warning',
-        `This installs ${candidate.release.version}, which is older than the current ${existing?.version}.`
-      )
-    )
-  }
+  risks.push(
+    ...createVersionRisks(input.action, input.candidate.release.version, input.currentVersion)
+  )
 
-  if (existing && existing.includePreviewUpdates !== includePreviewUpdates) {
+  if (
+    input.installation &&
+    input.installation.includePreviewUpdates !== input.includePreviewUpdates
+  ) {
     risks.push(
       createRisk(
         'preview-updates-change',
         'warning',
-        includePreviewUpdates
+        input.includePreviewUpdates
           ? 'This enables preview updates for this extension.'
           : 'This disables preview updates for this extension.'
       )
     )
   }
 
-  if (signer.status === 'unsigned') {
+  if (input.signer.status === 'unsigned') {
     risks.push(
       createRisk(
         'unsigned-release',
@@ -247,7 +258,7 @@ function createRepositoryRisks(
         'This remote release is not signed by an author key.'
       )
     )
-  } else if (signer.status === 'changed') {
+  } else if (input.signer.status === 'changed') {
     risks.push(
       createRisk(
         'signer-changed',
@@ -255,7 +266,7 @@ function createRepositoryRisks(
         'This release is signed by a different key than the currently installed version.'
       )
     )
-  } else if (signer.status === 'untrusted') {
+  } else if (input.signer.status === 'untrusted') {
     risks.push(
       createRisk(
         'signer-untrusted',
@@ -266,6 +277,34 @@ function createRepositoryRisks(
   }
 
   return risks
+}
+
+function createVersionRisks(
+  action: ExtensionReleaseAction,
+  targetVersion: string,
+  currentVersion: string | null | undefined
+): ExtensionReleaseRiskInfo[] {
+  if (action === 'reinstall') {
+    return [
+      createRisk(
+        'same-version',
+        'info',
+        `Version ${targetVersion} is already installed and will be replaced.`
+      )
+    ]
+  }
+
+  if (action === 'downgrade') {
+    return [
+      createRisk(
+        'downgrade',
+        'warning',
+        `This applies ${targetVersion}, which is older than the current ${currentVersion}.`
+      )
+    ]
+  }
+
+  return []
 }
 
 function getDefaultIncludePreviewUpdates(
@@ -340,10 +379,10 @@ function toArtifactInfo(
 }
 
 function createRisk(
-  code: ExtensionInstallRiskCode,
-  severity: ExtensionInstallRiskInfo['severity'],
+  code: ExtensionReleaseRiskCode,
+  severity: ExtensionReleaseRiskInfo['severity'],
   message: string
-): ExtensionInstallRiskInfo {
+): ExtensionReleaseRiskInfo {
   return {
     id: code,
     code,
@@ -352,27 +391,19 @@ function createRisk(
   }
 }
 
-function isDowngrade(nextVersion: string, currentVersion: string | null | undefined): boolean {
-  return Boolean(
-    currentVersion &&
-    semver.valid(currentVersion) &&
-    semver.valid(nextVersion) &&
-    semver.lt(nextVersion, currentVersion)
-  )
-}
-
-function createInstallPlan(plan: CreateExtensionInstallPlanInput): ExtensionInstallPlan {
+function createReleasePlan(plan: CreateExtensionReleasePlanInput): ExtensionReleasePlan {
   return {
     ...plan,
-    fingerprint: createInstallPlanFingerprint(plan)
+    fingerprint: createReleasePlanFingerprint(plan)
   }
 }
 
-function createInstallPlanFingerprint(plan: CreateExtensionInstallPlanInput): string {
+function createReleasePlanFingerprint(plan: CreateExtensionReleasePlanInput): string {
   const payload = {
-    kind: 'kisaki-extension-install-plan',
+    kind: 'kisaki-extension-release-plan',
     schemaVersion: 1,
     id: plan.id,
+    action: plan.action,
     sourceKind: plan.sourceKind,
     package: {
       id: plan.package.id,

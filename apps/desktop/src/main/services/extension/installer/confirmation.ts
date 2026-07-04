@@ -1,31 +1,31 @@
-import type { ExtensionInstallPlan } from '@shared/extension'
-import type { ExtensionInstallReleaseApproval } from './types'
+import type { ExtensionReleasePlan } from '@shared/extension'
+import type { ExtensionApplyReleaseApproval } from './types'
 
-export interface ExtensionInstallPlanConfirmationInput {
+export interface ExtensionReleasePlanConfirmationInput {
   planId: string
   planFingerprint: string
   trustSignerFingerprint?: boolean
 }
 
-export function assertInstallPlanConfirmed(
-  plan: ExtensionInstallPlan,
-  confirmation: ExtensionInstallPlanConfirmationInput
+export function assertReleasePlanConfirmed(
+  plan: ExtensionReleasePlan,
+  confirmation: ExtensionReleasePlanConfirmationInput
 ): void {
   if (confirmation.planId !== plan.id || confirmation.planFingerprint !== plan.fingerprint) {
-    throw new Error('Extension install plan has changed. Please review the latest plan.')
+    throw new Error('Extension release plan has changed. Please review the latest plan.')
   }
 
   if (
     confirmation.trustSignerFingerprint &&
     (!plan.signer.fingerprint || plan.signer.status === 'unsigned')
   ) {
-    throw new Error('Cannot trust an unsigned extension install plan.')
+    throw new Error('Cannot trust an unsigned extension release plan.')
   }
 }
 
-export function assertInstallPlanApproved(
-  plan: ExtensionInstallPlan,
-  approval: ExtensionInstallReleaseApproval
+export function assertReleasePlanApproved(
+  plan: ExtensionReleasePlan,
+  approval: ExtensionApplyReleaseApproval
 ): void {
   if (approval.kind === 'trusted-automatic') {
     if (plan.signer.status !== 'trusted' || !plan.signer.trusted) {
@@ -34,5 +34,5 @@ export function assertInstallPlanApproved(
     return
   }
 
-  assertInstallPlanConfirmed(plan, approval)
+  assertReleasePlanConfirmed(plan, approval)
 }

@@ -1,6 +1,6 @@
 import type { IpcService } from '@main/services/ipc'
 import { wrapIpc, wrapIpcVoid } from '@main/services/ipc'
-import { createInstallReleaseCommandFromRequest } from './installer'
+import { createApplyReleaseCommandFromRequest } from './installer'
 import type { ExtensionService } from './service'
 
 export function registerExtensionIpc(service: ExtensionService, ipc: IpcService): void {
@@ -16,18 +16,14 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpc(() => service.installations.isEnabled(extensionId))
   )
 
-  ipc.handle('extension:create-install-plan', async (_, request) =>
-    wrapIpc(() => service.installer.createInstallPlan(request))
+  ipc.handle('extension:create-release-plan', async (_, request) =>
+    wrapIpc(() => service.installer.createReleasePlan(request))
   )
 
-  ipc.handle('extension:install-release', async (_, request) =>
+  ipc.handle('extension:apply-release', async (_, request) =>
     wrapIpc(() =>
-      service.installer.startInstallRelease(createInstallReleaseCommandFromRequest(request))
+      service.installer.startApplyRelease(createApplyReleaseCommandFromRequest(request))
     )
-  )
-
-  ipc.handle('extension:install-from-file', async (_, request) =>
-    wrapIpc(() => service.installer.startLocalImport(request))
   )
 
   ipc.handle('extension:uninstall', async (_, extensionId) =>
@@ -39,10 +35,6 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
   )
 
   ipc.handle('extension:check-updates', async () => wrapIpc(() => service.updates.checkUpdates()))
-
-  ipc.handle('extension:update', async (_, request) =>
-    wrapIpc(() => service.updates.startUpdate(request))
-  )
 
   ipc.handle('extension:get-automatic-update-run', () =>
     wrapIpc(() => service.updates.getAutomaticUpdateRun())

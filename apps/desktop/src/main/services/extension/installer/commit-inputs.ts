@@ -1,4 +1,4 @@
-import type { ExtensionInstallPlan } from '@shared/extension'
+import type { ExtensionReleasePlan } from '@shared/extension'
 import type { ExtensionRepositoryInstallationSnapshot } from '@shared/extension/installation-source'
 import type { ExtensionRepositoryInstallCandidate } from '../repositories'
 import type { TrustExtensionSignerInput } from '../signers'
@@ -39,7 +39,7 @@ export function createRepositoryInstallationSnapshot(
 
 export function createSignerTrustInputs(
   candidate: ExtensionRepositoryInstallCandidate,
-  plan: ExtensionInstallPlan
+  plan: ExtensionReleasePlan
 ): readonly TrustExtensionSignerInput[] {
   const fingerprint = plan.signer.fingerprint
   const keyId = plan.signer.keyId

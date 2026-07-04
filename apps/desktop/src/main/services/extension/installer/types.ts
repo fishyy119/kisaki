@@ -1,11 +1,6 @@
-import type {
-  ExtensionInstallReleaseRequest,
-  ExtensionInstallUpdatePolicy
-} from '@shared/extension'
+import type { ExtensionApplyReleaseRequest, ExtensionInstallUpdatePolicy } from '@shared/extension'
 
-export type ExtensionInstallReleaseReason = 'manual' | 'update'
-
-export type ExtensionInstallReleaseApproval =
+export type ExtensionApplyReleaseApproval =
   | {
       kind: 'user-confirmed'
       planId: string
@@ -16,30 +11,53 @@ export type ExtensionInstallReleaseApproval =
       kind: 'trusted-automatic'
     }
 
-export interface ExtensionInstallReleaseCommand {
+export interface ExtensionRepositoryReleaseCommand {
+  sourceKind: 'repository'
   extensionId: string
   releaseId?: string
   repositoryId?: string
-  reason: ExtensionInstallReleaseReason
-  approval: ExtensionInstallReleaseApproval
+  approval: ExtensionApplyReleaseApproval
   enabled?: boolean
   updatePolicy?: ExtensionInstallUpdatePolicy
 }
 
-export function createInstallReleaseCommandFromRequest(
-  request: ExtensionInstallReleaseRequest
-): ExtensionInstallReleaseCommand {
+export interface ExtensionLocalReleaseCommand {
+  sourceKind: 'local-file'
+  filePath: string
+  approval: ExtensionApplyReleaseApproval
+  enabled?: boolean
+}
+
+export type ExtensionApplyReleaseCommand =
+  | ExtensionRepositoryReleaseCommand
+  | ExtensionLocalReleaseCommand
+
+export function createApplyReleaseCommandFromRequest(
+  request: ExtensionApplyReleaseRequest
+): ExtensionApplyReleaseCommand {
+  const approval: ExtensionApplyReleaseApproval = {
+    kind: 'user-confirmed',
+    planId: request.planId,
+    planFingerprint: request.planFingerprint,
+    trustSignerFingerprint:
+      request.sourceKind === 'repository' && request.trustSignerFingerprint === true
+  }
+
+  if (request.sourceKind === 'local-file') {
+    return {
+      sourceKind: request.sourceKind,
+      filePath: request.filePath,
+      approval,
+      enabled: request.enabled
+    }
+  }
+
   return {
+    sourceKind: request.sourceKind,
     extensionId: request.extensionId,
     releaseId: request.releaseId,
     repositoryId: request.repositoryId,
-    reason: 'manual',
-    approval: {
-      kind: 'user-confirmed',
-      planId: request.planId,
-      planFingerprint: request.planFingerprint,
-      trustSignerFingerprint: request.trustSignerFingerprint === true
-    },
+    approval,
     enabled: request.enabled,
     updatePolicy: request.updatePolicy
   }

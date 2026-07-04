@@ -222,7 +222,7 @@ export class ExtensionService implements IService {
       updatePlanner: new ExtensionUpdatePlanner({
         repositories: this.repositories,
         installations: installationStore,
-        createInstallPlan: (candidate) => this.installer.createRepositoryInstallPlan(candidate)
+        createReleasePlan: (candidate) => this.installer.createRepositoryReleasePlan(candidate)
       }),
       onAutomaticUpdateRunChanged: (state) =>
         this.ipc.send('extension:automatic-update-run-changed', state)

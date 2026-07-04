@@ -62,16 +62,15 @@ import type {
   ExtensionCatalogSearchRequest,
   ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
-  ExtensionCreateInstallPlanRequest,
+  ExtensionCreateReleasePlanRequest,
   ExtensionDevelopmentStaleChangedEvent,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
   ExtensionEntityMenuRefreshRequestedEvent,
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
-  ExtensionInstallPlan,
-  ExtensionInstallFromFileRequest,
-  ExtensionInstallReleaseRequest,
+  ExtensionReleasePlan,
+  ExtensionApplyReleaseRequest,
   ExtensionInstalledPackageInfo,
   ExtensionPurgeDataRequest,
   ExtensionRepositoryCreateRequest,
@@ -89,8 +88,7 @@ import type {
   ExtensionTrustedSignerInfo,
   ExtensionAutomaticUpdateRunState,
   ExtensionUpdateCheckResult,
-  ExtensionUpdatePolicyRequest,
-  ExtensionUpdateRequest
+  ExtensionUpdatePolicyRequest
 } from './extension'
 import type { NotifyOptions } from './notify'
 import type { AppEvents } from './events'
@@ -462,19 +460,15 @@ export interface IpcMainHandlers {
   'extension:disable': (extensionId: string) => IpcVoidResult
   'extension:enable': (extensionId: string) => IpcVoidResult
   'extension:is-enabled': (extensionId: string) => IpcResult<boolean>
-  'extension:create-install-plan': (
-    request: ExtensionCreateInstallPlanRequest
-  ) => IpcResult<ExtensionInstallPlan>
-  'extension:install-release': (
-    request: ExtensionInstallReleaseRequest
-  ) => IpcResult<TaskRunStartResult>
-  'extension:install-from-file': (
-    request: ExtensionInstallFromFileRequest
+  'extension:create-release-plan': (
+    request: ExtensionCreateReleasePlanRequest
+  ) => IpcResult<ExtensionReleasePlan>
+  'extension:apply-release': (
+    request: ExtensionApplyReleaseRequest
   ) => IpcResult<TaskRunStartResult>
   'extension:uninstall': (extensionId: string) => IpcVoidResult
   'extension:purge-data': (request: ExtensionPurgeDataRequest) => IpcVoidResult
   'extension:check-updates': () => IpcResult<ExtensionUpdateCheckResult>
-  'extension:update': (request: ExtensionUpdateRequest) => IpcResult<TaskRunStartResult>
   'extension:get-automatic-update-run': () => IpcResult<ExtensionAutomaticUpdateRunState>
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:reload': (extensionId: string) => IpcVoidResult

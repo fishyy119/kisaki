@@ -9,14 +9,14 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
-import ExtensionInstallDialog from '../extension-install-dialog.vue'
+import ExtensionReleaseDialog from '../extension-release-dialog.vue'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
 import ExtensionDiscoverPanelDetailsDialog from './discover-panel-details-dialog.vue'
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverExtensionStore } from '../../stores'
 import type {
   ExtensionCatalogPackageInfo,
-  ExtensionCreateRepositoryInstallPlanRequest,
+  ExtensionCreateRepositoryReleasePlanRequest,
   ExtensionInstalledPackageInfo
 } from '@shared/extension'
 
@@ -50,8 +50,8 @@ const page = ref(1)
 const isLoadingMore = ref(false)
 const detailsPackage = ref<ExtensionCatalogPackageInfo | null>(null)
 const detailsOpen = ref(false)
-const installRequest = ref<ExtensionCreateRepositoryInstallPlanRequest | null>(null)
-const installDialogOpen = ref(false)
+const releaseRequest = ref<ExtensionCreateRepositoryReleasePlanRequest | null>(null)
+const releaseDialogOpen = ref(false)
 const queryKey = computed(() =>
   [
     store.searchTrigger,
@@ -122,6 +122,9 @@ const displayedResults = computed(() => {
 
 const searched = computed(() => !isLoading.value)
 const installedIds = computed(() => new Set((catalog.value ?? []).map((entry) => entry.id)))
+const installedById = computed(
+  () => new Map((catalog.value ?? []).map((entry) => [entry.id, entry]))
+)
 const installedSourceKeys = computed(
   () => new Set((catalog.value ?? []).map((entry) => getCatalogSourceKey(entry)).filter(Boolean))
 )
@@ -160,9 +163,15 @@ function isInstalled(extension: ExtensionCatalogPackageInfo): boolean {
   )
 }
 
-function openInstallDialog(request: ExtensionCreateRepositoryInstallPlanRequest) {
-  installRequest.value = request
-  installDialogOpen.value = true
+function getInstalledPackage(
+  extension: ExtensionCatalogPackageInfo
+): ExtensionInstalledPackageInfo | null {
+  return installedById.value.get(extension.id) ?? null
+}
+
+function openReleaseDialog(request: ExtensionCreateRepositoryReleasePlanRequest) {
+  releaseRequest.value = request
+  releaseDialogOpen.value = true
 }
 
 function openDetails(extension: ExtensionCatalogPackageInfo) {
@@ -170,7 +179,7 @@ function openDetails(extension: ExtensionCatalogPackageInfo) {
   detailsOpen.value = true
 }
 
-async function handleInstalled() {
+async function handleReleaseApplied() {
   await Promise.all([refetchCatalog(), refetchSearch()])
 }
 
@@ -231,7 +240,7 @@ watch(detailsOpen, (open) => {
             :key="extension.id"
             :extension="extension"
             :installed="isInstalled(extension)"
-            @install="openInstallDialog"
+            @apply-release="openReleaseDialog"
             @details="openDetails"
           />
         </div>
@@ -260,15 +269,15 @@ watch(detailsOpen, (open) => {
       v-if="detailsPackage"
       v-model:open="detailsOpen"
       :extension="detailsPackage"
-      :installed="isInstalled(detailsPackage)"
-      @install="openInstallDialog"
+      :installed-package="getInstalledPackage(detailsPackage)"
+      @apply-release="openReleaseDialog"
     />
 
-    <ExtensionInstallDialog
-      v-if="installDialogOpen"
-      v-model:open="installDialogOpen"
-      :request="installRequest"
-      @installed="handleInstalled"
+    <ExtensionReleaseDialog
+      v-if="releaseDialogOpen"
+      v-model:open="releaseDialogOpen"
+      :request="releaseRequest"
+      @applied="handleReleaseApplied"
     />
   </div>
 </template>

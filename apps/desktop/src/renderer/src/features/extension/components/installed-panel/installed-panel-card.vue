@@ -11,7 +11,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import ExtensionInstalledDetailsDialog from './installed-panel-details-dialog.vue'
 import ExtensionUninstallDialog from '../extension-uninstall-dialog.vue'
-import ExtensionUpdateDialog from '../extension-update-dialog.vue'
+import ExtensionReleaseDialog from '../extension-release-dialog.vue'
 import ExtensionUpdatePolicyDialog from '../extension-update-policy-dialog.vue'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
@@ -362,12 +362,11 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
       :extension="props.extension"
     />
 
-    <ExtensionUpdateDialog
+    <ExtensionReleaseDialog
       v-if="updateDialogOpen && props.updateInfo"
       v-model:open="updateDialogOpen"
-      :extension="props.extension"
-      :update-info="props.updateInfo"
-      @updated="emit('refresh')"
+      :initial-plan="props.updateInfo.releasePlan"
+      @applied="emit('refresh')"
     />
 
     <ExtensionUpdatePolicyDialog

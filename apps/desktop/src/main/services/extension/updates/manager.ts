@@ -2,14 +2,11 @@ import { createLogger } from '@main/log'
 import type {
   ExtensionAutomaticUpdateResult,
   ExtensionAutomaticUpdateRunState,
-  ExtensionUpdateCheckResult,
-  ExtensionUpdateRequest
+  ExtensionUpdateCheckResult
 } from '@shared/extension'
-import type { TaskRunStartResult } from '@shared/task-run'
 import type { ExtensionInstalledEntry } from '../types'
-import type { ExtensionInstallerManager, ExtensionInstallReleaseApproval } from '../installer'
+import type { ExtensionApplyReleaseApproval, ExtensionInstallerManager } from '../installer'
 import type { ExtensionRepositoryManager } from '../repositories'
-import { requireSafeExtensionId } from '../shared/path-confinement'
 import type { ExtensionUpdatePlan } from './planner'
 import { ExtensionUpdatePlanner } from './planner'
 
@@ -66,22 +63,6 @@ export class ExtensionUpdateManager {
     })
 
     return this.automaticUpdateRunPromise
-  }
-
-  startUpdate(request: ExtensionUpdateRequest): TaskRunStartResult {
-    const updatePlan = this.updatePlanner.requireUpdatePlan(
-      requireSafeExtensionId(request.extensionId),
-      { mode: 'manual' }
-    )
-
-    return this.startUpdatePlan(updatePlan, {
-      approval: {
-        kind: 'user-confirmed',
-        planId: request.planId,
-        planFingerprint: request.planFingerprint,
-        trustSignerFingerprint: request.trustSignerFingerprint === true
-      }
-    })
   }
 
   private async runStartupAutomaticUpdatesOnce(): Promise<ExtensionAutomaticUpdateRunState> {
@@ -160,33 +141,18 @@ export class ExtensionUpdateManager {
     return this.getAutomaticUpdateRun()
   }
 
-  private startUpdatePlan(
-    updatePlan: ExtensionUpdatePlan,
-    options: {
-      approval: ExtensionInstallReleaseApproval
-    }
-  ): TaskRunStartResult {
-    return this.installer.startInstallRelease({
-      extensionId: updatePlan.installation.id,
-      repositoryId: updatePlan.candidate.repository.id,
-      releaseId: updatePlan.candidate.releaseDigest,
-      reason: 'update',
-      approval: options.approval
-    })
-  }
-
   private runUpdatePlan(
     updatePlan: ExtensionUpdatePlan,
     options: {
-      approval: ExtensionInstallReleaseApproval
+      approval: ExtensionApplyReleaseApproval
     }
   ): Promise<ExtensionInstalledEntry> {
-    return this.installer.runInstallRelease(
+    return this.installer.runApplyRelease(
       {
+        sourceKind: 'repository',
         extensionId: updatePlan.installation.id,
         repositoryId: updatePlan.candidate.repository.id,
         releaseId: updatePlan.candidate.releaseDigest,
-        reason: 'update',
         approval: options.approval
       },
       { type: 'system', reason: 'update' }

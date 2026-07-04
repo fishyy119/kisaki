@@ -1,6 +1,6 @@
 import { createLogger } from '@main/log'
 import type {
-  ExtensionCreateRepositoryInstallPlanRequest,
+  ExtensionCreateRepositoryReleasePlanRequest,
   ExtensionCatalogSearchRequest,
   ExtensionCatalogSearchResult,
   ExtensionRepositoryCreateRequest,
@@ -308,7 +308,7 @@ export class ExtensionRepositoryManager {
   }
 
   resolveInstallCandidate(
-    request: ExtensionCreateRepositoryInstallPlanRequest
+    request: ExtensionCreateRepositoryReleasePlanRequest
   ): ExtensionRepositoryInstallCandidate {
     const result = this.collectInstallCandidates(request.extensionId, {
       repositoryId: request.repositoryId,

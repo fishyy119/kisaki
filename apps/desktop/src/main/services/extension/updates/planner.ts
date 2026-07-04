@@ -2,7 +2,7 @@ import semver from 'semver'
 import { getExtensionRegistryReleaseKind } from '@kisaki3/extension-registry'
 import type { ExtensionInstallationRow } from '@shared/db'
 import type {
-  ExtensionInstallPlan,
+  ExtensionReleasePlan,
   ExtensionUpdateCheckResult,
   ExtensionUpdateInfo,
   ExtensionUpdateUnavailableInfo
@@ -19,7 +19,7 @@ export interface ExtensionUpdatePlan {
   installation: ExtensionInstallationRow
   candidate: ExtensionRepositoryInstallCandidate
   info: ExtensionUpdateInfo
-  installPlan: ExtensionInstallPlan
+  releasePlan: ExtensionReleasePlan
   trustedSigner: boolean
   automaticEligible: boolean
 }
@@ -31,7 +31,7 @@ export interface SelectExtensionUpdatePlanOptions {
 export interface ExtensionUpdatePlannerOptions {
   repositories: ExtensionRepositoryManager
   installations: ExtensionInstallationStore
-  createInstallPlan(candidate: ExtensionRepositoryInstallCandidate): ExtensionInstallPlan
+  createReleasePlan(candidate: ExtensionRepositoryInstallCandidate): ExtensionReleasePlan
 }
 
 export class ExtensionUpdatePlanner {
@@ -220,30 +220,24 @@ export class ExtensionUpdatePlanner {
     installation: ExtensionInstallationRow,
     candidate: ExtensionRepositoryInstallCandidate
   ): ExtensionUpdatePlan {
-    const installPlan = this.options.createInstallPlan(candidate)
-    const trustedSigner = installPlan.signer.status === 'trusted' && installPlan.signer.trusted
+    const releasePlan = this.options.createReleasePlan(candidate)
+    const trustedSigner = releasePlan.signer.status === 'trusted' && releasePlan.signer.trusted
     const automaticEligible = installation.updatePolicy === 'auto' && trustedSigner
 
     return {
       installation,
       candidate,
-      installPlan,
+      releasePlan,
       trustedSigner,
       automaticEligible,
       info: {
-        planId: installPlan.id,
-        planFingerprint: installPlan.fingerprint,
         extensionId: installation.id,
         currentVersion: installation.version,
         latestVersion: candidate.release.version,
-        repository: installPlan.repository,
-        release: installPlan.release,
-        artifact: installPlan.artifact,
-        signer: installPlan.signer,
+        releasePlan,
         updatePolicy: installation.updatePolicy,
         includePreviewUpdates: installation.includePreviewUpdates,
-        automaticEligible,
-        risks: installPlan.risks
+        automaticEligible
       }
     }
   }

@@ -1,18 +1,15 @@
 <!--
 Catalog Package Details Dialog shows repository releases and install metadata.
-Boundary: read-only details plus install request emission.
+Boundary: read-only details plus release request emission.
 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import semver from 'semver'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import {
-  getLocalizedBody,
-  getLocalizedSummary,
-  selectLocalizedDocument
-} from '../../utils/localized-document'
+import { getLocalizedBody, getLocalizedSummary } from '../../utils/localized-document'
 import {
   Dialog,
   DialogBody,
@@ -25,16 +22,17 @@ import {
 import type {
   ExtensionCatalogPackageInfo,
   ExtensionCatalogReleaseInfo,
-  ExtensionCreateRepositoryInstallPlanRequest
+  ExtensionCreateRepositoryReleasePlanRequest,
+  ExtensionInstalledPackageInfo
 } from '@shared/extension'
 
 interface Props {
   extension: ExtensionCatalogPackageInfo
-  installed: boolean
+  installedPackage?: ExtensionInstalledPackageInfo | null
 }
 
 interface Emits {
-  (e: 'install', request: ExtensionCreateRepositoryInstallPlanRequest): void
+  (e: 'apply-release', request: ExtensionCreateRepositoryReleasePlanRequest): void
 }
 
 const props = defineProps<Props>()
@@ -53,12 +51,12 @@ watch(
   }
 )
 
-function requestReleaseInstall(release: ExtensionCatalogReleaseInfo) {
-  if (!canInstallRelease(release)) {
+function requestReleaseApply(release: ExtensionCatalogReleaseInfo) {
+  if (!canApplyRelease(release)) {
     return
   }
 
-  emit('install', {
+  emit('apply-release', {
     sourceKind: 'repository',
     extensionId: props.extension.id,
     releaseId: release.releaseDigest,
@@ -66,8 +64,36 @@ function requestReleaseInstall(release: ExtensionCatalogReleaseInfo) {
   })
 }
 
-function canInstallRelease(release: ExtensionCatalogReleaseInfo): boolean {
-  return !props.installed && release.compatible && !release.yanked && release.artifact !== null
+function canApplyRelease(release: ExtensionCatalogReleaseInfo): boolean {
+  return release.compatible && !release.yanked && release.artifact !== null
+}
+
+function getReleaseActionLabel(release: ExtensionCatalogReleaseInfo): string {
+  const currentVersion = props.installedPackage?.version
+  if (!currentVersion) {
+    return '安装'
+  }
+
+  if (currentVersion === release.version) {
+    return '重新安装'
+  }
+
+  if (semver.valid(currentVersion) && semver.valid(release.version)) {
+    return semver.gt(release.version, currentVersion) ? '更新' : '降级'
+  }
+
+  return '应用'
+}
+
+function getReleaseActionIcon(release: ExtensionCatalogReleaseInfo): string {
+  const label = getReleaseActionLabel(release)
+  if (label === '安装') {
+    return 'icon-[mdi--download]'
+  }
+  if (label === '降级') {
+    return 'icon-[mdi--arrow-down-bold]'
+  }
+  return 'icon-[mdi--refresh]'
 }
 
 function isLatestStableRelease(release: ExtensionCatalogReleaseInfo): boolean {
@@ -112,14 +138,6 @@ function formatBytes(value: number | undefined): string {
 function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string {
   const count = release.sources.length || release.repositoryCount
   return `${count} 个来源`
-}
-
-function getReleaseChangelogSummary(release: ExtensionCatalogReleaseInfo): string {
-  return selectLocalizedDocument(release.changelog)?.summary ?? ''
-}
-
-function getReleaseChangelogBody(release: ExtensionCatalogReleaseInfo): string | null {
-  return selectLocalizedDocument(release.changelog)?.body ?? null
 }
 </script>
 
@@ -258,31 +276,19 @@ function getReleaseChangelogBody(release: ExtensionCatalogReleaseInfo): string |
                   <div>扩展 API：{{ release.engines.kisakiExtensionApi }}</div>
                   <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
                 </div>
-
-                <div
-                  v-if="getReleaseChangelogSummary(release)"
-                  class="space-y-1 text-xs text-muted-foreground"
-                >
-                  <p class="line-clamp-2">{{ getReleaseChangelogSummary(release) }}</p>
-                  <MarkdownContent
-                    v-if="getReleaseChangelogBody(release)"
-                    :content="getReleaseChangelogBody(release) ?? ''"
-                    class="text-muted-foreground prose-p:my-0 line-clamp-3"
-                  />
-                </div>
               </div>
 
               <div class="flex items-start">
                 <Button
                   size="sm"
-                  :disabled="!canInstallRelease(release)"
-                  @click="requestReleaseInstall(release)"
+                  :disabled="!canApplyRelease(release)"
+                  @click="requestReleaseApply(release)"
                 >
                   <Icon
-                    icon="icon-[mdi--download]"
+                    :icon="getReleaseActionIcon(release)"
                     class="size-3.5"
                   />
-                  安装
+                  {{ getReleaseActionLabel(release) }}
                 </Button>
               </div>
             </div>

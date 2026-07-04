@@ -15,7 +15,7 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'openInstallDialog'): void
+  (e: 'openReleaseDialog'): void
   (e: 'reloadExtensionHost'): void
 }
 
@@ -138,7 +138,7 @@ function isRouteActive(routeName: string): boolean {
         variant="default"
         size="sm"
         class="text-xs gap-1.5"
-        @click="emit('openInstallDialog')"
+        @click="emit('openReleaseDialog')"
       >
         <Icon
           icon="icon-[mdi--plus]"

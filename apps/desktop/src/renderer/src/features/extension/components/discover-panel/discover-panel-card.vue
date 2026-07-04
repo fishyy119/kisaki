@@ -11,7 +11,7 @@ import { cn } from '@renderer/utils/cn'
 import { getLocalizedSummary } from '../../utils/localized-document'
 import type {
   ExtensionCatalogPackageInfo,
-  ExtensionCreateRepositoryInstallPlanRequest
+  ExtensionCreateRepositoryReleasePlanRequest
 } from '@shared/extension'
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'install', request: ExtensionCreateRepositoryInstallPlanRequest): void
+  (e: 'apply-release', request: ExtensionCreateRepositoryReleasePlanRequest): void
   (e: 'details', extension: ExtensionCatalogPackageInfo): void
 }
 
@@ -47,7 +47,7 @@ function handleInstall() {
     return
   }
 
-  emit('install', {
+  emit('apply-release', {
     sourceKind: 'repository',
     extensionId: props.extension.id,
     releaseId: release.releaseDigest,

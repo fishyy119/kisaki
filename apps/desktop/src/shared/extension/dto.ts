@@ -75,19 +75,13 @@ export interface ExtensionDevelopmentStaleChangedEvent {
 }
 
 export interface ExtensionUpdateInfo {
-  planId: string
-  planFingerprint: string
   extensionId: string
   currentVersion: string
   latestVersion: string
-  repository?: ExtensionInstallPlanRepositoryInfo | null
-  release?: ExtensionCatalogReleaseInfo | null
-  artifact?: ExtensionCatalogArtifactInfo | null
-  signer?: ExtensionInstallPlanSignerInfo
+  releasePlan: ExtensionReleasePlan
   updatePolicy?: ExtensionInstallUpdatePolicy
   includePreviewUpdates?: boolean
   automaticEligible?: boolean
-  risks?: readonly ExtensionInstallRiskInfo[]
 }
 
 export type ExtensionUpdateUnavailableReason =
@@ -266,13 +260,6 @@ export interface ExtensionUpdatePolicyRequest {
   includePreviewUpdates?: boolean
 }
 
-export interface ExtensionUpdateRequest {
-  extensionId: string
-  planId: string
-  planFingerprint: string
-  trustSignerFingerprint?: boolean
-}
-
 export type ExtensionAutomaticUpdateRunStatus = 'idle' | 'running' | 'completed'
 
 export type ExtensionAutomaticUpdateResultStatus = 'updated' | 'failed'
@@ -294,35 +281,40 @@ export interface ExtensionAutomaticUpdateRunState {
   repositoryRefreshError?: string
 }
 
-export type ExtensionCreateInstallPlanRequest =
-  | ExtensionCreateRepositoryInstallPlanRequest
-  | ExtensionCreateLocalInstallPlanRequest
+export type ExtensionCreateReleasePlanRequest =
+  | ExtensionCreateRepositoryReleasePlanRequest
+  | ExtensionCreateLocalReleasePlanRequest
 
-export interface ExtensionCreateRepositoryInstallPlanRequest {
-  sourceKind?: 'repository'
+export interface ExtensionCreateRepositoryReleasePlanRequest {
+  sourceKind: 'repository'
   extensionId: string
   releaseId?: string
   repositoryId?: string
 }
 
-export interface ExtensionCreateLocalInstallPlanRequest {
+export interface ExtensionCreateLocalReleasePlanRequest {
   sourceKind: 'local-file'
   filePath: string
 }
 
-export interface ExtensionInstallPlanConfirmation {
+export interface ExtensionReleasePlanConfirmation {
   planId: string
   planFingerprint: string
 }
 
-export interface ExtensionInstallReleaseRequest
-  extends ExtensionCreateRepositoryInstallPlanRequest, ExtensionInstallPlanConfirmation {
+export type ExtensionApplyReleaseRequest =
+  | ExtensionApplyRepositoryReleaseRequest
+  | ExtensionApplyLocalReleaseRequest
+
+export interface ExtensionApplyRepositoryReleaseRequest
+  extends ExtensionCreateRepositoryReleasePlanRequest, ExtensionReleasePlanConfirmation {
   trustSignerFingerprint?: boolean
   enabled?: boolean
   updatePolicy?: ExtensionInstallUpdatePolicy
 }
 
-export interface ExtensionInstallFromFileRequest extends ExtensionInstallPlanConfirmation {
+export interface ExtensionApplyLocalReleaseRequest extends ExtensionReleasePlanConfirmation {
+  sourceKind: 'local-file'
   filePath: string
   enabled?: boolean
 }
@@ -332,9 +324,11 @@ export interface ExtensionPurgeDataRequest {
   force?: boolean
 }
 
-export type ExtensionInstallSourceKind = 'repository' | 'local-file'
+export type ExtensionReleaseSourceKind = 'repository' | 'local-file'
 
-export type ExtensionInstallRiskCode =
+export type ExtensionReleaseAction = 'install' | 'update' | 'reinstall' | 'downgrade'
+
+export type ExtensionReleaseRiskCode =
   | 'downgrade'
   | 'same-version'
   | 'preview-release'
@@ -345,33 +339,33 @@ export type ExtensionInstallRiskCode =
   | 'signer-changed'
   | 'local-unsigned'
 
-export type ExtensionInstallRiskSeverity = 'info' | 'warning' | 'danger'
+export type ExtensionReleaseRiskSeverity = 'info' | 'warning' | 'danger'
 
-export interface ExtensionInstallRiskInfo {
+export interface ExtensionReleaseRiskInfo {
   id: string
-  code: ExtensionInstallRiskCode
-  severity: ExtensionInstallRiskSeverity
+  code: ExtensionReleaseRiskCode
+  severity: ExtensionReleaseRiskSeverity
   message: string
 }
 
-export type ExtensionInstallSignerTrustStatus = 'trusted' | 'untrusted' | 'changed' | 'unsigned'
+export type ExtensionReleaseSignerTrustStatus = 'trusted' | 'untrusted' | 'changed' | 'unsigned'
 
-export interface ExtensionInstallPlanSignerInfo {
-  status: ExtensionInstallSignerTrustStatus
+export interface ExtensionReleasePlanSignerInfo {
+  status: ExtensionReleaseSignerTrustStatus
   keyId?: string
   algorithm?: ExtensionRegistrySigningAlgorithm
   fingerprint?: string
   trusted: boolean
 }
 
-export interface ExtensionInstallPlanRepositoryInfo {
+export interface ExtensionReleasePlanRepositoryInfo {
   id: string
   name: string
   url: string
   manifestDigest: string | null
 }
 
-export interface ExtensionInstallPlanPackageInfo {
+export interface ExtensionReleasePlanPackageInfo {
   id: string
   name: string
   description?: ExtensionRegistryLocalizedDocumentSet | null
@@ -380,23 +374,24 @@ export interface ExtensionInstallPlanPackageInfo {
   releaseKind: ExtensionRegistryReleaseKind
 }
 
-export interface ExtensionInstallPlan {
+export interface ExtensionReleasePlan {
   id: string
   fingerprint: string
-  sourceKind: ExtensionInstallSourceKind
-  package: ExtensionInstallPlanPackageInfo
-  repository: ExtensionInstallPlanRepositoryInfo | null
+  action: ExtensionReleaseAction
+  sourceKind: ExtensionReleaseSourceKind
+  package: ExtensionReleasePlanPackageInfo
+  repository: ExtensionReleasePlanRepositoryInfo | null
   release: ExtensionCatalogReleaseInfo | null
   artifact: ExtensionCatalogArtifactInfo | null
-  localFile: ExtensionInstallPlanLocalFileInfo | null
-  signer: ExtensionInstallPlanSignerInfo
-  risks: readonly ExtensionInstallRiskInfo[]
+  localFile: ExtensionReleasePlanLocalFileInfo | null
+  signer: ExtensionReleasePlanSignerInfo
+  risks: readonly ExtensionReleaseRiskInfo[]
   defaultEnabled: boolean
   updatePolicy: ExtensionInstallUpdatePolicy
   includePreviewUpdates: boolean
 }
 
-export interface ExtensionInstallPlanLocalFileInfo {
+export interface ExtensionReleasePlanLocalFileInfo {
   path: string
   size: number
   sha256: string
@@ -588,13 +583,11 @@ export type AssertExtensionDtosAreJsonSafe = AssertNever<
     ExtensionCatalogSearchRequest: ExtensionCatalogSearchRequest
     ExtensionCatalogSearchResult: ExtensionCatalogSearchResult
     ExtensionAutomaticUpdateRunState: ExtensionAutomaticUpdateRunState
-    ExtensionCreateInstallPlanRequest: ExtensionCreateInstallPlanRequest
-    ExtensionInstallPlan: ExtensionInstallPlan
-    ExtensionInstallReleaseRequest: ExtensionInstallReleaseRequest
-    ExtensionInstallFromFileRequest: ExtensionInstallFromFileRequest
+    ExtensionCreateReleasePlanRequest: ExtensionCreateReleasePlanRequest
+    ExtensionReleasePlan: ExtensionReleasePlan
+    ExtensionApplyReleaseRequest: ExtensionApplyReleaseRequest
     ExtensionPurgeDataRequest: ExtensionPurgeDataRequest
     ExtensionUpdatePolicyRequest: ExtensionUpdatePolicyRequest
-    ExtensionUpdateRequest: ExtensionUpdateRequest
     ExtensionContributionSnapshot: ExtensionContributionSnapshot
     ExtensionResolvedEntityMenu: ExtensionResolvedEntityMenu
     ExtensionEntityMenuResolveRequest: ExtensionEntityMenuResolveRequest

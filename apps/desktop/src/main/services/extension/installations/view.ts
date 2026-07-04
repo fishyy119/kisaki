@@ -37,25 +37,23 @@ export class ExtensionInstallationView {
     ])
 
     const nextEntries = new Map<string, ExtensionInstalledEntry>()
-    const builtinIds = new Set<string>()
-
-    for (const packageRecord of builtinPackages) {
-      const builtinEntry = buildInstalledEntry(this.layout, packageRecord.id, null, packageRecord)
-      nextEntries.set(packageRecord.id, builtinEntry)
-      builtinIds.add(packageRecord.id)
-    }
 
     for (const installation of installations) {
-      if (builtinIds.has(installation.id)) {
-        continue
-      }
-
       const packageRecord = findPackageRecord(installedPackages, installation.id)
 
       nextEntries.set(
         installation.id,
         buildInstalledEntry(this.layout, installation.id, installation, packageRecord)
       )
+    }
+
+    for (const packageRecord of builtinPackages) {
+      if (nextEntries.has(packageRecord.id)) {
+        continue
+      }
+
+      const builtinEntry = buildInstalledEntry(this.layout, packageRecord.id, null, packageRecord)
+      nextEntries.set(packageRecord.id, builtinEntry)
     }
 
     const sortedEntries = [...nextEntries.values()].sort(compareInstalledEntries)
