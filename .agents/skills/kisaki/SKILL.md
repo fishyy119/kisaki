@@ -17,7 +17,7 @@ This skill serves as the main entry point for development within the Kisaki repo
 - **Frontend**: Vue 3 + TypeScript + Vite
 - **Database**: SQLite + Drizzle ORM
 - **Styling**: TailwindCSS v4 (semantic tokens)
-- **Build**: electron-vite + electron-builder
+- **Build**: in-repo Vite bundler (`apps/desktop/tools/bundler`) + electron-builder
 
 ### Repository Structure
 

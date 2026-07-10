@@ -37,7 +37,8 @@ old internal shapes.
 - Frontend: Vue 3 + TypeScript + Vite.
 - Data: SQLite with Drizzle ORM.
 - Styling: TailwindCSS v4 using semantic tokens.
-- Build and release: electron-vite, electron-builder, pnpm workspaces.
+- Build and release: in-repo Vite bundler (`apps/desktop/tools/bundler`), electron-builder, pnpm
+  workspaces.
 
 ## Main Process Standards
 

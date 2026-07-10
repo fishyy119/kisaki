@@ -12,7 +12,7 @@
 - `apps/desktop/src/main/services/event/service.ts` - Main event service
 - `apps/desktop/src/renderer/src/core/ipc.ts` - Renderer IPC manager
 - `apps/desktop/src/renderer/src/core/event.ts` - Renderer event manager
-- `apps/desktop/src/preload/index.ts` - Preload bridge (`window.electron`)
+- `apps/desktop/src/preload/index.ts` - Preload bridge (`window.kisaki`)
 
 ## IPC Contracts
 

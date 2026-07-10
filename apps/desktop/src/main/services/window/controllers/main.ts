@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
-import { is, platform } from '@electron-toolkit/utils'
+import { isDev, isLinux, rendererDevServerUrl } from '@main/env'
 import windowStateKeeper from 'electron-window-state'
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
@@ -126,7 +126,7 @@ export class MainWindowController implements MainWindowApi {
       fullScreen: false
     })
 
-    const icon = platform.isLinux || is.dev ? resolveResourcePath('icon.png') : undefined
+    const icon = isLinux || isDev ? resolveResourcePath('icon.png') : undefined
 
     const mainWindow = new BrowserWindow({
       x: mainWindowState.x,
@@ -136,9 +136,9 @@ export class MainWindowController implements MainWindowApi {
       show: false,
       frame: false,
       autoHideMenuBar: true,
-      ...(platform.isLinux || is.dev ? { icon } : {}),
+      ...(isLinux || isDev ? { icon } : {}),
       webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
+        preload: join(import.meta.dirname, '../preload/index.mjs'),
         sandbox: false,
         webSecurity: false
       }
@@ -176,12 +176,12 @@ export class MainWindowController implements MainWindowApi {
       }
     })
 
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      const base = process.env['ELECTRON_RENDERER_URL']
+    if (isDev && rendererDevServerUrl) {
+      const base = rendererDevServerUrl
       const mainUrl = new URL('main.html', base.endsWith('/') ? base : `${base}/`).toString()
       mainWindow.loadURL(mainUrl)
     } else {
-      mainWindow.loadFile(join(__dirname, '../renderer/main.html'))
+      mainWindow.loadFile(join(import.meta.dirname, '../renderer/main.html'))
     }
 
     log.info('Main window created')

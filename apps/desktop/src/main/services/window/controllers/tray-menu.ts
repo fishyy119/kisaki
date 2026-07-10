@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
+import { isDev, rendererDevServerUrl } from '@main/env'
 import { createLogger } from '@main/log'
 
 const log = createLogger('Window')
@@ -46,7 +46,7 @@ export class TrayMenuWindowController implements TrayMenuWindowApi {
       transparent: false,
 
       webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
+        preload: join(import.meta.dirname, '../preload/index.mjs'),
         sandbox: false,
         webSecurity: false
       }
@@ -63,8 +63,8 @@ export class TrayMenuWindowController implements TrayMenuWindowApi {
       }
     })
 
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      const base = process.env['ELECTRON_RENDERER_URL']
+    if (isDev && rendererDevServerUrl) {
+      const base = rendererDevServerUrl
       const trayMenuUrl = new URL(
         'tray-menu.html',
         base.endsWith('/') ? base : `${base}/`
@@ -73,9 +73,11 @@ export class TrayMenuWindowController implements TrayMenuWindowApi {
         log.error('Failed to load tray menu window URL:', error)
       })
     } else {
-      trayMenuWindow.loadFile(join(__dirname, '../renderer/tray-menu.html')).catch((error) => {
-        log.error('Failed to load tray menu window file:', error)
-      })
+      trayMenuWindow
+        .loadFile(join(import.meta.dirname, '../renderer/tray-menu.html'))
+        .catch((error) => {
+          log.error('Failed to load tray menu window file:', error)
+        })
     }
 
     log.info('Tray menu window created')

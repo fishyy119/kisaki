@@ -82,7 +82,7 @@ export class DbService implements IService {
     this.client = drizzle(this.sqlite, { schema })
 
     // Run migrations
-    migrate(this.client, { migrationsFolder: path.join(__dirname, '../../drizzle') })
+    migrate(this.client, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') })
 
     // Initialize SQLite triggers for automatic event emission
     // IMPORTANT: Must register emit_db_change function BEFORE any DB writes

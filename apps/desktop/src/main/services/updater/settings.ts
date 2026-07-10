@@ -1,7 +1,10 @@
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import { settings as settingsTable } from '@shared/db'
-import { autoUpdater } from 'electron-updater'
+import electronUpdater from 'electron-updater'
+
+// electron-updater is CJS with lazy getter exports that Node ESM named imports cannot see.
+const { autoUpdater } = electronUpdater
 
 const log = createLogger('Updater')
 

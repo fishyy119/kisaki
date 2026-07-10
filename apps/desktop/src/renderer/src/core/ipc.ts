@@ -23,9 +23,9 @@ export class IpcManager {
   ): () => void {
     const wrappedListener = ((_e: Electron.IpcRendererEvent, ...args: unknown[]) => {
       listener(_e, ...(args as IpcRendererEvents[K]))
-    }) as Parameters<typeof window.electron.ipcRenderer.on>[1]
+    }) as Parameters<typeof window.kisaki.ipcRenderer.on>[1]
 
-    return window.electron.ipcRenderer.on(channel as string, wrappedListener)
+    return window.kisaki.ipcRenderer.on(channel as string, wrappedListener)
   }
 
   /**
@@ -37,16 +37,16 @@ export class IpcManager {
   ): () => void {
     const wrappedListener = ((_e: Electron.IpcRendererEvent, ...args: unknown[]) => {
       listener(_e, ...(args as IpcRendererEvents[K]))
-    }) as Parameters<typeof window.electron.ipcRenderer.once>[1]
+    }) as Parameters<typeof window.kisaki.ipcRenderer.once>[1]
 
-    return window.electron.ipcRenderer.once(channel as string, wrappedListener)
+    return window.kisaki.ipcRenderer.once(channel as string, wrappedListener)
   }
 
   /**
    * Send a one-way message to main process
    */
   send<K extends keyof IpcMainListeners>(channel: K, ...args: IpcMainListeners[K]): void {
-    window.electron.ipcRenderer.send(channel as string, ...args)
+    window.kisaki.ipcRenderer.send(channel as string, ...args)
   }
 
   /**
@@ -56,7 +56,7 @@ export class IpcManager {
     channel: K,
     ...args: Parameters<IpcMainHandlers[K]>
   ): Promise<Awaited<ReturnType<IpcMainHandlers[K]>>> {
-    return window.electron.ipcRenderer.invoke(channel as string, ...args) as Promise<
+    return window.kisaki.ipcRenderer.invoke(channel as string, ...args) as Promise<
       Awaited<ReturnType<IpcMainHandlers[K]>>
     >
   }

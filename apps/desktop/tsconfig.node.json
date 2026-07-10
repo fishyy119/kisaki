@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "include": [
     "env.d.ts",
-    "electron.vite.config.*",
     "tools/**/*",
     "src/main/**/*",
     "src/main/**/*.json",
@@ -12,7 +11,7 @@
   "compilerOptions": {
     "composite": true,
     "jsx": "preserve",
-    "types": ["node", "electron-vite/node"],
+    "types": ["node"],
     "paths": {
       "@main/*": ["./src/main/*"],
       "@shared/*": ["./src/shared/*"]

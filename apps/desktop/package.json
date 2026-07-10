@@ -2,6 +2,7 @@
   "name": "kisaki",
   "version": "0.0.5",
   "description": "A multifunctional media management project",
+  "type": "module",
   "main": "./out/main/index.js",
   "author": "ximu",
   "homepage": "https://github.com/ximu3/kisaki",
@@ -9,9 +10,9 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "pnpm run build:webview-fonts && tsx tools/builtin-extensions/cli.ts watch -- electron-vite dev",
-    "start": "pnpm run build:webview-fonts && tsx tools/builtin-extensions/cli.ts build --target=dev && electron-vite preview",
-    "build": "tsx tools/builtin-extensions/cli.ts build --target=resources && pnpm run build:webview-fonts && pnpm run typecheck && electron-vite build",
+    "dev": "pnpm run build:webview-fonts && tsx tools/builtin-extensions/cli.ts watch -- tsx tools/bundler/cli.ts dev",
+    "start": "pnpm run build:webview-fonts && tsx tools/builtin-extensions/cli.ts build --target=dev && tsx tools/bundler/cli.ts start",
+    "build": "tsx tools/builtin-extensions/cli.ts build --target=resources && pnpm run build:webview-fonts && pnpm run typecheck && tsx tools/bundler/cli.ts build",
     "build:webview-fonts": "tsx tools/webview-fonts/cli.ts build",
     "build:unpack": "pnpm run build && electron-builder --dir",
     "build:win:unpack": "pnpm run build && electron-builder --win --dir",
@@ -30,8 +31,6 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "@electron-toolkit/preload": "^3.0.2",
-    "@electron-toolkit/utils": "^4.0.0",
     "@kisaki3/extension-api": "workspace:*",
     "@kisaki3/extension-registry": "workspace:*",
     "@ximu3/process-list": "^0.0.1",
@@ -62,7 +61,6 @@
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/state": "^6.5.3",
     "@codemirror/view": "^6.39.9",
-    "@electron-toolkit/typed-ipc": "^1.0.2",
     "@fontsource-variable/noto-sans-mono": "^5.2.10",
     "@fontsource-variable/noto-sans-sc": "^5.2.10",
     "@iconify/json": "^2.2.408",
@@ -91,8 +89,6 @@
     "drizzle-kit": "^0.31.8",
     "electron": "^39.2.6",
     "electron-builder": "^26.11.1",
-    "electron-devtools-installer": "^4.0.0",
-    "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-vue": "^10.6.2",
     "markdown-it": "^14.1.0",

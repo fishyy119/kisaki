@@ -2,7 +2,7 @@ import { app } from 'electron'
 import path from 'path'
 import fse from 'fs-extra'
 import { createLogger } from '@main/log'
-import { is } from '@electron-toolkit/utils'
+import { isDev } from '@main/env'
 import { wrapIpc, wrapIpcVoid, type IpcService } from '@main/services/ipc'
 
 const log = createLogger('Portable')
@@ -38,7 +38,7 @@ let portableStatus: PortableStatus | null = null
  * In production, returns the directory containing the exe.
  */
 function getAppRootPath(): string {
-  if (is.dev) {
+  if (isDev) {
     return process.cwd()
   }
   // In production, app.getPath('exe') returns the path to the executable

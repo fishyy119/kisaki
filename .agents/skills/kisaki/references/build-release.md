@@ -6,7 +6,7 @@
 
 - `apps/desktop/package.json` - Scripts and version
 - `apps/desktop/tools/builtin-extensions/` - Built-in extension preparation for dev, preview, and production builds
-- `apps/desktop/electron.vite.config.ts` - Vite configuration
+- `apps/desktop/tools/bundler/` - In-repo Vite bundler (main/preload/renderer targets, dev orchestration)
 - `apps/desktop/electron-builder.yml` - Electron Builder config
 - `apps/desktop/tsconfig.*.json` - TypeScript configs
 
@@ -33,7 +33,7 @@
 pnpm dev  # Start dev server with hot reload
 ```
 
-`pnpm dev` routes to the desktop package, watches root `extensions/*`, writes built-in extension output to `apps/desktop/out/extensions`, and then starts `electron-vite dev`.
+`pnpm dev` routes to the desktop package, watches root `extensions/*`, writes built-in extension output to `apps/desktop/out/extensions`, and then starts `tools/bundler/cli.ts dev` (renderer dev server with HMR, main/preload watch builds, Electron restart on main rebuilds).
 
 ### Production Build
 
@@ -52,7 +52,7 @@ pnpm build:win:unpack  # Windows unpacked only
 
 1. **Built-in extensions**: `apps/desktop/tools/builtin-extensions/cli.ts build --target=resources` → `resources/extensions`
 2. **TypeScript check**: `vue-tsc --noEmit`
-3. **Vite build**: `electron-vite build` → `out/` (main/preload/renderer)
+3. **Vite build**: `tools/bundler/cli.ts build` → `out/` (ESM main + extension host, `.mjs` preload, renderer)
 4. **Package**: `electron-builder` → `dist/`
 5. **Windows installer**: `electron-builder` NSIS target → `*-setup.exe` + `latest.yml`
 
@@ -165,7 +165,7 @@ Tools used:
 - Windows: `nsis`, `installer.nsh`, `EnVar.dll`, `latest.yml`
 - Protocol: `setAsDefaultProtocolClient`, `kisaki` scheme
 - Workspace: `pnpm --filter`, `pnpm -r --parallel`
-- Tools: `electron-vite`, `electron-builder`, `drizzle-kit`
+- Tools: `tools/bundler`, `electron-builder`, `drizzle-kit`
 - Built-in extensions: `prepare-builtin-extensions`, `resources/extensions`, `out/extensions`, `extensions/*`
 
 ## Procedures
@@ -199,7 +199,7 @@ Tools used:
 2. Search for script call chain
 3. After changes, verify:
    - TypeScript: `tsconfig.base.json` + package tsconfigs
-   - Aliases: `electron.vite.config.ts` + tsconfig `paths`
+   - Aliases: `tools/bundler/targets.ts` + tsconfig `paths`
    - ESLint/Prettier consistency
 
 ## Constraints

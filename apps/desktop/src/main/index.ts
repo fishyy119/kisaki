@@ -1,6 +1,6 @@
 import { app } from 'electron'
-import { electronApp, optimizer, platform, is } from '@electron-toolkit/utils'
 import path from 'path'
+import { isDev, isMacOS, isWindows } from './env'
 import { createLogger, configureLogger, initializeLogger } from './log'
 
 // Services
@@ -93,21 +93,16 @@ if (!gotTheLock) {
 // Setup userData path before app is ready
 // In dev build: use local dev/app folder
 // In production: detect portable mode or use default userData
-if (is.dev) {
+if (isDev) {
   app.setPath('userData', path.join(process.cwd(), 'dev/app'))
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 async function onAppReady(): Promise<void> {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
-
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+  if (isWindows) {
+    app.setAppUserModelId('me.kisaki')
+  }
 
   // Services (register first, then initialize via container.initAll())
   await container.register(new IpcService())
@@ -194,40 +189,9 @@ async function onAppReady(): Promise<void> {
   })
 }
 
-void (async () => {
-  try {
-    if (!is.dev) {
-      await detectPortableMode()
-    }
-
-    configureLogger()
-    initializeLogger()
-
-    if (bootstrapArgs.developmentExtensions.length > 0) {
-      log.info('Development extensions requested.', {
-        developmentExtensions: bootstrapArgs.developmentExtensions.map(
-          (extension) => extension.path
-        )
-      })
-    }
-
-    if (bootstrapArgs.extensionHostInspect) {
-      log.info('Extension host inspector requested.', bootstrapArgs.extensionHostInspect)
-    }
-
-    await app.whenReady()
-    await onAppReady()
-  } catch (error) {
-    configureLogger()
-    initializeLogger()
-    log.error('Failed during app ready bootstrap.', error)
-    app.exit(1)
-  }
-})()
-
 // Quit when all windows are closed, except on macOS.
 app.on('window-all-closed', () => {
-  if (!platform.isMacOS) {
+  if (!isMacOS) {
     app.quit()
   }
 })
@@ -258,3 +222,36 @@ app.on('before-quit', (event) => {
     }
   })()
 })
+
+// Do not top-level await app.whenReady(): Electron defers 'ready' until the
+// ESM entry module finishes evaluating, so awaiting it here would deadlock.
+void (async () => {
+  try {
+    if (!isDev) {
+      await detectPortableMode()
+    }
+
+    configureLogger()
+    initializeLogger()
+
+    if (bootstrapArgs.developmentExtensions.length > 0) {
+      log.info('Development extensions requested.', {
+        developmentExtensions: bootstrapArgs.developmentExtensions.map(
+          (extension) => extension.path
+        )
+      })
+    }
+
+    if (bootstrapArgs.extensionHostInspect) {
+      log.info('Extension host inspector requested.', bootstrapArgs.extensionHostInspect)
+    }
+
+    await app.whenReady()
+    await onAppReady()
+  } catch (error) {
+    configureLogger()
+    initializeLogger()
+    log.error('Failed during app ready bootstrap.', error)
+    app.exit(1)
+  }
+})()

@@ -1,6 +1,7 @@
 import path from 'node:path'
 import fse from 'fs-extra'
-import rawLog from 'electron-log/main'
+// electron-log has no exports map; Node ESM subpath imports need the exact file.
+import rawLog from 'electron-log/main.js'
 import {
   createUnavailableError,
   type ExtensionRuntimeHandle,

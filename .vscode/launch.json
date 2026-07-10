@@ -10,7 +10,7 @@
       "windows": {
         "runtimeExecutable": "pnpm.cmd"
       },
-      "runtimeArgs": ["--filter", "kisaki", "run", "dev", "--", "--sourcemap"],
+      "runtimeArgs": ["--filter", "kisaki", "run", "dev"],
       "autoAttachChildProcesses": true,
       "console": "internalConsole",
       "outputCapture": "std",

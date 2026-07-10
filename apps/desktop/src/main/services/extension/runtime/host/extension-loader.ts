@@ -6,7 +6,9 @@ import type {
   ExtensionRuntimeMetadata
 } from '@kisaki3/extension-api'
 import { toRpcErrorPayload } from '@kisaki3/extension-api'
-import { readExtensionManifestFile, resolveExtensionFilePath } from '../../packages'
+// Import the manifest module directly: the packages barrel links Electron
+// main-process modules, which must stay out of the utility process bundle.
+import { readExtensionManifestFile, resolveExtensionFilePath } from '../../packages/manifest'
 import {
   createEntityMenuRegistrationMaps,
   createScraperProviderMaps,

@@ -5,7 +5,7 @@
  */
 
 import { shell } from 'electron'
-import { platform } from '@electron-toolkit/utils'
+import { isWindows } from '@main/env'
 import type { Game } from '@shared/db'
 import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
@@ -197,7 +197,7 @@ export class GameLauncherHandler {
 
   private async selectLauncherPath(game: Game): Promise<string | null> {
     const filters =
-      game.launcherMode === 'exec' && platform.isWindows
+      game.launcherMode === 'exec' && isWindows
         ? [
             { name: 'Executable', extensions: ['exe', 'bat', 'cmd', 'com'] },
             { name: 'All Files', extensions: ['*'] }
@@ -320,7 +320,7 @@ export class GameLauncherHandler {
     }
 
     // Windows uses taskkill command
-    if (platform.isWindows) {
+    if (isWindows) {
       await runExternalCommand('taskkill', ['/F', '/PID', String(status.pid)])
     } else {
       // Unix-like systems use kill command

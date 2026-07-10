@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { is } from '@electron-toolkit/utils'
+import { isDev } from '@main/env'
 import { createLogger } from '@main/log'
 import type { IpcService } from '@main/services/ipc'
 import {
@@ -13,8 +13,11 @@ import type {
   AppUpdaterState
 } from '@shared/updater'
 import type { TaskRunInitiator, TaskRunProgressUpdate, TaskRunStartResult } from '@shared/task-run'
-import { autoUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
+import electronUpdater, { type ProgressInfo, type UpdateInfo } from 'electron-updater'
 import type { UpdaterSettings } from './settings'
+
+// electron-updater is CJS with lazy getter exports that Node ESM named imports cannot see.
+const { autoUpdater } = electronUpdater
 
 const log = createLogger('Updater')
 
@@ -71,7 +74,7 @@ export class AppUpdateManager {
       }
     }
 
-    if (is.dev || !app.isPackaged) {
+    if (isDev) {
       throw new Error('Manual update check is only available in packaged builds.')
     }
 
@@ -312,7 +315,7 @@ export class AppUpdateManager {
       return false
     }
 
-    if (is.dev || !app.isPackaged) {
+    if (isDev) {
       log.info('Skipping startup update check in development mode.')
       return false
     }
