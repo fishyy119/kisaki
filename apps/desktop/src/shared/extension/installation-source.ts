@@ -1,7 +1,6 @@
 import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
-  ExtensionRegistryLocalizedDocumentSet,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease,
   ExtensionRegistrySchemaVersion,
@@ -35,6 +34,7 @@ export interface ExtensionRepositoryInstallationSnapshot {
     ExtensionRegistryPackage,
     | 'id'
     | 'name'
+    | 'summary'
     | 'description'
     | 'categories'
     | 'keywords'
@@ -55,7 +55,6 @@ export interface ExtensionLocalFileInstallationSource {
 
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 const ISO_UTC_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
-const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
 const SUPPORTED_SCHEMA_VERSION = 1 satisfies ExtensionRegistrySchemaVersion
 
 export function parseExtensionInstallationSource(
@@ -190,23 +189,23 @@ function parseSnapshotPackage(
   if (
     !isNonEmptyString(value.id) ||
     !isNonEmptyString(value.name) ||
+    !isNonEmptyString(value.summary) ||
     !Array.isArray(value.categories)
   ) {
     return null
   }
 
-  const description = parseLocalizedDocumentSet(value.description)
   const categories = value.categories.filter(isNonEmptyString) as ExtensionCategory[]
   const keywords =
     value.keywords === undefined ? undefined : parseOptionalStringArray(value.keywords)
   const owner = value.owner === undefined ? undefined : parseSnapshotPackageOwner(value.owner)
   const icon = value.icon === undefined ? undefined : parseSnapshotPackageIcon(value.icon)
   if (
-    !description ||
     categories.length !== value.categories.length ||
     keywords === null ||
     owner === null ||
     icon === null ||
+    (value.description !== undefined && typeof value.description !== 'string') ||
     (value.homepage !== undefined && !isValidUrl(value.homepage)) ||
     (value.repository !== undefined && !isValidUrl(value.repository)) ||
     (value.license !== undefined && !isNonEmptyString(value.license))
@@ -217,7 +216,8 @@ function parseSnapshotPackage(
   return {
     id: value.id,
     name: value.name,
-    description,
+    summary: value.summary,
+    ...(typeof value.description === 'string' ? { description: value.description } : {}),
     categories,
     ...(keywords ? { keywords } : {}),
     ...(owner ? { owner } : {}),
@@ -241,15 +241,14 @@ function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistry
   const engines = parseReleaseEngines(value.engines)
   const artifacts = value.artifacts.map(parseSnapshotArtifact)
   const changelog =
-    value.changelog === undefined ? undefined : parseLocalizedDocumentSet(value.changelog)
+    value.changelog === undefined ? undefined : parseReleaseChangelog(value.changelog)
   const yanked = value.yanked === undefined ? undefined : parseReleaseYank(value.yanked)
   if (
     !engines ||
     artifacts.length === 0 ||
     artifacts.some((artifact) => !artifact) ||
     changelog === null ||
-    yanked === null ||
-    (value.releasePage !== undefined && !isValidUrl(value.releasePage))
+    yanked === null
   ) {
     return null
   }
@@ -258,7 +257,6 @@ function parseSnapshotRelease(value: Record<string, unknown>): ExtensionRegistry
     version: value.version,
     publishedAt: value.publishedAt,
     engines,
-    ...(isNonEmptyString(value.releasePage) ? { releasePage: value.releasePage } : {}),
     ...(changelog ? { changelog } : {}),
     ...(yanked ? { yanked } : {}),
     artifacts: artifacts as ExtensionRegistryArtifact[]
@@ -307,44 +305,26 @@ function parseSnapshotPackageIcon(value: unknown): ExtensionRegistryPackage['ico
   }
 }
 
-function parseLocalizedDocumentSet(value: unknown): ExtensionRegistryLocalizedDocumentSet | null {
-  if (
-    !isPlainRecord(value) ||
-    !isNonEmptyString(value.defaultLocale) ||
-    !isPlainRecord(value.locales)
-  ) {
+function parseReleaseChangelog(value: unknown): ExtensionRegistryRelease['changelog'] | null {
+  if (!isPlainRecord(value)) {
     return null
   }
 
-  if (!LOCALE_PATTERN.test(value.defaultLocale) || !(value.defaultLocale in value.locales)) {
+  if (value.text !== undefined && !isNonEmptyString(value.text)) {
     return null
   }
 
-  const locales: Record<string, ExtensionRegistryLocalizedDocumentSet['locales'][string]> = {}
-  const localeEntries = Object.entries(value.locales)
-  if (localeEntries.length === 0) {
+  if (value.url !== undefined && !isValidUrl(value.url)) {
     return null
   }
 
-  for (const [locale, document] of localeEntries) {
-    if (!LOCALE_PATTERN.test(locale) || !isPlainRecord(document)) {
-      return null
-    }
-    if (!isNonEmptyString(document.summary)) {
-      return null
-    }
-    if (document.body !== undefined && !isNonEmptyString(document.body)) {
-      return null
-    }
-    locales[locale] = {
-      summary: document.summary,
-      ...(isNonEmptyString(document.body) ? { body: document.body } : {})
-    }
+  if (value.text === undefined && value.url === undefined) {
+    return null
   }
 
   return {
-    defaultLocale: value.defaultLocale,
-    locales
+    ...(isNonEmptyString(value.text) ? { text: value.text } : {}),
+    ...(isNonEmptyString(value.url) ? { url: value.url } : {})
   }
 }
 

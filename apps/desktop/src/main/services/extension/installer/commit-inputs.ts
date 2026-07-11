@@ -12,7 +12,10 @@ export function createRepositoryInstallationSnapshot(
     package: {
       id: candidate.registryPackage.id,
       name: candidate.registryPackage.name,
-      description: candidate.registryPackage.description,
+      summary: candidate.registryPackage.summary,
+      ...(candidate.registryPackage.description === undefined
+        ? {}
+        : { description: candidate.registryPackage.description }),
       categories: candidate.registryPackage.categories,
       ...(candidate.registryPackage.keywords === undefined
         ? {}

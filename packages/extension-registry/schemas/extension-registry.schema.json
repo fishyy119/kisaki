@@ -83,45 +83,6 @@
       "type": "string",
       "pattern": "^(?:any|[a-z][a-z0-9]*-[a-z0-9][a-z0-9_-]*)$"
     },
-    "locale": {
-      "type": "string",
-      "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
-    },
-    "localizedDocument": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["summary"],
-      "properties": {
-        "summary": {
-          "type": "string",
-          "minLength": 1
-        },
-        "body": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
-    },
-    "localizedDocumentSet": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["defaultLocale", "locales"],
-      "properties": {
-        "defaultLocale": {
-          "$ref": "#/$defs/locale"
-        },
-        "locales": {
-          "type": "object",
-          "minProperties": 1,
-          "propertyNames": {
-            "$ref": "#/$defs/locale"
-          },
-          "additionalProperties": {
-            "$ref": "#/$defs/localizedDocument"
-          }
-        }
-      }
-    },
     "signingKey": {
       "type": "object",
       "additionalProperties": false,
@@ -142,7 +103,7 @@
     "package": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "description", "categories", "releases"],
+      "required": ["id", "name", "summary", "categories", "releases"],
       "properties": {
         "id": {
           "$ref": "#/$defs/extensionIdentifier"
@@ -151,8 +112,12 @@
           "type": "string",
           "minLength": 1
         },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
         "description": {
-          "$ref": "#/$defs/localizedDocumentSet"
+          "type": "string"
         },
         "categories": {
           "type": "array",
@@ -240,12 +205,8 @@
         "engines": {
           "$ref": "#/$defs/releaseEngines"
         },
-        "releasePage": {
-          "type": "string",
-          "format": "uri"
-        },
         "changelog": {
-          "$ref": "#/$defs/localizedDocumentSet"
+          "$ref": "#/$defs/changelog"
         },
         "yanked": {
           "$ref": "#/$defs/yank"
@@ -266,6 +227,21 @@
       "properties": {
         "kisakiExtensionApi": {
           "$ref": "#/$defs/semverRange"
+        }
+      }
+    },
+    "changelog": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },

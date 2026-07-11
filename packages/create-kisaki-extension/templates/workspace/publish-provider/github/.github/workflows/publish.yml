@@ -114,7 +114,6 @@ jobs:
         env:
           PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
           PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
-          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
           PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
           ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
           SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}
@@ -125,7 +124,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PUBLISH_TAG: ${{ needs.detect.outputs.tag }}
           PUBLISH_EXTENSION_ID: ${{ needs.detect.outputs.extension_id }}
-          PUBLISH_EXTENSION_DIR: ${{ needs.detect.outputs.extension_dir }}
           PUBLISH_VERSION: ${{ needs.detect.outputs.version }}
           ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
           SIGNATURE_PATH: ${{ steps.artifact.outputs.signature_path }}

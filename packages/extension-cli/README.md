@@ -30,10 +30,7 @@ kisx key generate --out .keys/author.ed25519.json
 kisx registry init
 kisx registry add-release artifacts/example-0.0.1.kisx \
   --manifest registry/manifest.json \
-  --url https://example.com/extensions/example-0.0.1.kisx \
-  --release-page https://example.com/extensions/example/releases/0.0.1 \
-  --changelogs changelogs/v0.0.1 \
-  --default-locale en
+  --url https://example.com/extensions/example-0.0.1.kisx
 kisx registry yank example.extension@0.0.1 --manifest registry/manifest.json --reason "Broken package"
 kisx registry unyank example.extension@0.0.1 --manifest registry/manifest.json
 kisx registry validate registry/manifest.json
@@ -93,20 +90,7 @@ kisx registry validate registry/manifest.json
 size and sha256, creates or updates the release, and prints the release digest.
 Use `--signature <sig-file>` to attach a signature created by `kisx pack --sign` or
 `kisx registry sign`.
-Use `--release-page <url>` for the human release page. Release changelogs are
-localized Markdown files: pass `--changelogs <dir>` and `--default-locale <locale>`.
-The directory must contain one `<locale>.md` file per locale, such as
-`changelogs/v0.0.1/en.md` and `changelogs/v0.0.1/zh-Hans.md`. Each file declares
-its registry summary in top front matter; the remaining Markdown is the
-changelog body:
-
-```md
----
-summary: Added the first public release.
----
-
-Describe the release in more detail.
-```
+Use `--changelog <text>` and `--changelog-url <url>` for optional release notes.
 
 Stable releases use plain semver versions. Preview releases use semver prerelease
 prefixes such as `alpha`, `beta`, `rc`, or `nightly`. Platform builds are separate

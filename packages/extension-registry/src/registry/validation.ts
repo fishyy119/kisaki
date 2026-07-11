@@ -42,6 +42,7 @@ const SIGNING_KEY_KEYS = new Set(['id', 'algorithm', 'publicKey'])
 const PACKAGE_KEYS = new Set([
   'id',
   'name',
+  'summary',
   'description',
   'categories',
   'keywords',
@@ -58,14 +59,12 @@ const RELEASE_KEYS = new Set([
   'version',
   'publishedAt',
   'engines',
-  'releasePage',
   'changelog',
   'yanked',
   'artifacts'
 ])
 const RELEASE_ENGINES_KEYS = new Set(['kisakiExtensionApi'])
-const LOCALIZED_DOCUMENT_SET_KEYS = new Set(['defaultLocale', 'locales'])
-const LOCALIZED_DOCUMENT_KEYS = new Set(['summary', 'body'])
+const CHANGELOG_KEYS = new Set(['text', 'url'])
 const YANK_KEYS = new Set(['at', 'reason'])
 const ARTIFACT_KEYS = new Set(['target', 'url', 'size', 'sha256', 'signature'])
 const SIGNATURE_KEYS = new Set(['keyId', 'algorithm', 'value'])
@@ -74,7 +73,6 @@ const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/
 const ARTIFACT_TARGET_PATTERN = /^(?:any|[a-z][a-z0-9]*-[a-z0-9][a-z0-9_-]*)$/
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 const ISO_UTC_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
-const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
 
 export function matchesExtensionRegistryArtifactTargetFormat(
   value: string
@@ -299,7 +297,14 @@ function validateRegistryPackage(
       trim: true,
       valueMessage: 'Package name must be a non-empty string.'
     }),
-    ...validateLocalizedDocumentSet(value.description, `${path}.description`, 'description'),
+    ...validateRequiredString(value.summary, `${path}.summary`, {
+      minLength: 1,
+      trim: true,
+      valueMessage: 'Package summary must be a non-empty string.'
+    }),
+    ...validateOptionalString(value.description, `${path}.description`, {
+      typeMessage: 'description must be a string when provided.'
+    }),
     ...validateOptionalUri(value.homepage, `${path}.homepage`),
     ...validateOptionalUri(value.repository, `${path}.repository`),
     ...validateOptionalString(value.license, `${path}.license`, {
@@ -414,10 +419,8 @@ function validateRelease(
   )
 
   issues.push(...validateReleaseEngines(value.engines, `${path}.engines`))
-  issues.push(...validateOptionalUri(value.releasePage, `${path}.releasePage`))
-
   if (value.changelog !== undefined) {
-    issues.push(...validateLocalizedDocumentSet(value.changelog, `${path}.changelog`, 'changelog'))
+    issues.push(...validateReleaseChangelog(value.changelog, `${path}.changelog`))
   }
   if (value.yanked !== undefined) {
     issues.push(...validateReleaseYank(value.yanked, `${path}.yanked`))
@@ -475,106 +478,29 @@ function validateReleaseEngines(value: unknown, path: string): ValidationIssue[]
   return issues
 }
 
-function validateLocalizedDocumentSet(
-  value: unknown,
-  path: string,
-  label: string
-): ValidationIssue[] {
+function validateReleaseChangelog(value: unknown, path: string): ValidationIssue[] {
   const issues: ValidationIssue[] = []
 
   if (!isPlainObject(value)) {
-    return [{ path, message: `${label} must be a localized document set.` }]
+    return [{ path, message: 'changelog must be an object.' }]
   }
 
   issues.push(
-    ...validateUnknownKeysWithMessage(
-      value,
-      LOCALIZED_DOCUMENT_SET_KEYS,
-      path,
-      `Unknown ${label} field.`
-    ),
-    ...validateRequiredString(value.defaultLocale, `${path}.defaultLocale`, {
+    ...validateUnknownKeysWithMessage(value, CHANGELOG_KEYS, path, 'Unknown changelog field.'),
+    ...validateOptionalString(value.text, `${path}.text`, {
       minLength: 1,
       trim: true,
-      typeMessage: `${label}.defaultLocale must be a string.`,
-      valueMessage: `${label}.defaultLocale must be a non-empty locale.`
-    })
+      typeMessage: 'changelog.text must be a string when provided.',
+      valueMessage: 'changelog.text must be a non-empty string when provided.'
+    }),
+    ...validateOptionalUri(value.url, `${path}.url`)
   )
 
-  if (typeof value.defaultLocale === 'string' && !LOCALE_PATTERN.test(value.defaultLocale)) {
-    issues.push({
-      path: `${path}.defaultLocale`,
-      message: `${label}.defaultLocale must be a BCP 47-style locale such as en or zh-Hans.`
-    })
-  }
-
-  const locales = value.locales
-  if (!isPlainObject(locales)) {
-    issues.push({
-      path: `${path}.locales`,
-      message: `${label}.locales must be an object keyed by locale.`
-    })
-    return issues
-  }
-
-  const localeEntries = Object.entries(locales)
-  if (localeEntries.length === 0) {
-    issues.push({
-      path: `${path}.locales`,
-      message: `${label}.locales must contain at least one locale.`
-    })
-  }
-
-  for (const [locale, document] of localeEntries) {
-    const localePath = `${path}.locales.${JSON.stringify(locale)}`
-    if (!LOCALE_PATTERN.test(locale)) {
-      issues.push({
-        path: localePath,
-        message: `${label} locale keys must be BCP 47-style locales such as en or zh-Hans.`
-      })
-    }
-    issues.push(...validateLocalizedDocument(document, localePath, label))
-  }
-
-  if (
-    typeof value.defaultLocale === 'string' &&
-    LOCALE_PATTERN.test(value.defaultLocale) &&
-    !Object.prototype.hasOwnProperty.call(locales, value.defaultLocale)
-  ) {
-    issues.push({
-      path: `${path}.defaultLocale`,
-      message: `${label}.defaultLocale must reference an entry in ${label}.locales.`
-    })
+  if (value.text === undefined && value.url === undefined) {
+    issues.push({ path, message: 'changelog must include text or url.' })
   }
 
   return issues
-}
-
-function validateLocalizedDocument(value: unknown, path: string, label: string): ValidationIssue[] {
-  if (!isPlainObject(value)) {
-    return [{ path, message: `${label} locale entry must be an object.` }]
-  }
-
-  return [
-    ...validateUnknownKeysWithMessage(
-      value,
-      LOCALIZED_DOCUMENT_KEYS,
-      path,
-      `Unknown ${label} locale field.`
-    ),
-    ...validateRequiredString(value.summary, `${path}.summary`, {
-      minLength: 1,
-      trim: true,
-      typeMessage: `${label} summary must be a string.`,
-      valueMessage: `${label} summary must be a non-empty string.`
-    }),
-    ...validateOptionalString(value.body, `${path}.body`, {
-      minLength: 1,
-      trim: true,
-      typeMessage: `${label} body must be a string when provided.`,
-      valueMessage: `${label} body must be a non-empty string when provided.`
-    })
-  ]
 }
 
 function validateReleaseYank(value: unknown, path: string): ValidationIssue[] {

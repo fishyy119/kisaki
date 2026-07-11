@@ -83,7 +83,7 @@ export class ExtensionReleasePlanner {
       package: {
         id: candidate.registryPackage.id,
         name: candidate.registryPackage.name,
-        description: candidate.registryPackage.description,
+        summary: candidate.registryPackage.summary,
         currentVersion,
         targetVersion: candidate.release.version,
         releaseKind: release.releaseKind
@@ -337,7 +337,6 @@ function toReleaseInfo(
     releaseKind: getExtensionRegistryReleaseKind(candidate.release.version),
     publishedAt: candidate.release.publishedAt,
     engines: candidate.release.engines,
-    releasePage: candidate.release.releasePage,
     changelog: candidate.release.changelog,
     yanked: candidate.release.yanked !== undefined,
     compatible: true,
@@ -408,7 +407,7 @@ function createReleasePlanFingerprint(plan: CreateExtensionReleasePlanInput): st
     package: {
       id: plan.package.id,
       name: plan.package.name,
-      description: plan.package.description ?? null,
+      summary: plan.package.summary ?? null,
       currentVersion: plan.package.currentVersion,
       targetVersion: plan.package.targetVersion,
       releaseKind: plan.package.releaseKind
@@ -431,7 +430,6 @@ function createReleasePlanFingerprint(plan: CreateExtensionReleasePlanInput): st
           engines: {
             kisakiExtensionApi: plan.release.engines.kisakiExtensionApi
           },
-          releasePage: plan.release.releasePage ?? null,
           changelog: plan.release.changelog ?? null,
           yanked: plan.release.yanked,
           compatible: plan.release.compatible,

@@ -1,14 +1,11 @@
 import { commandSucceeds, readRequiredEnv, run } from './common'
-import { createDefaultReleaseNotes, readReleaseChangelog } from './changelog'
 
 const tag = readRequiredEnv('PUBLISH_TAG')
 const extensionId = readRequiredEnv('PUBLISH_EXTENSION_ID')
 const version = readRequiredEnv('PUBLISH_VERSION')
 const archivePath = readRequiredEnv('ARCHIVE_PATH')
 const signaturePath = readRequiredEnv('SIGNATURE_PATH')
-const workspaceDir = readRequiredEnv('GITHUB_WORKSPACE')
-const changelog = readReleaseChangelog(`${workspaceDir}/artifacts/release-source`, version)
-const releaseNotes = changelog?.releaseNotes ?? createDefaultReleaseNotes(extensionId, version)
+const releaseNotes = `Kisaki extension package \`${extensionId}@${version}\`.`
 
 readRequiredEnv('GH_TOKEN')
 

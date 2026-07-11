@@ -47,20 +47,11 @@ export interface ExtensionRegistryPackageIcon {
   readonly sha256?: string
 }
 
-export interface ExtensionRegistryLocalizedDocument {
-  readonly summary: string
-  readonly body?: string
-}
-
-export interface ExtensionRegistryLocalizedDocumentSet {
-  readonly defaultLocale: string
-  readonly locales: Readonly<Record<string, ExtensionRegistryLocalizedDocument>>
-}
-
 export interface ExtensionRegistryPackage {
   readonly id: string
   readonly name: string
-  readonly description: ExtensionRegistryLocalizedDocumentSet
+  readonly summary: string
+  readonly description?: string
   readonly categories: readonly ExtensionCategory[]
   readonly keywords?: readonly string[]
   readonly owner?: ExtensionRegistryPackageOwner
@@ -75,6 +66,11 @@ export interface ExtensionRegistryReleaseEngines {
   readonly kisakiExtensionApi: string
 }
 
+export interface ExtensionRegistryReleaseChangelog {
+  readonly text?: string
+  readonly url?: string
+}
+
 export interface ExtensionRegistryReleaseYank {
   readonly at: string
   readonly reason?: string
@@ -84,8 +80,7 @@ export interface ExtensionRegistryRelease {
   readonly version: string
   readonly publishedAt: string
   readonly engines: ExtensionRegistryReleaseEngines
-  readonly releasePage?: string
-  readonly changelog?: ExtensionRegistryLocalizedDocumentSet
+  readonly changelog?: ExtensionRegistryReleaseChangelog
   readonly yanked?: ExtensionRegistryReleaseYank
   readonly artifacts: readonly ExtensionRegistryArtifact[]
 }

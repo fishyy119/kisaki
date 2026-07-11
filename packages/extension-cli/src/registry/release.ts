@@ -1,7 +1,6 @@
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
-  ExtensionRegistryLocalizedDocumentSet,
   ExtensionRegistryManifest,
   ExtensionRegistryPackage,
   ExtensionRegistryRelease,
@@ -20,14 +19,14 @@ import {
   areRegistryManifestsEquivalent,
   compareRegistryArtifacts,
   compareRegistryReleases,
-  createPackageDescription
+  createPackageSummary
 } from './model'
 
 /** Release metadata supplied independently from the packaged extension. */
 export interface CreateRegistryReleaseOptions {
   publishedAt?: string
-  releasePage?: string
-  changelog?: ExtensionRegistryLocalizedDocumentSet
+  changelog?: string
+  changelogUrl?: string
 }
 
 /** Builds a registry release from a validated package manifest and artifact. */
@@ -46,8 +45,10 @@ export function createRegistryRelease(
     version: manifest.version,
     publishedAt: options.publishedAt ?? new Date().toISOString(),
     engines: { kisakiExtensionApi: kisakiExtensionApiRange },
-    releasePage: options.releasePage,
-    changelog: options.changelog,
+    changelog:
+      options.changelog || options.changelogUrl
+        ? { text: options.changelog, url: options.changelogUrl }
+        : undefined,
     artifacts: [artifact]
   })
 }
@@ -117,7 +118,8 @@ function createRegistryPackage(manifest: ExtensionManifest): ExtensionRegistryPa
   return compactRegistryPackage({
     id: manifest.id,
     name: manifest.name,
-    description: createPackageDescription(manifest),
+    summary: createPackageSummary(manifest),
+    description: manifest.description,
     categories: manifest.categories,
     keywords: manifest.keywords,
     owner: manifest.author ? { name: manifest.author } : undefined,
@@ -151,10 +153,7 @@ function mergeRegistryRelease(input: {
     const changelogChanged =
       input.incoming.changelog !== undefined &&
       JSON.stringify(input.incoming.changelog) !== JSON.stringify(input.existing.changelog)
-    const releasePageChanged =
-      input.incoming.releasePage !== undefined &&
-      input.incoming.releasePage !== input.existing.releasePage
-    if (!artifactChanged && !changelogChanged && !releasePageChanged) {
+    if (!artifactChanged && !changelogChanged) {
       return input.existing
     }
     if (artifactChanged && !input.replace) {
@@ -173,7 +172,6 @@ function mergeRegistryRelease(input: {
   return compactRegistryRelease({
     ...input.existing,
     publishedAt: input.replace ? input.incoming.publishedAt : input.existing.publishedAt,
-    releasePage: input.incoming.releasePage ?? input.existing.releasePage,
     changelog: input.incoming.changelog ?? input.existing.changelog,
     artifacts: artifacts.toSorted(compareRegistryArtifacts)
   })

@@ -13,26 +13,6 @@ packages only the tagged extension source, updates and validates
 GitHub Release for `<extension-id>-v0.0.1` without removing other extension
 packages.
 
-Optional release changelogs live under the extension directory. The workflow
-uses the default locale entry for GitHub Release notes and writes all locale
-entries into the registry release:
-
-```text
-extensions/<extension-id>/changelogs/v0.0.1/en.md
-extensions/<extension-id>/changelogs/v0.0.1/zh-Hans.md
-```
-
-Each file declares its registry summary in top front matter. The remaining
-Markdown is the changelog body:
-
-```md
----
-summary: Added the first public release.
----
-
-Describe the release in more detail.
-```
-
 If a publish job fails, fix the issue, move the same tag to the corrected
 commit, and push the tag again:
 

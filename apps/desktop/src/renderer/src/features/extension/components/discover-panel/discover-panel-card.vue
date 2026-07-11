@@ -8,7 +8,6 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils/cn'
-import { getLocalizedSummary } from '../../utils/localized-document'
 import type {
   ExtensionCatalogPackageInfo,
   ExtensionCreateRepositoryReleasePlanRequest
@@ -30,7 +29,6 @@ const emit = defineEmits<Emits>()
 const iconError = ref(false)
 
 const latestRelease = computed(() => props.extension.latestRelease)
-const description = computed(() => getLocalizedSummary(props.extension.description, '无描述'))
 const canInstall = computed(
   () =>
     !props.installed &&
@@ -89,7 +87,7 @@ function handleInstall() {
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ description }}
+      {{ props.extension.summary || '无描述' }}
     </p>
 
     <!-- Footer -->

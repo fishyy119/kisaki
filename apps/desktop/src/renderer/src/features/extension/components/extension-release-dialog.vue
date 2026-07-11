@@ -30,8 +30,6 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { useTaskRunStore } from '@renderer/stores'
-import { selectLocalizedDocument } from '../utils/localized-document'
-import ExtensionChangelogDialog from './extension-changelog-dialog.vue'
 import type {
   ExtensionApplyReleaseRequest,
   ExtensionCreateReleasePlanRequest,
@@ -64,7 +62,6 @@ const applying = ref(false)
 const enabled = ref(true)
 const updatePolicy = ref<ExtensionInstallUpdatePolicy>('manual')
 const trustSignerFingerprint = ref(false)
-const changelogDialogOpen = ref(false)
 
 const title = computed(() => {
   if (plan.value) {
@@ -93,8 +90,7 @@ const riskVariant = computed(() => {
 
   return 'destructive'
 })
-const changelog = computed(() => selectLocalizedDocument(plan.value?.release?.changelog))
-const changelogRelease = computed(() => plan.value?.release ?? null)
+const changelog = computed(() => plan.value?.release?.changelog ?? null)
 const confirmLabel = computed(() =>
   plan.value ? `确认${releaseActionLabel(plan.value.action)}` : '选择文件'
 )
@@ -274,7 +270,6 @@ function resetState() {
   enabled.value = true
   updatePolicy.value = 'manual'
   trustSignerFingerprint.value = false
-  changelogDialogOpen.value = false
 }
 
 function releaseActionLabel(action: ExtensionReleaseAction): string {
@@ -409,27 +404,37 @@ function formatBytes(value: number | undefined): string {
           </section>
 
           <div
-            v-if="changelog && plan.release"
+            v-if="changelog"
             class="rounded-md border border-border p-3 text-xs"
           >
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 space-y-2">
                 <div class="font-medium">更新日志</div>
-                <p class="text-muted-foreground line-clamp-2">
-                  {{ changelog.summary || '查看此版本的更新日志' }}
+                <p
+                  v-if="changelog.text"
+                  class="text-muted-foreground whitespace-pre-wrap"
+                >
+                  {{ changelog.text }}
                 </p>
               </div>
               <Button
+                v-if="changelog.url"
                 variant="outline"
                 size="sm"
                 class="shrink-0"
-                @click="changelogDialogOpen = true"
+                as-child
               >
-                <Icon
-                  icon="icon-[mdi--text-box-search-outline]"
-                  class="size-3.5"
-                />
-                详情
+                <a
+                  :href="changelog.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon
+                    icon="icon-[mdi--open-in-new]"
+                    class="size-3.5"
+                  />
+                  查看
+                </a>
               </Button>
             </div>
           </div>
@@ -543,11 +548,4 @@ function formatBytes(value: number | undefined): string {
       </DialogFooter>
     </DialogContent>
   </Dialog>
-
-  <ExtensionChangelogDialog
-    v-if="changelogDialogOpen && changelogRelease"
-    v-model:open="changelogDialogOpen"
-    :release="changelogRelease"
-    :package-name="plan?.package.name"
-  />
 </template>

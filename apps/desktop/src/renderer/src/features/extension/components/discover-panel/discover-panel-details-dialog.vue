@@ -8,8 +8,6 @@ import semver from 'semver'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
-import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { getLocalizedBody, getLocalizedSummary } from '../../utils/localized-document'
 import {
   Dialog,
   DialogBody,
@@ -41,8 +39,6 @@ const open = defineModel<boolean>('open', { required: true })
 
 const iconError = ref(false)
 const sortedReleases = computed(() => [...props.extension.releases])
-const descriptionSummary = computed(() => getLocalizedSummary(props.extension.description))
-const descriptionBody = computed(() => getLocalizedBody(props.extension.description))
 
 watch(
   () => props.extension.iconUrl,
@@ -161,7 +157,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
           <div class="min-w-0 flex-1">
             <DialogTitle>{{ props.extension.name }}</DialogTitle>
             <DialogDescription class="mt-1">
-              {{ descriptionSummary }}
+              {{ props.extension.summary }}
             </DialogDescription>
           </div>
         </div>
@@ -206,13 +202,10 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
         </section>
 
         <section
-          v-if="descriptionBody"
-          class="text-xs text-muted-foreground"
+          v-if="props.extension.description"
+          class="text-xs text-muted-foreground leading-relaxed"
         >
-          <MarkdownContent
-            :content="descriptionBody"
-            class="text-muted-foreground"
-          />
+          {{ props.extension.description }}
         </section>
 
         <section class="space-y-2">

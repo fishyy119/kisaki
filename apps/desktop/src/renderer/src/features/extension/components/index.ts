@@ -1,5 +1,4 @@
 export { default as ExtensionHeader } from './extension-header.vue'
-export { default as ExtensionChangelogDialog } from './extension-changelog-dialog.vue'
 export { default as ExtensionReleaseDialog } from './extension-release-dialog.vue'
 export { default as ExtensionUninstallDialog } from './extension-uninstall-dialog.vue'
 export { ExtensionDiscoverPanel } from './discover-panel'

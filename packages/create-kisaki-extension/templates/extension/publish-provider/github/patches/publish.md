@@ -14,24 +14,6 @@ version, packages only the tagged source, updates and validates the shared
 `registry/manifest.json`, and uploads the signed `.kisx` package to the
 GitHub Release for `{{EXTENSION_ID}}-v0.0.1`.
 
-Optional release changelogs live in this extension directory:
-
-```text
-extensions/{{EXTENSION_ID}}/changelogs/v0.0.1/en.md
-extensions/{{EXTENSION_ID}}/changelogs/v0.0.1/zh-Hans.md
-```
-
-Each file declares its registry summary in top front matter. The remaining
-Markdown is the changelog body:
-
-```md
----
-summary: Added the first public release.
----
-
-Describe the release in more detail.
-```
-
 If a publish job fails, fix the issue, move the same tag to the corrected
 commit, and push the tag again:
 

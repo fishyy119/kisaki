@@ -5,10 +5,7 @@ import { app } from 'electron'
 import { mkdir, rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
 import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
-import type {
-  ExtensionRegistryLocalizedDocumentSet,
-  ExtensionRegistryPackageIcon
-} from '@kisaki3/extension-registry'
+import type { ExtensionRegistryPackageIcon } from '@kisaki3/extension-registry'
 import type { EventService } from '@main/services/event'
 import type {
   ExtensionInstalledPackageInfo,
@@ -645,7 +642,7 @@ function toExtensionInstalledPackageInfo(
     id: entry.id,
     name: repositoryPackage?.name ?? entry.manifest?.name ?? entry.id,
     version: entry.version,
-    description: repositoryPackage?.description ?? createManifestDescription(entry.manifest),
+    description: repositoryPackage?.description ?? entry.manifest?.description,
     author: repositoryPackage?.owner?.name ?? entry.manifest?.author,
     homepage: repositoryPackage?.homepage ?? entry.manifest?.homepage,
     iconUrl:
@@ -673,22 +670,6 @@ function collectInstalledSnapshotIcons(
     const icon = entry.source?.kind === 'repository' ? entry.source.snapshot.package.icon : null
     return icon ? [icon] : []
   })
-}
-
-function createManifestDescription(
-  manifest: ExtensionInstalledEntry['manifest']
-): ExtensionRegistryLocalizedDocumentSet | undefined {
-  const summary = manifest?.description?.trim()
-  if (!summary) {
-    return undefined
-  }
-
-  return {
-    defaultLocale: 'en',
-    locales: {
-      en: { summary }
-    }
-  }
 }
 
 function createDevelopmentWatchPaths(

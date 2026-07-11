@@ -3,7 +3,6 @@ import {
   getExtensionRegistryReleaseKind,
   selectExtensionRegistryArtifact,
   type ExtensionRegistryArtifact,
-  type ExtensionRegistryLocalizedDocumentSet,
   type ExtensionRegistryManifest,
   type ExtensionRegistryPackage,
   type ExtensionRegistryRelease
@@ -151,6 +150,7 @@ export class ExtensionRepositoryAggregator {
     return {
       id: accumulator.id,
       name: primary.registryPackage.name,
+      summary: primary.registryPackage.summary,
       description: primary.registryPackage.description,
       categories: primary.registryPackage.categories,
       keywords: primary.registryPackage.keywords ?? [],
@@ -210,7 +210,6 @@ function toReleaseInfo(input: {
     releaseKind: getExtensionRegistryReleaseKind(input.release.version),
     publishedAt: input.release.publishedAt,
     engines: input.release.engines,
-    releasePage: input.release.releasePage,
     changelog: input.release.changelog,
     yanked: input.release.yanked !== undefined,
     compatible: semver.satisfies(input.apiVersion, input.release.engines.kisakiExtensionApi),
@@ -376,7 +375,7 @@ function calculateRelevanceScore(item: ExtensionRepositoryCatalogPackage, query:
   if (id.includes(query)) score += 40
   if (name.includes(query)) score += 35
   if (item.keywords.some((keyword) => keyword.toLowerCase().includes(query))) score += 20
-  if (getDocumentSummary(item.description).toLowerCase().includes(query)) score += 15
+  if (item.summary.toLowerCase().includes(query)) score += 15
   if (item.searchText.includes(query)) score += 5
 
   return score
@@ -469,25 +468,12 @@ function createSearchText(registryPackage: ExtensionRegistryPackage): string {
   return [
     registryPackage.id,
     registryPackage.name,
-    collectDocumentText(registryPackage.description),
+    registryPackage.summary,
+    registryPackage.description ?? '',
     ...(registryPackage.keywords ?? [])
   ]
     .join('\n')
     .toLowerCase()
-}
-
-function collectDocumentText(document: ExtensionRegistryLocalizedDocumentSet): string {
-  return Object.values(document.locales)
-    .flatMap((entry) => [entry.summary, entry.body ?? ''])
-    .join('\n')
-}
-
-function getDocumentSummary(document: ExtensionRegistryLocalizedDocumentSet): string {
-  return (
-    document.locales[document.defaultLocale]?.summary ??
-    Object.values(document.locales)[0]?.summary ??
-    ''
-  )
 }
 
 function normalizeQuery(value: string | undefined): string {
