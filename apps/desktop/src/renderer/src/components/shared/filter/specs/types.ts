@@ -3,12 +3,7 @@ import type { AllEntityType, ContentEntityType } from '@shared/common'
 export type FilterUiCategory = 'toggle' | 'enum' | 'numeric' | 'date' | 'relation'
 
 export type FilterUiControl =
-  | 'boolean'
-  | 'select'
-  | 'multiSelect'
-  | 'numberRange'
-  | 'dateRange'
-  | 'relation'
+  'boolean' | 'select' | 'multiSelect' | 'numberRange' | 'dateRange' | 'relation'
 
 export type RelationTargetEntity = AllEntityType
 

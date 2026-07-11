@@ -15,7 +15,7 @@ export default defineConfig({
       formats: ['es'],
       fileName: () => 'index.mjs'
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: [
         'vue',
         'reka-ui',

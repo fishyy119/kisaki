@@ -21,7 +21,7 @@ import {
 } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
-import { getAttachmentUrl } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import type { ContentEntityType } from '@shared/common'
 import {
   Dialog,

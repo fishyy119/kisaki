@@ -1,5 +1,5 @@
 import { like, or, sql, type SQL } from 'drizzle-orm'
-import { escapeSqlStringLiteral } from '@shared/utils'
+import { escapeSqlStringLiteral } from '@shared/utils/sql'
 import type { SearchQuerySpec } from './spec'
 
 export function normalizeSearchText(text: string | null | undefined): string | undefined {

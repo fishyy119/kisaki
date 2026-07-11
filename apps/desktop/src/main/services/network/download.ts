@@ -3,7 +3,8 @@ import { createWriteStream } from 'node:fs'
 import path from 'node:path'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import fse from 'fs-extra'
+import { mkdir, rm } from 'node:fs/promises'
+import { movePath } from '@main/utils/fs'
 import type { FetchOptions } from '@shared/network'
 import type { NetworkRequestClient } from './request'
 import { assertNotAborted, DEFAULT_NETWORK_RETRY_COUNT, executeWithNetworkRetry } from './shared'
@@ -41,8 +42,8 @@ export class NetworkDownloader {
     await executeWithNetworkRetry(
       async () => {
         assertNotAborted(options.signal)
-        await fse.ensureDir(path.dirname(destPath))
-        await fse.remove(tempPath).catch(() => undefined)
+        await mkdir(path.dirname(destPath), { recursive: true })
+        await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
 
         const response = await this.options.request.fetch(url, attemptOptions)
         if (!response.ok) {
@@ -64,9 +65,9 @@ export class NetworkDownloader {
             signal: options.signal
           })
           assertNotAborted(options.signal)
-          await fse.move(tempPath, destPath, { overwrite: true })
+          await movePath(tempPath, destPath, { overwrite: true })
         } catch (error) {
-          await fse.remove(tempPath).catch(() => undefined)
+          await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
           throw error
         }
       },

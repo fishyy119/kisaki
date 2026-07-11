@@ -10,7 +10,7 @@ import {
   formatTaskRunStatus,
   getTaskRunCategoryIcon,
   getTaskRunStatusVariant
-} from '../../../utils'
+} from '../../../utils/display'
 import TaskRunProgress from './progress.vue'
 
 interface Props {

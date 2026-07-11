@@ -8,8 +8,7 @@ import type { AllEntityType } from '@shared/common'
 export type DateRangeMode = 'timestampMs' | 'partialDate'
 
 export type SortQueryDef =
-  | { key: string; column: any }
-  | { key: string; kind: 'partialDate'; columnName: string }
+  { key: string; column: any } | { key: string; kind: 'partialDate'; columnName: string }
 
 export type FieldQueryDef =
   | { key: string; kind: 'boolean'; column: any }

@@ -68,7 +68,7 @@ export class DbEntityMergeCoordinator {
       )
     } catch (error) {
       log.error('Entity merge attachment staging failed.', error, { entityType })
-      throw new Error('Failed to stage merge attachments.')
+      throw new Error('Failed to stage merge attachments.', { cause: error })
     }
     stagedFiles.push(...attachmentStage.stagedFiles)
 
@@ -112,7 +112,7 @@ export class DbEntityMergeCoordinator {
         entityType,
         stagedFileCount: stagedFiles.length
       })
-      throw new Error('Failed to merge entities.')
+      throw new Error('Failed to merge entities.', { cause: error })
     }
 
     changedCounts.attachments = stagedFiles.length

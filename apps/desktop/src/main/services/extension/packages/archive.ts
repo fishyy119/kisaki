@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import fse from 'fs-extra'
+import { cp, mkdir, readdir, rm } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import type { ExtensionPackageLayout } from './layout'
 import { requireSafeArchiveSha256 } from './layout'
 import { hashFile } from './verifier'
@@ -20,24 +21,24 @@ export class ExtensionPackageArchiveStore {
     const targetPath = this.archivePath(sha256)
     const tempPath = resolveInsideRoot(this.layout.archivesDir, `${sha256}.${randomUUID()}.tmp`)
 
-    await fse.ensureDir(this.layout.archivesDir)
+    await mkdir(this.layout.archivesDir, { recursive: true })
     try {
-      await fse.copy(input.archivePath, tempPath, { overwrite: true })
+      await cp(input.archivePath, tempPath, { force: true })
       const copied = await hashFile(tempPath)
       if (copied.sha256 !== sha256) {
         throw new Error(`Stored extension package archive sha256 mismatch for "${sha256}".`)
       }
 
-      await fse.move(tempPath, targetPath, { overwrite: true })
+      await movePath(tempPath, targetPath, { overwrite: true })
       return targetPath
     } finally {
-      await fse.remove(tempPath).catch(() => undefined)
+      await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
     }
   }
 
   async requireArchive(sha256: string): Promise<string> {
     const archivePath = this.archivePath(sha256)
-    if (!(await fse.pathExists(archivePath))) {
+    if (!(await pathExists(archivePath))) {
       throw new Error(`extension package archive "${sha256}" is missing`)
     }
 
@@ -48,8 +49,8 @@ export class ExtensionPackageArchiveStore {
     retainedSha256s: ReadonlySet<string>,
     onPruned: (entryPath: string) => void
   ): Promise<void> {
-    await fse.ensureDir(this.layout.archivesDir)
-    const entries = await fse.readdir(this.layout.archivesDir, { withFileTypes: true })
+    await mkdir(this.layout.archivesDir, { recursive: true })
+    const entries = await readdir(this.layout.archivesDir, { withFileTypes: true })
 
     await Promise.all(
       entries.map(async (entry) => {
@@ -59,7 +60,7 @@ export class ExtensionPackageArchiveStore {
           return
         }
 
-        await fse.remove(entryPath)
+        await rm(entryPath, { recursive: true, force: true })
         onPruned(entryPath)
       })
     )

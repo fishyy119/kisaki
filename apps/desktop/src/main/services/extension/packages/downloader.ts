@@ -1,5 +1,5 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { cp, mkdir, rm, stat } from 'node:fs/promises'
 import type { NetworkService } from '@main/services/network'
 import { assertPackageSignalNotAborted } from './abort'
 import type { ExtensionPackageLayout } from './layout'
@@ -41,8 +41,8 @@ export class ExtensionPackageDownloader {
     try {
       assertPackageSignalNotAborted(input.signal)
 
-      await fse.ensureDir(path.dirname(workspacePaths.downloadPath))
-      await fse.remove(workspacePaths.downloadPath).catch(() => undefined)
+      await mkdir(path.dirname(workspacePaths.downloadPath), { recursive: true })
+      await rm(workspacePaths.downloadPath, { recursive: true, force: true }).catch(() => undefined)
       await this.networkService.download.toFile(input.url, workspacePaths.downloadPath, {
         signal: input.signal,
         maxBytes: resolvePackageDownloadBudget(input.expectedSize)
@@ -78,14 +78,14 @@ export class ExtensionPackageDownloader {
     try {
       assertPackageSignalNotAborted(input.signal)
 
-      const stat = await fse.stat(sourcePath)
-      if (!stat.isFile() || path.extname(sourcePath).toLowerCase() !== '.kisx') {
+      const fileStat = await stat(sourcePath)
+      if (!fileStat.isFile() || path.extname(sourcePath).toLowerCase() !== '.kisx') {
         throw new Error('Local extension package must be a .kisx file.')
       }
-      assertPackageSizeWithinBudget(stat.size, MAX_EXTENSION_PACKAGE_BYTES)
+      assertPackageSizeWithinBudget(fileStat.size, MAX_EXTENSION_PACKAGE_BYTES)
 
-      await fse.ensureDir(path.dirname(workspacePaths.downloadPath))
-      await fse.copy(sourcePath, workspacePaths.downloadPath, { overwrite: true })
+      await mkdir(path.dirname(workspacePaths.downloadPath), { recursive: true })
+      await cp(sourcePath, workspacePaths.downloadPath, { recursive: true, force: true })
       assertPackageSignalNotAborted(input.signal)
 
       return {

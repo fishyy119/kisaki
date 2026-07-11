@@ -19,7 +19,7 @@ import {
   TASK_RUN_COMPLETED_STATUS_OPTIONS,
   formatTaskRunCategory,
   formatTaskRunStatus
-} from '../../../utils'
+} from '../../../utils/display'
 
 interface Props {
   filteredCount: number

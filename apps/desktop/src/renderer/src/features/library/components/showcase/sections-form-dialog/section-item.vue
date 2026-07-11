@@ -4,7 +4,8 @@
 -->
 <script setup lang="ts">
 import { Button } from '@renderer/components/ui/button'
-import { cn, getEntityIcon } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { AllEntityType } from '@shared/common'
 import type { ShowcaseSectionFormItem } from '@shared/db'
 

@@ -21,8 +21,9 @@ permissions:
 
 env:
   NODE_VERSION: '24'
-  NPM_VERSION: '11.17.0'
-  PNPM_VERSION: '11.2.2'
+  NPM_VERSION: '11.18.0'
+  # pnpm 11.11.0 deadlocks resolving electron-builder peers: https://github.com/pnpm/pnpm/issues/12921
+  PNPM_VERSION: '11.10.0'
   VITE_YMGAL_API_CLIENT_ID: ${{ secrets.VITE_YMGAL_API_CLIENT_ID }}
   VITE_YMGAL_API_CLIENT_SECRET: ${{ secrets.VITE_YMGAL_API_CLIENT_SECRET }}
   VITE_IGDB_API_CLIENT_ID: ${{ secrets.VITE_IGDB_API_CLIENT_ID }}

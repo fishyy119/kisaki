@@ -29,8 +29,7 @@ export interface ExtensionLocalReleaseCommand {
 }
 
 export type ExtensionApplyReleaseCommand =
-  | ExtensionRepositoryReleaseCommand
-  | ExtensionLocalReleaseCommand
+  ExtensionRepositoryReleaseCommand | ExtensionLocalReleaseCommand
 
 export function createApplyReleaseCommandFromRequest(
   request: ExtensionApplyReleaseRequest

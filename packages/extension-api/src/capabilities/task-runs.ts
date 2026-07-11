@@ -3,14 +3,7 @@ import type { JsonValue } from '../shared'
 export type TaskRunOperation = string
 
 export type TaskRunStatus =
-  | 'queued'
-  | 'running'
-  | 'pausing'
-  | 'paused'
-  | 'cancelling'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+  'queued' | 'running' | 'pausing' | 'paused' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
 
 export type TaskRunFinalStatus = Extract<TaskRunStatus, 'completed' | 'failed' | 'cancelled'>
 
@@ -44,13 +37,7 @@ export type TaskRunInitiator =
     }
 
 export type TaskRunProgressUnit =
-  | 'item'
-  | 'file'
-  | 'byte'
-  | 'entity'
-  | 'step'
-  | 'package'
-  | 'request'
+  'item' | 'file' | 'byte' | 'entity' | 'step' | 'package' | 'request'
 
 export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
 

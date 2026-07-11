@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
   DialogBody,

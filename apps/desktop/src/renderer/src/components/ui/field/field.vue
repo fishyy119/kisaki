@@ -3,7 +3,7 @@
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { Icon } from '@renderer/components/ui/icon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import FieldDescription from './field-description.vue'

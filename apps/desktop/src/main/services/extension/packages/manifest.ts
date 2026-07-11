@@ -1,4 +1,7 @@
-import fse from 'fs-extra'
+import { readFile } from 'node:fs/promises'
+// Import the fs module directly: the utils barrel links Electron main-process
+// modules, which must stay out of the extension host utility process bundle.
+import { pathExists } from '@main/utils/fs'
 import type {
   ExtensionManifest,
   ParsedExtensionManifest,
@@ -14,7 +17,7 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
 export async function readExtensionManifestFile(
   manifestPath: string
 ): Promise<ParsedExtensionManifest> {
-  const raw = await fse.readJson(manifestPath)
+  const raw = JSON.parse(await readFile(manifestPath, 'utf8'))
   return parseExtensionManifest(raw)
 }
 
@@ -39,7 +42,7 @@ export async function validateExtensionFileExists(
     ]
   }
 
-  if (!(await fse.pathExists(absolutePath))) {
+  if (!(await pathExists(absolutePath))) {
     return [
       {
         path: fieldPath,

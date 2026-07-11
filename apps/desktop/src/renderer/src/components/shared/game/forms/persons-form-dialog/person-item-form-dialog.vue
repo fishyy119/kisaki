@@ -29,13 +29,7 @@ import { PersonSelect } from '@renderer/components/shared/person'
 import { notify } from '@renderer/core/notify'
 
 type PersonType =
-  | 'director'
-  | 'scenario'
-  | 'illustration'
-  | 'music'
-  | 'programmer'
-  | 'actor'
-  | 'other'
+  'director' | 'scenario' | 'illustration' | 'music' | 'programmer' | 'actor' | 'other'
 
 interface PersonLinkData {
   personId: string

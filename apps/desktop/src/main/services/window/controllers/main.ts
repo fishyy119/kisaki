@@ -1,11 +1,11 @@
 import { app, BrowserWindow } from 'electron'
-import { join } from 'path'
+import { join } from 'node:path'
 import { isDev, isLinux, rendererDevServerUrl } from '@main/env'
 import windowStateKeeper from 'electron-window-state'
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
 import type { IpcService } from '@main/services/ipc'
-import { openExternalLink } from '@main/utils'
+import { openExternalLink } from '@main/utils/external-url'
 import { settings } from '@shared/db'
 import type { MainWindowCloseAction } from '@shared/db/contracts/enums'
 

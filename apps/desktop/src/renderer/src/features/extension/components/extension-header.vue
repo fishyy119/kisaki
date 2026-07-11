@@ -37,10 +37,7 @@ const reloadButtonTitle = computed(() =>
 
 const navItems: {
   routeName:
-    | 'extension-discover'
-    | 'extension-installed'
-    | 'extension-repositories'
-    | 'extension-signers'
+    'extension-discover' | 'extension-installed' | 'extension-repositories' | 'extension-signers'
   label: string
   icon: string
 }[] = [

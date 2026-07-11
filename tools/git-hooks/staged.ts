@@ -54,7 +54,15 @@ if (mode === 'format') {
 } else {
   for (const [packageRoot, packageFiles] of groupByPackageRoot(files)) {
     runPnpm(
-      ['exec', 'eslint', '--fix', '--cache', ...relativeTo(packageRoot, packageFiles)],
+      [
+        'exec',
+        'eslint',
+        '--fix',
+        '--cache',
+        '--cache-location',
+        'node_modules/.cache/eslint',
+        ...relativeTo(packageRoot, packageFiles)
+      ],
       packageRoot
     )
   }

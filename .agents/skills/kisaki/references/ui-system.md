@@ -279,20 +279,14 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ submit: [data: ItemData] }>()
 
-const formData = ref<ItemData>({
-  /* defaults */
-})
+const formData = ref<ItemData>({/* defaults */})
 const isAddMode = computed(() => !props.initialData)
 
 watch(
   () => open.value,
   (isOpen) => {
     if (isOpen) {
-      formData.value = props.initialData
-        ? { ...props.initialData }
-        : {
-            /* defaults */
-          }
+      formData.value = props.initialData ? { ...props.initialData } : {/* defaults */}
     }
   },
   { immediate: true }

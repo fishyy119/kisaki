@@ -193,17 +193,12 @@ function resolveExtensionDefinition(
   }
 
   throw new Error(
-    `Extension "${extensionId}" must export an ExtensionDefinition or activate(context) from its .mjs or .cjs entry.`
+    `Extension "${extensionId}" must export an ExtensionDefinition or activate(context) from its .mjs entry.`
   )
 }
 
 function createExtensionDefinitionCandidates(module: Record<string, unknown>): readonly unknown[] {
-  const nestedDefault =
-    isRecord(module.default) && Object.hasOwn(module.default, 'default')
-      ? module.default.default
-      : undefined
-
-  return [module.default, nestedDefault, module]
+  return [module.default, module]
 }
 
 function toExtensionDefinition(value: unknown): ExtensionDefinition | null {

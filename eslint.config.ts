@@ -1,9 +1,8 @@
-import { defineConfig } from 'eslint/config'
+import { builtinModules } from 'node:module'
+import { defineConfig, globalIgnores } from 'eslint/config'
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
-
-const tsconfigRootDir = toFileDirectoryPath(import.meta.url)
 
 /**
  * Base ESLint configuration for the monorepo.
@@ -11,9 +10,7 @@ const tsconfigRootDir = toFileDirectoryPath(import.meta.url)
  * and add eslint-config-prettier at the end to disable formatting rules.
  */
 export const baseConfig = defineConfig([
-  {
-    ignores: ['**/node_modules', '**/dist', '**/out', '**/dev', '**/templates/**']
-  },
+  globalIgnores(['**/node_modules', '**/dist', '**/out', '**/dev', '**/templates/**']),
 
   // JavaScript recommended rules
   js.configs.recommended,
@@ -26,7 +23,7 @@ export const baseConfig = defineConfig([
     files: ['**/*.{ts,tsx,mts,vue}'],
     languageOptions: {
       parserOptions: {
-        tsconfigRootDir
+        tsconfigRootDir: import.meta.dirname
       }
     },
     rules: {
@@ -41,7 +38,18 @@ export const baseConfig = defineConfig([
         }
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off'
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      // Dedicated rule id so package-level no-restricted-imports overrides
+      // (import boundaries) never clobber the node: protocol enforcement.
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: builtinModules.map((name) => ({
+            name,
+            message: 'Import Node.js builtins with the node: protocol.'
+          }))
+        }
+      ]
     }
   },
   // Prettier - disables all formatting rules (MUST be last)
@@ -49,10 +57,3 @@ export const baseConfig = defineConfig([
 ])
 
 export default baseConfig
-
-function toFileDirectoryPath(url: string): string {
-  return decodeURIComponent(url)
-    .replace(/^file:\/\/\/([A-Za-z]:)/, '$1')
-    .replace(/^file:\/\//, '')
-    .replace(/\/[^/]*$/, '')
-}

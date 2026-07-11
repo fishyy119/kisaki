@@ -1,7 +1,8 @@
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
-import fse from 'fs-extra'
+import { mkdir, rm, stat } from 'node:fs/promises'
+import { movePath } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import { net } from 'electron'
 import { EXTENSION_ICON_SCHEME } from '@main/bootstrap/protocol'
@@ -119,8 +120,8 @@ export class ExtensionIconManager {
     }
 
     const tempPath = `${targetPath}.${process.pid}.${randomUUID()}.tmp`
-    await fse.ensureDir(this.cacheDir)
-    await fse.remove(tempPath).catch(() => undefined)
+    await mkdir(this.cacheDir, { recursive: true })
+    await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
 
     try {
       await this.networkService.download.toFile(icon.url, tempPath, {
@@ -136,12 +137,12 @@ export class ExtensionIconManager {
         }
       }
 
-      await fse.move(tempPath, targetPath, { overwrite: true })
+      await movePath(tempPath, targetPath, { overwrite: true })
       if (icon.sha256) {
         this.verifiedCacheKeys.add(cacheKey)
       }
     } catch (error) {
-      await fse.remove(tempPath).catch(() => undefined)
+      await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
       throw error
     }
   }
@@ -151,14 +152,14 @@ export class ExtensionIconManager {
     cacheKey: string,
     filePath: string
   ): Promise<boolean> {
-    const stat = await fse.stat(filePath).catch(() => null)
-    if (!stat?.isFile()) {
+    const fileStat = await stat(filePath).catch(() => null)
+    if (!fileStat?.isFile()) {
       return false
     }
 
-    if (Date.now() - stat.mtimeMs > EXTENSION_ICON_CACHE_TTL_MS) {
+    if (Date.now() - fileStat.mtimeMs > EXTENSION_ICON_CACHE_TTL_MS) {
       this.verifiedCacheKeys.delete(cacheKey)
-      await fse.remove(filePath).catch(() => undefined)
+      await rm(filePath, { recursive: true, force: true }).catch(() => undefined)
       return false
     }
 
@@ -172,7 +173,7 @@ export class ExtensionIconManager {
       return true
     }
 
-    await fse.remove(filePath).catch(() => undefined)
+    await rm(filePath, { recursive: true, force: true }).catch(() => undefined)
     return false
   }
 

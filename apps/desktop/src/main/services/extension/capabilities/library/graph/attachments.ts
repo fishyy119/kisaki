@@ -2,7 +2,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
-import fse from 'fs-extra'
+import { mkdir, rm, stat } from 'node:fs/promises'
 import {
   createValidationError,
   type ExtensionRuntimeMetadata,
@@ -56,7 +56,7 @@ export async function validateGraphFile(
   nodeKey: string
 ): Promise<LibraryGraphDiagnostic | null> {
   try {
-    const stats = await fse.stat(sourcePath)
+    const stats = await stat(sourcePath)
     if (stats.isFile()) {
       return null
     }
@@ -105,21 +105,21 @@ export async function persistSaveBackup(
 
   throwIfAborted(signal)
   const sourcePath = path.resolve(attachment.path)
-  const stats = await fse.stat(sourcePath)
+  const stats = await stat(sourcePath)
   if (!stats.isFile()) {
     throw createValidationError('Save backup attachment path must point to a file.')
   }
 
   const fileName = `${randomUUID()}${inferSafeExtension(attachment)}`
   const targetPath = db.attachment.getPath('games', gameId, fileName)
-  await fse.ensureDir(path.dirname(targetPath))
+  await mkdir(path.dirname(targetPath), { recursive: true })
 
   try {
     throwIfAborted(signal)
     await pipeline(createReadStream(sourcePath), createWriteStream(targetPath), { signal })
     throwIfAborted(signal)
   } catch (error) {
-    await fse.remove(targetPath).catch(() => undefined)
+    await rm(targetPath, { recursive: true, force: true }).catch(() => undefined)
     throw error
   }
 

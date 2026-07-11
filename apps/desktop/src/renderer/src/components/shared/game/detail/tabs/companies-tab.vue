@@ -8,7 +8,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
 import { GameCompaniesFormDialog } from '../../forms'

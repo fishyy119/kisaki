@@ -9,7 +9,7 @@
     <Icon :icon="config.icon" class="size-4 text-primary" />
 -->
 <script setup lang="ts">
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 const props = defineProps<{
   icon: string

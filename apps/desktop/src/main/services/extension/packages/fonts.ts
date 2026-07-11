@@ -1,5 +1,6 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { readFile } from 'node:fs/promises'
+import { pathExists } from '@main/utils/fs'
 import { app } from 'electron'
 import { createLogger } from '@main/log'
 import {
@@ -69,11 +70,11 @@ export class ExtensionWebviewFontServer {
       }
 
       const filePath = resolveInsideRoot(root, ...rest)
-      if (!(await fse.pathExists(filePath))) {
+      if (!(await pathExists(filePath))) {
         return new Response('Webview font asset not found', { status: 404 })
       }
 
-      const data = await fse.readFile(filePath)
+      const data = await readFile(filePath)
       return new Response(new Uint8Array(data), {
         headers: { ...FONT_RESPONSE_HEADERS, 'Content-Type': contentType }
       })

@@ -3,7 +3,7 @@
 import type { HTMLAttributes } from 'vue'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 const inputGroupButtonVariants = cva('text-sm shadow-none flex gap-2 items-center', {
   variants: {

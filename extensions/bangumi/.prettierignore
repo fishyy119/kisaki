@@ -1,0 +1,4 @@
+dist/
+artifacts/
+.kisaki/
+node_modules

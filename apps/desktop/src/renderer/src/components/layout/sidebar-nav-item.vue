@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@renderer/components/ui/tooltip'
 
 interface NavItem {

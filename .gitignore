@@ -1,13 +1,14 @@
 node_modules
 dist
 out
+artifacts/
 apps/desktop/resources/extensions
 apps/desktop/resources/webview-fonts
 .DS_Store
-.eslintcache
 *.log*
 dev
 .tmp/
+tmp
 .env
 .env.*
 !.env.example

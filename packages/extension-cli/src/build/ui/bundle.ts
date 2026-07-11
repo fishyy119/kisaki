@@ -1,6 +1,5 @@
 import path from 'node:path'
-import type { RollupWatcher } from 'rollup'
-import { build, mergeConfig, type InlineConfig } from 'vite'
+import { build, mergeConfig, type InlineConfig, type Rolldown } from 'vite'
 import type { KisxConfig } from '../../config'
 import type { ExtensionProject } from '../../project'
 import type { ExtensionUiEntry } from './entries'
@@ -17,9 +16,9 @@ export async function buildUiBundle(
   entries: readonly ExtensionUiEntry[],
   config: KisxConfig,
   options: UiBuildOptions = {}
-): Promise<RollupWatcher | null> {
+): Promise<Rolldown.RolldownWatcher | null> {
   const result = await build(createUiBuildConfig(project, entries, config, options))
-  return options.watch ? (result as RollupWatcher) : null
+  return options.watch ? (result as Rolldown.RolldownWatcher) : null
 }
 
 function createUiBuildConfig(
@@ -40,7 +39,7 @@ function createUiBuildConfig(
       outDir: path.join(project.distDir, 'ui'),
       emptyOutDir: false,
       sourcemap: true,
-      rollupOptions: { input },
+      rolldownOptions: { input },
       watch: options.watch ? {} : null
     }
   }

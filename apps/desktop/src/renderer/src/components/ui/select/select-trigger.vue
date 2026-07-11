@@ -4,7 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { SelectIcon, SelectTrigger, useForwardProps } from 'reka-ui'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 const props = withDefaults(
   defineProps<SelectTriggerProps & { class?: HTMLAttributes['class']; size?: 'sm' | 'default' }>(),

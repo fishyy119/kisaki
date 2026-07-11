@@ -1,5 +1,6 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { mkdir, rm } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import type {
   CreateOrUpdateExtensionInstallationInput,
@@ -61,21 +62,21 @@ export class ExtensionPackageCommitter {
       }
 
       assertInsideRoot(input.stagedPackageDir, workspacePaths.stagingDir)
-      const existingPackage = await fse.pathExists(packagePath)
+      const existingPackage = await pathExists(packagePath)
       assertExpectedPrevious(input.expectedPrevious, existingPackage, input.extensionId)
 
       await Promise.all([
-        fse.ensureDir(this.layout.packagesDir),
-        fse.ensureDir(path.dirname(backupPath))
+        mkdir(this.layout.packagesDir, { recursive: true }),
+        mkdir(path.dirname(backupPath), { recursive: true })
       ])
-      await fse.remove(backupPath).catch(() => undefined)
+      await rm(backupPath, { recursive: true, force: true }).catch(() => undefined)
 
       if (existingPackage) {
-        await fse.move(packagePath, backupPath, { overwrite: false })
+        await movePath(packagePath, backupPath, { overwrite: false })
         backupCreated = true
       }
 
-      await fse.move(input.stagedPackageDir, packagePath, { overwrite: false })
+      await movePath(input.stagedPackageDir, packagePath, { overwrite: false })
       stagedMoved = true
 
       this.installations.createOrUpdate(input.installation)
@@ -120,13 +121,13 @@ export class ExtensionPackageCommitter {
     let committed = false
 
     try {
-      const existingPackage = await fse.pathExists(packagePath)
+      const existingPackage = await pathExists(packagePath)
 
-      await fse.ensureDir(path.dirname(trashPath))
-      await fse.remove(trashPath).catch(() => undefined)
+      await mkdir(path.dirname(trashPath), { recursive: true })
+      await rm(trashPath, { recursive: true, force: true }).catch(() => undefined)
 
       if (existingPackage) {
-        await fse.move(packagePath, trashPath, { overwrite: false })
+        await movePath(packagePath, trashPath, { overwrite: false })
         trashed = true
       }
 
@@ -134,7 +135,7 @@ export class ExtensionPackageCommitter {
       committed = true
     } catch (error) {
       if (trashed) {
-        await fse.move(trashPath, packagePath, { overwrite: false }).catch((restoreError) => {
+        await movePath(trashPath, packagePath, { overwrite: false }).catch((restoreError) => {
           log.error('Failed to restore trashed extension package.', restoreError, {
             extensionId: input.extensionId
           })
@@ -159,11 +160,11 @@ async function restorePreviousActivePackage(options: {
   stagedMoved: boolean
 }): Promise<void> {
   if (options.stagedMoved) {
-    await fse.remove(options.packagePath)
+    await rm(options.packagePath, { recursive: true, force: true })
   }
 
   if (options.backupCreated) {
-    await fse.move(options.backupPath, options.packagePath, { overwrite: false })
+    await movePath(options.backupPath, options.packagePath, { overwrite: false })
   }
 }
 

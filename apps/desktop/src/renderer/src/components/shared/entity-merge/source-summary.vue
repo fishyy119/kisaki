@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { EntityMergeSummary } from './types'
 
 interface Props {

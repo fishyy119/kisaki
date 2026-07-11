@@ -1,6 +1,7 @@
 import { app } from 'electron'
-import path from 'path'
-import fse from 'fs-extra'
+import path from 'node:path'
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import { isDev } from '@main/env'
 import { wrapIpc, wrapIpcVoid, type IpcService } from '@main/services/ipc'
@@ -66,13 +67,13 @@ function getMigrationMarkerPath(): string {
 async function checkMigrationPending(): Promise<MigrationPending | null> {
   const markerPath = getMigrationMarkerPath()
   try {
-    if (await fse.pathExists(markerPath)) {
-      const content = await fse.readJson(markerPath)
+    if (await pathExists(markerPath)) {
+      const content = JSON.parse(await readFile(markerPath, 'utf8'))
       return content as MigrationPending
     }
   } catch {
     // Invalid marker file, remove it
-    await fse.remove(markerPath).catch(() => {})
+    await rm(markerPath, { recursive: true, force: true }).catch(() => {})
   }
   return null
 }
@@ -86,7 +87,7 @@ async function setMigrationPending(targetMode: 'portable' | 'normal'): Promise<v
     targetMode,
     requestedAt: Date.now()
   }
-  await fse.writeJson(markerPath, pending)
+  await writeFile(markerPath, `${JSON.stringify(pending)}\n`)
 }
 
 /**
@@ -94,7 +95,7 @@ async function setMigrationPending(targetMode: 'portable' | 'normal'): Promise<v
  */
 async function clearMigrationPending(): Promise<void> {
   const markerPath = getMigrationMarkerPath()
-  await fse.remove(markerPath).catch(() => {})
+  await rm(markerPath, { recursive: true, force: true }).catch(() => {})
 }
 
 /**
@@ -104,15 +105,15 @@ async function clearMigrationPending(): Promise<void> {
  */
 async function migrateData(from: string, to: string): Promise<void> {
   // Ensure target directory exists
-  await fse.ensureDir(to)
+  await mkdir(to, { recursive: true })
 
   // Check if source has any content
-  const sourceExists = await fse.pathExists(from)
+  const sourceExists = await pathExists(from)
   if (!sourceExists) {
     return
   }
 
-  const items = await fse.readdir(from)
+  const items = await readdir(from)
   if (items.length === 0) {
     return
   }
@@ -128,12 +129,12 @@ async function migrateData(from: string, to: string): Promise<void> {
     }
 
     // Remove existing target if exists
-    if (await fse.pathExists(targetPath)) {
-      await fse.remove(targetPath)
+    if (await pathExists(targetPath)) {
+      await rm(targetPath, { recursive: true, force: true })
     }
 
     // Move the item
-    await fse.move(sourcePath, targetPath)
+    await movePath(sourcePath, targetPath)
   }
 }
 
@@ -151,20 +152,20 @@ export async function detectPortableMode(): Promise<void> {
   if (pending) {
     if (pending.targetMode === 'portable') {
       // Migrate from normal to portable
-      await fse.ensureDir(portablePath)
+      await mkdir(portablePath, { recursive: true })
       await migrateData(defaultUserDataPath, portablePath)
       await clearMigrationPending()
     } else {
       // Migrate from portable to normal
       await migrateData(portablePath, defaultUserDataPath)
       // Remove the empty portable folder
-      await fse.remove(portablePath).catch(() => {})
+      await rm(portablePath, { recursive: true, force: true }).catch(() => {})
       await clearMigrationPending()
     }
   }
 
   // Check if portable folder exists
-  const isPortable = await fse.pathExists(portablePath)
+  const isPortable = await pathExists(portablePath)
 
   if (isPortable) {
     // Set userData path to portable folder

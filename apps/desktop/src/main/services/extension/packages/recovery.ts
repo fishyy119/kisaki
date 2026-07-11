@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import fse from 'fs-extra'
+import { mkdir, readdir, rm } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import type { ExtensionInstallationRow } from '@shared/db'
 import { resolveInsideRoot } from '../shared/path-confinement'
@@ -95,7 +96,7 @@ export class ExtensionPackageRecovery {
         this.layout.quarantineDir,
         createQuarantineDirectoryName(activePackage)
       )
-      await fse.move(activePackage.path, quarantinePath, { overwrite: false })
+      await movePath(activePackage.path, quarantinePath, { overwrite: false })
       actions.push({
         type: 'quarantined-untracked-package',
         extensionId: activePackage.extensionId,
@@ -114,13 +115,13 @@ export class ExtensionPackageRecovery {
         for (const backup of backupPackages.filter(
           (entry) => entry.extensionId === installation.id
         )) {
-          await fse.remove(backup.path)
+          await rm(backup.path, { recursive: true, force: true })
           actions.push({ type: 'removed-backup', path: backup.path })
         }
         for (const trash of trashPackages.filter(
           (entry) => entry.extensionId === installation.id
         )) {
-          await fse.remove(trash.path)
+          await rm(trash.path, { recursive: true, force: true })
           actions.push({ type: 'removed-trash', path: trash.path })
         }
         continue
@@ -134,8 +135,10 @@ export class ExtensionPackageRecovery {
       )
 
       if (recoverySource) {
-        await fse.remove(this.layout.packageDir(installation.id)).catch(() => undefined)
-        await fse.move(recoverySource.path, this.layout.packageDir(installation.id), {
+        await rm(this.layout.packageDir(installation.id), { recursive: true, force: true }).catch(
+          () => undefined
+        )
+        await movePath(recoverySource.path, this.layout.packageDir(installation.id), {
           overwrite: false
         })
         actions.push({
@@ -160,7 +163,7 @@ export class ExtensionPackageRecovery {
     }
 
     for (const backup of backupPackages) {
-      if (!(await fse.pathExists(backup.path))) {
+      if (!(await pathExists(backup.path))) {
         continue
       }
 
@@ -173,18 +176,18 @@ export class ExtensionPackageRecovery {
           )
         : 'missing installation'
       if (!backup.extensionId || !installationIds.has(backup.extensionId) || !activeIssue) {
-        await fse.remove(backup.path)
+        await rm(backup.path, { recursive: true, force: true })
         actions.push({ type: 'removed-backup', path: backup.path })
       }
     }
 
     for (const trash of trashPackages) {
-      if (!(await fse.pathExists(trash.path))) {
+      if (!(await pathExists(trash.path))) {
         continue
       }
 
       if (!trash.extensionId || !installationIds.has(trash.extensionId)) {
-        await fse.remove(trash.path)
+        await rm(trash.path, { recursive: true, force: true })
         actions.push({ type: 'removed-trash', path: trash.path })
       }
     }
@@ -200,12 +203,12 @@ async function pruneDirectoryChildren(
   directory: string,
   onPruned: (entryPath: string) => void
 ): Promise<void> {
-  await fse.ensureDir(directory)
-  const entries = await fse.readdir(directory)
+  await mkdir(directory, { recursive: true })
+  const entries = await readdir(directory)
   await Promise.all(
     entries.map(async (entry) => {
       const entryPath = path.join(directory, entry)
-      await fse.remove(entryPath)
+      await rm(entryPath, { recursive: true, force: true })
       onPruned(entryPath)
     })
   )
@@ -222,8 +225,8 @@ async function scanWorkspacePackages(directory: string): Promise<readonly Worksp
 }
 
 async function scanPackageDirectories(directory: string): Promise<readonly PackageDirectoryInfo[]> {
-  await fse.ensureDir(directory)
-  const entries = await fse.readdir(directory, { withFileTypes: true })
+  await mkdir(directory, { recursive: true })
+  const entries = await readdir(directory, { withFileTypes: true })
   const packages: PackageDirectoryInfo[] = []
 
   for (const entry of entries) {
@@ -252,20 +255,20 @@ async function removeWorkspacePackagesForExtension(
   actions: ExtensionPackageRecoveryAction[]
 ): Promise<void> {
   for (const backup of backupPackages.filter((entry) => entry.extensionId === extensionId)) {
-    if (!(await fse.pathExists(backup.path))) {
+    if (!(await pathExists(backup.path))) {
       continue
     }
 
-    await fse.remove(backup.path)
+    await rm(backup.path, { recursive: true, force: true })
     actions.push({ type: 'removed-backup', path: backup.path })
   }
 
   for (const trash of trashPackages.filter((entry) => entry.extensionId === extensionId)) {
-    if (!(await fse.pathExists(trash.path))) {
+    if (!(await pathExists(trash.path))) {
       continue
     }
 
-    await fse.remove(trash.path)
+    await rm(trash.path, { recursive: true, force: true })
     actions.push({ type: 'removed-trash', path: trash.path })
   }
 }
@@ -290,7 +293,7 @@ async function findVerifiedRecoverySource(
   ]
 
   for (const candidate of candidates) {
-    if (!(await fse.pathExists(candidate.path))) {
+    if (!(await pathExists(candidate.path))) {
       continue
     }
 

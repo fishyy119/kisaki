@@ -111,14 +111,7 @@ export interface BangumiSubjectRelation {
 // =============================================================================
 
 export type BangumiPersonCareer =
-  | 'producer'
-  | 'mangaka'
-  | 'artist'
-  | 'seiyu'
-  | 'writer'
-  | 'illustrator'
-  | 'actor'
-  | string
+  'producer' | 'mangaka' | 'artist' | 'seiyu' | 'writer' | 'illustrator' | 'actor' | string
 
 export interface BangumiPerson {
   id: number

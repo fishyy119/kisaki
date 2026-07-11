@@ -15,7 +15,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import type {
   AutomationSortDirection,
   AutomationSortField,

@@ -1,5 +1,5 @@
 import { app, BrowserWindow, screen, Tray } from 'electron'
-import { join } from 'path'
+import { join } from 'node:path'
 import { createLogger } from '@main/log'
 import type { WindowService } from '@main/services/window'
 

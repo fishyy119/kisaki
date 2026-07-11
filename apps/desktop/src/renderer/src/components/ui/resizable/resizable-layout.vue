@@ -1,7 +1,7 @@
 <!-- Resizable Layout - provides context for panels and handle -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, type HTMLAttributes } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { useProvideResizable } from './use-resizable'
 
 interface Props {

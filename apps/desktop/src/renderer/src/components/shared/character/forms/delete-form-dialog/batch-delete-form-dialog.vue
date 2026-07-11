@@ -8,7 +8,7 @@ import { notify } from '@renderer/core/notify'
 import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { useEntityDelete } from '@renderer/composables'
-import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils/entity-delete'
 
 interface Props {
   characterIds: string[]

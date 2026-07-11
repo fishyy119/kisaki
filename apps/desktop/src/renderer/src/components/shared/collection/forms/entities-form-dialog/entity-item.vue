@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
 
 interface EntityLink {

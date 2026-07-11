@@ -14,7 +14,7 @@ import {
 import MarkdownContent from './markdown-content.vue'
 import MarkdownEditorToolbar from './markdown-editor-toolbar.vue'
 import type { MarkdownEditorOnAttachment } from './types'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { createBaseTheme, createShadcnTheme } from './markdown-theme'
 import {
   buildImageMarkdown,

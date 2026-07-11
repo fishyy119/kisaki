@@ -1,7 +1,6 @@
 import { app } from 'electron'
-import path from 'path'
-// electron-log has no exports map; Node ESM subpath imports need the exact file.
-import rawLog from 'electron-log/main.js'
+import path from 'node:path'
+import rawLog from 'electron-log/main'
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 type LogSource = 'main' | 'renderer'

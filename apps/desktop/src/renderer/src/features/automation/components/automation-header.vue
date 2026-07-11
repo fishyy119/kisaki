@@ -4,7 +4,7 @@ Automation Header renders top-level page actions.
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   totalAutomations: number

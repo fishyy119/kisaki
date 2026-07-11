@@ -62,12 +62,7 @@ import { ExtensionLibraryGraphManager } from './graph'
 import { ExtensionLibraryRelationStore } from './relations'
 
 type LibraryEntityNamespaceName =
-  | 'games'
-  | 'characters'
-  | 'persons'
-  | 'companies'
-  | 'collections'
-  | 'tags'
+  'games' | 'characters' | 'persons' | 'companies' | 'collections' | 'tags'
 type LibraryEntityRpcMethod<
   TNamespace extends LibraryEntityNamespaceName,
   TAction extends 'get' | 'list' | 'create' | 'update' | 'remove'

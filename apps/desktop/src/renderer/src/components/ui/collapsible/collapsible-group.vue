@@ -1,6 +1,6 @@
 <!-- CollapsibleGroup - A lightweight collapsible section component -->
 <script setup lang="ts">
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { collapsibleGroupVariants } from './collapsible-group-variants'
 import type { CollapsibleGroupProps } from './collapsible-group-types'
 

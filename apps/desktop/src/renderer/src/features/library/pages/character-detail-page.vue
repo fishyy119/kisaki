@@ -21,7 +21,7 @@ import { useCharacterProvider, useEvent, useRenderState } from '@renderer/compos
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { characters } from '@shared/db'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
 // Route & Navigation

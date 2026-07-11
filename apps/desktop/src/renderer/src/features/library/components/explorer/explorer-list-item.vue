@@ -18,7 +18,7 @@ import {
 import { PersonContextMenu, PersonBatchContextMenu } from '@renderer/components/shared/person'
 import { CompanyContextMenu, CompanyBatchContextMenu } from '@renderer/components/shared/company'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { useLibraryExplorerStore } from '../../stores'
 import { parseExplorerSelectionKey, toExplorerSelectionKey } from '../../utils/explorer-selection'
 import type { EntityData } from '../../composables'

@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/u
 import { notify } from '@renderer/core/notify'
 import { useTaskRunStore } from '@renderer/stores'
 import type { TaskCenterTab, TaskRunCategoryFilter, TaskRunStatusFilter } from '../types'
-import { matchesTaskRunSearch } from '../utils'
+import { matchesTaskRunSearch } from '../utils/display'
 import {
   ActiveTaskRunDetailsDialog,
   ActiveTaskRunRow,

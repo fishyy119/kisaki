@@ -1,6 +1,6 @@
 <!-- CollapsibleGroupContent - Collapsible body -->
 <script setup lang="ts">
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { collapsibleGroupContentVariants } from './collapsible-group-variants'
 import type { CollapsibleGroupContentProps } from './collapsible-group-types'
 

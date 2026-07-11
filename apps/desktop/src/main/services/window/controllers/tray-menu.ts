@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { join } from 'path'
+import { join } from 'node:path'
 import { isDev, rendererDevServerUrl } from '@main/env'
 import { createLogger } from '@main/log'
 

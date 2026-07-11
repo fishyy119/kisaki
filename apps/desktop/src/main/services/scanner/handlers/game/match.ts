@@ -1,6 +1,6 @@
 import { createLogger } from '@main/log'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
 import type { EntityEntry } from '@shared/scanner'
 import type { ScannerPhash } from '../../phash'
 import { GAME_PHASH_INDEX } from '../../types'

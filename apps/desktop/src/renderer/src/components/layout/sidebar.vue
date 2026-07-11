@@ -6,7 +6,7 @@
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import {
   DropdownMenu,
   DropdownMenuTrigger,

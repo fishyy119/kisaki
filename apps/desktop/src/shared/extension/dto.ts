@@ -282,8 +282,7 @@ export interface ExtensionAutomaticUpdateRunState {
 }
 
 export type ExtensionCreateReleasePlanRequest =
-  | ExtensionCreateRepositoryReleasePlanRequest
-  | ExtensionCreateLocalReleasePlanRequest
+  ExtensionCreateRepositoryReleasePlanRequest | ExtensionCreateLocalReleasePlanRequest
 
 export interface ExtensionCreateRepositoryReleasePlanRequest {
   sourceKind: 'repository'
@@ -303,8 +302,7 @@ export interface ExtensionReleasePlanConfirmation {
 }
 
 export type ExtensionApplyReleaseRequest =
-  | ExtensionApplyRepositoryReleaseRequest
-  | ExtensionApplyLocalReleaseRequest
+  ExtensionApplyRepositoryReleaseRequest | ExtensionApplyLocalReleaseRequest
 
 export interface ExtensionApplyRepositoryReleaseRequest
   extends ExtensionCreateRepositoryReleasePlanRequest, ExtensionReleasePlanConfirmation {

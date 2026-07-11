@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 interface TagItem {
   id: string

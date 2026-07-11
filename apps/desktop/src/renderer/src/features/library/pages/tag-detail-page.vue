@@ -18,7 +18,7 @@ import {
   TagInfoFormDialog
 } from '@renderer/components/shared/tag'
 import { useEvent, useRenderState, useTagProvider } from '@renderer/composables'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 // =============================================================================

@@ -13,7 +13,7 @@ import {
   formatTaskRunStatus,
   getTaskRunCategoryIcon,
   getTaskRunStatusVariant
-} from '../../../utils'
+} from '../../../utils/display'
 
 interface Props {
   run: TaskRun

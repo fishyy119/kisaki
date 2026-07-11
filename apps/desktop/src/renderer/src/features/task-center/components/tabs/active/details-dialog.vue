@@ -21,7 +21,7 @@ import {
   formatTimestamp,
   getTaskRunCategoryIcon,
   getTaskRunStatusVariant
-} from '../../../utils'
+} from '../../../utils/display'
 
 interface Props {
   run: TaskRun

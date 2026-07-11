@@ -80,7 +80,7 @@ export class VndbClient {
     })
 
     if (!response.ok) {
-      let detail = ''
+      let detail: string
 
       try {
         const errorBody = (await response.json()) as Partial<VndbErrorResponse>

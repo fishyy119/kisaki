@@ -7,7 +7,7 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { usePerson } from '@renderer/composables/use-person'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import PersonDetailHero from './detail-hero.vue'
 import { PersonDetailOverviewTab, PersonDetailGamesTab, PersonDetailCharactersTab } from './tabs'
 

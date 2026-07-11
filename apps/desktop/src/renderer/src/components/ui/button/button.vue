@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Primitive } from 'reka-ui'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { buttonVariants } from './variants'
 import type { ButtonProps } from './types'
 

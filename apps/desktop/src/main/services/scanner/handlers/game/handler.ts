@@ -11,7 +11,7 @@
  */
 
 import { createLogger } from '@main/log'
-import { promises as fs } from 'fs'
+import { promises as fs } from 'node:fs'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'

@@ -22,7 +22,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils'
+import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Character')

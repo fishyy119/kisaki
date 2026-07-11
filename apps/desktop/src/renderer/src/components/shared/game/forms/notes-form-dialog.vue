@@ -11,7 +11,7 @@ import { db, attachment } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
-import { getAttachmentUrl } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { gameNotes } from '@shared/db'
 import {
   Dialog,

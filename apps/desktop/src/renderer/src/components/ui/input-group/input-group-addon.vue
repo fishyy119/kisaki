@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 const inputGroupAddonVariants = cva(
   "text-muted-foreground flex h-auto cursor-text items-center justify-center gap-2 py-1 text-sm font-medium select-none [&>svg:not([class*='size-'])]:size-4 group-data-[disabled=true]/input-group:opacity-50",

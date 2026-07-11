@@ -15,7 +15,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Badge } from '@renderer/components/ui/badge'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import type { ScraperCapability } from '@shared/scraper'
 import type { ContentEntityType } from '@shared/common'

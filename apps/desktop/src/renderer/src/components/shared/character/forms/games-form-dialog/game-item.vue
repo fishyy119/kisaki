@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 interface Props {
   gameId: string

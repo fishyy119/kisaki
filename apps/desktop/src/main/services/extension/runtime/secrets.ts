@@ -2,7 +2,8 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { safeStorage } from 'electron'
 import { Mutex } from 'async-mutex'
-import fse from 'fs-extra'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import {
   createUnavailableError,
@@ -108,14 +109,14 @@ export class ExtensionRuntimeSecrets {
 
   private async read(runtimeHandle: ExtensionRuntimeHandle): Promise<StoredSecretDocument> {
     const secretsPath = this.getSecretsPath(this.requireRuntimeHandle(runtimeHandle))
-    await fse.ensureDir(path.dirname(secretsPath))
+    await mkdir(path.dirname(secretsPath), { recursive: true })
 
-    if (!(await fse.pathExists(secretsPath))) {
+    if (!(await pathExists(secretsPath))) {
       return {}
     }
 
     try {
-      const raw = await fse.readJson(secretsPath)
+      const raw = JSON.parse(await readFile(secretsPath, 'utf8'))
       return normalizeStoredSecretDocument(raw)
     } catch (error) {
       log.warn('Failed to read extension secrets document, using empty document.', error, {
@@ -132,7 +133,7 @@ export class ExtensionRuntimeSecrets {
     signal?: AbortSignal
   ): Promise<void> {
     this.requireActiveRequest(runtimeHandle, secretsPath, signal)
-    await fse.ensureDir(path.dirname(secretsPath))
+    await mkdir(path.dirname(secretsPath), { recursive: true })
 
     const tempPath = resolveInsideRoot(
       path.dirname(secretsPath),
@@ -140,11 +141,11 @@ export class ExtensionRuntimeSecrets {
     )
 
     try {
-      await fse.writeJson(tempPath, document, { spaces: 2 })
+      await writeFile(tempPath, `${JSON.stringify(document, null, 2)}\n`)
       this.requireActiveRequest(runtimeHandle, secretsPath, signal)
-      await fse.move(tempPath, secretsPath, { overwrite: true })
+      await movePath(tempPath, secretsPath, { overwrite: true })
     } finally {
-      await fse.remove(tempPath).catch(() => undefined)
+      await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
     }
   }
 

@@ -12,9 +12,10 @@ import Database from 'better-sqlite3'
 import { drizzle, BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { app, net, protocol } from 'electron'
-import { pathToFileURL } from 'url'
-import fse from 'fs-extra'
-import path from 'path'
+import { pathToFileURL } from 'node:url'
+import { mkdir } from 'node:fs/promises'
+import { pathExists } from '@main/utils/fs'
+import path from 'node:path'
 import { createLogger } from '@main/log'
 import * as schema from '@shared/db/schema'
 import { settings } from '@shared/db/schema'
@@ -74,8 +75,8 @@ export class DbService implements IService {
     this.dbPath = path.join(app.getPath('userData'), 'database/kisaki.db')
     this.storageDir = path.join(app.getPath('userData'), 'database/storage')
 
-    await fse.mkdir(path.dirname(this.dbPath), { recursive: true })
-    await fse.mkdir(this.storageDir, { recursive: true })
+    await mkdir(path.dirname(this.dbPath), { recursive: true })
+    await mkdir(this.storageDir, { recursive: true })
 
     this.sqlite = new Database(this.dbPath)
     this.sqlite.pragma('journal_mode = WAL')
@@ -147,7 +148,7 @@ export class DbService implements IService {
         const fileDir = path.join(this.storageDir, tableName, rowId)
         const filePath = path.join(fileDir, fileName)
 
-        if (!(await fse.pathExists(filePath))) {
+        if (!(await pathExists(filePath))) {
           return new Response('Attachment not found', { status: 404 })
         }
 

@@ -32,7 +32,7 @@ export function createMainConfig(paths: BundlerPaths, mode: BundlerMode): Inline
     mode,
     clearScreen: false,
     publicDir: false,
-    envFile: false,
+    envDir: false,
     define: createBuildEnvDefine(paths, mode),
     resolve: {
       alias: {
@@ -45,7 +45,7 @@ export function createMainConfig(paths: BundlerPaths, mode: BundlerMode): Inline
       noExternal: true
     },
     build: {
-      target: 'node22',
+      target: 'node24',
       outDir: path.join(paths.outDir, 'main'),
       emptyOutDir: true,
       ssr: true,
@@ -53,7 +53,7 @@ export function createMainConfig(paths: BundlerPaths, mode: BundlerMode): Inline
       // Dev sourcemaps keep main-process debugger breakpoints on TS sources.
       sourcemap: mode === 'development',
       reportCompressedSize: false,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           index: path.join(paths.desktopRoot, 'src/main/index.ts'),
           'extension-host': path.join(
@@ -80,20 +80,20 @@ export function createPreloadConfig(paths: BundlerPaths, mode: BundlerMode): Inl
     mode,
     clearScreen: false,
     publicDir: false,
-    envFile: false,
+    envDir: false,
     ssr: {
       target: 'node',
       noExternal: true
     },
     build: {
-      target: 'node22',
+      target: 'node24',
       outDir: path.join(paths.outDir, 'preload'),
       emptyOutDir: true,
       ssr: true,
       minify: false,
       sourcemap: mode === 'development',
       reportCompressedSize: false,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           index: path.join(paths.desktopRoot, 'src/preload/index.ts')
         },
@@ -132,7 +132,7 @@ export function createRendererConfig(paths: BundlerPaths, mode: BundlerMode): In
       outDir: path.join(paths.outDir, 'renderer'),
       emptyOutDir: true,
       reportCompressedSize: false,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           main: path.join(rendererRoot, 'main.html'),
           'tray-menu': path.join(rendererRoot, 'tray-menu.html')

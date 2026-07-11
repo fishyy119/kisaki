@@ -7,8 +7,9 @@
 import { Mutex } from 'async-mutex'
 import sharp from 'sharp'
 import smartcrop from 'smartcrop-sharp'
-import fse from 'fs-extra'
-import path from 'path'
+import { readdir, rm } from 'node:fs/promises'
+import { pathExists } from '@main/utils/fs'
+import path from 'node:path'
 import { createLogger } from '@main/log'
 import type { ThumbnailFit, ThumbnailOptions } from './types'
 
@@ -45,7 +46,7 @@ export class ThumbnailStore {
 
     const existingMutex = this.mutexMap.get(thumbnailPath)
     if (!existingMutex || !existingMutex.isLocked()) {
-      if (await fse.pathExists(thumbnailPath)) {
+      if (await pathExists(thumbnailPath)) {
         return thumbnailPath
       }
     }
@@ -53,11 +54,11 @@ export class ThumbnailStore {
     const mutex = this.getMutex(thumbnailPath)
 
     return await mutex.runExclusive(async () => {
-      if (await fse.pathExists(thumbnailPath)) {
+      if (await pathExists(thumbnailPath)) {
         return thumbnailPath
       }
 
-      if (!(await fse.pathExists(originalPath))) {
+      if (!(await pathExists(originalPath))) {
         throw new Error(`Original file not found: ${originalPath}`)
       }
 
@@ -82,7 +83,7 @@ export class ThumbnailStore {
         return thumbnailPath
       } catch (error) {
         log.error('Failed to generate thumbnail.', error, { originalPath: originalPath })
-        throw new Error('Failed to generate thumbnail.')
+        throw new Error('Failed to generate thumbnail.', { cause: error })
       }
     })
   }
@@ -96,7 +97,7 @@ export class ThumbnailStore {
     const baseName = path.basename(originalFileName, ext)
 
     try {
-      const files = await fse.readdir(thumbnailDir)
+      const files = await readdir(thumbnailDir)
       const thumbnailPattern = new RegExp(
         `^${this.escapeRegex(baseName)}_\\d+x\\d+_(cover|contain|fill|inside|outside|smart)\\.webp$`
       )
@@ -104,7 +105,7 @@ export class ThumbnailStore {
       for (const file of files) {
         if (thumbnailPattern.test(file)) {
           const filePath = path.join(thumbnailDir, file)
-          await fse.remove(filePath)
+          await rm(filePath, { recursive: true, force: true })
           log.debug('Deleted thumbnail.', { filePath: filePath })
         }
       }

@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { builtinThemePresets } from './presets'
 import type { ThemeDefinition } from './types'
-import { createReactiveRegistry } from '@renderer/utils'
+import { createReactiveRegistry } from '@renderer/utils/registry'
 
 const STYLE_ELEMENT_ID = 'kisaki-theme-style'
 

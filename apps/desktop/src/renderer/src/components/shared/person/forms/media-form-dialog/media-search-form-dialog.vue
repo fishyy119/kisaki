@@ -10,7 +10,7 @@ import { db, attachment } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { persons, type Person } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import {
   Dialog,

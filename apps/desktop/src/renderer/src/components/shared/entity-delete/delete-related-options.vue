@@ -8,7 +8,7 @@ import type { AllEntityType } from '@shared/common'
 import type { EntityDeletePreviewOption } from '@shared/entity-delete'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
-import { getEntityDeleteLabel } from '@renderer/utils'
+import { getEntityDeleteLabel } from '@renderer/utils/entity-delete'
 
 interface Props {
   options: EntityDeletePreviewOption[]

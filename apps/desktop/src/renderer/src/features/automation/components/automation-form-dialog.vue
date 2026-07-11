@@ -35,7 +35,7 @@ import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables'
 import type { Automation, AutomationFailurePolicy, AutomationTriggers } from '@shared/automation'
-import { formatJson } from '../utils'
+import { formatJson } from '../utils/display'
 import CommandCombobox from './command-combobox.vue'
 
 interface Props {

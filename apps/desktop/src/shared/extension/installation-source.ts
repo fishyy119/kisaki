@@ -9,8 +9,7 @@ import type {
 } from '@kisaki3/extension-registry'
 
 export type ExtensionInstallationSource =
-  | ExtensionRepositoryInstallationSource
-  | ExtensionLocalFileInstallationSource
+  ExtensionRepositoryInstallationSource | ExtensionLocalFileInstallationSource
 
 export interface ExtensionRepositoryInstallationSource {
   kind: 'repository'

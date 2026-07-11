@@ -11,7 +11,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { db } from '@renderer/core/db'
-import { getAttachmentUrl } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 
 interface Props {

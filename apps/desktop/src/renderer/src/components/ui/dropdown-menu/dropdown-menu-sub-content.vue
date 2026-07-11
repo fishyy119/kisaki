@@ -3,7 +3,7 @@ import type { DropdownMenuSubContentEmits, DropdownMenuSubContentProps } from 'r
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { DropdownMenuSubContent, useForwardPropsEmits } from 'reka-ui'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 defineOptions({
   inheritAttrs: false

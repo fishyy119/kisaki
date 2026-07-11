@@ -5,7 +5,7 @@
  */
 import { and, eq, inArray, gte, lte, asc, desc, sql, type SQL } from 'drizzle-orm'
 import type { SortDirection } from '@shared/common'
-import { escapeSqlStringLiteral } from '@shared/utils'
+import { escapeSqlStringLiteral } from '@shared/utils/sql'
 import type {
   FilterState,
   DateRangeValue,

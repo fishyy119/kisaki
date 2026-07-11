@@ -20,7 +20,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { getAttachmentUrl } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 
 interface Props {
   noteId: string

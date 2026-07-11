@@ -5,7 +5,7 @@ import {
   type ExtensionRuntimeMetadata,
   type RuntimeInfo
 } from '@kisaki3/extension-api'
-import { openExternalLink } from '@main/utils'
+import { openExternalLink } from '@main/utils/external-url'
 
 export interface ExtensionRuntimeCapabilityProviderOptions {
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined

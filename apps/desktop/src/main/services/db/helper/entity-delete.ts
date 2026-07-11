@@ -121,12 +121,10 @@ export class DbEntityDeleteHelper {
     relatedIds: RelatedIdMap
   ): EntityDeletePreviewOption[] {
     return DIRECT_RELATED_ENTITY_TYPES[entityType]
-      .map(
-        (relatedType): EntityDeletePreviewOption => ({
-          entityType: relatedType,
-          count: relatedIds[relatedType]?.size ?? 0
-        })
-      )
+      .map((relatedType): EntityDeletePreviewOption => ({
+        entityType: relatedType,
+        count: relatedIds[relatedType]?.size ?? 0
+      }))
       .filter((option) => option.count > 0)
   }
 

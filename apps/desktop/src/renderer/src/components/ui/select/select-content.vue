@@ -3,7 +3,7 @@ import type { SelectContentEmits, SelectContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { SelectContent, SelectPortal, SelectViewport, useForwardPropsEmits } from 'reka-ui'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import SelectScrollUpButton from './select-scroll-up-button.vue'
 import SelectScrollDownButton from './select-scroll-down-button.vue'
 

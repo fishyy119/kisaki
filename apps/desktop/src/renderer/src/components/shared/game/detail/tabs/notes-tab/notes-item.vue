@@ -7,7 +7,8 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import type { GameNote } from '@shared/db'
-import { formatDate, getAttachmentUrl } from '@renderer/utils'
+import { formatDate } from '@renderer/utils/datetime'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 
 interface Props {
   note: GameNote

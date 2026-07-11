@@ -9,7 +9,9 @@ export default defineConfig([
     clean: true,
     banner: '#!/usr/bin/env node',
     sourcemap: true,
-    external: ['vite', 'rollup']
+    deps: {
+      neverBundle: ['vite']
+    }
   },
   {
     entry: {
@@ -19,6 +21,8 @@ export default defineConfig([
     clean: false,
     dts: true,
     sourcemap: true,
-    external: ['vite']
+    deps: {
+      neverBundle: ['vite']
+    }
   }
 ])

@@ -8,7 +8,7 @@ import {
   AlertDialogPortal,
   useForwardPropsEmits
 } from 'reka-ui'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 defineOptions({
   inheritAttrs: false

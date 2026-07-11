@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { games, type PartialDate } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
-import { formatDateInput } from '@renderer/utils'
+import { formatDateInput } from '@renderer/utils/datetime'
 import {
   Dialog,
   DialogContent,

@@ -9,7 +9,9 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { useCompany } from '@renderer/composables'
 import { CompanyBasicFormDialog } from '../forms'
-import { getAttachmentUrl, formatDate, getEntityIcon } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { formatDate } from '@renderer/utils/datetime'
+import { getEntityIcon } from '@renderer/utils/format'
 
 const { company } = useCompany()
 

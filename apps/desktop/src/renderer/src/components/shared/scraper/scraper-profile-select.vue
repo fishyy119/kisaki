@@ -22,7 +22,7 @@ import {
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { ScraperPresetFormDialog } from './forms'
 
 interface Props {

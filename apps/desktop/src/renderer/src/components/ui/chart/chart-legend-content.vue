@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, onMounted, ref } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { useChart } from '.'
 
 const props = withDefaults(

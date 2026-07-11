@@ -2,13 +2,7 @@ import { TaskRunCancellation } from '@main/services/task-run'
 import type { TaskRunInitiator, TaskRunProgressUpdate, TaskRunProgressWork } from '@shared/task-run'
 
 export type IngestProgressPhase =
-  | 'checking'
-  | 'preparing'
-  | 'scraping'
-  | 'building'
-  | 'planning'
-  | 'writing'
-  | 'assets'
+  'checking' | 'preparing' | 'scraping' | 'building' | 'planning' | 'writing' | 'assets'
 
 export interface IngestProgressUpdate {
   phase: IngestProgressPhase

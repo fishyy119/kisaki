@@ -4,7 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { Icon } from '@renderer/components/ui/icon'
 import { DialogClose, DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import DialogOverlay from './dialog-overlay.vue'
 
 defineOptions({

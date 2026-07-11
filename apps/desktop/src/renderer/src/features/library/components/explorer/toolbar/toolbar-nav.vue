@@ -8,7 +8,7 @@
 import { RouterLink } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { useLibraryExplorerStore } from '../../../stores'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 const store = useLibraryExplorerStore()
 

@@ -25,9 +25,9 @@ export interface WebviewRpcTransport {
 export type WebviewRpcFunctions = object
 
 export type WebviewRpcRemote<TRemote extends WebviewRpcFunctions> = {
-  [K in keyof TRemote as TRemote[K] extends (...args: never[]) => unknown
-    ? K
-    : never]: TRemote[K] extends (...args: infer TArgs) => infer TReturn
+  [
+    K in keyof TRemote as TRemote[K] extends (...args: never[]) => unknown ? K : never
+  ]: TRemote[K] extends (...args: infer TArgs) => infer TReturn
     ? (...args: TArgs) => Promise<Awaited<TReturn>>
     : never
 }

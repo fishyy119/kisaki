@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { app } from 'electron'
-import fse from 'fs-extra'
+import { pathExists } from '@main/utils/fs'
 import { Mutex } from 'async-mutex'
 import { createLogger } from '@main/log'
 import type { ExtensionHostInspectOptions } from '@shared/bootstrap'
@@ -312,7 +312,7 @@ export class RuntimeManager {
       return
     }
 
-    if (!(await fse.pathExists(this.options.hostModulePath))) {
+    if (!(await pathExists(this.options.hostModulePath))) {
       throw new Error(`Extension host entry was not found at ${this.options.hostModulePath}`)
     }
 

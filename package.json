@@ -1,7 +1,7 @@
 {
   "name": "kisaki-monorepo",
   "private": true,
-  "packageManager": "pnpm@11.2.2",
+  "packageManager": "pnpm@11.10.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -26,18 +26,18 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/cross-spawn": "^6.0.6",
-    "@types/node": "^24.0.0",
-    "cross-spawn": "^7.0.6",
-    "eslint": "^9.39.1",
-    "eslint-config-prettier": "^10.1.8",
-    "jiti": "^2.6.1",
-    "lefthook": "^2.0.12",
-    "prettier": "^3.7.4",
-    "tar": "7.5.9",
-    "tsdown": "^0.19.0",
-    "tsx": "^4.20.6",
-    "typescript-eslint": "^8.49.0"
+    "@eslint/js": "catalog:",
+    "@types/cross-spawn": "catalog:",
+    "@types/node": "catalog:",
+    "cross-spawn": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "jiti": "catalog:",
+    "lefthook": "^2.1.10",
+    "prettier": "catalog:",
+    "tar": "7.5.19",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
   }
 }

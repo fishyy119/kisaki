@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { StackedBar } from '@unovis/ts'
 import { VisXYContainer, VisStackedBar, VisAxis } from '@unovis/vue'

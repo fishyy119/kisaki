@@ -23,7 +23,7 @@ import { CollectionSelect } from '@renderer/components/shared/collection'
 import { useAsyncData } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { games, characters, persons, companies, tags, collections } from '@shared/db'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import type { FilterUiFieldDef } from '../specs/types'
 import { usePreferencesStore } from '@renderer/stores'
 

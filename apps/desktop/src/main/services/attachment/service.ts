@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import { createLogger } from '@main/log'
-import path from 'path'
+import path from 'node:path'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
 import { AttachmentCropper } from './crop'

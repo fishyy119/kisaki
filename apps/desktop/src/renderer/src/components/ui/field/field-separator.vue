@@ -3,7 +3,7 @@
 import type { HTMLAttributes } from 'vue'
 import { useSlots } from 'vue'
 import { Separator } from '@renderer/components/ui/separator'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   class?: HTMLAttributes['class']

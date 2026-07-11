@@ -1,4 +1,5 @@
-import fse from 'fs-extra'
+import { readdir } from 'node:fs/promises'
+import { pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import type { ValidationIssue } from '@kisaki3/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
@@ -81,11 +82,11 @@ export class ExtensionInstallationView {
     rootDir: string,
     builtin: boolean
   ): Promise<readonly ScannedExtensionPackage[]> {
-    if (!(await fse.pathExists(rootDir))) {
+    if (!(await pathExists(rootDir))) {
       return []
     }
 
-    const entries = await fse.readdir(rootDir, { withFileTypes: true })
+    const entries = await readdir(rootDir, { withFileTypes: true })
     const packages: ScannedExtensionPackage[] = []
 
     for (const entry of entries) {
@@ -97,7 +98,7 @@ export class ExtensionInstallationView {
       const packagePath = resolveInsideRoot(rootDir, directoryName)
       const manifestPath = resolveInsideRoot(packagePath, 'manifest.json')
 
-      if (!(await fse.pathExists(manifestPath))) {
+      if (!(await pathExists(manifestPath))) {
         packages.push({
           builtin,
           id: directoryName,

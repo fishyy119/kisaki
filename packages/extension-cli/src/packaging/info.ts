@@ -1,9 +1,9 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { stat } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
-import AdmZip from 'adm-zip'
+import { unzipSync, type Unzipped } from 'fflate'
 import { parseExtensionManifest, type ExtensionManifest } from '@kisaki3/extension-api'
 import { CliError } from '../errors'
 import { formatValidationIssues } from '../validation'
@@ -60,25 +60,25 @@ export async function hashFile(filePath: string): Promise<FileDigest> {
   }
 }
 
-function readKisxArchiveManifest(archivePath: string): ExtensionManifest {
-  let zip: AdmZip
+async function readKisxArchiveManifest(archivePath: string): Promise<ExtensionManifest> {
+  let archive: Unzipped
 
   try {
-    zip = new AdmZip(archivePath)
+    archive = unzipSync(await readFile(archivePath))
   } catch (error) {
     throw new CliError(
       `Could not read .kisx archive: ${error instanceof Error ? error.message : 'unknown error'}`
     )
   }
 
-  const manifestEntry = zip.getEntry('manifest.json')
-  if (!manifestEntry) {
+  const manifestData = archive['manifest.json']
+  if (!manifestData) {
     throw new CliError('Package archive must contain manifest.json at the archive root.')
   }
 
   let rawManifest: unknown
   try {
-    rawManifest = JSON.parse(manifestEntry.getData().toString('utf-8'))
+    rawManifest = JSON.parse(Buffer.from(manifestData).toString('utf-8'))
   } catch {
     throw new CliError('Package manifest.json contains invalid JSON.')
   }
@@ -88,11 +88,11 @@ function readKisxArchiveManifest(archivePath: string): ExtensionManifest {
     throw new CliError(formatValidationIssues('Package manifest is invalid.', parsed.issues))
   }
 
-  if (!zip.getEntry(parsed.manifest.entry)) {
+  if (!archive[parsed.manifest.entry]) {
     throw new CliError(`Package entry "${parsed.manifest.entry}" was not found in the archive.`)
   }
 
-  if (parsed.manifest.icon && !zip.getEntry(parsed.manifest.icon)) {
+  if (parsed.manifest.icon && !archive[parsed.manifest.icon]) {
     throw new CliError(`Package icon "${parsed.manifest.icon}" was not found in the archive.`)
   }
 

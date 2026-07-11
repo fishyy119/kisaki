@@ -1,6 +1,5 @@
 import path from 'node:path'
-import type { RollupWatcher } from 'rollup'
-import { build, mergeConfig, type InlineConfig } from 'vite'
+import { build, mergeConfig, type InlineConfig, type Rolldown } from 'vite'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type { KisxConfig } from '../config'
 import { CliError } from '../errors'
@@ -21,10 +20,10 @@ export async function buildHostBundle(
   manifest: ExtensionManifest,
   config: KisxConfig,
   options: HostBuildOptions = {}
-): Promise<RollupWatcher | null> {
+): Promise<Rolldown.RolldownWatcher | null> {
   const inlineConfig = await createHostInlineConfig(project, manifest, config, options)
   const result = await build(inlineConfig)
-  return options.watch ? (result as RollupWatcher) : null
+  return options.watch ? (result as Rolldown.RolldownWatcher) : null
 }
 
 async function createHostInlineConfig(
@@ -40,7 +39,6 @@ async function createHostInlineConfig(
   const runtimeDependencies = await readExtensionRuntimeDependencies(project)
   const entryFileName = path.posix.basename(manifest.entry)
   const outDir = path.posix.dirname(manifest.entry)
-  const format = entryFileName.endsWith('.cjs') ? 'cjs' : 'es'
 
   const base: InlineConfig = {
     configFile: false,
@@ -51,12 +49,12 @@ async function createHostInlineConfig(
       ssr: project.entrySourcePath,
       outDir,
       emptyOutDir: false,
-      target: 'node22',
+      target: 'node24',
       sourcemap: true,
       minify: false,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          format,
+          format: 'es',
           entryFileNames: entryFileName
         }
       },

@@ -9,7 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { games, gameSessions, type GameSession } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
-import { formatDuration } from '@renderer/utils'
+import { formatDuration } from '@renderer/utils/datetime'
 import {
   Dialog,
   DialogContent,

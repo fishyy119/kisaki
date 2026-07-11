@@ -1,5 +1,5 @@
 import { rm } from 'node:fs/promises'
-import type { RollupError, RollupWatcher, RollupWatcherEvent } from 'rollup'
+import type { Rolldown } from 'vite'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import type { KisxConfig } from '../config'
 import type { ExtensionProject } from '../project'
@@ -46,7 +46,7 @@ export interface WatchExtensionBundlesOptions {
 /** One failed bundle emitted by a Vite watch session. */
 export interface ExtensionBundleBuildFailure {
   label: string
-  error: RollupError
+  error: Rolldown.RolldownError
 }
 
 /**
@@ -64,16 +64,16 @@ export async function watchExtensionBundles(
   const uiEntries = await discoverUiEntries(project)
   assertUiConsistency(manifest, uiEntries)
 
-  const watchers: RollupWatcher[] = []
+  const watchers: Rolldown.RolldownWatcher[] = []
   const states: boolean[] = []
   let firstBuildResolvers: (() => void)[] = []
 
-  const trackWatcher = (watcher: RollupWatcher, label: string): void => {
+  const trackWatcher = (watcher: Rolldown.RolldownWatcher, label: string): void => {
     const index = states.length
     states.push(false)
     watchers.push(watcher)
 
-    watcher.on('event', (event: RollupWatcherEvent) => {
+    watcher.on('event', (event: Rolldown.RolldownWatcherEvent) => {
       if (event.code === 'BUNDLE_START') {
         states[index] = false
         return

@@ -7,7 +7,7 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useCompany } from '@renderer/composables'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import CompanyDetailHero from './detail-hero.vue'
 import { CompanyDetailOverviewTab, CompanyDetailGamesTab } from './tabs'
 

@@ -21,7 +21,7 @@ import { useCompanyProvider, useEvent, useRenderState } from '@renderer/composab
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { companies } from '@shared/db'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
 // Route & Navigation

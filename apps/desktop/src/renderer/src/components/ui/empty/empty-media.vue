@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 const emptyMediaVariants = cva(
   'flex shrink-0 items-center justify-center mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0',

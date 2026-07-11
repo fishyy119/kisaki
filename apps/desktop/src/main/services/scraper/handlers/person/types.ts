@@ -13,9 +13,7 @@ export type PersonScraperTagsResult = PersonSlotResult<'tags'>
 export type PersonScraperPhotosResult = PersonSlotResult<'photos'>
 
 export type PersonScraperResult =
-  | PersonScraperInfoResult
-  | PersonScraperTagsResult
-  | PersonScraperPhotosResult
+  PersonScraperInfoResult | PersonScraperTagsResult | PersonScraperPhotosResult
 
 export type PersonScraperImageSlot = 'photos'
 

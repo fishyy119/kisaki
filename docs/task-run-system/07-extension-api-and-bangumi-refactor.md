@@ -81,14 +81,7 @@ Public DTO：
 export type ExtensionTaskRunOperation = string
 
 export type ExtensionTaskRunStatus =
-  | 'queued'
-  | 'running'
-  | 'pausing'
-  | 'paused'
-  | 'cancelling'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+  'queued' | 'running' | 'pausing' | 'paused' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
 
 export type ExtensionTaskRunFinalStatus = Extract<
   ExtensionTaskRunStatus,
@@ -119,13 +112,7 @@ export type ExtensionTaskRunInitiator =
     }
 
 export type ExtensionTaskRunProgressUnit =
-  | 'item'
-  | 'file'
-  | 'byte'
-  | 'entity'
-  | 'step'
-  | 'package'
-  | 'request'
+  'item' | 'file' | 'byte' | 'entity' | 'step' | 'package' | 'request'
 
 export interface ExtensionTaskRunWarning {
   code?: string

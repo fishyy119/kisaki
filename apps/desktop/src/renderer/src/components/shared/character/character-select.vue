@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
-import { getAttachmentUrl } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { db } from '@renderer/core/db'
 import { useAsyncData, useEvent } from '@renderer/composables'
 

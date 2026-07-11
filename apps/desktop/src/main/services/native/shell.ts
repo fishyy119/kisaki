@@ -1,8 +1,8 @@
 import { shell } from 'electron'
-import { stat } from 'fs/promises'
-import { basename, dirname } from 'path'
+import { stat } from 'node:fs/promises'
+import { basename, dirname } from 'node:path'
 import { createLogger } from '@main/log'
-import { openExternalLink } from '@main/utils'
+import { openExternalLink } from '@main/utils/external-url'
 
 const log = createLogger('Native')
 
@@ -36,7 +36,7 @@ export class NativeShell {
         targetName: basename(targetPath),
         ensure: config.ensure
       })
-      throw new Error('Failed to open native path.')
+      throw new Error('Failed to open native path.', { cause: error })
     }
   }
 

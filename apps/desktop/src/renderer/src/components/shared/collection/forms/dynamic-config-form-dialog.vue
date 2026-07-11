@@ -34,7 +34,8 @@ import {
   companyFilterUiSpec
 } from '@renderer/components/shared/filter'
 import { useAsyncData } from '@renderer/composables'
-import { cn, getEntityIcon } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
+import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { createEmptyFilter, countActiveFilters } from '@shared/filter'

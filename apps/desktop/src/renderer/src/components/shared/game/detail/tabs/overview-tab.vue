@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
-import { formatDate } from '@renderer/utils'
+import { formatDate } from '@renderer/utils/datetime'
 import { Button } from '@renderer/components/ui/button'
 import { SectionHeader } from '@renderer/components/ui/section-header'
 import { MarkdownContent } from '@renderer/components/ui/markdown'

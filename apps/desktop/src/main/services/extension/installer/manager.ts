@@ -1,5 +1,5 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { rm, stat } from 'node:fs/promises'
 import type {
   ExtensionCreateLocalReleasePlanRequest,
   ExtensionCreateReleasePlanRequest,
@@ -334,8 +334,8 @@ export class ExtensionInstallerManager {
     signal?: AbortSignal
   ): Promise<ExtensionReleasePlan> {
     const filePath = path.resolve(request.filePath)
-    const stat = await fse.stat(filePath)
-    if (!stat.isFile() || path.extname(filePath).toLowerCase() !== '.kisx') {
+    const fileStat = await stat(filePath)
+    if (!fileStat.isFile() || path.extname(filePath).toLowerCase() !== '.kisx') {
       throw new Error('Local extension package must be a .kisx file.')
     }
 
@@ -514,8 +514,8 @@ export class ExtensionInstallerManager {
   private async cleanupPackageWorkspace(workspaceId: string): Promise<void> {
     const workspacePaths = this.layout.workspacePaths(workspaceId)
     await Promise.all([
-      fse.remove(workspacePaths.stagingDir).catch(() => undefined),
-      fse.remove(workspacePaths.downloadPath).catch(() => undefined)
+      rm(workspacePaths.stagingDir, { recursive: true, force: true }).catch(() => undefined),
+      rm(workspacePaths.downloadPath, { recursive: true, force: true }).catch(() => undefined)
     ])
   }
 

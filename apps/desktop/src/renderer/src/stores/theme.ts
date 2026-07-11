@@ -40,7 +40,7 @@ export const useThemeStore = defineStore(
 
     function applyTheme(): void {
       // Resolve light/dark from preference
-      let resolved: 'light' | 'dark' = 'light'
+      let resolved: 'light' | 'dark'
 
       if (mode.value === 'system') {
         const mql =

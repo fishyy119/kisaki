@@ -8,7 +8,7 @@ import { storeToRefs } from 'pinia'
 import { nanoid } from 'nanoid'
 import { and, eq, inArray } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import {
   ContextMenuItem,
   ContextMenuLabel,

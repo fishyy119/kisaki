@@ -7,7 +7,7 @@ import type {
   PartialDateInputMessages,
   PartialDateInputValidationResult
 } from './types'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { Input } from '@renderer/components/ui/input'
 
 const props = defineProps<{

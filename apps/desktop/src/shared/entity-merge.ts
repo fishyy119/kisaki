@@ -1,12 +1,7 @@
 import type { AllEntityType } from './common'
 
 export type EntityMergeChangeKind =
-  | 'fields'
-  | 'externalIds'
-  | 'relations'
-  | 'filters'
-  | 'attachments'
-  | 'source'
+  'fields' | 'externalIds' | 'relations' | 'filters' | 'attachments' | 'source'
 
 export interface EntityMergeRequest {
   entityType: AllEntityType

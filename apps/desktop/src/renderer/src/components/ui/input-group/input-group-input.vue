@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { Input } from '@renderer/components/ui/input'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   type?: string

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { stat } from 'node:fs/promises'
 import type {
   ExtensionRuntimeMetadata,
   NetworkDownloadRequest,
@@ -92,7 +92,7 @@ export class ExtensionNetworkCapabilityProvider {
         signal
       })
 
-      const stats = await fse.stat(destinationPath)
+      const stats = await stat(destinationPath)
       return {
         filePath: destinationPath,
         bytesWritten: stats.size

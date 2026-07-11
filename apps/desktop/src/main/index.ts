@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import path from 'path'
+import path from 'node:path'
 import { isDev, isMacOS, isWindows } from './env'
 import { createLogger, configureLogger, initializeLogger } from './log'
 

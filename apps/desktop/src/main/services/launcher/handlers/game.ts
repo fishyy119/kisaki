@@ -7,8 +7,8 @@
 import { shell } from 'electron'
 import { isWindows } from '@main/env'
 import type { Game } from '@shared/db'
-import { existsSync } from 'fs'
-import { dirname, resolve } from 'path'
+import { existsSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import spawn from 'cross-spawn'
 import { createLogger } from '@main/log'
 import type { MonitorService } from '@main/services/monitor'
@@ -18,7 +18,7 @@ import type { NotifyService } from '@main/services/notify'
 import { games } from '@shared/db'
 import type { GameLaunchResult, GameStopResult } from '@shared/launcher'
 import { and, eq } from 'drizzle-orm'
-import { openExternalProtocol } from '@main/utils'
+import { openExternalProtocol } from '@main/utils/external-url'
 
 const log = createLogger('Launcher')
 const LAUNCH_DETECTION_TIMEOUT_MS = 10000

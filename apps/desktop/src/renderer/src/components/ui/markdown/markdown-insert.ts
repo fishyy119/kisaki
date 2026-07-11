@@ -44,7 +44,7 @@ export function prefixSelectedLines(view: EditorView, prefix: string) {
   const toLine = view.state.doc.lineAt(sel.to)
 
   const changes: { from: number; to: number; insert: string }[] = []
-  for (let pos = fromLine.from; pos <= toLine.from; ) {
+  for (let pos = fromLine.from; pos <= toLine.from;) {
     const line = view.state.doc.lineAt(pos)
     changes.push({ from: line.from, to: line.from, insert: prefix })
     if (line.number === toLine.number) break

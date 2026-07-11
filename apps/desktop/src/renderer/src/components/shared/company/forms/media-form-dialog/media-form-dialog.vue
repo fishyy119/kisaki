@@ -12,7 +12,7 @@ import { notify } from '@renderer/core/notify'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
 import { companies, type Company } from '@shared/db'
 import { useAsyncData, useEvent } from '@renderer/composables'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
   DialogContent,

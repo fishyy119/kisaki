@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { computed, ref, toRaw } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import {

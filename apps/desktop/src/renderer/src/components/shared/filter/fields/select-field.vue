@@ -9,7 +9,7 @@ import type { FilterState } from '@shared/filter'
 import { getFilterValue, setFilterValue } from '@shared/filter'
 import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import type { FilterUiFieldDef } from '../specs/types'
 
 interface Props {

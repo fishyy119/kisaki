@@ -19,7 +19,7 @@ import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { useCollection, useRenderState } from '@renderer/composables'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
 import type { Game, Character, Person, Company } from '@shared/db'
 

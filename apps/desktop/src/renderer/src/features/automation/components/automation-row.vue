@@ -8,7 +8,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import {
@@ -17,7 +17,7 @@ import {
   formatAutomationTimestamp,
   getRunStatusLabel,
   getRunStatusVariant
-} from '../utils'
+} from '../utils/display'
 
 interface Props {
   automation: Automation

@@ -1,6 +1,6 @@
 <!-- CollapsibleGroupTrigger - Clickable header -->
 <script setup lang="ts">
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { collapsibleGroupTriggerVariants } from './collapsible-group-variants'
 import type { CollapsibleGroupTriggerProps } from './collapsible-group-types'
 

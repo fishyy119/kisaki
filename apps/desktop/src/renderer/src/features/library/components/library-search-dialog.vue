@@ -20,7 +20,9 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { useRenderState } from '@renderer/composables'
 import { useLibrarySearch } from '../composables'
-import { getAttachmentUrl, cn, getEntityIcon } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { cn } from '@renderer/utils/cn'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { Game, Character, Person, Company } from '@shared/db'
 
 // =============================================================================

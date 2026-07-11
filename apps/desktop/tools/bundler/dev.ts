@@ -3,7 +3,7 @@ import {
   createServer,
   mergeConfig,
   type InlineConfig,
-  type Rollup,
+  type Rolldown,
   type ViteDevServer
 } from 'vite'
 import { ElectronAppController } from './electron'
@@ -14,7 +14,7 @@ import { createMainConfig, createPreloadConfig, createRendererConfig } from './t
 const RENDERER_DEV_SERVER_URL_ENV = 'KISAKI_RENDERER_DEV_SERVER_URL'
 
 interface WatchBuildHandle {
-  watcher: Rollup.RollupWatcher
+  watcher: Rolldown.RolldownWatcher
   firstBuild: Promise<void>
   onRebuild(listener: () => void): void
 }
@@ -31,7 +31,7 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
   const rendererUrl = resolveRendererDevServerUrl(rendererServer)
   console.log(`[bundler] Renderer dev server running at ${rendererUrl}`)
 
-  let watchers: Rollup.RollupWatcher[] = []
+  let watchers: Rolldown.RolldownWatcher[] = []
   let shuttingDown = false
   const shutdown = (code: number): void => {
     if (shuttingDown) {
@@ -87,7 +87,7 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
 async function startWatchBuild(config: InlineConfig): Promise<WatchBuildHandle> {
   const watcher = (await build(
     mergeConfig(config, { build: { watch: {} } })
-  )) as Rollup.RollupWatcher
+  )) as Rolldown.RolldownWatcher
 
   let rebuildListener: (() => void) | null = null
   let sawSuccessfulBuild = false

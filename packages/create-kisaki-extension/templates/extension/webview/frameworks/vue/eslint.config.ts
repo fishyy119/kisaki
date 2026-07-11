@@ -1,4 +1,4 @@
-import { defineConfig } from 'eslint/config'
+import { defineConfig, globalIgnores } from 'eslint/config'
 import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
@@ -6,7 +6,7 @@ import vueParser from 'vue-eslint-parser'
 import prettier from 'eslint-config-prettier'
 
 export default defineConfig([
-  { ignores: ['dist/', 'artifacts/', '.kisaki/'] },
+  globalIgnores(['dist/', 'artifacts/', '.kisaki/']),
   eslint.configs.recommended,
   tseslint.configs.recommended,
   pluginVue.configs['flat/recommended'],

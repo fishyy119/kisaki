@@ -73,10 +73,7 @@ export type RpcBinary = Uint8Array
 export type RpcPrimitive = JsonPrimitive
 
 export type RpcValue =
-  | RpcPrimitive
-  | RpcBinary
-  | readonly RpcValue[]
-  | { readonly [key: string]: RpcValue }
+  RpcPrimitive | RpcBinary | readonly RpcValue[] | { readonly [key: string]: RpcValue }
 
 export interface RpcRecord {
   readonly [key: string]: RpcValue
@@ -136,8 +133,7 @@ export interface RpcEventEnvelope<
 }
 
 export type RpcResponseEnvelope<TResult = RpcValue> =
-  | RpcSuccessResponseEnvelope<TResult>
-  | RpcErrorResponseEnvelope
+  RpcSuccessResponseEnvelope<TResult> | RpcErrorResponseEnvelope
 
 export type RpcEnvelope<
   TMethod extends RpcMethod = RpcMethod,

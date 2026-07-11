@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { Primitive } from 'reka-ui'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props extends PrimitiveProps {
   class?: HTMLAttributes['class']

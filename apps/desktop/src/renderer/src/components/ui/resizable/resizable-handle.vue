@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, type HTMLAttributes } from 'vue'
 import { useResizable } from './use-resizable'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   class?: HTMLAttributes['class']

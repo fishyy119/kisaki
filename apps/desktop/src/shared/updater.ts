@@ -3,13 +3,7 @@
  */
 
 export type AppUpdaterStatus =
-  | 'idle'
-  | 'checking'
-  | 'available'
-  | 'not-available'
-  | 'downloading'
-  | 'downloaded'
-  | 'error'
+  'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
 
 export interface AppUpdaterRelease {
   version: string

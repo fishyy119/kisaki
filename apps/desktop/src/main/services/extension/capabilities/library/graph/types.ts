@@ -69,11 +69,7 @@ export interface NormalizedLibraryGraph {
 }
 
 export type LibraryGraphEntity =
-  | LibraryGame
-  | LibraryCollection
-  | LibraryTag
-  | LibraryCompany
-  | LibraryPerson
+  LibraryGame | LibraryCollection | LibraryTag | LibraryCompany | LibraryPerson
 
 export type LibraryGraphMatchReason = 'externalId' | 'path' | 'name'
 

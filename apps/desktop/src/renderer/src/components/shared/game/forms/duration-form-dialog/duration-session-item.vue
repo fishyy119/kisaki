@@ -4,7 +4,7 @@
 -->
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
-import { formatDuration, formatDateTimeRange } from '@renderer/utils'
+import { formatDuration, formatDateTimeRange } from '@renderer/utils/datetime'
 import { Button } from '@renderer/components/ui/button'
 
 interface Props {

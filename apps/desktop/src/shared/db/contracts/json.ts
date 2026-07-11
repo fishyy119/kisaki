@@ -89,12 +89,7 @@ export interface RelationValue {
 }
 
 export type FilterValue =
-  | true
-  | string
-  | string[]
-  | NumberRangeValue
-  | DateRangeValue
-  | RelationValue
+  true | string | string[] | NumberRangeValue | DateRangeValue | RelationValue
 
 /** Filter state stored as JSON (field key -> value). */
 export type FilterState = Record<string, FilterValue>
@@ -167,10 +162,7 @@ export type CharacterScraperSlot = 'info' | 'tags' | 'persons' | 'photos'
  * - Slot config editing UI
  */
 export type ScraperSlot =
-  | GameScraperSlot
-  | PersonScraperSlot
-  | CompanyScraperSlot
-  | CharacterScraperSlot
+  GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
 
 /** Shared strategy for combining multiple provider results. */
 export type SlotStrategy = 'first' | 'enrich'

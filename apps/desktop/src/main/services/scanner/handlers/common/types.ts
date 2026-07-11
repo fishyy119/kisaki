@@ -10,9 +10,7 @@ export interface ScannerRunMetadata {
 }
 
 export type ScannerEntityWarningType =
-  | 'asset-persist-failed'
-  | 'metadata-missing'
-  | 'scraper-unavailable'
+  'asset-persist-failed' | 'metadata-missing' | 'scraper-unavailable'
 
 export type ScannerEntityErrorType =
   | 'duplicate-external-id'

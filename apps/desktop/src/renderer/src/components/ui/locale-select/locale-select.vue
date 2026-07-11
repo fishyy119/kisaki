@@ -3,7 +3,7 @@
 import { computed, type HTMLAttributes } from 'vue'
 import type { Locale } from '@shared/locale'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   placeholder?: string

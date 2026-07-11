@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, useSlots } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface ErrorItem {
   message?: string

@@ -1,5 +1,6 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { stat } from 'node:fs/promises'
+import { pathExists } from '@main/utils/fs'
 import type {
   ExtensionRuntimeMetadata,
   LibraryAttachment,
@@ -24,11 +25,7 @@ import { assertInsideAnyRoot } from '../../shared/path-confinement'
 
 type AttachmentMode = 'single' | 'multiple'
 type AttachmentTable =
-  | typeof games
-  | typeof characters
-  | typeof persons
-  | typeof companies
-  | typeof collections
+  typeof games | typeof characters | typeof persons | typeof companies | typeof collections
 type AttachmentTableWithId = AttachmentTable & { id: AnySQLiteColumn<{ data: string }> }
 
 interface AttachmentSlotConfigBase {
@@ -301,7 +298,7 @@ export class ExtensionLibraryAttachmentStore {
     fileName: string
   ): Promise<LibraryAttachment> {
     const filePath = this.options.db.attachment.getPath(tableName, entity.id, fileName)
-    const stats = (await fse.pathExists(filePath)) ? await fse.stat(filePath) : null
+    const stats = (await pathExists(filePath)) ? await stat(filePath) : null
 
     return {
       entity,

@@ -6,7 +6,7 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
-import { formatDate } from '@renderer/utils'
+import { formatDate } from '@renderer/utils/datetime'
 
 interface Props {
   note: string

@@ -1,5 +1,5 @@
 import { pathToFileURL } from 'node:url'
-import fse from 'fs-extra'
+import { pathExists } from '@main/utils/fs'
 import { net } from 'electron'
 import { createLogger } from '@main/log'
 import { EXTENSION_UI_SCHEME } from '@main/bootstrap/protocol'
@@ -26,8 +26,7 @@ const extensionUiProtocolSlot = createProtocolHandlerSlot(
  * Delivery source for an extension's webview UI assets.
  */
 export type ExtensionWebviewUiSource =
-  | { kind: 'package'; rootPath: string }
-  | { kind: 'dev-server'; origin: string }
+  { kind: 'package'; rootPath: string } | { kind: 'dev-server'; origin: string }
 
 export interface ExtensionUiAssetServerOptions {
   resolveUiSource(extensionId: string): ExtensionWebviewUiSource | null
@@ -80,7 +79,7 @@ export class ExtensionUiAssetServer {
       }
 
       const filePath = resolveInsideRoot(source.rootPath, ...segments)
-      if (!(await fse.pathExists(filePath))) {
+      if (!(await pathExists(filePath))) {
         return new Response('Extension UI asset not found', { status: 404 })
       }
 

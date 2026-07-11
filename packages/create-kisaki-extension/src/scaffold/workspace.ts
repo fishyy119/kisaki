@@ -97,7 +97,7 @@ function readWorkspacePackageJson(filePath: string): WorkspacePackageJson {
     return JSON.parse(readFileSync(filePath, 'utf8')) as WorkspacePackageJson
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'unknown error'
-    throw new Error(`Could not read workspace package.json: ${detail}`)
+    throw new Error(`Could not read workspace package.json: ${detail}`, { cause: error })
   }
 }
 
@@ -106,7 +106,7 @@ function readWorkspaceConfig(filePath: string): ExtensionWorkspaceConfig {
     return JSON.parse(readFileSync(filePath, 'utf8')) as ExtensionWorkspaceConfig
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'unknown error'
-    throw new Error(`Could not read ${WORKSPACE_CONFIG_FILE}: ${detail}`)
+    throw new Error(`Could not read ${WORKSPACE_CONFIG_FILE}: ${detail}`, { cause: error })
   }
 }
 
@@ -115,7 +115,7 @@ function readRegistryManifest(filePath: string): RegistryManifest {
     return JSON.parse(readFileSync(filePath, 'utf8')) as RegistryManifest
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'unknown error'
-    throw new Error(`Could not read registry manifest: ${detail}`)
+    throw new Error(`Could not read registry manifest: ${detail}`, { cause: error })
   }
 }
 

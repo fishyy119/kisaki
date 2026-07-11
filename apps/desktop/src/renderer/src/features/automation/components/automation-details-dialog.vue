@@ -27,7 +27,7 @@ import {
   getRunStatusLabel,
   getRunStatusVariant,
   getTriggerLabel
-} from '../utils'
+} from '../utils/display'
 
 interface Props {
   automation: Automation
@@ -183,8 +183,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
           <div class="text-xs font-medium text-muted-foreground">参数</div>
           <pre
             class="max-h-48 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed text-foreground"
-            >{{ argsJson }}</pre
-          >
+            >{{ argsJson }}</pre>
         </section>
 
         <section class="space-y-2">
@@ -326,8 +325,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
           </div>
           <pre
             class="max-h-[52vh] overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
-            >{{ selectedRunResultText }}</pre
-          >
+            >{{ selectedRunResultText }}</pre>
         </section>
       </DialogBody>
     </DialogContent>

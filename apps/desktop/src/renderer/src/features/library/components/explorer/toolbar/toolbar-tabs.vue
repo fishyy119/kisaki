@@ -10,7 +10,7 @@ import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { useLibraryExplorerStore } from '../../../stores'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
 
 const ENTITY_TABS: ContentEntityType[] = ['game', 'character', 'person', 'company']

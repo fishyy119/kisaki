@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { persons } from '@shared/db'

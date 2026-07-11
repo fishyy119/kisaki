@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { AllEntityType } from '@shared/common'
 import { characters, collections, companies, games, persons, tags } from '@shared/db'
 import { db } from '@renderer/core/db'
-import { getAttachmentUrl } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import type { EntityMergeSummary } from './types'
 
 function getNameSubText(name: string, originalName: string | null | undefined): string {

@@ -2,7 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { toRef } from 'vue'
 import { useVModel } from '@vueuse/core'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']

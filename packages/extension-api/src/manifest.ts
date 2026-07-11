@@ -13,7 +13,7 @@ export const EXTENSION_CATEGORIES = ['scraper', 'tool', 'theme', 'integration'] 
 
 export type ExtensionCategory = (typeof EXTENSION_CATEGORIES)[number]
 
-export const EXTENSION_ENTRY_FILE_EXTENSIONS = ['.mjs', '.cjs'] as const
+export const EXTENSION_ENTRY_FILE_EXTENSIONS = ['.mjs'] as const
 
 export type ExtensionEntryFileExtension = (typeof EXTENSION_ENTRY_FILE_EXTENSIONS)[number]
 
@@ -245,7 +245,7 @@ export function parseExtensionManifest(value: unknown): ParsedExtensionManifest 
   } else if (!hasExtensionEntryFileExtension(normalizedEntry)) {
     issues.push({
       path: '$.entry',
-      message: 'Entry must point to a .mjs or .cjs file.'
+      message: 'Entry must point to a .mjs file.'
     })
   }
 

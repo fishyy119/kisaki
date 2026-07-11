@@ -7,7 +7,9 @@
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { usePerson } from '@renderer/composables/use-person'
-import { getAttachmentUrl, formatDate, getEntityIcon } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { formatDate } from '@renderer/utils/datetime'
+import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { PersonBasicFormDialog } from '../forms'
 

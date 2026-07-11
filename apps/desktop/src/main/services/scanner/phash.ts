@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import Database from 'better-sqlite3'
-import path from 'path'
+import path from 'node:path'
 import phash from 'sharp-phash'
 import type { ExternalId } from '@shared/identity'
 import type { FileIconSize, PhashIndexSpec } from './types'

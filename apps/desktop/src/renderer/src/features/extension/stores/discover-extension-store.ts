@@ -11,11 +11,7 @@ import type { ExtensionCategory } from '@kisaki3/extension-api'
 import type { SortDirection } from '@shared/common'
 
 export type DiscoverExtensionSortField =
-  | 'relevance'
-  | 'name'
-  | 'updatedAt'
-  | 'publishedAt'
-  | 'repositoryPriority'
+  'relevance' | 'name' | 'updatedAt' | 'publishedAt' | 'repositoryPriority'
 
 export const useDiscoverExtensionStore = defineStore(
   'discoverExtension',

@@ -63,14 +63,7 @@ export interface ScannerRunExisting {
 }
 
 export type ScannerRunStatus =
-  | 'queued'
-  | 'running'
-  | 'pausing'
-  | 'paused'
-  | 'cancelling'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+  'queued' | 'running' | 'pausing' | 'paused' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
 
 export const ACTIVE_SCANNER_RUN_STATUSES = [
   'queued',

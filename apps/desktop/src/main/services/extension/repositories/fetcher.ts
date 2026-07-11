@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import fse from 'fs-extra'
+import { readFile, stat } from 'node:fs/promises'
 import type { NetworkService } from '@main/services/network'
 import {
   parseExtensionRegistryManifest,
@@ -105,20 +105,17 @@ export class ExtensionRepositoryFetcher {
     }
 
     const filePath = fileURLToPath(url)
-    const stat = await fse.stat(filePath)
-    if (!stat.isFile()) {
+    const fileStat = await stat(filePath)
+    if (!fileStat.isFile()) {
       throw new Error('Repository manifest file must be a regular file.')
     }
-    if (stat.size > MAX_REGISTRY_MANIFEST_BYTES) {
+    if (fileStat.size > MAX_REGISTRY_MANIFEST_BYTES) {
       throw new Error(
-        `Repository manifest exceeds the maximum allowed size: ${stat.size} > ${MAX_REGISTRY_MANIFEST_BYTES}.`
+        `Repository manifest exceeds the maximum allowed size: ${fileStat.size} > ${MAX_REGISTRY_MANIFEST_BYTES}.`
       )
     }
 
-    return parseManifestJson(
-      await fse.readFile(filePath, 'utf8'),
-      this.options.allowInsecureLocalUrls
-    )
+    return parseManifestJson(await readFile(filePath, 'utf8'), this.options.allowInsecureLocalUrls)
   }
 
   validateManifest(manifest: unknown): ExtensionRegistryManifest {
@@ -143,7 +140,7 @@ function parseManifestJson(
     value = JSON.parse(text)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown JSON parse error'
-    throw new Error(`Repository manifest is not valid JSON: ${message}`)
+    throw new Error(`Repository manifest is not valid JSON: ${message}`, { cause: error })
   }
 
   const result = parseExtensionRegistryManifest(value, {

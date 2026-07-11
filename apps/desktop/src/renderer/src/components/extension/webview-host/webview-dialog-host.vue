@@ -9,7 +9,7 @@ import type { ExtensionWebviewSessionInfo } from '@shared/extension'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
 import { closeWebview, extensionWebviewStore } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import ExtensionWebviewFrame from './webview-frame.vue'
 
 const log = createLogger('Extension')

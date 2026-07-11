@@ -18,7 +18,7 @@ import {
   TASK_RUN_CATEGORY_OPTIONS,
   formatTaskRunCategory,
   formatTaskRunStatus
-} from '../../../utils'
+} from '../../../utils/display'
 
 interface Props {
   filteredCount: number

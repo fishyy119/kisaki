@@ -1,7 +1,7 @@
 <!-- Hover Scale Image with spring-like animation -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, type HTMLAttributes } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   class?: HTMLAttributes['class']

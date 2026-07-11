@@ -21,7 +21,7 @@ import { useEvent, usePersonProvider, useRenderState } from '@renderer/composabl
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { persons } from '@shared/db'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
 // Route & Navigation

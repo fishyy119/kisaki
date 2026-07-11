@@ -340,7 +340,7 @@ function getTemplateRenderMode(targetPath: string): TemplateRenderMode {
   if (extension === '.html') {
     return 'htmlTextContent'
   }
-  if (['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue'].includes(extension)) {
+  if (['.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue'].includes(extension)) {
     return 'templateStringContent'
   }
   return 'raw'

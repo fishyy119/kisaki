@@ -8,11 +8,12 @@
  */
 
 import { nanoid } from 'nanoid'
-import path from 'path'
+import path from 'node:path'
 import { games } from '@shared/db'
 import { shell } from 'electron'
 import { compressDir, extractZip } from '@main/utils/archive'
-import fse from 'fs-extra'
+import { mkdir, rm } from 'node:fs/promises'
+import { pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
@@ -34,7 +35,7 @@ export class GameAttachmentHandler {
       throw new Error('Save path is not configured for this game')
     }
 
-    if (!(await fse.pathExists(game.savePath))) {
+    if (!(await pathExists(game.savePath))) {
       throw new Error(`Save directory not found: ${game.savePath}`)
     }
 
@@ -43,7 +44,7 @@ export class GameAttachmentHandler {
     const saveFile = `${fileId}.zip`
 
     const outputPath = this.dbService.attachment.getPath('games', gameId, saveFile)
-    await fse.ensureDir(path.dirname(outputPath))
+    await mkdir(path.dirname(outputPath), { recursive: true })
 
     const sizeBytes = await compressDir(game.savePath, outputPath)
 
@@ -80,8 +81,8 @@ export class GameAttachmentHandler {
     }
 
     const backupPath = this.dbService.attachment.getPath('games', gameId, backup.saveFile)
-    if (await fse.pathExists(backupPath)) {
-      await fse.remove(backupPath)
+    if (await pathExists(backupPath)) {
+      await rm(backupPath, { recursive: true, force: true })
     }
 
     const updatedBackups = currentBackups.filter((b) => b.backupAt !== backupAt)
@@ -109,7 +110,7 @@ export class GameAttachmentHandler {
     }
 
     const backupPath = this.dbService.attachment.getPath('games', gameId, backup.saveFile)
-    if (!(await fse.pathExists(backupPath))) {
+    if (!(await pathExists(backupPath))) {
       throw new Error('Backup file not found on disk')
     }
 
@@ -145,7 +146,7 @@ export class GameAttachmentHandler {
 
   async openBackupFolder(gameId: string): Promise<void> {
     const backupDir = this.dbService.attachment.getPath('games', gameId, '')
-    await fse.ensureDir(backupDir)
+    await mkdir(backupDir, { recursive: true })
     shell.openPath(backupDir)
   }
 
@@ -156,7 +157,7 @@ export class GameAttachmentHandler {
       throw new Error('Save path is not configured for this game')
     }
 
-    if (!(await fse.pathExists(game.savePath))) {
+    if (!(await pathExists(game.savePath))) {
       throw new Error(`Save directory not found: ${game.savePath}`)
     }
 
@@ -168,7 +169,7 @@ export class GameAttachmentHandler {
       const game = await this.getGame(gameId)
 
       if (!game.savePath) return
-      if (!(await fse.pathExists(game.savePath))) return
+      if (!(await pathExists(game.savePath))) return
 
       await this.createBackup(gameId)
       log.info('Auto-backup completed for game.', { gameId: gameId })
@@ -200,8 +201,8 @@ export class GameAttachmentHandler {
 
     for (const backup of backupsToDelete) {
       const backupPath = this.dbService.attachment.getPath('games', gameId, backup.saveFile)
-      if (await fse.pathExists(backupPath)) {
-        await fse.remove(backupPath)
+      if (await pathExists(backupPath)) {
+        await rm(backupPath, { recursive: true, force: true })
       }
     }
 

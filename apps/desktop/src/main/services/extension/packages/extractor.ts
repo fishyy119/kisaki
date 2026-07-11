@@ -1,6 +1,6 @@
 import path from 'node:path'
-import AdmZip from 'adm-zip'
-import fse from 'fs-extra'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { unzipSync } from 'fflate'
 import type { ExtensionManifest } from '@kisaki3/extension-api'
 import { resolveInsideRoot } from '../shared/path-confinement'
 import type { ExtensionPackageArchiveStore } from './archive'
@@ -39,17 +39,17 @@ export class ExtensionPackageExtractor {
       })
     })
 
-    await fse.remove(workspacePaths.stagingDir).catch(() => undefined)
-    await fse.ensureDir(workspacePaths.stagingPackageDir)
+    await rm(workspacePaths.stagingDir, { recursive: true, force: true }).catch(() => undefined)
+    await mkdir(workspacePaths.stagingPackageDir, { recursive: true })
 
     try {
       assertPackageSignalNotAborted(input.signal)
       input.onPhase?.('extract')
-      const zip = new AdmZip(input.archivePath)
+      const archive = unzipSync(await readFile(input.archivePath))
       for (const verifiedEntry of verified.entries) {
         assertPackageSignalNotAborted(input.signal)
-        const entry = zip.getEntry(verifiedEntry.archiveName)
-        if (!entry || entry.isDirectory) {
+        const entryData = archive[verifiedEntry.archiveName]
+        if (!entryData) {
           throw new Error(`Verified package entry "${verifiedEntry.archiveName}" was not found.`)
         }
 
@@ -57,8 +57,8 @@ export class ExtensionPackageExtractor {
           workspacePaths.stagingPackageDir,
           verifiedEntry.normalizedName
         )
-        await fse.ensureDir(path.dirname(targetPath))
-        await fse.writeFile(targetPath, entry.getData())
+        await mkdir(path.dirname(targetPath), { recursive: true })
+        await writeFile(targetPath, entryData)
       }
 
       await this.verifier.verifyPackageDirectory({
@@ -85,7 +85,7 @@ export class ExtensionPackageExtractor {
         archiveSize: verified.size
       }
     } catch (error) {
-      await fse.remove(workspacePaths.stagingDir).catch(() => undefined)
+      await rm(workspacePaths.stagingDir, { recursive: true, force: true }).catch(() => undefined)
       throw wrapExtensionPackageError(error, {
         stage: 'extract',
         message: 'Failed to extract extension package archive',

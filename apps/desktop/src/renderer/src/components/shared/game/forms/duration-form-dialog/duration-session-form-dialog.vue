@@ -4,7 +4,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { formatDatetimeLocalInput } from '@renderer/utils'
+import { formatDatetimeLocalInput } from '@renderer/utils/datetime'
 import {
   Dialog,
   DialogContent,

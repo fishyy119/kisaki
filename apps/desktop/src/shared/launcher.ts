@@ -11,5 +11,4 @@ export type GameLaunchResult =
   | { status: 'unconfirmed'; reason: GameLaunchUnconfirmedReason }
 
 export type GameStopResult =
-  | { status: 'stopped' }
-  | { status: 'unconfirmed'; reason: GameStopUnconfirmedReason }
+  { status: 'stopped' } | { status: 'unconfirmed'; reason: GameStopUnconfirmedReason }

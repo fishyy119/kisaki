@@ -23,7 +23,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldDescription } from '@renderer/components/ui/field'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils'
+import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Company')

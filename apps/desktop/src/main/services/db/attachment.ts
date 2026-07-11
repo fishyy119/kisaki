@@ -10,10 +10,10 @@ import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { nanoid } from 'nanoid'
 import { fileTypeFromBuffer } from 'file-type'
-import fse from 'fs-extra'
+import { cp, mkdir, open, rm, stat, writeFile } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import { createReadStream, createWriteStream, type Stats } from 'node:fs'
-import { open, rm } from 'node:fs/promises'
-import path from 'path'
+import path from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { createLogger } from '@main/log'
 import type { NetworkService } from '@main/services/network'
@@ -89,7 +89,7 @@ export class AttachmentStore {
         return fileName
       } catch (error) {
         log.error('Failed to setFile.', error, { lockKey: lockKey })
-        throw new Error('Failed to set attachment file.')
+        throw new Error('Failed to set attachment file.', { cause: error })
       }
     })
   }
@@ -122,7 +122,7 @@ export class AttachmentStore {
         this.scheduleDeleteFile(fileDir, fileName, `clearFile:${lockKey}`)
       } catch (error) {
         log.error('Failed to clearFile.', error, { lockKey: lockKey })
-        throw new Error('Failed to clear attachment file.')
+        throw new Error('Failed to clear attachment file.', { cause: error })
       }
     })
   }
@@ -168,7 +168,7 @@ export class AttachmentStore {
         return fileName
       } catch (error) {
         log.error('Failed to addFile.', error, { lockKey: lockKey })
-        throw new Error('Failed to add attachment file.')
+        throw new Error('Failed to add attachment file.', { cause: error })
       }
     })
   }
@@ -204,7 +204,7 @@ export class AttachmentStore {
         this.scheduleDeleteFile(fileDir, fileName, `removeFile:${lockKey}`)
       } catch (error) {
         log.error('Failed to removeFile.', error, { lockKey: lockKey })
-        throw new Error('Failed to remove attachment file.')
+        throw new Error('Failed to remove attachment file.', { cause: error })
       }
     })
   }
@@ -256,7 +256,7 @@ export class AttachmentStore {
         }
       } catch (error) {
         log.error('Failed to clearFiles.', error, { lockKey: lockKey })
-        throw new Error('Failed to clear attachment files.')
+        throw new Error('Failed to clear attachment files.', { cause: error })
       }
     })
   }
@@ -325,16 +325,16 @@ export class AttachmentStore {
 
     return await mutex.runExclusive(async () => {
       const fromPath = this.getPath(tableName, String(fromRowId), fileName)
-      if (!(await fse.pathExists(fromPath))) {
+      if (!(await pathExists(fromPath))) {
         throw new Error('Attachment file not found.')
       }
 
       const toDir = path.join(this.storageDir, tableName, String(toRowId))
-      await fse.ensureDir(toDir)
+      await mkdir(toDir, { recursive: true })
 
       const copiedFileName = await this.createCopiedFileName(toDir, fileName)
       const toPath = path.join(toDir, copiedFileName)
-      await fse.copy(fromPath, toPath, { overwrite: false })
+      await cp(fromPath, toPath, { recursive: true, force: false })
       return copiedFileName
     })
   }
@@ -361,10 +361,10 @@ export class AttachmentStore {
 
     return await mutex.runExclusive(async () => {
       const fileDir = path.join(this.storageDir, tableName, String(rowId))
-      if (!(await fse.pathExists(fileDir))) return
+      if (!(await pathExists(fileDir))) return
 
       try {
-        await fse.remove(fileDir)
+        await rm(fileDir, { recursive: true, force: true })
         log.debug('Cleaned row dir.', { fileDir: fileDir })
       } catch (error) {
         log.warn('Failed to cleanup row dir.', error, { fileDir: fileDir })
@@ -489,7 +489,7 @@ export class AttachmentStore {
     signal?: AbortSignal
   ): Promise<{ fileName: string; filePath: string }> {
     throwIfAborted(signal)
-    await fse.ensureDir(fileDir)
+    await mkdir(fileDir, { recursive: true })
 
     switch (input.kind) {
       case 'buffer': {
@@ -499,11 +499,11 @@ export class AttachmentStore {
 
         try {
           throwIfAborted(signal)
-          await fse.writeFile(filePath, fileBuffer)
+          await writeFile(filePath, fileBuffer)
           throwIfAborted(signal)
           return { fileName, filePath }
         } catch (error) {
-          await fse.remove(filePath).catch(() => undefined)
+          await rm(filePath, { recursive: true, force: true }).catch(() => undefined)
           throw error
         }
       }
@@ -515,7 +515,7 @@ export class AttachmentStore {
 
         let stats: Stats
         try {
-          stats = await fse.stat(sourcePath)
+          stats = await stat(sourcePath)
         } catch {
           throw new Error(`Attachment path not found: ${sourcePath}`)
         }
@@ -534,7 +534,7 @@ export class AttachmentStore {
           throwIfAborted(signal)
           return { fileName, filePath }
         } catch (error) {
-          await fse.remove(filePath).catch(() => undefined)
+          await rm(filePath, { recursive: true, force: true }).catch(() => undefined)
           throw error
         }
       }
@@ -553,17 +553,17 @@ export class AttachmentStore {
           finalPath = filePath
 
           throwIfAborted(signal)
-          await fse.move(tempPath, filePath, { overwrite: true })
+          await movePath(tempPath, filePath, { overwrite: true })
           throwIfAborted(signal)
           return { fileName, filePath }
         } catch (error) {
           try {
-            await fse.remove(tempPath)
+            await rm(tempPath, { recursive: true, force: true })
           } catch {
             // ignore cleanup errors
           }
           if (finalPath) {
-            await fse.remove(finalPath).catch(() => undefined)
+            await rm(finalPath, { recursive: true, force: true }).catch(() => undefined)
           }
           throw error
         }
@@ -608,7 +608,7 @@ export class AttachmentStore {
 
     for (let i = 0; i < 5; i++) {
       const fileName = `${nanoid()}${safeExt}`
-      if (!(await fse.pathExists(path.join(fileDir, fileName)))) {
+      if (!(await pathExists(path.join(fileDir, fileName)))) {
         return fileName
       }
     }
@@ -656,7 +656,7 @@ export class AttachmentStore {
     const retryDelay = options?.retryDelayMs ?? 0
     const bestEffort = options?.bestEffort ?? false
 
-    const existed = await fse.pathExists(filePath)
+    const existed = await pathExists(filePath)
     if (!existed) return false
 
     try {

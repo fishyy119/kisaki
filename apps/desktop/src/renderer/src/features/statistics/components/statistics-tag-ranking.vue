@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 import { useStatistics } from '../composables'
 import { computeTagRanking, type RankingSort } from '@renderer/utils/statistics'
 import { RankingBarChart } from '@renderer/components/ui/ranking-bar-chart'
-import { formatDuration } from '@renderer/utils'
+import { formatDuration } from '@renderer/utils/datetime'
 import type { GameSession, Tag } from '@shared/db'
 
 interface Props {

@@ -10,7 +10,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useGameMonitorStore } from '@renderer/stores'
 import { ipcManager } from '@renderer/core/ipc'
 import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import { createLogger } from '@renderer/core/log'
 

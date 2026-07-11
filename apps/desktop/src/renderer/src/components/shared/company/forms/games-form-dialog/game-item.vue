@@ -6,7 +6,8 @@
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { getAttachmentUrl, getEntityIcon } from '@renderer/utils'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { GameCompanyType } from '@shared/db'
 
 interface GameLinkItem {

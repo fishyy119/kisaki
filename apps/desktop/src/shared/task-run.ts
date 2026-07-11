@@ -21,14 +21,7 @@ export type TaskRunOperation =
   | 'system.maintenance'
 
 export type TaskRunStatus =
-  | 'queued'
-  | 'running'
-  | 'pausing'
-  | 'paused'
-  | 'cancelling'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+  'queued' | 'running' | 'pausing' | 'paused' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
 
 export type TaskRunFinalStatus = Extract<TaskRunStatus, 'completed' | 'failed' | 'cancelled'>
 
@@ -97,13 +90,7 @@ export interface TaskRunWarning {
 }
 
 export type TaskRunProgressUnit =
-  | 'item'
-  | 'file'
-  | 'byte'
-  | 'entity'
-  | 'step'
-  | 'package'
-  | 'request'
+  'item' | 'file' | 'byte' | 'entity' | 'step' | 'package' | 'request'
 
 export type TaskRunRatePeriod = 'second' | 'minute' | 'hour'
 

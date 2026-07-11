@@ -9,7 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { useCompany } from '@renderer/composables'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { CompanyGamesFormDialog } from '../../forms'
 
 const GAME_COMPANY_TYPE_LABELS: Record<string, string> = {

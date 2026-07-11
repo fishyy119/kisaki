@@ -1,5 +1,5 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { mkdir } from 'node:fs/promises'
 import { createValidationError } from '@kisaki3/extension-api'
 import type { ExtensionServicePaths } from '../types'
 import { requireSafeExtensionId, resolveInsideRoot } from '../shared/path-confinement'
@@ -60,15 +60,15 @@ export class ExtensionPackageLayout {
 
   async ensureBaseDirectories(): Promise<void> {
     await Promise.all([
-      fse.ensureDir(this.packagesDir),
-      fse.ensureDir(this.archivesDir),
-      fse.ensureDir(this.dataDir),
-      fse.ensureDir(this.runtimeTempDir),
-      fse.ensureDir(this.downloadsDir),
-      fse.ensureDir(this.stagingDir),
-      fse.ensureDir(this.backupsDir),
-      fse.ensureDir(this.trashDir),
-      fse.ensureDir(this.quarantineDir)
+      mkdir(this.packagesDir, { recursive: true }),
+      mkdir(this.archivesDir, { recursive: true }),
+      mkdir(this.dataDir, { recursive: true }),
+      mkdir(this.runtimeTempDir, { recursive: true }),
+      mkdir(this.downloadsDir, { recursive: true }),
+      mkdir(this.stagingDir, { recursive: true }),
+      mkdir(this.backupsDir, { recursive: true }),
+      mkdir(this.trashDir, { recursive: true }),
+      mkdir(this.quarantineDir, { recursive: true })
     ])
   }
 

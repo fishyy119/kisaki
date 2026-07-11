@@ -1,7 +1,8 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { Mutex } from 'async-mutex'
-import fse from 'fs-extra'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { movePath, pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import {
   createUnavailableError,
@@ -99,14 +100,14 @@ export class ExtensionRuntimeStorage {
 
   private async read(runtimeHandle: ExtensionRuntimeHandle): Promise<Record<string, JsonValue>> {
     const storagePath = this.getStoragePath(this.requireRuntimeHandle(runtimeHandle))
-    await fse.ensureDir(path.dirname(storagePath))
+    await mkdir(path.dirname(storagePath), { recursive: true })
 
-    if (!(await fse.pathExists(storagePath))) {
+    if (!(await pathExists(storagePath))) {
       return {}
     }
 
     try {
-      const raw = await fse.readJson(storagePath)
+      const raw = JSON.parse(await readFile(storagePath, 'utf8'))
       return toJsonObject(raw, 'extension storage document') as Record<string, JsonValue>
     } catch (error) {
       log.warn('Failed to read extension storage document, using empty document.', error, {
@@ -123,7 +124,7 @@ export class ExtensionRuntimeStorage {
     signal?: AbortSignal
   ): Promise<void> {
     this.requireActiveRequest(runtimeHandle, storagePath, signal)
-    await fse.ensureDir(path.dirname(storagePath))
+    await mkdir(path.dirname(storagePath), { recursive: true })
 
     const tempPath = resolveInsideRoot(
       path.dirname(storagePath),
@@ -131,11 +132,11 @@ export class ExtensionRuntimeStorage {
     )
 
     try {
-      await fse.writeJson(tempPath, document, { spaces: 2 })
+      await writeFile(tempPath, `${JSON.stringify(document, null, 2)}\n`)
       this.requireActiveRequest(runtimeHandle, storagePath, signal)
-      await fse.move(tempPath, storagePath, { overwrite: true })
+      await movePath(tempPath, storagePath, { overwrite: true })
     } finally {
-      await fse.remove(tempPath).catch(() => undefined)
+      await rm(tempPath, { recursive: true, force: true }).catch(() => undefined)
     }
   }
 

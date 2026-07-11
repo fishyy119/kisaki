@@ -11,7 +11,8 @@ import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatDuration, formatRelativeTime, formatStatus, getEntityIcon } from '@renderer/utils'
+import { formatDuration, formatRelativeTime } from '@renderer/utils/datetime'
+import { formatStatus, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import {
   GameNameFormDialog,

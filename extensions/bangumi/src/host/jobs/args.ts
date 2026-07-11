@@ -4,9 +4,7 @@ import { requireBangumiMediaScope, type BangumiMediaScope } from '../media/scope
 import { BangumiExtensionError } from '../utils/errors'
 
 export type BangumiImportTargetCollection =
-  | { kind: 'none' }
-  | { kind: 'existing'; collectionId: string }
-  | { kind: 'byIndexTitle' }
+  { kind: 'none' } | { kind: 'existing'; collectionId: string } | { kind: 'byIndexTitle' }
 
 export interface BangumiImportWriteFields {
   status: boolean

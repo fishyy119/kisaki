@@ -25,7 +25,7 @@ import {
   getTaskRunCategoryIcon,
   getTaskRunCounterEntries,
   getTaskRunStatusVariant
-} from '../../../utils'
+} from '../../../utils/display'
 
 const TASK_RUN_OUTPUT_PREVIEW_MAX_CHARS = 6000
 
@@ -167,8 +167,7 @@ const metadata = computed(() => [
               </div>
               <pre
                 class="max-h-56 overflow-auto bg-background/40 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
-                >{{ outputPreview }}</pre
-              >
+                >{{ outputPreview }}</pre>
             </div>
           </div>
         </section>

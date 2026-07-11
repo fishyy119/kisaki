@@ -14,7 +14,7 @@ import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
 import { games, type Game } from '@shared/db'
 import type { GameMediaType } from '@shared/attachment'
 import { useAsyncData, useEvent } from '@renderer/composables'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
   DialogContent,

@@ -75,7 +75,7 @@ export class ServiceContainer {
     } catch (error) {
       await this.rollbackInit()
       log.error('Service initialization failed.', error, { failedServiceId: failedServiceId })
-      throw new Error('Failed to initialize services.')
+      throw new Error('Failed to initialize services.', { cause: error })
     }
   }
 

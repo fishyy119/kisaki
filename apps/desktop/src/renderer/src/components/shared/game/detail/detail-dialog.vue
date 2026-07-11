@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'

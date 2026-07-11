@@ -13,7 +13,7 @@ import type { GameMediaType } from '@shared/attachment'
 import { GAME_MEDIA_TYPE_TO_FIELD } from '@shared/attachment'
 import type { GameImageSlot } from '@shared/scraper'
 import { useAsyncData } from '@renderer/composables'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import {
   Dialog,

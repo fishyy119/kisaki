@@ -10,12 +10,7 @@ import type { ContentEntityType, MediaType } from '@shared/common'
  * Service initialization status
  */
 export type ServiceStatus =
-  | 'registered'
-  | 'initializing'
-  | 'ready'
-  | 'failed'
-  | 'disposing'
-  | 'disposed'
+  'registered' | 'initializing' | 'ready' | 'failed' | 'disposing' | 'disposed'
 
 // =============================================================================
 // Import all service types for centralized registry

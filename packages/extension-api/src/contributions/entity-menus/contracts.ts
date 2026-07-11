@@ -81,7 +81,9 @@ export type EntityMenuScope<TDomain extends EntityMenuDomain> = Extract<
 >
 
 export type EntityMenuInput = {
-  [TDomain in keyof EntityMenuInputMap]: EntityMenuInputMap[TDomain][keyof EntityMenuInputMap[TDomain]]
+  [
+    TDomain in keyof EntityMenuInputMap
+  ]: EntityMenuInputMap[TDomain][keyof EntityMenuInputMap[TDomain]]
 }[keyof EntityMenuInputMap]
 
 export type EntityMenuInputFor<

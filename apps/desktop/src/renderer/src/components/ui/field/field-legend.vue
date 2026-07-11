@@ -1,7 +1,7 @@
 <!-- FieldLegend component - legend for fieldset -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   variant?: 'legend' | 'label'

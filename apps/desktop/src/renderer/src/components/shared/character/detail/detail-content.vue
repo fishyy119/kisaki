@@ -9,7 +9,7 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import CharacterDetailHero from './detail-hero.vue'
 import {
   CharacterDetailOverviewTab,

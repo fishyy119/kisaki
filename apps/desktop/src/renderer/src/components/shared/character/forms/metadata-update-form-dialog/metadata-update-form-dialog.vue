@@ -9,7 +9,7 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables'
-import { buildIngestUpdateLookup } from '@renderer/utils'
+import { buildIngestUpdateLookup } from '@renderer/utils/ingest-update'
 import { characterExternalIds, characters } from '@shared/db'
 import type { ExternalId } from '@shared/identity'
 import {

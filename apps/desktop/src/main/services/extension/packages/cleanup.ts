@@ -1,5 +1,5 @@
 import path from 'node:path'
-import fse from 'fs-extra'
+import { rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
 import type { ExtensionPackageLayout } from './layout'
 import { assertInsideRoot } from '../shared/path-confinement'
@@ -20,7 +20,7 @@ export function createWorkspaceCleanupPaths(
 export async function removeCleanupPaths(paths: readonly string[]): Promise<void> {
   await Promise.all(
     paths.map(async (entryPath) => {
-      await fse.remove(entryPath).catch((error) => {
+      await rm(entryPath, { recursive: true, force: true }).catch((error) => {
         log.warn('Failed to remove package workspace path.', error, {
           entryName: path.basename(entryPath)
         })

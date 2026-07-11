@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { useStatistics } from '../composables'
 import { PieChart } from '@renderer/components/ui/pie-chart'
-import { formatDuration } from '@renderer/utils'
+import { formatDuration } from '@renderer/utils/datetime'
 import type { GameSession, Collection } from '@shared/db'
 
 interface Props {

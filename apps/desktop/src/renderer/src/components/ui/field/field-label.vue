@@ -1,7 +1,7 @@
 <!-- FieldLabel component -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { Label } from '@renderer/components/ui/label'
 
 interface Props {

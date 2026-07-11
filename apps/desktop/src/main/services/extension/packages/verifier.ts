@@ -3,8 +3,8 @@ import { Buffer } from 'node:buffer'
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { Writable } from 'node:stream'
-import AdmZip from 'adm-zip'
-import fse from 'fs-extra'
+import { readFile, stat } from 'node:fs/promises'
+import { unzipSync } from 'fflate'
 import semver from 'semver'
 import {
   EXTENSION_API_VERSION,
@@ -198,9 +198,9 @@ export async function hashFile(
   assertNotAborted(signal)
   await pipeline(createReadStream(filePath), sink, { signal })
   assertNotAborted(signal)
-  const stat = await fse.stat(filePath)
+  const fileStat = await stat(filePath)
   return {
-    size: stat.size,
+    size: fileStat.size,
     sha256: hash.digest('hex')
   }
 }
@@ -260,15 +260,14 @@ async function inspectArchive(archivePath: string): Promise<{
   manifest: ExtensionManifest
   entries: readonly ExtensionPackageArchiveEntry[]
 }> {
-  const zip = new AdmZip(archivePath)
-  const zipEntries = zip.getEntries()
-  const manifestEntry = zip.getEntry('manifest.json')
+  const archive = unzipSync(await readFile(archivePath))
+  const manifestData = archive['manifest.json']
 
-  if (!manifestEntry) {
+  if (!manifestData) {
     throw new Error('Extension package must contain manifest.json at the archive root.')
   }
 
-  const parsed = parseExtensionManifest(JSON.parse(manifestEntry.getData().toString('utf-8')))
+  const parsed = parseExtensionManifest(JSON.parse(Buffer.from(manifestData).toString('utf-8')))
   if (!parsed.manifest) {
     throw new Error(formatManifestIssues(parsed.issues))
   }
@@ -277,14 +276,14 @@ async function inspectArchive(archivePath: string): Promise<{
   const normalizedNames = new Set<string>()
   const normalizedNamesLower = new Set<string>()
 
-  for (const entry of zipEntries) {
-    if (entry.isDirectory) {
+  for (const entryName of Object.keys(archive)) {
+    if (entryName.endsWith('/')) {
       continue
     }
 
-    const normalizedName = normalizeArchiveEntryName(entry.entryName)
+    const normalizedName = normalizeArchiveEntryName(entryName)
     if (!normalizedName) {
-      throw new Error(`Package entry "${entry.entryName}" is outside the archive root.`)
+      throw new Error(`Package entry "${entryName}" is outside the archive root.`)
     }
     const lowerName = normalizedName.toLowerCase()
     if (normalizedNames.has(normalizedName) || normalizedNamesLower.has(lowerName)) {
@@ -293,7 +292,7 @@ async function inspectArchive(archivePath: string): Promise<{
     normalizedNames.add(normalizedName)
     normalizedNamesLower.add(lowerName)
     entries.push({
-      archiveName: entry.entryName,
+      archiveName: entryName,
       normalizedName
     })
   }

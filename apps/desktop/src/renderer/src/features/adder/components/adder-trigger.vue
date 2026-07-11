@@ -6,7 +6,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn, getEntityIcon } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
+import { getEntityIcon } from '@renderer/utils/format'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@renderer/components/ui/tooltip'
 import {
   DropdownMenu,

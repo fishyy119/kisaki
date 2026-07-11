@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { useTaskRunStore } from '@renderer/stores'
 import TaskCenterDialog from './task-center-dialog.vue'
 

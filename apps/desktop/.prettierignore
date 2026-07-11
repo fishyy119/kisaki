@@ -1,0 +1,6 @@
+out
+dist
+dev
+resources/extensions
+resources/webview-fonts
+node_modules

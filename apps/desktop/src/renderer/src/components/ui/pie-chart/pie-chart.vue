@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Donut } from '@unovis/ts'
 import { VisSingleContainer, VisDonut } from '@unovis/vue'

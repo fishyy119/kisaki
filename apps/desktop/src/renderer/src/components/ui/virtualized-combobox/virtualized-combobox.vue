@@ -14,7 +14,7 @@ import { useVirtualizer } from '@tanstack/vue-virtual'
 import { Popover, PopoverTrigger, PopoverContent } from '@renderer/components/ui/popover'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import type { VirtualizedComboboxEntity } from './types'
 
 interface Props {

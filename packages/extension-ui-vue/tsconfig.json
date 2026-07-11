@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // Browser UI kit: DOM lib, no node types, and no exactOptionalPropertyTypes
+    // because reka-ui prop forwarding is incompatible with it.
     "noEmit": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": [],
-    "skipLibCheck": true
+    "lib": ["ESNext", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*", "src/**/*.vue"]
 }

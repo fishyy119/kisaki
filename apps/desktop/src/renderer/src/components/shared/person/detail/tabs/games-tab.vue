@@ -6,7 +6,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { usePerson } from '@renderer/composables/use-person'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { PersonGamesFormDialog } from '../../forms'

@@ -13,9 +13,7 @@ export type CompanyScraperTagsResult = CompanySlotResult<'tags'>
 export type CompanyScraperLogosResult = CompanySlotResult<'logos'>
 
 export type CompanyScraperResult =
-  | CompanyScraperInfoResult
-  | CompanyScraperTagsResult
-  | CompanyScraperLogosResult
+  CompanyScraperInfoResult | CompanyScraperTagsResult | CompanyScraperLogosResult
 
 export type CompanyScraperImageSlot = 'logos'
 

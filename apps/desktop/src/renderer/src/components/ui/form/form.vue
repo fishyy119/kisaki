@@ -3,7 +3,7 @@
 import type { HTMLAttributes } from 'vue'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { notify } from '@renderer/core/notify'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   class?: HTMLAttributes['class']

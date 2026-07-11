@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useTag, useRenderState } from '@renderer/composables'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import {
   Empty,
   EmptyDescription,

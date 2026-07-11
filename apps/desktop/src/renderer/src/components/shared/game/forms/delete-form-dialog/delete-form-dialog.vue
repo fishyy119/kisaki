@@ -13,7 +13,7 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
 import { useAsyncData, useEntityDelete } from '@renderer/composables'
-import { formatEntityDeleteSuccessMessage } from '@renderer/utils'
+import { formatEntityDeleteSuccessMessage } from '@renderer/utils/entity-delete'
 
 interface Props {
   gameId: string

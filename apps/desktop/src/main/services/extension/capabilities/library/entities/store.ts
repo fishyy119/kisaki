@@ -385,8 +385,7 @@ export class ExtensionLibraryEntityStore {
 function getPatchExternalIds(
   patch: object
 ):
-  | { hasExternalIds: false }
-  | { hasExternalIds: true; externalIds: EntityExternalIds | undefined } {
+  { hasExternalIds: false } | { hasExternalIds: true; externalIds: EntityExternalIds | undefined } {
   if (!Object.hasOwn(patch, 'externalIds')) {
     return { hasExternalIds: false }
   }

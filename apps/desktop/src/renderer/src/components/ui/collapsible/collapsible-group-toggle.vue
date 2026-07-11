@@ -1,7 +1,7 @@
 <!-- CollapsibleGroupToggle - Expand/collapse button -->
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { collapsibleGroupToggleVariants } from './collapsible-group-variants'
 import type { CollapsibleGroupToggleProps } from './collapsible-group-types'
 

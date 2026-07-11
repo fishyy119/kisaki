@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import path from 'node:path'
-import AdmZip from 'adm-zip'
-import fse from 'fs-extra'
+import { lstat, readFile, readdir } from 'node:fs/promises'
+import { unzipSync } from 'fflate'
 import type { ExtensionInstallationRow } from '@shared/db'
 import type {
   ExtensionInstallationSource,
@@ -202,21 +202,20 @@ async function assertPackageDirectoryMatchesArchive(
     throw new Error(`installed package contains an unexpected file "${extraName}"`)
   }
 
-  const zip = new AdmZip(archivePath)
+  const archive = unzipSync(await readFile(archivePath))
   for (const entry of entries) {
-    const archiveEntry = zip.getEntry(entry.archiveName)
-    if (!archiveEntry || archiveEntry.isDirectory) {
+    const archiveBytes = archive[entry.archiveName]
+    if (!archiveBytes) {
       throw new Error(`verified archive entry "${entry.archiveName}" is missing`)
     }
 
     const filePath = resolveInsideRoot(packageDir, entry.normalizedName)
-    const stat = await fse.lstat(filePath).catch(() => null)
-    if (!stat?.isFile()) {
+    const fileStat = await lstat(filePath).catch(() => null)
+    if (!fileStat?.isFile()) {
       throw new Error(`installed package file "${entry.normalizedName}" is missing`)
     }
 
     const fileInfo = await hashFile(filePath)
-    const archiveBytes = archiveEntry.getData()
     if (
       fileInfo.size !== archiveBytes.byteLength ||
       fileInfo.sha256 !== createSha256(archiveBytes)
@@ -237,7 +236,7 @@ async function collectPackageFileNamesInto(
   directory: string,
   names: string[]
 ): Promise<void> {
-  const entries = await fse.readdir(directory, { withFileTypes: true })
+  const entries = await readdir(directory, { withFileTypes: true })
   for (const entry of entries) {
     const entryPath = path.join(directory, entry.name)
     if (entry.isDirectory()) {
@@ -250,7 +249,7 @@ async function collectPackageFileNamesInto(
   }
 }
 
-function createSha256(data: Buffer): string {
+function createSha256(data: Uint8Array): string {
   return createHash('sha256').update(data).digest('hex')
 }
 

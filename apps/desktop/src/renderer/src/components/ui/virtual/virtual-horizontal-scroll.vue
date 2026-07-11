@@ -28,7 +28,7 @@ import {
   type HTMLAttributes
 } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { useVirtualScrollParent } from './use-virtual-scroll-parent'
 
 const props = withDefaults(

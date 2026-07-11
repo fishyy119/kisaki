@@ -11,7 +11,7 @@ import {
   formatTaskRunPhase,
   formatTaskRunRate,
   getProgressPercentValue
-} from '../../../utils'
+} from '../../../utils/display'
 
 interface Props {
   run: TaskRun

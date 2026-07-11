@@ -31,7 +31,7 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { games, type Status } from '@shared/db'
-import { formatStatus, getStatusVariant, getEntityIcon } from '@renderer/utils'
+import { formatStatus, getStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
 // Constants

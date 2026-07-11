@@ -40,10 +40,7 @@ export const CHARACTER_SCRAPER_SLOTS = ['info', 'tags', 'persons', 'photos'] as 
 export type CharacterScraperSlot = (typeof CHARACTER_SCRAPER_SLOTS)[number]
 
 export type ScraperSlot =
-  | GameScraperSlot
-  | PersonScraperSlot
-  | CompanyScraperSlot
-  | CharacterScraperSlot
+  GameScraperSlot | PersonScraperSlot | CompanyScraperSlot | CharacterScraperSlot
 
 export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search' | TSlot
 

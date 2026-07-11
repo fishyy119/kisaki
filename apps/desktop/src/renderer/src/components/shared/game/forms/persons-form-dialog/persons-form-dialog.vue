@@ -38,13 +38,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 type PersonType =
-  | 'director'
-  | 'scenario'
-  | 'illustration'
-  | 'music'
-  | 'programmer'
-  | 'actor'
-  | 'other'
+  'director' | 'scenario' | 'illustration' | 'music' | 'programmer' | 'actor' | 'other'
 
 interface PersonLinkItem {
   id: string

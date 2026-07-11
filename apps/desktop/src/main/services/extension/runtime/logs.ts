@@ -1,7 +1,6 @@
 import path from 'node:path'
-import fse from 'fs-extra'
-// electron-log has no exports map; Node ESM subpath imports need the exact file.
-import rawLog from 'electron-log/main.js'
+import { mkdir } from 'node:fs/promises'
+import rawLog from 'electron-log/main'
 import {
   createUnavailableError,
   type ExtensionRuntimeHandle,
@@ -42,7 +41,7 @@ export class ExtensionRuntimeLogs {
     const logPath = this.getLogPath(extension)
 
     this.requireActiveRequest(runtimeHandle, logPath, signal)
-    await fse.ensureDir(path.dirname(logPath))
+    await mkdir(path.dirname(logPath), { recursive: true })
     this.requireActiveRequest(runtimeHandle, logPath, signal)
 
     extensionAuthorLog.processMessage(

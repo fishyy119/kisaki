@@ -159,7 +159,6 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
 
   private async executeQueuedScan(item: ScannerRunQueueItem): Promise<ScanCompletedData> {
     const record = this.requireActiveRun(item.scannerId)
-    let scanner = record.scanner
 
     try {
       this.taskRuns.start(record)
@@ -169,7 +168,7 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
       })
       session.start()
 
-      scanner = await this.options.loadScanner(item.scannerId)
+      const scanner = await this.options.loadScanner(item.scannerId)
       session.setScanner(scanner)
       this.options.eventService.bus.emit(
         'scanner.started',

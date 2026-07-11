@@ -18,7 +18,7 @@ import {
   type GlobalStatisticsStats
 } from '@renderer/utils/statistics'
 import { parseLocalDateKey } from '@renderer/utils/datetime'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 import type { GameSession } from '@shared/db'
 
 interface Props {

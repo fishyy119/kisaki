@@ -1,7 +1,7 @@
 {
   "devDependencies": {
     "@iconify-json/mdi": "^1.2.3",
-    "@iconify/tailwind4": "^1.2.1",
+    "@iconify/tailwind4": "^1.2.3",
     "@kisaki3/extension-ui-vue": "^{{KISAKI_TOOLING_VERSION}}"
   }
 }

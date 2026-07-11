@@ -1,7 +1,7 @@
 <!-- FieldSet component - semantic fieldset wrapper -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   class?: HTMLAttributes['class']

@@ -53,7 +53,7 @@ import {
   FieldLabel
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 
 interface Props {
   entityType: ContentEntityType

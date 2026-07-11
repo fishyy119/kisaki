@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { dialog, type FileFilter } from 'electron'
-import fse from 'fs-extra'
+import { cp, mkdir, rm, stat } from 'node:fs/promises'
 import type {
   ExtensionFileGrant,
   ExtensionRuntimeMetadata,
@@ -47,7 +47,7 @@ export class ExtensionFilesCapabilityProvider {
       }
 
       const selectedPath = path.resolve(result.filePaths[0])
-      const stats = await fse.stat(selectedPath)
+      const stats = await stat(selectedPath)
       if (!stats.isFile()) {
         throw createValidationError('The selected path must be a file.')
       }
@@ -61,9 +61,9 @@ export class ExtensionFilesCapabilityProvider {
       const fileName = normalizeSelectedFileName(path.basename(selectedPath))
       const grantPath = resolveInsideRoot(grantDir, fileName)
 
-      await fse.ensureDir(grantDir)
-      await fse.copy(selectedPath, grantPath, {
-        overwrite: false,
+      await mkdir(grantDir, { recursive: true })
+      await cp(selectedPath, grantPath, {
+        force: false,
         errorOnExist: true
       })
 
@@ -91,7 +91,7 @@ export class ExtensionFilesCapabilityProvider {
     const record = this.requireGrant(runtimeHandle, grantId)
 
     try {
-      await fse.remove(record.directory)
+      await rm(record.directory, { recursive: true, force: true })
       this.grants.delete(grantId)
     } catch (error) {
       throw normalizeCapabilityError(error, 'Failed to release the file grant.')
@@ -105,13 +105,13 @@ export class ExtensionFilesCapabilityProvider {
       }
 
       this.grants.delete(grantId)
-      void fse.remove(record.directory)
+      void rm(record.directory, { recursive: true, force: true })
     }
   }
 
   releaseAll(): void {
     for (const record of this.grants.values()) {
-      void fse.remove(record.directory)
+      void rm(record.directory, { recursive: true, force: true })
     }
     this.grants.clear()
   }

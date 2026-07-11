@@ -7,7 +7,7 @@
 -->
 
 <script setup lang="ts">
-import { cn } from '@renderer/utils'
+import { cn } from '@renderer/utils/cn'
 import { Icon } from '@renderer/components/ui/icon'
 import type { StatsGridProps } from './types'
 

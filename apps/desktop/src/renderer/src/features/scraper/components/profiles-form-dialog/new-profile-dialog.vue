@@ -22,7 +22,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
-import { getEntityIcon } from '@renderer/utils'
+import { getEntityIcon } from '@renderer/utils/format'
 
 interface Props {
   providersByType: ScraperProvidersByType

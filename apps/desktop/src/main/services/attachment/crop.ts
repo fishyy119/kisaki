@@ -1,7 +1,9 @@
-import fse from 'fs-extra'
+import { mkdir, readdir, rm, stat } from 'node:fs/promises'
+import type { Stats } from 'node:fs'
+import { pathExists } from '@main/utils/fs'
 import { nanoid } from 'nanoid'
-import path from 'path'
-import sharp from 'sharp'
+import path from 'node:path'
+import sharp, { type Metadata, type Sharp } from 'sharp'
 import type { CropRegion } from '@shared/attachment'
 import type { AttachmentInput } from '@shared/db/contracts/attachment'
 
@@ -22,18 +24,18 @@ export class AttachmentCropper {
 
   async cleanupOldTempCrops(ttlMs: number): Promise<void> {
     const { tempDir } = this.deps
-    if (!(await fse.pathExists(tempDir))) return
+    if (!(await pathExists(tempDir))) return
 
     const now = Date.now()
-    const entries = await fse.readdir(tempDir, { withFileTypes: true })
+    const entries = await readdir(tempDir, { withFileTypes: true })
     await Promise.all(
       entries.map(async (entry) => {
         if (!entry.isFile()) return
         const filePath = path.join(tempDir, entry.name)
         try {
-          const stat = await fse.stat(filePath)
-          if (now - stat.mtimeMs > ttlMs) {
-            await fse.remove(filePath)
+          const fileStat = await stat(filePath)
+          if (now - fileStat.mtimeMs > ttlMs) {
+            await rm(filePath, { recursive: true, force: true })
           }
         } catch {
           // Best-effort cleanup
@@ -58,7 +60,7 @@ export class AttachmentCropper {
     const { ext, applyFormat } = this.getOutputFormat(requestedFormat, metadata.format, quality)
 
     const outputDir = this.deps.tempDir
-    await fse.ensureDir(outputDir)
+    await mkdir(outputDir, { recursive: true })
 
     const outputPath = path.join(outputDir, `${nanoid()}${ext}`)
 
@@ -80,13 +82,13 @@ export class AttachmentCropper {
       case 'path': {
         const rawPath = input.path
         const filePath = path.isAbsolute(rawPath) ? rawPath : path.resolve(rawPath)
-        let stat: fse.Stats
+        let fileStat: Stats
         try {
-          stat = await fse.stat(filePath)
+          fileStat = await stat(filePath)
         } catch {
           throw new Error(`Source file not found: ${filePath}`)
         }
-        if (!stat.isFile()) {
+        if (!fileStat.isFile()) {
           throw new Error(`Source path is not a file: ${filePath}`)
         }
         return filePath
@@ -96,7 +98,7 @@ export class AttachmentCropper {
     }
   }
 
-  private getEffectiveDimensions(metadata: sharp.Metadata): { width: number; height: number } {
+  private getEffectiveDimensions(metadata: Metadata): { width: number; height: number } {
     const width = metadata.width ?? 0
     const height = metadata.height ?? 0
     const orientation = metadata.orientation
@@ -143,7 +145,7 @@ export class AttachmentCropper {
     requested: CropToTempFormat,
     sourceFormat: string | undefined,
     quality: number | undefined
-  ): { ext: string; applyFormat: (pipeline: sharp.Sharp) => sharp.Sharp } {
+  ): { ext: string; applyFormat: (pipeline: Sharp) => Sharp } {
     const q = typeof quality === 'number' ? Math.min(100, Math.max(1, Math.round(quality))) : 90
 
     const normalizeSource = (fmt: string | undefined) => {

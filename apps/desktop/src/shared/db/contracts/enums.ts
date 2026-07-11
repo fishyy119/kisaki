@@ -21,13 +21,7 @@ export type Gender = 'male' | 'female' | 'other'
 
 /** Game-Person relationship type */
 export type GamePersonType =
-  | 'director'
-  | 'scenario'
-  | 'illustration'
-  | 'music'
-  | 'programmer'
-  | 'actor'
-  | 'other'
+  'director' | 'scenario' | 'illustration' | 'music' | 'programmer' | 'actor' | 'other'
 
 /** Game-Character relationship type */
 export type GameCharacterType = 'main' | 'supporting' | 'cameo' | 'other'

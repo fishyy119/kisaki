@@ -2,7 +2,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { app } from 'electron'
-import fse from 'fs-extra'
+import { mkdir, rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
 import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type {
@@ -343,8 +343,8 @@ export class ExtensionInstallationManager {
         }
 
         await Promise.all([
-          fse.remove(this.layout.dataPath(safeExtensionId)),
-          fse.remove(this.layout.runtimeTempPath(safeExtensionId))
+          rm(this.layout.dataPath(safeExtensionId), { recursive: true, force: true }),
+          rm(this.layout.runtimeTempPath(safeExtensionId), { recursive: true, force: true })
         ])
       } catch (error) {
         if (installation && disabledForPurge) {
@@ -494,7 +494,10 @@ export class ExtensionInstallationManager {
 
       const dataPath = this.layout.dataPath(manifest.id)
       const tempPath = this.layout.runtimeTempPath(manifest.id)
-      await Promise.all([fse.ensureDir(dataPath), fse.ensureDir(tempPath)])
+      await Promise.all([
+        mkdir(dataPath, { recursive: true }),
+        mkdir(tempPath, { recursive: true })
+      ])
 
       log.info('Registered development extension.', {
         extensionId: manifest.id,
