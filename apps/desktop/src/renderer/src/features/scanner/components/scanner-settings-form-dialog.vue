@@ -27,6 +27,7 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Badge } from '@renderer/components/ui/badge'
@@ -40,7 +41,6 @@ import {
   FieldDescription
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { Spinner } from '@renderer/components/ui/spinner'
 
 // =============================================================================
 // Model
@@ -217,8 +217,11 @@ async function handleSubmit() {
       </DialogHeader>
 
       <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 

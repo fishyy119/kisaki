@@ -9,7 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { games, gameSessions, type GameSession } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
-import { formatDuration } from '@renderer/utils/datetime'
+import { formatDuration, formatDateTimeRange } from '@renderer/utils/datetime'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,9 +32,8 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldDescription } from '@renderer/components/ui/field'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { notify } from '@renderer/core/notify'
-import GameDurationSessionItem from './duration-session-item.vue'
 import GameDurationSessionFormDialog from './duration-session-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -229,8 +229,11 @@ const minutesModel = computed({
     <DialogContent class="max-w-lg max-h-[80vh] flex flex-col">
       <!-- Loading state -->
       <template v-if="isLoading || !data">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -291,15 +294,21 @@ const minutesModel = computed({
               >
                 暂无会话记录，点击下方按钮添加
               </p>
-              <GameDurationSessionItem
+              <ListItem
                 v-for="session in sessions"
                 v-else
                 :key="session.id"
-                :started-at="session.startedAt"
-                :ended-at="session.endedAt"
-                @edit="handleEditClick(session.id)"
-                @delete="deleteId = session.id"
-              />
+                icon="icon-[mdi--timer-outline]"
+                :title="formatDuration(session.endedAt.getTime() - session.startedAt.getTime())"
+                :description="formatDateTimeRange(session.startedAt, session.endedAt)"
+              >
+                <template #actions>
+                  <ListItemActions
+                    @edit="handleEditClick(session.id)"
+                    @delete="deleteId = session.id"
+                  />
+                </template>
+              </ListItem>
             </div>
           </div>
         </DialogBody>

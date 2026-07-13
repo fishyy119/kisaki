@@ -27,11 +27,12 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
-import CollectionEntitiesItem from './entity-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { getEntityIcon } from '@renderer/utils/format'
 import CollectionEntitiesItemFormDialog from './entity-item-form-dialog.vue'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
@@ -356,8 +357,11 @@ const entityTypeModel = computed({
     <DialogContent class="max-w-lg">
       <!-- Loading state -->
       <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -395,17 +399,25 @@ const entityTypeModel = computed({
             >
               暂无{{ config.label }}，点击下方按钮添加
             </div>
-            <CollectionEntitiesItem
+            <ListItem
               v-for="(link, index) in currentTypeLinks"
               :key="link.id"
-              :link="link"
-              :index="index"
-              :total-count="currentTypeLinks.length"
-              @edit="handleEditClick(link)"
-              @delete="deleteId = link.id"
-              @move-up="handleMoveUp(index)"
-              @move-down="handleMoveDown(index)"
-            />
+              :icon="getEntityIcon(link.entityType)"
+              :title="link.entityName"
+              :description="link.note"
+            >
+              <template #actions>
+                <ListItemActions
+                  movable
+                  :is-first="index === 0"
+                  :is-last="index === currentTypeLinks.length - 1"
+                  @move-up="handleMoveUp(index)"
+                  @move-down="handleMoveDown(index)"
+                  @edit="handleEditClick(link)"
+                  @delete="deleteId = link.id"
+                />
+              </template>
+            </ListItem>
           </div>
         </DialogBody>
         <DialogFooter class="flex justify-between">

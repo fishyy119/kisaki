@@ -20,12 +20,15 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { notify } from '@renderer/core/notify'
-import CompanyGamesItem from './game-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { CoverImage } from '@renderer/components/ui/cover-image'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import CompanyGamesItemFormDialog from './game-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -115,6 +118,17 @@ watch(fetchedData, (data) => {
 })
 
 const existingGameIds = computed(() => items.value.map((item) => item.gameId))
+
+// Pair each link with its spoiler-aware display texts and thumbnail URL
+function withSpoiler(links: GameLinkItem[]) {
+  return links.map((link) => ({
+    link,
+    spoiler: getSpoilerDisplay(link.gameName, link.note, link.isSpoiler, spoilersRevealed.value),
+    coverUrl: link.gameCover
+      ? getAttachmentUrl('games', link.gameId, link.gameCover, { width: 100, height: 100 })
+      : null
+  }))
+}
 
 // Group items by type
 const groupedItems = computed(() => {
@@ -266,8 +280,11 @@ const deleteDialogOpen = computed({
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -295,19 +312,38 @@ const deleteDialogOpen = computed({
                   {{ COMPANY_TYPE_LABELS[type] }}
                 </h4>
                 <div class="space-y-1">
-                  <CompanyGamesItem
-                    v-for="(item, index) in groupedItems[type]"
-                    :key="item.id"
-                    :item="item"
-                    :index="index"
-                    :is-first="index === 0"
-                    :is-last="index === groupedItems[type].length - 1"
-                    :spoilers-revealed="spoilersRevealed"
-                    @edit="handleEditClick"
-                    @delete="(id) => (deleteId = id)"
-                    @move-up="(i) => handleMoveUp(type, i)"
-                    @move-down="(i) => handleMoveDown(type, i)"
-                  />
+                  <ListItem
+                    v-for="({ link, spoiler, coverUrl }, index) in withSpoiler(groupedItems[type])"
+                    :key="link.id"
+                    :icon="spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('game')"
+                    :title="spoiler.name"
+                    :description="spoiler.note"
+                  >
+                    <template
+                      v-if="coverUrl && !spoiler.hidden"
+                      #leading
+                    >
+                      <CoverImage
+                        :src="coverUrl"
+                        :alt="spoiler.name"
+                        class="size-10 shrink-0 rounded-md border shadow-sm"
+                      />
+                    </template>
+                    <template
+                      v-if="!spoiler.hidden"
+                      #actions
+                    >
+                      <ListItemActions
+                        movable
+                        :is-first="index === 0"
+                        :is-last="index === groupedItems[type].length - 1"
+                        @move-up="handleMoveUp(type, index)"
+                        @move-down="handleMoveDown(type, index)"
+                        @edit="handleEditClick(link)"
+                        @delete="deleteId = link.id"
+                      />
+                    </template>
+                  </ListItem>
                 </div>
               </div>
             </template>

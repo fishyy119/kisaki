@@ -8,6 +8,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { usePerson } from '@renderer/composables/use-person'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { PersonGamesFormDialog } from '../../forms'
 
@@ -62,17 +63,17 @@ const gameDialogOpen = computed({
 <template>
   <template v-if="person">
     <!-- Empty state -->
-    <template v-if="!hasGames">
-      <div class="flex flex-col items-center justify-center py-12 text-center">
-        <Icon
-          :icon="getEntityIcon('game')"
-          class="size-12 text-muted-foreground/30 mb-3"
-        />
-        <p class="text-sm text-muted-foreground">暂无相关游戏</p>
+    <StateView
+      v-if="!hasGames"
+      state="empty"
+      :icon="getEntityIcon('game')"
+      description="暂无相关游戏"
+      class="py-12"
+    >
+      <template #actions>
         <Button
           variant="outline"
           size="sm"
-          class="mt-4"
           @click="editDialogOpen = true"
         >
           <Icon
@@ -81,8 +82,8 @@ const gameDialogOpen = computed({
           />
           添加游戏
         </Button>
-      </div>
-    </template>
+      </template>
+    </StateView>
 
     <!-- Games list -->
     <template v-else>

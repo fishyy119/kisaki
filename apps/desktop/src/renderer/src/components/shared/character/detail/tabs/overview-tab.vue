@@ -6,10 +6,8 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
-import { Button } from '@renderer/components/ui/button'
-import { SectionHeader } from '@renderer/components/ui/section-header'
+import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { VirtualHorizontalScroll } from '@renderer/components/ui/virtual'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { TagCard, TagDetailDialog } from '@renderer/components/shared/tag'
@@ -22,32 +20,10 @@ import {
 } from '../../forms'
 
 // =============================================================================
-// Types
-// =============================================================================
-
-type VirtualHorizontalScrollRef = {
-  scrollLeft: () => void
-  scrollRight: () => void
-  canScrollLeft: { value: boolean }
-  canScrollRight: { value: boolean }
-}
-
-interface HorizontalScrollState {
-  canScrollLeft: boolean
-  canScrollRight: boolean
-}
-
-// =============================================================================
 // State
 // =============================================================================
 
 const { character, tags, persons, games } = useCharacter()
-
-const gamesScrollRef = ref<VirtualHorizontalScrollRef | null>(null)
-const gamesScrollState = ref<HorizontalScrollState>({
-  canScrollLeft: false,
-  canScrollRight: false
-})
 
 // Edit dialog states
 const editDialogs = ref({
@@ -95,9 +71,10 @@ const groupedPersons = computed(() => {
 const hasRelatedSites = computed(
   () => character.value?.relatedSites && character.value.relatedSites.length > 0
 )
-const hasGames = computed(() => games.value.length > 0)
 const hasPersons = computed(() => persons.value.length > 0)
 const hasTags = computed(() => tags.value && tags.value.length > 0)
+
+const gameLinks = computed(() => games.value.filter((link) => link.game))
 
 // =============================================================================
 // Helpers
@@ -144,101 +121,43 @@ const tagDialogOpen = computed({
     <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
       <!-- Left column: Description, Related Games, Tags -->
       <div class="space-y-6 min-w-0">
-        <!-- Description -->
-        <section>
-          <SectionHeader
-            title="简介"
-            editable
-            @edit="openEditDialog('description')"
-          />
-          <MarkdownContent
-            v-if="character.description"
-            :content="character.description"
-          />
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无简介
-          </p>
-        </section>
+        <Section
+          title="简介"
+          editable
+          :empty="!character.description"
+          empty-text="暂无简介"
+          @edit="openEditDialog('description')"
+        >
+          <MarkdownContent :content="character.description!" />
+        </Section>
 
-        <!-- Related Games - horizontal scroll with navigation -->
-        <section>
-          <SectionHeader
-            title="相关游戏"
-            editable
-            @edit="openEditDialog('games')"
-          >
-            <template
-              v-if="hasGames"
-              #actions
-            >
-              <div class="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  :disabled="!gamesScrollState.canScrollLeft"
-                  class="size-6"
-                  @click="gamesScrollRef?.scrollLeft()"
-                >
-                  <Icon
-                    icon="icon-[mdi--chevron-left]"
-                    class="size-4"
-                  />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  :disabled="!gamesScrollState.canScrollRight"
-                  class="size-6"
-                  @click="gamesScrollRef?.scrollRight()"
-                >
-                  <Icon
-                    icon="icon-[mdi--chevron-right]"
-                    class="size-4"
-                  />
-                </Button>
-              </div>
-            </template>
-          </SectionHeader>
-          <VirtualHorizontalScroll
-            v-if="hasGames"
-            ref="gamesScrollRef"
-            :items="games.filter((link) => link.game)"
-            :get-key="(item) => item.id"
-            class="flex gap-3 pr-0.5"
-            @scroll-state-change="gamesScrollState = $event"
-          >
-            <template #item="{ item: link }">
-              <GameCard
-                :game="link.game!"
-                align="left"
-                size="sm"
-                :badge-label="getRoleLabel(link.type)"
-                @click="openGameId = link.game!.id"
-              />
-            </template>
-          </VirtualHorizontalScroll>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无相关游戏
-          </p>
-        </section>
+        <SectionScroll
+          title="相关游戏"
+          editable
+          :items="gameLinks"
+          :get-key="(item) => item.id"
+          empty-text="暂无相关游戏"
+          @edit="openEditDialog('games')"
+        >
+          <template #item="{ item: link }">
+            <GameCard
+              :game="link.game!"
+              align="left"
+              size="sm"
+              :badge-label="getRoleLabel(link.type)"
+              @click="openGameId = link.game!.id"
+            />
+          </template>
+        </SectionScroll>
 
-        <!-- Tags -->
-        <section>
-          <SectionHeader
-            title="标签"
-            editable
-            @edit="openEditDialog('tags')"
-          />
-          <div
-            v-if="hasTags"
-            class="flex flex-wrap gap-1"
-          >
+        <Section
+          title="标签"
+          editable
+          :empty="!hasTags"
+          empty-text="暂无标签"
+          @edit="openEditDialog('tags')"
+        >
+          <div class="flex flex-wrap gap-1">
             <template
               v-for="tagLink in tags"
               :key="tagLink.id"
@@ -252,28 +171,19 @@ const tagDialogOpen = computed({
               />
             </template>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无标签
-          </p>
-        </section>
+        </Section>
       </div>
 
       <!-- Right column: Related Persons, Related Sites -->
       <div class="space-y-6 min-w-0">
-        <!-- Related Persons -->
-        <section>
-          <SectionHeader
-            title="相关人物"
-            editable
-            @edit="openEditDialog('persons')"
-          />
-          <div
-            v-if="hasPersons"
-            class="space-y-2 text-sm"
-          >
+        <Section
+          title="相关人物"
+          editable
+          :empty="!hasPersons"
+          empty-text="暂无相关人物"
+          @edit="openEditDialog('persons')"
+        >
+          <div class="space-y-2 text-sm">
             <template
               v-for="type in PERSON_TYPE_ORDER"
               :key="type"
@@ -307,25 +217,16 @@ const tagDialogOpen = computed({
               </div>
             </template>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无相关人物
-          </p>
-        </section>
+        </Section>
 
-        <!-- Related Sites -->
-        <section>
-          <SectionHeader
-            title="相关链接"
-            editable
-            @edit="openEditDialog('sites')"
-          />
-          <div
-            v-if="hasRelatedSites"
-            class="flex flex-col gap-1.5"
-          >
+        <Section
+          title="相关链接"
+          editable
+          :empty="!hasRelatedSites"
+          empty-text="暂无相关链接"
+          @edit="openEditDialog('sites')"
+        >
+          <div class="flex flex-col gap-1.5">
             <a
               v-for="(site, index) in character.relatedSites"
               :key="index"
@@ -341,13 +242,7 @@ const tagDialogOpen = computed({
               {{ site.label }}
             </a>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无相关链接
-          </p>
-        </section>
+        </Section>
       </div>
     </div>
 

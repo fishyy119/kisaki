@@ -112,6 +112,34 @@ export function formatPercentage(value: number, decimals = 1): string {
 }
 
 // =============================================================================
+// Spoiler Display
+// =============================================================================
+
+export interface SpoilerDisplay {
+  hidden: boolean
+  name: string
+  note: string
+}
+
+/**
+ * Resolve the display name/note of a spoiler-maskable list entry.
+ * Hidden entries show fixed placeholder texts instead of real content.
+ */
+export function getSpoilerDisplay(
+  name: string,
+  note: string,
+  isSpoiler: boolean,
+  revealed: boolean
+): SpoilerDisplay {
+  const hidden = isSpoiler && !revealed
+  return {
+    hidden,
+    name: hidden ? '剧透内容' : name,
+    note: hidden ? '已隐藏，开启「显示剧透」后可查看' : note
+  }
+}
+
+// =============================================================================
 // Entity Icon Mapping
 // =============================================================================
 

@@ -18,11 +18,11 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
 import { useThemeStore } from '@renderer/stores'
 import { settings, type MainWindowCloseAction } from '@shared/db'
@@ -146,8 +146,11 @@ async function handleSubmit() {
       </DialogHeader>
 
       <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 

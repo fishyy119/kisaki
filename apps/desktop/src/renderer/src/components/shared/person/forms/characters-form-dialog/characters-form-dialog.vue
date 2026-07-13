@@ -18,12 +18,15 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import PersonCharactersItem from './character-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { CoverImage } from '@renderer/components/ui/cover-image'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import PersonCharactersItemFormDialog from './character-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -129,6 +132,25 @@ const groupedCharacters = computed(() => {
 
 // Existing character IDs for excluding from select
 const existingCharacterIds = computed(() => items.value.map((item) => item.characterId))
+
+// Pair each link with its spoiler-aware display texts and thumbnail URL
+function withSpoiler(links: CharacterLinkItem[]) {
+  return links.map((link) => ({
+    link,
+    spoiler: getSpoilerDisplay(
+      link.characterName,
+      link.note,
+      link.isSpoiler,
+      spoilersRevealed.value
+    ),
+    photoUrl: link.characterPhoto
+      ? getAttachmentUrl('characters', link.characterId, link.characterPhoto, {
+          width: 100,
+          height: 100
+        })
+      : null
+  }))
+}
 
 // Delete dialog state
 const deleteDialogOpen = computed({
@@ -308,8 +330,11 @@ function handleRevealSpoilersConfirm() {
     <DialogContent class="max-w-lg">
       <!-- Loading state -->
       <template v-if="isLoading || !results">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -336,22 +361,42 @@ function handleRevealSpoilersConfirm() {
                     {{ PERSON_TYPE_LABELS[type] }}
                   </h4>
                   <div class="space-y-1">
-                    <PersonCharactersItem
-                      v-for="(link, index) in groupedCharacters[type]"
+                    <ListItem
+                      v-for="({ link, spoiler, photoUrl }, index) in withSpoiler(
+                        groupedCharacters[type]
+                      )"
                       :key="link.id"
-                      :character-id="link.characterId"
-                      :character-name="link.characterName"
-                      :character-photo="link.characterPhoto"
-                      :note="link.note"
-                      :is-spoiler="link.isSpoiler"
-                      :spoilers-revealed="spoilersRevealed"
-                      :is-first="index === 0"
-                      :is-last="index === groupedCharacters[type].length - 1"
-                      @move-up="handleMoveUp(type, index)"
-                      @move-down="handleMoveDown(type, index)"
-                      @edit="handleEdit(link)"
-                      @delete="deleteId = link.id"
-                    />
+                      :icon="
+                        spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('character')
+                      "
+                      :title="spoiler.name"
+                      :description="spoiler.note"
+                    >
+                      <template
+                        v-if="photoUrl && !spoiler.hidden"
+                        #leading
+                      >
+                        <CoverImage
+                          :src="photoUrl"
+                          :alt="spoiler.name"
+                          class="size-10 shrink-0 rounded-md border shadow-sm"
+                        />
+                      </template>
+                      <template
+                        v-if="!spoiler.hidden"
+                        #actions
+                      >
+                        <ListItemActions
+                          movable
+                          :is-first="index === 0"
+                          :is-last="index === groupedCharacters[type].length - 1"
+                          @move-up="handleMoveUp(type, index)"
+                          @move-down="handleMoveDown(type, index)"
+                          @edit="handleEdit(link)"
+                          @delete="deleteId = link.id"
+                        />
+                      </template>
+                    </ListItem>
                   </div>
                 </div>
               </template>

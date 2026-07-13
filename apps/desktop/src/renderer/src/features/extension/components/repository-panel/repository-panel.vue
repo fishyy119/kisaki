@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
@@ -316,21 +317,19 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
     </div>
 
     <div class="flex-1 overflow-auto">
-      <template v-if="state === 'loading'">
-        <div class="flex items-center justify-center h-48">
-          <Spinner class="size-6" />
-        </div>
-      </template>
+      <StateView
+        v-if="state === 'loading'"
+        state="loading"
+        class="h-48"
+      />
 
-      <template v-else-if="repositoryList.length === 0">
-        <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
-          <Icon
-            icon="icon-[mdi--source-branch]"
-            class="size-16 mb-3 opacity-30"
-          />
-          <p class="font-medium">暂无扩展仓库</p>
-        </div>
-      </template>
+      <StateView
+        v-else-if="repositoryList.length === 0"
+        state="empty"
+        icon="icon-[mdi--source-branch]"
+        title="暂无扩展仓库"
+        class="h-48"
+      />
 
       <template v-else>
         <div class="divide-y divide-border">

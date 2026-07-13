@@ -16,10 +16,10 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import { Spinner } from '@renderer/components/ui/spinner'
 import {
   Select,
   SelectContent,
@@ -100,8 +100,11 @@ function handleCancel() {
     <DialogContent class="max-w-md">
       <!-- Loading state -->
       <template v-if="isLoading || !game">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 

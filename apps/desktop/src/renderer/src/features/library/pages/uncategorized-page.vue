@@ -6,10 +6,10 @@
  */
 
 import { ref, computed } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { notInArray, and, eq } from 'drizzle-orm'
-import { Icon } from '@renderer/components/ui/icon'
-import { Button } from '@renderer/components/ui/button'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import { db } from '@renderer/core/db'
@@ -236,32 +236,14 @@ function handleEntityClick(entity: EntityData) {
 <template>
   <div class="h-full flex flex-col w-full">
     <!-- Header -->
-    <header class="shrink-0 flex items-center gap-3 px-4 h-12 border-b border-border bg-surface">
-      <!-- Back button -->
-      <RouterLink to="/library">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-        >
-          <Icon
-            icon="icon-[mdi--arrow-left]"
-            class="size-4"
-          />
-        </Button>
-      </RouterLink>
-
-      <!-- Title -->
-      <div class="flex items-center gap-3 min-w-0">
-        <Icon
-          icon="icon-[mdi--folder-question-outline]"
-          class="size-5"
-        />
-        <h1 class="text-base font-semibold">未分类{{ ENTITY_CONFIG[entityType].label }}</h1>
-        <span class="text-xs text-muted-foreground">
-          {{ entities?.length ?? 0 }} {{ ENTITY_CONFIG[entityType].unitLabel }}
-        </span>
-      </div>
-    </header>
+    <PageHeader back-to="/library">
+      <PageHeaderTitle
+        :title="`未分类${ENTITY_CONFIG[entityType].label}`"
+        icon="icon-[mdi--folder-question-outline]"
+      >
+        {{ entities?.length ?? 0 }} {{ ENTITY_CONFIG[entityType].unitLabel }}
+      </PageHeaderTitle>
+    </PageHeader>
 
     <!-- Content -->
     <div
@@ -269,27 +251,20 @@ function handleEntityClick(entity: EntityData) {
       class="flex-1 overflow-auto p-4"
     >
       <!-- Loading state -->
-      <div
+      <StateView
         v-if="state === 'loading'"
-        class="flex items-center justify-center h-full"
-      >
-        <Icon
-          icon="icon-[mdi--loading]"
-          class="size-8 animate-spin text-muted-foreground"
-        />
-      </div>
+        state="loading"
+        class="h-full"
+      />
 
       <!-- Empty state -->
-      <div
+      <StateView
         v-else-if="!entities || entities.length === 0"
-        class="flex flex-col items-center justify-center h-full gap-4"
-      >
-        <Icon
-          icon="icon-[mdi--check-circle-outline]"
-          class="size-12 text-muted-foreground"
-        />
-        <p class="text-muted-foreground">所有{{ ENTITY_CONFIG[entityType].label }}都已分类</p>
-      </div>
+        state="empty"
+        icon="icon-[mdi--check-circle-outline]"
+        :description="`所有${ENTITY_CONFIG[entityType].label}都已分类`"
+        class="h-full"
+      />
 
       <!-- Grid -->
       <VirtualGrid

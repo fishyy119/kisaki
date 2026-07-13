@@ -9,8 +9,8 @@
 <script setup lang="ts">
 import { useStatistics } from '../composables'
 import { useRenderState } from '@renderer/composables'
-import { Spinner } from '@renderer/components/ui/spinner'
-import { SectionHeader } from '@renderer/components/ui/section-header'
+import { StateView } from '@renderer/components/ui/state-view'
+import { Section } from '@renderer/components/ui/section'
 import {
   StatisticsStatsSummary,
   StatisticsActivityHeatmap,
@@ -26,77 +26,74 @@ const state = useRenderState(isLoading, error, sessions)
 </script>
 
 <template>
-  <!-- Loading -->
-  <div
-    v-if="state === 'loading'"
-    class="flex items-center justify-center h-full"
-  >
-    <Spinner class="size-8" />
-  </div>
-
-  <!-- Error -->
-  <div
-    v-else-if="state === 'error'"
-    class="flex items-center justify-center h-full"
-  >
-    <p class="text-destructive">加载数据时出错</p>
-  </div>
+  <StateView
+    v-if="state !== 'success'"
+    :state="state"
+    :error="error"
+    class="h-full"
+  />
 
   <!-- Success -->
-  <template v-else-if="state === 'success'">
+  <template v-else>
     <!-- Content -->
     <div class="space-y-6">
       <!-- Stats Summary (with X/7 active days) -->
-      <section>
-        <SectionHeader title="本周概览" />
+      <Section title="本周概览">
         <StatisticsStatsSummary
           report-type="weekly"
           :total-days="7"
         />
-      </section>
+      </Section>
 
       <!-- Activity Heatmap (7 days) -->
-      <section>
-        <SectionHeader title="活动热力图" />
+      <Section title="活动热力图">
         <div class="rounded-lg border bg-card p-4">
           <StatisticsActivityHeatmap :available-granularities="['day']" />
         </div>
-      </section>
+      </Section>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
         <!-- Daily Breakdown (trend chart with daily only) -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="游玩趋势" />
+        <Section
+          title="游玩趋势"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsTimeTrend :available-granularities="['daily']" />
           </div>
-        </section>
+        </Section>
 
         <!-- Hourly Distribution -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="时段分布" />
+        <Section
+          title="时段分布"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsTimeDistribution :available-types="['hourly']" />
           </div>
-        </section>
+        </Section>
       </div>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
         <!-- Game Distribution -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="游戏分布" />
+        <Section
+          title="游戏分布"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsGameDistribution />
           </div>
-        </section>
+        </Section>
 
         <!-- Game Ranking -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="游戏排行" />
+        <Section
+          title="游戏排行"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsGameRanking />
           </div>
-        </section>
+        </Section>
       </div>
     </div>
   </template>

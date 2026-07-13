@@ -20,7 +20,7 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@renderer/components/ui/tooltip'
 import {
   Table,
@@ -166,31 +166,21 @@ function handleExclude(name: string) {
           </div>
         </div>
 
-        <!-- Loading -->
-        <div
-          v-if="state === 'loading'"
-          class="flex items-center justify-center py-8"
-        >
-          <Spinner class="size-8" />
-        </div>
-
-        <!-- Error -->
-        <div
-          v-else-if="state === 'error'"
-          class="text-center py-8"
-        >
-          <p class="text-destructive">{{ error }}</p>
-        </div>
+        <!-- Loading / Error -->
+        <StateView
+          v-if="state === 'loading' || state === 'error'"
+          :state="state"
+          :error="error"
+          class="py-8"
+        />
 
         <!-- Empty -->
-        <div
+        <StateView
           v-else-if="visibleResults.length === 0"
-          class="text-center py-8"
-        >
-          <p class="text-muted-foreground">
-            {{ resultsList.length === 0 ? '在指定层级未找到实体' : '所有实体已被排除' }}
-          </p>
-        </div>
+          state="empty"
+          :description="resultsList.length === 0 ? '在指定层级未找到实体' : '所有实体已被排除'"
+          class="py-8"
+        />
 
         <!-- Results Table -->
         <template v-else>
@@ -264,23 +254,19 @@ function handleExclude(name: string) {
                     v-if="props.onAddToIgnoreList"
                     class="text-center"
                   >
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          class="size-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                          @click="handleExclude(result.extractedName)"
-                        >
-                          <Icon
-                            icon="icon-[mdi--eye-off-outline]"
-                            class="size-3"
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>添加到排除列表</TooltipContent>
-                    </Tooltip>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      class="size-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      tooltip="添加到排除列表"
+                      @click="handleExclude(result.extractedName)"
+                    >
+                      <Icon
+                        icon="icon-[mdi--eye-off-outline]"
+                        class="size-3"
+                      />
+                    </Button>
                   </TableCell>
                 </TableRow>
               </TableBody>

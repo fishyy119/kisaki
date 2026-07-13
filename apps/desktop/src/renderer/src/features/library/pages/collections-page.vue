@@ -10,6 +10,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { CollectionInfoFormDialog, CollectionCard } from '@renderer/components/shared/collection'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -88,15 +90,11 @@ function handleCollectionClick(collectionId: string) {
 
 <template>
   <!-- Loading state -->
-  <div
+  <StateView
     v-if="state === 'loading'"
-    class="flex items-center justify-center h-full"
-  >
-    <Icon
-      icon="icon-[mdi--loading]"
-      class="size-8 animate-spin text-muted-foreground"
-    />
-  </div>
+    state="loading"
+    class="h-full"
+  />
 
   <!-- Content -->
   <div
@@ -104,30 +102,15 @@ function handleCollectionClick(collectionId: string) {
     class="h-full flex flex-col"
   >
     <!-- Header -->
-    <header
-      class="shrink-0 flex items-center justify-between px-4 h-12 border-b border-border bg-surface"
-    >
-      <div class="flex items-center gap-3">
-        <RouterLink to="/library">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-          >
-            <Icon
-              icon="icon-[mdi--arrow-left]"
-              class="size-4"
-            />
-          </Button>
-        </RouterLink>
-        <Icon
-          :icon="getEntityIcon('collection')"
-          class="size-5"
-        />
-        <h1 class="text-base font-semibold">合集</h1>
-        <span class="text-xs text-muted-foreground">{{ collectionList?.length ?? 0 }} 个</span>
-      </div>
+    <PageHeader back-to="/library">
+      <PageHeaderTitle
+        title="合集"
+        :icon="getEntityIcon('collection')"
+      >
+        {{ collectionList?.length ?? 0 }} 个
+      </PageHeaderTitle>
 
-      <div class="flex items-center gap-2">
+      <template #actions>
         <Button
           size="sm"
           @click="showCreateDialog = true"
@@ -138,8 +121,8 @@ function handleCollectionClick(collectionId: string) {
           />
           新建合集
         </Button>
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- Collection grid -->
     <div
@@ -147,17 +130,14 @@ function handleCollectionClick(collectionId: string) {
       class="flex-1 overflow-auto p-4"
     >
       <!-- Empty state -->
-      <div
+      <StateView
         v-if="!collectionList || collectionList.length === 0"
-        class="flex flex-col items-center justify-center h-full gap-4"
-      >
-        <Icon
-          icon="icon-[mdi--folder-plus-outline]"
-          class="size-16 text-muted-foreground"
-        />
-        <p class="text-muted-foreground">暂无合集</p>
-        <p class="text-sm text-muted-foreground">创建合集来整理你的媒体库</p>
-      </div>
+        state="empty"
+        icon="icon-[mdi--folder-plus-outline]"
+        title="暂无合集"
+        description="创建合集来整理你的媒体库"
+        class="h-full"
+      />
 
       <!-- Grid -->
       <VirtualGrid

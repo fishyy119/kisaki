@@ -123,40 +123,32 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
     </div>
 
     <div class="flex items-center justify-end gap-1">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="查看详情"
-            @click="emit('details', props.run)"
-          >
-            <Icon
-              icon="icon-[mdi--information-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>详情</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="详情"
+        aria-label="查看详情"
+        @click="emit('details', props.run)"
+      >
+        <Icon
+          icon="icon-[mdi--information-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="删除记录"
-            class="hover:text-destructive"
-            @click="emit('delete', props.run)"
-          >
-            <Icon
-              icon="icon-[mdi--trash-can-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>删除记录</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="删除记录"
+        aria-label="删除记录"
+        class="hover:text-destructive"
+        @click="emit('delete', props.run)"
+      >
+        <Icon
+          icon="icon-[mdi--trash-can-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 </template>

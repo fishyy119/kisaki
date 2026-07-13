@@ -18,12 +18,15 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import CharacterGamesItem from './game-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { CoverImage } from '@renderer/components/ui/cover-image'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import CharacterGamesItemFormDialog from './game-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -129,6 +132,17 @@ const groupedGames = computed(() => {
 
 // Existing game IDs for excluding from select
 const existingGameIds = computed(() => items.value.map((item) => item.gameId))
+
+// Pair each link with its spoiler-aware display texts and thumbnail URL
+function withSpoiler(links: GameLinkItem[]) {
+  return links.map((link) => ({
+    link,
+    spoiler: getSpoilerDisplay(link.gameName, link.note, link.isSpoiler, spoilersRevealed.value),
+    coverUrl: link.gameCover
+      ? getAttachmentUrl('games', link.gameId, link.gameCover, { width: 100, height: 100 })
+      : null
+  }))
+}
 
 // Delete dialog state
 const deleteDialogOpen = computed({
@@ -308,8 +322,11 @@ function handleRevealSpoilersConfirm() {
     <DialogContent class="max-w-lg">
       <!-- Loading state -->
       <template v-if="isLoading || !results">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -336,22 +353,40 @@ function handleRevealSpoilersConfirm() {
                     {{ CHARACTER_TYPE_LABELS[type] }}
                   </h4>
                   <div class="space-y-1">
-                    <CharacterGamesItem
-                      v-for="(link, index) in groupedGames[type]"
+                    <ListItem
+                      v-for="({ link, spoiler, coverUrl }, index) in withSpoiler(
+                        groupedGames[type]
+                      )"
                       :key="link.id"
-                      :game-id="link.gameId"
-                      :game-name="link.gameName"
-                      :game-cover="link.gameCover"
-                      :note="link.note"
-                      :is-spoiler="link.isSpoiler"
-                      :spoilers-revealed="spoilersRevealed"
-                      :is-first="index === 0"
-                      :is-last="index === groupedGames[type].length - 1"
-                      @move-up="handleMoveUp(type, index)"
-                      @move-down="handleMoveDown(type, index)"
-                      @edit="handleEdit(link)"
-                      @delete="deleteId = link.id"
-                    />
+                      :icon="spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('game')"
+                      :title="spoiler.name"
+                      :description="spoiler.note"
+                    >
+                      <template
+                        v-if="coverUrl && !spoiler.hidden"
+                        #leading
+                      >
+                        <CoverImage
+                          :src="coverUrl"
+                          :alt="spoiler.name"
+                          class="size-10 shrink-0 rounded-md border shadow-sm"
+                        />
+                      </template>
+                      <template
+                        v-if="!spoiler.hidden"
+                        #actions
+                      >
+                        <ListItemActions
+                          movable
+                          :is-first="index === 0"
+                          :is-last="index === groupedGames[type].length - 1"
+                          @move-up="handleMoveUp(type, index)"
+                          @move-down="handleMoveDown(type, index)"
+                          @edit="handleEdit(link)"
+                          @delete="deleteId = link.id"
+                        />
+                      </template>
+                    </ListItem>
                   </div>
                 </div>
               </template>

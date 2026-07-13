@@ -8,9 +8,11 @@
  */
 
 import { ref, computed } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { PageHeader } from '@renderer/components/ui/page-header'
+import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import {
   CollectionDetailContent,
@@ -131,100 +133,51 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
 </script>
 
 <template>
-  <!-- Loading state -->
-  <div
-    v-if="state === 'loading'"
-    class="flex-1 flex items-center justify-center h-full"
-  >
-    <Icon
-      icon="icon-[mdi--loading]"
-      class="size-8 text-muted-foreground animate-spin"
-    />
-  </div>
-
-  <!-- Error state -->
-  <div
-    v-else-if="state === 'error'"
-    class="flex-1 flex items-center justify-center h-full"
-  >
-    <div class="text-center">
-      <Icon
-        icon="icon-[mdi--alert-circle-outline]"
-        class="size-12 text-destructive/30 mb-3 mx-auto"
-      />
-      <p class="text-sm text-muted-foreground">{{ error?.message ?? error }}</p>
-    </div>
-  </div>
-
-  <!-- Not found state -->
-  <div
-    v-else-if="state === 'not-found'"
-    class="flex-1 flex items-center justify-center h-full"
-  >
-    <div class="text-center">
-      <Icon
-        icon="icon-[mdi--folder-open-outline]"
-        class="size-12 text-muted-foreground/30 mb-3 mx-auto"
-      />
-      <p class="text-sm text-muted-foreground">合集不存在</p>
-    </div>
-  </div>
+  <!-- Loading / Error / Not Found -->
+  <StateView
+    v-if="state !== 'success'"
+    :state="state"
+    :error="error"
+    icon="icon-[mdi--folder-open-outline]"
+    title="合集不存在"
+    class="h-full"
+  />
 
   <!-- Content -->
   <div
-    v-else-if="state === 'success' && collection"
+    v-else-if="collection"
     class="h-full flex flex-col w-full"
   >
     <!-- Header -->
-    <header class="shrink-0 flex items-center gap-3 px-4 h-12 border-b border-border bg-surface">
-      <!-- Back button -->
-      <RouterLink to="/library">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-        >
-          <Icon
-            icon="icon-[mdi--arrow-left]"
-            class="size-4"
-          />
-        </Button>
-      </RouterLink>
+    <PageHeader back-to="/library">
+      <h1 class="text-base font-semibold truncate">{{ collection?.name }}</h1>
+      <Icon
+        v-if="isDynamic"
+        icon="icon-[mdi--lightning-bolt]"
+        class="size-4 shrink-0"
+        title="动态合集"
+      />
 
-      <!-- Collection info -->
-      <div class="flex items-center gap-2 min-w-0 mr-auto">
-        <h1 class="text-base font-semibold truncate">{{ collection?.name }}</h1>
-        <Icon
-          v-if="isDynamic"
-          icon="icon-[mdi--lightning-bolt]"
-          class="size-4 shrink-0"
-          title="动态合集"
-        />
-      </div>
-
-      <!-- Entity type segmented control -->
-      <SegmentedControl
-        v-model="entityTypeModel"
-        class="ml-auto"
-      >
-        <SegmentedControlItem
-          v-for="type in CONTENT_ENTITY_TYPES"
-          :key="type"
-          :value="type"
-          :disabled="isDynamic && !configuredEntityTypes.includes(type)"
-          :class="isDynamic && !configuredEntityTypes.includes(type) ? 'opacity-50' : ''"
-        >
-          {{ ENTITY_CONFIG[type].label }}
-          <span
-            v-if="entityCounts[type] > 0"
-            class="ml-1 text-xs text-muted-foreground"
+      <template #actions>
+        <!-- Entity type segmented control -->
+        <SegmentedControl v-model="entityTypeModel">
+          <SegmentedControlItem
+            v-for="type in CONTENT_ENTITY_TYPES"
+            :key="type"
+            :value="type"
+            :disabled="isDynamic && !configuredEntityTypes.includes(type)"
+            :class="isDynamic && !configuredEntityTypes.includes(type) ? 'opacity-50' : ''"
           >
-            ({{ entityCounts[type] }})
-          </span>
-        </SegmentedControlItem>
-      </SegmentedControl>
+            {{ ENTITY_CONFIG[type].label }}
+            <span
+              v-if="entityCounts[type] > 0"
+              class="ml-1 text-xs text-muted-foreground"
+            >
+              ({{ entityCounts[type] }})
+            </span>
+          </SegmentedControlItem>
+        </SegmentedControl>
 
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2 shrink-0">
         <!-- For static collections: edit content button -->
         <Button
           v-if="!isDynamic"
@@ -271,8 +224,8 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
           :collection-id="collectionId"
           navigate-on-delete
         />
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- Main content -->
     <div

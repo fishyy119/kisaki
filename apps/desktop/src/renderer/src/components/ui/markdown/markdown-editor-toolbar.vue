@@ -2,6 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
+import { Separator } from '@renderer/components/ui/separator'
 import { cn } from '@renderer/utils/cn'
 
 interface Props {
@@ -106,7 +107,10 @@ const emit = defineEmits<{
         />
       </Button>
 
-      <div class="mx-1 h-4 w-px bg-border" />
+      <Separator
+        orientation="vertical"
+        class="mx-1 h-4"
+      />
 
       <Button
         variant="ghost"
@@ -135,7 +139,10 @@ const emit = defineEmits<{
         />
       </Button>
 
-      <div class="mx-1 h-4 w-px bg-border" />
+      <Separator
+        orientation="vertical"
+        class="mx-1 h-4"
+      />
 
       <Button
         variant="ghost"
@@ -243,7 +250,10 @@ const emit = defineEmits<{
       </Button>
 
       <template v-if="props.canAttach">
-        <div class="mx-1 h-4 w-px bg-border" />
+        <Separator
+          orientation="vertical"
+          class="mx-1 h-4"
+        />
         <Button
           variant="ghost"
           size="icon-xs"

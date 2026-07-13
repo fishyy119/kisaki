@@ -24,7 +24,7 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Input } from '@renderer/components/ui/input'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { MarkdownEditor } from '@renderer/components/ui/markdown'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
@@ -229,8 +229,11 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-6xl">
       <template v-if="isEditMode && (isLoading || !existingNote)">
-        <DialogBody class="flex items-center justify-center py-10">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-10"
+          />
         </DialogBody>
       </template>
 

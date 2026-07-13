@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCharacter } from '@renderer/composables/use-character'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatDate } from '@renderer/utils/datetime'
@@ -80,28 +81,19 @@ function getBodyStats() {
   <template v-if="character">
     <div class="flex gap-4 mb-4 group">
       <!-- Photo -->
-      <div class="w-24 aspect-[3/4] rounded-lg overflow-hidden shrink-0 bg-muted border shadow-sm">
-        <img
-          v-if="character.photoFile"
-          :src="
-            getAttachmentUrl('characters', character.id, character.photoFile, {
-              width: 300,
-              height: 400
-            })
-          "
-          :alt="character.name"
-          class="size-full object-cover"
-        />
-        <div
-          v-else
-          class="size-full flex items-center justify-center"
-        >
-          <Icon
-            :icon="getEntityIcon('character')"
-            class="size-8 text-muted-foreground/50"
-          />
-        </div>
-      </div>
+      <CoverImage
+        :src="
+          character.photoFile
+            ? getAttachmentUrl('characters', character.id, character.photoFile, {
+                width: 300,
+                height: 400
+              })
+            : null
+        "
+        :alt="character.name"
+        :icon="getEntityIcon('character')"
+        class="w-24 aspect-[3/4] rounded-lg shrink-0 border shadow-sm"
+      />
 
       <!-- Basic info -->
       <div class="flex-1 min-w-0 justify-between flex flex-col">

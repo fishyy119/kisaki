@@ -19,12 +19,13 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { notify } from '@renderer/core/notify'
-import CompanyTagsItem from './tag-item.vue'
+import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import CompanyTagsItemFormDialog from './tag-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -102,6 +103,13 @@ watch(fetchedData, (data) => {
 })
 
 const existingTagIds = computed(() => items.value.map((item) => item.tagId))
+
+const displayItems = computed(() =>
+  items.value.map((item) => ({
+    item,
+    spoiler: getSpoilerDisplay(item.tagName, item.note, item.isSpoiler, spoilersRevealed.value)
+  }))
+)
 
 async function handleSave() {
   isSaving.value = true
@@ -211,8 +219,11 @@ function handleRevealSpoilersConfirm() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -228,19 +239,28 @@ function handleRevealSpoilersConfirm() {
             >
               暂无标签，点击下方按钮添加
             </p>
-            <CompanyTagsItem
-              v-for="(item, index) in items"
+            <ListItem
+              v-for="({ item, spoiler }, index) in displayItems"
               :key="item.id"
-              :item="item"
-              :index="index"
-              :is-first="index === 0"
-              :is-last="index === items.length - 1"
-              :spoilers-revealed="spoilersRevealed"
-              @edit="handleEdit"
-              @delete="(i) => (deleteIndex = i)"
-              @move-up="handleMoveUp"
-              @move-down="handleMoveDown"
-            />
+              :icon="spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('tag')"
+              :title="spoiler.name"
+              :description="spoiler.note"
+            >
+              <template
+                v-if="!spoiler.hidden"
+                #actions
+              >
+                <ListItemActions
+                  movable
+                  :is-first="index === 0"
+                  :is-last="index === items.length - 1"
+                  @move-up="handleMoveUp(index)"
+                  @move-down="handleMoveDown(index)"
+                  @edit="handleEdit(item)"
+                  @delete="deleteIndex = index"
+                />
+              </template>
+            </ListItem>
           </div>
         </DialogBody>
         <DialogFooter class="flex justify-between">

@@ -23,7 +23,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Form } from '@renderer/components/ui/form'
 import {
   Dialog,
@@ -207,8 +207,11 @@ async function handleSubmit() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-3xl">
       <template v-if="isLoading || !data">
-        <DialogBody class="flex items-center justify-center py-10">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-10"
+          />
         </DialogBody>
       </template>
 

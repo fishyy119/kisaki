@@ -7,7 +7,6 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
@@ -141,74 +140,58 @@ const enabledModel = computed({
     </div>
 
     <div class="flex items-center justify-end gap-1">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            :class="cn(props.running && 'hover:text-destructive')"
-            :disabled="props.busy"
-            @click="props.running ? emit('cancel') : emit('run')"
-          >
-            <Icon
-              :icon="props.running ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--play-outline]'"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ props.running ? '停止重试' : '运行' }}</TooltipContent>
-      </Tooltip>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        :class="cn(props.running && 'hover:text-destructive')"
+        :tooltip="props.running ? '停止重试' : '运行'"
+        :disabled="props.busy"
+        @click="props.running ? emit('cancel') : emit('run')"
+      >
+        <Icon
+          :icon="props.running ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--play-outline]'"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            @click="emit('details')"
-          >
-            <Icon
-              icon="icon-[mdi--information-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>详情</TooltipContent>
-      </Tooltip>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        tooltip="详情"
+        @click="emit('details')"
+      >
+        <Icon
+          icon="icon-[mdi--information-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            :disabled="props.busy || props.running"
-            @click="emit('edit')"
-          >
-            <Icon
-              icon="icon-[mdi--pencil-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>编辑</TooltipContent>
-      </Tooltip>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        tooltip="编辑"
+        :disabled="props.busy || props.running"
+        @click="emit('edit')"
+      >
+        <Icon
+          icon="icon-[mdi--pencil-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            class="hover:text-destructive"
-            :disabled="props.busy || props.running"
-            @click="emit('delete')"
-          >
-            <Icon
-              icon="icon-[mdi--delete-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>删除</TooltipContent>
-      </Tooltip>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        class="hover:text-destructive"
+        tooltip="删除"
+        :disabled="props.busy || props.running"
+        @click="emit('delete')"
+      >
+        <Icon
+          icon="icon-[mdi--delete-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 </template>

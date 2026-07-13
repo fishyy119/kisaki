@@ -6,7 +6,7 @@ Boundary: calls signer trust IPC only; trust remains scoped by extension id.
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
@@ -117,21 +117,19 @@ async function handleRemoveSigner(): Promise<void> {
     </div>
 
     <div class="flex-1 overflow-auto">
-      <template v-if="state === 'loading'">
-        <div class="flex h-48 items-center justify-center">
-          <Spinner class="size-6" />
-        </div>
-      </template>
+      <StateView
+        v-if="state === 'loading'"
+        state="loading"
+        class="h-48"
+      />
 
-      <template v-else-if="signerList.length === 0">
-        <div class="flex h-48 flex-col items-center justify-center text-muted-foreground">
-          <Icon
-            icon="icon-[mdi--shield-key-outline]"
-            class="mb-3 size-16 opacity-30"
-          />
-          <p class="font-medium">暂无信任的签名指纹</p>
-        </div>
-      </template>
+      <StateView
+        v-else-if="signerList.length === 0"
+        state="empty"
+        icon="icon-[mdi--shield-key-outline]"
+        title="暂无信任的签名指纹"
+        class="h-48"
+      />
 
       <template v-else>
         <div class="divide-y divide-border">

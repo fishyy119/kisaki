@@ -7,6 +7,7 @@
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCompany } from '@renderer/composables'
 import { CompanyBasicFormDialog } from '../forms'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
@@ -22,28 +23,19 @@ const isEditOpen = ref(false)
   <template v-if="company">
     <div class="flex gap-4 mb-4 group">
       <!-- Logo -->
-      <div class="w-24 aspect-square rounded-lg overflow-hidden shrink-0 bg-muted border shadow-sm">
-        <img
-          v-if="company.logoFile"
-          :src="
-            getAttachmentUrl('companies', company.id, company.logoFile, {
-              width: 200,
-              height: 200
-            })
-          "
-          :alt="company.name"
-          class="size-full object-cover"
-        />
-        <div
-          v-else
-          class="size-full flex items-center justify-center"
-        >
-          <Icon
-            :icon="getEntityIcon('company')"
-            class="size-8 text-muted-foreground/50"
-          />
-        </div>
-      </div>
+      <CoverImage
+        :src="
+          company.logoFile
+            ? getAttachmentUrl('companies', company.id, company.logoFile, {
+                width: 200,
+                height: 200
+              })
+            : null
+        "
+        :alt="company.name"
+        :icon="getEntityIcon('company')"
+        class="w-24 aspect-square rounded-lg shrink-0 border shadow-sm"
+      />
 
       <!-- Basic info -->
       <div class="flex-1 min-w-0">

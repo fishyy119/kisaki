@@ -345,92 +345,74 @@ async function handleOpenPath() {
 
     <!-- Actions column -->
     <div class="relative flex items-center justify-end gap-0.5">
-      <Tooltip v-if="scannerState && issueCount > 0">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="text-warning hover:text-warning"
-            @click="isIssuesDialogOpen = true"
-          >
-            <Icon
-              icon="icon-[mdi--alert-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>问题 {{ issueCount }}</TooltipContent>
-      </Tooltip>
+      <Button
+        v-if="scannerState && issueCount > 0"
+        variant="ghost"
+        size="icon-sm"
+        class="text-warning hover:text-warning"
+        :tooltip="`问题 ${issueCount}`"
+        @click="isIssuesDialogOpen = true"
+      >
+        <Icon
+          icon="icon-[mdi--alert-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="primaryAction.disabled"
-            @click="primaryAction.handler"
-          >
-            <Icon
-              :icon="primaryAction.icon"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ primaryAction.tooltip }}</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :tooltip="primaryAction.tooltip"
+        :disabled="primaryAction.disabled"
+        @click="primaryAction.handler"
+      >
+        <Icon
+          :icon="primaryAction.icon"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip v-if="scannerState && isBusy">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="!canCancelScan"
-            class="hover:text-destructive"
-            @click="handleCancel"
-          >
-            <Icon
-              icon="icon-[mdi--stop]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ isCancelling ? '取消中' : '取消' }}</TooltipContent>
-      </Tooltip>
+      <Button
+        v-if="scannerState && isBusy"
+        variant="ghost"
+        size="icon-sm"
+        :tooltip="isCancelling ? '取消中' : '取消'"
+        :disabled="!canCancelScan"
+        class="hover:text-destructive"
+        @click="handleCancel"
+      >
+        <Icon
+          icon="icon-[mdi--stop]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="isBusy"
-            @click="isEditDialogOpen = true"
-          >
-            <Icon
-              icon="icon-[mdi--pencil-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>编辑</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="编辑"
+        :disabled="isBusy"
+        @click="isEditDialogOpen = true"
+      >
+        <Icon
+          icon="icon-[mdi--pencil-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="isBusy"
-            class="hover:text-destructive"
-            @click="isDeleteDialogOpen = true"
-          >
-            <Icon
-              icon="icon-[mdi--delete-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>删除</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="删除"
+        :disabled="isBusy"
+        class="hover:text-destructive"
+        @click="isDeleteDialogOpen = true"
+      >
+        <Icon
+          icon="icon-[mdi--delete-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 

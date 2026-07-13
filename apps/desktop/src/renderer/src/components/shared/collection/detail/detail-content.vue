@@ -17,7 +17,7 @@ import {
 } from '@renderer/components/ui/empty'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { useCollection, useRenderState } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
@@ -56,45 +56,16 @@ function handleItemClick(entity: EntityData) {
 </script>
 
 <template>
-  <!-- Loading state -->
-  <div
-    v-if="state === 'loading'"
-    class="h-full flex items-center justify-center"
-  >
-    <Spinner class="size-8" />
-  </div>
-
-  <!-- Error state -->
-  <div
-    v-else-if="state === 'error'"
-    class="h-full flex items-center justify-center"
-  >
-    <div class="text-center">
-      <Icon
-        icon="icon-[mdi--alert-circle-outline]"
-        class="size-12 text-destructive/50 mb-3 mx-auto"
-      />
-      <p class="text-lg font-medium">加载失败</p>
-      <p class="text-sm text-muted-foreground mt-1">
-        {{ error?.message ?? error }}
-      </p>
-    </div>
-  </div>
-
-  <!-- Not found state -->
-  <div
-    v-else-if="state === 'not-found'"
-    class="h-full flex items-center justify-center"
-  >
-    <div class="text-center">
-      <Icon
-        icon="icon-[mdi--alert-circle-outline]"
-        class="size-12 text-destructive/50 mb-3 mx-auto"
-      />
-      <p class="text-lg font-medium">合集不存在</p>
-      <p class="text-sm text-muted-foreground mt-1">该合集可能已被删除</p>
-    </div>
-  </div>
+  <!-- Loading / Error / Not Found -->
+  <StateView
+    v-if="state === 'loading' || state === 'error' || state === 'not-found'"
+    :state="state"
+    :error="error"
+    :icon="getEntityIcon('collection')"
+    title="合集不存在"
+    description="该合集可能已被删除"
+    class="h-full"
+  />
 
   <!-- Empty state -->
   <Empty

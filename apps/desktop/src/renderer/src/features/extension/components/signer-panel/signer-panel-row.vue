@@ -5,7 +5,6 @@ Boundary: pure row UI; emits selection and removal intents to the parent panel.
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 import { formatSignerDate, getSignerRepositoryLabel, shortSignerFingerprint } from './display'
 
@@ -46,38 +45,30 @@ const emit = defineEmits<Emits>()
     </div>
 
     <div class="flex items-center gap-1">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            @click="emit('details', props.signer)"
-          >
-            <Icon
-              icon="icon-[mdi--information-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>查看详情</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="查看详情"
+        @click="emit('details', props.signer)"
+      >
+        <Icon
+          icon="icon-[mdi--information-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="hover:text-destructive"
-            @click="emit('remove', props.signer)"
-          >
-            <Icon
-              icon="icon-[mdi--delete-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>撤销信任</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="撤销信任"
+        class="hover:text-destructive"
+        @click="emit('remove', props.signer)"
+      >
+        <Icon
+          icon="icon-[mdi--delete-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 </template>

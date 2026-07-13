@@ -21,8 +21,8 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import CompanyMediaSearchFormDialog from './media-search-form-dialog.vue'
 import CompanyMediaCropFormDialog from './media-crop-form-dialog.vue'
@@ -136,8 +136,11 @@ function handleClose() {
     <DialogContent class="max-w-2xl">
       <!-- Loading state -->
       <template v-if="isLoading || !company">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 

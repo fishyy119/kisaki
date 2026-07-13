@@ -8,7 +8,7 @@
 
 import { useScannerProvider } from '../composables'
 import { useRenderState } from '@renderer/composables'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
 import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
 
@@ -28,12 +28,11 @@ const state = useRenderState(isLoading, null, scanners)
     <!-- Main content - Table-like list -->
     <div class="flex-1 min-h-0">
       <!-- Loading -->
-      <div
+      <StateView
         v-if="state === 'loading'"
-        class="flex items-center justify-center h-full"
-      >
-        <Spinner class="size-8" />
-      </div>
+        state="loading"
+        class="h-full"
+      />
 
       <!-- Empty -->
       <ScannerEmptyState v-else-if="scanners.length === 0" />

@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { CharacterPersonsFormDialog } from '../../forms'
 
@@ -62,28 +63,27 @@ const personDialogOpen = computed({
 <template>
   <template v-if="character">
     <!-- Empty state -->
-    <div
+    <StateView
       v-if="!hasPersons"
-      class="flex flex-col items-center justify-center py-12 text-center"
+      state="empty"
+      icon="icon-[mdi--microphone-outline]"
+      description="暂无相关人物"
+      class="py-12"
     >
-      <Icon
-        icon="icon-[mdi--microphone-outline]"
-        class="size-12 text-muted-foreground/30 mb-3"
-      />
-      <p class="text-sm text-muted-foreground">暂无相关人物</p>
-      <Button
-        variant="outline"
-        size="sm"
-        class="mt-4"
-        @click="isEditOpen = true"
-      >
-        <Icon
-          icon="icon-[mdi--plus]"
-          class="size-4 mr-1.5"
-        />
-        添加人员
-      </Button>
-    </div>
+      <template #actions>
+        <Button
+          variant="outline"
+          size="sm"
+          @click="isEditOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--plus]"
+            class="size-4 mr-1.5"
+          />
+          添加人员
+        </Button>
+      </template>
+    </StateView>
 
     <!-- Content state -->
     <template v-else>

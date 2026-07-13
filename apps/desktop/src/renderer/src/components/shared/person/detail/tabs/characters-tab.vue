@@ -8,6 +8,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { usePerson } from '@renderer/composables/use-person'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonCharactersFormDialog } from '../../forms'
 
@@ -51,17 +52,17 @@ const characterDialogOpen = computed({
 <template>
   <template v-if="person">
     <!-- Empty state -->
-    <template v-if="!hasCharacters">
-      <div class="flex flex-col items-center justify-center py-12 text-center">
-        <Icon
-          :icon="getEntityIcon('character')"
-          class="size-12 text-muted-foreground/30 mb-3"
-        />
-        <p class="text-sm text-muted-foreground">暂无相关角色</p>
+    <StateView
+      v-if="!hasCharacters"
+      state="empty"
+      :icon="getEntityIcon('character')"
+      description="暂无相关角色"
+      class="py-12"
+    >
+      <template #actions>
         <Button
           variant="outline"
           size="sm"
-          class="mt-4"
           @click="editDialogOpen = true"
         >
           <Icon
@@ -70,8 +71,8 @@ const characterDialogOpen = computed({
           />
           添加角色
         </Button>
-      </div>
-    </template>
+      </template>
+    </StateView>
 
     <!-- Characters list -->
     <template v-else>

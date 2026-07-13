@@ -7,9 +7,9 @@
  */
 
 import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { scanners } from '@shared/db'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useEvent } from '@renderer/composables/use-event'
@@ -90,34 +90,16 @@ async function handleCancelAll() {
 </script>
 
 <template>
-  <header
-    class="flex items-center justify-between px-4 h-12 bg-surface border-b border-border shrink-0"
-  >
-    <div class="flex items-center gap-3">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        as-child
-      >
-        <RouterLink to="/library">
-          <Icon
-            icon="icon-[mdi--arrow-left]"
-            class="size-4"
-          />
-        </RouterLink>
-      </Button>
-      <Icon
-        icon="icon-[mdi--folder-search-outline]"
-        class="size-5"
-      />
-      <h1 class="text-base font-semibold">扫描器</h1>
-      <span class="text-xs text-muted-foreground">
-        {{ totalScanners ?? 0 }} 个扫描器
-        <template v-if="activeScannerStates > 0"> · {{ activeScannerStates }} 个运行中</template>
-      </span>
-    </div>
+  <PageHeader back-to="/library">
+    <PageHeaderTitle
+      title="扫描器"
+      icon="icon-[mdi--folder-search-outline]"
+    >
+      {{ totalScanners ?? 0 }} 个扫描器
+      <template v-if="activeScannerStates > 0"> · {{ activeScannerStates }} 个运行中</template>
+    </PageHeaderTitle>
 
-    <div class="flex items-center gap-2">
+    <template #actions>
       <Button
         size="sm"
         :disabled="isScanning"
@@ -144,7 +126,7 @@ async function handleCancelAll() {
       <Button
         variant="secondary"
         size="icon-sm"
-        title="扫描器设置"
+        tooltip="扫描器设置"
         :disabled="isScanning"
         @click="isSettingsDialogOpen = true"
       >
@@ -153,8 +135,8 @@ async function handleCancelAll() {
           class="size-4"
         />
       </Button>
-    </div>
-  </header>
+    </template>
+  </PageHeader>
 
   <!-- Dialogs -->
   <ScannerSettingsFormDialog

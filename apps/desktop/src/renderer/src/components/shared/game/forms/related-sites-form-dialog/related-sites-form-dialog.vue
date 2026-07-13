@@ -17,6 +17,7 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,9 +29,8 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import GameRelatedSitesItem from './related-site-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import GameRelatedSitesItemFormDialog from './related-site-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -153,8 +153,11 @@ function handleCancel() {
     <DialogContent class="max-w-lg">
       <!-- Loading state -->
       <template v-if="isLoading || !game">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -171,19 +174,26 @@ function handleCancel() {
             >
               暂无相关链接，点击下方按钮添加
             </p>
-            <GameRelatedSitesItem
+            <ListItem
               v-for="(site, index) in sites"
               v-else
               :key="index"
-              :label="site.label"
-              :url="site.url"
-              :is-first="index === 0"
-              :is-last="index === sites.length - 1"
-              @move-up="handleMoveUp(index)"
-              @move-down="handleMoveDown(index)"
-              @edit="handleEditClick(index)"
-              @delete="deleteIndex = index"
-            />
+              icon="icon-[mdi--link-variant]"
+              :title="site.label"
+              :description="site.url"
+            >
+              <template #actions>
+                <ListItemActions
+                  movable
+                  :is-first="index === 0"
+                  :is-last="index === sites.length - 1"
+                  @move-up="handleMoveUp(index)"
+                  @move-down="handleMoveDown(index)"
+                  @edit="handleEditClick(index)"
+                  @delete="deleteIndex = index"
+                />
+              </template>
+            </ListItem>
           </div>
         </DialogBody>
         <DialogFooter class="flex justify-between">

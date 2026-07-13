@@ -18,12 +18,13 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
-import GameCompaniesItem from './company-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import GameCompaniesItemFormDialog from './company-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -129,6 +130,14 @@ const groupedCompanies = computed(() => {
 
 // Existing company IDs for excluding from select
 const existingCompanyIds = computed(() => items.value.map((item) => item.companyId))
+
+// Pair each link with its spoiler-aware display texts
+function withSpoiler(links: CompanyLinkItem[]) {
+  return links.map((link) => ({
+    link,
+    spoiler: getSpoilerDisplay(link.companyName, link.note, link.isSpoiler, spoilersRevealed.value)
+  }))
+}
 
 // Delete dialog state
 const deleteDialogOpen = computed({
@@ -304,8 +313,11 @@ function handleRevealSpoilersConfirm() {
     <DialogContent class="max-w-lg">
       <!-- Loading state -->
       <template v-if="isLoading || !results">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -332,20 +344,30 @@ function handleRevealSpoilersConfirm() {
                     {{ COMPANY_TYPE_LABELS[type] }}
                   </h4>
                   <div class="space-y-1">
-                    <GameCompaniesItem
-                      v-for="(link, index) in groupedCompanies[type]"
+                    <ListItem
+                      v-for="({ link, spoiler }, index) in withSpoiler(groupedCompanies[type])"
                       :key="link.id"
-                      :company-name="link.companyName"
-                      :note="link.note"
-                      :is-spoiler="link.isSpoiler"
-                      :spoilers-revealed="spoilersRevealed"
-                      :is-first="index === 0"
-                      :is-last="index === groupedCompanies[type].length - 1"
-                      @move-up="handleMoveUp(type, index)"
-                      @move-down="handleMoveDown(type, index)"
-                      @edit="handleEdit(link)"
-                      @delete="deleteId = link.id"
-                    />
+                      :icon="
+                        spoiler.hidden ? 'icon-[mdi--eye-off-outline]' : getEntityIcon('company')
+                      "
+                      :title="spoiler.name"
+                      :description="spoiler.note"
+                    >
+                      <template
+                        v-if="!spoiler.hidden"
+                        #actions
+                      >
+                        <ListItemActions
+                          movable
+                          :is-first="index === 0"
+                          :is-last="index === groupedCompanies[type].length - 1"
+                          @move-up="handleMoveUp(type, index)"
+                          @move-down="handleMoveDown(type, index)"
+                          @edit="handleEdit(link)"
+                          @delete="deleteId = link.id"
+                        />
+                      </template>
+                    </ListItem>
                   </div>
                 </div>
               </template>

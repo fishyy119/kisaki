@@ -30,7 +30,6 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { games, settings } from '@shared/db'
 import type { ScannerRunIssueType } from '@shared/scanner'
 import ScannerResultFixDialog from './scanner-result-fix-dialog.vue'
@@ -351,58 +350,46 @@ useEvent('db.updated', (payload) => {
                 </TableCell>
                 <TableCell class="w-28">
                   <div class="flex items-center justify-end gap-0.5">
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          class="text-muted-foreground hover:text-foreground"
-                          @click="handleOpenPath(row.issue.path)"
-                        >
-                          <Icon
-                            icon="icon-[mdi--folder-open-outline]"
-                            class="size-4"
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>打开路径</TooltipContent>
-                    </Tooltip>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="text-muted-foreground hover:text-foreground"
+                      tooltip="打开路径"
+                      @click="handleOpenPath(row.issue.path)"
+                    >
+                      <Icon
+                        icon="icon-[mdi--folder-open-outline]"
+                        class="size-4"
+                      />
+                    </Button>
 
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          class="text-muted-foreground hover:text-foreground"
-                          :disabled="!row.issue.extractedName"
-                          @click="handleAddToExclusion(row)"
-                        >
-                          <Icon
-                            icon="icon-[mdi--folder-remove-outline]"
-                            class="size-4"
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>加入扫描排除列表</TooltipContent>
-                    </Tooltip>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="text-muted-foreground hover:text-foreground"
+                      tooltip="加入扫描排除列表"
+                      :disabled="!row.issue.extractedName"
+                      @click="handleAddToExclusion(row)"
+                    >
+                      <Icon
+                        icon="icon-[mdi--folder-remove-outline]"
+                        class="size-4"
+                      />
+                    </Button>
 
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          class="text-muted-foreground hover:text-foreground"
-                          :disabled="!row.issue.fixable"
-                          @click="handleFixIssue(row)"
-                        >
-                          <Icon
-                            icon="icon-[mdi--database-search-outline]"
-                            class="size-4"
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>修正并重新刮削</TooltipContent>
-                    </Tooltip>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="text-muted-foreground hover:text-foreground"
+                      tooltip="修正并重新刮削"
+                      :disabled="!row.issue.fixable"
+                      @click="handleFixIssue(row)"
+                    >
+                      <Icon
+                        icon="icon-[mdi--database-search-outline]"
+                        class="size-4"
+                      />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

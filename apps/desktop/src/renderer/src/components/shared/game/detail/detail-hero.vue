@@ -14,6 +14,7 @@ import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatDuration, formatRelativeTime } from '@renderer/utils/datetime'
 import { formatStatus, getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
+import { CoverImage } from '@renderer/components/ui/cover-image'
 import {
   GameNameFormDialog,
   GameOriginalNameFormDialog,
@@ -53,28 +54,16 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
     <!-- Game info section -->
     <div class="flex gap-4 mb-4">
       <!-- Cover -->
-      <div class="w-28 aspect-[3/4] rounded-lg overflow-hidden shrink-0 bg-muted border shadow-sm">
-        <img
-          v-if="game.coverFile"
-          :src="
-            getAttachmentUrl('games', game.id, game.coverFile, {
-              width: 300,
-              height: 400
-            })
-          "
-          :alt="game.name"
-          class="size-full object-cover"
-        />
-        <div
-          v-else
-          class="size-full flex items-center justify-center"
-        >
-          <Icon
-            :icon="getEntityIcon('game')"
-            class="size-8 text-muted-foreground/50"
-          />
-        </div>
-      </div>
+      <CoverImage
+        :src="
+          game.coverFile
+            ? getAttachmentUrl('games', game.id, game.coverFile, { width: 300, height: 400 })
+            : null
+        "
+        :alt="game.name"
+        :icon="getEntityIcon('game')"
+        class="w-28 aspect-[3/4] rounded-lg shrink-0 border shadow-sm"
+      />
 
       <!-- Info -->
       <div class="flex-1 min-w-0 flex flex-col justify-between">

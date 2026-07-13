@@ -18,11 +18,11 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { notify } from '@renderer/core/notify'
-import CompanyRelatedSitesItem from './related-site-item.vue'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import CompanyRelatedSitesItemFormDialog from './related-site-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
 
@@ -123,8 +123,11 @@ const deleteDialogOpen = computed({
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <template v-if="isLoading || !company">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 
@@ -140,14 +143,20 @@ const deleteDialogOpen = computed({
             >
               暂无相关链接，点击下方按钮添加
             </p>
-            <CompanyRelatedSitesItem
+            <ListItem
               v-for="(site, index) in sites"
               :key="index"
-              :site="site"
-              :index="index"
-              @edit="handleEditClick"
-              @delete="(i) => (deleteIndex = i)"
-            />
+              icon="icon-[mdi--link-variant]"
+              :title="site.label"
+              :description="site.url"
+            >
+              <template #actions>
+                <ListItemActions
+                  @edit="handleEditClick(index)"
+                  @delete="deleteIndex = index"
+                />
+              </template>
+            </ListItem>
           </div>
         </DialogBody>
         <DialogFooter class="flex justify-between">

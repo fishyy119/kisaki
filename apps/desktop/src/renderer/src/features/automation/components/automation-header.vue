@@ -4,6 +4,7 @@ Automation Header renders top-level page actions.
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { cn } from '@renderer/utils/cn'
 
 interface Props {
@@ -24,28 +25,22 @@ const emit = defineEmits<Emits>()
 </script>
 
 <template>
-  <header
-    class="flex h-12 shrink-0 items-center justify-between border-b border-border bg-surface px-4"
-  >
-    <div class="flex min-w-0 items-center gap-3">
-      <Icon
-        icon="icon-[mdi--timer-outline]"
-        class="size-5 shrink-0"
-      />
-      <h1 class="truncate text-base font-semibold">自动化</h1>
-      <span class="shrink-0 text-xs text-muted-foreground">
-        {{ props.totalAutomations }} 个自动化
-        <template v-if="props.runningAutomations > 0">
-          · {{ props.runningAutomations }} 个运行中</template
-        >
-      </span>
-    </div>
+  <PageHeader>
+    <PageHeaderTitle
+      title="自动化"
+      icon="icon-[mdi--timer-outline]"
+    >
+      {{ props.totalAutomations }} 个自动化
+      <template v-if="props.runningAutomations > 0">
+        · {{ props.runningAutomations }} 个运行中</template
+      >
+    </PageHeaderTitle>
 
-    <div class="flex items-center gap-2">
+    <template #actions>
       <Button
         variant="secondary"
         size="icon-sm"
-        title="刷新"
+        tooltip="刷新"
         :disabled="props.refreshing"
         @click="emit('refresh')"
       >
@@ -64,6 +59,6 @@ const emit = defineEmits<Emits>()
         />
         添加自动化
       </Button>
-    </div>
-  </header>
+    </template>
+  </PageHeader>
 </template>

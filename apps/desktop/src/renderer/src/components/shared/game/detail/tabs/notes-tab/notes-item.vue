@@ -5,7 +5,6 @@
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import type { GameNote } from '@shared/db'
 import { formatDate } from '@renderer/utils/datetime'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
@@ -60,88 +59,68 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center gap-1 shrink-0">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            @click="emit('open')"
-          >
-            <Icon
-              icon="icon-[mdi--open-in-new]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>打开</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="打开"
+        @click="emit('open')"
+      >
+        <Icon
+          icon="icon-[mdi--open-in-new]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="!props.canMoveUp"
-            @click="emit('moveUp')"
-          >
-            <Icon
-              icon="icon-[mdi--chevron-up]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>上移</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="上移"
+        :disabled="!props.canMoveUp"
+        @click="emit('moveUp')"
+      >
+        <Icon
+          icon="icon-[mdi--chevron-up]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="!props.canMoveDown"
-            @click="emit('moveDown')"
-          >
-            <Icon
-              icon="icon-[mdi--chevron-down]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>下移</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="下移"
+        :disabled="!props.canMoveDown"
+        @click="emit('moveDown')"
+      >
+        <Icon
+          icon="icon-[mdi--chevron-down]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            @click="emit('edit')"
-          >
-            <Icon
-              icon="icon-[mdi--pencil-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>编辑</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="编辑"
+        @click="emit('edit')"
+      >
+        <Icon
+          icon="icon-[mdi--pencil-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="hover:text-destructive"
-            @click="emit('delete')"
-          >
-            <Icon
-              icon="icon-[mdi--delete-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>删除</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="删除"
+        class="hover:text-destructive"
+        @click="emit('delete')"
+      >
+        <Icon
+          icon="icon-[mdi--delete-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 </template>

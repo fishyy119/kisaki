@@ -10,6 +10,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { GamePersonsFormDialog } from '../../forms'
 
@@ -77,17 +78,17 @@ const personDialogOpen = computed({
 <template>
   <template v-if="game">
     <!-- Empty state -->
-    <template v-if="!hasPersons">
-      <div class="flex flex-col items-center justify-center py-12 text-center">
-        <Icon
-          :icon="getEntityIcon('person')"
-          class="size-12 text-muted-foreground/30 mb-3"
-        />
-        <p class="text-sm text-muted-foreground">暂无人物信息</p>
+    <StateView
+      v-if="!hasPersons"
+      state="empty"
+      :icon="getEntityIcon('person')"
+      description="暂无人物信息"
+      class="py-12"
+    >
+      <template #actions>
         <Button
           variant="outline"
           size="sm"
-          class="mt-4"
           @click="editDialogOpen = true"
         >
           <Icon
@@ -96,8 +97,8 @@ const personDialogOpen = computed({
           />
           添加人员
         </Button>
-      </div>
-    </template>
+      </template>
+    </StateView>
 
     <!-- Persons list -->
     <template v-else>

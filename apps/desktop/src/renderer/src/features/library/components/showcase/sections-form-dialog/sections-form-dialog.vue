@@ -21,8 +21,11 @@ import {
 } from '@renderer/components/ui/dialog'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
-import LibraryShowcaseSectionsItem from './section-item.vue'
+import { Icon } from '@renderer/components/ui/icon'
+import { StateView } from '@renderer/components/ui/state-view'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { cn } from '@renderer/utils/cn'
+import { getEntityIcon } from '@renderer/utils/format'
 import LibraryShowcaseSectionItemFormDialog from './section-item-form-dialog.vue'
 import LibraryShowcaseSectionPresetsDialog from './section-presets-dialog.vue'
 import { notify } from '@renderer/core/notify'
@@ -33,7 +36,12 @@ import type {
   SectionOpenMode,
   SortDirection
 } from '@shared/db'
-import type { ContentEntityType } from '@shared/common'
+import type { AllEntityType, ContentEntityType } from '@shared/common'
+
+const LAYOUT_LABELS: Record<string, string> = {
+  horizontal: '横向滚动',
+  grid: '网格'
+}
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Library')
@@ -246,9 +254,10 @@ function handleClose() {
     v-model:open="open"
   >
     <DialogContent class="max-w-2xl">
-      <div class="flex items-center justify-center py-12">
-        <Spinner class="size-6" />
-      </div>
+      <StateView
+        state="loading"
+        class="py-12"
+      />
     </DialogContent>
   </Dialog>
 
@@ -268,19 +277,41 @@ function handleClose() {
               </p>
             </template>
             <template v-else>
-              <LibraryShowcaseSectionsItem
+              <ListItem
                 v-for="(item, index) in items"
                 :key="item.id"
-                :item="item"
-                :index="index"
-                :is-first="index === 0"
-                :is-last="index === items.length - 1"
-                @move-up="handleMoveUp(index)"
-                @move-down="handleMoveDown(index)"
-                @toggle-visibility="handleToggleVisibility(index)"
-                @edit="handleEdit(item)"
-                @delete="deleteIndex = index"
-              />
+                :icon="getEntityIcon(item.entityType as AllEntityType) || 'icon-[mdi--view-grid]'"
+                :title="item.name || '未命名'"
+                :description="LAYOUT_LABELS[item.layout] || item.layout"
+                :class="cn(!item.isVisible && 'opacity-50')"
+              >
+                <template #actions>
+                  <ListItemActions
+                    movable
+                    :is-first="index === 0"
+                    :is-last="index === items.length - 1"
+                    @move-up="handleMoveUp(index)"
+                    @move-down="handleMoveDown(index)"
+                    @edit="handleEdit(item)"
+                    @delete="deleteIndex = index"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="size-7"
+                      :title="item.isVisible ? '隐藏' : '显示'"
+                      @click="handleToggleVisibility(index)"
+                    >
+                      <Icon
+                        :icon="
+                          item.isVisible ? 'icon-[mdi--eye-outline]' : 'icon-[mdi--eye-off-outline]'
+                        "
+                        class="size-4"
+                      />
+                    </Button>
+                  </ListItemActions>
+                </template>
+              </ListItem>
             </template>
           </div>
         </DialogBody>

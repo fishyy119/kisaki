@@ -245,22 +245,18 @@ async function handleCopyProfileId() {
                     readonly
                     class="font-mono text-xs"
                   />
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        @click="handleCopyProfileId"
-                      >
-                        <Icon
-                          icon="icon-[mdi--content-copy]"
-                          class="size-4"
-                        />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>复制配置 ID</TooltipContent>
-                  </Tooltip>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    tooltip="复制配置 ID"
+                    @click="handleCopyProfileId"
+                  >
+                    <Icon
+                      icon="icon-[mdi--content-copy]"
+                      class="size-4"
+                    />
+                  </Button>
                 </div>
               </FieldContent>
             </Field>

@@ -3,8 +3,7 @@ Automation Page owns automation data, filters, and actions.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -339,46 +338,28 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
     />
 
     <div class="min-h-0 flex-1">
-      <div
-        v-if="state === 'loading'"
-        class="flex h-full items-center justify-center"
-      >
-        <Spinner class="size-8" />
-      </div>
+      <StateView
+        v-if="state === 'loading' || state === 'error'"
+        :state="state"
+        :error="error"
+        class="h-full"
+      />
 
-      <div
-        v-else-if="state === 'error'"
-        class="flex h-full flex-col items-center justify-center text-muted-foreground"
-      >
-        <Icon
-          icon="icon-[mdi--alert-circle-outline]"
-          class="mb-3 size-12 opacity-40"
-        />
-        <div class="text-sm font-medium">自动化加载失败</div>
-        <div class="mt-1 text-xs">{{ error }}</div>
-      </div>
-
-      <div
+      <StateView
         v-else-if="automationList.length === 0"
-        class="flex h-full flex-col items-center justify-center text-muted-foreground"
-      >
-        <Icon
-          icon="icon-[mdi--timer-outline]"
-          class="mb-3 size-16 opacity-30"
-        />
-        <div class="text-sm font-medium">暂无自动化</div>
-      </div>
+        state="empty"
+        icon="icon-[mdi--timer-outline]"
+        description="暂无自动化"
+        class="h-full"
+      />
 
-      <div
+      <StateView
         v-else-if="filteredAutomations.length === 0"
-        class="flex h-full flex-col items-center justify-center text-muted-foreground"
-      >
-        <Icon
-          icon="icon-[mdi--filter-off-outline]"
-          class="mb-3 size-16 opacity-30"
-        />
-        <div class="text-sm font-medium">没有匹配的自动化</div>
-      </div>
+        state="empty"
+        icon="icon-[mdi--filter-off-outline]"
+        description="没有匹配的自动化"
+        class="h-full"
+      />
 
       <div
         v-else

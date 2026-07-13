@@ -10,6 +10,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
 import { GameCompaniesFormDialog } from '../../forms'
 
@@ -66,17 +67,17 @@ const companyDialogOpen = computed({
 <template>
   <template v-if="game">
     <!-- Empty state -->
-    <template v-if="!hasCompanies">
-      <div class="flex flex-col items-center justify-center py-12 text-center">
-        <Icon
-          :icon="getEntityIcon('company')"
-          class="size-12 text-muted-foreground/30 mb-3"
-        />
-        <p class="text-sm text-muted-foreground">暂无公司信息</p>
+    <StateView
+      v-if="!hasCompanies"
+      state="empty"
+      :icon="getEntityIcon('company')"
+      description="暂无公司信息"
+      class="py-12"
+    >
+      <template #actions>
         <Button
           variant="outline"
           size="sm"
-          class="mt-4"
           @click="editDialogOpen = true"
         >
           <Icon
@@ -85,8 +86,8 @@ const companyDialogOpen = computed({
           />
           添加公司
         </Button>
-      </div>
-    </template>
+      </template>
+    </StateView>
 
     <!-- Companies list -->
     <template v-else>

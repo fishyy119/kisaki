@@ -16,11 +16,11 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Field, FieldLabel, FieldContent, FieldDescription } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
@@ -112,8 +112,11 @@ function handleCancel() {
     <DialogContent class="max-w-md">
       <!-- Loading state -->
       <template v-if="isLoading || !character">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 

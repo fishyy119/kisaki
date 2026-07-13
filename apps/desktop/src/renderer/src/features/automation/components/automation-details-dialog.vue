@@ -13,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import type { Automation, AutomationRunHistoryRecord } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import {
@@ -244,22 +243,19 @@ function openRunResult(record: AutomationRunHistoryRecord) {
                   <div class="min-w-0 flex-1 truncate text-muted-foreground">
                     {{ formatRunResultPreview(row.record) }}
                   </div>
-                  <Tooltip v-if="hasRunResult(row.record)">
-                    <TooltipTrigger as-child>
-                      <Button
-                        size="icon-xs"
-                        variant="ghost"
-                        class="shrink-0"
-                        @click="openRunResult(row.record)"
-                      >
-                        <Icon
-                          icon="icon-[mdi--text-box-search-outline]"
-                          class="size-3.5"
-                        />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>查看完整结果</TooltipContent>
-                  </Tooltip>
+                  <Button
+                    v-if="hasRunResult(row.record)"
+                    size="icon-xs"
+                    variant="ghost"
+                    class="shrink-0"
+                    tooltip="查看完整结果"
+                    @click="openRunResult(row.record)"
+                  >
+                    <Icon
+                      icon="icon-[mdi--text-box-search-outline]"
+                      class="size-3.5"
+                    />
+                  </Button>
                 </div>
               </div>
             </div>

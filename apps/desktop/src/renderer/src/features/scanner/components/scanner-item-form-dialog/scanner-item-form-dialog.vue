@@ -22,6 +22,7 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldContent, FieldGroup } from '@renderer/components/ui/field'
@@ -39,7 +40,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { CollectionSelect } from '@renderer/components/shared/collection'
 import { ScraperProfileSelect } from '@renderer/components/shared/scraper'
 import ScannerTestDialog from './scanner-item-test-dialog.vue'
@@ -283,8 +283,11 @@ async function openLink(link: { href: string }): Promise<void> {
       </DialogHeader>
 
       <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-8">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-8"
+          />
         </DialogBody>
       </template>
 

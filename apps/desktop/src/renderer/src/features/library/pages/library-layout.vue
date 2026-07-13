@@ -14,6 +14,7 @@ import { RouterView } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { ResizableHandle, ResizableLayout, ResizablePanel } from '@renderer/components/ui/resizable'
 import { useEvent } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
@@ -53,18 +54,13 @@ onUnmounted(() => {
 
 <template>
   <div class="h-full flex flex-col">
-    <header
-      class="shrink-0 flex items-center justify-between px-4 h-12 border-b border-border bg-surface"
-    >
-      <div class="flex items-center gap-3">
-        <Icon
-          icon="icon-[mdi--bookshelf]"
-          class="size-5"
-        />
-        <h1 class="text-base font-semibold">媒体库</h1>
-      </div>
+    <PageHeader>
+      <PageHeaderTitle
+        title="媒体库"
+        icon="icon-[mdi--bookshelf]"
+      />
 
-      <div class="flex items-center gap-2">
+      <template #actions>
         <Button
           variant="secondary"
           size="sm"
@@ -81,8 +77,8 @@ onUnmounted(() => {
             Ctrl F
           </kbd>
         </Button>
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <div class="flex-1 min-h-0">
       <ResizableLayout

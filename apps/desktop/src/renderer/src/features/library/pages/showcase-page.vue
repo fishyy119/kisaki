@@ -9,8 +9,9 @@
 
 import { ref, computed, provide } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
+import { StateView } from '@renderer/components/ui/state-view'
 import { useRenderState } from '@renderer/composables'
 import { useShowcaseSections } from '../composables'
 import {
@@ -37,18 +38,13 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
 <template>
   <div class="h-full flex flex-col">
     <!-- Header -->
-    <header
-      class="shrink-0 flex items-center justify-between px-4 h-12 border-b border-border bg-surface"
-    >
-      <div class="flex items-center gap-3">
-        <Icon
-          icon="icon-[mdi--view-dashboard-outline]"
-          class="size-5"
-        />
-        <h1 class="text-base font-semibold">陈列柜</h1>
-      </div>
+    <PageHeader>
+      <PageHeaderTitle
+        title="陈列柜"
+        icon="icon-[mdi--view-dashboard-outline]"
+      />
 
-      <div class="flex items-center gap-2">
+      <template #actions>
         <Button
           variant="ghost"
           size="sm"
@@ -60,16 +56,15 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
           />
           管理区块
         </Button>
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- Loading state -->
-    <div
+    <StateView
       v-if="state === 'loading'"
-      class="h-full flex items-center justify-center"
-    >
-      <Spinner class="size-8" />
-    </div>
+      state="loading"
+      class="h-full"
+    />
 
     <!-- Content -->
     <div

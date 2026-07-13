@@ -12,7 +12,8 @@ import { cva } from 'class-variance-authority'
 import { cn } from '@renderer/utils/cn'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Badge } from '@renderer/components/ui/badge'
-import { Button, type ButtonVariants } from '@renderer/components/ui/button'
+import type { ButtonVariants } from '@renderer/components/ui/button'
+import { MediaCardButton, type MediaCardSize } from '@renderer/components/ui/media-card'
 import { TagContextMenu } from './menus'
 import type { Tag as TagType } from '@shared/db'
 
@@ -52,43 +53,11 @@ const iconVariants = cva('', {
   defaultVariants: { size: 'md' }
 })
 
-const buttonCardVariants = cva('', {
-  variants: {
-    buttonVariant: {
-      default: '',
-      destructive: '',
-      outline: '',
-      secondary: '',
-      ghost: '',
-      link: 'h-auto p-0 shrink truncate',
-      text: '',
-      input: ''
-    },
-    buttonSize: {
-      default: '',
-      sm: '',
-      xs: '',
-      lg: '',
-      icon: '',
-      'icon-sm': '',
-      'icon-xs': '',
-      'icon-lg': ''
-    }
-  },
-  compoundVariants: [
-    { buttonVariant: 'secondary', buttonSize: 'sm', class: 'h-auto py-1 px-2' },
-    { buttonVariant: 'ghost', buttonSize: 'sm', class: 'h-auto py-1 px-2' }
-  ],
-  defaultVariants: { buttonVariant: 'secondary', buttonSize: 'sm' }
-})
-
-type CardSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-
 interface Props {
   tag: TagType
   variant?: 'card' | 'button'
   // Card variant props
-  size?: CardSize
+  size?: MediaCardSize
   badgeLabel?: string
   // Button variant props
   buttonVariant?: ButtonVariants['variant']
@@ -113,7 +82,7 @@ const emit = defineEmits<{
 
 <template>
   <TagContextMenu :tag-id="props.tag.id">
-    <!-- Card Variant -->
+    <!-- Card Variant: compact chip -->
     <div
       v-if="props.variant === 'card'"
       :class="cn(cardVariants({ size: props.size, clickable: props.clickable }), props.class)"
@@ -133,24 +102,13 @@ const emit = defineEmits<{
       </Badge>
     </div>
 
-    <!-- Button Variant -->
-    <Button
+    <MediaCardButton
       v-else
+      :name="props.tag.name"
       :variant="props.buttonVariant"
       :size="props.buttonSize"
-      :class="
-        cn(
-          buttonCardVariants({
-            buttonVariant: props.buttonVariant,
-            buttonSize: props.buttonSize
-          }),
-          props.class
-        )
-      "
-      :title="props.tag.name"
+      :class="props.class"
       @click="emit('click')"
-    >
-      {{ props.tag.name }}
-    </Button>
+    />
   </TagContextMenu>
 </template>

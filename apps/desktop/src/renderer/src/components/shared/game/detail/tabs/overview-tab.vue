@@ -11,10 +11,8 @@ import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
 import { formatDate } from '@renderer/utils/datetime'
-import { Button } from '@renderer/components/ui/button'
-import { SectionHeader } from '@renderer/components/ui/section-header'
+import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
-import { VirtualHorizontalScroll } from '@renderer/components/ui/virtual'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
@@ -28,16 +26,6 @@ import {
   GameCompaniesFormDialog,
   GameRelatedSitesFormDialog
 } from '../../forms'
-
-// VirtualHorizontalScroll ref type
-type VirtualHorizontalScrollRef = {
-  scrollLeft: () => void
-  scrollRight: () => void
-  canScrollLeft: { value: boolean }
-  canScrollRight: { value: boolean }
-}
-const charactersScrollRef = ref<VirtualHorizontalScrollRef>()
-const charactersScrollState = ref({ canScrollLeft: false, canScrollRight: false })
 
 // =============================================================================
 // Constants
@@ -160,7 +148,6 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
   editDialogs.value[dialog] = true
 }
 
-/** Parse HTML description (simple version without html-react-parser) */
 // Entity dialog computed getters
 const characterDialogOpen = computed({
   get: () => openCharacterId.value !== null,
@@ -196,101 +183,44 @@ const tagDialogOpen = computed({
     <div class="grid md:grid-cols-[3fr_1fr] grid-cols-1 gap-8">
       <!-- Left column: Description, Characters, Tags -->
       <div class="space-y-6 min-w-0">
-        <!-- Description -->
-        <section>
-          <SectionHeader
-            title="简介"
-            editable
-            @edit="openEditDialog('description')"
-          />
-          <MarkdownContent
-            v-if="game.description"
-            :content="game.description"
-          />
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无简介
-          </p>
-        </section>
+        <Section
+          title="简介"
+          editable
+          :empty="!game.description"
+          empty-text="暂无简介"
+          @edit="openEditDialog('description')"
+        >
+          <MarkdownContent :content="game.description!" />
+        </Section>
 
-        <!-- Characters -->
-        <section>
-          <SectionHeader
-            title="角色"
-            editable
-            @edit="openEditDialog('characters')"
-          >
-            <template
-              v-if="sortedCharacters.length > 0"
-              #actions
-            >
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                class="size-6"
-                :disabled="!charactersScrollState.canScrollLeft"
-                @click="charactersScrollRef?.scrollLeft()"
-              >
-                <Icon
-                  icon="icon-[mdi--chevron-left]"
-                  class="size-4"
-                />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                class="size-6"
-                :disabled="!charactersScrollState.canScrollRight"
-                @click="charactersScrollRef?.scrollRight()"
-              >
-                <Icon
-                  icon="icon-[mdi--chevron-right]"
-                  class="size-4"
-                />
-              </Button>
-            </template>
-          </SectionHeader>
-          <template v-if="sortedCharacters.length > 0">
-            <VirtualHorizontalScroll
-              ref="charactersScrollRef"
-              :items="sortedCharacters"
-              :get-key="(item) => item.link.id"
-              class="flex gap-3 pr-0.5"
-              @scroll-state-change="charactersScrollState = $event"
-            >
-              <template #item="{ item }">
-                <CharacterCard
-                  v-if="item.character"
-                  :character="item.character"
-                  size="sm"
-                  align="left"
-                  :badge-label="item.roleLabel"
-                  @click="openCharacterId = item.character.id"
-                />
-              </template>
-            </VirtualHorizontalScroll>
+        <SectionScroll
+          title="角色"
+          editable
+          :items="sortedCharacters"
+          :get-key="(item) => item.link.id"
+          empty-text="暂无角色"
+          @edit="openEditDialog('characters')"
+        >
+          <template #item="{ item }">
+            <CharacterCard
+              v-if="item.character"
+              :character="item.character"
+              size="sm"
+              align="left"
+              :badge-label="item.roleLabel"
+              @click="openCharacterId = item.character.id"
+            />
           </template>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无角色
-          </p>
-        </section>
+        </SectionScroll>
 
-        <!-- Tags -->
-        <section>
-          <SectionHeader
-            title="标签"
-            editable
-            @edit="openEditDialog('tags')"
-          />
-          <div
-            v-if="hasTags"
-            class="flex flex-wrap gap-1"
-          >
+        <Section
+          title="标签"
+          editable
+          :empty="!hasTags"
+          empty-text="暂无标签"
+          @edit="openEditDialog('tags')"
+        >
+          <div class="flex flex-wrap gap-1">
             <template
               v-for="tagLink in tags"
               :key="tagLink.id"
@@ -304,43 +234,32 @@ const tagDialogOpen = computed({
               />
             </template>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无标签
-          </p>
-        </section>
+        </Section>
       </div>
 
       <!-- Right column: Details, Staff, Companies, Links -->
       <div class="space-y-6 min-w-0">
-        <!-- Basic details -->
-        <section>
-          <SectionHeader
-            title="详细信息"
-            editable
-            @edit="openEditDialog('details')"
-          />
+        <Section
+          title="详细信息"
+          editable
+          @edit="openEditDialog('details')"
+        >
           <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
             <dt class="text-muted-foreground">发布日期</dt>
             <dd>{{ formatDate(game.releaseDate) }}</dd>
             <dt class="text-muted-foreground">添加日期</dt>
             <dd>{{ formatDate(game.createdAt) }}</dd>
           </dl>
-        </section>
+        </Section>
 
-        <!-- Staff (simplified) -->
-        <section>
-          <SectionHeader
-            title="人物"
-            editable
-            @edit="openEditDialog('staff')"
-          />
-          <div
-            v-if="hasPersons"
-            class="space-y-2 text-sm"
-          >
+        <Section
+          title="人物"
+          editable
+          :empty="!hasPersons"
+          empty-text="暂无人物"
+          @edit="openEditDialog('staff')"
+        >
+          <div class="space-y-2 text-sm">
             <template
               v-for="type in PERSON_TYPE_ORDER"
               :key="type"
@@ -374,25 +293,16 @@ const tagDialogOpen = computed({
               </div>
             </template>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无人物
-          </p>
-        </section>
+        </Section>
 
-        <!-- Companies -->
-        <section>
-          <SectionHeader
-            title="公司"
-            editable
-            @edit="openEditDialog('companies')"
-          />
-          <div
-            v-if="hasCompanies"
-            class="space-y-2 text-sm"
-          >
+        <Section
+          title="公司"
+          editable
+          :empty="!hasCompanies"
+          empty-text="暂无公司信息"
+          @edit="openEditDialog('companies')"
+        >
+          <div class="space-y-2 text-sm">
             <template
               v-for="type in COMPANY_TYPE_ORDER"
               :key="type"
@@ -428,25 +338,16 @@ const tagDialogOpen = computed({
               </div>
             </template>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无公司信息
-          </p>
-        </section>
+        </Section>
 
-        <!-- Related sites -->
-        <section>
-          <SectionHeader
-            title="相关链接"
-            editable
-            @edit="openEditDialog('relatedSites')"
-          />
-          <div
-            v-if="hasRelatedSites"
-            class="flex flex-col gap-1.5"
-          >
+        <Section
+          title="相关链接"
+          editable
+          :empty="!hasRelatedSites"
+          empty-text="暂无相关链接"
+          @edit="openEditDialog('relatedSites')"
+        >
+          <div class="flex flex-col gap-1.5">
             <a
               v-for="(site, index) in game.relatedSites"
               :key="index"
@@ -462,13 +363,7 @@ const tagDialogOpen = computed({
               {{ site.label }}
             </a>
           </div>
-          <p
-            v-else
-            class="text-xs text-muted-foreground italic"
-          >
-            暂无相关链接
-          </p>
-        </section>
+        </Section>
       </div>
     </div>
 

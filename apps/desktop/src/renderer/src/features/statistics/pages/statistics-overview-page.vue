@@ -8,8 +8,8 @@
 <script setup lang="ts">
 import { useStatistics } from '../composables'
 import { useRenderState } from '@renderer/composables'
-import { Spinner } from '@renderer/components/ui/spinner'
-import { SectionHeader } from '@renderer/components/ui/section-header'
+import { StateView } from '@renderer/components/ui/state-view'
+import { Section } from '@renderer/components/ui/section'
 import {
   StatisticsStatsSummary,
   StatisticsActivityHeatmap,
@@ -30,119 +30,124 @@ const state = useRenderState(isLoading, error, sessions)
 </script>
 
 <template>
-  <!-- Loading -->
-  <div
-    v-if="state === 'loading'"
-    class="flex items-center justify-center h-full"
-  >
-    <Spinner class="size-8" />
-  </div>
-
-  <!-- Error -->
-  <div
-    v-else-if="state === 'error'"
-    class="flex items-center justify-center h-full"
-  >
-    <p class="text-destructive">加载数据时出错</p>
-  </div>
+  <StateView
+    v-if="state !== 'success'"
+    :state="state"
+    :error="error"
+    class="h-full"
+  />
 
   <!-- Success -->
-  <template v-else-if="state === 'success'">
+  <template v-else>
     <!-- Content -->
     <div class="space-y-6">
       <!-- Stats Summary (all-time data) -->
-      <section>
-        <SectionHeader title="统计概览" />
+      <Section title="统计概览">
         <StatisticsStatsSummary
           :stats="allTimeStats"
           :sessions="allTimeSessions"
         />
-      </section>
+      </Section>
 
       <!-- Activity Heatmap (past year) -->
-      <section>
-        <SectionHeader title="活动热力图" />
+      <Section title="活动热力图">
         <div class="rounded-lg border bg-card p-4">
           <StatisticsActivityHeatmap
             :sessions="sessions"
             :date-range="timeBasedDateRange"
           />
         </div>
-      </section>
+      </Section>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
         <!-- Time Trend (past year) -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="游玩趋势" />
+        <Section
+          title="游玩趋势"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsTimeTrend
               :sessions="sessions"
               :date-range="timeBasedDateRange"
             />
           </div>
-        </section>
+        </Section>
 
         <!-- Time Distribution (past year) -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="时段分布" />
+        <Section
+          title="时段分布"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsTimeDistribution :sessions="sessions" />
           </div>
-        </section>
+        </Section>
       </div>
 
       <!-- Distribution Pie Charts Grid (all-time data) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         <!-- Game Distribution -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="游戏分布" />
+        <Section
+          title="游戏分布"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsGameDistribution :sessions="allTimeSessions" />
           </div>
-        </section>
+        </Section>
 
         <!-- Tag Distribution -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="标签分布" />
+        <Section
+          title="标签分布"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsTagDistribution :sessions="allTimeSessions" />
           </div>
-        </section>
+        </Section>
 
         <!-- Collection Distribution -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="收藏分布" />
+        <Section
+          title="收藏分布"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsCollectionDistribution :sessions="allTimeSessions" />
           </div>
-        </section>
+        </Section>
       </div>
 
       <!-- Rankings Grid (all-time data) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         <!-- Game Ranking -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="游戏排行" />
+        <Section
+          title="游戏排行"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsGameRanking :sessions="allTimeSessions" />
           </div>
-        </section>
+        </Section>
 
         <!-- Tag Ranking -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="标签排行" />
+        <Section
+          title="标签排行"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsTagRanking :sessions="allTimeSessions" />
           </div>
-        </section>
+        </Section>
 
         <!-- Collection Ranking -->
-        <section class="flex h-full flex-col">
-          <SectionHeader title="收藏排行" />
+        <Section
+          title="收藏排行"
+          class="flex h-full flex-col"
+        >
           <div class="flex-1 rounded-lg border bg-card p-4">
             <StatisticsCollectionRanking :sessions="allTimeSessions" />
           </div>
-        </section>
+        </Section>
       </div>
     </div>
   </template>

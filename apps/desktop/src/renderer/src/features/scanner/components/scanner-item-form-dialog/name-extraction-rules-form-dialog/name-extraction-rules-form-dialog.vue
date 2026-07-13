@@ -22,9 +22,10 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { Switch } from '@renderer/components/ui/switch'
 import ScannerNameExtractionRulesItemFormDialog from './name-extraction-rule-item-form-dialog.vue'
 import ScannerNameExtractionPresetDialog from './name-extraction-rule-presets-dialog.vue'
-import ScannerNameExtractionRuleItem from './name-extraction-rule-item.vue'
 
 // =============================================================================
 // Props & Model & Emits
@@ -169,18 +170,34 @@ function handleSave() {
           v-else
           class="space-y-1"
         >
-          <ScannerNameExtractionRuleItem
+          <ListItem
             v-for="(rule, index) in localRules"
             :key="rule.id"
-            v-model:enabled="createEnabledModel(rule.id).value"
-            :rule="rule"
-            :is-first="index === 0"
-            :is-last="index === localRules.length - 1"
-            @move-up="handleMoveUp(index)"
-            @move-down="handleMoveDown(index)"
-            @edit="handleEdit(rule)"
-            @delete="handleRemove(rule.id)"
-          />
+          >
+            <template #leading>
+              <Switch
+                v-model="createEnabledModel(rule.id).value"
+                class="shrink-0"
+              />
+            </template>
+            <div class="text-sm font-medium truncate">
+              {{ rule.description || '（未命名规则）' }}
+            </div>
+            <div class="text-xs text-muted-foreground font-mono truncate">
+              {{ rule.pattern }}
+            </div>
+            <template #actions>
+              <ListItemActions
+                movable
+                :is-first="index === 0"
+                :is-last="index === localRules.length - 1"
+                @move-up="handleMoveUp(index)"
+                @move-down="handleMoveDown(index)"
+                @edit="handleEdit(rule)"
+                @delete="handleRemove(rule.id)"
+              />
+            </template>
+          </ListItem>
         </div>
       </DialogBody>
       <DialogFooter class="flex justify-between">

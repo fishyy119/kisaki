@@ -19,9 +19,10 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
+import { getEntityIcon } from '@renderer/utils/format'
 import { useCollectionProvider, useEvent, useRenderState } from '@renderer/composables'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import CollectionDetailContent from './detail-content.vue'
@@ -135,48 +136,20 @@ const entityTypeModel = computed({
 <template>
   <Dialog v-model:open="open">
     <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
-      <!-- Loading state -->
-      <DialogBody
-        v-if="state === 'loading'"
-        class="flex items-center justify-center py-12"
-      >
-        <Spinner class="size-8" />
-      </DialogBody>
-
-      <!-- Error state -->
-      <DialogBody
-        v-else-if="state === 'error'"
-        class="flex items-center justify-center py-12"
-      >
-        <div class="text-center">
-          <Icon
-            icon="icon-[mdi--alert-circle-outline]"
-            class="size-12 text-destructive/50 mb-3 block mx-auto"
-          />
-          <p class="text-lg font-medium">加载失败</p>
-          <p class="text-sm text-muted-foreground mt-1">
-            {{ error?.message ?? error }}
-          </p>
-        </div>
-      </DialogBody>
-
-      <!-- Not found state -->
-      <DialogBody
-        v-else-if="state === 'not-found'"
-        class="flex items-center justify-center py-12"
-      >
-        <div class="text-center">
-          <Icon
-            icon="icon-[mdi--alert-circle-outline]"
-            class="size-12 text-destructive/50 mb-3 block mx-auto"
-          />
-          <p class="text-lg font-medium">合集不存在</p>
-          <p class="text-sm text-muted-foreground mt-1">该合集可能已被删除</p>
-        </div>
+      <!-- Loading / Error / Not Found -->
+      <DialogBody v-if="state !== 'success'">
+        <StateView
+          :state="state"
+          :error="error"
+          :icon="getEntityIcon('collection')"
+          title="合集不存在"
+          description="该合集可能已被删除"
+          class="py-12"
+        />
       </DialogBody>
 
       <!-- Content -->
-      <template v-else-if="state === 'success' && collection">
+      <template v-else-if="collection">
         <DialogHeader>
           <DialogTitle>{{ collection.name }}</DialogTitle>
         </DialogHeader>

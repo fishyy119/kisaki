@@ -8,7 +8,6 @@ import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
 import {
   formatRepositoryDate,
@@ -75,21 +74,17 @@ const emit = defineEmits<Emits>()
     </div>
 
     <div class="flex items-center gap-1">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            @click="emit('details', props.repository)"
-          >
-            <Icon
-              icon="icon-[mdi--information-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>详情</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="详情"
+        @click="emit('details', props.repository)"
+      >
+        <Icon
+          icon="icon-[mdi--information-outline]"
+          class="size-4"
+        />
+      </Button>
       <Switch
         :model-value="props.repository.state === 'enabled'"
         :disabled="props.busy"

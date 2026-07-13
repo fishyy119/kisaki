@@ -20,10 +20,11 @@ import {
   DialogBody,
   DialogFooter
 } from '@renderer/components/ui/dialog'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
+import { getEntityIcon } from '@renderer/utils/format'
 import CharacterDetailContent from './detail-content.vue'
 import { CharacterScoreFormDialog } from '../forms'
 import { CharacterDropdownMenu } from '../menus'
@@ -119,45 +120,22 @@ function handleRevealSpoilersConfirm() {
 <template>
   <Dialog v-model:open="open">
     <DialogContent class="max-w-4xl max-h-[90vh] flex flex-col">
-      <!-- Loading state -->
-      <template v-if="state === 'loading'">
-        <DialogBody class="flex items-center justify-center py-12">
-          <Spinner class="size-8" />
-        </DialogBody>
-      </template>
-
-      <!-- Error state -->
-      <template v-else-if="state === 'error'">
-        <DialogBody class="flex items-center justify-center py-12">
-          <div class="text-center">
-            <Icon
-              icon="icon-[mdi--alert-circle-outline]"
-              class="size-12 text-destructive/50 mb-3 mx-auto"
-            />
-            <p class="text-lg font-medium">加载失败</p>
-            <p class="text-sm text-muted-foreground mt-1">
-              {{ error }}
-            </p>
-          </div>
-        </DialogBody>
-      </template>
-
-      <!-- Not found state -->
-      <template v-else-if="state === 'not-found'">
-        <DialogBody class="flex items-center justify-center py-12">
-          <div class="text-center">
-            <Icon
-              icon="icon-[mdi--alert-circle-outline]"
-              class="size-12 text-destructive/50 mb-3 mx-auto"
-            />
-            <p class="text-lg font-medium">角色不存在</p>
-            <p class="text-sm text-muted-foreground mt-1">该角色可能已被删除</p>
-          </div>
+      <!-- Loading / Error / Not Found -->
+      <template v-if="state !== 'success'">
+        <DialogBody>
+          <StateView
+            :state="state"
+            :error="error"
+            :icon="getEntityIcon('character')"
+            title="角色不存在"
+            description="该角色可能已被删除"
+            class="py-12"
+          />
         </DialogBody>
       </template>
 
       <!-- Content state -->
-      <template v-else-if="state === 'success' && character">
+      <template v-else-if="character">
         <DialogHeader>
           <DialogTitle>{{ character.name }}</DialogTitle>
         </DialogHeader>
@@ -170,72 +148,61 @@ function handleRevealSpoilersConfirm() {
           <div class="flex items-center justify-end w-full">
             <!-- Right: Score, Favorite, More -->
             <div class="flex items-center gap-1.5">
-              <!-- Score button -->
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="secondary"
-                    :size="displayScore ? 'sm' : 'icon-sm'"
-                    :class="displayScore ? 'text-warning' : ''"
-                    @click="isScoreOpen = true"
-                  >
-                    <Icon
-                      icon="icon-[mdi--starburst-outline]"
-                      class="size-4"
-                    />
-                    <span
-                      v-if="displayScore"
-                      class="text-xs"
-                    >
-                      {{ displayScore }}
-                    </span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>评分</TooltipContent>
-              </Tooltip>
+              <Button
+                variant="secondary"
+                :size="displayScore ? 'sm' : 'icon-sm'"
+                :class="displayScore ? 'text-warning' : ''"
+                tooltip="评分"
+                @click="isScoreOpen = true"
+              >
+                <Icon
+                  icon="icon-[mdi--starburst-outline]"
+                  class="size-4"
+                />
+                <span
+                  v-if="displayScore"
+                  class="text-xs"
+                >
+                  {{ displayScore }}
+                </span>
+              </Button>
 
-              <div class="h-4 w-px bg-border" />
+              <Separator
+                orientation="vertical"
+                class="h-4"
+              />
 
-              <!-- Favorite toggle -->
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="secondary"
-                    size="icon-sm"
-                    :disabled="isPendingFavorite"
-                    @click="handleToggleFavorite"
-                  >
-                    <Icon
-                      icon="icon-[mdi--heart-outline]"
-                      :class="character.isFavorite ? 'size-4 text-destructive' : 'size-4'"
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{
-                  character.isFavorite ? '取消喜欢' : '添加喜欢'
-                }}</TooltipContent>
-              </Tooltip>
+              <Button
+                variant="secondary"
+                size="icon-sm"
+                :tooltip="character.isFavorite ? '取消喜欢' : '添加喜欢'"
+                :disabled="isPendingFavorite"
+                @click="handleToggleFavorite"
+              >
+                <Icon
+                  icon="icon-[mdi--heart-outline]"
+                  :class="character.isFavorite ? 'size-4 text-destructive' : 'size-4'"
+                />
+              </Button>
 
-              <!-- Spoiler toggle -->
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="secondary"
-                    size="icon-sm"
-                    @click="handleToggleSpoilers"
-                  >
-                    <Icon
-                      :icon="
-                        spoilersRevealed ? 'icon-[mdi--eye-outline]' : 'icon-[mdi--eye-off-outline]'
-                      "
-                      class="size-4"
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ spoilersRevealed ? '隐藏剧透' : '显示剧透' }}</TooltipContent>
-              </Tooltip>
+              <Button
+                variant="secondary"
+                size="icon-sm"
+                :tooltip="spoilersRevealed ? '隐藏剧透' : '显示剧透'"
+                @click="handleToggleSpoilers"
+              >
+                <Icon
+                  :icon="
+                    spoilersRevealed ? 'icon-[mdi--eye-outline]' : 'icon-[mdi--eye-off-outline]'
+                  "
+                  class="size-4"
+                />
+              </Button>
 
-              <div class="h-4 w-px bg-border" />
+              <Separator
+                orientation="vertical"
+                class="h-4"
+              />
 
               <!-- More menu -->
               <CharacterDropdownMenu :character-id="character.id" />

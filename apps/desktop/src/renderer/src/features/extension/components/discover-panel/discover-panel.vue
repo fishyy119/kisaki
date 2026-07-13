@@ -4,8 +4,8 @@ Boundary: reads store filters and queries the repository-backed catalog.
 -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
@@ -195,23 +195,20 @@ watch(detailsOpen, (open) => {
     <ExtensionDiscoverPanelFilterBar />
 
     <div class="flex-1 overflow-auto">
-      <template v-if="loading && displayedResults.length === 0">
-        <div class="flex items-center justify-center h-48">
-          <Spinner class="size-6" />
-        </div>
-      </template>
+      <StateView
+        v-if="loading && displayedResults.length === 0"
+        state="loading"
+        class="h-48"
+      />
 
       <template v-else-if="displayedResults.length === 0 && searched">
-        <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
-          <Icon
-            icon="icon-[mdi--puzzle-outline]"
-            class="size-16 mb-3 opacity-30"
-          />
-          <p class="font-medium">未找到扩展</p>
-          <p class="text-sm mt-1 text-muted-foreground/70">
-            {{ store.selectedCategory ? '该分类下暂无可用扩展' : '暂无可用扩展' }}
-          </p>
-        </div>
+        <StateView
+          state="empty"
+          icon="icon-[mdi--puzzle-outline]"
+          title="未找到扩展"
+          :description="store.selectedCategory ? '该分类下暂无可用扩展' : '暂无可用扩展'"
+          class="h-48"
+        />
 
         <div
           v-if="hasMore"

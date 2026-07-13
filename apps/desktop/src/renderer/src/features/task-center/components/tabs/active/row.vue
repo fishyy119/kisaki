@@ -111,77 +111,64 @@ const canCancel = computed(
     </div>
 
     <div class="flex items-center justify-end gap-1">
-      <Tooltip v-if="props.run.controls.pausable && props.run.status !== 'paused'">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="!canPause"
-            aria-label="暂停任务"
-            @click="emit('pause', props.run)"
-          >
-            <Icon
-              icon="icon-[mdi--pause]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>暂停</TooltipContent>
-      </Tooltip>
+      <Button
+        v-if="props.run.controls.pausable && props.run.status !== 'paused'"
+        variant="ghost"
+        size="icon-sm"
+        tooltip="暂停"
+        :disabled="!canPause"
+        aria-label="暂停任务"
+        @click="emit('pause', props.run)"
+      >
+        <Icon
+          icon="icon-[mdi--pause]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip v-if="props.run.controls.pausable && props.run.status === 'paused'">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="!canResume"
-            aria-label="继续任务"
-            @click="emit('resume', props.run)"
-          >
-            <Icon
-              icon="icon-[mdi--play]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>继续</TooltipContent>
-      </Tooltip>
+      <Button
+        v-if="props.run.controls.pausable && props.run.status === 'paused'"
+        variant="ghost"
+        size="icon-sm"
+        tooltip="继续"
+        :disabled="!canResume"
+        aria-label="继续任务"
+        @click="emit('resume', props.run)"
+      >
+        <Icon
+          icon="icon-[mdi--play]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip v-if="props.run.controls.cancelable || props.run.status === 'cancelling'">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="!canCancel"
-            aria-label="取消任务"
-            class="hover:text-destructive"
-            @click="emit('cancel', props.run)"
-          >
-            <Icon
-              icon="icon-[mdi--stop]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>取消</TooltipContent>
-      </Tooltip>
+      <Button
+        v-if="props.run.controls.cancelable || props.run.status === 'cancelling'"
+        variant="ghost"
+        size="icon-sm"
+        tooltip="取消"
+        :disabled="!canCancel"
+        aria-label="取消任务"
+        class="hover:text-destructive"
+        @click="emit('cancel', props.run)"
+      >
+        <Icon
+          icon="icon-[mdi--stop]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="查看详情"
-            @click="emit('details', props.run)"
-          >
-            <Icon
-              icon="icon-[mdi--information-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>详情</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="详情"
+        aria-label="查看详情"
+        @click="emit('details', props.run)"
+      >
+        <Icon
+          icon="icon-[mdi--information-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 </template>

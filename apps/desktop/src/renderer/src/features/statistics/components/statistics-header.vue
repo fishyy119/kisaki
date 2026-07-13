@@ -10,27 +10,30 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
 import { useStatistics } from '../composables'
 import { getYearWeek, getWeekStartDate } from '@renderer/utils/datetime'
 import { getEntityIcon } from '@renderer/utils/format'
-import type { ReportType } from '../types'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import {
+  PageHeader,
+  PageHeaderNav,
+  PageHeaderTitle,
+  type PageHeaderNavItem
+} from '@renderer/components/ui/page-header'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 
-const route = useRoute()
 const { reportType, currentPeriod, setCurrentPeriod, periodDisplay } = useStatistics()
 
 // Media type (currently only game, future expansion)
 const mediaType = ref<'game'>('game')
 
 // Report type navigation items
-const reportNavItems: { type: ReportType; label: string; routeName: string }[] = [
-  { type: 'overview', label: '总览', routeName: 'statistics-overview' },
-  { type: 'weekly', label: '周报', routeName: 'statistics-weekly' },
-  { type: 'monthly', label: '月报', routeName: 'statistics-monthly' },
-  { type: 'yearly', label: '年报', routeName: 'statistics-yearly' }
+const reportNavItems: PageHeaderNavItem[] = [
+  { label: '总览', routeName: 'statistics-overview' },
+  { label: '周报', routeName: 'statistics-weekly' },
+  { label: '月报', routeName: 'statistics-monthly' },
+  { label: '年报', routeName: 'statistics-yearly' }
 ]
 
 // Period navigation - only shown for non-overview reports
@@ -93,53 +96,19 @@ const canNavigateNext = computed(() => {
       return false
   }
 })
-
-// Check if route is active
-function isRouteActive(routeName: string): boolean {
-  const currentRouteName = route.name
-  if (!currentRouteName || typeof currentRouteName !== 'string')
-    return routeName === 'statistics-overview'
-  return currentRouteName === routeName
-}
 </script>
 
 <template>
-  <div
-    class="shrink-0 flex items-center justify-between gap-3 px-4 h-12 border-b border-border bg-surface"
-  >
+  <PageHeader>
     <!-- Left: Title + Report Type Navigation -->
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-3">
-        <Icon
-          icon="icon-[mdi--chart-box-outline]"
-          class="size-5"
-        />
-        <h1 class="text-base font-semibold">统计</h1>
-      </div>
-
-      <!-- Report Type Navigation -->
-      <div class="flex items-center gap-1">
-        <RouterLink
-          v-for="item in reportNavItems"
-          :key="item.type"
-          v-slot="{ navigate }"
-          :to="{ name: item.routeName }"
-          custom
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            :class="{ 'bg-accent': isRouteActive(item.routeName) }"
-            @click="navigate"
-          >
-            {{ item.label }}
-          </Button>
-        </RouterLink>
-      </div>
-    </div>
+    <PageHeaderTitle
+      title="统计"
+      icon="icon-[mdi--chart-box-outline]"
+    />
+    <PageHeaderNav :items="reportNavItems" />
 
     <!-- Right: Period Navigator + Media Selector -->
-    <div class="flex items-center gap-3">
+    <template #actions>
       <!-- Period Navigator (hidden for overview) -->
       <div
         v-if="showPeriodNav"
@@ -183,6 +152,6 @@ function isRouteActive(routeName: string): boolean {
           </div>
         </SegmentedControlItem>
       </SegmentedControl>
-    </div>
-  </div>
+    </template>
+  </PageHeader>
 </template>

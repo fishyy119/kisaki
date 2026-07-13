@@ -284,73 +284,58 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
           />
           更新
         </Button>
-        <Tooltip
+        <Button
           v-for="action in cardActions"
           :key="action.contributionId"
+          size="sm"
+          variant="ghost"
+          :tooltip="action.description"
+          :disabled="isCardActionRunning(action)"
+          @click="runCardAction(action)"
         >
-          <TooltipTrigger as-child>
-            <Button
-              size="sm"
-              variant="ghost"
-              :disabled="isCardActionRunning(action)"
-              @click="runCardAction(action)"
-            >
-              <Icon
-                v-if="isCardActionRunning(action)"
-                icon="icon-[mdi--loading]"
-                class="size-3.5 animate-spin"
-              />
-              {{ action.label }}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent v-if="action.description">{{ action.description }}</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              @click="detailsDialogOpen = true"
-            >
-              <Icon
-                icon="icon-[mdi--information-outline]"
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>详情</TooltipContent>
-        </Tooltip>
-        <Tooltip v-if="!isBuiltin">
-          <TooltipTrigger as-child>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              @click="updatePolicyDialogOpen = true"
-            >
-              <Icon
-                icon="icon-[mdi--update]"
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>更新配置</TooltipContent>
-        </Tooltip>
-        <Tooltip v-if="!isBuiltin">
-          <TooltipTrigger as-child>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              class="hover:text-destructive"
-              @click="uninstallDialogOpen = true"
-            >
-              <Icon
-                icon="icon-[mdi--delete-outline]"
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>卸载</TooltipContent>
-        </Tooltip>
+          <Icon
+            v-if="isCardActionRunning(action)"
+            icon="icon-[mdi--loading]"
+            class="size-3.5 animate-spin"
+          />
+          {{ action.label }}
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          tooltip="详情"
+          @click="detailsDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--information-outline]"
+            class="size-4"
+          />
+        </Button>
+        <Button
+          v-if="!isBuiltin"
+          size="icon-sm"
+          variant="ghost"
+          tooltip="更新配置"
+          @click="updatePolicyDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--update]"
+            class="size-4"
+          />
+        </Button>
+        <Button
+          v-if="!isBuiltin"
+          size="icon-sm"
+          variant="ghost"
+          tooltip="卸载"
+          class="hover:text-destructive"
+          @click="uninstallDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--delete-outline]"
+            class="size-4"
+          />
+        </Button>
       </div>
     </div>
 

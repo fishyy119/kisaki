@@ -29,14 +29,17 @@ import {
   DialogFooter
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import { Badge } from '@renderer/components/ui/badge'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
+import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
+import { getEntityIcon } from '@renderer/utils/format'
 import {
   ScraperPresetFormDialog,
+  getScraperProviderDisplay,
   type ScraperProvidersByType
 } from '@renderer/components/shared/scraper'
 import ScraperProfilesItemFormDialog from './profile-item-form-dialog.vue'
-import ScraperProfilesItem from './profile-item.vue'
 import ScraperNewProfileDialog from './new-profile-dialog.vue'
 
 const open = defineModel<boolean>('open', { required: true })
@@ -284,6 +287,18 @@ async function handleSave() {
 function getGlobalIndex(profile: ScraperProfile): number {
   return profiles.value.findIndex((p) => p.id === profile.id)
 }
+
+// Pair each profile with its search provider display info
+function withProviderDisplay(list: ScraperProfile[]) {
+  return list.map((profile) => ({
+    profile,
+    providerDisplay: getScraperProviderDisplay(
+      profile.searchProviderId,
+      providersByType.value[profile.mediaType || 'game'] ?? [],
+      ['search']
+    )
+  }))
+}
 </script>
 
 <template>
@@ -323,18 +338,36 @@ function getGlobalIndex(profile: ScraperProfile): number {
                 {{ mediaTypeLabels[type] || type }}
               </h4>
               <div class="space-y-1">
-                <ScraperProfilesItem
-                  v-for="profile in typeProfiles"
+                <ListItem
+                  v-for="{ profile, providerDisplay } in withProviderDisplay(typeProfiles)"
                   :key="profile.id"
-                  :profile="profile"
-                  :providers-by-type="providersByType"
-                  :index="getGlobalIndex(profile)"
-                  :total-count="profiles.length"
-                  @edit="handleEdit"
-                  @delete="handleDeleteRequest"
-                  @move-up="handleMoveUp"
-                  @move-down="handleMoveDown"
-                />
+                  :icon="getEntityIcon(profile.mediaType)"
+                >
+                  <div class="text-sm font-medium truncate">
+                    {{ profile.name || '(未命名)' }}
+                  </div>
+                  <div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                    <span class="truncate">搜索: {{ providerDisplay.label }}</span>
+                    <Badge
+                      v-if="providerDisplay.statusLabel"
+                      variant="warning"
+                      class="shrink-0 px-1 py-0 text-[10px]"
+                    >
+                      {{ providerDisplay.statusLabel }}
+                    </Badge>
+                  </div>
+                  <template #actions>
+                    <ListItemActions
+                      movable
+                      :is-first="getGlobalIndex(profile) === 0"
+                      :is-last="getGlobalIndex(profile) === profiles.length - 1"
+                      @move-up="handleMoveUp(getGlobalIndex(profile))"
+                      @move-down="handleMoveDown(getGlobalIndex(profile))"
+                      @edit="handleEdit(profile)"
+                      @delete="handleDeleteRequest(profile.id)"
+                    />
+                  </template>
+                </ListItem>
               </div>
             </div>
           </div>

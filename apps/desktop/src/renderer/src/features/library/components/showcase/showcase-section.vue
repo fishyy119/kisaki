@@ -7,7 +7,9 @@
 import { ref, computed, inject, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@renderer/components/ui/button'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { Icon } from '@renderer/components/ui/icon'
+import { Section } from '@renderer/components/ui/section'
+import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid, VirtualHorizontalScroll } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import { GameDetailDialog } from '@renderer/components/shared/game'
@@ -95,56 +97,59 @@ function getDetailPath(entityType: AllEntityType, id: string): string {
 </script>
 
 <template>
-  <div class="relative group">
-    <!-- Section header with scroll controls -->
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center gap-2">
-        <h3 class="text-base font-semibold">{{ props.section.name }}</h3>
-      </div>
+  <Section class="relative group">
+    <!-- Page-level section title overrides the default muted style -->
+    <template #title>
+      <h3 class="text-base font-semibold">{{ props.section.name }}</h3>
+    </template>
 
-      <!-- Scroll controls - only for horizontal layout -->
-      <div
-        v-if="showScrollButtons"
-        class="flex items-center gap-1"
+    <!-- Scroll controls - only for horizontal layout -->
+    <template
+      v-if="showScrollButtons"
+      #actions
+    >
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :disabled="!scrollState.canScrollLeft"
+        class="size-6 opacity-60 hover:opacity-100 disabled:opacity-30"
+        @click="scrollRef?.scrollLeft()"
       >
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          :disabled="!scrollState.canScrollLeft"
-          class="size-6 opacity-60 hover:opacity-100 disabled:opacity-30"
-          @click="scrollRef?.scrollLeft()"
-        >
-          <span class="icon-[mdi--chevron-left] size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          :disabled="!scrollState.canScrollRight"
-          class="size-6 opacity-60 hover:opacity-100 disabled:opacity-30"
-          @click="scrollRef?.scrollRight()"
-        >
-          <span class="icon-[mdi--chevron-right] size-4" />
-        </Button>
-      </div>
-    </div>
+        <Icon
+          icon="icon-[mdi--chevron-left]"
+          class="size-4"
+        />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        :disabled="!scrollState.canScrollRight"
+        class="size-6 opacity-60 hover:opacity-100 disabled:opacity-30"
+        @click="scrollRef?.scrollRight()"
+      >
+        <Icon
+          icon="icon-[mdi--chevron-right]"
+          class="size-4"
+        />
+      </Button>
+    </template>
 
     <!-- Loading state -->
-    <div
+    <StateView
       v-if="state === 'loading'"
-      class="flex items-center justify-center py-8"
-    >
-      <Spinner class="size-6" />
-    </div>
+      state="loading"
+      class="py-8"
+    />
 
     <!-- Success state -->
     <template v-else-if="state === 'success'">
       <!-- Empty state -->
-      <div
+      <StateView
         v-if="data.length === 0"
-        class="flex items-center justify-center py-8 text-xs text-muted-foreground"
-      >
-        暂无{{ entityLabel }}
-      </div>
+        state="empty"
+        :description="`暂无${entityLabel}`"
+        class="py-8"
+      />
 
       <!-- Horizontal layout -->
       <div
@@ -219,5 +224,5 @@ function getDetailPath(entityType: AllEntityType, id: string): string {
       v-model:open="detailDialogOpen"
       :tag-id="selectedEntityId"
     />
-  </div>
+  </Section>
 </template>

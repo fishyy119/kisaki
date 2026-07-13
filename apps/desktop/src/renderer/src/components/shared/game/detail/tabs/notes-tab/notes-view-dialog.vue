@@ -18,7 +18,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 
@@ -54,8 +54,11 @@ useEvent('db.deleted', ({ table, id }) => {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-4xl">
       <template v-if="isLoading">
-        <DialogBody class="flex items-center justify-center py-10">
-          <Spinner class="size-8" />
+        <DialogBody>
+          <StateView
+            state="loading"
+            class="py-10"
+          />
         </DialogBody>
       </template>
 

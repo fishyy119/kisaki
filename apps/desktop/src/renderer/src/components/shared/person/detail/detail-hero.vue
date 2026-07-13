@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { CoverImage } from '@renderer/components/ui/cover-image'
 import { usePerson } from '@renderer/composables/use-person'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatDate } from '@renderer/utils/datetime'
@@ -28,26 +29,16 @@ const isEditOpen = ref(false)
   <template v-if="person">
     <div class="flex gap-4 mb-4 group">
       <!-- Photo -->
-      <div class="w-24 aspect-[3/4] rounded-lg overflow-hidden shrink-0 bg-muted border shadow-sm">
-        <img
-          v-if="person.photoFile"
-          :src="
-            getAttachmentUrl('persons', person.id, person.photoFile, { width: 200, height: 267 }) ??
-            undefined
-          "
-          :alt="person.name"
-          class="size-full object-cover"
-        />
-        <div
-          v-else
-          class="size-full flex items-center justify-center"
-        >
-          <Icon
-            :icon="getEntityIcon('person')"
-            class="size-8 text-muted-foreground/50"
-          />
-        </div>
-      </div>
+      <CoverImage
+        :src="
+          person.photoFile
+            ? getAttachmentUrl('persons', person.id, person.photoFile, { width: 200, height: 267 })
+            : null
+        "
+        :alt="person.name"
+        :icon="getEntityIcon('person')"
+        class="w-24 aspect-[3/4] rounded-lg shrink-0 border shadow-sm"
+      />
 
       <!-- Basic info -->
       <div class="flex-1 min-w-0 justify-between flex flex-col">

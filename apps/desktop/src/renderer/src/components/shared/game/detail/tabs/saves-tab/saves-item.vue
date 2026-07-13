@@ -4,7 +4,6 @@
 -->
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
 import { formatDate } from '@renderer/utils/datetime'
 
@@ -71,54 +70,42 @@ function formatDateTime(date: Date): string {
 
     <!-- Actions -->
     <div class="flex items-center gap-1 shrink-0">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            @click="emit('restore')"
-          >
-            <Icon
-              icon="icon-[mdi--rotate-left]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>恢复</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="恢复"
+        @click="emit('restore')"
+      >
+        <Icon
+          icon="icon-[mdi--rotate-left]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            @click="emit('edit')"
-          >
-            <Icon
-              icon="icon-[mdi--pencil-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>编辑</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="编辑"
+        @click="emit('edit')"
+      >
+        <Icon
+          icon="icon-[mdi--pencil-outline]"
+          class="size-4"
+        />
+      </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            class="hover:text-destructive"
-            @click="emit('delete')"
-          >
-            <Icon
-              icon="icon-[mdi--delete-outline]"
-              class="size-4"
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>删除</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        tooltip="删除"
+        class="hover:text-destructive"
+        @click="emit('delete')"
+      >
+        <Icon
+          icon="icon-[mdi--delete-outline]"
+          class="size-4"
+        />
+      </Button>
     </div>
   </div>
 </template>

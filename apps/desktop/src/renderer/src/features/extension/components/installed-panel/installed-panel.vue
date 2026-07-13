@@ -4,8 +4,7 @@ Boundary: owns installed extension list, update checks, and update actions.
 -->
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
-import { Spinner } from '@renderer/components/ui/spinner'
+import { StateView } from '@renderer/components/ui/state-view'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
@@ -225,33 +224,29 @@ function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
 
     <!-- Extension Grid -->
     <div class="flex-1 overflow-auto">
-      <template v-if="state === 'loading'">
-        <div class="flex items-center justify-center h-48">
-          <Spinner class="size-6" />
-        </div>
-      </template>
+      <StateView
+        v-if="state === 'loading'"
+        state="loading"
+        class="h-48"
+      />
 
-      <template v-else-if="extensionsList.length === 0">
-        <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
-          <Icon
-            icon="icon-[mdi--puzzle-outline]"
-            class="size-16 mb-3 opacity-30"
-          />
-          <p class="font-medium">暂无已安装的扩展</p>
-          <p class="text-sm mt-1 text-muted-foreground/70">从“发现”页面安装扩展</p>
-        </div>
-      </template>
+      <StateView
+        v-else-if="extensionsList.length === 0"
+        state="empty"
+        icon="icon-[mdi--puzzle-outline]"
+        title="暂无已安装的扩展"
+        description="从“发现”页面安装扩展"
+        class="h-48"
+      />
 
-      <template v-else-if="filteredExtensions.length === 0">
-        <div class="flex flex-col items-center justify-center h-48 text-muted-foreground">
-          <Icon
-            icon="icon-[mdi--filter-off-outline]"
-            class="size-16 mb-3 opacity-30"
-          />
-          <p class="font-medium">没有匹配的扩展</p>
-          <p class="text-sm mt-1 text-muted-foreground/70">尝试调整筛选条件</p>
-        </div>
-      </template>
+      <StateView
+        v-else-if="filteredExtensions.length === 0"
+        state="empty"
+        icon="icon-[mdi--filter-off-outline]"
+        title="没有匹配的扩展"
+        description="尝试调整筛选条件"
+        class="h-48"
+      />
 
       <template v-else>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3">

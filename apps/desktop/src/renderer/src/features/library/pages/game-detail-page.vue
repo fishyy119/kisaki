@@ -6,11 +6,14 @@
  */
 
 import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
+import { PageHeader } from '@renderer/components/ui/page-header'
+import { Separator } from '@renderer/components/ui/separator'
+import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import {
@@ -172,185 +175,121 @@ const canOpenGameDir = computed(() => {
 </script>
 
 <template>
-  <!-- Loading state -->
-  <div
-    v-if="state === 'loading'"
-    class="flex-1 flex items-center justify-center h-full"
-  >
-    <Icon
-      icon="icon-[mdi--loading]"
-      class="size-8 text-muted-foreground animate-spin"
-    />
-  </div>
-
-  <!-- Error state -->
-  <div
-    v-else-if="state === 'error'"
-    class="flex-1 flex items-center justify-center h-full"
-  >
-    <div class="text-center">
-      <Icon
-        icon="icon-[mdi--alert-circle-outline]"
-        class="size-12 text-destructive/30 mb-3 mx-auto"
-      />
-      <p class="text-sm text-muted-foreground">{{ error }}</p>
-    </div>
-  </div>
-
-  <!-- Not found state -->
-  <div
-    v-else-if="state === 'not-found'"
-    class="flex-1 flex items-center justify-center h-full"
-  >
-    <div class="text-center">
-      <Icon
-        :icon="getEntityIcon('game')"
-        class="size-12 text-muted-foreground/30 mb-3 mx-auto"
-      />
-      <p class="text-sm text-muted-foreground">游戏不存在</p>
-    </div>
-  </div>
+  <!-- Loading / Error / Not Found -->
+  <StateView
+    v-if="state !== 'success'"
+    :state="state"
+    :error="error"
+    :icon="getEntityIcon('game')"
+    title="游戏不存在"
+    class="h-full"
+  />
 
   <!-- Content -->
   <div
-    v-else-if="state === 'success' && game"
+    v-else-if="game"
     class="h-full flex flex-col"
   >
     <!-- Header -->
-    <header class="shrink-0 flex items-center gap-3 px-4 h-12 border-b border-border bg-surface">
-      <!-- Back button -->
-      <RouterLink to="/library">
+    <PageHeader back-to="/library">
+      <h1 class="text-base font-semibold truncate">{{ game.name }}</h1>
+
+      <!-- Status dropdown -->
+      <Tooltip>
+        <DropdownMenu>
+          <TooltipTrigger as-child>
+            <DropdownMenuTrigger as-child>
+              <Badge
+                :variant="getStatusVariant(game.status)"
+                class="shrink-0 cursor-pointer"
+              >
+                {{ formatStatus(game.status) }}
+              </Badge>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>游玩状态</TooltipContent>
+
+          <DropdownMenuContent
+            align="end"
+            class="w-36"
+          >
+            <DropdownMenuRadioGroup v-model="selectedStatus">
+              <DropdownMenuRadioItem
+                v-for="option in STATUS_OPTIONS"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </Tooltip>
+
+      <template #actions>
         <Button
-          variant="ghost"
+          variant="secondary"
           size="icon-sm"
+          class="flex items-center py-0"
+          tooltip="评分"
+          @click="scoreDialogOpen = true"
         >
           <Icon
-            icon="icon-[mdi--arrow-left]"
+            icon="icon-[mdi--starburst-outline]"
             class="size-4"
           />
         </Button>
-      </RouterLink>
 
-      <!-- Game info -->
-      <div class="flex-1 min-w-0 flex items-center gap-3">
-        <h1 class="text-base font-semibold truncate">{{ game.name }}</h1>
+        <Button
+          variant="secondary"
+          size="icon-sm"
+          tooltip="打开游戏目录"
+          :disabled="!canOpenGameDir"
+          @click="handleOpenGameDir"
+        >
+          <Icon
+            icon="icon-[mdi--folder-open-outline]"
+            class="size-4"
+          />
+        </Button>
 
-        <!-- Status dropdown -->
-        <Tooltip>
-          <DropdownMenu>
-            <TooltipTrigger as-child>
-              <DropdownMenuTrigger as-child>
-                <Badge
-                  :variant="getStatusVariant(game.status)"
-                  class="shrink-0 cursor-pointer"
-                >
-                  {{ formatStatus(game.status) }}
-                </Badge>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent>游玩状态</TooltipContent>
+        <Separator
+          orientation="vertical"
+          class="h-4"
+        />
 
-            <DropdownMenuContent
-              align="end"
-              class="w-36"
-            >
-              <DropdownMenuRadioGroup v-model="selectedStatus">
-                <DropdownMenuRadioItem
-                  v-for="option in STATUS_OPTIONS"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </Tooltip>
-      </div>
+        <Button
+          variant="secondary"
+          size="icon-sm"
+          :tooltip="game.isFavorite ? '取消喜欢' : '添加喜欢'"
+          :disabled="isPendingFavorite"
+          @click="handleToggleFavorite"
+        >
+          <Icon
+            icon="icon-[mdi--heart-outline]"
+            :class="game.isFavorite ? 'size-4 text-destructive' : 'size-4'"
+          />
+        </Button>
 
-      <!-- Quick action buttons -->
-      <div class="flex items-center gap-2 shrink-0">
-        <!-- Score button -->
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              class="flex items-center py-0"
-              @click="scoreDialogOpen = true"
-            >
-              <Icon
-                icon="icon-[mdi--starburst-outline]"
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>评分</TooltipContent>
-        </Tooltip>
-
-        <!-- Open game directory -->
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              :disabled="!canOpenGameDir"
-              @click="handleOpenGameDir"
-            >
-              <Icon
-                icon="icon-[mdi--folder-open-outline]"
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>打开游戏目录</TooltipContent>
-        </Tooltip>
-
-        <div class="h-4 w-px bg-border" />
-
-        <!-- Favorite toggle -->
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              :disabled="isPendingFavorite"
-              @click="handleToggleFavorite"
-            >
-              <Icon
-                icon="icon-[mdi--heart-outline]"
-                :class="game.isFavorite ? 'size-4 text-destructive' : 'size-4'"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{{ game.isFavorite ? '取消喜欢' : '添加喜欢' }}</TooltipContent>
-        </Tooltip>
-
-        <!-- Spoiler toggle -->
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              @click="handleToggleSpoilers"
-            >
-              <Icon
-                :icon="spoilersRevealed ? 'icon-[mdi--eye-outline]' : 'icon-[mdi--eye-off-outline]'"
-                class="size-4"
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{{ spoilersRevealed ? '隐藏剧透' : '显示剧透' }}</TooltipContent>
-        </Tooltip>
+        <Button
+          variant="secondary"
+          size="icon-sm"
+          :tooltip="spoilersRevealed ? '隐藏剧透' : '显示剧透'"
+          @click="handleToggleSpoilers"
+        >
+          <Icon
+            :icon="spoilersRevealed ? 'icon-[mdi--eye-outline]' : 'icon-[mdi--eye-off-outline]'"
+            class="size-4"
+          />
+        </Button>
 
         <!-- TODO: Extension detail actions - requires itemComponent prop -->
-      </div>
 
-      <!-- Separator -->
-      <div class="h-4 w-px bg-border" />
+        <Separator
+          orientation="vertical"
+          class="h-4"
+        />
 
-      <!-- Primary action buttons -->
-      <div class="flex items-center gap-2 shrink-0">
         <GamePlayButton
           :game-id="game.id"
           size="sm"
@@ -366,8 +305,8 @@ const canOpenGameDir = computed(() => {
             />
           </Button>
         </GameDropdownMenu>
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- Main content -->
     <div class="flex-1 overflow-auto p-4">

@@ -9,6 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { useCharacter } from '@renderer/composables/use-character'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
+import { StateView } from '@renderer/components/ui/state-view'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { CharacterGamesFormDialog } from '../../forms'
 
@@ -67,28 +68,27 @@ const gameDialogOpen = computed({
 <template>
   <template v-if="character">
     <!-- Empty state -->
-    <div
+    <StateView
       v-if="!hasGames"
-      class="flex flex-col items-center justify-center py-12 text-center"
+      state="empty"
+      :icon="getEntityIcon('game')"
+      description="暂无相关游戏"
+      class="py-12"
     >
-      <Icon
-        :icon="getEntityIcon('game')"
-        class="size-12 text-muted-foreground/30 mb-3"
-      />
-      <p class="text-sm text-muted-foreground">暂无相关游戏</p>
-      <Button
-        variant="outline"
-        size="sm"
-        class="mt-4"
-        @click="editDialogOpen = true"
-      >
-        <Icon
-          icon="icon-[mdi--plus]"
-          class="size-4 mr-1.5"
-        />
-        添加游戏
-      </Button>
-    </div>
+      <template #actions>
+        <Button
+          variant="outline"
+          size="sm"
+          @click="editDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--plus]"
+            class="size-4 mr-1.5"
+          />
+          添加游戏
+        </Button>
+      </template>
+    </StateView>
 
     <!-- Content state -->
     <template v-else>
