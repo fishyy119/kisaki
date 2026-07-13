@@ -26,7 +26,7 @@ const state = useRenderState(isLoading, null, scanners)
     <ScannerHeader />
 
     <!-- Main content - Table-like list -->
-    <div class="flex-1 min-h-0">
+    <div class="flex-1 min-h-0 bg-background">
       <!-- Loading -->
       <StateView
         v-if="state === 'loading'"
@@ -44,7 +44,7 @@ const state = useRenderState(isLoading, null, scanners)
       >
         <!-- Table header -->
         <div
-          class="sticky top-0 z-10 grid items-center h-8 px-4 text-xs font-medium text-muted-foreground border-b border-border bg-background"
+          class="sticky top-0 z-10 grid items-center h-8 px-4 text-xs font-medium text-muted-foreground border-b border-border bg-background glass"
           :style="{ gridTemplateColumns: SCANNER_LIST_GRID_TEMPLATE }"
         >
           <div class="min-w-0">名称</div>

@@ -63,14 +63,14 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
     <StateView
       v-if="state === 'loading'"
       state="loading"
-      class="h-full"
+      class="h-full bg-background"
     />
 
     <!-- Content -->
     <div
       v-else
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto"
+      class="flex-1 overflow-auto bg-background"
     >
       <LibraryShowcaseEmpty
         v-if="visibleSections.length === 0"

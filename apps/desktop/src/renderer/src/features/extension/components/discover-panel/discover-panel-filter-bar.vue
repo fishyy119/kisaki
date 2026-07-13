@@ -91,7 +91,7 @@ function handleToggleSortDirection() {
 </script>
 
 <template>
-  <div class="shrink-0 flex flex-col gap-3 px-4 py-3 border-b border-border bg-background/50">
+  <div class="shrink-0 flex flex-col gap-3 px-4 py-3 border-b border-border bg-muted/50">
     <!-- Top row: Search + Repository + Sort -->
     <div class="flex items-center gap-3">
       <!-- Search input with button -->

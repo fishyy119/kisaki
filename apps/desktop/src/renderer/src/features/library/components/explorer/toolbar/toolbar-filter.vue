@@ -61,7 +61,7 @@ function getUiSpec(entityType: ContentEntityType) {
     <Button
       variant="secondary"
       size="icon"
-      :class="cn('size-7 relative bg-background/50', activeCount > 0 && 'text-primary')"
+      :class="cn('size-7 relative bg-muted/50', activeCount > 0 && 'text-primary')"
       title="筛选"
     >
       <Icon

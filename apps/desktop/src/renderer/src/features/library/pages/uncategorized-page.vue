@@ -248,7 +248,7 @@ function handleEntityClick(entity: EntityData) {
     <!-- Content -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto p-4"
+      class="flex-1 overflow-auto bg-background p-4"
     >
       <!-- Loading state -->
       <StateView

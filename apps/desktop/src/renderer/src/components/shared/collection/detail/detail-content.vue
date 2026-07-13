@@ -7,14 +7,6 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle
-} from '@renderer/components/ui/empty'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import { StateView } from '@renderer/components/ui/state-view'
@@ -68,21 +60,14 @@ function handleItemClick(entity: EntityData) {
   />
 
   <!-- Empty state -->
-  <Empty
+  <StateView
     v-else-if="state === 'success' && entities.length === 0"
-    class="h-full border-none"
-  >
-    <EmptyHeader>
-      <EmptyMedia>
-        <Icon
-          :icon="getEntityIcon(entityType)"
-          class="size-12 text-muted-foreground/50"
-        />
-      </EmptyMedia>
-      <EmptyTitle>此合集暂无{{ entityLabel }}</EmptyTitle>
-      <EmptyDescription>通过扫描器添加{{ entityLabel }}到此合集</EmptyDescription>
-    </EmptyHeader>
-  </Empty>
+    state="empty"
+    :icon="getEntityIcon(entityType)"
+    :title="`此合集暂无${entityLabel}`"
+    :description="`通过扫描器添加${entityLabel}到此合集`"
+    class="h-full"
+  />
 
   <!-- Content -->
   <VirtualGrid

@@ -21,7 +21,13 @@ import {
   CollectionDynamicConfigFormDialog,
   CollectionConvertToStaticFormDialog
 } from '@renderer/components/shared/collection'
-import { useCollectionProvider, useEvent, useRenderState } from '@renderer/composables'
+import {
+  useAmbientLight,
+  useCollectionProvider,
+  useEvent,
+  useRenderState
+} from '@renderer/composables'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 // =============================================================================
@@ -69,6 +75,15 @@ const {
   error
 } = useCollectionProvider(() => collectionId.value ?? '')
 const state = useRenderState(isLoading, error, collection)
+
+useAmbientLight(() =>
+  collection.value?.coverFile
+    ? getAttachmentUrl('collections', collection.value.id, collection.value.coverFile, {
+        width: 100,
+        height: 100
+      })
+    : null
+)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'collections' && id === collectionId.value) {
@@ -140,7 +155,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     :error="error"
     icon="icon-[mdi--folder-open-outline]"
     title="合集不存在"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -230,7 +245,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     <!-- Main content -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto p-4"
+      class="flex-1 overflow-auto bg-background p-4"
     >
       <CollectionDetailContent
         :scroll-parent="scrollContainerRef"

@@ -62,7 +62,7 @@ function handleInstall() {
         v-if="props.extension.iconUrl && !iconError"
         :src="props.extension.iconUrl"
         alt=""
-        class="size-5 rounded shrink-0 border shadow-xs"
+        class="size-5 rounded shrink-0 border shadow-raised"
         @error="iconError = true"
       />
       <Icon

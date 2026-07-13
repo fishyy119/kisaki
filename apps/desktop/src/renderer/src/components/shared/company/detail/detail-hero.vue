@@ -34,7 +34,7 @@ const isEditOpen = ref(false)
         "
         :alt="company.name"
         :icon="getEntityIcon('company')"
-        class="w-24 aspect-square rounded-lg shrink-0 border shadow-sm"
+        class="w-24 aspect-square rounded-lg shrink-0 border shadow-raised"
       />
 
       <!-- Basic info -->

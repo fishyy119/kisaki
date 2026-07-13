@@ -370,7 +370,7 @@ function handleMouseMove() {
             <!-- Avatar (if has imageUrl) -->
             <div
               v-if="filteredEntities[virtualItem.index].imageUrl !== undefined"
-              class="size-8 shrink-0 rounded-md overflow-hidden bg-muted border shadow-sm"
+              class="size-8 shrink-0 rounded-md overflow-hidden bg-muted border shadow-raised"
             >
               <img
                 v-if="filteredEntities[virtualItem.index].imageUrl"

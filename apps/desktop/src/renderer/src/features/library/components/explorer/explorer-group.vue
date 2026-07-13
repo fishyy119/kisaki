@@ -77,7 +77,7 @@ function handleGroupRowClick(e: MouseEvent) {
     >
       <RouterLink
         :to="linkTarget"
-        class="group flex items-center rounded-r-md text-muted-foreground hover:bg-accent/70 [&.router-link-active]:text-accent-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-sm"
+        class="group flex items-center rounded-r-md text-muted-foreground hover:bg-accent/70 [&.router-link-active]:text-accent-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-raised"
         @click="handleGroupRowClick"
       >
         <!-- Collapse toggle -->
@@ -108,7 +108,7 @@ function handleGroupRowClick(e: MouseEvent) {
     <RouterLink
       v-else
       :to="linkTarget"
-      class="group flex items-center rounded-r-md text-muted-foreground hover:bg-accent/70 [&.router-link-active]:text-accent-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-sm"
+      class="group flex items-center rounded-r-md text-muted-foreground hover:bg-accent/70 [&.router-link-active]:text-accent-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-raised"
       @click="handleGroupRowClick"
     >
       <!-- Collapse toggle -->

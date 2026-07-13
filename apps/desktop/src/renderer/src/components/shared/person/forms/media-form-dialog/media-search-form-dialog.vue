@@ -245,7 +245,7 @@ watch(selectedProviderId, () => {
                 type="button"
                 :class="
                   cn(
-                    'relative overflow-hidden transition-colors border shadow-sm rounded-lg',
+                    'relative overflow-hidden transition-colors border shadow-raised rounded-lg',
                     'hover:border-primary',
                     selectedUrl === url ? 'border-primary hover:border-primary' : 'border-border'
                   )

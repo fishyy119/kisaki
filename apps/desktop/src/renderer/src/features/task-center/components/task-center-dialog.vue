@@ -249,7 +249,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 </div>
                 <template v-else>
                   <div
-                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_132px] items-center gap-5 border-b border-border bg-background px-4 text-xs font-medium text-muted-foreground"
+                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_132px] items-center gap-5 border-b border-border bg-dialog px-4 text-xs font-medium text-muted-foreground"
                   >
                     <div>任务</div>
                     <div>进度</div>
@@ -310,7 +310,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 </div>
                 <template v-else>
                   <div
-                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_64px] items-center gap-5 border-b border-border bg-background px-4 text-xs font-medium text-muted-foreground"
+                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_64px] items-center gap-5 border-b border-border bg-dialog px-4 text-xs font-medium text-muted-foreground"
                   >
                     <div>任务</div>
                     <div>结果</div>

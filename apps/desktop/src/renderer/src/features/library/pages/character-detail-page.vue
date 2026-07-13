@@ -19,10 +19,16 @@ import {
   CharacterDropdownMenu,
   CharacterDetailContent
 } from '@renderer/components/shared/character'
-import { useCharacterProvider, useEvent, useRenderState } from '@renderer/composables'
+import {
+  useAmbientLight,
+  useCharacterProvider,
+  useEvent,
+  useRenderState
+} from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { characters } from '@shared/db'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
@@ -61,6 +67,15 @@ const { character, isLoading, error } = useCharacterProvider(
   spoilersRevealed
 )
 const state = useRenderState(isLoading, error, character)
+
+useAmbientLight(() =>
+  character.value?.photoFile
+    ? getAttachmentUrl('characters', character.value.id, character.value.photoFile, {
+        width: 100,
+        height: 100
+      })
+    : null
+)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'characters' && id === characterId.value) {
@@ -123,7 +138,7 @@ function handleRevealSpoilersConfirm() {
     :error="error"
     :icon="getEntityIcon('character')"
     title="角色不存在"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -197,7 +212,7 @@ function handleRevealSpoilersConfirm() {
     </PageHeader>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-auto p-4">
+    <div class="flex-1 overflow-auto bg-background p-4">
       <CharacterDetailContent />
     </div>
 

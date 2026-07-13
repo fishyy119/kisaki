@@ -328,74 +328,76 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
       @refresh="refreshAll"
     />
 
-    <AutomationToolbar
-      v-model:search-query="searchQuery"
-      v-model:status-filter="statusFilter"
-      v-model:source-filter="sourceFilter"
-      v-model:sort-field="sortField"
-      v-model:sort-direction="sortDirection"
-      :filtered-count="filteredAutomations.length"
-    />
-
-    <div class="min-h-0 flex-1">
-      <StateView
-        v-if="state === 'loading' || state === 'error'"
-        :state="state"
-        :error="error"
-        class="h-full"
+    <div class="flex min-h-0 flex-1 flex-col bg-background">
+      <AutomationToolbar
+        v-model:search-query="searchQuery"
+        v-model:status-filter="statusFilter"
+        v-model:source-filter="sourceFilter"
+        v-model:sort-field="sortField"
+        v-model:sort-direction="sortDirection"
+        :filtered-count="filteredAutomations.length"
       />
 
-      <StateView
-        v-else-if="automationList.length === 0"
-        state="empty"
-        icon="icon-[mdi--timer-outline]"
-        description="暂无自动化"
-        class="h-full"
-      />
+      <div class="min-h-0 flex-1">
+        <StateView
+          v-if="state === 'loading' || state === 'error'"
+          :state="state"
+          :error="error"
+          class="h-full"
+        />
 
-      <StateView
-        v-else-if="filteredAutomations.length === 0"
-        state="empty"
-        icon="icon-[mdi--filter-off-outline]"
-        description="没有匹配的自动化"
-        class="h-full"
-      />
+        <StateView
+          v-else-if="automationList.length === 0"
+          state="empty"
+          icon="icon-[mdi--timer-outline]"
+          description="暂无自动化"
+          class="h-full"
+        />
 
-      <div
-        v-else
-        class="h-full overflow-auto"
-      >
+        <StateView
+          v-else-if="filteredAutomations.length === 0"
+          state="empty"
+          icon="icon-[mdi--filter-off-outline]"
+          description="没有匹配的自动化"
+          class="h-full"
+        />
+
         <div
-          class="sticky top-0 z-10 grid h-8 items-center gap-3 border-b border-border bg-background px-4 text-xs font-medium text-muted-foreground"
-          style="
-            grid-template-columns:
-              minmax(240px, 2fr) minmax(180px, 1.2fr) minmax(150px, 1fr)
-              minmax(150px, 1fr) minmax(120px, 0.7fr) 132px;
-          "
+          v-else
+          class="h-full overflow-auto"
         >
-          <div>名称</div>
-          <div>命令</div>
-          <div>触发</div>
-          <div>运行</div>
-          <div>状态</div>
-          <div class="text-right">操作</div>
-        </div>
+          <div
+            class="sticky top-0 z-10 grid h-8 items-center gap-3 border-b border-border bg-background glass px-4 text-xs font-medium text-muted-foreground"
+            style="
+              grid-template-columns:
+                minmax(240px, 2fr) minmax(180px, 1.2fr) minmax(150px, 1fr)
+                minmax(150px, 1fr) minmax(120px, 0.7fr) 132px;
+            "
+          >
+            <div>名称</div>
+            <div>命令</div>
+            <div>触发</div>
+            <div>运行</div>
+            <div>状态</div>
+            <div class="text-right">操作</div>
+          </div>
 
-        <div class="divide-y divide-border/50">
-          <AutomationRow
-            v-for="automation in filteredAutomations"
-            :key="automation.id"
-            :automation="automation"
-            :command="getCommand(automation)"
-            :running="isAutomationRunning(automation.id)"
-            :busy="isAutomationBusy(automation.id)"
-            @run="handleRun(automation)"
-            @cancel="handleCancel(automation)"
-            @set-enabled="(enabled) => handleSetEnabled(automation, enabled)"
-            @edit="openEditDialog(automation)"
-            @details="openDetailsDialog(automation)"
-            @delete="requestDeleteAutomation(automation)"
-          />
+          <div class="divide-y divide-border/50">
+            <AutomationRow
+              v-for="automation in filteredAutomations"
+              :key="automation.id"
+              :automation="automation"
+              :command="getCommand(automation)"
+              :running="isAutomationRunning(automation.id)"
+              :busy="isAutomationBusy(automation.id)"
+              @run="handleRun(automation)"
+              @cancel="handleCancel(automation)"
+              @set-enabled="(enabled) => handleSetEnabled(automation, enabled)"
+              @edit="openEditDialog(automation)"
+              @details="openDetailsDialog(automation)"
+              @delete="requestDeleteAutomation(automation)"
+            />
+          </div>
         </div>
       </div>
     </div>

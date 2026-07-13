@@ -22,7 +22,10 @@
 - Dense settings and workflow surfaces should prefer divider-based grids or row lists
   over repeated cards: use borders, aligned columns, and compact row rhythm to make
   related controls scannable.
-- Minimal shadows and borders
+- Ambient light: a soft gradient glow painted under the whole UI (`ambient-light.vue`);
+  layer colors are slightly translucent so the glow bleeds through, floating layers
+  add glass blur on top
+- Shadows come in exactly three semantic tiers (raised/overlay/modal); borders stay subtle
 - Short animations (100-150ms) for popovers
 
 ## Semantic Tokens
@@ -62,6 +65,54 @@ border-border  /* Dividers, outlines */
 bg-input       /* Input background (currently transparent) */
 bg-muted       /* Disabled input background */
 ```
+
+### Glass & Light (theme-driven)
+
+Raw tokens live in theme presets (`core/theme/presets/*/theme.css`, `:root` + `.dark`);
+`globals.css` composes them into utilities. The default preset is Kisaki's own
+oklch system: one cool neutral hue anchor (~256deg) with disciplined chroma,
+per-mode calibrated primary/semantic colors, and a categorical chart ramp.
+
+```css
+/* Depth-plane alpha (composed into layer colors). Three planes matching the
+ * shadow tiers; themes opt out with 100%. Control fills
+ * (primary/secondary/accent/input/muted) stay OUTSIDE the alpha system;
+ * neutral fills are themselves relative alpha tints (ink on light, white on
+ * dark) so controls keep the same relationship on base and elevated planes. */
+--alpha-base     /* bg-background / bg-surface / bg-card */
+--alpha-overlay  /* bg-popover (popover/dropdown/tooltip/toast) */
+--alpha-modal    /* bg-dialog */
+
+/* Thick glass recipe for floating layers (custom utility in globals.css):
+ * backdrop-filter: blur(--glass-blur) saturate(--glass-saturate) */
+glass
+
+/* Elevation shadows - the ONLY legal shadow utilities (Tailwind scale is
+ * disabled via --shadow-*: initial; shadow-none stays as reset).
+ * Floating tiers lead with an inset top highlight = specular glass edge. */
+shadow-raised   /* small elements, thumbnails, active states */
+shadow-overlay  /* floating layers: popover/dropdown/tooltip/toast */
+shadow-modal    /* dialogs */
+
+/* Ambient light (bottom layer glow, rendered by layout/ambient-light.vue) */
+--light-1 / --light-2 / --light-3 / --light-strength
+
+/* Material grain (full-window noise layer above all surfaces) */
+--grain-opacity
+```
+
+Dark elevation ladder: higher planes are lighter (base < card < popover < dialog);
+light mode inverts (elevated planes step toward white).
+
+Ambient light source: cover-driven detail pages call `useAmbientLight(coverUrl)`
+(extraction in `core/theme/light/`); other pages fall back to theme `--light-*` tokens.
+
+**One paint per region rule**: every screen region (titlebar, sidebar, page header
+strips, page body/scroll containers) paints exactly ONE base-plane color
+(`bg-surface` or `bg-background`) directly over the ambient light; layout containers
+in between stay transparent. This keeps glow transmission uniform window-wide.
+Local tints (`bg-background/50` toolbars, `bg-muted` chips, sticky table headers)
+sit on top of the region's paint as before.
 
 ## Size & Typography
 
@@ -141,8 +192,8 @@ See `buttonVariants` in `components/ui/button.vue`:
 
 ### Dialog
 
-- `bg-popover` + `border` + `rounded-md`
-- Light shadow
+- `bg-dialog` + `border` + `rounded-md` + `shadow-modal backdrop-blur-glass`
+- No visual overlay/scrim: separation comes from shadow-modal + glass blur
 - 100-150ms fade/zoom animation
 - Structure: `DialogHeader` → `DialogBody` → `DialogFooter`
 
@@ -351,8 +402,10 @@ Zero JS runtime, CSS mask-based.
 
 ## Search Patterns
 
-- Theme tokens: `@theme inline`, `--color-*`, `--radius`
+- Theme tokens: `@theme inline`, `--color-*`, `--radius`, `--alpha-base/overlay/modal`, `--light-*`
 - Background: `bg-background`, `bg-surface`, `bg-popover`, `bg-card`
+- Glass/shadow: `shadow-raised`, `shadow-overlay`, `shadow-modal`, `glass`
+- Ambient light: `lightController`, `useAmbientLight`, `ambient-light`
 - Text: `text-foreground`, `text-muted-foreground`
 - Icon: `@iconify/tailwind4`, `icon-[mdi--...]`, `Icon`
 - UI wrapper: `useForwardPropsEmits`, `inheritAttrs: false`, `data-slot`
@@ -362,6 +415,10 @@ Zero JS runtime, CSS mask-based.
 ## Constraints
 
 - Use semantic tokens, not hardcoded colors
+- Shadows: only `shadow-raised` / `shadow-overlay` / `shadow-modal` (plus `shadow-none`).
+  The Tailwind size scale (`shadow-sm/md/lg/...`) is disabled and has no effect
+- Layer alpha is baked into layer colors; do not add per-component translucency to
+  layer backgrounds (use `/NN` modifiers only for interaction states on control fills)
 - Use `Icon` component for icons (CSS mask, tree-shakeable)
 - `components/ui/*` contains no business logic
 - All interactive elements must have `focus-visible` state

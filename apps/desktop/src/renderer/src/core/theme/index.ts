@@ -1,2 +1,5 @@
 export { themeManager } from './manager'
+export { lightController } from './light/controller'
+export type { AmbientLightColors } from './light/controller'
+export { extractAmbientLightColors } from './light/extraction'
 export type { ThemeDefinition } from './types'

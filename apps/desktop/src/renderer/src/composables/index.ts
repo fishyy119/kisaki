@@ -4,6 +4,7 @@
 export * from './types'
 
 // Core composables
+export * from './use-ambient-light'
 export * from './use-async-data'
 export * from './use-debounced-ref'
 export * from './use-delayed-loading'

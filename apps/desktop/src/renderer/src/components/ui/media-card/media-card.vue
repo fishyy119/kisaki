@@ -73,7 +73,7 @@ const alignStyle = computed(() => alignStyles[props.align])
     <div
       :class="
         cn(
-          'relative rounded-lg overflow-hidden bg-muted border shadow-sm',
+          'relative rounded-lg overflow-hidden bg-muted border shadow-raised',
           props.aspect === 'portrait' ? 'aspect-[3/4]' : 'aspect-square'
         )
       "

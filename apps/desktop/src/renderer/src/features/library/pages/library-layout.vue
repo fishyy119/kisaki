@@ -88,10 +88,7 @@ onUnmounted(() => {
         :max-left-width="400"
         class="h-full"
       >
-        <ResizablePanel
-          position="left"
-          class="bg-muted/30"
-        >
+        <ResizablePanel position="left">
           <LibraryExplorer />
         </ResizablePanel>
         <ResizableHandle />

@@ -179,7 +179,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
         v-if="iconUrl && !iconError"
         :src="iconUrl"
         alt=""
-        class="size-5 rounded shrink-0 border shadow-xs"
+        class="size-5 rounded shrink-0 border shadow-raised"
         @error="iconError = true"
       />
       <Icon

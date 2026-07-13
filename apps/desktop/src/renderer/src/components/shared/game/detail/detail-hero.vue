@@ -62,7 +62,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
         "
         :alt="game.name"
         :icon="getEntityIcon('game')"
-        class="w-28 aspect-[3/4] rounded-lg shrink-0 border shadow-sm"
+        class="w-28 aspect-[3/4] rounded-lg shrink-0 border shadow-raised"
       />
 
       <!-- Info -->

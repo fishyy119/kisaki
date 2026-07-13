@@ -27,7 +27,7 @@ function handleNavClick() {
     <RouterLink
       to="/library"
       exact
-      class="flex flex-1 items-center gap-1.5 h-7 px-2.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-exact-active]:text-foreground [&.router-link-exact-active]:bg-accent [&.router-link-exact-active]:shadow-sm"
+      class="flex flex-1 items-center gap-1.5 h-7 px-2.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-exact-active]:text-foreground [&.router-link-exact-active]:bg-accent [&.router-link-exact-active]:shadow-raised"
     >
       <Icon
         icon="icon-[mdi--view-dashboard-outline]"
@@ -41,7 +41,7 @@ function handleNavClick() {
       <!-- Collections link -->
       <RouterLink
         to="/library/collections"
-        class="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-active]:text-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-sm"
+        class="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-active]:text-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-raised"
         title="合集"
       >
         <Icon
@@ -53,7 +53,7 @@ function handleNavClick() {
       <!-- Favorites link -->
       <RouterLink
         to="/library/favorites"
-        class="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-active]:text-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-sm"
+        class="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-active]:text-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-raised"
         title="喜欢"
       >
         <Icon

@@ -37,7 +37,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       }"
       :class="
         cn(
-          'bg-popover text-popover-foreground border border-border rounded-md z-50 shadow-md',
+          'bg-popover text-popover-foreground border border-border rounded-md z-50 shadow-overlay glass',
           'overflow-x-hidden overflow-y-auto',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

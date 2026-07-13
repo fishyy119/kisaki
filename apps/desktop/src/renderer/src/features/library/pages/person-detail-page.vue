@@ -19,10 +19,11 @@ import {
   PersonDropdownMenu,
   PersonDetailContent
 } from '@renderer/components/shared/person'
-import { useEvent, usePersonProvider, useRenderState } from '@renderer/composables'
+import { useAmbientLight, useEvent, usePersonProvider, useRenderState } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { persons } from '@shared/db'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
@@ -58,6 +59,15 @@ watch(personId, () => {
 
 const { person, isLoading, error } = usePersonProvider(() => personId.value ?? '', spoilersRevealed)
 const state = useRenderState(isLoading, error, person)
+
+useAmbientLight(() =>
+  person.value?.photoFile
+    ? getAttachmentUrl('persons', person.value.id, person.value.photoFile, {
+        width: 100,
+        height: 100
+      })
+    : null
+)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'persons' && id === personId.value) {
@@ -120,7 +130,7 @@ function handleRevealSpoilersConfirm() {
     :error="error"
     :icon="getEntityIcon('person')"
     title="人员不存在"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -187,7 +197,7 @@ function handleRevealSpoilersConfirm() {
     </PageHeader>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-auto p-4">
+    <div class="flex-1 overflow-auto bg-background p-4">
       <PersonDetailContent />
     </div>
 

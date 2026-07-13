@@ -37,7 +37,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full bg-background">
     <header class="flex items-center gap-2 h-12 px-3 border-b border-border shrink-0">
       <Button
         size="icon-sm"

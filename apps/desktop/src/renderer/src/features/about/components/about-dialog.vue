@@ -54,7 +54,7 @@ function handleOpenUpdaterDialog() {
       <DialogBody class="space-y-5">
         <img
           :src="kisakiIcon"
-          class="mx-auto size-12 border shadow-sm rounded-md"
+          class="mx-auto size-12 border shadow-raised rounded-md"
           alt="Kisaki Icon"
         />
 

@@ -71,16 +71,51 @@ function getExtensionThemeId(extensionId: string, themeId: string): string {
 function compileThemeCss(theme: ThemeContribution): string {
   return [
     ':root {',
-    ...compileTokenRules(theme.tokens.light),
+    ...compileTokenRules(theme.tokens.light, 'light'),
     '}',
     '',
     '.dark {',
-    ...compileTokenRules(theme.tokens.dark),
+    ...compileTokenRules(theme.tokens.dark, 'dark'),
     '}'
   ].join('\n')
 }
 
-function compileTokenRules(tokens: ThemeContribution['tokens']['light']): string[] {
+/**
+ * App defaults for glass tokens (per-layer alpha, blur, elevation shadows,
+ * ambient light strength). Extension themes contribute colors only; the
+ * remaining glass values mirror the built-in default preset.
+ */
+const GLASS_TOKEN_RULES: Record<'light' | 'dark', readonly string[]> = {
+  light: [
+    '  --alpha-base: 72%;',
+    '  --alpha-overlay: 88%;',
+    '  --alpha-modal: 94%;',
+    '  --glass-blur: 28px;',
+    '  --glass-saturate: 140%;',
+    '  --shadow-raised: 0 1px 2px 0 oklch(0.13 0.02 258 / 0.08), 0 1px 1px -1px oklch(0.13 0.02 258 / 0.06);',
+    '  --shadow-overlay: inset 0 1px 0 oklch(1 0 0 / 0.5), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.05), 0 1px 2px 0 oklch(0.13 0.02 258 / 0.1), 0 10px 24px -6px oklch(0.13 0.02 258 / 0.16);',
+    '  --shadow-modal: inset 0 1px 0 oklch(1 0 0 / 0.55), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.06), 0 2px 4px 0 oklch(0.13 0.02 258 / 0.1), 0 28px 64px -16px oklch(0.13 0.02 258 / 0.24);',
+    '  --light-strength: 45%;',
+    '  --grain-opacity: 2.5%;'
+  ],
+  dark: [
+    '  --alpha-base: 75%;',
+    '  --alpha-overlay: 90%;',
+    '  --alpha-modal: 95%;',
+    '  --glass-blur: 28px;',
+    '  --glass-saturate: 140%;',
+    '  --shadow-raised: 0 1px 2px 0 oklch(0 0 0 / 0.35), 0 1px 1px -1px oklch(0 0 0 / 0.28);',
+    '  --shadow-overlay: inset 0 1px 0 oklch(1 0 0 / 0.08), inset 0 -1px 0 oklch(0 0 0 / 0.35), 0 1px 2px 0 oklch(0 0 0 / 0.45), 0 10px 24px -6px oklch(0 0 0 / 0.5);',
+    '  --shadow-modal: inset 0 1px 0 oklch(1 0 0 / 0.1), inset 0 -1px 0 oklch(0 0 0 / 0.4), 0 2px 4px 0 oklch(0 0 0 / 0.5), 0 28px 64px -16px oklch(0 0 0 / 0.65);',
+    '  --light-strength: 40%;',
+    '  --grain-opacity: 4%;'
+  ]
+}
+
+function compileTokenRules(
+  tokens: ThemeContribution['tokens']['light'],
+  mode: 'light' | 'dark'
+): string[] {
   const safeTokens = sanitizeThemeTokens(tokens)
 
   return [
@@ -119,7 +154,12 @@ function compileTokenRules(tokens: ThemeContribution['tokens']['light']): string
     `  --chart-2: ${safeTokens.accent};`,
     `  --chart-3: ${safeTokens.muted};`,
     `  --chart-4: ${safeTokens.border};`,
-    `  --chart-5: ${safeTokens.danger};`
+    `  --chart-5: ${safeTokens.danger};`,
+    ...GLASS_TOKEN_RULES[mode],
+    // Ambient light colors derived from the contributed palette.
+    `  --light-1: ${safeTokens.primary};`,
+    `  --light-2: ${safeTokens.accent};`,
+    `  --light-3: color-mix(in oklch, ${safeTokens.primary} 50%, ${safeTokens.accent});`
   ]
 }
 

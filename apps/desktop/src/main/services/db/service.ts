@@ -129,6 +129,18 @@ export class DbService implements IService {
     this.event.bus.emit('db.ready', true)
   }
 
+  // Attachment responses are consumed cross-origin (renderer fetch() for
+  // ambient color extraction), so successful responses opt into CORS.
+  private withAttachmentCors(response: Response): Response {
+    const headers = new Headers(response.headers)
+    headers.set('Access-Control-Allow-Origin', '*')
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    })
+  }
+
   private setupAttachmentProtocol(): void {
     protocol.handle('attachment', async (request) => {
       try {
@@ -164,7 +176,7 @@ export class DbService implements IService {
               thumbnailOptions
             )
             const thumbnailUrl = pathToFileURL(thumbnailPath).toString()
-            return await net.fetch(thumbnailUrl)
+            return this.withAttachmentCors(await net.fetch(thumbnailUrl))
           } catch (error) {
             log.warn('Thumbnail generation failed, falling back to original.', error, {
               fileName
@@ -173,7 +185,7 @@ export class DbService implements IService {
         }
 
         const fileUrl = pathToFileURL(filePath).toString()
-        return await net.fetch(fileUrl)
+        return this.withAttachmentCors(await net.fetch(fileUrl))
       } catch (error) {
         log.error('Attachment protocol failed.', error)
         return new Response('Failed to load attachment', { status: 500 })

@@ -96,7 +96,7 @@ async function handleRemoveSigner(): Promise<void> {
 
 <template>
   <div class="flex h-full flex-col">
-    <div class="shrink-0 flex items-center gap-3 border-b border-border bg-background/50 px-4 py-3">
+    <div class="shrink-0 flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3">
       <div class="flex-1">
         <div class="text-sm font-medium">签名信任</div>
         <div class="text-xs text-muted-foreground">{{ signerList.length }} 个扩展级签名指纹</div>

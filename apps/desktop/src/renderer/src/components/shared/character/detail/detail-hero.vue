@@ -92,7 +92,7 @@ function getBodyStats() {
         "
         :alt="character.name"
         :icon="getEntityIcon('character')"
-        class="w-24 aspect-[3/4] rounded-lg shrink-0 border shadow-sm"
+        class="w-24 aspect-[3/4] rounded-lg shrink-0 border shadow-raised"
       />
 
       <!-- Basic info -->

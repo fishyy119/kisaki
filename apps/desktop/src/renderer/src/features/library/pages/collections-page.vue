@@ -93,7 +93,7 @@ function handleCollectionClick(collectionId: string) {
   <StateView
     v-if="state === 'loading'"
     state="loading"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -127,7 +127,7 @@ function handleCollectionClick(collectionId: string) {
     <!-- Collection grid -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto p-4"
+      class="flex-1 overflow-auto bg-background p-4"
     >
       <!-- Empty state -->
       <StateView

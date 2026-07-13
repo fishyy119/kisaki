@@ -16,13 +16,7 @@ import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
-import {
-  Empty,
-  EmptyMedia,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription
-} from '@renderer/components/ui/empty'
+import { StateView } from '@renderer/components/ui/state-view'
 import {
   Table,
   TableHeader,
@@ -278,51 +272,31 @@ const gameIdModel = computed({
 
       <!-- Scrollable body -->
       <div class="h-[20vh] overflow-auto">
-        <Empty
+        <StateView
           v-if="!hasSearched"
-          class="h-full border-0"
-        >
-          <EmptyHeader>
-            <EmptyMedia>
-              <Icon
-                icon="icon-[mdi--magnify]"
-                class="size-6 text-muted-foreground/50"
-              />
-            </EmptyMedia>
-            <EmptyDescription>输入游戏名称开始搜索</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+          state="empty"
+          size="sm"
+          icon="icon-[mdi--magnify]"
+          description="输入游戏名称开始搜索"
+          class="h-full"
+        />
 
-        <Empty
+        <StateView
           v-else-if="isSearching"
-          class="h-full border-0"
-        >
-          <EmptyHeader>
-            <EmptyMedia>
-              <Icon
-                icon="icon-[mdi--loading]"
-                class="size-6 text-muted-foreground animate-spin"
-              />
-            </EmptyMedia>
-            <EmptyDescription>搜索中...</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+          state="loading"
+          size="sm"
+          class="h-full"
+        />
 
-        <Empty
+        <StateView
           v-else-if="searchResults.length === 0"
-          class="h-full border-0"
-        >
-          <EmptyHeader>
-            <EmptyMedia>
-              <Icon
-                icon="icon-[mdi--magnify-close]"
-                class="size-6 text-muted-foreground/50"
-              />
-            </EmptyMedia>
-            <EmptyTitle class="text-sm">无匹配结果</EmptyTitle>
-            <EmptyDescription>请尝试其他关键词</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+          state="empty"
+          size="sm"
+          icon="icon-[mdi--magnify-close]"
+          title="无匹配结果"
+          description="请尝试其他关键词"
+          class="h-full"
+        />
 
         <Table
           v-else

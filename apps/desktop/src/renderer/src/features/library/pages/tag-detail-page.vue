@@ -119,7 +119,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     :error="error"
     :icon="getEntityIcon('tag')"
     title="标签不存在"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -174,7 +174,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     <!-- Main content -->
     <div
       ref="scrollContainerRef"
-      class="flex-1 overflow-auto p-4"
+      class="flex-1 overflow-auto bg-background p-4"
     >
       <TagDetailContent
         :scroll-parent="scrollContainerRef"

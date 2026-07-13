@@ -2,9 +2,13 @@
   StateView - Block-level placeholder for async render states.
 
   Maps `useRenderState` results (plus an explicit 'empty') to a unified
-  centered placeholder: spinner for loading, icon + text for
-  error/not-found/empty. Renders nothing for 'pending' and 'success'.
-  Complements the Empty family, which stays a compositional layout kit.
+  centered placeholder: spinner for loading, icon + text (+ actions slot)
+  for error/not-found/empty. Renders nothing for 'success'; for 'pending'
+  it renders an empty container so the caller's region paint (e.g.
+  bg-background) stays in place and the ambient light layer never flashes
+  through during the pre-spinner window.
+  This is the single block-level placeholder for the app; inline busy
+  indicators keep using Spinner directly.
 -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
@@ -22,10 +26,33 @@ interface Props {
   description?: string
   /** Error detail shown as description in the error state */
   error?: string | Error | null
+  /** md for page/panel regions (default), sm for compact areas such as dialog result panes */
+  size?: 'md' | 'sm'
   class?: HTMLAttributes['class']
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  size: 'md'
+})
+
+const SIZE_CLASSES = {
+  md: {
+    spinner: 'size-8',
+    icon: 'mb-3 size-12',
+    title: 'text-lg',
+    description: 'text-sm',
+    actions: 'mt-4'
+  },
+  sm: {
+    spinner: 'size-5',
+    icon: 'mb-2 size-6',
+    title: 'text-sm',
+    description: 'text-xs',
+    actions: 'mt-3'
+  }
+} as const
+
+const sizeClasses = computed(() => SIZE_CLASSES[props.size])
 
 const isMessage = computed(
   () => props.state === 'error' || props.state === 'not-found' || props.state === 'empty'
@@ -46,41 +73,41 @@ const displayDescription = computed(() => {
 
 <template>
   <div
-    v-if="props.state === 'loading' || isMessage"
+    v-if="props.state !== 'success'"
     data-slot="state-view"
     :class="cn('flex flex-col items-center justify-center text-center', props.class)"
   >
     <Spinner
       v-if="props.state === 'loading'"
-      class="size-8 text-muted-foreground"
+      :class="cn('text-muted-foreground', sizeClasses.spinner)"
     />
 
-    <template v-else>
+    <template v-else-if="isMessage">
       <Icon
         v-if="displayIcon"
         :icon="displayIcon"
         :class="
           cn(
-            'mb-3 size-12',
+            sizeClasses.icon,
             props.state === 'error' ? 'text-destructive/50' : 'text-muted-foreground/50'
           )
         "
       />
       <p
         v-if="displayTitle"
-        class="text-lg font-medium"
+        :class="cn('font-medium', sizeClasses.title)"
       >
         {{ displayTitle }}
       </p>
       <p
         v-if="displayDescription"
-        class="mt-1 text-sm text-muted-foreground"
+        :class="cn('mt-1 text-muted-foreground', sizeClasses.description)"
       >
         {{ displayDescription }}
       </p>
       <div
         v-if="$slots.actions"
-        class="mt-4 flex items-center gap-2"
+        :class="cn('flex items-center gap-2', sizeClasses.actions)"
       >
         <slot name="actions" />
       </div>

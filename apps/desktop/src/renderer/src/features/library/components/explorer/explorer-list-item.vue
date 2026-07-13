@@ -179,7 +179,7 @@ function handleClick(e: MouseEvent) {
   >
     <RouterLink
       :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-sm [&.is-selected]:text-foreground [&.is-selected]:bg-accent/50"
+      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/50"
       :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
       @click="handleClick"
     >
@@ -187,7 +187,7 @@ function handleClick(e: MouseEvent) {
         v-if="imageUrl"
         :src="imageUrl"
         :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-sm object-cover"
+        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
       />
       <Icon
         v-else
@@ -207,7 +207,7 @@ function handleClick(e: MouseEvent) {
   >
     <RouterLink
       :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-sm [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
+      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
       :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
       @click="handleClick"
     >
@@ -215,7 +215,7 @@ function handleClick(e: MouseEvent) {
         v-if="imageUrl"
         :src="imageUrl"
         :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-sm object-cover"
+        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
       />
       <Icon
         v-else
@@ -235,7 +235,7 @@ function handleClick(e: MouseEvent) {
   >
     <RouterLink
       :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-sm [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
+      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
       :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
       @click="handleClick"
     >
@@ -243,7 +243,7 @@ function handleClick(e: MouseEvent) {
         v-if="imageUrl"
         :src="imageUrl"
         :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-sm object-cover"
+        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
       />
       <Icon
         v-else
@@ -263,7 +263,7 @@ function handleClick(e: MouseEvent) {
   >
     <RouterLink
       :to="{ path: detailPath, query: linkQuery }"
-      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-sm [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
+      class="group relative flex items-center h-6 pl-4 pr-2 text-xs rounded-r-md text-muted-foreground hover:text-foreground hover:bg-accent/70 [&.is-strict-active]:text-accent-foreground [&.is-strict-active]:bg-accent [&.is-strict-active]:shadow-raised [&.is-selected]:text-foreground [&.is-selected]:bg-accent/30"
       :class="{ 'is-strict-active': isStrictActive, 'is-selected': isSelected && !isStrictActive }"
       @click="handleClick"
     >
@@ -271,7 +271,7 @@ function handleClick(e: MouseEvent) {
         v-if="imageUrl"
         :src="imageUrl"
         :alt="props.entity.name"
-        class="size-4 rounded-sm mr-1.5 border shadow-sm object-cover"
+        class="size-4 rounded-sm mr-1.5 border shadow-raised object-cover"
       />
       <Icon
         v-else

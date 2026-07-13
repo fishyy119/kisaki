@@ -75,7 +75,7 @@ function getUiSpec(entityType: ContentEntityType) {
       <Button
         variant="secondary"
         size="icon"
-        class="size-7 bg-background/50"
+        class="size-7 bg-muted/50"
         title="排序"
       >
         <Icon

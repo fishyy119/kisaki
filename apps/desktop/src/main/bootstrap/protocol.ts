@@ -36,7 +36,10 @@ export function registerAppSchemes(): void {
         secure: true,
         supportFetchAPI: true,
         bypassCSP: true,
-        stream: true
+        stream: true,
+        // Renderer fetch() reads (ambient color extraction) are CORS-gated,
+        // so the scheme must participate in CORS.
+        corsEnabled: true
       }
     },
     {

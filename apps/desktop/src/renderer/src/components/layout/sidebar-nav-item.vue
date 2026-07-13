@@ -34,7 +34,7 @@ const props = defineProps<Props>()
             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary'
           )
         "
-        active-class="text-accent-foreground bg-accent shadow-sm"
+        active-class="text-accent-foreground bg-accent shadow-raised"
       >
         <!-- Active indicator -->
         <span

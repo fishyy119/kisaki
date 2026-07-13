@@ -35,7 +35,7 @@ const searchModel = computed({
     <Input
       v-model="searchModel"
       placeholder="搜索..."
-      class="pl-8 h-7 text-xs bg-background/50"
+      class="pl-8 h-7 text-xs bg-muted/50"
     />
     <Button
       v-if="search"

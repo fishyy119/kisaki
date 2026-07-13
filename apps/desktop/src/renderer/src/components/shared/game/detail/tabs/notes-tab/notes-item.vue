@@ -39,7 +39,7 @@ const emit = defineEmits<{
             })
           "
           alt=""
-          class="size-full object-cover border shadow-sm"
+          class="size-full object-cover border shadow-raised"
         />
         <div
           v-else

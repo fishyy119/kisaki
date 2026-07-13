@@ -29,11 +29,12 @@ import {
   GameScoreFormDialog,
   GameDetailContent
 } from '@renderer/components/shared/game'
-import { useEvent, useGameProvider, useRenderState } from '@renderer/composables'
+import { useAmbientLight, useEvent, useGameProvider, useRenderState } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { games, type Status } from '@shared/db'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatStatus, getStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
@@ -82,6 +83,12 @@ watch(gameId, () => {
 
 const { game, isLoading, error } = useGameProvider(() => gameId.value ?? '', spoilersRevealed)
 const state = useRenderState(isLoading, error, game)
+
+useAmbientLight(() =>
+  game.value?.coverFile
+    ? getAttachmentUrl('games', game.value.id, game.value.coverFile, { width: 100, height: 100 })
+    : null
+)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'games' && id === gameId.value) {
@@ -182,7 +189,7 @@ const canOpenGameDir = computed(() => {
     :error="error"
     :icon="getEntityIcon('game')"
     title="游戏不存在"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -309,7 +316,7 @@ const canOpenGameDir = computed(() => {
     </PageHeader>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-auto p-4">
+    <div class="flex-1 overflow-auto bg-background p-4">
       <GameDetailContent />
     </div>
 

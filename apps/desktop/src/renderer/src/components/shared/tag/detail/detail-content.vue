@@ -6,16 +6,8 @@
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { useTag, useRenderState } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle
-} from '@renderer/components/ui/empty'
 import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
@@ -67,21 +59,14 @@ function handleItemClick(entity: EntityData) {
   />
 
   <!-- Empty state -->
-  <Empty
+  <StateView
     v-else-if="state === 'success' && entities.length === 0"
-    class="h-full border-none"
-  >
-    <EmptyHeader>
-      <EmptyMedia>
-        <Icon
-          :icon="getEntityIcon('tag')"
-          class="size-12 text-muted-foreground/50"
-        />
-      </EmptyMedia>
-      <EmptyTitle>此标签暂无{{ entityLabel }}</EmptyTitle>
-      <EmptyDescription>尚无{{ entityLabel }}使用此标签</EmptyDescription>
-    </EmptyHeader>
-  </Empty>
+    state="empty"
+    :icon="getEntityIcon('tag')"
+    :title="`此标签暂无${entityLabel}`"
+    :description="`尚无${entityLabel}使用此标签`"
+    class="h-full"
+  />
 
   <!-- Content -->
   <VirtualGrid

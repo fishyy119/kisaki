@@ -326,7 +326,7 @@ const deleteDialogOpen = computed({
                       <CoverImage
                         :src="coverUrl"
                         :alt="spoiler.name"
-                        class="size-10 shrink-0 rounded-md border shadow-sm"
+                        class="size-10 shrink-0 rounded-md border shadow-raised"
                       />
                     </template>
                     <template

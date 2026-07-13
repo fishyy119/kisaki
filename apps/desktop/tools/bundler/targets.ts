@@ -169,6 +169,8 @@ function createRendererContentSecurityPolicy(): string {
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: attachment: kisaki-extension-icon: https: http:",
+    // Ambient light extraction fetches attachment cover thumbnails.
+    "connect-src 'self' attachment:",
     "frame-src 'self' kisaki-extension-ui:"
   ].join('; ')
 }

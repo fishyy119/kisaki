@@ -14,10 +14,20 @@
  *
  * Design Philosophy:
  * - Professional desktop software aesthetic for media management & tooling
- * - Neutral surfaces with subtle blue accent (primary + focus + selection)
+ * - Own oklch color system: one cool neutral hue anchor (~256deg), blue
+ *   primary, per-mode calibrated semantic colors (see theme presets)
  * - Information-dense layout with compact controls (14px base typography)
  * - Clear hierarchy through background layers and spacing, not heavy borders
- * - Subtle motion, low visual noise (short durations, minimal shadows)
+ * - Subtle motion, low visual noise (short durations, restrained shadows)
+ * - Ambient light: a soft gradient glow painted under the whole UI; layer
+ *   colors are slightly translucent (one --alpha-* token per depth plane:
+ *   base/overlay/modal) so the glow bleeds through, and floating layers add
+ *   glass blur on top. Every screen region paints exactly ONE base-plane
+ *   color over the glow (containers stay transparent) so light transmission
+ *   is uniform window-wide
+ * - Material: a full-window grain layer (--grain-opacity) above all surfaces
+ *   plus inset top highlights on floating shadow tiers give the glass a
+ *   physical feel; dark elevation ladder makes higher planes lighter
  *
  * Key Principles:
  * 1. Prefer semantic tokens (bg/text/border) over hard-coded colors
@@ -25,19 +35,29 @@
  * 3. Keep sizes consistent and compact (h-7, rounded-md, text-sm)
  * 4. Reserve primary blue for key actions and focus states
  * 5. Use gentle micro-interactions only (100–150ms, optional 1.02 hover scale)
+ * 6. Shadows come in exactly three semantic tiers: shadow-raised (small
+ *    elements / active states), shadow-overlay (floating layers), and
+ *    shadow-modal (dialogs). The Tailwind size scale is disabled on purpose.
+ * 7. Alpha comes in exactly three depth planes: --alpha-base (background/
+ *    surface/card), --alpha-overlay (popover family), --alpha-modal (dialog).
+ *    Control fills (primary/secondary/accent/input/muted) stay opaque and use
+ *    per-usage modifiers for interaction states (e.g. hover:bg-accent/50)
  */
 
 @theme inline {
-  /* Core semantic colors */
-  --color-background: var(--background);
+  /* Core semantic colors. Layer colors compose the alpha token of their
+   * depth plane (base/overlay/modal) so every bg-* usage is translucent by
+   * default and lets the ambient light layer show through; themes opt out by
+   * setting the alpha to 100%. */
+  --color-background: color-mix(in oklch, var(--background) var(--alpha-base), transparent);
   --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
+  --color-surface: color-mix(in oklch, var(--surface) var(--alpha-base), transparent);
   --color-surface-foreground: var(--surface-foreground);
-  --color-card: var(--card);
+  --color-card: color-mix(in oklch, var(--card) var(--alpha-base), transparent);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
+  --color-popover: color-mix(in oklch, var(--popover) var(--alpha-overlay), transparent);
   --color-popover-foreground: var(--popover-foreground);
-  --color-dialog: var(--dialog);
+  --color-dialog: color-mix(in oklch, var(--dialog) var(--alpha-modal), transparent);
   --color-dialog-foreground: var(--dialog-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -65,6 +85,41 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Elevation shadows. The Tailwind size scale is disabled so the three
+   * theme-driven semantic tiers are the only legal shadow utilities. */
+  --shadow-*: initial;
+  --shadow-raised: var(--shadow-raised);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-modal: var(--shadow-modal);
+}
+
+/* Thick glass recipe for floating layers: blur = material thickness,
+ * saturation boost = density of what shines through. Applied as one utility
+ * so the recipe stays a single theme-driven decision. */
+@utility glass {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+/* Ambient light colors are registered so dynamic (cover-derived) color
+ * changes can transition smoothly on the ambient light layer. */
+@property --light-1 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --light-2 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --light-3 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
 }
 
 /*
@@ -105,7 +160,10 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
+    /* Raw (opaque) background: the ambient light layer paints on top of
+     * this base, and translucent layer colors composite above both. */
+    background: var(--background);
     text-rendering: optimizeLegibility;
   }
 

@@ -19,10 +19,16 @@ import {
   CompanyDropdownMenu,
   CompanyDetailContent
 } from '@renderer/components/shared/company'
-import { useCompanyProvider, useEvent, useRenderState } from '@renderer/composables'
+import {
+  useAmbientLight,
+  useCompanyProvider,
+  useEvent,
+  useRenderState
+} from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { companies } from '@shared/db'
+import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 
 // =============================================================================
@@ -61,6 +67,15 @@ const { company, isLoading, error } = useCompanyProvider(
   spoilersRevealed
 )
 const state = useRenderState(isLoading, error, company)
+
+useAmbientLight(() =>
+  company.value?.logoFile
+    ? getAttachmentUrl('companies', company.value.id, company.value.logoFile, {
+        width: 100,
+        height: 100
+      })
+    : null
+)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'companies' && id === companyId.value) {
@@ -123,7 +138,7 @@ function handleRevealSpoilersConfirm() {
     :error="error"
     :icon="getEntityIcon('company')"
     title="公司不存在"
-    class="h-full"
+    class="h-full bg-background"
   />
 
   <!-- Content -->
@@ -197,7 +212,7 @@ function handleRevealSpoilersConfirm() {
     </PageHeader>
 
     <!-- Main content -->
-    <div class="flex-1 overflow-auto p-4">
+    <div class="flex-1 overflow-auto bg-background p-4">
       <CompanyDetailContent />
     </div>
 
