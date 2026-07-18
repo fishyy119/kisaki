@@ -20,6 +20,8 @@ import {
 import type { GameSession } from '@shared/db'
 
 interface Props {
+  /** Module header title */
+  title?: string
   /** Override sessions (for custom data source) */
   sessions?: GameSession[]
   /** Available distribution types */
@@ -77,6 +79,7 @@ const chartData = computed(() => {
 <template>
   <TimeDistributionChart
     v-model:distribution-type="distributionType"
+    :title="props.title"
     :data="chartData"
     :available-types="props.availableTypes"
     :format-value="(v: number) => `${v.toFixed(1)}h`"

@@ -75,7 +75,7 @@ bg-muted       /* Disabled input background */
 Raw tokens live in theme presets (`core/theme/presets/*/theme.css`, `:root` + `.dark`);
 `globals.css` composes them into utilities ("Lightbox recipes"). The default preset is
 Kisaki's own oklch system: one cool neutral hue anchor (~256deg) with disciplined
-chroma, per-mode calibrated primary/semantic colors, and a categorical chart ramp.
+chroma, per-mode calibrated primary/semantic colors, and a single chart ink token.
 The default lamp is near-monochrome cool light (hues within ~15deg of the anchor,
 low chroma, lightness near the base plane in each mode); color in the lamp is
 reserved for cover-derived page palettes.
@@ -115,10 +115,21 @@ shadow-raised   /* small elements, thumbnails, active states */
 shadow-overlay  /* floating layers: popover/dropdown/tooltip/toast */
 shadow-modal    /* dialogs */
 
-/* Charts: categorical ramp under the canvas chroma discipline (tight
- * lightness band, capped chroma). Large fills (pie slices, bars) run at
- * color-mix 85% toward transparent; strokes/chips use full tokens. */
---chart-1..5
+/* Charts: data ink discipline. All chart marks derive from the single
+ * --chart token; instances of the same kind (top-N lists, rank ladders)
+ * are coded by density steps, never by different hues. Density follows
+ * mark area: thin marks (lines, strokes, crosshairs, peak heatmap cells)
+ * use the full token, bars run at color-mix 70% toward transparent, large
+ * area fills stay at or below ~20-40% (area opacity or ladder steps).
+ * Chart ink is NOT --primary: primary is the interaction accent (actions,
+ * focus, selection) at full chroma; chart ink is calibrated for large data
+ * areas (lower chroma, mode-specific lightness) and must stay independent
+ * so charts never compete with controls. Top-N entity rankings are not
+ * charts: use RankingList (divider rows + share bars + cover imagery).
+ * Registered as --color-chart so bg-chart utilities work. A categorical
+ * ramp gets designed only when a true multi-series identity consumer
+ * exists (e.g. media types); do not re-add it speculatively. */
+--chart
 ```
 
 Dark elevation ladder: higher planes are lighter (base < popover < dialog);
@@ -158,13 +169,32 @@ in between stay transparent. This keeps transmission uniform window-wide.
    `bg-accent` (+ `/NN` for lighter states). Never use layer colors
    (`bg-background/NN` etc.) as fills.
 3. **Emphasis** (what deserves attention): color only with meaning. `primary`
-   for main actions/focus/selection, semantic colors for status, `--chart-*`
+   for main actions/focus/selection, semantic colors for status, `--chart`
    for data; everything else stays neutral.
 
 Object cards (media covers, extension entries, option rows) are transparent:
 border + `shadow-raised` define them, imagery borders stay faint
 (`border-border/40`). Page content partitioning uses Section + line frames
 (`rounded-lg border p-4`), never filled cards.
+
+**Report surfaces** (statistics pages): the page itself is the partitioned
+object. Full-bleed horizontal bands separated by `divide-y`; inside a band,
+equal-height cells split by `border-l` (asymmetric 2:1 only when content
+richness differs, e.g. trend | distribution; peer content like rankings gets
+equal columns). Cells pad themselves (`p-4`); the scroll container has no
+padding so lines close against the viewport. Visual weight decreases down the
+page: the hero band anchors its height with the period's most-played cover
+(large, right side) and distributes three left-column layers across it -
+the page's only 2xl figure with delta (2xl is the app-wide type ceiling; 3xl
+is never used), a full-width composition strip (top
+entities' share, chart ink density ladder by rank, residual segment
+`--color-muted`), and a fact row spread by spacing alone. No rules inside a
+band's content: all lines belong to the page grid. Chart bodies use fixed
+heights (200px; heatmap 100px) so band bottoms align; the rankings band
+sits last so uneven column ends fall off the page (full-width ranking bands
+flow rows into two columns via RankingList `columns`). Embedded report
+modules on mixed-content pages (e.g. detail activity tab) keep their line
+frames; full-page reports never frame.
 
 ## Size & Typography
 

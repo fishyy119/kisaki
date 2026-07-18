@@ -58,11 +58,12 @@ type ChartDatum = TimeDistributionDataPoint & {
   fill: string
 }
 
+// Chart ink: bars are mid-size marks and run at mid density.
 const chartData = computed<ChartDatum[]>(() =>
   props.data.map((d) => ({
     ...d,
     valueText: formatYLabel(d.value),
-    fill: 'var(--chart-1)'
+    fill: 'color-mix(in oklch, var(--chart) 70%, transparent)'
   }))
 )
 
@@ -77,14 +78,15 @@ const x = (d: ChartDatum) => d.key
 const y = (d: ChartDatum) => d.value
 const color = (d: ChartDatum) => d.fill
 
+// Sparse ticks so labels survive narrow side columns without colliding.
 const numTicks = computed(() => {
   switch (distributionType.value) {
     case 'hourly':
-      return 12
+      return 6
     case 'weekday':
       return 7
     case 'dayOfMonth':
-      return 15
+      return 10
     default: {
       const _exhaustive: never = distributionType.value
       return _exhaustive
@@ -132,10 +134,21 @@ const insight = computed(() => {
     :class="cn('space-y-2', props.class)"
     data-slot="time-distribution-chart"
   >
-    <div class="flex items-center gap-2 h-7">
+    <!-- Single header row: title, insight, selector -->
+    <div
+      v-if="props.title || insight || showTypeSelector"
+      class="flex h-7 items-center gap-2 text-xs text-muted-foreground"
+    >
+      <h3
+        v-if="props.title"
+        class="shrink-0 font-medium"
+      >
+        {{ props.title }}
+      </h3>
+      <span v-if="props.title && insight">·</span>
       <div
         v-if="insight"
-        class="text-xs text-muted-foreground truncate"
+        class="truncate"
         data-slot="chart-insight"
       >
         {{ insight }}
@@ -174,10 +187,13 @@ const insight = computed(() => {
             type="x"
             :tick-format="formatLabel"
             :num-ticks="numTicks"
+            :grid-line="false"
+            :domain-line="false"
           />
           <VisAxis
             type="y"
             :tick-format="(v: number) => formatYLabel(v)"
+            :domain-line="false"
           />
           <ChartTooltip
             :container="tooltipContainer!"
@@ -188,7 +204,7 @@ const insight = computed(() => {
             :y="y"
             :duration="0"
             :template="tooltipTemplate"
-            :color="['color-mix(in oklch, var(--chart-1) 85%, transparent)']"
+            :color="['var(--chart)']"
             :hide-when-far-from-pointer="false"
             :tooltip="crosshairTooltip!"
           />

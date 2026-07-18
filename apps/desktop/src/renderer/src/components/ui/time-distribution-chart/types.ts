@@ -9,6 +9,8 @@ export interface TimeDistributionDataPoint {
 }
 
 export interface TimeDistributionChartProps {
+  /** Module title rendered inline in the chart header row */
+  title?: string
   /** Data points to display */
   data: TimeDistributionDataPoint[]
   /** Available distribution types (defaults to all). Selector hidden when only one. */

@@ -8,6 +8,8 @@ export interface HeatmapDataPoint {
 }
 
 export interface HeatmapProps {
+  /** Module title rendered inline in the chart header row */
+  title?: string
   /** Time range to render cells for */
   range: { start: Date; end: Date }
   /** Data points to display */

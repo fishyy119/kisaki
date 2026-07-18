@@ -1,26 +1,22 @@
 <!--
   Statistics Yearly Page
 
-  Yearly report showing full visualizations for a specific year.
-  Features: Stats with X/365 active days, most active month, monthly average,
-  full year heatmap, monthly trend, all distributions and rankings.
+  One year in review. Full-bleed partitioned surface built from horizontal
+  bands: hero, year activity calendar, charts band (seasonality trend |
+  time of day), rankings band (games | collections). Every divider spans
+  the full row, so lines always close.
 -->
 
 <script setup lang="ts">
 import { useStatistics } from '../composables'
 import { useRenderState } from '@renderer/composables'
 import { StateView } from '@renderer/components/ui/state-view'
-import { Section } from '@renderer/components/ui/section'
 import {
-  StatisticsStatsSummary,
+  StatisticsHero,
   StatisticsActivityHeatmap,
   StatisticsTimeTrend,
   StatisticsTimeDistribution,
-  StatisticsGameDistribution,
-  StatisticsTagDistribution,
-  StatisticsCollectionDistribution,
   StatisticsGameRanking,
-  StatisticsTagRanking,
   StatisticsCollectionRanking
 } from '../components'
 
@@ -37,109 +33,43 @@ const state = useRenderState(isLoading, error, sessions)
     class="h-full"
   />
 
-  <!-- Success -->
-  <template v-else>
-    <!-- Content -->
-    <div class="space-y-6">
-      <!-- Stats Summary (with X/365 active days, most active month, monthly avg) -->
-      <Section title="年度概览">
-        <StatisticsStatsSummary report-type="yearly" />
-      </Section>
+  <div
+    v-else
+    class="divide-y"
+  >
+    <div class="p-4">
+      <StatisticsHero />
+    </div>
 
-      <!-- Activity Heatmap (full year) -->
-      <Section title="活动热力图">
-        <div class="rounded-lg border p-4">
-          <StatisticsActivityHeatmap />
-        </div>
-      </Section>
+    <div class="p-4">
+      <StatisticsActivityHeatmap
+        title="活动热力图"
+        :available-granularities="['day', 'week', 'month']"
+      />
+    </div>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
-        <!-- Monthly Trend -->
-        <Section
+    <!-- Charts band -->
+    <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
+      <div class="min-w-0 p-4">
+        <StatisticsTimeTrend
           title="游玩趋势"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTimeTrend />
-          </div>
-        </Section>
-
-        <!-- Time Distribution (all options) -->
-        <Section
-          title="时段分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTimeDistribution />
-          </div>
-        </Section>
+          :available-granularities="['weekly', 'monthly']"
+          default-granularity="monthly"
+        />
       </div>
-
-      <!-- Distribution Pie Charts Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        <!-- Game Distribution -->
-        <Section
-          title="游戏分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsGameDistribution />
-          </div>
-        </Section>
-
-        <!-- Tag Distribution -->
-        <Section
-          title="标签分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTagDistribution />
-          </div>
-        </Section>
-
-        <!-- Collection Distribution -->
-        <Section
-          title="收藏分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsCollectionDistribution />
-          </div>
-        </Section>
-      </div>
-
-      <!-- Rankings Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        <!-- Game Ranking -->
-        <Section
-          title="游戏排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsGameRanking />
-          </div>
-        </Section>
-
-        <!-- Tag Ranking -->
-        <Section
-          title="标签排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTagRanking />
-          </div>
-        </Section>
-
-        <!-- Collection Ranking -->
-        <Section
-          title="收藏排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsCollectionRanking />
-          </div>
-        </Section>
+      <div class="min-w-0 p-4 xl:border-l">
+        <StatisticsTimeDistribution title="时段分布" />
       </div>
     </div>
-  </template>
+
+    <!-- Rankings band: last row, so uneven column ends fall off the page -->
+    <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
+      <div class="min-w-0 p-4">
+        <StatisticsGameRanking title="游戏排行" />
+      </div>
+      <div class="min-w-0 p-4 xl:border-l">
+        <StatisticsCollectionRanking title="收藏排行" />
+      </div>
+    </div>
+  </div>
 </template>

@@ -140,11 +140,7 @@ function compileTokenRules(
     `  --warning-foreground: ${safeTokens.foreground};`,
     `  --border: ${safeTokens.border};`,
     `  --ring: ${safeTokens.primary};`,
-    `  --chart-1: ${safeTokens.primary};`,
-    `  --chart-2: ${safeTokens.accent};`,
-    `  --chart-3: ${safeTokens.muted};`,
-    `  --chart-4: ${safeTokens.border};`,
-    `  --chart-5: ${safeTokens.danger};`,
+    `  --chart: ${safeTokens.primary};`,
     ...LIGHTBOX_TOKEN_RULES[mode],
     // Ambient light colors derived from the contributed palette.
     `  --light-1: ${safeTokens.primary};`,

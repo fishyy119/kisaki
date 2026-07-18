@@ -53,7 +53,7 @@ const showGranularitySelector = computed(() => props.availableGranularities.leng
 const chartConfig = {
   valueText: {
     label: '时长',
-    color: 'var(--chart-1)'
+    color: 'var(--chart)'
   }
 } satisfies ChartConfig
 
@@ -257,10 +257,21 @@ const insight = computed(() => {
     :class="cn('space-y-2', props.class)"
     data-slot="trend-chart"
   >
-    <div class="flex items-center gap-2 h-7">
+    <!-- Single header row: title, insight, selector -->
+    <div
+      v-if="props.title || insight || showGranularitySelector"
+      class="flex h-7 items-center gap-2 text-xs text-muted-foreground"
+    >
+      <h3
+        v-if="props.title"
+        class="shrink-0 font-medium"
+      >
+        {{ props.title }}
+      </h3>
+      <span v-if="props.title && insight">·</span>
       <div
         v-if="insight"
-        class="text-xs text-muted-foreground truncate"
+        class="truncate"
         data-slot="chart-insight"
       >
         {{ insight }}
@@ -294,22 +305,25 @@ const insight = computed(() => {
           <VisArea
             :x="x"
             :y="y"
-            color="var(--chart-1)"
+            color="var(--chart)"
             :opacity="0.2"
           />
           <VisLine
             :x="x"
             :y="y"
-            color="var(--chart-1)"
+            color="var(--chart)"
           />
           <VisAxis
             type="x"
             :tick-format="formatXLabel"
             :num-ticks="numTicks"
+            :grid-line="false"
+            :domain-line="false"
           />
           <VisAxis
             type="y"
             :tick-format="(v: number) => formatYLabel(v)"
+            :domain-line="false"
           />
           <ChartTooltip
             :container="tooltipContainer!"
@@ -320,7 +334,7 @@ const insight = computed(() => {
             :y="y"
             :duration="0"
             :template="tooltipTemplate"
-            :color="['var(--chart-1)']"
+            :color="['var(--chart)']"
             :hide-when-far-from-pointer="false"
             :tooltip="crosshairTooltip!"
           />

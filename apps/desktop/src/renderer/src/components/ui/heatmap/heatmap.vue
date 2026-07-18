@@ -70,24 +70,28 @@ const tooltipTemplate = componentToString(chartConfig, ChartTooltipContent, { la
 // Helpers
 // =============================================================================
 
-function getIntensityLevel(value: number): number {
-  if (value === 0) return 0
-  if (value < 1800000) return 1
-  if (value < 3600000) return 2
-  if (value < 7200000) return 3
+// Relative intensity (GitHub-style): non-zero cells are bucketed against the
+// current view's maximum, so every granularity differentiates instead of
+// saturating on absolute day-scale thresholds.
+function getIntensityLevel(value: number, maxValue: number): number {
+  if (value <= 0 || maxValue <= 0) return 0
+  const ratio = value / maxValue
+  if (ratio <= 0.25) return 1
+  if (ratio <= 0.5) return 2
+  if (ratio <= 0.75) return 3
   return 4
 }
 
 function getCellFill(level: number): string {
   switch (level) {
     case 4:
-      return 'var(--chart-1)'
+      return 'var(--chart)'
     case 3:
-      return 'color-mix(in oklab, var(--chart-1) 60%, transparent)'
+      return 'color-mix(in oklch, var(--chart) 60%, transparent)'
     case 2:
-      return 'color-mix(in oklab, var(--chart-1) 40%, transparent)'
+      return 'color-mix(in oklch, var(--chart) 40%, transparent)'
     case 1:
-      return 'color-mix(in oklab, var(--chart-1) 20%, transparent)'
+      return 'color-mix(in oklch, var(--chart) 20%, transparent)'
     default:
       return 'var(--color-muted)'
   }
@@ -152,7 +156,7 @@ const cells = computed<HeatmapCell[]>(() => {
   const rangeStart = range.value.start
   const rangeEnd = range.value.end
 
-  const out: HeatmapCell[] = []
+  const out: Array<Omit<HeatmapCell, 'level'>> = []
 
   if (granularity.value === 'day') {
     const current = new Date(rangeStart)
@@ -162,12 +166,10 @@ const cells = computed<HeatmapCell[]>(() => {
 
     while (current <= end) {
       const dateKey = toLocalDateKey(current)
-      const value = valueMap.value.get(dateKey) ?? 0
       out.push({
         date: new Date(current),
         dateKey,
-        value,
-        level: getIntensityLevel(value)
+        value: valueMap.value.get(dateKey) ?? 0
       })
       current.setDate(current.getDate() + 1)
     }
@@ -181,12 +183,10 @@ const cells = computed<HeatmapCell[]>(() => {
 
     while (current <= end) {
       const weekKey = toLocalWeekKey(current)
-      const value = valueMap.value.get(weekKey) ?? 0
       out.push({
         date: new Date(current),
         dateKey: weekKey,
-        value,
-        level: getIntensityLevel(value)
+        value: valueMap.value.get(weekKey) ?? 0
       })
       current.setDate(current.getDate() + 7)
     }
@@ -198,18 +198,17 @@ const cells = computed<HeatmapCell[]>(() => {
 
     while (current <= end) {
       const monthKey = toLocalMonthKey(current)
-      const value = valueMap.value.get(monthKey) ?? 0
       out.push({
         date: new Date(current),
         dateKey: monthKey,
-        value,
-        level: getIntensityLevel(value)
+        value: valueMap.value.get(monthKey) ?? 0
       })
       current.setMonth(current.getMonth() + 1)
     }
   }
 
-  return out
+  const maxValue = out.reduce((max, cell) => Math.max(max, cell.value), 0)
+  return out.map((cell) => ({ ...cell, level: getIntensityLevel(cell.value, maxValue) }))
 })
 
 interface HeatmapChartDatum extends HeatmapCell {
@@ -226,12 +225,6 @@ const chartData = computed<HeatmapChartDatum[]>(() =>
     fill: getCellFill(cell.level)
   }))
 )
-
-const insight = computed(() => {
-  if (!range.value) return ''
-  const total = props.data.reduce((sum, point) => sum + point.value, 0)
-  return `总时长：${formatValueDisplay(total)}`
-})
 
 // =============================================================================
 // Unovis
@@ -314,14 +307,17 @@ watch(
     :class="cn('space-y-2', props.class)"
     data-slot="heatmap"
   >
-    <div class="flex items-center gap-2 h-7">
-      <div
-        v-if="insight"
-        class="text-xs text-muted-foreground truncate"
-        data-slot="chart-insight"
+    <!-- Single header row: title and selector (totals live in the page hero) -->
+    <div
+      v-if="props.title || showGranularitySelector"
+      class="flex h-7 items-center gap-2 text-xs text-muted-foreground"
+    >
+      <h3
+        v-if="props.title"
+        class="shrink-0 font-medium"
       >
-        {{ insight }}
-      </div>
+        {{ props.title }}
+      </h3>
       <div
         v-if="showGranularitySelector"
         class="ml-auto"

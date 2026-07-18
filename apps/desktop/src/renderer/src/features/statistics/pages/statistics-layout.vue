@@ -18,8 +18,9 @@ useStatisticsProvider()
     <!-- Header (includes report type navigation and period selector) -->
     <StatisticsHeader />
 
-    <!-- Main content - child routes render here -->
-    <div class="flex-1 min-h-0 overflow-auto bg-background p-4">
+    <!-- Main content - child routes render here. No padding: report pages
+         run their grid lines full-bleed and pad inside each cell. -->
+    <div class="flex-1 min-h-0 overflow-auto bg-background">
       <RouterView />
     </div>
   </div>

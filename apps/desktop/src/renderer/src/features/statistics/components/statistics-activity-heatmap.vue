@@ -12,6 +12,8 @@ import { useStatistics } from '../composables'
 import type { GameSession } from '@shared/db'
 
 interface Props {
+  /** Module header title */
+  title?: string
   /** Override sessions (for custom data source) */
   sessions?: GameSession[]
   /** Override date range (for custom range) */
@@ -39,6 +41,7 @@ const heatmapData = computed(() => {
 
 <template>
   <Heatmap
+    :title="props.title"
     :range="effectiveDateRange"
     :data="heatmapData"
     :available-granularities="props.availableGranularities"

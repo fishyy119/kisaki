@@ -70,13 +70,11 @@
   --border: oklch(0.86 0.012 256);
   --ring: oklch(0.56 0.2 258);
 
-  /* Charts - categorical ramp under the canvas chroma discipline: tight
-   * lightness band, capped chroma, cool core hues + muted warm counterpoints */
-  --chart-1: oklch(0.62 0.11 255);
-  --chart-2: oklch(0.66 0.1 210);
-  --chart-3: oklch(0.64 0.11 290);
-  --chart-4: oklch(0.68 0.09 150);
-  --chart-5: oklch(0.7 0.09 45);
+  /* Chart data ink - single hue under the canvas chroma discipline; all
+   * chart marks derive density steps from this one token (see "Chart ink"
+   * spec). A categorical ramp gets designed when a true multi-series
+   * consumer exists. */
+  --chart: oklch(0.62 0.11 255);
 
   /* Pane - translucency of the lightbox front glass (bg-background/
    * bg-surface). Perceived light/grain through a pane is (1 - alpha) times
@@ -166,12 +164,8 @@
   --border: oklch(0.45 0.02 258 / 0.35);
   --ring: oklch(0.64 0.17 256);
 
-  /* Charts - same discipline, lifted band for dark surfaces */
-  --chart-1: oklch(0.7 0.12 255);
-  --chart-2: oklch(0.74 0.11 212);
-  --chart-3: oklch(0.72 0.12 290);
-  --chart-4: oklch(0.74 0.1 150);
-  --chart-5: oklch(0.76 0.1 45);
+  /* Chart data ink - same discipline, lifted for dark surfaces */
+  --chart: oklch(0.7 0.12 255);
 
   /* Pane - dark panes stay a bit more opaque for readability */
   --pane-alpha: 75%;

@@ -5,14 +5,8 @@
  * Used by both global statistics pages and game detail activity tab.
  */
 
-import type { Game, GameSession, Tag, Collection } from '@shared/db'
-import {
-  parseLocalDateKey,
-  splitLocalByDay,
-  splitLocalByHour,
-  toLocalDateKey,
-  getYearWeek
-} from './datetime'
+import type { Game, GameSession, Collection } from '@shared/db'
+import { parseLocalDateKey, splitLocalByDay, splitLocalByHour, toLocalDateKey } from './datetime'
 
 // =============================================================================
 // Types
@@ -51,7 +45,7 @@ export interface GlobalStatisticsStats {
 // Date Key Functions
 // =============================================================================
 
-function sessionDurationMs(session: GameSession): number {
+export function sessionDurationMs(session: GameSession): number {
   return Math.max(0, session.endedAt.getTime() - session.startedAt.getTime())
 }
 
@@ -190,47 +184,6 @@ export function computeGameRanking(
   const ranking = [...gamePlaytime.entries()].map(([id, { duration, count }]) => ({
     id,
     name: games.get(id)?.name ?? 'Unknown',
-    totalDuration: duration,
-    sessionCount: count
-  }))
-
-  return ranking.sort((a, b) =>
-    sort === 'time' ? b.totalDuration - a.totalDuration : b.sessionCount - a.sessionCount
-  )
-}
-
-/** Compute tag ranking */
-export function computeTagRanking(
-  sessions: GameSession[],
-  gameTagLinks: { gameId: string; tagId: string }[],
-  tags: Map<string, Tag>,
-  sort: RankingSort
-): RankingItem[] {
-  const tagPlaytime = new Map<string, { duration: number; count: number }>()
-
-  // Build game -> tags map
-  const gameTagsMap = new Map<string, string[]>()
-  for (const link of gameTagLinks) {
-    const existing = gameTagsMap.get(link.gameId) ?? []
-    existing.push(link.tagId)
-    gameTagsMap.set(link.gameId, existing)
-  }
-
-  for (const session of sessions) {
-    const duration = sessionDurationMs(session)
-    const tagIds = gameTagsMap.get(session.gameId) ?? []
-
-    for (const tagId of tagIds) {
-      const existing = tagPlaytime.get(tagId) ?? { duration: 0, count: 0 }
-      existing.duration += duration
-      existing.count++
-      tagPlaytime.set(tagId, existing)
-    }
-  }
-
-  const ranking = [...tagPlaytime.entries()].map(([id, { duration, count }]) => ({
-    id,
-    name: tags.get(id)?.name ?? 'Unknown',
     totalDuration: duration,
     sessionCount: count
   }))
@@ -495,36 +448,4 @@ export function aggregateByLocalDayOfMonth(sessions: GameSession[]): number[] {
     }
   }
   return buckets
-}
-
-// =============================================================================
-// Period Functions
-// =============================================================================
-
-/** Period identifier for navigation */
-export interface StatisticsPeriod {
-  year: number
-  week?: number
-  month?: number
-}
-
-/** Report type for statistics */
-export type StatisticsReportType = 'overview' | 'weekly' | 'monthly' | 'yearly'
-
-/** Get current period based on report type */
-export function getCurrentPeriod(reportType: StatisticsReportType): StatisticsPeriod {
-  const now = new Date()
-
-  switch (reportType) {
-    case 'weekly': {
-      const { year, week } = getYearWeek(now)
-      return { year, week }
-    }
-    case 'monthly':
-      return { year: now.getFullYear(), month: now.getMonth() + 1 }
-    case 'yearly':
-    case 'overview':
-    default:
-      return { year: now.getFullYear() }
-  }
 }

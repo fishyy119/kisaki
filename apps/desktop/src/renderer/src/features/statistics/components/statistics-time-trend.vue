@@ -13,6 +13,8 @@ import { TrendChart } from '@renderer/components/ui/trend-chart'
 import type { GameSession } from '@shared/db'
 
 interface Props {
+  /** Module header title */
+  title?: string
   /** Override sessions (for custom data source) */
   sessions?: GameSession[]
   /** Override date range (for custom range) */
@@ -61,6 +63,7 @@ const chartData = computed(() =>
 <template>
   <TrendChart
     v-model:granularity="granularity"
+    :title="props.title"
     :range="effectiveDateRange"
     :data="chartData"
     :available-granularities="props.availableGranularities"

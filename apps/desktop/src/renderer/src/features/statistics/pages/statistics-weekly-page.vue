@@ -1,22 +1,21 @@
 <!--
   Statistics Weekly Page
 
-  Weekly report showing simplified visualizations for a specific week.
-  Features: Stats with X/7 active days, daily breakdown, hourly distribution,
-  game distribution and ranking.
+  One week in review. Full-bleed partitioned surface built from horizontal
+  bands: hero, day heatmap, charts band (daily trend | time of day), and a
+  full-width game ranking flowing in two columns. Every divider spans the
+  full row.
 -->
 
 <script setup lang="ts">
 import { useStatistics } from '../composables'
 import { useRenderState } from '@renderer/composables'
 import { StateView } from '@renderer/components/ui/state-view'
-import { Section } from '@renderer/components/ui/section'
 import {
-  StatisticsStatsSummary,
+  StatisticsHero,
   StatisticsActivityHeatmap,
   StatisticsTimeTrend,
   StatisticsTimeDistribution,
-  StatisticsGameDistribution,
   StatisticsGameRanking
 } from '../components'
 
@@ -33,68 +32,43 @@ const state = useRenderState(isLoading, error, sessions)
     class="h-full"
   />
 
-  <!-- Success -->
-  <template v-else>
-    <!-- Content -->
-    <div class="space-y-6">
-      <!-- Stats Summary (with X/7 active days) -->
-      <Section title="本周概览">
-        <StatisticsStatsSummary
-          report-type="weekly"
-          :total-days="7"
-        />
-      </Section>
+  <div
+    v-else
+    class="divide-y"
+  >
+    <div class="p-4">
+      <StatisticsHero />
+    </div>
 
-      <!-- Activity Heatmap (7 days) -->
-      <Section title="活动热力图">
-        <div class="rounded-lg border p-4">
-          <StatisticsActivityHeatmap :available-granularities="['day']" />
-        </div>
-      </Section>
+    <div class="p-4">
+      <StatisticsActivityHeatmap
+        title="活动热力图"
+        :available-granularities="['day']"
+      />
+    </div>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
-        <!-- Daily Breakdown (trend chart with daily only) -->
-        <Section
+    <!-- Charts band -->
+    <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
+      <div class="min-w-0 p-4">
+        <StatisticsTimeTrend
           title="游玩趋势"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTimeTrend :available-granularities="['daily']" />
-          </div>
-        </Section>
-
-        <!-- Hourly Distribution -->
-        <Section
-          title="时段分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTimeDistribution :available-types="['hourly']" />
-          </div>
-        </Section>
+          :available-granularities="['daily']"
+        />
       </div>
-
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
-        <!-- Game Distribution -->
-        <Section
-          title="游戏分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsGameDistribution />
-          </div>
-        </Section>
-
-        <!-- Game Ranking -->
-        <Section
-          title="游戏排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsGameRanking />
-          </div>
-        </Section>
+      <div class="min-w-0 p-4 xl:border-l">
+        <StatisticsTimeDistribution
+          title="时段分布"
+          :available-types="['hourly']"
+        />
       </div>
     </div>
-  </template>
+
+    <!-- Rankings band: full-width game ranking, rows flowing in two columns -->
+    <div class="p-4">
+      <StatisticsGameRanking
+        title="游戏排行"
+        :columns="2"
+      />
+    </div>
+  </div>
 </template>

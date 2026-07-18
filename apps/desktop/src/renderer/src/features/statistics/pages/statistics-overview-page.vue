@@ -1,30 +1,26 @@
 <!--
   Statistics Overview Page
 
-  Overview report showing past year data for time-based visualizations
-  and all-time data for stats/distributions/rankings.
+  All-time retrospective. Full-bleed partitioned surface built from
+  horizontal bands: hero, past-year heatmap, charts band (trend | time of
+  day), rankings band (games | collections). Every divider spans the full
+  row, so lines always close; cells inside a band share one height.
 -->
 
 <script setup lang="ts">
 import { useStatistics } from '../composables'
 import { useRenderState } from '@renderer/composables'
 import { StateView } from '@renderer/components/ui/state-view'
-import { Section } from '@renderer/components/ui/section'
 import {
-  StatisticsStatsSummary,
+  StatisticsHero,
   StatisticsActivityHeatmap,
   StatisticsTimeTrend,
   StatisticsTimeDistribution,
-  StatisticsGameDistribution,
-  StatisticsTagDistribution,
-  StatisticsCollectionDistribution,
   StatisticsGameRanking,
-  StatisticsTagRanking,
   StatisticsCollectionRanking
 } from '../components'
 
-const { sessions, allTimeSessions, allTimeStats, isLoading, error, timeBasedDateRange } =
-  useStatistics()
+const { sessions, allTimeSessions, isLoading, error } = useStatistics()
 
 const state = useRenderState(isLoading, error, sessions)
 </script>
@@ -37,118 +33,45 @@ const state = useRenderState(isLoading, error, sessions)
     class="h-full"
   />
 
-  <!-- Success -->
-  <template v-else>
-    <!-- Content -->
-    <div class="space-y-6">
-      <!-- Stats Summary (all-time data) -->
-      <Section title="统计概览">
-        <StatisticsStatsSummary
-          :stats="allTimeStats"
-          :sessions="allTimeSessions"
-        />
-      </Section>
+  <div
+    v-else
+    class="divide-y"
+  >
+    <div class="p-4">
+      <StatisticsHero />
+    </div>
 
-      <!-- Activity Heatmap (past year) -->
-      <Section title="活动热力图">
-        <div class="rounded-lg border p-4">
-          <StatisticsActivityHeatmap
-            :sessions="sessions"
-            :date-range="timeBasedDateRange"
-          />
-        </div>
-      </Section>
+    <div class="p-4">
+      <StatisticsActivityHeatmap title="活动热力图" />
+    </div>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 items-stretch">
-        <!-- Time Trend (past year) -->
-        <Section
+    <!-- Charts band -->
+    <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
+      <div class="min-w-0 p-4">
+        <StatisticsTimeTrend
           title="游玩趋势"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTimeTrend
-              :sessions="sessions"
-              :date-range="timeBasedDateRange"
-            />
-          </div>
-        </Section>
-
-        <!-- Time Distribution (past year) -->
-        <Section
-          title="时段分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTimeDistribution :sessions="sessions" />
-          </div>
-        </Section>
+          default-granularity="monthly"
+        />
       </div>
-
-      <!-- Distribution Pie Charts Grid (all-time data) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        <!-- Game Distribution -->
-        <Section
-          title="游戏分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsGameDistribution :sessions="allTimeSessions" />
-          </div>
-        </Section>
-
-        <!-- Tag Distribution -->
-        <Section
-          title="标签分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTagDistribution :sessions="allTimeSessions" />
-          </div>
-        </Section>
-
-        <!-- Collection Distribution -->
-        <Section
-          title="收藏分布"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsCollectionDistribution :sessions="allTimeSessions" />
-          </div>
-        </Section>
-      </div>
-
-      <!-- Rankings Grid (all-time data) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        <!-- Game Ranking -->
-        <Section
-          title="游戏排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsGameRanking :sessions="allTimeSessions" />
-          </div>
-        </Section>
-
-        <!-- Tag Ranking -->
-        <Section
-          title="标签排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsTagRanking :sessions="allTimeSessions" />
-          </div>
-        </Section>
-
-        <!-- Collection Ranking -->
-        <Section
-          title="收藏排行"
-          class="flex h-full flex-col"
-        >
-          <div class="flex-1 rounded-lg border p-4">
-            <StatisticsCollectionRanking :sessions="allTimeSessions" />
-          </div>
-        </Section>
+      <div class="min-w-0 p-4 xl:border-l">
+        <StatisticsTimeDistribution title="时段分布" />
       </div>
     </div>
-  </template>
+
+    <!-- Rankings band: last row, so uneven column ends fall off the page -->
+    <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
+      <div class="min-w-0 p-4">
+        <StatisticsGameRanking
+          title="游戏排行"
+          :sessions="allTimeSessions"
+        />
+      </div>
+      <div class="min-w-0 p-4 xl:border-l">
+        <StatisticsCollectionRanking
+          title="收藏排行"
+          :sessions="allTimeSessions"
+        />
+      </div>
+    </div>
+  </div>
 </template>

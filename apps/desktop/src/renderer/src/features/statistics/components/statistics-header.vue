@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useStatistics } from '../composables'
-import { getYearWeek, getWeekStartDate } from '@renderer/utils/datetime'
+import { isPeriodBeforeCurrent, shiftPeriod } from '../period'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -40,61 +40,14 @@ const reportNavItems: PageHeaderNavItem[] = [
 const showPeriodNav = computed(() => reportType.value !== 'overview')
 
 function navigatePeriod(direction: 'prev' | 'next') {
-  const current = currentPeriod.value
   const delta = direction === 'prev' ? -1 : 1
-
-  switch (reportType.value) {
-    case 'weekly': {
-      // Navigate weeks
-      const date = getWeekStartDate(current.year, current.week!)
-      date.setDate(date.getDate() + delta * 7)
-      const { year, week } = getYearWeek(date)
-      setCurrentPeriod({ year, week })
-      break
-    }
-    case 'monthly': {
-      // Navigate months
-      let newMonth = current.month! + delta
-      let newYear = current.year
-      if (newMonth < 1) {
-        newMonth = 12
-        newYear--
-      }
-      if (newMonth > 12) {
-        newMonth = 1
-        newYear++
-      }
-      setCurrentPeriod({ year: newYear, month: newMonth })
-      break
-    }
-    case 'yearly': {
-      // Navigate years
-      setCurrentPeriod({ year: current.year + delta })
-      break
-    }
-  }
+  setCurrentPeriod(shiftPeriod(reportType.value, currentPeriod.value, delta))
 }
 
-// Check if can navigate to future
+// Only periods before the current one may navigate forward
 const canNavigateNext = computed(() => {
-  const now = new Date()
-  const current = currentPeriod.value
-
-  switch (reportType.value) {
-    case 'weekly': {
-      const { year, week } = getYearWeek(now)
-      return current.year < year || (current.year === year && current.week! < week)
-    }
-    case 'monthly':
-      return (
-        current.year < now.getFullYear() ||
-        (current.year === now.getFullYear() && current.month! < now.getMonth() + 1)
-      )
-    case 'yearly':
-      return current.year < now.getFullYear()
-    default:
-      return false
-  }
+  if (reportType.value === 'overview') return false
+  return isPeriodBeforeCurrent(reportType.value, currentPeriod.value)
 })
 </script>
 

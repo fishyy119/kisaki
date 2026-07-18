@@ -3,7 +3,8 @@
  *
  * Provider/Consumer pattern for statistics data.
  * Handles report type switching (via route) and period navigation.
- * Date range is computed based on report type and current period.
+ * Date range is computed based on report type and current period; period
+ * reports also load the previous period's sessions for comparison.
  */
 
 import {
@@ -22,15 +23,16 @@ import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useEvent } from '@renderer/composables/use-event'
-import type { Game, GameSession, Tag, Collection } from '@shared/db/schema'
+import type { Game, GameSession, Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
+import { computeStats, type GlobalStatisticsStats } from '@renderer/utils/statistics'
 import {
-  computeStats,
+  calculatePeriodDateRange,
+  formatPeriodDisplay,
   getCurrentPeriod,
-  type GlobalStatisticsStats
-} from '@renderer/utils/statistics'
-import { formatDateRange, getWeekStartDate } from '@renderer/utils/datetime'
+  shiftPeriod
+} from '../period'
 import type { ReportType, Period, PeriodDisplay } from '../types'
 
 // =============================================================================
@@ -46,25 +48,23 @@ export interface StatisticsContext {
   setCurrentPeriod: (period: Period) => void
   periodDisplay: ComputedRef<PeriodDisplay>
 
-  // Computed date range based on report type and period
+  // Computed date range based on report type and period (overview: past year)
   dateRange: ComputedRef<{ start: Date; end: Date }>
-
-  // For overview: separate date range for time-based visualizations (past year)
-  timeBasedDateRange: ComputedRef<{ start: Date; end: Date }>
 
   // Data - filtered by dateRange
   sessions: ComputedRef<GameSession[]>
   games: ComputedRef<Map<string, Game>>
-  tags: ComputedRef<Map<string, Tag>>
   collections: ComputedRef<Map<string, Collection>>
   stats: ComputedRef<GlobalStatisticsStats>
+
+  // Previous period sessions for comparison; null for overview
+  previousSessions: ComputedRef<GameSession[] | null>
 
   // For overview: all-time data for stats/distributions/rankings
   allTimeSessions: ComputedRef<GameSession[]>
   allTimeStats: ComputedRef<GlobalStatisticsStats>
 
   // Link data for local computation
-  gameTagLinks: ComputedRef<{ gameId: string; tagId: string }[]>
   gameCollectionLinks: ComputedRef<{ gameId: string; collectionId: string }[]>
 
   // State
@@ -81,100 +81,8 @@ export interface StatisticsContext {
 export const StatisticsKey: InjectionKey<StatisticsContext> = Symbol('statistics')
 
 // =============================================================================
-// Date Range Calculation Helpers
+// Route Helpers
 // =============================================================================
-
-/** Calculate date range based on report type and period */
-function calculateDateRange(reportType: ReportType, period: Period): { start: Date; end: Date } {
-  const now = new Date()
-
-  switch (reportType) {
-    case 'overview': {
-      // Past year from today
-      const end = new Date(now)
-      end.setHours(23, 59, 59, 999)
-      const start = new Date(now)
-      start.setFullYear(start.getFullYear() - 1)
-      start.setDate(start.getDate() + 1)
-      start.setHours(0, 0, 0, 0)
-      return { start, end }
-    }
-
-    case 'weekly': {
-      // Specific week
-      const start = getWeekStartDate(period.year, period.week!)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(start)
-      end.setDate(end.getDate() + 6)
-      end.setHours(23, 59, 59, 999)
-      return { start, end }
-    }
-
-    case 'monthly': {
-      // Specific month
-      const start = new Date(period.year, period.month! - 1, 1)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(period.year, period.month!, 0) // Last day of month
-      end.setHours(23, 59, 59, 999)
-      return { start, end }
-    }
-
-    case 'yearly': {
-      // Specific year
-      const start = new Date(period.year, 0, 1)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(period.year, 11, 31)
-      end.setHours(23, 59, 59, 999)
-      return { start, end }
-    }
-  }
-}
-
-/** Format period for display */
-function formatPeriodDisplay(reportType: ReportType, period: Period): PeriodDisplay {
-  switch (reportType) {
-    case 'weekly': {
-      const start = getWeekStartDate(period.year, period.week!)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(start)
-      end.setDate(end.getDate() + 6)
-      end.setHours(23, 59, 59, 999)
-
-      // Use date range instead of week number to avoid cross-year ambiguity.
-      const label = formatDateRange(start, end).replace(' - ', '-')
-      const shortLabel = `${start.getMonth() + 1}/${start.getDate()}-${end.getMonth() + 1}/${end.getDate()}`
-
-      return { label, shortLabel }
-    }
-    case 'monthly': {
-      const monthNames = [
-        '1月',
-        '2月',
-        '3月',
-        '4月',
-        '5月',
-        '6月',
-        '7月',
-        '8月',
-        '9月',
-        '10月',
-        '11月',
-        '12月'
-      ]
-      return {
-        label: `${period.year}年${monthNames[period.month! - 1]}`,
-        shortLabel: monthNames[period.month! - 1]
-      }
-    }
-    case 'yearly':
-      return {
-        label: `${period.year}年`,
-        shortLabel: `${period.year}`
-      }
-    default:
-      return { label: '过去一年', shortLabel: '总览' }
-  }
-}
 
 /** Get report type from route name */
 function getReportTypeFromRoute(routeName: string | symbol | null | undefined): ReportType {
@@ -187,23 +95,20 @@ function getReportTypeFromRoute(routeName: string | symbol | null | undefined): 
 }
 
 // =============================================================================
-// Data Fetcher
+// Data Fetchers
 // =============================================================================
 
 interface FetchedData {
   sessions: GameSession[]
   games: Game[]
-  tags: Tag[]
   collections: Collection[]
-  gameTagLinks: { gameId: string; tagId: string }[]
   gameCollectionLinks: { gameId: string; collectionId: string }[]
 }
 
-async function fetchStatisticsData(
+async function fetchSessionsInRange(
   dateRange: { start: Date; end: Date } | null,
   showNsfw: boolean
-): Promise<FetchedData> {
-  // Build conditions for sessions query
+): Promise<GameSession[]> {
   const conditions: SQL[] = []
   if (dateRange) {
     conditions.push(
@@ -214,29 +119,34 @@ async function fetchStatisticsData(
 
   const sessionWhere = conditions.length ? and(...conditions) : undefined
 
-  // Fetch sessions (optionally filtered by game NSFW)
-  const sessions = showNsfw
-    ? await db
-        .select()
-        .from(schema.gameSessions)
-        .where(sessionWhere)
-        .orderBy(desc(schema.gameSessions.startedAt))
-    : (
-        await db
-          .select()
-          .from(schema.gameSessions)
-          .innerJoin(schema.games, eq(schema.gameSessions.gameId, schema.games.id))
-          .where(and(sessionWhere, eq(schema.games.isNsfw, false)))
-          .orderBy(desc(schema.gameSessions.startedAt))
-      ).map((row) => row.game_sessions)
+  if (showNsfw) {
+    return await db
+      .select()
+      .from(schema.gameSessions)
+      .where(sessionWhere)
+      .orderBy(desc(schema.gameSessions.startedAt))
+  }
+
+  const rows = await db
+    .select()
+    .from(schema.gameSessions)
+    .innerJoin(schema.games, eq(schema.gameSessions.gameId, schema.games.id))
+    .where(and(sessionWhere, eq(schema.games.isNsfw, false)))
+    .orderBy(desc(schema.gameSessions.startedAt))
+  return rows.map((row) => row.game_sessions)
+}
+
+async function fetchStatisticsData(
+  dateRange: { start: Date; end: Date } | null,
+  showNsfw: boolean
+): Promise<FetchedData> {
+  const sessions = await fetchSessionsInRange(dateRange, showNsfw)
 
   if (sessions.length === 0) {
     return {
       sessions: [],
       games: [],
-      tags: [],
       collections: [],
-      gameTagLinks: [],
       gameCollectionLinks: []
     }
   }
@@ -245,7 +155,7 @@ async function fetchStatisticsData(
   const gameIds = [...new Set(sessions.map((s) => s.gameId))]
 
   // Parallel fetch all related data
-  const [games, tags, collections, gameTagLinks, gameCollectionLinks] = await Promise.all([
+  const [games, collections, gameCollectionLinks] = await Promise.all([
     db
       .select()
       .from(schema.games)
@@ -257,28 +167,8 @@ async function fetchStatisticsData(
       ),
     db
       .select()
-      .from(schema.tags)
-      .where(showNsfw ? undefined : eq(schema.tags.isNsfw, false)),
-    db
-      .select()
       .from(schema.collections)
       .where(showNsfw ? undefined : eq(schema.collections.isNsfw, false)),
-    showNsfw
-      ? db
-          .select({
-            gameId: schema.gameTagLinks.gameId,
-            tagId: schema.gameTagLinks.tagId
-          })
-          .from(schema.gameTagLinks)
-          .where(inArray(schema.gameTagLinks.gameId, gameIds))
-      : db
-          .select({
-            gameId: schema.gameTagLinks.gameId,
-            tagId: schema.gameTagLinks.tagId
-          })
-          .from(schema.gameTagLinks)
-          .innerJoin(schema.tags, eq(schema.gameTagLinks.tagId, schema.tags.id))
-          .where(and(inArray(schema.gameTagLinks.gameId, gameIds), eq(schema.tags.isNsfw, false))),
     showNsfw
       ? db
           .select({
@@ -308,9 +198,7 @@ async function fetchStatisticsData(
   return {
     sessions,
     games,
-    tags,
     collections,
-    gameTagLinks,
     gameCollectionLinks
   }
 }
@@ -344,14 +232,15 @@ export function useStatisticsProvider(): StatisticsContext {
   })
 
   // Computed date range
-  const dateRange = computed(() => calculateDateRange(reportType.value, currentPeriod.value))
+  const dateRange = computed(() => calculatePeriodDateRange(reportType.value, currentPeriod.value))
 
-  // For overview: time-based visualizations use past year
-  const timeBasedDateRange = computed(() => {
-    if (reportType.value === 'overview') {
-      return calculateDateRange('overview', currentPeriod.value)
-    }
-    return dateRange.value
+  // Previous period range for comparison; overview has no natural predecessor
+  const previousDateRange = computed(() => {
+    if (reportType.value === 'overview') return null
+    return calculatePeriodDateRange(
+      reportType.value,
+      shiftPeriod(reportType.value, currentPeriod.value, -1)
+    )
   })
 
   // Period display
@@ -361,6 +250,12 @@ export function useStatisticsProvider(): StatisticsContext {
   const { data, isLoading, isFetching, error, refetch } = useAsyncData(
     () => fetchStatisticsData(dateRange.value, showNsfw.value),
     { watch: [dateRange, showNsfw] }
+  )
+
+  // Previous period sessions (comparison only, so sessions suffice)
+  const { data: previousData, refetch: refetchPrevious } = useAsyncData(
+    () => fetchSessionsInRange(previousDateRange.value, showNsfw.value),
+    { enabled: () => previousDateRange.value !== null, watch: [previousDateRange, showNsfw] }
   )
 
   // For overview: fetch all-time data separately
@@ -386,14 +281,6 @@ export function useStatisticsProvider(): StatisticsContext {
     return map
   })
 
-  const tags = computed(() => {
-    const map = new Map<string, Tag>()
-    for (const tag of data.value?.tags ?? []) {
-      map.set(tag.id, tag)
-    }
-    return map
-  })
-
   const collections = computed(() => {
     const map = new Map<string, Collection>()
     for (const collection of data.value?.collections ?? []) {
@@ -403,13 +290,6 @@ export function useStatisticsProvider(): StatisticsContext {
   })
 
   // Expose link data for local computation in components
-  const gameTagLinks = computed(() => {
-    if (reportType.value === 'overview') {
-      return allTimeData.value?.gameTagLinks ?? []
-    }
-    return data.value?.gameTagLinks ?? []
-  })
-
   const gameCollectionLinks = computed(() => {
     if (reportType.value === 'overview') {
       return allTimeData.value?.gameCollectionLinks ?? []
@@ -420,30 +300,32 @@ export function useStatisticsProvider(): StatisticsContext {
   // Computed stats
   const stats = computed(() => computeStats(sessions.value, games.value))
 
+  const previousSessions = computed(() => {
+    if (previousDateRange.value === null) return null
+    return previousData.value ?? []
+  })
+
   // All-time data for overview
   const allTimeSessions = computed(() => allTimeData.value?.sessions ?? [])
   const allTimeStats = computed(() => computeStats(allTimeSessions.value, games.value))
 
+  function refetchAll(): void {
+    void refetch()
+    if (previousDateRange.value !== null) void refetchPrevious()
+    if (reportType.value === 'overview') void refetchAllTime()
+  }
+
   // Event listeners for auto-refresh
   useEvent('db.inserted', ({ table }) => {
-    if (table === 'game_sessions') {
-      refetch()
-      if (reportType.value === 'overview') refetchAllTime()
-    }
+    if (table === 'game_sessions') refetchAll()
   })
 
   useEvent('db.updated', ({ table }) => {
-    if (table === 'game_sessions' || table === 'games') {
-      refetch()
-      if (reportType.value === 'overview') refetchAllTime()
-    }
+    if (table === 'game_sessions' || table === 'games') refetchAll()
   })
 
   useEvent('db.deleted', ({ table }) => {
-    if (table === 'game_sessions') {
-      refetch()
-      if (reportType.value === 'overview') refetchAllTime()
-    }
+    if (table === 'game_sessions') refetchAll()
   })
 
   const context: StatisticsContext = {
@@ -454,15 +336,13 @@ export function useStatisticsProvider(): StatisticsContext {
     },
     periodDisplay,
     dateRange,
-    timeBasedDateRange,
     sessions,
     games,
-    tags,
     collections,
     stats,
+    previousSessions,
     allTimeSessions,
     allTimeStats,
-    gameTagLinks,
     gameCollectionLinks,
     isLoading,
     isFetching,

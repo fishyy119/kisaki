@@ -8,6 +8,8 @@ export interface TrendChartDataPoint {
 }
 
 export interface TrendChartProps {
+  /** Module title rendered inline in the chart header row */
+  title?: string
   /** Time range this trend represents */
   range: { start: Date; end: Date }
   /** Data points to display */
