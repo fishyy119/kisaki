@@ -80,7 +80,7 @@
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "drizzle-kit": "^0.31.10",
-    "electron": "^43.1.0",
+    "electron": "41.2.0",
     "electron-builder": "^26.15.3",
     "eslint": "catalog:",
     "eslint-plugin-vue": "catalog:",
