@@ -106,7 +106,10 @@
  */
 
 /* Light: viewport-relative overlapping washes; the three ellipses tile the
- * window (no dead zones) so the lamp reads as one continuous field. */
+ * window (no dead zones) so the lamp reads as one continuous field. Page
+ * palettes land as sheet-scoped --light-* overrides (see AmbientLight); the
+ * property transition below only smooths in-place theme token changes on a
+ * resting sheet - palette switches swap sheets instead. */
 .glow {
   background:
     radial-gradient(
@@ -130,6 +133,21 @@
     --light-3 700ms ease;
 }
 
+/* Sheet cross-fade: every palette change mounts a new glow sheet (keyed by
+ * its colors) and fades it over the outgoing one. Opacity animates on the
+ * compositor, so main-thread jank from route transitions cannot swallow the
+ * switch animation - the gradient rasterizes once per switch instead of on
+ * every frame. */
+.glow-fade-enter-active,
+.glow-fade-leave-active {
+  transition: opacity 700ms ease;
+}
+
+.glow-fade-enter-from,
+.glow-fade-leave-to {
+  opacity: 0;
+}
+
 /* Diffuser: noise tile (SVG feTurbulence) directly in front of the lamp; it
  * textures the light and dithers the gradients against banding. Only the
  * base panes transmit it - floating slabs and content stay untextured. */
@@ -141,10 +159,10 @@
 }
 
 /* Ambient light has exactly one scope: the page. Dynamic (cover-derived)
- * colors are applied by the light controller as --light-* overrides on the
- * document root; the light layer (.glow) is the only consumer. Clearing
- * falls back to the theme's values. Registration enables smooth cross-fades
- * when colors change. */
+ * palettes are held by the light controller and rendered by AmbientLight as
+ * sheet-scoped --light-* overrides; clearing falls back to the theme's
+ * values. Registration types the tokens and enables interpolation when a
+ * theme changes them in place. */
 @property --light-1 {
   syntax: '<color>';
   inherits: true;
