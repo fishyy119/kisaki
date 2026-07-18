@@ -38,7 +38,10 @@
  * 5. Use gentle micro-interactions only (100–150ms, optional 1.02 hover scale)
  * 6. Shadows come in exactly three semantic tiers: shadow-raised (small
  *    elements / active states), shadow-overlay (floating layers), and
- *    shadow-modal (dialogs). The Tailwind size scale is disabled on purpose.
+ *    shadow-modal (dialogs). Tiers are elevation treatments, not sizes:
+ *    overlay/modal bundle the slab rim light (inset top highlight + shaded
+ *    bottom edge) and apply to opaque slabs only. The Tailwind size scale
+ *    is disabled on purpose.
  * 7. Alpha exists only on the base panes (--pane-alpha); popover and dialog
  *    are opaque slabs. Control fills (secondary/accent/input/muted) are
  *    relative tints with per-usage modifiers for interaction states
@@ -86,7 +89,9 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   /* Elevation shadows. The Tailwind size scale is disabled so the three
-   * theme-driven semantic tiers are the only legal shadow utilities. */
+   * theme-driven semantic tiers are the only legal shadow utilities. Each
+   * tier is a full elevation treatment: overlay/modal bundle the slab rim
+   * light, so they are for opaque slabs only. */
   --shadow-*: initial;
   --shadow-raised: var(--shadow-raised);
   --shadow-overlay: var(--shadow-overlay);

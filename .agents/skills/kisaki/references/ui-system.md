@@ -100,8 +100,14 @@ the glass and stays untextured; floating layers (popover/dialog) are opaque slab
 --grain-opacity
 
 /* Elevation shadows - the ONLY legal shadow utilities (Tailwind scale is
- * disabled via --shadow-*: initial; shadow-none stays as reset).
- * Floating tiers lead with an inset top highlight = specular top edge. */
+ * disabled via --shadow-*: initial; shadow-none stays as reset). Tiers are
+ * elevation treatments, not sizes: raised is a pure cast shadow (transparent
+ * cards have no lit face); overlay/modal bundle the slab rim light (inset
+ * top highlight + shaded bottom edge) and apply to OPAQUE slabs only. If a
+ * floating layer ever needs the cast shadow without the rim light (e.g.
+ * image content), split the rim light into the Tailwind v4 inset-shadow-*
+ * namespace locally (theme.css + globals.css + affected wrappers) instead
+ * of adding a fourth tier. */
 shadow-raised   /* small elements, thumbnails, active states */
 shadow-overlay  /* floating layers: popover/dropdown/tooltip/toast */
 shadow-modal    /* dialogs */
@@ -456,6 +462,8 @@ Zero JS runtime, CSS mask-based.
 - Use semantic tokens, not hardcoded colors
 - Shadows: only `shadow-raised` / `shadow-overlay` / `shadow-modal` (plus `shadow-none`).
   The Tailwind size scale (`shadow-sm/md/lg/...`) is disabled and has no effect
+- `shadow-overlay` / `shadow-modal` bundle the slab rim light (inset top highlight);
+  apply them to opaque slabs (`bg-popover` / `bg-dialog`) only
 - Pane alpha is baked into the base layer colors; do not add per-component
   translucency to layer backgrounds (use `/NN` modifiers only for interaction
   states on control fills)

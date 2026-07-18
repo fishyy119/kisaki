@@ -13,7 +13,7 @@ const props = defineProps<Props>()
 <template>
   <div class="flex items-center gap-3 rounded-md border bg-muted/30 p-2">
     <div
-      class="size-12 shrink-0 overflow-hidden rounded-md border bg-background flex items-center justify-center"
+      class="size-12 shrink-0 overflow-hidden rounded-md border bg-muted flex items-center justify-center"
     >
       <img
         v-if="props.summary?.imageUrl"

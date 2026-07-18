@@ -85,8 +85,11 @@
    * alpha system. */
   --pane-alpha: 72%;
 
-  /* Elevation shadows - cool ink, mass-anchored: contact shadow + heavy core;
-   * floating tiers add specular top highlight and shaded bottom edge */
+  /* Elevation shadows - per-tier treatment packages, not sizes. Cool ink,
+   * mass-anchored: contact shadow + heavy core. raised is a pure cast shadow
+   * (transparent cards have no lit face); overlay/modal bundle the slab rim
+   * light (inset top highlight + shaded bottom edge) and therefore apply to
+   * opaque slabs only. */
   --shadow-raised:
     0 1px 2px 0 oklch(0.13 0.02 258 / 0.08), 0 3px 10px -2px oklch(0.13 0.02 258 / 0.1);
   --shadow-overlay:
@@ -168,7 +171,9 @@
   /* Pane - dark panes stay a bit more opaque for readability */
   --pane-alpha: 75%;
 
-  /* Elevation shadows - heavier black mass for dark surfaces */
+  /* Elevation shadows - heavier black mass for dark surfaces; same tier
+   * semantics as light (overlay/modal bundle the slab rim light and stay
+   * on opaque slabs only) */
   --shadow-raised: 0 1px 2px 0 oklch(0 0 0 / 0.35), 0 4px 12px -2px oklch(0 0 0 / 0.4);
   --shadow-overlay:
     inset 0 1px 0 oklch(1 0 0 / 0.08), inset 0 -1px 0 oklch(0 0 0 / 0.35),

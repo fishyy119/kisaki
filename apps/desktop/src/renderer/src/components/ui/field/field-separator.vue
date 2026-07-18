@@ -19,16 +19,21 @@ const hasContent = !!slots.default
     data-slot="field-separator"
     :data-content="hasContent"
     :class="
-      cn('relative -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2', props.class)
+      cn(
+        '-my-2 flex h-5 items-center gap-2 text-sm group-data-[variant=outline]/field-group:-mb-2',
+        props.class
+      )
     "
   >
-    <Separator class="absolute inset-0 top-1/2" />
-    <span
-      v-if="hasContent"
-      class="bg-background text-muted-foreground relative mx-auto block w-fit px-2"
-      data-slot="field-separator-content"
-    >
-      <slot />
-    </span>
+    <Separator class="flex-1" />
+    <template v-if="hasContent">
+      <span
+        class="text-muted-foreground shrink-0"
+        data-slot="field-separator-content"
+      >
+        <slot />
+      </span>
+      <Separator class="flex-1" />
+    </template>
   </div>
 </template>

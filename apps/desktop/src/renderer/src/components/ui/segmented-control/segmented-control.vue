@@ -1,8 +1,8 @@
 <!-- SegmentedControl root component for controlled state switching -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { TabsRoot, TabsList } from 'reka-ui'
-import { cn } from '@renderer/utils/cn'
+import { TabsRoot } from 'reka-ui'
+import { TabsList } from '@renderer/components/ui/tabs'
 
 interface Props {
   defaultValue?: string
@@ -21,7 +21,7 @@ const model = defineModel<string>()
     data-slot="segmented-control"
   >
     <TabsList
-      :class="cn('inline-flex h-7 items-center gap-0.5 rounded-md bg-muted p-0.5', props.class)"
+      :class="props.class"
       data-slot="segmented-control-list"
     >
       <slot />

@@ -31,7 +31,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
   >
     <SwitchThumb
       data-slot="switch-thumb"
-      class="pointer-events-none block size-3 rounded-full bg-background shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-3.5 data-[state=unchecked]:translate-x-0.5"
+      class="pointer-events-none block size-3 rounded-full bg-primary-foreground shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-3.5 data-[state=unchecked]:translate-x-0.5"
     >
       <slot
         name="thumb"
