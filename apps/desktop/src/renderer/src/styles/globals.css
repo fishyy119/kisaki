@@ -164,10 +164,11 @@
 }
 
 /* Ambient light has exactly one scope: the page. Dynamic (cover-derived)
- * palettes are held by the light controller and rendered by AmbientLight as
- * sheet-scoped --light-* overrides; clearing falls back to the theme's
- * values. Registration types the tokens and enables interpolation when a
- * theme changes them in place. */
+ * palettes are held raw by the light controller; AmbientLight converges
+ * them for the active mode and renders sheet-scoped --light-* overrides.
+ * Clearing falls back to the theme's values after a short grace period.
+ * Registration types the tokens and enables interpolation when a theme
+ * changes them in place. */
 @property --light-1 {
   syntax: '<color>';
   inherits: true;

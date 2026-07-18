@@ -1,20 +1,25 @@
 /**
- * Ambient color extraction from cover images.
+ * Ambient palette extraction from cover images.
  *
  * Samples a small bitmap, buckets chromatic pixels by oklch hue, and returns
- * three CSS oklch colors converged into an ambient-friendly lightness/chroma
- * range. Returns null for unreadable or (near-)grayscale images so callers
- * fall back to the theme's light tokens.
+ * up to three raw hue anchors ordered by dominance. Output is unconverged:
+ * the light controller projects it into the active mode's ambient band at
+ * render time. Returns null for unreadable or near-grayscale images so
+ * callers fall back to the theme's light tokens.
  */
 
 import { createLogger } from '@renderer/core/log'
-import type { AmbientLightColors } from './controller'
+import { srgbToOklch, type Oklch } from './oklch'
 
 const log = createLogger('Theme')
+
+/** Raw cover-derived hue anchors, dominant first. */
+export type AmbientPalette = readonly [Oklch, Oklch, Oklch]
 
 const SAMPLE_SIZE = 64
 const HUE_BIN_COUNT = 24
 const HUE_BIN_DEGREES = 360 / HUE_BIN_COUNT
+const DEGREES_PER_RADIAN = 180 / Math.PI
 
 /** Pixels below these thresholds carry no usable hue signal. */
 const MIN_PIXEL_ALPHA = 128
@@ -22,61 +27,73 @@ const MIN_PIXEL_CHROMA = 0.04
 const MIN_PIXEL_LIGHTNESS = 0.1
 const MAX_PIXEL_LIGHTNESS = 0.97
 
-/** A hue bin must hold at least this share of total weight to be picked. */
-const MIN_BIN_WEIGHT_RATIO = 0.04
+/** Near-grayscale guard: below this share of chromatic pixels the cover has
+ * no honest color story and the theme light applies. */
+const MIN_CHROMATIC_PIXEL_RATIO = 0.05
+
+/** A peak (bin merged with its neighbors) must hold at least this share of
+ * total chromatic weight to be picked. */
+const MIN_PEAK_WEIGHT_RATIO = 0.05
 /** Picked hues must be at least this far apart to read as distinct tones. */
 const MIN_HUE_DISTANCE = 45
+/** Secondary hues stay within this arc of the dominant hue so one lamp
+ * never mixes clashing (near-complementary) colors. */
+const MAX_HUE_SPREAD = 90
 /** Analogous rotation used when the image yields fewer than three hues. */
 const FALLBACK_HUE_OFFSET = 40
 
-/** Ambient convergence range: mid lightness, soft-but-visible chroma. */
-const AMBIENT_MIN_LIGHTNESS = 0.55
-const AMBIENT_MAX_LIGHTNESS = 0.78
-const AMBIENT_MIN_CHROMA = 0.08
-const AMBIENT_MAX_CHROMA = 0.17
-
 const CACHE_LIMIT = 64
-const cache = new Map<string, AmbientLightColors | null>()
-
-interface Oklch {
-  l: number
-  c: number
-  h: number
-}
+const cache = new Map<string, AmbientPalette | null>()
 
 interface HueBin {
   weight: number
   lightnessSum: number
   chromaSum: number
-  hueSum: number
+  hueXSum: number
+  hueYSum: number
 }
 
-export async function extractAmbientLightColors(url: string): Promise<AmbientLightColors | null> {
-  const cached = cache.get(url)
-  if (cached !== undefined) return cached
+interface Histogram {
+  bins: HueBin[]
+  opaquePixels: number
+  chromaticPixels: number
+}
 
-  let colors: AmbientLightColors | null
+export async function extractAmbientPalette(url: string): Promise<AmbientPalette | null> {
+  const cached = cache.get(url)
+  if (cached !== undefined) {
+    // LRU touch: re-insert so hot covers survive eviction.
+    cache.delete(url)
+    cache.set(url, cached)
+    return cached
+  }
+
+  let palette: AmbientPalette | null
   try {
-    colors = await extract(url)
+    palette = await extract(url)
   } catch (error) {
     // Fall back to theme tokens; logged once per URL (result is cached).
-    log.warn('Ambient color extraction failed.', error)
-    colors = null
+    log.warn('Ambient palette extraction failed.', error)
+    palette = null
   }
 
   if (cache.size >= CACHE_LIMIT) {
     const oldest = cache.keys().next().value
     if (oldest !== undefined) cache.delete(oldest)
   }
-  cache.set(url, colors)
-  return colors
+  cache.set(url, palette)
+  return palette
 }
 
-async function extract(url: string): Promise<AmbientLightColors | null> {
-  const response = await fetch(url)
-  if (!response.ok) return null
+async function extract(url: string): Promise<AmbientPalette | null> {
+  // Image element loading shares the renderer's image cache with the page,
+  // which already displays the cover - no second download like fetch would.
+  const image = new Image()
+  image.decoding = 'async'
+  image.src = url
+  await image.decode()
 
-  const bitmap = await createImageBitmap(await response.blob(), {
+  const bitmap = await createImageBitmap(image, {
     resizeWidth: SAMPLE_SIZE,
     resizeHeight: SAMPLE_SIZE,
     resizeQuality: 'low'
@@ -93,72 +110,103 @@ async function extract(url: string): Promise<AmbientLightColors | null> {
   bitmap.close()
 
   const { data } = context.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE)
-  return pickAmbientColors(collectHueBins(data))
+  return pickPalette(collectHistogram(data))
 }
 
-function collectHueBins(data: Uint8ClampedArray): HueBin[] {
+function collectHistogram(data: Uint8ClampedArray): Histogram {
   const bins: HueBin[] = Array.from({ length: HUE_BIN_COUNT }, () => ({
     weight: 0,
     lightnessSum: 0,
     chromaSum: 0,
-    hueSum: 0
+    hueXSum: 0,
+    hueYSum: 0
   }))
+
+  let opaquePixels = 0
+  let chromaticPixels = 0
 
   for (let i = 0; i + 3 < data.length; i += 4) {
     const alpha = data[i + 3] ?? 0
     if (alpha < MIN_PIXEL_ALPHA) continue
+    opaquePixels++
 
     const { l, c, h } = srgbToOklch(data[i] ?? 0, data[i + 1] ?? 0, data[i + 2] ?? 0)
     if (c < MIN_PIXEL_CHROMA || l < MIN_PIXEL_LIGHTNESS || l > MAX_PIXEL_LIGHTNESS) continue
+    chromaticPixels++
 
     const bin = bins[Math.min(Math.floor(h / HUE_BIN_DEGREES), HUE_BIN_COUNT - 1)]
     if (!bin) continue
 
-    // Chroma-weighted sums: saturated pixels define the ambient tone.
+    // Chroma-weighted sums: saturated pixels define the ambient tone. Hue
+    // accumulates as a unit vector so circular means never wrap-around.
+    const hueRadians = h / DEGREES_PER_RADIAN
     bin.weight += c
     bin.lightnessSum += l * c
     bin.chromaSum += c * c
-    bin.hueSum += h * c
+    bin.hueXSum += Math.cos(hueRadians) * c
+    bin.hueYSum += Math.sin(hueRadians) * c
   }
 
-  return bins
+  return { bins, opaquePixels, chromaticPixels }
 }
 
-function pickAmbientColors(bins: HueBin[]): AmbientLightColors | null {
+function pickPalette({ bins, opaquePixels, chromaticPixels }: Histogram): AmbientPalette | null {
+  if (opaquePixels === 0 || chromaticPixels / opaquePixels < MIN_CHROMATIC_PIXEL_RATIO) return null
+
   const totalWeight = bins.reduce((sum, bin) => sum + bin.weight, 0)
   if (totalWeight <= 0) return null
 
+  // Smooth across neighbors so a hue mass straddling a bin edge still ranks
+  // as one peak; near-duplicate peaks are dropped by the distance rule.
+  const peaks = bins.map((_, index) => mergeWithNeighbors(bins, index))
+
   const picked: Oklch[] = []
-  for (const bin of [...bins].sort((a, b) => b.weight - a.weight)) {
+  for (const peak of [...peaks].sort((a, b) => b.weight - a.weight)) {
     if (picked.length === 3) break
-    if (bin.weight < totalWeight * MIN_BIN_WEIGHT_RATIO) break
+    if (peak.weight < totalWeight * MIN_PEAK_WEIGHT_RATIO) break
 
-    const hue = bin.hueSum / bin.weight
-    if (picked.some((color) => circularHueDistance(color.h, hue) < MIN_HUE_DISTANCE)) continue
-
-    picked.push({
-      l: bin.lightnessSum / bin.weight,
-      c: bin.chromaSum / bin.weight,
-      h: hue
-    })
+    const color = binToOklch(peak)
+    const primary = picked[0]
+    if (primary && circularHueDistance(primary.h, color.h) > MAX_HUE_SPREAD) continue
+    if (picked.some((chosen) => circularHueDistance(chosen.h, color.h) < MIN_HUE_DISTANCE)) continue
+    picked.push(color)
   }
 
   const primary = picked[0]
   if (!primary) return null
 
-  while (picked.length < 3) {
-    picked.push({ ...primary, h: (primary.h + FALLBACK_HUE_OFFSET * picked.length) % 360 })
+  // Analogous bracket fill: missing tones rotate off the dominant hue,
+  // mirroring the side an extracted secondary already occupies.
+  const secondary = picked[1] ?? { ...primary, h: rotateHue(primary.h, FALLBACK_HUE_OFFSET) }
+  const oppositeSide = signedHueDelta(secondary.h, primary.h) >= 0 ? -1 : 1
+  const tertiary = picked[2] ?? {
+    ...primary,
+    h: rotateHue(primary.h, oppositeSide * FALLBACK_HUE_OFFSET)
   }
 
-  return [toAmbientCss(picked[0]), toAmbientCss(picked[1]), toAmbientCss(picked[2])]
+  return [primary, secondary, tertiary]
 }
 
-function toAmbientCss(color: Oklch | undefined): string {
-  if (!color) return 'transparent'
+function mergeWithNeighbors(bins: HueBin[], index: number): HueBin {
+  const merged: HueBin = { weight: 0, lightnessSum: 0, chromaSum: 0, hueXSum: 0, hueYSum: 0 }
+  for (const offset of [-1, 0, 1]) {
+    const bin = bins[(index + offset + bins.length) % bins.length]
+    if (!bin) continue
+    merged.weight += bin.weight
+    merged.lightnessSum += bin.lightnessSum
+    merged.chromaSum += bin.chromaSum
+    merged.hueXSum += bin.hueXSum
+    merged.hueYSum += bin.hueYSum
+  }
+  return merged
+}
 
-  const l = clamp(color.l, AMBIENT_MIN_LIGHTNESS, AMBIENT_MAX_LIGHTNESS)
-  const c = clamp(color.c, AMBIENT_MIN_CHROMA, AMBIENT_MAX_CHROMA)
-  return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${color.h.toFixed(1)})`
+function binToOklch(bin: HueBin): Oklch {
+  return {
+    l: bin.lightnessSum / bin.weight,
+    c: bin.chromaSum / bin.weight,
+    h: (Math.atan2(bin.hueYSum, bin.hueXSum) * DEGREES_PER_RADIAN + 360) % 360
+  }
 }
 
 function circularHueDistance(a: number, b: number): number {
@@ -166,31 +214,11 @@ function circularHueDistance(a: number, b: number): number {
   return Math.min(distance, 360 - distance)
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
+/** Shortest signed arc from `origin` to `target`, in (-180, 180]. */
+function signedHueDelta(target: number, origin: number): number {
+  return ((target - origin + 540) % 360) - 180
 }
 
-/** sRGB (0-255 channels) to oklch, per Björn Ottosson's reference transform. */
-function srgbToOklch(r8: number, g8: number, b8: number): Oklch {
-  const r = srgbChannelToLinear(r8 / 255)
-  const g = srgbChannelToLinear(g8 / 255)
-  const b = srgbChannelToLinear(b8 / 255)
-
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
-  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
-  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
-
-  const okLightness = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
-  const okA = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s
-  const okB = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
-
-  return {
-    l: okLightness,
-    c: Math.hypot(okA, okB),
-    h: (Math.atan2(okB, okA) * (180 / Math.PI) + 360) % 360
-  }
-}
-
-function srgbChannelToLinear(value: number): number {
-  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+function rotateHue(hue: number, delta: number): number {
+  return (hue + delta + 360) % 360
 }

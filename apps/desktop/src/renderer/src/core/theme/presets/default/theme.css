@@ -99,11 +99,16 @@
     inset 0 1px 0 oklch(1 0 0 / 0.55), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.06),
     0 2px 4px 0 oklch(0.13 0.02 258 / 0.1), 0 28px 64px -16px oklch(0.13 0.02 258 / 0.24);
 
-  /* Light - the lamp of the lightbox, painted under the diffuser + panes */
-  --light-1: oklch(0.72 0.14 255);
-  --light-2: oklch(0.78 0.12 210);
-  --light-3: oklch(0.72 0.14 290);
-  --light-strength: 45%;
+  /* Light - the lamp of the lightbox, painted under the diffuser + panes.
+   * Near-monochrome cool light: hues stay within ~15deg of the neutral
+   * anchor and chroma stays close to the axis discipline, so the lamp reads
+   * as one light with spatial depth, not a gradient decoration. Lightness
+   * sits near the paper so the wash reads as light, not shadow; color is
+   * reserved for cover-derived page palettes. */
+  --light-1: oklch(0.88 0.045 248);
+  --light-2: oklch(0.9 0.03 260);
+  --light-3: oklch(0.87 0.05 268);
+  --light-strength: 50%;
 
   /* Diffuser - grain sheet in front of the lamp; shows through the panes at
    * (1 - pane-alpha), so the raw value compensates for that attenuation */
@@ -182,11 +187,12 @@
     inset 0 1px 0 oklch(1 0 0 / 0.1), inset 0 -1px 0 oklch(0 0 0 / 0.4),
     0 2px 4px 0 oklch(0 0 0 / 0.5), 0 28px 64px -16px oklch(0 0 0 / 0.65);
 
-  /* Light - deeper lamp tuned for dark surfaces */
-  --light-1: oklch(0.55 0.15 255);
-  --light-2: oklch(0.62 0.12 212);
-  --light-3: oklch(0.52 0.15 285);
-  --light-strength: 40%;
+  /* Light - same near-monochrome lamp lifted above the ink base so it
+   * genuinely glows; chroma stays disciplined, color comes from covers */
+  --light-1: oklch(0.52 0.055 248);
+  --light-2: oklch(0.56 0.04 260);
+  --light-3: oklch(0.5 0.06 268);
+  --light-strength: 45%;
 
   /* Diffuser - stronger grain on dark surfaces, compensated for pane alpha */
   --grain-opacity: 16%;

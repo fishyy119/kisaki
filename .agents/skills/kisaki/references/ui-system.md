@@ -76,6 +76,9 @@ Raw tokens live in theme presets (`core/theme/presets/*/theme.css`, `:root` + `.
 `globals.css` composes them into utilities ("Lightbox recipes"). The default preset is
 Kisaki's own oklch system: one cool neutral hue anchor (~256deg) with disciplined
 chroma, per-mode calibrated primary/semantic colors, and a categorical chart ramp.
+The default lamp is near-monochrome cool light (hues within ~15deg of the anchor,
+low chroma, lightness near the base plane in each mode); color in the lamp is
+reserved for cover-derived page palettes.
 
 The base is a lightbox of three layers, bottom to top: **light** (`.glow`, the lamp -
 the only dynamic layer), **diffuser** (`.grain`, static noise sheet texturing the lamp
@@ -92,8 +95,8 @@ the glass and stays untextured; floating layers (popover/dialog) are opaque slab
  * elevated planes. */
 --pane-alpha
 
-/* Light tokens (theme-owned; page-level dynamic colors override them on the
- * document root) */
+/* Light tokens (theme-owned; page palettes land as sheet-scoped overrides
+ * rendered by AmbientLight) */
 --light-1..3 / --light-strength
 
 /* Diffuser grain (raw value; calibrated against pane attenuation) */
@@ -124,9 +127,13 @@ Slab depth comes entirely from the ladder + shadow tiers + border; there is
 no backdrop-filter anywhere in the app.
 
 **Light scoping**: ambient light has exactly ONE scope - the page. Detail
-pages call `useAmbientLight(coverUrl)`; extracted colors land on the document
-root and the light layer (`.glow`) is the only consumer. No per-surface light
-overrides, no light on floating slabs.
+pages call `useAmbientLight(coverUrl)`; extraction yields a raw oklch palette
+(hue anchors, `light/extraction.ts`), the controller holds it, and AmbientLight
+converges it for the active mode (per-mode ambient bands + sRGB gamut cap,
+`light/convergence.ts`) into sheet-scoped `--light-*` overrides - the light
+layer (`.glow`) is the only consumer. Clearing has a short grace period so
+detail-to-detail navigation cross-fades palettes directly instead of flashing
+the theme light. No per-surface light overrides, no light on floating slabs.
 
 **One paint per region rule**: every screen region (titlebar, sidebar, page header
 strips, page body/scroll containers) paints exactly ONE base-plane color

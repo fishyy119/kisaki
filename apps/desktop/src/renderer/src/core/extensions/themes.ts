@@ -91,7 +91,7 @@ const LIGHTBOX_TOKEN_RULES: Record<'light' | 'dark', readonly string[]> = {
     '  --shadow-raised: 0 1px 2px 0 oklch(0.13 0.02 258 / 0.08), 0 3px 10px -2px oklch(0.13 0.02 258 / 0.1);',
     '  --shadow-overlay: inset 0 1px 0 oklch(1 0 0 / 0.5), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.05), 0 1px 2px 0 oklch(0.13 0.02 258 / 0.1), 0 10px 24px -6px oklch(0.13 0.02 258 / 0.16);',
     '  --shadow-modal: inset 0 1px 0 oklch(1 0 0 / 0.55), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.06), 0 2px 4px 0 oklch(0.13 0.02 258 / 0.1), 0 28px 64px -16px oklch(0.13 0.02 258 / 0.24);',
-    '  --light-strength: 45%;',
+    '  --light-strength: 50%;',
     '  --grain-opacity: 9%;'
   ],
   dark: [
@@ -99,7 +99,7 @@ const LIGHTBOX_TOKEN_RULES: Record<'light' | 'dark', readonly string[]> = {
     '  --shadow-raised: 0 1px 2px 0 oklch(0 0 0 / 0.35), 0 4px 12px -2px oklch(0 0 0 / 0.4);',
     '  --shadow-overlay: inset 0 1px 0 oklch(1 0 0 / 0.08), inset 0 -1px 0 oklch(0 0 0 / 0.35), 0 1px 2px 0 oklch(0 0 0 / 0.45), 0 10px 24px -6px oklch(0 0 0 / 0.5);',
     '  --shadow-modal: inset 0 1px 0 oklch(1 0 0 / 0.1), inset 0 -1px 0 oklch(0 0 0 / 0.4), 0 2px 4px 0 oklch(0 0 0 / 0.5), 0 28px 64px -16px oklch(0 0 0 / 0.65);',
-    '  --light-strength: 40%;',
+    '  --light-strength: 45%;',
     '  --grain-opacity: 16%;'
   ]
 }
