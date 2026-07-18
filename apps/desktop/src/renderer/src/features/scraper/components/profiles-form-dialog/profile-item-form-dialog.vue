@@ -325,7 +325,7 @@ async function handleCopyProfileId() {
                     v-for="slot in slotsForMediaType"
                     :key="slot"
                     type="button"
-                    class="w-full flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-left"
+                    class="w-full flex items-center justify-between p-2.5 rounded-lg border hover:bg-accent/50 transition-colors text-left"
                     @click="() => handleSlotClick(slot)"
                   >
                     <span class="text-sm font-medium">{{ SLOT_LABELS[slot] }}</span>

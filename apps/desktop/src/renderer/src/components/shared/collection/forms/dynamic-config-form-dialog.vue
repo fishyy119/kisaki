@@ -298,7 +298,7 @@ const sortDirectionModels = {
             :class="
               cn(
                 'rounded-lg border p-3 transition-colors',
-                localConfig[type].enabled ? 'bg-card border-primary/30' : 'bg-card border-border'
+                localConfig[type].enabled ? 'border-primary/30' : 'border-border'
               )
             "
           >

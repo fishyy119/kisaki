@@ -188,7 +188,7 @@ const insight = computed(() => {
             :y="y"
             :duration="0"
             :template="tooltipTemplate"
-            :color="['var(--chart-1)']"
+            :color="['color-mix(in oklch, var(--chart-1) 85%, transparent)']"
             :hide-when-far-from-pointer="false"
             :tooltip="crosshairTooltip!"
           />

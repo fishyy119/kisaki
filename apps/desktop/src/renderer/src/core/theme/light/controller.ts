@@ -1,22 +1,24 @@
-import { shallowRef } from 'vue'
-
 export type AmbientLightColors = readonly [string, string, string]
 
+const LIGHT_VARS = ['--light-1', '--light-2', '--light-3'] as const
+
 /**
- * Runtime state for the ambient light layer.
- *
- * Holds dynamic (content-derived) ambient colors. When null, the layer falls
- * back to the active theme's --light-* tokens.
+ * Ambient light has exactly one scope: the page. This controller applies
+ * page-level dynamic (cover-derived) colors as --light-* overrides on the
+ * document root; the light layer of the lightbox (.glow) is the only
+ * consumer. Clearing falls back to the theme's light tokens.
  */
 class LightController {
-  readonly colors = shallowRef<AmbientLightColors | null>(null)
-
   set(colors: AmbientLightColors): void {
-    this.colors.value = colors
+    for (const [index, name] of LIGHT_VARS.entries()) {
+      document.documentElement.style.setProperty(name, colors[index] ?? '')
+    }
   }
 
   clear(): void {
-    this.colors.value = null
+    for (const name of LIGHT_VARS) {
+      document.documentElement.style.removeProperty(name)
+    }
   }
 }
 

@@ -117,6 +117,8 @@ const isSearching = ref(false)
 const searchResults = ref<GameSearchResult[]>([])
 const hasSearched = ref(false)
 
+const RESULT_TABLE_COLUMNS = ['', '30%', '7.5rem']
+
 // ID state
 const gameId = ref('')
 watch(
@@ -258,87 +260,79 @@ const gameIdModel = computed({
     <!-- Search results table -->
     <div class="border border-border rounded-md overflow-hidden">
       <Table
-        class="table-fixed"
-        container-class="overflow-visible"
+        fixed-header
+        :columns="RESULT_TABLE_COLUMNS"
+        body-class="h-[20vh]"
       >
-        <TableHeader class="bg-muted/60">
-          <TableRow class="hover:bg-transparent border-border">
-            <TableHead>名称</TableHead>
-            <TableHead class="w-[30%]">原名</TableHead>
-            <TableHead class="w-30">发售日期</TableHead>
-          </TableRow>
-        </TableHeader>
-      </Table>
-
-      <!-- Scrollable body -->
-      <div class="h-[20vh] overflow-auto">
-        <StateView
-          v-if="!hasSearched"
-          state="empty"
-          size="sm"
-          icon="icon-[mdi--magnify]"
-          description="输入游戏名称开始搜索"
-          class="h-full"
-        />
-
-        <StateView
-          v-else-if="isSearching"
-          state="loading"
-          size="sm"
-          class="h-full"
-        />
-
-        <StateView
-          v-else-if="searchResults.length === 0"
-          state="empty"
-          size="sm"
-          icon="icon-[mdi--magnify-close]"
-          title="无匹配结果"
-          description="请尝试其他关键词"
-          class="h-full"
-        />
-
-        <Table
-          v-else
-          class="table-fixed"
-          container-class="overflow-visible"
-        >
-          <TableBody>
-            <TableRow
-              v-for="result in searchResults"
-              :key="result.id"
-              :data-state="selectedResultId === result.id ? 'selected' : undefined"
-              class="cursor-pointer text-xs border-border"
-              @click="handleResultSelect(result)"
-            >
-              <TableCell class="truncate max-w-0">{{ result.name }}</TableCell>
-              <TableCell class="w-[30%] text-muted-foreground truncate max-w-0">
-                {{ result.originalName || '-' }}
-              </TableCell>
-              <TableCell class="w-30 text-muted-foreground">
-                {{ formatDate(result.releaseDate ?? null) }}
-              </TableCell>
+        <template #header>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名称</TableHead>
+              <TableHead>原名</TableHead>
+              <TableHead>发售日期</TableHead>
             </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+          </TableHeader>
+        </template>
 
-      <!-- Results count footer -->
-      <Table
-        class="table-fixed"
-        container-class="overflow-visible"
-      >
-        <TableFooter class="bg-muted/30">
-          <TableRow class="hover:bg-transparent border-t border-border">
-            <TableCell
-              colspan="3"
-              class="h-6 py-0 text-[10px] text-muted-foreground"
-            >
-              共 {{ searchResults.length }} 条结果
-              <template v-if="selectedResultId"> · 已选择 1 条</template>
+        <template #state>
+          <StateView
+            v-if="!hasSearched"
+            state="empty"
+            size="sm"
+            icon="icon-[mdi--magnify]"
+            description="输入游戏名称开始搜索"
+            class="h-full"
+          />
+
+          <StateView
+            v-else-if="isSearching"
+            state="loading"
+            size="sm"
+            class="h-full"
+          />
+
+          <StateView
+            v-else-if="searchResults.length === 0"
+            state="empty"
+            size="sm"
+            icon="icon-[mdi--magnify-close]"
+            title="无匹配结果"
+            description="请尝试其他关键词"
+            class="h-full"
+          />
+        </template>
+
+        <TableBody>
+          <TableRow
+            v-for="result in searchResults"
+            :key="result.id"
+            :data-state="selectedResultId === result.id ? 'selected' : undefined"
+            class="cursor-pointer text-xs border-border"
+            @click="handleResultSelect(result)"
+          >
+            <TableCell class="truncate">{{ result.name }}</TableCell>
+            <TableCell class="text-muted-foreground truncate">
+              {{ result.originalName || '-' }}
+            </TableCell>
+            <TableCell class="text-muted-foreground">
+              {{ formatDate(result.releaseDate ?? null) }}
             </TableCell>
           </TableRow>
-        </TableFooter>
+        </TableBody>
+
+        <template #footer>
+          <TableFooter>
+            <TableRow>
+              <TableCell
+                colspan="3"
+                class="h-6 py-0 text-[10px] text-muted-foreground"
+              >
+                共 {{ searchResults.length }} 条结果
+                <template v-if="selectedResultId"> · 已选择 1 条</template>
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </template>
       </Table>
     </div>
 

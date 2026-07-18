@@ -24,8 +24,6 @@
   --color-foreground: var(--kisaki-foreground);
   --color-surface: var(--kisaki-surface);
   --color-surface-foreground: var(--kisaki-surface-foreground);
-  --color-card: var(--kisaki-card);
-  --color-card-foreground: var(--kisaki-card-foreground);
   --color-popover: var(--kisaki-popover);
   --color-popover-foreground: var(--kisaki-popover-foreground);
   --color-dialog: var(--kisaki-dialog);

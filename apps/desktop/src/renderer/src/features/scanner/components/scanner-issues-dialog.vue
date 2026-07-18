@@ -169,6 +169,8 @@ const filteredIssueRows = computed(() => {
 const issueCount = computed(() => issueRows.value.length)
 const hasSearch = computed(() => searchQuery.value.trim().length > 0)
 
+const ISSUE_TABLE_COLUMNS = ['', '8rem', '22%', '24%', '16%', '7rem']
+
 function handleClearSearch() {
   searchQuery.value = ''
 }
@@ -291,26 +293,32 @@ useEvent('db.updated', (payload) => {
 
         <div
           v-else
-          class="min-h-0 flex-1 overflow-auto rounded-md border border-border"
+          class="min-h-0 flex-1 overflow-hidden rounded-md border border-border"
         >
-          <Table class="table-fixed">
-            <TableHeader class="sticky top-0 z-10 bg-muted/60">
-              <TableRow class="hover:bg-transparent border-border">
-                <TableHead>名称</TableHead>
-                <TableHead class="w-32">类型</TableHead>
-                <TableHead class="w-[22%]">路径</TableHead>
-                <TableHead class="w-[24%]">原因</TableHead>
-                <TableHead class="w-[16%]">关联游戏</TableHead>
-                <TableHead class="w-28 text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
+          <Table
+            fixed-header
+            :columns="ISSUE_TABLE_COLUMNS"
+          >
+            <template #header>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>名称</TableHead>
+                  <TableHead>类型</TableHead>
+                  <TableHead>路径</TableHead>
+                  <TableHead>原因</TableHead>
+                  <TableHead>关联游戏</TableHead>
+                  <TableHead class="text-right">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+            </template>
+
             <TableBody>
               <TableRow
                 v-for="row in filteredIssueRows"
                 :key="`${row.scannerId}:${row.issue.id}`"
                 class="border-border"
               >
-                <TableCell class="max-w-0">
+                <TableCell>
                   <div class="flex min-w-0 items-center gap-2">
                     <Icon
                       :icon="getIssueIcon(row.issue.type)"
@@ -327,28 +335,28 @@ useEvent('db.updated', (payload) => {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell class="w-32">
+                <TableCell>
                   <Badge variant="warning">{{ getIssueTypeText(row.issue.type) }}</Badge>
                 </TableCell>
                 <TableCell
-                  class="w-[22%] max-w-0 truncate text-muted-foreground"
+                  class="truncate text-muted-foreground"
                   :title="row.issue.path"
                 >
                   {{ row.issue.path }}
                 </TableCell>
                 <TableCell
-                  class="w-[24%] max-w-0 truncate text-muted-foreground"
+                  class="truncate text-muted-foreground"
                   :title="row.issue.reason"
                 >
                   {{ row.issue.reason }}
                 </TableCell>
                 <TableCell
-                  class="w-[16%] max-w-0 truncate text-muted-foreground"
+                  class="truncate text-muted-foreground"
                   :title="row.existingGameName"
                 >
                   {{ row.existingGameName || '-' }}
                 </TableCell>
-                <TableCell class="w-28">
+                <TableCell>
                   <div class="flex items-center justify-end gap-0.5">
                     <Button
                       variant="ghost"

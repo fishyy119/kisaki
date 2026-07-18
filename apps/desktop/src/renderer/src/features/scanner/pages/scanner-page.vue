@@ -9,8 +9,8 @@
 import { useScannerProvider } from '../composables'
 import { useRenderState } from '@renderer/composables'
 import { StateView } from '@renderer/components/ui/state-view'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
-import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
 
 // =============================================================================
 // Context Provider
@@ -18,6 +18,8 @@ import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
 
 const { scanners, isLoading } = useScannerProvider()
 const state = useRenderState(isLoading, null, scanners)
+
+const SCANNER_TABLE_COLUMNS = ['', '6rem', '8rem', '7rem', '7rem', '5rem', '11rem']
 </script>
 
 <template>
@@ -38,33 +40,33 @@ const state = useRenderState(isLoading, null, scanners)
       <ScannerEmptyState v-else-if="scanners.length === 0" />
 
       <!-- Scanner list -->
-      <div
+      <Table
         v-else
-        class="h-full overflow-auto"
+        fixed-header
+        :columns="SCANNER_TABLE_COLUMNS"
       >
-        <!-- Table header -->
-        <div
-          class="sticky top-0 z-10 grid items-center h-8 px-4 text-xs font-medium text-muted-foreground border-b border-border bg-background glass"
-          :style="{ gridTemplateColumns: SCANNER_LIST_GRID_TEMPLATE }"
-        >
-          <div class="min-w-0">名称</div>
-          <div class="text-center">类型</div>
-          <div class="text-center">刮削配置</div>
-          <div class="text-center">目标合集</div>
-          <div class="text-center">新增 / 已存</div>
-          <div class="text-center">状态</div>
-          <div class="text-right">操作</div>
-        </div>
+        <template #header>
+          <TableHeader>
+            <TableRow class="h-8">
+              <TableHead class="pl-4">名称</TableHead>
+              <TableHead class="text-center">类型</TableHead>
+              <TableHead class="text-center">刮削配置</TableHead>
+              <TableHead class="text-center">目标合集</TableHead>
+              <TableHead class="text-center">新增 / 已存</TableHead>
+              <TableHead class="text-center">状态</TableHead>
+              <TableHead class="pr-4 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+        </template>
 
-        <!-- Scanner rows -->
-        <div class="divide-y divide-border/50">
+        <TableBody>
           <ScannerItem
             v-for="scanner in scanners"
             :key="scanner.id"
             :scanner="scanner"
           />
-        </div>
-      </div>
+        </TableBody>
+      </Table>
     </div>
   </div>
 </template>

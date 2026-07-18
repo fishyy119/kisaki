@@ -17,8 +17,6 @@ const TOKEN_CSS_VARS: Record<WebviewThemeTokenName, string> = {
   foreground: '--foreground',
   surface: '--surface',
   surfaceForeground: '--surface-foreground',
-  card: '--card',
-  cardForeground: '--card-foreground',
   popover: '--popover',
   popoverForeground: '--popover-foreground',
   dialog: '--dialog',

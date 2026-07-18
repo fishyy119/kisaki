@@ -100,7 +100,7 @@ function handleClose() {
               v-for="option in mediaTypeOptions"
               :key="option.value"
               type="button"
-              class="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-left"
+              class="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors text-left"
               @click="() => handleMediaTypeSelected(option.value)"
             >
               <div class="size-10 rounded-md bg-muted flex items-center justify-center shrink-0">
@@ -126,7 +126,7 @@ function handleClose() {
               v-for="provider in searchProviders"
               :key="provider.id"
               type="button"
-              class="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-left"
+              class="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors text-left"
               @click="() => handleProviderSelected(provider.id)"
             >
               <div class="size-10 rounded-md bg-muted flex items-center justify-center shrink-0">

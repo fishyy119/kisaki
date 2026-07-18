@@ -22,9 +22,10 @@
 - Dense settings and workflow surfaces should prefer divider-based grids or row lists
   over repeated cards: use borders, aligned columns, and compact row rhythm to make
   related controls scannable.
-- Ambient light: a soft gradient glow painted under the whole UI (`ambient-light.vue`);
-  layer colors are slightly translucent so the glow bleeds through, floating layers
-  add glass blur on top
+- Lightbox base: the app shell is a backlit panel of three layers (`ambient-light.vue`) -
+  light (soft gradient lamp, the only dynamic layer), diffuser (grain sheet texturing
+  the lamp), and glass (translucent base panes). Floating layers (popover/dialog) are
+  opaque slabs with no alpha, blur, or light
 - Shadows come in exactly three semantic tiers (raised/overlay/modal); borders stay subtle
 - Short animations (100-150ms) for popovers
 
@@ -33,11 +34,14 @@
 ### Background Layers
 
 ```css
-bg-background    /* App main background (RootLayout, main content) */
-bg-surface       /* Structural containers (Titlebar, Sidebar) */
+bg-background    /* App main background (page body regions) */
+bg-surface       /* Structural containers (Titlebar, Sidebar, page headers) */
 bg-popover       /* Popover/Dropdown/Tooltip/Toast backgrounds */
-bg-card          /* Content block containers (use sparingly) */
+bg-dialog        /* Modal surfaces */
 ```
+
+There is no card plane or card token: object cards are transparent, defined by
+border + `shadow-raised`.
 
 ### Text & Information
 
@@ -66,53 +70,88 @@ bg-input       /* Input background (currently transparent) */
 bg-muted       /* Disabled input background */
 ```
 
-### Glass & Light (theme-driven)
+### Lightbox & Light (theme-driven)
 
 Raw tokens live in theme presets (`core/theme/presets/*/theme.css`, `:root` + `.dark`);
-`globals.css` composes them into utilities. The default preset is Kisaki's own
-oklch system: one cool neutral hue anchor (~256deg) with disciplined chroma,
-per-mode calibrated primary/semantic colors, and a categorical chart ramp.
+`globals.css` composes them into utilities ("Lightbox recipes"). The default preset is
+Kisaki's own oklch system: one cool neutral hue anchor (~256deg) with disciplined
+chroma, per-mode calibrated primary/semantic colors, and a categorical chart ramp.
+
+The base is a lightbox of three layers, bottom to top: **light** (`.glow`, the lamp -
+the only dynamic layer), **diffuser** (`.grain`, static noise sheet texturing the lamp
+and dithering its gradients), and **glass** (translucent base panes). Content sits on
+the glass and stays untextured; floating layers (popover/dialog) are opaque slabs.
 
 ```css
-/* Depth-plane alpha (composed into layer colors). Three planes matching the
- * shadow tiers; themes opt out with 100%. Control fills
- * (primary/secondary/accent/input/muted) stay OUTSIDE the alpha system;
- * neutral fills are themselves relative alpha tints (ink on light, white on
- * dark) so controls keep the same relationship on base and elevated planes. */
---alpha-base     /* bg-background / bg-surface / bg-card */
---alpha-overlay  /* bg-popover (popover/dropdown/tooltip/toast) */
---alpha-modal    /* bg-dialog */
+/* Pane alpha (composed into bg-background/bg-surface). What reaches the eye
+ * through a pane is (1 - pane-alpha) times the light/diffuser underneath;
+ * themes opt out with 100%. popover/dialog take NO alpha (opaque slabs).
+ * Control fills (primary/secondary/accent/input/muted) stay OUTSIDE the
+ * alpha system; neutral fills are themselves relative alpha tints (ink on
+ * light, white on dark) so controls keep the same relationship on base and
+ * elevated planes. */
+--pane-alpha
 
-/* Thick glass recipe for floating layers (custom utility in globals.css):
- * backdrop-filter: blur(--glass-blur) saturate(--glass-saturate) */
-glass
+/* Light tokens (theme-owned; page-level dynamic colors override them on the
+ * document root) */
+--light-1..3 / --light-strength
+
+/* Diffuser grain (raw value; calibrated against pane attenuation) */
+--grain-opacity
 
 /* Elevation shadows - the ONLY legal shadow utilities (Tailwind scale is
  * disabled via --shadow-*: initial; shadow-none stays as reset).
- * Floating tiers lead with an inset top highlight = specular glass edge. */
+ * Floating tiers lead with an inset top highlight = specular top edge. */
 shadow-raised   /* small elements, thumbnails, active states */
 shadow-overlay  /* floating layers: popover/dropdown/tooltip/toast */
 shadow-modal    /* dialogs */
 
-/* Ambient light (bottom layer glow, rendered by layout/ambient-light.vue) */
---light-1 / --light-2 / --light-3 / --light-strength
-
-/* Material grain (full-window noise layer above all surfaces) */
---grain-opacity
+/* Charts: categorical ramp under the canvas chroma discipline (tight
+ * lightness band, capped chroma). Large fills (pie slices, bars) run at
+ * color-mix 85% toward transparent; strokes/chips use full tokens. */
+--chart-1..5
 ```
 
-Dark elevation ladder: higher planes are lighter (base < card < popover < dialog);
-light mode inverts (elevated planes step toward white).
+Dark elevation ladder: higher planes are lighter (base < popover < dialog);
+light mode inverts (elevated planes step toward white). Card is not a plane.
+Slab depth comes entirely from the ladder + shadow tiers + border; there is
+no backdrop-filter anywhere in the app.
 
-Ambient light source: cover-driven detail pages call `useAmbientLight(coverUrl)`
-(extraction in `core/theme/light/`); other pages fall back to theme `--light-*` tokens.
+**Light scoping**: ambient light has exactly ONE scope - the page. Detail
+pages call `useAmbientLight(coverUrl)`; extracted colors land on the document
+root and the light layer (`.glow`) is the only consumer. No per-surface light
+overrides, no light on floating slabs.
 
 **One paint per region rule**: every screen region (titlebar, sidebar, page header
 strips, page body/scroll containers) paints exactly ONE base-plane color
-(`bg-surface` or `bg-background`) directly over the ambient light; layout containers
-in between stay transparent. This keeps glow transmission uniform window-wide.
-Local tints (`bg-background/50` toolbars, `bg-muted` chips, sticky table headers)
-sit on top of the region's paint as before.
+(`bg-surface` or `bg-background`) directly over the light layers; layout containers
+in between stay transparent. This keeps transmission uniform window-wide.
+
+### Emphasis Fill Spec (three orthogonal axes)
+
+1. **Plane** (which elevation am I on): `bg-background/surface/popover/dialog` -
+   base panes compose `--pane-alpha`, floating slabs are opaque. Used ONLY to
+   paint the region you are - exactly once; never as a fill inside another
+   plane, and never repainted by children.
+2. **Fill** (how far do I rise from my plane): relative tints only, direction
+   constant on every plane. Toolbars/filter bars `bg-muted/50` + border. Table
+   headers are `bg-muted/50` and always OUTSIDE the scroll container - nothing
+   is ever pinned over scrolling content. Every headered columnar list is a
+   real `Table`; the component owns the mechanism: `fixed-header` + `columns`
+   render header/rows/footer as separate tables sharing one colgroup, every
+   region reserving the scrollbar gutter, with band chrome (fill + border) on
+   the region wrappers so it covers the gutter strip. Content wells
+   `bg-muted/50`, controls `bg-muted` / `bg-secondary` / `bg-input`, hover
+   `bg-accent` (+ `/NN` for lighter states). Never use layer colors
+   (`bg-background/NN` etc.) as fills.
+3. **Emphasis** (what deserves attention): color only with meaning. `primary`
+   for main actions/focus/selection, semantic colors for status, `--chart-*`
+   for data; everything else stays neutral.
+
+Object cards (media covers, extension entries, option rows) are transparent:
+border + `shadow-raised` define them, imagery borders stay faint
+(`border-border/40`). Page content partitioning uses Section + line frames
+(`rounded-lg border p-4`), never filled cards.
 
 ## Size & Typography
 
@@ -192,8 +231,8 @@ See `buttonVariants` in `components/ui/button.vue`:
 
 ### Dialog
 
-- `bg-dialog` + `border` + `rounded-md` + `shadow-modal backdrop-blur-glass`
-- No visual overlay/scrim: separation comes from shadow-modal + glass blur
+- `bg-dialog` (opaque slab) + `border` + `rounded-md` + `shadow-modal`
+- No visual overlay/scrim: separation comes from shadow-modal + the elevation ladder
 - 100-150ms fade/zoom animation
 - Structure: `DialogHeader` → `DialogBody` → `DialogFooter`
 
@@ -402,10 +441,10 @@ Zero JS runtime, CSS mask-based.
 
 ## Search Patterns
 
-- Theme tokens: `@theme inline`, `--color-*`, `--radius`, `--alpha-base/overlay/modal`, `--light-*`
-- Background: `bg-background`, `bg-surface`, `bg-popover`, `bg-card`
-- Glass/shadow: `shadow-raised`, `shadow-overlay`, `shadow-modal`, `glass`
-- Ambient light: `lightController`, `useAmbientLight`, `ambient-light`
+- Theme tokens: `@theme inline`, `--color-*`, `--radius`, `--pane-alpha`, `--light-*`
+- Background: `bg-background`, `bg-surface`, `bg-popover`, `bg-dialog`
+- Shadows: `shadow-raised`, `shadow-overlay`, `shadow-modal`
+- Ambient light: `lightController`, `useAmbientLight`, `ambient-light`, `glow`, `grain`
 - Text: `text-foreground`, `text-muted-foreground`
 - Icon: `@iconify/tailwind4`, `icon-[mdi--...]`, `Icon`
 - UI wrapper: `useForwardPropsEmits`, `inheritAttrs: false`, `data-slot`
@@ -417,8 +456,9 @@ Zero JS runtime, CSS mask-based.
 - Use semantic tokens, not hardcoded colors
 - Shadows: only `shadow-raised` / `shadow-overlay` / `shadow-modal` (plus `shadow-none`).
   The Tailwind size scale (`shadow-sm/md/lg/...`) is disabled and has no effect
-- Layer alpha is baked into layer colors; do not add per-component translucency to
-  layer backgrounds (use `/NN` modifiers only for interaction states on control fills)
+- Pane alpha is baked into the base layer colors; do not add per-component
+  translucency to layer backgrounds (use `/NN` modifiers only for interaction
+  states on control fills)
 - Use `Icon` component for icons (CSS mask, tree-shakeable)
 - `components/ui/*` contains no business logic
 - All interactive elements must have `focus-visible` state

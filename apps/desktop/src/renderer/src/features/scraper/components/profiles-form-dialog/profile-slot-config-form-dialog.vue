@@ -316,7 +316,7 @@ function handleSubmit() {
                     :key="row.entry.providerId"
                     :class="
                       cn(
-                        'flex items-center gap-2 rounded-lg border bg-card p-2',
+                        'flex items-center gap-2 rounded-lg border p-2',
                         row.display.status !== 'available' && 'border-warning/30 bg-warning/10',
                         !row.entry.enabled && 'opacity-50'
                       )

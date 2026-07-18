@@ -33,7 +33,7 @@ import {
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
 import ScannerIssuesDialog from './scanner-issues-dialog.vue'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { SCANNER_LIST_GRID_TEMPLATE } from '../utils/scanner-list-layout'
+import { TableCell, TableRow } from '@renderer/components/ui/table'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Scanner')
@@ -251,170 +251,172 @@ async function handleOpenPath() {
 </script>
 
 <template>
-  <div
-    :class="
-      cn(
-        'relative grid items-center h-11 px-4 transition-colors hover:bg-accent/30',
-        isBusy && 'bg-primary/5'
-      )
-    "
-    :style="{ gridTemplateColumns: SCANNER_LIST_GRID_TEMPLATE }"
+  <TableRow
+    :class="cn('relative h-11 border-border/50 hover:bg-accent/30', isBusy && 'bg-primary/5')"
   >
-    <!-- Progress bar overlay while a run is active -->
-    <div
-      v-if="showProgressOverlay"
-      class="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-300"
-      :style="{ width: `${progress}%` }"
-    />
-
     <!-- Name column -->
-    <div class="relative min-w-0 flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        class="bg-primary/10 text-primary hover:bg-primary/20"
-        @click="handleOpenPath"
-      >
-        <Icon
-          icon="icon-[mdi--folder-open-outline]"
-          class="size-4"
-        />
-      </Button>
-      <div class="min-w-0">
-        <p class="text-sm font-medium truncate">{{ props.scanner.name }}</p>
-        <p class="text-xs text-muted-foreground truncate">{{ props.scanner.path }}</p>
+    <TableCell class="pl-4">
+      <!-- Progress bar overlay while a run is active; positioned by the row -->
+      <div
+        v-if="showProgressOverlay"
+        class="absolute left-0 top-0 h-full bg-primary/10 transition-all duration-300"
+        :style="{ width: `${progress}%` }"
+      />
+
+      <div class="relative min-w-0 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="bg-primary/10 text-primary hover:bg-primary/20"
+          @click="handleOpenPath"
+        >
+          <Icon
+            icon="icon-[mdi--folder-open-outline]"
+            class="size-4"
+          />
+        </Button>
+        <div class="min-w-0">
+          <p class="text-sm font-medium truncate">{{ props.scanner.name }}</p>
+          <p class="text-xs text-muted-foreground truncate">{{ props.scanner.path }}</p>
+        </div>
       </div>
-    </div>
+    </TableCell>
 
     <!-- Type column -->
-    <div class="relative text-center">
+    <TableCell class="relative text-center">
       <span class="text-sm">{{ getTypeText(props.scanner.type) }}</span>
-    </div>
+    </TableCell>
 
     <!-- Profile column -->
-    <div class="relative min-w-0 text-center">
+    <TableCell class="relative text-center">
       <span class="block truncate text-sm text-muted-foreground">
         {{ profileName || props.scanner.scraperProfileId }}
       </span>
-    </div>
+    </TableCell>
 
     <!-- Collection column -->
-    <div class="relative min-w-0 text-center">
+    <TableCell class="relative text-center">
       <span class="block truncate text-sm text-muted-foreground">
         {{ collection?.name || '-' }}
       </span>
-    </div>
+    </TableCell>
 
     <!-- Stats columns -->
-    <div class="relative flex items-center justify-center gap-1">
-      <template v-if="scannerState">
-        <div class="flex items-center gap-2 text-xs">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <span class="text-success">{{ scannerState.newCount }} 新增</span>
-            </TooltipTrigger>
-            <TooltipContent>已添加到数据库的游戏数</TooltipContent>
-          </Tooltip>
-          <span class="text-muted-foreground/50">|</span>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <span class="text-muted-foreground">{{ scannerState.existingCount }} 已存</span>
-            </TooltipTrigger>
-            <TooltipContent>路径已存在的游戏数</TooltipContent>
-          </Tooltip>
-        </div>
-      </template>
-      <template v-else>
-        <span class="text-sm text-muted-foreground">-</span>
-      </template>
-    </div>
+    <TableCell class="relative">
+      <div class="flex items-center justify-center gap-1">
+        <template v-if="scannerState">
+          <div class="flex items-center gap-2 text-xs">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <span class="text-success">{{ scannerState.newCount }} 新增</span>
+              </TooltipTrigger>
+              <TooltipContent>已添加到数据库的游戏数</TooltipContent>
+            </Tooltip>
+            <span class="text-muted-foreground/50">|</span>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <span class="text-muted-foreground">{{ scannerState.existingCount }} 已存</span>
+              </TooltipTrigger>
+              <TooltipContent>路径已存在的游戏数</TooltipContent>
+            </Tooltip>
+          </div>
+        </template>
+        <template v-else>
+          <span class="text-sm text-muted-foreground">-</span>
+        </template>
+      </div>
+    </TableCell>
 
     <!-- Status column -->
-    <div class="relative flex items-center justify-center gap-1">
-      <Badge
-        :variant="statusInfo.variant"
-        class="gap-1"
-      >
-        <Spinner
-          v-if="statusInfo.spinning"
-          class="size-3"
-        />
-        {{ statusInfo.label }}
-      </Badge>
-    </div>
+    <TableCell class="relative">
+      <div class="flex items-center justify-center gap-1">
+        <Badge
+          :variant="statusInfo.variant"
+          class="gap-1"
+        >
+          <Spinner
+            v-if="statusInfo.spinning"
+            class="size-3"
+          />
+          {{ statusInfo.label }}
+        </Badge>
+      </div>
+    </TableCell>
 
     <!-- Actions column -->
-    <div class="relative flex items-center justify-end gap-0.5">
-      <Button
-        v-if="scannerState && issueCount > 0"
-        variant="ghost"
-        size="icon-sm"
-        class="text-warning hover:text-warning"
-        :tooltip="`问题 ${issueCount}`"
-        @click="isIssuesDialogOpen = true"
-      >
-        <Icon
-          icon="icon-[mdi--alert-outline]"
-          class="size-4"
-        />
-      </Button>
+    <TableCell class="relative pr-4">
+      <div class="flex items-center justify-end gap-0.5">
+        <Button
+          v-if="scannerState && issueCount > 0"
+          variant="ghost"
+          size="icon-sm"
+          class="text-warning hover:text-warning"
+          :tooltip="`问题 ${issueCount}`"
+          @click="isIssuesDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--alert-outline]"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        :tooltip="primaryAction.tooltip"
-        :disabled="primaryAction.disabled"
-        @click="primaryAction.handler"
-      >
-        <Icon
-          :icon="primaryAction.icon"
-          class="size-4"
-        />
-      </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          :tooltip="primaryAction.tooltip"
+          :disabled="primaryAction.disabled"
+          @click="primaryAction.handler"
+        >
+          <Icon
+            :icon="primaryAction.icon"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        v-if="scannerState && isBusy"
-        variant="ghost"
-        size="icon-sm"
-        :tooltip="isCancelling ? '取消中' : '取消'"
-        :disabled="!canCancelScan"
-        class="hover:text-destructive"
-        @click="handleCancel"
-      >
-        <Icon
-          icon="icon-[mdi--stop]"
-          class="size-4"
-        />
-      </Button>
+        <Button
+          v-if="scannerState && isBusy"
+          variant="ghost"
+          size="icon-sm"
+          :tooltip="isCancelling ? '取消中' : '取消'"
+          :disabled="!canCancelScan"
+          class="hover:text-destructive"
+          @click="handleCancel"
+        >
+          <Icon
+            icon="icon-[mdi--stop]"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        tooltip="编辑"
-        :disabled="isBusy"
-        @click="isEditDialogOpen = true"
-      >
-        <Icon
-          icon="icon-[mdi--pencil-outline]"
-          class="size-4"
-        />
-      </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          tooltip="编辑"
+          :disabled="isBusy"
+          @click="isEditDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--pencil-outline]"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        tooltip="删除"
-        :disabled="isBusy"
-        class="hover:text-destructive"
-        @click="isDeleteDialogOpen = true"
-      >
-        <Icon
-          icon="icon-[mdi--delete-outline]"
-          class="size-4"
-        />
-      </Button>
-    </div>
-  </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          tooltip="删除"
+          :disabled="isBusy"
+          class="hover:text-destructive"
+          @click="isDeleteDialogOpen = true"
+        >
+          <Icon
+            icon="icon-[mdi--delete-outline]"
+            class="size-4"
+          />
+        </Button>
+      </div>
+    </TableCell>
+  </TableRow>
 
   <!-- Delete Dialog -->
   <AlertDialog v-model:open="isDeleteDialogOpen">

@@ -11,6 +11,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { notify } from '@renderer/core/notify'
 import { useTaskRunStore } from '@renderer/stores'
 import type { TaskCenterTab, TaskRunCategoryFilter, TaskRunStatusFilter } from '../types'
@@ -25,6 +26,9 @@ import {
 } from './tabs'
 
 const open = defineModel<boolean>('open', { required: true })
+
+const ACTIVE_RUN_TABLE_COLUMNS = ['32%', '', '6rem', '8.25rem']
+const COMPLETED_RUN_TABLE_COLUMNS = ['32%', '', '6rem', '4rem']
 
 const store = useTaskRunStore()
 const { activeRuns, completedRuns, activeCount, completedCount, refreshing, error } =
@@ -240,23 +244,31 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 {{ error }}
               </div>
 
-              <div class="min-h-0 flex-1 overflow-auto overflow-x-hidden">
+              <div class="min-h-0 flex-1">
                 <div
                   v-if="filteredActiveRuns.length === 0"
                   class="flex h-full min-h-48 items-center justify-center text-sm text-muted-foreground"
                 >
                   暂无进行中的任务
                 </div>
-                <template v-else>
-                  <div
-                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_132px] items-center gap-5 border-b border-border bg-dialog px-4 text-xs font-medium text-muted-foreground"
-                  >
-                    <div>任务</div>
-                    <div>进度</div>
-                    <div>状态</div>
-                    <div class="text-right">操作</div>
-                  </div>
-                  <div class="divide-y divide-border/50">
+                <Table
+                  v-else
+                  fixed-header
+                  :columns="ACTIVE_RUN_TABLE_COLUMNS"
+                  body-class="overflow-x-hidden"
+                >
+                  <template #header>
+                    <TableHeader>
+                      <TableRow class="h-8">
+                        <TableHead class="pl-4">任务</TableHead>
+                        <TableHead>进度</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead class="pr-4 text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                  </template>
+
+                  <TableBody>
                     <ActiveTaskRunRow
                       v-for="run in filteredActiveRuns"
                       :key="run.id"
@@ -267,8 +279,8 @@ async function handleCancel(run: TaskRun): Promise<void> {
                       @resume="handleResume"
                       @cancel="handleCancel"
                     />
-                  </div>
-                </template>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           </TabsContent>
@@ -297,7 +309,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                 {{ error }}
               </div>
 
-              <div class="min-h-0 flex-1 overflow-auto overflow-x-hidden">
+              <div class="min-h-0 flex-1">
                 <div
                   v-if="filteredCompletedRuns.length === 0"
                   class="flex h-full min-h-48 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
@@ -308,16 +320,24 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   />
                   <span>暂无完成记录</span>
                 </div>
-                <template v-else>
-                  <div
-                    class="sticky top-0 z-10 grid h-8 grid-cols-[minmax(0,1.2fr)_minmax(0,2.55fr)_96px_64px] items-center gap-5 border-b border-border bg-dialog px-4 text-xs font-medium text-muted-foreground"
-                  >
-                    <div>任务</div>
-                    <div>结果</div>
-                    <div>状态</div>
-                    <div class="text-right">操作</div>
-                  </div>
-                  <div class="divide-y divide-border/50">
+                <Table
+                  v-else
+                  fixed-header
+                  :columns="COMPLETED_RUN_TABLE_COLUMNS"
+                  body-class="overflow-x-hidden"
+                >
+                  <template #header>
+                    <TableHeader>
+                      <TableRow class="h-8">
+                        <TableHead class="pl-4">任务</TableHead>
+                        <TableHead>结果</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead class="pr-4 text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                  </template>
+
+                  <TableBody>
                     <CompletedTaskRunRow
                       v-for="run in filteredCompletedRuns"
                       :key="run.id"
@@ -325,8 +345,8 @@ async function handleCancel(run: TaskRun): Promise<void> {
                       @details="openCompletedDetailsDialog"
                       @delete="handleDeleteCompleted"
                     />
-                  </div>
-                </template>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           </TabsContent>

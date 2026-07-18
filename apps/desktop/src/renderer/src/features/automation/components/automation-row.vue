@@ -7,6 +7,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
+import { TableCell, TableRow } from '@renderer/components/ui/table'
 import { cn } from '@renderer/utils/cn'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
@@ -59,139 +60,139 @@ const enabledModel = computed({
 </script>
 
 <template>
-  <div
+  <TableRow
     :class="
-      cn(
-        'grid min-h-16 items-center gap-3 px-4 py-2 transition-colors hover:bg-accent/30',
-        !props.automation.enabled && 'opacity-70'
-      )
-    "
-    style="
-      grid-template-columns:
-        minmax(240px, 2fr) minmax(180px, 1.2fr) minmax(150px, 1fr) minmax(150px, 1fr)
-        minmax(120px, 0.7fr) 132px;
+      cn('h-16 border-border/50 hover:bg-accent/30', !props.automation.enabled && 'opacity-70')
     "
   >
-    <div class="flex min-w-0 items-center gap-3">
-      <Switch
-        v-model="enabledModel"
-        :disabled="props.busy"
-      />
-      <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-        <Icon
-          icon="icon-[mdi--timer-outline]"
-          class="size-4 text-muted-foreground"
+    <TableCell class="py-2 pl-4">
+      <div class="flex min-w-0 items-center gap-3">
+        <Switch
+          v-model="enabledModel"
+          :disabled="props.busy"
         />
-      </div>
-      <div class="min-w-0">
-        <div class="flex min-w-0 items-center gap-2">
-          <div class="truncate text-sm font-medium">{{ props.automation.name }}</div>
+        <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+          <Icon
+            icon="icon-[mdi--timer-outline]"
+            class="size-4 text-muted-foreground"
+          />
         </div>
-        <div class="truncate text-xs text-muted-foreground">{{ props.automation.commandId }}</div>
+        <div class="min-w-0">
+          <div class="flex min-w-0 items-center gap-2">
+            <div class="truncate text-sm font-medium">{{ props.automation.name }}</div>
+          </div>
+          <div class="truncate text-xs text-muted-foreground">
+            {{ props.automation.commandId }}
+          </div>
+        </div>
       </div>
-    </div>
+    </TableCell>
 
-    <div class="min-w-0">
+    <TableCell class="py-2">
       <div class="truncate text-sm">{{ commandTitle }}</div>
       <div class="truncate text-xs text-muted-foreground">{{ commandDescription }}</div>
-    </div>
+    </TableCell>
 
-    <div class="min-w-0">
+    <TableCell class="py-2">
       <div class="truncate text-sm">{{ formatAutomationTriggers(props.automation.triggers) }}</div>
       <div class="truncate text-xs text-muted-foreground">
         {{ formatFailurePolicy(props.automation.failurePolicy) }}
       </div>
-    </div>
+    </TableCell>
 
-    <div class="min-w-0">
+    <TableCell class="py-2">
       <div class="truncate text-sm">
         {{ formatAutomationTimestamp(props.automation.lastRunAt) }}
       </div>
       <div class="truncate text-xs text-muted-foreground">下次 {{ nextRunLabel }}</div>
-    </div>
+    </TableCell>
 
-    <div class="flex min-w-0 flex-col items-start gap-1">
-      <Badge
-        v-if="props.running"
-        variant="default"
-        class="h-5"
-      >
-        <Icon
-          icon="icon-[mdi--progress-clock]"
-          class="size-3"
-        />
-        运行中
-      </Badge>
-      <Badge
-        v-else-if="latestRun"
-        :variant="getRunStatusVariant(latestRun.invocationStatus)"
-        class="h-5"
-      >
-        {{ getRunStatusLabel(latestRun.invocationStatus) }}
-      </Badge>
-      <Badge
-        v-else
-        variant="secondary"
-        class="h-5"
-      >
-        未调用
-      </Badge>
-      <span class="truncate text-xs text-muted-foreground">{{ sourceLabel }}</span>
-    </div>
+    <TableCell class="py-2">
+      <div class="flex min-w-0 flex-col items-start gap-1">
+        <Badge
+          v-if="props.running"
+          variant="default"
+          class="h-5"
+        >
+          <Icon
+            icon="icon-[mdi--progress-clock]"
+            class="size-3"
+          />
+          运行中
+        </Badge>
+        <Badge
+          v-else-if="latestRun"
+          :variant="getRunStatusVariant(latestRun.invocationStatus)"
+          class="h-5"
+        >
+          {{ getRunStatusLabel(latestRun.invocationStatus) }}
+        </Badge>
+        <Badge
+          v-else
+          variant="secondary"
+          class="h-5"
+        >
+          未调用
+        </Badge>
+        <span class="truncate text-xs text-muted-foreground">{{ sourceLabel }}</span>
+      </div>
+    </TableCell>
 
-    <div class="flex items-center justify-end gap-1">
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        :class="cn(props.running && 'hover:text-destructive')"
-        :tooltip="props.running ? '停止重试' : '运行'"
-        :disabled="props.busy"
-        @click="props.running ? emit('cancel') : emit('run')"
-      >
-        <Icon
-          :icon="props.running ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--play-outline]'"
-          class="size-4"
-        />
-      </Button>
+    <TableCell class="py-2 pr-4">
+      <div class="flex items-center justify-end gap-1">
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          :class="cn(props.running && 'hover:text-destructive')"
+          :tooltip="props.running ? '停止重试' : '运行'"
+          :disabled="props.busy"
+          @click="props.running ? emit('cancel') : emit('run')"
+        >
+          <Icon
+            :icon="props.running ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--play-outline]'"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        tooltip="详情"
-        @click="emit('details')"
-      >
-        <Icon
-          icon="icon-[mdi--information-outline]"
-          class="size-4"
-        />
-      </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          tooltip="详情"
+          @click="emit('details')"
+        >
+          <Icon
+            icon="icon-[mdi--information-outline]"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        tooltip="编辑"
-        :disabled="props.busy || props.running"
-        @click="emit('edit')"
-      >
-        <Icon
-          icon="icon-[mdi--pencil-outline]"
-          class="size-4"
-        />
-      </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          tooltip="编辑"
+          :disabled="props.busy || props.running"
+          @click="emit('edit')"
+        >
+          <Icon
+            icon="icon-[mdi--pencil-outline]"
+            class="size-4"
+          />
+        </Button>
 
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        class="hover:text-destructive"
-        tooltip="删除"
-        :disabled="props.busy || props.running"
-        @click="emit('delete')"
-      >
-        <Icon
-          icon="icon-[mdi--delete-outline]"
-          class="size-4"
-        />
-      </Button>
-    </div>
-  </div>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          class="hover:text-destructive"
+          tooltip="删除"
+          :disabled="props.busy || props.running"
+          @click="emit('delete')"
+        >
+          <Icon
+            icon="icon-[mdi--delete-outline]"
+            class="size-4"
+          />
+        </Button>
+      </div>
+    </TableCell>
+  </TableRow>
 </template>

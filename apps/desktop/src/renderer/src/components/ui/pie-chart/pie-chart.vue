@@ -41,12 +41,14 @@ const metric = defineModel<PieChartMetric>('metric', {
 // Helpers
 // =============================================================================
 
+/* Large filled areas run at reduced density (area and chroma are perceived
+ * multiplicatively); strokes and chips use the full chart tokens. */
 const SLICE_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)'
+  'color-mix(in oklch, var(--chart-1) 85%, transparent)',
+  'color-mix(in oklch, var(--chart-2) 85%, transparent)',
+  'color-mix(in oklch, var(--chart-3) 85%, transparent)',
+  'color-mix(in oklch, var(--chart-4) 85%, transparent)',
+  'color-mix(in oklch, var(--chart-5) 85%, transparent)'
 ] as const
 
 function getSliceColor(index: number): string {

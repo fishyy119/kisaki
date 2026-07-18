@@ -24,10 +24,7 @@ const props = defineProps<Props>()
   <div
     data-slot="list-item"
     :class="
-      cn(
-        'group flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-accent/30',
-        props.class
-      )
+      cn('group flex items-center gap-3 rounded-lg border p-3 hover:bg-accent/30', props.class)
     "
   >
     <slot name="leading">

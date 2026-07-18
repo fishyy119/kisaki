@@ -81,34 +81,26 @@ function compileThemeCss(theme: ThemeContribution): string {
 }
 
 /**
- * App defaults for glass tokens (per-layer alpha, blur, elevation shadows,
- * ambient light strength). Extension themes contribute colors only; the
- * remaining glass values mirror the built-in default preset.
+ * App defaults for lightbox and elevation tokens (pane alpha, shadow tiers,
+ * light strength, diffuser grain). Extension themes contribute colors only;
+ * these values mirror the built-in default preset.
  */
-const GLASS_TOKEN_RULES: Record<'light' | 'dark', readonly string[]> = {
+const LIGHTBOX_TOKEN_RULES: Record<'light' | 'dark', readonly string[]> = {
   light: [
-    '  --alpha-base: 72%;',
-    '  --alpha-overlay: 88%;',
-    '  --alpha-modal: 94%;',
-    '  --glass-blur: 28px;',
-    '  --glass-saturate: 140%;',
-    '  --shadow-raised: 0 1px 2px 0 oklch(0.13 0.02 258 / 0.08), 0 1px 1px -1px oklch(0.13 0.02 258 / 0.06);',
+    '  --pane-alpha: 72%;',
+    '  --shadow-raised: 0 1px 2px 0 oklch(0.13 0.02 258 / 0.08), 0 3px 10px -2px oklch(0.13 0.02 258 / 0.1);',
     '  --shadow-overlay: inset 0 1px 0 oklch(1 0 0 / 0.5), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.05), 0 1px 2px 0 oklch(0.13 0.02 258 / 0.1), 0 10px 24px -6px oklch(0.13 0.02 258 / 0.16);',
     '  --shadow-modal: inset 0 1px 0 oklch(1 0 0 / 0.55), inset 0 -1px 0 oklch(0.13 0.02 258 / 0.06), 0 2px 4px 0 oklch(0.13 0.02 258 / 0.1), 0 28px 64px -16px oklch(0.13 0.02 258 / 0.24);',
     '  --light-strength: 45%;',
-    '  --grain-opacity: 2.5%;'
+    '  --grain-opacity: 9%;'
   ],
   dark: [
-    '  --alpha-base: 75%;',
-    '  --alpha-overlay: 90%;',
-    '  --alpha-modal: 95%;',
-    '  --glass-blur: 28px;',
-    '  --glass-saturate: 140%;',
-    '  --shadow-raised: 0 1px 2px 0 oklch(0 0 0 / 0.35), 0 1px 1px -1px oklch(0 0 0 / 0.28);',
+    '  --pane-alpha: 75%;',
+    '  --shadow-raised: 0 1px 2px 0 oklch(0 0 0 / 0.35), 0 4px 12px -2px oklch(0 0 0 / 0.4);',
     '  --shadow-overlay: inset 0 1px 0 oklch(1 0 0 / 0.08), inset 0 -1px 0 oklch(0 0 0 / 0.35), 0 1px 2px 0 oklch(0 0 0 / 0.45), 0 10px 24px -6px oklch(0 0 0 / 0.5);',
     '  --shadow-modal: inset 0 1px 0 oklch(1 0 0 / 0.1), inset 0 -1px 0 oklch(0 0 0 / 0.4), 0 2px 4px 0 oklch(0 0 0 / 0.5), 0 28px 64px -16px oklch(0 0 0 / 0.65);',
     '  --light-strength: 40%;',
-    '  --grain-opacity: 4%;'
+    '  --grain-opacity: 16%;'
   ]
 }
 
@@ -124,8 +116,6 @@ function compileTokenRules(
     `  --foreground: ${safeTokens.foreground};`,
     `  --surface: ${safeTokens.surface};`,
     `  --surface-foreground: ${safeTokens.surfaceForeground};`,
-    `  --card: ${safeTokens.surface};`,
-    `  --card-foreground: ${safeTokens.surfaceForeground};`,
     `  --popover: ${safeTokens.surface};`,
     `  --popover-foreground: ${safeTokens.surfaceForeground};`,
     `  --dialog: ${safeTokens.surface};`,
@@ -155,7 +145,7 @@ function compileTokenRules(
     `  --chart-3: ${safeTokens.muted};`,
     `  --chart-4: ${safeTokens.border};`,
     `  --chart-5: ${safeTokens.danger};`,
-    ...GLASS_TOKEN_RULES[mode],
+    ...LIGHTBOX_TOKEN_RULES[mode],
     // Ambient light colors derived from the contributed palette.
     `  --light-1: ${safeTokens.primary};`,
     `  --light-2: ${safeTokens.accent};`,

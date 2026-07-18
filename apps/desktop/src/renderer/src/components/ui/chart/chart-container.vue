@@ -50,7 +50,10 @@ provideChartContext({
       '--vis-crosshair-circle-stroke-color': '#0000',
       '--vis-crosshair-line-stroke-width': cursor ? '1px' : '0px',
       '--vis-axis-grid-line-dasharray': '3 3',
-      '--vis-font-family': 'var(--font-sans)'
+      '--vis-font-family': 'var(--font-sans)',
+      // Donut pad-angle gaps must expose the plane beneath, not the default
+      // light-gray background disc unovis paints under the segments.
+      '--vis-donut-background-color': 'transparent'
     }"
   >
     <slot

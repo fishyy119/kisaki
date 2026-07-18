@@ -85,7 +85,8 @@ interface RankingChartDatum {
 
 /**
  * Generate gradient color based on ranking position.
- * Uses color-mix() to blend chart-1 with white for lower ranks.
+ * Lower ranks fade toward the plane color so the ramp works in both modes
+ * (toward white on light surfaces, toward ink on dark ones).
  */
 function getGradientColor(position: number, total: number): string {
   // Calculate interpolation factor (0 = top ranked, 1 = bottom ranked)
@@ -94,7 +95,8 @@ function getGradientColor(position: number, total: number): string {
   // Primary color percentage decreases for lower ranks (100% -> 75%)
   const primaryPercent = Math.round(100 - t * 25)
 
-  return `color-mix(in oklch, var(--chart-1) ${primaryPercent}%, white)`
+  // Bars are large fills: ramp toward the plane, then reduce overall density
+  return `color-mix(in oklch, color-mix(in oklch, var(--chart-1) ${primaryPercent}%, var(--background)) 85%, transparent)`
 }
 
 const chartData = computed<RankingChartDatum[]>(() => {

@@ -53,7 +53,7 @@ const daysInMonth = computed(() => {
 
       <!-- Activity Heatmap (month calendar) -->
       <Section title="活动热力图">
-        <div class="rounded-lg border bg-card p-4">
+        <div class="rounded-lg border p-4">
           <StatisticsActivityHeatmap :available-granularities="['day', 'week']" />
         </div>
       </Section>
@@ -64,7 +64,7 @@ const daysInMonth = computed(() => {
           title="游玩趋势"
           class="flex h-full flex-col"
         >
-          <div class="flex-1 rounded-lg border bg-card p-4">
+          <div class="flex-1 rounded-lg border p-4">
             <StatisticsTimeTrend :available-granularities="['daily', 'weekly']" />
           </div>
         </Section>
@@ -74,7 +74,7 @@ const daysInMonth = computed(() => {
           title="时段分布"
           class="flex h-full flex-col"
         >
-          <div class="flex-1 rounded-lg border bg-card p-4">
+          <div class="flex-1 rounded-lg border p-4">
             <StatisticsTimeDistribution :available-types="['hourly', 'weekday']" />
           </div>
         </Section>
@@ -86,7 +86,7 @@ const daysInMonth = computed(() => {
           title="游戏分布"
           class="flex h-full flex-col"
         >
-          <div class="flex-1 rounded-lg border bg-card p-4">
+          <div class="flex-1 rounded-lg border p-4">
             <StatisticsGameDistribution />
           </div>
         </Section>
@@ -96,7 +96,7 @@ const daysInMonth = computed(() => {
           title="游戏排行"
           class="flex h-full flex-col"
         >
-          <div class="flex-1 rounded-lg border bg-card p-4">
+          <div class="flex-1 rounded-lg border p-4">
             <StatisticsGameRanking />
           </div>
         </Section>

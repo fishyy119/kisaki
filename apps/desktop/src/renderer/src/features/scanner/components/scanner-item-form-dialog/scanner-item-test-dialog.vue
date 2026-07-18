@@ -187,7 +187,7 @@ function handleExclude(name: string) {
           <div class="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader class="bg-muted/50">
-                <TableRow class="hover:bg-transparent border-border">
+                <TableRow class="border-border">
                   <TableHead>实体名称</TableHead>
                   <TableHead v-if="hasRules">提取后名称</TableHead>
                   <TableHead

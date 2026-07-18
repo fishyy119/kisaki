@@ -241,7 +241,7 @@ async function handleRetryChangelog() {
           </div>
 
           <FieldContent>
-            <div class="rounded-md border border-border bg-card px-3 py-2 min-h-24">
+            <div class="rounded-md border border-border bg-muted/50 px-3 py-2 min-h-24">
               <div
                 v-if="isActiveChangelogLoading"
                 class="flex items-center gap-2 text-sm text-muted-foreground"

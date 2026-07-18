@@ -4,6 +4,7 @@ Automation Page owns automation data, filters, and actions.
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { StateView } from '@renderer/components/ui/state-view'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,8 @@ import type {
 } from '../types'
 
 const log = createLogger('Automation')
+
+const AUTOMATION_TABLE_COLUMNS = ['', '20%', '17%', '17%', '12%', '8.25rem']
 
 const searchQuery = ref('')
 const statusFilter = ref<AutomationStatusFilter>('all')
@@ -362,27 +365,25 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           class="h-full"
         />
 
-        <div
+        <Table
           v-else
-          class="h-full overflow-auto"
+          fixed-header
+          :columns="AUTOMATION_TABLE_COLUMNS"
         >
-          <div
-            class="sticky top-0 z-10 grid h-8 items-center gap-3 border-b border-border bg-background glass px-4 text-xs font-medium text-muted-foreground"
-            style="
-              grid-template-columns:
-                minmax(240px, 2fr) minmax(180px, 1.2fr) minmax(150px, 1fr)
-                minmax(150px, 1fr) minmax(120px, 0.7fr) 132px;
-            "
-          >
-            <div>名称</div>
-            <div>命令</div>
-            <div>触发</div>
-            <div>运行</div>
-            <div>状态</div>
-            <div class="text-right">操作</div>
-          </div>
+          <template #header>
+            <TableHeader>
+              <TableRow class="h-8">
+                <TableHead class="pl-4">名称</TableHead>
+                <TableHead>命令</TableHead>
+                <TableHead>触发</TableHead>
+                <TableHead>运行</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead class="pr-4 text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+          </template>
 
-          <div class="divide-y divide-border/50">
+          <TableBody>
             <AutomationRow
               v-for="automation in filteredAutomations"
               :key="automation.id"
@@ -397,8 +398,8 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
               @details="openDetailsDialog(automation)"
               @delete="requestDeleteAutomation(automation)"
             />
-          </div>
-        </div>
+          </TableBody>
+        </Table>
       </div>
     </div>
 

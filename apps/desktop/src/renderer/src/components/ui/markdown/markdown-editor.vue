@@ -194,7 +194,7 @@ watch(fullscreenOpen, async (open) => {
   <div
     :class="
       cn(
-        'w-full rounded-md border border-border bg-card transition-colors',
+        'w-full rounded-md border border-border bg-input transition-colors',
         'focus-within:border-primary',
         props.readonly && 'opacity-50 cursor-not-allowed',
         props.class

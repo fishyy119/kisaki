@@ -1,9 +1,10 @@
 <!--
   RootLayout
-  Application root layout with the ambient light layer, Titlebar, Sidebar,
-  and main content slot. Containers stay transparent; every visible region
-  (titlebar, sidebar, page headers, page bodies) paints exactly one depth
-  plane color over the glow so light transmission is uniform window-wide.
+  Application root layout with the lightbox luminaire (light + diffuser
+  layers), Titlebar, Sidebar, and main content slot. Containers stay
+  transparent; every visible region (titlebar, sidebar, page headers, page
+  bodies) paints exactly one translucent base pane over the light layers so
+  transmission is uniform window-wide.
 -->
 <script setup lang="ts">
 import { TooltipProvider } from '@renderer/components/ui/tooltip'
@@ -16,7 +17,7 @@ import Titlebar from './titlebar.vue'
 <template>
   <TooltipProvider :delay-duration="0">
     <div class="h-screen flex flex-col overflow-hidden">
-      <!-- Ambient light under everything -->
+      <!-- Lightbox light + diffuser layers under everything -->
       <AmbientLight />
 
       <!-- Top titlebar with window controls -->

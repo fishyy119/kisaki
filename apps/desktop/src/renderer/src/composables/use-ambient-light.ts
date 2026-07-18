@@ -2,8 +2,10 @@
  * Ambient light binding for cover-driven pages.
  *
  * Extracts ambient colors from the given cover URL and feeds the ambient
- * light controller. Pages without a usable cover (or extraction misses) fall
- * back to the active theme's light tokens. Clears on scope dispose.
+ * light controller (page scope: colors land on the document root and drive
+ * the lightbox light layer). Pages without a usable cover (or extraction
+ * misses) fall back to the active theme's light tokens. Clears on scope
+ * dispose.
  */
 
 import { onScopeDispose, toValue, watch, type MaybeRefOrGetter } from 'vue'

@@ -74,8 +74,6 @@ export const WEBVIEW_THEME_TOKEN_NAMES = [
   'foreground',
   'surface',
   'surfaceForeground',
-  'card',
-  'cardForeground',
   'popover',
   'popoverForeground',
   'dialog',

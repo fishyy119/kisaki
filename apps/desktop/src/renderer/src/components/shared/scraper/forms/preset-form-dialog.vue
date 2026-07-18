@@ -164,7 +164,7 @@ function handleCancel() {
             <label
               v-for="preset in presets"
               :key="preset.id"
-              class="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 cursor-pointer"
+              class="flex items-start gap-3 p-3 rounded-lg border hover:bg-accent/30 cursor-pointer"
             >
               <Checkbox
                 v-model="createSelectedModel(preset.id).value"

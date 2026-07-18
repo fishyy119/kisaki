@@ -17,7 +17,7 @@ export function createShadcnTheme(isDark: boolean): Extension {
       selection: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
       selectionMatch: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)',
       lineHighlight: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-      gutterBackground: 'var(--card)',
+      gutterBackground: 'var(--muted)',
       gutterForeground: 'var(--muted-foreground)',
       gutterBorder: 'transparent'
     },

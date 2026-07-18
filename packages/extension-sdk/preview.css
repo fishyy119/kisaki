@@ -23,8 +23,6 @@
   --kisaki-foreground: #0f172a;
   --kisaki-surface: #f1f5f9;
   --kisaki-surface-foreground: #020617;
-  --kisaki-card: transparent;
-  --kisaki-card-foreground: #020617;
   --kisaki-popover: #f8fafc;
   --kisaki-popover-foreground: #020617;
   --kisaki-dialog: #f8fafc;
@@ -56,8 +54,6 @@
   --kisaki-foreground: #e2e8f0;
   --kisaki-surface: #1a2433;
   --kisaki-surface-foreground: #e2e8f0;
-  --kisaki-card: #243044;
-  --kisaki-card-foreground: #e2e8f0;
   --kisaki-popover: #2a3850;
   --kisaki-popover-foreground: #e2e8f0;
   --kisaki-dialog: #243044;

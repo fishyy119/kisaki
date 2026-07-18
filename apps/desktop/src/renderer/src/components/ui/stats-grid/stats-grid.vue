@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<StatsGridProps>(), {
 
 <template>
   <div
-    :class="cn('rounded-lg border bg-card overflow-hidden', props.class)"
+    :class="cn('rounded-lg border overflow-hidden', props.class)"
     data-slot="stats-grid"
   >
     <div :class="cn('grid -m-px', props.gridClass)">

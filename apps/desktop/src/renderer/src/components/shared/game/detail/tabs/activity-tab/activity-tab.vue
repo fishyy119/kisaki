@@ -44,7 +44,7 @@ const state = useRenderState(isLoading, error, sessions)
 
     <!-- Activity Heatmap -->
     <Section title="活动热力图">
-      <div class="rounded-lg border bg-card p-4">
+      <div class="rounded-lg border p-4">
         <GameDetailActivityHeatmap :sessions="sessions" />
       </div>
     </Section>
@@ -56,7 +56,7 @@ const state = useRenderState(isLoading, error, sessions)
         title="游玩趋势"
         class="flex h-full flex-col"
       >
-        <div class="flex-1 rounded-lg border bg-card p-4">
+        <div class="flex-1 rounded-lg border p-4">
           <GameDetailActivityTrend :sessions="sessions" />
         </div>
       </Section>
@@ -66,7 +66,7 @@ const state = useRenderState(isLoading, error, sessions)
         title="时段分布"
         class="flex h-full flex-col"
       >
-        <div class="flex-1 rounded-lg border bg-card p-4">
+        <div class="flex-1 rounded-lg border p-4">
           <GameDetailActivityDistribution :sessions="sessions" />
         </div>
       </Section>
