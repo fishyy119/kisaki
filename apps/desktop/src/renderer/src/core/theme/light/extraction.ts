@@ -86,9 +86,11 @@ export async function extractAmbientPalette(url: string): Promise<AmbientPalette
 }
 
 async function extract(url: string): Promise<AmbientPalette | null> {
-  // Image element loading shares the renderer's image cache with the page,
-  // which already displays the cover - no second download like fetch would.
+  // CORS-mode load: the attachment protocol opts into CORS, so the decoded
+  // pixels stay readable through getImageData without depending on the
+  // window's webSecurity setting.
   const image = new Image()
+  image.crossOrigin = 'anonymous'
   image.decoding = 'async'
   image.src = url
   await image.decode()

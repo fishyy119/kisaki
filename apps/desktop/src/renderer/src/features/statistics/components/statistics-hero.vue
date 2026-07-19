@@ -236,7 +236,9 @@ const facts = computed<HeroFact[]>(() => {
     }
 
     case 'yearly': {
-      const daysInYear = currentPeriod.value.year % 4 === 0 ? 366 : 365
+      const year = currentPeriod.value.year
+      const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+      const daysInYear = isLeapYear ? 366 : 365
       const mostActiveMonth = getMostActiveMonth(effectiveSessions.value)
       return [
         ...baseFacts,

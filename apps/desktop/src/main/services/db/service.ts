@@ -129,8 +129,9 @@ export class DbService implements IService {
     this.event.bus.emit('db.ready', true)
   }
 
-  // Attachment responses are consumed cross-origin (renderer fetch() for
-  // ambient color extraction), so successful responses opt into CORS.
+  // Attachment responses are consumed cross-origin (ambient color extraction
+  // decodes covers as crossOrigin="anonymous" images for canvas pixel reads),
+  // so successful responses opt into CORS.
   private withAttachmentCors(response: Response): Response {
     const headers = new Headers(response.headers)
     headers.set('Access-Control-Allow-Origin', '*')

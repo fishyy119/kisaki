@@ -33,7 +33,7 @@ old internal shapes.
 
 ## Tech Stack
 
-- Runtime: Electron 39 + Node.js.
+- Runtime: Electron 41 + Node.js.
 - Frontend: Vue 3 + TypeScript + Vite.
 - Data: SQLite with Drizzle ORM.
 - Styling: TailwindCSS v4 using semantic tokens.

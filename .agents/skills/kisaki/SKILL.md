@@ -13,7 +13,7 @@ This skill serves as the main entry point for development within the Kisaki repo
 
 ### Tech Stack
 
-- **Runtime**: Electron 39 + Node.js
+- **Runtime**: Electron 41 + Node.js
 - **Frontend**: Vue 3 + TypeScript + Vite
 - **Database**: SQLite + Drizzle ORM
 - **Styling**: TailwindCSS v4 (semantic tokens)
