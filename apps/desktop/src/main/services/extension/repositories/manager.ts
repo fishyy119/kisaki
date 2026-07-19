@@ -89,8 +89,30 @@ export class ExtensionRepositoryManager {
   }
 
   async init(): Promise<void> {
+    this.discardInvalidManifestSnapshots()
     this.store.normalizePriorities()
     this.rebuildCatalog()
+  }
+
+  /**
+   * A persisted snapshot that fails to parse under the current registry schema is
+   * read back as null while its digest survives. Surface that as a repository
+   * error and drop the stale cache validators so the next refresh refetches.
+   */
+  private discardInvalidManifestSnapshots(): void {
+    for (const row of this.store.list()) {
+      if (!row.manifestDigest || row.manifestSnapshot) {
+        continue
+      }
+
+      this.store.discardInvalidManifestSnapshot(row.id, {
+        error:
+          'Stored repository manifest snapshot is no longer valid for this app version. Refresh the repository.'
+      })
+      log.warn('Discarded a persisted repository manifest snapshot that no longer parses.', {
+        repositoryId: row.id
+      })
+    }
   }
 
   listRepositories(): readonly ExtensionRepositoryInfo[] {
@@ -212,13 +234,20 @@ export class ExtensionRepositoryManager {
     }
 
     try {
+      // Conditional headers are only valid while the local snapshot is usable
+      // (readable and allowed by the URL policy); otherwise a 304 response
+      // would leave the repository empty forever, so force a full refetch.
+      const hasUsableSnapshot = this.getAllowedManifestSnapshot(row) !== null
       const fetched = await this.fetcher.fetch(row.url, {
-        etag: row.etag,
-        lastModified: row.lastModified,
+        etag: hasUsableSnapshot ? row.etag : null,
+        lastModified: hasUsableSnapshot ? row.lastModified : null,
         signal: options.signal
       })
 
       if (fetched.status === 'not-modified') {
+        if (!hasUsableSnapshot) {
+          throw new Error('Repository returned not-modified before it had a local snapshot.')
+        }
         const updated = this.store.recordRefreshNotModified(row.id, {
           etag: fetched.etag,
           lastModified: fetched.lastModified

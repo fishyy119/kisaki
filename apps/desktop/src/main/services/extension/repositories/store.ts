@@ -199,6 +199,31 @@ export class ExtensionRepositoryStore {
     return this.require(id)
   }
 
+  /**
+   * Drops a persisted snapshot that no longer parses under the current registry
+   * schema. Clears the HTTP cache validators so the next refresh performs a full
+   * refetch instead of being stranded by a 304 response.
+   */
+  discardInvalidManifestSnapshot(id: string, input: { error: string }): ExtensionRepositoryRow {
+    const updatedAt = new Date()
+
+    this.db
+      .update(extensionRepositories)
+      .set({
+        manifestSnapshot: null,
+        manifestDigest: null,
+        etag: null,
+        lastModified: null,
+        lastSuccessAt: null,
+        lastError: input.error,
+        updatedAt
+      })
+      .where(eq(extensionRepositories.id, id))
+      .run()
+
+    return this.require(id)
+  }
+
   recordRefreshNotModified(
     id: string,
     input: ExtensionRepositoryRefreshNotModifiedInput = {}
