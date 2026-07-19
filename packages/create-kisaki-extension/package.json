@@ -1,6 +1,6 @@
 {
   "name": "create-kisaki-extension",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Scaffolding tool to create Kisaki extensions",
   "repository": {
     "type": "git",
