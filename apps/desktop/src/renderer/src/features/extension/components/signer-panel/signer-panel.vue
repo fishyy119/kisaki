@@ -8,8 +8,8 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
-import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
+import { extensionSignersData } from '../../composables'
 import SignerDetailsDialog from './signer-details-dialog.vue'
 import SignerPanelRow from './signer-panel-row.vue'
 import SignerRemoveDialog from './signer-remove-dialog.vue'
@@ -21,16 +21,8 @@ const removeDialogOpen = ref(false)
 const signerToView = ref<ExtensionTrustedSignerInfo | null>(null)
 const signerToRemove = ref<ExtensionTrustedSignerInfo | null>(null)
 
-const {
-  data: signers,
-  isLoading,
-  error,
-  refetch
-} = useAsyncData(
-  async () => unwrapIpcData(await ipcManager.invoke('extension:list-trusted-signers')),
-  { immediate: true }
-)
-const state = useRenderState(isLoading, error, signers, { preset: 'network' })
+// Data settled during navigation by the route loader
+const { data: signers, error, refetch } = extensionSignersData()
 const signerList = computed(() =>
   [...(signers.value ?? [])].sort(
     (left, right) =>
@@ -105,7 +97,6 @@ async function handleRemoveSigner(): Promise<void> {
       <Button
         variant="outline"
         size="sm"
-        :disabled="state === 'loading'"
         @click="refetch"
       >
         <Icon
@@ -118,8 +109,9 @@ async function handleRemoveSigner(): Promise<void> {
 
     <div class="flex-1 overflow-auto">
       <StateView
-        v-if="state === 'loading'"
-        state="loading"
+        v-if="error"
+        state="error"
+        :error="error"
         class="h-48"
       />
 

@@ -10,15 +10,19 @@
 import { TooltipProvider } from '@renderer/components/ui/tooltip'
 
 import AmbientLight from './ambient-light.vue'
+import NavigationProgress from './navigation-progress.vue'
 import Sidebar from './sidebar.vue'
 import Titlebar from './titlebar.vue'
 </script>
 
 <template>
   <TooltipProvider :delay-duration="0">
-    <div class="h-screen flex flex-col overflow-hidden">
+    <div class="relative h-screen flex flex-col overflow-hidden">
       <!-- Lightbox light + diffuser layers under everything -->
       <AmbientLight />
+
+      <!-- Route navigation loading indicator -->
+      <NavigationProgress />
 
       <!-- Top titlebar with window controls -->
       <Titlebar />

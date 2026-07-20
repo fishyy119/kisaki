@@ -15,12 +15,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { CollectionInfoFormDialog, CollectionCard } from '@renderer/components/shared/collection'
 import { getEntityIcon } from '@renderer/utils/format'
-import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent, useRenderState } from '@renderer/composables'
-import { collections } from '@shared/db'
-import { storeToRefs } from 'pinia'
-import { usePreferencesStore } from '@renderer/stores'
-import { eq } from 'drizzle-orm'
+import { useCollectionsList } from '../composables'
 
 // =============================================================================
 // Router
@@ -34,47 +29,17 @@ const router = useRouter()
 
 const scrollContainerRef = ref<HTMLElement>()
 
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
 // =============================================================================
-// Data
+// Data (settled during navigation by the route loader)
 // =============================================================================
 
-const {
-  data: collectionList,
-  isLoading,
-  error,
-  refetch
-} = useAsyncData(
-  async () =>
-    await db
-      .select()
-      .from(collections)
-      .where(showNsfw.value ? undefined : eq(collections.isNsfw, false)),
-  { watch: [showNsfw] }
-)
-const state = useRenderState(isLoading, error, collectionList)
+const { collections: collectionList } = useCollectionsList()
 
 // =============================================================================
 // State
 // =============================================================================
 
 const showCreateDialog = ref(false)
-
-// =============================================================================
-// Event Listeners
-// =============================================================================
-
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'collections') refetch()
-})
-useEvent('db.updated', ({ table }) => {
-  if (table === 'collections') refetch()
-})
-useEvent('db.deleted', ({ table }) => {
-  if (table === 'collections') refetch()
-})
 
 // =============================================================================
 // Actions
@@ -89,25 +54,14 @@ function handleCollectionClick(collectionId: string) {
 </script>
 
 <template>
-  <!-- Loading state -->
-  <StateView
-    v-if="state === 'loading'"
-    state="loading"
-    class="h-full bg-background"
-  />
-
-  <!-- Content -->
-  <div
-    v-else
-    class="h-full flex flex-col"
-  >
+  <div class="h-full flex flex-col">
     <!-- Header -->
     <PageHeader back-to="/library">
       <PageHeaderTitle
         title="合集"
         :icon="getEntityIcon('collection')"
       >
-        {{ collectionList?.length ?? 0 }} 个
+        {{ collectionList.length }} 个
       </PageHeaderTitle>
 
       <template #actions>
@@ -131,7 +85,7 @@ function handleCollectionClick(collectionId: string) {
     >
       <!-- Empty state -->
       <StateView
-        v-if="!collectionList || collectionList.length === 0"
+        v-if="collectionList.length === 0"
         state="empty"
         icon="icon-[mdi--folder-plus-outline]"
         title="暂无合集"

@@ -1,28 +1,29 @@
 /**
  * Composable: useShowcaseSections
  *
- * Fetches and manages showcase sections from the database.
+ * Route-loaded showcase sections list.
  */
 
 import { computed } from 'vue'
 import { eq, asc } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { defineRouteData } from '@renderer/core/route-data'
+import { useEvent } from '@renderer/composables'
 import { showcaseSections, type ShowcaseSection, type NewShowcaseSection } from '@shared/db'
 
 // =============================================================================
-// Composable
+// Route Loader & Composable
 // =============================================================================
 
-export function useShowcaseSections() {
-  async function fetchSections(): Promise<ShowcaseSection[]> {
-    return await db.query.showcaseSections.findMany({
-      orderBy: asc(showcaseSections.order)
-    })
-  }
+export const showcaseSectionsData = defineRouteData(async (): Promise<ShowcaseSection[]> => {
+  return await db.query.showcaseSections.findMany({
+    orderBy: asc(showcaseSections.order)
+  })
+})
 
-  const { data, isLoading, isFetching, refetch } = useAsyncData(fetchSections)
+export function useShowcaseSections() {
+  const { data, error, isFetching, refetch } = showcaseSectionsData()
 
   // Listen for DB events
   useEvent('db.inserted', ({ table }) => {
@@ -37,7 +38,7 @@ export function useShowcaseSections() {
 
   return {
     sections: computed(() => data.value ?? []),
-    isLoading,
+    error,
     isFetching,
     refetch
   }

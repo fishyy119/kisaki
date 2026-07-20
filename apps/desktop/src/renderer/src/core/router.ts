@@ -8,6 +8,15 @@ import { h } from 'vue'
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 import { useDefaultFromStore } from '@renderer/stores'
 import { isContentEntityType } from '@shared/common'
+import { installRouteData } from '@renderer/core/route-data'
+import {
+  gameDetailData,
+  characterDetailData,
+  personDetailData,
+  companyDetailData,
+  collectionDetailData,
+  tagDetailData
+} from '@renderer/composables'
 
 // Library pages
 import {
@@ -21,14 +30,18 @@ import {
   TagDetailPage,
   CollectionsPage,
   UncategorizedPage,
-  FavoritesPage
+  FavoritesPage,
+  showcaseSectionsData,
+  favoritesData,
+  uncategorizedData,
+  collectionsListData
 } from '@renderer/features/library'
 
 // Scanner page
-import { ScannerPage } from '@renderer/features/scanner'
+import { ScannerPage, scannersData } from '@renderer/features/scanner'
 
 // Automation page
-import { AutomationPage } from '@renderer/features/automation'
+import { AutomationPage, automationsData } from '@renderer/features/automation'
 
 // Extension page
 import {
@@ -36,7 +49,11 @@ import {
   ExtensionInstalledPage,
   ExtensionLayout,
   ExtensionRepositoriesPage,
-  ExtensionSignersPage
+  ExtensionSignersPage,
+  discoverSearchData,
+  installedExtensionsData,
+  extensionRepositoriesData,
+  extensionSignersData
 } from '@renderer/features/extension'
 
 // Statistics pages
@@ -45,7 +62,8 @@ import {
   StatisticsOverviewPage,
   StatisticsWeeklyPage,
   StatisticsMonthlyPage,
-  StatisticsYearlyPage
+  StatisticsYearlyPage,
+  statisticsData
 } from '@renderer/features/statistics'
 
 // Extension webview page
@@ -78,65 +96,69 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'showcase',
-        component: ShowcasePage
+        component: ShowcasePage,
+        meta: { dataLoaders: [showcaseSectionsData] }
       },
       {
         path: 'game/:gameId',
         name: 'game-detail',
         component: GameDetailPage,
         props: true,
-        meta: { entityType: 'game' }
+        meta: { entityType: 'game', dataLoaders: [gameDetailData] }
       },
       {
         path: 'person/:personId',
         name: 'person-detail',
         component: PersonDetailPage,
         props: true,
-        meta: { entityType: 'person' }
+        meta: { entityType: 'person', dataLoaders: [personDetailData] }
       },
       {
         path: 'character/:characterId',
         name: 'character-detail',
         component: CharacterDetailPage,
         props: true,
-        meta: { entityType: 'character' }
+        meta: { entityType: 'character', dataLoaders: [characterDetailData] }
       },
       {
         path: 'company/:companyId',
         name: 'company-detail',
         component: CompanyDetailPage,
         props: true,
-        meta: { entityType: 'company' }
+        meta: { entityType: 'company', dataLoaders: [companyDetailData] }
       },
       {
         path: 'collection/:collectionId',
         name: 'collection-detail',
         component: CollectionDetailPage,
         props: true,
-        meta: { entityType: 'collection' }
+        meta: { entityType: 'collection', dataLoaders: [collectionDetailData] }
       },
       {
         path: 'tag/:tagId',
         name: 'tag-detail',
         component: TagDetailPage,
         props: true,
-        meta: { entityType: 'tag' }
+        meta: { entityType: 'tag', dataLoaders: [tagDetailData] }
       },
       {
         path: 'collections',
         name: 'collections',
-        component: CollectionsPage
+        component: CollectionsPage,
+        meta: { dataLoaders: [collectionsListData] }
       },
       {
         path: 'uncategorized/:entityType',
         name: 'uncategorized',
         component: UncategorizedPage,
-        props: true
+        props: true,
+        meta: { dataLoaders: [uncategorizedData] }
       },
       {
         path: 'favorites',
         name: 'favorites',
-        component: FavoritesPage
+        component: FavoritesPage,
+        meta: { dataLoaders: [favoritesData] }
       }
     ]
   },
@@ -149,22 +171,26 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'overview',
         name: 'statistics-overview',
-        component: StatisticsOverviewPage
+        component: StatisticsOverviewPage,
+        meta: { dataLoaders: [statisticsData] }
       },
       {
         path: 'weekly',
         name: 'statistics-weekly',
-        component: StatisticsWeeklyPage
+        component: StatisticsWeeklyPage,
+        meta: { dataLoaders: [statisticsData] }
       },
       {
         path: 'monthly',
         name: 'statistics-monthly',
-        component: StatisticsMonthlyPage
+        component: StatisticsMonthlyPage,
+        meta: { dataLoaders: [statisticsData] }
       },
       {
         path: 'yearly',
         name: 'statistics-yearly',
-        component: StatisticsYearlyPage
+        component: StatisticsYearlyPage,
+        meta: { dataLoaders: [statisticsData] }
       }
     ]
   },
@@ -172,13 +198,15 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/scanner',
     name: 'scanner',
-    component: ScannerPage
+    component: ScannerPage,
+    meta: { dataLoaders: [scannersData] }
   },
   // automations
   {
     path: '/automation',
     name: 'automation',
-    component: AutomationPage
+    component: AutomationPage,
+    meta: { dataLoaders: [automationsData] }
   },
   // Extension
   {
@@ -189,22 +217,26 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'discover',
         name: 'extension-discover',
-        component: ExtensionDiscoverPage
+        component: ExtensionDiscoverPage,
+        meta: { dataLoaders: [discoverSearchData, installedExtensionsData] }
       },
       {
         path: 'installed',
         name: 'extension-installed',
-        component: ExtensionInstalledPage
+        component: ExtensionInstalledPage,
+        meta: { dataLoaders: [installedExtensionsData] }
       },
       {
         path: 'repositories',
         name: 'extension-repositories',
-        component: ExtensionRepositoriesPage
+        component: ExtensionRepositoriesPage,
+        meta: { dataLoaders: [extensionRepositoriesData] }
       },
       {
         path: 'signers',
         name: 'extension-signers',
-        component: ExtensionSignersPage
+        component: ExtensionSignersPage,
+        meta: { dataLoaders: [extensionSignersData] }
       }
     ]
   },
@@ -239,6 +271,8 @@ export const router = createRouter({
     return { top: 0 }
   }
 })
+
+installRouteData(router)
 
 // Navigation guards
 router.beforeEach((to, _from) => {

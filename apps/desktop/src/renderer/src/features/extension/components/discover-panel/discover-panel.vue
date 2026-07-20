@@ -7,42 +7,20 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
-import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import { useAsyncData } from '@renderer/composables/use-async-data'
+import { ipcManager } from '@renderer/core/ipc'
 import ExtensionReleaseDialog from '../extension-release-dialog.vue'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
 import ExtensionDiscoverPanelDetailsDialog from './discover-panel-details-dialog.vue'
 import ExtensionDiscoverPanelFilterBar from './discover-panel-filter-bar.vue'
 import { useDiscoverExtensionStore } from '../../stores'
+import { discoverSearchData, installedExtensionsData, searchExtensionPage } from '../../composables'
 import type {
   ExtensionCatalogPackageInfo,
   ExtensionCreateRepositoryReleasePlanRequest,
   ExtensionInstalledPackageInfo
 } from '@shared/extension'
 
-const PAGE_SIZE = 20
-
 const store = useDiscoverExtensionStore()
-
-async function searchExtensionPage(page: number): Promise<{
-  results: ExtensionCatalogPackageInfo[]
-  hasMore: boolean
-}> {
-  const data = unwrapIpcData(
-    await ipcManager.invoke('extension:search-catalog', {
-      query: store.searchQuery,
-      page,
-      limit: PAGE_SIZE,
-      category: store.selectedCategory ?? undefined,
-      repositoryId: store.selectedRepositoryId ?? undefined,
-      compatibleOnly: store.compatibleOnly,
-      sortBy: store.sortField,
-      sortDirection: store.sortDirection
-    })
-  )
-
-  return { results: [...data.packages], hasMore: data.hasMore }
-}
 
 const additionalResults = ref<ExtensionCatalogPackageInfo[]>([])
 const additionalHasMore = ref(false)
@@ -63,22 +41,10 @@ const queryKey = computed(() =>
   ].join(':')
 )
 
-// Use useAsyncData for the initial search (page 1)
-const {
-  data: searchData,
-  isFetching,
-  isLoading,
-  refetch: refetchSearch
-} = useAsyncData(() => searchExtensionPage(1), {
-  watch: [queryKey],
-  immediate: true
-})
-const { data: catalog, refetch: refetchCatalog } = useAsyncData(
-  async () => unwrapIpcData(await ipcManager.invoke('extension:get-installed-packages')),
-  {
-    immediate: true
-  }
-)
+// Initial search (page 1) and installed catalog settle during navigation via
+// the route loaders; filter changes trigger a non-blocking SWR refetch.
+const { data: searchData, isFetching, refetch: refetchSearch } = discoverSearchData()
+const { data: catalog, refetch: refetchCatalog } = installedExtensionsData()
 
 let unsubscribeCatalogChanged: (() => void) | null = null
 let unsubscribeInstallationsChanged: (() => void) | null = null
@@ -97,15 +63,12 @@ onUnmounted(() => {
   unsubscribeInstallationsChanged?.()
 })
 
-watch(
-  queryKey,
-  () => {
-    page.value = 1
-    additionalResults.value = []
-    additionalHasMore.value = false
-  },
-  { immediate: true }
-)
+watch(queryKey, () => {
+  page.value = 1
+  additionalResults.value = []
+  additionalHasMore.value = false
+  void refetchSearch()
+})
 
 const allResults = computed(() => {
   const base = searchData.value?.results ?? []
@@ -120,7 +83,7 @@ const displayedResults = computed(() => {
   return [...allResults.value]
 })
 
-const searched = computed(() => !isLoading.value)
+const searched = computed(() => searchData.value !== undefined)
 const installedIds = computed(() => new Set((catalog.value ?? []).map((entry) => entry.id)))
 const installedById = computed(
   () => new Map((catalog.value ?? []).map((entry) => [entry.id, entry]))

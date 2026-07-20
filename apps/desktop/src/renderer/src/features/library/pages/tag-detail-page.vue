@@ -19,7 +19,7 @@ import {
   TagDropdownMenu,
   TagInfoFormDialog
 } from '@renderer/components/shared/tag'
-import { useEvent, useRenderState, useTagProvider } from '@renderer/composables'
+import { useEvent, useTagRouteProvider } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
@@ -46,22 +46,14 @@ const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
 const route = useRoute()
 const router = useRouter()
 
-const tagId = computed(() => route.params.tagId as string | undefined)
+const tagId = computed(() => route.params.tagId as string)
 const backTo = computed(() => (route.query.from as string) || '/library')
 
-// Redirect if no tagId
-if (!tagId.value) {
-  router.push(backTo.value)
-}
-
 // =============================================================================
-// Provider
+// Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { tag, entityType, entityCounts, setEntityType, isLoading, error } = useTagProvider(
-  () => tagId.value ?? ''
-)
-const state = useRenderState(isLoading, error, tag)
+const { tag, entityType, entityCounts, setEntityType, error } = useTagRouteProvider()
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'tags' && id === tagId.value) {
@@ -112,11 +104,16 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!tag"
+    state="not-found"
     :icon="getEntityIcon('tag')"
     title="标签不存在"
     class="h-full bg-background"
@@ -124,7 +121,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
 
   <!-- Content -->
   <div
-    v-else-if="tag"
+    v-else
     class="h-full flex flex-col w-full"
   >
     <!-- Header -->

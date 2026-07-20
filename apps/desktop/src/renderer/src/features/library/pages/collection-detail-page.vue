@@ -21,12 +21,7 @@ import {
   CollectionDynamicConfigFormDialog,
   CollectionConvertToStaticFormDialog
 } from '@renderer/components/shared/collection'
-import {
-  useAmbientLight,
-  useCollectionProvider,
-  useEvent,
-  useRenderState
-} from '@renderer/composables'
+import { useAmbientLight, useCollectionRouteProvider, useEvent } from '@renderer/composables'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
@@ -53,15 +48,10 @@ const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
 const route = useRoute()
 const router = useRouter()
 
-const collectionId = computed(() => route.params.collectionId as string | undefined)
-
-// Redirect if no collectionId
-if (!collectionId.value) {
-  router.push('/library/collections')
-}
+const collectionId = computed(() => route.params.collectionId as string)
 
 // =============================================================================
-// Provider
+// Provider (data settled during navigation by the route loader)
 // =============================================================================
 
 const {
@@ -70,11 +60,9 @@ const {
   entityCounts,
   configuredEntityTypes,
   setEntityType,
-  isLoading,
   refetch,
   error
-} = useCollectionProvider(() => collectionId.value ?? '')
-const state = useRenderState(isLoading, error, collection)
+} = useCollectionRouteProvider()
 
 useAmbientLight(() =>
   collection.value?.coverFile
@@ -148,11 +136,16 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!collection"
+    state="not-found"
     icon="icon-[mdi--folder-open-outline]"
     title="合集不存在"
     class="h-full bg-background"
@@ -160,7 +153,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
 
   <!-- Content -->
   <div
-    v-else-if="collection"
+    v-else
     class="h-full flex flex-col w-full"
   >
     <!-- Header -->

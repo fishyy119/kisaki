@@ -7,19 +7,14 @@
 
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { eq, and } from 'drizzle-orm'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
-import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent, useRenderState } from '@renderer/composables'
-import { games, characters, persons, companies } from '@shared/db'
 import type { Game, Character, Person, Company } from '@shared/db'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
-import { storeToRefs } from 'pinia'
-import { usePreferencesStore } from '@renderer/stores'
+import { useFavorites } from '../composables'
 
 // =============================================================================
 // Types & Config
@@ -46,86 +41,12 @@ type EntityData = Game | Character | Person | Company
 const router = useRouter()
 
 // =============================================================================
-// State
+// Data (settled during navigation by the route loader)
 // =============================================================================
 
-const entityType = ref<ContentEntityType>('game')
+const { entities, entityType } = useFavorites()
+
 const scrollContainerRef = ref<HTMLElement>()
-const preferencesStore = usePreferencesStore()
-const { showNsfw } = storeToRefs(preferencesStore)
-
-// =============================================================================
-// Data
-// =============================================================================
-
-async function fetchFavorites(): Promise<EntityData[]> {
-  switch (entityType.value) {
-    case 'game':
-      return await db
-        .select()
-        .from(games)
-        .where(
-          and(eq(games.isFavorite, true), showNsfw.value ? undefined : eq(games.isNsfw, false))
-        )
-    case 'character':
-      return await db
-        .select()
-        .from(characters)
-        .where(
-          and(
-            eq(characters.isFavorite, true),
-            showNsfw.value ? undefined : eq(characters.isNsfw, false)
-          )
-        )
-    case 'person':
-      return await db
-        .select()
-        .from(persons)
-        .where(
-          and(eq(persons.isFavorite, true), showNsfw.value ? undefined : eq(persons.isNsfw, false))
-        )
-    case 'company':
-      return await db
-        .select()
-        .from(companies)
-        .where(
-          and(
-            eq(companies.isFavorite, true),
-            showNsfw.value ? undefined : eq(companies.isNsfw, false)
-          )
-        )
-  }
-}
-
-const {
-  data: entities,
-  isLoading,
-  error,
-  refetch
-} = useAsyncData(fetchFavorites, {
-  watch: [entityType, showNsfw]
-})
-const state = useRenderState(isLoading, error, entities)
-
-// =============================================================================
-// Event Listeners
-// =============================================================================
-
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'games' || table === 'characters' || table === 'persons' || table === 'companies') {
-    refetch()
-  }
-})
-useEvent('db.updated', ({ table }) => {
-  if (table === 'games' || table === 'characters' || table === 'persons' || table === 'companies') {
-    refetch()
-  }
-})
-useEvent('db.deleted', ({ table }) => {
-  if (table === 'games' || table === 'characters' || table === 'persons' || table === 'companies') {
-    refetch()
-  }
-})
 
 // =============================================================================
 // Actions
@@ -160,7 +81,7 @@ function handleEntityClick(entity: EntityData) {
         title="喜欢"
         icon="icon-[mdi--heart-outline]"
       >
-        {{ entities?.length ?? 0 }} {{ ENTITY_CONFIG[entityType].unitLabel }}
+        {{ entities.length }} {{ ENTITY_CONFIG[entityType].unitLabel }}
       </PageHeaderTitle>
 
       <template #actions>
@@ -182,16 +103,9 @@ function handleEntityClick(entity: EntityData) {
       ref="scrollContainerRef"
       class="flex-1 overflow-auto bg-background p-4"
     >
-      <!-- Loading state -->
-      <StateView
-        v-if="state === 'loading'"
-        state="loading"
-        class="h-full"
-      />
-
       <!-- Empty state -->
       <StateView
-        v-else-if="!entities || entities.length === 0"
+        v-if="entities.length === 0"
         state="empty"
         icon="icon-[mdi--heart-off-outline]"
         :description="`暂无喜欢的${ENTITY_CONFIG[entityType].label}`"

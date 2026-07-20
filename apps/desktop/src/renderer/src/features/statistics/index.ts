@@ -5,3 +5,4 @@ export {
   StatisticsMonthlyPage,
   StatisticsYearlyPage
 } from './pages'
+export { statisticsData } from './composables'

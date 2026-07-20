@@ -2,23 +2,30 @@
  * Game data composable
  *
  * Provides game data with all related entities using Provider/Consumer pattern.
- * Replaces React's GameContext.
+ * Two provider surfaces share one fetcher, context assembly, and db sync:
+ * - Route page: `gameDetailData` loads during navigation (beforeResolve), the
+ *   page consumes the settled store via `useGameRouteProvider()`.
+ * - Dialog: `useGameDialogProvider()` fetches on demand after mount.
  */
 
 import {
   provide,
   inject,
+  ref,
   toRef,
   toValue,
   computed,
+  watch,
   type InjectionKey,
   type Ref,
   type MaybeRefOrGetter,
   type ComputedRef
 } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { eq, asc, desc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
+import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
@@ -66,7 +73,7 @@ export interface GameContext {
   companies: ComputedRef<(GameCompanyLink & { company: Company | null })[]>
   /** Game sessions (play history) */
   sessions: ComputedRef<GameSession[]>
-  /** Initial loading state */
+  /** Initial loading state (always false on the route surface after mount) */
   isLoading: Ref<boolean>
   /** Background refetching state */
   isFetching: Ref<boolean>
@@ -74,6 +81,11 @@ export interface GameContext {
   error: Ref<string | null>
   /** Manually refetch data */
   refetch: () => Promise<void>
+}
+
+export interface GameProviderReturn extends GameContext {
+  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
+  spoilersRevealed: Ref<boolean>
 }
 
 // =============================================================================
@@ -182,48 +194,59 @@ async function fetchGameData(
 }
 
 // =============================================================================
-// Provider Composable
+// Route Loader
 // =============================================================================
 
-/**
- * Provide game data context
- *
- * Call this in the parent component (page or provider component).
- *
- * @example
- * ```ts
- * // In game-detail-page.vue
- * const gameId = computed(() => route.params.gameId as string)
- * const { game, isLoading } = useGameProvider(gameId)
- * ```
- */
-export function useGameProvider(
-  gameId: MaybeRefOrGetter<string>,
-  spoilersRevealed: MaybeRefOrGetter<boolean> = false
-): GameContext {
-  const id = toRef(gameId)
-  const revealed = computed(() => toValue(spoilersRevealed))
-  const preferencesStore = usePreferencesStore()
-  const { showNsfw } = storeToRefs(preferencesStore)
+// Route-surface spoiler state lives beside the loader so the navigation-time
+// fetch reads a consistent value; it resets whenever a different game loads.
+let lastRouteGameId: string | null = null
+const routeSpoilersRevealed = ref(false)
 
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchGameData(toValue(id), revealed.value, showNsfw.value),
-    { watch: [id, revealed, showNsfw] }
-  )
+export const gameDetailData = defineRouteData((route) => {
+  const gameId = route.params.gameId as string
+  if (gameId !== lastRouteGameId) {
+    lastRouteGameId = gameId
+    routeSpoilersRevealed.value = false
+  }
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  return fetchGameData(gameId, routeSpoilersRevealed.value, showNsfw.value)
+})
 
-  // Computed properties for individual fields
-  const game = computed(() => data.value?.game ?? null)
-  const notes = computed(() => data.value?.notes ?? [])
-  const tags = computed(() => data.value?.tags ?? [])
-  const characters = computed(() => data.value?.characters ?? [])
-  const persons = computed(() => data.value?.persons ?? [])
-  const companies = computed(() => data.value?.companies ?? [])
-  const sessions = computed(() => data.value?.sessions ?? [])
+// =============================================================================
+// Shared Internals
+// =============================================================================
 
-  // Listen for DB updates
+interface GameDataSource {
+  data: Readonly<Ref<GameData | null | undefined>>
+  isLoading: Ref<boolean>
+  isFetching: Ref<boolean>
+  error: Ref<string | null>
+  refetch: () => Promise<void>
+}
+
+function provideGameContext(source: GameDataSource): GameContext {
+  const context: GameContext = {
+    game: computed(() => source.data.value?.game ?? null),
+    notes: computed(() => source.data.value?.notes ?? []),
+    tags: computed(() => source.data.value?.tags ?? []),
+    characters: computed(() => source.data.value?.characters ?? []),
+    persons: computed(() => source.data.value?.persons ?? []),
+    companies: computed(() => source.data.value?.companies ?? []),
+    sessions: computed(() => source.data.value?.sessions ?? []),
+    isLoading: source.isLoading,
+    isFetching: source.isFetching,
+    error: source.error,
+    refetch: source.refetch
+  }
+
+  provide(GameKey, context)
+
+  return context
+}
+
+function useGameDbSync(gameId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
   useEvent('db.updated', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'games' && entityId === currentId) {
+    if (table === 'games' && entityId === toValue(gameId)) {
       refetch()
     }
     if (
@@ -252,32 +275,75 @@ export function useGameProvider(
   })
 
   useEvent('db.deleted', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'games' && entityId === currentId) {
+    if (table === 'games' && entityId === toValue(gameId)) {
       refetch()
     }
     if (table === 'game_notes' || table === 'game_sessions') {
       refetch()
     }
   })
+}
 
-  const context: GameContext = {
-    game,
-    notes,
-    tags,
-    characters,
-    persons,
-    companies,
-    sessions,
-    isLoading,
+// =============================================================================
+// Provider Composables
+// =============================================================================
+
+/**
+ * Provide game data on the route surface.
+ *
+ * Data is loaded by `gameDetailData` during navigation, so it is already
+ * settled when the page mounts. In-page input changes (spoilers, NSFW
+ * preference) trigger a non-blocking SWR refetch.
+ */
+export function useGameRouteProvider(): GameProviderReturn {
+  const route = useRoute()
+  const gameId = computed(() => route.params.gameId as string)
+  const { data, error, isFetching, refetch } = gameDetailData()
+
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  watch(showNsfw, () => void refetch())
+
+  // Explicit setter (not a watcher on the module ref) so the loader's
+  // cross-navigation spoiler reset does not trigger a duplicate fetch.
+  const spoilersRevealed = computed({
+    get: () => routeSpoilersRevealed.value,
+    set: (value) => {
+      routeSpoilersRevealed.value = value
+      void refetch()
+    }
+  })
+
+  const context = provideGameContext({
+    data,
+    isLoading: ref(false),
     isFetching,
     error,
     refetch
-  }
+  })
+  useGameDbSync(gameId, refetch)
 
-  provide(GameKey, context)
+  return { ...context, spoilersRevealed }
+}
 
-  return context
+/**
+ * Provide game data on the dialog surface (fetches after mount).
+ *
+ * Spoiler state is instance-local and resets when the dialog unmounts.
+ */
+export function useGameDialogProvider(gameId: MaybeRefOrGetter<string>): GameProviderReturn {
+  const id = toRef(gameId)
+  const spoilersRevealed = ref(false)
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+
+  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
+    () => fetchGameData(toValue(id), spoilersRevealed.value, showNsfw.value),
+    { watch: [id, spoilersRevealed, showNsfw] }
+  )
+
+  const context = provideGameContext({ data, isLoading, isFetching, error, refetch })
+  useGameDbSync(id, refetch)
+
+  return { ...context, spoilersRevealed }
 }
 
 // =============================================================================
@@ -298,7 +364,7 @@ export function useGameProvider(
 export function useGame(): GameContext {
   const context = inject(GameKey)
   if (!context) {
-    throw new Error('useGame() must be used within a component that called useGameProvider()')
+    throw new Error('useGame() must be used within a component that provided the game context')
   }
   return context
 }

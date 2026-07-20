@@ -4,13 +4,13 @@
   Dialog view for character details.
 -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { characters } from '@shared/db'
-import { useCharacterProvider } from '@renderer/composables/use-character'
+import { useCharacterDialogProvider } from '@renderer/composables/use-character'
 import { useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
@@ -42,27 +42,15 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 // =============================================================================
-// Spoiler State
-// =============================================================================
-
-const spoilersRevealed = ref(false)
-const spoilerConfirmOpen = ref(false)
-
-watch(open, (isOpen) => {
-  if (isOpen) return
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
 // Provider
 // =============================================================================
 
-const { character, isLoading, error } = useCharacterProvider(
-  () => props.characterId,
-  spoilersRevealed
+const { character, isLoading, error, spoilersRevealed } = useCharacterDialogProvider(
+  () => props.characterId
 )
 const state = useRenderState(isLoading, error, character)
+
+const spoilerConfirmOpen = ref(false)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'characters' && id === props.characterId) {

@@ -2,15 +2,15 @@
  * Scanner Composable
  *
  * Provider/Consumer pattern for scanner list data.
- * Provides centralized data management for scanner page.
+ * Data loads during navigation via the route loader.
  */
 
 import type { InjectionKey, Ref } from 'vue'
 import { computed, inject, provide } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
+import { defineRouteData } from '@renderer/core/route-data'
 import { scanners as scannersTable, type Scanner } from '@shared/db'
-import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useEvent } from '@renderer/composables/use-event'
 
 // =============================================================================
@@ -19,7 +19,7 @@ import { useEvent } from '@renderer/composables/use-event'
 
 export interface ScannerContext {
   scanners: Ref<Scanner[]>
-  isLoading: Ref<boolean>
+  error: Ref<string | null>
   isFetching: Ref<boolean>
   refetch: () => Promise<void>
 }
@@ -27,21 +27,21 @@ export interface ScannerContext {
 export const ScannerKey: InjectionKey<ScannerContext> = Symbol('scanner')
 
 // =============================================================================
-// Provider
+// Route Loader & Provider
 // =============================================================================
+
+export const scannersData = defineRouteData(async (): Promise<Scanner[]> => {
+  return await db.query.scanners.findMany({
+    where: eq(scannersTable.type, 'game')
+  })
+})
 
 /**
  * Provides scanner list data to child components.
  * Call this in the scanner page root component.
  */
 export function useScannerProvider(): ScannerContext {
-  async function fetchScanners(): Promise<Scanner[]> {
-    return await db.query.scanners.findMany({
-      where: eq(scannersTable.type, 'game')
-    })
-  }
-
-  const { data, isLoading, isFetching, refetch } = useAsyncData(fetchScanners)
+  const { data, error, isFetching, refetch } = scannersData()
 
   // Computed to always return array
   const scanners = computed(() => data.value ?? [])
@@ -61,7 +61,7 @@ export function useScannerProvider(): ScannerContext {
 
   const context: ScannerContext = {
     scanners,
-    isLoading,
+    error,
     isFetching,
     refetch
   }

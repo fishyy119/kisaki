@@ -11,8 +11,6 @@ import { ref, computed, provide } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
-import { StateView } from '@renderer/components/ui/state-view'
-import { useRenderState } from '@renderer/composables'
 import { useShowcaseSections } from '../composables'
 import {
   LibraryShowcaseSection,
@@ -20,9 +18,8 @@ import {
   LibraryShowcaseSectionsFormDialog
 } from '../components/showcase'
 
-// Data
-const { sections, isLoading } = useShowcaseSections()
-const state = useRenderState(isLoading, null, sections)
+// Data (settled during navigation by the route loader)
+const { sections } = useShowcaseSections()
 
 // Scroll container for virtualized grids
 const scrollContainerRef = ref<HTMLElement>()
@@ -59,16 +56,8 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
       </template>
     </PageHeader>
 
-    <!-- Loading state -->
-    <StateView
-      v-if="state === 'loading'"
-      state="loading"
-      class="h-full bg-background"
-    />
-
     <!-- Content -->
     <div
-      v-else
       ref="scrollContainerRef"
       class="flex-1 overflow-auto bg-background"
     >

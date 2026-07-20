@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import { useStatistics } from '../composables'
-import { useRenderState } from '@renderer/composables'
 import { StateView } from '@renderer/components/ui/state-view'
 import {
   StatisticsHero,
@@ -20,15 +19,13 @@ import {
   StatisticsCollectionRanking
 } from '../components'
 
-const { sessions, isLoading, error } = useStatistics()
-
-const state = useRenderState(isLoading, error, sessions)
+const { error } = useStatistics()
 </script>
 
 <template>
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
     class="h-full"
   />

@@ -3,8 +3,10 @@
 ## Key Files
 
 - `apps/desktop/src/renderer/src/main.ts` - Renderer entry point
-- `apps/desktop/src/renderer/src/app.vue` - Root component with ErrorBoundary
-- `apps/desktop/src/renderer/src/composables/use-async-data.ts` - Async data fetching
+- `apps/desktop/src/renderer/src/main.vue` - Root component with ErrorBoundary
+- `apps/desktop/src/renderer/src/core/route-data.ts` - Route data loaders (navigation-blocking)
+- `apps/desktop/src/renderer/src/components/layout/navigation-progress.vue` - Route loading bar
+- `apps/desktop/src/renderer/src/composables/use-async-data.ts` - Async data fetching (non-route surfaces)
 - `apps/desktop/src/renderer/src/composables/use-render-state.ts` - Render state management
 - `apps/desktop/src/renderer/src/composables/use-delayed-loading.ts` - Loading delay
 - `apps/desktop/src/renderer/src/composables/use-event.ts` - Event subscription
@@ -12,6 +14,57 @@
 - `apps/desktop/src/renderer/src/stores/task-run.ts` - TaskRun active/history store
 - `apps/desktop/src/renderer/src/features/task-center/` - Task center dialog and display utilities
 - `apps/desktop/eslint.config.ts` - ESLint rules (props reactivity)
+
+## Data Loading Surfaces (Must Follow)
+
+The renderer has two data-loading surfaces with different rules:
+
+1. **Route pages** use route data loaders (`defineRouteData` + `meta.dataLoaders`). Data loads
+   during navigation in `beforeResolve`; the previous page stays visible until the next page's
+   data settles. Route page templates never render `pending`/`loading` branches - the first
+   frame is `success` / `not-found` / `error` only. The top `NavigationProgress` bar is the
+   single route-level loading indicator (appears after a 150ms delay).
+2. **Dialogs and embedded blocks** (mounted on demand) use `useAsyncData` + `useRenderState`
+   with delayed loading. This is unchanged.
+
+### Route Data Loaders
+
+```ts
+// Module scope, beside the fetcher (e.g. in a feature composable)
+export const gameDetailData = defineRouteData((route) => {
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  return fetchGameData(route.params.gameId as string, routeSpoilersRevealed.value, showNsfw.value)
+})
+
+// router.ts
+{ path: 'game/:gameId', component: GameDetailPage, meta: { dataLoaders: [gameDetailData] } }
+
+// Page/provider: data is already settled at mount
+const { data, error, isFetching, refetch } = gameDetailData()
+```
+
+Rules:
+
+- Loaders own a module-level store (singleton per loader; the app renders one RouterView).
+- `refetch()` re-runs the fetcher against the last loaded route without clearing data (SWR).
+  Use it for db-event invalidation and in-page parameter changes (tabs, period, spoilers);
+  the old data stays visible until the new data lands - no empty-state flash.
+- In-page fetch parameters live in module refs beside the loader so the navigation-time fetch
+  reads a consistent value; reset them when the route identity changes inside the fetcher.
+- Fetch failures are captured into the loader `error` ref and never block navigation.
+  `null` results mean not-found.
+
+### Entity Detail Providers (Dual Surface)
+
+Entity detail composables (`use-game`, `use-character`, ...) expose two provider entries over
+one shared fetcher, context assembly, and db-event sync:
+
+- `useGameRouteProvider()` - route page surface; reads the settled loader store, no isLoading.
+- `useGameDialogProvider(gameId)` - dialog surface; `useAsyncData` after mount.
+
+Both provide the same context; child components consume `useGame()` and cannot tell which
+surface they are on. Spoiler/tab state is owned by the provider (`spoilersRevealed` ref in the
+return value); toggling triggers an SWR refetch.
 
 ## Naming & Organization Conventions
 
@@ -99,7 +152,8 @@ const value = computed({
 
 ### useAsyncData
 
-Unified async data fetching with loading/error states:
+Unified async data fetching with loading/error states. For dialogs and embedded blocks only;
+route pages load data through route data loaders (see above):
 
 ```typescript
 const { data, loading, error, refetch } = useAsyncData(() => fetchGameById(props.gameId), {
@@ -303,6 +357,7 @@ Rules:
 - v-model: `defineModel(`, `v-model:open`
 - Dialog mounting: `v-if="...open"`, `enabled: () => open.value`
 - Composables: `useAsyncData(`, `useRenderState(`, `useEvent(`
+- Route data: `defineRouteData(`, `meta.dataLoaders`, `RouteProvider`, `DialogProvider`
 - TaskRun: `useTaskRunStore`, `task-run:changed`, `features/task-center`, `TaskRun`
 - Forbidden: `watchEffect`, `watchPostEffect`, `watchSyncEffect`
 

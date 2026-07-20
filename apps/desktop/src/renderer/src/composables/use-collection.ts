@@ -3,7 +3,8 @@
  *
  * Provides collection data with entities using Provider/Consumer pattern.
  * Supports both static and dynamic collections.
- * Replaces React's CollectionContext.
+ * Two provider surfaces share one fetcher, context assembly, and db sync:
+ * route pages consume the navigation-time loader, dialogs fetch after mount.
  */
 
 import {
@@ -13,14 +14,17 @@ import {
   toValue,
   computed,
   ref,
+  watch,
   type InjectionKey,
   type Ref,
   type MaybeRefOrGetter,
   type ComputedRef
 } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { eq, count, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
+import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
@@ -36,10 +40,18 @@ import type { ContentEntityData, ContentEntityCounts } from './types'
 // Types
 // =============================================================================
 
-interface CollectionData {
+interface CollectionCountsData {
   collection: Collection | null
   counts: ContentEntityCounts
   configuredTypes: ContentEntityType[]
+}
+
+interface CollectionData {
+  collection: Collection
+  counts: ContentEntityCounts
+  configuredTypes: ContentEntityType[]
+  entityType: ContentEntityType
+  entities: ContentEntityData[]
 }
 
 export interface CollectionContext {
@@ -58,9 +70,9 @@ export interface CollectionContext {
   /** Initial loading state */
   isLoading: Ref<boolean>
   /** Background refetching state */
-  isFetching: ComputedRef<boolean>
+  isFetching: Ref<boolean>
   /** Error if any */
-  error: ComputedRef<Error | null>
+  error: Ref<string | null>
   /** Manually refetch data */
   refetch: () => Promise<void>
 }
@@ -120,7 +132,7 @@ function getDefaultEntityType(
 async function fetchCollectionWithCounts(
   collectionId: string,
   showNsfw: boolean
-): Promise<CollectionData> {
+): Promise<CollectionCountsData> {
   // Fetch collection first
   const collectionWhere = and(
     eq(schema.collections.id, collectionId),
@@ -431,151 +443,192 @@ async function fetchCollectionEntities(
 
 const getQuerySpec = getFilterQuerySpec
 
+function resolveEntityType(
+  selectedType: ContentEntityType | null,
+  counts: ContentEntityCounts,
+  configuredTypes: ContentEntityType[],
+  isDynamic: boolean
+): ContentEntityType {
+  let type = selectedType ?? getDefaultEntityType(counts, configuredTypes)
+  // Ensure the selected type is valid for dynamic collections
+  if (isDynamic && configuredTypes.length > 0 && !configuredTypes.includes(type)) {
+    type = configuredTypes[0]
+  }
+  return type
+}
+
+async function fetchCollectionData(
+  collectionId: string,
+  selectedType: ContentEntityType | null,
+  showNsfw: boolean
+): Promise<CollectionData | null> {
+  const { collection, counts, configuredTypes } = await fetchCollectionWithCounts(
+    collectionId,
+    showNsfw
+  )
+  if (!collection) return null
+
+  const entityType = resolveEntityType(selectedType, counts, configuredTypes, collection.isDynamic)
+  const entities = await fetchCollectionEntities(collection, collectionId, entityType, showNsfw)
+
+  return { collection, counts, configuredTypes, entityType, entities }
+}
+
 // =============================================================================
-// Provider Composable
+// Route Loader
 // =============================================================================
 
-export function useCollectionProvider(
-  collectionId: MaybeRefOrGetter<string>,
-  initialEntityType?: ContentEntityType
-): CollectionContext {
-  const id = toRef(collectionId)
-  const preferencesStore = usePreferencesStore()
-  const { showNsfw } = storeToRefs(preferencesStore)
+// Route-surface entity type selection lives beside the loader so the
+// navigation-time fetch reads a consistent value; it resets whenever a
+// different collection loads.
+let lastRouteCollectionId: string | null = null
+const routeSelectedType = ref<ContentEntityType | null>(null)
 
-  // User-selected entity type
-  const userSelectedType = ref<ContentEntityType | null>(null)
+export const collectionDetailData = defineRouteData((route) => {
+  const collectionId = route.params.collectionId as string
+  if (collectionId !== lastRouteCollectionId) {
+    lastRouteCollectionId = collectionId
+    routeSelectedType.value = null
+  }
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  return fetchCollectionData(collectionId, routeSelectedType.value, showNsfw.value)
+})
 
-  // Fetch collection and counts
-  const collectionQuery = useAsyncData(
-    () => fetchCollectionWithCounts(toValue(id), showNsfw.value),
-    {
-      watch: [id, showNsfw]
-    }
-  )
+// =============================================================================
+// Shared Internals
+// =============================================================================
 
-  const collection = computed(() => collectionQuery.data.value?.collection ?? null)
-  const counts = computed(
-    () => collectionQuery.data.value?.counts ?? { game: 0, character: 0, person: 0, company: 0 }
-  )
-  const configuredTypes = computed(
-    () => collectionQuery.data.value?.configuredTypes ?? [...CONTENT_ENTITY_TYPES]
-  )
+interface CollectionDataSource {
+  data: Readonly<Ref<CollectionData | null | undefined>>
+  isLoading: Ref<boolean>
+  isFetching: Ref<boolean>
+  error: Ref<string | null>
+  refetch: () => Promise<void>
+  setEntityType: (type: ContentEntityType) => void
+}
 
-  // Determine effective entity type
-  const effectiveEntityType = computed(() => {
-    const coll = collection.value
-    if (!coll) return 'game' as ContentEntityType
-    return initialEntityType ?? getDefaultEntityType(counts.value, configuredTypes.value)
-  })
-
-  // Current entity type (user override or effective)
-  const entityType = computed(() => {
-    let type = userSelectedType.value ?? effectiveEntityType.value
-    // Ensure user-selected type is valid for dynamic collections
-    if (
-      collection.value?.isDynamic &&
-      configuredTypes.value.length > 0 &&
-      !configuredTypes.value.includes(type)
-    ) {
-      type = configuredTypes.value[0]
-    }
-    return type
-  })
-
-  const setEntityType = (type: ContentEntityType) => {
-    userSelectedType.value = type
+function provideCollectionContext(source: CollectionDataSource): CollectionContext {
+  const context: CollectionContext = {
+    collection: computed(() => source.data.value?.collection ?? null),
+    entities: computed(() => source.data.value?.entities ?? []),
+    entityType: computed(() => source.data.value?.entityType ?? 'game'),
+    entityCounts: computed(
+      () => source.data.value?.counts ?? { game: 0, character: 0, person: 0, company: 0 }
+    ),
+    configuredEntityTypes: computed(
+      () => source.data.value?.configuredTypes ?? [...CONTENT_ENTITY_TYPES]
+    ),
+    setEntityType: source.setEntityType,
+    isLoading: source.isLoading,
+    isFetching: source.isFetching,
+    error: source.error,
+    refetch: source.refetch
   }
 
-  // Fetch entities for current type
-  const entitiesQuery = useAsyncData(
-    () => fetchCollectionEntities(collection.value, toValue(id), entityType.value, showNsfw.value),
-    {
-      watch: [
-        id,
-        entityType,
-        () => collection.value?.id,
-        () => collection.value?.isDynamic,
-        showNsfw
-      ]
-    }
-  )
+  provide(CollectionKey, context)
 
-  const entities = computed(() => entitiesQuery.data.value ?? [])
+  return context
+}
 
-  // Listen for database changes
-  const isDynamic = computed(() => collection.value?.isDynamic ?? false)
+function useCollectionDbSync(
+  collectionId: MaybeRefOrGetter<string>,
+  context: CollectionContext,
+  refetch: () => Promise<void>
+): void {
+  const isDynamic = computed(() => context.collection.value?.isDynamic ?? false)
+  const entityTables = ['games', 'characters', 'persons', 'companies']
 
   useEvent('db.updated', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'collections' && entityId === currentId) {
-      collectionQuery.refetch()
-      entitiesQuery.refetch()
+    if (table === 'collections' && entityId === toValue(collectionId)) {
+      refetch()
     }
     // For dynamic collections, refetch when source entities change
-    if (isDynamic.value) {
-      const entityTables = ['games', 'characters', 'persons', 'companies']
-      if (entityTables.includes(table)) {
-        collectionQuery.refetch()
-        entitiesQuery.refetch()
-      }
+    if (isDynamic.value && entityTables.includes(table)) {
+      refetch()
     }
   })
 
   useEvent('db.inserted', ({ table }) => {
-    const linkTableName = getLinkTableName(entityType.value)
-    if (table === linkTableName || table === 'collections') {
-      collectionQuery.refetch()
-      entitiesQuery.refetch()
+    if (table === getLinkTableName(context.entityType.value) || table === 'collections') {
+      refetch()
     }
-    if (isDynamic.value) {
-      const entityTables = ['games', 'characters', 'persons', 'companies']
-      if (entityTables.includes(table)) {
-        collectionQuery.refetch()
-        entitiesQuery.refetch()
-      }
+    if (isDynamic.value && entityTables.includes(table)) {
+      refetch()
     }
   })
 
   useEvent('db.deleted', ({ table }) => {
-    const linkTableName = getLinkTableName(entityType.value)
-    if (table === linkTableName) {
-      collectionQuery.refetch()
-      entitiesQuery.refetch()
+    if (table === getLinkTableName(context.entityType.value)) {
+      refetch()
     }
-    if (isDynamic.value) {
-      const entityTables = ['games', 'characters', 'persons', 'companies']
-      if (entityTables.includes(table)) {
-        collectionQuery.refetch()
-        entitiesQuery.refetch()
-      }
+    if (isDynamic.value && entityTables.includes(table)) {
+      refetch()
     }
   })
+}
 
-  const refetch = async () => {
-    await Promise.all([collectionQuery.refetch(), entitiesQuery.refetch()])
+// =============================================================================
+// Provider Composables
+// =============================================================================
+
+/**
+ * Provide collection data on the route surface (data settled during navigation).
+ * Entity type switching triggers a non-blocking SWR refetch.
+ */
+export function useCollectionRouteProvider(): CollectionContext {
+  const route = useRoute()
+  const collectionId = computed(() => route.params.collectionId as string)
+  const { data, error, isFetching, refetch } = collectionDetailData()
+
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  watch(showNsfw, () => void refetch())
+
+  const setEntityType = (type: ContentEntityType) => {
+    routeSelectedType.value = type
+    void refetch()
   }
 
-  const error = computed(() =>
-    collectionQuery.error.value || entitiesQuery.error.value
-      ? new Error(collectionQuery.error.value || entitiesQuery.error.value || '')
-      : null
+  const context = provideCollectionContext({
+    data,
+    isLoading: ref(false),
+    isFetching,
+    error,
+    refetch,
+    setEntityType
+  })
+  useCollectionDbSync(collectionId, context, refetch)
+
+  return context
+}
+
+/**
+ * Provide collection data on the dialog surface (fetches after mount).
+ */
+export function useCollectionDialogProvider(
+  collectionId: MaybeRefOrGetter<string>
+): CollectionContext {
+  const id = toRef(collectionId)
+  const selectedType = ref<ContentEntityType | null>(null)
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+
+  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
+    () => fetchCollectionData(toValue(id), selectedType.value, showNsfw.value),
+    { watch: [id, selectedType, showNsfw] }
   )
 
-  const context: CollectionContext = {
-    collection,
-    entities,
-    entityType,
-    entityCounts: counts,
-    configuredEntityTypes: configuredTypes,
-    setEntityType,
-    isLoading: collectionQuery.isLoading,
-    isFetching: computed(() => collectionQuery.isFetching.value || entitiesQuery.isFetching.value),
-    error,
-    refetch
+  const setEntityType = (type: ContentEntityType) => {
+    selectedType.value = type
   }
 
-  provide(CollectionKey, context)
+  const context = provideCollectionContext({
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+    setEntityType
+  })
+  useCollectionDbSync(id, context, refetch)
 
   return context
 }
@@ -588,7 +641,7 @@ export function useCollection(): CollectionContext {
   const context = inject(CollectionKey)
   if (!context) {
     throw new Error(
-      'useCollection() must be used within a component that called useCollectionProvider()'
+      'useCollection() must be used within a component that provided the collection context'
     )
   }
   return context

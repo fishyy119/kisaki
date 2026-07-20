@@ -5,7 +5,7 @@
  * Full page view for character detail, used by routing.
  */
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
@@ -19,12 +19,7 @@ import {
   CharacterDropdownMenu,
   CharacterDetailContent
 } from '@renderer/components/shared/character'
-import {
-  useAmbientLight,
-  useCharacterProvider,
-  useEvent,
-  useRenderState
-} from '@renderer/composables'
+import { useAmbientLight, useCharacterRouteProvider, useEvent } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { characters } from '@shared/db'
@@ -38,35 +33,16 @@ import { getEntityIcon } from '@renderer/utils/format'
 const route = useRoute()
 const router = useRouter()
 
-const characterId = computed(() => route.params.characterId as string | undefined)
+const characterId = computed(() => route.params.characterId as string)
 const backTo = computed(() => (route.query.from as string) || '/library')
 
-// Redirect if no characterId
-if (!characterId.value) {
-  router.push(backTo.value)
-}
-
 // =============================================================================
-// Spoiler State
+// Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const spoilersRevealed = ref(false)
+const { character, error, spoilersRevealed } = useCharacterRouteProvider()
+
 const spoilerConfirmOpen = ref(false)
-
-watch(characterId, () => {
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
-// Provider
-// =============================================================================
-
-const { character, isLoading, error } = useCharacterProvider(
-  () => characterId.value ?? '',
-  spoilersRevealed
-)
-const state = useRenderState(isLoading, error, character)
 
 useAmbientLight(() =>
   character.value?.photoFile
@@ -101,8 +77,8 @@ const isPendingFavorite = ref(false)
 // =============================================================================
 
 async function handleToggleFavorite() {
-  if (isPendingFavorite.value || state.value !== 'success') return
-  const current = character.value!
+  if (isPendingFavorite.value || !character.value) return
+  const current = character.value
   isPendingFavorite.value = true
   try {
     await db
@@ -131,11 +107,16 @@ function handleRevealSpoilersConfirm() {
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!character"
+    state="not-found"
     :icon="getEntityIcon('character')"
     title="角色不存在"
     class="h-full bg-background"
@@ -143,7 +124,7 @@ function handleRevealSpoilersConfirm() {
 
   <!-- Content -->
   <div
-    v-else-if="character"
+    v-else
     class="h-full flex flex-col"
   >
     <!-- Header -->

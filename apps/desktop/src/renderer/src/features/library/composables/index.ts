@@ -10,6 +10,7 @@ export {
 } from './use-explorer-list'
 export {
   useShowcaseSections,
+  showcaseSectionsData,
   createSection,
   updateSection,
   deleteSection,
@@ -17,3 +18,6 @@ export {
 } from './use-showcase-sections'
 export { useSectionData, type SectionEntityData } from './use-section-data'
 export { useLibrarySearch, type LibrarySearchResult } from './use-library-search'
+export { useFavorites, favoritesData } from './use-favorites'
+export { useUncategorized, uncategorizedData } from './use-uncategorized'
+export { useCollectionsList, collectionsListData } from './use-collections-list'

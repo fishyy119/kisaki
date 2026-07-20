@@ -2,23 +2,28 @@
  * Person data composable
  *
  * Provides person data with all related entities using Provider/Consumer pattern.
- * Replaces React's PersonContext.
+ * Two provider surfaces share one fetcher, context assembly, and db sync:
+ * route pages consume the navigation-time loader, dialogs fetch after mount.
  */
 
 import {
   provide,
   inject,
+  ref,
   toRef,
   toValue,
   computed,
+  watch,
   type InjectionKey,
   type Ref,
   type MaybeRefOrGetter,
   type ComputedRef
 } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { eq, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
+import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
@@ -53,6 +58,11 @@ export interface PersonContext {
   isFetching: Ref<boolean>
   error: Ref<string | null>
   refetch: () => Promise<void>
+}
+
+export interface PersonProviderReturn extends PersonContext {
+  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
+  spoilersRevealed: Ref<boolean>
 }
 
 // =============================================================================
@@ -135,31 +145,56 @@ async function fetchPersonData(
 }
 
 // =============================================================================
-// Provider Composable
+// Route Loader
 // =============================================================================
 
-export function usePersonProvider(
-  personId: MaybeRefOrGetter<string>,
-  spoilersRevealed: MaybeRefOrGetter<boolean> = false
-): PersonContext {
-  const id = toRef(personId)
-  const revealed = computed(() => toValue(spoilersRevealed))
-  const preferencesStore = usePreferencesStore()
-  const { showNsfw } = storeToRefs(preferencesStore)
+// Route-surface spoiler state lives beside the loader so the navigation-time
+// fetch reads a consistent value; it resets whenever a different entity loads.
+let lastRoutePersonId: string | null = null
+const routeSpoilersRevealed = ref(false)
 
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchPersonData(toValue(id), revealed.value, showNsfw.value),
-    { watch: [id, revealed, showNsfw] }
-  )
+export const personDetailData = defineRouteData((route) => {
+  const personId = route.params.personId as string
+  if (personId !== lastRoutePersonId) {
+    lastRoutePersonId = personId
+    routeSpoilersRevealed.value = false
+  }
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  return fetchPersonData(personId, routeSpoilersRevealed.value, showNsfw.value)
+})
 
-  const person = computed(() => data.value?.person ?? null)
-  const tags = computed(() => data.value?.tags ?? [])
-  const games = computed(() => data.value?.games ?? [])
-  const characters = computed(() => data.value?.characters ?? [])
+// =============================================================================
+// Shared Internals
+// =============================================================================
 
+interface PersonDataSource {
+  data: Readonly<Ref<PersonData | null | undefined>>
+  isLoading: Ref<boolean>
+  isFetching: Ref<boolean>
+  error: Ref<string | null>
+  refetch: () => Promise<void>
+}
+
+function providePersonContext(source: PersonDataSource): PersonContext {
+  const context: PersonContext = {
+    person: computed(() => source.data.value?.person ?? null),
+    tags: computed(() => source.data.value?.tags ?? []),
+    games: computed(() => source.data.value?.games ?? []),
+    characters: computed(() => source.data.value?.characters ?? []),
+    isLoading: source.isLoading,
+    isFetching: source.isFetching,
+    error: source.error,
+    refetch: source.refetch
+  }
+
+  provide(PersonKey, context)
+
+  return context
+}
+
+function usePersonDbSync(personId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
   useEvent('db.updated', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'persons' && entityId === currentId) {
+    if (table === 'persons' && entityId === toValue(personId)) {
       refetch()
     }
     if (
@@ -182,26 +217,64 @@ export function usePersonProvider(
   })
 
   useEvent('db.deleted', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'persons' && entityId === currentId) {
+    if (table === 'persons' && entityId === toValue(personId)) {
       refetch()
     }
   })
+}
 
-  const context: PersonContext = {
-    person,
-    tags,
-    games,
-    characters,
-    isLoading,
+// =============================================================================
+// Provider Composables
+// =============================================================================
+
+/**
+ * Provide person data on the route surface (data settled during navigation).
+ */
+export function usePersonRouteProvider(): PersonProviderReturn {
+  const route = useRoute()
+  const personId = computed(() => route.params.personId as string)
+  const { data, error, isFetching, refetch } = personDetailData()
+
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  watch(showNsfw, () => void refetch())
+
+  const spoilersRevealed = computed({
+    get: () => routeSpoilersRevealed.value,
+    set: (value) => {
+      routeSpoilersRevealed.value = value
+      void refetch()
+    }
+  })
+
+  const context = providePersonContext({
+    data,
+    isLoading: ref(false),
     isFetching,
     error,
     refetch
-  }
+  })
+  usePersonDbSync(personId, refetch)
 
-  provide(PersonKey, context)
+  return { ...context, spoilersRevealed }
+}
 
-  return context
+/**
+ * Provide person data on the dialog surface (fetches after mount).
+ */
+export function usePersonDialogProvider(personId: MaybeRefOrGetter<string>): PersonProviderReturn {
+  const id = toRef(personId)
+  const spoilersRevealed = ref(false)
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+
+  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
+    () => fetchPersonData(toValue(id), spoilersRevealed.value, showNsfw.value),
+    { watch: [id, spoilersRevealed, showNsfw] }
+  )
+
+  const context = providePersonContext({ data, isLoading, isFetching, error, refetch })
+  usePersonDbSync(id, refetch)
+
+  return { ...context, spoilersRevealed }
 }
 
 // =============================================================================
@@ -211,7 +284,7 @@ export function usePersonProvider(
 export function usePerson(): PersonContext {
   const context = inject(PersonKey)
   if (!context) {
-    throw new Error('usePerson() must be used within a component that called usePersonProvider()')
+    throw new Error('usePerson() must be used within a component that provided the person context')
   }
   return context
 }

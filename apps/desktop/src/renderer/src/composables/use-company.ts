@@ -2,23 +2,28 @@
  * Company data composable
  *
  * Provides company data with all related entities using Provider/Consumer pattern.
- * Replaces React's CompanyContext.
+ * Two provider surfaces share one fetcher, context assembly, and db sync:
+ * route pages consume the navigation-time loader, dialogs fetch after mount.
  */
 
 import {
   provide,
   inject,
+  ref,
   toRef,
   toValue,
   computed,
+  watch,
   type InjectionKey,
   type Ref,
   type MaybeRefOrGetter,
   type ComputedRef
 } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { eq, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
+import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
@@ -43,6 +48,11 @@ export interface CompanyContext {
   isFetching: Ref<boolean>
   error: Ref<string | null>
   refetch: () => Promise<void>
+}
+
+export interface CompanyProviderReturn extends CompanyContext {
+  /** Spoiler reveal state owned by the provider; toggling refetches (SWR) */
+  spoilersRevealed: Ref<boolean>
 }
 
 // =============================================================================
@@ -106,30 +116,55 @@ async function fetchCompanyData(
 }
 
 // =============================================================================
-// Provider Composable
+// Route Loader
 // =============================================================================
 
-export function useCompanyProvider(
-  companyId: MaybeRefOrGetter<string>,
-  spoilersRevealed: MaybeRefOrGetter<boolean> = false
-): CompanyContext {
-  const id = toRef(companyId)
-  const revealed = computed(() => toValue(spoilersRevealed))
-  const preferencesStore = usePreferencesStore()
-  const { showNsfw } = storeToRefs(preferencesStore)
+// Route-surface spoiler state lives beside the loader so the navigation-time
+// fetch reads a consistent value; it resets whenever a different entity loads.
+let lastRouteCompanyId: string | null = null
+const routeSpoilersRevealed = ref(false)
 
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchCompanyData(toValue(id), revealed.value, showNsfw.value),
-    { watch: [id, revealed, showNsfw] }
-  )
+export const companyDetailData = defineRouteData((route) => {
+  const companyId = route.params.companyId as string
+  if (companyId !== lastRouteCompanyId) {
+    lastRouteCompanyId = companyId
+    routeSpoilersRevealed.value = false
+  }
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  return fetchCompanyData(companyId, routeSpoilersRevealed.value, showNsfw.value)
+})
 
-  const company = computed(() => data.value?.company ?? null)
-  const tags = computed(() => data.value?.tags ?? [])
-  const games = computed(() => data.value?.games ?? [])
+// =============================================================================
+// Shared Internals
+// =============================================================================
 
+interface CompanyDataSource {
+  data: Readonly<Ref<CompanyData | null | undefined>>
+  isLoading: Ref<boolean>
+  isFetching: Ref<boolean>
+  error: Ref<string | null>
+  refetch: () => Promise<void>
+}
+
+function provideCompanyContext(source: CompanyDataSource): CompanyContext {
+  const context: CompanyContext = {
+    company: computed(() => source.data.value?.company ?? null),
+    tags: computed(() => source.data.value?.tags ?? []),
+    games: computed(() => source.data.value?.games ?? []),
+    isLoading: source.isLoading,
+    isFetching: source.isFetching,
+    error: source.error,
+    refetch: source.refetch
+  }
+
+  provide(CompanyKey, context)
+
+  return context
+}
+
+function useCompanyDbSync(companyId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
   useEvent('db.updated', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'companies' && entityId === currentId) {
+    if (table === 'companies' && entityId === toValue(companyId)) {
       refetch()
     }
     if (table === 'company_tag_links' || table === 'game_company_links') {
@@ -144,25 +179,66 @@ export function useCompanyProvider(
   })
 
   useEvent('db.deleted', ({ table, id: entityId }) => {
-    const currentId = toValue(id)
-    if (table === 'companies' && entityId === currentId) {
+    if (table === 'companies' && entityId === toValue(companyId)) {
       refetch()
     }
   })
+}
 
-  const context: CompanyContext = {
-    company,
-    tags,
-    games,
-    isLoading,
+// =============================================================================
+// Provider Composables
+// =============================================================================
+
+/**
+ * Provide company data on the route surface (data settled during navigation).
+ */
+export function useCompanyRouteProvider(): CompanyProviderReturn {
+  const route = useRoute()
+  const companyId = computed(() => route.params.companyId as string)
+  const { data, error, isFetching, refetch } = companyDetailData()
+
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  watch(showNsfw, () => void refetch())
+
+  const spoilersRevealed = computed({
+    get: () => routeSpoilersRevealed.value,
+    set: (value) => {
+      routeSpoilersRevealed.value = value
+      void refetch()
+    }
+  })
+
+  const context = provideCompanyContext({
+    data,
+    isLoading: ref(false),
     isFetching,
     error,
     refetch
-  }
+  })
+  useCompanyDbSync(companyId, refetch)
 
-  provide(CompanyKey, context)
+  return { ...context, spoilersRevealed }
+}
 
-  return context
+/**
+ * Provide company data on the dialog surface (fetches after mount).
+ */
+export function useCompanyDialogProvider(
+  companyId: MaybeRefOrGetter<string>
+): CompanyProviderReturn {
+  const id = toRef(companyId)
+  const spoilersRevealed = ref(false)
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+
+  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
+    () => fetchCompanyData(toValue(id), spoilersRevealed.value, showNsfw.value),
+    { watch: [id, spoilersRevealed, showNsfw] }
+  )
+
+  const context = provideCompanyContext({ data, isLoading, isFetching, error, refetch })
+  useCompanyDbSync(id, refetch)
+
+  return { ...context, spoilersRevealed }
 }
 
 // =============================================================================
@@ -172,7 +248,9 @@ export function useCompanyProvider(
 export function useCompany(): CompanyContext {
   const context = inject(CompanyKey)
   if (!context) {
-    throw new Error('useCompany() must be used within a component that called useCompanyProvider()')
+    throw new Error(
+      'useCompany() must be used within a component that provided the company context'
+    )
   }
   return context
 }

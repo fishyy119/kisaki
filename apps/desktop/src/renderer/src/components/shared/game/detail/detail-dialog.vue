@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
@@ -14,7 +14,7 @@ import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
-import { useGameProvider } from '@renderer/composables/use-game'
+import { useGameDialogProvider } from '@renderer/composables/use-game'
 import { useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
@@ -44,25 +44,14 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 // =============================================================================
-// Spoiler State
-// =============================================================================
-
-const spoilersRevealed = ref(false)
-const spoilerConfirmOpen = ref(false)
-
-watch(open, (isOpen) => {
-  if (isOpen) return
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
 // Game Context (Provider)
 // =============================================================================
 
 const gameId = computed(() => props.gameId)
-const { game, isLoading, error } = useGameProvider(gameId, spoilersRevealed)
+const { game, isLoading, error, spoilersRevealed } = useGameDialogProvider(gameId)
 const state = useRenderState(isLoading, error, game)
+
+const spoilerConfirmOpen = ref(false)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'games' && id === props.gameId) {

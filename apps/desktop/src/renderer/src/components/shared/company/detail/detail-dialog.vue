@@ -3,7 +3,7 @@
   Dialog view for company details.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { eq } from 'drizzle-orm'
 import { notify } from '@renderer/core/notify'
@@ -22,7 +22,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useCompanyProvider, useEvent, useRenderState } from '@renderer/composables'
+import { useCompanyDialogProvider, useEvent, useRenderState } from '@renderer/composables'
 import CompanyDetailContent from './detail-content.vue'
 import { CompanyScoreFormDialog } from '../forms'
 import { CompanyDropdownMenu } from '../menus'
@@ -35,21 +35,12 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-// =============================================================================
-// Spoiler State
-// =============================================================================
-
-const spoilersRevealed = ref(false)
-const spoilerConfirmOpen = ref(false)
-
-watch(open, (isOpen) => {
-  if (isOpen) return
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-const { company, isLoading, error } = useCompanyProvider(() => props.companyId, spoilersRevealed)
+const { company, isLoading, error, spoilersRevealed } = useCompanyDialogProvider(
+  () => props.companyId
+)
 const state = useRenderState(isLoading, error, company)
+
+const spoilerConfirmOpen = ref(false)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'companies' && id === props.companyId) {

@@ -3,14 +3,14 @@
   Dialog view for person details.
 -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { persons } from '@shared/db'
 import { eq } from 'drizzle-orm'
-import { usePersonProvider } from '@renderer/composables/use-person'
+import { usePersonDialogProvider } from '@renderer/composables/use-person'
 import { useEvent, useRenderState } from '@renderer/composables'
 import {
   Dialog,
@@ -39,25 +39,14 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 // =============================================================================
-// Spoiler State
-// =============================================================================
-
-const spoilersRevealed = ref(false)
-const spoilerConfirmOpen = ref(false)
-
-watch(open, (isOpen) => {
-  if (isOpen) return
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
 // Person Context (Provider)
 // =============================================================================
 
 const personId = computed(() => props.personId)
-const { person, isLoading, error } = usePersonProvider(personId, spoilersRevealed)
+const { person, isLoading, error, spoilersRevealed } = usePersonDialogProvider(personId)
 const state = useRenderState(isLoading, error, person)
+
+const spoilerConfirmOpen = ref(false)
 
 useEvent('db.deleted', ({ table, id }) => {
   if (table === 'persons' && id === props.personId) {

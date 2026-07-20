@@ -5,7 +5,7 @@
  * Full page view for person detail, used by routing.
  */
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
@@ -19,7 +19,7 @@ import {
   PersonDropdownMenu,
   PersonDetailContent
 } from '@renderer/components/shared/person'
-import { useAmbientLight, useEvent, usePersonProvider, useRenderState } from '@renderer/composables'
+import { useAmbientLight, useEvent, usePersonRouteProvider } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { persons } from '@shared/db'
@@ -33,32 +33,16 @@ import { getEntityIcon } from '@renderer/utils/format'
 const route = useRoute()
 const router = useRouter()
 
-const personId = computed(() => route.params.personId as string | undefined)
+const personId = computed(() => route.params.personId as string)
 const backTo = computed(() => (route.query.from as string) || '/library')
 
-// Redirect if no personId
-if (!personId.value) {
-  router.push(backTo.value)
-}
-
 // =============================================================================
-// Spoiler State
+// Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const spoilersRevealed = ref(false)
+const { person, error, spoilersRevealed } = usePersonRouteProvider()
+
 const spoilerConfirmOpen = ref(false)
-
-watch(personId, () => {
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
-// Provider
-// =============================================================================
-
-const { person, isLoading, error } = usePersonProvider(() => personId.value ?? '', spoilersRevealed)
-const state = useRenderState(isLoading, error, person)
 
 useAmbientLight(() =>
   person.value?.photoFile
@@ -93,8 +77,8 @@ const isPendingFavorite = ref(false)
 // =============================================================================
 
 async function handleToggleFavorite() {
-  if (isPendingFavorite.value || state.value !== 'success') return
-  const current = person.value!
+  if (isPendingFavorite.value || !person.value) return
+  const current = person.value
   isPendingFavorite.value = true
   try {
     await db
@@ -123,11 +107,16 @@ function handleRevealSpoilersConfirm() {
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!person"
+    state="not-found"
     :icon="getEntityIcon('person')"
     title="人员不存在"
     class="h-full bg-background"
@@ -135,7 +124,7 @@ function handleRevealSpoilersConfirm() {
 
   <!-- Content -->
   <div
-    v-else-if="person"
+    v-else
     class="h-full flex flex-col"
   >
     <!-- Header -->

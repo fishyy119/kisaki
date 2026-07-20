@@ -18,9 +18,10 @@ import {
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import { useAsyncData, useEvent, useRenderState } from '@renderer/composables'
+import { useEvent } from '@renderer/composables'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
+import { useAutomations } from '../composables'
 import {
   AutomationDetailsDialog,
   AutomationFormDialog,
@@ -45,7 +46,6 @@ const sourceFilter = ref<AutomationSourceFilter>('all')
 const sortField = ref<AutomationSortField>('createdAt')
 const sortDirection = ref<AutomationSortDirection>('desc')
 
-const runningAutomationIds = ref(new Set<string>())
 const busyAutomationIds = ref(new Set<string>())
 const formDialogOpen = ref(false)
 const detailsDialogOpen = ref(false)
@@ -55,21 +55,15 @@ const detailsAutomation = ref<Automation | null>(null)
 const pendingDeleteAutomation = ref<Automation | null>(null)
 const deleting = ref(false)
 
+// Data (settled during navigation by the route loader)
 const {
-  data: automations,
-  isLoading,
-  isFetching,
+  automations: automationList,
+  commands: commandList,
+  runningAutomationIds,
   error,
-  refetch: refetchAutomations
-} = useAsyncData(fetchAutomations)
-
-const { data: commands, refetch: refetchCommands } = useAsyncData(() =>
-  ipcManager.invoke('command:list').then(unwrapIpcData)
-)
-
-const state = useRenderState(isLoading, error, automations)
-const automationList = computed(() => automations.value ?? [])
-const commandList = computed(() => commands.value ?? [])
+  isFetching,
+  refetch
+} = useAutomations()
 const commandById = computed(() => {
   const map = new Map<string, CommandListItem>()
   for (const command of commandList.value) {
@@ -133,32 +127,23 @@ const selectedDetailsCommand = computed(() =>
     : undefined
 )
 
-async function fetchAutomations(): Promise<Automation[]> {
-  const [items, runningIds] = await Promise.all([
-    ipcManager.invoke('automation:list').then(unwrapIpcData),
-    ipcManager.invoke('automation:list-running').then(unwrapIpcData)
-  ])
-  runningAutomationIds.value = new Set(runningIds)
-  return items
-}
-
 useEvent('automation.changed', () => {
-  void refreshAll()
+  void refetch()
 })
 
 useEvent('automation.deleted', ({ automationId }) => {
   removeFromSet(runningAutomationIds, automationId)
-  void refreshAll()
+  void refetch()
 })
 
 useEvent('automation.started', ({ automationId }) => {
   addToSet(runningAutomationIds, automationId)
-  void refetchAutomations()
+  void refetch()
 })
 
 useEvent('automation.finished', (record) => {
   removeFromSet(runningAutomationIds, record.automationId)
-  void refetchAutomations()
+  void refetch()
 })
 
 function compareAutomations(left: Automation, right: Automation): number {
@@ -217,12 +202,8 @@ function requestDeleteAutomation(automation: Automation) {
   deleteDialogOpen.value = true
 }
 
-async function refreshAll() {
-  await Promise.all([refetchAutomations(), refetchCommands()])
-}
-
 async function handleSaved() {
-  await refreshAll()
+  await refetch()
 }
 
 async function handleRun(automation: Automation) {
@@ -241,7 +222,7 @@ async function handleRun(automation: Automation) {
     notify.error('运行自动化失败', error instanceof Error ? error.message : String(error))
   } finally {
     removeFromSet(runningAutomationIds, automation.id)
-    await refetchAutomations()
+    await refetch()
   }
 }
 
@@ -268,7 +249,7 @@ async function handleSetEnabled(automation: Automation, enabled: boolean) {
   try {
     unwrapIpcData(await ipcManager.invoke('automation:set-enabled', automation.id, enabled))
     notify.success(enabled ? '自动化已启用' : '自动化已禁用')
-    await refetchAutomations()
+    await refetch()
   } catch (error) {
     log.error('Failed to toggle Automation:', error)
     notify.error('更新自动化失败', error instanceof Error ? error.message : String(error))
@@ -290,7 +271,7 @@ async function handleDeleteConfirmed() {
     notify.success('自动化已删除')
     deleteDialogOpen.value = false
     pendingDeleteAutomation.value = null
-    await refetchAutomations()
+    await refetch()
   } catch (error) {
     log.error('Failed to delete Automation:', error)
     notify.error('删除自动化失败', error instanceof Error ? error.message : String(error))
@@ -328,7 +309,7 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
       :running-automations="runningAutomationIds.size"
       :refreshing="isFetching"
       @create="openCreateDialog"
-      @refresh="refreshAll"
+      @refresh="refetch"
     />
 
     <div class="flex min-h-0 flex-1 flex-col bg-background">
@@ -343,8 +324,8 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
 
       <div class="min-h-0 flex-1">
         <StateView
-          v-if="state === 'loading' || state === 'error'"
-          :state="state"
+          v-if="error"
+          state="error"
           :error="error"
           class="h-full"
         />

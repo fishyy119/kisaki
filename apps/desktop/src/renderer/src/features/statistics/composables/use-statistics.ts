@@ -5,6 +5,8 @@
  * Handles report type switching (via route) and period navigation.
  * Date range is computed based on report type and current period; period
  * reports also load the previous period's sessions for comparison.
+ * Data loads during navigation (route loader); period switching triggers a
+ * non-blocking SWR refetch.
  */
 
 import {
@@ -17,11 +19,10 @@ import {
   type ComputedRef,
   type Ref
 } from 'vue'
-import { useRoute } from 'vue-router'
 import { desc, gte, lte, and, inArray, eq, type SQL } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
-import { useAsyncData } from '@renderer/composables/use-async-data'
+import { defineRouteData } from '@renderer/core/route-data'
 import { useEvent } from '@renderer/composables/use-event'
 import type { Game, GameSession, Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
@@ -40,11 +41,11 @@ import type { ReportType, Period, PeriodDisplay } from '../types'
 // =============================================================================
 
 export interface StatisticsContext {
-  // Report type (derived from route)
+  // Report type (derived from the loaded route data)
   reportType: ComputedRef<ReportType>
 
   // Period state (for weekly/monthly/yearly)
-  currentPeriod: Ref<Period>
+  currentPeriod: ComputedRef<Period>
   setCurrentPeriod: (period: Period) => void
   periodDisplay: ComputedRef<PeriodDisplay>
 
@@ -68,7 +69,6 @@ export interface StatisticsContext {
   gameCollectionLinks: ComputedRef<{ gameId: string; collectionId: string }[]>
 
   // State
-  isLoading: Ref<boolean>
   isFetching: Ref<boolean>
   error: Ref<string | null>
   refetch: () => Promise<void>
@@ -204,86 +204,94 @@ async function fetchStatisticsData(
 }
 
 // =============================================================================
+// Route Loader
+// =============================================================================
+
+interface StatisticsData {
+  reportType: ReportType
+  period: Period
+  current: FetchedData
+  previousSessions: GameSession[] | null
+  allTime: FetchedData | null
+}
+
+// In-page period selection lives beside the loader so the navigation-time
+// fetch reads a consistent value; it resets whenever the report type changes.
+let lastReportType: ReportType | null = null
+const selectedPeriod = ref<Period>(getCurrentPeriod('overview'))
+
+export const statisticsData = defineRouteData(async (route): Promise<StatisticsData> => {
+  const reportType = getReportTypeFromRoute(route.name)
+  if (reportType !== lastReportType) {
+    lastReportType = reportType
+    selectedPeriod.value = getCurrentPeriod(reportType)
+  }
+
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  const period = selectedPeriod.value
+  const dateRange = calculatePeriodDateRange(reportType, period)
+  // Overview has no natural predecessor; period reports compare to the
+  // previous period and overview additionally loads all-time data.
+  const previousRange =
+    reportType === 'overview'
+      ? null
+      : calculatePeriodDateRange(reportType, shiftPeriod(reportType, period, -1))
+
+  const [current, previousSessions, allTime] = await Promise.all([
+    fetchStatisticsData(dateRange, showNsfw.value),
+    previousRange ? fetchSessionsInRange(previousRange, showNsfw.value) : Promise.resolve(null),
+    reportType === 'overview' ? fetchStatisticsData(null, showNsfw.value) : Promise.resolve(null)
+  ])
+
+  return { reportType, period, current, previousSessions, allTime }
+})
+
+// =============================================================================
 // Provider Composable
 // =============================================================================
 
 /**
- * Provide statistics data context
+ * Provide statistics data context.
  *
- * @example
- * ```ts
- * const { sessions, stats, reportType } = useStatisticsProvider()
- * ```
+ * Data is loaded by `statisticsData` during navigation. Period switching and
+ * NSFW preference changes trigger a non-blocking SWR refetch; derived state
+ * (period, date range, display) follows the loaded snapshot so charts and
+ * labels always match the sessions on screen.
  */
 export function useStatisticsProvider(): StatisticsContext {
-  const route = useRoute()
-  const preferencesStore = usePreferencesStore()
-  const { showNsfw } = storeToRefs(preferencesStore)
+  const { data, error, isFetching, refetch } = statisticsData()
 
-  // Report type derived from route
-  const reportType = computed<ReportType>(() => getReportTypeFromRoute(route.name))
+  const { showNsfw } = storeToRefs(usePreferencesStore())
+  watch(showNsfw, () => void refetch())
 
-  // Period state - initialized based on report type
-  const currentPeriod = ref<Period>(getCurrentPeriod(reportType.value))
-
-  // Reset period when report type changes
-  watch(reportType, (newType) => {
-    currentPeriod.value = getCurrentPeriod(newType)
-  })
-
-  // Computed date range
+  const reportType = computed<ReportType>(() => data.value?.reportType ?? 'overview')
+  const currentPeriod = computed<Period>(() => data.value?.period ?? selectedPeriod.value)
   const dateRange = computed(() => calculatePeriodDateRange(reportType.value, currentPeriod.value))
-
-  // Previous period range for comparison; overview has no natural predecessor
-  const previousDateRange = computed(() => {
-    if (reportType.value === 'overview') return null
-    return calculatePeriodDateRange(
-      reportType.value,
-      shiftPeriod(reportType.value, currentPeriod.value, -1)
-    )
-  })
-
-  // Period display
   const periodDisplay = computed(() => formatPeriodDisplay(reportType.value, currentPeriod.value))
 
-  // Fetch data based on computed date range
-  const { data, isLoading, isFetching, error, refetch } = useAsyncData(
-    () => fetchStatisticsData(dateRange.value, showNsfw.value),
-    { watch: [dateRange, showNsfw] }
-  )
-
-  // Previous period sessions (comparison only, so sessions suffice)
-  const { data: previousData, refetch: refetchPrevious } = useAsyncData(
-    () => fetchSessionsInRange(previousDateRange.value, showNsfw.value),
-    { enabled: () => previousDateRange.value !== null, watch: [previousDateRange, showNsfw] }
-  )
-
-  // For overview: fetch all-time data separately
-  const { data: allTimeData, refetch: refetchAllTime } = useAsyncData(
-    () => fetchStatisticsData(null, showNsfw.value),
-    { enabled: () => reportType.value === 'overview', watch: [showNsfw] }
-  )
+  const setCurrentPeriod = (period: Period): void => {
+    selectedPeriod.value = period
+    void refetch()
+  }
 
   // Computed data maps
-  const sessions = computed(() => data.value?.sessions ?? [])
+  const sessions = computed(() => data.value?.current.sessions ?? [])
 
   const games = computed(() => {
     const map = new Map<string, Game>()
     // Merge games from both data sources for overview
-    for (const game of data.value?.games ?? []) {
+    for (const game of data.value?.current.games ?? []) {
       map.set(game.id, game)
     }
-    if (reportType.value === 'overview') {
-      for (const game of allTimeData.value?.games ?? []) {
-        map.set(game.id, game)
-      }
+    for (const game of data.value?.allTime?.games ?? []) {
+      map.set(game.id, game)
     }
     return map
   })
 
   const collections = computed(() => {
     const map = new Map<string, Collection>()
-    for (const collection of data.value?.collections ?? []) {
+    for (const collection of data.value?.current.collections ?? []) {
       map.set(collection.id, collection)
     }
     return map
@@ -292,48 +300,37 @@ export function useStatisticsProvider(): StatisticsContext {
   // Expose link data for local computation in components
   const gameCollectionLinks = computed(() => {
     if (reportType.value === 'overview') {
-      return allTimeData.value?.gameCollectionLinks ?? []
+      return data.value?.allTime?.gameCollectionLinks ?? []
     }
-    return data.value?.gameCollectionLinks ?? []
+    return data.value?.current.gameCollectionLinks ?? []
   })
 
   // Computed stats
   const stats = computed(() => computeStats(sessions.value, games.value))
 
-  const previousSessions = computed(() => {
-    if (previousDateRange.value === null) return null
-    return previousData.value ?? []
-  })
+  const previousSessions = computed(() => data.value?.previousSessions ?? null)
 
   // All-time data for overview
-  const allTimeSessions = computed(() => allTimeData.value?.sessions ?? [])
+  const allTimeSessions = computed(() => data.value?.allTime?.sessions ?? [])
   const allTimeStats = computed(() => computeStats(allTimeSessions.value, games.value))
-
-  function refetchAll(): void {
-    void refetch()
-    if (previousDateRange.value !== null) void refetchPrevious()
-    if (reportType.value === 'overview') void refetchAllTime()
-  }
 
   // Event listeners for auto-refresh
   useEvent('db.inserted', ({ table }) => {
-    if (table === 'game_sessions') refetchAll()
+    if (table === 'game_sessions') void refetch()
   })
 
   useEvent('db.updated', ({ table }) => {
-    if (table === 'game_sessions' || table === 'games') refetchAll()
+    if (table === 'game_sessions' || table === 'games') void refetch()
   })
 
   useEvent('db.deleted', ({ table }) => {
-    if (table === 'game_sessions') refetchAll()
+    if (table === 'game_sessions') void refetch()
   })
 
   const context: StatisticsContext = {
     reportType,
     currentPeriod,
-    setCurrentPeriod: (period) => {
-      currentPeriod.value = period
-    },
+    setCurrentPeriod,
     periodDisplay,
     dateRange,
     sessions,
@@ -344,7 +341,6 @@ export function useStatisticsProvider(): StatisticsContext {
     allTimeSessions,
     allTimeStats,
     gameCollectionLinks,
-    isLoading,
     isFetching,
     error,
     refetch

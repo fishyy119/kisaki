@@ -7,17 +7,14 @@
  */
 
 import { useScannerProvider } from '../composables'
-import { useRenderState } from '@renderer/composables'
-import { StateView } from '@renderer/components/ui/state-view'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ScannerHeader, ScannerEmptyState, ScannerItem } from '../components'
 
 // =============================================================================
-// Context Provider
+// Context Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const { scanners, isLoading } = useScannerProvider()
-const state = useRenderState(isLoading, null, scanners)
+const { scanners } = useScannerProvider()
 
 const SCANNER_TABLE_COLUMNS = ['', '6rem', '8rem', '7rem', '7rem', '5rem', '11rem']
 </script>
@@ -29,15 +26,8 @@ const SCANNER_TABLE_COLUMNS = ['', '6rem', '8rem', '7rem', '7rem', '5rem', '11re
 
     <!-- Main content - Table-like list -->
     <div class="flex-1 min-h-0 bg-background">
-      <!-- Loading -->
-      <StateView
-        v-if="state === 'loading'"
-        state="loading"
-        class="h-full"
-      />
-
       <!-- Empty -->
-      <ScannerEmptyState v-else-if="scanners.length === 0" />
+      <ScannerEmptyState v-if="scanners.length === 0" />
 
       <!-- Scanner list -->
       <Table

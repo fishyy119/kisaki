@@ -10,8 +10,8 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import { useAsyncData, useRenderState } from '@renderer/composables'
 import { useTaskRunStore } from '@renderer/stores'
+import { extensionRepositoriesData } from '../../composables'
 import RepositoryAddDialog from './repository-add-dialog.vue'
 import RepositoryDetailsDialog from './repository-details-dialog.vue'
 import RepositoryPanelRow from './repository-panel-row.vue'
@@ -33,16 +33,8 @@ const removeDialogOpen = ref(false)
 const selectedRepositoryId = ref<string | null>(null)
 const repositoryToRemove = ref<ExtensionRepositoryInfo | null>(null)
 
-const {
-  data: repositories,
-  isLoading,
-  error,
-  refetch
-} = useAsyncData(
-  async () => unwrapIpcData(await ipcManager.invoke('extension:list-repositories')),
-  { immediate: true }
-)
-const state = useRenderState(isLoading, error, repositories, { preset: 'network' })
+// Data settled during navigation by the route loader
+const { data: repositories, error, refetch } = extensionRepositoriesData()
 const repositoryList = computed(() =>
   [...(repositories.value ?? [])].sort((left, right) => left.priority - right.priority)
 )
@@ -318,8 +310,9 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
 
     <div class="flex-1 overflow-auto">
       <StateView
-        v-if="state === 'loading'"
-        state="loading"
+        v-if="error"
+        state="error"
+        :error="error"
         class="h-48"
       />
 

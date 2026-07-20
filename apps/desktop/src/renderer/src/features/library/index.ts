@@ -11,3 +11,9 @@ export {
   UncategorizedPage,
   FavoritesPage
 } from './pages'
+export {
+  showcaseSectionsData,
+  favoritesData,
+  uncategorizedData,
+  collectionsListData
+} from './composables'

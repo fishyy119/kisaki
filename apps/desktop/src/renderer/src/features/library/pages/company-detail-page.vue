@@ -5,7 +5,7 @@
  * Full page view for company detail, used by routing.
  */
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
@@ -19,12 +19,7 @@ import {
   CompanyDropdownMenu,
   CompanyDetailContent
 } from '@renderer/components/shared/company'
-import {
-  useAmbientLight,
-  useCompanyProvider,
-  useEvent,
-  useRenderState
-} from '@renderer/composables'
+import { useAmbientLight, useCompanyRouteProvider, useEvent } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { companies } from '@shared/db'
@@ -38,35 +33,16 @@ import { getEntityIcon } from '@renderer/utils/format'
 const route = useRoute()
 const router = useRouter()
 
-const companyId = computed(() => route.params.companyId as string | undefined)
+const companyId = computed(() => route.params.companyId as string)
 const backTo = computed(() => (route.query.from as string) || '/library')
 
-// Redirect if no companyId
-if (!companyId.value) {
-  router.push(backTo.value)
-}
-
 // =============================================================================
-// Spoiler State
+// Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const spoilersRevealed = ref(false)
+const { company, error, spoilersRevealed } = useCompanyRouteProvider()
+
 const spoilerConfirmOpen = ref(false)
-
-watch(companyId, () => {
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
-// Provider
-// =============================================================================
-
-const { company, isLoading, error } = useCompanyProvider(
-  () => companyId.value ?? '',
-  spoilersRevealed
-)
-const state = useRenderState(isLoading, error, company)
 
 useAmbientLight(() =>
   company.value?.logoFile
@@ -101,8 +77,8 @@ const isPendingFavorite = ref(false)
 // =============================================================================
 
 async function handleToggleFavorite() {
-  if (isPendingFavorite.value || state.value !== 'success') return
-  const current = company.value!
+  if (isPendingFavorite.value || !company.value) return
+  const current = company.value
   isPendingFavorite.value = true
   try {
     await db
@@ -131,11 +107,16 @@ function handleRevealSpoilersConfirm() {
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!company"
+    state="not-found"
     :icon="getEntityIcon('company')"
     title="公司不存在"
     class="h-full bg-background"
@@ -143,7 +124,7 @@ function handleRevealSpoilersConfirm() {
 
   <!-- Content -->
   <div
-    v-else-if="company"
+    v-else
     class="h-full flex flex-col"
   >
     <!-- Header -->

@@ -23,7 +23,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useCollectionProvider, useEvent, useRenderState } from '@renderer/composables'
+import { useCollectionDialogProvider, useEvent, useRenderState } from '@renderer/composables'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import CollectionDetailContent from './detail-content.vue'
 import { CollectionDropdownMenu } from '../menus'
@@ -50,7 +50,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 // Establish provider
 const { collection, entityType, entityCounts, setEntityType, isLoading, error } =
-  useCollectionProvider(() => props.collectionId)
+  useCollectionDialogProvider(() => props.collectionId)
 const state = useRenderState(isLoading, error, collection)
 
 useEvent('db.deleted', ({ table, id }) => {

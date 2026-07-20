@@ -6,16 +6,14 @@ Boundary: owns installed extension list, update checks, and update actions.
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { StateView } from '@renderer/components/ui/state-view'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
-import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData, useRenderState } from '@renderer/composables'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
+import { installedExtensionsData } from '../../composables'
 import type {
   ExtensionAutomaticUpdateRunState,
-  ExtensionRuntimeStateChangedEvent,
   ExtensionUpdateCheckResult
 } from '@shared/extension'
 
@@ -26,22 +24,8 @@ const updateCheck = ref<ExtensionUpdateCheckResult>({ updates: [], unavailable: 
 const automaticUpdateRun = ref<ExtensionAutomaticUpdateRunState>(createIdleAutomaticUpdateRun())
 const checkingUpdates = ref(false)
 
-const {
-  data: extensions,
-  isLoading,
-  error,
-  refetch
-} = useAsyncData(
-  async () => {
-    const [catalog] = await Promise.all([
-      ipcManager.invoke('extension:get-installed-packages').then(unwrapIpcData),
-      refreshExtensionContributionSnapshot()
-    ])
-    return catalog
-  },
-  { immediate: true }
-)
-const state = useRenderState(isLoading, error, extensions, { preset: 'network' })
+// Data settled during navigation by the route loader
+const { data: extensions, error, refetch } = installedExtensionsData()
 
 const extensionsList = computed(() => extensions.value ?? [])
 const updates = computed(() => updateCheck.value.updates)
@@ -54,12 +38,9 @@ onMounted(() => {
   unsubscribeInstallationsChanged = ipcManager.on('extension:installations-changed', () => {
     void refreshInstalledCatalog()
   })
-  unsubscribeRuntimeStateChanged = ipcManager.on(
-    'extension:runtime-state-changed',
-    (_event, state) => {
-      applyRuntimeStateChanged(state)
-    }
-  )
+  unsubscribeRuntimeStateChanged = ipcManager.on('extension:runtime-state-changed', () => {
+    void refetch()
+  })
   unsubscribeAutomaticUpdateRunChanged = ipcManager.on(
     'extension:automatic-update-run-changed',
     (_event, state) => {
@@ -86,32 +67,6 @@ async function refreshInstalledCatalog() {
 
 async function handleRefresh() {
   await refreshInstalledCatalog()
-}
-
-function applyRuntimeStateChanged(state: ExtensionRuntimeStateChangedEvent) {
-  const current = extensions.value
-  if (!current) {
-    return
-  }
-
-  let changed = false
-  const next = current.map((extension) => {
-    if (extension.id !== state.extensionId) {
-      return extension
-    }
-
-    changed = true
-    return {
-      ...extension,
-      runtimeStatus: state.runtimeStatus,
-      runtimeError: state.runtimeError,
-      runtimeDiagnostics: state.runtimeDiagnostics
-    }
-  })
-
-  if (changed) {
-    extensions.value = next
-  }
 }
 
 async function handleCheckUpdates() {
@@ -225,8 +180,9 @@ function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
     <!-- Extension Grid -->
     <div class="flex-1 overflow-auto">
       <StateView
-        v-if="state === 'loading'"
-        state="loading"
+        v-if="error"
+        state="error"
+        :error="error"
         class="h-48"
       />
 

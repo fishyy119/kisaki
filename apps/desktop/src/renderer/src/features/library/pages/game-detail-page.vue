@@ -5,7 +5,7 @@
  * Full page view for game detail, used by routing.
  */
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
@@ -29,7 +29,7 @@ import {
   GameScoreFormDialog,
   GameDetailContent
 } from '@renderer/components/shared/game'
-import { useAmbientLight, useEvent, useGameProvider, useRenderState } from '@renderer/composables'
+import { useAmbientLight, useEvent, useGameRouteProvider } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
@@ -57,32 +57,16 @@ const STATUS_OPTIONS: { value: Status; label: string }[] = [
 const route = useRoute()
 const router = useRouter()
 
-const gameId = computed(() => route.params.gameId as string | undefined)
+const gameId = computed(() => route.params.gameId as string)
 const backTo = computed(() => (route.query.from as string) || '/library')
 
-// Redirect if no gameId
-if (!gameId.value) {
-  router.push(backTo.value)
-}
-
 // =============================================================================
-// Spoiler State
+// Provider (data settled during navigation by the route loader)
 // =============================================================================
 
-const spoilersRevealed = ref(false)
+const { game, error, spoilersRevealed } = useGameRouteProvider()
+
 const spoilerConfirmOpen = ref(false)
-
-watch(gameId, () => {
-  spoilersRevealed.value = false
-  spoilerConfirmOpen.value = false
-})
-
-// =============================================================================
-// Provider
-// =============================================================================
-
-const { game, isLoading, error } = useGameProvider(() => gameId.value ?? '', spoilersRevealed)
-const state = useRenderState(isLoading, error, game)
 
 useAmbientLight(() =>
   game.value?.coverFile
@@ -115,8 +99,8 @@ const isPendingStatus = ref(false)
 // =============================================================================
 
 async function handleToggleFavorite() {
-  if (isPendingFavorite.value || state.value !== 'success') return
-  const current = game.value!
+  if (isPendingFavorite.value || !game.value) return
+  const current = game.value
   isPendingFavorite.value = true
   try {
     await db.update(games).set({ isFavorite: !current.isFavorite }).where(eq(games.id, current.id))
@@ -142,10 +126,10 @@ function handleRevealSpoilersConfirm() {
 
 // Status as a computed to track dropdown value
 const selectedStatus = computed({
-  get: () => (state.value === 'success' ? game.value?.status : undefined),
+  get: () => game.value?.status,
   set: async (status: Status | undefined) => {
-    if (isPendingStatus.value || state.value !== 'success' || !status) return
-    const current = game.value!
+    if (isPendingStatus.value || !game.value || !status) return
+    const current = game.value
     isPendingStatus.value = true
     try {
       await db.update(games).set({ status }).where(eq(games.id, current.id))
@@ -159,8 +143,8 @@ const selectedStatus = computed({
 })
 
 async function handleOpenGameDir() {
-  if (state.value !== 'success') return
-  const current = game.value!
+  if (!game.value) return
+  const current = game.value
   const pathToOpen =
     current.gameDirPath || (current.launcherMode === 'file' ? current.launcherPath : null)
   if (!pathToOpen) {
@@ -174,7 +158,6 @@ async function handleOpenGameDir() {
 }
 
 const canOpenGameDir = computed(() => {
-  if (state.value !== 'success') return false
   const current = game.value
   if (!current) return false
   return !!(current.gameDirPath || (current.launcherMode === 'file' && current.launcherPath))
@@ -182,11 +165,16 @@ const canOpenGameDir = computed(() => {
 </script>
 
 <template>
-  <!-- Loading / Error / Not Found -->
+  <!-- Error / Not Found (data settles before navigation confirms) -->
   <StateView
-    v-if="state !== 'success'"
-    :state="state"
+    v-if="error"
+    state="error"
     :error="error"
+    class="h-full bg-background"
+  />
+  <StateView
+    v-else-if="!game"
+    state="not-found"
     :icon="getEntityIcon('game')"
     title="游戏不存在"
     class="h-full bg-background"
@@ -194,7 +182,7 @@ const canOpenGameDir = computed(() => {
 
   <!-- Content -->
   <div
-    v-else-if="game"
+    v-else
     class="h-full flex flex-col"
   >
     <!-- Header -->
