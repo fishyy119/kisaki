@@ -11,6 +11,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { scanners, settings, type Scanner, type NameExtractionRule } from '@shared/db'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
@@ -69,22 +70,19 @@ const scanner = ref<Scanner | null>(null)
 const isTestDialogOpen = ref(false)
 const isRulesDialogOpen = ref(false)
 
-const typeOptions = [{ value: 'game', label: '游戏' }] as const
-const entityDepthHelp = {
-  text: '指定媒体实体在目录结构中的层级深度。0 表示扫描路径的直接子项就是实体，1 表示子目录下的项目是实体，以此类推。'
-} as const
-const scraperProfileHelp = {
-  text: '选择用于获取元数据的刮削配置。配置决定了从哪些数据源获取哪些字段的数据。'
-} as const
-const scanIntervalDescription = '设置为 0 表示不自动扫描'
-const nameExtractionRulesHelp = {
-  text: '按顺序应用正则表达式规则，从文件夹名中提取游戏名称。规则使用命名捕获组 (?<name>...) 提取名称。',
+const { m } = useI18n()
+
+const typeOptions = computed(() => [{ value: 'game', label: m.value.library.entities.game }])
+const entityDepthHelp = computed(() => ({ text: m.value.scanner.form.entityDepthHelp }))
+const scraperProfileHelp = computed(() => ({ text: m.value.scanner.form.scraperProfileHelp }))
+const nameExtractionRulesHelp = computed(() => ({
+  text: m.value.scanner.form.nameExtractionRulesHelp,
   icon: 'icon-[mdi--regex]'
-} as const
-const nameExtractionRulesLink = {
-  href: 'https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group',
-  label: '查看命名捕获组文档'
-} as const
+}))
+const nameExtractionRulesLink = computed(() => ({
+  href: 'https://developer.mozilla.org/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group',
+  label: m.value.scanner.form.nameExtractionRulesLink
+}))
 
 // Form state
 interface FormData {
@@ -188,7 +186,7 @@ async function handleSubmit() {
     !formData.value.path.trim() ||
     !formData.value.scraperProfileId
   ) {
-    notify.error('请填写必填字段')
+    notify.error(m.value.scanner.form.requiredFields)
     return
   }
 
@@ -208,7 +206,7 @@ async function handleSubmit() {
           nameExtractionRules: formData.value.nameExtractionRules
         })
         .where(eq(scanners.id, scanner.value.id))
-      notify.success('扫描器已更新')
+      notify.success(m.value.scanner.form.updated)
     } else {
       await db
         .insert(scanners)
@@ -223,11 +221,13 @@ async function handleSubmit() {
           nameExtractionRules: formData.value.nameExtractionRules
         })
         .returning({ id: scanners.id })
-      notify.success('扫描器已创建')
+      notify.success(m.value.scanner.form.created)
     }
     open.value = false
   } catch {
-    notify.error(isEdit.value ? '更新失败，请重试' : '创建失败，请重试')
+    notify.error(
+      isEdit.value ? m.value.scanner.form.updateFailed : m.value.scanner.form.createFailed
+    )
   } finally {
     isSaving.value = false
   }
@@ -270,7 +270,10 @@ async function openLink(link: { href: string }): Promise<void> {
   try {
     unwrapIpcVoid(await ipcManager.invoke('native:open-external', link.href))
   } catch (error) {
-    notify.error('打开链接失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.scanner.form.openLinkFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 </script>
@@ -279,7 +282,9 @@ async function openLink(link: { href: string }): Promise<void> {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>{{ isEdit ? '编辑扫描器' : '创建扫描器' }}</DialogTitle>
+        <DialogTitle>
+          {{ isEdit ? m.scanner.form.editTitle : m.scanner.form.createTitle }}
+        </DialogTitle>
       </DialogHeader>
 
       <template v-if="state === 'loading'">
@@ -295,17 +300,17 @@ async function openLink(link: { href: string }): Promise<void> {
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
-              <Field label="名称">
+              <Field :label="m.scanner.form.name">
                 <FieldContent>
                   <Input
                     v-model="formData.name"
                     required
-                    placeholder="例如: 我的游戏库"
+                    :placeholder="m.scanner.form.namePlaceholder"
                   />
                 </FieldContent>
               </Field>
 
-              <Field label="类型">
+              <Field :label="m.scanner.form.type">
                 <FieldContent>
                   <Select v-model="formData.type">
                     <SelectTrigger class="w-full">
@@ -324,13 +329,13 @@ async function openLink(link: { href: string }): Promise<void> {
                 </FieldContent>
               </Field>
 
-              <Field label="扫描路径">
+              <Field :label="m.scanner.form.scanPath">
                 <FieldContent>
                   <div class="flex gap-2">
                     <Input
                       v-model="formData.path"
                       required
-                      placeholder="选择要扫描的文件夹"
+                      :placeholder="m.scanner.form.scanPathPlaceholder"
                       class="flex-1"
                     />
                     <Button
@@ -350,7 +355,7 @@ async function openLink(link: { href: string }): Promise<void> {
 
               <Field
                 for="entityDepth"
-                label="实体层级"
+                :label="m.scanner.form.entityDepth"
                 :help="entityDepthHelp"
               >
                 <FieldContent>
@@ -365,7 +370,7 @@ async function openLink(link: { href: string }): Promise<void> {
               </Field>
 
               <Field
-                label="刮削配置"
+                :label="m.scanner.form.scraperProfile"
                 :help="scraperProfileHelp"
               >
                 <FieldContent>
@@ -376,7 +381,7 @@ async function openLink(link: { href: string }): Promise<void> {
                 </FieldContent>
               </Field>
 
-              <Field label="目标合集">
+              <Field :label="m.scanner.form.targetCollection">
                 <FieldContent>
                   <CollectionSelect
                     v-model="formData.targetCollectionId"
@@ -388,8 +393,8 @@ async function openLink(link: { href: string }): Promise<void> {
 
               <Field
                 for="interval"
-                label="自动扫描间隔"
-                :description="scanIntervalDescription"
+                :label="m.scanner.form.scanInterval"
+                :description="m.scanner.form.scanIntervalDescription"
               >
                 <FieldContent>
                   <InputGroup>
@@ -400,14 +405,14 @@ async function openLink(link: { href: string }): Promise<void> {
                       :min="0"
                     />
                     <InputGroupAddon align="inline-end">
-                      <InputGroupText>分钟</InputGroupText>
+                      <InputGroupText>{{ m.scanner.form.minutes }}</InputGroupText>
                     </InputGroupAddon>
                   </InputGroup>
                 </FieldContent>
               </Field>
 
               <Field
-                label="名称提取规则"
+                :label="m.scanner.form.nameExtractionRules"
                 :help="nameExtractionRulesHelp"
                 :link="nameExtractionRulesLink"
                 @link-click="openLink"
@@ -423,12 +428,14 @@ async function openLink(link: { href: string }): Promise<void> {
                       icon="icon-[mdi--regex]"
                       class="size-4 mr-2"
                     />
-                    编辑规则
+                    {{ m.scanner.form.editRules }}
                     <span class="ml-auto text-muted-foreground">
                       {{
                         formData.nameExtractionRules.length === 0
-                          ? '未配置'
-                          : `${formData.nameExtractionRules.length} 条`
+                          ? m.scanner.form.notConfigured
+                          : m.scanner.form.ruleCount({
+                              count: formData.nameExtractionRules.length
+                            })
                       }}
                     </span>
                   </Button>
@@ -448,7 +455,7 @@ async function openLink(link: { href: string }): Promise<void> {
                 icon="icon-[mdi--flask-outline]"
                 class="size-4 mr-1.5"
               />
-              测试配置
+              {{ m.scanner.form.testConfig }}
             </Button>
             <div class="flex gap-2">
               <Button
@@ -457,13 +464,13 @@ async function openLink(link: { href: string }): Promise<void> {
                 :disabled="isSaving"
                 @click="open = false"
               >
-                取消
+                {{ m.common.cancel }}
               </Button>
               <Button
                 type="submit"
                 :disabled="isSaving"
               >
-                保存
+                {{ m.common.save }}
               </Button>
             </div>
           </DialogFooter>

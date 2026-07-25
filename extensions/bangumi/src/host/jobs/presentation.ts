@@ -1,4 +1,4 @@
-import { getMediaScopeLabel } from '../media/labels'
+import { m } from '../i18n'
 import type { BangumiMediaScope } from '../media/scopes'
 import type { BangumiJobPreviewGroup, BangumiJobPreviewRow } from '../../shared/settings'
 
@@ -24,7 +24,7 @@ export function createRemotePreviewGroup({
   return createPreviewGroup({
     title,
     subjectId,
-    badge: { label: `${getMediaScopeLabel(scope)}远端预览`, tone: 'info' },
+    badge: { label: m().jobs.preview.remoteBadge({ scope }), tone: 'info' },
     rows
   })
 }

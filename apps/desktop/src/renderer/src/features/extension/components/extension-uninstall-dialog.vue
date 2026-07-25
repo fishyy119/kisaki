@@ -18,7 +18,11 @@ import {
 } from '@renderer/components/ui/alert-dialog'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
-import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
+import {
+  refreshExtensionContributionSnapshot,
+  resolveExtensionText
+} from '@renderer/core/extensions'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionInstalledPackageInfo } from '@shared/extension'
 
 interface Props {
@@ -32,6 +36,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+const { m } = useI18n()
 const uninstalling = ref(false)
 const purgeData = ref(false)
 
@@ -57,18 +62,22 @@ async function handleUninstall() {
 
     await refreshExtensionContributionSnapshot()
 
-    notify.success(purgeData.value ? '扩展已卸载并清除数据' : '扩展已卸载')
+    notify.success(
+      purgeData.value
+        ? m.value.extension.uninstall.uninstalledPurged
+        : m.value.extension.uninstall.uninstalled
+    )
     open.value = false
     emit('uninstalled')
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (uninstalled) {
       await refreshExtensionContributionSnapshot().catch(() => undefined)
-      notify.error('扩展已卸载，清除数据失败', message)
+      notify.error(m.value.extension.uninstall.purgeFailed, message)
       open.value = false
       emit('uninstalled')
     } else {
-      notify.error('卸载失败', message)
+      notify.error(m.value.extension.uninstall.failed, message)
     }
   } finally {
     uninstalling.value = false
@@ -80,7 +89,9 @@ async function handleUninstall() {
   <AlertDialog v-model:open="open">
     <AlertDialogContent class="max-w-md">
       <AlertDialogHeader>
-        <AlertDialogTitle>卸载 {{ props.extension.name }}？</AlertDialogTitle>
+        <AlertDialogTitle>
+          {{ m.extension.uninstall.title({ name: resolveExtensionText(props.extension.name) }) }}
+        </AlertDialogTitle>
       </AlertDialogHeader>
 
       <div class="px-4 py-3 text-sm text-muted-foreground">
@@ -95,13 +106,13 @@ async function handleUninstall() {
             for="extension-purge-data"
             class="text-sm font-normal cursor-pointer"
           >
-            同时清除扩展数据
+            {{ m.extension.uninstall.purgeData }}
           </Label>
         </div>
       </div>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="uninstalling">取消</AlertDialogCancel>
+        <AlertDialogCancel :disabled="uninstalling">{{ m.common.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="uninstalling"
           @click.prevent="handleUninstall"
@@ -110,7 +121,7 @@ async function handleUninstall() {
             v-if="uninstalling"
             class="size-4"
           />
-          {{ purgeData ? '卸载并清除' : '卸载' }}
+          {{ purgeData ? m.extension.uninstall.confirmPurge : m.extension.uninstall.confirm }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

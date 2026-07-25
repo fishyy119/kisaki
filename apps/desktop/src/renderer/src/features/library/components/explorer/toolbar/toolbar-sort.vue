@@ -27,6 +27,9 @@ import {
   companyFilterUiSpec
 } from '@renderer/components/shared/filter'
 import type { ContentEntityType } from '@shared/common'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const store = useLibraryExplorerStore()
 const { activeEntityType, sortField, sortDirection, overrideCollectionOrder } = storeToRefs(store)
@@ -58,13 +61,13 @@ const overrideModel = computed({
 function getUiSpec(entityType: ContentEntityType) {
   switch (entityType) {
     case 'game':
-      return gameFilterUiSpec
+      return gameFilterUiSpec.value
     case 'character':
-      return characterFilterUiSpec
+      return characterFilterUiSpec.value
     case 'person':
-      return personFilterUiSpec
+      return personFilterUiSpec.value
     case 'company':
-      return companyFilterUiSpec
+      return companyFilterUiSpec.value
   }
 }
 </script>
@@ -76,7 +79,7 @@ function getUiSpec(entityType: ContentEntityType) {
         variant="secondary"
         size="icon"
         class="size-7 bg-muted/50"
-        title="排序"
+        :title="m.library.explorer.sort"
       >
         <Icon
           v-if="sortDirection === 'asc'"
@@ -110,14 +113,18 @@ function getUiSpec(entityType: ContentEntityType) {
 
       <!-- Sort direction -->
       <DropdownMenuRadioGroup v-model="sortDirectionModel">
-        <DropdownMenuRadioItem value="asc">升序</DropdownMenuRadioItem>
-        <DropdownMenuRadioItem value="desc">降序</DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="asc">{{ m.library.explorer.sortAsc }}</DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="desc">
+          {{ m.library.explorer.sortDesc }}
+        </DropdownMenuRadioItem>
       </DropdownMenuRadioGroup>
 
       <DropdownMenuSeparator />
 
       <!-- Override collection order -->
-      <DropdownMenuCheckboxItem v-model="overrideModel"> 覆盖合集内排序 </DropdownMenuCheckboxItem>
+      <DropdownMenuCheckboxItem v-model="overrideModel">
+        {{ m.library.explorer.overrideCollectionSort }}
+      </DropdownMenuCheckboxItem>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>

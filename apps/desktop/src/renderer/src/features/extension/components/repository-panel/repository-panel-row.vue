@@ -8,6 +8,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
 import {
   formatRepositoryDate,
@@ -34,6 +35,8 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const { m } = useI18n()
 </script>
 
 <template>
@@ -59,10 +62,24 @@ const emit = defineEmits<Emits>()
       <div class="truncate text-xs text-muted-foreground">{{ props.repository.url }}</div>
 
       <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-4">
-        <div>优先级：{{ props.priorityLabel }}</div>
-        <div>扩展包：{{ props.repository.packageCount }}</div>
-        <div>清单更新：{{ formatRepositoryDate(props.repository.manifestUpdatedAt) }}</div>
-        <div>上次检查：{{ formatRepositoryDate(props.repository.lastRefreshAt) }}</div>
+        <div>{{ m.extension.repository.priorityLine({ value: String(props.priorityLabel) }) }}</div>
+        <div>
+          {{ m.extension.repository.packageCountLine({ count: props.repository.packageCount }) }}
+        </div>
+        <div>
+          {{
+            m.extension.repository.manifestUpdatedLine({
+              value: formatRepositoryDate(props.repository.manifestUpdatedAt)
+            })
+          }}
+        </div>
+        <div>
+          {{
+            m.extension.repository.lastCheckedLine({
+              value: formatRepositoryDate(props.repository.lastRefreshAt)
+            })
+          }}
+        </div>
       </div>
 
       <div
@@ -77,7 +94,7 @@ const emit = defineEmits<Emits>()
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="详情"
+        :tooltip="m.extension.repository.detailsTooltip"
         @click="emit('details', props.repository)"
       >
         <Icon

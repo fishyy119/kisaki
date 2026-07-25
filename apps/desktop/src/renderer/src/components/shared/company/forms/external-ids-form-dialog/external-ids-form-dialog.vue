@@ -25,6 +25,9 @@ import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import CompanyExternalIdItemFormDialog from './external-id-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Company')
 
@@ -103,12 +106,12 @@ async function handleSave() {
     const seen = new Set<string>()
     for (const item of normalizedItems) {
       if (!item.source || !item.externalId) {
-        notify.error('外部ID中存在空值，请检查后重试')
+        notify.error(m.value.library.forms.externalIdEmptyValues)
         return
       }
       const key = `${item.source}\u0000${item.externalId}`
       if (seen.has(key)) {
-        notify.error('存在重复的外部ID，请检查后重试')
+        notify.error(m.value.library.forms.externalIdDuplicates)
         return
       }
       seen.add(key)
@@ -128,11 +131,11 @@ async function handleSave() {
       )
     }
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
-    notify.error('保存失败，请检查是否与其他实体存在重复外部ID')
+    notify.error(m.value.library.forms.externalIdSaveFailed)
   } finally {
     isSaving.value = false
   }
@@ -217,7 +220,7 @@ function handleCancel() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>管理外部ID</DialogTitle>
+          <DialogTitle>{{ m.library.forms.manageExternalIds }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
@@ -225,7 +228,7 @@ function handleCancel() {
               v-if="items.length === 0"
               class="text-sm text-muted-foreground text-center py-8"
             >
-              暂无外部ID，点击下方按钮添加
+              {{ m.library.forms.emptyExternalIdsHint }}
             </p>
             <ListItem
               v-for="(item, index) in items"
@@ -257,20 +260,20 @@ function handleCancel() {
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加外部ID
+            {{ m.library.forms.addExternalId }}
           </Button>
           <div class="flex gap-2">
             <Button
               variant="outline"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -281,7 +284,7 @@ function handleCancel() {
   <DeleteConfirmDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    entity-label="外部ID"
+    :entity-label="m.library.forms.linkLabels.externalId"
     mode="remove"
     @confirm="deleteId !== null && handleRemove(deleteId)"
   />

@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -20,6 +21,8 @@ import GameAdderDialog from './game-adder-dialog.vue'
 import PersonAdderDialog from './person-adder-dialog.vue'
 import CompanyAdderDialog from './company-adder-dialog.vue'
 import CharacterAdderDialog from './character-adder-dialog.vue'
+
+const { m } = useI18n()
 
 const router = useRouter()
 const gameDialogOpen = ref(false)
@@ -79,7 +82,7 @@ function handleAddScanner() {
         side="right"
         :side-offset="8"
       >
-        添加
+        {{ m.adder.trigger }}
       </TooltipContent>
 
       <DropdownMenuContent
@@ -95,7 +98,7 @@ function handleAddScanner() {
             :icon="getEntityIcon('game')"
             class="size-4"
           />
-          <span>添加游戏</span>
+          <span>{{ m.library.detail.addEntity({ label: m.library.entities.game }) }}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
@@ -105,7 +108,7 @@ function handleAddScanner() {
             :icon="getEntityIcon('character')"
             class="size-4"
           />
-          <span>添加角色</span>
+          <span>{{ m.library.detail.addEntity({ label: m.library.entities.character }) }}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
@@ -115,7 +118,7 @@ function handleAddScanner() {
             :icon="getEntityIcon('person')"
             class="size-4"
           />
-          <span>添加人物</span>
+          <span>{{ m.library.detail.addEntity({ label: m.library.entities.person }) }}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2"
@@ -125,7 +128,7 @@ function handleAddScanner() {
             :icon="getEntityIcon('company')"
             class="size-4"
           />
-          <span>添加公司</span>
+          <span>{{ m.library.detail.addEntity({ label: m.library.entities.company }) }}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -136,7 +139,7 @@ function handleAddScanner() {
             icon="icon-[mdi--folder-plus-outline]"
             class="size-4"
           />
-          <span>添加扫描器</span>
+          <span>{{ m.adder.addScanner }}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

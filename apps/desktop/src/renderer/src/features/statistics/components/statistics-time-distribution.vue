@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import {
   TimeDistributionChart,
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const context = useStatistics()
+const { m, f } = useI18n()
 
 const effectiveSessions = computed(() => props.sessions ?? context.sessions.value)
 
@@ -47,12 +49,6 @@ watch(
   }
 )
 
-// Distribution labels - always provide all three for the component
-const distributionLabels = { hourly: '小时', weekday: '星期', dayOfMonth: '日期' }
-
-// Weekday names starting from Monday
-const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-
 // Aggregate play time based on distribution type
 const chartData = computed(() => {
   switch (distributionType.value) {
@@ -62,11 +58,15 @@ const chartData = computed(() => {
     }
     case 'weekday': {
       const values = aggregateByLocalWeekdayMondayFirst(effectiveSessions.value)
-      return values.map((value, day) => ({ key: day, label: weekdayNames[day], value }))
+      return values.map((value, day) => ({ key: day, label: f.value.weekdayName(day + 1), value }))
     }
     case 'dayOfMonth': {
       const values = aggregateByLocalDayOfMonth(effectiveSessions.value)
-      return values.map((value, i) => ({ key: i + 1, label: `${i + 1}日`, value }))
+      return values.map((value, i) => ({
+        key: i + 1,
+        label: m.value.game.activity.dayOfMonthLabel({ day: i + 1 }),
+        value
+      }))
     }
     default: {
       const _exhaustive: never = distributionType.value
@@ -83,7 +83,6 @@ const chartData = computed(() => {
     :data="chartData"
     :available-types="props.availableTypes"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :distribution-labels="distributionLabels"
     :height="200"
   />
 </template>

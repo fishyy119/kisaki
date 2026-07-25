@@ -1,4 +1,5 @@
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
+import type { BangumiMediaScope } from '../../media/scopes'
 import type {
   LocalCollectionTarget,
   LocalMediaAdapter,
@@ -32,7 +33,7 @@ export type CollectionImportOperation =
     }
 
 export interface CollectedCollectionImport {
-  label: string
+  scope: BangumiMediaScope
   adapter?: LocalMediaAdapter
   targetCollection?: LocalCollectionTarget
   planItems: readonly CollectionImportPlanItem[]
@@ -51,7 +52,7 @@ export type IndexImportOperation =
     }
 
 export interface CollectedIndexImport {
-  label: string
+  scope: BangumiMediaScope
   adapter?: LocalMediaAdapter
   targetCollection?: LocalCollectionTarget
   planItems: readonly IndexImportPlanItem[]

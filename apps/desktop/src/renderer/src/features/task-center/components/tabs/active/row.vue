@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TaskRun, TaskRunWarning } from '@shared/task-run'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -29,6 +30,8 @@ const emit = defineEmits<{
   resume: [run: TaskRun]
   cancel: [run: TaskRun]
 }>()
+
+const { m } = useI18n()
 
 const categoryText = computed(() => formatTaskRunCategory(props.run.category))
 const warnings = computed<readonly TaskRunWarning[]>(() => props.run.progress?.warnings ?? [])
@@ -62,7 +65,7 @@ const canCancel = computed(
                 <button
                   type="button"
                   class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-[11px] leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
-                  :aria-label="`${warnings.length} 条警告`"
+                  :aria-label="m.task.row.warningCount({ count: warnings.length })"
                 >
                   <Icon
                     icon="icon-[mdi--alert-outline]"
@@ -87,7 +90,9 @@ const canCancel = computed(
                     v-if="warnings.length > warningPreview.length"
                     class="text-xs text-muted-foreground"
                   >
-                    还有 {{ warnings.length - warningPreview.length }} 条警告
+                    {{
+                      m.task.row.moreWarnings({ count: warnings.length - warningPreview.length })
+                    }}
                   </div>
                 </div>
               </TooltipContent>
@@ -117,9 +122,9 @@ const canCancel = computed(
           v-if="props.run.controls.pausable && props.run.status !== 'paused'"
           variant="ghost"
           size="icon-sm"
-          tooltip="暂停"
+          :tooltip="m.task.row.pause"
           :disabled="!canPause"
-          aria-label="暂停任务"
+          :aria-label="m.task.row.pauseTask"
           @click="emit('pause', props.run)"
         >
           <Icon
@@ -132,9 +137,9 @@ const canCancel = computed(
           v-if="props.run.controls.pausable && props.run.status === 'paused'"
           variant="ghost"
           size="icon-sm"
-          tooltip="继续"
+          :tooltip="m.task.row.resume"
           :disabled="!canResume"
-          aria-label="继续任务"
+          :aria-label="m.task.row.resumeTask"
           @click="emit('resume', props.run)"
         >
           <Icon
@@ -147,9 +152,9 @@ const canCancel = computed(
           v-if="props.run.controls.cancelable || props.run.status === 'cancelling'"
           variant="ghost"
           size="icon-sm"
-          tooltip="取消"
+          :tooltip="m.task.row.cancel"
           :disabled="!canCancel"
-          aria-label="取消任务"
+          :aria-label="m.task.row.cancelTask"
           class="hover:text-destructive"
           @click="emit('cancel', props.run)"
         >
@@ -162,8 +167,8 @@ const canCancel = computed(
         <Button
           variant="ghost"
           size="icon-sm"
-          tooltip="详情"
-          aria-label="查看详情"
+          :tooltip="m.task.row.details"
+          :aria-label="m.task.row.viewDetails"
           @click="emit('details', props.run)"
         >
           <Icon

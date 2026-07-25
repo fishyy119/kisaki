@@ -10,7 +10,7 @@ import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -29,11 +29,24 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
-  placeholder: '搜索人员...',
-  emptyText: '选择人员...',
+  placeholder: undefined,
+  emptyText: undefined,
   disabled: false,
   excludeIds: () => []
 })
+
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () =>
+    props.placeholder ??
+    m.value.library.select.searchPlaceholder({ label: m.value.library.entities.person })
+)
+const emptyTextValue = computed(
+  () =>
+    props.emptyText ??
+    m.value.library.select.selectPlaceholder({ label: m.value.library.entities.person })
+)
 
 /** Currently selected person ID (single mode) */
 const modelValue = defineModel<string>({ default: '' })
@@ -93,8 +106,8 @@ const selectedIds = computed({
   <VirtualizedCombobox
     v-model:selected-ids="selectedIds"
     :entities="personEntities"
-    :placeholder="placeholder"
-    :empty-text="emptyText"
+    :placeholder="placeholderText"
+    :empty-text="emptyTextValue"
     :multiple="multiple"
     :class="props.class"
     :disabled="disabled"

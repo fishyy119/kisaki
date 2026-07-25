@@ -27,6 +27,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { CompanySelect } from '@renderer/components/shared/company'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 type CompanyType = 'developer' | 'publisher' | 'distributor' | 'other'
 
@@ -51,12 +54,12 @@ const emit = defineEmits<{
   submit: [data: CompanyLinkData]
 }>()
 
-const COMPANY_TYPE_OPTIONS: { value: CompanyType; label: string }[] = [
-  { value: 'developer', label: '开发' },
-  { value: 'publisher', label: '发行' },
-  { value: 'distributor', label: '分销' },
-  { value: 'other', label: '其他' }
-]
+const COMPANY_TYPE_OPTIONS = computed<{ value: CompanyType; label: string }[]>(() => [
+  { value: 'developer', label: m.value.library.roles.gameCompany.developer },
+  { value: 'publisher', label: m.value.library.roles.gameCompany.publisher },
+  { value: 'distributor', label: m.value.library.roles.gameCompany.distributor },
+  { value: 'other', label: m.value.library.roles.gameCompany.other }
+])
 
 // Form state
 const formData = ref<CompanyLinkData>({
@@ -118,7 +121,9 @@ watch(
 
 function handleSubmit() {
   if (!formData.value.companyId) {
-    notify.error('请选择公司')
+    notify.error(
+      m.value.library.forms.selectEntityRequired({ label: m.value.library.entities.company })
+    )
     return
   }
 
@@ -141,23 +146,29 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加公司' : '编辑公司' }}</DialogTitle>
+        <DialogTitle>{{
+          (isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
+            label: m.library.entities.company
+          })
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>公司</FieldLabel>
+              <FieldLabel>{{ m.library.forms.companyLabel }}</FieldLabel>
               <FieldContent>
                 <CompanySelect
                   v-model="formData.companyId"
                   :exclude-ids="selectExcludeIds"
-                  placeholder="选择公司..."
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.company })
+                  "
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>公司类型</FieldLabel>
+              <FieldLabel>{{ m.library.forms.companyRoleLabel }}</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.type">
                   <SelectTrigger class="w-full">
@@ -176,16 +187,16 @@ function handleCancel() {
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="可选备注..."
+                  :placeholder="m.library.forms.notePlaceholder"
                 />
               </FieldContent>
             </Field>
             <Field orientation="horizontal">
-              <FieldLabel>包含剧透</FieldLabel>
+              <FieldLabel>{{ m.library.forms.includesSpoiler }}</FieldLabel>
               <FieldContent>
                 <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
@@ -198,9 +209,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

@@ -26,6 +26,9 @@ import { useCompanyDialogProvider, useEvent, useRenderState } from '@renderer/co
 import CompanyDetailContent from './detail-content.vue'
 import { CompanyScoreFormDialog } from '../forms'
 import { CompanyDropdownMenu } from '../menus'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 interface Props {
   companyId: string
@@ -60,9 +63,13 @@ async function handleToggleFavorite() {
       .update(companies)
       .set({ isFavorite: !current.isFavorite })
       .where(eq(companies.id, current.id))
-    notify.success(current.isFavorite ? '已取消喜欢' : '已添加至喜欢')
+    notify.success(
+      current.isFavorite
+        ? m.value.library.feedback.favoriteRemoved
+        : m.value.library.feedback.favoriteAdded
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -91,8 +98,10 @@ function handleRevealSpoilersConfirm() {
             :state="state"
             :error="error"
             :icon="getEntityIcon('company')"
-            title="公司不存在"
-            description="该公司可能已被删除"
+            :title="m.library.detail.notFoundTitle({ label: m.library.entities.company })"
+            :description="
+              m.library.detail.notFoundDescription({ label: m.library.entities.company })
+            "
             class="py-12"
           />
         </DialogBody>
@@ -114,7 +123,7 @@ function handleRevealSpoilersConfirm() {
                 variant="secondary"
                 :size="company!.score !== null ? 'sm' : 'icon-sm'"
                 :class="company!.score !== null ? 'text-warning' : ''"
-                tooltip="评分"
+                :tooltip="m.library.detail.tooltips.score"
                 @click="isScoreOpen = true"
               >
                 <Icon
@@ -137,7 +146,11 @@ function handleRevealSpoilersConfirm() {
               <Button
                 variant="secondary"
                 size="icon-sm"
-                :tooltip="company!.isFavorite ? '取消喜欢' : '添加喜欢'"
+                :tooltip="
+                  company!.isFavorite
+                    ? m.library.detail.tooltips.favoriteRemove
+                    : m.library.detail.tooltips.favoriteAdd
+                "
                 :disabled="isPendingFavorite"
                 @click="handleToggleFavorite"
               >
@@ -151,7 +164,11 @@ function handleRevealSpoilersConfirm() {
               <Button
                 variant="secondary"
                 size="icon-sm"
-                :tooltip="spoilersRevealed ? '隐藏剧透' : '显示剧透'"
+                :tooltip="
+                  spoilersRevealed
+                    ? m.library.detail.tooltips.spoilerHide
+                    : m.library.detail.tooltips.spoilerShow
+                "
                 @click="handleToggleSpoilers"
               >
                 <Icon

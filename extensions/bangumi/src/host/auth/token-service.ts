@@ -1,4 +1,5 @@
 import type { ExtensionLogger } from '@kisaki3/extension-sdk'
+import { m } from '../i18n'
 import { BangumiExtensionError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
 import type { OAuthRelayClient, OAuthRelayTokenStatus } from './relay-client'
@@ -35,7 +36,7 @@ export class TokenService {
       if (options.optional) {
         return undefined
       }
-      throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
+      throw new BangumiExtensionError('auth_required', m().errors.authRequired)
     }
 
     if (options.forceRefresh) {
@@ -58,7 +59,7 @@ export class TokenService {
       if (options.optional) {
         return expired ? undefined : token.accessToken
       }
-      throw new BangumiExtensionError('auth_required', 'Bangumi 凭据无法刷新，请重新登录。')
+      throw new BangumiExtensionError('auth_required', m().errors.tokenRefreshFailed)
     }
 
     try {
@@ -75,7 +76,7 @@ export class TokenService {
   async refreshAccessToken(options: TokenAccessOptions = {}): Promise<BangumiTokenSecretV1> {
     const current = await this.tokenStore.getToken()
     if (!current?.refreshToken) {
-      throw new BangumiExtensionError('auth_required', 'Bangumi refresh token 不存在，请重新登录。')
+      throw new BangumiExtensionError('auth_required', m().errors.refreshTokenMissing)
     }
 
     const refreshed = await this.relayClient.refresh(current.refreshToken, options.signal)
@@ -91,7 +92,7 @@ export class TokenService {
     await this.tokenStore.setToken(next)
     const stored = await this.tokenStore.getToken()
     if (!stored) {
-      throw new BangumiExtensionError('relay_unavailable', 'Bangumi 凭据保存失败。')
+      throw new BangumiExtensionError('relay_unavailable', m().errors.tokenSaveFailed)
     }
 
     return stored
@@ -100,12 +101,12 @@ export class TokenService {
   async verifyCurrentToken(signal?: AbortSignal): Promise<OAuthRelayTokenStatus> {
     const token = await this.tokenStore.getToken()
     if (!token) {
-      throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
+      throw new BangumiExtensionError('auth_required', m().errors.authRequired)
     }
 
     const status = await this.relayClient.tokenStatus(token.accessToken, signal)
     if (!status.active) {
-      throw new BangumiExtensionError('auth_required', 'Bangumi 登录已失效，请重新登录。')
+      throw new BangumiExtensionError('auth_required', m().errors.authSessionInvalid)
     }
 
     return status

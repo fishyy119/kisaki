@@ -3,6 +3,7 @@ import type { AutomationService } from '@main/services/automation'
 import type { CommandService } from '@main/services/command'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
+import type { I18nService } from '@main/services/i18n'
 import type { IngestService } from '@main/services/ingest'
 import type { NetworkService } from '@main/services/network'
 import type { NotifyService } from '@main/services/notify'
@@ -28,6 +29,7 @@ export interface ExtensionCapabilityGatewayOptions {
   command: CommandService
   db: DbService
   event: EventService
+  i18n: I18nService
   ingest: IngestService
   network: NetworkService
   notify: NotifyService
@@ -74,7 +76,8 @@ export class ExtensionCapabilityGateway {
       event: options.event
     })
     this.runtime = new ExtensionRuntimeCapabilityProvider({
-      resolveRuntimeHandle: options.resolveRuntimeHandle
+      resolveRuntimeHandle: options.resolveRuntimeHandle,
+      getUiLocale: () => options.i18n.locale
     })
     this.scrapers = new ExtensionScrapersCapabilityProvider({
       scraper: options.scraper,

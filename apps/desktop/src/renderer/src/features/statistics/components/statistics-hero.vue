@@ -22,7 +22,8 @@ import {
   getMostActiveWeek,
   getMostActiveWeekdayMondayFirst
 } from '@renderer/utils/statistics'
-import { formatDuration, parseLocalDateKey } from '@renderer/utils/datetime'
+import { parseLocalDateKey } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -38,6 +39,8 @@ const {
   allTimeStats,
   games
 } = useStatistics()
+
+const { m, f } = useI18n()
 
 // Overview reports on all-time data; period reports on their range.
 const effectiveStats = computed(() =>
@@ -62,11 +65,19 @@ const delta = computed(() => {
   const diff = effectiveStats.value.totalDuration - previousTotal
   const label = getPreviousPeriodLabel(reportType.value)
 
-  if (diff === 0) return { icon: 'icon-[mdi--minus]', text: `与${label}持平` }
-  if (diff > 0) {
-    return { icon: 'icon-[mdi--trending-up]', text: `较${label} +${formatDuration(diff)}` }
+  if (diff === 0) {
+    return { icon: 'icon-[mdi--minus]', text: m.value.statistics.hero.flatVsPrevious({ label }) }
   }
-  return { icon: 'icon-[mdi--trending-down]', text: `较${label} -${formatDuration(-diff)}` }
+  if (diff > 0) {
+    return {
+      icon: 'icon-[mdi--trending-up]',
+      text: m.value.statistics.hero.upVsPrevious({ label, duration: f.value.duration(diff) })
+    }
+  }
+  return {
+    icon: 'icon-[mdi--trending-down]',
+    text: m.value.statistics.hero.downVsPrevious({ label, duration: f.value.duration(-diff) })
+  }
 })
 
 // =============================================================================
@@ -112,7 +123,7 @@ const composition = computed<CompositionSegment[] | null>(() => {
   if (otherDuration > 0) {
     segments.push({
       id: '__other',
-      name: '其他',
+      name: m.value.statistics.hero.other,
       fill: 'var(--color-muted)',
       duration: otherDuration
     })
@@ -126,7 +137,7 @@ const composition = computed<CompositionSegment[] | null>(() => {
       fill: segment.fill,
       width: `${(share * 100).toFixed(2)}%`,
       shareText: `${(share * 100).toFixed(1)}%`,
-      durationText: formatDuration(segment.duration)
+      durationText: f.value.duration(segment.duration)
     }
   })
 })
@@ -158,13 +169,13 @@ interface HeroFact {
 }
 
 function formatWeekdayMondayFirst(weekday: number): string {
-  const names = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-  return names[weekday] ?? '-'
+  if (weekday < 0 || weekday > 6) return '-'
+  return f.value.weekdayName(weekday + 1)
 }
 
 function formatMonth(monthKey: string): string {
   const [year, month] = monthKey.split('-')
-  return `${year}年${parseInt(month)}月`
+  return f.value.yearMonth(new Date(parseInt(year), parseInt(month) - 1, 1))
 }
 
 function formatWeekRange(weekStartKey: string): string {
@@ -196,10 +207,11 @@ const facts = computed<HeroFact[]>(() => {
   const current = effectiveStats.value
   const activeDays = countActiveDays(effectiveSessions.value)
 
+  const hero = m.value.statistics.hero
   const baseFacts: HeroFact[] = [
-    { label: '游玩次数', value: `${current.totalSessions}次` },
-    { label: '游玩数量', value: `${current.uniqueGamesPlayed}款` },
-    { label: '平均单次', value: formatDuration(current.averageSessionDuration) }
+    { label: hero.sessions, value: hero.timesValue({ count: current.totalSessions }) },
+    { label: hero.gamesPlayed, value: hero.gamesValue({ count: current.uniqueGamesPlayed }) },
+    { label: hero.averageSession, value: f.value.duration(current.averageSessionDuration) }
   ]
 
   switch (reportType.value) {
@@ -207,10 +219,10 @@ const facts = computed<HeroFact[]>(() => {
       const mostActiveWeekday = getMostActiveWeekdayMondayFirst(effectiveSessions.value)
       return [
         ...baseFacts,
-        { label: '活跃天数', value: `${activeDays}/7天` },
-        { label: '日均时长', value: formatDuration(current.totalDuration / 7) },
+        { label: hero.activeDays, value: hero.activeDaysValue({ active: activeDays, total: 7 }) },
+        { label: hero.dailyAverage, value: f.value.duration(current.totalDuration / 7) },
         {
-          label: '最活跃日',
+          label: hero.mostActiveDay,
           value: mostActiveWeekday ? formatWeekdayMondayFirst(mostActiveWeekday.weekday) : '-'
         }
       ]
@@ -226,10 +238,16 @@ const facts = computed<HeroFact[]>(() => {
       const mostActiveWeek = getMostActiveWeek(effectiveSessions.value)
       return [
         ...baseFacts,
-        { label: '活跃天数', value: `${activeDays}/${daysInMonth}天` },
-        { label: '周均时长', value: formatDuration(weeks > 0 ? current.totalDuration / weeks : 0) },
         {
-          label: '最活跃周',
+          label: hero.activeDays,
+          value: hero.activeDaysValue({ active: activeDays, total: daysInMonth })
+        },
+        {
+          label: hero.weeklyAverage,
+          value: f.value.duration(weeks > 0 ? current.totalDuration / weeks : 0)
+        },
+        {
+          label: hero.mostActiveWeek,
           value: mostActiveWeek ? formatWeekRange(mostActiveWeek.weekStart) : '-'
         }
       ]
@@ -242,10 +260,13 @@ const facts = computed<HeroFact[]>(() => {
       const mostActiveMonth = getMostActiveMonth(effectiveSessions.value)
       return [
         ...baseFacts,
-        { label: '活跃天数', value: `${activeDays}/${daysInYear}天` },
-        { label: '月均时长', value: formatDuration(current.totalDuration / 12) },
         {
-          label: '最活跃月份',
+          label: hero.activeDays,
+          value: hero.activeDaysValue({ active: activeDays, total: daysInYear })
+        },
+        { label: hero.monthlyAverage, value: f.value.duration(current.totalDuration / 12) },
+        {
+          label: hero.mostActiveMonth,
           value: mostActiveMonth ? formatMonth(mostActiveMonth.month) : '-'
         }
       ]
@@ -255,9 +276,9 @@ const facts = computed<HeroFact[]>(() => {
     default:
       return [
         ...baseFacts,
-        { label: '最长单次', value: formatDuration(current.longestSession) },
-        { label: '当前连续', value: `${current.currentStreak}天` },
-        { label: '最长连续', value: `${current.longestStreak}天` }
+        { label: hero.longestSession, value: f.value.duration(current.longestSession) },
+        { label: hero.currentStreak, value: hero.daysValue({ count: current.currentStreak }) },
+        { label: hero.longestStreak, value: hero.daysValue({ count: current.longestStreak }) }
       ]
   }
 })
@@ -268,10 +289,10 @@ const facts = computed<HeroFact[]>(() => {
     <!-- Left column: three layers distributed across the band height -->
     <div class="flex min-w-0 flex-1 flex-col justify-between gap-y-4">
       <div>
-        <div class="text-xs text-muted-foreground">总游玩时长</div>
+        <div class="text-xs text-muted-foreground">{{ m.statistics.hero.totalPlayTime }}</div>
         <div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span class="text-2xl font-semibold tracking-tight tabular-nums">
-            {{ formatDuration(effectiveStats.totalDuration) }}
+            {{ f.duration(effectiveStats.totalDuration) }}
           </span>
           <span
             v-if="delta"
@@ -335,7 +356,7 @@ const facts = computed<HeroFact[]>(() => {
               <span class="tabular-nums">{{ segment.shareText }}</span>
             </div>
           </template>
-          <span v-else>暂无游玩记录</span>
+          <span v-else>{{ m.statistics.hero.noPlayRecords }}</span>
         </div>
       </div>
 
@@ -373,7 +394,7 @@ const facts = computed<HeroFact[]>(() => {
         />
       </div>
       <div class="text-right">
-        <div class="text-xs text-muted-foreground">最常玩</div>
+        <div class="text-xs text-muted-foreground">{{ m.statistics.hero.mostPlayed }}</div>
         <div class="mt-0.5 truncate text-sm font-medium">{{ mostPlayed?.name ?? '-' }}</div>
       </div>
     </div>

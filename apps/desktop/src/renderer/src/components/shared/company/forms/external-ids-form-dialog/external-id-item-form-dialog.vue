@@ -17,6 +17,9 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface ExternalIdData {
   source: string
@@ -64,7 +67,7 @@ function handleSubmit() {
   const externalId = formData.value.externalId.trim()
 
   if (!source || !externalId) {
-    notify.error('请填写来源和ID')
+    notify.error(m.value.library.forms.externalIdSourceAndIdRequired)
     return
   }
 
@@ -81,27 +84,29 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加外部ID' : '编辑外部ID' }}</DialogTitle>
+        <DialogTitle>{{
+          isAddMode ? m.library.forms.addExternalId : m.library.forms.editExternalId
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>来源</FieldLabel>
+              <FieldLabel>{{ m.library.forms.externalIdSourceLabel }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.source"
-                  placeholder="如: vndb、steam、bangumi"
+                  :placeholder="m.library.forms.externalIdSourcePlaceholder"
                   required
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>外部ID</FieldLabel>
+              <FieldLabel>{{ m.library.forms.externalIdValueLabel }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.externalId"
-                  placeholder="如: v12345"
+                  :placeholder="m.library.forms.externalIdValuePlaceholder"
                   required
                 />
               </FieldContent>
@@ -114,9 +119,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

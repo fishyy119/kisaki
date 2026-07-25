@@ -1,5 +1,6 @@
 import { BangumiExtensionError, type BangumiErrorCode } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
+import { m } from '../i18n'
 
 export interface BangumiApiErrorOptions {
   status?: number
@@ -36,14 +37,14 @@ export function normalizeBangumiApiError(
   const detail = readErrorMessage(data)
 
   if (status === 401 || status === 403) {
-    return new BangumiApiError('auth_required', detail || 'Bangumi 登录已失效，请重新登录。', {
+    return new BangumiApiError('auth_required', detail || m().errors.authSessionInvalid, {
       status,
       path
     })
   }
 
   if (status === 404) {
-    return new BangumiApiError('bangumi_not_found', detail || 'Bangumi 条目不存在。', {
+    return new BangumiApiError('bangumi_not_found', detail || m().errors.apiNotFound, {
       status,
       path
     })
@@ -52,19 +53,19 @@ export function normalizeBangumiApiError(
   if (status === 429) {
     return new BangumiApiError(
       'bangumi_rate_limited',
-      detail || 'Bangumi API 请求过于频繁，请稍后重试。',
+      detail || m().errors.apiRateLimited,
       omitUndefined({ status, path, retryAfterMs })
     )
   }
 
   if (status >= 400 && status < 500) {
-    return new BangumiApiError('bangumi_validation', detail || 'Bangumi API 拒绝了本次请求。', {
+    return new BangumiApiError('bangumi_validation', detail || m().errors.apiRejected, {
       status,
       path
     })
   }
 
-  return new BangumiApiError('network_failed', detail || 'Bangumi API 暂时不可用。', {
+  return new BangumiApiError('network_failed', detail || m().errors.apiUnavailable, {
     status,
     path
   })

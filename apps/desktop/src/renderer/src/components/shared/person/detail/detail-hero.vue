@@ -4,23 +4,20 @@
   Shows photo and basic stats.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { usePerson } from '@renderer/composables/use-person'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { PersonBasicFormDialog } from '../forms'
 
-const GENDER_LABELS: Record<string, string> = {
-  male: '男性',
-  female: '女性',
-  other: '其他'
-}
+const GENDER_LABELS = computed<Record<string, string>>(() => m.value.library.gender)
 
 const { person } = usePerson()
+const { m, f } = useI18n()
 
 const isEditOpen = ref(false)
 </script>
@@ -71,28 +68,28 @@ const isEditOpen = ref(false)
             v-if="person.gender"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">性别</span>
+            <span class="text-muted-foreground">{{ m.library.fields.gender }}</span>
             <span>{{ GENDER_LABELS[person.gender] || person.gender }}</span>
           </div>
           <div
             v-if="person.birthDate"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">生日</span>
-            <span>{{ formatDate(person.birthDate) }}</span>
+            <span class="text-muted-foreground">{{ m.library.fields.birthDate }}</span>
+            <span>{{ f.date(person.birthDate) }}</span>
           </div>
           <div
             v-if="person.deathDate"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">忌日</span>
-            <span>{{ formatDate(person.deathDate) }}</span>
+            <span class="text-muted-foreground">{{ m.library.fields.deathDate }}</span>
+            <span>{{ f.date(person.deathDate) }}</span>
           </div>
           <div
             v-if="person.score !== null"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">评分</span>
+            <span class="text-muted-foreground">{{ m.library.fields.score }}</span>
             <span class="text-warning">{{ (person.score / 10).toFixed(1) }}</span>
           </div>
         </div>

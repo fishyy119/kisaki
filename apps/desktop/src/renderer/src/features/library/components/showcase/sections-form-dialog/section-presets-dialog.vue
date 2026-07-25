@@ -6,7 +6,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { nanoid } from 'nanoid'
-import { SHOWCASE_SECTION_PRESETS, type ShowcaseSectionPreset } from './section-presets'
+import { getShowcaseSectionPresets, type ShowcaseSectionPreset } from './section-presets'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { AllEntityType } from '@shared/common'
 import type { ShowcaseSectionFormItem } from '@shared/db'
 import {
@@ -20,18 +21,7 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const ENTITY_TYPE_LABELS: Record<AllEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司',
-  collection: '合集',
-  tag: '标签'
-}
+const { m } = useI18n()
 
 // =============================================================================
 // Props & Emits
@@ -50,15 +40,15 @@ const emit = defineEmits<{
 const selectedIds = ref<Set<string>>(new Set())
 
 // Group presets by entity type for organized display
-const presetsByEntityType: Record<AllEntityType, ShowcaseSectionPreset[]> = (() => {
+const presetsByEntityType = computed<Record<AllEntityType, ShowcaseSectionPreset[]>>(() => {
   const result = {} as Record<AllEntityType, ShowcaseSectionPreset[]>
-  for (const preset of SHOWCASE_SECTION_PRESETS) {
+  for (const preset of getShowcaseSectionPresets()) {
     const type = preset.entityType
     if (!result[type]) result[type] = []
     result[type].push(preset)
   }
   return result
-})()
+})
 
 // =============================================================================
 // Handlers
@@ -85,23 +75,23 @@ function createSelectedModel(presetId: string) {
 function handleAdd() {
   if (selectedIds.value.size === 0) return
 
-  const sectionsToAdd: ShowcaseSectionFormItem[] = SHOWCASE_SECTION_PRESETS.filter((p) =>
-    selectedIds.value.has(p.id)
-  ).map((preset, index) => ({
-    id: nanoid(),
-    entityType: preset.entityType,
-    name: preset.name,
-    order: index,
-    isVisible: true,
-    layout: preset.layout,
-    itemSize: preset.itemSize,
-    openMode: 'page',
-    limit: preset.limit,
-    filter: preset.filter,
-    sortField: preset.sortField,
-    sortDirection: preset.sortDirection,
-    isNew: true
-  }))
+  const sectionsToAdd: ShowcaseSectionFormItem[] = getShowcaseSectionPresets()
+    .filter((p) => selectedIds.value.has(p.id))
+    .map((preset, index) => ({
+      id: nanoid(),
+      entityType: preset.entityType,
+      name: preset.name,
+      order: index,
+      isVisible: true,
+      layout: preset.layout,
+      itemSize: preset.itemSize,
+      openMode: 'page' as const,
+      limit: preset.limit,
+      filter: preset.filter,
+      sortField: preset.sortField,
+      sortDirection: preset.sortDirection,
+      isNew: true
+    }))
 
   emit('add', sectionsToAdd)
   selectedIds.value = new Set()
@@ -118,11 +108,13 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>选择预设区块</DialogTitle>
+        <DialogTitle>{{ m.library.showcase.presetsDialog.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
-        <template v-if="SHOWCASE_SECTION_PRESETS.length === 0">
-          <p class="text-sm text-muted-foreground text-center py-8">暂无可用预设</p>
+        <template v-if="Object.keys(presetsByEntityType).length === 0">
+          <p class="text-sm text-muted-foreground text-center py-8">
+            {{ m.library.showcase.presetsDialog.empty }}
+          </p>
         </template>
         <template v-else>
           <div class="space-y-4">
@@ -132,7 +124,7 @@ function handleCancel() {
               class="space-y-1"
             >
               <div class="flex items-center text-xs font-medium text-muted-foreground px-1">
-                {{ ENTITY_TYPE_LABELS[entityType] || entityType }}
+                {{ m.library.entities[entityType] || entityType }}
               </div>
               <label
                 v-for="preset in presets"
@@ -157,13 +149,13 @@ function handleCancel() {
           variant="outline"
           @click="handleCancel"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="selectedIds.size === 0"
           @click="handleAdd"
         >
-          添加 ({{ selectedIds.size }})
+          {{ m.library.showcase.presetsDialog.addWithCount({ count: selectedIds.size }) }}
         </Button>
       </DialogFooter>
     </DialogContent>

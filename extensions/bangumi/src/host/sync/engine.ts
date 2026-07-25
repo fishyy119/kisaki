@@ -8,6 +8,7 @@ import type { MediaRegistry } from '../media/registry'
 import type { SettingsStore } from '../config/store'
 import { createBangumiSubjectRef } from '../identity/subject-ref'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import { createSyncFingerprint, type SyncStateStore } from './fingerprint'
 import {
@@ -262,7 +263,7 @@ export class SyncEngine {
     signal?: AbortSignal
   ): Promise<BangumiUserCollection | undefined> {
     if (!username) {
-      throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
+      throw new BangumiExtensionError('auth_required', m().errors.authRequired)
     }
 
     try {

@@ -4,7 +4,8 @@ import { computed } from 'vue'
 import { Badge, Button, Icon, type BadgeVariants } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
 import { settingsForm } from '../form'
-import { AUTOMATION_LABELS, AUTOMATION_STATUS_LABELS, AUTOMATION_STATUS_VARIANTS } from '../labels'
+import { m } from '../i18n'
+import { AUTOMATION_STATUS_VARIANTS, getAutomationLabel, getAutomationStatusLabel } from '../labels'
 import SettingsSection from '../components/settings-section.vue'
 
 type SettingsTabId = 'account' | 'sync' | 'import' | 'automation' | 'maintenance'
@@ -21,22 +22,22 @@ const emit = defineEmits<{
 
 const accountLabel = computed(() => {
   if (!props.overview.account.loggedIn) {
-    return '未登录'
+    return m.value.ui.overview.notLoggedIn
   }
 
   return props.overview.account.nickname
     ? `${props.overview.account.nickname} (@${props.overview.account.username ?? '-'})`
-    : '已登录'
+    : m.value.ui.overview.loggedIn
 })
 
 const accountBadge = computed<{ label: string; variant: BadgeVariants['variant'] }>(() => {
   if (!props.overview.account.hasToken) {
-    return { label: '未授权', variant: 'secondary' }
+    return { label: m.value.ui.overview.notAuthorized, variant: 'secondary' }
   }
 
   return props.overview.account.expired
-    ? { label: '凭据过期', variant: 'warning' }
-    : { label: '可用', variant: 'success' }
+    ? { label: m.value.ui.overview.credentialsExpired, variant: 'warning' }
+    : { label: m.value.ui.overview.available, variant: 'success' }
 })
 
 const runningJobs = computed(() => Object.values(props.overview.activeJobs).filter(Boolean).length)
@@ -47,22 +48,24 @@ const missingAutomationCount = computed(
 
 const syncItemsLabel = computed(() => {
   if (!settingsForm.autoSyncEnabled) {
-    return '未启用'
+    return m.value.ui.overview.disabled
   }
 
   const labels = [
-    settingsForm.autoSyncItems.includes('create') ? '创建收藏' : null,
-    settingsForm.autoSyncItems.includes('status') ? '游玩状态' : null,
-    settingsForm.autoSyncItems.includes('score') ? '评分' : null
+    settingsForm.autoSyncItems.includes('create') ? m.value.ui.overview.syncItemCreate : null,
+    settingsForm.autoSyncItems.includes('status') ? m.value.ui.overview.syncItemStatus : null,
+    settingsForm.autoSyncItems.includes('score') ? m.value.ui.overview.syncItemScore : null
   ].filter(Boolean)
 
-  return labels.length > 0 ? labels.join('、') : '未选择同步项'
+  return labels.length > 0
+    ? labels.join(m.value.common.listSeparator)
+    : m.value.ui.overview.noSyncItems
 })
 </script>
 
 <template>
   <div class="space-y-4">
-    <SettingsSection title="状态概览">
+    <SettingsSection :title="m.ui.overview.statusTitle">
       <div class="overflow-hidden rounded-md border border-border bg-background/60">
         <div class="grid -m-px lg:grid-cols-3">
           <button
@@ -72,7 +75,7 @@ const syncItemsLabel = computed(() => {
           >
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
-                <span class="text-xs text-muted-foreground">账号</span>
+                <span class="text-xs text-muted-foreground">{{ m.ui.overview.accountLabel }}</span>
                 <div class="mt-1 truncate text-sm font-medium">{{ accountLabel }}</div>
               </div>
               <Badge :variant="accountBadge.variant">{{ accountBadge.label }}</Badge>
@@ -85,9 +88,9 @@ const syncItemsLabel = computed(() => {
             @click="emit('navigate', 'sync')"
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs text-muted-foreground">自动同步</span>
+              <span class="text-xs text-muted-foreground">{{ m.ui.overview.autoSyncLabel }}</span>
               <Badge :variant="settingsForm.autoSyncEnabled ? 'success' : 'secondary'">
-                {{ settingsForm.autoSyncEnabled ? '已启用' : '未启用' }}
+                {{ settingsForm.autoSyncEnabled ? m.ui.overview.enabled : m.ui.overview.disabled }}
               </Badge>
             </div>
             <div class="mt-1 truncate text-sm font-medium">{{ syncItemsLabel }}</div>
@@ -99,43 +102,53 @@ const syncItemsLabel = computed(() => {
             @click="emit('navigate', 'automation')"
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs text-muted-foreground">推荐自动化</span>
+              <span class="text-xs text-muted-foreground">
+                {{ m.ui.overview.recommendedAutomations }}
+              </span>
               <Badge :variant="missingAutomationCount === 0 ? 'success' : 'warning'">
-                {{ missingAutomationCount === 0 ? '已齐全' : `${missingAutomationCount} 项未创建` }}
+                {{
+                  missingAutomationCount === 0
+                    ? m.ui.overview.automationsComplete
+                    : m.ui.overview.automationsMissing({ count: missingAutomationCount })
+                }}
               </Badge>
             </div>
             <div class="mt-1 truncate text-sm font-medium">
-              {{ props.overview.automations.length }} 个模板
+              {{ m.ui.overview.templatesCount({ count: props.overview.automations.length }) }}
             </div>
           </button>
         </div>
       </div>
     </SettingsSection>
 
-    <SettingsSection title="运行状态">
+    <SettingsSection :title="m.ui.overview.runtimeTitle">
       <div class="overflow-hidden rounded-md border border-border bg-background/60">
         <div class="grid -m-px sm:grid-cols-2">
           <div class="border-r border-b border-border px-3 py-2">
-            <div class="text-xs text-muted-foreground">正在运行的 Bangumi 任务</div>
+            <div class="text-xs text-muted-foreground">{{ m.ui.overview.runningJobs }}</div>
             <div class="mt-1 flex items-center gap-2">
               <span class="text-lg leading-tight font-semibold">{{ runningJobs }}</span>
               <Badge :variant="runningJobs > 0 ? 'warning' : 'secondary'">
-                {{ runningJobs > 0 ? '运行中' : '空闲' }}
+                {{ runningJobs > 0 ? m.ui.overview.running : m.ui.overview.idle }}
               </Badge>
             </div>
           </div>
           <div class="border-r border-b border-border px-3 py-2">
-            <div class="text-xs text-muted-foreground">可用本地资源</div>
+            <div class="text-xs text-muted-foreground">{{ m.ui.overview.localResources }}</div>
             <div class="mt-1 text-sm">
-              {{ props.overview.profiles.length }} 个刮削配置 /
-              {{ props.overview.collections.length }} 个合集
+              {{
+                m.ui.overview.localResourcesSummary({
+                  profiles: props.overview.profiles.length,
+                  collections: props.overview.collections.length
+                })
+              }}
             </div>
           </div>
         </div>
       </div>
     </SettingsSection>
 
-    <SettingsSection title="快捷入口">
+    <SettingsSection :title="m.ui.overview.quickActionsTitle">
       <div class="grid gap-2 sm:grid-cols-2">
         <Button
           variant="outline"
@@ -148,7 +161,7 @@ const syncItemsLabel = computed(() => {
             icon="icon-[mdi--database-import-outline]"
             class="size-3.5"
           />
-          导入 Bangumi 收藏或目录
+          {{ m.ui.overview.importAction }}
         </Button>
         <Button
           variant="outline"
@@ -161,21 +174,21 @@ const syncItemsLabel = computed(() => {
             icon="icon-[mdi--tune-variant]"
             class="size-3.5"
           />
-          调整网络和维护选项
+          {{ m.ui.overview.maintenanceAction }}
         </Button>
       </div>
     </SettingsSection>
 
-    <SettingsSection title="自动化模板">
+    <SettingsSection :title="m.ui.overview.automationsTitle">
       <div class="divide-y divide-border rounded-md border border-border">
         <div
           v-for="automation in props.overview.automations"
           :key="automation.kind"
           class="flex items-center justify-between gap-3 px-3 py-2"
         >
-          <span class="min-w-0 truncate text-sm">{{ AUTOMATION_LABELS[automation.kind] }}</span>
+          <span class="min-w-0 truncate text-sm">{{ getAutomationLabel(automation.kind) }}</span>
           <Badge :variant="AUTOMATION_STATUS_VARIANTS[automation.status]">
-            {{ AUTOMATION_STATUS_LABELS[automation.status] }}
+            {{ getAutomationStatusLabel(automation.status) }}
           </Badge>
         </div>
       </div>

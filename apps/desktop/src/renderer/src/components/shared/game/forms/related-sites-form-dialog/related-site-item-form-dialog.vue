@@ -17,6 +17,9 @@ import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface SiteData {
   label: string
@@ -64,7 +67,7 @@ function handleSubmit() {
   const trimmedLabel = formData.value.label.trim()
   const trimmedUrl = formData.value.url.trim()
   if (!trimmedLabel || !trimmedUrl) {
-    notify.error('请填写必填字段')
+    notify.error(m.value.library.forms.requiredFieldsMissing)
     return
   }
 
@@ -81,23 +84,25 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加链接' : '编辑链接' }}</DialogTitle>
+        <DialogTitle>{{
+          isAddMode ? m.library.forms.addLink : m.library.forms.editLink
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>名称</FieldLabel>
+              <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.label"
-                  placeholder="如: 官网、Steam、VNDB..."
+                  :placeholder="m.library.forms.siteNamePlaceholder"
                   required
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>链接</FieldLabel>
+              <FieldLabel>{{ m.library.forms.siteUrlLabel }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.url"
@@ -114,9 +119,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

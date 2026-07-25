@@ -4,7 +4,7 @@
  * Type definitions for complex JSON structures stored in SQLite text columns.
  */
 
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 
 /** Related site link */
 export interface RelatedSite {
@@ -175,7 +175,7 @@ export interface ScraperProviderEntry {
   providerId: string
   enabled: boolean
   priority: number
-  locale?: Locale | null
+  locale?: ContentLocale | null
 }
 
 /** Base configuration shared by all slots. */

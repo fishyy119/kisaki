@@ -11,6 +11,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useTaskRunStore } from '@renderer/stores'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { extensionRepositoriesData } from '../../composables'
 import RepositoryAddDialog from './repository-add-dialog.vue'
 import RepositoryDetailsDialog from './repository-details-dialog.vue'
@@ -23,6 +24,7 @@ import {
   type ExtensionRepositoryInfo
 } from '@shared/extension'
 
+const { m } = useI18n()
 const addDialogOpen = ref(false)
 const submitting = ref(false)
 const addingOfficialRepository = ref(false)
@@ -101,11 +103,14 @@ async function handleAddRepository(request: RepositoryAddRequest) {
       })
       .then(unwrapIpcData)
 
-    notify.success('仓库已添加')
+    notify.success(m.value.extension.repository.added)
     addDialogOpen.value = false
     refetch()
   } catch (err) {
-    notify.error('添加仓库失败', err instanceof Error ? err.message : String(err))
+    notify.error(
+      m.value.extension.repository.addFailed,
+      err instanceof Error ? err.message : String(err)
+    )
   } finally {
     submitting.value = false
   }
@@ -121,10 +126,13 @@ async function handleAddOfficialRepository() {
       })
       .then(unwrapIpcData)
 
-    notify.success('官方仓库已添加')
+    notify.success(m.value.extension.repository.officialAdded)
     refetch()
   } catch (err) {
-    notify.error('添加官方仓库失败', err instanceof Error ? err.message : String(err))
+    notify.error(
+      m.value.extension.repository.officialAddFailed,
+      err instanceof Error ? err.message : String(err)
+    )
   } finally {
     addingOfficialRepository.value = false
   }
@@ -134,9 +142,12 @@ async function handleRefreshAll() {
   startingRefreshAll.value = true
   try {
     unwrapIpcData(await ipcManager.invoke('extension:refresh-repositories'))
-    notify.success('已开始刷新扩展仓库')
+    notify.success(m.value.extension.repository.refreshAllStarted)
   } catch (err) {
-    notify.error('刷新仓库失败', err instanceof Error ? err.message : String(err))
+    notify.error(
+      m.value.extension.repository.refreshFailed,
+      err instanceof Error ? err.message : String(err)
+    )
   } finally {
     startingRefreshAll.value = false
   }
@@ -145,7 +156,7 @@ async function handleRefreshAll() {
 async function handleRefreshRepository(repository: ExtensionRepositoryInfo) {
   await withRepositoryBusy(repository.id, async () => {
     unwrapIpcData(await ipcManager.invoke('extension:refresh-repository', repository.id))
-    notify.success('已开始刷新仓库')
+    notify.success(m.value.extension.repository.refreshStarted)
   })
 }
 
@@ -157,7 +168,11 @@ async function handleToggleRepository(repository: ExtensionRepositoryInfo, enabl
         state: enabled ? 'enabled' : 'disabled'
       })
       .then(unwrapIpcData)
-    notify.success(enabled ? '仓库已启用' : '仓库已禁用')
+    notify.success(
+      enabled
+        ? m.value.extension.repository.enabledFeedback
+        : m.value.extension.repository.disabledFeedback
+    )
     refetch()
   })
 }
@@ -194,12 +209,15 @@ async function handleConfirmRemoveRepository() {
   setRepositoryBusy(repository.id, true)
   try {
     unwrapIpcVoid(await ipcManager.invoke('extension:remove-repository', repository.id))
-    notify.success('仓库已删除')
+    notify.success(m.value.extension.repository.deleted)
     removeDialogOpen.value = false
     repositoryToRemove.value = null
     refetch()
   } catch (err) {
-    notify.error('仓库操作失败', err instanceof Error ? err.message : String(err))
+    notify.error(
+      m.value.extension.repository.operationFailed,
+      err instanceof Error ? err.message : String(err)
+    )
   } finally {
     setRepositoryBusy(repository.id, false)
   }
@@ -215,7 +233,10 @@ async function withRepositoryBusy(repositoryId: string, run: () => Promise<void>
   try {
     await run()
   } catch (err) {
-    notify.error('仓库操作失败', err instanceof Error ? err.message : String(err))
+    notify.error(
+      m.value.extension.repository.operationFailed,
+      err instanceof Error ? err.message : String(err)
+    )
   } finally {
     setRepositoryBusy(repositoryId, false)
   }
@@ -254,9 +275,9 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
   <div class="flex flex-col h-full">
     <div class="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border bg-muted/50">
       <div class="flex-1">
-        <div class="text-sm font-medium">扩展仓库</div>
+        <div class="text-sm font-medium">{{ m.extension.repository.panelTitle }}</div>
         <div class="text-xs text-muted-foreground">
-          {{ repositoryList.length }} 个仓库，按优先级聚合发现目录
+          {{ m.extension.repository.panelSummary({ count: repositoryList.length }) }}
         </div>
       </div>
 
@@ -275,7 +296,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
           icon="icon-[mdi--refresh]"
           class="size-4"
         />
-        刷新全部
+        {{ m.extension.repository.refreshAll }}
       </Button>
       <Button
         v-if="!hasOfficialRepository"
@@ -293,7 +314,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
           icon="icon-[mdi--shield-plus-outline]"
           class="size-4"
         />
-        添加官方仓库
+        {{ m.extension.repository.addOfficial }}
       </Button>
       <Button
         variant="outline"
@@ -304,7 +325,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
           icon="icon-[mdi--plus]"
           class="size-4"
         />
-        添加仓库
+        {{ m.extension.repository.add }}
       </Button>
     </div>
 
@@ -320,7 +341,7 @@ function canMoveRepository(repository: ExtensionRepositoryInfo, delta: number): 
         v-else-if="repositoryList.length === 0"
         state="empty"
         icon="icon-[mdi--source-branch]"
-        title="暂无扩展仓库"
+        :title="m.extension.repository.emptyTitle"
         class="h-48"
       />
 

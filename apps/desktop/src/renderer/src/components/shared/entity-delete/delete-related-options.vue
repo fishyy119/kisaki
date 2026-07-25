@@ -8,13 +8,15 @@ import type { AllEntityType } from '@shared/common'
 import type { EntityDeletePreviewOption } from '@shared/entity-delete'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
-import { getEntityDeleteLabel } from '@renderer/utils/entity-delete'
+import { useI18n } from '@renderer/composables'
+import { formatEntityDeleteCount } from '@renderer/utils/entity-delete'
 
 interface Props {
   options: EntityDeletePreviewOption[]
 }
 
 const props = defineProps<Props>()
+const { m } = useI18n()
 
 const selectedTypes = defineModel<AllEntityType[]>('selectedTypes', { required: true })
 
@@ -57,7 +59,11 @@ function updateSelected(entityType: AllEntityType, checked: boolean | 'indetermi
           :for="`${idBase}-${option.entityType}`"
           class="text-sm font-normal cursor-pointer"
         >
-          同时删除关联{{ getEntityDeleteLabel(option.entityType) }}（{{ option.count }}）
+          {{
+            m.library.forms.deleteRelatedOption({
+              items: formatEntityDeleteCount(option.entityType, option.count)
+            })
+          }}
         </Label>
       </div>
     </div>

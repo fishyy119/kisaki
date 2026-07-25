@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { rm, stat } from 'node:fs/promises'
+import { resolveLocalizedText } from '@kisaki3/extension-api'
 import type {
   ExtensionCreateLocalReleasePlanRequest,
   ExtensionCreateReleasePlanRequest,
@@ -17,6 +18,8 @@ import {
   type TaskRunHandle,
   type TaskRunService
 } from '@main/services/task-run'
+import type { I18nService } from '@main/services/i18n'
+import type { Messages } from '@shared/i18n'
 import type { ExtensionInstalledEntry } from '../types'
 import type { ExtensionInstallationManager } from '../installations'
 import type {
@@ -54,6 +57,7 @@ export interface ExtensionInstallerManagerOptions {
   packageVerifier: ExtensionPackageVerifier
   packageCommitter: ExtensionPackageCommitter
   taskRun: TaskRunService
+  i18n: I18nService
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
   onTrustedSignersChanged?: () => void
@@ -75,6 +79,7 @@ export class ExtensionInstallerManager {
   private readonly packageVerifier: ExtensionPackageVerifier
   private readonly packageCommitter: ExtensionPackageCommitter
   private readonly taskRun: TaskRunService
+  private readonly i18n: I18nService
 
   constructor(private readonly options: ExtensionInstallerManagerOptions) {
     this.layout = options.layout
@@ -95,6 +100,7 @@ export class ExtensionInstallerManager {
     this.packageVerifier = options.packageVerifier
     this.packageCommitter = options.packageCommitter
     this.taskRun = options.taskRun
+    this.i18n = options.i18n
   }
 
   async createReleasePlan(
@@ -139,17 +145,19 @@ export class ExtensionInstallerManager {
     const plan = this.releasePlanner.createRepositoryPlanForCandidate(candidate)
     assertReleasePlanApproved(plan, command.approval)
 
-    const actionLabel = getReleaseActionLabel(plan.action)
     const run = this.taskRun.runs.create({
       category: 'extension',
       operation: getPackageOperation(plan),
-      title: `${actionLabel}扩展 ${candidate.registryPackage.name}`,
+      title: this.i18n.messages.extension.installer.releaseTitle({
+        action: plan.action,
+        name: resolveLocalizedText(candidate.registryPackage.name, this.i18n.locale)
+      }),
       owner: { type: 'app' },
       initiator,
       subject: {
         type: 'extension',
         id: candidate.registryPackage.id,
-        labelSnapshot: candidate.registryPackage.name
+        labelSnapshot: resolveLocalizedText(candidate.registryPackage.name, this.i18n.locale)
       },
       controls: { cancelable: true, pausable: false }
     })
@@ -167,7 +175,7 @@ export class ExtensionInstallerManager {
     const run = this.taskRun.runs.create({
       category: 'extension',
       operation: 'extension.package.import',
-      title: '应用本地扩展包',
+      title: this.i18n.messages.extension.installer.localTitle,
       owner: { type: 'app' },
       initiator,
       subject: {
@@ -232,10 +240,12 @@ export class ExtensionInstallerManager {
       })
 
       run.complete({
-        title: `${getReleaseActionLabel(plan.action)}扩展完成`,
-        summary: `已${getReleaseActionLabel(plan.action)} ${getInstalledExtensionName(installed)} v${
-          installed.version ?? 'unknown'
-        }`,
+        title: this.i18n.messages.extension.installer.completedTitle({ action: plan.action }),
+        summary: this.i18n.messages.extension.installer.completedSummary({
+          action: plan.action,
+          name: this.getInstalledExtensionName(installed),
+          version: installed.version ?? 'unknown'
+        }),
         output: {
           extensionId: installed.id,
           version: installed.version,
@@ -249,7 +259,9 @@ export class ExtensionInstallerManager {
     } catch (error) {
       await this.cleanupPackageWorkspace(workspaceId)
       this.finishTaskRunFromError(run, error, {
-        cancelledSummary: `扩展${getReleaseActionLabel(plan.action)}已取消`
+        cancelledSummary: this.i18n.messages.extension.installer.cancelledSummary({
+          action: plan.action
+        })
       })
       throw error
     }
@@ -306,10 +318,12 @@ export class ExtensionInstallerManager {
       })
 
       run.complete({
-        title: `${getReleaseActionLabel(completedAction)}扩展完成`,
-        summary: `已${getReleaseActionLabel(completedAction)} ${getInstalledExtensionName(
-          installed
-        )} v${installed.version ?? 'unknown'}`,
+        title: this.i18n.messages.extension.installer.completedTitle({ action: completedAction }),
+        summary: this.i18n.messages.extension.installer.completedSummary({
+          action: completedAction,
+          name: this.getInstalledExtensionName(installed),
+          version: installed.version ?? 'unknown'
+        }),
         output: {
           extensionId: installed.id,
           version: installed.version,
@@ -323,7 +337,7 @@ export class ExtensionInstallerManager {
     } catch (error) {
       await this.cleanupPackageWorkspace(workspaceId)
       this.finishTaskRunFromError(run, error, {
-        cancelledSummary: '扩展包应用已取消'
+        cancelledSummary: this.i18n.messages.extension.installer.localCancelledSummary
       })
       throw error
     }
@@ -355,10 +369,14 @@ export class ExtensionInstallerManager {
   }
 
   private reportPackagePhase(run: TaskRunHandle, phase: ExtensionPackagePhase): void {
-    const progress = createPackagePhaseProgress(phase)
+    const progress = createPackagePhaseProgress(this.i18n.messages, phase)
     if (progress) {
       run.context.report(progress)
     }
+  }
+
+  private getInstalledExtensionName(entry: ExtensionInstalledEntry): string {
+    return entry.manifest ? resolveLocalizedText(entry.manifest.name, this.i18n.locale) : entry.id
   }
 
   private finishTaskRunFromError(
@@ -536,19 +554,6 @@ function getPackageOperation(plan: ExtensionReleasePlan): TaskRunOperation {
   return plan.action === 'install' ? 'extension.package.install' : 'extension.package.update'
 }
 
-function getReleaseActionLabel(action: ExtensionReleaseAction): string {
-  switch (action) {
-    case 'install':
-      return '安装'
-    case 'update':
-      return '更新'
-    case 'reinstall':
-      return '重新安装'
-    case 'downgrade':
-      return '降级'
-  }
-}
-
 function getReleaseActionCounter(action: ExtensionReleaseAction): string {
   switch (action) {
     case 'install':
@@ -562,13 +567,17 @@ function getReleaseActionCounter(action: ExtensionReleaseAction): string {
   }
 }
 
-function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgressUpdate {
+function createPackagePhaseProgress(
+  messages: Messages,
+  phase: ExtensionPackagePhase
+): TaskRunProgressUpdate {
+  const phases = messages.extension.installer.phases
   switch (phase) {
     case 'waiting-lock':
       return {
         phase: {
           key: 'waitingLock',
-          label: '等待扩展包写入锁',
+          label: phases.waitLock,
           current: 1,
           total: 5
         }
@@ -577,7 +586,7 @@ function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgre
       return {
         phase: {
           key: 'download',
-          label: '准备扩展安装包',
+          label: phases.prepare,
           current: 2,
           total: 5
         }
@@ -586,7 +595,7 @@ function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgre
       return {
         phase: {
           key: 'verify',
-          label: '校验扩展安装包',
+          label: phases.verify,
           current: 3,
           total: 5
         }
@@ -595,7 +604,7 @@ function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgre
       return {
         phase: {
           key: 'extract',
-          label: '解压扩展安装包',
+          label: phases.extract,
           current: 4,
           total: 5
         }
@@ -604,7 +613,7 @@ function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgre
       return {
         phase: {
           key: 'commit',
-          label: '提交扩展安装状态',
+          label: phases.commit,
           current: 5,
           total: 5
         }
@@ -614,8 +623,4 @@ function createPackagePhaseProgress(phase: ExtensionPackagePhase): TaskRunProgre
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError'
-}
-
-function getInstalledExtensionName(entry: ExtensionInstalledEntry): string {
-  return entry.manifest?.name ?? entry.id
 }

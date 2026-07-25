@@ -57,7 +57,8 @@ export class ExtensionService implements IService {
     'command',
     'automation',
     'task-run',
-    'deeplink'
+    'deeplink',
+    'i18n'
   ] as const satisfies readonly ServiceName[]
 
   capabilities!: ExtensionCapabilityGateway
@@ -136,6 +137,7 @@ export class ExtensionService implements IService {
       }),
       iconManager,
       taskRun: container.get('task-run'),
+      i18n: container.get('i18n'),
       apiVersion: EXTENSION_API_VERSION,
       allowInsecureLocalUrls: !app.isPackaged,
       getInstalledVersions: () => this.installations?.getInstalledVersionMap() ?? new Map(),
@@ -149,6 +151,7 @@ export class ExtensionService implements IService {
       command: container.get('command'),
       db: container.get('db'),
       event: container.get('event'),
+      i18n: container.get('i18n'),
       ingest: container.get('ingest'),
       network: container.get('network'),
       notify: container.get('notify'),
@@ -178,6 +181,7 @@ export class ExtensionService implements IService {
       hostInspect: getBootstrapArgs().extensionHostInspect,
       capabilities: this.capabilities,
       contributions: this.contributions,
+      getUiLocale: () => container.get('i18n').locale,
       onRuntimeStateChanged: (extensionId, state) =>
         this.emitRuntimeStateChanged(extensionId, state)
     })
@@ -212,6 +216,7 @@ export class ExtensionService implements IService {
       packageVerifier,
       packageCommitter: this.packageCommitter,
       taskRun: container.get('task-run'),
+      i18n: container.get('i18n'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
       onTrustedSignersChanged: () => this.emitTrustedSignersChanged()

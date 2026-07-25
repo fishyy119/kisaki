@@ -54,6 +54,7 @@ Load the relevant reference based on your task:
 | Extension API Contracts   | [extension-api.md](references/extension-api.md)       | Public extension API type architecture, naming, DTO, validation, and RPC rules                         |
 | Build & Release           | [build-release.md](references/build-release.md)       | Building, packaging, NSIS, monorepo scripts                                                            |
 | Changelog                 | [changelog.md](references/changelog.md)               | Release changelog file structure, section classification, writing rules, and entry wording             |
+| i18n                      | [i18n.md](references/i18n.md)                         | Message catalogs, UiLocale/ContentLocale, formatters, copy style guide, four-language glossary         |
 | Coding Conventions        | [conventions.md](references/conventions.md)           | Async patterns, error handling, comments, i18n                                                         |
 
 ## Quick Search
@@ -67,6 +68,7 @@ Search within `references/` for keywords:
 - DB: `sqliteTable`, `drizzle`, `migrate`
 - Vue: `defineProps`, `defineModel`, `useAsyncData`
 - UI: `bg-surface`, `text-foreground`, `buttonVariants`
+- i18n: `useI18n`, `Messages`, `UiLocale`, `LocalizedText`, `createFormatters`
 
 ## Project Preferences
 

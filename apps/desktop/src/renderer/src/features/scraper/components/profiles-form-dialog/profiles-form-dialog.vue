@@ -15,6 +15,7 @@ import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { useAsyncData, useEvent } from '@renderer/composables'
 import { ipcManager } from '@renderer/core/ipc'
@@ -43,6 +44,8 @@ import ScraperProfilesItemFormDialog from './profile-item-form-dialog.vue'
 import ScraperNewProfileDialog from './new-profile-dialog.vue'
 
 const open = defineModel<boolean>('open', { required: true })
+
+const { m } = useI18n()
 
 // Profile form data type
 interface ProfileFormData {
@@ -134,12 +137,12 @@ const groupedProfiles = computed(() => {
   )
 })
 
-const mediaTypeLabels: Record<string, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司'
-}
+const mediaTypeLabels = computed<Record<string, string>>(() => ({
+  game: m.value.library.entities.game,
+  character: m.value.library.entities.character,
+  person: m.value.library.entities.person,
+  company: m.value.library.entities.company
+}))
 
 // Computed for delete dialog
 const deleteDialogOpen = computed({
@@ -275,10 +278,10 @@ async function handleSave() {
       }
     }
 
-    notify.success('配置已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch {
-    notify.error('保存失败')
+    notify.error(m.value.common.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -305,7 +308,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>刮削配置管理</DialogTitle>
+        <DialogTitle>{{ m.scraper.profiles.manageTitle }}</DialogTitle>
       </DialogHeader>
 
       <!-- Loading state -->
@@ -323,7 +326,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
             v-if="profiles.length === 0"
             class="text-sm text-muted-foreground text-center py-8"
           >
-            暂无配置，点击下方按钮添加
+            {{ m.scraper.profiles.emptyProfiles }}
           </p>
           <div
             v-else
@@ -335,7 +338,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
               :key="type"
             >
               <h4 class="text-xs font-medium text-muted-foreground mb-1">
-                {{ mediaTypeLabels[type] || type }}
+                {{ mediaTypeLabels[type] ?? type }}
               </h4>
               <div class="space-y-1">
                 <ListItem
@@ -344,10 +347,12 @@ function withProviderDisplay(list: ScraperProfile[]) {
                   :icon="getEntityIcon(profile.mediaType)"
                 >
                   <div class="text-sm font-medium truncate">
-                    {{ profile.name || '(未命名)' }}
+                    {{ profile.name || m.scraper.profiles.unnamed }}
                   </div>
                   <div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                    <span class="truncate">搜索: {{ providerDisplay.label }}</span>
+                    <span class="truncate">{{
+                      m.scraper.profiles.searchProviderValue({ label: providerDisplay.label })
+                    }}</span>
                     <Badge
                       v-if="providerDisplay.statusLabel"
                       variant="warning"
@@ -383,7 +388,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
                 icon="icon-[mdi--plus]"
                 class="size-4 mr-1"
               />
-              添加配置
+              {{ m.scraper.profiles.addProfile }}
             </Button>
             <Button
               type="button"
@@ -394,7 +399,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
                 icon="icon-[mdi--flash-outline]"
                 class="size-4 mr-1"
               />
-              选择预设
+              {{ m.scraper.profiles.choosePreset }}
             </Button>
           </div>
           <div class="flex gap-2">
@@ -403,14 +408,14 @@ function withProviderDisplay(list: ScraperProfile[]) {
               variant="outline"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="button"
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ isSaving ? '保存中...' : '保存' }}
+              {{ isSaving ? m.common.saving : m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -439,7 +444,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
   <DeleteConfirmDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    entity-label="配置"
+    :entity-label="m.scraper.profiles.profileEntityLabel"
     :entity-name="deleteProfileName"
     mode="remove"
     @confirm="handleDeleteConfirm"

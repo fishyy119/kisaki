@@ -2,7 +2,7 @@
  * Shared session payload loading helpers for the scraper execution pipeline.
  */
 
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { SlotStrategy } from '@shared/db'
 import type { BaseResolvedTarget, BaseScraperSession } from '../../types'
 import type { PlannedProviderTask, ScraperExecutionPlan } from './planner'
@@ -15,7 +15,7 @@ interface SessionCapableScraperProvider<
   TResultMap extends Partial<Record<TSlot, unknown>>
 > {
   readonly capabilities: readonly string[]
-  openSession(target: TTarget, locale: Locale): Promise<TSession>
+  openSession(target: TTarget, locale: ContentLocale): Promise<TSession>
 }
 
 export interface ExecuteScraperPlanOptions<
@@ -29,7 +29,7 @@ export interface ExecuteScraperPlanOptions<
   state: ScraperInvocationState<TTarget, TSession, TSlot, TResultMap, TResult>
   plan: ScraperExecutionPlan<TSlot>
   getProvider(providerId: string): TProvider | undefined
-  resolveProviderTarget(providerId: string, locale: Locale): Promise<TTarget | null>
+  resolveProviderTarget(providerId: string, locale: ContentLocale): Promise<TTarget | null>
   collectResolvedIdentity?(context: { providerId: string; target: TTarget }): void
   buildResult(context: {
     providerId: string
@@ -416,8 +416,8 @@ export async function loadSessionSlot<
   providerId: string
   target: TTarget
   slot: TSlot
-  locale: Locale
-  openSession: (target: TTarget, locale: Locale) => Promise<TSession>
+  locale: ContentLocale
+  openSession: (target: TTarget, locale: ContentLocale) => Promise<TSession>
 }): Promise<TResultMap[TSlot] | null> {
   const results = await loadSessionSlots({
     state: options.state,
@@ -446,8 +446,8 @@ export async function loadSessionSlots<
   providerId: string
   target: TTarget
   slots: readonly TSlot[]
-  locale: Locale
-  openSession: (target: TTarget, locale: Locale) => Promise<TSession>
+  locale: ContentLocale
+  openSession: (target: TTarget, locale: ContentLocale) => Promise<TSession>
 }): Promise<Partial<TResultMap>> {
   const missingSlots: TSlot[] = []
 

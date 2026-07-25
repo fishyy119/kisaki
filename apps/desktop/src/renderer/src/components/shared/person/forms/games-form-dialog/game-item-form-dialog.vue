@@ -29,6 +29,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { GameSelect } from '@renderer/components/shared/game'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface GameLinkData {
   gameId: string
@@ -52,15 +55,15 @@ const emit = defineEmits<{
   submit: [data: GameLinkData]
 }>()
 
-const PERSON_TYPE_OPTIONS: { value: GamePersonType; label: string }[] = [
-  { value: 'director', label: '导演' },
-  { value: 'scenario', label: '剧本' },
-  { value: 'illustration', label: '原画' },
-  { value: 'music', label: '音乐' },
-  { value: 'programmer', label: '程序' },
-  { value: 'actor', label: '声优' },
-  { value: 'other', label: '其他' }
-]
+const PERSON_TYPE_OPTIONS = computed<{ value: GamePersonType; label: string }[]>(() => [
+  { value: 'director', label: m.value.library.roles.gamePerson.director },
+  { value: 'scenario', label: m.value.library.roles.gamePerson.scenario },
+  { value: 'illustration', label: m.value.library.roles.gamePerson.illustration },
+  { value: 'music', label: m.value.library.roles.gamePerson.music },
+  { value: 'programmer', label: m.value.library.roles.gamePerson.programmer },
+  { value: 'actor', label: m.value.library.roles.gamePerson.actor },
+  { value: 'other', label: m.value.library.roles.gamePerson.other }
+])
 
 // Form state
 const formData = ref<GameLinkData>({
@@ -125,7 +128,9 @@ watch(
 
 function handleSubmit() {
   if (!formData.value.gameId) {
-    notify.error('请选择游戏')
+    notify.error(
+      m.value.library.forms.selectEntityRequired({ label: m.value.library.entities.game })
+    )
     return
   }
 
@@ -149,23 +154,29 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加游戏' : '编辑游戏' }}</DialogTitle>
+        <DialogTitle>{{
+          (isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
+            label: m.library.entities.game
+          })
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>游戏</FieldLabel>
+              <FieldLabel>{{ m.library.forms.gameLabel }}</FieldLabel>
               <FieldContent>
                 <GameSelect
                   v-model="formData.gameId"
                   :exclude-ids="selectExcludeIds"
-                  placeholder="选择游戏..."
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.game })
+                  "
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>职位</FieldLabel>
+              <FieldLabel>{{ m.library.forms.creditRoleLabel }}</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.type">
                   <SelectTrigger class="w-full">
@@ -184,16 +195,16 @@ function handleCancel() {
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="可选备注..."
+                  :placeholder="m.library.forms.notePlaceholder"
                 />
               </FieldContent>
             </Field>
             <Field orientation="horizontal">
-              <FieldLabel>包含剧透</FieldLabel>
+              <FieldLabel>{{ m.library.forms.includesSpoiler }}</FieldLabel>
               <FieldContent>
                 <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
@@ -206,9 +217,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

@@ -5,10 +5,11 @@ import type {
   TaskRunOperation,
   TaskRunRatePeriod,
   TaskRunProgressUnit,
-  TaskRunStatus,
-  TaskRunSubjectType
+  TaskRunStatus
 } from '@shared/task-run'
 import type { BadgeVariants } from '@renderer/components/ui/badge'
+import type { Messages } from '@shared/i18n'
+import { formatters, messages } from '@renderer/core/i18n'
 
 export const TASK_RUN_CATEGORY_OPTIONS: readonly TaskRunCategory[] = [
   'scanner',
@@ -32,50 +33,27 @@ export const TASK_RUN_ACTIVE_STATUS_OPTIONS: readonly TaskRunStatus[] = [
   'cancelling'
 ]
 
-const COUNTER_LABELS: Record<string, string> = {
-  total: '总数',
-  processed: '已处理',
-  succeeded: '成功',
-  success: '成功',
-  failed: '失败',
-  skipped: '跳过',
-  warnings: '警告',
-  warning: '警告',
-  added: '新增',
-  new: '新增',
-  existing: '已存在',
-  updated: '更新',
-  deleted: '删除',
-  changed: '变化',
-  notModified: '未变化'
-}
-
-const SUBJECT_LABELS: Record<TaskRunSubjectType, string> = {
-  command: '命令',
-  automation: '自动化',
-  scanner: '扫描器',
-  game: '游戏',
-  person: '人物',
-  company: '公司',
-  character: '角色',
-  extension: '扩展',
-  repository: '仓库',
-  app: '应用'
+// Counter keys with aliases collapsing onto the canonical catalog labels.
+const COUNTER_KEY_ALIASES: Record<string, keyof Messages['task']['counters']> = {
+  total: 'total',
+  processed: 'processed',
+  succeeded: 'succeeded',
+  success: 'succeeded',
+  failed: 'failed',
+  skipped: 'skipped',
+  warnings: 'warnings',
+  warning: 'warnings',
+  added: 'added',
+  new: 'added',
+  existing: 'existing',
+  updated: 'updated',
+  deleted: 'deleted',
+  changed: 'changed',
+  notModified: 'notModified'
 }
 
 export function formatTaskRunCategory(category: TaskRunCategory): string {
-  switch (category) {
-    case 'scanner':
-      return '扫描'
-    case 'ingest':
-      return '导入'
-    case 'extension':
-      return '扩展'
-    case 'updater':
-      return '更新'
-    case 'system':
-      return '系统'
-  }
+  return messages.value.task.categories[category]
 }
 
 export function getTaskRunCategoryIcon(category: TaskRunCategory): string {
@@ -94,27 +72,28 @@ export function getTaskRunCategoryIcon(category: TaskRunCategory): string {
 }
 
 export function formatTaskRunOperation(operation: TaskRunOperation): string {
+  const ops = messages.value.task.operations
   switch (operation) {
     case 'scanner.scan':
-      return '扫描媒体'
+      return ops.scan
     case 'extension.package.install':
-      return '安装扩展'
+      return ops.installExtension
     case 'extension.package.update':
-      return '更新扩展'
+      return ops.updateExtension
     case 'extension.package.import':
-      return '导入扩展包'
+      return ops.importExtensionPackage
     case 'extension.package.uninstall':
-      return '卸载扩展'
+      return ops.uninstallExtension
     case 'extension.repository.refresh':
-      return '刷新扩展仓库'
+      return ops.refreshRepository
     case 'extension.repository.refreshAll':
-      return '刷新全部扩展仓库'
+      return ops.refreshAllRepositories
     case 'updater.check':
-      return '检查软件更新'
+      return ops.checkUpdates
     case 'updater.download':
-      return '下载软件更新'
+      return ops.downloadUpdate
     case 'system.maintenance':
-      return '系统维护'
+      return ops.systemMaintenance
     default:
       break
   }
@@ -124,31 +103,14 @@ export function formatTaskRunOperation(operation: TaskRunOperation): string {
   }
 
   if (operation.startsWith('extension.task.')) {
-    return '扩展任务'
+    return ops.extensionTask
   }
 
   return operation
 }
 
 export function formatTaskRunStatus(status: TaskRunStatus): string {
-  switch (status) {
-    case 'queued':
-      return '排队中'
-    case 'running':
-      return '运行中'
-    case 'pausing':
-      return '暂停中'
-    case 'paused':
-      return '已暂停'
-    case 'cancelling':
-      return '取消中'
-    case 'completed':
-      return '已完成'
-    case 'failed':
-      return '失败'
-    case 'cancelled':
-      return '已取消'
-  }
+  return messages.value.task.statuses[status]
 }
 
 export function getTaskRunStatusVariant(status: TaskRunStatus): BadgeVariants['variant'] {
@@ -171,22 +133,29 @@ export function getTaskRunStatusVariant(status: TaskRunStatus): BadgeVariants['v
 
 export function formatTaskRunOwner(run: TaskRun): string {
   if (run.owner.type === 'app') {
-    return '应用'
+    return messages.value.task.owner.app
   }
 
-  return `扩展：${run.owner.extension.nameSnapshot ?? run.owner.extension.id}`
+  return messages.value.task.owner.extension({
+    name: run.owner.extension.nameSnapshot ?? run.owner.extension.id
+  })
 }
 
 export function formatTaskRunInitiator(run: TaskRun): string {
+  const initiator = messages.value.task.initiator
   switch (run.initiator.type) {
     case 'user':
-      return '用户'
+      return initiator.user
     case 'automation':
-      return `自动化：${run.initiator.automation.nameSnapshot}`
+      return initiator.automation({ name: run.initiator.automation.nameSnapshot })
     case 'extension':
-      return `扩展：${run.initiator.extension.nameSnapshot ?? run.initiator.extension.id}`
+      return initiator.extension({
+        name: run.initiator.extension.nameSnapshot ?? run.initiator.extension.id
+      })
     case 'system':
-      return run.initiator.reason ? `系统：${formatSystemReason(run.initiator.reason)}` : '系统'
+      return run.initiator.reason
+        ? initiator.systemWithReason({ reason: formatSystemReason(run.initiator.reason) })
+        : initiator.system
   }
 }
 
@@ -195,9 +164,9 @@ export function formatTaskRunSubject(run: TaskRun): string {
     return '-'
   }
 
-  const label = SUBJECT_LABELS[run.subject.type]
+  const label = messages.value.task.subjects[run.subject.type]
   const value = run.subject.labelSnapshot ?? run.subject.id
-  return value ? `${label}：${value}` : label
+  return value ? messages.value.task.subjectValue({ label, value }) : label
 }
 
 export function formatTaskRunPhase(run: TaskRun): string {
@@ -224,7 +193,7 @@ export function formatTaskRunResultSummary(run: TaskRun): string {
   }
 
   const counters = formatTaskRunCounterSummary(run, run.result?.counters, 3)
-  return counters ?? '无结果摘要'
+  return counters ?? messages.value.task.details.noResultSummary
 }
 
 export function formatProgressCount(run: TaskRun): string | null {
@@ -287,7 +256,7 @@ export function formatTaskRunRate(run: TaskRun): string | null {
     return `${formatBytes(rate * getRatePeriodMultiplier(period))}/${formatRatePeriod(period)}`
   }
 
-  const unit = work?.unit ? formatProgressUnit(work.unit) : '项'
+  const unit = work?.unit ? formatProgressUnit(work.unit) : messages.value.task.progressUnits.item
   const period = work?.ratePeriod ?? selectRatePeriod(rate)
   return `${formatRateNumber(rate * getRatePeriodMultiplier(period))} ${unit}/${formatRatePeriod(
     period
@@ -300,7 +269,7 @@ export function formatTaskRunEta(run: TaskRun): string | null {
     return null
   }
 
-  return `约 ${formatDurationShort(etaMs)}`
+  return messages.value.task.progress.etaAbout({ duration: formatDurationShort(etaMs) })
 }
 
 export function formatTaskRunDuration(run: TaskRun, now = Date.now()): string {
@@ -314,18 +283,12 @@ export function formatTimestamp(timestamp: number | undefined): string {
     return '-'
   }
 
-  return new Date(timestamp).toLocaleString('zh-Hans', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
+  return formatters.value.dateTime(new Date(timestamp))
 }
 
 export function formatCounterKey(key: string): string {
-  return COUNTER_LABELS[key] ?? key
+  const canonical = COUNTER_KEY_ALIASES[key]
+  return canonical ? messages.value.task.counters[canonical] : key
 }
 
 export function getTaskRunCounterEntries(
@@ -402,19 +365,20 @@ export function matchesTaskRunSearch(run: TaskRun, search: string): boolean {
 }
 
 function formatIngestOperation(operation: TaskRunOperation): string {
+  const ops = messages.value.task.operations
   const [, entity, action] = operation.split('.')
-  const entityLabel = formatIngestEntity(entity)
+  const label = formatIngestEntity(entity)
   switch (action) {
     case 'add':
-      return `添加${entityLabel}`
+      return ops.ingestAdd({ label })
     case 'update':
-      return `更新${entityLabel}`
+      return ops.ingestUpdate({ label })
     case 'batchAdd':
-      return `批量添加${entityLabel}`
+      return ops.ingestBatchAdd({ label })
     case 'batchUpdate':
-      return `批量更新${entityLabel}`
+      return ops.ingestBatchUpdate({ label })
     case 'batchDelete':
-      return `批量删除${entityLabel}`
+      return ops.ingestBatchDelete({ label })
     default:
       return operation
   }
@@ -423,28 +387,22 @@ function formatIngestOperation(operation: TaskRunOperation): string {
 function formatIngestEntity(entity: string | undefined): string {
   switch (entity) {
     case 'game':
-      return '游戏'
     case 'person':
-      return '人物'
     case 'company':
-      return '公司'
     case 'character':
-      return '角色'
+      return messages.value.task.subjects[entity]
     default:
-      return '条目'
+      return messages.value.task.operations.ingestFallbackEntity
   }
 }
 
 function formatSystemReason(reason: string): string {
   switch (reason) {
     case 'startup':
-      return '启动'
     case 'maintenance':
-      return '维护'
     case 'update':
-      return '更新'
     case 'shutdown':
-      return '退出'
+      return messages.value.task.systemReasons[reason]
     default:
       return reason
   }
@@ -470,22 +428,7 @@ function formatProgressValue(value: number, unit: TaskRunProgressUnit | undefine
 }
 
 function formatProgressUnit(unit: TaskRunProgressUnit): string {
-  switch (unit) {
-    case 'item':
-      return '项'
-    case 'file':
-      return '文件'
-    case 'byte':
-      return '字节'
-    case 'entity':
-      return '项'
-    case 'step':
-      return '步骤'
-    case 'package':
-      return '包'
-    case 'request':
-      return '请求'
-  }
+  return messages.value.task.progressUnits[unit]
 }
 
 function formatNumber(value: number): string {
@@ -494,7 +437,7 @@ function formatNumber(value: number): string {
   }
 
   if (Math.abs(value) >= 10) {
-    return Math.round(value).toLocaleString('zh-Hans')
+    return formatters.value.number(Math.round(value))
   }
 
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
@@ -506,7 +449,7 @@ function formatRateNumber(value: number): string {
   }
 
   if (Math.abs(value) >= 10) {
-    return Math.round(value).toLocaleString('zh-Hans')
+    return formatters.value.number(Math.round(value))
   }
 
   if (Math.abs(value) >= 1) {
@@ -540,14 +483,7 @@ function getRatePeriodMultiplier(period: TaskRunRatePeriod): number {
 }
 
 function formatRatePeriod(period: TaskRunRatePeriod): string {
-  switch (period) {
-    case 'second':
-      return '秒'
-    case 'minute':
-      return '分钟'
-    case 'hour':
-      return '小时'
-  }
+  return messages.value.task.ratePeriods[period]
 }
 
 function formatBytes(bytes: number): string {
@@ -565,24 +501,10 @@ function formatBytes(bytes: number): string {
 
 function formatDurationShort(ms: number): string {
   if (!Number.isFinite(ms) || ms <= 0) {
-    return '0 秒'
+    return formatters.value.durationFine(0)
   }
 
-  const totalSeconds = Math.max(1, Math.floor(ms / 1000))
-  const seconds = totalSeconds % 60
-  const totalMinutes = Math.floor(totalSeconds / 60)
-  const minutes = totalMinutes % 60
-  const hours = Math.floor(totalMinutes / 60)
-
-  if (hours > 0) {
-    return minutes > 0 ? `${hours} 小时 ${minutes} 分钟` : `${hours} 小时`
-  }
-
-  if (minutes > 0) {
-    return seconds > 0 ? `${minutes} 分钟 ${seconds} 秒` : `${minutes} 分钟`
-  }
-
-  return `${seconds} 秒`
+  return formatters.value.durationFine(Math.max(1000, ms))
 }
 
 function counterPriority(key: string): number {

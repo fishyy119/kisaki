@@ -95,9 +95,9 @@ export class ExtensionEventsCapabilityProvider {
         return this.options.event.bus.on('extension.disabled', ({ extensionId }) => {
           this.emitSubscriptionEvent(subscriptionId, topic, { extensionId })
         })
-      case 'app.locale.changed':
-        return this.options.event.bus.on('app.locale.changed', ({ locale }) => {
-          this.emitSubscriptionEvent(subscriptionId, topic, { locale })
+      case 'app.ui-locale.changed':
+        return this.options.event.bus.on('app.ui-locale.changed', ({ preference, effective }) => {
+          this.emitSubscriptionEvent(subscriptionId, topic, { preference, effective })
         })
       case 'app.settings.changed':
         return this.options.event.bus.on('app.settings.changed', ({ setting, value }) => {

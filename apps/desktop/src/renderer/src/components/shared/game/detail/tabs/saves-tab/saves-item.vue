@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   note: string
@@ -22,6 +22,8 @@ const emit = defineEmits<{
   delete: []
 }>()
 
+const { m, f } = useI18n()
+
 function formatSize(bytes?: number): string {
   if (!bytes) return ''
   const units = ['B', 'KB', 'MB', 'GB']
@@ -32,11 +34,6 @@ function formatSize(bytes?: number): string {
     unitIndex++
   }
   return `${size.toFixed(1)} ${units[unitIndex]}`
-}
-
-function formatDateTime(date: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 </script>
 
@@ -50,7 +47,7 @@ function formatDateTime(date: Date): string {
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <p class="text-sm font-medium truncate">
-            {{ props.note || formatDate(new Date(props.backupAt)) }}
+            {{ props.note || f.date(new Date(props.backupAt)) }}
           </p>
           <Icon
             v-if="props.locked"
@@ -59,7 +56,7 @@ function formatDateTime(date: Date): string {
           />
         </div>
         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{{ formatDateTime(new Date(props.backupAt)) }}</span>
+          <span>{{ f.dateTime(new Date(props.backupAt)) }}</span>
           <template v-if="props.sizeBytes">
             <span>·</span>
             <span>{{ formatSize(props.sizeBytes) }}</span>
@@ -73,7 +70,7 @@ function formatDateTime(date: Date): string {
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="恢复"
+        :tooltip="m.game.saves.restoreTooltip"
         @click="emit('restore')"
       >
         <Icon
@@ -85,7 +82,7 @@ function formatDateTime(date: Date): string {
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="编辑"
+        :tooltip="m.common.edit"
         @click="emit('edit')"
       >
         <Icon
@@ -97,7 +94,7 @@ function formatDateTime(date: Date): string {
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="删除"
+        :tooltip="m.common.delete"
         class="hover:text-destructive"
         @click="emit('delete')"
       >

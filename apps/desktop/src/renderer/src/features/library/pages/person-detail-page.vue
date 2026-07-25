@@ -20,6 +20,7 @@ import {
   PersonDetailContent
 } from '@renderer/components/shared/person'
 import { useAmbientLight, useEvent, usePersonRouteProvider } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { persons } from '@shared/db'
@@ -39,6 +40,8 @@ const backTo = computed(() => (route.query.from as string) || '/library')
 // =============================================================================
 // Provider (data settled during navigation by the route loader)
 // =============================================================================
+
+const { m } = useI18n()
 
 const { person, error, spoilersRevealed } = usePersonRouteProvider()
 
@@ -85,9 +88,13 @@ async function handleToggleFavorite() {
       .update(persons)
       .set({ isFavorite: !current.isFavorite })
       .where(eq(persons.id, current.id))
-    notify.success(current.isFavorite ? '已取消喜欢' : '已添加至喜欢')
+    notify.success(
+      current.isFavorite
+        ? m.value.library.feedback.favoriteRemoved
+        : m.value.library.feedback.favoriteAdded
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -118,7 +125,7 @@ function handleRevealSpoilersConfirm() {
     v-else-if="!person"
     state="not-found"
     :icon="getEntityIcon('person')"
-    title="人员不存在"
+    :title="m.library.detail.notFoundTitle({ label: m.library.entities.person })"
     class="h-full bg-background"
   />
 
@@ -136,7 +143,7 @@ function handleRevealSpoilersConfirm() {
           variant="secondary"
           size="icon-sm"
           class="flex items-center py-0"
-          tooltip="评分"
+          :tooltip="m.library.detail.tooltips.score"
           @click="scoreDialogOpen = true"
         >
           <Icon
@@ -153,7 +160,11 @@ function handleRevealSpoilersConfirm() {
         <Button
           variant="secondary"
           size="icon-sm"
-          :tooltip="person!.isFavorite ? '取消喜欢' : '添加喜欢'"
+          :tooltip="
+            person!.isFavorite
+              ? m.library.detail.tooltips.favoriteRemove
+              : m.library.detail.tooltips.favoriteAdd
+          "
           :disabled="isPendingFavorite"
           @click="handleToggleFavorite"
         >
@@ -166,7 +177,11 @@ function handleRevealSpoilersConfirm() {
         <Button
           variant="secondary"
           size="icon-sm"
-          :tooltip="spoilersRevealed ? '隐藏剧透' : '显示剧透'"
+          :tooltip="
+            spoilersRevealed
+              ? m.library.detail.tooltips.spoilerHide
+              : m.library.detail.tooltips.spoilerShow
+          "
           @click="handleToggleSpoilers"
         >
           <Icon

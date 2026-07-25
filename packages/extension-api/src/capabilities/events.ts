@@ -1,5 +1,4 @@
 import type {
-  AppLocale,
   Disposable,
   ExternalId,
   LibraryBloodType,
@@ -9,7 +8,8 @@ import type {
   PartialDate,
   RelatedSite,
   JsonObject,
-  JsonValue
+  JsonValue,
+  UiLocale
 } from '../shared'
 import type { DynamicCollectionConfig, LibraryGameStatus } from './library/entities'
 
@@ -403,7 +403,7 @@ export interface LibraryTagDeletedEvent {
 
 export interface HostEvents {
   'app.ready': Record<string, never>
-  'app.locale.changed': { locale: AppLocale | null }
+  'app.ui-locale.changed': { preference: UiLocale | null; effective: UiLocale }
   'app.settings.changed': { key: string; value: JsonValue | undefined }
   'app.theme.changed': { themeId: string; mode: 'light' | 'dark' | 'system' }
   'extension.enabled': { extensionId: string }

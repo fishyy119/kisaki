@@ -45,7 +45,6 @@
     "electron-window-state": "^5.0.3",
     "fflate": "catalog:",
     "file-type": "^22.0.1",
-    "i18next": "^26.3.6",
     "nanoid": "^5.1.16",
     "semver": "catalog:",
     "sharp": "^0.35.3",

@@ -1,5 +1,4 @@
 import type { Disposable, ScraperProfileSummary } from '@kisaki3/extension-sdk'
-import type { BangumiCollectionType } from '../api/types'
 import type { BangumiMediaScope, BangumiSupportedSubjectType } from './scopes'
 
 export interface ExternalIdRef {
@@ -85,8 +84,6 @@ export interface LocalMediaAdapter {
 export interface BangumiMediaDescriptor {
   scope: BangumiMediaScope
   subjectType: BangumiSupportedSubjectType
-  label: string
-  collectionLabels: Record<BangumiCollectionType, string>
   localAdapter?: LocalMediaAdapter | undefined
 }
 

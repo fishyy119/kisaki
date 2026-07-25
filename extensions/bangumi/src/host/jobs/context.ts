@@ -25,6 +25,7 @@ import {
   type BangumiJobSummary
 } from './summary'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 
 /**
  * Representative failures forwarded to the task run result. The full error
@@ -138,7 +139,7 @@ export async function runBangumiJob(
     const summary = createSummary(state)
     await finishRun(logger, () =>
       context.run.complete({
-        summary: 'Bangumi job 已完成。',
+        summary: m().jobs.completed,
         output: toTaskRunOutput(summary),
         counters: state.counters,
         warnings: toTaskRunWarnings(summary)
@@ -147,11 +148,11 @@ export async function runBangumiJob(
     return summary
   } catch (error) {
     if (isTaskRunCancellation(error) || isCancellationError(error) || context.run.signal.aborted) {
-      job.report('cancelled', 'Bangumi job 已取消。', { indeterminate: true })
+      job.report('cancelled', m().jobs.cancelled, { indeterminate: true })
       const summary = createSummary(state)
       await finishRun(logger, () =>
         context.run.cancel({
-          summary: 'Bangumi job 已取消。',
+          summary: m().jobs.cancelled,
           output: toTaskRunOutput(summary),
           counters: state.counters,
           warnings: toTaskRunWarnings(summary)
@@ -235,7 +236,7 @@ function toUserErrorMessage(error: unknown): string {
     return error.message.trim()
   }
 
-  return 'Bangumi job 执行失败。'
+  return m().errors.jobFailed
 }
 
 function toSafeErrorLog(error: unknown): Record<string, unknown> {

@@ -13,6 +13,9 @@ import {
   ImageCropperDialog,
   type CropConfirmPayload
 } from '@renderer/components/ui/image-cropper-dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 type CompanyMediaType = 'logo'
 
@@ -31,9 +34,9 @@ const isCropping = ref(false)
 const imageSrc = computed(
   () => `attachment://companies/${props.companyId}/${props.currentFileName}`
 )
-const MEDIA_TYPE_LABEL: Record<CompanyMediaType, string> = {
-  logo: 'Logo'
-}
+const MEDIA_TYPE_LABEL = computed<Record<CompanyMediaType, string>>(() => ({
+  logo: m.value.library.forms.mediaTypes.logo
+}))
 const MEDIA_TYPE_TO_ASPECT: Record<CompanyMediaType, number | undefined> = {
   logo: 1
 }
@@ -41,7 +44,9 @@ const MEDIA_TYPE_TO_ASPECT_LABEL: Record<CompanyMediaType, string | undefined> =
   logo: '1:1'
 }
 
-const dialogTitle = computed(() => `裁剪${MEDIA_TYPE_LABEL[props.mediaType]}`)
+const dialogTitle = computed(() =>
+  m.value.library.forms.cropMediaTitle({ label: MEDIA_TYPE_LABEL.value[props.mediaType] })
+)
 const aspectRatio = computed(() => MEDIA_TYPE_TO_ASPECT[props.mediaType])
 const aspectLabel = computed(() => MEDIA_TYPE_TO_ASPECT_LABEL[props.mediaType])
 
@@ -58,7 +63,7 @@ async function handleConfirm(payload: CropConfirmPayload) {
       { format: 'keep' }
     )
     if (!croppedResult.success) {
-      notify.error('裁剪失败', croppedResult.error)
+      notify.error(m.value.library.forms.cropFailed, croppedResult.error)
       return
     }
 
@@ -67,10 +72,10 @@ async function handleConfirm(payload: CropConfirmPayload) {
       path: croppedResult.data
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
     open.value = false
   } catch (error) {
-    notify.error('裁剪失败', (error as Error).message)
+    notify.error(m.value.library.forms.cropFailed, (error as Error).message)
   } finally {
     isCropping.value = false
   }

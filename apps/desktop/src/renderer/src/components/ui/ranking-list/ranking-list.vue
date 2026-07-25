@@ -17,13 +17,17 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import RankingListRows from './ranking-list-rows.vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { RankingListProps } from './types'
 
 const props = withDefaults(defineProps<RankingListProps>(), {
   maxItems: 8,
-  columns: 1,
-  expandTitle: '排行'
+  columns: 1
 })
+
+const { m } = useI18n()
+
+const expandTitleText = computed(() => props.expandTitle ?? m.value.ui.rankingList.expandTitle)
 
 const dialogOpen = ref(false)
 
@@ -72,7 +76,7 @@ const inlineColumns = computed(() => {
       class="mt-1 w-full text-muted-foreground"
       @click="dialogOpen = true"
     >
-      查看全部 {{ props.items.length }} 项
+      {{ m.ui.rankingList.viewAll({ count: props.items.length }) }}
     </Button>
 
     <Dialog
@@ -81,7 +85,7 @@ const inlineColumns = computed(() => {
     >
       <DialogContent class="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{{ props.expandTitle }}</DialogTitle>
+          <DialogTitle>{{ expandTitleText }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="max-h-[65vh] overflow-y-auto scrollbar-thin">
           <RankingListRows

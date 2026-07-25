@@ -8,7 +8,7 @@
  */
 
 import type { GameScraperSlot } from '@shared/db'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
@@ -99,7 +99,7 @@ export class YmgalProvider implements GameScraperProvider {
   // Search
   // ===========================================================================
 
-  public async search(query: string, locale?: Locale): Promise<GameSearchResult[]> {
+  public async search(query: string, locale?: ContentLocale): Promise<GameSearchResult[]> {
     const keyword = query.trim()
     if (!keyword) return []
 
@@ -125,7 +125,10 @@ export class YmgalProvider implements GameScraperProvider {
     return ordered.slice(0, 25)
   }
 
-  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+  public async resolve(
+    lookup: ScraperLookup,
+    locale: ContentLocale
+  ): Promise<GameResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
@@ -141,7 +144,7 @@ export class YmgalProvider implements GameScraperProvider {
 
   public async openSession(
     target: GameResolvedTarget,
-    locale: Locale
+    locale: ContentLocale
   ): Promise<GameScraperSession> {
     const gameId = normalizeYmgalId(target.id, 'YMGal game id')
     const getArchive = this.memoizeTask(() => this.client.getGameArchive(gameId))
@@ -243,7 +246,7 @@ export class YmgalProvider implements GameScraperProvider {
 
   private async buildInfo(
     getArchive: () => Promise<YmgalGameArchiveData>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGameInfo> {
     const archive = await getArchive()
     const game = archive.game
@@ -280,7 +283,7 @@ export class YmgalProvider implements GameScraperProvider {
     getArchive: () => Promise<YmgalGameArchiveData>,
     getCharacterDetails: () => Promise<Map<string, YmgalCharacter>>,
     getPersonDetails: () => Promise<Map<string, YmgalPerson>>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGameCharacterFact[]> {
     const archive = await getArchive()
     const relations = archive.game.characters ?? []
@@ -340,7 +343,7 @@ export class YmgalProvider implements GameScraperProvider {
   private async buildPersons(
     getArchive: () => Promise<YmgalGameArchiveData>,
     getPersonDetails: () => Promise<Map<string, YmgalPerson>>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGamePersonFact[]> {
     const archive = await getArchive()
     const game = archive.game
@@ -378,7 +381,7 @@ export class YmgalProvider implements GameScraperProvider {
 
   private async buildCompanies(
     getOrganizationResources: () => Promise<YmgalOrganizationResources>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGameCompanyFact[]> {
     const { developerId, organization, relatedGames } = await getOrganizationResources()
     if (!developerId) return []
@@ -432,7 +435,7 @@ export class YmgalProvider implements GameScraperProvider {
   // Helpers
   // ===========================================================================
 
-  private mapGameSearchResult(game: YmgalGame, locale?: Locale): GameSearchResult {
+  private mapGameSearchResult(game: YmgalGame, locale?: ContentLocale): GameSearchResult {
     const rawGameId = toYmgalId(game.gid)
     if (!rawGameId) {
       throw new Error(`Invalid YMGal game id: ${game.gid}`)
@@ -452,7 +455,7 @@ export class YmgalProvider implements GameScraperProvider {
 
   private mapSearchListItem(
     item: YmgalGameSearchListItem,
-    locale?: Locale
+    locale?: ContentLocale
   ): GameSearchResult | null {
     const itemId = toYmgalId(item.id) || toYmgalId(item.gid)
     const name = item.name?.trim()
@@ -493,7 +496,7 @@ export class YmgalProvider implements GameScraperProvider {
     relation: YmgalCharacterRelation,
     archive: YmgalGameArchiveData,
     actorDetails: Map<string, YmgalPerson>,
-    locale?: Locale
+    locale?: ContentLocale
   ): ScrapedCharacterPersonFact[] {
     const actorId = toYmgalId(relation.cvId)
     if (!actorId) return []
@@ -536,7 +539,7 @@ export class YmgalProvider implements GameScraperProvider {
     staff: YmgalStaff,
     detail: YmgalPerson | undefined,
     snapshot: YmgalPersonMapping | undefined,
-    locale?: Locale
+    locale?: ContentLocale
   ): ScrapedGamePersonFact {
     const base = this.buildGamePersonBase(personId, detail, snapshot, locale)
     const role = this.resolveStaffRoleName(staff)
@@ -553,7 +556,7 @@ export class YmgalProvider implements GameScraperProvider {
     personId: string,
     detail: YmgalPerson | undefined,
     snapshot: YmgalPersonMapping | undefined,
-    locale?: Locale
+    locale?: ContentLocale
   ): Omit<ScrapedGamePersonFact, 'type' | 'note'> {
     const { name, originalName } = resolveLocalizedName(
       detail?.name || snapshot?.name || personId,

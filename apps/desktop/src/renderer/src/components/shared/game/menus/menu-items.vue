@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid'
 import { eq, and } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -20,16 +20,6 @@ import { usePreferencesStore } from '@renderer/stores'
 import { games, collections, collectionGameLinks, type Game } from '@shared/db'
 import { Status } from '@shared/db'
 import type { MenuComponents } from '@renderer/types'
-
-// Status options for selection
-const STATUS_OPTIONS: { value: Status; label: string }[] = [
-  { value: 'notStarted', label: '未开始' },
-  { value: 'inProgress', label: '进行中' },
-  { value: 'partial', label: '部分完成' },
-  { value: 'completed', label: '已完成' },
-  { value: 'multiple', label: '多周目' },
-  { value: 'shelved', label: '已搁置' }
-]
 
 interface Props {
   gameId: string
@@ -45,6 +35,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
+
+const { m } = useI18n()
+
+// Status options for selection
+const statusOptions = computed<{ value: Status; label: string }[]>(() =>
+  (['notStarted', 'inProgress', 'partial', 'completed', 'multiple', 'shelved'] as const).map(
+    (value) => ({ value, label: m.value.library.status[value] })
+  )
+)
 
 const emit = defineEmits<{
   openScoreDialog: []
@@ -137,9 +136,9 @@ async function handleAddToCollection(collectionId: string) {
       collectionId,
       gameId: props.gameId
     })
-    notify.success('已添加至合集')
+    notify.success(m.value.library.feedback.addedToCollection)
   } catch {
-    notify.error('添加失败')
+    notify.error(m.value.library.feedback.addFailed)
   }
 }
 
@@ -153,9 +152,9 @@ async function handleRemoveFromCollection(collectionId: string) {
           eq(collectionGameLinks.collectionId, collectionId)
         )
       )
-    notify.success('已从合集中移除')
+    notify.success(m.value.library.feedback.removedFromCollection)
   } catch {
-    notify.error('移除失败')
+    notify.error(m.value.library.feedback.removeFailed)
   }
 }
 
@@ -166,9 +165,9 @@ const statusModel = computed({
     if (!status) return
     try {
       await db.update(games).set({ status }).where(eq(games.id, props.gameId))
-      notify.success('状态已更新')
+      notify.success(m.value.library.feedback.statusUpdated)
     } catch {
-      notify.error('更新失败')
+      notify.error(m.value.library.feedback.updateFailed)
     }
   }
 })
@@ -177,9 +176,11 @@ async function handleToggleNsfw() {
   if (!game.value) return
   try {
     await db.update(games).set({ isNsfw: !game.value.isNsfw }).where(eq(games.id, props.gameId))
-    notify.success(game.value.isNsfw ? '已取消 NSFW 标记' : '已标记为 NSFW')
+    notify.success(
+      game.value.isNsfw ? m.value.library.feedback.nsfwCleared : m.value.library.feedback.nsfwMarked
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 
@@ -190,9 +191,13 @@ async function handleToggleFavorite() {
       .update(games)
       .set({ isFavorite: !game.value.isFavorite })
       .where(eq(games.id, props.gameId))
-    notify.success(game.value.isFavorite ? '已取消喜欢' : '已添加至我喜欢')
+    notify.success(
+      game.value.isFavorite
+        ? m.value.library.feedback.favoriteRemoved
+        : m.value.library.feedback.favoriteAdded
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 
@@ -201,12 +206,12 @@ async function handleOpenGameDir() {
   const pathToOpen =
     current?.gameDirPath || (current?.launcherMode === 'file' ? current?.launcherPath : null)
   if (!pathToOpen) {
-    notify.error('游戏目录未设置')
+    notify.error(m.value.library.feedback.gameDirNotSet)
     return
   }
   const result = await ipcManager.invoke('native:open-path', { path: pathToOpen, ensure: 'folder' })
   if (!result.success) {
-    notify.error('无法打开游戏目录')
+    notify.error(m.value.library.feedback.openGameDirFailed)
   }
 }
 </script>
@@ -221,7 +226,7 @@ async function handleOpenGameDir() {
           icon="icon-[mdi--folder-plus-outline]"
           class="size-4"
         />
-        添加至合集
+        {{ m.library.menu.addToCollection }}
       </component>
       <component
         :is="props.components.SubContent"
@@ -248,7 +253,7 @@ async function handleOpenGameDir() {
           v-else
           disabled
         >
-          <span class="text-muted-foreground">无可用合集</span>
+          <span class="text-muted-foreground">{{ m.library.menu.noCollections }}</span>
         </component>
         <component :is="props.components.Separator" />
         <component
@@ -259,7 +264,7 @@ async function handleOpenGameDir() {
             icon="icon-[mdi--plus]"
             class="size-4"
           />
-          新建合集...
+          {{ m.library.menu.newCollection }}
         </component>
       </component>
     </component>
@@ -274,7 +279,7 @@ async function handleOpenGameDir() {
           icon="icon-[mdi--folder-remove-outline]"
           class="size-4"
         />
-        从合集中移除
+        {{ m.library.menu.removeFromCollection }}
       </component>
       <component
         :is="props.components.SubContent"
@@ -306,7 +311,7 @@ async function handleOpenGameDir() {
           icon="icon-[mdi--bookmark-outline]"
           class="size-4"
         />
-        游玩状态
+        {{ m.library.menu.playStatus }}
       </component>
       <component
         :is="props.components.SubContent"
@@ -318,7 +323,7 @@ async function handleOpenGameDir() {
         >
           <component
             :is="props.components.RadioItem"
-            v-for="option in STATUS_OPTIONS"
+            v-for="option in statusOptions"
             :key="option.value"
             :value="option.value"
           >
@@ -337,7 +342,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--starburst-outline]"
         class="size-4"
       />
-      修改评分
+      {{ m.library.menu.editScore }}
     </component>
 
     <component :is="props.components.Separator" />
@@ -352,7 +357,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--heart-outline]"
         class="size-4"
       />
-      喜欢
+      {{ m.library.menu.favorite }}
     </component>
 
     <!-- Toggle NSFW -->
@@ -380,7 +385,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--folder-open-outline]"
         class="size-4"
       />
-      打开游戏目录
+      {{ m.library.menu.openGameDir }}
     </component>
 
     <!-- Launch Config -->
@@ -392,7 +397,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--power-settings-new]"
         class="size-4"
       />
-      启动配置
+      {{ m.library.menu.launchConfig }}
     </component>
 
     <!-- Media Management -->
@@ -404,7 +409,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--image-multiple-outline]"
         class="size-4"
       />
-      媒体管理
+      {{ m.library.menu.media }}
     </component>
 
     <!-- Metadata Update -->
@@ -416,7 +421,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--database-sync-outline]"
         class="size-4"
       />
-      更新元数据
+      {{ m.library.menu.updateMetadata }}
     </component>
 
     <component
@@ -427,7 +432,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--card-text-outline]"
         class="size-4"
       />
-      管理外部ID
+      {{ m.library.menu.manageExternalIds }}
     </component>
 
     <component
@@ -438,7 +443,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--source-merge]"
         class="size-4"
       />
-      合并重复实体
+      {{ m.library.menu.mergeDuplicates }}
     </component>
 
     <ExtensionEntityMenuItems
@@ -459,7 +464,7 @@ async function handleOpenGameDir() {
         icon="icon-[mdi--delete-outline]"
         class="size-4"
       />
-      删除
+      {{ m.common.delete }}
     </component>
   </template>
 </template>

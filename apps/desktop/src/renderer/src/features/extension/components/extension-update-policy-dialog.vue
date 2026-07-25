@@ -3,7 +3,7 @@ Extension Update Policy Dialog edits one installed extension update configuratio
 Boundary: calls set-update-policy IPC and leaves catalog refresh to the parent.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Spinner } from '@renderer/components/ui/spinner'
 import {
@@ -26,6 +26,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionInstalledPackageInfo, ExtensionInstallUpdatePolicy } from '@shared/extension'
 
 interface Props {
@@ -39,18 +40,21 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+const { m } = useI18n()
 const saving = ref(false)
 const updatePolicy = ref<ExtensionInstallUpdatePolicy>(currentPolicy())
 const includePreviewUpdates = ref(currentIncludePreviewUpdates())
 
-const POLICY_OPTIONS: {
-  value: ExtensionInstallUpdatePolicy
-  label: string
-}[] = [
-  { value: 'manual', label: '手动' },
-  { value: 'auto', label: '自动' },
-  { value: 'pinned', label: '锁定' }
-]
+const POLICY_OPTIONS = computed<
+  {
+    value: ExtensionInstallUpdatePolicy
+    label: string
+  }[]
+>(() => [
+  { value: 'manual', label: m.value.extension.policy.manual },
+  { value: 'auto', label: m.value.extension.policy.auto },
+  { value: 'pinned', label: m.value.extension.policy.pinned }
+])
 
 watch(open, (value) => {
   if (value) {
@@ -73,11 +77,14 @@ async function handleSave() {
         includePreviewUpdates: includePreviewUpdates.value
       })
     )
-    notify.success('更新配置已保存')
+    notify.success(m.value.extension.updatePolicyDialog.saved)
     open.value = false
     emit('updated')
   } catch (error) {
-    notify.error('保存更新配置失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.extension.updatePolicyDialog.saveFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     saving.value = false
   }
@@ -96,14 +103,14 @@ function currentIncludePreviewUpdates(): boolean {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>更新配置</DialogTitle>
+        <DialogTitle>{{ m.extension.updatePolicyDialog.title }}</DialogTitle>
         <DialogDescription>{{ props.extension.name }}</DialogDescription>
       </DialogHeader>
 
       <DialogBody>
         <FieldGroup>
           <Field orientation="horizontal">
-            <FieldLabel>更新策略</FieldLabel>
+            <FieldLabel>{{ m.extension.updatePolicyDialog.policyLabel }}</FieldLabel>
             <FieldContent>
               <Select v-model="updatePolicy">
                 <SelectTrigger class="w-36">
@@ -123,7 +130,7 @@ function currentIncludePreviewUpdates(): boolean {
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>接收预览版更新</FieldLabel>
+            <FieldLabel>{{ m.extension.updatePolicyDialog.receivePrerelease }}</FieldLabel>
             <FieldContent>
               <Switch v-model="includePreviewUpdates" />
             </FieldContent>
@@ -137,7 +144,7 @@ function currentIncludePreviewUpdates(): boolean {
           :disabled="saving"
           @click="open = false"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="saving"
@@ -147,7 +154,7 @@ function currentIncludePreviewUpdates(): boolean {
             v-if="saving"
             class="size-4"
           />
-          保存
+          {{ m.common.save }}
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -26,6 +26,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   enabled: true
 })
+
+const { m } = useI18n()
 
 const emit = defineEmits<{
   openEditDialog: []
@@ -60,9 +62,11 @@ async function handleToggleNsfw() {
   if (!tag.value) return
   try {
     await db.update(tags).set({ isNsfw: !tag.value.isNsfw }).where(eq(tags.id, props.tagId))
-    notify.success(tag.value.isNsfw ? '已取消 NSFW 标记' : '已标记为 NSFW')
+    notify.success(
+      tag.value.isNsfw ? m.value.library.feedback.nsfwCleared : m.value.library.feedback.nsfwMarked
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 </script>
@@ -79,7 +83,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--pencil-outline]"
         class="size-4"
       />
-      编辑
+      {{ m.common.edit }}
     </component>
 
     <component
@@ -90,7 +94,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--source-merge]"
         class="size-4"
       />
-      合并重复实体
+      {{ m.library.menu.mergeDuplicates }}
     </component>
 
     <component :is="props.components.Separator" />
@@ -126,7 +130,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--delete-outline]"
         class="size-4"
       />
-      删除
+      {{ m.common.delete }}
     </component>
   </template>
 </template>

@@ -12,6 +12,7 @@ import {
   PageHeaderTitle,
   type PageHeaderNavItem
 } from '@renderer/components/ui/page-header'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   reloadingExtensionHost?: boolean
@@ -31,26 +32,44 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<Emits>()
 
+const { m } = useI18n()
+
 const showPendingIndicator = computed(() => props.hasPendingReload && !props.reloadingExtensionHost)
 const reloadButtonTitle = computed(() =>
   props.hasPendingReload
-    ? `扩展代码已更新（${props.pendingReloadCount}），点击重载进程以应用`
-    : '重载扩展进程'
+    ? m.value.extension.header.reloadPending({ count: props.pendingReloadCount })
+    : m.value.extension.header.reloadHost
 )
 
-const navItems: PageHeaderNavItem[] = [
-  { routeName: 'extension-discover', label: '发现', icon: 'icon-[mdi--storefront-outline]' },
-  { routeName: 'extension-installed', label: '已安装', icon: 'icon-[mdi--check-circle-outline]' },
-  { routeName: 'extension-repositories', label: '仓库', icon: 'icon-[mdi--source-branch]' },
-  { routeName: 'extension-signers', label: '签名', icon: 'icon-[mdi--shield-key-outline]' }
-]
+const navItems = computed<PageHeaderNavItem[]>(() => [
+  {
+    routeName: 'extension-discover',
+    label: m.value.extension.nav.discover,
+    icon: 'icon-[mdi--storefront-outline]'
+  },
+  {
+    routeName: 'extension-installed',
+    label: m.value.extension.nav.installed,
+    icon: 'icon-[mdi--check-circle-outline]'
+  },
+  {
+    routeName: 'extension-repositories',
+    label: m.value.extension.nav.repositories,
+    icon: 'icon-[mdi--source-branch]'
+  },
+  {
+    routeName: 'extension-signers',
+    label: m.value.extension.nav.signers,
+    icon: 'icon-[mdi--shield-key-outline]'
+  }
+])
 </script>
 
 <template>
   <PageHeader back-to="/library">
     <!-- Left: Title and sub-route navigation -->
     <PageHeaderTitle
-      title="扩展"
+      :title="m.extension.title"
       icon="icon-[mdi--puzzle-outline]"
     />
     <PageHeaderNav :items="navItems" />
@@ -69,7 +88,7 @@ const navItems: PageHeaderNavItem[] = [
           :icon="props.reloadingExtensionHost ? 'icon-[mdi--loading]' : 'icon-[mdi--restart]'"
           :class="props.reloadingExtensionHost ? 'size-4 animate-spin' : 'size-4'"
         />
-        重载进程
+        {{ m.extension.header.reloadProcess }}
         <span
           v-if="showPendingIndicator"
           class="absolute -right-1 -top-1 size-2 rounded-full bg-warning ring-2 ring-surface"
@@ -87,7 +106,7 @@ const navItems: PageHeaderNavItem[] = [
           icon="icon-[mdi--plus]"
           class="size-4"
         />
-        安装扩展
+        {{ m.extension.header.install }}
       </Button>
     </template>
   </PageHeader>

@@ -43,42 +43,43 @@ import type {
   SortDirection
 } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const ENTITY_TYPES: { value: AllEntityType; label: string }[] = [
-  { value: 'game', label: '游戏' },
-  { value: 'character', label: '角色' },
-  { value: 'person', label: '人物' },
-  { value: 'company', label: '公司' },
-  { value: 'collection', label: '合集' },
-  { value: 'tag', label: '标签' }
-]
+const ENTITY_TYPES = computed<{ value: AllEntityType; label: string }[]>(() =>
+  (['game', 'character', 'person', 'company', 'collection', 'tag'] as const).map((value) => ({
+    value,
+    label: m.value.library.entities[value]
+  }))
+)
 
-const LAYOUTS = [
-  { value: 'horizontal', label: '横向滚动' },
-  { value: 'grid', label: '网格' }
-]
+const LAYOUTS = computed(() => [
+  { value: 'horizontal', label: m.value.library.showcase.layoutHorizontal },
+  { value: 'grid', label: m.value.library.showcase.layoutGrid }
+])
 
-const ITEM_SIZES = [
-  { value: 'xs', label: '超小' },
-  { value: 'sm', label: '小' },
-  { value: 'md', label: '中' },
-  { value: 'lg', label: '大' },
-  { value: 'xl', label: '超大' }
-]
+const ITEM_SIZES = computed(() => [
+  { value: 'xs', label: m.value.library.showcase.form.cardSizeXs },
+  { value: 'sm', label: m.value.library.showcase.form.cardSizeSm },
+  { value: 'md', label: m.value.library.showcase.form.cardSizeMd },
+  { value: 'lg', label: m.value.library.showcase.form.cardSizeLg },
+  { value: 'xl', label: m.value.library.showcase.form.cardSizeXl }
+])
 
-const SORT_DIRECTIONS = [
-  { value: 'asc', label: '升序' },
-  { value: 'desc', label: '降序' }
-]
+const SORT_DIRECTIONS = computed(() => [
+  { value: 'asc', label: m.value.library.showcase.form.sortAsc },
+  { value: 'desc', label: m.value.library.showcase.form.sortDesc }
+])
 
-const OPEN_MODES: { value: SectionOpenMode; label: string }[] = [
-  { value: 'page', label: '页面' },
-  { value: 'dialog', label: '弹窗' }
-]
+const OPEN_MODES = computed<{ value: SectionOpenMode; label: string }[]>(() => [
+  { value: 'page', label: m.value.library.showcase.form.openModePage },
+  { value: 'dialog', label: m.value.library.showcase.form.openModeDialog }
+])
 
 // =============================================================================
 // Props & Emits
@@ -174,17 +175,17 @@ watch(
 function getUiSpec(entityType: AllEntityType) {
   switch (entityType) {
     case 'game':
-      return gameFilterUiSpec
+      return gameFilterUiSpec.value
     case 'character':
-      return characterFilterUiSpec
+      return characterFilterUiSpec.value
     case 'person':
-      return personFilterUiSpec
+      return personFilterUiSpec.value
     case 'company':
-      return companyFilterUiSpec
+      return companyFilterUiSpec.value
     case 'collection':
-      return collectionFilterUiSpec
+      return collectionFilterUiSpec.value
     case 'tag':
-      return tagFilterUiSpec
+      return tagFilterUiSpec.value
   }
 }
 
@@ -194,7 +195,7 @@ function getUiSpec(entityType: AllEntityType) {
 
 function handleSubmit() {
   if (!formData.value.name.trim()) {
-    notify.error('请输入区块标题')
+    notify.error(m.value.library.showcase.form.titleRequired)
     return
   }
 
@@ -231,7 +232,9 @@ watch(open, (newOpen, oldOpen) => {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>{{ props.isNew ? '添加区块' : '编辑区块' }}</DialogTitle>
+        <DialogTitle>
+          {{ props.isNew ? m.library.showcase.form.addTitle : m.library.showcase.form.editTitle }}
+        </DialogTitle>
       </DialogHeader>
 
       <Form @submit="handleSubmit">
@@ -239,11 +242,11 @@ watch(open, (newOpen, oldOpen) => {
           <FieldGroup>
             <!-- Title -->
             <Field>
-              <FieldLabel>标题</FieldLabel>
+              <FieldLabel>{{ m.library.showcase.form.title }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.name"
-                  placeholder="输入区块标题..."
+                  :placeholder="m.library.showcase.form.titlePlaceholder"
                 />
               </FieldContent>
             </Field>
@@ -251,7 +254,7 @@ watch(open, (newOpen, oldOpen) => {
             <!-- Entity Type & Layout -->
             <div class="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel>实体类型</FieldLabel>
+                <FieldLabel>{{ m.library.showcase.form.entityType }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="formData.entityType">
                     <SelectTrigger class="w-full">
@@ -271,7 +274,7 @@ watch(open, (newOpen, oldOpen) => {
               </Field>
 
               <Field>
-                <FieldLabel>布局</FieldLabel>
+                <FieldLabel>{{ m.library.showcase.form.layout }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="formData.layout">
                     <SelectTrigger class="w-full">
@@ -293,7 +296,7 @@ watch(open, (newOpen, oldOpen) => {
 
             <!-- Open Mode -->
             <Field>
-              <FieldLabel>打开方式</FieldLabel>
+              <FieldLabel>{{ m.library.showcase.form.openMode }}</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.openMode">
                   <SelectTrigger class="w-full">
@@ -301,11 +304,11 @@ watch(open, (newOpen, oldOpen) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
-                      v-for="m in OPEN_MODES"
-                      :key="m.value"
-                      :value="m.value"
+                      v-for="mode in OPEN_MODES"
+                      :key="mode.value"
+                      :value="mode.value"
                     >
-                      {{ m.label }}
+                      {{ mode.label }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -315,7 +318,7 @@ watch(open, (newOpen, oldOpen) => {
             <!-- Size & Limit -->
             <div class="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel>卡片大小</FieldLabel>
+                <FieldLabel>{{ m.library.showcase.form.cardSize }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="formData.itemSize">
                     <SelectTrigger class="w-full">
@@ -335,12 +338,12 @@ watch(open, (newOpen, oldOpen) => {
               </Field>
 
               <Field>
-                <FieldLabel>显示数量</FieldLabel>
+                <FieldLabel>{{ m.library.showcase.form.displayCount }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.limit"
                     type="number"
-                    placeholder="不限"
+                    :placeholder="m.library.showcase.form.displayCountUnlimited"
                     min="1"
                   />
                 </FieldContent>
@@ -349,7 +352,7 @@ watch(open, (newOpen, oldOpen) => {
 
             <!-- Sort -->
             <Field>
-              <FieldLabel>排序</FieldLabel>
+              <FieldLabel>{{ m.library.showcase.form.sort }}</FieldLabel>
               <FieldContent>
                 <div class="flex gap-2">
                   <Select v-model="formData.sortField">
@@ -386,7 +389,7 @@ watch(open, (newOpen, oldOpen) => {
 
             <!-- Filter Button -->
             <Field>
-              <FieldLabel>筛选条件</FieldLabel>
+              <FieldLabel>{{ m.library.showcase.form.filters }}</FieldLabel>
               <FieldContent>
                 <Button
                   type="button"
@@ -396,10 +399,12 @@ watch(open, (newOpen, oldOpen) => {
                 >
                   <span class="icon-[mdi--filter-outline] size-4 mr-2 text-muted-foreground" />
                   <template v-if="activeFilterCount > 0">
-                    已设置 <span class="text-primary">{{ activeFilterCount }}</span> 个条件
+                    {{ m.library.showcase.form.filtersSetCount({ count: activeFilterCount }) }}
                   </template>
                   <template v-else>
-                    <span class="text-muted-foreground">点击设置筛选条件...</span>
+                    <span class="text-muted-foreground">
+                      {{ m.library.showcase.form.filtersClickToSet }}
+                    </span>
                   </template>
                 </Button>
               </FieldContent>
@@ -413,9 +418,9 @@ watch(open, (newOpen, oldOpen) => {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

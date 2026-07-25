@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   CompanyBasicFormDialog
   Dialog for editing company basic information.
   Uses two-layer pattern: outer handles data fetching, inner handles form state.
@@ -28,6 +28,9 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Company')
 
@@ -80,7 +83,9 @@ async function handleSubmit() {
   try {
     const foundedDateValidation = foundedDateInput.value?.validate()
     if (foundedDateValidation && !foundedDateValidation.valid) {
-      notify.error(foundedDateValidation.errorText ?? '成立日期格式不正确')
+      notify.error(
+        foundedDateValidation.errorText ?? m.value.library.forms.foundedDateInvalidFormat
+      )
       return
     }
     const foundedDate = foundedDateValidation?.value ?? formData.value.foundedDate
@@ -94,11 +99,11 @@ async function handleSubmit() {
         foundedDate
       })
       .where(eq(companies.id, props.companyId))
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -123,47 +128,49 @@ function handleCancel() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑基本信息</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editBasicInfo }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field>
-                <FieldLabel>名称</FieldLabel>
+                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    placeholder="公司名称"
+                    :placeholder="
+                      m.library.forms.namePlaceholder({ label: m.library.entities.company })
+                    "
                     required
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>原名</FieldLabel>
+                <FieldLabel>{{ m.library.fields.originalName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.originalName"
-                    placeholder="原文名称"
+                    :placeholder="m.library.forms.originalNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>排序名</FieldLabel>
+                <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.sortName"
-                    placeholder="用于排序的名称"
+                    :placeholder="m.library.forms.sortNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>成立日期</FieldLabel>
+                <FieldLabel>{{ m.library.fields.foundedDate }}</FieldLabel>
                 <FieldContent>
                   <PartialDateInput
                     ref="foundedDateInput"
                     v-model="formData.foundedDate"
                     :messages="{
-                      yearDayWithoutMonthText: '成立日期填写了年份和日期时，必须同时填写月份。'
+                      yearDayWithoutMonthText: m.library.forms.foundedDateYearDayWithoutMonth
                     }"
                   />
                 </FieldContent>
@@ -177,13 +184,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

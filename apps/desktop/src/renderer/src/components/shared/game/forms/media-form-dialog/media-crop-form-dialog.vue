@@ -15,6 +15,9 @@ import {
   ImageCropperDialog,
   type CropConfirmPayload
 } from '@renderer/components/ui/image-cropper-dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   gameId: string
@@ -41,17 +44,19 @@ const ASPECT_LABELS: Record<GameMediaType, string | undefined> = {
   icon: '1:1'
 }
 
-const MEDIA_TYPE_LABELS: Record<GameMediaType, string> = {
-  cover: '封面',
-  backdrop: '背景',
-  logo: 'Logo',
-  icon: '图标'
-}
+const MEDIA_TYPE_LABELS = computed<Record<GameMediaType, string>>(() => ({
+  cover: m.value.library.forms.mediaTypes.cover,
+  backdrop: m.value.library.forms.mediaTypes.backdrop,
+  logo: m.value.library.forms.mediaTypes.logo,
+  icon: m.value.library.forms.mediaTypes.icon
+}))
 
 const isCropping = ref(false)
 
 const imageSrc = computed(() => `attachment://games/${props.gameId}/${props.currentFileName}`)
-const dialogTitle = computed(() => `裁剪${MEDIA_TYPE_LABELS[props.mediaType]}`)
+const dialogTitle = computed(() =>
+  m.value.library.forms.cropMediaTitle({ label: MEDIA_TYPE_LABELS.value[props.mediaType] })
+)
 const aspectRatio = computed(() => ASPECT_RATIOS[props.mediaType])
 const aspectLabel = computed(() => ASPECT_LABELS[props.mediaType])
 
@@ -68,7 +73,7 @@ async function handleConfirm(payload: CropConfirmPayload) {
       { format: 'keep' }
     )
     if (!croppedResult.success) {
-      notify.error('裁剪失败', croppedResult.error)
+      notify.error(m.value.library.forms.cropFailed, croppedResult.error)
       return
     }
 
@@ -77,10 +82,10 @@ async function handleConfirm(payload: CropConfirmPayload) {
       path: croppedResult.data
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
     open.value = false
   } catch (error) {
-    notify.error('裁剪失败', (error as Error).message)
+    notify.error(m.value.library.forms.cropFailed, (error as Error).message)
   } finally {
     isCropping.value = false
   }

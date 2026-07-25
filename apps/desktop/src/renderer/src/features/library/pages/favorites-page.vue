@@ -15,22 +15,9 @@ import { EntityCard } from '@renderer/components/shared'
 import type { Game, Character, Person, Company } from '@shared/db'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import { useFavorites } from '../composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 
-// =============================================================================
-// Types & Config
-// =============================================================================
-
-interface EntityConfig {
-  label: string
-  unitLabel: string
-}
-
-const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
-  game: { label: '游戏', unitLabel: '款' },
-  character: { label: '角色', unitLabel: '个' },
-  person: { label: '人物', unitLabel: '位' },
-  company: { label: '公司', unitLabel: '家' }
-}
+const { m } = useI18n()
 
 type EntityData = Game | Character | Person | Company
 
@@ -78,10 +65,10 @@ function handleEntityClick(entity: EntityData) {
     <!-- Header -->
     <PageHeader back-to="/library">
       <PageHeaderTitle
-        title="喜欢"
+        :title="m.library.pages.favoritesTitle"
         icon="icon-[mdi--heart-outline]"
       >
-        {{ entities.length }} {{ ENTITY_CONFIG[entityType].unitLabel }}
+        {{ m.library.counts[entityType]({ count: entities.length }) }}
       </PageHeaderTitle>
 
       <template #actions>
@@ -92,7 +79,7 @@ function handleEntityClick(entity: EntityData) {
             :key="type"
             :value="type"
           >
-            {{ ENTITY_CONFIG[type].label }}
+            {{ m.library.entities[type] }}
           </SegmentedControlItem>
         </SegmentedControl>
       </template>
@@ -108,7 +95,7 @@ function handleEntityClick(entity: EntityData) {
         v-if="entities.length === 0"
         state="empty"
         icon="icon-[mdi--heart-off-outline]"
-        :description="`暂无喜欢的${ENTITY_CONFIG[entityType].label}`"
+        :description="m.library.pages.favoritesEmpty({ label: m.library.entities[entityType] })"
         class="h-full"
       />
 

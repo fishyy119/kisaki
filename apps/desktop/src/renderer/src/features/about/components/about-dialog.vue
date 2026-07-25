@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { ipcManager } from '@renderer/core/ipc'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -22,6 +23,8 @@ import kisakiIcon from '@assets/icon-128.png'
 
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const appVersion = ref('...')
 const isUpdaterDialogOpen = ref(false)
 
@@ -35,7 +38,10 @@ onMounted(async () => {
     }
   } catch (error) {
     appVersion.value = 'unknown'
-    notify.error('读取版本失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.app.about.readVersionFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   }
 })
 
@@ -48,86 +54,86 @@ function handleOpenUpdaterDialog() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>关于 Kisaki</DialogTitle>
+        <DialogTitle>{{ m.app.about.title }}</DialogTitle>
       </DialogHeader>
 
       <DialogBody class="space-y-5">
         <img
           :src="kisakiIcon"
           class="mx-auto size-12 border shadow-raised rounded-md"
-          alt="Kisaki Icon"
+          alt="Kisaki"
         />
 
         <div
           class="rounded-md border border-border bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground"
         >
-          <p>Kisaki 是一个多功能的媒体管理项目</p>
-          <p>旨在提供一个统一的用户界面和数据库模型</p>
-          <p>来记录、管理、构建、同步、展示您的媒体馆藏与回忆</p>
+          <p>{{ m.app.about.tagline1 }}</p>
+          <p>{{ m.app.about.tagline2 }}</p>
+          <p>{{ m.app.about.tagline3 }}</p>
         </div>
 
         <FieldGroup>
           <Field orientation="horizontal">
-            <FieldLabel>作者</FieldLabel>
+            <FieldLabel>{{ m.app.about.authorLabel }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <a
                 href="https://github.com/ximu3/"
                 target="_blank"
                 class="text-sm text-blue-500 hover:underline"
               >
-                ximu
+                {{ m.app.about.authorName }}
               </a>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>仓库</FieldLabel>
+            <FieldLabel>{{ m.app.about.repoLabel }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <a
                 href="https://github.com/ximu3/kisaki/"
                 target="_blank"
                 class="text-sm text-blue-500 hover:underline"
               >
-                Github Repository
+                {{ m.app.about.repoLink }}
               </a>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>反馈</FieldLabel>
+            <FieldLabel>{{ m.app.about.feedbackLabel }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <a
                 href="https://github.com/ximu3/kisaki/issues"
                 target="_blank"
                 class="text-sm text-blue-500 hover:underline"
               >
-                Github Issues
+                {{ m.app.about.feedbackLink }}
               </a>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>群组</FieldLabel>
+            <FieldLabel>{{ m.app.about.communityLabel }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <a
                 href="https://t.me/kisaki3"
                 target="_blank"
                 class="text-sm text-blue-500 hover:underline"
               >
-                Telegram 群组
+                {{ m.app.about.telegramGroup }}
               </a>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>版本</FieldLabel>
+            <FieldLabel>{{ m.app.about.versionLabel }}</FieldLabel>
             <FieldContent class="flex-row items-center gap-1.5 justify-self-start">
               <span class="text-sm">v{{ appVersion }}</span>
               <Button
                 type="button"
                 variant="outline"
                 size="icon-xs"
-                title="检查更新"
+                :title="m.app.about.checkUpdates"
                 @click="handleOpenUpdaterDialog"
               >
                 <Icon
@@ -146,7 +152,7 @@ function handleOpenUpdaterDialog() {
           variant="outline"
           @click="open = false"
         >
-          关闭
+          {{ m.common.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

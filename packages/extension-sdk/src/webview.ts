@@ -2,6 +2,7 @@ import type {
   Disposable,
   JsonObject,
   JsonValue,
+  UiLocale,
   WebviewAppearance,
   WebviewBootstrapPayload,
   WebviewClient,
@@ -10,7 +11,7 @@ import type {
   WebviewTheme,
   WebviewTypography
 } from '@kisaki3/extension-api'
-import { WEBVIEW_BOOTSTRAP_QUERY_PARAM, toJsonValue } from '@kisaki3/extension-api'
+import { UI_LOCALES, WEBVIEW_BOOTSTRAP_QUERY_PARAM, toJsonValue } from '@kisaki3/extension-api'
 
 export { createWebviewRpc } from './shared/webview-rpc'
 export type {
@@ -22,6 +23,7 @@ export type {
   Disposable,
   JsonObject,
   JsonValue,
+  UiLocale,
   WebviewAppearance,
   WebviewBootstrapPayload,
   WebviewClient,
@@ -35,11 +37,13 @@ interface WebviewClientConnection {
   readonly bootstrap: WebviewBootstrapPayload
   theme: WebviewTheme
   typography: WebviewTypography
+  uiLocale: UiLocale
 }
 
 const messageListeners = new Set<(message: JsonValue) => void>()
 const themeListeners = new Set<(theme: WebviewTheme) => void>()
 const typographyListeners = new Set<(typography: WebviewTypography) => void>()
+const uiLocaleListeners = new Set<(uiLocale: UiLocale) => void>()
 const bufferedMessages: JsonValue[] = []
 const injectedFontStylesheets = new Map<string, HTMLLinkElement>()
 
@@ -70,8 +74,13 @@ function isBootstrapPayload(value: unknown): value is WebviewBootstrapPayload {
     typeof value.extensionId === 'string' &&
     value.extensionId.length > 0 &&
     isRecord(value.params) &&
-    isWebviewAppearance(value.appearance)
+    isWebviewAppearance(value.appearance) &&
+    isUiLocale(value.uiLocale)
   )
+}
+
+function isUiLocale(value: unknown): value is UiLocale {
+  return typeof value === 'string' && (UI_LOCALES as readonly string[]).includes(value)
 }
 
 function isWebviewAppearance(value: unknown): value is WebviewAppearance {
@@ -218,7 +227,8 @@ function connect(): WebviewClientConnection | null {
   const state: WebviewClientConnection = {
     bootstrap,
     theme: bootstrap.appearance.theme,
-    typography: bootstrap.appearance.typography
+    typography: bootstrap.appearance.typography,
+    uiLocale: bootstrap.uiLocale
   }
 
   window.addEventListener('message', (event) => {
@@ -234,13 +244,36 @@ function connect(): WebviewClientConnection | null {
 
     if (envelope.type === 'kisaki-webview:appearance') {
       applyAppearance(state, envelope.appearance)
+      return
+    }
+
+    if (envelope.type === 'kisaki-webview:ui-locale') {
+      applyUiLocale(state, envelope.uiLocale)
     }
   })
 
   applyAppearanceToDocument(bootstrap.appearance)
+  applyUiLocaleToDocument(bootstrap.uiLocale)
   postToEmbedder({ type: 'kisaki-webview:ready', webviewId: bootstrap.webviewId })
 
   return state
+}
+
+/** Mirrors the host UI locale onto the document `lang` attribute. */
+function applyUiLocaleToDocument(uiLocale: UiLocale): void {
+  document.documentElement.lang = uiLocale
+}
+
+function applyUiLocale(state: WebviewClientConnection, uiLocale: UiLocale): void {
+  if (state.uiLocale === uiLocale) {
+    return
+  }
+
+  state.uiLocale = uiLocale
+  applyUiLocaleToDocument(uiLocale)
+  for (const listener of uiLocaleListeners) {
+    listener(uiLocale)
+  }
 }
 
 /**
@@ -301,6 +334,9 @@ export const webview: WebviewClient = {
   get typography(): WebviewTypography {
     return requireConnection().typography
   },
+  get uiLocale(): UiLocale {
+    return requireConnection().uiLocale
+  },
   onThemeChange(listener: (theme: WebviewTheme) => void): Disposable {
     requireConnection()
     themeListeners.add(listener)
@@ -316,6 +352,15 @@ export const webview: WebviewClient = {
     return {
       dispose() {
         typographyListeners.delete(listener)
+      }
+    }
+  },
+  onUiLocaleChange(listener: (uiLocale: UiLocale) => void): Disposable {
+    requireConnection()
+    uiLocaleListeners.add(listener)
+    return {
+      dispose() {
+        uiLocaleListeners.delete(listener)
       }
     }
   },

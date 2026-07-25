@@ -6,6 +6,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   totalAutomations: number
@@ -22,17 +23,19 @@ const props = withDefaults(defineProps<Props>(), {
   refreshing: false
 })
 const emit = defineEmits<Emits>()
+
+const { m } = useI18n()
 </script>
 
 <template>
   <PageHeader>
     <PageHeaderTitle
-      title="自动化"
+      :title="m.automation.title"
       icon="icon-[mdi--timer-outline]"
     >
-      {{ props.totalAutomations }} 个自动化
+      {{ m.automation.countSummary({ count: props.totalAutomations }) }}
       <template v-if="props.runningAutomations > 0">
-        · {{ props.runningAutomations }} 个运行中</template
+        · {{ m.automation.runningSummary({ count: props.runningAutomations }) }}</template
       >
     </PageHeaderTitle>
 
@@ -40,7 +43,7 @@ const emit = defineEmits<Emits>()
       <Button
         variant="secondary"
         size="icon-sm"
-        tooltip="刷新"
+        :tooltip="m.common.refresh"
         :disabled="props.refreshing"
         @click="emit('refresh')"
       >
@@ -57,7 +60,7 @@ const emit = defineEmits<Emits>()
           icon="icon-[mdi--plus]"
           class="size-4"
         />
-        添加自动化
+        {{ m.automation.addAutomation }}
       </Button>
     </template>
   </PageHeader>

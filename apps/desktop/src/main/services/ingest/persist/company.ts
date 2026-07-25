@@ -1,4 +1,5 @@
 import type { DbContext, DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type {
   IngestAddCompanyFromScraperOptions,
   IngestAddCompanyFromScraperResult
@@ -24,7 +25,10 @@ type CompanyPersistOptions = IngestAddCompanyFromScraperOptions &
   Pick<IngestOperationOptions, 'signal' | 'onProgress'>
 
 export class CompanyIngestPersistHandler {
-  constructor(private readonly dbService: DbService) {}
+  constructor(
+    private readonly dbService: DbService,
+    private readonly i18nService: I18nService
+  ) {}
 
   persistCompanyGraph(
     graph: IngestCompanyGraph,
@@ -50,7 +54,7 @@ export class CompanyIngestPersistHandler {
     if (result.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        label: '正在保存公司媒体资源'
+        label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'company' })
       })
     }
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {

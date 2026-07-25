@@ -8,6 +8,7 @@
 -->
 
 <script setup lang="ts">
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import { StateView } from '@renderer/components/ui/state-view'
 import {
@@ -18,6 +19,8 @@ import {
   StatisticsGameRanking,
   StatisticsCollectionRanking
 } from '../components'
+
+const { m } = useI18n()
 
 const { allTimeSessions, error } = useStatistics()
 </script>
@@ -39,19 +42,19 @@ const { allTimeSessions, error } = useStatistics()
     </div>
 
     <div class="p-4">
-      <StatisticsActivityHeatmap title="活动热力图" />
+      <StatisticsActivityHeatmap :title="m.statistics.charts.heatmapTitle" />
     </div>
 
     <!-- Charts band -->
     <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsTimeTrend
-          title="游玩趋势"
+          :title="m.statistics.charts.trendTitle"
           default-granularity="monthly"
         />
       </div>
       <div class="min-w-0 p-4 xl:border-l">
-        <StatisticsTimeDistribution title="时段分布" />
+        <StatisticsTimeDistribution :title="m.statistics.charts.distributionTitle" />
       </div>
     </div>
 
@@ -59,13 +62,13 @@ const { allTimeSessions, error } = useStatistics()
     <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsGameRanking
-          title="游戏排行"
+          :title="m.statistics.ranking.gameTitle"
           :sessions="allTimeSessions"
         />
       </div>
       <div class="min-w-0 p-4 xl:border-l">
         <StatisticsCollectionRanking
-          title="收藏排行"
+          :title="m.statistics.ranking.collectionTitle"
           :sessions="allTimeSessions"
         />
       </div>

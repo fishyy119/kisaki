@@ -11,7 +11,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -30,11 +30,24 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
-  placeholder: '搜索角色...',
-  emptyText: '选择角色...',
+  placeholder: undefined,
+  emptyText: undefined,
   disabled: false,
   excludeIds: () => []
 })
+
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () =>
+    props.placeholder ??
+    m.value.library.select.searchPlaceholder({ label: m.value.library.entities.character })
+)
+const emptyTextValue = computed(
+  () =>
+    props.emptyText ??
+    m.value.library.select.selectPlaceholder({ label: m.value.library.entities.character })
+)
 
 /** Currently selected character ID (single mode) */
 const modelValue = defineModel<string>({ default: '' })
@@ -101,8 +114,8 @@ const selectedIds = computed({
   <VirtualizedCombobox
     v-model:selected-ids="selectedIds"
     :entities="characterEntities"
-    :placeholder="placeholder"
-    :empty-text="emptyText"
+    :placeholder="placeholderText"
+    :empty-text="emptyTextValue"
     :multiple="multiple"
     :class="props.class"
     :disabled="disabled"

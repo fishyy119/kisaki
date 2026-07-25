@@ -3,7 +3,7 @@
   Dialog for editing game status.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { games, Status } from '@shared/db'
@@ -29,6 +29,9 @@ import {
 } from '@renderer/components/ui/select'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -40,14 +43,14 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const STATUS_OPTIONS: { value: Status; label: string }[] = [
-  { value: 'notStarted', label: '未开始' },
-  { value: 'inProgress', label: '进行中' },
-  { value: 'partial', label: '部分完成' },
-  { value: 'completed', label: '已完成' },
-  { value: 'multiple', label: '多周目' },
-  { value: 'shelved', label: '已搁置' }
-]
+const STATUS_OPTIONS = computed<{ value: Status; label: string }[]>(() => [
+  { value: 'notStarted', label: m.value.library.status.notStarted },
+  { value: 'inProgress', label: m.value.library.status.inProgress },
+  { value: 'partial', label: m.value.library.status.partial },
+  { value: 'completed', label: m.value.library.status.completed },
+  { value: 'multiple', label: m.value.library.status.multiple },
+  { value: 'shelved', label: m.value.library.status.shelved }
+])
 
 // Form state
 interface FormData {
@@ -80,11 +83,11 @@ async function handleSubmit() {
   try {
     await db.update(games).set({ status: formData.value.status }).where(eq(games.id, props.gameId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -111,16 +114,16 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑游玩状态</DialogTitle>
+          <DialogTitle>{{ m.game.statusDialog.title }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <Field>
-              <FieldLabel>游玩状态</FieldLabel>
+              <FieldLabel>{{ m.library.menu.playStatus }}</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.status">
                   <SelectTrigger>
-                    <SelectValue placeholder="选择状态" />
+                    <SelectValue :placeholder="m.game.statusDialog.selectStatus" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
@@ -142,13 +145,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

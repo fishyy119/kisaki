@@ -9,7 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
 import { games, gameSessions, type GameSession } from '@shared/db'
 import { useAsyncData } from '@renderer/composables'
-import { formatDuration, formatDateTimeRange } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -46,6 +46,8 @@ interface Props {
 const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
+
+const { m, f } = useI18n()
 
 function calculateSessionsDuration(sessionsList: GameSession[]): number {
   return sessionsList.reduce((sum, session) => {
@@ -141,11 +143,11 @@ async function handleSave() {
       .update(games)
       .set({ totalDuration: newTotalDuration })
       .where(eq(games.id, props.gameId))
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -155,10 +157,10 @@ async function handleDeleteSession(sessionId: string) {
   try {
     await db.delete(gameSessions).where(eq(gameSessions.id, sessionId))
     sessions.value = sessions.value.filter((s) => s.id !== sessionId)
-    notify.success('已删除记录')
+    notify.success(m.value.game.duration.recordDeleted)
   } catch (error) {
     log.error('Delete session failed:', error)
-    notify.error('删除失败')
+    notify.error(m.value.common.deleteFailed)
   } finally {
     deleteId.value = null
   }
@@ -181,14 +183,14 @@ async function handleSessionFormSubmit(data: { startedAt: Date; endedAt: Date })
         .update(gameSessions)
         .set({ startedAt: data.startedAt, endedAt: data.endedAt })
         .where(eq(gameSessions.id, editingId.value))
-      notify.success('已更新记录')
+      notify.success(m.value.game.duration.recordUpdated)
     } else {
       await db.insert(gameSessions).values({
         gameId: props.gameId,
         startedAt: data.startedAt,
         endedAt: data.endedAt
       })
-      notify.success('已添加记录')
+      notify.success(m.value.game.duration.recordAdded)
     }
     const updated = await db.query.gameSessions.findMany({
       where: eq(gameSessions.gameId, props.gameId),
@@ -197,7 +199,9 @@ async function handleSessionFormSubmit(data: { startedAt: Date; endedAt: Date })
     sessions.value = updated
   } catch (error) {
     log.error('Session save failed:', error)
-    notify.error(editingId.value ? '更新失败' : '添加失败')
+    notify.error(
+      editingId.value ? m.value.library.feedback.updateFailed : m.value.library.feedback.addFailed
+    )
   }
   sessionFormOpen.value = false
   editingId.value = null
@@ -240,25 +244,29 @@ const minutesModel = computed({
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑游玩时间</DialogTitle>
+          <DialogTitle>{{ m.game.duration.title }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="flex-1 min-h-0 p-0 flex flex-col">
           <!-- Total duration summary -->
           <div class="px-4 py-3 border-b bg-muted/30">
             <div class="flex items-center justify-between text-sm">
-              <span class="text-muted-foreground">总游玩时间</span>
-              <span class="font-medium">{{ formatDuration(totalDuration) }}</span>
+              <span class="text-muted-foreground">{{ m.game.duration.totalPlayTime }}</span>
+              <span class="font-medium">{{ f.duration(totalDuration) }}</span>
             </div>
             <div class="flex items-center justify-between text-xs text-muted-foreground mt-1">
-              <span>会话记录: {{ formatDuration(sessionsDuration) }}</span>
-              <span>未记录时间: {{ formatDuration(untrackedMs) }}</span>
+              <span>{{
+                m.game.duration.sessionsDuration({ value: f.duration(sessionsDuration) })
+              }}</span>
+              <span>{{
+                m.game.duration.untrackedDuration({ value: f.duration(untrackedMs) })
+              }}</span>
             </div>
           </div>
 
           <!-- Untracked time input -->
           <div class="px-4 py-3 border-b">
             <Field>
-              <FieldLabel>未记录的游玩时间</FieldLabel>
+              <FieldLabel>{{ m.game.duration.untrackedLabel }}</FieldLabel>
               <FieldContent>
                 <div class="flex items-center gap-2">
                   <Input
@@ -267,7 +275,7 @@ const minutesModel = computed({
                     min="0"
                     class="w-20"
                   />
-                  <span class="text-sm text-muted-foreground">小时</span>
+                  <span class="text-sm text-muted-foreground">{{ m.game.duration.hoursUnit }}</span>
                   <Input
                     v-model="minutesModel"
                     type="number"
@@ -275,32 +283,34 @@ const minutesModel = computed({
                     max="59"
                     class="w-20"
                   />
-                  <span class="text-sm text-muted-foreground">分钟</span>
+                  <span class="text-sm text-muted-foreground">{{
+                    m.game.duration.minutesUnit
+                  }}</span>
                 </div>
               </FieldContent>
-              <FieldDescription>游戏会话未记录的游玩时间（如导入的历史数据）</FieldDescription>
+              <FieldDescription>{{ m.game.duration.untrackedHint }}</FieldDescription>
             </Field>
           </div>
 
           <!-- Session records -->
           <div class="flex-1 min-h-0 flex flex-col">
             <div class="px-4 py-2 text-sm font-medium text-muted-foreground border-b shrink-0">
-              会话记录 ({{ sessions.length }})
+              {{ m.game.duration.sessionsHeader({ count: sessions.length }) }}
             </div>
             <div class="px-4 py-3 space-y-1 overflow-auto max-h-[40vh]">
               <p
                 v-if="sessions.length === 0"
                 class="text-sm text-muted-foreground text-center py-6"
               >
-                暂无会话记录，点击下方按钮添加
+                {{ m.game.duration.emptySessions }}
               </p>
               <ListItem
                 v-for="session in sessions"
                 v-else
                 :key="session.id"
                 icon="icon-[mdi--timer-outline]"
-                :title="formatDuration(session.endedAt.getTime() - session.startedAt.getTime())"
-                :description="formatDateTimeRange(session.startedAt, session.endedAt)"
+                :title="f.duration(session.endedAt.getTime() - session.startedAt.getTime())"
+                :description="f.dateTimeRange(session.startedAt, session.endedAt)"
               >
                 <template #actions>
                   <ListItemActions
@@ -321,20 +331,20 @@ const minutesModel = computed({
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加记录
+            {{ m.game.duration.addRecord }}
           </Button>
           <div class="flex gap-2">
             <Button
               variant="outline"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -356,13 +366,13 @@ const minutesModel = computed({
   <AlertDialog v-model:open="deleteDialogOpen">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>确认删除</AlertDialogTitle>
+        <AlertDialogTitle>{{ m.library.forms.deleteLinkConfirmTitle }}</AlertDialogTitle>
       </AlertDialogHeader>
-      <AlertDialogDescription>确定要删除这条会话记录吗？此操作无法撤销。</AlertDialogDescription>
+      <AlertDialogDescription>{{ m.game.duration.deleteRecordDescription }}</AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>取消</AlertDialogCancel>
+        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
         <AlertDialogAction @click="deleteId && handleDeleteSession(deleteId)">
-          删除
+          {{ m.common.delete }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

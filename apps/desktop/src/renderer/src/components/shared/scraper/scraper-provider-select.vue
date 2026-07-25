@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
-import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useAsyncData, useI18n, useRenderState } from '@renderer/composables'
 import {
   Select,
   SelectContent,
@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
   entityType: 'game',
   requiredCapabilities: () => [],
   excludeProviderIds: () => [],
-  placeholder: '选择提供者...',
+  placeholder: undefined,
   disabled: false,
   size: 'default',
   autoFocus: false,
@@ -58,6 +58,12 @@ const model = defineModel<string>()
 const emit = defineEmits<{
   change: [providerId: string]
 }>()
+
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () => props.placeholder ?? m.value.scraper.providerSelect.placeholder
+)
 
 async function listProviders(entityType: ContentEntityType): Promise<ScraperProviderInfo[]> {
   switch (entityType) {
@@ -169,7 +175,7 @@ watch(model, (providerId) => {
     v-if="state === 'loading'"
     :class="cn('flex items-center gap-2 h-7', props.class)"
   >
-    <span class="text-xs text-muted-foreground">加载中...</span>
+    <span class="text-xs text-muted-foreground">{{ m.common.loading }}</span>
   </div>
 
   <!-- Normal select -->
@@ -184,13 +190,13 @@ watch(model, (providerId) => {
     >
       <SelectValue
         v-if="selectedProviderLabel"
-        :placeholder="placeholder"
+        :placeholder="placeholderText"
       >
         {{ selectedProviderLabel }}
       </SelectValue>
       <SelectValue
         v-else
-        :placeholder="placeholder"
+        :placeholder="placeholderText"
       />
     </SelectTrigger>
     <SelectContent>
@@ -214,7 +220,7 @@ watch(model, (providerId) => {
         v-if="filteredProviders.length === 0 && !selectedFallbackProvider"
         class="py-2 px-2 text-xs text-muted-foreground"
       >
-        暂无可用提供者
+        {{ m.scraper.providerSelect.empty }}
       </div>
       <SelectItem
         v-for="provider in filteredProviders"

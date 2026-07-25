@@ -9,6 +9,7 @@ import { ref, watch, computed } from 'vue'
 import { getFilterValue, setFilterValue } from '@shared/filter'
 import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Input } from '@renderer/components/ui/input'
+import { useI18n } from '@renderer/composables'
 import type { FilterUiFieldDef } from '../specs/types'
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const filterModel = defineModel<FilterState>({ required: true })
+const { m } = useI18n()
 
 // Computed for the field's value within the FilterState
 const fieldValue = computed({
@@ -60,7 +62,7 @@ function handleBlur() {
         <Input
           v-model="minInput"
           type="number"
-          :placeholder="props.field.min?.toString() || '最小'"
+          :placeholder="props.field.min?.toString() || m.filter.minPlaceholder"
           :min="props.field.min"
           :max="props.field.max"
           :step="props.field.step"
@@ -70,7 +72,7 @@ function handleBlur() {
         <Input
           v-model="maxInput"
           type="number"
-          :placeholder="props.field.max?.toString() || '最大'"
+          :placeholder="props.field.max?.toString() || m.filter.maxPlaceholder"
           :min="props.field.min"
           :max="props.field.max"
           :step="props.field.step"

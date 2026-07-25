@@ -8,6 +8,8 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
+import { resolveExtensionText } from '@renderer/core/extensions'
 import type {
   ExtensionCatalogPackageInfo,
   ExtensionCreateRepositoryReleasePlanRequest
@@ -26,6 +28,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { m } = useI18n()
 const iconError = ref(false)
 
 const latestRelease = computed(() => props.extension.latestRelease)
@@ -36,8 +39,14 @@ const canInstall = computed(
     !latestRelease.value?.yanked &&
     Boolean(latestRelease.value?.artifact)
 )
-const ownerLabel = computed(() => props.extension.owner?.name ?? '未知作者')
-const sourceLabel = computed(() => `${props.extension.repositoryCount} 个来源`)
+const displayName = computed(() => resolveExtensionText(props.extension.name))
+const displaySummary = computed(() => resolveExtensionText(props.extension.summary))
+const ownerLabel = computed(
+  () => props.extension.owner?.name ?? m.value.extension.discover.unknownAuthor
+)
+const sourceLabel = computed(() =>
+  m.value.extension.discover.sourceCount({ count: props.extension.repositoryCount })
+)
 
 function handleInstall() {
   const release = latestRelease.value
@@ -70,13 +79,13 @@ function handleInstall() {
         icon="icon-[mdi--puzzle-outline]"
         class="size-5 text-muted-foreground shrink-0"
       />
-      <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
+      <h3 class="text-sm font-medium truncate flex-1">{{ displayName }}</h3>
       <Badge
         variant="outline"
         class="text-[10px] px-1.5 py-0 h-4 text-muted-foreground font-mono"
       >
         <template v-if="latestRelease">v{{ latestRelease.version }}</template>
-        <template v-else>无版本</template>
+        <template v-else>{{ m.extension.discover.noVersion }}</template>
       </Badge>
     </div>
 
@@ -87,7 +96,7 @@ function handleInstall() {
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.extension.summary || '无描述' }}
+      {{ displaySummary || m.extension.discover.noDescription }}
     </p>
 
     <!-- Footer -->
@@ -111,7 +120,7 @@ function handleInstall() {
             icon="icon-[mdi--open-in-new]"
             class="size-3"
           />
-          主页
+          {{ m.extension.discover.homepage }}
         </a>
       </div>
 
@@ -121,7 +130,7 @@ function handleInstall() {
           variant="ghost"
           @click="emit('details', props.extension)"
         >
-          详情
+          {{ m.extension.discover.details }}
         </Button>
         <Button
           size="sm"
@@ -134,14 +143,14 @@ function handleInstall() {
               icon="icon-[mdi--check]"
               class="size-3.5"
             />
-            已安装
+            {{ m.extension.discover.installed }}
           </template>
           <template v-else>
             <Icon
               icon="icon-[mdi--download]"
               class="size-3.5"
             />
-            安装
+            {{ m.extension.discover.install }}
           </template>
         </Button>
       </div>

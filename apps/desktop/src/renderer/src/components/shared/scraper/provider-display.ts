@@ -7,6 +7,7 @@ import type {
   PersonScraperProviderInfo,
   ScraperCapability
 } from '@shared/scraper'
+import { messages } from '@renderer/core/i18n'
 
 export type ScraperProviderInfo =
   | GameScraperProviderInfo
@@ -57,7 +58,7 @@ export function getScraperProviderDisplay(
       label: formatScraperProviderFallbackName(providerId),
       description: providerId,
       status: 'unavailable',
-      statusLabel: '不可用',
+      statusLabel: messages.value.scraper.providerSelect.unavailable,
       provider: null
     }
   }
@@ -71,7 +72,9 @@ export function getScraperProviderDisplay(
     label: provider.name,
     description: provider.id,
     status: supportsRequiredCapabilities ? 'available' : 'unsupported',
-    statusLabel: supportsRequiredCapabilities ? null : '不支持',
+    statusLabel: supportsRequiredCapabilities
+      ? null
+      : messages.value.scraper.providerSelect.unsupported,
     provider
   }
 }

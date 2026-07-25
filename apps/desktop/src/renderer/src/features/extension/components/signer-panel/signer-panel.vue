@@ -9,12 +9,14 @@ import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { extensionSignersData } from '../../composables'
 import SignerDetailsDialog from './signer-details-dialog.vue'
 import SignerPanelRow from './signer-panel-row.vue'
 import SignerRemoveDialog from './signer-remove-dialog.vue'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 
+const { m } = useI18n()
 const removing = ref(false)
 const detailsDialogOpen = ref(false)
 const removeDialogOpen = ref(false)
@@ -74,12 +76,15 @@ async function handleRemoveSigner(): Promise<void> {
   removing.value = true
   try {
     unwrapIpcVoid(await ipcManager.invoke('extension:remove-trusted-signer', signer.id))
-    notify.success('签名信任已撤销')
+    notify.success(m.value.extension.signer.revoked)
     removeDialogOpen.value = false
     signerToRemove.value = null
     refetch()
   } catch (err) {
-    notify.error('撤销签名信任失败', err instanceof Error ? err.message : String(err))
+    notify.error(
+      m.value.extension.signer.revokeFailed,
+      err instanceof Error ? err.message : String(err)
+    )
   } finally {
     removing.value = false
   }
@@ -90,8 +95,10 @@ async function handleRemoveSigner(): Promise<void> {
   <div class="flex h-full flex-col">
     <div class="shrink-0 flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3">
       <div class="flex-1">
-        <div class="text-sm font-medium">签名信任</div>
-        <div class="text-xs text-muted-foreground">{{ signerList.length }} 个扩展级签名指纹</div>
+        <div class="text-sm font-medium">{{ m.extension.signer.panelTitle }}</div>
+        <div class="text-xs text-muted-foreground">
+          {{ m.extension.signer.panelSummary({ count: signerList.length }) }}
+        </div>
       </div>
 
       <Button
@@ -103,7 +110,7 @@ async function handleRemoveSigner(): Promise<void> {
           icon="icon-[mdi--refresh]"
           class="size-4"
         />
-        刷新
+        {{ m.common.refresh }}
       </Button>
     </div>
 
@@ -119,7 +126,7 @@ async function handleRemoveSigner(): Promise<void> {
         v-else-if="signerList.length === 0"
         state="empty"
         icon="icon-[mdi--shield-key-outline]"
-        title="暂无信任的签名指纹"
+        :title="m.extension.signer.emptyTitle"
         class="h-48"
       />
 

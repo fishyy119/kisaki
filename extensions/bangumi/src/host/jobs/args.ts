@@ -2,6 +2,7 @@ import type { JsonObject } from '@kisaki3/extension-sdk'
 import type { BangumiCollectionType } from '../config/schema'
 import { requireBangumiMediaScope, type BangumiMediaScope } from '../media/scopes'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 
 export type BangumiImportTargetCollection =
   { kind: 'none' } | { kind: 'existing'; collectionId: string } | { kind: 'byIndexTitle' }
@@ -88,7 +89,7 @@ export function normalizeImportCollectionsArgs(args: JsonObject): BangumiImportC
 }
 
 export function normalizeImportIndexArgs(args: JsonObject): BangumiImportIndexArgs {
-  const indexInput = readRequiredString(args.indexInput, '请输入 Bangumi 目录 ID 或链接。')
+  const indexInput = readRequiredString(args.indexInput, m().errors.indexInputRequired)
 
   return {
     scope: readScope(args.scope),
@@ -127,10 +128,7 @@ export function parseBangumiIndexId(input: string): number {
     // Fall through to the user-facing validation error below.
   }
 
-  throw new BangumiExtensionError(
-    'bangumi_validation',
-    'Bangumi 目录必须是数字 ID，或 https://bgm.tv/index/<id>、https://bangumi.tv/index/<id> 形式的链接。'
-  )
+  throw new BangumiExtensionError('bangumi_validation', m().errors.indexInputInvalid)
 }
 
 function normalizeCollectionTypes(value: unknown): readonly BangumiCollectionType[] {
@@ -162,7 +160,7 @@ function normalizeTargetCollection(
   if (kind === 'existing') {
     return {
       kind,
-      collectionId: readRequiredString(record?.collectionId, '请选择目标合集。')
+      collectionId: readRequiredString(record?.collectionId, m().errors.selectTargetCollection)
     }
   }
 

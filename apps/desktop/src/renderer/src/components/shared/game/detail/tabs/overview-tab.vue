@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { useGame } from '@renderer/composables/use-game'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Section, SectionScroll } from '@renderer/components/ui/section'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
@@ -31,22 +31,11 @@ import {
 // Constants
 // =============================================================================
 
-const COMPANY_TYPE_LABELS: Record<string, string> = {
-  developer: '开发',
-  publisher: '发行',
-  distributor: '分销',
-  other: '其他'
-}
+const COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCompany
+)
 
-const PERSON_TYPE_LABELS: Record<string, string> = {
-  director: '导演',
-  scenario: '剧本',
-  illustration: '原画',
-  music: '音乐',
-  programmer: '程序',
-  actor: '声优',
-  other: '其他'
-}
+const PERSON_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.roles.gamePerson)
 
 const PERSON_TYPE_ORDER = [
   'director',
@@ -62,18 +51,16 @@ const COMPANY_TYPE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as
 
 const CHARACTER_TYPE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
 
-const CHARACTER_TYPE_LABELS: Record<string, string> = {
-  main: '主角',
-  supporting: '配角',
-  cameo: '客串',
-  other: '其他'
-}
+const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCharacter
+)
 
 // =============================================================================
 // State
 // =============================================================================
 
 const { game, tags, characters, persons, companies } = useGame()
+const { m, f } = useI18n()
 
 /** Edit dialog states */
 const editDialogs = ref({
@@ -121,7 +108,7 @@ const sortedCharacters = computed(() => {
     .map((link) => ({
       link,
       character: link.character,
-      roleLabel: link.type ? CHARACTER_TYPE_LABELS[link.type] : undefined
+      roleLabel: link.type ? CHARACTER_TYPE_LABELS.value[link.type] : undefined
     }))
     .filter((item) => item.character !== null)
 })
@@ -184,21 +171,21 @@ const tagDialogOpen = computed({
       <!-- Left column: Description, Characters, Tags -->
       <div class="space-y-6 min-w-0">
         <Section
-          title="简介"
+          :title="m.library.detail.sections.description"
           editable
           :empty="!game.description"
-          empty-text="暂无简介"
+          :empty-text="m.library.detail.empty.description"
           @edit="openEditDialog('description')"
         >
           <MarkdownContent :content="game.description!" />
         </Section>
 
         <SectionScroll
-          title="角色"
+          :title="m.library.detail.tabs.characters"
           editable
           :items="sortedCharacters"
           :get-key="(item) => item.link.id"
-          empty-text="暂无角色"
+          :empty-text="m.library.detail.empty.characters"
           @edit="openEditDialog('characters')"
         >
           <template #item="{ item }">
@@ -214,10 +201,10 @@ const tagDialogOpen = computed({
         </SectionScroll>
 
         <Section
-          title="标签"
+          :title="m.library.fields.tags"
           editable
           :empty="!hasTags"
-          empty-text="暂无标签"
+          :empty-text="m.library.detail.empty.tags"
           @edit="openEditDialog('tags')"
         >
           <div class="flex flex-wrap gap-1">
@@ -240,23 +227,23 @@ const tagDialogOpen = computed({
       <!-- Right column: Details, Staff, Companies, Links -->
       <div class="space-y-6 min-w-0">
         <Section
-          title="详细信息"
+          :title="m.library.detail.sections.details"
           editable
           @edit="openEditDialog('details')"
         >
           <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">
-            <dt class="text-muted-foreground">发布日期</dt>
-            <dd>{{ formatDate(game.releaseDate) }}</dd>
-            <dt class="text-muted-foreground">添加日期</dt>
-            <dd>{{ formatDate(game.createdAt) }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.releaseDate }}</dt>
+            <dd>{{ game.releaseDate ? f.date(game.releaseDate) : m.common.emptyValue }}</dd>
+            <dt class="text-muted-foreground">{{ m.library.fields.addedDate }}</dt>
+            <dd>{{ game.createdAt ? f.date(game.createdAt) : m.common.emptyValue }}</dd>
           </dl>
         </Section>
 
         <Section
-          title="人物"
+          :title="m.library.detail.tabs.persons"
           editable
           :empty="!hasPersons"
-          empty-text="暂无人物"
+          :empty-text="m.library.detail.empty.persons"
           @edit="openEditDialog('staff')"
         >
           <div class="space-y-2 text-sm">
@@ -296,10 +283,10 @@ const tagDialogOpen = computed({
         </Section>
 
         <Section
-          title="公司"
+          :title="m.library.detail.tabs.companies"
           editable
           :empty="!hasCompanies"
-          empty-text="暂无公司信息"
+          :empty-text="m.library.detail.empty.companies"
           @edit="openEditDialog('companies')"
         >
           <div class="space-y-2 text-sm">
@@ -341,10 +328,10 @@ const tagDialogOpen = computed({
         </Section>
 
         <Section
-          title="相关链接"
+          :title="m.library.fields.relatedSites"
           editable
           :empty="!hasRelatedSites"
-          empty-text="暂无相关链接"
+          :empty-text="m.library.detail.empty.relatedSites"
           @edit="openEditDialog('relatedSites')"
         >
           <div class="flex flex-col gap-1.5">

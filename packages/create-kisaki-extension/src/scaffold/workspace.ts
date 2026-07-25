@@ -135,6 +135,20 @@ export function updateWorkspaceExtensionList(workspaceDir: string): void {
   renameSync(tempPath, readmePath)
 }
 
+/** Reads a manifest display name: a plain string or a localized object with an `en` baseline. */
+function readManifestDisplayName(value: unknown): string | null {
+  if (typeof value === 'string' && value.length > 0) {
+    return value
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const en = (value as Record<string, unknown>).en
+    if (typeof en === 'string' && en.length > 0) {
+      return en
+    }
+  }
+  return null
+}
+
 function readWorkspaceExtensions(extensionsDir: string): WorkspaceExtensionEntry[] {
   const entries: WorkspaceExtensionEntry[] = []
   for (const dirent of readdirSync(extensionsDir, { withFileTypes: true })) {
@@ -148,10 +162,11 @@ function readWorkspaceExtensions(extensionsDir: string): WorkspaceExtensionEntry
     }
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
-    if (typeof manifest.id !== 'string' || typeof manifest.name !== 'string') {
+    const name = readManifestDisplayName(manifest.name)
+    if (typeof manifest.id !== 'string' || !name) {
       throw new Error(`Invalid extension identity in ${manifestPath}.`)
     }
-    entries.push({ id: manifest.id, name: manifest.name })
+    entries.push({ id: manifest.id, name })
   }
   return entries.toSorted((left, right) => left.id.localeCompare(right.id, 'en'))
 }

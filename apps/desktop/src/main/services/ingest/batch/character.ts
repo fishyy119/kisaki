@@ -1,5 +1,6 @@
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -30,7 +31,8 @@ export class CharacterBatchHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly updateHandler: CharacterUpdateHandler,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startUpdateFromScraper(request: CharacterBatchUpdateRequest): TaskRunStartResult {
@@ -38,16 +40,25 @@ export class CharacterBatchHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.character.batchUpdate',
-      title: '批量更新角色元数据',
-      description: `${request.rootIds.length} 个角色`,
+      title: this.i18nService.messages.ingest.batch.title({ entity: 'character' }),
+      description: this.i18nService.messages.ingest.batch.subjectCount({
+        entity: 'character',
+        count: request.rootIds.length
+      }),
       owner: { type: 'app' },
       initiator: { type: 'user' },
-      subject: { type: 'character', labelSnapshot: `${request.rootIds.length} 个角色` },
+      subject: {
+        type: 'character',
+        labelSnapshot: this.i18nService.messages.ingest.batch.subjectCount({
+          entity: 'character',
+          count: request.rootIds.length
+        })
+      },
       controls: { cancelable: true, pausable: false },
       presentation: {
         notify: {
           enabled: true,
-          title: '批量更新角色元数据',
+          title: this.i18nService.messages.ingest.batch.title({ entity: 'character' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -71,9 +82,10 @@ export class CharacterBatchHandler {
     try {
       run.start()
       reportBatchProgress({
+        messages: this.i18nService.messages,
         context: run.context,
         phase: 'searching',
-        label: '正在准备角色列表',
+        label: this.i18nService.messages.ingest.batch.preparingList({ entity: 'character' }),
         current: 0,
         total,
         counters,
@@ -91,6 +103,7 @@ export class CharacterBatchHandler {
         const baseKnownIds = request.useCurrentExternalIdsAsKnownIds ? row.externalIds : []
 
         reportBatchProgress({
+          messages: this.i18nService.messages,
           context: run.context,
           phase: 'searching',
           label: queryName,
@@ -110,10 +123,11 @@ export class CharacterBatchHandler {
           throwIfIngestAborted(run.context.signal)
           const first = searchResults[0]
           if (!first) {
-            throw new Error('无搜索结果')
+            throw new Error(this.i18nService.messages.ingest.batch.noSearchResults)
           }
 
           reportBatchProgress({
+            messages: this.i18nService.messages,
             context: run.context,
             phase: 'updating',
             label: queryName,
@@ -166,6 +180,7 @@ export class CharacterBatchHandler {
 
         processed++
         reportBatchProgress({
+          messages: this.i18nService.messages,
           context: run.context,
           phase: 'updating',
           current: processed,
@@ -177,18 +192,31 @@ export class CharacterBatchHandler {
       }
 
       run.complete({
-        title: counters.failed > 0 ? '批量更新角色元数据完成（有失败）' : '批量更新角色元数据完成',
-        summary: `成功 ${counters.succeeded}，失败 ${counters.failed}，跳过 ${counters.skipped}`,
+        title:
+          counters.failed > 0
+            ? this.i18nService.messages.ingest.batch.completedWithFailuresTitle({
+                entity: 'character'
+              })
+            : this.i18nService.messages.ingest.batch.completedTitle({ entity: 'character' }),
+        summary: this.i18nService.messages.ingest.batch.resultSummary({
+          succeeded: counters.succeeded,
+          failed: counters.failed,
+          skipped: counters.skipped
+        }),
         counters,
-        warnings: createBatchTaskRunWarnings(failures, itemWarnings),
+        warnings: createBatchTaskRunWarnings(this.i18nService.messages, failures, itemWarnings),
         output: this.createResult(total, counters, failures, itemWarnings)
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
         run.cancel({
-          summary: `已取消。成功 ${counters.succeeded}，失败 ${counters.failed}，跳过 ${counters.skipped}`,
+          summary: this.i18nService.messages.ingest.batch.cancelledSummary({
+            succeeded: counters.succeeded,
+            failed: counters.failed,
+            skipped: counters.skipped
+          }),
           counters,
-          warnings: createBatchTaskRunWarnings(failures, itemWarnings),
+          warnings: createBatchTaskRunWarnings(this.i18nService.messages, failures, itemWarnings),
           output: this.createResult(total, counters, failures, itemWarnings)
         })
         return
@@ -196,7 +224,7 @@ export class CharacterBatchHandler {
 
       run.fail(error, {
         counters,
-        warnings: createBatchTaskRunWarnings(failures, itemWarnings),
+        warnings: createBatchTaskRunWarnings(this.i18nService.messages, failures, itemWarnings),
         output: this.createResult(total, counters, failures, itemWarnings)
       })
     }

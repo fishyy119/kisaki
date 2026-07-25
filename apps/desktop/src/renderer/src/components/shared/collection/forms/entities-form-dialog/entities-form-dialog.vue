@@ -36,6 +36,9 @@ import { getEntityIcon } from '@renderer/utils/format'
 import CollectionEntitiesItemFormDialog from './entity-item-form-dialog.vue'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Collection')
 
@@ -51,15 +54,14 @@ interface EntityLink {
 
 interface EntityConfig {
   label: string
-  unitLabel: string
 }
 
-const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
-  game: { label: '游戏', unitLabel: '款' },
-  character: { label: '角色', unitLabel: '个' },
-  person: { label: '人物', unitLabel: '位' },
-  company: { label: '公司', unitLabel: '家' }
-}
+const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
+  game: { label: m.value.library.entities.game },
+  character: { label: m.value.library.entities.character },
+  person: { label: m.value.library.entities.person },
+  company: { label: m.value.library.entities.company }
+}))
 
 interface Props {
   collectionId: string
@@ -177,7 +179,7 @@ const currentTypeLinks = computed(() =>
 
 const existingEntityIds = computed(() => currentTypeLinks.value.map((l) => l.entityId))
 
-const config = computed(() => ENTITY_CONFIG[currentEntityType.value])
+const config = computed(() => ENTITY_CONFIG.value[currentEntityType.value])
 
 const entityCounts = computed(() =>
   CONTENT_ENTITY_TYPES.reduce(
@@ -318,11 +320,11 @@ async function handleSave() {
       await db.insert(collectionCompanyLinks).values(companyLinksToInsert)
     }
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -367,7 +369,7 @@ const entityTypeModel = computed({
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑合集内容</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editCollectionEntities }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <!-- Entity type tabs -->
@@ -397,7 +399,7 @@ const entityTypeModel = computed({
               v-if="!hasAnyItems"
               class="text-sm text-muted-foreground text-center py-8"
             >
-              暂无{{ config.label }}，点击下方按钮添加
+              {{ m.library.forms.emptyListHint({ label: config.label }) }}
             </div>
             <ListItem
               v-for="(link, index) in currentTypeLinks"
@@ -429,20 +431,20 @@ const entityTypeModel = computed({
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加{{ config.label }}
+            {{ m.library.detail.addEntity({ label: config.label }) }}
           </Button>
           <div class="flex gap-2">
             <Button
               variant="outline"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ isSaving ? '保存中...' : '保存' }}
+              {{ isSaving ? m.common.saving : m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -454,7 +456,7 @@ const entityTypeModel = computed({
   <DeleteConfirmDialog
     v-if="deleteId"
     v-model:open="deleteDialogOpen"
-    entity-label="项目"
+    :entity-label="m.library.forms.itemEntityLabel"
     mode="remove"
     @confirm="handleDelete"
   />

@@ -9,6 +9,7 @@ import type {
 } from './types'
 import { cn } from '@renderer/utils/cn'
 import { Input } from '@renderer/components/ui/input'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 const props = defineProps<{
   modelValue?: PartialDate | null
@@ -24,11 +25,13 @@ const emit = defineEmits<{
   (e: 'update:modelValue', payload: PartialDate | null): void
 }>()
 
+const { m } = useI18n()
+
 const messageTexts = computed(() => {
   return {
-    invalidIntegerText: props.messages?.invalidIntegerText ?? '日期只能填写整数。',
+    invalidIntegerText: props.messages?.invalidIntegerText ?? m.value.ui.partialDate.invalidInteger,
     yearDayWithoutMonthText:
-      props.messages?.yearDayWithoutMonthText ?? '填写了年份和日期时，必须同时填写月份。'
+      props.messages?.yearDayWithoutMonthText ?? m.value.ui.partialDate.yearDayWithoutMonth
   }
 })
 
@@ -143,7 +146,7 @@ defineExpose<PartialDateInputExpose>({ validate })
       :id="yearInputId"
       v-model="rawYear"
       type="number"
-      placeholder="年"
+      :placeholder="m.ui.partialDate.yearPlaceholder"
       :disabled="props.disabled"
       :readonly="props.readonly"
     />
@@ -151,7 +154,7 @@ defineExpose<PartialDateInputExpose>({ validate })
       :id="monthInputId"
       v-model="rawMonth"
       type="number"
-      placeholder="月"
+      :placeholder="m.ui.partialDate.monthPlaceholder"
       :disabled="props.disabled"
       :readonly="props.readonly"
     />
@@ -159,7 +162,7 @@ defineExpose<PartialDateInputExpose>({ validate })
       :id="dayInputId"
       v-model="rawDay"
       type="number"
-      placeholder="日"
+      :placeholder="m.ui.partialDate.dayPlaceholder"
       :disabled="props.disabled"
       :readonly="props.readonly"
     />

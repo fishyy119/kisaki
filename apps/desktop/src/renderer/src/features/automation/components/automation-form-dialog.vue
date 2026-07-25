@@ -34,6 +34,7 @@ import { Textarea } from '@renderer/components/ui/textarea'
 import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { Automation, AutomationFailurePolicy, AutomationTriggers } from '@shared/automation'
 import { formatJson } from '../utils/display'
 import CommandCombobox from './command-combobox.vue'
@@ -65,6 +66,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const formData = ref<AutomationFormData>(createDefaultFormData())
 const isSaving = ref(false)
 const triggerDialogOpen = ref(false)
@@ -87,25 +90,30 @@ const selectedCommand = computed(
 )
 const selectedCommandDescription = computed(() => {
   if (!selectedCommand.value) {
-    return formData.value.commandId ? '命令当前不可用' : ''
+    return formData.value.commandId ? m.value.automation.form.commandUnavailable : ''
   }
 
   return selectedCommand.value.description || selectedCommand.value.id
 })
-const dialogTitle = computed(() => (isEditMode.value ? '编辑自动化' : '添加自动化'))
+const dialogTitle = computed(() =>
+  isEditMode.value ? m.value.automation.form.editTitle : m.value.automation.form.addTitle
+)
 const canSubmit = computed(() => Boolean(formData.value.commandId) && !isSaving.value)
 const triggerSummary = computed(() => {
+  const display = m.value.automation.display
   const labels: string[] = []
   if (formData.value.onStartup) {
-    labels.push('启动时')
+    labels.push(display.onStartup)
   }
   if (formData.value.cronConfigured) {
     labels.push(`Cron ${formData.value.cronExpression}`)
   }
-  return labels.length > 0 ? labels.join('，') : '手动运行'
+  return labels.length > 0 ? labels.join(display.triggerSeparator) : display.manualOnly
 })
 const triggerMeta = computed(() =>
-  formData.value.cronConfigured ? formData.value.cronTimezone || '系统时区' : '配置'
+  formData.value.cronConfigured
+    ? formData.value.cronTimezone || m.value.automation.display.systemTimezone
+    : m.value.automation.form.configure
 )
 
 const commandIdModel = computed({
@@ -145,7 +153,7 @@ watch(
 
 async function handleSubmit() {
   if (!formData.value.commandId) {
-    notify.warning('请选择命令')
+    notify.warning(m.value.automation.feedback.selectCommand)
     return
   }
 
@@ -175,7 +183,7 @@ async function handleSubmit() {
           failurePolicy
         })
       )
-      notify.success('自动化已更新')
+      notify.success(m.value.automation.feedback.updated)
     } else {
       unwrapIpcData(
         await ipcManager.invoke('automation:create', {
@@ -186,13 +194,16 @@ async function handleSubmit() {
           failurePolicy
         })
       )
-      notify.success('自动化已添加')
+      notify.success(m.value.automation.feedback.added)
     }
 
     emit('saved')
     open.value = false
   } catch (error) {
-    notify.error('保存自动化失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.automation.feedback.saveFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     isSaving.value = false
   }
@@ -270,7 +281,7 @@ function parseArgs(): Record<string, unknown> {
 
   const parsed = JSON.parse(rawArgs) as unknown
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('参数必须是 JSON 对象')
+    throw new Error(m.value.automation.form.paramsMustBeObject)
   }
 
   return parsed as Record<string, unknown>
@@ -287,7 +298,7 @@ function createTriggers(): AutomationTriggers {
 
   const expression = formData.value.cronExpression.trim()
   if (!expression) {
-    throw new Error('Cron 表达式不能为空')
+    throw new Error(m.value.automation.form.cronRequired)
   }
 
   const timezone = parseOptionalTimezone(formData.value.cronTimezone)
@@ -328,7 +339,10 @@ function createFailurePolicy(): AutomationFailurePolicy {
     return { type: 'none' }
   }
 
-  const retryCount = parseNonNegativeInteger(formData.value.retryCount, '重试次数')
+  const retryCount = parseNonNegativeInteger(
+    formData.value.retryCount,
+    m.value.automation.form.retryCountLabel
+  )
   const retryDelayMs = parseOptionalDelayMs(formData.value.retryDelaySeconds)
 
   if (formData.value.failureType === 'retry') {
@@ -345,7 +359,7 @@ function createFailurePolicy(): AutomationFailurePolicy {
 function parsePositiveNumber(value: string, label: string): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`${label}必须大于 0`)
+    throw new Error(m.value.automation.form.mustBePositive({ label }))
   }
   return parsed
 }
@@ -353,7 +367,7 @@ function parsePositiveNumber(value: string, label: string): number {
 function parseNonNegativeInteger(value: string, label: string): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
-    throw new Error(`${label}必须是大于等于 0 的整数`)
+    throw new Error(m.value.automation.form.mustBeNonNegativeInteger({ label }))
   }
   return parsed
 }
@@ -363,7 +377,9 @@ function parseOptionalDelayMs(value: string): number | undefined {
     return undefined
   }
 
-  return Math.round(parsePositiveNumber(value, '重试延迟秒数') * 1_000)
+  return Math.round(
+    parsePositiveNumber(value, m.value.automation.form.retryDelaySecondsLabel) * 1_000
+  )
 }
 
 function parseOptionalTimezone(value: string): string | undefined {
@@ -375,7 +391,7 @@ function parseOptionalTimezone(value: string): string | undefined {
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date())
   } catch {
-    throw new Error('时区无效')
+    throw new Error(m.value.automation.form.invalidTimezone)
   }
 
   return timezone
@@ -392,16 +408,16 @@ function parseOptionalTimezone(value: string): string | undefined {
       <Form @submit="handleSubmit">
         <DialogBody class="max-h-[72vh] overflow-auto">
           <FieldGroup>
-            <Field label="名称">
+            <Field :label="m.automation.form.name">
               <FieldContent>
                 <Input
                   v-model="formData.name"
-                  placeholder="自动化名称"
+                  :placeholder="m.automation.form.namePlaceholder"
                 />
               </FieldContent>
             </Field>
 
-            <Field label="命令">
+            <Field :label="m.automation.form.command">
               <FieldContent>
                 <CommandCombobox
                   v-model="commandIdModel"
@@ -416,7 +432,7 @@ function parseOptionalTimezone(value: string): string | undefined {
               </FieldContent>
             </Field>
 
-            <Field label="触发">
+            <Field :label="m.automation.form.trigger">
               <FieldContent>
                 <Button
                   type="button"
@@ -438,7 +454,7 @@ function parseOptionalTimezone(value: string): string | undefined {
 
             <div class="flex flex-wrap items-start gap-4">
               <Field
-                label="失败策略"
+                :label="m.automation.form.failurePolicy"
                 class="w-56 shrink-0"
               >
                 <FieldContent>
@@ -447,9 +463,11 @@ function parseOptionalTimezone(value: string): string | undefined {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">不重试</SelectItem>
-                      <SelectItem value="retry">重试</SelectItem>
-                      <SelectItem value="pauseAutomation">失败后暂停</SelectItem>
+                      <SelectItem value="none">{{ m.automation.form.policyNone }}</SelectItem>
+                      <SelectItem value="retry">{{ m.automation.form.policyRetry }}</SelectItem>
+                      <SelectItem value="pauseAutomation">
+                        {{ m.automation.form.policyPause }}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
@@ -457,7 +475,7 @@ function parseOptionalTimezone(value: string): string | undefined {
 
               <Field
                 v-if="formData.failureType !== 'none'"
-                label="重试次数"
+                :label="m.automation.form.retryCount"
                 class="w-32 shrink-0"
               >
                 <FieldContent>
@@ -472,7 +490,7 @@ function parseOptionalTimezone(value: string): string | undefined {
 
               <Field
                 v-if="formData.failureType !== 'none'"
-                label="重试延迟"
+                :label="m.automation.form.retryDelay"
                 class="w-40 shrink-0"
               >
                 <FieldContent>
@@ -484,14 +502,14 @@ function parseOptionalTimezone(value: string): string | undefined {
                       step="any"
                     />
                     <InputGroupAddon align="inline-end">
-                      <InputGroupText>秒</InputGroupText>
+                      <InputGroupText>{{ m.automation.form.seconds }}</InputGroupText>
                     </InputGroupAddon>
                   </InputGroup>
                 </FieldContent>
               </Field>
             </div>
 
-            <Field label="参数">
+            <Field :label="m.automation.form.params">
               <FieldContent>
                 <Textarea
                   v-model="formData.argsText"
@@ -510,7 +528,7 @@ function parseOptionalTimezone(value: string): string | undefined {
             :disabled="isSaving"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
           <Button
             type="submit"
@@ -520,7 +538,7 @@ function parseOptionalTimezone(value: string): string | undefined {
               icon="icon-[mdi--content-save-outline]"
               class="size-4"
             />
-            {{ isSaving ? '保存中' : '保存' }}
+            {{ isSaving ? m.common.saving : m.common.save }}
           </Button>
         </DialogFooter>
       </Form>
@@ -530,39 +548,39 @@ function parseOptionalTimezone(value: string): string | undefined {
   <Dialog v-model:open="triggerDialogOpen">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>配置触发</DialogTitle>
+        <DialogTitle>{{ m.automation.form.configureTrigger }}</DialogTitle>
       </DialogHeader>
 
       <Form @submit="handleSaveTrigger">
         <DialogBody>
           <FieldGroup>
             <Field
-              label="启动时运行"
+              :label="m.automation.form.runOnStartup"
               orientation="horizontal"
             >
               <Checkbox v-model="triggerDraftOnStartup" />
             </Field>
 
             <Field
-              label="表达式"
+              :label="m.automation.form.expression"
               orientation="horizontal"
             >
               <FieldContent class="w-72">
                 <Input
                   v-model="triggerDraftCronExpression"
-                  placeholder="Cron 表达式，留空则不启用"
+                  :placeholder="m.automation.form.cronPlaceholder"
                 />
               </FieldContent>
             </Field>
 
             <Field
-              label="时区"
+              :label="m.automation.form.timezone"
               orientation="horizontal"
             >
               <FieldContent class="w-72">
                 <Input
                   v-model="triggerDraftCronTimezone"
-                  placeholder="系统时区"
+                  :placeholder="m.automation.form.timezonePlaceholder"
                 />
               </FieldContent>
             </Field>
@@ -575,9 +593,9 @@ function parseOptionalTimezone(value: string): string | undefined {
             variant="outline"
             @click="triggerDialogOpen = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

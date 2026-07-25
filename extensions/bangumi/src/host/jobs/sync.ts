@@ -1,5 +1,7 @@
 import { formatScopedCollectionType } from '../media/labels'
+import type { BangumiMediaScope } from '../media/scopes'
 import { readBangumiSubjectId } from '../media/game/mapping'
+import { m } from '../i18n'
 import { BangumiExtensionError } from '../utils/errors'
 import { omitUndefined } from '../utils/object'
 import type { SyncItemResult } from '../sync/engine'
@@ -16,7 +18,7 @@ import type { BangumiJobSummary } from './summary'
 import { isCancellationError } from './summary'
 
 interface CollectedFullSync {
-  label: string
+  scope: BangumiMediaScope
   supported: boolean
   scanned: number
   operations: readonly SyncItemResult[]
@@ -31,7 +33,7 @@ export class SyncJobRunner {
   ): Promise<BangumiJobSummary> {
     return runBangumiJob(context, this.deps.logger, async (job) => {
       const descriptor = this.deps.mediaRegistry.require(args.scope)
-      job.report('loadingQueue', '正在读取 Bangumi 变更同步队列...', { indeterminate: true })
+      job.report('loadingQueue', m().jobs.sync.loadingQueue, { indeterminate: true })
       await job.checkpoint()
 
       const queueItems = await this.deps.syncQueueStore.list(args.limit, args.scope)
@@ -39,7 +41,7 @@ export class SyncJobRunner {
 
       if (!descriptor.localAdapter?.supportsAutoSync) {
         job.increment('skippedUnsupportedScope', queueItems.length || 1)
-        job.report('completed', `${descriptor.label}暂不支持本地变更同步。`, {
+        job.report('completed', m().jobs.sync.queueUnsupported({ scope: descriptor.scope }), {
           current: queueItems.length,
           total: queueItems.length
         })
@@ -71,7 +73,7 @@ export class SyncJobRunner {
         } finally {
           if (countProcessed) {
             processedQueuedItems += 1
-            job.report('syncingQueuedItems', '正在同步 Bangumi 变更队列...', {
+            job.report('syncingQueuedItems', m().jobs.sync.syncingQueue, {
               current: processedQueuedItems,
               total: queueItems.length
             })
@@ -79,7 +81,7 @@ export class SyncJobRunner {
         }
       }
 
-      const message = `变更队列同步完成：${job.counters.synced ?? 0} 个条目已同步。`
+      const message = m().jobs.sync.queueCompleted({ count: job.counters.synced ?? 0 })
       job.report('completed', message, {
         current: queueItems.length,
         total: queueItems.length
@@ -95,7 +97,10 @@ export class SyncJobRunner {
       }
       await this.executeFullSync(job, collected)
 
-      const message = `全量同步完成：${job.counters.synced ?? 0} 个${collected.label}已同步。`
+      const message = m().jobs.sync.fullCompleted({
+        count: job.counters.synced ?? 0,
+        scope: collected.scope
+      })
       job.report('completed', message, {
         current: job.counters.synced ?? 0,
         total: collected.operations.length
@@ -110,7 +115,10 @@ export class SyncJobRunner {
         return
       }
 
-      const message = `全量同步预览完成：${job.counters.wouldSync ?? 0} 个${collected.label}可同步。`
+      const message = m().jobs.sync.previewCompleted({
+        count: job.counters.wouldSync ?? 0,
+        scope: collected.scope
+      })
       job.report('completed', message, {
         current: collected.scanned,
         total: collected.scanned
@@ -127,11 +135,11 @@ export class SyncJobRunner {
     const adapter = descriptor.localAdapter
     if (!adapter?.supportsAutoSync) {
       job.increment('skippedUnsupportedScope')
-      job.report('completed', `${descriptor.label}暂不支持本地全量同步。`, {
+      job.report('completed', m().jobs.sync.fullUnsupported({ scope: descriptor.scope }), {
         current: 1,
         total: 1
       })
-      return { label: descriptor.label, supported: false, scanned: 0, operations: [] }
+      return { scope: descriptor.scope, supported: false, scanned: 0, operations: [] }
     }
 
     const settings = await this.deps.settingsStore.get()
@@ -146,7 +154,7 @@ export class SyncJobRunner {
 
     while (true) {
       await job.checkpoint()
-      job.report('loadingItems', `正在扫描${descriptor.label}...`, {
+      job.report('loadingItems', m().jobs.sync.scanningItems({ scope: descriptor.scope }), {
         current: scanned,
         indeterminate: true
       })
@@ -203,7 +211,9 @@ export class SyncJobRunner {
             job.increment('scanned')
             job.report(
               options.includePreview ? 'previewingFullSyncItems' : 'collectingFullSyncItems',
-              options.includePreview ? '正在预览 Bangumi 全量同步...' : '正在计算需要同步的游戏...',
+              options.includePreview
+                ? m().jobs.sync.previewingItems
+                : m().jobs.sync.collectingItems({ scope: args.scope }),
               {
                 current: scanned,
                 indeterminate: true
@@ -220,7 +230,7 @@ export class SyncJobRunner {
     }
 
     return {
-      label: descriptor.label,
+      scope: descriptor.scope,
       supported: true,
       scanned,
       operations
@@ -235,7 +245,7 @@ export class SyncJobRunner {
       return
     }
 
-    job.report('syncingFullSyncItems', '正在同步 Bangumi 全量条目...', {
+    job.report('syncingFullSyncItems', m().jobs.sync.applyingItems, {
       current: 0,
       total: collected.operations.length,
       ratePeriod: 'minute'
@@ -260,7 +270,7 @@ export class SyncJobRunner {
         })
         incrementSyncFailure(job, error)
       } finally {
-        job.report('syncingFullSyncItems', '正在同步 Bangumi 全量条目...', {
+        job.report('syncingFullSyncItems', m().jobs.sync.applyingItems, {
           current: index + 1,
           total: collected.operations.length,
           ratePeriod: 'minute'
@@ -272,7 +282,7 @@ export class SyncJobRunner {
   private async requireAccount() {
     const account = await this.deps.accountService.getAccountSnapshot()
     if (!account) {
-      throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
+      throw new BangumiExtensionError('auth_required', m().errors.authRequired)
     }
     return account
   }
@@ -338,8 +348,10 @@ function createFullSyncPreviewChange(result: SyncItemResult): BangumiJobPreviewG
 
   if (payload.type !== undefined) {
     rows.push({
-      label: '收藏状态',
-      before: remote ? formatScopedCollectionType(result.scope, remote.type) : '未收藏',
+      label: m().jobs.preview.collectionStatus,
+      before: remote
+        ? formatScopedCollectionType(result.scope, remote.type)
+        : m().jobs.preview.notCollected,
       after: formatScopedCollectionType(result.scope, payload.type),
       tone: remote ? 'info' : 'success'
     })
@@ -348,8 +360,8 @@ function createFullSyncPreviewChange(result: SyncItemResult): BangumiJobPreviewG
   const remoteScore = normalizeBangumiRate(remote?.rate)
   if (payload.rate !== undefined && (payload.rate !== 0 || remoteScore !== undefined)) {
     rows.push({
-      label: '评分',
-      before: remoteScore === undefined ? '未评分' : `${remoteScore}`,
+      label: m().jobs.preview.score,
+      before: remoteScore === undefined ? m().jobs.preview.notRated : `${remoteScore}`,
       after: formatSyncPayloadRate(payload.rate),
       tone: payload.rate === 0 ? 'warning' : remote ? 'info' : 'success'
     })
@@ -363,7 +375,9 @@ function createFullSyncPreviewChange(result: SyncItemResult): BangumiJobPreviewG
     title: item.name,
     subjectId,
     badge: {
-      label: remote ? '更新 Bangumi 收藏' : '创建 Bangumi 收藏',
+      label: remote
+        ? m().jobs.preview.updateRemoteCollectionBadge
+        : m().jobs.preview.createRemoteCollectionBadge,
       tone: remote ? 'info' : 'success'
     },
     rows
@@ -377,7 +391,7 @@ function normalizeBangumiRate(value: unknown): number | undefined {
 }
 
 function formatSyncPayloadRate(rate: number): string {
-  return rate === 0 ? '未评分' : `${rate}`
+  return rate === 0 ? m().jobs.preview.notRated : `${rate}`
 }
 
 function shouldStopSyncBatch(error: unknown): boolean {

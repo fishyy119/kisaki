@@ -35,6 +35,9 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Person')
 
@@ -47,12 +50,12 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
 const NONE_VALUE = '#none'
-const GENDER_OPTIONS = [
-  { value: NONE_VALUE, label: '无' },
-  { value: 'male', label: '男性' },
-  { value: 'female', label: '女性' },
-  { value: 'other', label: '其他' }
-]
+const GENDER_OPTIONS = computed(() => [
+  { value: NONE_VALUE, label: m.value.common.none },
+  { value: 'male', label: m.value.library.gender.male },
+  { value: 'female', label: m.value.library.gender.female },
+  { value: 'other', label: m.value.library.gender.other }
+])
 
 // Form state
 interface FormData {
@@ -116,14 +119,14 @@ async function handleSubmit() {
   try {
     const birthDateValidation = birthDateInput.value?.validate()
     if (birthDateValidation && !birthDateValidation.valid) {
-      notify.error(birthDateValidation.errorText ?? '生日格式不正确')
+      notify.error(birthDateValidation.errorText ?? m.value.library.forms.birthDateInvalidFormat)
       return
     }
     const birthDate = birthDateValidation?.value ?? formData.value.birthDate
 
     const deathDateValidation = deathDateInput.value?.validate()
     if (deathDateValidation && !deathDateValidation.valid) {
-      notify.error(deathDateValidation.errorText ?? '忌日格式不正确')
+      notify.error(deathDateValidation.errorText ?? m.value.library.forms.deathDateInvalidFormat)
       return
     }
     const deathDate = deathDateValidation?.value ?? formData.value.deathDate
@@ -140,11 +143,11 @@ async function handleSubmit() {
       })
       .where(eq(persons.id, props.personId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -171,45 +174,47 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑基本信息</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editBasicInfo }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field>
-                <FieldLabel>名称</FieldLabel>
+                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    placeholder="人物名称"
+                    :placeholder="
+                      m.library.forms.namePlaceholder({ label: m.library.entities.person })
+                    "
                     required
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>原名</FieldLabel>
+                <FieldLabel>{{ m.library.fields.originalName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.originalName"
-                    placeholder="原文名称"
+                    :placeholder="m.library.forms.originalNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>排序名</FieldLabel>
+                <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.sortName"
-                    placeholder="用于排序的名称"
+                    :placeholder="m.library.forms.sortNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>性别</FieldLabel>
+                <FieldLabel>{{ m.library.fields.gender }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="genderModel">
                     <SelectTrigger>
-                      <SelectValue placeholder="选择性别" />
+                      <SelectValue :placeholder="m.library.forms.selectGender" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem
@@ -225,22 +230,22 @@ function handleCancel() {
               </Field>
               <div class="grid grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel>生日</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.birthDate }}</FieldLabel>
                   <FieldContent>
                     <PartialDateInput
                       ref="birthDateInput"
                       v-model="formData.birthDate"
-                      :messages="{ invalidIntegerText: '生日只能填写整数。' }"
+                      :messages="{ invalidIntegerText: m.library.forms.birthDateInvalidInteger }"
                     />
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel>忌日</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.deathDate }}</FieldLabel>
                   <FieldContent>
                     <PartialDateInput
                       ref="deathDateInput"
                       v-model="formData.deathDate"
-                      :messages="{ invalidIntegerText: '忌日只能填写整数。' }"
+                      :messages="{ invalidIntegerText: m.library.forms.deathDateInvalidInteger }"
                     />
                   </FieldContent>
                 </Field>
@@ -254,13 +259,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

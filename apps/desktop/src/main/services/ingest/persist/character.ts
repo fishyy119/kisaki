@@ -1,4 +1,5 @@
 import type { DbContext, DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type {
   IngestAddCharacterFromScraperOptions,
   IngestAddCharacterFromScraperResult
@@ -127,7 +128,8 @@ function resolveCharacterPersonLinks(params: {
 export class CharacterIngestPersistHandler {
   constructor(
     private readonly dbService: DbService,
-    private readonly personPersist: PersonIngestPersistHandler
+    private readonly personPersist: PersonIngestPersistHandler,
+    private readonly i18nService: I18nService
   ) {}
 
   persistCharacterGraph(
@@ -154,7 +156,7 @@ export class CharacterIngestPersistHandler {
     if (result.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        label: '正在保存角色媒体资源'
+        label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'character' })
       })
     }
     const warnings = await flushPendingAssets(this.dbService, result.pendingAssets, {

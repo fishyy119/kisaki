@@ -28,6 +28,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { GameSelect } from '@renderer/components/shared/game'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface GameLinkData {
   gameId: string
@@ -51,12 +54,12 @@ const emit = defineEmits<{
   submit: [data: GameLinkData]
 }>()
 
-const CHARACTER_TYPE_OPTIONS: { value: GameCharacterType; label: string }[] = [
-  { value: 'main', label: '主角' },
-  { value: 'supporting', label: '配角' },
-  { value: 'cameo', label: '客串' },
-  { value: 'other', label: '其他' }
-]
+const CHARACTER_TYPE_OPTIONS = computed<{ value: GameCharacterType; label: string }[]>(() => [
+  { value: 'main', label: m.value.library.roles.gameCharacter.main },
+  { value: 'supporting', label: m.value.library.roles.gameCharacter.supporting },
+  { value: 'cameo', label: m.value.library.roles.gameCharacter.cameo },
+  { value: 'other', label: m.value.library.roles.gameCharacter.other }
+])
 
 // Form state
 const formData = ref<GameLinkData>({
@@ -123,7 +126,9 @@ watch(
 
 function handleSubmit() {
   if (!formData.value.gameId) {
-    notify.error('请选择游戏')
+    notify.error(
+      m.value.library.forms.selectEntityRequired({ label: m.value.library.entities.game })
+    )
     return
   }
 
@@ -147,23 +152,29 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加游戏' : '编辑游戏' }}</DialogTitle>
+        <DialogTitle>{{
+          (isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
+            label: m.library.entities.game
+          })
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>游戏</FieldLabel>
+              <FieldLabel>{{ m.library.forms.gameLabel }}</FieldLabel>
               <FieldContent>
                 <GameSelect
                   v-model="formData.gameId"
                   :exclude-ids="selectExcludeIds"
-                  placeholder="选择游戏..."
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.game })
+                  "
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>角色类型</FieldLabel>
+              <FieldLabel>{{ m.library.forms.characterRoleLabel }}</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.type">
                   <SelectTrigger class="w-full">
@@ -182,16 +193,16 @@ function handleCancel() {
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="可选备注..."
+                  :placeholder="m.library.forms.notePlaceholder"
                 />
               </FieldContent>
             </Field>
             <Field orientation="horizontal">
-              <FieldLabel>包含剧透</FieldLabel>
+              <FieldLabel>{{ m.library.forms.includesSpoiler }}</FieldLabel>
               <FieldContent>
                 <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
@@ -204,9 +215,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

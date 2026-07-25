@@ -34,7 +34,7 @@ import type {
   ScraperSessionResult
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
-import type { Locale, JsonObject, UiCallbackResult } from '../shared'
+import type { ContentLocale, JsonObject, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
@@ -176,19 +176,19 @@ export type ScraperProviderUnregisterRequest = ScraperProviderScopedRpcParams
 export type ScraperProviderSearchRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
       query: string
-      locale?: Locale
+      locale?: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
       query: string
-      locale?: Locale
+      locale?: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'company'> & {
       query: string
-      locale?: Locale
+      locale?: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'character'> & {
       query: string
-      locale?: Locale
+      locale?: ContentLocale
     })
 
 export type ScraperProviderSearchResponse =
@@ -200,19 +200,19 @@ export type ScraperProviderSearchResponse =
 export type ScraperProviderResolveRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
       lookup: ScraperLookup
-      locale: Locale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
       lookup: ScraperLookup
-      locale: Locale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'company'> & {
       lookup: ScraperLookup
-      locale: Locale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'character'> & {
       lookup: ScraperLookup
-      locale: Locale
+      locale: ContentLocale
     })
 
 export type ScraperProviderResolveResponse =
@@ -224,19 +224,19 @@ export type ScraperProviderResolveResponse =
 export type ScraperProviderSessionOpenRequest =
   | (ScraperProviderScopedRpcParamsFor<'game'> & {
       target: IdResolvedTarget
-      locale: Locale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'person'> & {
       target: IdResolvedTarget
-      locale: Locale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'company'> & {
       target: IdResolvedTarget
-      locale: Locale
+      locale: ContentLocale
     })
   | (ScraperProviderScopedRpcParamsFor<'character'> & {
       target: IdResolvedTarget
-      locale: Locale
+      locale: ContentLocale
     })
 
 export type ScraperProviderSessionOpenResponse =

@@ -1,6 +1,7 @@
 import type { NetworkCapability, JsonObject } from '@kisaki3/extension-sdk'
 import { BANGUMI_OAUTH_RELAY_BASE_URL } from '../utils/constants'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 
 export interface OAuthRelaySession {
@@ -111,7 +112,7 @@ export class OAuthRelayClient {
         ok: response.ok,
         status: response.status,
         checkedAt,
-        message: response.ok ? 'OAuth Relay 可用。' : readRelayErrorMessage(response.data)
+        message: response.ok ? m().errors.relayAvailable : readRelayErrorMessage(response.data)
       })
     } catch {
       if (signal?.aborted) {
@@ -121,7 +122,7 @@ export class OAuthRelayClient {
       return {
         ok: false,
         checkedAt,
-        message: '无法连接 Kisaki OAuth Relay。'
+        message: m().errors.relayUnreachable
       }
     }
   }
@@ -149,7 +150,7 @@ export class OAuthRelayClient {
       if (!response.ok) {
         throw new BangumiExtensionError(
           response.status === 404 ? 'auth_expired' : 'relay_unavailable',
-          readRelayErrorMessage(response.data) || 'Kisaki OAuth Relay 暂时不可用，请稍后重试。'
+          readRelayErrorMessage(response.data) || m().errors.relayUnavailable
         )
       }
 
@@ -163,7 +164,7 @@ export class OAuthRelayClient {
         throw error
       }
 
-      throw new BangumiExtensionError('relay_unavailable', '无法连接 Kisaki OAuth Relay。')
+      throw new BangumiExtensionError('relay_unavailable', m().errors.relayUnreachable)
     }
   }
 
@@ -193,7 +194,7 @@ function normalizeSession(value: unknown): OAuthRelaySession {
   const expiresAt = readEpochMs(record, ['expiresAt', 'expires_at', 'expires'])
 
   if (!sessionId || !state || !authorizeUrl || expiresAt === undefined) {
-    throw new BangumiExtensionError('relay_unavailable', 'OAuth Relay 返回了无法识别的登录会话。')
+    throw new BangumiExtensionError('relay_unavailable', m().errors.relayInvalidSession)
   }
 
   return {
@@ -211,7 +212,7 @@ function normalizeToken(value: unknown): OAuthRelayToken {
   const accessToken = readRequiredString(record, ACCESS_TOKEN_KEYS)
 
   if (!accessToken) {
-    throw new BangumiExtensionError('relay_unavailable', 'OAuth Relay 没有返回访问凭据。')
+    throw new BangumiExtensionError('relay_unavailable', m().errors.relayNoToken)
   }
 
   const refreshToken = readOptionalString(record, ['refreshToken', 'refresh_token'])

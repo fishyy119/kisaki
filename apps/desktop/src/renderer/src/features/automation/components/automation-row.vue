@@ -9,6 +9,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
 import { TableCell, TableRow } from '@renderer/components/ui/table'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import {
@@ -42,16 +43,20 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<Emits>()
 
+const { m } = useI18n()
+
 const latestRun = computed(() => props.automation.history[0] ?? null)
 const commandTitle = computed(() => props.command?.title ?? props.automation.commandId)
 const commandDescription = computed(() => props.command?.description ?? props.automation.commandId)
 const sourceLabel = computed(() =>
   props.automation.owner.type === 'extension'
     ? (props.automation.owner.extension.nameSnapshot ?? props.automation.owner.extension.id)
-    : '应用'
+    : m.value.automation.row.app
 )
 const nextRunLabel = computed(() =>
-  props.automation.enabled ? formatAutomationTimestamp(props.automation.nextRunAt, '无') : '已禁用'
+  props.automation.enabled
+    ? formatAutomationTimestamp(props.automation.nextRunAt, m.value.automation.row.nextNone)
+    : m.value.automation.row.disabled
 )
 const enabledModel = computed({
   get: () => props.automation.enabled,
@@ -104,7 +109,9 @@ const enabledModel = computed({
       <div class="truncate text-sm">
         {{ formatAutomationTimestamp(props.automation.lastRunAt) }}
       </div>
-      <div class="truncate text-xs text-muted-foreground">下次 {{ nextRunLabel }}</div>
+      <div class="truncate text-xs text-muted-foreground">
+        {{ m.automation.row.nextRun({ label: nextRunLabel }) }}
+      </div>
     </TableCell>
 
     <TableCell class="py-2">
@@ -118,7 +125,7 @@ const enabledModel = computed({
             icon="icon-[mdi--progress-clock]"
             class="size-3"
           />
-          运行中
+          {{ m.automation.row.running }}
         </Badge>
         <Badge
           v-else-if="latestRun"
@@ -132,7 +139,7 @@ const enabledModel = computed({
           variant="secondary"
           class="h-5"
         >
-          未调用
+          {{ m.automation.row.notInvoked }}
         </Badge>
         <span class="truncate text-xs text-muted-foreground">{{ sourceLabel }}</span>
       </div>
@@ -144,7 +151,7 @@ const enabledModel = computed({
           size="icon-sm"
           variant="ghost"
           :class="cn(props.running && 'hover:text-destructive')"
-          :tooltip="props.running ? '停止重试' : '运行'"
+          :tooltip="props.running ? m.automation.row.stopRetry : m.automation.row.run"
           :disabled="props.busy"
           @click="props.running ? emit('cancel') : emit('run')"
         >
@@ -157,7 +164,7 @@ const enabledModel = computed({
         <Button
           size="icon-sm"
           variant="ghost"
-          tooltip="详情"
+          :tooltip="m.automation.row.details"
           @click="emit('details')"
         >
           <Icon
@@ -169,7 +176,7 @@ const enabledModel = computed({
         <Button
           size="icon-sm"
           variant="ghost"
-          tooltip="编辑"
+          :tooltip="m.common.edit"
           :disabled="props.busy || props.running"
           @click="emit('edit')"
         >
@@ -183,7 +190,7 @@ const enabledModel = computed({
           size="icon-sm"
           variant="ghost"
           class="hover:text-destructive"
-          tooltip="删除"
+          :tooltip="m.common.delete"
           :disabled="props.busy || props.running"
           @click="emit('delete')"
         >

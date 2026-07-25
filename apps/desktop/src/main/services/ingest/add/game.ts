@@ -7,6 +7,7 @@ import type {
 } from '@shared/ingest/add'
 import type { ScraperLookup } from '@shared/scraper'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -37,7 +38,8 @@ export class GameAddHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly persistHandler: GameIngestPersistHandler,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startAddFromScraper(
@@ -49,7 +51,7 @@ export class GameAddHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.game.add',
-      title: '添加游戏',
+      title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
       description: normalized.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -58,7 +60,7 @@ export class GameAddHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '添加游戏',
+          title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -81,7 +83,7 @@ export class GameAddHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.game.add',
-      title: '添加游戏',
+      title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
       description: normalizedLookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -90,7 +92,7 @@ export class GameAddHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '添加游戏',
+          title: this.i18nService.messages.ingest.add.title({ entity: 'game' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -121,7 +123,7 @@ export class GameAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      label: '正在检查现有游戏'
+      label: this.i18nService.messages.ingest.add.checkingExisting({ entity: 'game' })
     })
     const existing = this.tryResolveExistingGame(normalized.lookup.knownIds, options)
     if (existing) {
@@ -131,7 +133,7 @@ export class GameAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取游戏元数据'
+      label: this.i18nService.messages.ingest.add.scrapingMetadata({ entity: 'game' })
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.game.scrape(normalized.profileId, normalized.lookup),
@@ -140,12 +142,12 @@ export class GameAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      label: '正在整理游戏元数据'
+      label: this.i18nService.messages.ingest.add.buildingMetadata({ entity: 'game' })
     })
     const graph = buildGameGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入游戏'
+      label: this.i18nService.messages.ingest.add.writing({ entity: 'game' })
     })
     return this.persistHandler.persistGameGraph(graph, options)
   }
@@ -170,7 +172,7 @@ export class GameAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      label: '正在检查现有游戏',
+      label: this.i18nService.messages.ingest.add.checkingExisting({ entity: 'game' }),
       phaseCurrent: 1,
       phaseTotal: 2
     })
@@ -182,7 +184,7 @@ export class GameAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入游戏',
+      label: this.i18nService.messages.ingest.add.writing({ entity: 'game' }),
       phaseCurrent: 2,
       phaseTotal: 2
     })
@@ -240,8 +242,12 @@ export class GameAddHandler {
   ): void {
     const warningItems = toTaskRunWarnings(result.warnings)
     run.complete({
-      title: result.isNew ? '游戏添加成功' : '游戏已存在',
-      summary: result.isNew ? '游戏已写入资料库。' : '已匹配现有游戏。',
+      title: result.isNew
+        ? this.i18nService.messages.ingest.add.addedTitle({ entity: 'game' })
+        : this.i18nService.messages.ingest.add.existsTitle({ entity: 'game' }),
+      summary: result.isNew
+        ? this.i18nService.messages.ingest.add.addedSummary({ entity: 'game' })
+        : this.i18nService.messages.ingest.add.existsSummary({ entity: 'game' }),
       output: result,
       counters: {
         added: result.isNew ? 1 : 0,
@@ -254,7 +260,9 @@ export class GameAddHandler {
 
   private finishRunFromError(run: TaskRunHandle, error: unknown): void {
     if (isTaskRunCancellation(error)) {
-      run.cancel({ summary: '添加游戏已取消。' })
+      run.cancel({
+        summary: this.i18nService.messages.ingest.add.cancelledSummary({ entity: 'game' })
+      })
       return
     }
 

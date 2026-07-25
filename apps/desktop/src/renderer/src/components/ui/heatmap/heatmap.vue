@@ -22,6 +22,7 @@ import {
 } from '@renderer/components/ui/chart'
 import { HeatmapRectGrid, HeatmapRectGridSelectors } from './heatmap-grid'
 import type { HeatmapGranularity, HeatmapProps } from './types'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 // =============================================================================
 // Props & Model
@@ -30,14 +31,32 @@ import type { HeatmapGranularity, HeatmapProps } from './types'
 const props = withDefaults(defineProps<HeatmapProps>(), {
   height: 100,
   showLegend: true,
-  legendLabels: () => ({ less: 'Less', more: 'More' }),
-  granularityLabels: () => ({ day: '日', week: '周', month: '月' }),
+  legendLabels: undefined,
   availableGranularities: () => ['day', 'week', 'month']
 })
 
 const granularity = defineModel<HeatmapGranularity>('granularity', {
   default: 'day'
 })
+
+const { m, f } = useI18n()
+
+const legendLabelTexts = computed(
+  () =>
+    props.legendLabels ?? {
+      less: m.value.ui.charts.legendLess,
+      more: m.value.ui.charts.legendMore
+    }
+)
+
+const granularityLabelTexts = computed(
+  () =>
+    props.granularityLabels ?? {
+      day: m.value.ui.charts.day,
+      week: m.value.ui.charts.week,
+      month: m.value.ui.charts.month
+    }
+)
 
 // Show selector only when multiple options available
 const showGranularitySelector = computed(() => props.availableGranularities.length > 1)
@@ -60,11 +79,13 @@ const range = computed(() => {
 // Chart Config (shadcn-vue tooltip)
 // =============================================================================
 
-const chartConfig = {
-  valueText: { label: '时长' }
-} satisfies ChartConfig
+const chartConfig = computed(
+  () => ({ valueText: { label: m.value.ui.charts.duration } }) satisfies ChartConfig
+)
 
-const tooltipTemplate = componentToString(chartConfig, ChartTooltipContent, { labelKey: 'label' })
+const tooltipTemplate = computed(() =>
+  componentToString(chartConfig.value, ChartTooltipContent, { labelKey: 'label' })
+)
 
 // =============================================================================
 // Helpers
@@ -103,22 +124,19 @@ function formatDateDisplay(date: Date): string {
     case 'week': {
       const weekEnd = new Date(date)
       weekEnd.setDate(weekEnd.getDate() + 6)
-      return `${date.toLocaleDateString('zh-Hans', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('zh-Hans', { month: 'short', day: 'numeric' })}`
+      return f.value.monthDayRange(date, weekEnd)
     }
     case 'month':
-      return date.toLocaleDateString('zh-Hans', { year: 'numeric', month: 'long' })
+      return f.value.yearMonth(date)
     default:
-      return date.toLocaleDateString('zh-Hans', { year: 'numeric', month: 'short', day: 'numeric' })
+      return f.value.date(date)
   }
 }
 
 function formatValueDisplay(value: number): string {
   if (props.formatValue) return props.formatValue(value)
-  if (value === 0) return '无活动'
-  const hours = Math.floor(value / 3600000)
-  const minutes = Math.floor((value % 3600000) / 60000)
-  if (hours > 0) return `${hours}小时${minutes}分钟`
-  return `${minutes}分钟`
+  if (value === 0) return m.value.ui.charts.noActivity
+  return f.value.duration(value)
 }
 
 // =============================================================================
@@ -263,7 +281,7 @@ function initUnovis() {
     container: document.body,
     className: 'chart-tooltip-portal',
     triggers: {
-      [HeatmapRectGridSelectors.cell]: tooltipTemplate!
+      [HeatmapRectGridSelectors.cell]: tooltipTemplate.value!
     }
   })
 
@@ -328,7 +346,7 @@ watch(
             :key="g"
             :value="g"
           >
-            {{ props.granularityLabels[g] }}
+            {{ granularityLabelTexts[g] }}
           </SegmentedControlItem>
         </SegmentedControl>
       </div>
@@ -347,7 +365,7 @@ watch(
       v-if="props.showLegend"
       class="flex items-center justify-end gap-2 text-xs text-muted-foreground"
     >
-      <span>{{ props.legendLabels.less }}</span>
+      <span>{{ legendLabelTexts.less }}</span>
       <div class="flex gap-1">
         <div
           v-for="level in 5"
@@ -356,7 +374,7 @@ watch(
           :style="{ backgroundColor: getCellFill(level - 1) }"
         />
       </div>
-      <span>{{ props.legendLabels.more }}</span>
+      <span>{{ legendLabelTexts.more }}</span>
     </div>
   </div>
 </template>

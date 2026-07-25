@@ -8,6 +8,7 @@ import SelectNode from './node/select-node.vue'
 import SubmenuNode from './node/submenu-node.vue'
 import SeparatorNode from './node/separator-node.vue'
 import { useExtensionEntityMenuSession } from './entity-menu-session'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { EntityMenuInput } from '@kisaki3/extension-api'
 import type { MenuComponents } from '@renderer/types'
 
@@ -29,6 +30,7 @@ const props = withDefaults(
 )
 
 const session = useExtensionEntityMenuSession(toRef(props, 'input'), toRef(props, 'enabled'))
+const { m } = useI18n()
 </script>
 
 <template>
@@ -44,7 +46,7 @@ const session = useExtensionEntityMenuSession(toRef(props, 'input'), toRef(props
       disabled
     >
       <Spinner class="size-3.5" />
-      加载扩展菜单...
+      {{ m.extension.entityMenu.loading }}
     </component>
 
     <component
@@ -56,7 +58,7 @@ const session = useExtensionEntityMenuSession(toRef(props, 'input'), toRef(props
         icon="icon-[mdi--alert-circle-outline]"
         class="size-4 text-destructive"
       />
-      扩展菜单加载失败
+      {{ m.extension.entityMenu.loadFailed }}
     </component>
 
     <template
@@ -120,7 +122,7 @@ const session = useExtensionEntityMenuSession(toRef(props, 'input'), toRef(props
         icon="icon-[mdi--alert-circle-outline]"
         class="size-4 text-muted-foreground"
       />
-      部分扩展菜单不可用
+      {{ m.extension.entityMenu.partiallyUnavailable }}
     </component>
   </template>
 </template>

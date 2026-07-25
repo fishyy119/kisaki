@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { AllEntityType } from '@shared/common'
 import { characters, collections, companies, games, persons, tags } from '@shared/db'
 import { db } from '@renderer/core/db'
+import { messages } from '@renderer/core/i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import type { EntityMergeSummary } from './types'
 
@@ -88,7 +89,9 @@ export async function fetchEntityMergeSummary(
         entityType,
         id: row.id,
         name: row.name,
-        subText: row.isDynamic ? '动态合集' : '静态合集',
+        subText: row.isDynamic
+          ? messages.value.merge.dynamicCollection
+          : messages.value.merge.staticCollection,
         imageUrl: row.coverFile
           ? getAttachmentUrl('collections', row.id, row.coverFile, { width: 96, height: 96 })
           : null

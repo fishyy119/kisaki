@@ -14,6 +14,9 @@ import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
 import { useAsyncData, useEntityDelete } from '@renderer/composables'
 import { formatEntityDeleteSuccessMessage } from '@renderer/utils/entity-delete'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   gameId: string
@@ -96,7 +99,9 @@ async function handleConfirm() {
 
     emit('deleted', props.gameId)
   } catch (error) {
-    notify.error(`删除失败: ${(error as Error).message}`)
+    notify.error(
+      m.value.library.feedback.deleteFailedWithReason({ message: (error as Error).message })
+    )
   }
 }
 </script>
@@ -104,7 +109,7 @@ async function handleConfirm() {
 <template>
   <DeleteConfirmDialog
     v-model:open="open"
-    entity-label="游戏"
+    :entity-label="m.library.entities.game"
     :entity-name="firstName"
     :loading="isLoading || isDeletePreviewLoading || !data || !deletePreview"
     @confirm="handleConfirm"
@@ -122,7 +127,11 @@ async function handleConfirm() {
         for="add-to-ignored"
         class="text-sm font-normal cursor-pointer"
       >
-        将{{ folderName ? `文件夹「${folderName}」` : `「${gameName}」` }}加入扫描器忽略列表
+        {{
+          folderName
+            ? m.library.forms.addToScannerIgnoreFolder({ name: folderName })
+            : m.library.forms.addToScannerIgnoreName({ name: gameName })
+        }}
       </Label>
     </div>
 

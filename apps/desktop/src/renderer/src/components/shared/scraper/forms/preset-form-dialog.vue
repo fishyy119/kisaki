@@ -11,7 +11,8 @@ import type { ContentEntityType } from '@shared/common'
 
 import { ref, watch, computed } from 'vue'
 import { nanoid } from 'nanoid'
-import { SCRAPER_PRESETS, type ScraperPreset } from './presets'
+import { useI18n } from '@renderer/composables'
+import { getScraperPresets, type ScraperPreset } from './presets'
 import {
   Dialog,
   DialogContent,
@@ -32,19 +33,15 @@ interface Props {
 const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
+const { m } = useI18n()
 
 const selectedIds = ref<Set<string>>(new Set())
 
-const MEDIA_TYPE_LABELS: Record<ContentEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司'
-}
+const allPresets = computed(() => getScraperPresets())
 
 const filteredPresets = computed(() => {
-  if (!props.mediaType) return SCRAPER_PRESETS
-  return SCRAPER_PRESETS.filter((p) => p.mediaType === props.mediaType)
+  if (!props.mediaType) return allPresets.value
+  return allPresets.value.filter((p) => p.mediaType === props.mediaType)
 })
 
 // Group presets by media type for organized display (when no filter is provided)
@@ -55,7 +52,7 @@ const presetsByMediaType = computed(() => {
     } as Record<ContentEntityType, ScraperPreset[]>
   }
 
-  return SCRAPER_PRESETS.reduce<Record<ContentEntityType, ScraperPreset[]>>(
+  return allPresets.value.reduce<Record<ContentEntityType, ScraperPreset[]>>(
     (acc, preset) => {
       const type = preset.mediaType
       if (!acc[type]) acc[type] = []
@@ -130,12 +127,12 @@ function handleCancel() {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <DialogTitle>
-          选择预设配置
+          {{ m.scraper.presetDialog.title }}
           <span
             v-if="props.mediaType"
             class="text-muted-foreground text-xs font-normal"
           >
-            （{{ MEDIA_TYPE_LABELS[props.mediaType] || props.mediaType }}）
+            ({{ m.library.entities[props.mediaType] || props.mediaType }})
           </span>
         </DialogTitle>
       </DialogHeader>
@@ -144,7 +141,7 @@ function handleCancel() {
           v-if="filteredPresets.length === 0"
           class="text-sm text-muted-foreground text-center py-8"
         >
-          暂无可用预设
+          {{ m.scraper.presetDialog.empty }}
         </p>
         <div
           v-else
@@ -159,7 +156,7 @@ function handleCancel() {
               v-if="!props.mediaType"
               class="text-xs font-medium text-muted-foreground px-1"
             >
-              {{ MEDIA_TYPE_LABELS[mediaTypeKey as ContentEntityType] || mediaTypeKey }}
+              {{ m.library.entities[mediaTypeKey as ContentEntityType] || mediaTypeKey }}
             </div>
             <label
               v-for="preset in presets"
@@ -174,7 +171,7 @@ function handleCancel() {
                 <div class="text-sm font-medium">{{ preset.name }}</div>
                 <div class="text-xs text-muted-foreground">{{ preset.description }}</div>
                 <div class="text-xs text-muted-foreground font-mono mt-1">
-                  搜索: {{ preset.searchProviderId }}
+                  {{ m.scraper.presetDialog.searchProvider({ id: preset.searchProviderId }) }}
                 </div>
               </div>
             </label>
@@ -186,13 +183,13 @@ function handleCancel() {
           variant="outline"
           @click="handleCancel"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="selectedIds.size === 0"
           @click="handleAdd"
         >
-          添加 ({{ selectedIds.size }})
+          {{ m.scraper.presetDialog.addWithCount({ count: selectedIds.size }) }}
         </Button>
       </DialogFooter>
     </DialogContent>

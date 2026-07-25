@@ -19,6 +19,7 @@ import {
 } from '@shared/db'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,8 @@ import { Form } from '@renderer/components/ui/form'
 
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 // =============================================================================
 // State
 // =============================================================================
@@ -63,27 +66,25 @@ interface FormData {
   newIgnoredName: string
 }
 
-const scannerIngestModeOptions = [
+const scannerIngestModeOptions = computed<
+  readonly { value: ScannerIngestMode; label: string; description: string }[]
+>(() => [
   {
     value: 'prefer-scraper',
-    label: '优先刮削',
-    description: '优先使用刮削导入，失败时回退到直接入库'
+    label: m.value.scanner.settings.ingestPreferScraper,
+    description: m.value.scanner.settings.ingestPreferScraperDescription
   },
   {
     value: 'require-scraper',
-    label: '必须刮削',
-    description: '必须通过刮削导入，刮削失败时直接记为失败'
+    label: m.value.scanner.settings.ingestRequireScraper,
+    description: m.value.scanner.settings.ingestRequireScraperDescription
   },
   {
     value: 'direct-only',
-    label: '仅直接入库',
-    description: '跳过刮削，直接按识别结果创建游戏'
+    label: m.value.scanner.settings.ingestDirectOnly,
+    description: m.value.scanner.settings.ingestDirectOnlyDescription
   }
-] as const satisfies readonly {
-  value: ScannerIngestMode
-  label: string
-  description: string
-}[]
+])
 
 function createDefaultFormData(): FormData {
   return {
@@ -199,10 +200,13 @@ async function handleSubmit() {
       })
       .where(eq(settings.id, 0))
       .run()
-    notify.success('设置已保存')
+    notify.success(m.value.scanner.settings.saved)
     open.value = false
   } catch (error) {
-    notify.error('保存失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.scanner.settings.saveFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     isSaving.value = false
   }
@@ -213,7 +217,7 @@ async function handleSubmit() {
   <Dialog v-model:open="openModel">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>扫描器设置</DialogTitle>
+        <DialogTitle>{{ m.scanner.settings.title }}</DialogTitle>
       </DialogHeader>
 
       <template v-if="state === 'loading'">
@@ -236,7 +240,7 @@ async function handleSubmit() {
               variant="outline"
               @click="refetch"
             >
-              重试
+              {{ m.common.retry }}
             </Button>
           </div>
         </DialogBody>
@@ -247,16 +251,16 @@ async function handleSubmit() {
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field orientation="horizontal">
-                <FieldLabel>启动时自动扫描</FieldLabel>
-                <FieldDescription>打开应用时自动运行所有扫描器</FieldDescription>
+                <FieldLabel>{{ m.scanner.settings.startAtOpen }}</FieldLabel>
+                <FieldDescription>{{ m.scanner.settings.startAtOpenDescription }}</FieldDescription>
                 <FieldContent>
                   <Switch v-model="formData.startAtOpen" />
                 </FieldContent>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>入库模式</FieldLabel>
-                <FieldDescription>控制扫描器识别到新游戏后的导入策略</FieldDescription>
+                <FieldLabel>{{ m.scanner.settings.ingestMode }}</FieldLabel>
+                <FieldDescription>{{ m.scanner.settings.ingestModeDescription }}</FieldDescription>
                 <FieldContent>
                   <Select v-model="formData.ingestMode">
                     <SelectTrigger class="w-32">
@@ -283,17 +287,17 @@ async function handleSubmit() {
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>pHash 辅助刮削</FieldLabel>
-                <FieldDescription>实验性功能</FieldDescription>
+                <FieldLabel>{{ m.scanner.settings.usePhash }}</FieldLabel>
+                <FieldDescription>{{ m.scanner.settings.usePhashDescription }}</FieldDescription>
                 <FieldContent>
                   <Switch v-model="formData.usePhash" />
                 </FieldContent>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>并行处理数</FieldLabel>
+                <FieldLabel>{{ m.scanner.settings.parallelCount }}</FieldLabel>
                 <FieldDescription>
-                  控制单个扫描器同时处理的条目数，1 表示串行处理
+                  {{ m.scanner.settings.parallelCountDescription }}
                 </FieldDescription>
                 <FieldContent>
                   <Input
@@ -309,13 +313,15 @@ async function handleSubmit() {
               </Field>
 
               <Field>
-                <FieldLabel>忽略名称列表</FieldLabel>
-                <FieldDescription>扫描器会跳过这些提取后的实体名称</FieldDescription>
+                <FieldLabel>{{ m.scanner.settings.ignoredNames }}</FieldLabel>
+                <FieldDescription>{{
+                  m.scanner.settings.ignoredNamesDescription
+                }}</FieldDescription>
                 <FieldContent>
                   <div class="flex gap-2">
                     <Input
                       v-model="formData.newIgnoredName"
-                      placeholder="输入要忽略的名称..."
+                      :placeholder="m.scanner.settings.ignoredNamePlaceholder"
                       class="flex-1"
                       @keydown="handleKeyDown"
                     />
@@ -329,7 +335,7 @@ async function handleSubmit() {
                         icon="icon-[mdi--plus]"
                         class="size-4"
                       />
-                      添加
+                      {{ m.common.add }}
                     </Button>
                   </div>
 
@@ -363,7 +369,7 @@ async function handleSubmit() {
                     v-else
                     class="text-xs text-muted-foreground mt-2"
                   >
-                    暂无忽略名称
+                    {{ m.scanner.settings.noIgnoredNames }}
                   </p>
                 </FieldContent>
               </Field>
@@ -377,13 +383,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

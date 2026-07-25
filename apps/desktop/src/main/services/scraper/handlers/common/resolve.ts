@@ -2,13 +2,13 @@
  * Shared resolve orchestration built on top of invocation state caches.
  */
 
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { ScraperLookup } from '@shared/scraper'
 import type { BaseResolvedTarget, BaseScraperSession } from '../../types'
 import type { ScraperInvocationState } from './state'
 
 export interface ResolveCapableScraperProvider<TTarget extends BaseResolvedTarget> {
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<TTarget | null>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<TTarget | null>
 }
 
 /**
@@ -41,7 +41,7 @@ export async function resolveProviderTarget<
   providerId: string
   provider: TProvider
   lookup: ScraperLookup
-  locale: Locale
+  locale: ContentLocale
 }): Promise<TTarget | null> {
   return options.state.getOrCreateResolvedTarget(
     options.providerId,
@@ -66,7 +66,7 @@ export async function resolveSearchProviderTarget<
   providerId: string
   provider: TProvider
   lookup: ScraperLookup
-  locale: Locale
+  locale: ContentLocale
   warn?: (message: string, error?: unknown) => void
 }): Promise<{
   target: TTarget | null

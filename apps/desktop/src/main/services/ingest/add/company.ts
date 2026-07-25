@@ -4,6 +4,7 @@ import type {
 } from '@shared/ingest/add'
 import type { ScraperLookup } from '@shared/scraper'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -27,7 +28,8 @@ export class CompanyAddHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly persistHandler: CompanyIngestPersistHandler,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startAddFromScraper(
@@ -39,7 +41,7 @@ export class CompanyAddHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.company.add',
-      title: '添加公司',
+      title: this.i18nService.messages.ingest.add.title({ entity: 'company' }),
       description: normalized.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -48,7 +50,7 @@ export class CompanyAddHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '添加公司',
+          title: this.i18nService.messages.ingest.add.title({ entity: 'company' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -82,7 +84,7 @@ export class CompanyAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      label: '正在检查现有公司'
+      label: this.i18nService.messages.ingest.add.checkingExisting({ entity: 'company' })
     })
     if (normalized.lookup.knownIds?.length) {
       const existingByExternalId = this.dbService.entityFinder.findExistingCompany({
@@ -102,7 +104,7 @@ export class CompanyAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取公司元数据'
+      label: this.i18nService.messages.ingest.add.scrapingMetadata({ entity: 'company' })
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.company.scrape(normalized.profileId, normalized.lookup),
@@ -111,12 +113,12 @@ export class CompanyAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      label: '正在整理公司元数据'
+      label: this.i18nService.messages.ingest.add.buildingMetadata({ entity: 'company' })
     })
     const graph = buildCompanyGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入公司'
+      label: this.i18nService.messages.ingest.add.writing({ entity: 'company' })
     })
     return this.persistHandler.persistCompanyGraph(graph, options)
   }
@@ -138,8 +140,12 @@ export class CompanyAddHandler {
       run.context.throwIfCancelled()
       const warningItems = toTaskRunWarnings(result.warnings)
       run.complete({
-        title: result.isNew ? '公司添加成功' : '公司已存在',
-        summary: result.isNew ? '公司已写入资料库。' : '已匹配现有公司。',
+        title: result.isNew
+          ? this.i18nService.messages.ingest.add.addedTitle({ entity: 'company' })
+          : this.i18nService.messages.ingest.add.existsTitle({ entity: 'company' }),
+        summary: result.isNew
+          ? this.i18nService.messages.ingest.add.addedSummary({ entity: 'company' })
+          : this.i18nService.messages.ingest.add.existsSummary({ entity: 'company' }),
         output: result,
         counters: {
           added: result.isNew ? 1 : 0,
@@ -150,7 +156,9 @@ export class CompanyAddHandler {
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
-        run.cancel({ summary: '添加公司已取消。' })
+        run.cancel({
+          summary: this.i18nService.messages.ingest.add.cancelledSummary({ entity: 'company' })
+        })
         return
       }
 

@@ -20,6 +20,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { TagSelect } from '@renderer/components/shared/tag'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface TagLinkData {
   tagId: string
@@ -98,7 +101,7 @@ watch(
 
 function handleSubmit() {
   if (!formData.value.tagId) {
-    notify.error('请选择标签')
+    notify.error(m.value.library.forms.selectTagRequired)
     return
   }
 
@@ -120,33 +123,37 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加标签' : '编辑标签' }}</DialogTitle>
+        <DialogTitle>{{
+          isAddMode ? m.library.forms.addTag : m.library.forms.editTagLink
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>标签</FieldLabel>
+              <FieldLabel>{{ m.library.fields.tags }}</FieldLabel>
               <FieldContent>
                 <TagSelect
                   v-model="formData.tagId"
                   :exclude-ids="selectExcludeIds"
-                  placeholder="选择标签..."
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.tag })
+                  "
                   allow-create
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="备注信息..."
+                  :placeholder="m.library.forms.noteInfoPlaceholder"
                 />
               </FieldContent>
             </Field>
             <Field orientation="horizontal">
-              <FieldLabel>包含剧透</FieldLabel>
+              <FieldLabel>{{ m.library.forms.includesSpoiler }}</FieldLabel>
               <FieldContent>
                 <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
@@ -159,9 +166,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

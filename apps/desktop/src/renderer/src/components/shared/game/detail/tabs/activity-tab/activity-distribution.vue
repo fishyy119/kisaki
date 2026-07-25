@@ -17,17 +17,16 @@ import {
   TimeDistributionChart,
   type DistributionType
 } from '@renderer/components/ui/time-distribution-chart'
+import { useI18n } from '@renderer/composables'
 
 interface Props {
   sessions: GameSession[]
 }
 
 const props = defineProps<Props>()
+const { m, f } = useI18n()
 
 const distributionType = ref<DistributionType>('hourly')
-
-// Weekday names starting from Monday
-const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
 // Aggregate play time based on distribution type
 const chartData = computed(() => {
@@ -38,11 +37,16 @@ const chartData = computed(() => {
     }
     case 'weekday': {
       const values = aggregateByLocalWeekdayMondayFirst(props.sessions)
-      return values.map((value, day) => ({ key: day, label: weekdayNames[day], value }))
+      // Aggregation is Monday-first; ISO day 1 is Monday.
+      return values.map((value, day) => ({ key: day, label: f.value.weekdayName(day + 1), value }))
     }
     case 'dayOfMonth': {
       const values = aggregateByLocalDayOfMonth(props.sessions)
-      return values.map((value, i) => ({ key: i + 1, label: `${i + 1}日`, value }))
+      return values.map((value, i) => ({
+        key: i + 1,
+        label: m.value.game.activity.dayOfMonthLabel({ day: i + 1 }),
+        value
+      }))
     }
     default: {
       const _exhaustive: never = distributionType.value
@@ -57,7 +61,6 @@ const chartData = computed(() => {
     v-model:distribution-type="distributionType"
     :data="chartData"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :distribution-labels="{ hourly: '小时', weekday: '星期', dayOfMonth: '日期' }"
     :height="200"
   />
 </template>

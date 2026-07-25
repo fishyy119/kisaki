@@ -59,6 +59,7 @@ export interface RuntimeManagerOptions {
   hostInspect?: ExtensionHostInspectOptions
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
+  getUiLocale(): RuntimeInfo['uiLocale']
   onRuntimeStateChanged?(extensionId: string, state: ExtensionRuntimeState): void
 }
 
@@ -351,7 +352,7 @@ export class RuntimeManager {
       return
     }
 
-    const runtimeInfo = createRuntimeInfo()
+    const runtimeInfo = createRuntimeInfo(this.options.getUiLocale())
     const response = await this.requireRpc().handshake(
       {
         protocolVersion: EXTENSION_RPC_PROTOCOL_VERSION,
@@ -662,13 +663,14 @@ export class RuntimeManager {
   }
 }
 
-function createRuntimeInfo(): RuntimeInfo {
+function createRuntimeInfo(uiLocale: RuntimeInfo['uiLocale']): RuntimeInfo {
   return {
     appVersion: app.getVersion(),
     apiVersion: EXTENSION_API_VERSION,
     mode: app.isPackaged ? 'production' : 'development',
     platform: toRuntimePlatform(process.platform),
-    arch: process.arch
+    arch: process.arch,
+    uiLocale
   }
 }
 

@@ -8,6 +8,7 @@
 -->
 
 <script setup lang="ts">
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import { StateView } from '@renderer/components/ui/state-view'
 import {
@@ -17,6 +18,8 @@ import {
   StatisticsTimeDistribution,
   StatisticsGameRanking
 } from '../components'
+
+const { m } = useI18n()
 
 const { error } = useStatistics()
 </script>
@@ -39,7 +42,7 @@ const { error } = useStatistics()
 
     <div class="p-4">
       <StatisticsActivityHeatmap
-        title="活动热力图"
+        :title="m.statistics.charts.heatmapTitle"
         :available-granularities="['day']"
       />
     </div>
@@ -48,13 +51,13 @@ const { error } = useStatistics()
     <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsTimeTrend
-          title="游玩趋势"
+          :title="m.statistics.charts.trendTitle"
           :available-granularities="['daily']"
         />
       </div>
       <div class="min-w-0 p-4 xl:border-l">
         <StatisticsTimeDistribution
-          title="时段分布"
+          :title="m.statistics.charts.distributionTitle"
           :available-types="['hourly']"
         />
       </div>
@@ -63,7 +66,7 @@ const { error } = useStatistics()
     <!-- Rankings band: full-width game ranking, rows flowing in two columns -->
     <div class="p-4">
       <StatisticsGameRanking
-        title="游戏排行"
+        :title="m.statistics.ranking.gameTitle"
         :columns="2"
       />
     </div>

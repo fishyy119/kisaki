@@ -10,6 +10,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/u
 import { getEntityIcon } from '@renderer/utils/format'
 import PersonDetailHero from './detail-hero.vue'
 import { PersonDetailOverviewTab, PersonDetailGamesTab, PersonDetailCharactersTab } from './tabs'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 const { person } = usePerson()
 </script>
@@ -27,21 +30,21 @@ const { person } = usePerson()
             icon="icon-[mdi--information-outline]"
             class="size-3.5"
           />
-          概览
+          {{ m.library.detail.tabs.overview }}
         </TabsTrigger>
         <TabsTrigger value="characters">
           <Icon
             :icon="getEntityIcon('character')"
             class="size-3.5"
           />
-          相关角色
+          {{ m.library.detail.tabs.relatedCharacters }}
         </TabsTrigger>
         <TabsTrigger value="games">
           <Icon
             :icon="getEntityIcon('game')"
             class="size-3.5"
           />
-          相关游戏
+          {{ m.library.detail.tabs.relatedGames }}
         </TabsTrigger>
       </TabsList>
 

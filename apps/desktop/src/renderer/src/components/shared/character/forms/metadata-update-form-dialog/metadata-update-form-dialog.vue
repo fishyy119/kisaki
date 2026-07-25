@@ -50,6 +50,9 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   characterId: string
@@ -75,26 +78,26 @@ const collectionUpdate = ref<IngestUpdatePolicy['collectionUpdate']>('replace')
 const selectedSurfaces = ref<CharacterUpdateSurface[]>([...CHARACTER_UPDATE_SURFACE_KEYS])
 const useCurrentExternalIdsAsKnownIds = ref(true)
 
-const SURFACE_LABELS: Record<CharacterUpdateSurface, string> = {
-  name: '名称',
-  originalName: '原名',
-  birthDate: '生日',
-  gender: '性别',
-  age: '年龄',
-  bloodType: '血型',
-  height: '身高',
-  weight: '体重',
-  bust: '胸围',
-  waist: '腰围',
-  hips: '臀围',
-  cup: '罩杯',
-  description: '简介',
-  relatedSites: '相关链接',
-  externalIds: '外部 ID',
-  tags: '标签',
-  person: '人物',
-  photos: '照片'
-}
+const SURFACE_LABELS = computed<Record<CharacterUpdateSurface, string>>(() => ({
+  name: m.value.library.fields.name,
+  originalName: m.value.library.fields.originalName,
+  birthDate: m.value.library.fields.birthDate,
+  gender: m.value.library.fields.gender,
+  age: m.value.library.fields.age,
+  bloodType: m.value.library.fields.bloodType,
+  height: m.value.library.fields.height,
+  weight: m.value.library.fields.weight,
+  bust: m.value.library.fields.bust,
+  waist: m.value.library.fields.waist,
+  hips: m.value.library.fields.hips,
+  cup: m.value.library.fields.cup,
+  description: m.value.library.fields.description,
+  relatedSites: m.value.library.fields.relatedSites,
+  externalIds: m.value.library.fields.externalIds,
+  tags: m.value.library.fields.tags,
+  person: m.value.library.entities.person,
+  photos: m.value.library.fields.photos
+}))
 
 const { data, isLoading } = useAsyncData(
   async () => {
@@ -205,11 +208,14 @@ async function handleSubmit() {
   try {
     const result = await ipcManager.invoke('ingest:update-character-from-scraper', request)
     if (!result.success) {
-      notify.error('启动更新失败', result.error)
+      notify.error(m.value.library.forms.startUpdateFailed, result.error)
       return
     }
   } catch (error) {
-    notify.error('启动更新失败', error instanceof Error ? error.message : '未知错误')
+    notify.error(
+      m.value.library.forms.startUpdateFailed,
+      error instanceof Error ? error.message : m.value.library.feedback.unknownError
+    )
   } finally {
     isSubmitting.value = false
   }
@@ -235,7 +241,7 @@ async function handleSubmit() {
               icon="icon-[mdi--database-sync-outline]"
               class="size-4"
             />
-            更新元数据
+            {{ m.library.forms.updateMetadataTitle }}
           </DialogTitle>
         </DialogHeader>
 
@@ -249,7 +255,7 @@ async function handleSubmit() {
 
             <FieldGroup>
               <Field>
-                <FieldLabel>更新项</FieldLabel>
+                <FieldLabel>{{ m.library.forms.updateFieldsLabel }}</FieldLabel>
                 <FieldContent>
                   <div class="flex items-center gap-2 pb-2">
                     <Button
@@ -259,7 +265,7 @@ async function handleSubmit() {
                       :disabled="isSubmitting"
                       @click="handleSelectAllSurfaces"
                     >
-                      全选
+                      {{ m.library.forms.selectAll }}
                     </Button>
                     <Button
                       type="button"
@@ -268,7 +274,7 @@ async function handleSubmit() {
                       :disabled="isSubmitting"
                       @click="handleSelectNoSurfaces"
                     >
-                      全不选
+                      {{ m.library.forms.selectNone }}
                     </Button>
                   </div>
 
@@ -296,57 +302,65 @@ async function handleSubmit() {
               </Field>
 
               <Field>
-                <FieldLabel>单值策略</FieldLabel>
+                <FieldLabel>{{ m.library.forms.scalarStrategyLabel }}</FieldLabel>
                 <FieldContent>
                   <Select
                     v-model="singularUpdate"
                     :disabled="isSubmitting"
                   >
                     <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择单值策略..." />
+                      <SelectValue :placeholder="m.library.forms.scalarStrategyPlaceholder" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ifMissing">仅缺失时写入</SelectItem>
-                      <SelectItem value="overwrite">覆盖现有值</SelectItem>
+                      <SelectItem value="ifMissing">{{
+                        m.library.forms.scalarStrategyIfMissing
+                      }}</SelectItem>
+                      <SelectItem value="overwrite">{{
+                        m.library.forms.scalarStrategyOverwrite
+                      }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
                 <FieldDescription>
                   {{
                     singularUpdate === 'ifMissing'
-                      ? '仅在当前值缺失时写入新值'
-                      : '如存在可用新值，则覆盖当前值'
+                      ? m.library.forms.scalarStrategyIfMissingHint
+                      : m.library.forms.scalarStrategyOverwriteHint
                   }}
                 </FieldDescription>
               </Field>
 
               <Field>
-                <FieldLabel>集合策略</FieldLabel>
+                <FieldLabel>{{ m.library.forms.collectionStrategyLabel }}</FieldLabel>
                 <FieldContent>
                   <Select
                     v-model="collectionUpdate"
                     :disabled="isSubmitting"
                   >
                     <SelectTrigger class="w-full">
-                      <SelectValue placeholder="选择集合策略..." />
+                      <SelectValue :placeholder="m.library.forms.collectionStrategyPlaceholder" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="merge">合并追加</SelectItem>
-                      <SelectItem value="replace">整体替换</SelectItem>
+                      <SelectItem value="merge">{{
+                        m.library.forms.collectionStrategyMerge
+                      }}</SelectItem>
+                      <SelectItem value="replace">{{
+                        m.library.forms.collectionStrategyReplace
+                      }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
                 <FieldDescription>
                   {{
                     collectionUpdate === 'merge'
-                      ? '保留现有内容，并追加新增内容'
-                      : '以新内容整体替换当前内容'
+                      ? m.library.forms.collectionStrategyMergeHint
+                      : m.library.forms.collectionStrategyReplaceHint
                   }}
                 </FieldDescription>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>使用当前外部 ID 辅助定位</FieldLabel>
+                <FieldLabel>{{ m.library.forms.useExternalIdsLabel }}</FieldLabel>
                 <FieldContent>
                   <Checkbox
                     id="use-current-external-ids"
@@ -354,7 +368,7 @@ async function handleSubmit() {
                     :disabled="isSubmitting"
                   />
                 </FieldContent>
-                <FieldDescription>若当前条目可能对应错误目标，请勿启用此项。</FieldDescription>
+                <FieldDescription>{{ m.library.forms.useExternalIdsHint }}</FieldDescription>
               </Field>
             </FieldGroup>
           </DialogBody>
@@ -365,7 +379,7 @@ async function handleSubmit() {
                 icon="icon-[mdi--lightbulb-outline]"
                 class="size-3.5"
               />
-              <span>“人物”可作为独立项单独勾选更新。</span>
+              <span>{{ m.library.forms.personStandaloneHint }}</span>
             </div>
             <Button
               type="button"
@@ -373,7 +387,7 @@ async function handleSubmit() {
               :disabled="isSubmitting"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
@@ -384,14 +398,14 @@ async function handleSubmit() {
                   icon="icon-[mdi--loading]"
                   class="size-4 animate-spin"
                 />
-                更新中...
+                {{ m.library.forms.updating }}
               </template>
               <template v-else>
                 <Icon
                   icon="icon-[mdi--refresh]"
                   class="size-4"
                 />
-                更新
+                {{ m.library.forms.update }}
               </template>
             </Button>
           </DialogFooter>

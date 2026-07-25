@@ -4,6 +4,7 @@ import type {
 } from '@shared/ingest/add'
 import type { ScraperLookup } from '@shared/scraper'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -32,7 +33,8 @@ export class CharacterAddHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly persistHandler: CharacterIngestPersistHandler,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startAddFromScraper(
@@ -44,7 +46,7 @@ export class CharacterAddHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.character.add',
-      title: '添加角色',
+      title: this.i18nService.messages.ingest.add.title({ entity: 'character' }),
       description: normalized.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -53,7 +55,7 @@ export class CharacterAddHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '添加角色',
+          title: this.i18nService.messages.ingest.add.title({ entity: 'character' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -87,7 +89,7 @@ export class CharacterAddHandler {
 
     reportIngestProgress(options, {
       phase: 'checking',
-      label: '正在检查现有角色'
+      label: this.i18nService.messages.ingest.add.checkingExisting({ entity: 'character' })
     })
     if (normalized.lookup.knownIds?.length) {
       const existingByExternalId = this.dbService.entityFinder.findExistingCharacter({
@@ -111,7 +113,7 @@ export class CharacterAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取角色元数据'
+      label: this.i18nService.messages.ingest.add.scrapingMetadata({ entity: 'character' })
     })
     const bundle = requireScrapedBundle(
       await this.scraperService.character.scrape(normalized.profileId, normalized.lookup),
@@ -120,12 +122,12 @@ export class CharacterAddHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'building',
-      label: '正在整理角色元数据'
+      label: this.i18nService.messages.ingest.add.buildingMetadata({ entity: 'character' })
     })
     const graph = buildCharacterGraph(bundle, normalized.lookup)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入角色'
+      label: this.i18nService.messages.ingest.add.writing({ entity: 'character' })
     })
     return this.persistHandler.persistCharacterGraph(graph, options)
   }
@@ -147,8 +149,12 @@ export class CharacterAddHandler {
       run.context.throwIfCancelled()
       const warningItems = toTaskRunWarnings(result.warnings)
       run.complete({
-        title: result.isNew ? '角色添加成功' : '角色已存在',
-        summary: result.isNew ? '角色已写入资料库。' : '已匹配现有角色。',
+        title: result.isNew
+          ? this.i18nService.messages.ingest.add.addedTitle({ entity: 'character' })
+          : this.i18nService.messages.ingest.add.existsTitle({ entity: 'character' }),
+        summary: result.isNew
+          ? this.i18nService.messages.ingest.add.addedSummary({ entity: 'character' })
+          : this.i18nService.messages.ingest.add.existsSummary({ entity: 'character' }),
         output: result,
         counters: {
           added: result.isNew ? 1 : 0,
@@ -159,7 +165,9 @@ export class CharacterAddHandler {
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
-        run.cancel({ summary: '添加角色已取消。' })
+        run.cancel({
+          summary: this.i18nService.messages.ingest.add.cancelledSummary({ entity: 'character' })
+        })
         return
       }
 

@@ -1,91 +1,112 @@
+import { computed, type ComputedRef } from 'vue'
+import { messages } from '@renderer/core/i18n'
 import type { FilterUiSpec } from './types'
-import { GAME_STATUS_OPTIONS } from './shared-options'
+import { getGameStatusOptions } from './shared-options'
 
-export const gameFilterUiSpec: FilterUiSpec = {
-  entityType: 'game',
-  fields: [
-    { key: 'isFavorite', label: '我喜欢', category: 'toggle', control: 'boolean' },
-    { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+export const gameFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
+  const m = messages.value
 
-    {
-      key: 'status',
-      label: '状态',
-      category: 'enum',
-      control: 'multiSelect',
-      options: [...GAME_STATUS_OPTIONS]
-    },
+  return {
+    entityType: 'game',
+    fields: [
+      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
 
-    {
-      key: 'score',
-      label: '评分',
-      category: 'numeric',
-      control: 'numberRange',
-      min: 0,
-      max: 100,
-      step: 1
-    },
-    {
-      key: 'totalDuration',
-      label: '游玩时长',
-      category: 'numeric',
-      control: 'numberRange',
-      min: 0,
-      placeholder: '秒'
-    },
+      {
+        key: 'status',
+        label: m.library.fields.status,
+        category: 'enum',
+        control: 'multiSelect',
+        options: getGameStatusOptions()
+      },
 
-    { key: 'releaseDate', label: '发行日期', category: 'date', control: 'dateRange' },
-    { key: 'lastActiveAt', label: '最近游玩', category: 'date', control: 'dateRange' },
-    { key: 'createdAt', label: '添加时间', category: 'date', control: 'dateRange' },
+      {
+        key: 'score',
+        label: m.library.fields.score,
+        category: 'numeric',
+        control: 'numberRange',
+        min: 0,
+        max: 100,
+        step: 1
+      },
+      {
+        key: 'totalDuration',
+        label: m.library.fields.playDuration,
+        category: 'numeric',
+        control: 'numberRange',
+        min: 0,
+        placeholder: m.filter.secondsUnit
+      },
 
-    {
-      key: 'tags',
-      label: '标签',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'tag',
-      multiple: true
-    },
-    {
-      key: 'collections',
-      label: '合集',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'collection',
-      multiple: true
-    },
-    {
-      key: 'persons',
-      label: '相关人员',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'person',
-      multiple: true
-    },
-    {
-      key: 'companies',
-      label: '相关公司',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'company',
-      multiple: true
-    },
-    {
-      key: 'characters',
-      label: '相关角色',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'character',
-      multiple: true
-    }
-  ],
-  sortOptions: [
-    { key: 'name', label: '名称' },
-    { key: 'sortName', label: '排序名' },
-    { key: 'originalName', label: '原名' },
-    { key: 'lastActiveAt', label: '最近游玩' },
-    { key: 'totalDuration', label: '游玩时长' },
-    { key: 'createdAt', label: '添加时间' },
-    { key: 'releaseDate', label: '发行日期' },
-    { key: 'score', label: '评分' }
-  ]
-}
+      {
+        key: 'releaseDate',
+        label: m.library.fields.releaseDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+      {
+        key: 'lastActiveAt',
+        label: m.library.fields.lastActiveAt,
+        category: 'date',
+        control: 'dateRange'
+      },
+      {
+        key: 'createdAt',
+        label: m.library.fields.addedDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+
+      {
+        key: 'tags',
+        label: m.library.fields.tags,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'tag',
+        multiple: true
+      },
+      {
+        key: 'collections',
+        label: m.library.fields.collections,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'collection',
+        multiple: true
+      },
+      {
+        key: 'persons',
+        label: m.library.fields.relatedPersons,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'person',
+        multiple: true
+      },
+      {
+        key: 'companies',
+        label: m.library.fields.relatedCompanies,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'company',
+        multiple: true
+      },
+      {
+        key: 'characters',
+        label: m.library.fields.relatedCharacters,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'character',
+        multiple: true
+      }
+    ],
+    sortOptions: [
+      { key: 'name', label: m.library.fields.name },
+      { key: 'sortName', label: m.library.fields.sortName },
+      { key: 'originalName', label: m.library.fields.originalName },
+      { key: 'lastActiveAt', label: m.library.fields.lastActiveAt },
+      { key: 'totalDuration', label: m.library.fields.playDuration },
+      { key: 'createdAt', label: m.library.fields.addedDate },
+      { key: 'releaseDate', label: m.library.fields.releaseDate },
+      { key: 'score', label: m.library.fields.score }
+    ]
+  }
+})

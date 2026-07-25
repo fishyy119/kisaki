@@ -24,6 +24,9 @@ import {
   FieldGroup,
   FieldDescription
 } from '@renderer/components/ui/field'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface BackupData {
   note: string
@@ -73,27 +76,27 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>编辑备份</DialogTitle>
+        <DialogTitle>{{ m.game.saves.editBackupTitle }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="例如：第三章通关存档"
+                  :placeholder="m.game.saves.notePlaceholder"
                 />
               </FieldContent>
             </Field>
 
             <Field>
-              <FieldLabel>锁定备份</FieldLabel>
+              <FieldLabel>{{ m.game.saves.lockLabel }}</FieldLabel>
               <FieldContent>
                 <Switch v-model="formData.locked" />
               </FieldContent>
-              <FieldDescription>锁定后不会被自动清理</FieldDescription>
+              <FieldDescription>{{ m.game.saves.lockHint }}</FieldDescription>
             </Field>
           </FieldGroup>
         </DialogBody>
@@ -104,7 +107,7 @@ function handleCancel() {
             :disabled="isSaving"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
           <Button
             type="submit"
@@ -115,7 +118,7 @@ function handleCancel() {
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin mr-1.5"
             />
-            保存
+            {{ m.common.save }}
           </Button>
         </DialogFooter>
       </Form>

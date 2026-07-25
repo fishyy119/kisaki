@@ -16,6 +16,7 @@ import {
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsFormState, BangumiSettingsOverview } from '../../shared/settings'
 import { applySettingsForm, settingsFormsEqual, settingsForm, snapshotSettingsForm } from './form'
+import { m } from './i18n'
 import { host, onHostRefreshRequested, toErrorMessage } from './rpc'
 import OverviewTab from './tabs/overview-tab.vue'
 import AccountTab from './tabs/account-tab.vue'
@@ -26,14 +27,22 @@ import MaintenanceTab from './tabs/maintenance-tab.vue'
 
 type SettingsTabId = 'overview' | 'account' | 'sync' | 'import' | 'automation' | 'maintenance'
 
-const TABS: readonly { id: SettingsTabId; label: string; icon: string }[] = [
-  { id: 'overview', label: '总览', icon: 'icon-[mdi--view-dashboard-outline]' },
-  { id: 'account', label: '账号', icon: 'icon-[mdi--account-circle-outline]' },
-  { id: 'sync', label: '同步', icon: 'icon-[mdi--sync]' },
-  { id: 'import', label: '导入', icon: 'icon-[mdi--database-import-outline]' },
-  { id: 'automation', label: '自动化', icon: 'icon-[mdi--calendar-sync-outline]' },
-  { id: 'maintenance', label: '维护', icon: 'icon-[mdi--tune-variant]' }
-]
+const TAB_ICONS: Record<SettingsTabId, string> = {
+  overview: 'icon-[mdi--view-dashboard-outline]',
+  account: 'icon-[mdi--account-circle-outline]',
+  sync: 'icon-[mdi--sync]',
+  import: 'icon-[mdi--database-import-outline]',
+  automation: 'icon-[mdi--calendar-sync-outline]',
+  maintenance: 'icon-[mdi--tune-variant]'
+}
+
+const tabs = computed(() =>
+  (Object.keys(TAB_ICONS) as SettingsTabId[]).map((id) => ({
+    id,
+    label: m.value.ui.tabs[id],
+    icon: TAB_ICONS[id]
+  }))
+)
 
 const activeTab = ref<SettingsTabId>('overview')
 const overview = ref<BangumiSettingsOverview | null>(null)
@@ -135,7 +144,7 @@ function navigate(tab: SettingsTabId): void {
       <aside class="flex w-40 shrink-0 flex-col border-r border-border bg-surface/60 p-2">
         <TabsList class="h-auto w-full flex-col items-stretch">
           <TabsTrigger
-            v-for="tab in TABS"
+            v-for="tab in tabs"
             :key="tab.id"
             :value="tab.id"
             class="h-8 justify-start px-2"
@@ -162,7 +171,7 @@ function navigate(tab: SettingsTabId): void {
             v-if="savedNotice"
             variant="success"
           >
-            Bangumi 设置已保存。
+            {{ m.ui.saved }}
           </Alert>
 
           <TabsContent
@@ -232,21 +241,21 @@ function navigate(tab: SettingsTabId): void {
       class="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground"
     >
       <Spinner v-if="loading" />
-      {{ loading ? '正在加载 Bangumi 设置…' : 'Bangumi 设置不可用' }}
+      {{ loading ? m.ui.loading : m.ui.unavailable }}
     </main>
 
     <footer
       v-if="overview && isDirty"
       class="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-2.5"
     >
-      <span class="mr-auto text-xs text-muted-foreground">偏好设置有未保存更改</span>
+      <span class="mr-auto text-xs text-muted-foreground">{{ m.ui.unsavedChanges }}</span>
       <Button
         variant="outline"
         type="button"
         :disabled="saving"
         @click="discardDraft"
       >
-        放弃更改
+        {{ m.ui.discardChanges }}
       </Button>
       <Button
         type="button"
@@ -254,7 +263,7 @@ function navigate(tab: SettingsTabId): void {
         @click="save"
       >
         <Spinner v-if="saving" />
-        保存偏好
+        {{ m.ui.savePreferences }}
       </Button>
     </footer>
   </Tabs>

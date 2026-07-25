@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   GameInfoFormDialog
   Dialog for editing game info (sort name, release date, created date).
 -->
@@ -28,6 +28,9 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -77,7 +80,9 @@ async function handleSubmit() {
   try {
     const releaseDateValidation = releaseDateInput.value?.validate()
     if (releaseDateValidation && !releaseDateValidation.valid) {
-      notify.error(releaseDateValidation.errorText ?? '发布日期格式不正确')
+      notify.error(
+        releaseDateValidation.errorText ?? m.value.library.forms.releaseDateInvalidFormat
+      )
       return
     }
     const releaseDate = releaseDateValidation?.value ?? formData.value.releaseDate
@@ -91,11 +96,11 @@ async function handleSubmit() {
       })
       .where(eq(games.id, props.gameId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -122,36 +127,36 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑详细信息</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editDetails }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <FieldGroup>
               <Field>
-                <FieldLabel>排序名称</FieldLabel>
+                <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.sortName"
-                    placeholder="排序名称"
+                    :placeholder="m.library.forms.sortNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
 
               <Field>
-                <FieldLabel>发布日期</FieldLabel>
+                <FieldLabel>{{ m.library.fields.releaseDate }}</FieldLabel>
                 <FieldContent>
                   <PartialDateInput
                     ref="releaseDateInput"
                     v-model="formData.releaseDate"
                     :messages="{
-                      yearDayWithoutMonthText: '发布日期填写了年份和日期时，必须同时填写月份。'
+                      yearDayWithoutMonthText: m.library.forms.releaseDateYearDayWithoutMonth
                     }"
                   />
                 </FieldContent>
               </Field>
 
               <Field>
-                <FieldLabel>添加日期</FieldLabel>
+                <FieldLabel>{{ m.library.fields.addedDate }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.createdAt"
@@ -168,13 +173,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

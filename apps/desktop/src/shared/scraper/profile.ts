@@ -1,5 +1,5 @@
 import type { ContentEntityType } from '@shared/common'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 
 export interface ScraperProfileProviderSlot {
   slot: string
@@ -14,7 +14,7 @@ export interface ScraperProfileSummary {
   mediaType: ContentEntityType
   /** Provider id interpreted within this profile's mediaType. */
   searchProviderId: string
-  defaultLocale: Locale | null
+  defaultLocale: ContentLocale | null
   providerSlots: ScraperProfileProviderSlot[]
 }
 

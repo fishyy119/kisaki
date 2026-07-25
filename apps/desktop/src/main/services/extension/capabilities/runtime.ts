@@ -3,12 +3,14 @@ import {
   EXTENSION_API_VERSION,
   createUnavailableError,
   type ExtensionRuntimeMetadata,
-  type RuntimeInfo
+  type RuntimeInfo,
+  type UiLocale
 } from '@kisaki3/extension-api'
 import { openExternalLink } from '@main/utils/external-url'
 
 export interface ExtensionRuntimeCapabilityProviderOptions {
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
+  getUiLocale(): UiLocale
 }
 
 export class ExtensionRuntimeCapabilityProvider {
@@ -29,7 +31,8 @@ export class ExtensionRuntimeCapabilityProvider {
       apiVersion: EXTENSION_API_VERSION,
       mode: metadata.mode,
       platform: toRuntimePlatform(process.platform),
-      arch: process.arch
+      arch: process.arch,
+      uiLocale: this.options.getUiLocale()
     }
   }
 

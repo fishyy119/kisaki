@@ -1,5 +1,6 @@
 import type { ExternalId } from '@shared/identity'
 import type { TaskRunContext } from '@main/services/task-run'
+import type { Messages } from '@shared/i18n'
 import type { TaskRunWarning } from '@shared/task-run'
 
 export interface IngestBatchUpdateRow {
@@ -70,23 +71,32 @@ export function pushBoundedItemWarning(
 }
 
 export function createBatchTaskRunWarnings(
+  messages: Messages,
   failures: readonly IngestBatchFailure[],
   itemWarnings: readonly IngestBatchItemWarning[],
   limit = BATCH_PROGRESS_WARNING_LIMIT
 ): TaskRunWarning[] {
+  const fallbackLabel = messages.ingest.batch.fallbackItemLabel
   return [
     ...failures.map((failure) => ({
       code: 'item-failed',
-      message: `${failure.name ?? failure.entityId ?? '项目'}：${failure.error}`
+      message: messages.ingest.batch.itemMessage({
+        name: failure.name ?? failure.entityId ?? fallbackLabel,
+        detail: failure.error
+      })
     })),
     ...itemWarnings.map((warning) => ({
       code: warning.code,
-      message: `${warning.name ?? warning.entityId ?? '项目'}：${warning.message}`
+      message: messages.ingest.batch.itemMessage({
+        name: warning.name ?? warning.entityId ?? fallbackLabel,
+        detail: warning.message
+      })
     }))
   ].slice(-limit)
 }
 
 export function reportBatchProgress(params: {
+  messages: Messages
   context: TaskRunContext
   phase: 'searching' | 'updating'
   label?: string
@@ -99,7 +109,7 @@ export function reportBatchProgress(params: {
   params.context.report({
     phase: {
       key: params.phase,
-      label: params.label ?? getBatchProgressPhaseLabel(params.phase),
+      label: params.label ?? getBatchProgressPhaseLabel(params.messages, params.phase),
       current: params.phase === 'searching' ? 1 : 2,
       total: 2
     },
@@ -109,15 +119,15 @@ export function reportBatchProgress(params: {
       unit: 'entity'
     },
     counters: { ...params.counters },
-    warnings: createBatchTaskRunWarnings(params.failures, params.itemWarnings)
+    warnings: createBatchTaskRunWarnings(params.messages, params.failures, params.itemWarnings)
   })
 }
 
-function getBatchProgressPhaseLabel(phase: 'searching' | 'updating'): string {
+function getBatchProgressPhaseLabel(messages: Messages, phase: 'searching' | 'updating'): string {
   switch (phase) {
     case 'searching':
-      return '正在匹配远端条目'
+      return messages.ingest.batch.matchingRemote
     case 'updating':
-      return '正在更新本地元数据'
+      return messages.ingest.batch.updatingLocal
   }
 }

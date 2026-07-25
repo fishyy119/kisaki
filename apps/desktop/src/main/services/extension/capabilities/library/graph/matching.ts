@@ -486,7 +486,7 @@ function applyIncomingExternalIdConflicts(
         createDiagnostic({
           level: 'error',
           code: 'kisaki.graph.identityConflict',
-          message: `External ID ${group.externalId.source}:${group.externalId.id} is assigned to multiple ${group.scopeLabel} nodes in this import: ${nodeLabels.join('、')}.`,
+          message: `External ID ${group.externalId.source}:${group.externalId.id} is assigned to multiple ${group.scopeLabel} nodes in this import: ${nodeLabels.join(', ')}.`,
           nodeKey: claim.nodeKey
         })
       )

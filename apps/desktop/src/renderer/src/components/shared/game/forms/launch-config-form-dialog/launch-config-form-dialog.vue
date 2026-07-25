@@ -25,6 +25,9 @@ import { notify } from '@renderer/core/notify'
 import GameLaunchConfigLaunchTab from './launch-tab.vue'
 import GameLaunchConfigMonitorTab from './monitor-tab.vue'
 import GameLaunchConfigSaveTab from './save-tab.vue'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   gameId: string
@@ -101,10 +104,10 @@ async function handleSave() {
       })
       .where(eq(games.id, props.gameId))
 
-    notify.success('启动配置已保存')
+    notify.success(m.value.game.launchConfig.saved)
     open.value = false
   } catch {
-    notify.error('保存失败')
+    notify.error(m.value.common.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -131,7 +134,7 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>启动配置</DialogTitle>
+          <DialogTitle>{{ m.game.launchConfig.title }}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <Tabs
@@ -144,21 +147,21 @@ function handleCancel() {
                   icon="icon-[mdi--play-circle-outline]"
                   class="size-3.5"
                 />
-                启动
+                {{ m.game.launchConfig.tabLaunch }}
               </TabsTrigger>
               <TabsTrigger value="monitor">
                 <Icon
                   icon="icon-[mdi--eye-outline]"
                   class="size-3.5"
                 />
-                监视
+                {{ m.game.launchConfig.tabMonitor }}
               </TabsTrigger>
               <TabsTrigger value="save">
                 <Icon
                   icon="icon-[mdi--content-save-outline]"
                   class="size-3.5"
                 />
-                存档
+                {{ m.library.detail.tabs.saves }}
               </TabsTrigger>
             </TabsList>
 
@@ -191,7 +194,7 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
           <Button
             :disabled="isSaving"
@@ -202,9 +205,9 @@ function handleCancel() {
                 icon="icon-[mdi--loading]"
                 class="size-4 animate-spin"
               />
-              保存中...
+              {{ m.common.saving }}
             </template>
-            <template v-else> 保存 </template>
+            <template v-else>{{ m.common.save }}</template>
           </Button>
         </DialogFooter>
       </template>

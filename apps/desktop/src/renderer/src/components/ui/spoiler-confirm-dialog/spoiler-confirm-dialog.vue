@@ -1,6 +1,6 @@
 <!-- Spoiler Confirm Dialog component -->
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +12,7 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   title?: string
@@ -22,12 +23,15 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '显示剧透？',
-  description: '开启后将立即显示被标记为剧透的内容。',
-  confirmText: '确认',
-  cancelText: '取消',
   loading: false
 })
+
+const { m } = useI18n()
+
+const titleText = computed(() => props.title ?? m.value.ui.spoiler.title)
+const descriptionText = computed(() => props.description ?? m.value.ui.spoiler.description)
+const confirmTextDisplay = computed(() => props.confirmText ?? m.value.common.confirm)
+const cancelTextDisplay = computed(() => props.cancelText ?? m.value.common.cancel)
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -61,21 +65,21 @@ async function handleConfirm() {
 
       <template v-else>
         <AlertDialogHeader>
-          <AlertDialogTitle>{{ props.title }}</AlertDialogTitle>
+          <AlertDialogTitle>{{ titleText }}</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription>
           <div class="space-y-4">
-            <p>{{ props.description }}</p>
+            <p>{{ descriptionText }}</p>
             <slot />
           </div>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="isConfirming">{{ props.cancelText }}</AlertDialogCancel>
+          <AlertDialogCancel :disabled="isConfirming">{{ cancelTextDisplay }}</AlertDialogCancel>
           <AlertDialogAction
             :disabled="isConfirming"
             @click="handleConfirm"
           >
-            {{ props.confirmText }}
+            {{ confirmTextDisplay }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </template>

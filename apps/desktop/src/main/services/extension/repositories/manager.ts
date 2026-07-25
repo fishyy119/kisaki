@@ -10,6 +10,7 @@ import type {
 } from '@shared/extension'
 import type { TaskRunInitiator, TaskRunStartResult } from '@shared/task-run'
 import type { ExtensionRepositoryRow } from '@shared/db'
+import type { I18nService } from '@main/services/i18n'
 import type { TaskRunService } from '@main/services/task-run'
 import type {
   ExtensionRegistryManifest,
@@ -43,6 +44,7 @@ export interface ExtensionRepositoryManagerOptions {
   fetcher: ExtensionRepositoryFetcher
   iconManager: ExtensionIconManager
   taskRun: TaskRunService
+  i18n: I18nService
   apiVersion: string
   allowInsecureLocalUrls?: boolean
   getInstalledVersions?: () => ReadonlyMap<string, string>
@@ -83,6 +85,7 @@ export class ExtensionRepositoryManager {
     this.refreshRunner = new ExtensionRepositoryRefreshRunner({
       taskRun: options.taskRun,
       store: this.store,
+      i18n: options.i18n,
       refreshRepository: (repositoryId, refreshOptions) =>
         this.refreshRepository(repositoryId, refreshOptions)
     })

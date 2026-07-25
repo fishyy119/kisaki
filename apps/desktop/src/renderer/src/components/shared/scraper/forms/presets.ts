@@ -6,13 +6,14 @@
  */
 
 import type { ContentEntityType } from '@shared/common'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { ScraperSlotConfigs } from '@shared/db'
 import {
   createExtensionScraperProviderId,
   createSlotConfig,
   createEmptySlotConfig
 } from '@shared/scraper'
+import { messages } from '@renderer/core/i18n'
 
 const BANGUMI_PROVIDER_ID = createExtensionScraperProviderId('builtin.bangumi', 'bangumi')
 
@@ -23,10 +24,12 @@ const BANGUMI_PROVIDER_ID = createExtensionScraperProviderId('builtin.bangumi', 
 /** Scraper preset definition (code-only, never stored in DB) */
 export interface ScraperPreset {
   id: string
+  /** Localized display name resolved from the current UI locale. */
   name: string
+  /** Localized description resolved from the current UI locale. */
   description: string
   mediaType: ContentEntityType
-  defaultLocale?: Locale
+  defaultLocale?: ContentLocale
   searchProviderId: string
   slotConfigs: ScraperSlotConfigs
 }
@@ -46,11 +49,14 @@ export type PresetId = (typeof PRESET_IDS)[keyof typeof PRESET_IDS]
 // Game Presets
 // =============================================================================
 
+type ScraperPresetDefinition = Omit<ScraperPreset, 'name' | 'description'> & {
+  copy: (m: typeof messages.value) => { name: string; description: string }
+}
+
 /** Visual Novel preset using VNDB as the sole data source */
-const VISUAL_NOVEL_CN: ScraperPreset = {
+const VISUAL_NOVEL_CN: ScraperPresetDefinition = {
   id: PRESET_IDS.VISUAL_NOVEL_CN,
-  name: '视觉小说',
-  description: '适合获取视觉小说的中文元数据',
+  copy: (m) => m.scraper.presets.visualNovel,
   mediaType: 'game',
   defaultLocale: 'zh-Hans',
   searchProviderId: 'vndb',
@@ -69,10 +75,9 @@ const VISUAL_NOVEL_CN: ScraperPreset = {
   }
 }
 
-const VIDEO_GAME: ScraperPreset = {
+const VIDEO_GAME: ScraperPresetDefinition = {
   id: 'video-game',
-  name: 'Video Game',
-  description: 'A general-purpose preset for video games',
+  copy: (m) => m.scraper.presets.videoGame,
   mediaType: 'game',
   defaultLocale: 'en',
   searchProviderId: 'igdb',
@@ -93,15 +98,24 @@ const VIDEO_GAME: ScraperPreset = {
 // Preset Registry
 // =============================================================================
 
-/** All scraper presets */
-export const SCRAPER_PRESETS: ScraperPreset[] = [VISUAL_NOVEL_CN, VIDEO_GAME]
+const PRESET_DEFINITIONS: ScraperPresetDefinition[] = [VISUAL_NOVEL_CN, VIDEO_GAME]
+
+function resolvePreset({ copy, ...preset }: ScraperPresetDefinition): ScraperPreset {
+  return { ...preset, ...copy(messages.value) }
+}
+
+/** All scraper presets with copy resolved for the current UI locale. */
+export function getScraperPresets(): ScraperPreset[] {
+  return PRESET_DEFINITIONS.map(resolvePreset)
+}
 
 /** Get a preset by ID */
 export function getPresetById(presetId: string): ScraperPreset | undefined {
-  return SCRAPER_PRESETS.find((p) => p.id === presetId)
+  const definition = PRESET_DEFINITIONS.find((p) => p.id === presetId)
+  return definition ? resolvePreset(definition) : undefined
 }
 
 /** Get presets by media type */
 export function getPresetsByMediaType(mediaType: ContentEntityType): ScraperPreset[] {
-  return SCRAPER_PRESETS.filter((p) => p.mediaType === mediaType)
+  return PRESET_DEFINITIONS.filter((p) => p.mediaType === mediaType).map(resolvePreset)
 }

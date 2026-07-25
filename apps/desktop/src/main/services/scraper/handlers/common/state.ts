@@ -8,7 +8,7 @@ import {
   toExternalIdKey,
   type ExternalId
 } from '@shared/identity'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { ScrapedEntityIdentity, ScraperLookup } from '@shared/scraper'
 import type { BaseResolvedTarget, BaseScraperSession } from '../../types'
 
@@ -22,26 +22,26 @@ export interface ScraperInvocationState<
   getOrCreateResolvedTarget(
     providerId: string,
     lookup: ScraperLookup,
-    locale: Locale,
+    locale: ContentLocale,
     resolver: () => Promise<TTarget | null>
   ): Promise<TTarget | null>
   getOrCreateSession(
     providerId: string,
     target: TTarget,
-    locale: Locale,
+    locale: ContentLocale,
     opener: () => Promise<TSession>
   ): Promise<TSession>
   getPayloadTask<TValue>(
     providerId: string,
     target: TTarget,
     slot: TSlot,
-    locale: Locale
+    locale: ContentLocale
   ): Promise<TValue | null> | undefined
   setPayloadTask<TValue>(
     providerId: string,
     target: TTarget,
     slot: TSlot,
-    locale: Locale,
+    locale: ContentLocale,
     task: Promise<TValue | null>
   ): Promise<TValue | null>
   collectIdentity(identity: ScrapedEntityIdentity): void
@@ -58,7 +58,11 @@ function buildKnownIdsCacheKey(knownIds: ExternalId[] | undefined): string {
     .join('|')
 }
 
-function buildResolveCacheKey(providerId: string, lookup: ScraperLookup, locale: Locale): string {
+function buildResolveCacheKey(
+  providerId: string,
+  lookup: ScraperLookup,
+  locale: ContentLocale
+): string {
   return [
     providerId,
     normalizeKeyText(lookup.name),
@@ -70,7 +74,7 @@ function buildResolveCacheKey(providerId: string, lookup: ScraperLookup, locale:
 function buildSessionCacheKey(
   providerId: string,
   target: BaseResolvedTarget,
-  locale: Locale
+  locale: ContentLocale
 ): string {
   return [providerId, target.cacheKey, locale].join('::')
 }
@@ -79,7 +83,7 @@ function buildPayloadCacheKey(
   providerId: string,
   target: BaseResolvedTarget,
   slot: string,
-  locale: Locale
+  locale: ContentLocale
 ): string {
   return [providerId, target.cacheKey, slot, locale].join('::')
 }
@@ -125,7 +129,12 @@ export function createScraperInvocationState<
       return task
     },
 
-    getPayloadTask<TValue>(providerId: string, target: TTarget, slot: TSlot, locale: Locale) {
+    getPayloadTask<TValue>(
+      providerId: string,
+      target: TTarget,
+      slot: TSlot,
+      locale: ContentLocale
+    ) {
       const cacheKey = buildPayloadCacheKey(providerId, target, slot, locale)
       return payloadCache.get(cacheKey) as Promise<TValue | null> | undefined
     },
@@ -134,7 +143,7 @@ export function createScraperInvocationState<
       providerId: string,
       target: TTarget,
       slot: TSlot,
-      locale: Locale,
+      locale: ContentLocale,
       task: Promise<TValue | null>
     ) {
       const cacheKey = buildPayloadCacheKey(providerId, target, slot, locale)

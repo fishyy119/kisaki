@@ -9,20 +9,20 @@ import {
   type ScraperMediaType,
   type SlotConfigsForMediaType
 } from '@shared/scraper'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { RegisteredScraperProvider } from './registry'
 
 export interface PlannedSlotEntry<TSlot extends string> {
   slot: TSlot
   providerId: string
   rank: number
-  locale: Locale
+  locale: ContentLocale
   strategy: SlotStrategy
 }
 
 export interface PlannedProviderTask<TSlot extends string> {
   providerId: string
-  locale: Locale
+  locale: ContentLocale
   slots: readonly TSlot[]
   entries: readonly PlannedSlotEntry<TSlot>[]
 }
@@ -43,7 +43,7 @@ export interface ScraperExecutionPlan<TSlot extends string> {
 export function buildSingleProviderExecutionPlan<TSlot extends string>(options: {
   providerId: string
   slot: TSlot
-  locale: Locale
+  locale: ContentLocale
   strategy?: SlotStrategy
   rank?: number
 }): ScraperExecutionPlan<TSlot> {
@@ -212,7 +212,7 @@ export function buildExecutionPlan<TSlot extends string>(options: {
       strategy: SlotStrategy
     }
   >
-  resolveLocale: (entry: ScraperProviderEntry) => Locale
+  resolveLocale: (entry: ScraperProviderEntry) => ContentLocale
 }): ScraperExecutionPlan<TSlot> {
   const plannedEntries: PlannedSlotEntry<TSlot>[] = []
 

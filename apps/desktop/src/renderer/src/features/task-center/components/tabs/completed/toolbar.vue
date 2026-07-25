@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { TaskRunCategoryFilter, TaskRunStatusFilter } from '../../../types'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -33,6 +34,8 @@ const props = withDefaults(defineProps<Props>(), {
   clearing: false
 })
 
+const { m } = useI18n()
+
 const search = defineModel<string>('search', { required: true })
 const category = defineModel<TaskRunCategoryFilter>('category', { required: true })
 const status = defineModel<TaskRunStatusFilter>('status', { required: true })
@@ -62,7 +65,7 @@ function clearSearch(): void {
         <InputGroupInput
           v-model="search"
           class="text-xs"
-          placeholder="搜索完成记录..."
+          :placeholder="m.task.toolbar.searchCompletedPlaceholder"
         />
         <InputGroupAddon
           v-if="hasSearch"
@@ -81,7 +84,7 @@ function clearSearch(): void {
         v-if="hasSearch"
         class="shrink-0 text-xs text-muted-foreground"
       >
-        {{ props.filteredCount }} 项
+        {{ m.common.itemCount({ count: props.filteredCount }) }}
       </span>
 
       <div
@@ -89,7 +92,7 @@ function clearSearch(): void {
         class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
       >
         <Spinner class="size-3.5" />
-        <span>刷新中</span>
+        <span>{{ m.task.toolbar.refreshing }}</span>
       </div>
 
       <div class="min-w-2 flex-1" />
@@ -102,7 +105,7 @@ function clearSearch(): void {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">全部分类</SelectItem>
+          <SelectItem value="all">{{ m.task.toolbar.allCategories }}</SelectItem>
           <SelectItem
             v-for="item in TASK_RUN_CATEGORY_OPTIONS"
             :key="item"
@@ -121,7 +124,7 @@ function clearSearch(): void {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">全部状态</SelectItem>
+          <SelectItem value="all">{{ m.task.toolbar.allStatuses }}</SelectItem>
           <SelectItem
             v-for="item in TASK_RUN_COMPLETED_STATUS_OPTIONS"
             :key="item"
@@ -139,7 +142,7 @@ function clearSearch(): void {
               variant="outline"
               size="icon-sm"
               :disabled="props.refreshing"
-              aria-label="刷新任务列表"
+              :aria-label="m.task.toolbar.refreshList"
               @click="emit('refresh')"
             >
               <Icon
@@ -148,7 +151,7 @@ function clearSearch(): void {
               />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">刷新</TooltipContent>
+          <TooltipContent side="bottom">{{ m.task.toolbar.refresh }}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -157,7 +160,7 @@ function clearSearch(): void {
               variant="outline"
               size="icon-sm"
               :disabled="props.completedCount === 0 || props.clearing"
-              aria-label="清理完成记录"
+              :aria-label="m.task.toolbar.clearCompleted"
               @click="emit('clearCompleted')"
             >
               <Icon
@@ -166,7 +169,7 @@ function clearSearch(): void {
               />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">清理完成记录</TooltipContent>
+          <TooltipContent side="bottom">{{ m.task.toolbar.clearCompleted }}</TooltipContent>
         </Tooltip>
       </ButtonGroup>
     </div>

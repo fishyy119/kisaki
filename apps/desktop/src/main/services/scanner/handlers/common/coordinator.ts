@@ -1,4 +1,5 @@
 import type { EventService } from '@main/services/event'
+import type { I18nService } from '@main/services/i18n'
 import type { IpcService } from '@main/services/ipc'
 import type { TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -22,6 +23,7 @@ export interface ScannerRunCoordinatorOptions<TScanner extends ScannerRunMetadat
   ipc: IpcService
   taskRun: TaskRunService
   eventService: EventService
+  i18n: I18nService
   loadScanner: (scannerId: string) => Awaitable<TScanner>
   runScan: (scanner: TScanner, session: ScannerRunSession<TScanner>) => Awaitable<void>
 }
@@ -41,7 +43,7 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
   private isProcessingQueue = false
 
   constructor(private readonly options: ScannerRunCoordinatorOptions<TScanner>) {
-    this.taskRuns = new ScannerTaskRunBridge(options.taskRun)
+    this.taskRuns = new ScannerTaskRunBridge(options.taskRun, options.i18n)
     this.unsubscribeCancel = this.taskRuns.onCancelRequested((runId) => {
       this.handleTaskRunCancelRequested(runId)
     })
@@ -163,6 +165,7 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
     try {
       this.taskRuns.start(record)
       const session = new ScannerRunSession(record, this.states, record.taskRun.context, {
+        i18n: this.options.i18n,
         publish: (nextRecord) => this.publishStateChanged(nextRecord),
         readTaskRunStatus: (runId) => this.taskRuns.readStatus(runId)
       })
@@ -176,7 +179,7 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
         { scannerId: scanner.id, scannerName: scanner.name }
       )
       await this.options.runScan(scanner, session)
-      session.reportPhase('finished', '扫描完成')
+      session.reportPhase('finished', this.options.i18n.messages.scanner.run.finished)
 
       const result = this.finishRecord(record, 'completed')
       this.taskRuns.complete(record)

@@ -13,6 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useTaskRunStore } from '@renderer/stores'
 import type { TaskCenterTab, TaskRunCategoryFilter, TaskRunStatusFilter } from '../types'
 import { matchesTaskRunSearch } from '../utils/display'
@@ -26,6 +27,8 @@ import {
 } from './tabs'
 
 const open = defineModel<boolean>('open', { required: true })
+
+const { m } = useI18n()
 
 const ACTIVE_RUN_TABLE_COLUMNS = ['32%', '', '6rem', '8.25rem']
 const COMPLETED_RUN_TABLE_COLUMNS = ['32%', '', '6rem', '4rem']
@@ -127,7 +130,7 @@ async function handleRefresh(): Promise<void> {
     await store.refresh()
   } catch (refreshError) {
     notify.error(
-      '刷新任务中心失败',
+      m.value.task.feedback.refreshFailed,
       refreshError instanceof Error ? refreshError.message : String(refreshError)
     )
   }
@@ -139,7 +142,7 @@ async function handleClearCompleted(): Promise<void> {
     await store.clearCompleted()
   } catch (clearError) {
     notify.error(
-      '清理任务记录失败',
+      m.value.task.feedback.clearFailed,
       clearError instanceof Error ? clearError.message : String(clearError)
     )
   } finally {
@@ -155,7 +158,7 @@ async function handleDeleteCompleted(run: TaskRun): Promise<void> {
     }
   } catch (deleteError) {
     notify.error(
-      '删除任务记录失败',
+      m.value.task.feedback.deleteFailed,
       deleteError instanceof Error ? deleteError.message : String(deleteError)
     )
   }
@@ -165,11 +168,11 @@ async function handlePause(run: TaskRun): Promise<void> {
   try {
     const accepted = await store.pauseRun(run.id)
     if (!accepted) {
-      notify.info('任务暂时不能暂停')
+      notify.info(m.value.task.feedback.cannotPauseNow)
     }
   } catch (pauseError) {
     notify.error(
-      '暂停任务失败',
+      m.value.task.feedback.pauseFailed,
       pauseError instanceof Error ? pauseError.message : String(pauseError)
     )
   }
@@ -179,11 +182,11 @@ async function handleResume(run: TaskRun): Promise<void> {
   try {
     const accepted = await store.resumeRun(run.id)
     if (!accepted) {
-      notify.info('任务暂时不能继续')
+      notify.info(m.value.task.feedback.cannotResumeNow)
     }
   } catch (resumeError) {
     notify.error(
-      '继续任务失败',
+      m.value.task.feedback.resumeFailed,
       resumeError instanceof Error ? resumeError.message : String(resumeError)
     )
   }
@@ -193,11 +196,11 @@ async function handleCancel(run: TaskRun): Promise<void> {
   try {
     const accepted = await store.cancelRun(run.id)
     if (!accepted) {
-      notify.info('任务已结束或不可取消')
+      notify.info(m.value.task.feedback.cannotCancel)
     }
   } catch (cancelError) {
     notify.error(
-      '取消任务失败',
+      m.value.task.feedback.cancelFailed,
       cancelError instanceof Error ? cancelError.message : String(cancelError)
     )
   }
@@ -208,7 +211,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
   <Dialog v-model:open="open">
     <DialogContent class="w-[min(calc(100vw-2rem),980px)] max-w-none">
       <DialogHeader>
-        <DialogTitle>任务中心</DialogTitle>
+        <DialogTitle>{{ m.task.center }}</DialogTitle>
       </DialogHeader>
 
       <DialogBody class="overflow-hidden p-0">
@@ -218,8 +221,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
         >
           <div class="shrink-0 border-b border-border px-4 py-2">
             <TabsList>
-              <TabsTrigger value="active">进行中 ({{ activeCount }})</TabsTrigger>
-              <TabsTrigger value="completed">已完成 ({{ completedCount }})</TabsTrigger>
+              <TabsTrigger value="active">{{ m.task.tabActive }} ({{ activeCount }})</TabsTrigger>
+              <TabsTrigger value="completed">
+                {{ m.task.tabCompleted }} ({{ completedCount }})
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -249,7 +254,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   v-if="filteredActiveRuns.length === 0"
                   class="flex h-full min-h-48 items-center justify-center text-sm text-muted-foreground"
                 >
-                  暂无进行中的任务
+                  {{ m.task.noActiveTasks }}
                 </div>
                 <Table
                   v-else
@@ -260,10 +265,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   <template #header>
                     <TableHeader>
                       <TableRow class="h-8">
-                        <TableHead class="pl-4">任务</TableHead>
-                        <TableHead>进度</TableHead>
-                        <TableHead>状态</TableHead>
-                        <TableHead class="pr-4 text-right">操作</TableHead>
+                        <TableHead class="pl-4">{{ m.task.table.task }}</TableHead>
+                        <TableHead>{{ m.task.table.progress }}</TableHead>
+                        <TableHead>{{ m.task.table.status }}</TableHead>
+                        <TableHead class="pr-4 text-right">{{ m.task.table.actions }}</TableHead>
                       </TableRow>
                     </TableHeader>
                   </template>
@@ -318,7 +323,7 @@ async function handleCancel(run: TaskRun): Promise<void> {
                     icon="icon-[mdi--archive-outline]"
                     class="size-8 opacity-40"
                   />
-                  <span>暂无完成记录</span>
+                  <span>{{ m.task.noCompletedRecords }}</span>
                 </div>
                 <Table
                   v-else
@@ -329,10 +334,10 @@ async function handleCancel(run: TaskRun): Promise<void> {
                   <template #header>
                     <TableHeader>
                       <TableRow class="h-8">
-                        <TableHead class="pl-4">任务</TableHead>
-                        <TableHead>结果</TableHead>
-                        <TableHead>状态</TableHead>
-                        <TableHead class="pr-4 text-right">操作</TableHead>
+                        <TableHead class="pl-4">{{ m.task.table.task }}</TableHead>
+                        <TableHead>{{ m.task.table.result }}</TableHead>
+                        <TableHead>{{ m.task.table.status }}</TableHead>
+                        <TableHead class="pr-4 text-right">{{ m.task.table.actions }}</TableHead>
                       </TableRow>
                     </TableHeader>
                   </template>

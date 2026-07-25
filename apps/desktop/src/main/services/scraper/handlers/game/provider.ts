@@ -4,7 +4,7 @@
 
 import type { GameScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type {
   GameSearchResult,
   ScrapedGameInfo,
@@ -38,7 +38,7 @@ export interface GameScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, locale?: Locale): Promise<GameSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null>
-  openSession(target: GameResolvedTarget, locale: Locale): Promise<GameScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<GameSearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<GameResolvedTarget | null>
+  openSession(target: GameResolvedTarget, locale: ContentLocale): Promise<GameScraperSession>
 }

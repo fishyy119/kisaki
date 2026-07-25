@@ -23,6 +23,9 @@ import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -67,11 +70,11 @@ async function handleSubmit() {
       .update(games)
       .set({ name: formData.value.name.trim() || 'unknown game' })
       .where(eq(games.id, props.gameId))
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -98,16 +101,16 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑名称</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editName }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <Field>
-              <FieldLabel>名称</FieldLabel>
+              <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.name"
-                  placeholder="游戏名称"
+                  :placeholder="m.library.forms.namePlaceholder({ label: m.library.entities.game })"
                   required
                 />
               </FieldContent>
@@ -120,13 +123,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

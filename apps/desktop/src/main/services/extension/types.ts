@@ -5,6 +5,7 @@ import type {
   ExtensionRuntimeMetadata,
   ValidationIssue
 } from '@kisaki3/extension-api'
+import { resolveLocalizedText } from '@kisaki3/extension-api'
 import type { ExtensionInstallUpdatePolicy } from '@shared/extension'
 import type { ExtensionInstallationSource } from '@shared/extension/installation-source'
 
@@ -66,7 +67,8 @@ export function createExtensionRuntimeMetadata(
 
   return {
     id: entry.manifest.id,
-    name: entry.manifest.name,
+    // Canonical (en-baseline) name: runtime metadata feeds logs and snapshots.
+    name: resolveLocalizedText(entry.manifest.name, 'en'),
     version: entry.manifest.version,
     manifestPath: entry.manifestPath,
     extensionPath: entry.packagePath,

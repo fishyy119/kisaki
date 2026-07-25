@@ -5,11 +5,11 @@
   Includes embedded preset dialog for quick profile creation when empty.
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent, useRenderState } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n, useRenderState } from '@renderer/composables'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import {
@@ -39,26 +39,24 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   mediaType: 'game',
-  placeholder: '选择刮削配置',
+  placeholder: undefined,
   disabled: false,
   showMediaType: false,
   autoSelectFirst: true
 })
 
 const model = defineModel<string>()
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () => props.placeholder ?? m.value.scraper.profileSelect.placeholder
+)
 
 const emit = defineEmits<{
   change: [profileId: string]
 }>()
 
 const isPresetDialogOpen = ref(false)
-
-const MEDIA_TYPE_LABELS: Record<ContentEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司'
-}
 
 const {
   data: profiles,
@@ -145,7 +143,7 @@ void handleAddPresets
     :class="cn('flex items-center gap-2 h-7', props.class)"
   >
     <Spinner class="size-4" />
-    <span class="text-xs text-muted-foreground">加载中...</span>
+    <span class="text-xs text-muted-foreground">{{ m.common.loading }}</span>
   </div>
 
   <!-- Empty state with create button -->
@@ -155,7 +153,7 @@ void handleAddPresets
   >
     <Select disabled>
       <SelectTrigger class="w-full">
-        <SelectValue placeholder="暂无配置" />
+        <SelectValue :placeholder="m.scraper.profileSelect.empty" />
       </SelectTrigger>
     </Select>
     <Button
@@ -185,7 +183,7 @@ void handleAddPresets
     :disabled="disabled"
   >
     <SelectTrigger :class="cn('w-full', props.class)">
-      <SelectValue :placeholder="placeholder" />
+      <SelectValue :placeholder="placeholderText" />
     </SelectTrigger>
     <SelectContent>
       <SelectItem
@@ -200,7 +198,7 @@ void handleAddPresets
             variant="outline"
             class="text-[10px] px-1 py-0"
           >
-            {{ MEDIA_TYPE_LABELS[profile.mediaType] || profile.mediaType }}
+            {{ m.library.entities[profile.mediaType] || profile.mediaType }}
           </Badge>
         </div>
       </SelectItem>

@@ -13,7 +13,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
-import { useAsyncData, useEntityMerge } from '@renderer/composables'
+import { useAsyncData, useEntityMerge, useI18n } from '@renderer/composables'
 import { fetchEntityMergeSummary } from './summary'
 import TargetSummary from './target-summary.vue'
 import SourcePicker from './source-picker.vue'
@@ -26,6 +26,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { m } = useI18n()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{
   merged: [result: EntityMergeResult]
@@ -77,11 +78,13 @@ async function handleSubmit() {
 
   try {
     const result = await mergeEntities()
-    notify.success(`已合并到「${targetSummary.value?.name ?? '目标实体'}」`)
+    notify.success(
+      m.value.merge.merged({ name: targetSummary.value?.name ?? m.value.merge.fallbackTargetName })
+    )
     emit('merged', result)
     open.value = false
   } catch {
-    notify.error('合并失败')
+    notify.error(m.value.merge.failed)
   }
 }
 </script>
@@ -90,7 +93,7 @@ async function handleSubmit() {
   <Dialog v-model:open="openModel">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>合并重复实体</DialogTitle>
+        <DialogTitle>{{ m.merge.title }}</DialogTitle>
       </DialogHeader>
 
       <DialogBody class="space-y-3">
@@ -121,7 +124,7 @@ async function handleSubmit() {
           :disabled="submitting"
           @click="openModel = false"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="!canSubmit"
@@ -132,7 +135,7 @@ async function handleSubmit() {
             icon="icon-[mdi--loading]"
             class="size-4 animate-spin"
           />
-          合并
+          {{ m.merge.action }}
         </Button>
       </DialogFooter>
     </DialogContent>

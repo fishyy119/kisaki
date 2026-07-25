@@ -30,6 +30,8 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { refreshExtensionContributionSnapshot } from '@renderer/core/extensions'
 import { useTaskRunStore } from '@renderer/stores'
+import { useI18n } from '@renderer/composables/use-i18n'
+import { resolveExtensionText } from '@renderer/core/extensions'
 import type {
   ExtensionApplyReleaseRequest,
   ExtensionCreateReleasePlanRequest,
@@ -54,6 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 const taskRunStore = useTaskRunStore()
+const { m } = useI18n()
 
 const plan = ref<ExtensionReleasePlan | null>(null)
 const localFilePath = ref<string | null>(null)
@@ -65,17 +68,19 @@ const trustSignerFingerprint = ref(false)
 
 const title = computed(() => {
   if (plan.value) {
-    return `${releaseActionLabel(plan.value.action)}扩展`
+    return m.value.extension.release.actionTitle({ action: releaseActionLabel(plan.value.action) })
   }
 
-  return props.request ? '准备扩展版本' : '导入本地扩展'
+  return props.request
+    ? m.value.extension.release.prepareTitle
+    : m.value.extension.release.importLocalTitle
 })
 const description = computed(() => {
   if (plan.value?.sourceKind === 'repository') {
-    return '检查版本、仓库来源和签名后继续'
+    return m.value.extension.release.repositoryDescription
   }
 
-  return '选择本地 .kisx 文件并确认'
+  return m.value.extension.release.localDescription
 })
 const canTrustSigner = computed(
   () =>
@@ -92,7 +97,9 @@ const riskVariant = computed(() => {
 })
 const changelog = computed(() => plan.value?.release?.changelog ?? null)
 const confirmLabel = computed(() =>
-  plan.value ? `确认${releaseActionLabel(plan.value.action)}` : '选择文件'
+  plan.value
+    ? m.value.extension.release.confirmAction({ action: releaseActionLabel(plan.value.action) })
+    : m.value.extension.release.selectFile
 )
 
 watch(
@@ -127,7 +134,10 @@ async function createPlan(request: ExtensionCreateReleasePlanRequest) {
       )
     )
   } catch (error) {
-    notify.error('无法创建版本计划', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.extension.release.planFailed,
+      error instanceof Error ? error.message : String(error)
+    )
     open.value = false
   } finally {
     loadingPlan.value = false
@@ -138,8 +148,8 @@ async function handleSelectLocalFile() {
   loadingPlan.value = true
   try {
     const res = await ipcManager.invoke('native:open-dialog', {
-      title: '选择扩展文件',
-      filters: [{ name: '扩展包', extensions: ['kisx'] }],
+      title: m.value.extension.release.filePickerTitle,
+      filters: [{ name: m.value.extension.release.filePickerFilterName, extensions: ['kisx'] }],
       properties: ['openFile']
     })
 
@@ -160,7 +170,10 @@ async function handleSelectLocalFile() {
   } catch (error) {
     localFilePath.value = null
     plan.value = null
-    notify.error('无法创建版本计划', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.extension.release.planFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     loadingPlan.value = false
   }
@@ -180,7 +193,7 @@ async function handleApply() {
     )
     const finalRun = await taskRunStore.waitRun(started.runId)
     if (finalRun.status === 'cancelled') {
-      notify.info('操作已取消')
+      notify.info(m.value.extension.release.cancelled)
       return
     }
     if (finalRun.status !== 'completed') {
@@ -189,11 +202,16 @@ async function handleApply() {
 
     await refreshExtensionContributionSnapshot()
 
-    notify.success(`扩展${releaseActionLabel(currentPlan.action)}成功`)
+    notify.success(
+      m.value.extension.release.applied({ action: releaseActionLabel(currentPlan.action) })
+    )
     open.value = false
     emit('applied')
   } catch (error) {
-    notify.error('操作失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.extension.release.applyFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     applying.value = false
   }
@@ -273,28 +291,19 @@ function resetState() {
 }
 
 function releaseActionLabel(action: ExtensionReleaseAction): string {
-  switch (action) {
-    case 'install':
-      return '安装'
-    case 'update':
-      return '更新'
-    case 'reinstall':
-      return '重新安装'
-    case 'downgrade':
-      return '降级'
-  }
+  return m.value.extension.actions[action]
 }
 
 function signerLabel(value: ExtensionReleasePlan['signer']['status']): string {
   switch (value) {
     case 'trusted':
-      return '签名已信任'
+      return m.value.extension.release.signerTrusted
     case 'untrusted':
-      return '签名未信任'
+      return m.value.extension.release.signerUntrusted
     case 'changed':
-      return '签名已变更'
+      return m.value.extension.release.signerChanged
     case 'unsigned':
-      return '未签名'
+      return m.value.extension.release.signerUnsigned
   }
 }
 
@@ -311,12 +320,14 @@ function signerVariant(
 }
 
 function releaseKindLabel(value: ExtensionReleasePlan['package']['releaseKind']): string {
-  return value === 'stable' ? '稳定版' : '预览版'
+  return value === 'stable'
+    ? m.value.extension.release.kindStable
+    : m.value.extension.release.kindPreview
 }
 
 function formatBytes(value: number | undefined): string {
   if (!value || value <= 0) {
-    return '未知大小'
+    return m.value.extension.release.unknownSize
   }
 
   const units = ['B', 'KB', 'MB', 'GB']
@@ -356,7 +367,9 @@ function formatBytes(value: number | undefined): string {
               />
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2 min-w-0">
-                  <div class="text-sm font-medium truncate">{{ plan.package.name }}</div>
+                  <div class="text-sm font-medium truncate">
+                    {{ resolveExtensionText(plan.package.name) }}
+                  </div>
                   <Badge
                     variant="secondary"
                     class="text-[10px] h-5"
@@ -377,27 +390,37 @@ function formatBytes(value: number | undefined): string {
                   </Badge>
                 </div>
                 <div class="mt-1 text-xs text-muted-foreground">
-                  <template v-if="plan.repository"> 仓库：{{ plan.repository.name }} </template>
-                  <template v-else> 本地文件 · {{ formatBytes(plan.localFile?.size) }} </template>
+                  <template v-if="plan.repository">
+                    {{ m.extension.release.repositoryLine({ name: plan.repository.name }) }}
+                  </template>
+                  <template v-else>
+                    {{
+                      m.extension.release.localFileLine({
+                        size: formatBytes(plan.localFile?.size)
+                      })
+                    }}
+                  </template>
                 </div>
               </div>
             </div>
 
             <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
               <div class="min-w-0">
-                <dt class="text-muted-foreground">当前版本</dt>
-                <dd class="truncate">{{ plan.package.currentVersion ?? '未安装' }}</dd>
+                <dt class="text-muted-foreground">{{ m.extension.release.currentVersion }}</dt>
+                <dd class="truncate">
+                  {{ plan.package.currentVersion ?? m.extension.release.notInstalled }}
+                </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">版本类型</dt>
+                <dt class="text-muted-foreground">{{ m.extension.release.releaseKind }}</dt>
                 <dd>{{ releaseKindLabel(plan.package.releaseKind) }}</dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">签名指纹</dt>
-                <dd class="font-mono truncate">{{ plan.signer.fingerprint ?? '无' }}</dd>
+                <dt class="text-muted-foreground">{{ m.extension.release.signerFingerprint }}</dt>
+                <dd class="font-mono truncate">{{ plan.signer.fingerprint ?? m.common.none }}</dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">安装包大小</dt>
+                <dt class="text-muted-foreground">{{ m.extension.release.artifactSize }}</dt>
                 <dd>{{ formatBytes(plan.artifact?.size ?? plan.localFile?.size) }}</dd>
               </div>
             </dl>
@@ -409,7 +432,7 @@ function formatBytes(value: number | undefined): string {
           >
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 space-y-2">
-                <div class="font-medium">更新日志</div>
+                <div class="font-medium">{{ m.extension.release.changelog }}</div>
                 <p
                   v-if="changelog.text"
                   class="text-muted-foreground whitespace-pre-wrap"
@@ -433,7 +456,7 @@ function formatBytes(value: number | undefined): string {
                     icon="icon-[mdi--open-in-new]"
                     class="size-3.5"
                   />
-                  查看
+                  {{ m.extension.release.viewChangelog }}
                 </a>
               </Button>
             </div>
@@ -448,7 +471,7 @@ function formatBytes(value: number | undefined): string {
                 : 'border-warning/40 bg-warning/5'
             "
           >
-            <div class="font-medium">需要确认</div>
+            <div class="font-medium">{{ m.extension.release.needsConfirmation }}</div>
             <ul class="space-y-1 text-muted-foreground">
               <li
                 v-for="risk in plan.risks"
@@ -461,14 +484,14 @@ function formatBytes(value: number | undefined): string {
 
           <FieldGroup>
             <Field orientation="horizontal">
-              <FieldLabel>应用后启用</FieldLabel>
+              <FieldLabel>{{ m.extension.release.enableAfterApply }}</FieldLabel>
               <FieldContent>
                 <Switch v-model="enabled" />
               </FieldContent>
             </Field>
 
             <Field orientation="horizontal">
-              <FieldLabel>更新策略</FieldLabel>
+              <FieldLabel>{{ m.extension.release.updatePolicy }}</FieldLabel>
               <FieldContent>
                 <Select
                   v-if="plan.sourceKind === 'repository'"
@@ -478,16 +501,16 @@ function formatBytes(value: number | undefined): string {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manual">手动</SelectItem>
-                    <SelectItem value="auto">自动</SelectItem>
-                    <SelectItem value="pinned">锁定</SelectItem>
+                    <SelectItem value="manual">{{ m.extension.policy.manual }}</SelectItem>
+                    <SelectItem value="auto">{{ m.extension.policy.auto }}</SelectItem>
+                    <SelectItem value="pinned">{{ m.extension.policy.pinned }}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Badge
                   v-else
                   variant="secondary"
                 >
-                  手动
+                  {{ m.extension.policy.manual }}
                 </Badge>
               </FieldContent>
             </Field>
@@ -496,7 +519,7 @@ function formatBytes(value: number | undefined): string {
               v-if="canTrustSigner"
               orientation="horizontal"
             >
-              <FieldLabel>信任此扩展的签名指纹</FieldLabel>
+              <FieldLabel>{{ m.extension.release.trustSigner }}</FieldLabel>
               <FieldContent>
                 <Switch v-model="trustSignerFingerprint" />
               </FieldContent>
@@ -512,7 +535,9 @@ function formatBytes(value: number | undefined): string {
             icon="icon-[mdi--folder-zip-outline]"
             class="size-12 text-muted-foreground/50 mx-auto mb-3"
           />
-          <p class="text-sm text-muted-foreground mb-4">选择本地扩展包文件 (.kisx)</p>
+          <p class="text-sm text-muted-foreground mb-4">
+            {{ m.extension.release.pickLocalHint }}
+          </p>
           <Button
             variant="outline"
             :disabled="loadingPlan"
@@ -522,7 +547,7 @@ function formatBytes(value: number | undefined): string {
               icon="icon-[mdi--folder-open-outline]"
               class="size-4"
             />
-            选择文件
+            {{ m.extension.release.selectFile }}
           </Button>
         </div>
       </DialogBody>
@@ -533,7 +558,7 @@ function formatBytes(value: number | undefined): string {
           :disabled="applying"
           @click="open = false"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="loadingPlan || applying || (!plan && Boolean(props.request))"

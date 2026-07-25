@@ -3,6 +3,7 @@
   Monitor configuration tab content with monitor mode and path settings.
 -->
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
 import { GameMonitorMode } from '@shared/db'
@@ -23,6 +24,9 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   effectiveMonitorPath: string | null
@@ -33,11 +37,25 @@ const props = defineProps<Props>()
 const monitorMode = defineModel<GameMonitorMode>('monitorMode', { required: true })
 const monitorPath = defineModel<string>('monitorPath', { required: true })
 
-const MONITOR_MODE_OPTIONS: { value: GameMonitorMode; label: string; description: string }[] = [
-  { value: 'folder', label: '文件夹', description: '监视目录内的所有进程' },
-  { value: 'file', label: '文件', description: '监视指定的可执行文件' },
-  { value: 'process', label: '进程名', description: '监视指定名称的进程' }
-]
+const MONITOR_MODE_OPTIONS = computed<
+  { value: GameMonitorMode; label: string; description: string }[]
+>(() => [
+  {
+    value: 'folder',
+    label: m.value.game.launchConfig.monitorFolder,
+    description: m.value.game.launchConfig.monitorFolderHint
+  },
+  {
+    value: 'file',
+    label: m.value.game.launchConfig.monitorFile,
+    description: m.value.game.launchConfig.monitorFileHint
+  },
+  {
+    value: 'process',
+    label: m.value.game.launchConfig.monitorProcess,
+    description: m.value.game.launchConfig.monitorProcessHint
+  }
+])
 
 async function handleSelectMonitorPath() {
   const result = await ipcManager.invoke('native:open-dialog', {
@@ -52,7 +70,7 @@ async function handleSelectMonitorPath() {
 <template>
   <FieldGroup>
     <Field>
-      <FieldLabel>监视模式</FieldLabel>
+      <FieldLabel>{{ m.game.launchConfig.monitorModeLabel }}</FieldLabel>
       <FieldContent>
         <Select v-model="monitorMode">
           <SelectTrigger>
@@ -76,7 +94,11 @@ async function handleSelectMonitorPath() {
 
     <Field>
       <FieldLabel class="inline-flex items-center gap-1">
-        {{ monitorMode === 'process' ? '进程名' : '监视路径' }}
+        {{
+          monitorMode === 'process'
+            ? m.game.launchConfig.processNameLabel
+            : m.game.launchConfig.monitorPathLabel
+        }}
         <Tooltip>
           <TooltipTrigger as-child>
             <Icon
@@ -86,13 +108,15 @@ async function handleSelectMonitorPath() {
           </TooltipTrigger>
           <TooltipContent class="max-w-xs">
             <div class="space-y-1">
-              <div class="font-medium">留空时自动推导</div>
+              <div class="font-medium">{{ m.game.launchConfig.autoDeriveTitle }}</div>
               <div class="text-muted-foreground">
                 <template v-if="monitorMode === 'folder'">
-                  优先使用游戏目录，否则使用启动文件所在目录
+                  {{ m.game.launchConfig.autoDeriveFolderHint }}
                 </template>
-                <template v-else-if="monitorMode === 'file'"> 使用启动文件路径 </template>
-                <template v-else> 从启动文件名提取，如 game.exe </template>
+                <template v-else-if="monitorMode === 'file'">{{
+                  m.game.launchConfig.autoDeriveFileHint
+                }}</template>
+                <template v-else>{{ m.game.launchConfig.autoDeriveProcessHint }}</template>
               </div>
             </div>
           </TooltipContent>
@@ -102,7 +126,7 @@ async function handleSelectMonitorPath() {
         <div class="flex gap-2">
           <Input
             v-model="monitorPath"
-            placeholder="留空自动推导"
+            :placeholder="m.game.launchConfig.autoDerivePlaceholder"
           />
           <Button
             v-if="monitorMode !== 'process'"
@@ -123,7 +147,7 @@ async function handleSelectMonitorPath() {
         </div>
       </FieldContent>
       <FieldDescription v-if="!monitorPath && props.effectiveMonitorPath">
-        将使用: {{ props.effectiveMonitorPath }}
+        {{ m.game.launchConfig.willUse({ path: props.effectiveMonitorPath }) }}
       </FieldDescription>
     </Field>
   </FieldGroup>

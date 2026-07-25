@@ -4,7 +4,7 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 import {
   baseColumns,
   contentEntityType,
-  locale,
+  contentLocale,
   mediaType,
   nameExtractionRules,
   scraperSlotConfigs
@@ -19,7 +19,7 @@ export const scraperProfiles = sqliteTable(
     description: text('description'),
     mediaType: contentEntityType('media_type').notNull().default('game'),
     sourcePresetId: text('source_preset_id'),
-    defaultLocale: locale('default_locale'),
+    defaultLocale: contentLocale('default_locale'),
     searchProviderId: text('search_provider_id').notNull(),
     slotConfigs: scraperSlotConfigs('slot_configs').notNull(),
     order: integer('order').notNull().default(0)

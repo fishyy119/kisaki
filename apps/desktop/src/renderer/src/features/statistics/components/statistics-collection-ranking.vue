@@ -18,7 +18,7 @@ import {
 import { RankingList, type RankingListItem } from '@renderer/components/ui/ranking-list'
 import { Section } from '@renderer/components/ui/section'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import { formatDuration } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { GameSession } from '@shared/db'
 
@@ -32,6 +32,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const context = useStatistics()
+const { m, f } = useI18n()
 
 const effectiveSessions = computed(() => props.sessions ?? context.sessions.value)
 
@@ -56,7 +57,9 @@ const items = computed<RankingListItem[]>(() =>
     name: item.name,
     value: sort.value === 'time' ? item.totalDuration : item.sessionCount,
     valueText:
-      sort.value === 'time' ? formatDuration(item.totalDuration) : `${item.sessionCount}次`,
+      sort.value === 'time'
+        ? f.value.duration(item.totalDuration)
+        : m.value.statistics.hero.timesValue({ count: item.sessionCount }),
     icon: getEntityIcon('collection')
   }))
 )
@@ -66,8 +69,12 @@ const items = computed<RankingListItem[]>(() =>
   <Section :title="props.title">
     <template #actions>
       <SegmentedControl v-model="sort">
-        <SegmentedControlItem value="time">时长</SegmentedControlItem>
-        <SegmentedControlItem value="count">次数</SegmentedControlItem>
+        <SegmentedControlItem value="time">{{
+          m.statistics.ranking.sortTime
+        }}</SegmentedControlItem>
+        <SegmentedControlItem value="count">{{
+          m.statistics.ranking.sortCount
+        }}</SegmentedControlItem>
       </SegmentedControl>
     </template>
 
@@ -75,13 +82,13 @@ const items = computed<RankingListItem[]>(() =>
       v-if="items.length > 0"
       :items="items"
       :total-value="totalValue"
-      expand-title="收藏排行"
+      :expand-title="m.statistics.ranking.collectionTitle"
     />
     <div
       v-else
       class="flex h-24 items-center justify-center text-sm text-muted-foreground"
     >
-      暂无数据
+      {{ m.common.noData }}
     </div>
   </Section>
 </template>

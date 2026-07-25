@@ -23,6 +23,9 @@ import { Button } from '@renderer/components/ui/button'
 import { MarkdownEditor } from '@renderer/components/ui/markdown'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Character')
 
@@ -69,11 +72,11 @@ async function handleSubmit() {
       .set({ description: next || null })
       .where(eq(characters.id, props.characterId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -100,16 +103,18 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑简介</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editDescription }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <Field>
-              <FieldLabel>角色简介</FieldLabel>
+              <FieldLabel>{{ m.library.fields.description }}</FieldLabel>
               <FieldContent>
                 <MarkdownEditor
                   v-model="formData.description"
-                  placeholder="输入角色简介 (支持 Markdown)..."
+                  :placeholder="
+                    m.library.forms.descriptionPlaceholder({ label: m.library.entities.character })
+                  "
                   min-height="240px"
                 />
               </FieldContent>
@@ -122,13 +127,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

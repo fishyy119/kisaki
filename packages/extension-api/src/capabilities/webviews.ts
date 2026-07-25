@@ -1,4 +1,5 @@
 import type { Disposable, JsonObject, JsonValue } from '../shared'
+import type { UiLocale } from '../shared/locales'
 import type { ValidationIssue } from '../shared/validation'
 import { normalizeExtensionPackagePath } from '../manifest'
 import { validateJsonObject } from '../shared/json'
@@ -181,6 +182,8 @@ export interface WebviewBootstrapPayload {
   extensionId: string
   params: JsonObject
   appearance: WebviewAppearance
+  /** Host interface language at open time. Changes are pushed as `kisaki-webview:ui-locale`. */
+  uiLocale: UiLocale
 }
 
 /**
@@ -197,6 +200,7 @@ export type WebviewClientEnvelope =
 export type WebviewEmbedderEnvelope =
   | { type: 'kisaki-webview:message'; message: JsonValue }
   | { type: 'kisaki-webview:appearance'; appearance: WebviewAppearance }
+  | { type: 'kisaki-webview:ui-locale'; uiLocale: UiLocale }
 
 /**
  * In-document API implemented by `@kisaki3/extension-sdk/webview`.
@@ -207,8 +211,10 @@ export interface WebviewClient {
   readonly params: JsonObject
   readonly theme: WebviewTheme
   readonly typography: WebviewTypography
+  readonly uiLocale: UiLocale
   onThemeChange(listener: (theme: WebviewTheme) => void): Disposable
   onTypographyChange(listener: (typography: WebviewTypography) => void): Disposable
+  onUiLocaleChange(listener: (uiLocale: UiLocale) => void): Disposable
   postMessage(message: JsonValue): void
   onMessage(listener: (message: JsonValue) => void): Disposable
   close(): void

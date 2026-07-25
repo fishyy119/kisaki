@@ -1,3 +1,4 @@
+import type { I18nService } from '@main/services/i18n'
 import type { TaskRunContext } from '@main/services/task-run'
 import {
   isActiveScannerRunStatus,
@@ -17,6 +18,7 @@ export class ScannerRunSession<TScanner extends ScannerRunMetadata> {
     private readonly states: ScannerRunStateStore<TScanner>,
     private readonly context: TaskRunContext,
     private readonly options: {
+      i18n: I18nService
       publish: (record: ActiveScannerRun<TScanner>) => void
       readTaskRunStatus: (runId: string) => TaskRunStatus | null
     }
@@ -47,7 +49,7 @@ export class ScannerRunSession<TScanner extends ScannerRunMetadata> {
     this.updateState({
       status: 'running',
       phase: 'preparing',
-      message: '准备扫描',
+      message: this.options.i18n.messages.scanner.run.preparing,
       startedAt: this.record.state.startedAt ?? Date.now()
     })
     this.reportTaskRunProgress()

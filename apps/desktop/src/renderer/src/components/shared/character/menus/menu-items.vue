@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid'
 import { eq, and } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -33,6 +33,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
+
+const { m } = useI18n()
 
 const emit = defineEmits<{
   openScoreDialog: []
@@ -121,9 +123,9 @@ async function handleAddToCollection(collectionId: string) {
       collectionId,
       characterId: props.characterId
     })
-    notify.success('已添加至合集')
+    notify.success(m.value.library.feedback.addedToCollection)
   } catch {
-    notify.error('添加失败')
+    notify.error(m.value.library.feedback.addFailed)
   }
 }
 
@@ -137,9 +139,9 @@ async function handleRemoveFromCollection(collectionId: string) {
           eq(collectionCharacterLinks.collectionId, collectionId)
         )
       )
-    notify.success('已从合集中移除')
+    notify.success(m.value.library.feedback.removedFromCollection)
   } catch {
-    notify.error('移除失败')
+    notify.error(m.value.library.feedback.removeFailed)
   }
 }
 
@@ -150,9 +152,13 @@ async function handleToggleFavorite() {
       .update(characters)
       .set({ isFavorite: !character.value.isFavorite })
       .where(eq(characters.id, props.characterId))
-    notify.success(character.value.isFavorite ? '已取消喜欢' : '已添加至喜欢')
+    notify.success(
+      character.value.isFavorite
+        ? m.value.library.feedback.favoriteRemoved
+        : m.value.library.feedback.favoriteAdded
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 
@@ -163,9 +169,13 @@ async function handleToggleNsfw() {
       .update(characters)
       .set({ isNsfw: !character.value.isNsfw })
       .where(eq(characters.id, props.characterId))
-    notify.success(character.value.isNsfw ? '已取消 NSFW 标记' : '已标记为 NSFW')
+    notify.success(
+      character.value.isNsfw
+        ? m.value.library.feedback.nsfwCleared
+        : m.value.library.feedback.nsfwMarked
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 
@@ -186,7 +196,7 @@ const displayScore = computed(() =>
           icon="icon-[mdi--folder-plus-outline]"
           class="size-4"
         />
-        添加至合集
+        {{ m.library.menu.addToCollection }}
       </component>
       <component
         :is="props.components.SubContent"
@@ -213,7 +223,7 @@ const displayScore = computed(() =>
           v-else
           disabled
         >
-          <span class="text-muted-foreground">无可用合集</span>
+          <span class="text-muted-foreground">{{ m.library.menu.noCollections }}</span>
         </component>
         <component :is="props.components.Separator" />
         <component
@@ -224,7 +234,7 @@ const displayScore = computed(() =>
             icon="icon-[mdi--plus]"
             class="size-4"
           />
-          新建合集...
+          {{ m.library.menu.newCollection }}
         </component>
       </component>
     </component>
@@ -239,7 +249,7 @@ const displayScore = computed(() =>
           icon="icon-[mdi--folder-remove-outline]"
           class="size-4"
         />
-        从合集中移除
+        {{ m.library.menu.removeFromCollection }}
       </component>
       <component
         :is="props.components.SubContent"
@@ -273,7 +283,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--starburst-outline]"
         class="size-4"
       />
-      修改评分
+      {{ m.library.menu.editScore }}
       <span
         v-if="displayScore"
         class="ml-auto text-xs text-muted-foreground"
@@ -294,7 +304,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--heart-outline]"
         class="size-4"
       />
-      喜欢
+      {{ m.library.menu.favorite }}
     </component>
 
     <component
@@ -320,7 +330,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--image-multiple-outline]"
         class="size-4"
       />
-      媒体管理
+      {{ m.library.menu.media }}
     </component>
 
     <!-- Metadata Update -->
@@ -332,7 +342,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--database-sync-outline]"
         class="size-4"
       />
-      更新元数据
+      {{ m.library.menu.updateMetadata }}
     </component>
 
     <component
@@ -343,7 +353,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--card-text-outline]"
         class="size-4"
       />
-      管理外部ID
+      {{ m.library.menu.manageExternalIds }}
     </component>
 
     <component
@@ -354,7 +364,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--source-merge]"
         class="size-4"
       />
-      合并重复实体
+      {{ m.library.menu.mergeDuplicates }}
     </component>
 
     <ExtensionEntityMenuItems
@@ -375,7 +385,7 @@ const displayScore = computed(() =>
         icon="icon-[mdi--delete-outline]"
         class="size-4"
       />
-      删除
+      {{ m.common.delete }}
     </component>
   </template>
 </template>

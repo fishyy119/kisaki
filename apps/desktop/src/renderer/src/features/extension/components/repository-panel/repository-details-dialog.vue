@@ -4,6 +4,7 @@ Boundary: no mutations; consumes the repository DTO already loaded by the parent
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
@@ -33,6 +34,8 @@ interface Props {
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const stateLabel = computed(() => getRepositoryStateLabel(props.repository))
 const stateVariant = computed(() => getRepositoryStateVariant(props.repository))
 const healthLabel = computed(() => getRepositoryHealthLabel(props.repository))
@@ -60,26 +63,30 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
 
       <DialogBody class="max-h-[65vh] overflow-auto space-y-5">
         <section class="space-y-2">
-          <div class="text-sm font-medium">基础信息</div>
+          <div class="text-sm font-medium">{{ m.extension.repository.details.basicInfo }}</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
-              <dt class="text-muted-foreground">仓库 ID</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.repository.details.repositoryId }}
+              </dt>
               <dd class="font-mono break-all select-text">{{ props.repository.id }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">优先级</dt>
+              <dt class="text-muted-foreground">{{ m.extension.repository.details.priority }}</dt>
               <dd>{{ props.priorityLabel }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">扩展包</dt>
+              <dt class="text-muted-foreground">{{ m.extension.repository.details.packages }}</dt>
               <dd>{{ props.repository.packageCount }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">本地状态</dt>
+              <dt class="text-muted-foreground">{{ m.extension.repository.details.localState }}</dt>
               <dd>{{ stateLabel }}</dd>
             </div>
             <div class="min-w-0 sm:col-span-2">
-              <dt class="text-muted-foreground">仓库清单 URL</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.repository.details.manifestUrl }}
+              </dt>
               <dd>
                 <a
                   :href="props.repository.url"
@@ -95,16 +102,22 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
         </section>
 
         <section class="space-y-2">
-          <div class="text-sm font-medium">清单元数据</div>
+          <div class="text-sm font-medium">
+            {{ m.extension.repository.details.manifestMetadata }}
+          </div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0 sm:col-span-2">
-              <dt class="text-muted-foreground">清单摘要</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.repository.details.manifestDigest }}
+              </dt>
               <dd class="font-mono break-all select-text">
                 {{ formatRepositoryNullable(props.repository.manifestDigest) }}
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">清单更新时间</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.repository.details.manifestUpdatedAt }}
+              </dt>
               <dd>{{ formatRepositoryDate(props.repository.manifestUpdatedAt) }}</dd>
             </div>
             <div class="min-w-0">
@@ -123,35 +136,39 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
         </section>
 
         <section class="space-y-2">
-          <div class="text-sm font-medium">刷新状态</div>
+          <div class="text-sm font-medium">{{ m.extension.repository.details.refreshState }}</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
-              <dt class="text-muted-foreground">上次检查</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.repository.details.lastChecked }}
+              </dt>
               <dd>{{ formatRepositoryDate(props.repository.lastRefreshAt) }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">上次成功</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.repository.details.lastSuccess }}
+              </dt>
               <dd>{{ formatRepositoryDate(props.repository.lastSuccessAt) }}</dd>
             </div>
             <div
               v-if="props.repository.lastError"
               class="min-w-0 sm:col-span-2"
             >
-              <dt class="text-muted-foreground">最近错误</dt>
+              <dt class="text-muted-foreground">{{ m.extension.repository.details.lastError }}</dt>
               <dd class="break-words text-destructive">{{ props.repository.lastError }}</dd>
             </div>
           </dl>
         </section>
 
         <section class="space-y-2">
-          <div class="text-sm font-medium">本地记录</div>
+          <div class="text-sm font-medium">{{ m.extension.repository.details.localRecord }}</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
-              <dt class="text-muted-foreground">创建时间</dt>
+              <dt class="text-muted-foreground">{{ m.extension.repository.details.createdAt }}</dt>
               <dd>{{ formatRepositoryDate(props.repository.createdAt) }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">更新时间</dt>
+              <dt class="text-muted-foreground">{{ m.extension.repository.details.updatedAt }}</dt>
               <dd>{{ formatRepositoryDate(props.repository.updatedAt) }}</dd>
             </div>
           </dl>
@@ -163,7 +180,7 @@ const healthVariant = computed(() => getRepositoryHealthVariant(props.repository
           variant="outline"
           @click="open = false"
         >
-          关闭
+          {{ m.common.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

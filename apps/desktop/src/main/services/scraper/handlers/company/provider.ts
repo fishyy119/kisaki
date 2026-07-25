@@ -4,7 +4,7 @@
 
 import type { CompanyScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type {
   CompanySearchResult,
   ScrapedCompanyInfo,
@@ -29,7 +29,7 @@ export interface CompanyScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, locale?: Locale): Promise<CompanySearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<CompanyResolvedTarget | null>
-  openSession(target: CompanyResolvedTarget, locale: Locale): Promise<CompanyScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<CompanySearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<CompanyResolvedTarget | null>
+  openSession(target: CompanyResolvedTarget, locale: ContentLocale): Promise<CompanyScraperSession>
 }

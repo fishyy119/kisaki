@@ -2,8 +2,8 @@ import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiCollectionType, BangumiUserCollection } from '../api/types'
 import type { BangumiMediaScope } from '../media/scopes'
-import { formatScopedCollectionType } from '../media/labels'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 
 export interface CollectionReaderOptions {
   username: string
@@ -25,7 +25,7 @@ export class CollectionReader {
       assertNotCancelled(options.event.signal)
       options.report?.(
         'loadingCollections',
-        `正在读取 Bangumi ${formatScopedCollectionType(options.scope, collectionType)}收藏...`
+        m().jobs.import.readingCollections({ scope: options.scope, type: collectionType })
       )
 
       collections.push(
@@ -51,6 +51,6 @@ export class CollectionReader {
 
 function assertNotCancelled(signal: AbortSignal): void {
   if (signal.aborted) {
-    throw new BangumiExtensionError('job_cancelled', 'Bangumi job 已取消。')
+    throw new BangumiExtensionError('job_cancelled', m().errors.jobCancelled)
   }
 }

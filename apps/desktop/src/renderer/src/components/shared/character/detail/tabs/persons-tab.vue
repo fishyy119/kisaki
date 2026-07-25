@@ -11,6 +11,9 @@ import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { PersonCard, PersonDetailDialog } from '@renderer/components/shared/person'
 import { CharacterPersonsFormDialog } from '../../forms'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -25,12 +28,9 @@ const openPersonId = ref<string | null>(null)
 // Constants
 // =============================================================================
 
-const PERSON_TYPE_LABELS: Record<string, string> = {
-  actor: '声优',
-  illustration: '原画',
-  designer: '设计',
-  other: '其他'
-}
+const PERSON_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.characterPerson
+)
 
 const PERSON_TYPE_ORDER = ['actor', 'illustration', 'designer', 'other'] as const
 
@@ -67,7 +67,7 @@ const personDialogOpen = computed({
       v-if="!hasPersons"
       state="empty"
       icon="icon-[mdi--microphone-outline]"
-      description="暂无相关人物"
+      :description="m.library.detail.empty.relatedPersons"
       class="py-12"
     >
       <template #actions>
@@ -80,7 +80,7 @@ const personDialogOpen = computed({
             icon="icon-[mdi--plus]"
             class="size-4 mr-1.5"
           />
-          添加人员
+          {{ m.library.detail.addEntity({ label: m.library.entities.person }) }}
         </Button>
       </template>
     </StateView>
@@ -98,7 +98,7 @@ const personDialogOpen = computed({
             icon="icon-[mdi--pencil-outline]"
             class="size-4 mr-1.5"
           />
-          管理
+          {{ m.library.detail.manage }}
         </Button>
       </div>
 

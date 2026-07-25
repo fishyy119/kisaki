@@ -1,4 +1,5 @@
 import semver from 'semver'
+import { resolveLocalizedText, type LocalizedText } from '@kisaki3/extension-api'
 import {
   getExtensionRegistryReleaseKind,
   selectExtensionRegistryArtifact,
@@ -368,14 +369,15 @@ function toPublicPackage(item: ExtensionRepositoryCatalogPackage): ExtensionCata
 function calculateRelevanceScore(item: ExtensionRepositoryCatalogPackage, query: string): number {
   let score = 0
   const id = item.id.toLowerCase()
-  const name = item.name.toLowerCase()
+  const names = localizedVariants(item.name).map((value) => value.toLowerCase())
+  const summaries = localizedVariants(item.summary).map((value) => value.toLowerCase())
 
   if (id === query) score += 100
-  if (name === query) score += 90
+  if (names.some((name) => name === query)) score += 90
   if (id.includes(query)) score += 40
-  if (name.includes(query)) score += 35
+  if (names.some((name) => name.includes(query))) score += 35
   if (item.keywords.some((keyword) => keyword.toLowerCase().includes(query))) score += 20
-  if (item.summary.toLowerCase().includes(query)) score += 15
+  if (summaries.some((summary) => summary.includes(query))) score += 15
   if (item.searchText.includes(query)) score += 5
 
   return score
@@ -394,7 +396,10 @@ function compareSearchItems(
   let result = 0
   switch (sortBy) {
     case 'name':
-      result = compareStrings(left.item.name, right.item.name)
+      result = compareStrings(
+        resolveLocalizedText(left.item.name, 'en'),
+        resolveLocalizedText(right.item.name, 'en')
+      )
       break
     case 'updatedAt':
       result = compareNullableTime(left.item.updatedAt, right.item.updatedAt)
@@ -414,8 +419,10 @@ function compareSearchItems(
         return result * multiplier
       }
       return (
-        compareStrings(left.item.name, right.item.name) ||
-        compareStrings(left.item.id, right.item.id)
+        compareStrings(
+          resolveLocalizedText(left.item.name, 'en'),
+          resolveLocalizedText(right.item.name, 'en')
+        ) || compareStrings(left.item.id, right.item.id)
       )
   }
 
@@ -467,13 +474,24 @@ function compareRepositorySources(
 function createSearchText(registryPackage: ExtensionRegistryPackage): string {
   return [
     registryPackage.id,
-    registryPackage.name,
-    registryPackage.summary,
-    registryPackage.description ?? '',
+    ...localizedVariants(registryPackage.name),
+    ...localizedVariants(registryPackage.summary),
+    ...localizedVariants(registryPackage.description),
     ...(registryPackage.keywords ?? [])
   ]
     .join('\n')
     .toLowerCase()
+}
+
+/** All locale variants of a localized text, for locale-agnostic search matching. */
+function localizedVariants(text: LocalizedText | undefined): string[] {
+  if (text === undefined) {
+    return []
+  }
+  if (typeof text === 'string') {
+    return [text]
+  }
+  return Object.values(text).filter((value): value is string => typeof value === 'string')
 }
 
 function normalizeQuery(value: string | undefined): string {

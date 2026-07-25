@@ -20,6 +20,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 // =============================================================================
 // Props & Model & Emits
@@ -38,6 +39,11 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+const { m } = useI18n()
+
+/** Locale-neutral regex token shown inline in the pattern hint. */
+const NAME_GROUP_TOKEN = '(?<name>...)'
 
 // =============================================================================
 // State
@@ -89,33 +95,36 @@ function handleSubmit() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>{{ props.isNew ? '添加规则' : '编辑规则' }}</DialogTitle>
+        <DialogTitle>
+          {{ props.isNew ? m.scanner.rules.itemAddTitle : m.scanner.rules.itemEditTitle }}
+        </DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>描述</FieldLabel>
+              <FieldLabel>{{ m.scanner.rules.description }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.description"
-                  placeholder="例如: 移除方括号前缀"
+                  :placeholder="m.scanner.rules.descriptionPlaceholder"
                   required
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>正则表达式</FieldLabel>
+              <FieldLabel>{{ m.scanner.rules.pattern }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.pattern"
-                  placeholder="例如: ^\[.*?\]\s*(?<name>.+)"
+                  placeholder="^\[.*?\]\s*(?<name>.+)"
                   class="font-mono text-sm"
                   required
                 />
                 <p class="text-xs text-muted-foreground mt-1">
-                  使用命名捕获组 <code class="text-primary">(?&lt;name&gt;...)</code>
-                  来指定要提取的名称
+                  {{ m.scanner.rules.patternHintBefore }}
+                  <code class="text-primary">{{ NAME_GROUP_TOKEN }}</code>
+                  {{ m.scanner.rules.patternHintAfter }}
                 </p>
               </FieldContent>
             </Field>
@@ -127,9 +136,9 @@ function handleSubmit() {
             variant="outline"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

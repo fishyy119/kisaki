@@ -17,9 +17,12 @@ import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { ResizableHandle, ResizableLayout, ResizablePanel } from '@renderer/components/ui/resizable'
 import { useEvent } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useLibraryExplorerStore } from '../stores'
 import { parseExplorerSelectionKey } from '../utils/explorer-selection'
 import { LibraryExplorer, LibrarySearchDialog } from '../components'
+
+const { m } = useI18n()
 
 const store = useLibraryExplorerStore()
 const { explorerWidth } = storeToRefs(store)
@@ -56,7 +59,7 @@ onUnmounted(() => {
   <div class="h-full flex flex-col">
     <PageHeader>
       <PageHeaderTitle
-        title="媒体库"
+        :title="m.library.pages.libraryTitle"
         icon="icon-[mdi--bookshelf]"
       />
 
@@ -70,7 +73,7 @@ onUnmounted(() => {
             icon="icon-[mdi--magnify]"
             class="size-4"
           />
-          全局搜索
+          {{ m.library.pages.globalSearch }}
           <kbd
             class="ml-2 -mr-1 p-0 pointer-events-none h-5 select-none items-center gap-1 rounded px-1.5 font-mono text-xs font-medium text-muted-foreground hidden sm:inline-flex"
           >

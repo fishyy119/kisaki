@@ -1,4 +1,6 @@
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
+import { m } from '../../i18n'
+import type { BangumiMediaScope } from '../../media/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter } from '../../media/types'
 import { BangumiExtensionError } from '../../utils/errors'
 import type { BangumiImportCollectionsArgs, BangumiImportIndexArgs } from '../args'
@@ -13,18 +15,18 @@ import type {
 import { createIndexCollectionPatchPreviewChange } from './preview'
 import { isCancellationError } from '../summary'
 
-export function emptyCollectedCollectionImport(label: string) {
+export function emptyCollectedCollectionImport(scope: BangumiMediaScope) {
   return {
-    label,
+    scope,
     planItems: [],
     operations: [],
     skippedNoChange: 0
   }
 }
 
-export function emptyCollectedIndexImport(label: string) {
+export function emptyCollectedIndexImport(scope: BangumiMediaScope) {
   return {
-    label,
+    scope,
     planItems: [],
     operations: [],
     skippedNoChange: 0
@@ -49,18 +51,26 @@ export async function collectCollectionImportOperations({
   let skippedNoChange = 0
 
   if (executableItems.length > 0) {
-    job.report('collectingCollectionImportPlan', '正在计算需要导入的游戏...', {
-      current: 0,
-      total: executableItems.length
-    })
+    job.report(
+      'collectingCollectionImportPlan',
+      m().jobs.import.collectingPlan({ scope: args.scope }),
+      {
+        current: 0,
+        total: executableItems.length
+      }
+    )
   }
 
   for (const [index, planItem] of executableItems.entries()) {
     await job.checkpoint()
-    job.report('collectingCollectionImportPlan', '正在计算需要导入的游戏...', {
-      current: index + 1,
-      total: executableItems.length
-    })
+    job.report(
+      'collectingCollectionImportPlan',
+      m().jobs.import.collectingPlan({ scope: args.scope }),
+      {
+        current: index + 1,
+        total: executableItems.length
+      }
+    )
 
     try {
       if (planItem.action.kind === 'create') {
@@ -70,7 +80,7 @@ export async function collectCollectionImportOperations({
 
       const localItem = planItem.localItem
       if (!localItem) {
-        throw new BangumiExtensionError('library_update_failed', '本地条目不存在。')
+        throw new BangumiExtensionError('library_update_failed', m().errors.localItemMissing)
       }
 
       const updatePlan = await buildCollectionLocalUpdatePlan({
@@ -121,7 +131,7 @@ export async function collectIndexImportOperations({
   let skippedNoChange = 0
 
   if (executableItems.length > 0) {
-    job.report('collectingIndexImportPlan', '正在计算需要导入的游戏...', {
+    job.report('collectingIndexImportPlan', m().jobs.import.collectingPlan({ scope: args.scope }), {
       current: 0,
       total: executableItems.length
     })
@@ -129,7 +139,7 @@ export async function collectIndexImportOperations({
 
   for (const [index, planItem] of executableItems.entries()) {
     await job.checkpoint()
-    job.report('collectingIndexImportPlan', '正在计算需要导入的游戏...', {
+    job.report('collectingIndexImportPlan', m().jobs.import.collectingPlan({ scope: args.scope }), {
       current: index + 1,
       total: executableItems.length
     })
@@ -142,10 +152,10 @@ export async function collectIndexImportOperations({
 
       const localItem = planItem.localItem
       if (!localItem) {
-        throw new BangumiExtensionError('library_update_failed', '本地条目不存在。')
+        throw new BangumiExtensionError('library_update_failed', m().errors.localItemMissing)
       }
       if (!targetCollection) {
-        throw new BangumiExtensionError('bangumi_validation', '请选择目标合集。')
+        throw new BangumiExtensionError('bangumi_validation', m().errors.selectTargetCollection)
       }
 
       const previewGroup = await createIndexCollectionPatchPreviewChange(

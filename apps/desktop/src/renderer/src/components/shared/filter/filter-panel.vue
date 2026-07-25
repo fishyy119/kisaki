@@ -11,6 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { createEmptyFilter, countActiveFilters } from '@shared/filter'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Button } from '@renderer/components/ui/button'
+import { useI18n } from '@renderer/composables'
 import FilterBuilder from './filter-builder.vue'
 import type { FilterUiSpec } from './specs/types'
 
@@ -28,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const model = defineModel<FilterState>({ required: true })
+const { m } = useI18n()
 
 const open = ref(false)
 
@@ -51,7 +53,7 @@ function handleClear() {
       <div class="flex flex-col max-h-[70vh]">
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b">
-          <div class="text-sm font-medium">筛选条件</div>
+          <div class="text-sm font-medium">{{ m.filter.title }}</div>
           <Button
             type="button"
             variant="ghost"
@@ -87,13 +89,13 @@ function handleClear() {
               icon="icon-[mdi--filter-off-outline]"
               class="size-4 mr-1.5"
             />
-            清除筛选
+            {{ m.filter.clearFilters }}
           </Button>
           <span
             v-if="countActiveFilters(model) > 0"
             class="text-xs text-muted-foreground"
           >
-            {{ countActiveFilters(model) }} 个条件
+            {{ m.filter.conditionCount({ count: countActiveFilters(model) }) }}
           </span>
         </div>
       </div>

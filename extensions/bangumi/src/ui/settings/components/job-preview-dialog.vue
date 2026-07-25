@@ -11,6 +11,7 @@ import {
   DialogTitle
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiPreviewGroupDto } from '../../../shared/settings'
+import { m } from '../i18n'
 import JobPreviewGroups from './job-preview-groups.vue'
 
 interface Props {
@@ -48,7 +49,7 @@ const open = defineModel<boolean>('open', { required: true })
           type="button"
           @click="open = false"
         >
-          关闭
+          {{ m.common.close }}
         </Button>
         <slot name="footer" />
       </DialogFooter>

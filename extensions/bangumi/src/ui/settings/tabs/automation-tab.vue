@@ -3,8 +3,14 @@
 import { ref } from 'vue'
 import { Badge, Button, Icon, Spinner } from '@kisaki3/extension-ui-vue'
 import type { BangumiAutomationKind, BangumiSettingsOverview } from '../../../shared/settings'
+import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
-import { AUTOMATION_LABELS, AUTOMATION_STATUS_LABELS, AUTOMATION_STATUS_VARIANTS } from '../labels'
+import {
+  AUTOMATION_STATUS_VARIANTS,
+  getAutomationDescription,
+  getAutomationLabel,
+  getAutomationStatusLabel
+} from '../labels'
 import SettingsSection from '../components/settings-section.vue'
 
 interface Props {
@@ -17,12 +23,6 @@ const emit = defineEmits<{
   refresh: []
   error: [message: string]
 }>()
-
-const AUTOMATION_DESCRIPTIONS: Record<BangumiAutomationKind, string> = {
-  'auth-refresh': '应用启动时刷新并验证 Bangumi 凭据。',
-  'sync-changed': '应用启动后同步上次运行期积累的本地变更。',
-  'sync-full-daily': '每天凌晨执行一次游戏全量同步。'
-}
 
 const creatingKind = ref<BangumiAutomationKind | null>(null)
 
@@ -41,8 +41,8 @@ async function create(kind: BangumiAutomationKind): Promise<void> {
 
 <template>
   <SettingsSection
-    title="推荐自动化"
-    description="这里只创建 Bangumi 推荐模板；启停、触发条件和历史由主应用自动化页面负责。"
+    :title="m.ui.automation.title"
+    :description="m.ui.automation.description"
   >
     <div class="divide-y divide-border rounded-md border border-border">
       <div
@@ -52,15 +52,15 @@ async function create(kind: BangumiAutomationKind): Promise<void> {
       >
         <div class="min-w-0">
           <div class="truncate text-sm font-medium">
-            {{ AUTOMATION_LABELS[automation.kind] }}
+            {{ getAutomationLabel(automation.kind) }}
           </div>
           <div class="text-xs text-muted-foreground">
-            {{ AUTOMATION_DESCRIPTIONS[automation.kind] }}
+            {{ getAutomationDescription(automation.kind) }}
           </div>
         </div>
         <div class="flex items-center gap-2">
           <Badge :variant="AUTOMATION_STATUS_VARIANTS[automation.status]">
-            {{ AUTOMATION_STATUS_LABELS[automation.status] }}
+            {{ getAutomationStatusLabel(automation.status) }}
           </Badge>
           <Button
             variant="outline"
@@ -75,7 +75,7 @@ async function create(kind: BangumiAutomationKind): Promise<void> {
               icon="icon-[mdi--plus]"
               class="size-3.5"
             />
-            创建
+            {{ m.ui.automation.create }}
           </Button>
         </div>
       </div>

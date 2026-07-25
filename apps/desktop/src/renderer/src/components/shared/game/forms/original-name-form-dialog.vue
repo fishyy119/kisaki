@@ -23,6 +23,9 @@ import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -68,11 +71,11 @@ async function handleSubmit() {
       .set({ originalName: formData.value.originalName.trim() || null })
       .where(eq(games.id, props.gameId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -99,16 +102,16 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑原名</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editOriginalName }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <Field>
-              <FieldLabel>原名</FieldLabel>
+              <FieldLabel>{{ m.library.fields.originalName }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.originalName"
-                  placeholder="游戏原名（可留空）"
+                  :placeholder="m.library.forms.originalNamePlaceholder"
                 />
               </FieldContent>
             </Field>
@@ -120,13 +123,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

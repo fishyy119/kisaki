@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -48,6 +48,8 @@ const props = withDefaults(defineProps<Props>(), {
   defaultGameId: '',
   isSubmitting: false
 })
+
+const { m, f } = useI18n()
 
 const emit = defineEmits<{
   selectionChange: [selection: GameSearcherSelection]
@@ -182,7 +184,10 @@ async function handleSearch() {
 
     searchResults.value = result.data ?? []
   } catch (error) {
-    notify.error('搜索失败', error instanceof Error ? error.message : '未知错误')
+    notify.error(
+      m.value.library.feedback.searchFailed,
+      error instanceof Error ? error.message : m.value.library.feedback.unknownError
+    )
   } finally {
     isSearching.value = false
   }
@@ -214,7 +219,7 @@ const gameIdModel = computed({
   <FieldGroup :class="props.class">
     <!-- Profile selector -->
     <Field>
-      <FieldLabel>刮削配置</FieldLabel>
+      <FieldLabel>{{ m.library.searcher.scraperProfile }}</FieldLabel>
       <FieldContent>
         <ScraperProfileSelect
           v-model="selectedProfileId"
@@ -225,12 +230,14 @@ const gameIdModel = computed({
 
     <!-- Search section -->
     <Field>
-      <FieldLabel>搜索游戏</FieldLabel>
+      <FieldLabel>{{
+        m.library.searcher.searchLabel({ label: m.library.entities.game })
+      }}</FieldLabel>
       <FieldContent>
         <div class="flex gap-2">
           <Input
             v-model="searchQuery"
-            placeholder="输入游戏名称..."
+            :placeholder="m.library.searcher.namePlaceholder({ label: m.library.entities.game })"
             :disabled="!selectedProfileId || isSearching"
             class="flex-1"
             @keydown="handleSearchKeyDown"
@@ -251,7 +258,7 @@ const gameIdModel = computed({
               icon="icon-[mdi--magnify]"
               class="size-4"
             />
-            搜索
+            {{ m.common.search }}
           </Button>
         </div>
       </FieldContent>
@@ -267,9 +274,9 @@ const gameIdModel = computed({
         <template #header>
           <TableHeader>
             <TableRow>
-              <TableHead>名称</TableHead>
-              <TableHead>原名</TableHead>
-              <TableHead>发售日期</TableHead>
+              <TableHead>{{ m.library.searcher.columnName }}</TableHead>
+              <TableHead>{{ m.library.searcher.columnOriginalName }}</TableHead>
+              <TableHead>{{ m.library.searcher.columnReleaseDate }}</TableHead>
             </TableRow>
           </TableHeader>
         </template>
@@ -280,7 +287,7 @@ const gameIdModel = computed({
             state="empty"
             size="sm"
             icon="icon-[mdi--magnify]"
-            description="输入游戏名称开始搜索"
+            :description="m.library.searcher.startHint({ label: m.library.entities.game })"
             class="h-full"
           />
 
@@ -296,8 +303,8 @@ const gameIdModel = computed({
             state="empty"
             size="sm"
             icon="icon-[mdi--magnify-close]"
-            title="无匹配结果"
-            description="请尝试其他关键词"
+            :title="m.library.searcher.noMatchTitle"
+            :description="m.library.searcher.noMatchDescription"
             class="h-full"
           />
         </template>
@@ -315,7 +322,7 @@ const gameIdModel = computed({
               {{ result.originalName || '-' }}
             </TableCell>
             <TableCell class="text-muted-foreground">
-              {{ formatDate(result.releaseDate ?? null) }}
+              {{ result.releaseDate ? f.date(result.releaseDate) : m.common.emptyValue }}
             </TableCell>
           </TableRow>
         </TableBody>
@@ -327,8 +334,8 @@ const gameIdModel = computed({
                 colspan="3"
                 class="h-6 py-0 text-[10px] text-muted-foreground"
               >
-                共 {{ searchResults.length }} 条结果
-                <template v-if="selectedResultId"> · 已选择 1 条</template>
+                {{ m.library.searcher.resultCount({ count: searchResults.length }) }}
+                <template v-if="selectedResultId"> · {{ m.library.searcher.selectedOne }}</template>
               </TableCell>
             </TableRow>
           </TableFooter>
@@ -338,11 +345,11 @@ const gameIdModel = computed({
 
     <!-- ID input -->
     <Field>
-      <FieldLabel>游戏 ID</FieldLabel>
+      <FieldLabel>{{ m.library.searcher.idLabel({ label: m.library.entities.game }) }}</FieldLabel>
       <FieldContent>
         <Input
           v-model="gameIdModel"
-          placeholder="从上方选择或直接输入..."
+          :placeholder="m.library.searcher.idPlaceholder"
           :disabled="!selectedProfileId || props.isSubmitting"
           class="font-mono text-xs"
         />

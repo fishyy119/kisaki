@@ -8,6 +8,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { ipcManager } from '@renderer/core/ipc'
+import { useI18n } from '@renderer/composables/use-i18n'
 import ExtensionReleaseDialog from '../extension-release-dialog.vue'
 import ExtensionDiscoverPanelCard from './discover-panel-card.vue'
 import ExtensionDiscoverPanelDetailsDialog from './discover-panel-details-dialog.vue'
@@ -21,6 +22,7 @@ import type {
 } from '@shared/extension'
 
 const store = useDiscoverExtensionStore()
+const { m } = useI18n()
 
 const additionalResults = ref<ExtensionCatalogPackageInfo[]>([])
 const additionalHasMore = ref(false)
@@ -168,8 +170,12 @@ watch(detailsOpen, (open) => {
         <StateView
           state="empty"
           icon="icon-[mdi--puzzle-outline]"
-          title="未找到扩展"
-          :description="store.selectedCategory ? '该分类下暂无可用扩展' : '暂无可用扩展'"
+          :title="m.extension.discover.emptyTitle"
+          :description="
+            store.selectedCategory
+              ? m.extension.discover.emptyCategoryDescription
+              : m.extension.discover.emptyDescription
+          "
           class="h-48"
         />
 
@@ -187,7 +193,7 @@ watch(detailsOpen, (open) => {
               v-if="loading"
               class="size-4 mr-2"
             />
-            加载更多
+            {{ m.extension.discover.loadMore }}
           </Button>
         </div>
       </template>
@@ -219,7 +225,7 @@ watch(detailsOpen, (open) => {
               v-if="loading"
               class="size-4 mr-2"
             />
-            加载更多
+            {{ m.extension.discover.loadMore }}
           </Button>
         </div>
       </template>

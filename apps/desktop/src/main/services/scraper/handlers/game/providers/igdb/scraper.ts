@@ -9,7 +9,7 @@
  */
 
 import type { GameCompanyType, GameScraperSlot } from '@shared/db'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
@@ -115,7 +115,7 @@ export class IGDBProvider implements GameScraperProvider {
   // Search
   // ===========================================================================
 
-  public async search(query: string, _locale?: Locale): Promise<GameSearchResult[]> {
+  public async search(query: string, _locale?: ContentLocale): Promise<GameSearchResult[]> {
     this.ensureConfigured()
 
     const escaped = escapeApicalypseString(query.trim())
@@ -161,7 +161,10 @@ export class IGDBProvider implements GameScraperProvider {
       }))
   }
 
-  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+  public async resolve(
+    lookup: ScraperLookup,
+    locale: ContentLocale
+  ): Promise<GameResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
@@ -177,7 +180,7 @@ export class IGDBProvider implements GameScraperProvider {
 
   public async openSession(
     target: GameResolvedTarget,
-    locale: Locale
+    locale: ContentLocale
   ): Promise<GameScraperSession> {
     void locale
     this.ensureConfigured()

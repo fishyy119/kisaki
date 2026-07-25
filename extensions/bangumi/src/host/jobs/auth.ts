@@ -1,4 +1,5 @@
 import type { BangumiAuthRefreshArgs } from './args'
+import { m } from '../i18n'
 import { runBangumiJob, type BangumiJobRun, type JobRunnerDependencies } from './context'
 import type { BangumiJobSummary } from './summary'
 
@@ -7,7 +8,7 @@ export class AuthJobRunner {
 
   runAuthRefresh(args: BangumiAuthRefreshArgs, context: BangumiJobRun): Promise<BangumiJobSummary> {
     return runBangumiJob(context, this.deps.logger, async (job) => {
-      job.report('refreshingToken', '正在刷新 Bangumi 凭据...', { indeterminate: true })
+      job.report('refreshingToken', m().jobs.auth.refreshingToken, { indeterminate: true })
 
       if (args.forceRefresh) {
         await this.deps.tokenService.refreshAccessToken({
@@ -21,17 +22,21 @@ export class AuthJobRunner {
       }
 
       if (args.verifyAccount) {
-        job.report('verifyingAccount', '正在验证 Bangumi 账号...', { indeterminate: true })
+        job.report('verifyingAccount', m().jobs.auth.verifyingAccount, { indeterminate: true })
         const verification = await this.deps.accountService.verifyAccount(job.signal)
         job.increment('verified')
-        job.report('completed', `Bangumi 账号有效：${verification.account.nickname}`, {
-          current: 1,
-          total: 1
-        })
+        job.report(
+          'completed',
+          m().jobs.auth.accountValid({ nickname: verification.account.nickname }),
+          {
+            current: 1,
+            total: 1
+          }
+        )
       } else {
         const account = await this.deps.accountService.refreshAccount(job.signal)
         job.increment('accountRefreshed')
-        job.report('completed', `Bangumi 账号摘要已更新：${account.nickname}`, {
+        job.report('completed', m().jobs.auth.accountRefreshed({ nickname: account.nickname }), {
           current: 1,
           total: 1
         })

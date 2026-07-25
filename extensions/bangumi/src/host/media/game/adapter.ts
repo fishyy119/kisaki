@@ -8,8 +8,8 @@ import {
   type LibraryGameUpdatedEvent,
   type LibraryTag
 } from '@kisaki3/extension-sdk'
-import { BANGUMI_COLLECTION_LABELS_BY_SCOPE, BANGUMI_SCOPE_LABELS } from '../labels'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../scopes'
+import { m } from '../../i18n'
 import { omitUndefined } from '../../utils/object'
 import type {
   BangumiMediaDescriptor,
@@ -147,7 +147,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
 
     if (patch.status !== undefined) {
       if (!isLibraryGameStatus(patch.status)) {
-        throw new BangumiExtensionError('bangumi_validation', '无法识别本地游戏状态。')
+        throw new BangumiExtensionError('bangumi_validation', m().errors.localGameStatusUnknown)
       }
       gamePatch.status = patch.status
     }
@@ -162,7 +162,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
 
     const item = await this.getLocalItem(localId)
     if (!item) {
-      throw new BangumiExtensionError('library_update_failed', '本地游戏不存在。')
+      throw new BangumiExtensionError('library_update_failed', m().errors.localGameMissing)
     }
 
     return item
@@ -201,7 +201,7 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
   async resolveExistingCollection(collectionId: string): Promise<LocalCollectionTarget> {
     const collection = await kisaki.library.collections.get(collectionId)
     if (!collection || collection.isDynamic) {
-      throw new BangumiExtensionError('bangumi_validation', '选择的目标合集不存在。')
+      throw new BangumiExtensionError('bangumi_validation', m().errors.targetCollectionMissing)
     }
 
     return { id: collection.id, name: collection.name }
@@ -239,8 +239,6 @@ export function createGameMediaDescriptor(adapter: LocalMediaAdapter): BangumiMe
   return {
     scope: 'game',
     subjectType: BANGUMI_SUBJECT_TYPE_BY_SCOPE.game,
-    label: BANGUMI_SCOPE_LABELS.game,
-    collectionLabels: BANGUMI_COLLECTION_LABELS_BY_SCOPE.game,
     localAdapter: adapter
   }
 }
@@ -311,7 +309,7 @@ async function createStaticCollectionByName(name: string): Promise<LibraryCollec
 function normalizeCollectionName(name: string): string {
   const normalized = name.trim()
   if (!normalized) {
-    throw new BangumiExtensionError('bangumi_validation', 'Bangumi 目录标题为空，无法创建合集。')
+    throw new BangumiExtensionError('bangumi_validation', m().errors.indexTitleEmpty)
   }
   return normalized
 }

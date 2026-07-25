@@ -1,5 +1,5 @@
 import type {
-  Locale,
+  ContentLocale,
   ScrapedCharacterPersonFact,
   ScrapedGameCharacterFact,
   ScrapedTag
@@ -31,7 +31,7 @@ interface BuildGameCharactersOptions {
   getSubjectCharacters: () => Promise<BangumiRelatedCharacter[]>
   getCharacterDetails: () => Promise<Map<number, BangumiCharacterDetail>>
   getCharacterPersons: () => Promise<Map<number, BangumiCharacterPerson[]>>
-  locale?: Locale | undefined
+  locale?: ContentLocale | undefined
 }
 
 export async function buildGameCharacters({
@@ -119,7 +119,7 @@ function mapGameCharacter({
   relatedCharacter: BangumiRelatedCharacter
   detail: BangumiCharacterDetail | undefined
   characterPersons: BangumiCharacterPerson[] | undefined
-  locale?: Locale | undefined
+  locale?: ContentLocale | undefined
 }): ScrapedGameCharacterFact {
   const { name, originalName } = resolveLocalizedEntityName(
     detail?.name || relatedCharacter.name,

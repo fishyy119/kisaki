@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -26,6 +26,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   enabled: true
 })
+
+const { m } = useI18n()
 
 const emit = defineEmits<{
   openEditMetadataDialog: []
@@ -70,9 +72,13 @@ async function handleToggleNsfw() {
       .update(collections)
       .set({ isNsfw: !collection.value.isNsfw })
       .where(eq(collections.id, props.collectionId))
-    notify.success(collection.value.isNsfw ? '已取消 NSFW 标记' : '已标记为 NSFW')
+    notify.success(
+      collection.value.isNsfw
+        ? m.value.library.feedback.nsfwCleared
+        : m.value.library.feedback.nsfwMarked
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 </script>
@@ -89,7 +95,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--pencil-outline]"
         class="size-4"
       />
-      编辑信息
+      {{ m.library.menu.editInfo }}
     </component>
 
     <component
@@ -100,7 +106,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--source-merge]"
         class="size-4"
       />
-      合并重复实体
+      {{ m.library.menu.mergeDuplicates }}
     </component>
 
     <!-- Static: Edit Entities -->
@@ -113,7 +119,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--format-list-numbered]"
         class="size-4"
       />
-      编辑内容
+      {{ m.library.menu.editContent }}
     </component>
 
     <!-- Dynamic: Edit Filter -->
@@ -126,7 +132,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--filter-outline]"
         class="size-4"
       />
-      编辑筛选
+      {{ m.library.menu.editFilter }}
     </component>
 
     <!-- Dynamic: Convert to Static -->
@@ -139,7 +145,7 @@ async function handleToggleNsfw() {
           icon="icon-[mdi--subdirectory-arrow-left]"
           class="size-4"
         />
-        转为静态
+        {{ m.library.menu.convertToStatic }}
       </component>
     </template>
 
@@ -176,7 +182,7 @@ async function handleToggleNsfw() {
         icon="icon-[mdi--delete-outline]"
         class="size-4"
       />
-      删除
+      {{ m.common.delete }}
     </component>
   </template>
 </template>

@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 
 interface Props {
@@ -27,26 +28,32 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+
+const { m } = useI18n()
 </script>
 
 <template>
   <AlertDialog v-model:open="open">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>撤销签名信任？</AlertDialogTitle>
+        <AlertDialogTitle>{{ m.extension.signer.removeDialog.title }}</AlertDialogTitle>
       </AlertDialogHeader>
 
       <AlertDialogDescription>
-        确定要撤销「{{ props.signer.extensionId }}」的签名信任吗？新版本使用该指纹时将需要重新确认。
+        {{ m.extension.signer.removeDialog.description({ id: props.signer.extensionId }) }}
       </AlertDialogDescription>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="props.removing">取消</AlertDialogCancel>
+        <AlertDialogCancel :disabled="props.removing">{{ m.common.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="props.removing"
           @click.prevent="emit('confirm')"
         >
-          {{ props.removing ? '撤销中' : '撤销' }}
+          {{
+            props.removing
+              ? m.extension.signer.removeDialog.revoking
+              : m.extension.signer.removeDialog.revoke
+          }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

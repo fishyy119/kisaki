@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
+import { useI18n } from '@renderer/composables'
 import type { EntityMergeSummary } from './types'
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { m } = useI18n()
 </script>
 
 <template>
@@ -34,7 +36,7 @@ const props = defineProps<Props>()
           {{ props.summary?.name ?? '...' }}
         </div>
         <span class="shrink-0 rounded-sm bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-          保留
+          {{ m.merge.keep }}
         </span>
       </div>
       <div class="truncate text-xs text-muted-foreground">

@@ -11,6 +11,7 @@ import {
   Spinner
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
+import { m, uiLocale } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
 import SettingsSection from '../components/settings-section.vue'
 
@@ -36,14 +37,16 @@ const accountProfileUrl = computed(() =>
     : null
 )
 const summary = computed(() =>
-  account.value.loggedIn && account.value.nickname ? account.value.nickname : '未登录'
+  account.value.loggedIn && account.value.nickname
+    ? account.value.nickname
+    : m.value.ui.account.notLoggedIn
 )
 const expiresAtLabel = computed(() => {
   if (!account.value.hasToken || account.value.expiresAt === null) {
     return null
   }
 
-  return new Date(account.value.expiresAt).toLocaleString('zh-CN', { hour12: false })
+  return new Date(account.value.expiresAt).toLocaleString(uiLocale.value, { hour12: false })
 })
 
 async function runAction(action: string, run: () => Promise<void>): Promise<void> {
@@ -95,14 +98,18 @@ function openAccountProfile(): void {
 <template>
   <div class="space-y-4">
     <SettingsSection
-      title="Bangumi 账号"
+      :title="m.ui.account.sectionTitle"
       surface="rows"
     >
       <FieldGroup>
         <Field
           orientation="horizontal"
-          label="登录状态"
-          :description="verifiedNickname ? `账号验证成功：${verifiedNickname}` : undefined"
+          :label="m.ui.account.loginStatus"
+          :description="
+            verifiedNickname
+              ? m.ui.account.verifiedDescription({ nickname: verifiedNickname })
+              : undefined
+          "
         >
           <FieldContent class="flex-row items-center justify-end">
             <span
@@ -135,23 +142,23 @@ function openAccountProfile(): void {
 
         <Field
           orientation="horizontal"
-          label="访问令牌"
+          :label="m.ui.account.accessToken"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Badge :variant="account.hasToken ? 'success' : 'secondary'">
-              {{ account.hasToken ? '已保存' : '未保存' }}
+              {{ account.hasToken ? m.ui.account.tokenSaved : m.ui.account.tokenMissing }}
             </Badge>
             <Badge
               v-if="account.hasRefreshToken"
               variant="secondary"
             >
-              可刷新
+              {{ m.ui.account.refreshable }}
             </Badge>
             <Badge
               v-if="account.expired"
               variant="warning"
             >
-              已过期
+              {{ m.ui.account.expired }}
             </Badge>
           </FieldContent>
         </Field>
@@ -159,7 +166,7 @@ function openAccountProfile(): void {
         <Field
           v-if="expiresAtLabel"
           orientation="horizontal"
-          label="凭据有效期"
+          :label="m.ui.account.expiresAt"
         >
           <FieldContent class="flex-row items-center">
             <span class="text-sm">{{ expiresAtLabel }}</span>
@@ -168,7 +175,7 @@ function openAccountProfile(): void {
       </FieldGroup>
     </SettingsSection>
 
-    <SettingsSection title="账号操作">
+    <SettingsSection :title="m.ui.account.actionsTitle">
       <div class="flex flex-wrap items-center gap-2">
         <Button
           v-if="!account.loggedIn"
@@ -183,7 +190,7 @@ function openAccountProfile(): void {
             icon="icon-[mdi--login]"
             class="size-3.5"
           />
-          登录 Bangumi
+          {{ m.ui.account.login }}
         </Button>
         <Button
           variant="outline"
@@ -198,7 +205,7 @@ function openAccountProfile(): void {
             icon="icon-[mdi--account-check-outline]"
             class="size-3.5"
           />
-          验证账号
+          {{ m.ui.account.verify }}
         </Button>
         <Button
           variant="outline"
@@ -217,7 +224,7 @@ function openAccountProfile(): void {
             icon="icon-[mdi--refresh]"
             class="size-3.5"
           />
-          刷新凭据
+          {{ m.ui.account.refreshCredentials }}
         </Button>
         <Button
           v-if="account.loggedIn"
@@ -233,7 +240,7 @@ function openAccountProfile(): void {
             icon="icon-[mdi--logout]"
             class="size-3.5"
           />
-          退出登录
+          {{ m.ui.account.logout }}
         </Button>
       </div>
     </SettingsSection>

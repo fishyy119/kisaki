@@ -21,6 +21,9 @@ import { Icon } from '@renderer/components/ui/icon'
 import { StateView } from '@renderer/components/ui/state-view'
 import { MarkdownContent } from '@renderer/components/ui/markdown'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   noteId: string
@@ -64,15 +67,17 @@ useEvent('db.deleted', ({ table, id }) => {
 
       <template v-else-if="!note">
         <DialogHeader>
-          <DialogTitle>笔记</DialogTitle>
+          <DialogTitle>{{ m.game.notes.title }}</DialogTitle>
         </DialogHeader>
-        <DialogBody class="text-sm text-muted-foreground py-10 text-center">未找到笔记</DialogBody>
+        <DialogBody class="text-sm text-muted-foreground py-10 text-center">{{
+          m.game.notes.notFound
+        }}</DialogBody>
         <DialogFooter>
           <Button
             variant="outline"
             @click="open = false"
           >
-            关闭
+            {{ m.common.close }}
           </Button>
         </DialogFooter>
       </template>
@@ -108,9 +113,9 @@ useEvent('db.deleted', ({ table, id }) => {
             variant="outline"
             @click="open = false"
           >
-            关闭
+            {{ m.common.close }}
           </Button>
-          <Button @click="emit('edit')">编辑</Button>
+          <Button @click="emit('edit')">{{ m.common.edit }}</Button>
         </DialogFooter>
       </template>
     </DialogContent>

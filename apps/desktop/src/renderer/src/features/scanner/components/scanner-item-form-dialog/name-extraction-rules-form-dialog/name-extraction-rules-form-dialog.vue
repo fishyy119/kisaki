@@ -26,6 +26,7 @@ import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { Switch } from '@renderer/components/ui/switch'
 import ScannerNameExtractionRulesItemFormDialog from './name-extraction-rule-item-form-dialog.vue'
 import ScannerNameExtractionPresetDialog from './name-extraction-rule-presets-dialog.vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 // =============================================================================
 // Props & Model & Emits
@@ -43,6 +44,8 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -157,14 +160,14 @@ function handleSave() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>名称提取规则</DialogTitle>
+        <DialogTitle>{{ m.scanner.rules.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
         <p
           v-if="localRules.length === 0"
           class="text-sm text-muted-foreground text-center py-8"
         >
-          暂无规则，点击下方按钮添加
+          {{ m.scanner.rules.empty }}
         </p>
         <div
           v-else
@@ -181,7 +184,7 @@ function handleSave() {
               />
             </template>
             <div class="text-sm font-medium truncate">
-              {{ rule.description || '（未命名规则）' }}
+              {{ rule.description || m.scanner.rules.unnamedRule }}
             </div>
             <div class="text-xs text-muted-foreground font-mono truncate">
               {{ rule.pattern }}
@@ -211,7 +214,7 @@ function handleSave() {
               icon="icon-[mdi--plus]"
               class="size-4 mr-1"
             />
-            添加规则
+            {{ m.scanner.rules.addRule }}
           </Button>
           <Button
             type="button"
@@ -222,7 +225,7 @@ function handleSave() {
               icon="icon-[mdi--format-list-bulleted]"
               class="size-4 mr-1"
             />
-            选择预设
+            {{ m.scanner.rules.selectPresets }}
           </Button>
         </div>
         <div class="flex gap-2">
@@ -231,13 +234,13 @@ function handleSave() {
             variant="outline"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
           <Button
             type="button"
             @click="handleSave"
           >
-            保存
+            {{ m.common.save }}
           </Button>
         </div>
       </DialogFooter>

@@ -8,6 +8,7 @@ import {
   VirtualizedCombobox,
   type VirtualizedComboboxEntity
 } from '@renderer/components/ui/virtualized-combobox'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { CommandListItem } from '@shared/command'
 
 interface Props {
@@ -19,12 +20,21 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '搜索命令...',
-  emptyText: '选择命令...',
+  placeholder: undefined,
+  emptyText: undefined,
   disabled: false
 })
 
 const modelValue = defineModel<string>({ default: '' })
+
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () => props.placeholder ?? m.value.automation.combobox.searchPlaceholder
+)
+const emptyTextValue = computed(
+  () => props.emptyText ?? m.value.automation.combobox.selectPlaceholder
+)
 
 const commandEntities = computed<VirtualizedComboboxEntity[]>(() => {
   const entities = props.commands.map((command) => ({
@@ -38,7 +48,7 @@ const commandEntities = computed<VirtualizedComboboxEntity[]>(() => {
       {
         id: modelValue.value,
         name: modelValue.value,
-        subText: '命令当前不可用'
+        subText: m.value.automation.combobox.unavailable
       },
       ...entities
     ]
@@ -59,8 +69,8 @@ const selectedIds = computed({
   <VirtualizedCombobox
     v-model:selected-ids="selectedIds"
     :entities="commandEntities"
-    :placeholder="props.placeholder"
-    :empty-text="props.emptyText"
+    :placeholder="placeholderText"
+    :empty-text="emptyTextValue"
     :disabled="props.disabled"
     :class="props.class"
     :max-height="280"

@@ -29,6 +29,7 @@ import type {
   BangumiPreviewGroupDto,
   BangumiSettingsOverview
 } from '../../../shared/settings'
+import { m } from '../i18n'
 import { host, onHostPreviewProgress, toErrorMessage } from '../rpc'
 import JobPreviewDialog from '../components/job-preview-dialog.vue'
 
@@ -53,19 +54,20 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const COLLECTION_TYPES: readonly { value: number; label: string }[] = [
-  { value: 1, label: '想玩' },
-  { value: 2, label: '玩过' },
-  { value: 3, label: '在玩' },
-  { value: 4, label: '搁置' },
-  { value: 5, label: '抛弃' }
-]
+const COLLECTION_TYPE_VALUES = [1, 2, 3, 4, 5] as const
 
-const DATA_ITEMS: readonly { value: BangumiImportDataItem; label: string }[] = [
-  { value: 'status', label: '游玩状态' },
-  { value: 'score', label: '评分' },
-  { value: 'tags', label: '标签' }
-]
+const collectionTypes = computed<readonly { value: number; label: string }[]>(() =>
+  COLLECTION_TYPE_VALUES.map((value) => ({
+    value,
+    label: m.value.media.collections.game[value]
+  }))
+)
+
+const dataItems = computed<readonly { value: BangumiImportDataItem; label: string }[]>(() => [
+  { value: 'status', label: m.value.ui.importCollections.itemStatus },
+  { value: 'score', label: m.value.ui.importCollections.itemScore },
+  { value: 'tags', label: m.value.ui.importCollections.itemTags }
+])
 
 const defaultProfileId = computed(() => props.overview.profiles[0]?.value ?? '')
 const defaultCollectionId = computed(() => props.overview.collections[0]?.value ?? '')
@@ -109,7 +111,7 @@ watch(
 
 function initializeForm(): void {
   collectionsForm.profileId = defaultProfileId.value
-  collectionsForm.collectionTypes = COLLECTION_TYPES.map((type) => type.value)
+  collectionsForm.collectionTypes = [...COLLECTION_TYPE_VALUES]
   collectionsForm.dataItems = []
   collectionsForm.patchExisting = false
   collectionsForm.useTargetCollection = false
@@ -174,17 +176,17 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>导入我的收藏</DialogTitle>
+        <DialogTitle>{{ m.ui.importCollections.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[64vh] overflow-y-auto">
         <FieldGroup class="gap-4">
           <Field
             orientation="horizontal"
-            label="刮削配置"
+            :label="m.ui.importCollections.profile"
           >
             <Select v-model="collectionsForm.profileId">
               <SelectTrigger class="min-w-44">
-                <SelectValue placeholder="选择刮削配置" />
+                <SelectValue :placeholder="m.ui.importCollections.profilePlaceholder" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
@@ -200,11 +202,11 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
 
           <Field
             orientation="horizontal"
-            label="收藏类型"
+            :label="m.ui.importCollections.collectionTypes"
           >
             <FieldContent class="grid grid-cols-5 gap-x-3 gap-y-2">
               <Label
-                v-for="type in COLLECTION_TYPES"
+                v-for="type in collectionTypes"
                 :key="type.value"
                 class="font-normal"
               >
@@ -226,11 +228,11 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
 
           <Field
             orientation="horizontal"
-            label="导入用户态字段"
+            :label="m.ui.importCollections.dataItems"
           >
             <FieldContent class="flex-row items-center gap-3">
               <Label
-                v-for="item in DATA_ITEMS"
+                v-for="item in dataItems"
                 :key="item.value"
                 class="font-normal"
               >
@@ -252,14 +254,14 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
 
           <Field
             orientation="horizontal"
-            label="更新已有条目"
+            :label="m.ui.importCollections.patchExisting"
           >
             <Switch v-model="collectionsForm.patchExisting" />
           </Field>
 
           <Field
             orientation="horizontal"
-            label="加入合集"
+            :label="m.ui.importCollections.targetCollection"
           >
             <FieldContent class="flex-row items-center gap-2">
               <Switch v-model="collectionsForm.useTargetCollection" />
@@ -268,7 +270,7 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
                 v-model="collectionsForm.targetCollectionId"
               >
                 <SelectTrigger class="min-w-44">
-                  <SelectValue placeholder="选择合集" />
+                  <SelectValue :placeholder="m.ui.importCollections.collectionPlaceholder" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
@@ -305,7 +307,7 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
             icon="icon-[mdi--eye-outline]"
             class="size-3.5"
           />
-          预览
+          {{ m.common.preview }}
         </Button>
         <Button
           size="sm"
@@ -319,7 +321,7 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
             icon="icon-[mdi--play]"
             class="size-3.5"
           />
-          开始导入
+          {{ m.ui.importCollections.start }}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -328,8 +330,8 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
   <JobPreviewDialog
     v-if="preview"
     v-model:open="previewOpen"
-    title="导入我的收藏预览"
-    description="确认将创建、更新或跳过的条目。"
+    :title="m.ui.importCollections.previewTitle"
+    :description="m.ui.importCollections.previewDescription"
     :groups="preview"
     @error="(message) => emit('error', message)"
   >
@@ -346,7 +348,7 @@ function snapshotArgs(): BangumiImportCollectionsFormArgs {
           icon="icon-[mdi--play]"
           class="size-3.5"
         />
-        开始导入
+        {{ m.ui.importCollections.start }}
       </Button>
     </template>
   </JobPreviewDialog>

@@ -1,5 +1,6 @@
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -37,7 +38,8 @@ export class GameUpdateHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly persistHandlers: IngestPersistHandlers,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startUpdateFromScraper(
@@ -48,7 +50,7 @@ export class GameUpdateHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.game.update',
-      title: '更新游戏元数据',
+      title: this.i18nService.messages.ingest.update.title({ entity: 'game' }),
       description: request.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -57,7 +59,7 @@ export class GameUpdateHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '更新游戏元数据',
+          title: this.i18nService.messages.ingest.update.title({ entity: 'game' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -85,7 +87,7 @@ export class GameUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      label: '正在准备更新游戏元数据'
+      label: this.i18nService.messages.ingest.update.preparing({ entity: 'game' })
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, GAME_UPDATE_SURFACE_KEYS)
@@ -99,13 +101,13 @@ export class GameUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取游戏元数据'
+      label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'game' })
     })
     const bundle = await this.scraperService.game.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      label: '正在生成游戏更新计划'
+      label: this.i18nService.messages.ingest.update.planning({ entity: 'game' })
     })
     const incoming = buildGameIncoming(bundle, lookup)
     const relationGraph =
@@ -126,7 +128,7 @@ export class GameUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入游戏元数据'
+      label: this.i18nService.messages.ingest.update.writing({ entity: 'game' })
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyGamePlan(tx, request.rootId, plan, this.persistHandlers)
@@ -135,7 +137,7 @@ export class GameUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        label: '正在保存游戏媒体资源'
+        label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'game' })
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
@@ -171,8 +173,8 @@ export class GameUpdateHandler {
       })
       run.context.throwIfCancelled()
       run.complete({
-        title: '游戏元数据更新完成',
-        summary: '游戏元数据已写入资料库。',
+        title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'game' }),
+        summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'game' }),
         output: {
           gameId: request.rootId,
           ...result
@@ -185,7 +187,9 @@ export class GameUpdateHandler {
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
-        run.cancel({ summary: '更新游戏元数据已取消。' })
+        run.cancel({
+          summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'game' })
+        })
         return
       }
 

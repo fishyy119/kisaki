@@ -44,6 +44,5 @@ const heatmapData = computed<HeatmapDataPoint[]>(() => {
     v-if="range"
     :range="range"
     :data="heatmapData"
-    :legend-labels="{ less: '少', more: '多' }"
   />
 </template>

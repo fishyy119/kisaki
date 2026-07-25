@@ -15,6 +15,7 @@ import { promises as fs } from 'node:fs'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
 import type { EventService } from '@main/services/event'
+import type { I18nService } from '@main/services/i18n'
 import type { IngestService } from '@main/services/ingest'
 import type { IpcService } from '@main/services/ipc'
 import type { TaskRunService } from '@main/services/task-run'
@@ -154,12 +155,14 @@ export class GameScannerHandler {
     ipcService: IpcService,
     eventService: EventService,
     private readonly ingestService: IngestService,
-    taskRunService: TaskRunService
+    taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {
     this.runs = new ScannerRunCoordinator<Scanner>({
       ipc: ipcService,
       taskRun: taskRunService,
       eventService,
+      i18n: i18nService,
       loadScanner: async (scannerId) => this.loadGameScanner(scannerId),
       runScan: async (scanner, session) => this.runScannerScan(scanner, session)
     })
@@ -350,7 +353,7 @@ export class GameScannerHandler {
       value5: profile?.name ?? 'none'
     })
 
-    session.reportPhase('discovering', '正在扫描目录', true)
+    session.reportPhase('discovering', this.i18nService.messages.scanner.run.discovering, true)
     await session.checkpoint()
 
     const entities = await this.discovery.scanForEntities(scanner.path, {
@@ -365,7 +368,7 @@ export class GameScannerHandler {
       scannerEntityDepth: scanner.entityDepth
     })
 
-    session.reportPhase('processing', '正在处理扫描结果')
+    session.reportPhase('processing', this.i18nService.messages.scanner.run.processing)
     session.setTotal(entities.length)
     await session.processItemsWithConcurrency(entities, scannerParallelCount, async (entity) => {
       const entityResult = await this.processEntity(entity, {
@@ -418,7 +421,7 @@ export class GameScannerHandler {
             kind: 'failed',
             errors: [
               createError('scraper-unavailable', {
-                reason: '刮削配置不可用，当前模式要求刮削，未添加。'
+                reason: this.i18nService.messages.scanner.run.reasons.scrapeUnavailableRequired
               })
             ]
           }
@@ -445,8 +448,8 @@ export class GameScannerHandler {
             errors: [
               createError(getScraperProblemType(error), {
                 reason: metadataMissing
-                  ? '未找到可用元数据，当前模式要求刮削，未添加。'
-                  : '刮削失败且当前模式要求刮削，未添加。'
+                  ? this.i18nService.messages.scanner.run.reasons.noMetadataRequired
+                  : this.i18nService.messages.scanner.run.reasons.scrapeFailedRequired
               })
             ]
           }
@@ -459,7 +462,7 @@ export class GameScannerHandler {
             result,
             warnings: [
               createWarning('scraper-unavailable', {
-                reason: '刮削配置不可用，已使用目录名直接添加。'
+                reason: this.i18nService.messages.scanner.run.reasons.scrapeUnavailableFallback
               })
             ]
           }
@@ -488,8 +491,8 @@ export class GameScannerHandler {
             warnings: [
               createWarning(getScraperProblemType(error), {
                 reason: metadataMissing
-                  ? '未找到可用元数据，已使用目录名直接添加。'
-                  : '刮削失败，已使用目录名直接添加。'
+                  ? this.i18nService.messages.scanner.run.reasons.noMetadataFallback
+                  : this.i18nService.messages.scanner.run.reasons.scrapeFailedFallback
               })
             ]
           }
@@ -538,7 +541,7 @@ export class GameScannerHandler {
           kind: 'failed',
           errors: [
             createError('path-unavailable', {
-              reason: `路径不可访问，未添加：${message}`
+              reason: this.i18nService.messages.scanner.run.reasons.pathInaccessible({ message })
             })
           ]
         }
@@ -551,7 +554,7 @@ export class GameScannerHandler {
           kind: 'failed',
           errors: [
             createError('unsupported-entry', {
-              reason: '路径不是可扫描目录，未添加。'
+              reason: this.i18nService.messages.scanner.run.reasons.notScannableDirectory
             })
           ]
         }
@@ -628,7 +631,7 @@ export class GameScannerHandler {
         existingGameId: addResult.gameId,
         errors: [
           createError('duplicate-external-id', {
-            reason: '外部 ID 已关联到现有游戏，当前路径未添加。'
+            reason: this.i18nService.messages.scanner.run.reasons.externalIdLinked
           })
         ]
       }

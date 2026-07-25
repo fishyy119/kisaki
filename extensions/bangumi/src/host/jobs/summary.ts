@@ -1,6 +1,7 @@
 import type { JsonObject } from '@kisaki3/extension-sdk'
 import type { BangumiJobPreviewGroup } from '../../shared/settings'
 import { BangumiExtensionError, type BangumiErrorCode } from '../utils/errors'
+import { m } from '../i18n'
 
 export interface BangumiJobError extends JsonObject {
   scope: string | null
@@ -64,7 +65,7 @@ export function toDisplayError(error: unknown): {
     return { code: 'bangumi_error', message: error.message.trim() }
   }
 
-  return { code: 'bangumi_error', message: 'Bangumi job 执行失败。' }
+  return { code: 'bangumi_error', message: m().errors.jobFailed }
 }
 
 export function isCancellationError(error: unknown): boolean {
@@ -92,7 +93,7 @@ function normalizeJobError(
     subjectId: error.subjectId || null,
     localId: error.localId || null,
     code: error.code || 'bangumi_error',
-    message: error.message || 'Bangumi job 执行失败。'
+    message: error.message || m().errors.jobFailed
   }
 }
 
@@ -130,5 +131,5 @@ function toErrorShape(error: unknown): { code: string; message: string } {
     return { code: 'bangumi_error', message: error.message.trim() }
   }
 
-  return { code: 'bangumi_error', message: 'Bangumi job 执行失败。' }
+  return { code: 'bangumi_error', message: m().errors.jobFailed }
 }

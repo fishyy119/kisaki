@@ -11,6 +11,9 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
 import { useLibraryExplorerStore } from '../../../stores'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const store = useLibraryExplorerStore()
 const { search } = storeToRefs(store)
@@ -34,7 +37,7 @@ const searchModel = computed({
     />
     <Input
       v-model="searchModel"
-      placeholder="搜索..."
+      :placeholder="m.library.explorer.searchPlaceholder"
       class="pl-8 h-7 text-xs bg-muted/50"
     />
     <Button

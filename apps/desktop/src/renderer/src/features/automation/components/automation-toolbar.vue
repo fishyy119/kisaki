@@ -16,6 +16,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type {
   AutomationSortDirection,
   AutomationSortField,
@@ -35,30 +36,50 @@ const sourceFilter = defineModel<AutomationSourceFilter>('sourceFilter', { requi
 const sortField = defineModel<AutomationSortField>('sortField', { required: true })
 const sortDirection = defineModel<AutomationSortDirection>('sortDirection', { required: true })
 
-const statusOptions: {
-  value: AutomationStatusFilter
-  label: string
-  icon: string
-}[] = [
-  { value: 'all', label: '全部', icon: 'icon-[mdi--filter-outline]' },
-  { value: 'enabled', label: '已启用', icon: 'icon-[mdi--check-circle-outline]' },
-  { value: 'disabled', label: '已禁用', icon: 'icon-[mdi--pause-circle-outline]' },
-  { value: 'running', label: '运行中', icon: 'icon-[mdi--progress-clock]' },
-  { value: 'failed', label: '失败', icon: 'icon-[mdi--alert-circle-outline]' }
-]
+const { m } = useI18n()
 
-const sortOptions: { value: AutomationSortField; label: string }[] = [
-  { value: 'createdAt', label: '创建时间' },
-  { value: 'name', label: '名称' },
-  { value: 'lastRunAt', label: '最近运行' },
-  { value: 'nextRunAt', label: '下次运行' }
-]
+const statusOptions = computed<
+  {
+    value: AutomationStatusFilter
+    label: string
+    icon: string
+  }[]
+>(() => [
+  { value: 'all', label: m.value.automation.toolbar.filterAll, icon: 'icon-[mdi--filter-outline]' },
+  {
+    value: 'enabled',
+    label: m.value.automation.toolbar.filterEnabled,
+    icon: 'icon-[mdi--check-circle-outline]'
+  },
+  {
+    value: 'disabled',
+    label: m.value.automation.toolbar.filterDisabled,
+    icon: 'icon-[mdi--pause-circle-outline]'
+  },
+  {
+    value: 'running',
+    label: m.value.automation.toolbar.filterRunning,
+    icon: 'icon-[mdi--progress-clock]'
+  },
+  {
+    value: 'failed',
+    label: m.value.automation.toolbar.filterFailed,
+    icon: 'icon-[mdi--alert-circle-outline]'
+  }
+])
 
-const sourceOptions: { value: AutomationSourceFilter; label: string }[] = [
-  { value: 'all', label: '全部来源' },
-  { value: 'app', label: '应用' },
-  { value: 'extension', label: '扩展' }
-]
+const sortOptions = computed<{ value: AutomationSortField; label: string }[]>(() => [
+  { value: 'createdAt', label: m.value.automation.toolbar.sortCreatedAt },
+  { value: 'name', label: m.value.automation.toolbar.sortName },
+  { value: 'lastRunAt', label: m.value.automation.toolbar.sortLastRunAt },
+  { value: 'nextRunAt', label: m.value.automation.toolbar.sortNextRunAt }
+])
+
+const sourceOptions = computed<{ value: AutomationSourceFilter; label: string }[]>(() => [
+  { value: 'all', label: m.value.automation.toolbar.sourceAll },
+  { value: 'app', label: m.value.automation.toolbar.sourceApp },
+  { value: 'extension', label: m.value.automation.toolbar.sourceExtension }
+])
 
 const hasSearch = computed(() => searchQuery.value.trim().length > 0)
 
@@ -84,7 +105,7 @@ function handleToggleSortDirection() {
         <InputGroupInput
           v-model="searchQuery"
           class="text-xs"
-          placeholder="搜索自动化..."
+          :placeholder="m.automation.toolbar.searchPlaceholder"
         />
         <InputGroupAddon
           v-if="hasSearch"
@@ -99,7 +120,9 @@ function handleToggleSortDirection() {
         </InputGroupAddon>
       </InputGroup>
 
-      <span class="shrink-0 text-xs text-muted-foreground">{{ props.filteredCount }} 项</span>
+      <span class="shrink-0 text-xs text-muted-foreground">
+        {{ m.common.itemCount({ count: props.filteredCount }) }}
+      </span>
 
       <div class="flex-1" />
 
@@ -181,7 +204,11 @@ function handleToggleSortDirection() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {{ sortDirection === 'asc' ? '升序' : '降序' }}
+            {{
+              sortDirection === 'asc'
+                ? m.automation.toolbar.ascending
+                : m.automation.toolbar.descending
+            }}
           </TooltipContent>
         </Tooltip>
       </ButtonGroup>

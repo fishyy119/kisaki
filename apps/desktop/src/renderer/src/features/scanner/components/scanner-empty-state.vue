@@ -11,20 +11,23 @@ import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { StateView } from '@renderer/components/ui/state-view'
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 // =============================================================================
 // State
 // =============================================================================
 
 const isCreateDialogOpen = ref(false)
+
+const { m } = useI18n()
 </script>
 
 <template>
   <StateView
     state="empty"
     icon="icon-[mdi--folder-search-outline]"
-    title="暂无扫描器"
-    description="添加扫描器来自动发现并导入你的媒体文件"
+    :title="m.scanner.emptyTitle"
+    :description="m.scanner.emptyDescription"
     class="h-full"
   >
     <template #actions>
@@ -33,7 +36,7 @@ const isCreateDialogOpen = ref(false)
           icon="icon-[mdi--folder-plus-outline]"
           class="size-4"
         />
-        添加扫描器
+        {{ m.scanner.addScanner }}
       </Button>
     </template>
   </StateView>

@@ -6,7 +6,7 @@ import {
   type ContentEntityType,
   type MediaType
 } from '../../common'
-import { APP_LOCALES, LOCALES, type AppLocale, type Locale } from '../../locale'
+import { CONTENT_LOCALES, UI_LOCALES, type ContentLocale, type UiLocale } from '../../i18n'
 import {
   SCANNER_INGEST_MODE_VALUES,
   SCANNER_PARALLEL_COUNT_DEFAULT,
@@ -124,8 +124,8 @@ const CUP_SIZE_VALUES = [
 export const cupSize = createNullableEnumType<CupSize>(CUP_SIZE_VALUES, 'cupSize')
 
 export const mediaType = createEnumType<MediaType>(MEDIA_TYPES, 'game', 'mediaType')
-export const locale = createNullableEnumType<Locale>(LOCALES, 'locale')
-export const appLocale = createNullableEnumType<AppLocale>(APP_LOCALES, 'appLocale')
+export const contentLocale = createNullableEnumType<ContentLocale>(CONTENT_LOCALES, 'contentLocale')
+export const uiLocale = createNullableEnumType<UiLocale>(UI_LOCALES, 'uiLocale')
 
 const MAIN_WINDOW_CLOSE_ACTION_VALUES = ['exit', 'tray'] as const
 export const mainWindowCloseAction = createEnumType<MainWindowCloseAction>(

@@ -1,6 +1,6 @@
 <!-- Full sync flow: configure one run, preview remote changes, then start the job. -->
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import {
   Button,
   Checkbox,
@@ -25,6 +25,7 @@ import type {
   BangumiSyncDataItem
 } from '../../../shared/settings'
 import { settingsForm } from '../form'
+import { m } from '../i18n'
 import { host, onHostPreviewProgress, toErrorMessage } from '../rpc'
 import JobPreviewDialog from '../components/job-preview-dialog.vue'
 
@@ -47,10 +48,10 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const FULL_SYNC_ITEMS: readonly { value: BangumiSyncDataItem; label: string }[] = [
-  { value: 'status', label: '游玩状态' },
-  { value: 'score', label: '评分' }
-]
+const fullSyncItems = computed<readonly { value: BangumiSyncDataItem; label: string }[]>(() => [
+  { value: 'status', label: m.value.ui.fullSync.itemStatus },
+  { value: 'score', label: m.value.ui.fullSync.itemScore }
+])
 
 const DEFAULT_ITEMS: readonly BangumiSyncDataItem[] = ['status', 'score']
 
@@ -156,17 +157,17 @@ function snapshotArgs(): FullSyncForm {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>全量同步</DialogTitle>
+        <DialogTitle>{{ m.ui.fullSync.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[64vh] overflow-y-auto">
         <FieldGroup class="gap-4">
           <Field
             orientation="horizontal"
-            label="同步数据"
+            :label="m.ui.fullSync.syncData"
           >
             <FieldContent class="flex-row items-center gap-3">
               <Label
-                v-for="item in FULL_SYNC_ITEMS"
+                v-for="item in fullSyncItems"
                 :key="item.value"
                 class="font-normal"
               >
@@ -183,15 +184,15 @@ function snapshotArgs(): FullSyncForm {
 
           <Field
             orientation="horizontal"
-            label="更新已有收藏"
-            description="关闭时只为远端缺失的条目创建 Bangumi 收藏。"
+            :label="m.ui.fullSync.updateExisting"
+            :description="m.ui.fullSync.updateExistingDescription"
           >
             <Switch v-model="fullSyncForm.updateExisting" />
           </Field>
 
           <Field
             orientation="horizontal"
-            label="允许删除远端评分"
+            :label="m.ui.fullSync.clearRemoteScore"
           >
             <Switch
               v-model="fullSyncForm.clearRemoteScoreWhenEmpty"
@@ -201,7 +202,7 @@ function snapshotArgs(): FullSyncForm {
 
           <Field
             orientation="horizontal"
-            label="批次大小"
+            :label="m.ui.fullSync.batchSize"
           >
             <Input
               v-model.number="fullSyncForm.batchSize"
@@ -234,7 +235,7 @@ function snapshotArgs(): FullSyncForm {
             icon="icon-[mdi--eye-outline]"
             class="size-3.5"
           />
-          预览
+          {{ m.common.preview }}
         </Button>
         <Button
           type="button"
@@ -247,7 +248,7 @@ function snapshotArgs(): FullSyncForm {
             icon="icon-[mdi--play]"
             class="size-4"
           />
-          执行同步
+          {{ m.ui.fullSync.run }}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -256,8 +257,8 @@ function snapshotArgs(): FullSyncForm {
   <JobPreviewDialog
     v-if="preview"
     v-model:open="previewOpen"
-    title="全量同步预览"
-    description="确认即将同步到 Bangumi 的变更。"
+    :title="m.ui.fullSync.previewTitle"
+    :description="m.ui.fullSync.previewDescription"
     :groups="preview"
     @error="(message) => emit('error', message)"
   >
@@ -273,7 +274,7 @@ function snapshotArgs(): FullSyncForm {
           icon="icon-[mdi--play]"
           class="size-4"
         />
-        执行同步
+        {{ m.ui.fullSync.run }}
       </Button>
     </template>
   </JobPreviewDialog>

@@ -1,5 +1,6 @@
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -33,7 +34,8 @@ export class PersonUpdateHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startUpdateFromScraper(
@@ -44,7 +46,7 @@ export class PersonUpdateHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.person.update',
-      title: '更新人物元数据',
+      title: this.i18nService.messages.ingest.update.title({ entity: 'person' }),
       description: request.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -53,7 +55,7 @@ export class PersonUpdateHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '更新人物元数据',
+          title: this.i18nService.messages.ingest.update.title({ entity: 'person' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -81,7 +83,7 @@ export class PersonUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      label: '正在准备更新人物元数据'
+      label: this.i18nService.messages.ingest.update.preparing({ entity: 'person' })
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, PERSON_UPDATE_SURFACE_KEYS)
@@ -94,13 +96,13 @@ export class PersonUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取人物元数据'
+      label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'person' })
     })
     const bundle = await this.scraperService.person.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      label: '正在生成人物更新计划'
+      label: this.i18nService.messages.ingest.update.planning({ entity: 'person' })
     })
     const incoming = buildPersonIncoming(bundle, lookup)
     const current = loadPersonCurrent(this.dbService.client, request.rootId, selection)
@@ -114,7 +116,7 @@ export class PersonUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入人物元数据'
+      label: this.i18nService.messages.ingest.update.writing({ entity: 'person' })
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyPersonPlan(tx, request.rootId, plan)
@@ -123,7 +125,7 @@ export class PersonUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        label: '正在保存人物媒体资源'
+        label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'person' })
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
@@ -159,8 +161,8 @@ export class PersonUpdateHandler {
       })
       run.context.throwIfCancelled()
       run.complete({
-        title: '人物元数据更新完成',
-        summary: '人物元数据已写入资料库。',
+        title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'person' }),
+        summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'person' }),
         output: {
           personId: request.rootId,
           ...result
@@ -173,7 +175,9 @@ export class PersonUpdateHandler {
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
-        run.cancel({ summary: '更新人物元数据已取消。' })
+        run.cancel({
+          summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'person' })
+        })
         return
       }
 

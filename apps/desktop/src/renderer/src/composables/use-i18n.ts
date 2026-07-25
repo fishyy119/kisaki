@@ -1,29 +1,42 @@
 /**
- * i18n Composable
+ * i18n composable.
  *
- * Provides reactive translation in Vue components.
+ * Reactive access to the message catalog, Intl formatters, and UI locale
+ * state inside Vue components:
+ *
+ *   const { m, f } = useI18n()
+ *   // template: {{ m.common.save }}  {{ f.date(game.releaseDate) }}
  */
 
-import { computed, type ComputedRef } from 'vue'
-import { i18n, getLocale, setLocale } from '@renderer/core/i18n'
-import type { AppLocale } from '@shared/locale'
+import type { ComputedRef, ShallowRef } from 'vue'
+import type { I18nFormatters, Messages, UiLocale } from '@shared/i18n'
+import {
+  formatters,
+  messages,
+  setUiLocalePreference,
+  uiLocale,
+  uiLocalePreference
+} from '@renderer/core/i18n'
 
 interface UseI18nReturn {
-  /** Translation function */
-  t: typeof i18n.t
-  /** Current locale (reactive) */
-  locale: ComputedRef<AppLocale>
-  /** Change locale */
-  changeLocale: typeof setLocale
+  /** Message catalog for the current UI locale. */
+  m: ComputedRef<Messages>
+  /** Intl formatters for the current UI locale. */
+  f: ComputedRef<I18nFormatters>
+  /** Effective UI locale. */
+  locale: Readonly<ShallowRef<UiLocale>>
+  /** Persisted preference; null means follow the system language. */
+  preference: Readonly<ShallowRef<UiLocale | null>>
+  /** Persist a new UI language preference (null = follow system). */
+  setPreference(preference: UiLocale | null): Promise<void>
 }
 
-/**
- * Composable for i18n in Vue components
- */
 export function useI18n(): UseI18nReturn {
   return {
-    t: i18n.t.bind(i18n),
-    locale: computed(() => getLocale()),
-    changeLocale: setLocale
+    m: messages,
+    f: formatters,
+    locale: uiLocale,
+    preference: uiLocalePreference,
+    setPreference: setUiLocalePreference
   }
 }

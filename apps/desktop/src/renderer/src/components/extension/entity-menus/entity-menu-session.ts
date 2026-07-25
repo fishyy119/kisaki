@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { ipcManager } from '@renderer/core/ipc'
+import { messages } from '@renderer/core/i18n'
 import { notify } from '@renderer/core/notify'
 import type { EntityMenuInput } from '@kisaki3/extension-api'
 import type {
@@ -156,14 +157,17 @@ export function useExtensionEntityMenuSession(
       )
 
       if (!response.result.success) {
-        notify.error('扩展菜单操作失败', response.result.error.message)
+        notify.error(
+          messages.value.extension.entityMenu.actionFailed,
+          response.result.error.message
+        )
       }
 
       if (response.result.refresh) {
         await resolveEntityMenu()
       }
     } catch (e) {
-      notify.error('扩展菜单操作失败', getErrorMessage(e))
+      notify.error(messages.value.extension.entityMenu.actionFailed, getErrorMessage(e))
     } finally {
       invokingKey.value = null
     }

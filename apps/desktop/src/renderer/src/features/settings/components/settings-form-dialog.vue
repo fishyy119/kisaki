@@ -10,6 +10,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -24,10 +25,14 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/components/ui/select'
+import { UiLocaleSelect } from '@renderer/components/ui/locale-select'
 import { useThemeStore } from '@renderer/stores'
 import { settings, type MainWindowCloseAction } from '@shared/db'
+import type { UiLocale } from '@shared/i18n'
 
 const open = defineModel<boolean>('open', { required: true })
+
+const { m, preference, setPreference } = useI18n()
 
 const themeStore = useThemeStore()
 const { themes, activeThemeId } = storeToRefs(themeStore)
@@ -36,6 +41,7 @@ const isSaving = ref(false)
 type SettingsFormData = {
   autoLaunch: boolean
   activeThemeId: string
+  uiLocalePreference: UiLocale | null
   mainWindowCloseAction: MainWindowCloseAction
   updaterAutoCheck: boolean
   updaterAllowPrerelease: boolean
@@ -44,6 +50,7 @@ type SettingsFormData = {
 const formData = ref<SettingsFormData>({
   autoLaunch: false,
   activeThemeId: activeThemeId.value,
+  uiLocalePreference: preference.value,
   mainWindowCloseAction: 'exit',
   updaterAutoCheck: true,
   updaterAllowPrerelease: false
@@ -85,6 +92,7 @@ const state = useRenderState(isLoading, error, data)
 watch(open, (isOpen) => {
   if (!isOpen) return
   formData.value.activeThemeId = activeThemeId.value
+  formData.value.uiLocalePreference = preference.value
 })
 
 watch(data, (d) => {
@@ -100,6 +108,19 @@ watch(
   (themeId) => {
     if (themeId === activeThemeId.value) return
     themeStore.setActiveTheme(themeId)
+  }
+)
+
+// Language applies immediately, matching theme behavior.
+watch(
+  () => formData.value.uiLocalePreference,
+  async (uiLocalePreference) => {
+    if (uiLocalePreference === preference.value) return
+    try {
+      await setPreference(uiLocalePreference)
+    } catch (e) {
+      notify.error(m.value.common.saveFailed, e instanceof Error ? e.message : String(e))
+    }
   }
 )
 
@@ -128,10 +149,10 @@ async function handleSubmit() {
 
     ipcManager.send('window:set-main-window-close-action', formData.value.mainWindowCloseAction)
 
-    notify.success('设置已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (e) {
-    notify.error('保存失败', e instanceof Error ? e.message : String(e))
+    notify.error(m.value.common.saveFailed, e instanceof Error ? e.message : String(e))
   } finally {
     isSaving.value = false
   }
@@ -142,7 +163,7 @@ async function handleSubmit() {
   <Dialog v-model:open="openModel">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>设置</DialogTitle>
+        <DialogTitle>{{ m.settings.title }}</DialogTitle>
       </DialogHeader>
 
       <template v-if="state === 'loading'">
@@ -165,7 +186,7 @@ async function handleSubmit() {
               variant="outline"
               @click="refetch"
             >
-              重试
+              {{ m.common.retry }}
             </Button>
           </div>
         </DialogBody>
@@ -176,7 +197,17 @@ async function handleSubmit() {
           <DialogBody>
             <FieldGroup>
               <Field orientation="horizontal">
-                <FieldLabel>主题</FieldLabel>
+                <FieldLabel>{{ m.settings.language.uiLanguageLabel }}</FieldLabel>
+                <FieldContent>
+                  <UiLocaleSelect
+                    v-model="formData.uiLocalePreference"
+                    trigger-class="w-56"
+                  />
+                </FieldContent>
+              </Field>
+
+              <Field orientation="horizontal">
+                <FieldLabel>{{ m.settings.themeLabel }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="formData.activeThemeId">
                     <SelectTrigger class="w-56">
@@ -201,40 +232,42 @@ async function handleSubmit() {
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>开机自启</FieldLabel>
+                <FieldLabel>{{ m.settings.autoLaunchLabel }}</FieldLabel>
                 <FieldContent>
                   <Switch v-model="formData.autoLaunch" />
                 </FieldContent>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>关闭窗口时</FieldLabel>
+                <FieldLabel>{{ m.settings.closeActionLabel }}</FieldLabel>
                 <FieldContent>
                   <Select v-model="formData.mainWindowCloseAction">
                     <SelectTrigger class="w-56">
                       <span class="truncate">
                         {{
-                          formData.mainWindowCloseAction === 'exit' ? '退出应用' : '最小化到托盘'
+                          formData.mainWindowCloseAction === 'exit'
+                            ? m.settings.closeActionExit
+                            : m.settings.closeActionTray
                         }}
                       </span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="exit">退出应用</SelectItem>
-                      <SelectItem value="tray">最小化到托盘</SelectItem>
+                      <SelectItem value="exit">{{ m.settings.closeActionExit }}</SelectItem>
+                      <SelectItem value="tray">{{ m.settings.closeActionTray }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FieldContent>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>自动检查更新</FieldLabel>
+                <FieldLabel>{{ m.settings.updaterAutoCheckLabel }}</FieldLabel>
                 <FieldContent>
                   <Switch v-model="formData.updaterAutoCheck" />
                 </FieldContent>
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>接受预览版更新</FieldLabel>
+                <FieldLabel>{{ m.settings.updaterAllowPrereleaseLabel }}</FieldLabel>
                 <FieldContent>
                   <Switch v-model="formData.updaterAllowPrerelease" />
                 </FieldContent>
@@ -249,13 +282,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

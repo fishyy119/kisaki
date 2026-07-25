@@ -1,5 +1,6 @@
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -33,7 +34,8 @@ export class CompanyUpdateHandler {
   constructor(
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startUpdateFromScraper(
@@ -44,7 +46,7 @@ export class CompanyUpdateHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.company.update',
-      title: '更新公司元数据',
+      title: this.i18nService.messages.ingest.update.title({ entity: 'company' }),
       description: request.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -53,7 +55,7 @@ export class CompanyUpdateHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '更新公司元数据',
+          title: this.i18nService.messages.ingest.update.title({ entity: 'company' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -81,7 +83,7 @@ export class CompanyUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      label: '正在准备更新公司元数据'
+      label: this.i18nService.messages.ingest.update.preparing({ entity: 'company' })
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, COMPANY_UPDATE_SURFACE_KEYS)
@@ -94,13 +96,13 @@ export class CompanyUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取公司元数据'
+      label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'company' })
     })
     const bundle = await this.scraperService.company.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      label: '正在生成公司更新计划'
+      label: this.i18nService.messages.ingest.update.planning({ entity: 'company' })
     })
     const incoming = buildCompanyIncoming(bundle, lookup)
     const current = loadCompanyCurrent(this.dbService.client, request.rootId, selection)
@@ -114,7 +116,7 @@ export class CompanyUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入公司元数据'
+      label: this.i18nService.messages.ingest.update.writing({ entity: 'company' })
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyCompanyPlan(tx, request.rootId, plan)
@@ -123,7 +125,7 @@ export class CompanyUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        label: '正在保存公司媒体资源'
+        label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'company' })
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
@@ -159,8 +161,8 @@ export class CompanyUpdateHandler {
       })
       run.context.throwIfCancelled()
       run.complete({
-        title: '公司元数据更新完成',
-        summary: '公司元数据已写入资料库。',
+        title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'company' }),
+        summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'company' }),
         output: {
           companyId: request.rootId,
           ...result
@@ -173,7 +175,9 @@ export class CompanyUpdateHandler {
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
-        run.cancel({ summary: '更新公司元数据已取消。' })
+        run.cancel({
+          summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'company' })
+        })
         return
       }
 

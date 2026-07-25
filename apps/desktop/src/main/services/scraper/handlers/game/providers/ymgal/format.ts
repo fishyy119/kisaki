@@ -1,5 +1,5 @@
 import type { GameCharacterType, GamePersonType, Gender } from '@shared/db'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type { ExternalId } from '@shared/identity'
 import type { YmgalWebsite } from './types'
@@ -31,7 +31,7 @@ function formatRelatedSiteLabel(value: string | undefined | null): string | unde
   }
 }
 
-export function isChineseLocale(locale?: Locale): boolean {
+export function isChineseLocale(locale?: ContentLocale): boolean {
   return locale === 'zh-Hans' || locale === 'zh-Hant'
 }
 
@@ -81,7 +81,7 @@ export function buildYmgalPersonUrl(personId: string): string {
 export function resolveLocalizedName(
   name: string | undefined | null,
   chineseName: string | undefined | null,
-  locale?: Locale
+  locale?: ContentLocale
 ): { name: string; originalName?: string } {
   const original = trimValue(name)
   const chinese = trimValue(chineseName)

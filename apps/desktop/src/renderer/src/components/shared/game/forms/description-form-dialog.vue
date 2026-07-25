@@ -23,6 +23,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -93,11 +96,11 @@ async function handleSubmit() {
 
     await gcOnSave(next)
     didSave.value = true
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -124,7 +127,7 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑简介</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editDescription }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
@@ -134,12 +137,14 @@ function handleCancel() {
                   for="description"
                   class="text-xs"
                 >
-                  支持 Markdown
+                  {{ m.library.forms.markdownSupported }}
                 </FieldLabel>
                 <FieldContent>
                   <MarkdownEditor
                     v-model="formData.description"
-                    placeholder="输入游戏简介 (支持 Markdown)..."
+                    :placeholder="
+                      m.library.forms.descriptionPlaceholder({ label: m.library.entities.game })
+                    "
                     min-height="500px"
                     max-height="500px"
                     :on-attachment="onAttachment"
@@ -156,13 +161,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

@@ -1,4 +1,4 @@
-import type { ExtensionCategory } from '@kisaki3/extension-api'
+import type { ExtensionCategory, LocalizedText } from '@kisaki3/extension-api'
 import type { ExtensionRegistryArtifact } from './artifact'
 
 export const EXTENSION_REGISTRY_SCHEMA_VERSION = 1
@@ -49,9 +49,9 @@ export interface ExtensionRegistryPackageIcon {
 
 export interface ExtensionRegistryPackage {
   readonly id: string
-  readonly name: string
-  readonly summary: string
-  readonly description?: string
+  readonly name: LocalizedText
+  readonly summary: LocalizedText
+  readonly description?: LocalizedText
   readonly categories: readonly ExtensionCategory[]
   readonly keywords?: readonly string[]
   readonly owner?: ExtensionRegistryPackageOwner

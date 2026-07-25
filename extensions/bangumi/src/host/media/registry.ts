@@ -1,4 +1,5 @@
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import { isBangumiMediaScope, type BangumiMediaScope } from './scopes'
 import type { BangumiMediaDescriptor, LocalMediaAdapter } from './types'
 
@@ -32,7 +33,7 @@ export class MediaRegistry {
   require(scope: BangumiMediaScope): BangumiMediaDescriptor {
     const descriptor = this.get(scope)
     if (!descriptor) {
-      throw new BangumiExtensionError('bangumi_validation', 'Bangumi 媒体类型尚未注册。')
+      throw new BangumiExtensionError('bangumi_validation', m().errors.mediaScopeNotRegistered)
     }
     return descriptor
   }
@@ -42,7 +43,7 @@ export class MediaRegistry {
     if (!descriptor.localAdapter) {
       throw new BangumiExtensionError(
         'local_media_unsupported',
-        `${descriptor.label}暂不支持写入本地库。`
+        m().errors.localWriteUnsupported({ scope: descriptor.scope })
       )
     }
     return descriptor.localAdapter
@@ -58,5 +59,5 @@ export function requireRegisteredMediaScope(value: unknown): BangumiMediaScope {
     return value
   }
 
-  throw new BangumiExtensionError('bangumi_validation', '请选择有效的 Bangumi 媒体类型。')
+  throw new BangumiExtensionError('bangumi_validation', m().errors.invalidMediaScope)
 }

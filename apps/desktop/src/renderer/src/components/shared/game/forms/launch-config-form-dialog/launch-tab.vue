@@ -3,6 +3,7 @@
   Launch configuration tab content with game directory, launcher mode, and path settings.
 -->
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
 import { GameLauncherMode } from '@shared/db'
@@ -22,16 +23,33 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const gameDirPath = defineModel<string>('gameDirPath', { required: true })
 const launcherMode = defineModel<GameLauncherMode>('launcherMode', { required: true })
 const launcherPath = defineModel<string>('launcherPath', { required: true })
 
-const LAUNCHER_MODE_OPTIONS: { value: GameLauncherMode; label: string; description: string }[] = [
-  { value: 'file', label: '文件', description: '直接运行可执行文件' },
-  { value: 'url', label: '链接', description: '通过 URL 协议启动（如 steam://）' },
-  { value: 'exec', label: '命令', description: '执行命令行指令' }
-]
+const LAUNCHER_MODE_OPTIONS = computed<
+  { value: GameLauncherMode; label: string; description: string }[]
+>(() => [
+  {
+    value: 'file',
+    label: m.value.game.launchConfig.modeFile,
+    description: m.value.game.launchConfig.modeFileHint
+  },
+  {
+    value: 'url',
+    label: m.value.game.launchConfig.modeUrl,
+    description: m.value.game.launchConfig.modeUrlHint
+  },
+  {
+    value: 'exec',
+    label: m.value.game.launchConfig.modeExec,
+    description: m.value.game.launchConfig.modeExecHint
+  }
+])
 
 async function handleSelectGameDirPath() {
   const result = await ipcManager.invoke('native:open-dialog', {
@@ -55,12 +73,12 @@ async function handleSelectLauncherPath() {
 <template>
   <FieldGroup>
     <Field>
-      <FieldLabel>游戏目录</FieldLabel>
+      <FieldLabel>{{ m.game.launchConfig.gameDirLabel }}</FieldLabel>
       <FieldContent>
         <div class="flex gap-2">
           <Input
             v-model="gameDirPath"
-            placeholder="未设置"
+            :placeholder="m.common.notSet"
           />
           <Button
             type="button"
@@ -75,11 +93,11 @@ async function handleSelectLauncherPath() {
           </Button>
         </div>
       </FieldContent>
-      <FieldDescription>用于自动推导和命令模式下的工作目录</FieldDescription>
+      <FieldDescription>{{ m.game.launchConfig.gameDirHint }}</FieldDescription>
     </Field>
 
     <Field>
-      <FieldLabel>启动模式</FieldLabel>
+      <FieldLabel>{{ m.game.launchConfig.launchModeLabel }}</FieldLabel>
       <FieldContent>
         <Select v-model="launcherMode">
           <SelectTrigger>
@@ -104,14 +122,20 @@ async function handleSelectLauncherPath() {
     <Field>
       <FieldLabel>
         {{
-          launcherMode === 'url' ? '启动链接' : launcherMode === 'exec' ? '启动命令' : '启动文件'
+          launcherMode === 'url'
+            ? m.game.launchConfig.launchUrlLabel
+            : launcherMode === 'exec'
+              ? m.game.launchConfig.launchCommandLabel
+              : m.game.launchConfig.launchFileLabel
         }}
       </FieldLabel>
       <FieldContent>
         <div class="flex gap-2">
           <Input
             v-model="launcherPath"
-            :placeholder="launcherMode === 'url' ? '例如: steam://rungameid/123' : '未设置'"
+            :placeholder="
+              launcherMode === 'url' ? m.game.launchConfig.urlPlaceholder : m.common.notSet
+            "
           />
           <Button
             v-if="launcherMode === 'file'"

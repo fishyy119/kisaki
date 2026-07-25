@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
 
 interface Props {
@@ -27,26 +28,30 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+
+const { m } = useI18n()
 </script>
 
 <template>
   <AlertDialog v-model:open="open">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>删除 {{ props.repository.name }}？</AlertDialogTitle>
+        <AlertDialogTitle>
+          {{ m.extension.repository.removeDialog.title({ name: props.repository.name }) }}
+        </AlertDialogTitle>
       </AlertDialogHeader>
 
       <AlertDialogDescription>
-        确定要删除该仓库吗？删除后将不再从该仓库获取扩展目录，已安装的扩展不会被卸载。
+        {{ m.extension.repository.removeDialog.description }}
       </AlertDialogDescription>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="props.removing">取消</AlertDialogCancel>
+        <AlertDialogCancel :disabled="props.removing">{{ m.common.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="props.removing"
           @click.prevent="emit('confirm')"
         >
-          {{ props.removing ? '删除中' : '删除' }}
+          {{ props.removing ? m.extension.repository.removeDialog.deleting : m.common.delete }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

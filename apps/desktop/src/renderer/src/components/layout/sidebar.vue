@@ -38,6 +38,7 @@ import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
 import { SettingsFormDialog } from '@renderer/features/settings'
 import { AboutDialog } from '@renderer/features/about'
 import { TaskCenterTrigger } from '@renderer/features/task-center'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface NavItem {
   id: string
@@ -46,18 +47,35 @@ interface NavItem {
   path: string
 }
 
-const navItems: NavItem[] = [
-  { id: 'library', label: '媒体库', icon: 'icon-[mdi--bookshelf]', path: '/library' },
-  { id: 'statistics', label: '统计', icon: 'icon-[mdi--chart-box-outline]', path: '/statistics' },
-  { id: 'scanner', label: '扫描器', icon: 'icon-[mdi--folder-search-outline]', path: '/scanner' },
+const { m } = useI18n()
+
+const navItems = computed<NavItem[]>(() => [
+  { id: 'library', label: m.value.nav.library, icon: 'icon-[mdi--bookshelf]', path: '/library' },
+  {
+    id: 'statistics',
+    label: m.value.nav.statistics,
+    icon: 'icon-[mdi--chart-box-outline]',
+    path: '/statistics'
+  },
+  {
+    id: 'scanner',
+    label: m.value.nav.scanner,
+    icon: 'icon-[mdi--folder-search-outline]',
+    path: '/scanner'
+  },
   {
     id: 'automation',
-    label: '自动化',
+    label: m.value.nav.automation,
     icon: 'icon-[mdi--timer-outline]',
     path: '/automation'
   },
-  { id: 'extension', label: '扩展', icon: 'icon-[mdi--puzzle-outline]', path: '/extension' }
-]
+  {
+    id: 'extension',
+    label: m.value.nav.extension,
+    icon: 'icon-[mdi--puzzle-outline]',
+    path: '/extension'
+  }
+])
 
 const isSettingsOpen = ref(false)
 const isProfileManagerOpen = ref(false)
@@ -138,7 +156,7 @@ const showNsfwModel = computed({
             side="right"
             :side-offset="8"
           >
-            设置
+            {{ m.nav.settings }}
           </TooltipContent>
 
           <DropdownMenuContent
@@ -153,7 +171,7 @@ const showNsfwModel = computed({
                   icon="icon-[mdi--weather-sunset]"
                   class="size-4"
                 />
-                <span>主题模式</span>
+                <span>{{ m.nav.themeMode }}</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent
                 side="right"
@@ -166,21 +184,21 @@ const showNsfwModel = computed({
                       icon="icon-[mdi--weather-sunny]"
                       class="size-4"
                     />
-                    <span>浅色</span>
+                    <span>{{ m.nav.themeLight }}</span>
                   </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="dark">
                     <Icon
                       icon="icon-[mdi--weather-night]"
                       class="size-4"
                     />
-                    <span>深色</span>
+                    <span>{{ m.nav.themeDark }}</span>
                   </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="system">
                     <Icon
                       icon="icon-[mdi--laptop]"
                       class="size-4"
                     />
-                    <span>跟随系统</span>
+                    <span>{{ m.nav.themeSystem }}</span>
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
@@ -191,7 +209,7 @@ const showNsfwModel = computed({
                 icon="icon-[mdi--coffee-outline]"
                 class="size-4"
               />
-              <span>显示 NSFW 内容</span>
+              <span>{{ m.nav.showNsfw }}</span>
             </DropdownMenuCheckboxItem>
 
             <DropdownMenuSeparator />
@@ -201,7 +219,7 @@ const showNsfwModel = computed({
                 icon="icon-[mdi--database-cog-outline]"
                 class="size-4"
               />
-              <span>刮削配置</span>
+              <span>{{ m.nav.scraperProfiles }}</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem @select="isSettingsOpen = true">
@@ -209,7 +227,7 @@ const showNsfwModel = computed({
                 icon="icon-[mdi--power-settings-new]"
                 class="size-4"
               />
-              <span>软件设置</span>
+              <span>{{ m.nav.appSettings }}</span>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -219,7 +237,7 @@ const showNsfwModel = computed({
                 icon="icon-[mdi--information-outline]"
                 class="size-4"
               />
-              <span>关于</span>
+              <span>{{ m.nav.about }}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -247,16 +265,16 @@ const showNsfwModel = computed({
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>
-          {{ pendingShowNsfw ? '显示 NSFW 内容？' : '隐藏 NSFW 内容？' }}
+          {{ pendingShowNsfw ? m.nav.nsfw.enableTitle : m.nav.nsfw.disableTitle }}
         </AlertDialogTitle>
       </AlertDialogHeader>
       <AlertDialogDescription>
-        <p v-if="pendingShowNsfw">开启后将显示被标记为 NSFW 的内容。</p>
-        <p v-else>关闭后将隐藏被标记为 NSFW 的内容。</p>
+        <p v-if="pendingShowNsfw">{{ m.nav.nsfw.enableDescription }}</p>
+        <p v-else>{{ m.nav.nsfw.disableDescription }}</p>
       </AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>取消</AlertDialogCancel>
-        <AlertDialogAction @click="handleNsfwConfirm">确认</AlertDialogAction>
+        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogAction @click="handleNsfwConfirm">{{ m.common.confirm }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

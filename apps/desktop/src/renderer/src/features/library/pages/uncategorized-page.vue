@@ -14,22 +14,9 @@ import { EntityCard } from '@renderer/components/shared'
 import type { Game, Character, Person, Company } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import { useUncategorized } from '../composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 
-// =============================================================================
-// Types & Config
-// =============================================================================
-
-interface EntityConfig {
-  label: string
-  unitLabel: string
-}
-
-const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
-  game: { label: '游戏', unitLabel: '款' },
-  character: { label: '角色', unitLabel: '个' },
-  person: { label: '人物', unitLabel: '位' },
-  company: { label: '公司', unitLabel: '家' }
-}
+const { m } = useI18n()
 
 type EntityData = Game | Character | Person | Company
 
@@ -79,10 +66,10 @@ function handleEntityClick(entity: EntityData) {
     <!-- Header -->
     <PageHeader back-to="/library">
       <PageHeaderTitle
-        :title="`未分类${ENTITY_CONFIG[entityType].label}`"
+        :title="m.library.pages.uncategorizedTitle({ label: m.library.entities[entityType] })"
         icon="icon-[mdi--folder-question-outline]"
       >
-        {{ entities.length }} {{ ENTITY_CONFIG[entityType].unitLabel }}
+        {{ m.library.counts[entityType]({ count: entities.length }) }}
       </PageHeaderTitle>
     </PageHeader>
 
@@ -96,7 +83,7 @@ function handleEntityClick(entity: EntityData) {
         v-if="entities.length === 0"
         state="empty"
         icon="icon-[mdi--check-circle-outline]"
-        :description="`所有${ENTITY_CONFIG[entityType].label}都已分类`"
+        :description="m.library.pages.uncategorizedEmpty({ label: m.library.entities[entityType] })"
         class="h-full"
       />
 

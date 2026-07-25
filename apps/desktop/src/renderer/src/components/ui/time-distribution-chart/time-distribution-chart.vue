@@ -21,6 +21,7 @@ import {
   componentToString,
   type ChartConfig
 } from '@renderer/components/ui/chart'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type {
   DistributionType,
   TimeDistributionDataPoint,
@@ -33,13 +34,23 @@ import type {
 
 const props = withDefaults(defineProps<TimeDistributionChartProps>(), {
   height: 200,
-  distributionLabels: () => ({ hourly: '小时', weekday: '星期', dayOfMonth: '日期' }),
   availableTypes: () => ['hourly', 'weekday', 'dayOfMonth']
 })
 
 const distributionType = defineModel<DistributionType>('distributionType', {
   default: 'hourly'
 })
+
+const { m } = useI18n()
+
+const distributionLabelTexts = computed(
+  () =>
+    props.distributionLabels ?? {
+      hourly: m.value.ui.charts.hourly,
+      weekday: m.value.ui.charts.weekday,
+      dayOfMonth: m.value.ui.charts.dayOfMonth
+    }
+)
 
 // Show selector only when multiple options available
 const showTypeSelector = computed(() => props.availableTypes.length > 1)
@@ -67,11 +78,9 @@ const chartData = computed<ChartDatum[]>(() =>
   }))
 )
 
-const chartConfig = {
-  valueText: {
-    label: '时长'
-  }
-} satisfies ChartConfig
+const chartConfig = computed(
+  () => ({ valueText: { label: m.value.ui.charts.duration } }) satisfies ChartConfig
+)
 
 // Accessors
 const x = (d: ChartDatum) => d.key
@@ -99,7 +108,9 @@ function formatLabel(key: number): string {
   return item?.label ?? ''
 }
 
-const tooltipTemplate = componentToString(chartConfig, ChartTooltipContent, { labelKey: 'label' })
+const tooltipTemplate = computed(() =>
+  componentToString(chartConfig.value, ChartTooltipContent, { labelKey: 'label' })
+)
 
 // Tooltip instance for crosshair - appended to body to avoid clipping
 const crosshairTooltip = shallowRef<Tooltip | null>(null)
@@ -124,8 +135,8 @@ const insight = computed(() => {
     if (point.value <= 0) continue
     if (!best || point.value > best.value) best = point
   }
-  if (!best) return '最活跃：无活动'
-  return `最活跃：${best.label}，${formatYLabel(best.value)}`
+  if (!best) return m.value.ui.charts.mostActiveNone
+  return m.value.ui.charts.mostActive({ label: best.label, value: formatYLabel(best.value) })
 })
 </script>
 
@@ -163,7 +174,7 @@ const insight = computed(() => {
             :key="t"
             :value="t"
           >
-            {{ props.distributionLabels[t] }}
+            {{ distributionLabelTexts[t] }}
           </SegmentedControlItem>
         </SegmentedControl>
       </div>

@@ -21,13 +21,9 @@ import LibraryExplorerListItem from './explorer-list-item.vue'
 import { hasActiveFilters } from '@shared/filter'
 import { hasActiveSearch } from '@shared/search'
 import { toExplorerSelectionKey } from '../../utils/explorer-selection'
+import { useI18n } from '@renderer/composables/use-i18n'
 
-const ENTITY_CONFIG = {
-  game: { icon: getEntityIcon('game'), label: '游戏' },
-  character: { icon: getEntityIcon('character'), label: '角色' },
-  person: { icon: getEntityIcon('person'), label: '人物' },
-  company: { icon: getEntityIcon('company'), label: '公司' }
-} as const
+const { m } = useI18n()
 
 const store = useLibraryExplorerStore()
 const defaultFromStore = useDefaultFromStore()
@@ -116,7 +112,10 @@ watch(
   { immediate: true }
 )
 
-const currentConfig = computed(() => ENTITY_CONFIG[activeEntityType.value])
+const currentConfig = computed(() => ({
+  icon: getEntityIcon(activeEntityType.value),
+  label: m.value.library.entities[activeEntityType.value]
+}))
 </script>
 
 <template>
@@ -138,7 +137,7 @@ const currentConfig = computed(() => ENTITY_CONFIG[activeEntityType.value])
       <div
         class="flex items-center h-6 px-2 text-xs text-muted-foreground/70 rounded-r-md bg-accent/20 mb-0.5"
       >
-        筛选结果
+        {{ m.library.explorer.filteredResults }}
         <span class="ml-auto tabular-nums opacity-50">{{ allEntities.length }}</span>
       </div>
       <VirtualList
@@ -164,7 +163,7 @@ const currentConfig = computed(() => ENTITY_CONFIG[activeEntityType.value])
           icon="icon-[mdi--filter-off-outline]"
           class="size-6 text-muted-foreground/40 mb-1.5"
         />
-        <p class="text-xs text-muted-foreground/60">无匹配结果</p>
+        <p class="text-xs text-muted-foreground/60">{{ m.library.explorer.noMatch }}</p>
       </div>
     </div>
 
@@ -177,7 +176,9 @@ const currentConfig = computed(() => ENTITY_CONFIG[activeEntityType.value])
         :icon="currentConfig.icon"
         class="size-6 text-muted-foreground/40 mb-1.5"
       />
-      <p class="text-xs text-muted-foreground/60">暂无{{ currentConfig.label }}</p>
+      <p class="text-xs text-muted-foreground/60">
+        {{ m.library.explorer.emptyList({ label: currentConfig.label }) }}
+      </p>
     </div>
 
     <!-- Normal grouped view -->
@@ -198,7 +199,7 @@ const currentConfig = computed(() => ENTITY_CONFIG[activeEntityType.value])
         v-if="data.uncategorized.length > 0"
         :group="{
           id: '__uncategorized__',
-          name: '未分类',
+          name: m.library.explorer.uncategorized,
           coverFile: null,
           isDynamic: false,
           entities: data.uncategorized

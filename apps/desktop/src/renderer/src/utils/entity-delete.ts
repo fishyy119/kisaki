@@ -1,5 +1,6 @@
 import type { AllEntityType } from '@shared/common'
 import type { EntityDeleteResult } from '@shared/entity-delete'
+import { messages } from '@renderer/core/i18n'
 
 const ENTITY_DELETE_ORDER: readonly AllEntityType[] = [
   'game',
@@ -10,35 +11,22 @@ const ENTITY_DELETE_ORDER: readonly AllEntityType[] = [
   'collection'
 ]
 
-export const ENTITY_DELETE_LABELS: Record<AllEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司',
-  tag: '标签',
-  collection: '合集'
-}
-
 /**
- * Get the localized label for an entity type.
+ * Get the localized count phrase (for example "3 games") for deleted entities.
  */
-export function getEntityDeleteLabel(entityType: AllEntityType): string {
-  return ENTITY_DELETE_LABELS[entityType]
+export function formatEntityDeleteCount(entityType: AllEntityType, count: number): string {
+  return messages.value.library.counts[entityType]({ count })
 }
 
 /**
  * Format a compact delete success message from grouped delete counts.
  */
 export function formatEntityDeleteSuccessMessage(result: EntityDeleteResult): string {
-  const parts = ENTITY_DELETE_ORDER.flatMap((entityType) => {
+  const items = ENTITY_DELETE_ORDER.flatMap((entityType) => {
     const count = result.deletedCounts[entityType]
     if (!count) return []
-    return `${count} 个${getEntityDeleteLabel(entityType)}`
+    return formatEntityDeleteCount(entityType, count)
   })
 
-  if (parts.length === 0) {
-    return '已删除'
-  }
-
-  return `已删除 ${parts.join('、')}`
+  return messages.value.library.feedback.deletedSummary({ items })
 }

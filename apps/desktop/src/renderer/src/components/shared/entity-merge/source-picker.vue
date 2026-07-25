@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { AllEntityType } from '@shared/common'
+import { useI18n } from '@renderer/composables'
 import GameSelect from '../game/game-select.vue'
 import PersonSelect from '../person/person-select.vue'
 import CompanySelect from '../company/company-select.vue'
@@ -19,6 +20,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const sourceId = defineModel<string>({ required: true })
+const { m } = useI18n()
+
+const emptyText = computed(() =>
+  m.value.merge.selectDuplicate({ label: m.value.library.entities[props.entityType] })
+)
 
 const excludeIds = computed(() => [props.targetId])
 const collectionSourceId = computed<string | null>({
@@ -34,7 +40,7 @@ const collectionSourceId = computed<string | null>({
     v-if="props.entityType === 'game'"
     v-model="sourceId"
     class="w-full"
-    empty-text="选择重复游戏..."
+    :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :disabled="props.disabled"
   />
@@ -42,7 +48,7 @@ const collectionSourceId = computed<string | null>({
     v-else-if="props.entityType === 'person'"
     v-model="sourceId"
     class="w-full"
-    empty-text="选择重复人物..."
+    :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :disabled="props.disabled"
   />
@@ -50,7 +56,7 @@ const collectionSourceId = computed<string | null>({
     v-else-if="props.entityType === 'company'"
     v-model="sourceId"
     class="w-full"
-    empty-text="选择重复公司..."
+    :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :disabled="props.disabled"
   />
@@ -58,7 +64,7 @@ const collectionSourceId = computed<string | null>({
     v-else-if="props.entityType === 'character'"
     v-model="sourceId"
     class="w-full"
-    empty-text="选择重复角色..."
+    :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :disabled="props.disabled"
   />
@@ -66,7 +72,7 @@ const collectionSourceId = computed<string | null>({
     v-else-if="props.entityType === 'collection'"
     v-model="collectionSourceId"
     class="w-full"
-    empty-text="选择重复合集..."
+    :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :allow-none="false"
     :allow-create="false"
@@ -76,7 +82,7 @@ const collectionSourceId = computed<string | null>({
     v-else
     v-model="sourceId"
     class="w-full"
-    empty-text="选择重复标签..."
+    :empty-text="emptyText"
     :exclude-ids="excludeIds"
     :allow-create="false"
     :disabled="props.disabled"

@@ -7,6 +7,11 @@ import {
   validateRequiredString,
   validateUnknownKeys
 } from './shared/validation'
+import {
+  validateLocalizedTextShape,
+  validateOptionalLocalizedTextShape,
+  type LocalizedText
+} from './shared/locales'
 import semver from 'semver'
 
 export const EXTENSION_CATEGORIES = ['scraper', 'tool', 'theme', 'integration'] as const
@@ -24,7 +29,7 @@ export interface ExtensionManifestEngines {
 export interface ExtensionManifest {
   $schema?: string
   id: string
-  name: string
+  name: LocalizedText
   version: string
   categories: readonly ExtensionCategory[]
   entry: string
@@ -33,7 +38,7 @@ export interface ExtensionManifest {
    * `./dist/ui`. Required for the extension to open webviews.
    */
   ui?: string
-  description?: string
+  description?: LocalizedText
   author?: string
   homepage?: string
   icon?: string
@@ -85,10 +90,7 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
       typeMessage: 'Field must be a string when provided.'
     }),
     ...validateExtensionIdentifier(value.id, '$.id'),
-    ...validateRequiredString(value.name, '$.name', {
-      minLength: 1,
-      valueMessage: 'Field must be a non-empty string.'
-    }),
+    ...validateLocalizedTextShape(value.name, '$.name'),
     ...validateRequiredString(value.version, '$.version', {
       minLength: 1,
       valueMessage: 'Field must be a non-empty string.'
@@ -102,9 +104,7 @@ export function validateExtensionManifestShape(value: unknown): ValidationIssue[
       typeMessage: 'Field must be a string when provided.',
       valueMessage: 'Field must be a non-empty string when provided.'
     }),
-    ...validateOptionalString(value.description, '$.description', {
-      typeMessage: 'Field must be a string when provided.'
-    }),
+    ...validateOptionalLocalizedTextShape(value.description, '$.description'),
     ...validateOptionalString(value.author, '$.author', {
       typeMessage: 'Field must be a string when provided.'
     }),

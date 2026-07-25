@@ -22,7 +22,7 @@ import type {
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import type { ExternalId } from '@shared/identity'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import {
   CHARACTER_SCRAPER_SLOTS,
   COMPANY_SCRAPER_SLOTS,
@@ -212,7 +212,7 @@ export interface ScraperLookup {
   /** Entity name - universal identifier across providers. */
   name: string
   /** Preferred locale for resolve operations or single-provider helper paths. */
-  locale?: Locale
+  locale?: ContentLocale
   /** Known external IDs (e.g. from search selection or database). */
   knownIds?: ExternalId[]
 }
@@ -282,7 +282,7 @@ function normalizeSlotConfig<S extends ScraperSlot>(slot: S, value: unknown): Sl
 
 interface CreateSlotConfigOptions {
   strategy?: SlotStrategy
-  locale?: Locale | null
+  locale?: ContentLocale | null
   unmatchedEntityPolicy?: UnmatchedEntityPolicy
 }
 
@@ -333,37 +333,37 @@ export function createSlotConfigs(
   mediaType: 'game',
   providerId: string,
   capabilities: ScraperCapability[],
-  locale?: Locale
+  locale?: ContentLocale
 ): GameScraperSlotConfigs
 export function createSlotConfigs(
   mediaType: 'person',
   providerId: string,
   capabilities: ScraperCapability[],
-  locale?: Locale
+  locale?: ContentLocale
 ): PersonScraperSlotConfigs
 export function createSlotConfigs(
   mediaType: 'company',
   providerId: string,
   capabilities: ScraperCapability[],
-  locale?: Locale
+  locale?: ContentLocale
 ): CompanyScraperSlotConfigs
 export function createSlotConfigs(
   mediaType: 'character',
   providerId: string,
   capabilities: ScraperCapability[],
-  locale?: Locale
+  locale?: ContentLocale
 ): CharacterScraperSlotConfigs
 export function createSlotConfigs<T extends ScraperMediaType>(
   mediaType: T,
   providerId: string,
   capabilities: ScraperCapability[],
-  locale?: Locale
+  locale?: ContentLocale
 ): SlotConfigsForMediaType<T>
 export function createSlotConfigs<T extends ScraperMediaType>(
   mediaType: T,
   providerId: string,
   capabilities: ScraperCapability[],
-  locale?: Locale
+  locale?: ContentLocale
 ): SlotConfigsForMediaType<T> {
   const configs = {} as Record<string, SlotConfig>
 

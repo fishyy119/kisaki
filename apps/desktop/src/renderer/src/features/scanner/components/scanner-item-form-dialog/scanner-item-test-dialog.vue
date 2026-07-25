@@ -11,6 +11,7 @@ import type { ExtractionTestResult } from '@shared/scanner'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
 import { useAsyncData, useRenderState } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,8 @@ interface Props {
 
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -129,7 +132,7 @@ function handleExclude(name: string) {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>扫描器配置测试</DialogTitle>
+        <DialogTitle>{{ m.scanner.test.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
         <!-- Config Summary -->
@@ -140,14 +143,14 @@ function handleExclude(name: string) {
                 icon="icon-[mdi--folder-open-outline]"
                 class="size-4"
               />
-              层级: {{ props.entityDepth }}
+              {{ m.scanner.test.depth }}: {{ props.entityDepth }}
             </span>
             <span class="flex items-center gap-1">
               <Icon
                 icon="icon-[mdi--regex]"
                 class="size-4"
               />
-              规则: {{ props.rules.length }}
+              {{ m.scanner.test.rules }}: {{ props.rules.length }}
             </span>
           </div>
 
@@ -156,11 +159,11 @@ function handleExclude(name: string) {
             class="flex items-center gap-4 whitespace-nowrap"
           >
             <span>
-              实体:
+              {{ m.scanner.test.entities }}:
               <span class="text-foreground font-medium tabular-nums">{{ totalCount }}</span>
             </span>
             <span v-if="hasRules">
-              匹配:
+              {{ m.scanner.test.matched }}:
               <span class="text-foreground font-medium tabular-nums">{{ matchedCount }}</span>
             </span>
           </div>
@@ -178,7 +181,9 @@ function handleExclude(name: string) {
         <StateView
           v-else-if="visibleResults.length === 0"
           state="empty"
-          :description="resultsList.length === 0 ? '在指定层级未找到实体' : '所有实体已被排除'"
+          :description="
+            resultsList.length === 0 ? m.scanner.test.noEntitiesFound : m.scanner.test.allExcluded
+          "
           class="py-8"
         />
 
@@ -188,13 +193,13 @@ function handleExclude(name: string) {
             <Table>
               <TableHeader class="bg-muted/50">
                 <TableRow class="border-border">
-                  <TableHead>实体名称</TableHead>
-                  <TableHead v-if="hasRules">提取后名称</TableHead>
+                  <TableHead>{{ m.scanner.test.entityName }}</TableHead>
+                  <TableHead v-if="hasRules">{{ m.scanner.test.extractedName }}</TableHead>
                   <TableHead
                     v-if="hasRules"
                     class="text-center w-16"
                   >
-                    规则
+                    {{ m.scanner.test.rule }}
                   </TableHead>
                   <TableHead
                     v-if="props.onAddToIgnoreList"
@@ -259,7 +264,7 @@ function handleExclude(name: string) {
                       variant="ghost"
                       size="icon-sm"
                       class="size-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                      tooltip="添加到排除列表"
+                      :tooltip="m.scanner.test.addToExclusion"
                       @click="handleExclude(result.extractedName)"
                     >
                       <Icon
@@ -275,7 +280,7 @@ function handleExclude(name: string) {
         </template>
       </DialogBody>
       <DialogFooter>
-        <Button @click="open = false">关闭</Button>
+        <Button @click="open = false">{{ m.common.close }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

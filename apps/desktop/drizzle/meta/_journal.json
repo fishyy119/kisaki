@@ -78,6 +78,13 @@
       "when": 1780144696946,
       "tag": "0010_automation_phase_5",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1784999400000,
+      "tag": "0011_settings_ui_locale",
+      "breakpoints": true
     }
   ]
 }

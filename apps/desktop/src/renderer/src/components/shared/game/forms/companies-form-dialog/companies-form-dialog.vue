@@ -27,6 +27,9 @@ import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import GameCompaniesItemFormDialog from './company-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -51,12 +54,12 @@ interface CompanyLinkItem {
   isNew?: boolean
 }
 
-const COMPANY_TYPE_LABELS: Record<string, string> = {
-  developer: '开发',
-  publisher: '发行',
-  distributor: '分销',
-  other: '其他'
-}
+const COMPANY_TYPE_LABELS = computed<Record<string, string>>(() => ({
+  developer: m.value.library.roles.gameCompany.developer,
+  publisher: m.value.library.roles.gameCompany.publisher,
+  distributor: m.value.library.roles.gameCompany.distributor,
+  other: m.value.library.roles.gameCompany.other
+}))
 
 const COMPANY_TYPE_ORDER: CompanyType[] = ['developer', 'publisher', 'distributor', 'other']
 
@@ -195,11 +198,11 @@ async function handleSave() {
       }
     }
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -324,7 +327,7 @@ function handleRevealSpoilersConfirm() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑公司</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editGameCompanies }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-4">
@@ -332,7 +335,7 @@ function handleRevealSpoilersConfirm() {
               v-if="items.length === 0"
               class="text-sm text-muted-foreground text-center py-8"
             >
-              暂无公司，点击下方按钮添加
+              {{ m.library.forms.emptyListHint({ label: m.library.entities.company }) }}
             </p>
             <template v-else>
               <template
@@ -383,7 +386,7 @@ function handleRevealSpoilersConfirm() {
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加公司
+            {{ m.library.detail.addEntity({ label: m.library.entities.company }) }}
           </Button>
           <div class="flex gap-2">
             <Button
@@ -394,19 +397,19 @@ function handleRevealSpoilersConfirm() {
                 :icon="spoilersRevealed ? 'icon-[mdi--eye-off-outline]' : 'icon-[mdi--eye-outline]'"
                 class="size-4 mr-1.5"
               />
-              {{ spoilersRevealed ? '隐藏剧透' : '显示剧透' }}
+              {{ spoilersRevealed ? m.library.forms.hideSpoilers : m.library.forms.showSpoilers }}
             </Button>
             <Button
               variant="outline"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -418,7 +421,7 @@ function handleRevealSpoilersConfirm() {
   <DeleteConfirmDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    entity-label="公司关联"
+    :entity-label="m.library.forms.linkLabels.company"
     mode="remove"
     @confirm="deleteId !== null && handleRemove(deleteId)"
   />

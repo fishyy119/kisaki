@@ -10,6 +10,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import { isPeriodBeforeCurrent, shiftPeriod } from '../period'
 import { getEntityIcon } from '@renderer/utils/format'
@@ -23,18 +24,20 @@ import {
 } from '@renderer/components/ui/page-header'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 
+const { m } = useI18n()
+
 const { reportType, currentPeriod, setCurrentPeriod, periodDisplay } = useStatistics()
 
 // Media type (currently only game, future expansion)
 const mediaType = ref<'game'>('game')
 
 // Report type navigation items
-const reportNavItems: PageHeaderNavItem[] = [
-  { label: '总览', routeName: 'statistics-overview' },
-  { label: '周报', routeName: 'statistics-weekly' },
-  { label: '月报', routeName: 'statistics-monthly' },
-  { label: '年报', routeName: 'statistics-yearly' }
-]
+const reportNavItems = computed<PageHeaderNavItem[]>(() => [
+  { label: m.value.statistics.tabs.overview, routeName: 'statistics-overview' },
+  { label: m.value.statistics.tabs.weekly, routeName: 'statistics-weekly' },
+  { label: m.value.statistics.tabs.monthly, routeName: 'statistics-monthly' },
+  { label: m.value.statistics.tabs.yearly, routeName: 'statistics-yearly' }
+])
 
 // Period navigation - only shown for non-overview reports
 const showPeriodNav = computed(() => reportType.value !== 'overview')
@@ -55,7 +58,7 @@ const canNavigateNext = computed(() => {
   <PageHeader>
     <!-- Left: Title + Report Type Navigation -->
     <PageHeaderTitle
-      title="统计"
+      :title="m.statistics.title"
       icon="icon-[mdi--chart-box-outline]"
     />
     <PageHeaderNav :items="reportNavItems" />
@@ -101,7 +104,7 @@ const canNavigateNext = computed(() => {
               :icon="getEntityIcon('game')"
               class="size-4"
             />
-            <span>游戏</span>
+            <span>{{ m.library.entities.game }}</span>
           </div>
         </SegmentedControlItem>
       </SegmentedControl>

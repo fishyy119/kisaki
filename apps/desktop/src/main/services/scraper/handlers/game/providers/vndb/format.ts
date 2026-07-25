@@ -6,7 +6,7 @@ import type {
   GamePersonType,
   Gender
 } from '@shared/db'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type { ExternalId } from '@shared/identity'
 import type { VndbExtlink, VndbSchemaEnumEntry, VndbTitle } from './types'
@@ -60,11 +60,11 @@ export function normalizeVndbId(
   throw new Error(`Invalid VNDB id: ${id}`)
 }
 
-export function isChineseLocale(locale?: Locale): boolean {
+export function isChineseLocale(locale?: ContentLocale): boolean {
   return locale === 'zh-Hans' || locale === 'zh-Hant'
 }
 
-function isEnglishLocale(locale?: Locale): boolean {
+function isEnglishLocale(locale?: ContentLocale): boolean {
   return locale === 'en'
 }
 
@@ -86,7 +86,10 @@ function normalizeVndbTitles(titles?: VndbTitle[] | null): ResolvedVndbTitle[] {
     .filter((entry) => entry.title.length > 0)
 }
 
-function pickLocalizedVndbTitle(titles: ResolvedVndbTitle[], locale?: Locale): string | undefined {
+function pickLocalizedVndbTitle(
+  titles: ResolvedVndbTitle[],
+  locale?: ContentLocale
+): string | undefined {
   if (!locale) return undefined
 
   const exactMain = titles.find((item) => item.lang === locale && item.isMain)?.title
@@ -111,7 +114,7 @@ export function resolveLocalizedVnName(
     alttitle?: string | null
     titles?: VndbTitle[] | null
   },
-  locale?: Locale
+  locale?: ContentLocale
 ): { name: string; originalName?: string } {
   const romanTitle = source.title?.trim() || ''
   const fallbackTitle = romanTitle || source.alttitle?.trim() || ''
@@ -141,7 +144,7 @@ export function resolveLocalizedVnName(
 export function resolveVndbEntityName(
   name?: string | null,
   original?: string | null,
-  locale?: Locale
+  locale?: ContentLocale
 ): { name: string; originalName?: string } {
   const normalizedName = name?.trim() || ''
   const normalizedOriginal = original?.trim() || ''

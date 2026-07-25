@@ -1,6 +1,7 @@
 import type { BangumiMediaScope } from '../media/scopes'
 import type { BangumiIndexSubject, BangumiUserCollection } from '../api/types'
 import type { LocalCollectionTarget, LocalMediaItem } from '../media/types'
+import { m } from '../i18n'
 
 export type PlannedImportAction =
   | {
@@ -94,7 +95,7 @@ export class ImportPlanner {
           action: {
             kind: 'error',
             scope: options.scope,
-            message: 'Bangumi 收藏缺少有效 subject ID。'
+            message: m().errors.collectionMissingSubjectId
           }
         })
         continue
@@ -138,7 +139,7 @@ export class ImportPlanner {
           action: {
             kind: 'error',
             scope: options.scope,
-            message: 'Bangumi 目录条目缺少有效 subject ID。'
+            message: m().errors.indexSubjectMissingId
           }
         })
         continue

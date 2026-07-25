@@ -1,6 +1,7 @@
 import type { BangumiIndexSubject, BangumiUserCollection } from '../../api/types'
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
 import { formatScopedCollectionType, getMediaScopeLabel } from '../../media/labels'
+import { m } from '../../i18n'
 import type { BangumiMediaScope } from '../../media/scopes'
 import type { LocalCollectionTarget, LocalMediaAdapter, LocalMediaItem } from '../../media/types'
 import { BangumiExtensionError } from '../../utils/errors'
@@ -57,7 +58,7 @@ export function previewCollectionImport(
       job.increment('wouldPatch')
     }
 
-    job.report('planningCollectionImport', '正在生成收藏导入预览...', {
+    job.report('planningCollectionImport', m().jobs.import.buildingCollectionsPreview, {
       current: index + 1,
       total: collected.operations.length,
       ratePeriod: 'second'
@@ -87,7 +88,7 @@ export function previewIndexImport(
       job.increment('wouldPatch')
     }
 
-    job.report('planningIndexImport', '正在生成目录导入预览...', {
+    job.report('planningIndexImport', m().jobs.import.buildingIndexPreview, {
       current: index + 1,
       total: collected.operations.length,
       ratePeriod: 'second'
@@ -110,11 +111,11 @@ export async function createIndexCollectionPatchPreviewChange(
   return createPreviewGroup({
     title: item.name,
     subjectId,
-    badge: { label: '更新本地游戏', tone: 'info' },
+    badge: { label: m().jobs.preview.updateLocalBadge({ scope: 'game' }), tone: 'info' },
     rows: [
       {
-        label: '合集',
-        before: '未加入',
+        label: m().jobs.preview.collection,
+        before: m().jobs.preview.notInCollection,
         after: formatTargetCollectionValue(targetCollection),
         tone: 'success'
       }
@@ -132,10 +133,14 @@ export function recordRemoteOnlyCollectionPreview(
     if (!subjectId) {
       continue
     }
-    job.report('buildingRemoteCollectionPreview', '正在生成远端收藏预览...', {
-      current: index + 1,
-      total: planItems.length
-    })
+    job.report(
+      'buildingRemoteCollectionPreview',
+      m().jobs.import.buildingRemoteCollectionsPreview,
+      {
+        current: index + 1,
+        total: planItems.length
+      }
+    )
 
     job.increment('remoteOnly')
     job.addPreviewGroup(
@@ -151,8 +156,8 @@ export function recordRemoteOnlyCollectionPreview(
           : `Bangumi ${subjectId}`,
         rows: [
           {
-            label: '收藏状态',
-            before: '远端',
+            label: m().jobs.preview.collectionStatus,
+            before: m().jobs.preview.remote,
             after: formatScopedCollectionType(scope, collection.type),
             tone: 'info'
           }
@@ -161,7 +166,7 @@ export function recordRemoteOnlyCollectionPreview(
     )
   }
 
-  job.report('completed', `${getMediaScopeLabel(scope)}远端收藏预览完成。`, {
+  job.report('completed', m().jobs.import.remoteCollectionsPreviewCompleted({ scope }), {
     current: planItems.length,
     total: planItems.length
   })
@@ -189,7 +194,7 @@ export function recordRemoteOnlyIndexPreview(
     if (!subjectId) {
       continue
     }
-    job.report('buildingRemoteIndexPreview', '正在生成远端目录预览...', {
+    job.report('buildingRemoteIndexPreview', m().jobs.import.buildingRemoteIndexPreview, {
       current: index + 1,
       total: planItems.length
     })
@@ -203,8 +208,8 @@ export function recordRemoteOnlyIndexPreview(
         rows: [
           {
             label: getMediaScopeLabel(scope),
-            before: '目录条目',
-            after: '远端预览',
+            before: m().jobs.preview.indexEntry,
+            after: m().jobs.preview.remotePreview,
             tone: 'info'
           }
         ]
@@ -212,7 +217,7 @@ export function recordRemoteOnlyIndexPreview(
     )
   }
 
-  job.report('completed', `${getMediaScopeLabel(scope)}目录远端预览完成。`, {
+  job.report('completed', m().jobs.import.remoteIndexPreviewCompleted({ scope }), {
     current: planItems.length,
     total: planItems.length
   })
@@ -236,14 +241,14 @@ function createImportCollectionCreatePreviewChange({
     : `${subjectId}`
   const label = getMediaScopeLabel(scope)
   const rows: BangumiJobPreviewRow[] = [
-    { label, before: '不存在', after: '创建', tone: 'success' },
-    { label: 'Bangumi ID', before: '无', after: `${subjectId}`, tone: 'success' }
+    { label, before: m().jobs.preview.missing, after: m().jobs.preview.create, tone: 'success' },
+    { label: 'Bangumi ID', before: m().common.none, after: `${subjectId}`, tone: 'success' }
   ]
 
   if (fields.status) {
     rows.push({
-      label: '状态',
-      before: '未设置',
+      label: m().jobs.preview.status,
+      before: m().jobs.preview.notSet,
       after: formatLocalStatus(mapCollectionTypeToLocalStatus(collection.type)),
       tone: 'success'
     })
@@ -251,8 +256,8 @@ function createImportCollectionCreatePreviewChange({
 
   if (fields.score) {
     rows.push({
-      label: '评分',
-      before: '未评分',
+      label: m().jobs.preview.score,
+      before: m().jobs.preview.notRated,
       after: formatCollectionScore(collection.rate),
       tone: 'success'
     })
@@ -260,8 +265,8 @@ function createImportCollectionCreatePreviewChange({
 
   if (fields.tags) {
     rows.push({
-      label: '标签',
-      before: '无',
+      label: m().jobs.preview.tags,
+      before: m().common.none,
       after: formatCollectionTags(collection.tags),
       tone: 'success'
     })
@@ -269,8 +274,8 @@ function createImportCollectionCreatePreviewChange({
 
   if (targetCollection) {
     rows.push({
-      label: '合集',
-      before: '未加入',
+      label: m().jobs.preview.collection,
+      before: m().jobs.preview.notInCollection,
       after: formatTargetCollectionValue(targetCollection),
       tone: 'success'
     })
@@ -279,7 +284,7 @@ function createImportCollectionCreatePreviewChange({
   return createPreviewGroup({
     title,
     subjectId,
-    badge: { label: `创建本地${label}`, tone: 'success' },
+    badge: { label: m().jobs.preview.createLocalBadge({ scope }), tone: 'success' },
     rows
   })
 }
@@ -300,7 +305,7 @@ function createImportCollectionPatchPreviewChangeFromPlan({
   return createPreviewGroup({
     title: item.name,
     subjectId,
-    badge: { label: `更新本地${getMediaScopeLabel(scope)}`, tone: 'info' },
+    badge: { label: m().jobs.preview.updateLocalBadge({ scope }), tone: 'info' },
     rows: updatePlan.rows
   })
 }
@@ -315,14 +320,14 @@ function createIndexCreatePreviewChange(
   const title = formatBangumiSubjectTitle(subject.name_cn, subject.name, subjectId)
   const label = getMediaScopeLabel(scope)
   const rows: BangumiJobPreviewRow[] = [
-    { label, before: '不存在', after: '创建', tone: 'success' },
-    { label: 'Bangumi ID', before: '无', after: `${subjectId}`, tone: 'success' }
+    { label, before: m().jobs.preview.missing, after: m().jobs.preview.create, tone: 'success' },
+    { label: 'Bangumi ID', before: m().common.none, after: `${subjectId}`, tone: 'success' }
   ]
 
   if (targetCollection) {
     rows.push({
-      label: '合集',
-      before: '未加入',
+      label: m().jobs.preview.collection,
+      before: m().jobs.preview.notInCollection,
       after: formatTargetCollectionValue(targetCollection),
       tone: 'success'
     })
@@ -331,7 +336,7 @@ function createIndexCreatePreviewChange(
   return createPreviewGroup({
     title,
     subjectId,
-    badge: { label: `创建本地${label}`, tone: 'success' },
+    badge: { label: m().jobs.preview.createLocalBadge({ scope }), tone: 'success' },
     rows
   })
 }
@@ -341,7 +346,7 @@ function reportCollectionImportPreviewStart(job: JobStateController, total: numb
     return
   }
 
-  job.report('planningCollectionImport', '正在生成收藏导入预览...', {
+  job.report('planningCollectionImport', m().jobs.import.buildingCollectionsPreview, {
     current: 0,
     total,
     ratePeriod: 'second'
@@ -353,7 +358,7 @@ function reportIndexImportPreviewStart(job: JobStateController, total: number): 
     return
   }
 
-  job.report('planningIndexImport', '正在生成目录导入预览...', {
+  job.report('planningIndexImport', m().jobs.import.buildingIndexPreview, {
     current: 0,
     total,
     ratePeriod: 'second'

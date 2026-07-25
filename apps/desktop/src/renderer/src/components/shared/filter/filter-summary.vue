@@ -8,6 +8,7 @@ import { computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import { useI18n } from '@renderer/composables'
 import { countActiveFilters } from '@shared/filter'
 import type { DateRangeValue, FilterState, NumberRangeValue, RelationValue } from '@shared/filter'
 import type { FilterUiFieldDef, FilterUiSpec } from './specs/types'
@@ -26,6 +27,8 @@ const emit = defineEmits<{
   clear: []
 }>()
 
+const { m } = useI18n()
+
 const activeCount = computed(() => countActiveFilters(props.filter))
 const fieldByKey = computed(() => new Map(props.uiSpec.fields.map((f) => [f.key, f])))
 
@@ -36,7 +39,7 @@ function formatValue(
   if (value === null || value === undefined) return null
 
   if (field.control === 'boolean') {
-    return { value: value === true ? '是' : '否' }
+    return { value: value === true ? m.value.common.yes : m.value.common.no }
   }
 
   if (field.control === 'select') {
@@ -49,7 +52,7 @@ function formatValue(
     const arr = Array.isArray(value) ? (value as string[]) : []
     const labels = arr.map((v) => field.options.find((o) => o.value === v)?.label ?? v)
     if (labels.length <= 2) return { value: labels.join(', ') }
-    return { value: `${labels[0]} 等 ${labels.length} 项` }
+    return { value: m.value.filter.summaryAndMore({ first: labels[0], count: labels.length }) }
   }
 
   if (field.control === 'numberRange') {
@@ -64,8 +67,8 @@ function formatValue(
   if (field.control === 'dateRange') {
     const range = value as DateRangeValue
     if (range.from && range.to) return { value: `${range.from} ~ ${range.to}` }
-    if (range.from) return { value: `从 ${range.from}` }
-    if (range.to) return { value: `到 ${range.to}` }
+    if (range.from) return { value: m.value.filter.summaryFrom({ value: range.from }) }
+    if (range.to) return { value: m.value.filter.summaryTo({ value: range.to }) }
     return null
   }
 
@@ -73,7 +76,10 @@ function formatValue(
     const rel = value as RelationValue
     const count = Array.isArray(rel.ids) ? rel.ids.length : 0
     if (count === 0) return null
-    return { value: `${count} 项`, mode: rel.match === 'all' ? '全部' : undefined }
+    return {
+      value: m.value.common.itemCount({ count }),
+      mode: rel.match === 'all' ? m.value.filter.matchAll : undefined
+    }
   }
 
   return { value: String(value) }
@@ -99,7 +105,7 @@ const activeEntries = computed(() => {
     <span
       v-if="!props.compact"
       class="text-xs text-muted-foreground"
-      >无筛选条件</span
+      >{{ m.filter.noActive }}</span
     >
   </template>
 
@@ -111,13 +117,13 @@ const activeEntries = computed(() => {
       variant="secondary"
       class="text-xs"
     >
-      {{ activeCount }} 个筛选
+      {{ m.filter.activeCount({ count: activeCount }) }}
     </Badge>
     <Button
       variant="ghost"
       size="icon-sm"
       class="size-5"
-      title="清除筛选"
+      :title="m.filter.clearFilters"
       @click="emit('clear')"
     >
       <Icon
@@ -145,7 +151,7 @@ const activeEntries = computed(() => {
       class="h-6 text-xs px-2"
       @click="emit('clear')"
     >
-      清除
+      {{ m.common.clear }}
     </Button>
   </div>
 </template>

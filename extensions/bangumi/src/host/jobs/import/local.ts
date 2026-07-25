@@ -10,6 +10,7 @@ import type {
 } from '../../media/types'
 import { BANGUMI_SOURCE_ID } from '../../utils/constants'
 import { BangumiExtensionError } from '../../utils/errors'
+import { m } from '../../i18n'
 import { omitUndefined } from '../../utils/object'
 import type { BangumiImportCollectionsArgs, BangumiImportTargetCollection } from '../args'
 import type { CollectionLocalUpdatePlan } from './model'
@@ -66,7 +67,7 @@ export async function importItemFromIndexSubject(
 ) {
   const subjectId = normalizePositiveInteger(subject.id)
   if (!subjectId) {
-    throw new BangumiExtensionError('bangumi_validation', 'Bangumi 目录条目缺少有效 subject ID。')
+    throw new BangumiExtensionError('bangumi_validation', m().errors.indexSubjectMissingId)
   }
 
   return executor.addFromScraper(scope, {
@@ -82,7 +83,7 @@ export async function requireLocalItem(
 ): Promise<LocalMediaItem> {
   const item = await adapter.getLocalItem(localId)
   if (!item) {
-    throw new BangumiExtensionError('library_update_failed', '导入后的本地条目不存在。')
+    throw new BangumiExtensionError('library_update_failed', m().errors.importedItemMissing)
   }
   return item
 }
@@ -162,7 +163,7 @@ export async function buildCollectionLocalUpdatePlan({
     if (item.status !== targetStatus) {
       patch.status = targetStatus
       rows.push({
-        label: '状态',
+        label: m().jobs.preview.status,
         before: formatLocalStatus(item.status),
         after: formatLocalStatus(targetStatus),
         tone: 'info'
@@ -176,7 +177,7 @@ export async function buildCollectionLocalUpdatePlan({
     if (localScore !== targetScore) {
       patch.score = targetScore
       rows.push({
-        label: '评分',
+        label: m().jobs.preview.score,
         before: formatLocalScore(localScore),
         after: formatLocalScore(targetScore),
         tone: 'info'
@@ -191,7 +192,7 @@ export async function buildCollectionLocalUpdatePlan({
     if (missingTags.length > 0) {
       tagNames = missingTags
       rows.push({
-        label: '标签',
+        label: m().jobs.preview.tags,
         before: formatTagNames([...currentTagNames]),
         after: formatTagNames(targetTagNames),
         tone: 'info'
@@ -205,8 +206,8 @@ export async function buildCollectionLocalUpdatePlan({
   if (targetCollection && !hasTargetCollectionRelation) {
     resolvedTargetCollection = targetCollection
     rows.push({
-      label: '合集',
-      before: '未加入',
+      label: m().jobs.preview.collection,
+      before: m().jobs.preview.notInCollection,
       after: formatTargetCollectionValue(targetCollection),
       tone: 'success'
     })
@@ -253,25 +254,25 @@ export function formatCollectionScore(score: number | undefined): string {
 
 export function formatCollectionTags(tags: readonly string[] | undefined): string {
   const normalized = (tags ?? []).map((tag) => tag.trim()).filter((tag) => tag.length > 0)
-  return normalized.length > 0 ? normalized.join('、') : '无'
+  return normalized.length > 0 ? normalized.join(m().common.listSeparator) : m().common.none
 }
 
 export function formatLocalStatus(value: string | undefined): string {
   switch (value) {
     case 'notStarted':
-      return '想玩'
+      return m().jobs.gameStatus.notStarted
     case 'inProgress':
-      return '在玩'
+      return m().jobs.gameStatus.inProgress
     case 'partial':
-      return '部分通关'
+      return m().jobs.gameStatus.partial
     case 'completed':
-      return '玩过'
+      return m().jobs.gameStatus.completed
     case 'multiple':
-      return '多周目'
+      return m().jobs.gameStatus.multiple
     case 'shelved':
-      return '搁置'
+      return m().jobs.gameStatus.shelved
     default:
-      return '未设置'
+      return m().jobs.gameStatus.unset
   }
 }
 
@@ -320,17 +321,17 @@ function normalizeCollectionTagNames(tags: readonly string[] | undefined): reado
 }
 
 function formatLocalScore(score: number | null): string {
-  return score === null ? '未评分' : (score / 10).toFixed(1)
+  return score === null ? m().jobs.preview.notRated : (score / 10).toFixed(1)
 }
 
 function formatTagNames(tagNames: readonly string[]): string {
-  return tagNames.length > 0 ? tagNames.join('、') : '无'
+  return tagNames.length > 0 ? tagNames.join(m().common.listSeparator) : m().common.none
 }
 
 function requireProfileId(profileId: string | undefined): string {
   const normalized = profileId?.trim()
   if (!normalized) {
-    throw new BangumiExtensionError('profile_missing', '请选择用于创建游戏的刮削配置。')
+    throw new BangumiExtensionError('profile_missing', m().errors.profileRequired)
   }
   return normalized
 }

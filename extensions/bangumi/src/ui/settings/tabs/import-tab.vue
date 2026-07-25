@@ -11,6 +11,7 @@ import {
   Input
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsOverview } from '../../../shared/settings'
+import { m } from '../i18n'
 import SettingsSection from '../components/settings-section.vue'
 import ImportCollectionsDialog from '../flows/import-collections-dialog.vue'
 import ImportIndexDialog from '../flows/import-index-dialog.vue'
@@ -38,19 +39,19 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
       v-if="!hasProfiles"
       variant="warning"
     >
-      尚未配置游戏刮削配置，导入仍可预览，但执行本地写入前需要可用配置。
+      {{ m.ui.import.noProfilesWarning }}
     </Alert>
 
     <SettingsSection
-      title="导入来源"
-      description="导入是一次性任务；选项只用于本次运行，不写入 Bangumi 偏好。"
+      :title="m.ui.import.sourceTitle"
+      :description="m.ui.import.sourceDescription"
       surface="rows"
     >
       <FieldGroup>
         <Field
           orientation="horizontal"
-          label="我的收藏"
-          description="按收藏类型导入当前 Bangumi 用户的游戏收藏。"
+          :label="m.ui.import.myCollections"
+          :description="m.ui.import.myCollectionsDescription"
         >
           <FieldContent class="flex-row items-center">
             <Button
@@ -63,21 +64,21 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
                 icon="icon-[mdi--account-heart-outline]"
                 class="size-3.5"
               />
-              配置导入
+              {{ m.ui.import.configureImport }}
             </Button>
           </FieldContent>
         </Field>
 
         <Field
           orientation="horizontal"
-          label="Bangumi 目录"
-          description="输入目录 ID 或链接后配置导入。"
+          :label="m.ui.import.bangumiIndex"
+          :description="m.ui.import.bangumiIndexDescription"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Input
               v-model="indexInput"
               type="text"
-              placeholder="目录 ID 或 https://bgm.tv/index/..."
+              :placeholder="m.ui.import.indexPlaceholder"
               class="w-72"
             />
             <Button
@@ -90,7 +91,7 @@ const hasProfiles = computed(() => props.overview.profiles.length > 0)
                 icon="icon-[mdi--playlist-plus]"
                 class="size-3.5"
               />
-              配置导入
+              {{ m.ui.import.configureImport }}
             </Button>
           </FieldContent>
         </Field>

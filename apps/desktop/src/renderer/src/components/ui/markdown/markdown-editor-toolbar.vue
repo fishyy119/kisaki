@@ -3,6 +3,7 @@ import type { HTMLAttributes } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { Separator } from '@renderer/components/ui/separator'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 
 interface Props {
@@ -36,6 +37,8 @@ const emit = defineEmits<{
   fullscreen: []
   exitFullscreen: []
 }>()
+
+const { m } = useI18n()
 </script>
 
 <template>
@@ -44,7 +47,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Bold"
+        :title="m.ui.markdown.toolbar.bold"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('wrapSelection', '**', '**')"
@@ -57,7 +60,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Italic"
+        :title="m.ui.markdown.toolbar.italic"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('wrapSelection', '*', '*')"
@@ -70,7 +73,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Strikethrough"
+        :title="m.ui.markdown.toolbar.strikethrough"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('wrapSelection', '~~', '~~')"
@@ -83,7 +86,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Inline code"
+        :title="m.ui.markdown.toolbar.inlineCode"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('wrapSelection', '`', '`')"
@@ -96,7 +99,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Code block"
+        :title="m.ui.markdown.toolbar.codeBlock"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertBlock', '```\\n\\n```')"
@@ -115,7 +118,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Link"
+        :title="m.ui.markdown.toolbar.link"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertLink')"
@@ -128,7 +131,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Image syntax"
+        :title="m.ui.markdown.toolbar.imageSyntax"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertImageSyntax')"
@@ -147,7 +150,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Heading 1"
+        :title="m.ui.markdown.toolbar.heading1"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertHeading', 1)"
@@ -160,7 +163,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Heading 2"
+        :title="m.ui.markdown.toolbar.heading2"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertHeading', 2)"
@@ -173,7 +176,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Quote"
+        :title="m.ui.markdown.toolbar.quote"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('prefixSelectedLines', '> ')"
@@ -186,7 +189,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Bulleted list"
+        :title="m.ui.markdown.toolbar.bulletedList"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('prefixSelectedLines', '- ')"
@@ -199,7 +202,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Numbered list"
+        :title="m.ui.markdown.toolbar.numberedList"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('prefixSelectedLines', '1. ')"
@@ -212,7 +215,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Task list"
+        :title="m.ui.markdown.toolbar.taskList"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('prefixSelectedLines', '- [ ] ')"
@@ -225,7 +228,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Table"
+        :title="m.ui.markdown.toolbar.table"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertTable')"
@@ -238,7 +241,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-xs"
-        title="Footnote"
+        :title="m.ui.markdown.toolbar.footnote"
         type="button"
         :disabled="props.readonly"
         @click.prevent="emit('insertFootnote')"
@@ -257,7 +260,7 @@ const emit = defineEmits<{
         <Button
           variant="ghost"
           size="icon-xs"
-          title="Attach image"
+          :title="m.ui.markdown.toolbar.attachImage"
           type="button"
           :disabled="props.readonly"
           @click.prevent="emit('attachImage')"
@@ -275,7 +278,7 @@ const emit = defineEmits<{
         v-if="props.showPreview"
         variant="ghost"
         size="icon-xs"
-        title="Preview"
+        :title="m.ui.markdown.toolbar.preview"
         type="button"
         @click.prevent="emit('preview')"
       >
@@ -288,7 +291,7 @@ const emit = defineEmits<{
         v-if="props.showFullscreen"
         variant="ghost"
         size="icon-xs"
-        title="Fullscreen"
+        :title="m.ui.markdown.toolbar.fullscreen"
         type="button"
         @click.prevent="emit('fullscreen')"
       >
@@ -301,7 +304,7 @@ const emit = defineEmits<{
         v-if="props.showExitFullscreen"
         variant="ghost"
         size="icon-xs"
-        title="Exit fullscreen"
+        :title="m.ui.markdown.toolbar.exitFullscreen"
         type="button"
         @click.prevent="emit('exitFullscreen')"
       >

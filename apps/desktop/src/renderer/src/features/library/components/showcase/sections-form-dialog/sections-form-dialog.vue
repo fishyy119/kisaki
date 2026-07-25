@@ -37,14 +37,17 @@ import type {
   SortDirection
 } from '@shared/db'
 import type { AllEntityType, ContentEntityType } from '@shared/common'
-
-const LAYOUT_LABELS: Record<string, string> = {
-  horizontal: '横向滚动',
-  grid: '网格'
-}
+import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Library')
+
+const { m } = useI18n()
+
+const LAYOUT_LABELS = computed<Record<string, string>>(() => ({
+  horizontal: m.value.library.showcase.layoutHorizontal,
+  grid: m.value.library.showcase.layoutGrid
+}))
 
 // =============================================================================
 // Props & Emits
@@ -159,11 +162,11 @@ async function handleSave() {
         .where(eq(showcaseSections.id, item.id))
     }
 
-    notify.success('已保存')
+    notify.success(m.value.library.showcase.manage.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.showcase.manage.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -266,14 +269,14 @@ function handleClose() {
     <Dialog v-model:open="open">
       <DialogContent class="max-w-lg">
         <DialogHeader>
-          <DialogTitle>管理区块</DialogTitle>
+          <DialogTitle>{{ m.library.showcase.manage.title }}</DialogTitle>
         </DialogHeader>
 
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
             <template v-if="items.length === 0">
               <p class="text-sm text-muted-foreground text-center py-8">
-                暂无区块，点击下方按钮添加
+                {{ m.library.showcase.manage.empty }}
               </p>
             </template>
             <template v-else>
@@ -281,7 +284,7 @@ function handleClose() {
                 v-for="(item, index) in items"
                 :key="item.id"
                 :icon="getEntityIcon(item.entityType as AllEntityType) || 'icon-[mdi--view-grid]'"
-                :title="item.name || '未命名'"
+                :title="item.name || m.library.showcase.manage.unnamed"
                 :description="LAYOUT_LABELS[item.layout] || item.layout"
                 :class="cn(!item.isVisible && 'opacity-50')"
               >
@@ -299,7 +302,11 @@ function handleClose() {
                       variant="ghost"
                       size="icon-sm"
                       class="size-7"
-                      :title="item.isVisible ? '隐藏' : '显示'"
+                      :title="
+                        item.isVisible
+                          ? m.library.showcase.manage.hide
+                          : m.library.showcase.manage.show
+                      "
                       @click="handleToggleVisibility(index)"
                     >
                       <Icon
@@ -323,14 +330,14 @@ function handleClose() {
               @click="handleAddNew"
             >
               <span class="icon-[mdi--plus] size-4 mr-1" />
-              添加区块
+              {{ m.library.showcase.manage.addSection }}
             </Button>
             <Button
               variant="outline"
               @click="isPresetDialogOpen = true"
             >
               <span class="icon-[mdi--lightning-bolt-outline] size-4 mr-1" />
-              选择预设
+              {{ m.library.showcase.manage.selectPresets }}
             </Button>
           </div>
           <div class="flex gap-2">
@@ -338,13 +345,13 @@ function handleClose() {
               variant="outline"
               @click="handleClose"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              {{ isSaving ? '保存中...' : '保存' }}
+              {{ isSaving ? m.common.saving : m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -372,7 +379,7 @@ function handleClose() {
     <DeleteConfirmDialog
       v-if="deleteIndex !== null"
       v-model:open="deleteDialogOpen"
-      entity-label="区块"
+      :entity-label="m.library.showcase.manage.sectionEntityLabel"
       :entity-name="deleteIndex !== null ? items[deleteIndex]?.name : ''"
       mode="remove"
       @confirm="handleRemove"

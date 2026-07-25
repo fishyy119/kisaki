@@ -1,6 +1,7 @@
 import { kisaki } from '@kisaki3/extension-sdk'
 import type { BangumiActiveJobsState } from '../../shared/settings'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from './commands'
 
 export async function isBangumiCommandActive(commandId: BangumiCommandId): Promise<boolean> {
@@ -13,10 +14,7 @@ export async function isBangumiCommandActive(commandId: BangumiCommandId): Promi
 
 export async function assertBangumiCommandIdle(commandId: BangumiCommandId): Promise<void> {
   if (await isBangumiCommandActive(commandId)) {
-    throw new BangumiExtensionError(
-      'bangumi_job_running',
-      '该 Bangumi 任务正在运行，请先等待完成或取消。'
-    )
+    throw new BangumiExtensionError('bangumi_job_running', m().errors.jobAlreadyRunning)
   }
 }
 

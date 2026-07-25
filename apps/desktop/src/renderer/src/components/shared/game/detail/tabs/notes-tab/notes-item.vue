@@ -6,7 +6,7 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import type { GameNote } from '@shared/db'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 
 interface Props {
@@ -24,6 +24,8 @@ const emit = defineEmits<{
   edit: []
   delete: []
 }>()
+
+const { m, f } = useI18n()
 </script>
 
 <template>
@@ -54,7 +56,7 @@ const emit = defineEmits<{
 
       <div class="min-w-0">
         <p class="text-sm font-medium truncate">{{ props.note.name }}</p>
-        <p class="text-xs text-muted-foreground">{{ formatDate(props.note.updatedAt) }}</p>
+        <p class="text-xs text-muted-foreground">{{ f.date(props.note.updatedAt) }}</p>
       </div>
     </div>
 
@@ -62,7 +64,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="打开"
+        :tooltip="m.common.open"
         @click="emit('open')"
       >
         <Icon
@@ -74,7 +76,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="上移"
+        :tooltip="m.common.moveUp"
         :disabled="!props.canMoveUp"
         @click="emit('moveUp')"
       >
@@ -87,7 +89,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="下移"
+        :tooltip="m.common.moveDown"
         :disabled="!props.canMoveDown"
         @click="emit('moveDown')"
       >
@@ -100,7 +102,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="编辑"
+        :tooltip="m.common.edit"
         @click="emit('edit')"
       >
         <Icon
@@ -112,7 +114,7 @@ const emit = defineEmits<{
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="删除"
+        :tooltip="m.common.delete"
         class="hover:text-destructive"
         @click="emit('delete')"
       >

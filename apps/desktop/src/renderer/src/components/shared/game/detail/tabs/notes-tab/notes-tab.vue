@@ -18,6 +18,9 @@ import GameDetailNotesItem from './notes-item.vue'
 import GameDetailNotesViewDialog from './notes-view-dialog.vue'
 import { GameNotesFormDialog } from '../../../forms'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -88,10 +91,10 @@ function handleViewEdit() {
 async function handleDelete(noteId: string) {
   try {
     await db.delete(gameNotes).where(eq(gameNotes.id, noteId))
-    notify.success('已删除笔记')
+    notify.success(m.value.game.notes.noteDeleted)
   } catch (error) {
     log.error('Delete note failed:', error)
-    notify.error('删除失败')
+    notify.error(m.value.common.deleteFailed)
   } finally {
     deleteTargetId.value = null
   }
@@ -141,7 +144,7 @@ async function reorder(noteId: string, direction: -1 | 1) {
       .where(eq(gameNotes.id, neighbor.id))
   } catch (error) {
     log.error('Reorder failed:', error)
-    notify.error('排序失败')
+    notify.error(m.value.game.notes.reorderFailed)
     displayNotes.value = [...notes.value]
   } finally {
     isReordering.value = false
@@ -162,14 +165,14 @@ async function reorder(noteId: string, direction: -1 | 1) {
           icon="icon-[mdi--note-text-outline]"
           class="size-12 text-muted-foreground/30 mb-3"
         />
-        <p class="text-sm text-muted-foreground">暂无笔记</p>
-        <p class="text-xs text-muted-foreground/70 mt-1 mb-4">记录游戏过程中的想法与截图</p>
+        <p class="text-sm text-muted-foreground">{{ m.game.notes.emptyTitle }}</p>
+        <p class="text-xs text-muted-foreground/70 mt-1 mb-4">{{ m.game.notes.emptyHint }}</p>
         <Button @click="openCreateDialog">
           <Icon
             icon="icon-[mdi--plus]"
             class="size-4 mr-2"
           />
-          新建笔记
+          {{ m.game.notes.newNote }}
         </Button>
       </div>
     </template>
@@ -187,9 +190,11 @@ async function reorder(noteId: string, direction: -1 | 1) {
                 icon="icon-[mdi--plus]"
                 class="size-4 mr-1.5"
               />
-              新建笔记
+              {{ m.game.notes.newNote }}
             </Button>
-            <span class="text-xs text-muted-foreground">{{ displayNotes.length }} 条</span>
+            <span class="text-xs text-muted-foreground">{{
+              m.common.itemCount({ count: displayNotes.length })
+            }}</span>
           </div>
         </div>
 
@@ -228,7 +233,7 @@ async function reorder(noteId: string, direction: -1 | 1) {
     <DeleteConfirmDialog
       v-if="deleteDialogOpen"
       v-model:open="deleteDialogOpen"
-      entity-label="笔记"
+      :entity-label="m.game.notes.entityLabel"
       @confirm="deleteTargetId && handleDelete(deleteTargetId)"
     />
   </template>

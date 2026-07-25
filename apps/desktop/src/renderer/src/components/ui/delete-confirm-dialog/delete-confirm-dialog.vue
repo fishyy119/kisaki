@@ -12,6 +12,7 @@ import {
   AlertDialogCancel
 } from '@renderer/components/ui/alert-dialog'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   entityLabel: string
@@ -42,33 +43,37 @@ const emit = defineEmits<{
 
 const isDeleting = ref(false)
 
+const { m } = useI18n()
+
 // Computed text based on mode
 const titleText = computed(() => {
   if (props.mode === 'remove') {
-    return `确认移除${props.entityLabel}？`
+    return m.value.ui.deleteConfirm.removeTitle({ label: props.entityLabel })
   }
-  return `确认删除${props.entityLabel}？`
+  return m.value.ui.deleteConfirm.deleteTitle({ label: props.entityLabel })
 })
 
 const descriptionText = computed(() => {
   if (props.mode === 'remove') {
     if (props.entityName) {
-      return `确定要移除「${props.entityName}」吗？`
+      return m.value.ui.deleteConfirm.removeNamedDescription({ name: props.entityName })
     }
-    return `确定要移除此${props.entityLabel}吗？`
+    return m.value.ui.deleteConfirm.removeDescription({ label: props.entityLabel })
   }
-  // delete mode
   if (props.entityName) {
-    return `确定要删除「${props.entityName}」吗？此操作无法撤销，${props.entityLabel}数据将被永久删除。`
+    return m.value.ui.deleteConfirm.deleteNamedDescription({
+      name: props.entityName,
+      label: props.entityLabel
+    })
   }
-  return `此操作无法撤销，${props.entityLabel}数据将被永久删除。`
+  return m.value.ui.deleteConfirm.deleteDescription({ label: props.entityLabel })
 })
 
 const actionText = computed(() => {
   if (props.mode === 'remove') {
-    return isDeleting.value ? '移除中...' : '移除'
+    return isDeleting.value ? m.value.ui.deleteConfirm.removing : m.value.common.remove
   }
-  return isDeleting.value ? '删除中...' : '删除'
+  return isDeleting.value ? m.value.ui.deleteConfirm.deleting : m.value.common.delete
 })
 
 async function handleConfirm() {
@@ -108,7 +113,7 @@ async function handleConfirm() {
           </div>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="isDeleting">取消</AlertDialogCancel>
+          <AlertDialogCancel :disabled="isDeleting">{{ m.common.cancel }}</AlertDialogCancel>
           <AlertDialogAction
             :disabled="isDeleting"
             @click="handleConfirm"

@@ -24,6 +24,9 @@ import { notify } from '@renderer/core/notify'
 import { ListItem, ListItemActions } from '@renderer/components/ui/list-item'
 import PersonRelatedSitesItemFormDialog from './related-site-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Person')
 
@@ -85,11 +88,11 @@ async function handleSave() {
       .set({ relatedSites: validSites.length > 0 ? validSites : null })
       .where(eq(persons.id, props.personId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -157,7 +160,7 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑相关链接</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editRelatedSites }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
@@ -165,7 +168,7 @@ function handleCancel() {
               v-if="sites.length === 0"
               class="text-sm text-muted-foreground text-center py-8"
             >
-              暂无相关链接，点击下方按钮添加
+              {{ m.library.forms.emptyListHint({ label: m.library.forms.linkLabels.link }) }}
             </p>
             <ListItem
               v-for="(site, index) in sites"
@@ -198,20 +201,20 @@ function handleCancel() {
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加链接
+            {{ m.library.forms.addLink }}
           </Button>
           <div class="flex gap-2">
             <Button
               variant="outline"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -231,7 +234,7 @@ function handleCancel() {
   <DeleteConfirmDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    entity-label="链接"
+    :entity-label="m.library.forms.linkLabels.link"
     @confirm="handleRemoveSite"
   />
 </template>

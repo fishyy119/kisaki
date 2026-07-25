@@ -4,6 +4,7 @@ import type { BangumiMediaScope } from '../media/scopes'
 import type { LocalMediaChangeEvent } from '../media/types'
 import type { MediaRegistry } from '../media/registry'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import type { SyncEngine, SyncItemResult } from './engine'
 import type { SyncQueueStore } from './queue'
 
@@ -134,7 +135,7 @@ export class SyncSubscription implements Disposable {
     }
 
     try {
-      await kisaki.notify.error('Bangumi 自动同步失败', {
+      await kisaki.notify.error(m().notifications.autoSyncFailedTitle, {
         message: toUserErrorMessage(error),
         id: `bangumi-auto-sync:${scope}:${localId}`
       })
@@ -197,7 +198,7 @@ function toUserErrorMessage(error: unknown): string {
     return error.message.trim()
   }
 
-  return 'Bangumi 自动同步失败。'
+  return m().notifications.autoSyncFailedFallback
 }
 
 function toSafeErrorLog(error: unknown): Record<string, unknown> {

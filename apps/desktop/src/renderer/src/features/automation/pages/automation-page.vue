@@ -17,6 +17,7 @@ import {
 } from '@renderer/components/ui/alert-dialog'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useEvent } from '@renderer/composables'
 import type { Automation } from '@shared/automation'
@@ -39,6 +40,8 @@ import type {
 const log = createLogger('Automation')
 
 const AUTOMATION_TABLE_COLUMNS = ['', '20%', '17%', '17%', '12%', '8.25rem']
+
+const { m } = useI18n()
 
 const searchQuery = ref('')
 const statusFilter = ref<AutomationStatusFilter>('all')
@@ -211,15 +214,18 @@ async function handleRun(automation: Automation) {
   try {
     const record = unwrapIpcData(await ipcManager.invoke('automation:run', automation.id))
     if (!record) {
-      notify.info('自动化未触发')
+      notify.info(m.value.automation.feedback.notTriggered)
     } else if (record.invocationStatus === 'completed') {
-      notify.success('自动化调用已完成')
+      notify.success(m.value.automation.feedback.runCompleted)
     } else {
-      notify.error('自动化调用失败', record.error?.message)
+      notify.error(m.value.automation.feedback.runFailed, record.error?.message)
     }
   } catch (error) {
     log.error('Failed to run Automation:', error)
-    notify.error('运行自动化失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.automation.feedback.runError,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     removeFromSet(runningAutomationIds, automation.id)
     await refetch()
@@ -231,14 +237,17 @@ async function handleCancel(automation: Automation) {
   try {
     const cancelled = unwrapIpcData(await ipcManager.invoke('automation:cancel', automation.id))
     if (cancelled) {
-      notify.info('已请求停止自动化重试')
+      notify.info(m.value.automation.feedback.stopRequested)
     } else {
-      notify.info('自动化未在运行')
+      notify.info(m.value.automation.feedback.notRunning)
       removeFromSet(runningAutomationIds, automation.id)
     }
   } catch (error) {
     log.error('Failed to cancel Automation:', error)
-    notify.error('停止自动化失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.automation.feedback.stopFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     setBusy(automation.id, false)
   }
@@ -248,11 +257,16 @@ async function handleSetEnabled(automation: Automation, enabled: boolean) {
   setBusy(automation.id, true)
   try {
     unwrapIpcData(await ipcManager.invoke('automation:set-enabled', automation.id, enabled))
-    notify.success(enabled ? '自动化已启用' : '自动化已禁用')
+    notify.success(
+      enabled ? m.value.automation.feedback.enabled : m.value.automation.feedback.disabled
+    )
     await refetch()
   } catch (error) {
     log.error('Failed to toggle Automation:', error)
-    notify.error('更新自动化失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.automation.feedback.updateFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     setBusy(automation.id, false)
   }
@@ -268,13 +282,16 @@ async function handleDeleteConfirmed() {
   setBusy(automation.id, true)
   try {
     unwrapIpcVoid(await ipcManager.invoke('automation:delete', automation.id))
-    notify.success('自动化已删除')
+    notify.success(m.value.automation.feedback.deleted)
     deleteDialogOpen.value = false
     pendingDeleteAutomation.value = null
     await refetch()
   } catch (error) {
     log.error('Failed to delete Automation:', error)
-    notify.error('删除自动化失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.automation.feedback.deleteFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     setBusy(automation.id, false)
     deleting.value = false
@@ -334,7 +351,7 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           v-else-if="automationList.length === 0"
           state="empty"
           icon="icon-[mdi--timer-outline]"
-          description="暂无自动化"
+          :description="m.automation.page.emptyDescription"
           class="h-full"
         />
 
@@ -342,7 +359,7 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           v-else-if="filteredAutomations.length === 0"
           state="empty"
           icon="icon-[mdi--filter-off-outline]"
-          description="没有匹配的自动化"
+          :description="m.automation.page.noMatchDescription"
           class="h-full"
         />
 
@@ -354,12 +371,12 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
           <template #header>
             <TableHeader>
               <TableRow class="h-8">
-                <TableHead class="pl-4">名称</TableHead>
-                <TableHead>命令</TableHead>
-                <TableHead>触发</TableHead>
-                <TableHead>运行</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead class="pr-4 text-right">操作</TableHead>
+                <TableHead class="pl-4">{{ m.automation.page.table.name }}</TableHead>
+                <TableHead>{{ m.automation.page.table.command }}</TableHead>
+                <TableHead>{{ m.automation.page.table.trigger }}</TableHead>
+                <TableHead>{{ m.automation.page.table.run }}</TableHead>
+                <TableHead>{{ m.automation.page.table.status }}</TableHead>
+                <TableHead class="pr-4 text-right">{{ m.automation.page.table.actions }}</TableHead>
               </TableRow>
             </TableHeader>
           </template>
@@ -402,18 +419,18 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
     <AlertDialog v-model:open="deleteDialogOpen">
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>删除自动化？</AlertDialogTitle>
+          <AlertDialogTitle>{{ m.automation.page.deleteTitle }}</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription>
-          确定要删除「{{ pendingDeleteAutomation?.name }}」吗？此操作无法撤销。
+          {{ m.automation.page.deleteDescription({ name: pendingDeleteAutomation?.name ?? '' }) }}
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="deleting">取消</AlertDialogCancel>
+          <AlertDialogCancel :disabled="deleting">{{ m.common.cancel }}</AlertDialogCancel>
           <AlertDialogAction
             :disabled="deleting"
             @click="handleDeleteConfirmed"
           >
-            {{ deleting ? '删除中' : '删除' }}
+            {{ deleting ? m.automation.page.deleting : m.common.delete }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

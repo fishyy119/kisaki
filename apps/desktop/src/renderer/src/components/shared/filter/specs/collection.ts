@@ -1,14 +1,25 @@
+import { computed, type ComputedRef } from 'vue'
+import { messages } from '@renderer/core/i18n'
 import type { FilterUiSpec } from './types'
 
-export const collectionFilterUiSpec: FilterUiSpec = {
-  entityType: 'collection',
-  fields: [
-    { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
-    { key: 'createdAt', label: '添加时间', category: 'date', control: 'dateRange' }
-  ],
-  sortOptions: [
-    { key: 'name', label: '名称' },
-    { key: 'order', label: '排序' },
-    { key: 'createdAt', label: '添加时间' }
-  ]
-}
+export const collectionFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
+  const m = messages.value
+
+  return {
+    entityType: 'collection',
+    fields: [
+      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+      {
+        key: 'createdAt',
+        label: m.library.fields.addedDate,
+        category: 'date',
+        control: 'dateRange'
+      }
+    ],
+    sortOptions: [
+      { key: 'name', label: m.library.fields.name },
+      { key: 'order', label: m.library.fields.order },
+      { key: 'createdAt', label: m.library.fields.addedDate }
+    ]
+  }
+})

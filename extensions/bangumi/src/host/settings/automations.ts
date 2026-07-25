@@ -1,5 +1,6 @@
 import { kisaki } from '@kisaki3/extension-sdk'
 import { BANGUMI_COMMAND_IDS, type BangumiCommandId } from '../jobs/commands'
+import { m } from '../i18n'
 import type { SettingsStore } from '../config/store'
 import type { BangumiAutomationKind, BangumiAutomationState } from '../../shared/settings'
 
@@ -36,7 +37,7 @@ export async function createBangumiAutomation(
 ): Promise<void> {
   if (kind === 'auth-refresh') {
     await kisaki.automations.create({
-      name: 'Bangumi 启动时刷新凭据',
+      name: m().automations.names['auth-refresh'],
       commandId: BANGUMI_COMMAND_IDS.authRefresh,
       args: { forceRefresh: true, verifyAccount: true },
       enabled: true,
@@ -48,7 +49,7 @@ export async function createBangumiAutomation(
 
   if (kind === 'sync-changed') {
     await kisaki.automations.create({
-      name: 'Bangumi 启动后同步变更队列',
+      name: m().automations.names['sync-changed'],
       commandId: BANGUMI_COMMAND_IDS.syncChangedItems,
       args: { scope: 'game', limit: 500 },
       enabled: true,
@@ -60,7 +61,7 @@ export async function createBangumiAutomation(
 
   const settings = await settingsStore.get()
   await kisaki.automations.create({
-    name: 'Bangumi 每日全量同步',
+    name: m().automations.names['sync-full-daily'],
     commandId: BANGUMI_COMMAND_IDS.syncFull,
     args: {
       scope: 'game',

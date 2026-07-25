@@ -18,6 +18,9 @@ import {
   CharacterTagsFormDialog,
   CharacterGamesFormDialog
 } from '../../forms'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -43,12 +46,9 @@ const openTagId = ref<string | null>(null)
 // Constants
 // =============================================================================
 
-const PERSON_TYPE_LABELS: Record<string, string> = {
-  actor: '声优',
-  illustration: '原画',
-  designer: '设计',
-  other: '其他'
-}
+const PERSON_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.characterPerson
+)
 
 const PERSON_TYPE_ORDER = ['actor', 'illustration', 'designer', 'other'] as const
 
@@ -86,11 +86,7 @@ function openEditDialog(dialog: keyof typeof editDialogs.value) {
 
 function getRoleLabel(type: string | null | undefined) {
   if (!type) return undefined
-  const labels: Record<string, string> = {
-    main: '主角',
-    supporting: '配角',
-    other: '其他'
-  }
+  const labels: Record<string, string> = m.value.library.roles.gameCharacter
   return labels[type]
 }
 
@@ -122,21 +118,21 @@ const tagDialogOpen = computed({
       <!-- Left column: Description, Related Games, Tags -->
       <div class="space-y-6 min-w-0">
         <Section
-          title="简介"
+          :title="m.library.detail.sections.description"
           editable
           :empty="!character.description"
-          empty-text="暂无简介"
+          :empty-text="m.library.detail.empty.description"
           @edit="openEditDialog('description')"
         >
           <MarkdownContent :content="character.description!" />
         </Section>
 
         <SectionScroll
-          title="相关游戏"
+          :title="m.library.fields.relatedGames"
           editable
           :items="gameLinks"
           :get-key="(item) => item.id"
-          empty-text="暂无相关游戏"
+          :empty-text="m.library.detail.empty.relatedGames"
           @edit="openEditDialog('games')"
         >
           <template #item="{ item: link }">
@@ -151,10 +147,10 @@ const tagDialogOpen = computed({
         </SectionScroll>
 
         <Section
-          title="标签"
+          :title="m.library.fields.tags"
           editable
           :empty="!hasTags"
-          empty-text="暂无标签"
+          :empty-text="m.library.detail.empty.tags"
           @edit="openEditDialog('tags')"
         >
           <div class="flex flex-wrap gap-1">
@@ -177,10 +173,10 @@ const tagDialogOpen = computed({
       <!-- Right column: Related Persons, Related Sites -->
       <div class="space-y-6 min-w-0">
         <Section
-          title="相关人物"
+          :title="m.library.fields.relatedPersons"
           editable
           :empty="!hasPersons"
-          empty-text="暂无相关人物"
+          :empty-text="m.library.detail.empty.relatedPersons"
           @edit="openEditDialog('persons')"
         >
           <div class="space-y-2 text-sm">
@@ -220,10 +216,10 @@ const tagDialogOpen = computed({
         </Section>
 
         <Section
-          title="相关链接"
+          :title="m.library.fields.relatedSites"
           editable
           :empty="!hasRelatedSites"
-          empty-text="暂无相关链接"
+          :empty-text="m.library.detail.empty.relatedSites"
           @edit="openEditDialog('sites')"
         >
           <div class="flex flex-col gap-1.5">

@@ -14,8 +14,11 @@ import {
   leaveExtensionWebviewPage
 } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 const log = createLogger('Extension')
+
+const { m } = useI18n()
 
 interface Props {
   webviewId: string
@@ -67,7 +70,7 @@ onBeforeRouteLeave(() => {
         v-else
         class="flex items-center justify-center h-full text-sm text-muted-foreground"
       >
-        该扩展页面已关闭
+        {{ m.extension.webviewPageClosed }}
       </div>
     </div>
   </div>

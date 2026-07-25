@@ -2,6 +2,7 @@ import type { BangumiClient } from '../api/client'
 import { collectPages } from '../api/pagination'
 import type { BangumiIndex, BangumiIndexSubject } from '../api/types'
 import { getBangumiSubjectType, type BangumiMediaScope } from '../media/scopes'
+import { m } from '../i18n'
 
 export interface IndexReaderOptions {
   indexId: number
@@ -18,7 +19,7 @@ export class IndexReader {
   }
 
   async readIndexSubjects(options: IndexReaderOptions): Promise<readonly BangumiIndexSubject[]> {
-    options.report?.('loadingIndexSubjects', '正在读取 Bangumi 目录条目...')
+    options.report?.('loadingIndexSubjects', m().jobs.import.readingIndex)
 
     const subjects = await collectPages(
       (query) =>

@@ -10,17 +10,20 @@ import { ipcManager } from '@renderer/core/ipc'
 import { useIpc } from '@renderer/composables/use-ipc'
 import { UpdaterDialog } from '@renderer/features/updater'
 import { useUpdaterStore } from '@renderer/stores'
+import { useI18n } from '@renderer/composables/use-i18n'
 import kisakiIcon from '@assets/icon-32.png'
 
 const isMaximized = ref(false)
 const isUpdaterDialogOpen = ref(false)
 
+const { m } = useI18n()
+
 const updaterStore = useUpdaterStore()
 const { hasDownloadedUpdate, release } = storeToRefs(updaterStore)
 
 const updateButtonTitle = computed(() => {
-  if (!release.value) return '更新已下载'
-  return `发现新版本 v${release.value.version}`
+  if (!release.value) return m.value.updater.updateDownloaded
+  return m.value.updater.newVersionFound({ version: release.value.version })
 })
 
 useIpc('native:main-window-maximized', () => {
@@ -60,7 +63,7 @@ function handleOpenUpdaterDialog() {
     >
       <img
         :src="kisakiIcon"
-        alt="Kisaki Icon"
+        alt="Kisaki"
         class="w-[18px] h-[18px] border border-border rounded-md"
       />
     </div>
@@ -83,7 +86,7 @@ function handleOpenUpdaterDialog() {
           icon="icon-[mdi--update]"
           class="size-4"
         />
-        <span>有可用的更新</span>
+        <span>{{ m.updater.updateAvailable }}</span>
       </button>
       <button
         class="relative pointer-events-auto flex items-center justify-center w-12 h-full hover:bg-accent transition-colors"

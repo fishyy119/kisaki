@@ -1,65 +1,93 @@
+import { computed, type ComputedRef } from 'vue'
+import { messages } from '@renderer/core/i18n'
 import type { FilterUiSpec } from './types'
-import { GENDER_OPTIONS } from './shared-options'
+import { getGenderOptions } from './shared-options'
 
-export const personFilterUiSpec: FilterUiSpec = {
-  entityType: 'person',
-  fields: [
-    { key: 'isFavorite', label: '我喜欢', category: 'toggle', control: 'boolean' },
-    { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+export const personFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
+  const m = messages.value
 
-    {
-      key: 'gender',
-      label: '性别',
-      category: 'enum',
-      control: 'select',
-      options: [...GENDER_OPTIONS]
-    },
+  return {
+    entityType: 'person',
+    fields: [
+      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
 
-    { key: 'score', label: '评分', category: 'numeric', control: 'numberRange', min: 0, max: 100 },
+      {
+        key: 'gender',
+        label: m.library.fields.gender,
+        category: 'enum',
+        control: 'select',
+        options: getGenderOptions()
+      },
 
-    { key: 'birthDate', label: '出生日期', category: 'date', control: 'dateRange' },
-    { key: 'deathDate', label: '逝世日期', category: 'date', control: 'dateRange' },
-    { key: 'createdAt', label: '添加时间', category: 'date', control: 'dateRange' },
+      {
+        key: 'score',
+        label: m.library.fields.score,
+        category: 'numeric',
+        control: 'numberRange',
+        min: 0,
+        max: 100
+      },
 
-    {
-      key: 'games',
-      label: '相关游戏',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'game',
-      multiple: true
-    },
-    {
-      key: 'characters',
-      label: '相关角色',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'character',
-      multiple: true
-    },
-    {
-      key: 'tags',
-      label: '标签',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'tag',
-      multiple: true
-    },
-    {
-      key: 'collections',
-      label: '合集',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'collection',
-      multiple: true
-    }
-  ],
-  sortOptions: [
-    { key: 'name', label: '名称' },
-    { key: 'sortName', label: '排序名' },
-    { key: 'originalName', label: '原名' },
-    { key: 'createdAt', label: '添加时间' },
-    { key: 'score', label: '评分' },
-    { key: 'birthDate', label: '生日' }
-  ]
-}
+      {
+        key: 'birthDate',
+        label: m.library.fields.birthDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+      {
+        key: 'deathDate',
+        label: m.library.fields.deathDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+      {
+        key: 'createdAt',
+        label: m.library.fields.addedDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+
+      {
+        key: 'games',
+        label: m.library.fields.relatedGames,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'game',
+        multiple: true
+      },
+      {
+        key: 'characters',
+        label: m.library.fields.relatedCharacters,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'character',
+        multiple: true
+      },
+      {
+        key: 'tags',
+        label: m.library.fields.tags,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'tag',
+        multiple: true
+      },
+      {
+        key: 'collections',
+        label: m.library.fields.collections,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'collection',
+        multiple: true
+      }
+    ],
+    sortOptions: [
+      { key: 'name', label: m.library.fields.name },
+      { key: 'sortName', label: m.library.fields.sortName },
+      { key: 'originalName', label: m.library.fields.originalName },
+      { key: 'createdAt', label: m.library.fields.addedDate },
+      { key: 'score', label: m.library.fields.score },
+      { key: 'birthDate', label: m.library.fields.birthDate }
+    ]
+  }
+})

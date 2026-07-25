@@ -6,7 +6,7 @@
  * Defines application-owned events shared between main and renderer.
  */
 
-import type { AppLocale } from '../locale'
+import type { UiLocale } from '../i18n'
 import type { AutomationRunHistoryRecord } from '../automation'
 import type {
   LibraryCharacterCreatedEvent,
@@ -104,7 +104,7 @@ export interface AppEvents {
   // Application events
   'app.ready': []
   'app.theme.changed': [{ theme: 'light' | 'dark' | 'system' }]
-  'app.locale.changed': [{ locale: AppLocale | null }]
+  'app.ui-locale.changed': [{ preference: UiLocale | null; effective: UiLocale }]
   'app.settings.changed': [{ setting: string; value: unknown }]
 
   // Extension lifecycle events

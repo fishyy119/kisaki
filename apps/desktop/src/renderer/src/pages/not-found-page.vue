@@ -6,6 +6,9 @@
 import { Icon } from '@renderer/components/ui/icon'
 import { RouterLink } from 'vue-router'
 import { Button } from '@renderer/components/ui/button'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 </script>
 
 <template>
@@ -14,10 +17,10 @@ import { Button } from '@renderer/components/ui/button'
       icon="icon-[mdi--alert-circle-outline]"
       class="size-16 text-muted-foreground"
     />
-    <h1 class="text-2xl font-bold">页面未找到</h1>
-    <p class="text-muted-foreground">您访问的页面不存在</p>
+    <h1 class="text-2xl font-bold">{{ m.app.notFound.title }}</h1>
+    <p class="text-muted-foreground">{{ m.app.notFound.description }}</p>
     <Button as-child>
-      <RouterLink to="/library">返回媒体库</RouterLink>
+      <RouterLink to="/library">{{ m.app.notFound.backToLibrary }}</RouterLink>
     </Button>
   </div>
 </template>

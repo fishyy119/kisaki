@@ -16,6 +16,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import type { ExtensionInstalledPackageInfo } from '@shared/extension'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { EXTENSION_CATEGORIES } from '../../types/constants'
 
 interface Props {
@@ -23,6 +24,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { m, f } = useI18n()
 const open = defineModel<boolean>('open', { required: true })
 const iconError = ref(false)
 
@@ -38,69 +41,75 @@ const localFileSource = computed(() =>
     : null
 )
 const categoryLabels = computed(() => {
-  const labelMap = new Map(EXTENSION_CATEGORIES.map((category) => [category.id, category.label]))
+  const labelMap = new Map(
+    EXTENSION_CATEGORIES.value.map((category) => [category.id, category.label])
+  )
   const labels = props.extension.categories.map((category) => labelMap.get(category) ?? category)
-  return labels.length > 0 ? labels.join('、') : '未分类'
+  return labels.length > 0
+    ? labels.join(m.value.extension.categories.joinSeparator)
+    : m.value.extension.categories.uncategorized
 })
 const versionLabel = computed(() =>
-  props.extension.version ? `v${props.extension.version}` : '未知版本'
+  props.extension.version
+    ? `v${props.extension.version}`
+    : m.value.extension.installed.unknownVersion
 )
 const sourceKindLabel = computed(() => {
   if (props.extension.builtin) {
-    return '内置扩展'
+    return m.value.extension.installed.details.sourceBuiltin
   }
 
   if (repositorySource.value) {
-    return '仓库安装'
+    return m.value.extension.installed.details.sourceRepository
   }
 
   if (localFileSource.value) {
-    return '本地文件'
+    return m.value.extension.installed.details.sourceLocalFile
   }
 
-  return '未知来源'
+  return m.value.extension.installed.details.sourceUnknown
 })
 const packageStatusLabel = computed(() => {
   switch (props.extension.status) {
     case 'ready':
-      return '正常'
+      return m.value.extension.installed.statusReady
     case 'invalid':
-      return '包无效'
+      return m.value.extension.installed.statusInvalid
     case 'missing-package':
-      return '包缺失'
+      return m.value.extension.installed.statusMissingPackage
   }
 
-  return '未知'
+  return m.value.common.unknown
 })
 const runtimeStatusLabel = computed(() => {
   if (!props.extension.enabled || props.extension.status !== 'ready') {
-    return '未运行'
+    return m.value.extension.installed.runtimeStopped
   }
 
   switch (props.extension.runtimeStatus) {
     case 'loading':
-      return '加载中'
+      return m.value.extension.installed.runtimeLoading
     case 'running':
-      return '运行中'
+      return m.value.extension.installed.runtimeRunning
     case 'failed':
-      return '加载失败'
+      return m.value.extension.installed.runtimeFailed
     case 'stopped':
-      return '未运行'
+      return m.value.extension.installed.runtimeStopped
   }
 
-  return '未知'
+  return m.value.common.unknown
 })
 const updatePolicyLabel = computed(() => {
   switch (props.extension.updatePolicy ?? 'manual') {
     case 'manual':
-      return '手动'
+      return m.value.extension.policy.manual
     case 'auto':
-      return '自动'
+      return m.value.extension.policy.auto
     case 'pinned':
-      return '锁定'
+      return m.value.extension.policy.pinned
   }
 
-  return '未知'
+  return m.value.common.unknown
 })
 
 watch(iconUrl, () => {
@@ -109,7 +118,7 @@ watch(iconUrl, () => {
 
 function formatDate(value: string | null | undefined): string {
   if (!value) {
-    return '未知时间'
+    return m.value.extension.installed.details.unknownTime
   }
 
   const date = new Date(value)
@@ -117,21 +126,21 @@ function formatDate(value: string | null | undefined): string {
     return value
   }
 
-  return date.toLocaleString()
+  return f.value.dateTime(date)
 }
 
 function formatBoolean(value: boolean | null | undefined): string {
-  return value ? '是' : '否'
+  return value ? m.value.common.yes : m.value.common.no
 }
 
 function diagnosticSeverityLabel(severity: string): string {
   switch (severity) {
     case 'info':
-      return '信息'
+      return m.value.extension.installed.details.severityInfo
     case 'warning':
-      return '警告'
+      return m.value.extension.installed.details.severityWarning
     case 'error':
-      return '错误'
+      return m.value.extension.installed.details.severityError
     default:
       return severity
   }
@@ -182,36 +191,36 @@ function diagnosticSeverityClass(severity: string): string {
 
       <DialogBody class="max-h-[65vh] overflow-auto space-y-5">
         <section class="space-y-2">
-          <div class="text-sm font-medium">基础信息</div>
+          <div class="text-sm font-medium">{{ m.extension.installed.details.basicInfo }}</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0 sm:col-span-2">
-              <dt class="text-muted-foreground">扩展 ID</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.extensionId }}</dt>
               <dd class="font-mono break-all select-text">{{ props.extension.id }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">版本</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.version }}</dt>
               <dd>{{ versionLabel }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">作者</dt>
-              <dd>{{ props.extension.author || '未知作者' }}</dd>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.author }}</dt>
+              <dd>{{ props.extension.author || m.extension.installed.details.unknownAuthor }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">类别</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.category }}</dt>
               <dd>{{ categoryLabels }}</dd>
             </div>
             <div
               v-if="props.extension.installedAt"
               class="min-w-0"
             >
-              <dt class="text-muted-foreground">安装时间</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.installedAt }}</dt>
               <dd>{{ formatDate(props.extension.installedAt) }}</dd>
             </div>
             <div
               v-if="props.extension.homepage"
               class="min-w-0 sm:col-span-2"
             >
-              <dt class="text-muted-foreground">主页</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.homepage }}</dt>
               <dd>
                 <a
                   :href="props.extension.homepage"
@@ -227,44 +236,64 @@ function diagnosticSeverityClass(severity: string): string {
         </section>
 
         <section class="space-y-2">
-          <div class="text-sm font-medium">状态</div>
+          <div class="text-sm font-medium">{{ m.extension.installed.details.status }}</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
-              <dt class="text-muted-foreground">启用状态</dt>
-              <dd>{{ props.extension.enabled ? '已启用' : '已禁用' }}</dd>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.enabledStatus }}
+              </dt>
+              <dd>
+                {{
+                  props.extension.enabled
+                    ? m.extension.installed.details.enabled
+                    : m.extension.installed.details.disabled
+                }}
+              </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">包状态</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.packageStatus }}
+              </dt>
               <dd>{{ packageStatusLabel }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">运行状态</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.runtimeStatus }}
+              </dt>
               <dd>{{ runtimeStatusLabel }}</dd>
             </div>
             <div
               v-if="props.extension.runtimeError"
               class="min-w-0 sm:col-span-2"
             >
-              <dt class="text-muted-foreground">运行错误</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.runtimeError }}
+              </dt>
               <dd class="break-words text-destructive">{{ props.extension.runtimeError }}</dd>
             </div>
           </dl>
         </section>
 
         <section class="space-y-2">
-          <div class="text-sm font-medium">安装来源</div>
+          <div class="text-sm font-medium">
+            {{ m.extension.installed.details.installationSource }}
+          </div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
-              <dt class="text-muted-foreground">类型</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.sourceType }}</dt>
               <dd>{{ sourceKindLabel }}</dd>
             </div>
             <template v-if="repositorySource">
               <div class="min-w-0">
-                <dt class="text-muted-foreground">仓库</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.repository }}
+                </dt>
                 <dd class="font-mono break-all select-text">{{ repositorySource.repositoryId }}</dd>
               </div>
               <div class="min-w-0 sm:col-span-2">
-                <dt class="text-muted-foreground">仓库地址</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.repositoryUrl }}
+                </dt>
                 <dd>
                   <a
                     :href="repositorySource.repositoryUrl"
@@ -277,17 +306,23 @@ function diagnosticSeverityClass(severity: string): string {
                 </dd>
               </div>
               <div class="min-w-0 sm:col-span-2">
-                <dt class="text-muted-foreground">发布摘要</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.releaseDigest }}
+                </dt>
                 <dd class="font-mono break-all select-text">{{ repositorySource.releaseId }}</dd>
               </div>
               <div class="min-w-0 sm:col-span-2">
-                <dt class="text-muted-foreground">清单摘要</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.manifestDigest }}
+                </dt>
                 <dd class="font-mono break-all select-text">
                   {{ repositorySource.manifestDigest }}
                 </dd>
               </div>
               <div class="min-w-0 sm:col-span-2">
-                <dt class="text-muted-foreground">安装包 SHA256</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.artifactSha256 }}
+                </dt>
                 <dd class="font-mono break-all select-text">
                   {{ repositorySource.artifact.sha256 }}
                 </dd>
@@ -296,38 +331,48 @@ function diagnosticSeverityClass(severity: string): string {
                 v-if="repositorySource.signature?.fingerprint"
                 class="min-w-0 sm:col-span-2"
               >
-                <dt class="text-muted-foreground">签名指纹</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.signerFingerprint }}
+                </dt>
                 <dd class="font-mono break-all select-text">
                   {{ repositorySource.signature.fingerprint }}
                 </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">发布版本</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.releaseVersion }}
+                </dt>
                 <dd>v{{ repositorySource.snapshot.release.version }}</dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">发布时间</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.publishedAt }}
+                </dt>
                 <dd>{{ formatDate(repositorySource.snapshot.release.publishedAt) }}</dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">扩展 API</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.extensionApi }}
+                </dt>
                 <dd>{{ repositorySource.snapshot.release.engines.kisakiExtensionApi }}</dd>
               </div>
             </template>
             <template v-else-if="localFileSource">
               <div class="min-w-0 sm:col-span-2">
-                <dt class="text-muted-foreground">文件</dt>
+                <dt class="text-muted-foreground">{{ m.extension.installed.details.file }}</dt>
                 <dd class="break-all select-text">{{ localFileSource.path }}</dd>
               </div>
               <div class="min-w-0 sm:col-span-2">
-                <dt class="text-muted-foreground">安装包 SHA256</dt>
+                <dt class="text-muted-foreground">
+                  {{ m.extension.installed.details.artifactSha256 }}
+                </dt>
                 <dd class="font-mono break-all select-text">
                   {{ localFileSource.artifactSha256 }}
                 </dd>
               </div>
             </template>
             <div class="min-w-0 sm:col-span-2">
-              <dt class="text-muted-foreground">安装目录</dt>
+              <dt class="text-muted-foreground">{{ m.extension.installed.details.installDir }}</dt>
               <dd class="break-all select-text">{{ props.extension.directory }}</dd>
             </div>
           </dl>
@@ -337,21 +382,27 @@ function diagnosticSeverityClass(severity: string): string {
           v-if="!props.extension.builtin"
           class="space-y-2"
         >
-          <div class="text-sm font-medium">更新配置</div>
+          <div class="text-sm font-medium">{{ m.extension.installed.details.updateConfig }}</div>
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
             <div class="min-w-0">
-              <dt class="text-muted-foreground">更新策略</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.updatePolicy }}
+              </dt>
               <dd>{{ updatePolicyLabel }}</dd>
             </div>
             <div
               v-if="props.extension.updatePolicy === 'pinned' && props.extension.pinnedVersion"
               class="min-w-0"
             >
-              <dt class="text-muted-foreground">锁定版本</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.pinnedVersion }}
+              </dt>
               <dd>v{{ props.extension.pinnedVersion }}</dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-muted-foreground">接收预览版更新</dt>
+              <dt class="text-muted-foreground">
+                {{ m.extension.installed.details.receivePrerelease }}
+              </dt>
               <dd>{{ formatBoolean(props.extension.includePreviewUpdates) }}</dd>
             </div>
           </dl>
@@ -361,7 +412,7 @@ function diagnosticSeverityClass(severity: string): string {
           v-if="props.extension.issues.length > 0"
           class="space-y-2"
         >
-          <div class="text-sm font-medium">包问题</div>
+          <div class="text-sm font-medium">{{ m.extension.installed.details.packageIssues }}</div>
           <ul class="space-y-1 text-xs text-destructive">
             <li
               v-for="issue in props.extension.issues"
@@ -377,7 +428,9 @@ function diagnosticSeverityClass(severity: string): string {
           v-if="props.extension.runtimeDiagnostics.length > 0"
           class="space-y-2"
         >
-          <div class="text-sm font-medium">运行诊断</div>
+          <div class="text-sm font-medium">
+            {{ m.extension.installed.details.runtimeDiagnostics }}
+          </div>
           <div class="space-y-2 text-xs">
             <div
               v-for="diagnostic in props.extension.runtimeDiagnostics"
@@ -411,7 +464,7 @@ function diagnosticSeverityClass(severity: string): string {
           variant="outline"
           @click="open = false"
         >
-          关闭
+          {{ m.common.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

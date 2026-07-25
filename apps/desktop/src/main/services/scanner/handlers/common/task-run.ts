@@ -1,3 +1,4 @@
+import type { I18nService } from '@main/services/i18n'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import type { TaskRunInitiator, TaskRunStatus } from '@shared/task-run'
 import {
@@ -9,13 +10,16 @@ import {
 import type { ActiveScannerRun, ScannerRunMetadata } from './types'
 
 export class ScannerTaskRunBridge<TScanner extends ScannerRunMetadata> {
-  constructor(private readonly service: TaskRunService) {}
+  constructor(
+    private readonly service: TaskRunService,
+    private readonly i18n: I18nService
+  ) {}
 
   create(scanner: TScanner, initiator: TaskRunInitiator): TaskRunHandle {
     return this.service.runs.create({
       category: 'scanner',
       operation: 'scanner.scan',
-      title: `扫描 ${scanner.name}`,
+      title: this.i18n.messages.scanner.run.title({ name: scanner.name }),
       description: scanner.path,
       owner: { type: 'app' },
       initiator,
@@ -46,7 +50,7 @@ export class ScannerTaskRunBridge<TScanner extends ScannerRunMetadata> {
 
   complete(record: ActiveScannerRun<TScanner>): void {
     record.taskRun.complete({
-      summary: toTaskRunSummary('completed', record.state),
+      summary: toTaskRunSummary(this.i18n.messages, 'completed', record.state),
       counters: toTaskRunCounters(record.state),
       warnings: toTaskRunWarnings(record.state),
       output: toTaskRunOutput('completed', record.state)
@@ -55,7 +59,7 @@ export class ScannerTaskRunBridge<TScanner extends ScannerRunMetadata> {
 
   fail(record: ActiveScannerRun<TScanner>, error: unknown): void {
     record.taskRun.fail(error, {
-      summary: toTaskRunSummary('failed', record.state),
+      summary: toTaskRunSummary(this.i18n.messages, 'failed', record.state),
       counters: toTaskRunCounters(record.state),
       warnings: toTaskRunWarnings(record.state),
       output: toTaskRunOutput('failed', record.state)
@@ -64,7 +68,7 @@ export class ScannerTaskRunBridge<TScanner extends ScannerRunMetadata> {
 
   finishCancelled(record: ActiveScannerRun<TScanner>): void {
     record.taskRun.cancel({
-      summary: toTaskRunSummary('cancelled', record.state),
+      summary: toTaskRunSummary(this.i18n.messages, 'cancelled', record.state),
       counters: toTaskRunCounters(record.state),
       warnings: toTaskRunWarnings(record.state),
       output: toTaskRunOutput('cancelled', record.state)

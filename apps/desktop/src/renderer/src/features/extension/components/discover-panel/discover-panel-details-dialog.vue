@@ -5,6 +5,8 @@ Boundary: read-only details plus release request emission.
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import semver from 'semver'
+import { useI18n } from '@renderer/composables/use-i18n'
+import { resolveExtensionText } from '@renderer/core/extensions'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
@@ -34,10 +36,15 @@ interface Emits {
 }
 
 const props = defineProps<Props>()
+
+const { m, f } = useI18n()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
 
 const iconError = ref(false)
+const displayName = computed(() => resolveExtensionText(props.extension.name))
+const displaySummary = computed(() => resolveExtensionText(props.extension.summary))
+const displayDescription = computed(() => resolveExtensionText(props.extension.description))
 const sortedReleases = computed(() => [...props.extension.releases])
 
 watch(
@@ -64,29 +71,35 @@ function canApplyRelease(release: ExtensionCatalogReleaseInfo): boolean {
   return release.compatible && !release.yanked && release.artifact !== null
 }
 
-function getReleaseActionLabel(release: ExtensionCatalogReleaseInfo): string {
+type ReleaseActionKind = 'install' | 'reinstall' | 'update' | 'downgrade' | 'apply'
+
+function getReleaseActionKind(release: ExtensionCatalogReleaseInfo): ReleaseActionKind {
   const currentVersion = props.installedPackage?.version
   if (!currentVersion) {
-    return '安装'
+    return 'install'
   }
 
   if (currentVersion === release.version) {
-    return '重新安装'
+    return 'reinstall'
   }
 
   if (semver.valid(currentVersion) && semver.valid(release.version)) {
-    return semver.gt(release.version, currentVersion) ? '更新' : '降级'
+    return semver.gt(release.version, currentVersion) ? 'update' : 'downgrade'
   }
 
-  return '应用'
+  return 'apply'
+}
+
+function getReleaseActionLabel(release: ExtensionCatalogReleaseInfo): string {
+  return m.value.extension.actions[getReleaseActionKind(release)]
 }
 
 function getReleaseActionIcon(release: ExtensionCatalogReleaseInfo): string {
-  const label = getReleaseActionLabel(release)
-  if (label === '安装') {
+  const kind = getReleaseActionKind(release)
+  if (kind === 'install') {
     return 'icon-[mdi--download]'
   }
-  if (label === '降级') {
+  if (kind === 'downgrade') {
     return 'icon-[mdi--arrow-down-bold]'
   }
   return 'icon-[mdi--refresh]'
@@ -104,7 +117,7 @@ function isLatestStableRelease(release: ExtensionCatalogReleaseInfo): boolean {
 
 function formatDate(value: string | null | undefined): string {
   if (!value) {
-    return '未知时间'
+    return m.value.extension.discover.unknownTime
   }
 
   const date = new Date(value)
@@ -112,12 +125,12 @@ function formatDate(value: string | null | undefined): string {
     return value
   }
 
-  return date.toLocaleDateString()
+  return f.value.date(date)
 }
 
 function formatBytes(value: number | undefined): string {
   if (!value || value <= 0) {
-    return '未知大小'
+    return m.value.extension.discover.unknownSize
   }
 
   const units = ['B', 'KB', 'MB', 'GB']
@@ -133,7 +146,7 @@ function formatBytes(value: number | undefined): string {
 
 function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string {
   const count = release.sources.length || release.repositoryCount
-  return `${count} 个来源`
+  return m.value.extension.discover.sourceCount({ count })
 }
 </script>
 
@@ -155,9 +168,9 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
             class="size-9 text-muted-foreground shrink-0"
           />
           <div class="min-w-0 flex-1">
-            <DialogTitle>{{ props.extension.name }}</DialogTitle>
+            <DialogTitle>{{ displayName }}</DialogTitle>
             <DialogDescription class="mt-1">
-              {{ props.extension.summary }}
+              {{ displaySummary }}
             </DialogDescription>
           </div>
         </div>
@@ -166,19 +179,19 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
       <DialogBody class="max-h-[65vh] overflow-auto space-y-5">
         <section class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
           <div>
-            <span class="text-muted-foreground">扩展 ID</span>
+            <span class="text-muted-foreground">{{ m.extension.discover.extensionId }}</span>
             <div class="font-mono">{{ props.extension.id }}</div>
           </div>
           <div v-if="props.extension.owner">
-            <span class="text-muted-foreground">作者</span>
+            <span class="text-muted-foreground">{{ m.extension.discover.author }}</span>
             <div>{{ props.extension.owner.name }}</div>
           </div>
           <div v-if="props.extension.updatedAt">
-            <span class="text-muted-foreground">最近发布</span>
+            <span class="text-muted-foreground">{{ m.extension.discover.latestPublish }}</span>
             <div>{{ formatDate(props.extension.updatedAt) }}</div>
           </div>
           <div v-if="props.extension.homepage">
-            <span class="text-muted-foreground">主页</span>
+            <span class="text-muted-foreground">{{ m.extension.discover.homepage }}</span>
             <a
               :href="props.extension.homepage"
               target="_blank"
@@ -189,7 +202,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
             </a>
           </div>
           <div v-if="props.extension.repository">
-            <span class="text-muted-foreground">代码仓库</span>
+            <span class="text-muted-foreground">{{ m.extension.discover.codeRepository }}</span>
             <a
               :href="props.extension.repository"
               target="_blank"
@@ -202,14 +215,14 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
         </section>
 
         <section
-          v-if="props.extension.description"
+          v-if="displayDescription"
           class="text-xs text-muted-foreground leading-relaxed"
         >
-          {{ props.extension.description }}
+          {{ displayDescription }}
         </section>
 
         <section class="space-y-2">
-          <div class="text-sm font-medium">版本</div>
+          <div class="text-sm font-medium">{{ m.extension.discover.versions }}</div>
           <div class="rounded-md border border-border overflow-hidden">
             <div
               v-for="release in sortedReleases"
@@ -224,50 +237,66 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
                     variant="success"
                     class="text-[10px] h-5"
                   >
-                    最新版
+                    {{ m.extension.discover.latestBadge }}
                   </Badge>
                   <Badge
                     v-if="release.releaseKind === 'preview'"
                     variant="secondary"
                     class="text-[10px] h-5"
                   >
-                    预览版
+                    {{ m.extension.discover.previewBadge }}
                   </Badge>
                   <Badge
                     v-if="release.yanked"
                     variant="destructive"
                     class="text-[10px] h-5"
                   >
-                    已撤回
+                    {{ m.extension.discover.yankedBadge }}
                   </Badge>
                   <Badge
                     v-if="!release.compatible"
                     variant="warning"
                     class="text-[10px] h-5"
                   >
-                    API 不兼容
+                    {{ m.extension.discover.apiIncompatibleBadge }}
                   </Badge>
                   <Badge
                     v-if="!release.artifact"
                     variant="warning"
                     class="text-[10px] h-5"
                   >
-                    无可用包
+                    {{ m.extension.discover.noArtifactBadge }}
                   </Badge>
                   <Badge
                     v-else-if="!release.artifact.signature"
                     variant="warning"
                     class="text-[10px] h-5"
                   >
-                    未签名
+                    {{ m.extension.discover.unsignedBadge }}
                   </Badge>
                 </div>
 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <div>来源：{{ formatReleaseSourceCount(release) }}</div>
-                  <div>发布时间：{{ formatDate(release.publishedAt) }}</div>
-                  <div>扩展 API：{{ release.engines.kisakiExtensionApi }}</div>
-                  <div>安装包大小：{{ formatBytes(release.artifact?.size) }}</div>
+                  <div>
+                    {{
+                      m.extension.discover.sourcesLine({ value: formatReleaseSourceCount(release) })
+                    }}
+                  </div>
+                  <div>
+                    {{
+                      m.extension.discover.publishedLine({ value: formatDate(release.publishedAt) })
+                    }}
+                  </div>
+                  <div>
+                    {{
+                      m.extension.discover.apiLine({ value: release.engines.kisakiExtensionApi })
+                    }}
+                  </div>
+                  <div>
+                    {{
+                      m.extension.discover.sizeLine({ value: formatBytes(release.artifact?.size) })
+                    }}
+                  </div>
                 </div>
               </div>
 
@@ -294,7 +323,7 @@ function formatReleaseSourceCount(release: ExtensionCatalogReleaseInfo): string 
           variant="outline"
           @click="open = false"
         >
-          关闭
+          {{ m.common.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

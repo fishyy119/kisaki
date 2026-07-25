@@ -25,6 +25,9 @@ import { Field, FieldLabel, FieldContent, FieldDescription } from '@renderer/com
 import { notify } from '@renderer/core/notify'
 import { dbScoreToDisplay, displayScoreToDb } from '@renderer/utils/format'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Company')
 
@@ -77,7 +80,7 @@ async function handleSubmit() {
   if (trimmed !== '') {
     const num = parseFloat(trimmed)
     if (isNaN(num) || num < 0 || num > 10) {
-      notify.error('评分必须在 0-10 之间')
+      notify.error(m.value.library.forms.scoreOutOfRange)
       return
     }
   }
@@ -85,11 +88,11 @@ async function handleSubmit() {
   try {
     const dbScore = displayScoreToDb(formData.value.score)
     await db.update(companies).set({ score: dbScore }).where(eq(companies.id, props.companyId))
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -118,12 +121,12 @@ function handleCancel() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑评分</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editScore }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <Field>
-              <FieldLabel>我的评分</FieldLabel>
+              <FieldLabel>{{ m.library.fields.myScore }}</FieldLabel>
               <FieldContent>
                 <div class="flex gap-2 items-center">
                   <Input
@@ -138,11 +141,11 @@ function handleCancel() {
                     variant="outline"
                     @click="handleClear"
                   >
-                    清空
+                    {{ m.common.clear }}
                   </Button>
                 </div>
               </FieldContent>
-              <FieldDescription>评分范围 0-10，支持一位小数（如 8.5）</FieldDescription>
+              <FieldDescription>{{ m.library.forms.scoreRangeHint }}</FieldDescription>
             </Field>
           </DialogBody>
           <DialogFooter>
@@ -152,13 +155,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

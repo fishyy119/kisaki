@@ -12,13 +12,13 @@ import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { useCompany } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import { CompanyGamesFormDialog } from '../../forms'
+import { useI18n } from '@renderer/composables'
 
-const GAME_COMPANY_TYPE_LABELS: Record<string, string> = {
-  developer: '开发',
-  publisher: '发行',
-  distributor: '分销',
-  other: '其他'
-}
+const { m } = useI18n()
+
+const GAME_COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCompany
+)
 
 const GAME_COMPANY_TYPE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
 
@@ -55,7 +55,7 @@ const groupedGames = computed(() => {
       v-if="!hasGames"
       state="empty"
       :icon="getEntityIcon('game')"
-      description="暂无相关游戏"
+      :description="m.library.detail.empty.relatedGames"
       class="py-12"
     >
       <template #actions>
@@ -68,7 +68,7 @@ const groupedGames = computed(() => {
             icon="icon-[mdi--plus]"
             class="size-4 mr-1.5"
           />
-          添加游戏
+          {{ m.library.detail.addEntity({ label: m.library.entities.game }) }}
         </Button>
       </template>
     </StateView>
@@ -86,7 +86,7 @@ const groupedGames = computed(() => {
             icon="icon-[mdi--pencil-outline]"
             class="size-4 mr-1.5"
           />
-          管理
+          {{ m.library.detail.manage }}
         </Button>
       </div>
 

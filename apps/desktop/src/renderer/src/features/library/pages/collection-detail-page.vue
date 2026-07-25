@@ -22,24 +22,11 @@ import {
   CollectionConvertToStaticFormDialog
 } from '@renderer/components/shared/collection'
 import { useAmbientLight, useCollectionRouteProvider, useEvent } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
-// =============================================================================
-// Types & Config
-// =============================================================================
-
-interface EntityConfig {
-  label: string
-  unitLabel: string
-}
-
-const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
-  game: { label: '游戏', unitLabel: '款' },
-  character: { label: '角色', unitLabel: '个' },
-  person: { label: '人物', unitLabel: '位' },
-  company: { label: '公司', unitLabel: '家' }
-}
+const { m } = useI18n()
 
 // =============================================================================
 // Route & Navigation
@@ -147,7 +134,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     v-else-if="!collection"
     state="not-found"
     icon="icon-[mdi--folder-open-outline]"
-    title="合集不存在"
+    :title="m.library.detail.notFoundTitle({ label: m.library.entities.collection })"
     class="h-full bg-background"
   />
 
@@ -163,7 +150,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
         v-if="isDynamic"
         icon="icon-[mdi--lightning-bolt]"
         class="size-4 shrink-0"
-        title="动态合集"
+        :title="m.library.pages.dynamicCollection"
       />
 
       <template #actions>
@@ -176,7 +163,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
             :disabled="isDynamic && !configuredEntityTypes.includes(type)"
             :class="isDynamic && !configuredEntityTypes.includes(type) ? 'opacity-50' : ''"
           >
-            {{ ENTITY_CONFIG[type].label }}
+            {{ m.library.entities[type] }}
             <span
               v-if="entityCounts[type] > 0"
               class="ml-1 text-xs text-muted-foreground"
@@ -197,7 +184,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
             icon="icon-[mdi--format-list-numbered]"
             class="size-4 mr-1.5"
           />
-          编辑内容
+          {{ m.library.menu.editContent }}
         </Button>
 
         <!-- For dynamic collections: edit filter and convert buttons -->
@@ -211,7 +198,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
               icon="icon-[mdi--filter-outline]"
               class="size-4 mr-1.5"
             />
-            编辑筛选
+            {{ m.library.menu.editFilter }}
           </Button>
           <Button
             variant="secondary"
@@ -222,7 +209,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
               icon="icon-[mdi--arrow-bottom-left]"
               class="size-4 mr-1.5"
             />
-            转为静态
+            {{ m.library.menu.convertToStatic }}
           </Button>
         </template>
 

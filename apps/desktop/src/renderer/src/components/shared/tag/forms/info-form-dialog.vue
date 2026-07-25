@@ -32,6 +32,9 @@ import { Form } from '@renderer/components/ui/form'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Tag')
 
@@ -101,11 +104,11 @@ async function handleSubmit() {
         isNsfw: formData.value.isNsfw
       })
       .where(eq(tags.id, props.tagId))
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -126,27 +129,27 @@ async function handleSubmit() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑标签</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editTags }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field>
-                <FieldLabel>名称</FieldLabel>
+                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    placeholder="标签名称"
+                    :placeholder="m.library.forms.tagNamePlaceholder"
                     required
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>描述</FieldLabel>
+                <FieldLabel>{{ m.library.fields.description }}</FieldLabel>
                 <FieldContent>
                   <MarkdownEditor
                     v-model="formData.description"
-                    placeholder="标签描述（可选，支持 Markdown）"
+                    :placeholder="m.library.forms.tagDescriptionPlaceholder"
                     min-height="140px"
                     max-height="200px"
                   />
@@ -154,7 +157,7 @@ async function handleSubmit() {
               </Field>
               <Field orientation="horizontal">
                 <FieldLabel>NSFW</FieldLabel>
-                <FieldDescription>标记此标签为成人内容</FieldDescription>
+                <FieldDescription>{{ m.library.forms.tagNsfwHint }}</FieldDescription>
                 <FieldContent>
                   <Switch v-model="formData.isNsfw" />
                 </FieldContent>
@@ -168,13 +171,13 @@ async function handleSubmit() {
               :disabled="isSaving"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

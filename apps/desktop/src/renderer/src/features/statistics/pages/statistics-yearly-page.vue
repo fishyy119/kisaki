@@ -8,6 +8,7 @@
 -->
 
 <script setup lang="ts">
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useStatistics } from '../composables'
 import { StateView } from '@renderer/components/ui/state-view'
 import {
@@ -18,6 +19,8 @@ import {
   StatisticsGameRanking,
   StatisticsCollectionRanking
 } from '../components'
+
+const { m } = useI18n()
 
 const { error } = useStatistics()
 </script>
@@ -40,7 +43,7 @@ const { error } = useStatistics()
 
     <div class="p-4">
       <StatisticsActivityHeatmap
-        title="活动热力图"
+        :title="m.statistics.charts.heatmapTitle"
         :available-granularities="['day', 'week', 'month']"
       />
     </div>
@@ -49,23 +52,23 @@ const { error } = useStatistics()
     <div class="grid grid-cols-1 divide-y xl:grid-cols-[2fr_1fr] xl:divide-y-0">
       <div class="min-w-0 p-4">
         <StatisticsTimeTrend
-          title="游玩趋势"
+          :title="m.statistics.charts.trendTitle"
           :available-granularities="['weekly', 'monthly']"
           default-granularity="monthly"
         />
       </div>
       <div class="min-w-0 p-4 xl:border-l">
-        <StatisticsTimeDistribution title="时段分布" />
+        <StatisticsTimeDistribution :title="m.statistics.charts.distributionTitle" />
       </div>
     </div>
 
     <!-- Rankings band: last row, so uneven column ends fall off the page -->
     <div class="grid grid-cols-1 divide-y xl:grid-cols-2 xl:divide-y-0">
       <div class="min-w-0 p-4">
-        <StatisticsGameRanking title="游戏排行" />
+        <StatisticsGameRanking :title="m.statistics.ranking.gameTitle" />
       </div>
       <div class="min-w-0 p-4 xl:border-l">
-        <StatisticsCollectionRanking title="收藏排行" />
+        <StatisticsCollectionRanking :title="m.statistics.ranking.collectionTitle" />
       </div>
     </div>
   </div>

@@ -18,7 +18,7 @@ import { dedupeTargets } from './shared/targets'
 
 const log = createLogger('Db')
 const SETTINGS_COLUMN_KEYS: Record<string, string> = {
-  locale: 'locale',
+  ui_locale: 'uiLocale',
   main_window_close_action: 'mainWindowCloseAction',
   scanner_ignored_names: 'scannerIgnoredNames',
   scanner_use_phash: 'scannerUsePhash',

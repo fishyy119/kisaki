@@ -1,4 +1,5 @@
 import type { ScannerFinishedStatus } from '@shared/events/library'
+import type { Messages } from '@shared/i18n'
 import type { ScanCompletedData, ScannerRunState, ScannerRunStatus } from '@shared/scanner'
 import type { TaskRunProgressUpdate } from '@shared/task-run'
 
@@ -65,10 +66,26 @@ export function toTaskRunWarnings(state: ScannerRunState) {
     .slice(0, TASK_RUN_PROGRESS_WARNING_LIMIT)
 }
 
-export function toTaskRunSummary(status: ScannerFinishedStatus, state: ScannerRunState): string {
+export function toTaskRunSummary(
+  messages: Messages,
+  status: ScannerFinishedStatus,
+  state: ScannerRunState
+): string {
   const prefix =
-    status === 'completed' ? '扫描完成' : status === 'cancelled' ? '扫描已取消' : '扫描失败'
-  return `${prefix}：处理 ${state.processedCount}/${state.total}，新增 ${state.newCount}，已存在 ${state.existingCount}，失败 ${state.failedCount}，问题 ${state.issueCount}`
+    status === 'completed'
+      ? messages.scanner.run.resultCompleted
+      : status === 'cancelled'
+        ? messages.scanner.run.resultCancelled
+        : messages.scanner.run.resultFailed
+  return messages.scanner.run.resultSummary({
+    status: prefix,
+    processed: state.processedCount,
+    total: state.total,
+    added: state.newCount,
+    existing: state.existingCount,
+    failed: state.failedCount,
+    issues: state.issueCount
+  })
 }
 
 export function toTaskRunOutput(status: ScannerFinishedStatus, state: ScannerRunState) {

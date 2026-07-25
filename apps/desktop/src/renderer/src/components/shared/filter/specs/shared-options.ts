@@ -1,9 +1,6 @@
-export const GENDER_OPTIONS = [
-  { value: 'male', label: '男' },
-  { value: 'female', label: '女' },
-  { value: 'other', label: '其他' }
-] as const
+import { messages } from '@renderer/core/i18n'
 
+/** Blood type and cup size options are Latin letters; no localization needed. */
 export const BLOOD_TYPE_OPTIONS = [
   { value: 'A', label: 'A' },
   { value: 'B', label: 'B' },
@@ -27,11 +24,25 @@ export const CUP_SIZE_OPTIONS = [
   { value: 'k', label: 'K' }
 ] as const
 
-export const GAME_STATUS_OPTIONS = [
-  { value: 'notStarted', label: '未开始' },
-  { value: 'inProgress', label: '进行中' },
-  { value: 'partial', label: '部分完成' },
-  { value: 'completed', label: '已完成' },
-  { value: 'multiple', label: '多周目' },
-  { value: 'shelved', label: '搁置' }
-] as const
+/** Localized gender options for the current UI locale. */
+export function getGenderOptions(): { value: string; label: string }[] {
+  const gender = messages.value.library.gender
+  return [
+    { value: 'male', label: gender.male },
+    { value: 'female', label: gender.female },
+    { value: 'other', label: gender.other }
+  ]
+}
+
+/** Localized game status options for the current UI locale. */
+export function getGameStatusOptions(): { value: string; label: string }[] {
+  const status = messages.value.library.status
+  return [
+    { value: 'notStarted', label: status.notStarted },
+    { value: 'inProgress', label: status.inProgress },
+    { value: 'partial', label: status.partial },
+    { value: 'completed', label: status.completed },
+    { value: 'multiple', label: status.multiple },
+    { value: 'shelved', label: status.shelved }
+  ]
+}

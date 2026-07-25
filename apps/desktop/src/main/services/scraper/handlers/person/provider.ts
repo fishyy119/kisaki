@@ -4,7 +4,7 @@
 
 import type { PersonScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type {
   PersonSearchResult,
   ScrapedPersonInfo,
@@ -29,7 +29,7 @@ export interface PersonScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, locale?: Locale): Promise<PersonSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<PersonResolvedTarget | null>
-  openSession(target: PersonResolvedTarget, locale: Locale): Promise<PersonScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<PersonSearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<PersonResolvedTarget | null>
+  openSession(target: PersonResolvedTarget, locale: ContentLocale): Promise<PersonScraperSession>
 }

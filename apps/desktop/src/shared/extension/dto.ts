@@ -18,6 +18,7 @@ import type {
   JsonObject,
   JsonSafe,
   JsonValue,
+  LocalizedText,
   ThemeContribution,
   UiCallbackResult,
   WebviewSurface
@@ -44,9 +45,11 @@ export interface ExtensionInstalledRuntimeInfo {
 export interface ExtensionInstalledPackageInfo extends ExtensionInstalledRuntimeInfo {
   builtin: boolean
   id: string
-  name: string
+  /** Localized display name; renderer resolves it against the current UI locale. */
+  name: LocalizedText
   version: string | null
-  description?: string
+  /** Localized description; renderer resolves it against the current UI locale. */
+  description?: LocalizedText
   author?: string
   homepage?: string
   iconUrl?: string
@@ -188,9 +191,12 @@ export interface ExtensionCatalogSearchResult {
 
 export interface ExtensionCatalogPackageInfo {
   id: string
-  name: string
-  summary: string
-  description?: string
+  /** Localized display name; renderer resolves it against the current UI locale. */
+  name: LocalizedText
+  /** Localized summary; renderer resolves it against the current UI locale. */
+  summary: LocalizedText
+  /** Localized description; renderer resolves it against the current UI locale. */
+  description?: LocalizedText
   categories: readonly ExtensionCategory[]
   keywords: readonly string[]
   owner?: {
@@ -365,8 +371,10 @@ export interface ExtensionReleasePlanRepositoryInfo {
 
 export interface ExtensionReleasePlanPackageInfo {
   id: string
-  name: string
-  summary?: string
+  /** Localized display name; renderer resolves it against the current UI locale. */
+  name: LocalizedText
+  /** Localized summary; renderer resolves it against the current UI locale. */
+  summary?: LocalizedText
   currentVersion: string | null
   targetVersion: string
   releaseKind: ExtensionRegistryReleaseKind

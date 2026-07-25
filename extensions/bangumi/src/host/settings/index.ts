@@ -10,6 +10,7 @@ import {
   type BangumiSettingsUiFunctions
 } from '../../shared/settings'
 import { createBangumiSettingsHostFunctions } from './host'
+import { m } from '../i18n'
 import { BangumiSettingsSession } from './session'
 import type { BangumiSettingsRuntime } from './runtime'
 
@@ -39,8 +40,8 @@ export function registerBangumiSettingsUi(
 
   context.contributions.cardActions.register({
     id: 'settings',
-    label: '设置',
-    description: '打开 Bangumi 集成设置。',
+    label: m().settings.commandLabel,
+    description: m().settings.commandDescription,
     async run() {
       if (current) {
         return
@@ -48,7 +49,7 @@ export function registerBangumiSettingsUi(
 
       const webview = await kisaki.webviews.open({
         entry: BANGUMI_SETTINGS_ENTRY,
-        title: 'Bangumi 集成',
+        title: m().settings.webviewTitle,
         surface: { kind: 'dialog', size: 'xl' }
       })
       current = webview

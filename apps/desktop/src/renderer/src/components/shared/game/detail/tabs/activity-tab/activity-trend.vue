@@ -51,7 +51,6 @@ const chartData = computed(() =>
     :range="range"
     :data="chartData"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :granularity-labels="{ daily: '日', weekly: '周', monthly: '月' }"
     :height="200"
   />
 </template>

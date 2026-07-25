@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
 import { useTaskRunStore } from '@renderer/stores'
 import TaskCenterDialog from './task-center-dialog.vue'
+
+const { m } = useI18n()
 
 const open = ref(false)
 const store = useTaskRunStore()
@@ -26,7 +29,7 @@ const badgeText = computed(() => (activeCount.value > 9 ? '9+' : String(activeCo
             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary'
           )
         "
-        aria-label="任务中心"
+        :aria-label="m.task.center"
         @click="open = true"
       >
         <Icon
@@ -45,7 +48,7 @@ const badgeText = computed(() => (activeCount.value > 9 ? '9+' : String(activeCo
       side="right"
       :side-offset="8"
     >
-      任务中心
+      {{ m.task.center }}
     </TooltipContent>
   </Tooltip>
 

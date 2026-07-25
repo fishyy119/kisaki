@@ -2,8 +2,11 @@
  * Showcase Section Presets
  *
  * Predefined section configurations for quick showcase setup.
+ * Names and descriptions resolve from the active message catalog.
  */
 
+import { messages } from '@renderer/core/i18n'
+import type { Messages } from '@shared/i18n'
 import type { AllEntityType } from '@shared/common'
 import type { FilterState, SectionLayout, SectionItemSize } from '@shared/filter'
 
@@ -24,16 +27,21 @@ export interface ShowcaseSectionPreset {
   sortDirection: 'asc' | 'desc'
 }
 
+type PresetCopyKey = keyof Messages['library']['showcase']['presets']
+
+type PresetDefinition = Omit<ShowcaseSectionPreset, 'name' | 'description'> & {
+  copyKey: PresetCopyKey
+}
+
 // =============================================================================
 // Presets
 // =============================================================================
 
-export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
+const PRESET_DEFINITIONS: PresetDefinition[] = [
   // Game presets
   {
     id: 'recently-played',
-    name: '最近游玩',
-    description: '按最后活跃时间排序的游戏',
+    copyKey: 'recentlyPlayed',
     entityType: 'game',
     layout: 'horizontal',
     itemSize: 'md',
@@ -44,8 +52,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   },
   {
     id: 'top-rated',
-    name: '高分游戏',
-    description: '按评分排序的游戏',
+    copyKey: 'topRated',
     entityType: 'game',
     layout: 'horizontal',
     itemSize: 'md',
@@ -56,8 +63,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   },
   {
     id: 'recently-added',
-    name: '最新添加',
-    description: '按添加时间排序的游戏',
+    copyKey: 'recentlyAdded',
     entityType: 'game',
     layout: 'horizontal',
     itemSize: 'md',
@@ -68,8 +74,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   },
   {
     id: 'all-games',
-    name: '全部游戏',
-    description: '库中的全部游戏',
+    copyKey: 'allGames',
     entityType: 'game',
     layout: 'grid',
     itemSize: 'md',
@@ -80,8 +85,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   },
   {
     id: 'favorite-games',
-    name: '喜欢的游戏',
-    description: '已红心的游戏',
+    copyKey: 'favoriteGames',
     entityType: 'game',
     layout: 'horizontal',
     itemSize: 'md',
@@ -94,8 +98,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   // Character presets
   {
     id: 'favorite-characters',
-    name: '喜欢的角色',
-    description: '已红心的角色',
+    copyKey: 'favoriteCharacters',
     entityType: 'character',
     layout: 'horizontal',
     itemSize: 'md',
@@ -108,8 +111,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   // Person presets
   {
     id: 'favorite-persons',
-    name: '喜欢的人物',
-    description: '已红心的人物',
+    copyKey: 'favoritePersons',
     entityType: 'person',
     layout: 'horizontal',
     itemSize: 'md',
@@ -122,8 +124,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   // Company presets
   {
     id: 'favorite-companies',
-    name: '喜欢的公司',
-    description: '已红心的公司',
+    copyKey: 'favoriteCompanies',
     entityType: 'company',
     layout: 'horizontal',
     itemSize: 'md',
@@ -136,8 +137,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   // Collection presets
   {
     id: 'all-collections',
-    name: '全部合集',
-    description: '库中的全部合集',
+    copyKey: 'allCollections',
     entityType: 'collection',
     layout: 'horizontal',
     itemSize: 'md',
@@ -150,8 +150,7 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
   // Tag presets
   {
     id: 'all-tags',
-    name: '全部标签',
-    description: '库中的全部标签',
+    copyKey: 'allTags',
     entityType: 'tag',
     layout: 'horizontal',
     itemSize: 'md',
@@ -161,3 +160,12 @@ export const SHOWCASE_SECTION_PRESETS: ShowcaseSectionPreset[] = [
     sortDirection: 'asc'
   }
 ]
+
+export function getShowcaseSectionPresets(): ShowcaseSectionPreset[] {
+  const presetCopy = messages.value.library.showcase.presets
+  return PRESET_DEFINITIONS.map(({ copyKey, ...preset }) => ({
+    ...preset,
+    name: presetCopy[copyKey].name,
+    description: presetCopy[copyKey].description
+  }))
+}

@@ -6,6 +6,7 @@ import type {
   ExtensionRegistrySigningAlgorithm
 } from '@kisaki3/extension-registry'
 import { getExtensionRegistryReleaseKind } from '@kisaki3/extension-registry'
+import type { LocalizedText } from '@kisaki3/extension-api'
 import {
   createExtensionRegistrySignerFingerprint,
   stringifyExtensionRegistryCanonicalJson
@@ -37,7 +38,7 @@ export interface ExtensionReleasePlannerOptions {
 export interface LocalExtensionReleasePlanInput {
   filePath: string
   extensionId: string
-  name: string
+  name: LocalizedText
   version: string
   fileSize: number
   artifactSha256: string

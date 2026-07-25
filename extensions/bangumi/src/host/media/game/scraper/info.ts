@@ -1,5 +1,5 @@
 import type {
-  Locale,
+  ContentLocale,
   ScrapedEntityIdentity,
   ScrapedGameInfo,
   ScrapedTag
@@ -16,7 +16,7 @@ import { buildBangumiSubjectUrl, dedupeRelatedSites } from './format/urls'
 
 interface BuildGameInfoOptions {
   getSubject: () => Promise<BangumiSubject>
-  locale?: Locale | undefined
+  locale?: ContentLocale | undefined
 }
 
 export async function buildGameInfo({

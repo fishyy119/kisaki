@@ -9,6 +9,7 @@ import type {
   LocalMediaUserPatch
 } from '../media/types'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 
 export class ImportExecutor {
   constructor(private readonly mediaRegistry: MediaRegistry) {}
@@ -20,7 +21,10 @@ export class ImportExecutor {
   requireWritableAdapter(scope: BangumiMediaScope): LocalMediaAdapter {
     const adapter = this.mediaRegistry.requireLocalAdapter(scope)
     if (!adapter.supportsImportWrite) {
-      throw new BangumiExtensionError('local_media_unsupported', '当前媒体类型暂不支持写入本地库。')
+      throw new BangumiExtensionError(
+        'local_media_unsupported',
+        m().errors.localWriteUnsupportedGeneric
+      )
     }
 
     return adapter

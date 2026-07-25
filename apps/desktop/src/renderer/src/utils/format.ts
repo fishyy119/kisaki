@@ -6,6 +6,7 @@
 
 import type { Status, Gender } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
+import { messages } from '@renderer/core/i18n'
 
 // =============================================================================
 // Status Formatting
@@ -13,15 +14,6 @@ import type { AllEntityType } from '@shared/common'
 
 /** Badge variant type for status display */
 export type StatusVariant = 'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-
-const STATUS_LABELS: Record<Status, string> = {
-  notStarted: '未开始',
-  inProgress: '进行中',
-  partial: '部分完成',
-  completed: '已通关',
-  multiple: '多周目',
-  shelved: '已搁置'
-}
 
 const STATUS_VARIANTS: Record<Status, StatusVariant> = {
   notStarted: 'secondary',
@@ -33,10 +25,10 @@ const STATUS_VARIANTS: Record<Status, StatusVariant> = {
 }
 
 /**
- * Format game status to Chinese label
+ * Format game status to a localized label
  */
 export function formatStatus(status: Status): string {
-  return STATUS_LABELS[status] ?? '未知'
+  return messages.value.library.status[status]
 }
 
 /**
@@ -82,33 +74,9 @@ export function displayScoreToDb(displayScore: string): number | null {
 // Gender Formatting
 // =============================================================================
 
-/** Format gender label */
+/** Format gender to a localized label */
 export function formatGender(gender: Gender): string {
-  switch (gender) {
-    case 'male':
-      return '男'
-    case 'female':
-      return '女'
-    case 'other':
-      return '其他'
-    default:
-      return '未知'
-  }
-}
-
-// =============================================================================
-// Number Formatting
-// =============================================================================
-
-/**
- * Format percentage value.
- *
- * @example
- * formatPercentage(45.678)    // "45.7%"
- * formatPercentage(100, 0)    // "100%"
- */
-export function formatPercentage(value: number, decimals = 1): string {
-  return `${value.toFixed(decimals)}%`
+  return messages.value.library.gender[gender]
 }
 
 // =============================================================================
@@ -132,10 +100,11 @@ export function getSpoilerDisplay(
   revealed: boolean
 ): SpoilerDisplay {
   const hidden = isSpoiler && !revealed
+  const spoiler = messages.value.library.spoiler
   return {
     hidden,
-    name: hidden ? '剧透内容' : name,
-    note: hidden ? '已隐藏，开启「显示剧透」后可查看' : note
+    name: hidden ? spoiler.maskedName : name,
+    note: hidden ? spoiler.maskedNote : note
   }
 }
 

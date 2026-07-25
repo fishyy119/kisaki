@@ -13,6 +13,9 @@ import {
   ImageCropperDialog,
   type CropConfirmPayload
 } from '@renderer/components/ui/image-cropper-dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 type PersonMediaType = 'photo'
 
@@ -29,9 +32,9 @@ const open = defineModel<boolean>('open', { required: true })
 const isCropping = ref(false)
 
 const imageSrc = computed(() => `attachment://persons/${props.personId}/${props.currentFileName}`)
-const MEDIA_TYPE_LABEL: Record<PersonMediaType, string> = {
-  photo: '照片'
-}
+const MEDIA_TYPE_LABEL = computed<Record<PersonMediaType, string>>(() => ({
+  photo: m.value.library.forms.mediaTypes.photo
+}))
 const MEDIA_TYPE_TO_ASPECT: Record<PersonMediaType, number | undefined> = {
   photo: 3 / 4
 }
@@ -39,7 +42,9 @@ const MEDIA_TYPE_TO_ASPECT_LABEL: Record<PersonMediaType, string | undefined> = 
   photo: '3:4'
 }
 
-const dialogTitle = computed(() => `裁剪${MEDIA_TYPE_LABEL[props.mediaType]}`)
+const dialogTitle = computed(() =>
+  m.value.library.forms.cropMediaTitle({ label: MEDIA_TYPE_LABEL.value[props.mediaType] })
+)
 const aspectRatio = computed(() => MEDIA_TYPE_TO_ASPECT[props.mediaType])
 const aspectLabel = computed(() => MEDIA_TYPE_TO_ASPECT_LABEL[props.mediaType])
 
@@ -56,7 +61,7 @@ async function handleConfirm(payload: CropConfirmPayload) {
       { format: 'keep' }
     )
     if (!croppedResult.success) {
-      notify.error('裁剪失败', croppedResult.error)
+      notify.error(m.value.library.forms.cropFailed, croppedResult.error)
       return
     }
 
@@ -65,10 +70,10 @@ async function handleConfirm(payload: CropConfirmPayload) {
       path: croppedResult.data
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
     open.value = false
   } catch (error) {
-    notify.error('裁剪失败', (error as Error).message)
+    notify.error(m.value.library.forms.cropFailed, (error as Error).message)
   } finally {
     isCropping.value = false
   }

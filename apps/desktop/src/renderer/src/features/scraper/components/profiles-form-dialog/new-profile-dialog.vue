@@ -13,6 +13,7 @@ import type {
 
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -36,15 +37,17 @@ const emit = defineEmits<{
   select: [mediaType: ContentEntityType, providerId: string]
 }>()
 
+const { m } = useI18n()
+
 const selectedMediaType = ref<ContentEntityType | null>(null)
 
 // Media type options
-const mediaTypeOptions: { value: ContentEntityType; label: string }[] = [
-  { value: 'game', label: '游戏' },
-  { value: 'character', label: '角色' },
-  { value: 'person', label: '人物' },
-  { value: 'company', label: '公司' }
-]
+const mediaTypeOptions = computed<{ value: ContentEntityType; label: string }[]>(() => [
+  { value: 'game', label: m.value.library.entities.game },
+  { value: 'character', label: m.value.library.entities.character },
+  { value: 'person', label: m.value.library.entities.person },
+  { value: 'company', label: m.value.library.entities.company }
+])
 
 const currentProviders = computed<ScraperProviderInfo[]>(() => {
   if (!selectedMediaType.value) return []
@@ -89,12 +92,18 @@ function handleClose() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ selectedMediaType ? '选择主要提供者' : '选择媒体类型' }}</DialogTitle>
+        <DialogTitle>{{
+          selectedMediaType
+            ? m.scraper.profiles.newTitleProvider
+            : m.scraper.profiles.newTitleMediaType
+        }}</DialogTitle>
       </DialogHeader>
       <DialogBody>
         <!-- Media Type Selection -->
         <template v-if="!selectedMediaType">
-          <p class="text-sm text-muted-foreground mb-4">选择要创建配置的媒体类型</p>
+          <p class="text-sm text-muted-foreground mb-4">
+            {{ m.scraper.profiles.newMediaTypeHint }}
+          </p>
           <div class="space-y-1">
             <button
               v-for="option in mediaTypeOptions"
@@ -119,7 +128,7 @@ function handleClose() {
         <!-- Provider Selection -->
         <template v-else>
           <p class="text-sm text-muted-foreground mb-4">
-            选择一个主要的数据提供者作为默认配置的基础
+            {{ m.scraper.profiles.newProviderHint }}
           </p>
           <div class="space-y-1">
             <button
@@ -144,7 +153,7 @@ function handleClose() {
               v-if="searchProviders.length === 0"
               class="text-sm text-muted-foreground text-center py-4"
             >
-              暂无可用的提供者
+              {{ m.scraper.profiles.noProvidersAvailable }}
             </p>
           </div>
         </template>
@@ -159,14 +168,14 @@ function handleClose() {
             icon="icon-[mdi--arrow-left]"
             class="size-4 mr-1"
           />
-          返回
+          {{ m.common.back }}
         </Button>
         <div class="flex-1" />
         <Button
           variant="outline"
           @click="handleClose"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
       </DialogFooter>
     </DialogContent>

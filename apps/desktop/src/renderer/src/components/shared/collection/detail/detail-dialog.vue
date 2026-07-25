@@ -28,18 +28,9 @@ import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import CollectionDetailContent from './detail-content.vue'
 import { CollectionDropdownMenu } from '../menus'
 import { CollectionEntitiesFormDialog } from '../forms'
+import { useI18n } from '@renderer/composables'
 
-interface EntityTypeConfig {
-  label: string
-  unitLabel: string
-}
-
-const ENTITY_CONFIG: Record<ContentEntityType, EntityTypeConfig> = {
-  game: { label: '游戏', unitLabel: '款' },
-  character: { label: '角色', unitLabel: '个' },
-  person: { label: '人物', unitLabel: '位' },
-  company: { label: '公司', unitLabel: '家' }
-}
+const { m } = useI18n()
 
 interface Props {
   collectionId: string
@@ -142,8 +133,10 @@ const entityTypeModel = computed({
           :state="state"
           :error="error"
           :icon="getEntityIcon('collection')"
-          title="合集不存在"
-          description="该合集可能已被删除"
+          :title="m.library.detail.notFoundTitle({ label: m.library.entities.collection })"
+          :description="
+            m.library.detail.notFoundDescription({ label: m.library.entities.collection })
+          "
           class="py-12"
         />
       </DialogBody>
@@ -171,7 +164,7 @@ const entityTypeModel = computed({
                 :key="type"
                 :value="type"
               >
-                {{ ENTITY_CONFIG[type].label }}
+                {{ m.library.entities[type] }}
                 <span
                   v-if="entityCounts[type] > 0"
                   class="ml-1 text-[10px] text-muted-foreground"
@@ -192,7 +185,7 @@ const entityTypeModel = computed({
                   icon="icon-[mdi--format-list-numbered]"
                   class="size-4 mr-1.5"
                 />
-                编辑内容
+                {{ m.library.menu.editContent }}
               </Button>
               <CollectionDropdownMenu :collection-id="collection!.id" />
             </div>

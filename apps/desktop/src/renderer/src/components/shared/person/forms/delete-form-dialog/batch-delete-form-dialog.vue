@@ -9,6 +9,9 @@ import { DeleteRelatedOptions } from '@renderer/components/shared/entity-delete'
 import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dialog'
 import { useEntityDelete } from '@renderer/composables'
 import { formatEntityDeleteSuccessMessage } from '@renderer/utils/entity-delete'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   personIds: string[]
@@ -45,7 +48,9 @@ async function handleConfirm() {
     notify.success(formatEntityDeleteSuccessMessage(result))
     emit('deleted', props.personIds)
   } catch (error) {
-    notify.error(`删除失败: ${(error as Error).message}`)
+    notify.error(
+      m.value.library.feedback.deleteFailedWithReason({ message: (error as Error).message })
+    )
   }
 }
 </script>
@@ -53,7 +58,7 @@ async function handleConfirm() {
 <template>
   <DeleteConfirmDialog
     v-model:open="open"
-    entity-label="人物"
+    :entity-label="m.library.entities.person"
     :entity-name="entityName"
     :loading="isLoading || !data"
     @confirm="handleConfirm"
@@ -73,7 +78,7 @@ async function handleConfirm() {
         v-if="count > previewNames.length"
         class="opacity-70"
       >
-        …等 {{ count }} 项
+        {{ m.library.forms.andMoreCount({ count }) }}
       </div>
     </div>
 

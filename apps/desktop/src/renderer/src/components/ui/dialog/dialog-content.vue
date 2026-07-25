@@ -4,6 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { Icon } from '@renderer/components/ui/icon'
 import { DialogClose, DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 import DialogOverlay from './dialog-overlay.vue'
 
@@ -23,6 +24,8 @@ const props = withDefaults(
   }
 )
 const emits = defineEmits<DialogContentEmits>()
+
+const { m } = useI18n()
 
 const delegatedProps = reactiveOmit(props, 'class', 'showCloseButton')
 
@@ -68,7 +71,7 @@ function handleCloseAutoFocus(event: Event) {
           icon="icon-[mdi--close]"
           class="size-4"
         />
-        <span class="sr-only">Close</span>
+        <span class="sr-only">{{ m.common.close }}</span>
       </DialogClose>
     </DialogContent>
   </DialogPortal>

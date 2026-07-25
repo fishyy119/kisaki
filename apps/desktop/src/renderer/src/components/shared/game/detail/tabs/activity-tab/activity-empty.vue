@@ -6,6 +6,9 @@
 
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 </script>
 
 <template>
@@ -14,7 +17,7 @@ import { Icon } from '@renderer/components/ui/icon'
       icon="icon-[mdi--report-timeline-variant]"
       class="size-12 text-muted-foreground/30 mb-3"
     />
-    <p class="text-sm text-muted-foreground font-medium mb-1">暂无游玩活动</p>
-    <p class="text-xs text-muted-foreground/70 max-w-xs">启动游戏后，游玩时间将自动记录在这里</p>
+    <p class="text-sm text-muted-foreground font-medium mb-1">{{ m.game.activity.emptyTitle }}</p>
+    <p class="text-xs text-muted-foreground/70 max-w-xs">{{ m.game.activity.emptyHint }}</p>
   </div>
 </template>

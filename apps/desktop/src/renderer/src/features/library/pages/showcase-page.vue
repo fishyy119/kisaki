@@ -12,11 +12,14 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { useShowcaseSections } from '../composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   LibraryShowcaseSection,
   LibraryShowcaseEmpty,
   LibraryShowcaseSectionsFormDialog
 } from '../components/showcase'
+
+const { m } = useI18n()
 
 // Data (settled during navigation by the route loader)
 const { sections } = useShowcaseSections()
@@ -37,7 +40,7 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
     <!-- Header -->
     <PageHeader>
       <PageHeaderTitle
-        title="陈列柜"
+        :title="m.library.pages.showcaseTitle"
         icon="icon-[mdi--view-dashboard-outline]"
       />
 
@@ -51,7 +54,7 @@ const visibleSections = computed(() => sections.value.filter((s) => s.isVisible)
             icon="icon-[mdi--cog-outline]"
             class="size-4"
           />
-          管理区块
+          {{ m.library.pages.manageSections }}
         </Button>
       </template>
     </PageHeader>

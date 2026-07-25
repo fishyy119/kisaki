@@ -197,9 +197,6 @@ importers:
       file-type:
         specifier: ^22.0.1
         version: 22.0.1
-      i18next:
-        specifier: ^26.3.6
-        version: 26.3.6(typescript@6.0.3)
       nanoid:
         specifier: ^5.1.16
         version: 5.1.16
@@ -3703,14 +3700,6 @@ packages:
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
-
-  i18next@26.3.6:
-    resolution: {integrity: sha512-Bu5Z2nAXgfVyM8xvW3jk9EKRIuX37PudsrBViThNFx7CR7aaYTpP01cxNB/E4c4UUzTDiAZRstEhsRfPOL/8xA==}
-    peerDependencies:
-      typescript: ^5 || ^6 || ^7
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
@@ -8269,10 +8258,6 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
-
-  i18next@26.3.6(typescript@6.0.3):
-    optionalDependencies:
-      typescript: 6.0.3
 
   iconv-lite@0.6.3:
     dependencies:

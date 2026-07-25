@@ -1,8 +1,9 @@
 import {
   GAME_UPDATE_SURFACES,
-  LOCALES,
+  CONTENT_LOCALES,
   createUnavailableError,
   createValidationError,
+  type ContentLocale,
   type ExtensionRuntimeMetadata,
   type GameUpdateSurface,
   type IngestAddGameFromScraperOptions,
@@ -10,7 +11,6 @@ import {
   type IngestGameUpdateFromScraperInput,
   type IngestGameUpdateFromScraperOptions,
   type IngestUpdateResult,
-  type Locale,
   type ScraperLookup
 } from '@kisaki3/extension-api'
 import type { IngestService } from '@main/services/ingest'
@@ -154,16 +154,18 @@ function toAppScraperLookup(lookup: ScraperLookup): AppScraperLookup {
   }
 }
 
-function readOptionalLocale(value: unknown): Locale | undefined {
+function readOptionalLocale(value: unknown): ContentLocale | undefined {
   if (value === undefined) {
     return undefined
   }
 
-  if (typeof value !== 'string' || !(LOCALES as readonly string[]).includes(value)) {
-    throw createValidationError(`ingest lookup.locale must be one of: ${LOCALES.join(', ')}.`)
+  if (typeof value !== 'string' || !(CONTENT_LOCALES as readonly string[]).includes(value)) {
+    throw createValidationError(
+      `ingest lookup.locale must be one of: ${CONTENT_LOCALES.join(', ')}.`
+    )
   }
 
-  return value as Locale
+  return value as ContentLocale
 }
 
 function toAppGameUpdateRequest(input: IngestGameUpdateFromScraperInput): GameUpdateRequest {

@@ -1,5 +1,5 @@
 import semver from 'semver'
-import type { ExtensionManifest } from '@kisaki3/extension-api'
+import type { ExtensionManifest, LocalizedText } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifact,
   ExtensionRegistryManifest,
@@ -8,13 +8,30 @@ import type {
   ExtensionRegistrySigningKey
 } from '@kisaki3/extension-registry'
 
-/** Creates the short registry summary for an extension package. */
-export function createPackageSummary(manifest: ExtensionManifest): string {
-  const description = manifest.description?.trim()
-  if (!description) {
+/** Creates the short registry summary for an extension package, per locale variant. */
+export function createPackageSummary(manifest: ExtensionManifest): LocalizedText {
+  const description = manifest.description
+  if (description === undefined) {
     return manifest.name
   }
-  return description.length > 160 ? `${description.slice(0, 157)}...` : description
+
+  if (typeof description === 'string') {
+    const trimmed = description.trim()
+    return trimmed ? truncateSummary(trimmed) : manifest.name
+  }
+
+  const entries = Object.entries(description)
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+    .map(([locale, value]) => [locale, truncateSummary(value.trim())] as const)
+    .filter(([, value]) => value.length > 0)
+  const summary = Object.fromEntries(entries)
+  return typeof summary.en === 'string' && summary.en.length > 0
+    ? (summary as LocalizedText)
+    : manifest.name
+}
+
+function truncateSummary(value: string): string {
+  return value.length > 160 ? `${value.slice(0, 157)}...` : value
 }
 
 /** Compares registry packages by stable identifier. */

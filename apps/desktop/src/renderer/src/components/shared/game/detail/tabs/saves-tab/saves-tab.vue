@@ -24,6 +24,9 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import type { SaveBackup } from '@shared/db/contracts/json'
 import { GameSavesFormDialog } from '../../../forms'
 import GameDetailSavesItem from './saves-item.vue'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const { game, refetch } = useGame()
 
@@ -63,10 +66,10 @@ async function handleCreate() {
     // TODO: Rename 'attachment:create-game-backup' to 'attachment:create-game-save-backup'
     const result = await ipcManager.invoke('attachment:create-game-backup', game.value.id)
     if (result.success) {
-      notify.success('存档已创建')
+      notify.success(m.value.game.saves.backupCreated)
       refetch()
     } else {
-      notify.error('创建存档失败', result.error)
+      notify.error(m.value.game.saves.createBackupFailed, result.error)
     }
   } finally {
     isCreating.value = false
@@ -77,10 +80,10 @@ async function handleRestore(backupAt: number) {
   if (!game.value) return
   const result = await ipcManager.invoke('attachment:restore-game-backup', game.value.id, backupAt)
   if (result.success) {
-    notify.success('存档已恢复')
+    notify.success(m.value.game.saves.restored)
     refetch()
   } else {
-    notify.error('恢复存档失败', result.error)
+    notify.error(m.value.game.saves.restoreFailed, result.error)
   }
   restoreTarget.value = null
 }
@@ -89,10 +92,10 @@ async function handleDelete(backupAt: number) {
   if (!game.value) return
   const result = await ipcManager.invoke('attachment:delete-game-backup', game.value.id, backupAt)
   if (result.success) {
-    notify.success('备份已删除')
+    notify.success(m.value.game.saves.backupDeleted)
     refetch()
   } else {
-    notify.error(result.error || '删除备份失败')
+    notify.error(result.error || m.value.game.saves.deleteBackupFailed)
   }
   deleteTarget.value = null
 }
@@ -122,15 +125,15 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
       data
     )
     if (result.success) {
-      notify.success('备份信息已更新')
+      notify.success(m.value.game.saves.backupInfoUpdated)
       editDialogOpen.value = false
       editTarget.value = null
       refetch()
     } else {
-      notify.error(result.error || '更新失败')
+      notify.error(result.error || m.value.library.feedback.updateFailed)
     }
   } catch {
-    notify.error('更新失败')
+    notify.error(m.value.library.feedback.updateFailed)
   }
 }
 </script>
@@ -144,9 +147,9 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
           icon="icon-[mdi--folder-search-outline]"
           class="size-12 text-muted-foreground/30 mb-3"
         />
-        <p class="text-sm text-muted-foreground">未设置存档路径</p>
+        <p class="text-sm text-muted-foreground">{{ m.game.saves.noSavePathTitle }}</p>
         <p class="text-xs text-muted-foreground/70 mt-1">
-          请在游戏设置中配置存档目录后再使用备份功能
+          {{ m.game.saves.noSavePathHint }}
         </p>
       </div>
     </template>
@@ -158,8 +161,10 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
           icon="icon-[mdi--content-save-outline]"
           class="size-12 text-muted-foreground/30 mb-3"
         />
-        <p class="text-sm text-muted-foreground">暂无存档备份</p>
-        <p class="text-xs text-muted-foreground/70 mt-1 mb-4">创建备份以保护你的游戏进度</p>
+        <p class="text-sm text-muted-foreground">{{ m.game.saves.emptyBackupsTitle }}</p>
+        <p class="text-xs text-muted-foreground/70 mt-1 mb-4">
+          {{ m.game.saves.emptyBackupsHint }}
+        </p>
         <Button
           :disabled="isCreating"
           @click="handleCreate"
@@ -174,7 +179,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
             icon="icon-[mdi--plus]"
             class="size-4 mr-2"
           />
-          创建备份
+          {{ m.game.saves.createBackup }}
         </Button>
       </div>
     </template>
@@ -200,10 +205,10 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
                 icon="icon-[mdi--plus]"
                 class="size-4 mr-1.5"
               />
-              创建备份
+              {{ m.game.saves.createBackup }}
             </Button>
             <span class="text-xs text-muted-foreground">
-              {{ backups.length }} / {{ game.maxSaveBackups }} 个备份
+              {{ m.game.saves.backupCount({ current: backups.length, max: game.maxSaveBackups }) }}
             </span>
           </div>
           <div class="flex items-center gap-1">
@@ -216,7 +221,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
                 icon="icon-[mdi--folder-open-outline]"
                 class="size-4 mr-1.5"
               />
-              存档目录
+              {{ m.game.saves.saveDir }}
             </Button>
             <Button
               variant="ghost"
@@ -227,7 +232,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
                 icon="icon-[mdi--folder-zip-outline]"
                 class="size-4 mr-1.5"
               />
-              备份目录
+              {{ m.game.saves.backupDir }}
             </Button>
           </div>
         </div>
@@ -260,15 +265,15 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
       <AlertDialog v-model:open="restoreDialogOpen">
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>恢复存档</AlertDialogTitle>
+            <AlertDialogTitle>{{ m.game.saves.restoreTitle }}</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要恢复此备份吗？当前存档将被覆盖，此操作无法撤销。
+              {{ m.game.saves.restoreDescription }}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
             <AlertDialogAction @click="restoreTarget && handleRestore(restoreTarget)">
-              确认恢复
+              {{ m.game.saves.confirmRestore }}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -278,7 +283,7 @@ async function handleEditSubmit(data: { note: string; locked: boolean }) {
       <DeleteConfirmDialog
         v-if="deleteDialogOpen"
         v-model:open="deleteDialogOpen"
-        entity-label="备份"
+        :entity-label="m.game.saves.backupEntityLabel"
         @confirm="deleteTarget && handleDelete(deleteTarget)"
       />
     </template>

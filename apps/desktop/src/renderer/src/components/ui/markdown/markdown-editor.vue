@@ -15,6 +15,7 @@ import MarkdownContent from './markdown-content.vue'
 import MarkdownEditorToolbar from './markdown-editor-toolbar.vue'
 import type { MarkdownEditorOnAttachment } from './types'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { createBaseTheme, createShadcnTheme } from './markdown-theme'
 import {
   buildImageMarkdown,
@@ -48,6 +49,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const model = defineModel<string>({ required: true })
+
+const { m } = useI18n()
 
 const markdownLang = markdown()
 
@@ -237,7 +240,7 @@ watch(fullscreenOpen, async (open) => {
     <DialogContent class="max-w-none w-full h-full overflow-hidden p-0 rounded-none border-0">
       <div class="flex h-full flex-col">
         <DialogHeader class="shrink-0">
-          <DialogTitle>Markdown 编辑</DialogTitle>
+          <DialogTitle>{{ m.ui.markdown.editorTitle }}</DialogTitle>
         </DialogHeader>
         <MarkdownEditorToolbar
           class="shrink-0"
@@ -279,7 +282,7 @@ watch(fullscreenOpen, async (open) => {
   <Dialog v-model:open="previewOpen">
     <DialogContent class="max-w-[90vw] w-[90vw]">
       <DialogHeader>
-        <DialogTitle>预览</DialogTitle>
+        <DialogTitle>{{ m.ui.markdown.previewTitle }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[75vh] overflow-auto">
         <MarkdownContent :content="model" />

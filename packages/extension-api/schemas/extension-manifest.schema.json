@@ -15,8 +15,7 @@
       "pattern": "^(?!.*(?:^|\\.)(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\\.|$))[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$"
     },
     "name": {
-      "type": "string",
-      "minLength": 1
+      "$ref": "#/$defs/localizedText"
     },
     "version": {
       "type": "string",
@@ -44,7 +43,7 @@
       "description": "Package-relative root directory of built webview UI assets, e.g. ./dist/ui. Required for the extension to open webviews."
     },
     "description": {
-      "type": "string"
+      "$ref": "#/$defs/localizedText"
     },
     "author": {
       "type": "string"
@@ -78,6 +77,40 @@
           "description": "Kisaki Extension API version range. Runtime validation uses semver.validRange; this schema restricts the string to semver range syntax characters."
         }
       }
+    }
+  },
+  "$defs": {
+    "localizedText": {
+      "description": "A plain string is a language-neutral default. The object form requires en as the resolution baseline and may add any supported UI locale.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["en"],
+          "properties": {
+            "en": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ja": {
+              "type": "string",
+              "minLength": 1
+            },
+            "zh-Hans": {
+              "type": "string",
+              "minLength": 1
+            },
+            "zh-Hant": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
     }
   }
 }

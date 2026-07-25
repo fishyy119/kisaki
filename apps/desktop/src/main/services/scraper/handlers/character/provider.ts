@@ -4,7 +4,7 @@
 
 import type { CharacterScraperSlot } from '@shared/db'
 import type { Tag } from '@shared/metadata'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type {
   CharacterSearchResult,
   ScrapedCharacterInfo,
@@ -34,7 +34,10 @@ export interface CharacterScraperProvider {
   readonly externalIdSource: string
   readonly capabilities: readonly ScraperCapability[]
 
-  search(query: string, locale?: Locale): Promise<CharacterSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<CharacterResolvedTarget | null>
-  openSession(target: CharacterResolvedTarget, locale: Locale): Promise<CharacterScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<CharacterSearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<CharacterResolvedTarget | null>
+  openSession(
+    target: CharacterResolvedTarget,
+    locale: ContentLocale
+  ): Promise<CharacterScraperSession>
 }

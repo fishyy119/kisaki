@@ -8,6 +8,7 @@ import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useEvent } from '@renderer/composables/use-event'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { usePreferencesStore, useScannerStore } from '@renderer/stores'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
@@ -52,6 +53,8 @@ interface Props {
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const scannerStore = useScannerStore()
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
@@ -61,8 +64,8 @@ const issueTypeFilter = ref<ScannerIssueTypeFilter>('all')
 const fixDialogOpen = ref(false)
 const fixTarget = ref<ScannerFixTarget | null>(null)
 
-const issueTypeOptions: { value: ScannerIssueTypeFilter; label: string }[] = [
-  { value: 'all', label: '全部类型' },
+const issueTypeOptions = computed<{ value: ScannerIssueTypeFilter; label: string }[]>(() => [
+  { value: 'all', label: m.value.scanner.issues.allTypes },
   { value: 'metadata-missing', label: getIssueTypeText('metadata-missing') },
   { value: 'scraper-unavailable', label: getIssueTypeText('scraper-unavailable') },
   { value: 'duplicate-external-id', label: getIssueTypeText('duplicate-external-id') },
@@ -70,7 +73,7 @@ const issueTypeOptions: { value: ScannerIssueTypeFilter; label: string }[] = [
   { value: 'unsupported-entry', label: getIssueTypeText('unsupported-entry') },
   { value: 'asset-persist-failed', label: getIssueTypeText('asset-persist-failed') },
   { value: 'unexpected-error', label: getIssueTypeText('unexpected-error') }
-]
+])
 
 const issueRowsBase = computed<ScannerIssueRow[]>(() => {
   if (props.scannerId) {
@@ -196,7 +199,7 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
     const currentSettings = await db.query.settings.findFirst()
     const currentIgnoredNames = currentSettings?.scannerIgnoredNames ?? []
     if (currentIgnoredNames.includes(extractedName)) {
-      notify.success('已在排除列表中')
+      notify.success(m.value.scanner.issues.alreadyExcluded)
       return
     }
 
@@ -206,9 +209,12 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
       .where(eq(settings.id, 0))
       .run()
 
-    notify.success('已加入扫描排除列表')
+    notify.success(m.value.scanner.issues.addedToExclusion)
   } catch (error) {
-    notify.error('加入排除列表失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.scanner.issues.excludeFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
@@ -228,9 +234,11 @@ useEvent('db.updated', (payload) => {
             icon="icon-[mdi--alert-outline]"
             class="size-4 text-warning"
           />
-          扫描问题
+          {{ m.scanner.issues.title }}
         </DialogTitle>
-        <DialogDescription>共 {{ issueCount }} 项</DialogDescription>
+        <DialogDescription>
+          {{ m.scanner.issues.totalCount({ count: issueCount }) }}
+        </DialogDescription>
       </DialogHeader>
 
       <DialogBody class="flex max-h-[68vh] flex-col gap-3 overflow-hidden">
@@ -245,7 +253,7 @@ useEvent('db.updated', (payload) => {
             <InputGroupInput
               v-model="searchQuery"
               class="text-xs"
-              placeholder="搜索名称、路径、原因..."
+              :placeholder="m.scanner.issues.searchPlaceholder"
             />
             <InputGroupAddon
               v-if="hasSearch"
@@ -268,7 +276,7 @@ useEvent('db.updated', (payload) => {
               <span class="truncate">
                 {{
                   issueTypeOptions.find((option) => option.value === issueTypeFilter)?.label ??
-                  '全部类型'
+                  m.scanner.issues.allTypes
                 }}
               </span>
             </SelectTrigger>
@@ -288,7 +296,7 @@ useEvent('db.updated', (payload) => {
           v-if="filteredIssueRows.length === 0"
           class="flex h-40 items-center justify-center rounded-md border border-border text-sm text-muted-foreground"
         >
-          没有匹配的问题
+          {{ m.scanner.issues.noMatch }}
         </div>
 
         <div
@@ -302,12 +310,12 @@ useEvent('db.updated', (payload) => {
             <template #header>
               <TableHeader>
                 <TableRow>
-                  <TableHead>名称</TableHead>
-                  <TableHead>类型</TableHead>
-                  <TableHead>路径</TableHead>
-                  <TableHead>原因</TableHead>
-                  <TableHead>关联游戏</TableHead>
-                  <TableHead class="text-right">操作</TableHead>
+                  <TableHead>{{ m.scanner.issues.table.name }}</TableHead>
+                  <TableHead>{{ m.scanner.issues.table.type }}</TableHead>
+                  <TableHead>{{ m.scanner.issues.table.path }}</TableHead>
+                  <TableHead>{{ m.scanner.issues.table.reason }}</TableHead>
+                  <TableHead>{{ m.scanner.issues.table.relatedGame }}</TableHead>
+                  <TableHead class="text-right">{{ m.scanner.issues.table.actions }}</TableHead>
                 </TableRow>
               </TableHeader>
             </template>
@@ -362,7 +370,7 @@ useEvent('db.updated', (payload) => {
                       variant="ghost"
                       size="icon-sm"
                       class="text-muted-foreground hover:text-foreground"
-                      tooltip="打开路径"
+                      :tooltip="m.scanner.issues.openPath"
                       @click="handleOpenPath(row.issue.path)"
                     >
                       <Icon
@@ -375,7 +383,7 @@ useEvent('db.updated', (payload) => {
                       variant="ghost"
                       size="icon-sm"
                       class="text-muted-foreground hover:text-foreground"
-                      tooltip="加入扫描排除列表"
+                      :tooltip="m.scanner.issues.addToExclusion"
                       :disabled="!row.issue.extractedName"
                       @click="handleAddToExclusion(row)"
                     >
@@ -389,7 +397,7 @@ useEvent('db.updated', (payload) => {
                       variant="ghost"
                       size="icon-sm"
                       class="text-muted-foreground hover:text-foreground"
-                      tooltip="修正并重新刮削"
+                      :tooltip="m.scanner.issues.fixAndRescrape"
                       :disabled="!row.issue.fixable"
                       @click="handleFixIssue(row)"
                     >

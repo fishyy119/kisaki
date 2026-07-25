@@ -1,4 +1,8 @@
-import type { Locale, ScrapedGameCompanyFact, ScrapedGamePersonFact } from '@kisaki3/extension-sdk'
+import type {
+  ContentLocale,
+  ScrapedGameCompanyFact,
+  ScrapedGamePersonFact
+} from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import type { BangumiPersonDetail, BangumiRelatedPerson } from '../../../api/types'
 import { BANGUMI_SOURCE_ID } from '../../../utils/constants'
@@ -21,7 +25,7 @@ import { buildBangumiPersonUrl, dedupeRelatedSites, dedupeUrls } from './format/
 export async function buildGamePersons(
   getSubjectPersons: () => Promise<BangumiRelatedPerson[]>,
   getPersonDetails: () => Promise<Map<number, BangumiPersonDetail>>,
-  locale?: Locale | undefined
+  locale?: ContentLocale | undefined
 ): Promise<ScrapedGamePersonFact[]> {
   const relatedPersons = (await getSubjectPersons()).filter((person) => person.type === 1)
   if (!relatedPersons.length) return []
@@ -36,7 +40,7 @@ export async function buildGamePersons(
 export async function buildGameCompanies(
   getSubjectPersons: () => Promise<BangumiRelatedPerson[]>,
   getPersonDetails: () => Promise<Map<number, BangumiPersonDetail>>,
-  locale?: Locale
+  locale?: ContentLocale
 ): Promise<ScrapedGameCompanyFact[]> {
   const relatedCompanies = (await getSubjectPersons()).filter(
     (person) => person.type === 2 || person.type === 3
@@ -80,7 +84,7 @@ export async function fetchPersonDetails(
 function mapGamePerson(
   relatedPerson: BangumiRelatedPerson,
   detail: BangumiPersonDetail | undefined,
-  locale?: Locale
+  locale?: ContentLocale
 ): ScrapedGamePersonFact {
   const { name, originalName } = resolveLocalizedEntityName(
     detail?.name || relatedPerson.name,
@@ -122,7 +126,7 @@ function mapGamePerson(
 function mapGameCompany(
   relatedCompany: BangumiRelatedPerson,
   detail: BangumiPersonDetail | undefined,
-  locale?: Locale | undefined
+  locale?: ContentLocale | undefined
 ): ScrapedGameCompanyFact {
   const { name, originalName } = resolveLocalizedEntityName(
     detail?.name || relatedCompany.name,

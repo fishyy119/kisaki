@@ -8,6 +8,8 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
+import { resolveExtensionText } from '@renderer/core/extensions'
+import { useI18n } from '@renderer/composables/use-i18n'
 import ExtensionInstalledPanelCard from './installed-panel-card.vue'
 import ExtensionInstalledPanelFilterBar from './installed-panel-filter-bar.vue'
 import { useInstalledExtensionStore } from '../../stores'
@@ -20,6 +22,7 @@ import type {
 const log = createLogger('Extension')
 
 const store = useInstalledExtensionStore()
+const { m } = useI18n()
 const updateCheck = ref<ExtensionUpdateCheckResult>({ updates: [], unavailable: [] })
 const automaticUpdateRun = ref<ExtensionAutomaticUpdateRunState>(createIdleAutomaticUpdateRun())
 const checkingUpdates = ref(false)
@@ -75,13 +78,19 @@ async function handleCheckUpdates() {
     const result = unwrapIpcData(await ipcManager.invoke('extension:check-updates'))
     updateCheck.value = result
     if (result.updates.length > 0) {
-      notify.info('发现可用更新', `${result.updates.length} 个扩展可以更新`)
+      notify.info(
+        m.value.extension.installed.updatesAvailable,
+        m.value.extension.installed.updatesAvailableCount({ count: result.updates.length })
+      )
     } else {
-      notify.info('暂无可用更新')
+      notify.info(m.value.extension.installed.noUpdates)
     }
   } catch (error) {
     log.error('Failed to check updates:', error)
-    notify.error('检查更新失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.extension.installed.checkUpdatesFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     checkingUpdates.value = false
   }
@@ -110,8 +119,8 @@ const filteredExtensions = computed(() => {
     const query = store.searchQuery.toLowerCase()
     result = result.filter(
       (p) =>
-        p.name.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query) ||
+        resolveExtensionText(p.name).toLowerCase().includes(query) ||
+        resolveExtensionText(p.description)?.toLowerCase().includes(query) ||
         p.author?.toLowerCase().includes(query)
     )
   }
@@ -138,7 +147,7 @@ const filteredExtensions = computed(() => {
     let comparison = 0
     switch (store.sortField) {
       case 'name':
-        comparison = a.name.localeCompare(b.name)
+        comparison = resolveExtensionText(a.name).localeCompare(resolveExtensionText(b.name))
         break
       case 'status':
         comparison = (a.enabled ? 1 : 0) - (b.enabled ? 1 : 0)
@@ -190,8 +199,8 @@ function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
         v-else-if="extensionsList.length === 0"
         state="empty"
         icon="icon-[mdi--puzzle-outline]"
-        title="暂无已安装的扩展"
-        description="从“发现”页面安装扩展"
+        :title="m.extension.installed.emptyTitle"
+        :description="m.extension.installed.emptyDescription"
         class="h-48"
       />
 
@@ -199,8 +208,8 @@ function createIdleAutomaticUpdateRun(): ExtensionAutomaticUpdateRunState {
         v-else-if="filteredExtensions.length === 0"
         state="empty"
         icon="icon-[mdi--filter-off-outline]"
-        title="没有匹配的扩展"
-        description="尝试调整筛选条件"
+        :title="m.extension.installed.noMatchTitle"
+        :description="m.extension.installed.noMatchDescription"
         class="h-48"
       />
 

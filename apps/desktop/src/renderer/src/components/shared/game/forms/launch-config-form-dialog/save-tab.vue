@@ -22,6 +22,9 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const savePath = defineModel<string>('savePath', { required: true })
 const maxSaveBackups = defineModel<number>('maxSaveBackups', { required: true })
@@ -49,12 +52,12 @@ async function handleSelectSavePath() {
 <template>
   <FieldGroup>
     <Field>
-      <FieldLabel>存档路径</FieldLabel>
+      <FieldLabel>{{ m.game.launchConfig.savePathLabel }}</FieldLabel>
       <FieldContent>
         <div class="flex gap-2">
           <Input
             v-model="savePath"
-            placeholder="未设置"
+            :placeholder="m.common.notSet"
           />
           <Button
             type="button"
@@ -69,12 +72,12 @@ async function handleSelectSavePath() {
           </Button>
         </div>
       </FieldContent>
-      <FieldDescription>用于自动备份的存档目录</FieldDescription>
+      <FieldDescription>{{ m.game.launchConfig.savePathHint }}</FieldDescription>
     </Field>
 
     <Field orientation="horizontal">
-      <FieldLabel>最大备份数</FieldLabel>
-      <FieldDescription>超过此数量时自动删除最旧的备份</FieldDescription>
+      <FieldLabel>{{ m.game.launchConfig.maxBackupsLabel }}</FieldLabel>
+      <FieldDescription>{{ m.game.launchConfig.maxBackupsHint }}</FieldDescription>
       <FieldContent>
         <Select v-model="maxBackupsModel">
           <SelectTrigger class="w-20">

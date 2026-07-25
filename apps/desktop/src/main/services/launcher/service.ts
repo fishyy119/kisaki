@@ -17,6 +17,7 @@ export class LauncherService implements IMediaService {
   readonly id = 'launcher'
   readonly deps = [
     'db',
+    'i18n',
     'ipc',
     'monitor',
     'native',
@@ -31,8 +32,15 @@ export class LauncherService implements IMediaService {
     const ipcService = container.get('ipc')
     const nativeService = container.get('native')
     const notifyService = container.get('notify')
+    const i18nService = container.get('i18n')
 
-    this.game = new GameLauncherHandler(dbService, monitorService, nativeService, notifyService)
+    this.game = new GameLauncherHandler(
+      dbService,
+      monitorService,
+      nativeService,
+      notifyService,
+      i18nService
+    )
     registerLauncherIpc(this, ipcService)
     log.info('Initialized')
   }

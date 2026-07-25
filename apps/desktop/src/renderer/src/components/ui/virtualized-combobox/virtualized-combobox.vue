@@ -15,6 +15,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@renderer/components/ui
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { VirtualizedComboboxEntity } from './types'
 
 interface Props {
@@ -39,13 +40,16 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '搜索...',
-  emptyText: '选择...',
   multiple: false,
   disabled: false,
   maxHeight: 230,
   allowCreate: false
 })
+
+const { m } = useI18n()
+
+const placeholderText = computed(() => props.placeholder ?? m.value.common.searchPlaceholder)
+const emptyTextDisplay = computed(() => props.emptyText ?? m.value.common.select)
 
 const emit = defineEmits<{
   /** Callback when selection changes */
@@ -116,7 +120,7 @@ const displayText = computed(() => {
 
   if (selectedIds.length === 0) return null
   if (props.multiple) {
-    return `已选择 ${selectedIds.length} 项`
+    return m.value.common.selectedCount({ count: selectedIds.length })
   }
   const selected = entities.find((e) => e.id === selectedIds[0])
   return selected?.name ?? null
@@ -293,7 +297,7 @@ function handleMouseMove() {
         "
       >
         <span :class="cn('truncate', !displayText && 'text-muted-foreground')">
-          {{ displayText || props.emptyText }}
+          {{ displayText || emptyTextDisplay }}
         </span>
         <Icon
           icon="icon-[mdi--unfold-more-horizontal]"
@@ -319,7 +323,7 @@ function handleMouseMove() {
         <input
           ref="inputRef"
           :value="search"
-          :placeholder="props.placeholder"
+          :placeholder="placeholderText"
           class="placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
           @input="handleSearch(($event.target as HTMLInputElement).value)"
         />
@@ -338,7 +342,7 @@ function handleMouseMove() {
           v-if="filteredEntities.length === 0"
           class="py-6 text-center text-sm text-muted-foreground"
         >
-          未找到匹配项
+          {{ m.ui.combobox.noMatches }}
         </div>
 
         <!-- Virtual list -->
@@ -438,7 +442,7 @@ function handleMouseMove() {
             icon="icon-[mdi--plus]"
             class="size-4 shrink-0"
           />
-          <span class="truncate">创建 "{{ search.trim() }}"</span>
+          <span class="truncate">{{ m.ui.combobox.create({ name: search.trim() }) }}</span>
         </div>
       </div>
     </PopoverContent>

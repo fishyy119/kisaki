@@ -23,6 +23,9 @@ import { useLibraryExplorerStore } from '../../../stores'
 import { countActiveFilters } from '@shared/filter'
 import type { FilterState } from '@shared/filter'
 import type { ContentEntityType } from '@shared/common'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const store = useLibraryExplorerStore()
 const { activeEntityType, filter } = storeToRefs(store)
@@ -40,13 +43,13 @@ const filterModel = computed({
 function getUiSpec(entityType: ContentEntityType) {
   switch (entityType) {
     case 'game':
-      return gameFilterUiSpec
+      return gameFilterUiSpec.value
     case 'character':
-      return characterFilterUiSpec
+      return characterFilterUiSpec.value
     case 'person':
-      return personFilterUiSpec
+      return personFilterUiSpec.value
     case 'company':
-      return companyFilterUiSpec
+      return companyFilterUiSpec.value
   }
 }
 </script>
@@ -62,7 +65,7 @@ function getUiSpec(entityType: ContentEntityType) {
       variant="secondary"
       size="icon"
       :class="cn('size-7 relative bg-muted/50', activeCount > 0 && 'text-primary')"
-      title="筛选"
+      :title="m.library.explorer.filter"
     >
       <Icon
         icon="icon-[mdi--filter-outline]"

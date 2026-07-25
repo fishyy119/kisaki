@@ -2,11 +2,11 @@ import { check, integer, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { sql, type InferInsertModel, type InferSelectModel } from 'drizzle-orm'
 
 import {
-  appLocale,
   mainWindowCloseAction,
   scannerIgnoredNames,
   scannerIngestMode,
-  scannerParallelCount
+  scannerParallelCount,
+  uiLocale
 } from '../../columns'
 import {
   SCANNER_PARALLEL_COUNT_DEFAULT,
@@ -18,7 +18,7 @@ export const settings = sqliteTable(
   'settings',
   {
     id: integer('id').primaryKey().default(0),
-    locale: appLocale('locale'),
+    uiLocale: uiLocale('ui_locale'),
     mainWindowCloseAction: mainWindowCloseAction('main_window_close_action')
       .notNull()
       .default('exit'),

@@ -12,7 +12,9 @@ import { Progress } from '@renderer/components/ui/progress'
 import { Button } from '@renderer/components/ui/button'
 import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
-import { getLocale } from '@renderer/core/i18n'
+import { useI18n } from '@renderer/composables/use-i18n'
+import { uiLocale } from '@renderer/core/i18n'
+import { languageAutonym } from '@shared/i18n'
 import {
   Dialog,
   DialogBody,
@@ -28,6 +30,8 @@ import {
 } from '@shared/updater'
 
 const open = defineModel<boolean>('open', { required: true })
+
+const { m, f } = useI18n()
 
 const updaterStore = useUpdaterStore()
 const {
@@ -47,11 +51,17 @@ const {
 } = storeToRefs(updaterStore)
 
 function resolveDefaultChangelogLocale(): AppUpdaterChangelogLocale {
-  const currentLocale = getLocale().toLowerCase()
-  if (currentLocale.startsWith('ja')) return 'ja'
-  if (currentLocale.startsWith('en')) return 'en'
-  if (currentLocale.startsWith('zh')) return 'zh-Hans'
-  return DEFAULT_APP_UPDATER_CHANGELOG_LOCALE
+  switch (uiLocale.value) {
+    case 'ja':
+      return 'ja'
+    case 'en':
+      return 'en'
+    case 'zh-Hans':
+    case 'zh-Hant':
+      return 'zh-Hans'
+    default:
+      return DEFAULT_APP_UPDATER_CHANGELOG_LOCALE
+  }
 }
 
 const selectedChangelogLocale = ref<AppUpdaterChangelogLocale>(resolveDefaultChangelogLocale())
@@ -68,14 +78,15 @@ const releaseDateText = computed(() => {
 
   const date = new Date(releaseDate)
   if (Number.isNaN(date.getTime())) return releaseDate
-  return date.toLocaleString()
+  return f.value.dateTime(date)
 })
 
 const releaseMetaItems = computed(() => {
   const items: string[] = []
   if (release.value?.version) items.push(`v${release.value.version}`)
   if (release.value?.releaseName) items.push(release.value.releaseName)
-  if (releaseDateText.value) items.push(`发布于 ${releaseDateText.value}`)
+  if (releaseDateText.value)
+    items.push(m.value.updater.dialog.releasedAt({ date: releaseDateText.value }))
   return items
 })
 
@@ -85,24 +96,27 @@ const progressPercent = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (isChecking.value) return '正在检查更新...'
-  if (isDownloading.value) return '正在下载更新...'
+  const dialog = m.value.updater.dialog
+  if (isChecking.value) return dialog.checking
+  if (isDownloading.value) return dialog.downloading
 
   switch (state.value.status) {
     case 'idle':
-      return '点击「检查更新」开始'
+      return dialog.idleHint
     case 'checking':
-      return '正在检查更新...'
+      return dialog.checking
     case 'available':
-      return '发现新版本'
+      return dialog.newVersionAvailable
     case 'downloading':
-      return '正在下载更新...'
+      return dialog.downloading
     case 'downloaded':
-      return '更新已下载'
+      return dialog.downloaded
     case 'not-available':
-      return '当前已是最新版本'
+      return dialog.upToDate
     case 'error':
-      return state.value.error ? `更新失败：${state.value.error}` : '更新失败'
+      return state.value.error
+        ? dialog.failedWithReason({ message: state.value.error })
+        : dialog.failed
     default:
       return ''
   }
@@ -153,7 +167,10 @@ async function handleCheckForUpdates() {
   try {
     await updaterStore.checkForUpdates()
   } catch (error) {
-    notify.error('检查更新失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.updater.dialog.checkFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
@@ -161,7 +178,10 @@ async function handleDownloadUpdate() {
   try {
     await updaterStore.downloadUpdate()
   } catch (error) {
-    notify.error('下载更新失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.updater.dialog.downloadFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
@@ -169,7 +189,10 @@ async function handleInstallAndRestart() {
   try {
     await updaterStore.quitAndInstall()
   } catch (error) {
-    notify.error('安装更新失败', error instanceof Error ? error.message : String(error))
+    notify.error(
+      m.value.updater.dialog.installFailed,
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
@@ -180,7 +203,10 @@ async function loadChangelog(options: { force: boolean; notifyOnError: boolean }
     await updaterStore.ensureActiveReleaseChangelog({ force: options.force })
   } catch (error) {
     if (options.notifyOnError) {
-      notify.error('获取更新日志失败', error instanceof Error ? error.message : String(error))
+      notify.error(
+        m.value.updater.dialog.changelogLoadFailed,
+        error instanceof Error ? error.message : String(error)
+      )
     }
   }
 }
@@ -194,7 +220,7 @@ async function handleRetryChangelog() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>软件更新</DialogTitle>
+        <DialogTitle>{{ m.updater.dialog.title }}</DialogTitle>
       </DialogHeader>
 
       <DialogBody class="space-y-4 max-h-[70vh] overflow-y-auto">
@@ -219,7 +245,7 @@ async function handleRetryChangelog() {
           class="rounded-md border border-border px-3 py-2 space-y-2"
         >
           <div class="flex items-center justify-between text-xs text-muted-foreground">
-            <span>下载进度</span>
+            <span>{{ m.updater.dialog.downloadProgress }}</span>
             <span>{{ progressPercent.toFixed(1) }}%</span>
           </div>
           <Progress :model-value="progressPercent" />
@@ -232,11 +258,13 @@ async function handleRetryChangelog() {
 
         <Field>
           <div class="flex items-center justify-between gap-2">
-            <FieldLabel>更新日志</FieldLabel>
+            <FieldLabel>{{ m.updater.dialog.changelogLabel }}</FieldLabel>
             <SegmentedControl v-model="selectedChangelogLocale">
-              <SegmentedControlItem value="zh-Hans">简体中文</SegmentedControlItem>
-              <SegmentedControlItem value="en">English</SegmentedControlItem>
-              <SegmentedControlItem value="ja">日本語</SegmentedControlItem>
+              <SegmentedControlItem value="zh-Hans">{{
+                languageAutonym('zh-Hans')
+              }}</SegmentedControlItem>
+              <SegmentedControlItem value="en">{{ languageAutonym('en') }}</SegmentedControlItem>
+              <SegmentedControlItem value="ja">{{ languageAutonym('ja') }}</SegmentedControlItem>
             </SegmentedControl>
           </div>
 
@@ -247,21 +275,23 @@ async function handleRetryChangelog() {
                 class="flex items-center gap-2 text-sm text-muted-foreground"
               >
                 <Spinner class="size-4" />
-                <span>正在加载更新日志...</span>
+                <span>{{ m.updater.dialog.changelogLoading }}</span>
               </div>
 
               <div
                 v-else-if="activeChangelogError"
                 class="space-y-2"
               >
-                <p class="text-sm text-destructive">更新日志加载失败：{{ activeChangelogError }}</p>
+                <p class="text-sm text-destructive">
+                  {{ m.updater.dialog.changelogError({ message: activeChangelogError }) }}
+                </p>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   @click="handleRetryChangelog"
                 >
-                  重试
+                  {{ m.common.retry }}
                 </Button>
               </div>
 
@@ -275,14 +305,14 @@ async function handleRetryChangelog() {
                 v-else-if="hasRelease"
                 class="space-y-2"
               >
-                <p class="text-sm text-muted-foreground">当前语言暂无更新日志</p>
+                <p class="text-sm text-muted-foreground">{{ m.updater.dialog.changelogEmpty }}</p>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   @click="handleRetryChangelog"
                 >
-                  重试
+                  {{ m.common.retry }}
                 </Button>
               </div>
 
@@ -290,7 +320,7 @@ async function handleRetryChangelog() {
                 v-else
                 class="text-sm text-muted-foreground"
               >
-                检查到更新后会在此显示更新日志
+                {{ m.updater.dialog.changelogPlaceholder }}
               </p>
             </div>
           </FieldContent>
@@ -308,7 +338,7 @@ async function handleRetryChangelog() {
             v-if="isChecking || isManuallyChecking"
             class="size-4"
           />
-          <template v-else>检查更新</template>
+          <template v-else>{{ m.updater.dialog.checkUpdates }}</template>
         </Button>
 
         <div class="flex items-center gap-2">
@@ -322,7 +352,7 @@ async function handleRetryChangelog() {
               v-if="isDownloading || isStartingDownload"
               class="size-4"
             />
-            <template v-else>开始下载</template>
+            <template v-else>{{ m.updater.dialog.startDownload }}</template>
           </Button>
 
           <Button
@@ -335,7 +365,7 @@ async function handleRetryChangelog() {
               v-if="isInstalling"
               class="size-4"
             />
-            <template v-else>更新并重启</template>
+            <template v-else>{{ m.updater.dialog.installAndRestart }}</template>
           </Button>
 
           <Button
@@ -344,7 +374,7 @@ async function handleRetryChangelog() {
             :disabled="isInstalling"
             @click="open = false"
           >
-            关闭
+            {{ m.common.close }}
           </Button>
         </div>
       </DialogFooter>

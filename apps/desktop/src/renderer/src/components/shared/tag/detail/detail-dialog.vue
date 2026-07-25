@@ -28,6 +28,9 @@ import { TagDropdownMenu } from '../menus'
 import { TagInfoFormDialog } from '../forms'
 import TagDetailContent from './detail-content.vue'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 interface Props {
   tagId: string
@@ -36,13 +39,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
-
-const ENTITY_CONFIG: Record<ContentEntityType, { label: string; unitLabel: string }> = {
-  game: { label: '游戏', unitLabel: '款' },
-  character: { label: '角色', unitLabel: '个' },
-  person: { label: '人物', unitLabel: '位' },
-  company: { label: '公司', unitLabel: '家' }
-}
 
 // Use TagProvider
 const { tag, entityType, setEntityType, isLoading, error } = useTagDialogProvider(() => props.tagId)
@@ -130,8 +126,8 @@ const entityTypeModel = computed({
           :state="state"
           :error="error"
           icon="icon-[mdi--tag-off-outline]"
-          title="标签不存在"
-          description="该标签可能已被删除"
+          :title="m.library.detail.notFoundTitle({ label: m.library.entities.tag })"
+          :description="m.library.detail.notFoundDescription({ label: m.library.entities.tag })"
           class="py-12"
         />
       </DialogBody>
@@ -175,7 +171,7 @@ const entityTypeModel = computed({
                 :key="type"
                 :value="type"
               >
-                {{ ENTITY_CONFIG[type].label }}
+                {{ m.library.entities[type] }}
               </SegmentedControlItem>
             </SegmentedControl>
 
@@ -191,7 +187,7 @@ const entityTypeModel = computed({
                   icon="icon-[mdi--pencil-outline]"
                   class="size-4 mr-1.5"
                 />
-                编辑
+                {{ m.common.edit }}
               </Button>
               <TagDropdownMenu :tag-id="tag.id" />
             </div>

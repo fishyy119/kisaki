@@ -15,7 +15,13 @@ const log = createLogger('Updater')
 
 export class UpdaterService implements IService {
   readonly id = 'updater'
-  readonly deps = ['db', 'ipc', 'network', 'task-run'] as const satisfies readonly ServiceName[]
+  readonly deps = [
+    'db',
+    'i18n',
+    'ipc',
+    'network',
+    'task-run'
+  ] as const satisfies readonly ServiceName[]
 
   updates!: AppUpdateManager
   changelog!: UpdaterChangelogProvider
@@ -30,7 +36,8 @@ export class UpdaterService implements IService {
     this.updates = new AppUpdateManager({
       ipc: ipcService,
       settings: this.settings,
-      taskRun: container.get('task-run')
+      taskRun: container.get('task-run'),
+      i18n: container.get('i18n')
     })
     this.changelog = new UpdaterChangelogProvider(networkService, {
       baseUrl: getConfiguredChangelogBaseUrl()

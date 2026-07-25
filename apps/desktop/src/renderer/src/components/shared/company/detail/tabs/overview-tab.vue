@@ -16,13 +16,13 @@ import {
   CompanyTagsFormDialog,
   CompanyGamesFormDialog
 } from '../../forms'
+import { useI18n } from '@renderer/composables'
 
-const GAME_COMPANY_TYPE_LABELS: Record<string, string> = {
-  developer: '开发商',
-  publisher: '发行商',
-  distributor: '经销商',
-  other: '其他'
-}
+const { m } = useI18n()
+
+const GAME_COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCompany
+)
 
 const { company, tags, games } = useCompany()
 
@@ -64,21 +64,21 @@ const tagDialogOpen = computed({
       <!-- Left column: Description, Related Games, Tags -->
       <div class="space-y-6 min-w-0">
         <Section
-          title="简介"
+          :title="m.library.detail.sections.description"
           editable
           :empty="!company.description"
-          empty-text="暂无简介"
+          :empty-text="m.library.detail.empty.description"
           @edit="descriptionDialogOpen = true"
         >
           <MarkdownContent :content="company.description!" />
         </Section>
 
         <SectionScroll
-          title="相关游戏"
+          :title="m.library.fields.relatedGames"
           editable
           :items="gameLinks"
           :get-key="(item) => item.id"
-          empty-text="暂无相关游戏"
+          :empty-text="m.library.detail.empty.relatedGames"
           @edit="gamesDialogOpen = true"
         >
           <template #item="{ item: link }">
@@ -93,10 +93,10 @@ const tagDialogOpen = computed({
         </SectionScroll>
 
         <Section
-          title="标签"
+          :title="m.library.fields.tags"
           editable
           :empty="!hasTags"
-          empty-text="暂无标签"
+          :empty-text="m.library.detail.empty.tags"
           @edit="tagsDialogOpen = true"
         >
           <div class="flex flex-wrap gap-1">
@@ -119,10 +119,10 @@ const tagDialogOpen = computed({
       <!-- Right column: Related Sites -->
       <div class="space-y-6 min-w-0">
         <Section
-          title="相关链接"
+          :title="m.library.fields.relatedSites"
           editable
           :empty="!hasRelatedSites"
-          empty-text="暂无相关链接"
+          :empty-text="m.library.detail.empty.relatedSites"
           @edit="sitesDialogOpen = true"
         >
           <div class="flex flex-col gap-1.5">

@@ -6,12 +6,12 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCharacter } from '@renderer/composables/use-character'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { Button } from '@renderer/components/ui/button'
 import { CharacterBasicFormDialog } from '../forms'
@@ -21,6 +21,7 @@ import { CharacterBasicFormDialog } from '../forms'
 // =============================================================================
 
 const { character } = useCharacter()
+const { m, f } = useI18n()
 
 const isEditOpen = ref(false)
 
@@ -28,18 +29,9 @@ const isEditOpen = ref(false)
 // Constants
 // =============================================================================
 
-const GENDER_LABELS: Record<string, string> = {
-  male: '男性',
-  female: '女性',
-  other: '其他'
-}
+const GENDER_LABELS = computed<Record<string, string>>(() => m.value.library.gender)
 
-const BLOOD_TYPE_LABELS: Record<string, string> = {
-  a: 'A型',
-  b: 'B型',
-  o: 'O型',
-  ab: 'AB型'
-}
+const BLOOD_TYPE_LABELS = computed<Record<string, string>>(() => m.value.library.bloodType)
 
 const CUP_SIZE_LABELS: Record<string, string> = {
   aaa: 'AAA',
@@ -126,35 +118,35 @@ function getBodyStats() {
             v-if="character.gender"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">性别</span>
+            <span class="text-muted-foreground">{{ m.library.fields.gender }}</span>
             <span>{{ GENDER_LABELS[character.gender] || character.gender }}</span>
           </div>
           <div
             v-if="character.birthDate"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">生日</span>
-            <span>{{ formatDate(character.birthDate) }}</span>
+            <span class="text-muted-foreground">{{ m.library.fields.birthDate }}</span>
+            <span>{{ f.date(character.birthDate) }}</span>
           </div>
           <div
             v-if="character.age !== null"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">年龄</span>
-            <span>{{ character.age }}岁</span>
+            <span class="text-muted-foreground">{{ m.library.fields.age }}</span>
+            <span>{{ m.library.detail.ageValue({ age: character.age }) }}</span>
           </div>
           <div
             v-if="character.bloodType"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">血型</span>
+            <span class="text-muted-foreground">{{ m.library.fields.bloodType }}</span>
             <span>{{ BLOOD_TYPE_LABELS[character.bloodType] || character.bloodType }}</span>
           </div>
           <div
             v-if="getBodyStats()"
             class="flex gap-2 col-span-2"
           >
-            <span class="text-muted-foreground">体型</span>
+            <span class="text-muted-foreground">{{ m.library.fields.measurements }}</span>
             <span>{{ getBodyStats() }}</span>
           </div>
         </div>

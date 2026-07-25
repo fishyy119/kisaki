@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { RepositoryAddRequest } from './types'
 
 interface Props {
@@ -33,6 +34,7 @@ interface FormData {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const open = defineModel<boolean>('open', { required: true })
+const { m } = useI18n()
 
 const formData = ref<FormData>({
   url: '',
@@ -69,11 +71,13 @@ function resetForm() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>添加扩展仓库</DialogTitle>
+        <DialogTitle>{{ m.extension.repository.addDialog.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="space-y-3">
         <div class="space-y-1.5">
-          <label class="text-xs text-muted-foreground">仓库清单 URL</label>
+          <label class="text-xs text-muted-foreground">{{
+            m.extension.repository.addDialog.manifestUrl
+          }}</label>
           <Input
             v-model="formData.url"
             placeholder="https://example.com/extensions/manifest.json"
@@ -81,10 +85,12 @@ function resetForm() {
           />
         </div>
         <div class="space-y-1.5">
-          <label class="text-xs text-muted-foreground">显示名称</label>
+          <label class="text-xs text-muted-foreground">{{
+            m.extension.repository.addDialog.displayName
+          }}</label>
           <Input
             v-model="formData.name"
-            placeholder="留空使用仓库清单名称"
+            :placeholder="m.extension.repository.addDialog.displayNamePlaceholder"
             @keydown.enter="handleSubmit"
           />
         </div>
@@ -95,7 +101,7 @@ function resetForm() {
           :disabled="props.submitting"
           @click="open = false"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="!canSubmit"
@@ -105,7 +111,7 @@ function resetForm() {
             v-if="props.submitting"
             class="size-4"
           />
-          添加
+          {{ m.common.add }}
         </Button>
       </DialogFooter>
     </DialogContent>

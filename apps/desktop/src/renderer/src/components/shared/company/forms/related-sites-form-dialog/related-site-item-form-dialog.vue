@@ -17,6 +17,9 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface RelatedSite {
   label: string
@@ -57,7 +60,7 @@ function handleSubmit() {
   const trimmedLabel = formData.value.label.trim()
   const trimmedUrl = formData.value.url.trim()
   if (!trimmedLabel || !trimmedUrl) {
-    notify.error('请填写必填字段')
+    notify.error(m.value.library.forms.requiredFieldsMissing)
     return
   }
   emit('submit', { label: trimmedLabel, url: trimmedUrl })
@@ -73,23 +76,25 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ props.initialData ? '编辑链接' : '添加链接' }}</DialogTitle>
+        <DialogTitle>{{
+          props.initialData ? m.library.forms.editLink : m.library.forms.addLink
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>名称</FieldLabel>
+              <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.label"
-                  placeholder="如: 官网..."
+                  :placeholder="m.library.forms.siteNamePlaceholder"
                   required
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>链接</FieldLabel>
+              <FieldLabel>{{ m.library.forms.siteUrlLabel }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.url"
@@ -106,9 +111,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

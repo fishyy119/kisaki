@@ -1,4 +1,5 @@
 import type { ScannerRunIssue, ScannerRunIssueType } from '@shared/scanner'
+import { messages } from '@renderer/core/i18n'
 
 export interface ScannerIssueRow {
   scannerId: string
@@ -13,21 +14,22 @@ export type ScannerFixTarget = ScannerRunIssue & {
 }
 
 export function getIssueTypeText(type: ScannerRunIssueType): string {
+  const issueTypes = messages.value.scanner.issueTypes
   switch (type) {
     case 'asset-persist-failed':
-      return '资源保存失败'
+      return issueTypes.assetPersistFailed
     case 'duplicate-external-id':
-      return '外部 ID 重复'
+      return issueTypes.duplicateExternalId
     case 'metadata-missing':
-      return '元数据缺失'
+      return issueTypes.metadataMissing
     case 'path-unavailable':
-      return '路径不可访问'
+      return issueTypes.pathUnavailable
     case 'scraper-unavailable':
-      return '刮削不可用'
+      return issueTypes.scraperUnavailable
     case 'unexpected-error':
-      return '意外错误'
+      return issueTypes.unexpectedError
     case 'unsupported-entry':
-      return '不支持的条目'
+      return issueTypes.unsupportedEntry
     default:
       return type
   }

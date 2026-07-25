@@ -11,10 +11,11 @@ import { CoverImage } from '@renderer/components/ui/cover-image'
 import { useCompany } from '@renderer/composables'
 import { CompanyBasicFormDialog } from '../forms'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 
 const { company } = useCompany()
+const { m, f } = useI18n()
 
 const isEditOpen = ref(false)
 </script>
@@ -68,14 +69,14 @@ const isEditOpen = ref(false)
             v-if="company.foundedDate"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">成立日期</span>
-            <span>{{ formatDate(company.foundedDate) }}</span>
+            <span class="text-muted-foreground">{{ m.library.fields.foundedDate }}</span>
+            <span>{{ f.date(company.foundedDate) }}</span>
           </div>
           <div
             v-if="company.score !== null"
             class="flex gap-2"
           >
-            <span class="text-muted-foreground">评分</span>
+            <span class="text-muted-foreground">{{ m.library.fields.score }}</span>
             <span class="text-warning">{{ (company.score / 10).toFixed(1) }}</span>
           </div>
         </div>

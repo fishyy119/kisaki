@@ -20,7 +20,7 @@ import { PersonSelect } from '@renderer/components/shared/person'
 import { CompanySelect } from '@renderer/components/shared/company'
 import { TagSelect } from '@renderer/components/shared/tag'
 import { CollectionSelect } from '@renderer/components/shared/collection'
-import { useAsyncData } from '@renderer/composables'
+import { useAsyncData, useI18n } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { games, characters, persons, companies, tags, collections } from '@shared/db'
 import { cn } from '@renderer/utils/cn'
@@ -35,6 +35,11 @@ interface Props {
 
 const props = defineProps<Props>()
 const filterModel = defineModel<FilterState>({ required: true })
+const { m } = useI18n()
+
+const selectPlaceholder = computed(() =>
+  m.value.library.select.selectPlaceholder({ label: props.field.label })
+)
 
 const localMode = ref<MatchMode>('any')
 
@@ -184,7 +189,7 @@ function handleRemove(idToRemove: string) {
           "
           @click="() => handleModeChange('any')"
         >
-          任意
+          {{ m.filter.matchAny }}
         </button>
         <button
           type="button"
@@ -198,7 +203,7 @@ function handleRemove(idToRemove: string) {
           "
           @click="() => handleModeChange('all')"
         >
-          全部
+          {{ m.filter.matchAll }}
         </button>
       </div>
     </div>
@@ -208,37 +213,37 @@ function handleRemove(idToRemove: string) {
         v-if="targetEntity === 'game'"
         v-model:selected-ids="selectedIds"
         multiple
-        :placeholder="`选择${props.field.label}...`"
+        :placeholder="selectPlaceholder"
       />
       <CharacterSelect
         v-else-if="targetEntity === 'character'"
         v-model:selected-ids="selectedIds"
         multiple
-        :placeholder="`选择${props.field.label}...`"
+        :placeholder="selectPlaceholder"
       />
       <PersonSelect
         v-else-if="targetEntity === 'person'"
         v-model:selected-ids="selectedIds"
         multiple
-        :placeholder="`选择${props.field.label}...`"
+        :placeholder="selectPlaceholder"
       />
       <CompanySelect
         v-else-if="targetEntity === 'company'"
         v-model:selected-ids="selectedIds"
         multiple
-        :placeholder="`选择${props.field.label}...`"
+        :placeholder="selectPlaceholder"
       />
       <TagSelect
         v-else-if="targetEntity === 'tag'"
         v-model:selected-ids="selectedIds"
         multiple
-        :placeholder="`选择${props.field.label}...`"
+        :placeholder="selectPlaceholder"
       />
       <CollectionSelect
         v-else-if="targetEntity === 'collection'"
         v-model:selected-ids="selectedIds"
         multiple
-        :placeholder="`选择${props.field.label}...`"
+        :placeholder="selectPlaceholder"
       />
 
       <div

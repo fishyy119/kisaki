@@ -14,6 +14,9 @@ import { useCollection, useRenderState } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import type { ContentEntityType } from '@shared/common'
 import type { Game, Character, Person, Company } from '@shared/db'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 interface Props {
   scrollParent?: HTMLElement | null
@@ -28,14 +31,7 @@ type EntityData = Game | Character | Person | Company
 const { collection, entities, entityType, isLoading, error } = useCollection()
 const state = useRenderState(isLoading, error, collection)
 
-const ENTITY_LABELS: Record<ContentEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司'
-}
-
-const entityLabel = computed(() => ENTITY_LABELS[entityType.value])
+const entityLabel = computed(() => m.value.library.entities[entityType.value])
 
 const emit = defineEmits<{
   (e: 'entity-click', payload: { type: ContentEntityType; id: string; entity: EntityData }): void
@@ -54,8 +50,8 @@ function handleItemClick(entity: EntityData) {
     :state="state"
     :error="error"
     :icon="getEntityIcon('collection')"
-    title="合集不存在"
-    description="该合集可能已被删除"
+    :title="m.library.detail.notFoundTitle({ label: m.library.entities.collection })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.collection })"
     class="h-full"
   />
 
@@ -64,8 +60,8 @@ function handleItemClick(entity: EntityData) {
     v-else-if="state === 'success' && entities.length === 0"
     state="empty"
     :icon="getEntityIcon(entityType)"
-    :title="`此合集暂无${entityLabel}`"
-    :description="`通过扫描器添加${entityLabel}到此合集`"
+    :title="m.library.detail.collectionEmptyTitle({ label: entityLabel })"
+    :description="m.library.detail.collectionEmptyDescription({ label: entityLabel })"
     class="h-full"
   />
 

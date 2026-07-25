@@ -1,12 +1,13 @@
 import type { ExistingReason, IngestWarning } from '@shared/ingest'
+import { messages } from '@renderer/core/i18n'
 
 /**
  * Map ingest existing reasons to user-facing labels.
  */
 export function getExistingReasonText(reason: ExistingReason | undefined): string {
-  if (reason === 'externalId') return '外部 ID'
-  if (reason === 'path') return '路径'
-  return '未知原因'
+  if (reason === 'externalId') return messages.value.adder.existingReasonExternalId
+  if (reason === 'path') return messages.value.adder.existingReasonPath
+  return messages.value.adder.existingReasonUnknown
 }
 
 /**
@@ -15,5 +16,5 @@ export function getExistingReasonText(reason: ExistingReason | undefined): strin
 export function getIngestWarningMessage(warnings: IngestWarning[] | undefined): string | undefined {
   if (!warnings?.length) return undefined
   if (warnings.length === 1) return warnings[0].message
-  return `${warnings.length} 个资源后处理步骤失败，请查看日志。`
+  return messages.value.adder.postProcessWarnings({ count: warnings.length })
 }

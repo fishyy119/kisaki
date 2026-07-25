@@ -1,6 +1,6 @@
 <!-- Maintenance Tab edits advanced client preferences and destructive local maintenance. -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,7 @@ import {
   Switch
 } from '@kisaki3/extension-ui-vue'
 import { settingsForm } from '../form'
+import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
 import SettingsSection from '../components/settings-section.vue'
 
@@ -33,26 +34,28 @@ interface DangerAction {
   run: () => Promise<void>
 }
 
-const DANGER_ACTIONS: readonly { key: string; label: string; action: DangerAction }[] = [
-  {
-    key: 'clear-sync',
-    label: '清除同步状态',
-    action: {
-      title: '清除同步状态',
-      description: '将清空同步指纹与变更队列，下次同步会重新比对全部条目。',
-      run: () => host.clearSyncState()
+const dangerActions = computed<readonly { key: string; label: string; action: DangerAction }[]>(
+  () => [
+    {
+      key: 'clear-sync',
+      label: m.value.ui.maintenance.clearSyncState,
+      action: {
+        title: m.value.ui.maintenance.clearSyncState,
+        description: m.value.ui.maintenance.clearSyncStateDescription,
+        run: () => host.clearSyncState()
+      }
+    },
+    {
+      key: 'reset',
+      label: m.value.ui.maintenance.resetSettings,
+      action: {
+        title: m.value.ui.maintenance.resetSettings,
+        description: m.value.ui.maintenance.resetSettingsDescription,
+        run: () => host.resetSettings()
+      }
     }
-  },
-  {
-    key: 'reset',
-    label: '恢复默认设置',
-    action: {
-      title: '恢复默认设置',
-      description: '将把 Bangumi 偏好设置重置为默认值，不会退出账号或删除自动化。',
-      run: () => host.resetSettings()
-    }
-  }
-]
+  ]
+)
 
 const busy = ref(false)
 const confirmOpen = ref(false)
@@ -85,14 +88,14 @@ async function confirmAction(): Promise<void> {
 <template>
   <div class="space-y-4">
     <SettingsSection
-      title="网络与客户端"
-      description="这些偏好保存后影响后续 Bangumi API 请求。"
+      :title="m.ui.maintenance.networkTitle"
+      :description="m.ui.maintenance.networkDescription"
       surface="rows"
     >
       <FieldGroup>
         <Field
           orientation="horizontal"
-          label="登录超时"
+          :label="m.ui.maintenance.loginTimeout"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Input
@@ -102,14 +105,14 @@ async function confirmAction(): Promise<void> {
               max="60"
               class="w-20"
             />
-            <span class="text-xs text-muted-foreground">分钟</span>
+            <span class="text-xs text-muted-foreground">{{ m.ui.maintenance.minutes }}</span>
           </FieldContent>
         </Field>
 
         <Field
           orientation="horizontal"
-          label="API 速率限制"
-          description="请求数 / 时间窗口。"
+          :label="m.ui.maintenance.rateLimit"
+          :description="m.ui.maintenance.rateLimitDescription"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Input
@@ -127,13 +130,13 @@ async function confirmAction(): Promise<void> {
               max="3600"
               class="w-20"
             />
-            <span class="text-xs text-muted-foreground">秒</span>
+            <span class="text-xs text-muted-foreground">{{ m.ui.maintenance.seconds }}</span>
           </FieldContent>
         </Field>
 
         <Field
           orientation="horizontal"
-          label="API 超时"
+          :label="m.ui.maintenance.apiTimeout"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Input
@@ -143,13 +146,13 @@ async function confirmAction(): Promise<void> {
               max="120"
               class="w-20"
             />
-            <span class="text-xs text-muted-foreground">秒</span>
+            <span class="text-xs text-muted-foreground">{{ m.ui.maintenance.seconds }}</span>
           </FieldContent>
         </Field>
 
         <Field
           orientation="horizontal"
-          label="重试次数"
+          :label="m.ui.maintenance.retryCount"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Input
@@ -159,13 +162,13 @@ async function confirmAction(): Promise<void> {
               max="10"
               class="w-20"
             />
-            <span class="text-xs text-muted-foreground">次</span>
+            <span class="text-xs text-muted-foreground">{{ m.ui.maintenance.retryUnit }}</span>
           </FieldContent>
         </Field>
 
         <Field
           orientation="horizontal"
-          label="自动同步防抖"
+          :label="m.ui.maintenance.debounce"
         >
           <FieldContent class="flex-row items-center gap-2">
             <Input
@@ -176,14 +179,14 @@ async function confirmAction(): Promise<void> {
               step="0.25"
               class="w-20"
             />
-            <span class="text-xs text-muted-foreground">秒</span>
+            <span class="text-xs text-muted-foreground">{{ m.ui.maintenance.seconds }}</span>
           </FieldContent>
         </Field>
 
         <Field
           orientation="horizontal"
-          label="同步错误通知"
-          description="同步任务失败时发送主应用通知。"
+          :label="m.ui.maintenance.notifyErrors"
+          :description="m.ui.maintenance.notifyErrorsDescription"
         >
           <Switch v-model="settingsForm.notifyErrors" />
         </Field>
@@ -191,12 +194,12 @@ async function confirmAction(): Promise<void> {
     </SettingsSection>
 
     <SettingsSection
-      title="维护操作"
-      description="这些操作立即生效且不可撤销。"
+      :title="m.ui.maintenance.actionsTitle"
+      :description="m.ui.maintenance.actionsDescription"
     >
       <div class="flex flex-wrap items-center gap-2">
         <Button
-          v-for="entry in DANGER_ACTIONS"
+          v-for="entry in dangerActions"
           :key="entry.key"
           variant="destructive"
           size="sm"
@@ -222,12 +225,12 @@ async function confirmAction(): Promise<void> {
           {{ pendingAction?.description }}
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="busy">取消</AlertDialogCancel>
+          <AlertDialogCancel :disabled="busy">{{ m.common.cancel }}</AlertDialogCancel>
           <AlertDialogAction
             :disabled="busy"
             @click="confirmAction"
           >
-            确认执行
+            {{ m.ui.maintenance.confirmAction }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

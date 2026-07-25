@@ -1,5 +1,10 @@
 import semver from 'semver'
-import { isExtensionCategory, validateExtensionIdentifier } from '@kisaki3/extension-api'
+import {
+  isExtensionCategory,
+  validateExtensionIdentifier,
+  validateLocalizedTextShape,
+  validateOptionalLocalizedTextShape
+} from '@kisaki3/extension-api'
 import type { ValidationIssue } from '../shared/validation'
 import {
   isPlainObject,
@@ -292,19 +297,13 @@ function validateRegistryPackage(
   issues.push(
     ...validateUnknownKeysWithMessage(value, PACKAGE_KEYS, path, 'Unknown package field.'),
     ...validateExtensionIdentifier(value.id, `${path}.id`),
-    ...validateRequiredString(value.name, `${path}.name`, {
-      minLength: 1,
-      trim: true,
+    ...validateLocalizedTextShape(value.name, `${path}.name`, {
       valueMessage: 'Package name must be a non-empty string.'
     }),
-    ...validateRequiredString(value.summary, `${path}.summary`, {
-      minLength: 1,
-      trim: true,
+    ...validateLocalizedTextShape(value.summary, `${path}.summary`, {
       valueMessage: 'Package summary must be a non-empty string.'
     }),
-    ...validateOptionalString(value.description, `${path}.description`, {
-      typeMessage: 'description must be a string when provided.'
-    }),
+    ...validateOptionalLocalizedTextShape(value.description, `${path}.description`),
     ...validateOptionalUri(value.homepage, `${path}.homepage`),
     ...validateOptionalUri(value.repository, `${path}.repository`),
     ...validateOptionalString(value.license, `${path}.license`, {

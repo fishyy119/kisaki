@@ -3,6 +3,8 @@ import {
   type TaskRunHandle,
   type TaskRunService
 } from '@main/services/task-run'
+import type { I18nService } from '@main/services/i18n'
+import type { Messages } from '@shared/i18n'
 import type { ExtensionRepositoryRow } from '@shared/db'
 import type { ExtensionRepositoryRefreshResult } from '@shared/extension'
 import type {
@@ -24,6 +26,7 @@ export interface ExtensionRepositoryRefreshOptions {
 export interface ExtensionRepositoryRefreshRunnerOptions {
   taskRun: TaskRunService
   store: ExtensionRepositoryStore
+  i18n: I18nService
   refreshRepository(
     repositoryId: string,
     options?: ExtensionRepositoryRefreshOptions
@@ -46,6 +49,10 @@ interface RepositoryRefreshCounters extends Record<string, number> {
 
 export class ExtensionRepositoryRefreshRunner {
   constructor(private readonly options: ExtensionRepositoryRefreshRunnerOptions) {}
+
+  private get messages(): Messages {
+    return this.options.i18n.messages
+  }
 
   startRefreshRepository(repositoryId: string): TaskRunStartResult {
     const run = this.createRefreshRepositoryRun(repositoryId, { type: 'user' })
@@ -73,7 +80,7 @@ export class ExtensionRepositoryRefreshRunner {
     const run = this.options.taskRun.runs.create({
       category: 'extension',
       operation: 'extension.repository.refresh',
-      title: `刷新仓库 ${row.name}`,
+      title: this.messages.extension.repositoryRefresh.refreshOneTitle({ name: row.name }),
       owner: { type: 'app' },
       initiator,
       subject: {
@@ -96,12 +103,12 @@ export class ExtensionRepositoryRefreshRunner {
     const run = this.options.taskRun.runs.create({
       category: 'extension',
       operation: 'extension.repository.refreshAll',
-      title: '刷新全部扩展仓库',
+      title: this.messages.extension.repositoryRefresh.refreshAllTitle,
       owner: { type: 'app' },
       initiator,
       subject: {
         type: 'repository',
-        labelSnapshot: '全部扩展仓库'
+        labelSnapshot: this.messages.extension.repositoryRefresh.allSubjectLabel
       },
       controls: { cancelable: true, pausable: false }
     })
@@ -118,7 +125,7 @@ export class ExtensionRepositoryRefreshRunner {
   ): Promise<ExtensionRepositoryRefreshResult> {
     try {
       run.start()
-      run.context.report(createSingleRepositoryRefreshProgress(row.name))
+      run.context.report(createSingleRepositoryRefreshProgress(this.messages, row.name))
 
       const result = await this.options.refreshRepository(row.id, {
         signal: run.context.signal
@@ -128,7 +135,7 @@ export class ExtensionRepositoryRefreshRunner {
       return result
     } catch (error) {
       finishTaskRunFromError(run, error, {
-        cancelledSummary: '扩展仓库刷新已取消'
+        cancelledSummary: this.messages.extension.repositoryRefresh.cancelledSummary
       })
       throw error
     }
@@ -146,7 +153,10 @@ export class ExtensionRepositoryRefreshRunner {
         createRepositoryRefreshAllProgress({
           current: 0,
           total: rows.length,
-          label: rows.length > 0 ? '准备刷新扩展仓库' : '没有启用的扩展仓库',
+          label:
+            rows.length > 0
+              ? this.messages.extension.repositoryRefresh.preparing
+              : this.messages.extension.repositoryRefresh.noneEnabled,
           results
         })
       )
@@ -157,7 +167,7 @@ export class ExtensionRepositoryRefreshRunner {
           createRepositoryRefreshAllProgress({
             current: index,
             total: rows.length,
-            label: `正在刷新 ${row.name}`,
+            label: this.messages.extension.repositoryRefresh.refreshingOne({ name: row.name }),
             results
           })
         )
@@ -172,7 +182,7 @@ export class ExtensionRepositoryRefreshRunner {
           createRepositoryRefreshAllProgress({
             current: index + 1,
             total: rows.length,
-            label: `已刷新 ${row.name}`,
+            label: this.messages.extension.repositoryRefresh.refreshedOne({ name: row.name }),
             results
           })
         )
@@ -182,7 +192,7 @@ export class ExtensionRepositoryRefreshRunner {
       return results
     } catch (error) {
       finishTaskRunFromError(run, error, {
-        cancelledSummary: '扩展仓库刷新已取消'
+        cancelledSummary: this.messages.extension.repositoryRefresh.cancelledSummary
       })
       throw error
     }
@@ -198,8 +208,10 @@ export class ExtensionRepositoryRefreshRunner {
 
     if (result.status === 'failed') {
       run.fail(new Error(result.error ?? 'Extension repository refresh failed.'), {
-        title: '仓库刷新失败',
-        summary: `${result.repository.name} 刷新失败。`,
+        title: this.messages.extension.repositoryRefresh.oneFailedTitle,
+        summary: this.messages.extension.repositoryRefresh.oneFailedSummary({
+          name: result.repository.name
+        }),
         counters,
         warnings,
         output
@@ -208,11 +220,18 @@ export class ExtensionRepositoryRefreshRunner {
     }
 
     run.complete({
-      title: result.status === 'not-modified' ? '仓库未变化' : '仓库刷新完成',
+      title:
+        result.status === 'not-modified'
+          ? this.messages.extension.repositoryRefresh.oneNotModifiedTitle
+          : this.messages.extension.repositoryRefresh.oneCompletedTitle,
       summary:
         result.status === 'not-modified'
-          ? `${result.repository.name} 已是最新。`
-          : `${result.repository.name} 已刷新。`,
+          ? this.messages.extension.repositoryRefresh.oneNotModifiedSummary({
+              name: result.repository.name
+            })
+          : this.messages.extension.repositoryRefresh.oneRefreshedSummary({
+              name: result.repository.name
+            }),
       counters,
       output
     })
@@ -225,11 +244,11 @@ export class ExtensionRepositoryRefreshRunner {
     const counters = createRepositoryRefreshCounters(results)
     const warnings = createRepositoryRefreshWarnings(results)
     const output = createRepositoryRefreshOutput(results)
-    const summary = createRepositoryRefreshSummary(counters)
+    const summary = createRepositoryRefreshSummary(this.messages, counters)
 
     if (counters.total > 0 && counters.failed === counters.total) {
       run.fail(new Error('All extension repositories failed to refresh.'), {
-        title: '扩展仓库刷新失败',
+        title: this.messages.extension.repositoryRefresh.allFailedTitle,
         summary,
         counters,
         warnings,
@@ -239,7 +258,10 @@ export class ExtensionRepositoryRefreshRunner {
     }
 
     run.complete({
-      title: counters.failed > 0 ? '部分扩展仓库刷新失败' : '扩展仓库刷新完成',
+      title:
+        counters.failed > 0
+          ? this.messages.extension.repositoryRefresh.allPartialTitle
+          : this.messages.extension.repositoryRefresh.allCompletedTitle,
       summary,
       counters,
       warnings,
@@ -248,11 +270,14 @@ export class ExtensionRepositoryRefreshRunner {
   }
 }
 
-function createSingleRepositoryRefreshProgress(repositoryName: string): TaskRunProgressUpdate {
+function createSingleRepositoryRefreshProgress(
+  messages: Messages,
+  repositoryName: string
+): TaskRunProgressUpdate {
   return {
     phase: {
       key: 'refresh',
-      label: `正在刷新 ${repositoryName}`,
+      label: messages.extension.repositoryRefresh.refreshingOne({ name: repositoryName }),
       current: 1,
       total: 1
     },
@@ -340,12 +365,21 @@ function createRepositoryRefreshOutput(results: readonly ExtensionRepositoryRefr
   }
 }
 
-function createRepositoryRefreshSummary(counters: RepositoryRefreshCounters): string {
+function createRepositoryRefreshSummary(
+  messages: Messages,
+  counters: RepositoryRefreshCounters
+): string {
   if (counters.total === 0) {
-    return '没有启用的扩展仓库。'
+    return messages.extension.repositoryRefresh.noneEnabledSummary
   }
 
-  return `已处理 ${counters.processed}/${counters.total} 个仓库，成功 ${counters.succeeded}，未变化 ${counters.notModified}，失败 ${counters.failed}。`
+  return messages.extension.repositoryRefresh.allSummary({
+    processed: counters.processed,
+    total: counters.total,
+    succeeded: counters.succeeded,
+    notModified: counters.notModified,
+    failed: counters.failed
+  })
 }
 
 function finishTaskRunFromError(

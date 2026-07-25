@@ -32,6 +32,7 @@ import type {
 import type { BangumiSettingsV1 } from '../config/schema'
 import { BANGUMI_API_BASE_URL, BANGUMI_SUBJECT_TYPE_GAME } from '../utils/constants'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { TokenService } from '../auth/token-service'
 import type { BangumiSubjectRef } from '../identity/subject-ref'
@@ -362,7 +363,7 @@ export class BangumiClient {
         throw normalizeBangumiApiError(response.status, pathname, response.data, retryAfterMs)
       } catch (error) {
         if (isAbortLikeError(error)) {
-          throw new BangumiExtensionError('job_cancelled', '操作已取消。')
+          throw new BangumiExtensionError('job_cancelled', m().errors.operationCancelled)
         }
 
         if (error instanceof BangumiExtensionError) {
@@ -376,7 +377,7 @@ export class BangumiClient {
       }
     }
 
-    throw new BangumiApiError('network_failed', 'Bangumi API 网络请求失败。', { path: pathname })
+    throw new BangumiApiError('network_failed', m().errors.networkFailed, { path: pathname })
   }
 
   private async sendOnce<T>(
@@ -463,7 +464,7 @@ function normalizeMe(value: BangumiMe): BangumiMe {
     typeof value.username !== 'string' ||
     !value.username.trim()
   ) {
-    throw new BangumiApiError('bangumi_validation', 'Bangumi 账号响应无法识别。', {
+    throw new BangumiApiError('bangumi_validation', m().errors.accountResponseInvalid, {
       path: '/v0/me'
     })
   }

@@ -13,17 +13,17 @@ import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { CompanyCard, CompanyDetailDialog } from '@renderer/components/shared/company'
 import { GameCompaniesFormDialog } from '../../forms'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const COMPANY_TYPE_LABELS: Record<string, string> = {
-  developer: '开发',
-  publisher: '发行',
-  distributor: '分销',
-  other: '其他'
-}
+const COMPANY_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCompany
+)
 
 const COMPANY_TYPE_ORDER = ['developer', 'publisher', 'distributor', 'other'] as const
 
@@ -71,7 +71,7 @@ const companyDialogOpen = computed({
       v-if="!hasCompanies"
       state="empty"
       :icon="getEntityIcon('company')"
-      description="暂无公司信息"
+      :description="m.library.detail.empty.companies"
       class="py-12"
     >
       <template #actions>
@@ -84,7 +84,7 @@ const companyDialogOpen = computed({
             icon="icon-[mdi--plus]"
             class="size-4 mr-1.5"
           />
-          添加公司
+          {{ m.library.detail.addEntity({ label: m.library.entities.company }) }}
         </Button>
       </template>
     </StateView>
@@ -102,7 +102,7 @@ const companyDialogOpen = computed({
             icon="icon-[mdi--pencil-outline]"
             class="size-4 mr-1.5"
           />
-          管理
+          {{ m.library.detail.manage }}
         </Button>
       </div>
 

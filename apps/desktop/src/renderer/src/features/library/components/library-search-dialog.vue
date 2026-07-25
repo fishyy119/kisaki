@@ -19,6 +19,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Button } from '@renderer/components/ui/button'
 import { useRenderState } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useLibrarySearch } from '../composables'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { cn } from '@renderer/utils/cn'
@@ -37,16 +38,15 @@ interface ColumnConfig {
   emptyText: string
 }
 
-const COLUMNS: ColumnConfig[] = [
-  { type: 'game', title: '游戏', emptyText: '无游戏结果' },
-  { type: 'character', title: '角色', emptyText: '无角色结果' },
-  { type: 'person', title: '人物', emptyText: '无人物结果' },
-  {
-    type: 'company',
-    title: '公司',
-    emptyText: '无公司结果'
-  }
-]
+const { m } = useI18n()
+
+const COLUMNS = computed<ColumnConfig[]>(() =>
+  (['game', 'character', 'person', 'company'] as const).map((type) => ({
+    type,
+    title: m.value.library.entities[type],
+    emptyText: m.value.library.search.emptyResult({ label: m.value.library.entities[type] })
+  }))
+)
 
 // =============================================================================
 // Props & Emits
@@ -73,7 +73,7 @@ const prevDebouncedQuery = ref('')
 
 // Build flattened list of all results with column info for keyboard navigation
 const flatResults = computed(() => {
-  return COLUMNS.flatMap((config, columnIndex) => {
+  return COLUMNS.value.flatMap((config, columnIndex) => {
     const items = (results.value[`${config.type}s` as keyof typeof results.value] ?? []) as Array<
       Game | Character | Person | Company
     >
@@ -88,7 +88,7 @@ const flatResults = computed(() => {
 
 // Build column-based index map for efficient navigation
 const columnItems = computed(() => {
-  return COLUMNS.map((_, colIndex) =>
+  return COLUMNS.value.map((_, colIndex) =>
     flatResults.value
       .map((r, globalIndex) => ({ ...r, globalIndex }))
       .filter((r) => r.columnIndex === colIndex)
@@ -308,8 +308,8 @@ watch(
       @keydown="handleKeyDown"
     >
       <DialogHeader class="sr-only">
-        <DialogTitle>库搜索</DialogTitle>
-        <DialogDescription>搜索游戏、角色、人物和公司</DialogDescription>
+        <DialogTitle>{{ m.library.search.title }}</DialogTitle>
+        <DialogDescription>{{ m.library.search.description }}</DialogDescription>
       </DialogHeader>
 
       <!-- Search input -->
@@ -318,7 +318,7 @@ watch(
         <Input
           ref="inputRef"
           v-model="query"
-          placeholder="搜索游戏、角色、人物、公司..."
+          :placeholder="m.library.search.placeholder"
           class="border-0 shadow-none bg-transparent focus-visible:ring-0 h-8 px-0"
           autofocus
         />
@@ -362,7 +362,7 @@ watch(
           <div class="overflow-auto py-1 h-[50vh]">
             <template v-if="getColumnItems(config).length === 0">
               <div class="px-2 py-4 text-xs text-muted-foreground text-center">
-                {{ debouncedQuery ? config.emptyText : '输入关键词搜索' }}
+                {{ debouncedQuery ? config.emptyText : m.library.search.typeToSearch }}
               </div>
             </template>
             <template v-else>
@@ -412,14 +412,16 @@ watch(
         <div class="flex items-center gap-4">
           <span class="flex items-center gap-1">
             <kbd class="px-1 py-0.5 bg-muted rounded text-[10px]">↑↓</kbd>
-            导航
+            {{ m.library.search.navigate }}
           </span>
           <span class="flex items-center gap-1">
             <kbd class="px-1 py-0.5 bg-muted rounded text-[10px]">Enter</kbd>
-            选择
+            {{ m.library.search.select }}
           </span>
         </div>
-        <span v-if="hasResults">共 {{ totalResultCount }} 条结果</span>
+        <span v-if="hasResults">{{
+          m.library.search.totalResults({ count: totalResultCount })
+        }}</span>
       </div>
     </DialogContent>
   </Dialog>

@@ -1,5 +1,10 @@
 import { defineConfig } from 'eslint/config'
-import { baseConfig } from '../../eslint.config'
+import {
+  baseConfig,
+  noBareStringsOptions,
+  noCjkLiteralRestrictions,
+  noCjkTemplateRestrictions
+} from '../../eslint.config'
 import pluginVue from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
 import tseslint from 'typescript-eslint'
@@ -56,7 +61,22 @@ export default defineConfig([
       'vue/no-unused-refs': 'error',
       'vue/no-useless-v-bind': 'error',
       'vue/prefer-true-attribute-shorthand': 'error',
-      'vue/prefer-separate-static-class': 'error'
+      'vue/prefer-separate-static-class': 'error',
+      // Keep user-facing copy in the i18n message catalogs.
+      'vue/no-restricted-syntax': ['error', ...noCjkTemplateRestrictions],
+      'vue/no-bare-strings-in-template': ['error', noBareStringsOptions]
+    }
+  },
+  // CJK copy must live in the shared i18n message catalogs.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: [
+      'src/shared/i18n/messages/**',
+      // Parses CJK source data from the YMGal API; not UI copy.
+      'src/main/services/scraper/handlers/game/providers/ymgal/format.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', ...noCjkLiteralRestrictions]
     }
   },
   {
@@ -72,7 +92,8 @@ export default defineConfig([
         {
           selector: 'ExportAllDeclaration',
           message: 'Use explicit named exports instead of export *.'
-        }
+        },
+        ...noCjkLiteralRestrictions
       ],
       'no-restricted-imports': [
         'error',

@@ -1,5 +1,5 @@
 import type { CollectionImportPlanItem, IndexImportPlanItem } from '../../import/planner'
-import { getMediaScopeLabel } from '../../media/labels'
+import { m } from '../../i18n'
 import type { BangumiMediaScope } from '../../media/scopes'
 import { BangumiExtensionError } from '../../utils/errors'
 import { omitUndefined } from '../../utils/object'
@@ -11,7 +11,7 @@ export function recordUnsupportedImportResult(
   scope: BangumiMediaScope
 ): void {
   job.increment('skippedUnsupportedScope')
-  job.report('completed', `${getMediaScopeLabel(scope)}暂不支持写入本地库。`, {
+  job.report('completed', m().jobs.import.writeUnsupported({ scope }), {
     current: 1,
     total: 1
   })
@@ -43,14 +43,14 @@ export function recordSkippedIndexImportPlanItems(
 
 export function reportCollectionImportExecutionStart(
   job: JobStateController,
-  label: string,
+  scope: BangumiMediaScope,
   total: number
 ): void {
   if (total <= 0) {
     return
   }
 
-  job.report('processingCollectionImport', `正在准备导入${label}...`, {
+  job.report('processingCollectionImport', m().jobs.import.preparing({ scope }), {
     current: 0,
     total,
     ratePeriod: 'minute'
@@ -59,14 +59,14 @@ export function reportCollectionImportExecutionStart(
 
 export function reportIndexImportExecutionStart(
   job: JobStateController,
-  label: string,
+  scope: BangumiMediaScope,
   total: number
 ): void {
   if (total <= 0) {
     return
   }
 
-  job.report('processingIndexImport', `正在准备导入${label}...`, {
+  job.report('processingIndexImport', m().jobs.import.preparing({ scope }), {
     current: 0,
     total,
     ratePeriod: 'minute'
@@ -76,18 +76,18 @@ export function reportIndexImportExecutionStart(
 export function reportCollectionImportExecutionProgress({
   job,
   actionKind,
-  label,
+  scope,
   current,
   total
 }: {
   job: JobStateController
   actionKind: CollectionImportOperation['kind']
-  label: string
+  scope: BangumiMediaScope
   current: number
   total: number
 }): void {
   if (actionKind === 'create') {
-    job.report('creatingLocalItems', `正在添加${label}...`, {
+    job.report('creatingLocalItems', m().jobs.import.creatingLocal({ scope }), {
       current,
       total,
       ratePeriod: 'minute'
@@ -95,7 +95,7 @@ export function reportCollectionImportExecutionProgress({
     return
   }
 
-  job.report('patchingLocalItems', `正在更新${label}...`, {
+  job.report('patchingLocalItems', m().jobs.import.patchingLocal({ scope }), {
     current,
     total,
     ratePeriod: 'minute'
@@ -105,18 +105,18 @@ export function reportCollectionImportExecutionProgress({
 export function reportIndexImportExecutionProgress({
   job,
   actionKind,
-  label,
+  scope,
   current,
   total
 }: {
   job: JobStateController
   actionKind: IndexImportOperation['kind']
-  label: string
+  scope: BangumiMediaScope
   current: number
   total: number
 }): void {
   if (actionKind === 'patch') {
-    job.report('patchingLocalItems', `正在更新${label}...`, {
+    job.report('patchingLocalItems', m().jobs.import.patchingLocal({ scope }), {
       current,
       total,
       ratePeriod: 'minute'
@@ -124,7 +124,7 @@ export function reportIndexImportExecutionProgress({
     return
   }
 
-  job.report('creatingLocalItems', `正在添加${label}...`, {
+  job.report('creatingLocalItems', m().jobs.import.creatingLocal({ scope }), {
     current,
     total,
     ratePeriod: 'minute'

@@ -29,6 +29,9 @@ import {
   FieldGroup,
   FieldDescription
 } from '@renderer/components/ui/field'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   gameId: string
@@ -39,12 +42,12 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const MEDIA_TYPE_LABEL: Record<GameMediaType, string> = {
-  cover: '封面',
-  backdrop: '背景',
-  logo: 'Logo',
-  icon: '图标'
-}
+const MEDIA_TYPE_LABEL = computed<Record<GameMediaType, string>>(() => ({
+  cover: m.value.library.forms.mediaTypes.cover,
+  backdrop: m.value.library.forms.mediaTypes.backdrop,
+  logo: m.value.library.forms.mediaTypes.logo,
+  icon: m.value.library.forms.mediaTypes.icon
+}))
 
 // Form state
 interface FormData {
@@ -76,7 +79,7 @@ const isValidUrl = computed(
 
 async function handleImport() {
   if (!isValidUrl.value) {
-    notify.error('请输入有效的 URL')
+    notify.error(m.value.library.forms.imageUrlInvalid)
     return
   }
 
@@ -88,7 +91,7 @@ async function handleImport() {
       url: formData.value.url.trim()
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
     open.value = false
   } finally {
     isImporting.value = false
@@ -110,16 +113,22 @@ function handleClose() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>从链接导入{{ MEDIA_TYPE_LABEL[props.mediaType] }}</DialogTitle>
+        <DialogTitle>{{
+          m.library.forms.importMediaFromUrlTitle({ label: MEDIA_TYPE_LABEL[props.mediaType] })
+        }}</DialogTitle>
         <DialogDescription>
-          输入图片 URL 以导入{{ MEDIA_TYPE_LABEL[props.mediaType] }}
+          {{
+            m.library.forms.importMediaFromUrlDescription({
+              label: MEDIA_TYPE_LABEL[props.mediaType]
+            })
+          }}
         </DialogDescription>
       </DialogHeader>
 
       <DialogBody class="space-y-4">
         <FieldGroup>
           <Field>
-            <FieldLabel>图片链接</FieldLabel>
+            <FieldLabel>{{ m.library.forms.imageUrlLabel }}</FieldLabel>
             <FieldContent>
               <Input
                 v-model="formData.url"
@@ -129,7 +138,7 @@ function handleClose() {
                 @keydown="handleKeyDown"
               />
             </FieldContent>
-            <FieldDescription>支持 JPG、PNG、WebP 等常见图片格式</FieldDescription>
+            <FieldDescription>{{ m.library.forms.imageFormatsHint }}</FieldDescription>
           </Field>
         </FieldGroup>
 
@@ -138,7 +147,7 @@ function handleClose() {
           v-if="isValidUrl"
           class="space-y-2"
         >
-          <span class="text-xs text-muted-foreground">预览:</span>
+          <span class="text-xs text-muted-foreground">{{ m.library.forms.previewLabel }}</span>
           <div
             :class="
               cn(
@@ -159,12 +168,12 @@ function handleClose() {
                 icon="icon-[mdi--image-off-outline]"
                 class="size-8"
               />
-              <span class="text-xs">无法加载预览</span>
+              <span class="text-xs">{{ m.library.forms.previewLoadFailed }}</span>
             </div>
             <img
               v-else
               :src="formData.url"
-              alt="Preview"
+              :alt="m.common.preview"
               class="size-full object-contain"
               @error="previewError = true"
             />
@@ -177,7 +186,7 @@ function handleClose() {
           variant="outline"
           @click="handleClose"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="!isValidUrl || isImporting"
@@ -188,14 +197,14 @@ function handleClose() {
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin"
             />
-            导入中...
+            {{ m.library.forms.importing }}
           </template>
           <template v-else>
             <Icon
               icon="icon-[mdi--download]"
               class="size-4"
             />
-            导入
+            {{ m.common.import }}
           </template>
         </Button>
       </DialogFooter>

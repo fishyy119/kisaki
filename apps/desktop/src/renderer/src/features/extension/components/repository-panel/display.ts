@@ -1,9 +1,10 @@
 import type { BadgeVariants } from '@renderer/components/ui/badge'
 import type { ExtensionRepositoryInfo } from '@shared/extension'
+import { formatters, messages } from '@renderer/core/i18n'
 
 export function formatRepositoryDate(value: string | null): string {
   if (!value) {
-    return '无'
+    return messages.value.extension.repository.none
   }
 
   const date = new Date(value)
@@ -11,15 +12,17 @@ export function formatRepositoryDate(value: string | null): string {
     return value
   }
 
-  return date.toLocaleString()
+  return formatters.value.dateTime(date)
 }
 
 export function formatRepositoryNullable(value: string | null): string {
-  return value || '无'
+  return value || messages.value.extension.repository.none
 }
 
 export function getRepositoryStateLabel(repository: ExtensionRepositoryInfo): string {
-  return repository.state === 'enabled' ? '已启用' : '已禁用'
+  return repository.state === 'enabled'
+    ? messages.value.extension.repository.stateEnabled
+    : messages.value.extension.repository.stateDisabled
 }
 
 export function getRepositoryStateVariant(
@@ -30,15 +33,15 @@ export function getRepositoryStateVariant(
 
 export function getRepositoryHealthLabel(repository: ExtensionRepositoryInfo): string {
   if (repository.state === 'disabled') {
-    return '已禁用'
+    return messages.value.extension.repository.healthDisabled
   }
   if (repository.lastError) {
-    return '异常'
+    return messages.value.extension.repository.healthError
   }
   if (!repository.lastSuccessAt) {
-    return '未刷新'
+    return messages.value.extension.repository.healthNeverRefreshed
   }
-  return '正常'
+  return messages.value.extension.repository.healthOk
 }
 
 export function getRepositoryHealthVariant(

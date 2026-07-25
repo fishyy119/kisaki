@@ -32,6 +32,9 @@ import GameDetailContent from './detail-content.vue'
 import GamePlayButton from '../game-play-button.vue'
 import { GameScoreFormDialog } from '../forms'
 import { GameDropdownMenu } from '../menus'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // Props & Model
@@ -76,9 +79,13 @@ async function handleToggleFavorite() {
   isPendingFavorite.value = true
   try {
     await db.update(games).set({ isFavorite: !current.isFavorite }).where(eq(games.id, current.id))
-    notify.success(current.isFavorite ? '已取消喜欢' : '已添加至喜欢')
+    notify.success(
+      current.isFavorite
+        ? m.value.library.feedback.favoriteRemoved
+        : m.value.library.feedback.favoriteAdded
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -102,7 +109,7 @@ async function handleOpenFolder() {
   const pathToOpen =
     current.gameDirPath || (current.launcherMode === 'file' ? current.launcherPath : null)
   if (!pathToOpen) {
-    notify.error('未设置游戏目录')
+    notify.error(m.value.library.feedback.gameDirNotSet)
     return
   }
   await ipcManager.invoke('native:open-path', { path: pathToOpen, ensure: 'folder' })
@@ -126,8 +133,8 @@ const canOpenGameDir = computed(() => {
             :state="state"
             :error="error"
             :icon="getEntityIcon('game')"
-            title="游戏不存在"
-            description="该游戏可能已被删除"
+            :title="m.library.detail.notFoundTitle({ label: m.library.entities.game })"
+            :description="m.library.detail.notFoundDescription({ label: m.library.entities.game })"
             class="py-12"
           />
         </DialogBody>
@@ -154,7 +161,7 @@ const canOpenGameDir = computed(() => {
               <Button
                 variant="secondary"
                 size="icon-sm"
-                tooltip="评分"
+                :tooltip="m.library.detail.tooltips.score"
                 @click="isScoreOpen = true"
               >
                 <Icon
@@ -166,7 +173,7 @@ const canOpenGameDir = computed(() => {
               <Button
                 variant="secondary"
                 size="icon-sm"
-                tooltip="打开目录"
+                :tooltip="m.library.detail.tooltips.openDir"
                 :disabled="!canOpenGameDir"
                 @click="handleOpenFolder"
               >
@@ -184,7 +191,11 @@ const canOpenGameDir = computed(() => {
               <Button
                 variant="secondary"
                 size="icon-sm"
-                :tooltip="game.isFavorite ? '取消喜欢' : '添加喜欢'"
+                :tooltip="
+                  game.isFavorite
+                    ? m.library.detail.tooltips.favoriteRemove
+                    : m.library.detail.tooltips.favoriteAdd
+                "
                 :disabled="isPendingFavorite"
                 @click="handleToggleFavorite"
               >
@@ -198,7 +209,11 @@ const canOpenGameDir = computed(() => {
               <Button
                 variant="secondary"
                 size="icon-sm"
-                :tooltip="spoilersRevealed ? '隐藏剧透' : '显示剧透'"
+                :tooltip="
+                  spoilersRevealed
+                    ? m.library.detail.tooltips.spoilerHide
+                    : m.library.detail.tooltips.spoilerShow
+                "
                 @click="handleToggleSpoilers"
               >
                 <Icon

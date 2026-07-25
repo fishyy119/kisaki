@@ -10,7 +10,7 @@ const log = createLogger('TaskRun')
 
 export class TaskRunService implements IService {
   readonly id = 'task-run'
-  readonly deps = ['db', 'ipc', 'notify'] as const satisfies readonly ServiceName[]
+  readonly deps = ['db', 'i18n', 'ipc', 'notify'] as const satisfies readonly ServiceName[]
 
   runs!: TaskRunManager
   history!: TaskRunHistoryStore
@@ -25,6 +25,7 @@ export class TaskRunService implements IService {
     })
     this.notifications = new TaskRunNotificationCoordinator({
       notify: container.get('notify'),
+      i18n: container.get('i18n'),
       cancelRun: (runId) => this.runs.cancel(runId)
     })
     this.runs = new TaskRunManager({

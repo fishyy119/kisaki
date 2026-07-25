@@ -3,7 +3,7 @@ import type {
   GameScraperSlot,
   GameSessionResultMap,
   IdResolvedTarget,
-  Locale
+  ContentLocale
 } from '@kisaki3/extension-sdk'
 import type { BangumiClient } from '../../../api/client'
 import { BANGUMI_SUBJECT_TYPE_GAME } from '../../../utils/constants'
@@ -22,7 +22,7 @@ import type { BangumiGameSessionLoaders } from './types'
 interface BangumiGameSessionOptions {
   client: BangumiClient
   target: IdResolvedTarget
-  locale: Locale
+  locale: ContentLocale
 }
 
 export function createBangumiGameSession({
@@ -112,7 +112,7 @@ function loadSlot(
   slot: GameScraperSlot,
   subjectId: number,
   loaders: BangumiGameSessionLoaders,
-  locale: Locale
+  locale: ContentLocale
 ): Promise<unknown> {
   switch (slot) {
     case 'info':

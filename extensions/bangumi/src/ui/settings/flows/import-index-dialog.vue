@@ -30,6 +30,7 @@ import type {
   BangumiPreviewGroupDto,
   BangumiSettingsOverview
 } from '../../../shared/settings'
+import { m } from '../i18n'
 import { host, onHostPreviewProgress, toErrorMessage } from '../rpc'
 import JobPreviewDialog from '../components/job-preview-dialog.vue'
 
@@ -145,13 +146,13 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>导入目录</DialogTitle>
+        <DialogTitle>{{ m.ui.importIndex.title }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[64vh] overflow-y-auto">
         <FieldGroup class="gap-4">
           <Field
             orientation="horizontal"
-            label="目录"
+            :label="m.ui.importIndex.index"
           >
             <FieldContent class="flex-row items-center">
               <span class="text-sm break-all text-muted-foreground">{{ props.indexInput }}</span>
@@ -160,11 +161,11 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
 
           <Field
             orientation="horizontal"
-            label="刮削配置"
+            :label="m.ui.importIndex.profile"
           >
             <Select v-model="indexForm.profileId">
               <SelectTrigger class="min-w-44">
-                <SelectValue placeholder="选择刮削配置" />
+                <SelectValue :placeholder="m.ui.importIndex.profilePlaceholder" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
@@ -178,19 +179,19 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
             </Select>
           </Field>
 
-          <Field label="目标合集">
+          <Field :label="m.ui.importIndex.targetCollection">
             <RadioGroup v-model="indexForm.targetCollectionMode">
               <Label class="font-normal">
                 <RadioGroupItem value="none" />
-                不放入合集
+                {{ m.ui.importIndex.targetNone }}
               </Label>
               <Label class="font-normal">
                 <RadioGroupItem value="existing" />
-                已有合集
+                {{ m.ui.importIndex.targetExisting }}
               </Label>
               <Label class="font-normal">
                 <RadioGroupItem value="byIndexTitle" />
-                按目录标题创建
+                {{ m.ui.importIndex.targetByIndexTitle }}
               </Label>
             </RadioGroup>
           </Field>
@@ -198,11 +199,11 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
           <Field
             v-if="indexForm.targetCollectionMode === 'existing'"
             orientation="horizontal"
-            label="选择合集"
+            :label="m.ui.importIndex.selectCollection"
           >
             <Select v-model="indexForm.targetCollectionId">
               <SelectTrigger class="min-w-44">
-                <SelectValue placeholder="选择合集" />
+                <SelectValue :placeholder="m.ui.importIndex.collectionPlaceholder" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
@@ -218,7 +219,7 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
 
           <Field
             orientation="horizontal"
-            label="更新已有条目"
+            :label="m.ui.importIndex.patchExisting"
           >
             <Switch
               v-model="indexForm.patchExisting"
@@ -248,7 +249,7 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
             icon="icon-[mdi--eye-outline]"
             class="size-3.5"
           />
-          预览
+          {{ m.common.preview }}
         </Button>
         <Button
           size="sm"
@@ -262,7 +263,7 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
             icon="icon-[mdi--play]"
             class="size-3.5"
           />
-          开始导入
+          {{ m.ui.importIndex.start }}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -271,8 +272,8 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
   <JobPreviewDialog
     v-if="preview"
     v-model:open="previewOpen"
-    title="导入目录预览"
-    description="确认将创建、更新或跳过的条目。"
+    :title="m.ui.importIndex.previewTitle"
+    :description="m.ui.importIndex.previewDescription"
     :groups="preview"
     @error="(message) => emit('error', message)"
   >
@@ -289,7 +290,7 @@ function snapshotArgs(): BangumiImportIndexFormArgs {
           icon="icon-[mdi--play]"
           class="size-3.5"
         />
-        开始导入
+        {{ m.ui.importIndex.start }}
       </Button>
     </template>
   </JobPreviewDialog>

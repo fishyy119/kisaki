@@ -33,6 +33,9 @@ import {
 } from '@shared/db'
 import type { SortDirection } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Collection')
 
@@ -216,12 +219,12 @@ async function handleConfirm() {
       .set({ isDynamic: false, dynamicConfig: null })
       .where(eq(collections.id, props.collectionId))
 
-    notify.success('已转换为静态合集')
+    notify.success(m.value.library.forms.convertedToStatic)
     emit('converted', props.collectionId)
     open.value = false
   } catch (error) {
     log.error('Failed to convert to static:', error)
-    notify.error('转换失败')
+    notify.error(m.value.library.forms.convertFailed)
   } finally {
     isConverting.value = false
   }
@@ -232,19 +235,18 @@ async function handleConfirm() {
   <AlertDialog v-model:open="open">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>转换为静态合集</AlertDialogTitle>
+        <AlertDialogTitle>{{ m.library.forms.convertToStaticTitle }}</AlertDialogTitle>
       </AlertDialogHeader>
       <AlertDialogDescription>
         <template v-if="props.totalCount !== undefined">
-          此操作将把动态合集转换为静态合集，当前筛选结果（共 {{ props.totalCount }}
-          项）将被固化为合集内容。转换后，合集内容将不再随数据变化自动更新。
+          {{ m.library.forms.convertToStaticDescriptionWithCount({ count: props.totalCount }) }}
         </template>
         <template v-else>
-          此操作将把动态合集转换为静态合集。转换后，合集内容将不再自动更新。
+          {{ m.library.forms.convertToStaticDescription }}
         </template>
       </AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="isConverting">取消</AlertDialogCancel>
+        <AlertDialogCancel :disabled="isConverting">{{ m.common.cancel }}</AlertDialogCancel>
         <AlertDialogAction
           :disabled="isConverting || isLoading || !canConvert"
           @click="handleConfirm"
@@ -254,9 +256,9 @@ async function handleConfirm() {
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin mr-1.5"
             />
-            转换中...
+            {{ m.library.forms.converting }}
           </template>
-          <template v-else>确认转换</template>
+          <template v-else>{{ m.library.forms.confirmConvert }}</template>
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

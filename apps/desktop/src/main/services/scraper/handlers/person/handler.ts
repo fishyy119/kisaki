@@ -19,7 +19,7 @@ import type {
   ScrapedPersonBundle,
   ScraperLookup
 } from '@shared/scraper'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { I18nService } from '@main/services/i18n'
 import { ensureProviderExternalId, ensureProviderIdentity } from '../../shared'
 import { executeScraperPlan } from '../common/executor'
@@ -151,7 +151,7 @@ export class PersonScraperHandler {
 
       const resolveProviderId = async (
         providerId: string,
-        locale: Locale
+        locale: ContentLocale
       ): Promise<PersonResolvedTarget | null> => {
         void locale
 
@@ -211,7 +211,7 @@ export class PersonScraperHandler {
       return []
     }
 
-    const locale = lookup.locale ?? (this.i18n.locale.getCurrent() as Locale)
+    const locale = lookup.locale ?? this.i18n.locale
     const plan = buildSingleProviderExecutionPlan<PersonScraperImageSlot>({
       providerId,
       slot: imageType,
@@ -331,15 +331,18 @@ export class PersonScraperHandler {
     return provider.externalIdSource
   }
 
-  private getProfileLocale(profile: ScraperProfile): Locale {
-    return (profile.defaultLocale ?? this.i18n.locale.getCurrent()) as Locale
+  private getProfileLocale(profile: ScraperProfile): ContentLocale {
+    return profile.defaultLocale ?? this.i18n.locale
   }
 
-  private getResolveLocale(profile: ScraperProfile, lookup: ScraperLookup): Locale {
-    return (lookup.locale ?? profile.defaultLocale ?? this.i18n.locale.getCurrent()) as Locale
+  private getResolveLocale(profile: ScraperProfile, lookup: ScraperLookup): ContentLocale {
+    return lookup.locale ?? profile.defaultLocale ?? this.i18n.locale
   }
 
-  private getFetchLocale(profile: ScraperProfile, entry: { locale?: Locale | null }): Locale {
-    return (entry.locale ?? profile.defaultLocale ?? this.i18n.locale.getCurrent()) as Locale
+  private getFetchLocale(
+    profile: ScraperProfile,
+    entry: { locale?: ContentLocale | null }
+  ): ContentLocale {
+    return entry.locale ?? profile.defaultLocale ?? this.i18n.locale
   }
 }

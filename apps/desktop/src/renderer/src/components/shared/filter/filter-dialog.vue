@@ -19,6 +19,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Form } from '@renderer/components/ui/form'
 import { Button } from '@renderer/components/ui/button'
+import { useI18n } from '@renderer/composables'
 import FilterBuilder from './filter-builder.vue'
 import type { FilterUiSpec } from './specs/types'
 
@@ -27,6 +28,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { m } = useI18n()
 
 const open = defineModel<boolean>('open', { required: true })
 const filterModel = defineModel<FilterState>({ required: true })
@@ -76,12 +78,12 @@ function handleCancel() {
               icon="icon-[mdi--filter-outline]"
               class="size-4"
             />
-            筛选条件
+            {{ m.filter.title }}
             <span
               v-if="countActiveFilters(localFilter) > 0"
               class="text-sm font-normal text-muted-foreground"
             >
-              {{ countActiveFilters(localFilter) }} 个条件
+              {{ m.filter.conditionCount({ count: countActiveFilters(localFilter) }) }}
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -105,7 +107,7 @@ function handleCancel() {
               icon="icon-[mdi--filter-off-outline]"
               class="size-4 mr-1.5"
             />
-            清除筛选
+            {{ m.filter.clearFilters }}
           </Button>
           <div class="flex gap-2">
             <Button
@@ -113,9 +115,9 @@ function handleCancel() {
               variant="outline"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
-            <Button type="submit"> 确认 </Button>
+            <Button type="submit"> {{ m.common.confirm }} </Button>
           </div>
         </DialogFooter>
       </Form>

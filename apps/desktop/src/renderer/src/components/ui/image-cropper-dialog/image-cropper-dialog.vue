@@ -17,6 +17,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { CropConfirmPayload, CropRegion, NormalizedCropRegion } from './types'
 
 interface Props {
@@ -35,9 +36,12 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '裁剪图片',
   allowFreeAspect: true
 })
+
+const { m } = useI18n()
+
+const titleText = computed(() => props.title ?? m.value.ui.imageCropper.title)
 
 const emit = defineEmits<{
   confirm: [payload: CropConfirmPayload]
@@ -535,36 +539,44 @@ onBeforeUnmount(() => {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-3xl">
       <DialogHeader>
-        <DialogTitle>{{ props.title }}</DialogTitle>
+        <DialogTitle>{{ titleText }}</DialogTitle>
       </DialogHeader>
 
       <DialogBody class="flex flex-col items-center gap-4">
         <!-- Aspect ratio control -->
         <div class="flex items-center gap-3 text-xs">
           <template v-if="props.aspectRatio && props.allowFreeAspect">
-            <span class="text-muted-foreground"
-              >推荐比例: {{ props.aspectLabel ?? props.aspectRatio }}</span
-            >
+            <span class="text-muted-foreground">
+              {{
+                m.ui.imageCropper.recommendedRatio({
+                  ratio: String(props.aspectLabel ?? props.aspectRatio)
+                })
+              }}
+            </span>
             <label class="flex items-center gap-1.5 cursor-pointer">
               <Switch
                 v-model="lockAspect"
                 class="scale-75"
               />
               <span :class="cn(lockAspect ? 'text-foreground' : 'text-muted-foreground')">
-                锁定比例
+                {{ m.ui.imageCropper.lockRatio }}
               </span>
             </label>
           </template>
           <template v-else-if="props.aspectRatio">
-            <span class="text-muted-foreground"
-              >固定比例: {{ props.aspectLabel ?? props.aspectRatio }}</span
-            >
+            <span class="text-muted-foreground">
+              {{
+                m.ui.imageCropper.fixedRatio({
+                  ratio: String(props.aspectLabel ?? props.aspectRatio)
+                })
+              }}
+            </span>
           </template>
           <span
             v-else
             class="text-muted-foreground"
           >
-            自由裁剪
+            {{ m.ui.imageCropper.freeCrop }}
           </span>
         </div>
 
@@ -579,7 +591,7 @@ onBeforeUnmount(() => {
             <img
               ref="imgRef"
               :src="props.src"
-              alt="Crop preview"
+              :alt="m.ui.imageCropper.title"
               :class="
                 cn('block max-h-[400px] max-w-full w-auto select-none', !imageLoaded && 'invisible')
               "
@@ -682,7 +694,9 @@ onBeforeUnmount(() => {
           v-if="cropInfo"
           class="text-xs text-muted-foreground"
         >
-          <span>裁剪区域: {{ cropInfo.width }} × {{ cropInfo.height }} px</span>
+          <span>{{
+            m.ui.imageCropper.cropArea({ width: cropInfo.width, height: cropInfo.height })
+          }}</span>
         </div>
       </DialogBody>
 
@@ -691,7 +705,7 @@ onBeforeUnmount(() => {
           variant="outline"
           @click="handleClose"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="!imageLoaded || props.loading"
@@ -702,14 +716,14 @@ onBeforeUnmount(() => {
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin"
             />
-            处理中...
+            {{ m.common.processing }}
           </template>
           <template v-else>
             <Icon
               icon="icon-[mdi--crop]"
               class="size-4"
             />
-            确认裁剪
+            {{ m.ui.imageCropper.confirm }}
           </template>
         </Button>
       </DialogFooter>

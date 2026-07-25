@@ -44,6 +44,9 @@ import { collections, type DynamicCollectionConfig, type DynamicEntityConfig } f
 import type { ContentEntityType, SortDirection } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Collection')
 
@@ -62,12 +65,12 @@ interface EntityTypeConfig {
   label: string
 }
 
-const ENTITY_TYPE_CONFIG: Record<ContentEntityType, EntityTypeConfig> = {
-  game: { label: '游戏' },
-  character: { label: '角色' },
-  person: { label: '人物' },
-  company: { label: '公司' }
-}
+const ENTITY_TYPE_CONFIG = computed<Record<ContentEntityType, EntityTypeConfig>>(() => ({
+  game: { label: m.value.library.entities.game },
+  character: { label: m.value.library.entities.character },
+  person: { label: m.value.library.entities.person },
+  company: { label: m.value.library.entities.company }
+}))
 
 function createDefaultEntityConfig(): DynamicEntityConfig {
   return {
@@ -146,13 +149,13 @@ const currentEntityFilter = computed({
 function getUiSpec(entityType: ContentEntityType) {
   switch (entityType) {
     case 'game':
-      return gameFilterUiSpec
+      return gameFilterUiSpec.value
     case 'character':
-      return characterFilterUiSpec
+      return characterFilterUiSpec.value
     case 'person':
-      return personFilterUiSpec
+      return personFilterUiSpec.value
     case 'company':
-      return companyFilterUiSpec
+      return companyFilterUiSpec.value
   }
 }
 
@@ -224,12 +227,12 @@ function handleConfirm() {
         .update(collections)
         .set({ dynamicConfig: localConfig.value })
         .where(eq(collections.id, props.collectionId))
-      notify.success('筛选配置已更新')
+      notify.success(m.value.library.forms.filterConfigUpdated)
       emit('updated', localConfig.value)
       open.value = false
     } catch (error) {
       log.error('Failed to update filter config:', error)
-      notify.error('更新失败')
+      notify.error(m.value.library.feedback.updateFailed)
     } finally {
       isSubmitting.value = false
     }
@@ -280,12 +283,12 @@ const sortDirectionModels = {
             icon="icon-[mdi--filter-outline]"
             class="size-5"
           />
-          动态筛选配置
+          {{ m.library.forms.dynamicConfigTitle }}
           <span
             v-if="enabledCount > 0"
             class="text-sm font-normal text-muted-foreground"
           >
-            已启用 {{ enabledCount }} 个类型
+            {{ m.library.forms.enabledTypesCount({ count: enabledCount }) }}
           </span>
         </DialogTitle>
       </DialogHeader>
@@ -349,7 +352,7 @@ const sortDirectionModels = {
                   icon="icon-[mdi--filter-outline]"
                   class="size-3.5 mr-1"
                 />
-                筛选
+                {{ m.library.forms.filterLabel }}
                 <span
                   v-if="countActiveFilters(localConfig[type].filter) > 0"
                   class="ml-1 text-muted-foreground leading-0"
@@ -361,7 +364,7 @@ const sortDirectionModels = {
               <div class="flex-1" />
 
               <!-- Sort controls -->
-              <span class="text-xs text-muted-foreground">排序:</span>
+              <span class="text-xs text-muted-foreground">{{ m.library.forms.sortLabel }}</span>
               <Select v-model="sortFieldModels[type].value">
                 <SelectTrigger class="w-20 h-7 text-xs">
                   <SelectValue />
@@ -381,8 +384,8 @@ const sortDirectionModels = {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="asc">升序</SelectItem>
-                  <SelectItem value="desc">降序</SelectItem>
+                  <SelectItem value="asc">{{ m.library.forms.sortAsc }}</SelectItem>
+                  <SelectItem value="desc">{{ m.library.forms.sortDesc }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -394,7 +397,7 @@ const sortDirectionModels = {
               icon="icon-[mdi--information-outline]"
               class="size-3.5 mr-1 shrink-0"
             />
-            已启用但未设置筛选条件的类型将包含该类型的全部项目
+            {{ m.library.forms.dynamicConfigHint }}
           </p>
         </div>
       </DialogBody>
@@ -405,13 +408,13 @@ const sortDirectionModels = {
           :disabled="isSubmitting"
           @click="open = false"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="isSubmitting || !initialized"
           @click="handleConfirm"
         >
-          确认
+          {{ m.common.confirm }}
         </Button>
       </DialogFooter>
     </DialogContent>

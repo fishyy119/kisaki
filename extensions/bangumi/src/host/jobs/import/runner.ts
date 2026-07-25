@@ -1,4 +1,5 @@
 import { CollectionReader } from '../../import/collection-reader'
+import { m } from '../../i18n'
 import { ImportExecutor } from '../../import/executor'
 import { IndexReader } from '../../import/index-reader'
 import { ImportPlanner } from '../../import/planner'
@@ -82,7 +83,11 @@ export class ImportJobRunner {
       incrementSkippedNoChange(job, collected.skippedNoChange)
       await this.executeCollectionImport(args, job, collected)
 
-      const message = `我的收藏导入完成：新增 ${job.counters.imported ?? 0} 个${collected.label}，更新 ${job.counters.patchedExisting ?? 0} 个已有${collected.label}。`
+      const message = m().jobs.import.collectionsCompleted({
+        added: job.counters.imported ?? 0,
+        updated: job.counters.patchedExisting ?? 0,
+        scope: collected.scope
+      })
       job.report('completed', message, {
         current: job.counters.processed ?? 0,
         total: collected.operations.length
@@ -105,7 +110,11 @@ export class ImportJobRunner {
       incrementSkippedNoChange(job, collected.skippedNoChange)
       previewCollectionImport(args, job, collected)
 
-      const message = `我的收藏导入预览完成：${job.counters.wouldImport ?? 0} 个${collected.label}将导入，${job.counters.wouldPatch ?? 0} 个已有${collected.label}将更新。`
+      const message = m().jobs.import.collectionsPreviewCompleted({
+        toImport: job.counters.wouldImport ?? 0,
+        toPatch: job.counters.wouldPatch ?? 0,
+        scope: collected.scope
+      })
       job.report('completed', message, {
         current: collected.operations.length,
         total: collected.operations.length
@@ -125,7 +134,11 @@ export class ImportJobRunner {
       incrementSkippedNoChange(job, collected.skippedNoChange)
       await this.executeIndexImport(args, job, collected)
 
-      const message = `目录导入完成：新增 ${job.counters.imported ?? 0} 个${collected.label}，更新 ${job.counters.patchedExisting ?? 0} 个已有${collected.label}。`
+      const message = m().jobs.import.indexCompleted({
+        added: job.counters.imported ?? 0,
+        updated: job.counters.patchedExisting ?? 0,
+        scope: collected.scope
+      })
       job.report('completed', message, {
         current: job.counters.processed ?? 0,
         total: collected.operations.length
@@ -148,7 +161,11 @@ export class ImportJobRunner {
       incrementSkippedNoChange(job, collected.skippedNoChange)
       previewIndexImport(args, job, collected)
 
-      const message = `目录导入预览完成：${job.counters.wouldImport ?? 0} 个${collected.label}将导入，${job.counters.wouldPatch ?? 0} 个已有${collected.label}将更新。`
+      const message = m().jobs.import.indexPreviewCompleted({
+        toImport: job.counters.wouldImport ?? 0,
+        toPatch: job.counters.wouldPatch ?? 0,
+        scope: collected.scope
+      })
       job.report('completed', message, {
         current: collected.operations.length,
         total: collected.operations.length
@@ -163,10 +180,10 @@ export class ImportJobRunner {
   ): Promise<CollectedCollectionImport> {
     const descriptor = this.deps.mediaRegistry.require(args.scope)
     const localAdapter = this.importExecutor.getLocalAdapter(args.scope)
-    job.report('validating', '正在检查 Bangumi 导入参数...', { indeterminate: true })
+    job.report('validating', m().jobs.import.validating, { indeterminate: true })
 
     if (options.requireWritable && !localAdapter?.supportsImportWrite) {
-      return emptyCollectedCollectionImport(descriptor.label)
+      return emptyCollectedCollectionImport(descriptor.scope)
     }
 
     const account = await this.requireAccount()
@@ -206,7 +223,7 @@ export class ImportJobRunner {
         targetCollection
       })
       return omitUndefined({
-        label: descriptor.label,
+        scope: descriptor.scope,
         targetCollection,
         planItems: plan.items,
         operations: [],
@@ -214,7 +231,7 @@ export class ImportJobRunner {
       })
     }
 
-    job.report('matchingLocalItems', `正在匹配${descriptor.label}...`, {
+    job.report('matchingLocalItems', m().jobs.import.matchingLocal({ scope: descriptor.scope }), {
       current: 0,
       total: collections.length
     })
@@ -238,7 +255,7 @@ export class ImportJobRunner {
     })
 
     return omitUndefined({
-      label: descriptor.label,
+      scope: descriptor.scope,
       adapter,
       targetCollection,
       planItems: plan.items,
@@ -254,10 +271,10 @@ export class ImportJobRunner {
   ): Promise<CollectedIndexImport> {
     const descriptor = this.deps.mediaRegistry.require(args.scope)
     const localAdapter = this.importExecutor.getLocalAdapter(args.scope)
-    job.report('validating', '正在检查 Bangumi 目录导入参数...', { indeterminate: true })
+    job.report('validating', m().jobs.import.validatingIndex, { indeterminate: true })
 
     if (options.requireWritable && !localAdapter?.supportsImportWrite) {
-      return emptyCollectedIndexImport(descriptor.label)
+      return emptyCollectedIndexImport(descriptor.scope)
     }
 
     const adapter = localAdapter?.supportsImportWrite
@@ -295,7 +312,7 @@ export class ImportJobRunner {
         targetCollection
       })
       return omitUndefined({
-        label: descriptor.label,
+        scope: descriptor.scope,
         targetCollection,
         planItems: plan.items,
         operations: [],
@@ -303,7 +320,7 @@ export class ImportJobRunner {
       })
     }
 
-    job.report('matchingLocalItems', `正在匹配${descriptor.label}...`, {
+    job.report('matchingLocalItems', m().jobs.import.matchingLocal({ scope: descriptor.scope }), {
       current: 0,
       total: subjects.length
     })
@@ -329,7 +346,7 @@ export class ImportJobRunner {
     })
 
     return omitUndefined({
-      label: descriptor.label,
+      scope: descriptor.scope,
       adapter,
       targetCollection,
       planItems: plan.items,
@@ -344,7 +361,7 @@ export class ImportJobRunner {
     collected: CollectedCollectionImport
   ): Promise<void> {
     const adapter = requireCollectedAdapter(collected.adapter)
-    reportCollectionImportExecutionStart(job, collected.label, collected.operations.length)
+    reportCollectionImportExecutionStart(job, collected.scope, collected.operations.length)
 
     for (const operation of collected.operations) {
       await job.checkpoint()
@@ -421,7 +438,7 @@ export class ImportJobRunner {
           reportCollectionImportExecutionProgress({
             job,
             actionKind: operation.kind,
-            label: collected.label,
+            scope: collected.scope,
             current: job.counters.processed ?? 0,
             total: collected.operations.length
           })
@@ -436,7 +453,7 @@ export class ImportJobRunner {
     collected: CollectedIndexImport
   ): Promise<void> {
     const adapter = requireCollectedAdapter(collected.adapter)
-    reportIndexImportExecutionStart(job, collected.label, collected.operations.length)
+    reportIndexImportExecutionStart(job, collected.scope, collected.operations.length)
 
     for (const operation of collected.operations) {
       await job.checkpoint()
@@ -509,7 +526,7 @@ export class ImportJobRunner {
           reportIndexImportExecutionProgress({
             job,
             actionKind: operation.kind,
-            label: collected.label,
+            scope: collected.scope,
             current: job.counters.processed ?? 0,
             total: collected.operations.length
           })
@@ -524,12 +541,12 @@ export class ImportJobRunner {
   ): Promise<void> {
     const normalizedProfileId = profileId?.trim()
     if (!normalizedProfileId) {
-      throw new BangumiExtensionError('profile_missing', '请选择用于创建游戏的刮削配置。')
+      throw new BangumiExtensionError('profile_missing', m().errors.profileRequired)
     }
 
     const profiles = (await adapter.listProfiles?.()) ?? []
     if (!profiles.some((profile) => profile.id === normalizedProfileId)) {
-      throw new BangumiExtensionError('profile_missing', '选择的游戏刮削配置不存在。')
+      throw new BangumiExtensionError('profile_missing', m().errors.profileNotFound)
     }
   }
 
@@ -545,7 +562,7 @@ export class ImportJobRunner {
   private async requireAccount() {
     const account = await this.deps.accountService.getAccountSnapshot()
     if (!account) {
-      throw new BangumiExtensionError('auth_required', '请先登录 Bangumi 账号。')
+      throw new BangumiExtensionError('auth_required', m().errors.authRequired)
     }
     return account
   }
@@ -553,7 +570,10 @@ export class ImportJobRunner {
 
 function requireCollectedAdapter(adapter: LocalMediaAdapter | undefined): LocalMediaAdapter {
   if (!adapter?.supportsImportWrite) {
-    throw new BangumiExtensionError('local_media_unsupported', '当前媒体类型暂不支持写入本地库。')
+    throw new BangumiExtensionError(
+      'local_media_unsupported',
+      m().errors.localWriteUnsupportedGeneric
+    )
   }
 
   return adapter

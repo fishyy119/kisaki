@@ -30,6 +30,7 @@ import {
   GameDetailContent
 } from '@renderer/components/shared/game'
 import { useAmbientLight, useEvent, useGameRouteProvider } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
@@ -37,18 +38,20 @@ import { games, type Status } from '@shared/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { formatStatus, getStatusVariant, getEntityIcon } from '@renderer/utils/format'
 
+const { m } = useI18n()
+
 // =============================================================================
 // Constants
 // =============================================================================
 
-const STATUS_OPTIONS: { value: Status; label: string }[] = [
-  { value: 'notStarted', label: '未开始' },
-  { value: 'inProgress', label: '进行中' },
-  { value: 'partial', label: '部分完成' },
-  { value: 'completed', label: '已完成' },
-  { value: 'multiple', label: '多周目' },
-  { value: 'shelved', label: '已搁置' }
-]
+const STATUS_OPTIONS = computed<{ value: Status; label: string }[]>(() => [
+  { value: 'notStarted', label: m.value.library.status.notStarted },
+  { value: 'inProgress', label: m.value.library.status.inProgress },
+  { value: 'partial', label: m.value.library.status.partial },
+  { value: 'completed', label: m.value.library.status.completed },
+  { value: 'multiple', label: m.value.library.status.multiple },
+  { value: 'shelved', label: m.value.library.status.shelved }
+])
 
 // =============================================================================
 // Route & Navigation
@@ -104,9 +107,13 @@ async function handleToggleFavorite() {
   isPendingFavorite.value = true
   try {
     await db.update(games).set({ isFavorite: !current.isFavorite }).where(eq(games.id, current.id))
-    notify.success(current.isFavorite ? '已取消喜欢' : '已添加至喜欢')
+    notify.success(
+      current.isFavorite
+        ? m.value.library.feedback.favoriteRemoved
+        : m.value.library.feedback.favoriteAdded
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   } finally {
     isPendingFavorite.value = false
   }
@@ -133,9 +140,9 @@ const selectedStatus = computed({
     isPendingStatus.value = true
     try {
       await db.update(games).set({ status }).where(eq(games.id, current.id))
-      notify.success('状态已更新')
+      notify.success(m.value.library.feedback.statusUpdated)
     } catch {
-      notify.error('更新失败')
+      notify.error(m.value.library.feedback.updateFailed)
     } finally {
       isPendingStatus.value = false
     }
@@ -148,12 +155,12 @@ async function handleOpenGameDir() {
   const pathToOpen =
     current.gameDirPath || (current.launcherMode === 'file' ? current.launcherPath : null)
   if (!pathToOpen) {
-    notify.error('游戏目录未设置')
+    notify.error(m.value.library.feedback.gameDirNotSet)
     return
   }
   const result = await ipcManager.invoke('native:open-path', { path: pathToOpen, ensure: 'folder' })
   if (!result.success) {
-    notify.error('无法打开游戏目录')
+    notify.error(m.value.library.feedback.openGameDirFailed)
   }
 }
 
@@ -176,7 +183,7 @@ const canOpenGameDir = computed(() => {
     v-else-if="!game"
     state="not-found"
     :icon="getEntityIcon('game')"
-    title="游戏不存在"
+    :title="m.library.detail.notFoundTitle({ label: m.library.entities.game })"
     class="h-full bg-background"
   />
 
@@ -202,7 +209,7 @@ const canOpenGameDir = computed(() => {
               </Badge>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>游玩状态</TooltipContent>
+          <TooltipContent>{{ m.library.pages.playStatus }}</TooltipContent>
 
           <DropdownMenuContent
             align="end"
@@ -226,7 +233,7 @@ const canOpenGameDir = computed(() => {
           variant="secondary"
           size="icon-sm"
           class="flex items-center py-0"
-          tooltip="评分"
+          :tooltip="m.library.detail.tooltips.score"
           @click="scoreDialogOpen = true"
         >
           <Icon
@@ -238,7 +245,7 @@ const canOpenGameDir = computed(() => {
         <Button
           variant="secondary"
           size="icon-sm"
-          tooltip="打开游戏目录"
+          :tooltip="m.library.menu.openGameDir"
           :disabled="!canOpenGameDir"
           @click="handleOpenGameDir"
         >
@@ -256,7 +263,11 @@ const canOpenGameDir = computed(() => {
         <Button
           variant="secondary"
           size="icon-sm"
-          :tooltip="game.isFavorite ? '取消喜欢' : '添加喜欢'"
+          :tooltip="
+            game.isFavorite
+              ? m.library.detail.tooltips.favoriteRemove
+              : m.library.detail.tooltips.favoriteAdd
+          "
           :disabled="isPendingFavorite"
           @click="handleToggleFavorite"
         >
@@ -269,7 +280,11 @@ const canOpenGameDir = computed(() => {
         <Button
           variant="secondary"
           size="icon-sm"
-          :tooltip="spoilersRevealed ? '隐藏剧透' : '显示剧透'"
+          :tooltip="
+            spoilersRevealed
+              ? m.library.detail.tooltips.spoilerHide
+              : m.library.detail.tooltips.spoilerShow
+          "
           @click="handleToggleSpoilers"
         >
           <Icon

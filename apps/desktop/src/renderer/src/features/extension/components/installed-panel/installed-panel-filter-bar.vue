@@ -18,6 +18,7 @@ import {
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   useInstalledExtensionStore,
   type InstalledExtensionSortField,
@@ -44,18 +45,34 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<Emits>()
 
-// Status filter configuration
-const STATUS_OPTIONS: { value: InstalledExtensionStatusFilter; label: string; icon: string }[] = [
-  { value: 'all', label: '全部', icon: 'icon-[mdi--filter-outline]' },
-  { value: 'enabled', label: '已启用', icon: 'icon-[mdi--check-circle-outline]' },
-  { value: 'disabled', label: '已禁用', icon: 'icon-[mdi--pause-circle-outline]' }
-]
+const { m } = useI18n()
 
-const SORT_OPTIONS: { value: InstalledExtensionSortField; label: string }[] = [
-  { value: 'name', label: '名称' },
-  { value: 'status', label: '状态' },
-  { value: 'hasUpdate', label: '更新' }
-]
+// Status filter configuration
+const STATUS_OPTIONS = computed<
+  { value: InstalledExtensionStatusFilter; label: string; icon: string }[]
+>(() => [
+  {
+    value: 'all',
+    label: m.value.extension.installed.filterAll,
+    icon: 'icon-[mdi--filter-outline]'
+  },
+  {
+    value: 'enabled',
+    label: m.value.extension.installed.filterEnabled,
+    icon: 'icon-[mdi--check-circle-outline]'
+  },
+  {
+    value: 'disabled',
+    label: m.value.extension.installed.filterDisabled,
+    icon: 'icon-[mdi--pause-circle-outline]'
+  }
+])
+
+const SORT_OPTIONS = computed<{ value: InstalledExtensionSortField; label: string }[]>(() => [
+  { value: 'name', label: m.value.extension.installed.sortName },
+  { value: 'status', label: m.value.extension.installed.sortStatus },
+  { value: 'hasUpdate', label: m.value.extension.installed.sortHasUpdate }
+])
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {
@@ -91,16 +108,16 @@ const automaticUpdateSummary = computed(() => {
   }
 
   if (run.status === 'running') {
-    return '启动更新中'
+    return m.value.extension.installed.startupUpdating
   }
 
   const updated = run.results.filter((result) => result.status === 'updated').length
   const failed = run.results.filter((result) => result.status === 'failed').length
   if (updated === 0 && failed === 0) {
-    return run.repositoryRefreshError ? '仓库刷新失败' : null
+    return run.repositoryRefreshError ? m.value.extension.installed.repositoryRefreshFailed : null
   }
   if (failed > 0) {
-    return `${failed} 个自动更新失败`
+    return m.value.extension.installed.autoUpdateFailedCount({ count: failed })
   }
 
   return null
@@ -141,7 +158,7 @@ function handleToggleSortDirection() {
         <InputGroupInput
           v-model="searchQueryModel"
           class="text-xs"
-          placeholder="搜索已安装的扩展..."
+          :placeholder="m.extension.installed.searchPlaceholder"
         />
         <InputGroupAddon
           v-if="store.searchQuery"
@@ -171,7 +188,7 @@ function handleToggleSortDirection() {
             icon="icon-[mdi--refresh]"
             :class="cn('size-4', props.checkingUpdates && 'animate-spin')"
           />
-          检查更新
+          {{ m.extension.installed.checkUpdates }}
         </Button>
 
         <div
@@ -248,7 +265,11 @@ function handleToggleSortDirection() {
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {{ store.showUpdatesOnly ? '显示全部' : '仅显示有更新' }}
+          {{
+            store.showUpdatesOnly
+              ? m.extension.installed.showAll
+              : m.extension.installed.showUpdatesOnly
+          }}
         </TooltipContent>
       </Tooltip>
 
@@ -290,7 +311,11 @@ function handleToggleSortDirection() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {{ store.sortDirection === 'asc' ? '升序' : '降序' }}
+            {{
+              store.sortDirection === 'asc'
+                ? m.extension.installed.ascending
+                : m.extension.installed.descending
+            }}
           </TooltipContent>
         </Tooltip>
       </ButtonGroup>
@@ -303,7 +328,7 @@ function handleToggleSortDirection() {
           icon="icon-[mdi--view-grid-outline]"
           class="size-3.5"
         />
-        全部
+        {{ m.extension.installed.filterAll }}
       </SegmentedControlItem>
       <SegmentedControlItem
         v-for="cat in EXTENSION_CATEGORIES"

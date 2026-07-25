@@ -5,23 +5,9 @@
  * the header's period navigator.
  */
 
-import { formatDateRange, getWeekStartDate, getYearWeek } from '@renderer/utils/datetime'
+import { getWeekStartDate, getYearWeek } from '@renderer/utils/datetime'
+import { formatters, messages } from '@renderer/core/i18n'
 import type { Period, PeriodDisplay, ReportType } from './types'
-
-const MONTH_NAMES = [
-  '1月',
-  '2月',
-  '3月',
-  '4月',
-  '5月',
-  '6月',
-  '7月',
-  '8月',
-  '9月',
-  '10月',
-  '11月',
-  '12月'
-] as const
 
 /** Get the period containing today for the given report type. */
 export function getCurrentPeriod(reportType: ReportType): Period {
@@ -134,23 +120,26 @@ export function formatPeriodDisplay(reportType: ReportType, period: Period): Per
       end.setHours(23, 59, 59, 999)
 
       // Use date range instead of week number to avoid cross-year ambiguity.
-      const label = formatDateRange(start, end).replace(' - ', '-')
+      const label = formatters.value.dateRange(start, end)
       const shortLabel = `${start.getMonth() + 1}/${start.getDate()}-${end.getMonth() + 1}/${end.getDate()}`
 
       return { label, shortLabel }
     }
     case 'monthly':
       return {
-        label: `${period.year}年${MONTH_NAMES[period.month! - 1]}`,
-        shortLabel: MONTH_NAMES[period.month! - 1]
+        label: formatters.value.yearMonth(new Date(period.year, period.month! - 1, 1)),
+        shortLabel: formatters.value.monthName(period.month!)
       }
     case 'yearly':
       return {
-        label: `${period.year}年`,
+        label: formatters.value.date({ year: period.year }),
         shortLabel: `${period.year}`
       }
     case 'overview':
-      return { label: '过去一年', shortLabel: '总览' }
+      return {
+        label: messages.value.statistics.period.pastYear,
+        shortLabel: messages.value.statistics.tabs.overview
+      }
   }
 }
 
@@ -158,12 +147,12 @@ export function formatPeriodDisplay(reportType: ReportType, period: Period): Per
 export function getPreviousPeriodLabel(reportType: ReportType): string {
   switch (reportType) {
     case 'weekly':
-      return '上周'
+      return messages.value.statistics.period.previousWeek
     case 'monthly':
-      return '上月'
+      return messages.value.statistics.period.previousMonth
     case 'yearly':
-      return '去年'
+      return messages.value.statistics.period.previousYear
     case 'overview':
-      return '上一期'
+      return messages.value.statistics.period.previousPeriod
   }
 }

@@ -1,4 +1,5 @@
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 
 export const BANGUMI_MEDIA_SCOPES = ['book', 'game', 'anime', 'music'] as const
 
@@ -28,7 +29,7 @@ export function requireBangumiMediaScope(value: unknown): BangumiMediaScope {
     return value
   }
 
-  throw new BangumiExtensionError('bangumi_validation', '请选择有效的 Bangumi 媒体类型。')
+  throw new BangumiExtensionError('bangumi_validation', m().errors.invalidMediaScope)
 }
 
 export function getBangumiSubjectType(scope: BangumiMediaScope): BangumiSupportedSubjectType {

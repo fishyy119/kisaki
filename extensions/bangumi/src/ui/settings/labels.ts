@@ -1,16 +1,17 @@
 import type { BadgeVariants } from '@kisaki3/extension-ui-vue'
 import type { BangumiAutomationKind, BangumiAutomationStatus } from '../../shared/settings'
+import { m } from './i18n'
 
-export const AUTOMATION_LABELS: Record<BangumiAutomationKind, string> = {
-  'auth-refresh': '启动时刷新凭据',
-  'sync-changed': '启动后同步变更队列',
-  'sync-full-daily': '每日全量同步'
+export function getAutomationLabel(kind: BangumiAutomationKind): string {
+  return m.value.automations.labels[kind]
 }
 
-export const AUTOMATION_STATUS_LABELS: Record<BangumiAutomationStatus, string> = {
-  missing: '未创建',
-  enabled: '已启用',
-  disabled: '已停用'
+export function getAutomationDescription(kind: BangumiAutomationKind): string {
+  return m.value.automations.descriptions[kind]
+}
+
+export function getAutomationStatusLabel(status: BangumiAutomationStatus): string {
+  return m.value.automations.status[status]
 }
 
 export const AUTOMATION_STATUS_VARIANTS: Record<BangumiAutomationStatus, BadgeVariants['variant']> =

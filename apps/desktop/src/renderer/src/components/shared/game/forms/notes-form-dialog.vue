@@ -30,6 +30,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { ImagePicker } from '@renderer/components/ui/image-picker'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -132,7 +135,7 @@ watch(open, async (isOpen, wasOpen) => {
 })
 
 async function pickCoverPath(): Promise<string | null> {
-  const dialogOptions = getOpenImageDialogOptions({ title: '选择封面' })
+  const dialogOptions = getOpenImageDialogOptions({ title: m.value.library.forms.pickCover })
   const res = await ipcManager.invoke('native:open-dialog', dialogOptions)
   if (!res.success) {
     throw new Error(res.error || 'Failed to open file dialog')
@@ -151,7 +154,7 @@ async function handlePickCover() {
     coverPath.value = path
   } catch (error) {
     log.error('Pick cover failed:', error)
-    notify.error('选择封面失败')
+    notify.error(m.value.library.feedback.pickCoverFailed)
   }
 }
 
@@ -210,11 +213,11 @@ async function handleSubmit() {
     }
 
     didSave.value = true
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Save note failed:', error)
-    notify.error('保存失败')
+    notify.error(m.value.common.saveFailed)
   } finally {
     isSaving.value = false
   }
@@ -239,29 +242,29 @@ function handleCancel() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ isEditMode ? '编辑笔记' : '新建笔记' }}</DialogTitle>
+          <DialogTitle>{{ isEditMode ? m.game.notes.editNote : m.game.notes.newNote }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="space-y-4 max-h-[80vh] overflow-auto">
             <FieldGroup>
               <Field>
-                <FieldLabel>标题</FieldLabel>
+                <FieldLabel>{{ m.game.notes.titleLabel }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    placeholder="输入标题"
+                    :placeholder="m.game.notes.titlePlaceholder"
                     autofocus
                   />
                 </FieldContent>
               </Field>
 
               <Field>
-                <FieldLabel>封面</FieldLabel>
+                <FieldLabel>{{ m.library.forms.coverLabel }}</FieldLabel>
                 <FieldContent>
                   <ImagePicker
                     :image-url="currentCoverUrl"
                     :picked-path="coverMode === 'set' ? coverPath : null"
-                    pick-label="选择封面"
+                    :pick-label="m.library.forms.pickCover"
                     :clear-disabled="
                       (!isEditMode && coverMode !== 'set') ||
                       (isEditMode && !existingNote?.coverFile && coverMode !== 'set')
@@ -273,11 +276,11 @@ function handleCancel() {
               </Field>
 
               <Field>
-                <FieldLabel>内容</FieldLabel>
+                <FieldLabel>{{ m.game.notes.contentLabel }}</FieldLabel>
                 <FieldContent>
                   <MarkdownEditor
                     v-model="formData.content"
-                    placeholder="支持 Markdown..."
+                    :placeholder="m.game.notes.contentPlaceholder"
                     min-height="420px"
                     max-height="420px"
                     :on-attachment="isEditMode ? handleInlineAttachment : undefined"
@@ -293,7 +296,7 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
@@ -304,7 +307,7 @@ function handleCancel() {
                 icon="icon-[mdi--loading]"
                 class="size-4 animate-spin mr-1.5"
               />
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

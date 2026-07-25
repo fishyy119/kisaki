@@ -1,5 +1,7 @@
 import type { NotifyOptions, NotifyType } from '@shared/notify'
 import type { NotifyCallbacks, NotifyService } from '@main/services/notify'
+import type { I18nService } from '@main/services/i18n'
+import type { Messages } from '@shared/i18n'
 import type { TaskRun, TaskRunPresentation } from '@shared/task-run'
 
 const CANCEL_ACTION_ID = 'cancel'
@@ -11,6 +13,7 @@ interface ActiveTaskRunNotification {
 
 export interface TaskRunNotificationCoordinatorOptions {
   notify: NotifyService
+  i18n: I18nService
   cancelRun(runId: string): boolean
 }
 
@@ -57,10 +60,10 @@ export class TaskRunNotificationCoordinator {
 
     const options: NotifyOptions = {
       title: notify.title ?? run.title,
-      message: formatActiveMessage(run, presentation),
+      message: formatActiveMessage(this.options.i18n.messages, run, presentation),
       type: 'loading',
       closable: notify.closable ?? true,
-      action: createCancelAction(run)
+      action: createCancelAction(this.options.i18n.messages, run)
     }
     const callbacks: NotifyCallbacks = {
       actions: options.action
@@ -93,7 +96,7 @@ export class TaskRunNotificationCoordinator {
     const active = this.active.get(run.id)
     const resultToastId = `task-run.result.${run.id}`
     const options: NotifyOptions = {
-      title: resolveFinalTitle(run, presentation),
+      title: resolveFinalTitle(this.options.i18n.messages, run, presentation),
       message: resolveFinalMessage(run),
       type: resolveFinalType(run),
       closable: true
@@ -114,11 +117,12 @@ export class TaskRunNotificationCoordinator {
   }
 
   private requestCancel(run: TaskRun, toastId: string): void {
+    const messages = this.options.i18n.messages
     const accepted = this.options.cancelRun(run.id)
     if (!accepted) {
       this.options.notify.update(toastId, {
         title: run.title,
-        message: '任务已结束或不可取消。',
+        message: messages.task.notifications.cancelUnavailable,
         type: 'info',
         closable: true
       })
@@ -131,34 +135,38 @@ export class TaskRunNotificationCoordinator {
 
     this.options.notify.update(toastId, {
       title: run.title,
-      message: '正在取消...',
+      message: messages.task.notifications.cancelling,
       type: 'loading',
       closable: true
     })
   }
 }
 
-function createCancelAction(run: TaskRun): NotifyOptions['action'] {
+function createCancelAction(messages: Messages, run: TaskRun): NotifyOptions['action'] {
   if (!run.controls.cancelable || run.status === 'cancelling') {
     return undefined
   }
 
   return {
     id: CANCEL_ACTION_ID,
-    label: '取消'
+    label: messages.common.cancel
   }
 }
 
-function formatActiveMessage(run: TaskRun, presentation: TaskRunPresentation): string | undefined {
+function formatActiveMessage(
+  messages: Messages,
+  run: TaskRun,
+  presentation: TaskRunPresentation
+): string | undefined {
   const notify = presentation.notify
   if (run.status === 'cancelling') {
-    return '正在取消...'
+    return messages.task.notifications.cancelling
   }
   if (run.status === 'pausing') {
-    return '正在暂停...'
+    return messages.task.notifications.pausing
   }
   if (run.status === 'paused') {
-    return '已暂停'
+    return messages.task.notifications.paused
   }
 
   const base = notify?.message ?? run.progress?.phase?.label ?? run.description
@@ -193,15 +201,19 @@ function formatProgressCount(run: TaskRun): string | undefined {
   return undefined
 }
 
-function resolveFinalTitle(run: TaskRun, presentation: TaskRunPresentation): string {
+function resolveFinalTitle(
+  messages: Messages,
+  run: TaskRun,
+  presentation: TaskRunPresentation
+): string {
   const title = presentation.notify?.title ?? run.result?.title ?? run.title
   switch (run.status) {
     case 'completed':
-      return `${title}已完成`
+      return messages.task.notifications.finalCompleted({ title })
     case 'cancelled':
-      return `${title}已取消`
+      return messages.task.notifications.finalCancelled({ title })
     case 'failed':
-      return `${title}失败`
+      return messages.task.notifications.finalFailed({ title })
     default:
       return title
   }

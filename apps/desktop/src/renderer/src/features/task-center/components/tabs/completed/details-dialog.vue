@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TaskRun, TaskRunWarning } from '@shared/task-run'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import {
@@ -37,6 +38,8 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const result = computed(() => props.run.result)
 const counters = computed(() => getTaskRunCounterEntries(result.value?.counters))
 const warnings = computed<readonly TaskRunWarning[]>(() => result.value?.warnings ?? [])
@@ -69,17 +72,17 @@ const resultIconClass = computed(() => {
   }
 })
 const metadata = computed(() => [
-  { label: '任务 ID', value: props.run.id },
-  { label: '分类', value: formatTaskRunCategory(props.run.category) },
-  { label: '操作', value: formatTaskRunOperation(props.run.operation) },
-  { label: '操作 ID', value: props.run.operation },
-  { label: '来源', value: formatTaskRunOwner(props.run) },
-  { label: '发起', value: formatTaskRunInitiator(props.run) },
-  { label: '对象', value: formatTaskRunSubject(props.run) },
-  { label: '创建', value: formatTimestamp(props.run.createdAt) },
-  { label: '开始', value: formatTimestamp(props.run.startedAt) },
-  { label: '结束', value: formatTimestamp(props.run.finishedAt) },
-  { label: '耗时', value: formatTaskRunDuration(props.run) }
+  { label: m.value.task.details.runId, value: props.run.id },
+  { label: m.value.task.details.category, value: formatTaskRunCategory(props.run.category) },
+  { label: m.value.task.details.operation, value: formatTaskRunOperation(props.run.operation) },
+  { label: m.value.task.details.operationId, value: props.run.operation },
+  { label: m.value.task.details.owner, value: formatTaskRunOwner(props.run) },
+  { label: m.value.task.details.initiator, value: formatTaskRunInitiator(props.run) },
+  { label: m.value.task.details.subject, value: formatTaskRunSubject(props.run) },
+  { label: m.value.task.details.createdAt, value: formatTimestamp(props.run.createdAt) },
+  { label: m.value.task.details.startedAt, value: formatTimestamp(props.run.startedAt) },
+  { label: m.value.task.details.finishedAt, value: formatTimestamp(props.run.finishedAt) },
+  { label: m.value.task.details.duration, value: formatTaskRunDuration(props.run) }
 ])
 </script>
 
@@ -104,7 +107,7 @@ const metadata = computed(() => [
 
       <DialogBody class="max-h-[72vh] space-y-4 overflow-auto overflow-x-hidden">
         <section class="space-y-2">
-          <div class="text-xs font-medium text-muted-foreground">结果</div>
+          <div class="text-xs font-medium text-muted-foreground">{{ m.task.details.result }}</div>
           <div class="overflow-hidden rounded-md border border-border bg-muted/20">
             <div class="flex items-start gap-2.5 px-3 py-2.5">
               <Icon
@@ -135,7 +138,7 @@ const metadata = computed(() => [
                   v-if="!result?.summary && !result?.error"
                   class="text-muted-foreground"
                 >
-                  无结果摘要
+                  {{ m.task.details.noResultSummary }}
                 </p>
               </div>
             </div>
@@ -163,7 +166,7 @@ const metadata = computed(() => [
               <div
                 class="border-b border-border bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground"
               >
-                输出
+                {{ m.task.details.output }}
               </div>
               <pre
                 class="max-h-56 overflow-auto bg-muted/50 p-3 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground"
@@ -176,7 +179,7 @@ const metadata = computed(() => [
           v-if="warnings.length"
           class="space-y-2"
         >
-          <div class="text-xs font-medium text-muted-foreground">警告</div>
+          <div class="text-xs font-medium text-muted-foreground">{{ m.task.details.warnings }}</div>
           <div class="overflow-hidden rounded-md border border-border bg-muted/20">
             <div
               v-for="(warning, index) in warnings"
@@ -201,13 +204,13 @@ const metadata = computed(() => [
         </section>
 
         <section class="space-y-2">
-          <div class="text-xs font-medium text-muted-foreground">信息</div>
+          <div class="text-xs font-medium text-muted-foreground">{{ m.task.details.info }}</div>
           <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div
               v-if="props.run.description"
               class="col-span-2 min-w-0"
             >
-              <div class="text-xs text-muted-foreground">描述</div>
+              <div class="text-xs text-muted-foreground">{{ m.task.details.description }}</div>
               <div class="break-words">{{ props.run.description }}</div>
             </div>
 

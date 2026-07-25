@@ -1,7 +1,7 @@
 <!--
 Extension Webview Frame hosts one webview session document in an iframe.
-Boundary: bootstrap injection, ready handshake, appearance push, and message
-relay between the iframe document and main.
+Boundary: bootstrap injection, ready handshake, appearance and UI locale push,
+and message relay between the iframe document and main.
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -21,6 +21,7 @@ import {
   registerWebviewFrame
 } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
+import { uiLocale } from '@renderer/core/i18n'
 import { useThemeStore } from '@renderer/stores'
 import { readCurrentWebviewAppearance } from './webview-theme'
 
@@ -73,12 +74,19 @@ watch(
   { flush: 'post' }
 )
 
+watch(uiLocale, () => {
+  if (ready.value) {
+    postCurrentUiLocale()
+  }
+})
+
 function buildDocumentSrc(session: ExtensionWebviewSessionInfo): string {
   const bootstrap: WebviewBootstrapPayload = {
     webviewId: session.webviewId,
     extensionId: session.extensionId,
     params: session.params,
-    appearance: readCurrentWebviewAppearance(resolvedTheme.value)
+    appearance: readCurrentWebviewAppearance(resolvedTheme.value),
+    uiLocale: uiLocale.value
   }
   const url = new URL(session.documentUrl)
   url.searchParams.set(WEBVIEW_BOOTSTRAP_QUERY_PARAM, JSON.stringify(bootstrap))
@@ -103,6 +111,7 @@ function handleWindowMessage(event: MessageEvent): void {
     case 'kisaki-webview:ready':
       ready.value = true
       postCurrentAppearance()
+      postCurrentUiLocale()
       void notifyWebviewReady(props.session.webviewId).catch((error) => {
         log.error('Failed to acknowledge webview readiness:', error)
       })
@@ -142,6 +151,13 @@ function postCurrentAppearance(): void {
   postToFrame({
     type: 'kisaki-webview:appearance',
     appearance: readCurrentWebviewAppearance(resolvedTheme.value)
+  })
+}
+
+function postCurrentUiLocale(): void {
+  postToFrame({
+    type: 'kisaki-webview:ui-locale',
+    uiLocale: uiLocale.value
   })
 }
 </script>

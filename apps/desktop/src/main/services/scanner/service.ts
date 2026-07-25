@@ -25,6 +25,7 @@ export class ScannerService implements IMediaService {
   readonly id = 'scanner'
   readonly deps = [
     'db',
+    'i18n',
     'ipc',
     'ingest',
     'event',
@@ -52,7 +53,8 @@ export class ScannerService implements IMediaService {
       ipcService,
       eventService,
       ingestService,
-      taskRunService
+      taskRunService,
+      container.get('i18n')
     )
     registerScannerIpc(this, ipcService)
     log.info('Initialized')

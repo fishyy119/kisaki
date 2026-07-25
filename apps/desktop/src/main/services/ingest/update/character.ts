@@ -1,5 +1,6 @@
 import { createLogger } from '@main/log'
 import type { DbService } from '@main/services/db'
+import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
@@ -37,7 +38,8 @@ export class CharacterUpdateHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly persistHandlers: IngestPersistHandlers,
-    private readonly taskRunService: TaskRunService
+    private readonly taskRunService: TaskRunService,
+    private readonly i18nService: I18nService
   ) {}
 
   startUpdateFromScraper(
@@ -48,7 +50,7 @@ export class CharacterUpdateHandler {
     const run = this.taskRunService.runs.create({
       category: 'ingest',
       operation: 'ingest.character.update',
-      title: '更新角色元数据',
+      title: this.i18nService.messages.ingest.update.title({ entity: 'character' }),
       description: request.lookup.name,
       owner: { type: 'app' },
       initiator: options?.taskRunInitiator ?? { type: 'user' },
@@ -57,7 +59,7 @@ export class CharacterUpdateHandler {
       presentation: {
         notify: {
           enabled: true,
-          title: '更新角色元数据',
+          title: this.i18nService.messages.ingest.update.title({ entity: 'character' }),
           showProgress: true,
           showResult: true,
           closable: true
@@ -85,7 +87,7 @@ export class CharacterUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'preparing',
-      label: '正在准备更新角色元数据'
+      label: this.i18nService.messages.ingest.update.preparing({ entity: 'character' })
     })
     const lookup = normalizeLookup(request.lookup)
     const surfaces = normalizeSelection(request.selection.surfaces, CHARACTER_UPDATE_SURFACE_KEYS)
@@ -99,13 +101,13 @@ export class CharacterUpdateHandler {
 
     reportIngestProgress(options, {
       phase: 'scraping',
-      label: '正在抓取角色元数据'
+      label: this.i18nService.messages.ingest.update.scrapingMetadata({ entity: 'character' })
     })
     const bundle = await this.scraperService.character.scrape(request.profileId, lookup)
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'planning',
-      label: '正在生成角色更新计划'
+      label: this.i18nService.messages.ingest.update.planning({ entity: 'character' })
     })
     const incoming = buildCharacterIncoming(bundle, lookup)
     const relationGraph =
@@ -124,7 +126,7 @@ export class CharacterUpdateHandler {
     throwIfIngestAborted(options?.signal)
     reportIngestProgress(options, {
       phase: 'writing',
-      label: '正在写入角色元数据'
+      label: this.i18nService.messages.ingest.update.writing({ entity: 'character' })
     })
     const applyResult = this.dbService.client.transaction((tx) =>
       applyCharacterPlan(tx, request.rootId, plan, this.persistHandlers)
@@ -133,7 +135,7 @@ export class CharacterUpdateHandler {
     if (applyResult.pendingAssets.length > 0) {
       reportIngestProgress(options, {
         phase: 'assets',
-        label: '正在保存角色媒体资源'
+        label: this.i18nService.messages.ingest.persist.savingMedia({ entity: 'character' })
       })
     }
     const warnings = await flushPendingAssets(this.dbService, applyResult.pendingAssets, {
@@ -169,8 +171,8 @@ export class CharacterUpdateHandler {
       })
       run.context.throwIfCancelled()
       run.complete({
-        title: '角色元数据更新完成',
-        summary: '角色元数据已写入资料库。',
+        title: this.i18nService.messages.ingest.update.completedTitle({ entity: 'character' }),
+        summary: this.i18nService.messages.ingest.update.completedSummary({ entity: 'character' }),
         output: {
           characterId: request.rootId,
           ...result
@@ -183,7 +185,9 @@ export class CharacterUpdateHandler {
       })
     } catch (error) {
       if (isTaskRunCancellation(error)) {
-        run.cancel({ summary: '更新角色元数据已取消。' })
+        run.cancel({
+          summary: this.i18nService.messages.ingest.update.cancelledSummary({ entity: 'character' })
+        })
         return
       }
 

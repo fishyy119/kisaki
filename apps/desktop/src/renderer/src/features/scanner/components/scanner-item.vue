@@ -35,8 +35,11 @@ import ScannerIssuesDialog from './scanner-issues-dialog.vue'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { TableCell, TableRow } from '@renderer/components/ui/table'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 const log = createLogger('Scanner')
+
+const { m } = useI18n()
 
 // =============================================================================
 // Props
@@ -131,34 +134,35 @@ const progress = computed(() => {
 const issueCount = computed(() => scannerState.value?.issueCount ?? 0)
 
 const statusInfo = computed(() => {
+  const item = m.value.scanner.item
   const state = scannerState.value
   if (!state) {
-    return { variant: 'secondary' as const, label: '空闲', spinning: false }
+    return { variant: 'secondary' as const, label: item.statusIdle, spinning: false }
   }
 
   switch (state.status) {
     case 'queued':
-      return { variant: 'secondary' as const, label: '排队中', spinning: true }
+      return { variant: 'secondary' as const, label: item.statusQueued, spinning: true }
     case 'running':
       return {
         variant: 'default' as const,
-        label: state.total > 0 ? `${progress.value}%` : '扫描中',
+        label: state.total > 0 ? `${progress.value}%` : item.statusScanning,
         spinning: true
       }
     case 'pausing':
-      return { variant: 'warning' as const, label: '暂停中', spinning: true }
+      return { variant: 'warning' as const, label: item.statusPausing, spinning: true }
     case 'paused':
-      return { variant: 'warning' as const, label: '已暂停', spinning: false }
+      return { variant: 'warning' as const, label: item.statusPaused, spinning: false }
     case 'cancelling':
-      return { variant: 'destructive' as const, label: '取消中', spinning: true }
+      return { variant: 'destructive' as const, label: item.statusCancelling, spinning: true }
     case 'completed':
-      return { variant: 'success' as const, label: '完成', spinning: false }
+      return { variant: 'success' as const, label: item.statusCompleted, spinning: false }
     case 'cancelled':
-      return { variant: 'destructive' as const, label: '已取消', spinning: false }
+      return { variant: 'destructive' as const, label: item.statusCancelled, spinning: false }
     case 'failed':
-      return { variant: 'destructive' as const, label: '失败', spinning: false }
+      return { variant: 'destructive' as const, label: item.statusFailed, spinning: false }
     default:
-      return { variant: 'secondary' as const, label: '空闲', spinning: false }
+      return { variant: 'secondary' as const, label: item.statusIdle, spinning: false }
   }
 })
 
@@ -166,7 +170,7 @@ const primaryAction = computed(() => {
   if (canPauseScan.value) {
     return {
       icon: 'icon-[mdi--pause]',
-      tooltip: '暂停',
+      tooltip: m.value.scanner.item.pause,
       disabled: false,
       handler: handlePause
     }
@@ -175,7 +179,7 @@ const primaryAction = computed(() => {
   if (canResumeScan.value) {
     return {
       icon: 'icon-[mdi--play]',
-      tooltip: '继续',
+      tooltip: m.value.scanner.item.resume,
       disabled: false,
       handler: handleResume
     }
@@ -183,7 +187,7 @@ const primaryAction = computed(() => {
 
   return {
     icon: 'icon-[mdi--play]',
-    tooltip: '扫描',
+    tooltip: m.value.scanner.item.scan,
     disabled: !canStartScan.value,
     handler: handleScan
   }
@@ -194,7 +198,7 @@ const primaryAction = computed(() => {
 // =============================================================================
 
 function getTypeText(type: Scanner['type']): string {
-  if (type === 'game') return '游戏'
+  if (type === 'game') return m.value.library.entities.game
   return type
 }
 
@@ -308,16 +312,20 @@ async function handleOpenPath() {
           <div class="flex items-center gap-2 text-xs">
             <Tooltip>
               <TooltipTrigger as-child>
-                <span class="text-success">{{ scannerState.newCount }} 新增</span>
+                <span class="text-success">
+                  {{ m.scanner.item.newCount({ count: scannerState.newCount }) }}
+                </span>
               </TooltipTrigger>
-              <TooltipContent>已添加到数据库的游戏数</TooltipContent>
+              <TooltipContent>{{ m.scanner.item.newCountTooltip }}</TooltipContent>
             </Tooltip>
             <span class="text-muted-foreground/50">|</span>
             <Tooltip>
               <TooltipTrigger as-child>
-                <span class="text-muted-foreground">{{ scannerState.existingCount }} 已存</span>
+                <span class="text-muted-foreground">
+                  {{ m.scanner.item.existingCount({ count: scannerState.existingCount }) }}
+                </span>
               </TooltipTrigger>
-              <TooltipContent>路径已存在的游戏数</TooltipContent>
+              <TooltipContent>{{ m.scanner.item.existingCountTooltip }}</TooltipContent>
             </Tooltip>
           </div>
         </template>
@@ -351,7 +359,7 @@ async function handleOpenPath() {
           variant="ghost"
           size="icon-sm"
           class="text-warning hover:text-warning"
-          :tooltip="`问题 ${issueCount}`"
+          :tooltip="m.scanner.item.issuesTooltip({ count: issueCount })"
           @click="isIssuesDialogOpen = true"
         >
           <Icon
@@ -377,7 +385,7 @@ async function handleOpenPath() {
           v-if="scannerState && isBusy"
           variant="ghost"
           size="icon-sm"
-          :tooltip="isCancelling ? '取消中' : '取消'"
+          :tooltip="isCancelling ? m.scanner.item.cancelling : m.scanner.item.cancel"
           :disabled="!canCancelScan"
           class="hover:text-destructive"
           @click="handleCancel"
@@ -391,7 +399,7 @@ async function handleOpenPath() {
         <Button
           variant="ghost"
           size="icon-sm"
-          tooltip="编辑"
+          :tooltip="m.common.edit"
           :disabled="isBusy"
           @click="isEditDialogOpen = true"
         >
@@ -404,7 +412,7 @@ async function handleOpenPath() {
         <Button
           variant="ghost"
           size="icon-sm"
-          tooltip="删除"
+          :tooltip="m.common.delete"
           :disabled="isBusy"
           class="hover:text-destructive"
           @click="isDeleteDialogOpen = true"
@@ -422,14 +430,14 @@ async function handleOpenPath() {
   <AlertDialog v-model:open="isDeleteDialogOpen">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>确认删除</AlertDialogTitle>
+        <AlertDialogTitle>{{ m.scanner.item.deleteTitle }}</AlertDialogTitle>
       </AlertDialogHeader>
       <AlertDialogDescription>
-        确定要删除扫描器「{{ props.scanner.name }}」吗？此操作无法撤销。
+        {{ m.scanner.item.deleteDescription({ name: props.scanner.name }) }}
       </AlertDialogDescription>
       <AlertDialogFooter>
-        <AlertDialogCancel>取消</AlertDialogCancel>
-        <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
+        <AlertDialogCancel>{{ m.common.cancel }}</AlertDialogCancel>
+        <AlertDialogAction @click="handleDelete">{{ m.common.delete }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

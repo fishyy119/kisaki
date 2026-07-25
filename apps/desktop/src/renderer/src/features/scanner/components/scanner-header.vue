@@ -18,8 +18,11 @@ import { Button } from '@renderer/components/ui/button'
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
 import ScannerSettingsFormDialog from './scanner-settings-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 const log = createLogger('Scanner')
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -92,11 +95,13 @@ async function handleCancelAll() {
 <template>
   <PageHeader back-to="/library">
     <PageHeaderTitle
-      title="扫描器"
+      :title="m.scanner.title"
       icon="icon-[mdi--folder-search-outline]"
     >
-      {{ totalScanners ?? 0 }} 个扫描器
-      <template v-if="activeScannerStates > 0"> · {{ activeScannerStates }} 个运行中</template>
+      {{ m.scanner.countSummary({ count: totalScanners ?? 0 }) }}
+      <template v-if="activeScannerStates > 0">
+        · {{ m.scanner.runningSummary({ count: activeScannerStates }) }}
+      </template>
     </PageHeaderTitle>
 
     <template #actions>
@@ -109,7 +114,7 @@ async function handleCancelAll() {
           icon="icon-[mdi--folder-plus-outline]"
           class="size-4"
         />
-        添加扫描器
+        {{ m.scanner.addScanner }}
       </Button>
       <Button
         variant="secondary"
@@ -121,12 +126,12 @@ async function handleCancelAll() {
           :icon="isScanning ? 'icon-[mdi--stop-circle-outline]' : 'icon-[mdi--refresh]'"
           class="size-4"
         />
-        {{ isScanning ? '取消全部' : '扫描全部' }}
+        {{ isScanning ? m.scanner.cancelAll : m.scanner.scanAll }}
       </Button>
       <Button
         variant="secondary"
         size="icon-sm"
-        tooltip="扫描器设置"
+        :tooltip="m.scanner.settingsTooltip"
         :disabled="isScanning"
         @click="isSettingsDialogOpen = true"
       >

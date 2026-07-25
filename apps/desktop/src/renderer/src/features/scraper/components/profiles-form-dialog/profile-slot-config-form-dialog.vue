@@ -15,6 +15,7 @@ import type { ContentEntityType } from '@shared/common'
 import { computed, ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   getDefaultUnmatchedEntityPolicy,
   getSupportedSlotStrategies,
@@ -44,7 +45,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
-import { LocaleSelect } from '@renderer/components/ui/locale-select'
+import { ContentLocaleSelect } from '@renderer/components/ui/locale-select'
 import {
   Field,
   FieldContent,
@@ -80,15 +81,7 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const STRATEGY_LABELS: Record<SlotStrategy, string> = {
-  first: '首个',
-  enrich: '增强'
-}
-
-const UNMATCHED_POLICY_LABELS: Record<UnmatchedEntityPolicy, string> = {
-  ignore: '忽略未匹配项',
-  append: '追加未匹配项'
-}
+const { m } = useI18n()
 
 interface SlotConfigFormData {
   strategy: SlotStrategy
@@ -125,34 +118,32 @@ const formData = ref<SlotConfigFormData>({
   providers: []
 })
 
-function getStrategyDescription(value: SlotStrategy): string {
-  if (value === 'first') {
-    return '使用第一个有效结果，忽略后续来源'
-  }
-
-  return '以首个结果为基准，补全缺失字段'
-}
-
 const strategyOptions = computed<StrategyOption[]>(() =>
   getSupportedSlotStrategies().map((value) => ({
     value,
-    label: STRATEGY_LABELS[value],
-    description: getStrategyDescription(value)
+    label:
+      value === 'first'
+        ? m.value.scraper.profiles.strategyFirst
+        : m.value.scraper.profiles.strategyEnrich,
+    description:
+      value === 'first'
+        ? m.value.scraper.profiles.strategyFirstHint
+        : m.value.scraper.profiles.strategyEnrichHint
   }))
 )
 
-const unmatchedPolicyOptions: UnmatchedPolicyOption[] = [
+const unmatchedPolicyOptions = computed<UnmatchedPolicyOption[]>(() => [
   {
     value: 'ignore',
-    label: UNMATCHED_POLICY_LABELS.ignore,
-    description: '只补全已匹配实体，新的未匹配实体会被丢弃'
+    label: m.value.scraper.profiles.unmatchedIgnore,
+    description: m.value.scraper.profiles.unmatchedIgnoreHint
   },
   {
     value: 'append',
-    label: UNMATCHED_POLICY_LABELS.append,
-    description: '未匹配实体会被追加，并可继续被后续来源补全'
+    label: m.value.scraper.profiles.unmatchedAppend,
+    description: m.value.scraper.profiles.unmatchedAppendHint
   }
-]
+])
 
 function getSlotUnmatchedEntityPolicy(
   slot: ScraperSlot,
@@ -251,18 +242,20 @@ function handleSubmit() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>配置: {{ props.slotName }}</DialogTitle>
+        <DialogTitle>{{
+          m.scraper.profiles.slotDialogTitle({ name: props.slotName })
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody class="max-h-[60vh] overflow-auto">
           <FieldGroup>
             <Field>
-              <FieldLabel>策略</FieldLabel>
-              <FieldDescription>多个提供者返回数据时的处理方式</FieldDescription>
+              <FieldLabel>{{ m.scraper.profiles.strategyLabel }}</FieldLabel>
+              <FieldDescription>{{ m.scraper.profiles.strategyHint }}</FieldDescription>
               <FieldContent>
                 <Select v-model="formData.strategy">
                   <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择策略" />
+                    <SelectValue :placeholder="m.scraper.profiles.selectStrategy" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
@@ -279,12 +272,12 @@ function handleSubmit() {
             </Field>
 
             <Field v-if="isRelationCollectionSlot(props.slotType)">
-              <FieldLabel>未匹配实体</FieldLabel>
-              <FieldDescription>是否追加后续数据源的未匹配实体</FieldDescription>
+              <FieldLabel>{{ m.scraper.profiles.unmatchedLabel }}</FieldLabel>
+              <FieldDescription>{{ m.scraper.profiles.unmatchedHint }}</FieldDescription>
               <FieldContent>
                 <Select v-model="formData.unmatchedEntityPolicy">
                   <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择未匹配实体策略" />
+                    <SelectValue :placeholder="m.scraper.profiles.selectUnmatched" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem
@@ -301,15 +294,15 @@ function handleSubmit() {
             </Field>
 
             <Field>
-              <FieldLabel>数据提供者</FieldLabel>
-              <FieldDescription>选择为此槽位提供数据的来源，可调整优先级</FieldDescription>
+              <FieldLabel>{{ m.scraper.profiles.providersLabel }}</FieldLabel>
+              <FieldDescription>{{ m.scraper.profiles.providersHint }}</FieldDescription>
               <FieldContent>
                 <div class="space-y-1.5">
                   <p
                     v-if="formData.providers.length === 0"
                     class="rounded-lg border bg-muted/30 py-4 text-center text-sm text-muted-foreground"
                   >
-                    暂无提供者
+                    {{ m.scraper.profiles.noProviders }}
                   </p>
                   <div
                     v-for="row in providerRows"
@@ -347,12 +340,14 @@ function handleSubmit() {
                       </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-1.5">
-                      <span class="text-xs text-muted-foreground">语言:</span>
-                      <LocaleSelect
+                      <span class="text-xs text-muted-foreground">{{
+                        m.scraper.profiles.languageLabel
+                      }}</span>
+                      <ContentLocaleSelect
                         v-model="row.entry.locale"
                         class="w-20"
                         size="sm"
-                        placeholder="默认"
+                        :placeholder="m.scraper.profiles.languageDefaultPlaceholder"
                       />
                     </div>
                     <div class="flex shrink-0 items-center gap-0.5">
@@ -401,7 +396,7 @@ function handleSubmit() {
                     :entity-type="props.entityType"
                     :required-capabilities="[props.slotType]"
                     :exclude-provider-ids="existingProviderIds"
-                    placeholder="添加提供者..."
+                    :placeholder="m.scraper.profiles.addProviderPlaceholder"
                     size="sm"
                     :auto-select-first="false"
                     @change="handleAddProvider"
@@ -418,9 +413,9 @@ function handleSubmit() {
             variant="outline"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

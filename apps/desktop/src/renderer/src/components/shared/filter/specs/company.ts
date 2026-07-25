@@ -1,47 +1,70 @@
+import { computed, type ComputedRef } from 'vue'
+import { messages } from '@renderer/core/i18n'
 import type { FilterUiSpec } from './types'
 
-export const companyFilterUiSpec: FilterUiSpec = {
-  entityType: 'company',
-  fields: [
-    { key: 'isFavorite', label: '我喜欢', category: 'toggle', control: 'boolean' },
-    { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+export const companyFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
+  const m = messages.value
 
-    { key: 'score', label: '评分', category: 'numeric', control: 'numberRange', min: 0, max: 100 },
+  return {
+    entityType: 'company',
+    fields: [
+      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
 
-    { key: 'foundedDate', label: '成立日期', category: 'date', control: 'dateRange' },
-    { key: 'createdAt', label: '添加时间', category: 'date', control: 'dateRange' },
+      {
+        key: 'score',
+        label: m.library.fields.score,
+        category: 'numeric',
+        control: 'numberRange',
+        min: 0,
+        max: 100
+      },
 
-    {
-      key: 'games',
-      label: '相关游戏',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'game',
-      multiple: true
-    },
-    {
-      key: 'tags',
-      label: '标签',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'tag',
-      multiple: true
-    },
-    {
-      key: 'collections',
-      label: '合集',
-      category: 'relation',
-      control: 'relation',
-      targetEntity: 'collection',
-      multiple: true
-    }
-  ],
-  sortOptions: [
-    { key: 'name', label: '名称' },
-    { key: 'sortName', label: '排序名' },
-    { key: 'originalName', label: '原名' },
-    { key: 'createdAt', label: '添加时间' },
-    { key: 'score', label: '评分' },
-    { key: 'foundedDate', label: '成立日期' }
-  ]
-}
+      {
+        key: 'foundedDate',
+        label: m.library.fields.foundedDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+      {
+        key: 'createdAt',
+        label: m.library.fields.addedDate,
+        category: 'date',
+        control: 'dateRange'
+      },
+
+      {
+        key: 'games',
+        label: m.library.fields.relatedGames,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'game',
+        multiple: true
+      },
+      {
+        key: 'tags',
+        label: m.library.fields.tags,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'tag',
+        multiple: true
+      },
+      {
+        key: 'collections',
+        label: m.library.fields.collections,
+        category: 'relation',
+        control: 'relation',
+        targetEntity: 'collection',
+        multiple: true
+      }
+    ],
+    sortOptions: [
+      { key: 'name', label: m.library.fields.name },
+      { key: 'sortName', label: m.library.fields.sortName },
+      { key: 'originalName', label: m.library.fields.originalName },
+      { key: 'createdAt', label: m.library.fields.addedDate },
+      { key: 'score', label: m.library.fields.score },
+      { key: 'foundedDate', label: m.library.fields.foundedDate }
+    ]
+  }
+})

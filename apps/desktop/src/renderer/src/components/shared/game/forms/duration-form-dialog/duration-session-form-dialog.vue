@@ -19,6 +19,9 @@ import { Field, FieldLabel, FieldContent } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import type { GameSession } from '@shared/db'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface SessionData {
   startedAt: Date
@@ -85,17 +88,17 @@ function findOverlappingSession(startedAt: Date, endedAt: Date): boolean {
 
 function handleSubmit() {
   if (!formData.value.startedAt || !formData.value.endedAt) {
-    notify.error('请填写开始和结束时间')
+    notify.error(m.value.game.duration.startEndRequired)
     return
   }
   const start = new Date(formData.value.startedAt)
   const end = new Date(formData.value.endedAt)
   if (start >= end) {
-    notify.error('结束时间必须晚于开始时间')
+    notify.error(m.value.game.duration.endAfterStart)
     return
   }
   if (findOverlappingSession(start, end)) {
-    notify.error('时间段与现有记录重叠，请调整时间')
+    notify.error(m.value.game.duration.overlap)
     return
   }
 
@@ -112,13 +115,15 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加记录' : '编辑记录' }}</DialogTitle>
+        <DialogTitle>{{
+          isAddMode ? m.game.duration.addRecord : m.game.duration.editRecord
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <div class="space-y-4">
             <Field>
-              <FieldLabel>开始时间</FieldLabel>
+              <FieldLabel>{{ m.game.duration.startTime }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.startedAt"
@@ -128,7 +133,7 @@ function handleCancel() {
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>结束时间</FieldLabel>
+              <FieldLabel>{{ m.game.duration.endTime }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.endedAt"
@@ -145,9 +150,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">确定</Button>
+          <Button type="submit">{{ m.common.confirm }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

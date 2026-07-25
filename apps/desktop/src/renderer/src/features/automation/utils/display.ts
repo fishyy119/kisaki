@@ -5,66 +5,55 @@ import type {
   AutomationTriggers
 } from '@shared/automation'
 import type { BadgeVariants } from '@renderer/components/ui/badge'
-
-const DATE_TIME_FORMAT = new Intl.DateTimeFormat('zh-CN', {
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit'
-})
-
-const FULL_DATE_TIME_FORMAT = new Intl.DateTimeFormat('zh-CN', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit'
-})
+import { formatters, messages } from '@renderer/core/i18n'
 
 export function formatAutomationTriggers(triggers: AutomationTriggers): string {
+  const display = messages.value.automation.display
   const labels: string[] = []
 
   if (triggers.onStartup) {
-    labels.push('启动时')
+    labels.push(display.onStartup)
   }
 
   if (triggers.cron) {
     labels.push(`Cron ${triggers.cron.expression}`)
   }
 
-  return labels.length > 0 ? labels.join('，') : '手动运行'
+  return labels.length > 0 ? labels.join(display.triggerSeparator) : display.manualOnly
 }
 
 export function formatCronTimezone(triggers: AutomationTriggers): string {
-  return triggers.cron?.timezone ?? '系统时区'
+  return triggers.cron?.timezone ?? messages.value.automation.display.systemTimezone
 }
 
 export function formatFailurePolicy(policy: AutomationFailurePolicy): string {
+  const display = messages.value.automation.display
   switch (policy.type) {
     case 'none':
-      return '不重试'
+      return display.noRetry
     case 'retry':
-      return `重试 ${policy.retryCount} 次`
+      return display.retryTimes({ count: policy.retryCount })
     case 'pauseAutomation':
-      return `失败后暂停${policy.retryCount ? `，先重试 ${policy.retryCount} 次` : ''}`
+      return policy.retryCount
+        ? display.pauseAfterFailureWithRetry({ count: policy.retryCount })
+        : display.pauseAfterFailure
   }
 }
 
-export function formatAutomationTimestamp(value: number | undefined, fallback = '从未'): string {
+export function formatAutomationTimestamp(value: number | undefined, fallback?: string): string {
   if (!value) {
-    return fallback
+    return fallback ?? messages.value.automation.display.never
   }
 
-  return DATE_TIME_FORMAT.format(new Date(value))
+  return formatters.value.dateTime(new Date(value))
 }
 
-export function formatFullTimestamp(value: number | undefined, fallback = '从未'): string {
+export function formatFullTimestamp(value: number | undefined, fallback?: string): string {
   if (!value) {
-    return fallback
+    return fallback ?? messages.value.automation.display.never
   }
 
-  return FULL_DATE_TIME_FORMAT.format(new Date(value))
+  return formatters.value.dateTime(new Date(value))
 }
 
 export function formatRunDuration(record: AutomationRunHistoryRecord): string {
@@ -72,18 +61,7 @@ export function formatRunDuration(record: AutomationRunHistoryRecord): string {
 }
 
 export function formatDuration(durationMs: number): string {
-  const safeDuration = Math.max(0, durationMs)
-  if (safeDuration < 1_000) {
-    return `${safeDuration}ms`
-  }
-
-  if (safeDuration < 60_000) {
-    return `${(safeDuration / 1_000).toFixed(1)}s`
-  }
-
-  const minutes = Math.floor(safeDuration / 60_000)
-  const seconds = Math.floor((safeDuration % 60_000) / 1_000)
-  return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`
+  return formatters.value.durationFine(durationMs)
 }
 
 export function formatJson(value: unknown): string {
@@ -99,11 +77,12 @@ export function formatJson(value: unknown): string {
 }
 
 export function getRunStatusLabel(status: AutomationCommandInvocationStatus): string {
+  const display = messages.value.automation.display
   switch (status) {
     case 'completed':
-      return '完成'
+      return display.statusCompleted
     case 'failed':
-      return '失败'
+      return display.statusFailed
   }
 }
 
@@ -119,11 +98,12 @@ export function getRunStatusVariant(
 }
 
 export function getTriggerLabel(trigger: AutomationRunHistoryRecord['trigger']): string {
+  const display = messages.value.automation.display
   switch (trigger) {
     case 'manual':
-      return '手动'
+      return display.triggerManual
     case 'startup':
-      return '启动'
+      return display.triggerStartup
     case 'cron':
       return 'Cron'
   }

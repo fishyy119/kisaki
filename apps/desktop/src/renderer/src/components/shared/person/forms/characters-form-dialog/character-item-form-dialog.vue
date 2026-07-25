@@ -29,6 +29,9 @@ import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/component
 import { Form } from '@renderer/components/ui/form'
 import { CharacterSelect } from '@renderer/components/shared/character'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface CharacterLinkData {
   characterId: string
@@ -52,12 +55,12 @@ const emit = defineEmits<{
   submit: [data: CharacterLinkData]
 }>()
 
-const PERSON_TYPE_OPTIONS: { value: CharacterPersonType; label: string }[] = [
-  { value: 'actor', label: '声优' },
-  { value: 'illustration', label: '原画' },
-  { value: 'designer', label: '设计' },
-  { value: 'other', label: '其他' }
-]
+const PERSON_TYPE_OPTIONS = computed<{ value: CharacterPersonType; label: string }[]>(() => [
+  { value: 'actor', label: m.value.library.roles.characterPerson.actor },
+  { value: 'illustration', label: m.value.library.roles.characterPerson.illustration },
+  { value: 'designer', label: m.value.library.roles.characterPerson.designer },
+  { value: 'other', label: m.value.library.roles.characterPerson.other }
+])
 
 // Form state
 const formData = ref<CharacterLinkData>({
@@ -122,7 +125,9 @@ watch(
 
 function handleSubmit() {
   if (!formData.value.characterId) {
-    notify.error('请选择角色')
+    notify.error(
+      m.value.library.forms.selectEntityRequired({ label: m.value.library.entities.character })
+    )
     return
   }
 
@@ -146,23 +151,29 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-sm">
       <DialogHeader>
-        <DialogTitle>{{ isAddMode ? '添加角色' : '编辑角色' }}</DialogTitle>
+        <DialogTitle>{{
+          (isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
+            label: m.library.entities.character
+          })
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody>
           <FieldGroup>
             <Field>
-              <FieldLabel>角色</FieldLabel>
+              <FieldLabel>{{ m.library.forms.characterLabel }}</FieldLabel>
               <FieldContent>
                 <CharacterSelect
                   v-model="formData.characterId"
                   :exclude-ids="selectExcludeIds"
-                  placeholder="选择角色..."
+                  :placeholder="
+                    m.library.select.selectPlaceholder({ label: m.library.entities.character })
+                  "
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>类型</FieldLabel>
+              <FieldLabel>{{ m.library.fields.type }}</FieldLabel>
               <FieldContent>
                 <Select v-model="formData.type">
                   <SelectTrigger class="w-full">
@@ -181,16 +192,16 @@ function handleCancel() {
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="可选备注..."
+                  :placeholder="m.library.forms.notePlaceholder"
                 />
               </FieldContent>
             </Field>
             <Field orientation="horizontal">
-              <FieldLabel>包含剧透</FieldLabel>
+              <FieldLabel>{{ m.library.forms.includesSpoiler }}</FieldLabel>
               <FieldContent>
                 <Checkbox v-model="formData.isSpoiler" />
               </FieldContent>
@@ -203,9 +214,9 @@ function handleCancel() {
             variant="outline"
             @click="handleCancel"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

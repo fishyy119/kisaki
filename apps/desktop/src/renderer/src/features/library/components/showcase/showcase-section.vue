@@ -20,6 +20,7 @@ import { CollectionDetailDialog } from '@renderer/components/shared/collection'
 import { TagDetailDialog } from '@renderer/components/shared/tag'
 import { useSectionData, type SectionEntityData } from '../../composables'
 import { useRenderState } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ShowcaseSection } from '@shared/db'
 import type { AllEntityType } from '@shared/common'
 
@@ -50,17 +51,9 @@ const detailDialogOpen = ref(false)
 const detailEntityId = ref<string | null>(null)
 const selectedEntityId = computed(() => detailEntityId.value ?? '')
 
-const entityLabel = computed(() => {
-  const labels: Record<AllEntityType, string> = {
-    game: '游戏',
-    character: '角色',
-    person: '人物',
-    company: '公司',
-    collection: '合集',
-    tag: '标签'
-  }
-  return labels[entityType.value] ?? ''
-})
+const { m } = useI18n()
+
+const entityLabel = computed(() => m.value.library.entities[entityType.value] ?? '')
 
 function handleScrollStateChange(state: { canScrollLeft: boolean; canScrollRight: boolean }) {
   scrollState.value = state
@@ -147,7 +140,7 @@ function getDetailPath(entityType: AllEntityType, id: string): string {
       <StateView
         v-if="data.length === 0"
         state="empty"
-        :description="`暂无${entityLabel}`"
+        :description="m.library.showcase.sectionEmpty({ label: entityLabel })"
         class="py-8"
       />
 

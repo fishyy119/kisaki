@@ -29,6 +29,9 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import PersonMediaSearchFormDialog from './media-search-form-dialog.vue'
 import PersonMediaCropFormDialog from './media-crop-form-dialog.vue'
 import PersonMediaUrlFormDialog from './media-url-form-dialog.vue'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   personId: string
@@ -48,15 +51,15 @@ interface MediaTypeConfig {
   field: 'photoFile'
 }
 
-const MEDIA_TYPES: MediaTypeConfig[] = [
+const MEDIA_TYPES = computed<MediaTypeConfig[]>(() => [
   {
     type: 'photo',
-    label: '照片',
-    description: '人物照片，用于卡片和详情显示',
+    label: m.value.library.forms.mediaTypes.photo,
+    description: m.value.library.forms.mediaDescriptions.personPhoto,
     aspectRatio: 'aspect-[3/4]',
     field: 'photoFile'
   }
-]
+])
 
 // Content state
 const person = ref<Person | null>(null)
@@ -93,7 +96,9 @@ useEvent('db.updated', ({ table, id }) => {
   }
 })
 
-const selectedConfig = computed(() => MEDIA_TYPES.find((m) => m.type === selectedType.value)!)
+const selectedConfig = computed(() =>
+  MEDIA_TYPES.value.find((mt) => mt.type === selectedType.value)!
+)
 
 const currentFile = computed(() => {
   if (!person.value) return null
@@ -108,7 +113,7 @@ async function handleImportFile() {
   try {
     const dialogResult = await ipcManager.invoke('native:open-dialog', getOpenImageDialogOptions())
     if (!dialogResult.success) {
-      notify.error(dialogResult.error || '选择文件失败')
+      notify.error(dialogResult.error || m.value.library.feedback.pickFileFailed)
       return
     }
     if (!dialogResult.data || dialogResult.data.canceled || !dialogResult.data.filePaths[0]) {
@@ -120,7 +125,7 @@ async function handleImportFile() {
       path: dialogResult.data.filePaths[0]
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
   } finally {
     isImportingFile.value = false
   }
@@ -129,7 +134,7 @@ async function handleImportFile() {
 // Delete media
 async function handleDelete() {
   await attachment.clearFile(persons, props.personId, selectedConfig.value.field)
-  notify.success('媒体已删除')
+  notify.success(m.value.library.forms.mediaDeleted)
 }
 
 function handleClose() {
@@ -153,7 +158,7 @@ function handleClose() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>媒体管理</DialogTitle>
+          <DialogTitle>{{ m.library.forms.manageMedia }}</DialogTitle>
         </DialogHeader>
 
         <DialogBody class="flex gap-4">
@@ -223,7 +228,9 @@ function handleClose() {
                   icon="icon-[mdi--image-off-outline]"
                   class="size-12"
                 />
-                <span class="text-sm">暂无{{ selectedConfig.label }}</span>
+                <span class="text-sm">{{
+                  m.library.forms.emptyMedia({ label: selectedConfig.label })
+                }}</span>
               </div>
             </div>
 
@@ -248,7 +255,7 @@ function handleClose() {
                   icon="icon-[mdi--upload]"
                   class="size-4"
                 />
-                从文件导入
+                {{ m.library.forms.importFromFile }}
               </Button>
               <Button
                 variant="outline"
@@ -259,7 +266,7 @@ function handleClose() {
                   icon="icon-[mdi--link-variant]"
                   class="size-4"
                 />
-                从链接导入
+                {{ m.library.forms.importFromUrl }}
               </Button>
               <Button
                 variant="outline"
@@ -270,7 +277,7 @@ function handleClose() {
                   icon="icon-[mdi--magnify]"
                   class="size-4"
                 />
-                搜索图片
+                {{ m.library.forms.searchImages }}
               </Button>
               <template v-if="hasImage && currentFile">
                 <Button
@@ -282,7 +289,7 @@ function handleClose() {
                     icon="icon-[mdi--crop]"
                     class="size-4"
                   />
-                  裁剪
+                  {{ m.library.forms.crop }}
                 </Button>
                 <Button
                   variant="outline"
@@ -294,7 +301,7 @@ function handleClose() {
                     icon="icon-[mdi--delete-outline]"
                     class="size-4"
                   />
-                  删除
+                  {{ m.common.delete }}
                 </Button>
               </template>
             </div>
@@ -306,7 +313,7 @@ function handleClose() {
             variant="outline"
             @click="handleClose"
           >
-            关闭
+            {{ m.common.close }}
           </Button>
         </DialogFooter>
       </template>
@@ -342,8 +349,8 @@ function handleClose() {
   <DeleteConfirmDialog
     v-if="showDeleteConfirm"
     v-model:open="showDeleteConfirm"
-    entity-label="图片"
-    entity-name="照片"
+    :entity-label="m.library.forms.imageEntityLabel"
+    :entity-name="m.library.forms.mediaTypes.photo"
     @confirm="handleDelete"
   />
 </template>

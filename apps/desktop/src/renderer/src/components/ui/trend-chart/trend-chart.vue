@@ -28,6 +28,7 @@ import {
   type ChartConfig
 } from '@renderer/components/ui/chart'
 import type { TrendChartProps, TrendGranularity } from './types'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 // =============================================================================
 // Props & Model
@@ -35,13 +36,23 @@ import type { TrendChartProps, TrendGranularity } from './types'
 
 const props = withDefaults(defineProps<TrendChartProps>(), {
   height: 200,
-  granularityLabels: () => ({ daily: '日', weekly: '周', monthly: '月' }),
   availableGranularities: () => ['daily', 'weekly', 'monthly']
 })
 
 const granularity = defineModel<TrendGranularity>('granularity', {
   default: 'daily'
 })
+
+const { m, f } = useI18n()
+
+const granularityLabelTexts = computed(
+  () =>
+    props.granularityLabels ?? {
+      daily: m.value.ui.charts.day,
+      weekly: m.value.ui.charts.week,
+      monthly: m.value.ui.charts.month
+    }
+)
 
 // Show selector only when multiple options available
 const showGranularitySelector = computed(() => props.availableGranularities.length > 1)
@@ -50,12 +61,15 @@ const showGranularitySelector = computed(() => props.availableGranularities.leng
 // Chart Config (shadcn-vue)
 // =============================================================================
 
-const chartConfig = {
-  valueText: {
-    label: '时长',
-    color: 'var(--chart)'
-  }
-} satisfies ChartConfig
+const chartConfig = computed(
+  () =>
+    ({
+      valueText: {
+        label: m.value.ui.charts.duration,
+        color: 'var(--chart)'
+      }
+    }) satisfies ChartConfig
+)
 
 // =============================================================================
 // Range & Data Normalization (range-driven, like Heatmap)
@@ -126,12 +140,12 @@ function formatTooltipLabel(date: Date): string {
   if (granularity.value === 'weekly') {
     const weekEnd = new Date(date)
     weekEnd.setDate(weekEnd.getDate() + 6)
-    return `${date.toLocaleDateString('zh-Hans', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('zh-Hans', { month: 'short', day: 'numeric' })}`
+    return f.value.monthDayRange(date, weekEnd)
   }
   if (granularity.value === 'monthly') {
-    return date.toLocaleDateString('zh-Hans', { year: 'numeric', month: 'long' })
+    return f.value.yearMonth(date)
   }
-  return date.toLocaleDateString('zh-Hans', { year: 'numeric', month: 'short', day: 'numeric' })
+  return f.value.date(date)
 }
 
 const series = computed<TrendChartSeriesPoint[]>(() => {
@@ -221,7 +235,9 @@ function formatXLabel(i: number): string {
   }
 }
 
-const tooltipTemplate = componentToString(chartConfig, ChartTooltipContent, { labelKey: 'label' })
+const tooltipTemplate = computed(() =>
+  componentToString(chartConfig.value, ChartTooltipContent, { labelKey: 'label' })
+)
 
 // Tooltip instance for crosshair - appended to body to avoid clipping
 const crosshairTooltip = shallowRef<Tooltip | null>(null)
@@ -247,8 +263,8 @@ const insight = computed(() => {
     if (point.value <= 0) continue
     if (!best || point.value > best.value) best = point
   }
-  if (!best) return '峰值：无活动'
-  return `峰值：${best.label}，${best.valueText}`
+  if (!best) return m.value.ui.charts.peakNone
+  return m.value.ui.charts.peak({ label: best.label, value: best.valueText })
 })
 </script>
 
@@ -286,7 +302,7 @@ const insight = computed(() => {
             :key="g"
             :value="g"
           >
-            {{ props.granularityLabels[g] }}
+            {{ granularityLabelTexts[g] }}
           </SegmentedControlItem>
         </SegmentedControl>
       </div>

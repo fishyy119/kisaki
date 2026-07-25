@@ -21,6 +21,7 @@ import { cn } from '@renderer/utils/cn'
 import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { useAsyncData } from '@renderer/composables/use-async-data'
 import { useDebouncedRef } from '@renderer/composables/use-debounced-ref'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { useDiscoverExtensionStore, type DiscoverExtensionSortField } from '../../stores'
 import { EXTENSION_CATEGORIES } from '../../types'
 import type { ExtensionCategory } from '@kisaki3/extension-api'
@@ -33,13 +34,15 @@ const CATEGORY_ICONS: Record<string, string> = {
   integration: 'icon-[mdi--connection]'
 }
 
-const SORT_OPTIONS: { value: DiscoverExtensionSortField; label: string }[] = [
-  { value: 'relevance', label: '相关' },
-  { value: 'name', label: '名称' },
-  { value: 'publishedAt', label: '发布' },
-  { value: 'updatedAt', label: '更新' },
-  { value: 'repositoryPriority', label: '仓库' }
-]
+const { m } = useI18n()
+
+const SORT_OPTIONS = computed<{ value: DiscoverExtensionSortField; label: string }[]>(() => [
+  { value: 'relevance', label: m.value.extension.discover.sortRelevance },
+  { value: 'name', label: m.value.extension.discover.sortName },
+  { value: 'publishedAt', label: m.value.extension.discover.sortPublishedAt },
+  { value: 'updatedAt', label: m.value.extension.discover.sortUpdatedAt },
+  { value: 'repositoryPriority', label: m.value.extension.discover.sortRepositoryPriority }
+])
 
 const store = useDiscoverExtensionStore()
 
@@ -106,7 +109,7 @@ function handleToggleSortDirection() {
           <InputGroupInput
             v-model="searchInputModel"
             class="text-xs"
-            placeholder="搜索扩展名称或描述..."
+            :placeholder="m.extension.discover.searchPlaceholder"
           />
           <InputGroupAddon
             v-if="store.searchInput"
@@ -138,7 +141,7 @@ function handleToggleSortDirection() {
           <SelectValue class="leading-none" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">全部仓库</SelectItem>
+          <SelectItem value="all">{{ m.extension.discover.allRepositories }}</SelectItem>
           <SelectItem
             v-for="repository in enabledRepositories"
             :key="repository.id"
@@ -164,7 +167,11 @@ function handleToggleSortDirection() {
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {{ store.compatibleOnly ? '仅显示兼容版本' : '显示全部兼容状态' }}
+          {{
+            store.compatibleOnly
+              ? m.extension.discover.compatibleOnly
+              : m.extension.discover.allCompatibility
+          }}
         </TooltipContent>
       </Tooltip>
 
@@ -206,7 +213,11 @@ function handleToggleSortDirection() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {{ store.sortDirection === 'asc' ? '升序' : '降序' }}
+            {{
+              store.sortDirection === 'asc'
+                ? m.extension.discover.ascending
+                : m.extension.discover.descending
+            }}
           </TooltipContent>
         </Tooltip>
       </ButtonGroup>
@@ -219,7 +230,7 @@ function handleToggleSortDirection() {
           icon="icon-[mdi--view-grid-outline]"
           class="size-3.5"
         />
-        全部
+        {{ m.extension.discover.allCategories }}
       </SegmentedControlItem>
       <SegmentedControlItem
         v-for="cat in EXTENSION_CATEGORIES"

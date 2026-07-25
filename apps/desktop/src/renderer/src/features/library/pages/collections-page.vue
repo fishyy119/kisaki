@@ -16,6 +16,9 @@ import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { CollectionInfoFormDialog, CollectionCard } from '@renderer/components/shared/collection'
 import { getEntityIcon } from '@renderer/utils/format'
 import { useCollectionsList } from '../composables'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 // =============================================================================
 // Router
@@ -58,10 +61,10 @@ function handleCollectionClick(collectionId: string) {
     <!-- Header -->
     <PageHeader back-to="/library">
       <PageHeaderTitle
-        title="合集"
+        :title="m.library.pages.collectionsTitle"
         :icon="getEntityIcon('collection')"
       >
-        {{ collectionList.length }} 个
+        {{ m.library.counts.collection({ count: collectionList.length }) }}
       </PageHeaderTitle>
 
       <template #actions>
@@ -73,7 +76,7 @@ function handleCollectionClick(collectionId: string) {
             icon="icon-[mdi--plus]"
             class="size-4"
           />
-          新建合集
+          {{ m.library.pages.newCollection }}
         </Button>
       </template>
     </PageHeader>
@@ -88,8 +91,8 @@ function handleCollectionClick(collectionId: string) {
         v-if="collectionList.length === 0"
         state="empty"
         icon="icon-[mdi--folder-plus-outline]"
-        title="暂无合集"
-        description="创建合集来整理你的媒体库"
+        :title="m.library.pages.collectionsEmptyTitle"
+        :description="m.library.pages.collectionsEmptyDescription"
         class="h-full"
       />
 

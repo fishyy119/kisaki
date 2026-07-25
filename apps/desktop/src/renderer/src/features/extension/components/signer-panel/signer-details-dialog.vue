@@ -15,6 +15,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { formatSignerDate, formatSignerOptionalValue } from './display'
 
 interface Props {
@@ -23,13 +24,15 @@ interface Props {
 
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
+
+const { m } = useI18n()
 </script>
 
 <template>
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>签名详情</DialogTitle>
+        <DialogTitle>{{ m.extension.signer.details.title }}</DialogTitle>
         <DialogDescription>
           {{ props.signer.extensionId }}
         </DialogDescription>
@@ -38,21 +41,21 @@ const open = defineModel<boolean>('open', { required: true })
       <DialogBody class="max-h-[70vh] overflow-auto">
         <FieldGroup class="gap-4">
           <Field orientation="horizontal">
-            <FieldLabel>扩展 ID</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.extensionId }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <span class="font-mono text-xs">{{ props.signer.extensionId }}</span>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>算法</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.algorithm }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <span class="font-mono text-xs">{{ props.signer.algorithm }}</span>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>密钥 ID</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.keyId }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <span class="font-mono text-xs">{{
                 formatSignerOptionalValue(props.signer.label)
@@ -61,28 +64,28 @@ const open = defineModel<boolean>('open', { required: true })
           </Field>
 
           <Field>
-            <FieldLabel>签名指纹</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.fingerprint }}</FieldLabel>
             <FieldContent>
               <span class="break-all font-mono text-xs">{{ props.signer.fingerprint }}</span>
             </FieldContent>
           </Field>
 
           <Field>
-            <FieldLabel>公钥</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.publicKey }}</FieldLabel>
             <FieldContent>
               <span class="break-all font-mono text-xs">{{ props.signer.publicKey }}</span>
             </FieldContent>
           </Field>
 
           <Field>
-            <FieldLabel>信任记录 ID</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.trustRecordId }}</FieldLabel>
             <FieldContent>
               <span class="break-all font-mono text-xs">{{ props.signer.id }}</span>
             </FieldContent>
           </Field>
 
           <Field>
-            <FieldLabel>来源仓库 ID</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.sourceRepositoryId }}</FieldLabel>
             <FieldContent>
               <span class="break-all font-mono text-xs">
                 {{ formatSignerOptionalValue(props.signer.trustedFromRepositoryId) }}
@@ -91,7 +94,7 @@ const open = defineModel<boolean>('open', { required: true })
           </Field>
 
           <Field>
-            <FieldLabel>来源仓库 URL</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.sourceRepositoryUrl }}</FieldLabel>
             <FieldContent>
               <span class="break-all font-mono text-xs">
                 {{ formatSignerOptionalValue(props.signer.trustedFromRepositoryUrl) }}
@@ -100,14 +103,14 @@ const open = defineModel<boolean>('open', { required: true })
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>信任时间</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.trustedAt }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <span class="text-xs">{{ formatSignerDate(props.signer.trustedAt) }}</span>
             </FieldContent>
           </Field>
 
           <Field orientation="horizontal">
-            <FieldLabel>创建时间</FieldLabel>
+            <FieldLabel>{{ m.extension.signer.details.createdAt }}</FieldLabel>
             <FieldContent class="justify-self-start">
               <span class="text-xs">{{ formatSignerDate(props.signer.createdAt) }}</span>
             </FieldContent>
@@ -120,7 +123,7 @@ const open = defineModel<boolean>('open', { required: true })
           variant="outline"
           @click="open = false"
         >
-          关闭
+          {{ m.common.close }}
         </Button>
       </DialogFooter>
     </DialogContent>

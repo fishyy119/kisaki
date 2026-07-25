@@ -47,9 +47,6 @@ watch(
   { immediate: true }
 )
 
-// Granularity labels - always provide all three for the component
-const granularityLabels = { daily: '日', weekly: '周', monthly: '月' }
-
 const chartData = computed(() =>
   // TrendChart already handles weekly/monthly bucketing internally.
   // Keep the input data at daily granularity so partial-week/partial-month ranges still render correctly.
@@ -68,7 +65,6 @@ const chartData = computed(() =>
     :data="chartData"
     :available-granularities="props.availableGranularities"
     :format-value="(v: number) => `${v.toFixed(1)}h`"
-    :granularity-labels="granularityLabels"
     :height="200"
   />
 </template>

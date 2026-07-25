@@ -3,6 +3,9 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
 import { ipcManager } from '@renderer/core/ipc'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const rootEl = ref<HTMLElement | null>(null)
 let resizeObserver: ResizeObserver | null = null
@@ -52,7 +55,7 @@ onBeforeUnmount(() => {
         icon="icon-[mdi--power]"
         class="size-4"
       />
-      <span>退出 Kisaki</span>
+      <span>{{ m.app.quit }}</span>
     </Button>
   </div>
 </template>

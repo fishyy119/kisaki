@@ -30,6 +30,9 @@ import {
 import { Form } from '@renderer/components/ui/form'
 import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Game')
 
@@ -73,11 +76,11 @@ async function handleSubmit() {
     const newLastActiveAt = formData.value.datetime ? new Date(formData.value.datetime) : null
     await db.update(games).set({ lastActiveAt: newLastActiveAt }).where(eq(games.id, props.gameId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -108,13 +111,13 @@ function clearDatetime() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑最近运行时间</DialogTitle>
+          <DialogTitle>{{ m.game.lastActiveDialog.title }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <FieldGroup>
               <Field>
-                <FieldLabel>最近运行时间</FieldLabel>
+                <FieldLabel>{{ m.game.lastActiveDialog.label }}</FieldLabel>
                 <FieldContent>
                   <div class="flex gap-2">
                     <Input
@@ -127,11 +130,11 @@ function clearDatetime() {
                       variant="outline"
                       @click="clearDatetime"
                     >
-                      清空
+                      {{ m.common.clear }}
                     </Button>
                   </div>
                 </FieldContent>
-                <FieldDescription>留空表示从未运行过</FieldDescription>
+                <FieldDescription>{{ m.game.lastActiveDialog.emptyHint }}</FieldDescription>
               </Field>
             </FieldGroup>
           </DialogBody>
@@ -142,13 +145,13 @@ function clearDatetime() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

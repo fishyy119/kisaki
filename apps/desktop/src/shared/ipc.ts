@@ -91,6 +91,7 @@ import type {
   ExtensionUpdatePolicyRequest
 } from './extension'
 import type { NotifyOptions } from './notify'
+import type { UiLocale, UiLocaleState } from './i18n'
 import type { AppEvents } from './events'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
@@ -204,6 +205,10 @@ export interface IpcMainHandlers {
   'updater:download-update': () => IpcResult<TaskRunStartResult>
   'updater:reload-settings': () => IpcVoidResult
   'updater:quit-and-install': () => IpcVoidResult
+
+  // I18n
+  'i18n:get-state': () => IpcResult<UiLocaleState>
+  'i18n:set-preference': (preference: UiLocale | null) => IpcVoidResult
 
   // Task runs
   'task-run:list-active': (query?: TaskRunActiveListQuery) => IpcResult<TaskRun[]>

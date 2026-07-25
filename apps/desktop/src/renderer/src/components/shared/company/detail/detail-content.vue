@@ -10,6 +10,9 @@ import { useCompany } from '@renderer/composables'
 import { getEntityIcon } from '@renderer/utils/format'
 import CompanyDetailHero from './detail-hero.vue'
 import { CompanyDetailOverviewTab, CompanyDetailGamesTab } from './tabs'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 const { company } = useCompany()
 </script>
@@ -27,14 +30,14 @@ const { company } = useCompany()
             icon="icon-[mdi--information-outline]"
             class="size-3.5"
           />
-          概览
+          {{ m.library.detail.tabs.overview }}
         </TabsTrigger>
         <TabsTrigger value="games">
           <Icon
             :icon="getEntityIcon('game')"
             class="size-3.5"
           />
-          相关游戏
+          {{ m.library.detail.tabs.relatedGames }}
         </TabsTrigger>
       </TabsList>
 

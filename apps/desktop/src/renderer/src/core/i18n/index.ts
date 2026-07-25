@@ -1,1 +1,8 @@
-export { i18n, initI18n, getLocale, setLocale } from './setup'
+export {
+  formatters,
+  initI18n,
+  messages,
+  setUiLocalePreference,
+  uiLocale,
+  uiLocalePreference
+} from './controller'

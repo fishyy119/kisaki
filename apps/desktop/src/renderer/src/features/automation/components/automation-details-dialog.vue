@@ -3,6 +3,7 @@ Automation Details Dialog renders automation metadata and run history.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
@@ -41,11 +42,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const commandTitle = computed(() => props.command?.title ?? props.automation.commandId)
 const sourceLabel = computed(() =>
   props.automation.owner.type === 'extension'
     ? (props.automation.owner.extension.nameSnapshot ?? props.automation.owner.extension.id)
-    : '应用'
+    : m.value.automation.details.app
 )
 const latestRun = computed(() => props.automation.history[0] ?? null)
 const historyRows = computed(() =>
@@ -63,9 +66,13 @@ const selectedRunSequence = computed(() =>
 const selectedRunResultTitle = computed(() =>
   selectedRunRecord.value
     ? `#${selectedRunSequence.value ?? '?'} ${formatAutomationTimestamp(selectedRunRecord.value.startedAt)}`
-    : '调用结果'
+    : m.value.automation.details.runResult
 )
-const selectedRunResultLabel = computed(() => (selectedRunRecord.value?.error ? '错误' : '结果'))
+const selectedRunResultLabel = computed(() =>
+  selectedRunRecord.value?.error
+    ? m.value.automation.details.error
+    : m.value.automation.details.result
+)
 const selectedRunResultText = computed(() =>
   selectedRunRecord.value ? formatRunResult(selectedRunRecord.value) : ''
 )
@@ -76,7 +83,7 @@ function hasRunResult(record: AutomationRunHistoryRecord): boolean {
 
 function formatRunResultPreview(record: AutomationRunHistoryRecord): string {
   if (!hasRunResult(record)) {
-    return '无错误'
+    return m.value.automation.details.noError
   }
 
   return formatRunResult(record)
@@ -87,7 +94,7 @@ function formatRunResult(record: AutomationRunHistoryRecord): string {
     return record.error.message
   }
 
-  return '无错误'
+  return m.value.automation.details.noError
 }
 
 function getRunSequence(record: AutomationRunHistoryRecord): number | undefined {
@@ -116,7 +123,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             variant="default"
             class="h-5"
           >
-            运行中
+            {{ m.automation.details.running }}
           </Badge>
           <Badge
             v-if="!props.running && latestRun"
@@ -131,18 +138,18 @@ function openRunResult(record: AutomationRunHistoryRecord) {
       <DialogBody class="max-h-[72vh] space-y-4 overflow-auto">
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">命令</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.command }}</div>
             <div class="truncate">{{ commandTitle }}</div>
             <div class="truncate text-xs text-muted-foreground">
               {{ props.automation.commandId }}
             </div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">来源</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.source }}</div>
             <div class="truncate">{{ sourceLabel }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">触发</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.trigger }}</div>
             <div class="truncate">{{ formatAutomationTriggers(props.automation.triggers) }}</div>
             <div class="truncate text-xs text-muted-foreground">
               {{ formatFailurePolicy(props.automation.failurePolicy) }}
@@ -155,31 +162,41 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             </div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">运行时间</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.runTime }}</div>
             <div class="truncate">
-              最近 {{ formatAutomationTimestamp(props.automation.lastRunAt) }}
+              {{
+                m.automation.details.lastRun({
+                  time: formatAutomationTimestamp(props.automation.lastRunAt)
+                })
+              }}
             </div>
             <div class="truncate text-xs text-muted-foreground">
-              下次
               {{
-                props.automation.enabled
-                  ? formatAutomationTimestamp(props.automation.nextRunAt, '无')
-                  : '已禁用'
+                m.automation.details.nextRun({
+                  time: props.automation.enabled
+                    ? formatAutomationTimestamp(
+                        props.automation.nextRunAt,
+                        m.automation.details.nextNone
+                      )
+                    : m.automation.details.nextDisabled
+                })
               }}
             </div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">创建</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.createdAt }}</div>
             <div class="truncate">{{ formatFullTimestamp(props.automation.createdAt) }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">更新</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.updatedAt }}</div>
             <div class="truncate">{{ formatFullTimestamp(props.automation.updatedAt) }}</div>
           </div>
         </section>
 
         <section class="space-y-2">
-          <div class="text-xs font-medium text-muted-foreground">参数</div>
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ m.automation.details.params }}
+          </div>
           <pre
             class="max-h-48 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed text-foreground"
             >{{ argsJson }}</pre>
@@ -187,10 +204,12 @@ function openRunResult(record: AutomationRunHistoryRecord) {
 
         <section class="space-y-2">
           <div class="flex items-center justify-between">
-            <div class="text-xs font-medium text-muted-foreground">调用历史</div>
-            <span class="text-xs text-muted-foreground"
-              >{{ props.automation.history.length }} 条</span
-            >
+            <div class="text-xs font-medium text-muted-foreground">
+              {{ m.automation.details.history }}
+            </div>
+            <span class="text-xs text-muted-foreground">
+              {{ m.automation.details.historyCount({ count: props.automation.history.length }) }}
+            </span>
           </div>
 
           <div
@@ -201,7 +220,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
               icon="icon-[mdi--history]"
               class="mb-2 size-8 opacity-40"
             />
-            <div class="text-sm">暂无调用历史</div>
+            <div class="text-sm">{{ m.automation.details.noHistory }}</div>
           </div>
 
           <div
@@ -211,11 +230,11 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             <div
               class="grid h-8 grid-cols-[116px_96px_132px_80px_minmax(160px,1fr)] items-center gap-3 border-b border-border bg-muted/40 px-3 text-xs font-medium text-muted-foreground"
             >
-              <div>运行</div>
-              <div>触发</div>
-              <div>开始时间</div>
-              <div>耗时</div>
-              <div>结果</div>
+              <div>{{ m.automation.details.historyRun }}</div>
+              <div>{{ m.automation.details.historyTrigger }}</div>
+              <div>{{ m.automation.details.historyStartedAt }}</div>
+              <div>{{ m.automation.details.historyDuration }}</div>
+              <div>{{ m.automation.details.historyResult }}</div>
             </div>
             <div class="max-h-80 divide-y divide-border/60 overflow-auto">
               <div
@@ -248,7 +267,7 @@ function openRunResult(record: AutomationRunHistoryRecord) {
                     size="icon-xs"
                     variant="ghost"
                     class="shrink-0"
-                    tooltip="查看完整结果"
+                    :tooltip="m.automation.details.viewFullResult"
                     @click="openRunResult(row.record)"
                   >
                     <Icon
@@ -273,7 +292,9 @@ function openRunResult(record: AutomationRunHistoryRecord) {
             icon="icon-[mdi--text-box-search-outline]"
             class="size-5 shrink-0"
           />
-          <span class="truncate">调用结果 {{ selectedRunResultTitle }}</span>
+          <span class="truncate">
+            {{ m.automation.details.runResultTitle({ title: selectedRunResultTitle }) }}
+          </span>
           <Badge
             v-if="selectedRunRecord"
             :variant="getRunStatusVariant(selectedRunRecord.invocationStatus)"
@@ -290,27 +311,27 @@ function openRunResult(record: AutomationRunHistoryRecord) {
       >
         <section class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">触发</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.trigger }}</div>
             <div class="truncate">{{ getTriggerLabel(selectedRunRecord.trigger) }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">尝试</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.attempt }}</div>
             <div class="truncate">#{{ selectedRunRecord.attempt }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">开始</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.startedAt }}</div>
             <div class="truncate">{{ formatFullTimestamp(selectedRunRecord.startedAt) }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">结束</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.finishedAt }}</div>
             <div class="truncate">{{ formatFullTimestamp(selectedRunRecord.finishedAt) }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">耗时</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.duration }}</div>
             <div class="truncate">{{ formatRunDuration(selectedRunRecord) }}</div>
           </div>
           <div class="min-w-0">
-            <div class="text-xs text-muted-foreground">命令</div>
+            <div class="text-xs text-muted-foreground">{{ m.automation.details.command }}</div>
             <div class="truncate">{{ selectedRunRecord.commandId }}</div>
           </div>
         </section>

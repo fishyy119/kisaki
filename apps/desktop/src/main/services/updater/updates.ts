@@ -13,6 +13,8 @@ import type {
   AppUpdaterState
 } from '@shared/updater'
 import type { TaskRunInitiator, TaskRunProgressUpdate, TaskRunStartResult } from '@shared/task-run'
+import type { I18nService } from '@main/services/i18n'
+import type { Messages } from '@shared/i18n'
 import electronUpdater, { type ProgressInfo, type UpdateInfo } from 'electron-updater'
 import type { UpdaterSettings } from './settings'
 
@@ -25,6 +27,7 @@ interface AppUpdateManagerOptions {
   ipc: IpcService
   settings: UpdaterSettings
   taskRun: TaskRunService
+  i18n: I18nService
 }
 
 export class AppUpdateManager {
@@ -81,7 +84,7 @@ export class AppUpdateManager {
     const run = this.options.taskRun.runs.create({
       category: 'updater',
       operation: 'updater.check',
-      title: '检查应用更新',
+      title: this.options.i18n.messages.updater.run.checkTitle,
       owner: { type: 'app' },
       initiator,
       subject: { type: 'app', labelSnapshot: app.getName() },
@@ -117,7 +120,9 @@ export class AppUpdateManager {
     const run = this.options.taskRun.runs.create({
       category: 'updater',
       operation: 'updater.download',
-      title: `下载应用更新 v${this.state.update.version}`,
+      title: this.options.i18n.messages.updater.run.downloadTitle({
+        version: this.state.update.version
+      }),
       owner: { type: 'app' },
       initiator,
       subject: { type: 'app', labelSnapshot: app.getName() },
@@ -249,7 +254,9 @@ export class AppUpdateManager {
 
   private readonly handleDownloadProgress = (progress: ProgressInfo) => {
     this.isDownloading = true
-    this.activeDownloadRun?.context.report(createDownloadProgress(progress))
+    this.activeDownloadRun?.context.report(
+      createDownloadProgress(this.options.i18n.messages, progress)
+    )
     this.updateState({
       status: 'downloading',
       error: null,
@@ -327,12 +334,13 @@ export class AppUpdateManager {
     run: TaskRunHandle,
     options: { autoDownload: boolean }
   ): Promise<void> {
+    const messages = this.options.i18n.messages
     try {
       run.start()
       run.context.report({
         phase: {
           key: 'checking',
-          label: '正在检查应用更新',
+          label: messages.updater.run.checkingPhase,
           current: 1,
           total: 1
         },
@@ -348,8 +356,8 @@ export class AppUpdateManager {
       const update = this.state.update
       if (update && this.state.status !== 'not-available') {
         run.complete({
-          title: '发现新版本',
-          summary: `发现应用更新 v${update.version}`,
+          title: messages.updater.run.foundTitle,
+          summary: messages.updater.run.foundSummary({ version: update.version }),
           counters: { available: 1 },
           output: {
             version: update.version,
@@ -362,13 +370,13 @@ export class AppUpdateManager {
       }
 
       run.complete({
-        title: '当前已是最新版本',
-        summary: '没有发现可用应用更新。',
+        title: messages.updater.run.upToDateTitle,
+        summary: messages.updater.run.upToDateSummary,
         counters: { notAvailable: 1 }
       })
     } catch (error) {
       this.finishTaskRunFromError(run, error, {
-        cancelledSummary: '应用更新检查已取消'
+        cancelledSummary: messages.updater.run.checkCancelledSummary
       })
       throw error
     } finally {
@@ -379,10 +387,11 @@ export class AppUpdateManager {
   }
 
   private async executeDownloadUpdate(run: TaskRunHandle): Promise<void> {
+    const messages = this.options.i18n.messages
     try {
       run.start()
       run.context.report(
-        createDownloadProgress({
+        createDownloadProgress(messages, {
           transferred: this.state.downloadProgress?.transferred ?? 0,
           total: this.state.downloadProgress?.total ?? 0,
           percent: this.state.downloadProgress?.percent ?? 0,
@@ -396,8 +405,10 @@ export class AppUpdateManager {
       const update = this.state.update
       const progress = this.state.downloadProgress
       run.complete({
-        title: '应用更新下载完成',
-        summary: update ? `已下载应用更新 v${update.version}` : '应用更新已下载。',
+        title: messages.updater.run.downloadedTitle,
+        summary: update
+          ? messages.updater.run.downloadedSummary({ version: update.version })
+          : messages.updater.run.downloadedSummaryNoVersion,
         counters: { downloaded: 1 },
         output: {
           version: update?.version,
@@ -406,7 +417,7 @@ export class AppUpdateManager {
       })
     } catch (error) {
       this.finishTaskRunFromError(run, error, {
-        cancelledSummary: '应用更新下载已取消'
+        cancelledSummary: messages.updater.run.downloadCancelledSummary
       })
       throw error
     } finally {
@@ -462,6 +473,7 @@ export class AppUpdateManager {
 }
 
 function createDownloadProgress(
+  messages: Messages,
   progress: Pick<ProgressInfo, 'transferred' | 'total' | 'percent' | 'bytesPerSecond'>
 ): TaskRunProgressUpdate {
   const total = Number.isFinite(progress.total) && progress.total > 0 ? progress.total : undefined
@@ -473,7 +485,7 @@ function createDownloadProgress(
   return {
     phase: {
       key: 'download',
-      label: '正在下载应用更新',
+      label: messages.updater.run.downloadingPhase,
       current: 1,
       total: 1
     },

@@ -1,5 +1,6 @@
 import type { DeeplinkRouteHandleEvent, ExtensionLogger } from '@kisaki3/extension-sdk'
 import { BangumiExtensionError } from '../utils/errors'
+import { m } from '../i18n'
 import { omitUndefined } from '../utils/object'
 import type { OAuthRelayClient, OAuthRelayToken } from './relay-client'
 import type { BangumiPendingSessionSecretV1 } from './token-store'
@@ -59,7 +60,7 @@ export class OAuthFlow {
     const state = event.query.state?.trim()
 
     if (!sessionId || !state) {
-      throw new BangumiExtensionError('auth_cancelled', 'Bangumi 登录回调缺少必要参数。')
+      throw new BangumiExtensionError('auth_cancelled', m().errors.loginCallbackMissingParams)
     }
 
     return this.completeSession(sessionId, state)
@@ -98,12 +99,12 @@ export class OAuthFlow {
 
     if (pending.expiresAt <= Date.now()) {
       await this.options.tokenStore.deletePendingSession()
-      throw new BangumiExtensionError('auth_expired', 'Bangumi 登录会话已过期，请重新登录。')
+      throw new BangumiExtensionError('auth_expired', m().errors.loginSessionExpired)
     }
 
     if (pending.sessionId !== sessionId || pending.state !== state) {
       this.options.logger?.warn('Bangumi OAuth callback state did not match pending session.')
-      throw new BangumiExtensionError('auth_cancelled', 'Bangumi 登录回调校验失败，请重新登录。')
+      throw new BangumiExtensionError('auth_cancelled', m().errors.loginCallbackInvalid)
     }
 
     const token = await this.options.relayClient.completeSession(sessionId, state, signal)
@@ -115,7 +116,7 @@ export class OAuthFlow {
   private async requirePendingSession(): Promise<BangumiPendingSessionSecretV1> {
     const pending = await this.options.tokenStore.getPendingSession()
     if (!pending) {
-      throw new BangumiExtensionError('auth_cancelled', '没有正在等待完成的 Bangumi 登录。')
+      throw new BangumiExtensionError('auth_cancelled', m().errors.noPendingLogin)
     }
     return pending
   }

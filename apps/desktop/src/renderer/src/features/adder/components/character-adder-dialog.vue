@@ -9,6 +9,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
 import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,12 @@ const emit = defineEmits<{
   /** Called after character is successfully added */
   success: [characterId: string]
 }>()
+
+const { m } = useI18n()
+
+const addFailedTitle = computed(() =>
+  m.value.adder.addFailed({ label: m.value.library.entities.character })
+)
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -77,35 +84,38 @@ async function handleSubmit() {
     )
 
     if (!result.success) {
-      notify.error('添加角色失败', result.error)
+      notify.error(addFailedTitle.value, result.error)
       return
     }
 
     const waitResult = await ipcManager.invoke('task-run:wait', result.data.runId)
     if (!waitResult.success) {
-      notify.error('添加角色失败', waitResult.error)
+      notify.error(addFailedTitle.value, waitResult.error)
       return
     }
 
     const run = waitResult.data
     if (run.status === 'cancelled') {
-      notify.info('添加角色已取消')
+      notify.info(m.value.adder.addCancelled({ label: m.value.library.entities.character }))
       return
     }
     if (run.status !== 'completed') {
-      notify.error('添加角色失败', run.result?.error)
+      notify.error(addFailedTitle.value, run.result?.error)
       return
     }
 
     const output = run.result?.output as IngestAddCharacterFromScraperResult | undefined
     if (!output?.characterId) {
-      notify.error('添加角色失败', '任务结果缺少角色 ID')
+      notify.error(
+        addFailedTitle.value,
+        m.value.adder.missingEntityId({ label: m.value.library.entities.character })
+      )
       return
     }
 
     emit('success', output.characterId)
   } catch (error) {
-    notify.error('添加角色失败', (error as Error).message)
+    notify.error(addFailedTitle.value, (error as Error).message)
   } finally {
     isSubmitting.value = false
   }
@@ -128,7 +138,7 @@ const openModel = computed({
             :icon="getEntityIcon('character')"
             class="size-4"
           />
-          添加角色
+          {{ m.library.forms.addEntityTitle({ label: m.library.entities.character }) }}
         </DialogTitle>
       </DialogHeader>
       <DialogBody>
@@ -143,14 +153,14 @@ const openModel = computed({
             icon="icon-[mdi--lightbulb-outline]"
             class="size-3.5"
           />
-          <span>点击搜索结果自动填充 ID</span>
+          <span>{{ m.adder.autofillHint }}</span>
         </div>
         <Button
           variant="outline"
           :disabled="isSubmitting"
           @click="openModel = false"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="!selection.canSubmit || isSubmitting"
@@ -161,14 +171,14 @@ const openModel = computed({
               icon="icon-[mdi--loading]"
               class="size-4 animate-spin"
             />
-            添加中...
+            {{ m.adder.adding }}
           </template>
           <template v-else>
             <Icon
               icon="icon-[mdi--plus]"
               class="size-4"
             />
-            识别并添加
+            {{ m.adder.submit }}
           </template>
         </Button>
       </DialogFooter>

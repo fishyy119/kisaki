@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TaskRun, TaskRunWarning } from '@shared/task-run'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -26,6 +27,8 @@ const emit = defineEmits<{
   details: [run: TaskRun]
   delete: [run: TaskRun]
 }>()
+
+const { m } = useI18n()
 
 const categoryText = computed(() => formatTaskRunCategory(props.run.category))
 const resultText = computed(() => formatTaskRunResultSummary(props.run))
@@ -54,7 +57,7 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
                 <button
                   type="button"
                   class="inline-flex h-5 shrink-0 items-center gap-0.5 rounded px-1 text-[11px] leading-none text-warning hover:bg-warning/10 focus-visible:ring-1 focus-visible:ring-warning focus-visible:outline-none"
-                  :aria-label="`${warnings.length} 条警告`"
+                  :aria-label="m.task.row.warningCount({ count: warnings.length })"
                 >
                   <Icon
                     icon="icon-[mdi--alert-outline]"
@@ -79,7 +82,9 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
                     v-if="warnings.length > warningPreview.length"
                     class="text-xs text-muted-foreground"
                   >
-                    还有 {{ warnings.length - warningPreview.length }} 条警告
+                    {{
+                      m.task.row.moreWarnings({ count: warnings.length - warningPreview.length })
+                    }}
                   </div>
                 </div>
               </TooltipContent>
@@ -101,14 +106,14 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
         class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground"
       >
         <span>
-          <span>耗时</span>
+          <span>{{ m.task.row.duration }}</span>
           <span class="ml-1 text-foreground">{{ formatTaskRunDuration(props.run) }}</span>
         </span>
         <span
           v-if="counterText"
           class="min-w-0"
         >
-          <span>计数</span>
+          <span>{{ m.task.row.counters }}</span>
           <span class="ml-1 text-foreground">{{ counterText }}</span>
         </span>
       </div>
@@ -128,8 +133,8 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
         <Button
           variant="ghost"
           size="icon-sm"
-          tooltip="详情"
-          aria-label="查看详情"
+          :tooltip="m.task.row.details"
+          :aria-label="m.task.row.viewDetails"
           @click="emit('details', props.run)"
         >
           <Icon
@@ -141,8 +146,8 @@ const warningPreview = computed(() => warnings.value.slice(0, 3))
         <Button
           variant="ghost"
           size="icon-sm"
-          tooltip="删除记录"
-          aria-label="删除记录"
+          :tooltip="m.task.row.deleteRecord"
+          :aria-label="m.task.row.deleteRecord"
           class="hover:text-destructive"
           @click="emit('delete', props.run)"
         >

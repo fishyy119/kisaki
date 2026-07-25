@@ -25,6 +25,9 @@ import { CharacterSelect } from '@renderer/components/shared/character'
 import { PersonSelect } from '@renderer/components/shared/person'
 import { CompanySelect } from '@renderer/components/shared/company'
 import type { ContentEntityType } from '@shared/common'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface EntityLink {
   id: string
@@ -40,12 +43,12 @@ interface EntityConfig {
   label: string
 }
 
-const ENTITY_CONFIG: Record<ContentEntityType, EntityConfig> = {
-  game: { label: '游戏' },
-  character: { label: '角色' },
-  person: { label: '人物' },
-  company: { label: '公司' }
-}
+const ENTITY_CONFIG = computed<Record<ContentEntityType, EntityConfig>>(() => ({
+  game: { label: m.value.library.entities.game },
+  character: { label: m.value.library.entities.character },
+  person: { label: m.value.library.entities.person },
+  company: { label: m.value.library.entities.company }
+}))
 
 interface Props {
   entityType: ContentEntityType
@@ -131,7 +134,11 @@ watch(
 
 function handleSubmit() {
   if (!formData.value.entityId) {
-    notify.error(`请选择${ENTITY_CONFIG[props.entityType].label}`)
+    notify.error(
+      m.value.library.forms.selectEntityRequired({
+        label: ENTITY_CONFIG.value[props.entityType].label
+      })
+    )
     return
   }
   emit('submit', {
@@ -153,7 +160,7 @@ const excludeIds = computed(() => {
   return props.existingEntityIds.filter((id) => id !== props.initialData?.entityId)
 })
 
-const config = ENTITY_CONFIG[props.entityType]
+const config = computed(() => ENTITY_CONFIG.value[props.entityType])
 </script>
 
 <template>
@@ -161,7 +168,9 @@ const config = ENTITY_CONFIG[props.entityType]
     <DialogContent class="max-w-sm">
       <DialogHeader>
         <DialogTitle>{{
-          props.isAddMode ? `添加${config.label}` : `编辑${config.label}`
+          (props.isAddMode ? m.library.forms.addEntityTitle : m.library.forms.editEntityTitle)({
+            label: config.label
+          })
         }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
@@ -174,34 +183,34 @@ const config = ENTITY_CONFIG[props.entityType]
                   v-if="props.entityType === 'game'"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
-                  :placeholder="`选择${config.label}...`"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
                 />
                 <CharacterSelect
                   v-else-if="props.entityType === 'character'"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
-                  :placeholder="`选择${config.label}...`"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
                 />
                 <PersonSelect
                   v-else-if="props.entityType === 'person'"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
-                  :placeholder="`选择${config.label}...`"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
                 />
                 <CompanySelect
                   v-else-if="props.entityType === 'company'"
                   v-model="formData.entityId"
                   :exclude-ids="excludeIds"
-                  :placeholder="`选择${config.label}...`"
+                  :placeholder="m.library.select.selectPlaceholder({ label: config.label })"
                 />
               </FieldContent>
             </Field>
             <Field>
-              <FieldLabel>备注</FieldLabel>
+              <FieldLabel>{{ m.library.fields.note }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.note"
-                  placeholder="可选备注..."
+                  :placeholder="m.library.forms.notePlaceholder"
                 />
               </FieldContent>
             </Field>
@@ -213,9 +222,9 @@ const config = ENTITY_CONFIG[props.entityType]
             variant="outline"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

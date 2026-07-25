@@ -2,7 +2,11 @@
  * Name extraction presets (renderer-only UI helpers).
  *
  * These presets are only used by the renderer preset picker dialog.
+ * Names and descriptions resolve from the active message catalog.
  */
+
+import { messages } from '@renderer/core/i18n'
+import type { Messages } from '@shared/i18n'
 
 export interface NameExtractionPreset {
   id: string
@@ -11,59 +15,38 @@ export interface NameExtractionPreset {
   pattern: string
 }
 
-export const NAME_EXTRACTION_PRESETS: NameExtractionPreset[] = [
-  {
-    id: 'bracket-prefix',
-    name: '方括号前缀 [xxx]',
-    description: '移除开头的 [xxx]',
-    pattern: '^\\[.*?\\]\\s*(?<name>.+)'
-  },
-  {
-    id: 'paren-prefix',
-    name: '圆括号前缀 (xxx)',
-    description: '移除开头的 (xxx)',
-    pattern: '^\\(.*?\\)\\s*(?<name>.+)'
-  },
+type PresetCopyKey = keyof Messages['scanner']['rules']['presets']
+
+const PRESET_DEFINITIONS: { id: string; copyKey: PresetCopyKey; pattern: string }[] = [
+  { id: 'bracket-prefix', copyKey: 'bracketPrefix', pattern: '^\\[.*?\\]\\s*(?<name>.+)' },
+  { id: 'paren-prefix', copyKey: 'parenPrefix', pattern: '^\\(.*?\\)\\s*(?<name>.+)' },
   {
     id: 'multi-bracket-prefix',
-    name: '多重方括号前缀',
-    description: '移除多个连续 [xxx]',
+    copyKey: 'multiBracketPrefix',
     pattern: '^(?:\\[.*?\\]\\s*)+(?<name>.+)'
   },
-  {
-    id: 'bracket-suffix',
-    name: '方括号后缀 [xxx]',
-    description: '移除结尾的 [xxx]',
-    pattern: '^(?<name>.+?)\\s*\\[.*?\\]$'
-  },
-  {
-    id: 'paren-suffix',
-    name: '圆括号后缀 (xxx)',
-    description: '移除结尾的 (xxx)',
-    pattern: '^(?<name>.+?)\\s*\\(.*?\\)$'
-  },
-  {
-    id: 'version-suffix',
-    name: '版本号后缀 _vX.X',
-    description: '移除 _v1.2.3',
-    pattern: '^(?<name>.+?)_v[\\d.]+'
-  },
-  {
-    id: 'year-suffix',
-    name: '年份后缀 (YYYY)',
-    description: '移除 (2024)',
-    pattern: '^(?<name>.+?)\\s*\\(\\d{4}\\)$'
-  },
+  { id: 'bracket-suffix', copyKey: 'bracketSuffix', pattern: '^(?<name>.+?)\\s*\\[.*?\\]$' },
+  { id: 'paren-suffix', copyKey: 'parenSuffix', pattern: '^(?<name>.+?)\\s*\\(.*?\\)$' },
+  { id: 'version-suffix', copyKey: 'versionSuffix', pattern: '^(?<name>.+?)_v[\\d.]+' },
+  { id: 'year-suffix', copyKey: 'yearSuffix', pattern: '^(?<name>.+?)\\s*\\(\\d{4}\\)$' },
   {
     id: 'lang-suffix',
-    name: '语言后缀',
-    description: '移除 CHS/CHT/JP/EN 等',
+    copyKey: 'langSuffix',
     pattern: '^(?<name>.+?)[-_](?:CHS|CHT|JP|EN|KR|SC|TC)(?:[-_]|$)'
   },
   {
     id: 'bracket-both',
-    name: '前后方括号',
-    description: '移除 [前缀] 和 [后缀]',
+    copyKey: 'bracketBoth',
     pattern: '^\\[.*?\\]\\s*(?<name>.+?)\\s*\\[.*?\\]$'
   }
 ]
+
+export function getNameExtractionPresets(): NameExtractionPreset[] {
+  const presetCopy = messages.value.scanner.rules.presets
+  return PRESET_DEFINITIONS.map((definition) => ({
+    id: definition.id,
+    pattern: definition.pattern,
+    name: presetCopy[definition.copyKey].name,
+    description: presetCopy[definition.copyKey].description
+  }))
+}

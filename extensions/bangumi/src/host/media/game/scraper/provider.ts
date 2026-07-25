@@ -3,7 +3,7 @@ import type {
   GameScraperSession,
   GameSearchResult,
   IdResolvedTarget,
-  Locale,
+  ContentLocale,
   ScrapedEntityIdentity,
   ScraperLookup
 } from '@kisaki3/extension-sdk'
@@ -34,7 +34,7 @@ export class BangumiProvider implements GameScraperProvider {
 
   constructor(private readonly client: BangumiClient) {}
 
-  async search(query: string, locale?: Locale): Promise<GameSearchResult[]> {
+  async search(query: string, locale?: ContentLocale): Promise<GameSearchResult[]> {
     const keyword = query.trim()
     if (!keyword) return []
 
@@ -68,7 +68,7 @@ export class BangumiProvider implements GameScraperProvider {
       })
   }
 
-  async resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null> {
+  async resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
@@ -80,7 +80,7 @@ export class BangumiProvider implements GameScraperProvider {
       : null
   }
 
-  async openSession(target: IdResolvedTarget, locale: Locale): Promise<GameScraperSession> {
+  async openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<GameScraperSession> {
     return createBangumiGameSession({
       client: this.client,
       target,

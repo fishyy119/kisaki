@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { nanoid } from 'nanoid'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { collections } from '@shared/db'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
@@ -40,14 +40,28 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '搜索合集...',
-  emptyText: '选择合集...',
+  placeholder: undefined,
+  emptyText: undefined,
   multiple: false,
   allowCreate: false,
   excludeIds: () => [],
   allowNone: true,
-  noneLabel: '无'
+  noneLabel: undefined
 })
+
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () =>
+    props.placeholder ??
+    m.value.library.select.searchPlaceholder({ label: m.value.library.entities.collection })
+)
+const emptyTextValue = computed(
+  () =>
+    props.emptyText ??
+    m.value.library.select.selectPlaceholder({ label: m.value.library.entities.collection })
+)
+const noneLabelText = computed(() => props.noneLabel ?? m.value.common.none)
 
 /** For single selection mode */
 const modelValue = defineModel<string | null>({ default: null })
@@ -81,7 +95,7 @@ const collectionEntities = computed(() => {
   const showNone = !props.multiple && props.allowNone
   const items = allCollections.value ?? []
   return [
-    ...(showNone ? [{ id: NONE_ID, name: props.noneLabel }] : []),
+    ...(showNone ? [{ id: NONE_ID, name: noneLabelText.value }] : []),
     ...items
       .filter((c) => !props.excludeIds.includes(c.id))
       .map((c) => ({
@@ -147,8 +161,8 @@ async function handleCreate(name: string) {
   <VirtualizedCombobox
     v-model:selected-ids="selectedIds"
     :entities="collectionEntities"
-    :placeholder="props.placeholder"
-    :empty-text="props.emptyText"
+    :placeholder="placeholderText"
+    :empty-text="emptyTextValue"
     :multiple="props.multiple"
     :class="props.class"
     :disabled="props.disabled"

@@ -1,4 +1,4 @@
-import type { Disposable, ExternalId, Locale, PartialDate, RelatedSite } from '../../shared'
+import type { Disposable, ExternalId, ContentLocale, PartialDate, RelatedSite } from '../../shared'
 import type {
   LibraryBloodType,
   LibraryCharacterPersonRole,
@@ -46,7 +46,7 @@ export type ScraperCapability<TSlot extends ScraperSlot = ScraperSlot> = 'search
 
 export interface ScraperLookup {
   name: string
-  locale?: Locale
+  locale?: ContentLocale
   knownIds?: readonly ExternalId[]
 }
 
@@ -291,27 +291,27 @@ export interface BaseScraperProvider<TSlot extends ScraperSlot = ScraperSlot> {
 }
 
 export interface GameScraperProvider extends BaseScraperProvider<GameScraperSlot> {
-  search(query: string, locale?: Locale): Promise<readonly GameSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: Locale): Promise<GameScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<readonly GameSearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<GameScraperSession>
 }
 
 export interface PersonScraperProvider extends BaseScraperProvider<PersonScraperSlot> {
-  search(query: string, locale?: Locale): Promise<readonly PersonSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: Locale): Promise<PersonScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<readonly PersonSearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<PersonScraperSession>
 }
 
 export interface CompanyScraperProvider extends BaseScraperProvider<CompanyScraperSlot> {
-  search(query: string, locale?: Locale): Promise<readonly CompanySearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: Locale): Promise<CompanyScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<readonly CompanySearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<CompanyScraperSession>
 }
 
 export interface CharacterScraperProvider extends BaseScraperProvider<CharacterScraperSlot> {
-  search(query: string, locale?: Locale): Promise<readonly CharacterSearchResult[]>
-  resolve(lookup: ScraperLookup, locale: Locale): Promise<IdResolvedTarget | null>
-  openSession(target: IdResolvedTarget, locale: Locale): Promise<CharacterScraperSession>
+  search(query: string, locale?: ContentLocale): Promise<readonly CharacterSearchResult[]>
+  resolve(lookup: ScraperLookup, locale: ContentLocale): Promise<IdResolvedTarget | null>
+  openSession(target: IdResolvedTarget, locale: ContentLocale): Promise<CharacterScraperSession>
 }
 
 export type ScraperProviderRegistration = Disposable

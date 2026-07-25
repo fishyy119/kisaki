@@ -1,4 +1,4 @@
-import type { Locale } from '../shared'
+import type { ContentLocale } from '../shared'
 import type { ScraperMediaType } from '../contributions/scraper-providers'
 
 export interface ScraperProfileProviderSlot {
@@ -12,7 +12,7 @@ export interface ScraperProfileSummary {
   description: string | null
   mediaType: ScraperMediaType
   searchProviderId: string
-  defaultLocale: Locale | null
+  defaultLocale: ContentLocale | null
   providerSlots: readonly ScraperProfileProviderSlot[]
 }
 

@@ -10,7 +10,7 @@
  */
 
 import type { GameCompanyType, GameScraperSlot } from '@shared/db'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { Tag } from '@shared/metadata'
 import type {
   GameSearchResult,
@@ -116,7 +116,7 @@ export class VNDBProvider implements GameScraperProvider {
   // Search
   // ===========================================================================
 
-  public async search(query: string, locale?: Locale): Promise<GameSearchResult[]> {
+  public async search(query: string, locale?: ContentLocale): Promise<GameSearchResult[]> {
     const keyword = query.trim()
     if (!keyword) return []
 
@@ -138,7 +138,10 @@ export class VNDBProvider implements GameScraperProvider {
     })
   }
 
-  public async resolve(lookup: ScraperLookup, locale: Locale): Promise<GameResolvedTarget | null> {
+  public async resolve(
+    lookup: ScraperLookup,
+    locale: ContentLocale
+  ): Promise<GameResolvedTarget | null> {
     const knownTarget = this.resolveKnownTarget(lookup)
     if (knownTarget) {
       return knownTarget
@@ -154,7 +157,7 @@ export class VNDBProvider implements GameScraperProvider {
 
   public async openSession(
     target: GameResolvedTarget,
-    locale: Locale
+    locale: ContentLocale
   ): Promise<GameScraperSession> {
     const vnId = normalizeVndbId(target.id, 'v')
     const getVnCore = this.memoizeTask(() => this.client.getVnById(vnId, VN_CORE_FIELDS))
@@ -277,7 +280,7 @@ export class VNDBProvider implements GameScraperProvider {
 
   private async buildInfo(
     getVnCore: () => Promise<VndbVn | null>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGameInfo> {
     const vn = await getVnCore()
     if (!vn) {
@@ -381,7 +384,7 @@ export class VNDBProvider implements GameScraperProvider {
     getCharacters: () => Promise<VndbCharacter[]>,
     getTraitMap: () => Promise<Map<string, VndbTrait>>,
     getStaffMap: () => Promise<Map<string, VndbStaff>>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGameCharacterFact[]> {
     const [relations, characters, traitMap, staffMap] = await Promise.all([
       getVnRelations(),
@@ -406,7 +409,7 @@ export class VNDBProvider implements GameScraperProvider {
     getVnRelations: () => Promise<VndbVn | null>,
     getSchema: () => Promise<Awaited<ReturnType<VndbClient['getSchema']>>>,
     getStaffMap: () => Promise<Map<string, VndbStaff>>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGamePersonFact[]> {
     const [vn, schema, staffMap] = await Promise.all([getVnRelations(), getSchema(), getStaffMap()])
     if (!vn) return []
@@ -456,7 +459,7 @@ export class VNDBProvider implements GameScraperProvider {
     getReleases: () => Promise<VndbRelease[]>,
     getSchema: () => Promise<Awaited<ReturnType<VndbClient['getSchema']>>>,
     getProducerMap: () => Promise<Map<string, VndbProducer>>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Promise<ScrapedGameCompanyFact[]> {
     const [vn, releases, schema, producerMap] = await Promise.all([
       getVnRelations(),
@@ -539,7 +542,7 @@ export class VNDBProvider implements GameScraperProvider {
     character: VndbCharacter,
     traitMap: Map<string, VndbTrait>,
     actors: ScrapedCharacterPersonFact[],
-    locale?: Locale
+    locale?: ContentLocale
   ): ScrapedGameCharacterFact {
     const { name, originalName } = resolveVndbEntityName(character.name, character.original, locale)
     const role = character.vns?.find((item) => item.id === vnId)?.role
@@ -587,7 +590,7 @@ export class VNDBProvider implements GameScraperProvider {
   private buildCharacterActorMap(
     entries: VndbVnVaEntry[],
     staffMap: Map<string, VndbStaff>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Map<string, ScrapedCharacterPersonFact[]> {
     const actorMap = new Map<string, ScrapedCharacterPersonFact[]>()
 
@@ -611,7 +614,7 @@ export class VNDBProvider implements GameScraperProvider {
     staffId: string,
     staff: VndbStaff | undefined,
     note?: string,
-    locale?: Locale
+    locale?: ContentLocale
   ): ScrapedCharacterPersonFact {
     const { name, originalName } = resolveVndbEntityName(
       staff?.name || staffId,
@@ -642,7 +645,7 @@ export class VNDBProvider implements GameScraperProvider {
   private buildStaffPersonBase(
     staffId: string,
     staff: VndbStaff | undefined,
-    locale?: Locale
+    locale?: ContentLocale
   ): Omit<ScrapedGamePersonFact, 'type' | 'note'> {
     const { name, originalName } = resolveVndbEntityName(
       staff?.name || staffId,
@@ -684,7 +687,7 @@ export class VNDBProvider implements GameScraperProvider {
     producerId: string,
     producer: VndbProducer | undefined,
     languageMap: Map<string, string>,
-    locale?: Locale
+    locale?: ContentLocale
   ): Omit<ScrapedGameCompanyFact, 'type'> {
     const { name, originalName } = resolveVndbEntityName(
       producer?.name || producerId,

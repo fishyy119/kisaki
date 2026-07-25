@@ -12,6 +12,9 @@ import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { GameCard, GameDetailDialog } from '@renderer/components/shared/game'
 import { CharacterGamesFormDialog } from '../../forms'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -26,12 +29,9 @@ const openGameId = ref<string | null>(null)
 // Constants
 // =============================================================================
 
-const CHARACTER_ROLE_LABELS: Record<string, string> = {
-  main: '主角',
-  supporting: '配角',
-  cameo: '客串',
-  other: '其他'
-}
+const CHARACTER_ROLE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCharacter
+)
 
 const CHARACTER_ROLE_ORDER = ['main', 'supporting', 'cameo', 'other'] as const
 
@@ -72,7 +72,7 @@ const gameDialogOpen = computed({
       v-if="!hasGames"
       state="empty"
       :icon="getEntityIcon('game')"
-      description="暂无相关游戏"
+      :description="m.library.detail.empty.relatedGames"
       class="py-12"
     >
       <template #actions>
@@ -85,7 +85,7 @@ const gameDialogOpen = computed({
             icon="icon-[mdi--plus]"
             class="size-4 mr-1.5"
           />
-          添加游戏
+          {{ m.library.detail.addEntity({ label: m.library.entities.game }) }}
         </Button>
       </template>
     </StateView>
@@ -103,7 +103,7 @@ const gameDialogOpen = computed({
             icon="icon-[mdi--pencil-outline]"
             class="size-4 mr-1.5"
           />
-          管理
+          {{ m.library.detail.manage }}
         </Button>
       </div>
 

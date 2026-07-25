@@ -16,6 +16,9 @@ import {
   CharacterDetailPersonsTab,
   CharacterDetailGamesTab
 } from './tabs'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -37,21 +40,21 @@ const { character } = useCharacter()
             icon="icon-[mdi--information-outline]"
             class="size-3.5"
           />
-          概览
+          {{ m.library.detail.tabs.overview }}
         </TabsTrigger>
         <TabsTrigger value="persons">
           <Icon
             :icon="getEntityIcon('person')"
             class="size-3.5"
           />
-          相关人物
+          {{ m.library.detail.tabs.relatedPersons }}
         </TabsTrigger>
         <TabsTrigger value="games">
           <Icon
             :icon="getEntityIcon('game')"
             class="size-3.5"
           />
-          相关游戏
+          {{ m.library.detail.tabs.relatedGames }}
         </TabsTrigger>
       </TabsList>
 

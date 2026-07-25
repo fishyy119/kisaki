@@ -17,6 +17,7 @@ import type { RenderState } from '@renderer/composables'
 import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { cn } from '@renderer/utils/cn'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   state: RenderState | 'empty'
@@ -52,6 +53,8 @@ const SIZE_CLASSES = {
   }
 } as const
 
+const { m } = useI18n()
+
 const sizeClasses = computed(() => SIZE_CLASSES[props.size])
 
 const isMessage = computed(
@@ -62,7 +65,9 @@ const displayIcon = computed(() =>
   props.state === 'error' ? 'icon-[mdi--alert-circle-outline]' : props.icon
 )
 
-const displayTitle = computed(() => (props.state === 'error' ? '加载失败' : props.title))
+const displayTitle = computed(() =>
+  props.state === 'error' ? m.value.ui.stateView.errorTitle : props.title
+)
 
 const displayDescription = computed(() => {
   if (props.state === 'error')

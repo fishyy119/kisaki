@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { TaskRun } from '@shared/task-run'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { Progress } from '@renderer/components/ui/progress'
 import { Spinner } from '@renderer/components/ui/spinner'
 import {
@@ -19,6 +20,8 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const { m } = useI18n()
+
 const now = ref(Date.now())
 const percentValue = computed(() => getProgressPercentValue(props.run))
 const percentText = computed(() => formatProgressPercent(props.run))
@@ -31,9 +34,9 @@ const isIndeterminate = computed(
 )
 const metrics = computed(() => {
   const items = [
-    { label: '进度', value: countText.value },
-    { label: '速度', value: rateText.value },
-    { label: '剩余', value: etaText.value }
+    { label: m.value.task.progress.progress, value: countText.value },
+    { label: m.value.task.progress.rate, value: rateText.value },
+    { label: m.value.task.progress.eta, value: etaText.value }
   ]
 
   return items.filter((item): item is { label: string; value: string } => Boolean(item.value))
@@ -81,7 +84,7 @@ onUnmounted(() => {
       v-else
       class="relative h-1.5 overflow-hidden rounded-full bg-muted"
       role="progressbar"
-      aria-valuetext="进行中"
+      :aria-valuetext="m.task.progress.inProgress"
     >
       <div
         class="task-run-progress-indicator absolute inset-y-0 left-0 w-1/3 rounded-full bg-primary"

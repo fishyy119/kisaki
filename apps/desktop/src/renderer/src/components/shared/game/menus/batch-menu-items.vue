@@ -20,7 +20,7 @@ import {
   ContextMenuRadioGroup,
   ContextMenuRadioItem
 } from '@renderer/components/ui/context-menu'
-import { useAsyncData } from '@renderer/composables'
+import { useAsyncData, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -39,6 +39,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const preferencesStore = usePreferencesStore()
 const { showNsfw } = storeToRefs(preferencesStore)
+
+const { m } = useI18n()
 
 const emit = defineEmits<{
   openMetadataUpdateDialog: []
@@ -145,10 +147,10 @@ async function handleAddToCollection(collectionId: string) {
         orderInCollection: 0
       }))
     )
-    notify.success('已添加到合集')
+    notify.success(m.value.library.feedback.addedToCollection)
     await refetch()
   } catch {
-    notify.error('添加失败')
+    notify.error(m.value.library.feedback.addFailed)
   }
 }
 
@@ -165,10 +167,10 @@ async function handleRemoveFromCollection(collectionId: string) {
           inArray(collectionGameLinks.gameId, ids)
         )
       )
-    notify.success('已从合集中移除')
+    notify.success(m.value.library.feedback.removedFromCollection)
     await refetch()
   } catch {
-    notify.error('移除失败')
+    notify.error(m.value.library.feedback.removeFailed)
   }
 }
 
@@ -178,15 +180,17 @@ async function handleSetFavorite(isFavorite: boolean) {
 
   try {
     await db.update(games).set({ isFavorite }).where(inArray(games.id, ids))
-    notify.success(isFavorite ? '已设为喜欢' : '已取消喜欢')
+    notify.success(
+      isFavorite ? m.value.library.feedback.favoriteAdded : m.value.library.feedback.favoriteRemoved
+    )
   } catch {
-    notify.error('操作失败')
+    notify.error(m.value.common.operationFailed)
   }
 }
 </script>
 
 <template>
-  <ContextMenuLabel>已选择 {{ selectedEntityCount }} 项</ContextMenuLabel>
+  <ContextMenuLabel>{{ m.common.selectedCount({ count: selectedEntityCount }) }}</ContextMenuLabel>
   <ContextMenuSeparator />
 
   <!-- Add to collection -->
@@ -196,7 +200,7 @@ async function handleSetFavorite(isFavorite: boolean) {
         icon="icon-[mdi--folder-plus-outline]"
         class="size-4"
       />
-      加入到合集
+      {{ m.library.menu.addToCollection }}
     </ContextMenuSubTrigger>
     <ContextMenuSubContent class="min-w-[180px]">
       <template v-if="collectionsAddable.length > 0">
@@ -218,7 +222,7 @@ async function handleSetFavorite(isFavorite: boolean) {
         v-else
         disabled
       >
-        <span class="text-muted-foreground">无可用合集</span>
+        <span class="text-muted-foreground">{{ m.library.menu.noCollections }}</span>
       </ContextMenuItem>
     </ContextMenuSubContent>
   </ContextMenuSub>
@@ -230,7 +234,7 @@ async function handleSetFavorite(isFavorite: boolean) {
         icon="icon-[mdi--folder-remove-outline]"
         class="size-4"
       />
-      从合集中移除
+      {{ m.library.menu.removeFromCollection }}
     </ContextMenuSubTrigger>
     <ContextMenuSubContent class="min-w-[180px]">
       <template v-if="collectionsRemovable.length > 0">
@@ -252,7 +256,7 @@ async function handleSetFavorite(isFavorite: boolean) {
         v-else
         disabled
       >
-        <span class="text-muted-foreground">无可用合集</span>
+        <span class="text-muted-foreground">{{ m.library.menu.noCollections }}</span>
       </ContextMenuItem>
     </ContextMenuSubContent>
   </ContextMenuSub>
@@ -265,14 +269,14 @@ async function handleSetFavorite(isFavorite: boolean) {
       icon="icon-[mdi--heart-outline]"
       class="size-4"
     />
-    设为喜欢
+    {{ m.library.menu.setFavorite }}
   </ContextMenuItem>
   <ContextMenuItem @select="handleSetFavorite(false)">
     <Icon
       icon="icon-[mdi--heart-off-outline]"
       class="size-4"
     />
-    取消喜欢
+    {{ m.library.menu.unsetFavorite }}
   </ContextMenuItem>
 
   <ContextMenuSeparator />
@@ -282,7 +286,7 @@ async function handleSetFavorite(isFavorite: boolean) {
       icon="icon-[mdi--database-sync-outline]"
       class="size-4"
     />
-    批量更新元数据
+    {{ m.library.menu.batchUpdateMetadata }}
   </ContextMenuItem>
 
   <ExtensionEntityMenuItems
@@ -300,6 +304,6 @@ async function handleSetFavorite(isFavorite: boolean) {
       icon="icon-[mdi--delete-outline]"
       class="size-4"
     />
-    批量删除
+    {{ m.library.menu.batchDelete }}
   </ContextMenuItem>
 </template>

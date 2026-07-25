@@ -2,6 +2,7 @@ import { readdir } from 'node:fs/promises'
 import { pathExists } from '@main/utils/fs'
 import { createLogger } from '@main/log'
 import type { ValidationIssue } from '@kisaki3/extension-api'
+import { resolveLocalizedText } from '@kisaki3/extension-api'
 import type { ExtensionInstallationRow } from '@shared/db'
 import {
   type ExtensionPackageLayout,
@@ -257,8 +258,8 @@ function compareInstalledEntries(
     return statusWeight
   }
 
-  const leftName = left.manifest?.name ?? left.id
-  const rightName = right.manifest?.name ?? right.id
+  const leftName = left.manifest ? resolveLocalizedText(left.manifest.name, 'en') : left.id
+  const rightName = right.manifest ? resolveLocalizedText(right.manifest.name, 'en') : right.id
   return leftName.localeCompare(rightName, 'en')
 }
 

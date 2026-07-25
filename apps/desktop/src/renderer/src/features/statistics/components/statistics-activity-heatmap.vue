@@ -45,6 +45,5 @@ const heatmapData = computed(() => {
     :range="effectiveDateRange"
     :data="heatmapData"
     :available-granularities="props.availableGranularities"
-    :legend-labels="{ less: '少', more: '多' }"
   />
 </template>

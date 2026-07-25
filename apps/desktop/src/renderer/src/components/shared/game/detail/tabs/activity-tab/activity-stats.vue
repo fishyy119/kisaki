@@ -9,12 +9,15 @@ import { computed } from 'vue'
 import type { GameSession } from '@shared/db'
 import { StatsGrid, type StatsGridItem } from '@renderer/components/ui/stats-grid'
 import { computeStreaks } from '@renderer/utils/statistics'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
   sessions: GameSession[]
 }
 
 const props = defineProps<Props>()
+
+const { m, f } = useI18n()
 
 const stats = computed(() => {
   const sessions = props.sessions
@@ -61,60 +64,50 @@ const stats = computed(() => {
   }
 })
 
-function formatDuration(ms: number): string {
-  const hours = Math.floor(ms / 3600000)
-  const minutes = Math.floor((ms % 3600000) / 60000)
-  if (hours > 0) {
-    return `${hours}小时${minutes}分钟`
-  }
-  return `${minutes}分钟`
-}
-
-function formatDate(date: Date | null): string {
-  if (!date) return '-'
-  return date.toLocaleDateString('zh-Hans', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
 const items = computed<StatsGridItem[]>(() => [
   {
     icon: 'icon-[mdi--timer-outline]',
-    label: '游玩时长',
-    value: formatDuration(stats.value.totalDuration)
+    label: m.value.game.activity.playDuration,
+    value: f.value.duration(stats.value.totalDuration)
   },
   {
     icon: 'icon-[mdi--play-circle-outline]',
-    label: '游玩次数',
-    value: `${stats.value.totalSessions}次`
+    label: m.value.game.activity.playCount,
+    value: m.value.game.activity.playCountValue({ count: stats.value.totalSessions })
   },
   {
     icon: 'icon-[mdi--timer-sand-paused]',
-    label: '平均时长',
-    value: formatDuration(stats.value.averageSessionDuration)
+    label: m.value.game.activity.avgDuration,
+    value: f.value.duration(stats.value.averageSessionDuration)
   },
   {
     icon: 'icon-[mdi--trophy-variant-outline]',
-    label: '最长单次',
-    value: formatDuration(stats.value.longestSession)
+    label: m.value.game.activity.longestSession,
+    value: f.value.duration(stats.value.longestSession)
   },
   {
     icon: 'icon-[mdi--lightbulb-variant-outline]',
-    label: '当前连续',
-    value: `${stats.value.currentStreak}天`
+    label: m.value.game.activity.currentStreak,
+    value: m.value.game.activity.streakValue({ days: stats.value.currentStreak })
   },
   {
     icon: 'icon-[mdi--medal-outline]',
-    label: '最长连续',
-    value: `${stats.value.longestStreak}天`
+    label: m.value.game.activity.longestStreak,
+    value: m.value.game.activity.streakValue({ days: stats.value.longestStreak })
   },
   {
     icon: 'icon-[mdi--calendar-start-outline]',
-    label: '首次游玩',
-    value: formatDate(stats.value.firstSessionDate)
+    label: m.value.game.activity.firstPlayed,
+    value: stats.value.firstSessionDate
+      ? f.value.date(stats.value.firstSessionDate)
+      : m.value.common.emptyValue
   },
   {
     icon: 'icon-[mdi--calendar-end-outline]',
-    label: '最近游玩',
-    value: formatDate(stats.value.lastSessionDate)
+    label: m.value.game.activity.lastPlayed,
+    value: stats.value.lastSessionDate
+      ? f.value.date(stats.value.lastSessionDate)
+      : m.value.common.emptyValue
   }
 ])
 </script>

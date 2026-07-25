@@ -9,6 +9,9 @@ import { RouterLink } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { useLibraryExplorerStore } from '../../../stores'
 import { getEntityIcon } from '@renderer/utils/format'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const store = useLibraryExplorerStore()
 
@@ -33,7 +36,7 @@ function handleNavClick() {
         icon="icon-[mdi--view-dashboard-outline]"
         class="size-4"
       />
-      <span>陈列柜</span>
+      <span>{{ m.library.pages.showcaseTitle }}</span>
     </RouterLink>
 
     <!-- Right side icons -->
@@ -42,7 +45,7 @@ function handleNavClick() {
       <RouterLink
         to="/library/collections"
         class="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-active]:text-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-raised"
-        title="合集"
+        :title="m.library.pages.collectionsTitle"
       >
         <Icon
           :icon="getEntityIcon('collection')"
@@ -54,7 +57,7 @@ function handleNavClick() {
       <RouterLink
         to="/library/favorites"
         class="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 [&.router-link-active]:text-foreground [&.router-link-active]:bg-accent [&.router-link-active]:shadow-raised"
-        title="喜欢"
+        :title="m.library.pages.favoritesTitle"
       >
         <Icon
           icon="icon-[mdi--heart-outline]"

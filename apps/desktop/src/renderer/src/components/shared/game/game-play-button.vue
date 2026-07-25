@@ -34,8 +34,8 @@ const props = withDefaults(defineProps<Props>(), {
   display: 'labeled',
   size: 'md',
   showLabel: true,
-  playLabel: '开始游戏',
-  stopLabel: '停止游戏'
+  playLabel: undefined,
+  stopLabel: undefined
 })
 
 const gameMonitorStore = useGameMonitorStore()

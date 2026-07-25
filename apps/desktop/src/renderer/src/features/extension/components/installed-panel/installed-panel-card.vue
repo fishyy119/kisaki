@@ -26,6 +26,7 @@ import type {
   ExtensionUpdateInfo
 } from '@shared/extension'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 const log = createLogger('Extension')
 
@@ -41,6 +42,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { m } = useI18n()
 const toggling = ref(false)
 const iconError = ref(false)
 const detailsDialogOpen = ref(false)
@@ -57,7 +59,9 @@ const cardActions = computed(() =>
 
 const iconUrl = computed(() => props.extension.iconUrl)
 const versionLabel = computed(() =>
-  props.extension.version ? `v${props.extension.version}` : '未知版本'
+  props.extension.version
+    ? `v${props.extension.version}`
+    : m.value.extension.installed.unknownVersion
 )
 const isBuiltin = computed(() => props.extension.builtin)
 const canToggle = computed(() => props.extension.status === 'ready' && !isBuiltin.value)
@@ -66,9 +70,9 @@ const statusLabel = computed(() => {
     case 'ready':
       return null
     case 'invalid':
-      return '包无效'
+      return m.value.extension.installed.statusInvalid
     case 'missing-package':
-      return '包缺失'
+      return m.value.extension.installed.statusMissingPackage
   }
 
   return null
@@ -80,13 +84,13 @@ const runtimeLabel = computed(() => {
 
   switch (props.extension.runtimeStatus) {
     case 'loading':
-      return '加载中'
+      return m.value.extension.installed.runtimeLoading
     case 'running':
-      return '运行中'
+      return m.value.extension.installed.runtimeRunning
     case 'failed':
-      return '加载失败'
+      return m.value.extension.installed.runtimeFailed
     case 'stopped':
-      return '未运行'
+      return m.value.extension.installed.runtimeStopped
   }
 
   return null
@@ -101,12 +105,15 @@ watch(iconUrl, () => {
 
 async function handleToggle(enabled: boolean) {
   if (isBuiltin.value) {
-    notify.error('内置扩展由 Kisaki 管理')
+    notify.error(m.value.extension.installed.builtinManaged)
     return
   }
 
   if (!canToggle.value) {
-    notify.error('无法启用扩展', props.extension.issues[0] ?? '扩展包当前不可运行')
+    notify.error(
+      m.value.extension.installed.enableFailed,
+      props.extension.issues[0] ?? m.value.extension.installed.packageNotRunnable
+    )
     return
   }
 
@@ -119,11 +126,15 @@ async function handleToggle(enabled: boolean) {
     }
     await refreshExtensionContributionSnapshot()
 
-    notify.success(enabled ? '扩展已启用' : '扩展已禁用')
+    notify.success(
+      enabled
+        ? m.value.extension.installed.enabledFeedback
+        : m.value.extension.installed.disabledFeedback
+    )
     emit('refresh')
   } catch (error) {
     log.error('Toggle failed:', error)
-    notify.error('操作失败', (error as Error).message)
+    notify.error(m.value.extension.installed.operationFailed, (error as Error).message)
   } finally {
     toggling.value = false
   }
@@ -154,7 +165,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
     )
   } catch (error) {
     log.error('Card action failed:', error)
-    notify.error('扩展操作失败', (error as Error).message)
+    notify.error(m.value.extension.installed.extensionOperationFailed, (error as Error).message)
   } finally {
     runningCardActionIds.value = runningCardActionIds.value.filter(
       (id) => id !== action.contributionId
@@ -199,14 +210,14 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
         variant="secondary"
         class="text-[10px] px-1.5 py-0 h-4"
       >
-        内置
+        {{ m.extension.installed.builtinBadge }}
       </Badge>
       <Badge
         v-if="props.updateInfo"
         variant="default"
         class="text-[10px] px-1.5 py-0 h-4"
       >
-        更新
+        {{ m.extension.installed.updateBadge }}
       </Badge>
       <Badge
         v-if="statusLabel"
@@ -239,12 +250,12 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
 
     <!-- Meta -->
     <div class="text-xs text-muted-foreground mb-2 space-y-1">
-      <div>{{ props.extension.author || '未知' }}</div>
+      <div>{{ props.extension.author || m.extension.installed.unknownAuthor }}</div>
     </div>
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.extension.description || '无描述' }}
+      {{ props.extension.description || m.extension.installed.noDescription }}
     </p>
 
     <!-- Footer -->
@@ -256,7 +267,9 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
             icon="icon-[mdi--package-variant-closed-check]"
             class="size-4 text-muted-foreground"
           />
-          <span class="text-xs text-muted-foreground">随应用启用</span>
+          <span class="text-xs text-muted-foreground">{{
+            m.extension.installed.enableWithApp
+          }}</span>
         </template>
         <template v-else>
           <Switch
@@ -265,7 +278,11 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
             class="scale-90"
           />
           <span class="text-xs text-muted-foreground">
-            {{ props.extension.enabled ? '启用' : '禁用' }}
+            {{
+              props.extension.enabled
+                ? m.extension.installed.enabledState
+                : m.extension.installed.disabledState
+            }}
           </span>
         </template>
       </div>
@@ -282,7 +299,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
             icon="icon-[mdi--refresh]"
             class="size-3.5"
           />
-          更新
+          {{ m.extension.installed.update }}
         </Button>
         <Button
           v-for="action in cardActions"
@@ -303,7 +320,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
         <Button
           size="icon-sm"
           variant="ghost"
-          tooltip="详情"
+          :tooltip="m.extension.installed.detailsTooltip"
           @click="detailsDialogOpen = true"
         >
           <Icon
@@ -315,7 +332,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
           v-if="!isBuiltin"
           size="icon-sm"
           variant="ghost"
-          tooltip="更新配置"
+          :tooltip="m.extension.installed.updatePolicyTooltip"
           @click="updatePolicyDialogOpen = true"
         >
           <Icon
@@ -327,7 +344,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
           v-if="!isBuiltin"
           size="icon-sm"
           variant="ghost"
-          tooltip="卸载"
+          :tooltip="m.extension.installed.uninstallTooltip"
           class="hover:text-destructive"
           @click="uninstallDialogOpen = true"
         >

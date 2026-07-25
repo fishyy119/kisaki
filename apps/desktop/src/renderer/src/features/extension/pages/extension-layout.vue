@@ -9,10 +9,12 @@ import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { extensionDevelopmentStore } from '@renderer/core/extensions'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { ExtensionHeader, ExtensionReleaseDialog } from '../components'
 
 const log = createLogger('Extension')
 const router = useRouter()
+const { m } = useI18n()
 const releaseDialogOpen = ref(false)
 const reloadingExtensionHost = ref(false)
 const { hasStaleExtensions, staleCount } = extensionDevelopmentStore
@@ -27,19 +29,19 @@ async function handleReloadExtensionHost() {
   }
 
   reloadingExtensionHost.value = true
-  const toastId = notify.loading('正在重载扩展进程')
+  const toastId = notify.loading(m.value.extension.host.reloading)
 
   try {
     unwrapIpcVoid(await ipcManager.invoke('extension:restart-host'))
     notify.update(toastId, {
-      title: '扩展进程已重载',
+      title: m.value.extension.host.reloaded,
       type: 'success',
       duration: 3000
     })
   } catch (error) {
     log.error('Failed to restart extension host:', error)
     notify.update(toastId, {
-      title: '重载扩展进程失败',
+      title: m.value.extension.host.reloadFailed,
       message: error instanceof Error ? error.message : String(error),
       type: 'error',
       duration: 5000

@@ -34,6 +34,9 @@ import {
   type PartialDateInputExpose
 } from '@renderer/components/ui/partial-date-input'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Character')
 
@@ -62,21 +65,21 @@ interface FormData {
 }
 
 const NONE_VALUE = '#none'
-const GENDER_OPTIONS = [
-  { value: NONE_VALUE, label: '无' },
-  { value: 'male', label: '男性' },
-  { value: 'female', label: '女性' },
-  { value: 'other', label: '其他' }
-]
-const BLOOD_TYPE_OPTIONS = [
-  { value: NONE_VALUE, label: '无' },
-  { value: 'a', label: 'A型' },
-  { value: 'b', label: 'B型' },
-  { value: 'o', label: 'O型' },
-  { value: 'ab', label: 'AB型' }
-]
-const CUP_SIZE_OPTIONS = [
-  { value: NONE_VALUE, label: '无' },
+const GENDER_OPTIONS = computed(() => [
+  { value: NONE_VALUE, label: m.value.common.none },
+  { value: 'male', label: m.value.library.gender.male },
+  { value: 'female', label: m.value.library.gender.female },
+  { value: 'other', label: m.value.library.gender.other }
+])
+const BLOOD_TYPE_OPTIONS = computed(() => [
+  { value: NONE_VALUE, label: m.value.common.none },
+  { value: 'a', label: m.value.library.bloodType.a },
+  { value: 'b', label: m.value.library.bloodType.b },
+  { value: 'o', label: m.value.library.bloodType.o },
+  { value: 'ab', label: m.value.library.bloodType.ab }
+])
+const CUP_SIZE_OPTIONS = computed(() => [
+  { value: NONE_VALUE, label: m.value.common.none },
   { value: 'aaa', label: 'AAA' },
   { value: 'aa', label: 'AA' },
   { value: 'a', label: 'A' },
@@ -90,7 +93,7 @@ const CUP_SIZE_OPTIONS = [
   { value: 'i', label: 'I' },
   { value: 'j', label: 'J' },
   { value: 'k', label: 'K' }
-]
+])
 
 // Form state
 const formData = ref<FormData>({
@@ -182,7 +185,7 @@ const cupModel = computed({
 })
 
 function isCupSize(value: string): value is CupSize {
-  return value !== NONE_VALUE && CUP_SIZE_OPTIONS.some((o) => o.value === value)
+  return value !== NONE_VALUE && CUP_SIZE_OPTIONS.value.some((o) => o.value === value)
 }
 
 async function handleSubmit() {
@@ -190,7 +193,7 @@ async function handleSubmit() {
   try {
     const birthDateValidation = birthDateInput.value?.validate()
     if (birthDateValidation && !birthDateValidation.valid) {
-      notify.error(birthDateValidation.errorText ?? '生日格式不正确')
+      notify.error(birthDateValidation.errorText ?? m.value.library.forms.birthDateInvalidFormat)
       return
     }
     const birthDate = birthDateValidation?.value ?? formData.value.birthDate
@@ -214,11 +217,11 @@ async function handleSubmit() {
       })
       .where(eq(characters.id, props.characterId))
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Update failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -245,46 +248,48 @@ function handleCancel() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑基本信息</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editBasicInfo }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody class="max-h-[60vh] overflow-auto">
             <FieldGroup>
               <Field>
-                <FieldLabel>名称</FieldLabel>
+                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    placeholder="角色名称"
+                    :placeholder="
+                      m.library.forms.namePlaceholder({ label: m.library.entities.character })
+                    "
                     required
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>原名</FieldLabel>
+                <FieldLabel>{{ m.library.fields.originalName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.originalName"
-                    placeholder="原文名称"
+                    :placeholder="m.library.forms.originalNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel>排序名</FieldLabel>
+                <FieldLabel>{{ m.library.fields.sortName }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.sortName"
-                    placeholder="用于排序的名称"
+                    :placeholder="m.library.forms.sortNamePlaceholder"
                   />
                 </FieldContent>
               </Field>
               <div class="grid grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel>性别</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.gender }}</FieldLabel>
                   <FieldContent>
                     <Select v-model="genderModel">
                       <SelectTrigger class="w-full">
-                        <SelectValue placeholder="选择性别" />
+                        <SelectValue :placeholder="m.library.forms.selectGender" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem
@@ -299,34 +304,34 @@ function handleCancel() {
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel>年龄</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.age }}</FieldLabel>
                   <FieldContent>
                     <Input
                       v-model="formData.age"
                       type="number"
                       min="0"
-                      placeholder="岁"
+                      :placeholder="m.library.forms.agePlaceholder"
                     />
                   </FieldContent>
                 </Field>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel>生日</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.birthDate }}</FieldLabel>
                   <FieldContent>
                     <PartialDateInput
                       ref="birthDateInput"
                       v-model="formData.birthDate"
-                      :messages="{ invalidIntegerText: '生日只能填写整数。' }"
+                      :messages="{ invalidIntegerText: m.library.forms.birthDateInvalidInteger }"
                     />
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel>血型</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.bloodType }}</FieldLabel>
                   <FieldContent>
                     <Select v-model="bloodTypeModel">
                       <SelectTrigger class="w-full">
-                        <SelectValue placeholder="选择血型" />
+                        <SelectValue :placeholder="m.library.forms.selectBloodType" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem
@@ -343,7 +348,7 @@ function handleCancel() {
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel>身高</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.height }}</FieldLabel>
                   <FieldContent>
                     <Input
                       v-model="formData.height"
@@ -354,7 +359,7 @@ function handleCancel() {
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel>体重</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.weight }}</FieldLabel>
                   <FieldContent>
                     <Input
                       v-model="formData.weight"
@@ -400,11 +405,11 @@ function handleCancel() {
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel>罩杯</FieldLabel>
+                  <FieldLabel>{{ m.library.fields.cup }}</FieldLabel>
                   <FieldContent>
                     <Select v-model="cupModel">
                       <SelectTrigger class="w-full">
-                        <SelectValue placeholder="罩杯" />
+                        <SelectValue :placeholder="m.library.fields.cup" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem
@@ -428,13 +433,13 @@ function handleCancel() {
               :disabled="isSaving"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSaving"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </DialogFooter>
         </Form>

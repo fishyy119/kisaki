@@ -20,6 +20,9 @@ import {
   GameDetailSavesTab,
   GameDetailNotesTab
 } from './tabs'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // State
@@ -41,49 +44,49 @@ const { game } = useGame()
             icon="icon-[mdi--information-outline]"
             class="size-3.5"
           />
-          概览
+          {{ m.library.detail.tabs.overview }}
         </TabsTrigger>
         <TabsTrigger value="characters">
           <Icon
             :icon="getEntityIcon('character')"
             class="size-3.5"
           />
-          角色
+          {{ m.library.detail.tabs.characters }}
         </TabsTrigger>
         <TabsTrigger value="staff">
           <Icon
             :icon="getEntityIcon('person')"
             class="size-3.5"
           />
-          人物
+          {{ m.library.detail.tabs.persons }}
         </TabsTrigger>
         <TabsTrigger value="companies">
           <Icon
             :icon="getEntityIcon('company')"
             class="size-3.5"
           />
-          公司
+          {{ m.library.detail.tabs.companies }}
         </TabsTrigger>
         <TabsTrigger value="activity">
           <Icon
             icon="icon-[mdi--report-timeline-variant]"
             class="size-3.5"
           />
-          活动
+          {{ m.library.detail.tabs.activity }}
         </TabsTrigger>
         <TabsTrigger value="saves">
           <Icon
             icon="icon-[mdi--content-save-outline]"
             class="size-3.5"
           />
-          存档
+          {{ m.library.detail.tabs.saves }}
         </TabsTrigger>
         <TabsTrigger value="notes">
           <Icon
             icon="icon-[mdi--image-multiple-outline]"
             class="size-3.5"
           />
-          笔记
+          {{ m.library.detail.tabs.notes }}
         </TabsTrigger>
       </TabsList>
 

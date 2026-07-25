@@ -1,4 +1,5 @@
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
+import { formatters, messages } from '@renderer/core/i18n'
 
 export function shortSignerFingerprint(value: string): string {
   return `${value.slice(0, 12)}...${value.slice(-8)}`
@@ -10,13 +11,17 @@ export function formatSignerDate(value: string): string {
     return value
   }
 
-  return date.toLocaleString()
+  return formatters.value.dateTime(date)
 }
 
 export function formatSignerOptionalValue(value: string | null): string {
-  return value ?? '无'
+  return value ?? messages.value.extension.signer.none
 }
 
 export function getSignerRepositoryLabel(signer: ExtensionTrustedSignerInfo): string {
-  return signer.trustedFromRepositoryUrl ?? signer.trustedFromRepositoryId ?? '本地确认'
+  return (
+    signer.trustedFromRepositoryUrl ??
+    signer.trustedFromRepositoryId ??
+    messages.value.extension.signer.localConfirmation
+  )
 }

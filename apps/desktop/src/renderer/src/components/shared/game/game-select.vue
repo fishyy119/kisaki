@@ -9,7 +9,7 @@ import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
@@ -30,11 +30,24 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '搜索游戏...',
-  emptyText: '选择游戏...',
+  placeholder: undefined,
+  emptyText: undefined,
   multiple: false,
   excludeIds: () => []
 })
+
+const { m } = useI18n()
+
+const placeholderText = computed(
+  () =>
+    props.placeholder ??
+    m.value.library.select.searchPlaceholder({ label: m.value.library.entities.game })
+)
+const emptyTextValue = computed(
+  () =>
+    props.emptyText ??
+    m.value.library.select.selectPlaceholder({ label: m.value.library.entities.game })
+)
 
 /** For single selection mode */
 const modelValue = defineModel<string>({ default: '' })
@@ -101,8 +114,8 @@ const selectedIds = computed({
   <VirtualizedCombobox
     v-model:selected-ids="selectedIds"
     :entities="gameEntities"
-    :placeholder="props.placeholder"
-    :empty-text="props.emptyText"
+    :placeholder="placeholderText"
+    :empty-text="emptyTextValue"
     :multiple="props.multiple"
     :class="props.class"
     :disabled="props.disabled"

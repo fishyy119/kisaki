@@ -1,4 +1,4 @@
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 import type { ScraperLookup } from '@shared/scraper'
 import type { ExtensionContributionDomainOptions } from '../types'
 import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
@@ -15,7 +15,7 @@ export function createProviderAdapter(
     name: registration.provider.name,
     externalIdSource: registration.provider.externalIdSource,
     capabilities: [...registration.provider.capabilities],
-    async search(query: string, locale?: Locale) {
+    async search(query: string, locale?: ContentLocale) {
       const response = await requestScraperHost<{ results: readonly unknown[] }>(
         options,
         domain,
@@ -31,7 +31,7 @@ export function createProviderAdapter(
 
       return response.results
     },
-    async resolve(lookup: ScraperLookup, locale: Locale) {
+    async resolve(lookup: ScraperLookup, locale: ContentLocale) {
       const response = await requestScraperHost<{ target: unknown }>(options, domain, 'resolve', {
         runtimeHandle: registration.owner.runtimeHandle,
         mediaType: domain.mediaType,
@@ -42,7 +42,7 @@ export function createProviderAdapter(
 
       return response.target
     },
-    async openSession(target: unknown, locale: Locale) {
+    async openSession(target: unknown, locale: ContentLocale) {
       const response = await requestScraperHost<{ sessionId: string }>(
         options,
         domain,

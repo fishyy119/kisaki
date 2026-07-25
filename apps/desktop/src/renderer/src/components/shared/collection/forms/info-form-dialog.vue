@@ -48,6 +48,9 @@ import {
 } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Collection')
 
@@ -159,7 +162,7 @@ watch(
 )
 
 async function pickCoverPath(): Promise<string | null> {
-  const dialogOptions = getOpenImageDialogOptions({ title: '选择封面' })
+  const dialogOptions = getOpenImageDialogOptions({ title: m.value.library.forms.pickCover })
   const res = await ipcManager.invoke('native:open-dialog', dialogOptions)
   if (!res.success) {
     throw new Error(res.error || 'Failed to open file dialog')
@@ -178,7 +181,7 @@ async function handlePickCover() {
     coverPath.value = path
   } catch (error) {
     log.error('Pick cover failed:', error)
-    notify.error('选择封面失败')
+    notify.error(m.value.library.feedback.pickCoverFailed)
   }
 }
 
@@ -212,7 +215,7 @@ async function handleSubmit() {
           path: coverPath.value
         })
       }
-      notify.success('合集已更新')
+      notify.success(m.value.library.forms.collectionUpdated)
     } else {
       const newCollectionId = nanoid()
       const isDynamic = isStaticCreateLocked.value ? false : formData.value.isDynamic
@@ -252,7 +255,11 @@ async function handleSubmit() {
                 gameId: entityId
               })
             }
-            notify.success('已创建合集并添加游戏')
+            notify.success(
+              m.value.library.forms.collectionCreatedWithEntities({
+                label: m.value.library.entities.game
+              })
+            )
             break
           }
           case 'character': {
@@ -269,7 +276,11 @@ async function handleSubmit() {
                 characterId: entityId
               })
             }
-            notify.success('已创建合集并添加角色')
+            notify.success(
+              m.value.library.forms.collectionCreatedWithEntities({
+                label: m.value.library.entities.character
+              })
+            )
             break
           }
           case 'person': {
@@ -286,7 +297,11 @@ async function handleSubmit() {
                 personId: entityId
               })
             }
-            notify.success('已创建合集并添加人物')
+            notify.success(
+              m.value.library.forms.collectionCreatedWithEntities({
+                label: m.value.library.entities.person
+              })
+            )
             break
           }
           case 'company': {
@@ -303,17 +318,23 @@ async function handleSubmit() {
                 companyId: entityId
               })
             }
-            notify.success('已创建合集并添加公司')
+            notify.success(
+              m.value.library.forms.collectionCreatedWithEntities({
+                label: m.value.library.entities.company
+              })
+            )
             break
           }
         }
       } else {
-        notify.success('合集已创建')
+        notify.success(m.value.library.forms.collectionCreated)
       }
     }
     open.value = false
   } catch (_error) {
-    notify.error(isEditMode ? '更新失败' : '创建失败')
+    notify.error(
+      isEditMode ? m.value.library.feedback.updateFailed : m.value.library.feedback.createFailed
+    )
   } finally {
     isSubmitting.value = false
   }
@@ -345,29 +366,31 @@ const canSubmit = computed(() => formData.value.name.trim())
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>{{ isEditMode ? '编辑合集' : '新建合集' }}</DialogTitle>
+          <DialogTitle>{{
+            isEditMode ? m.library.forms.editCollection : m.library.forms.newCollection
+          }}</DialogTitle>
         </DialogHeader>
         <Form @submit="handleSubmit">
           <DialogBody>
             <FieldGroup>
               <Field>
-                <FieldLabel>名称</FieldLabel>
+                <FieldLabel>{{ m.library.fields.name }}</FieldLabel>
                 <FieldContent>
                   <Input
                     v-model="formData.name"
-                    placeholder="输入合集名称"
+                    :placeholder="m.library.forms.collectionNamePlaceholder"
                     autofocus
                   />
                 </FieldContent>
               </Field>
 
               <Field>
-                <FieldLabel>封面</FieldLabel>
+                <FieldLabel>{{ m.library.forms.coverLabel }}</FieldLabel>
                 <FieldContent>
                   <ImagePicker
                     :image-url="currentCoverUrl"
                     :picked-path="coverMode === 'set' ? coverPath : null"
-                    pick-label="选择封面"
+                    :pick-label="m.library.forms.pickCover"
                     :clear-disabled="
                       (!isEditMode && coverMode !== 'set') ||
                       (isEditMode && !existingCollection?.coverFile && coverMode !== 'set')
@@ -379,11 +402,11 @@ const canSubmit = computed(() => formData.value.name.trim())
               </Field>
 
               <Field>
-                <FieldLabel>描述</FieldLabel>
+                <FieldLabel>{{ m.library.fields.description }}</FieldLabel>
                 <FieldContent>
                   <MarkdownEditor
                     v-model="formData.description"
-                    placeholder="添加描述（可选，支持 Markdown）"
+                    :placeholder="m.library.forms.collectionDescriptionPlaceholder"
                     min-height="140px"
                     max-height="200px"
                   />
@@ -392,9 +415,9 @@ const canSubmit = computed(() => formData.value.name.trim())
 
               <!-- Type selection is hidden for entity menu quick-create flows. -->
               <Field v-if="!isEditMode && !isStaticCreateLocked">
-                <FieldLabel>类型</FieldLabel>
+                <FieldLabel>{{ m.library.fields.type }}</FieldLabel>
                 <FieldDescription>
-                  静态合集手动添加内容，动态合集根据筛选条件自动更新
+                  {{ m.library.forms.collectionTypeHint }}
                 </FieldDescription>
                 <FieldContent>
                   <RadioGroup
@@ -410,7 +433,7 @@ const canSubmit = computed(() => formData.value.name.trim())
                         for="static"
                         class="cursor-pointer"
                       >
-                        静态合集
+                        {{ m.library.forms.staticCollection }}
                       </Label>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -422,7 +445,7 @@ const canSubmit = computed(() => formData.value.name.trim())
                         for="dynamic"
                         class="cursor-pointer"
                       >
-                        动态合集
+                        {{ m.library.forms.dynamicCollection }}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -430,8 +453,8 @@ const canSubmit = computed(() => formData.value.name.trim())
               </Field>
 
               <Field orientation="horizontal">
-                <FieldLabel>成人内容</FieldLabel>
-                <FieldDescription>标记此合集包含成人内容</FieldDescription>
+                <FieldLabel>{{ m.library.forms.nsfwLabel }}</FieldLabel>
+                <FieldDescription>{{ m.library.forms.collectionNsfwHint }}</FieldDescription>
                 <FieldContent>
                   <Switch v-model="formData.isNsfw" />
                 </FieldContent>
@@ -445,13 +468,13 @@ const canSubmit = computed(() => formData.value.name.trim())
               :disabled="isSubmitting"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               type="submit"
               :disabled="isSubmitting || !canSubmit"
             >
-              {{ isEditMode ? '保存' : '创建' }}
+              {{ isEditMode ? m.common.save : m.common.create }}
             </Button>
           </DialogFooter>
         </Form>

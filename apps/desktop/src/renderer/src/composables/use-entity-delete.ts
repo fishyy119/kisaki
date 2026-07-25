@@ -2,6 +2,7 @@ import { computed, ref, toRaw, watch, type ComputedRef, type Ref } from 'vue'
 import type { AllEntityType } from '@shared/common'
 import type { EntityDeleteResult } from '@shared/entity-delete'
 import { deleteEntities, previewEntityDelete } from '@renderer/core/db'
+import { messages } from '@renderer/core/i18n'
 import { useAsyncData } from './use-async-data'
 
 interface UseEntityDeleteOptions {
@@ -50,7 +51,9 @@ export function useEntityDelete(options: UseEntityDeleteOptions) {
   const firstName = computed(() => items.value[0]?.name ?? '')
   const entityName = computed(() => {
     if (count.value <= 1) return firstName.value
-    return firstName.value ? `${firstName.value} 等 ${count.value} 项` : `${count.value} 项`
+    return firstName.value
+      ? messages.value.library.feedback.nameAndMore({ name: firstName.value, count: count.value })
+      : messages.value.common.itemCount({ count: count.value })
   })
   const previewNames = computed(() =>
     items.value

@@ -15,6 +15,8 @@ import type { MonitorService } from '@main/services/monitor'
 import type { DbService } from '@main/services/db'
 import type { NativeService } from '@main/services/native'
 import type { NotifyService } from '@main/services/notify'
+import type { I18nService } from '@main/services/i18n'
+import type { Messages } from '@shared/i18n'
 import { games } from '@shared/db'
 import type { GameLaunchResult, GameStopResult } from '@shared/launcher'
 import { and, eq } from 'drizzle-orm'
@@ -29,7 +31,8 @@ export class GameLauncherHandler {
     private dbService: DbService,
     private monitorService: MonitorService,
     private nativeService: NativeService,
-    private notifyService: NotifyService
+    private notifyService: NotifyService,
+    private i18nService: I18nService
   ) {}
 
   /**
@@ -63,13 +66,14 @@ export class GameLauncherHandler {
     gameId: string,
     options?: { cancelBehavior?: 'return' | 'throw' }
   ): Promise<GameLaunchResult> {
-    const toastId = this.notifyService.loading('正在启动游戏')
+    const messages = this.i18nService.messages
+    const toastId = this.notifyService.loading(messages.launcher.launching)
 
     try {
       const result = await this.performLaunchGame(gameId, options)
       this.notifyService.update(toastId, {
-        title: getLaunchResultTitle(result),
-        message: getLaunchResultMessage(result),
+        title: getLaunchResultTitle(messages, result),
+        message: getLaunchResultMessage(messages, result),
         type: result.status === 'detected' ? 'success' : 'warning',
         duration: result.status === 'unconfirmed' ? 5000 : 3000
       })
@@ -77,8 +81,10 @@ export class GameLauncherHandler {
     } catch (error) {
       const selectionCancelled = isLaunchPathSelectionCancelled(error)
       this.notifyService.update(toastId, {
-        title: selectionCancelled ? '已取消启动' : '启动游戏失败',
-        message: selectionCancelled ? undefined : formatLaunchErrorMessage(error),
+        title: selectionCancelled
+          ? messages.launcher.launchCancelledTitle
+          : messages.launcher.launchFailedTitle,
+        message: selectionCancelled ? undefined : formatLaunchErrorMessage(messages, error),
         type: selectionCancelled ? 'warning' : 'error',
         duration: selectionCancelled ? 3000 : 5000
       })
@@ -205,8 +211,8 @@ export class GameLauncherHandler {
         : undefined
 
     const result = await this.nativeService.dialogs.showOpenDialog({
-      title: '选择启动文件',
-      buttonLabel: '选择',
+      title: this.i18nService.messages.launcher.filePickerTitle,
+      buttonLabel: this.i18nService.messages.launcher.filePickerButton,
       defaultPath: game.gameDirPath ?? undefined,
       properties: ['openFile'],
       filters
@@ -291,21 +297,22 @@ export class GameLauncherHandler {
    * @throws Error when game is not running or kill fails
    */
   async killGame(gameId: string): Promise<GameStopResult> {
-    const toastId = this.notifyService.loading('正在停止游戏')
+    const messages = this.i18nService.messages
+    const toastId = this.notifyService.loading(messages.launcher.stopping)
 
     try {
       const result = await this.performKillGame(gameId)
       this.notifyService.update(toastId, {
-        title: getStopResultTitle(result),
-        message: getStopResultMessage(result),
+        title: getStopResultTitle(messages, result),
+        message: getStopResultMessage(messages, result),
         type: result.status === 'stopped' ? 'success' : 'warning',
         duration: result.status === 'stopped' ? 3000 : 5000
       })
       return result
     } catch (error) {
       this.notifyService.update(toastId, {
-        title: '停止游戏失败',
-        message: formatKillErrorMessage(error),
+        title: messages.launcher.stopFailedTitle,
+        message: formatKillErrorMessage(messages, error),
         type: 'error',
         duration: 5000
       })
@@ -338,69 +345,70 @@ export class GameLauncherHandler {
   }
 }
 
-function formatLaunchErrorMessage(error: unknown): string {
+function formatLaunchErrorMessage(messages: Messages, error: unknown): string {
   const message = toErrorMessage(error)
+  const errors = messages.launcher.errors
 
-  if (message === 'Game not found') return '游戏不存在'
-  if (message === 'Launcher path is not set') return '启动路径未设置'
-  if (message.startsWith('File not found:')) return '启动文件不存在'
-  if (message.startsWith('Executable not found:')) return '启动程序不存在'
-  if (message.startsWith('Failed to open file:')) return '打开启动文件失败'
-  if (message.startsWith('Invalid URL format:')) return '启动链接格式不正确'
-  if (message.startsWith('Unknown launcher mode:')) return '未知启动方式'
+  if (message === 'Game not found') return errors.gameNotFound
+  if (message === 'Launcher path is not set') return errors.launcherPathNotSet
+  if (message.startsWith('File not found:')) return errors.fileNotFound
+  if (message.startsWith('Executable not found:')) return errors.executableNotFound
+  if (message.startsWith('Failed to open file:')) return errors.openFileFailed
+  if (message.startsWith('Invalid URL format:')) return errors.invalidUrl
+  if (message.startsWith('Unknown launcher mode:')) return errors.unknownMode
 
   return message
 }
 
-function getLaunchResultTitle(result: GameLaunchResult): string {
+function getLaunchResultTitle(messages: Messages, result: GameLaunchResult): string {
   switch (result.status) {
     case 'detected':
-      return '已启动游戏'
+      return messages.launcher.launchedTitle
     case 'cancelled':
-      return '已取消启动'
+      return messages.launcher.launchCancelledTitle
     case 'unconfirmed':
-      return '启动请求已发送'
+      return messages.launcher.launchRequestedTitle
   }
 }
 
-function getLaunchResultMessage(result: GameLaunchResult): string | undefined {
+function getLaunchResultMessage(messages: Messages, result: GameLaunchResult): string | undefined {
   if (result.status !== 'unconfirmed') {
     return undefined
   }
 
   switch (result.reason) {
     case 'monitor-unavailable':
-      return '无法开始进程检测，请检查监控配置'
+      return messages.launcher.monitorUnavailable
     case 'process-not-detected':
-      return '尚未检测到游戏进程，请检查监控配置'
+      return messages.launcher.processNotDetected
   }
 }
 
-function getStopResultTitle(result: GameStopResult): string {
+function getStopResultTitle(messages: Messages, result: GameStopResult): string {
   switch (result.status) {
     case 'stopped':
-      return '已停止游戏'
+      return messages.launcher.stoppedTitle
     case 'unconfirmed':
-      return '停止请求已发送'
+      return messages.launcher.stopRequestedTitle
   }
 }
 
-function getStopResultMessage(result: GameStopResult): string | undefined {
+function getStopResultMessage(messages: Messages, result: GameStopResult): string | undefined {
   if (result.status !== 'unconfirmed') {
     return undefined
   }
 
   switch (result.reason) {
     case 'process-still-running':
-      return '尚未确认游戏进程已停止'
+      return messages.launcher.stopNotConfirmed
   }
 }
 
-function formatKillErrorMessage(error: unknown): string {
+function formatKillErrorMessage(messages: Messages, error: unknown): string {
   const message = toErrorMessage(error)
 
-  if (message === 'Game is not running') return '游戏未运行'
-  if (message.includes('exited with code')) return '停止进程失败'
+  if (message === 'Game is not running') return messages.launcher.errors.gameNotRunning
+  if (message.includes('exited with code')) return messages.launcher.errors.stopProcessFailed
 
   return message
 }

@@ -13,11 +13,12 @@ import type {
   SlotStrategy
 } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
-import type { Locale } from '@shared/locale'
+import type { ContentLocale } from '@shared/i18n'
 
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   createEmptySlotConfig,
   getScraperSlotsForMediaType,
@@ -44,7 +45,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { LocaleSelect } from '@renderer/components/ui/locale-select'
+import { ContentLocaleSelect } from '@renderer/components/ui/locale-select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   Field,
@@ -67,37 +68,28 @@ const props = defineProps<Props>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-const MEDIA_TYPE_LABELS: Record<ContentEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司'
-}
+const { m } = useI18n()
 
-const SLOT_LABELS: Record<ScraperSlot, string> = {
-  info: '基本信息',
-  tags: '标签',
-  characters: '角色',
-  persons: '人物',
-  companies: '公司',
-  covers: '封面',
-  backdrops: '背景图',
-  logos: 'Logo',
-  icons: '图标',
-  photos: '照片'
-}
+const MEDIA_TYPE_LABELS = computed<Record<ContentEntityType, string>>(() => ({
+  game: m.value.library.entities.game,
+  character: m.value.library.entities.character,
+  person: m.value.library.entities.person,
+  company: m.value.library.entities.company
+}))
 
-const STRATEGY_LABELS: Record<SlotStrategy, string> = {
-  first: '首个',
-  enrich: '增强'
-}
+const SLOT_LABELS = computed<Record<ScraperSlot, string>>(() => m.value.scraper.profiles.slots)
+
+const STRATEGY_LABELS = computed<Record<SlotStrategy, string>>(() => ({
+  first: m.value.scraper.profiles.strategyFirst,
+  enrich: m.value.scraper.profiles.strategyEnrich
+}))
 
 // Form state
 interface FormData {
   name: string
   mediaType: ContentEntityType
   searchProviderId: string
-  defaultLocale: Locale | null
+  defaultLocale: ContentLocale | null
   slotConfigs: ScraperSlotConfigs
 }
 
@@ -198,7 +190,7 @@ const mediaTypeModel = computed({
 })
 
 function getSlotStrategyLabel(slot: ScraperSlot): string {
-  return STRATEGY_LABELS[formData.value.slotConfigs[slot]?.strategy ?? 'first']
+  return STRATEGY_LABELS.value[formData.value.slotConfigs[slot]?.strategy ?? 'first']
 }
 
 async function handleCopyProfileId() {
@@ -208,9 +200,9 @@ async function handleCopyProfileId() {
 
   try {
     await navigator.clipboard.writeText(props.profile.id)
-    notify.success('配置 ID 已复制')
+    notify.success(m.value.scraper.profiles.idCopied)
   } catch (error) {
-    notify.error('复制失败', error instanceof Error ? error.message : String(error))
+    notify.error(m.value.common.copyFailed, error instanceof Error ? error.message : String(error))
   }
 }
 </script>
@@ -219,25 +211,27 @@ async function handleCopyProfileId() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <DialogHeader>
-        <DialogTitle>{{ props.isNew ? '添加配置' : '编辑配置' }}</DialogTitle>
+        <DialogTitle>{{
+          props.isNew ? m.scraper.profiles.itemTitleAdd : m.scraper.profiles.itemTitleEdit
+        }}</DialogTitle>
       </DialogHeader>
       <Form @submit="handleSubmit">
         <DialogBody class="max-h-[70vh] overflow-auto">
           <FieldGroup>
             <!-- Profile Name -->
             <Field>
-              <FieldLabel>配置名称</FieldLabel>
+              <FieldLabel>{{ m.scraper.profiles.nameLabel }}</FieldLabel>
               <FieldContent>
                 <Input
                   v-model="formData.name"
                   required
-                  placeholder="例如: 视觉小说"
+                  :placeholder="m.scraper.profiles.namePlaceholder"
                 />
               </FieldContent>
             </Field>
 
             <Field>
-              <FieldLabel>配置 ID</FieldLabel>
+              <FieldLabel>{{ m.scraper.profiles.idLabel }}</FieldLabel>
               <FieldContent>
                 <div class="flex gap-1.5">
                   <Input
@@ -249,7 +243,7 @@ async function handleCopyProfileId() {
                     type="button"
                     variant="outline"
                     size="icon"
-                    tooltip="复制配置 ID"
+                    :tooltip="m.scraper.profiles.copyIdTooltip"
                     @click="handleCopyProfileId"
                   >
                     <Icon
@@ -263,11 +257,11 @@ async function handleCopyProfileId() {
 
             <!-- Media Type -->
             <Field>
-              <FieldLabel>媒体类型</FieldLabel>
+              <FieldLabel>{{ m.scraper.profiles.mediaTypeLabel }}</FieldLabel>
               <FieldContent>
                 <Select v-model="mediaTypeModel">
                   <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择媒体类型" />
+                    <SelectValue :placeholder="m.scraper.profiles.selectMediaType" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="game">{{ MEDIA_TYPE_LABELS.game }}</SelectItem>
@@ -281,7 +275,7 @@ async function handleCopyProfileId() {
 
             <!-- Search Provider -->
             <Field>
-              <FieldLabel>搜索提供者</FieldLabel>
+              <FieldLabel>{{ m.scraper.profiles.searchProviderLabel }}</FieldLabel>
               <FieldContent>
                 <ScraperProviderSelect
                   v-model="formData.searchProviderId"
@@ -291,10 +285,10 @@ async function handleCopyProfileId() {
               </FieldContent>
             </Field>
 
-            <!-- Default Locale -->
+            <!-- Default ContentLocale -->
             <Field>
               <FieldLabel class="flex items-center gap-1.5">
-                默认语言
+                {{ m.scraper.profiles.defaultLanguageLabel }}
                 <Tooltip>
                   <TooltipTrigger as-child>
                     <Icon
@@ -303,22 +297,19 @@ async function handleCopyProfileId() {
                     />
                   </TooltipTrigger>
                   <TooltipContent class="max-w-xs">
-                    用于实体解析和未单独指定的抓取语言。单个槽位提供者可覆盖抓取语言，但不会影响实体解析。若未指定，将使用系统语言。
+                    {{ m.scraper.profiles.defaultLanguageHint }}
                   </TooltipContent>
                 </Tooltip>
               </FieldLabel>
               <FieldContent>
-                <LocaleSelect
-                  v-model="formData.defaultLocale"
-                  placeholder="选择默认语言"
-                />
+                <ContentLocaleSelect v-model="formData.defaultLocale" />
               </FieldContent>
             </Field>
 
             <!-- Slot Configs - inline list -->
             <Field>
-              <FieldLabel>槽位配置</FieldLabel>
-              <FieldDescription>点击槽位配置数据来源和结果策略</FieldDescription>
+              <FieldLabel>{{ m.scraper.profiles.slotsLabel }}</FieldLabel>
+              <FieldDescription>{{ m.scraper.profiles.slotsHint }}</FieldDescription>
               <FieldContent>
                 <div class="space-y-1">
                   <button
@@ -334,9 +325,12 @@ async function handleCopyProfileId() {
                         {{ getSlotStrategyLabel(slot) }}
                         ·
                         {{
-                          formData.slotConfigs[slot]?.providers.filter((p) => p.enabled).length || 0
+                          m.scraper.profiles.providerCount({
+                            count:
+                              formData.slotConfigs[slot]?.providers.filter((p) => p.enabled)
+                                .length || 0
+                          })
                         }}
-                        个提供者
                       </span>
                       <Icon
                         icon="icon-[mdi--chevron-right]"
@@ -356,9 +350,9 @@ async function handleCopyProfileId() {
             variant="outline"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
-          <Button type="submit">保存</Button>
+          <Button type="submit">{{ m.common.save }}</Button>
         </DialogFooter>
       </Form>
     </DialogContent>

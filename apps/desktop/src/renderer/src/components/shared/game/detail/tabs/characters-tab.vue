@@ -13,16 +13,17 @@ import { Button } from '@renderer/components/ui/button'
 import { StateView } from '@renderer/components/ui/state-view'
 import { CharacterCard, CharacterDetailDialog } from '@renderer/components/shared/character'
 import { GameCharactersFormDialog } from '../../forms'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const CHARACTER_TYPE_LABELS: Record<string, string> = {
-  main: '主角',
-  supporting: '配角',
-  other: '其他'
-}
+const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(
+  () => m.value.library.roles.gameCharacter
+)
 
 const CHARACTER_TYPE_ORDER = ['main', 'supporting', 'other'] as const
 
@@ -70,7 +71,7 @@ const characterDialogOpen = computed({
       v-if="!hasCharacters"
       state="empty"
       :icon="getEntityIcon('character')"
-      description="暂无角色信息"
+      :description="m.library.detail.empty.characters"
       class="py-12"
     >
       <template #actions>
@@ -83,7 +84,7 @@ const characterDialogOpen = computed({
             icon="icon-[mdi--plus]"
             class="size-4 mr-1.5"
           />
-          添加角色
+          {{ m.library.detail.addEntity({ label: m.library.entities.character }) }}
         </Button>
       </template>
     </StateView>
@@ -101,7 +102,7 @@ const characterDialogOpen = computed({
             icon="icon-[mdi--pencil-outline]"
             class="size-4 mr-1.5"
           />
-          管理
+          {{ m.library.detail.manage }}
         </Button>
       </div>
 

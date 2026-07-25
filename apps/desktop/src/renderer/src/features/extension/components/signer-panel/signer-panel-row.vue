@@ -5,6 +5,7 @@ Boundary: pure row UI; emits selection and removal intents to the parent panel.
 <script setup lang="ts">
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
+import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionTrustedSignerInfo } from '@shared/extension'
 import { formatSignerDate, getSignerRepositoryLabel, shortSignerFingerprint } from './display'
 
@@ -19,6 +20,8 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const { m } = useI18n()
 </script>
 
 <template>
@@ -39,8 +42,14 @@ const emit = defineEmits<Emits>()
       </div>
 
       <div class="grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground lg:grid-cols-2">
-        <div class="truncate">来源：{{ getSignerRepositoryLabel(props.signer) }}</div>
-        <div>信任时间：{{ formatSignerDate(props.signer.trustedAt) }}</div>
+        <div class="truncate">
+          {{ m.extension.signer.sourceLine({ value: getSignerRepositoryLabel(props.signer) }) }}
+        </div>
+        <div>
+          {{
+            m.extension.signer.trustedAtLine({ value: formatSignerDate(props.signer.trustedAt) })
+          }}
+        </div>
       </div>
     </div>
 
@@ -48,7 +57,7 @@ const emit = defineEmits<Emits>()
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="查看详情"
+        :tooltip="m.extension.signer.viewDetails"
         @click="emit('details', props.signer)"
       >
         <Icon
@@ -60,7 +69,7 @@ const emit = defineEmits<Emits>()
       <Button
         variant="ghost"
         size="icon-sm"
-        tooltip="撤销信任"
+        :tooltip="m.extension.signer.revokeTrust"
         class="hover:text-destructive"
         @click="emit('remove', props.signer)"
       >

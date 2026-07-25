@@ -1,4 +1,5 @@
 import { defineExtension, kisaki, type ExtensionLogger } from '@kisaki3/extension-sdk'
+import { m, setHostUiLocale } from './i18n'
 import { BangumiClient } from './api/client'
 import { createBangumiUserAgent } from './api/user-agent'
 import { AccountService } from './auth/account'
@@ -26,6 +27,13 @@ import { SyncSuppressor } from './sync/suppressor'
 
 export default defineExtension({
   async activate(context) {
+    setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
+    context.subscriptions.add(
+      await kisaki.events.on('app.ui-locale.changed', ({ effective }) => {
+        setHostUiLocale(effective)
+      })
+    )
+
     const settingsStore = new SettingsStore(context.storage)
     const tokenStore = new TokenStore(context.secrets)
     await settingsStore.get()
@@ -86,7 +94,7 @@ export default defineExtension({
         try {
           const oauthFlow = oauthFlowRef.current
           if (!oauthFlow) {
-            throw new BangumiExtensionError('relay_unavailable', 'Bangumi 登录尚未准备好。')
+            throw new BangumiExtensionError('relay_unavailable', m().errors.loginNotReady)
           }
 
           await oauthFlow.completeFromDeeplink(event)
@@ -96,7 +104,7 @@ export default defineExtension({
           return {
             success: true,
             status: 'handled',
-            message: `Bangumi 登录完成：${account.nickname}`
+            message: m().oauth.loginCompleted({ nickname: account.nickname })
           }
         } catch (error) {
           const message = toUserMessage(error)
@@ -163,7 +171,7 @@ export default defineExtension({
 
 async function notifyLoginSuccess(nickname: string, logger: ExtensionLogger): Promise<void> {
   try {
-    await kisaki.notify.success('Bangumi 登录完成', {
+    await kisaki.notify.success(m().oauth.loginSucceededTitle, {
       message: nickname
     })
   } catch (error) {
@@ -173,7 +181,7 @@ async function notifyLoginSuccess(nickname: string, logger: ExtensionLogger): Pr
 
 async function notifyLoginFailure(message: string, logger: ExtensionLogger): Promise<void> {
   try {
-    await kisaki.notify.error('Bangumi 登录失败', {
+    await kisaki.notify.error(m().oauth.loginFailedTitle, {
       message
     })
   } catch (error) {
@@ -186,7 +194,7 @@ function toUserMessage(error: unknown): string {
     return error.message
   }
 
-  return 'Bangumi 登录回调处理失败，请回到设置页重试。'
+  return m().oauth.callbackFailed
 }
 
 function toSafeErrorLog(error: unknown): Record<string, unknown> {

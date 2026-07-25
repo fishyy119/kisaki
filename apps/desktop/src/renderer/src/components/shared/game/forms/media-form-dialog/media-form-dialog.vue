@@ -29,6 +29,9 @@ import { DeleteConfirmDialog } from '@renderer/components/ui/delete-confirm-dial
 import GameMediaSearchFormDialog from './media-search-form-dialog.vue'
 import GameMediaCropFormDialog from './media-crop-form-dialog.vue'
 import GameMediaUrlFormDialog from './media-url-form-dialog.vue'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   gameId: string
@@ -46,36 +49,36 @@ interface MediaTypeConfig {
   field: 'coverFile' | 'backdropFile' | 'logoFile' | 'iconFile'
 }
 
-const MEDIA_TYPES: MediaTypeConfig[] = [
+const MEDIA_TYPES = computed<MediaTypeConfig[]>(() => [
   {
     type: 'cover',
-    label: '封面',
-    description: '游戏封面图，用于卡片和列表显示',
+    label: m.value.library.forms.mediaTypes.cover,
+    description: m.value.library.forms.mediaDescriptions.gameCover,
     aspectRatio: 'aspect-[3/4]',
     field: 'coverFile'
   },
   {
     type: 'backdrop',
-    label: '背景',
-    description: '详情页背景图',
+    label: m.value.library.forms.mediaTypes.backdrop,
+    description: m.value.library.forms.mediaDescriptions.gameBackdrop,
     aspectRatio: 'aspect-video',
     field: 'backdropFile'
   },
   {
     type: 'logo',
-    label: 'Logo',
-    description: '游戏标题 Logo',
+    label: m.value.library.forms.mediaTypes.logo,
+    description: m.value.library.forms.mediaDescriptions.gameLogo,
     aspectRatio: 'aspect-[3/1]',
     field: 'logoFile'
   },
   {
     type: 'icon',
-    label: '图标',
-    description: '小尺寸图标',
+    label: m.value.library.forms.mediaTypes.icon,
+    description: m.value.library.forms.mediaDescriptions.gameIcon,
     aspectRatio: 'aspect-square',
     field: 'iconFile'
   }
-]
+])
 
 // Content state
 const game = ref<Game | null>(null)
@@ -112,7 +115,9 @@ useEvent('db.updated', ({ table, id }) => {
   }
 })
 
-const selectedConfig = computed(() => MEDIA_TYPES.find((m) => m.type === selectedType.value)!)
+const selectedConfig = computed(() =>
+  MEDIA_TYPES.value.find((mt) => mt.type === selectedType.value)!
+)
 
 const currentFile = computed(() => {
   if (!game.value) return null
@@ -128,7 +133,7 @@ async function handleImportFile() {
   try {
     const dialogResult = await ipcManager.invoke('native:open-dialog', getOpenImageDialogOptions())
     if (!dialogResult.success) {
-      notify.error(dialogResult.error || '选择文件失败')
+      notify.error(dialogResult.error || m.value.library.feedback.pickFileFailed)
       return
     }
     if (!dialogResult.data || dialogResult.data.canceled || !dialogResult.data.filePaths[0]) {
@@ -140,7 +145,7 @@ async function handleImportFile() {
       path: dialogResult.data.filePaths[0]
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
   } finally {
     isImportingFile.value = false
   }
@@ -149,7 +154,7 @@ async function handleImportFile() {
 // Delete media
 async function handleDelete() {
   await attachment.clearFile(games, props.gameId, selectedConfig.value.field)
-  notify.success('媒体已删除')
+  notify.success(m.value.library.forms.mediaDeleted)
 }
 
 function handleClose() {
@@ -173,7 +178,7 @@ function handleClose() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>媒体管理</DialogTitle>
+          <DialogTitle>{{ m.library.forms.manageMedia }}</DialogTitle>
         </DialogHeader>
 
         <DialogBody class="flex gap-4">
@@ -246,7 +251,9 @@ function handleClose() {
                   icon="icon-[mdi--image-off-outline]"
                   class="size-12"
                 />
-                <span class="text-sm">暂无{{ selectedConfig.label }}</span>
+                <span class="text-sm">{{
+                  m.library.forms.emptyMedia({ label: selectedConfig.label })
+                }}</span>
               </div>
             </div>
 
@@ -271,7 +278,7 @@ function handleClose() {
                   icon="icon-[mdi--upload]"
                   class="size-4"
                 />
-                从文件导入
+                {{ m.library.forms.importFromFile }}
               </Button>
               <Button
                 variant="outline"
@@ -282,7 +289,7 @@ function handleClose() {
                   icon="icon-[mdi--link-variant]"
                   class="size-4"
                 />
-                从链接导入
+                {{ m.library.forms.importFromUrl }}
               </Button>
               <Button
                 variant="outline"
@@ -293,7 +300,7 @@ function handleClose() {
                   icon="icon-[mdi--magnify]"
                   class="size-4"
                 />
-                搜索图片
+                {{ m.library.forms.searchImages }}
               </Button>
               <template v-if="hasImage">
                 <Button
@@ -305,7 +312,7 @@ function handleClose() {
                     icon="icon-[mdi--crop]"
                     class="size-4"
                   />
-                  裁剪
+                  {{ m.library.forms.crop }}
                 </Button>
                 <Button
                   variant="outline"
@@ -317,7 +324,7 @@ function handleClose() {
                     icon="icon-[mdi--delete-outline]"
                     class="size-4"
                   />
-                  删除
+                  {{ m.common.delete }}
                 </Button>
               </template>
             </div>
@@ -329,7 +336,7 @@ function handleClose() {
             variant="outline"
             @click="handleClose"
           >
-            关闭
+            {{ m.common.close }}
           </Button>
         </DialogFooter>
       </template>
@@ -365,7 +372,7 @@ function handleClose() {
   <DeleteConfirmDialog
     v-if="showDeleteConfirm"
     v-model:open="showDeleteConfirm"
-    entity-label="图片"
+    :entity-label="m.library.forms.imageEntityLabel"
     :entity-name="selectedConfig.label"
     @confirm="handleDelete"
   />

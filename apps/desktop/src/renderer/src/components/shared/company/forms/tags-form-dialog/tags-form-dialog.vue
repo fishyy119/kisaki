@@ -28,6 +28,9 @@ import { notify } from '@renderer/core/notify'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import CompanyTagsItemFormDialog from './tag-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Company')
 
@@ -131,11 +134,11 @@ async function handleSave() {
       )
     }
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -229,7 +232,7 @@ function handleRevealSpoilersConfirm() {
 
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑标签</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editTags }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-1">
@@ -237,7 +240,7 @@ function handleRevealSpoilersConfirm() {
               v-if="items.length === 0"
               class="text-sm text-muted-foreground text-center py-8"
             >
-              暂无标签，点击下方按钮添加
+              {{ m.library.forms.emptyTagsHint }}
             </p>
             <ListItem
               v-for="({ item, spoiler }, index) in displayItems"
@@ -272,7 +275,7 @@ function handleRevealSpoilersConfirm() {
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加标签
+            {{ m.library.forms.addTag }}
           </Button>
           <div class="flex gap-2">
             <Button
@@ -283,19 +286,19 @@ function handleRevealSpoilersConfirm() {
                 :icon="spoilersRevealed ? 'icon-[mdi--eye-off-outline]' : 'icon-[mdi--eye-outline]'"
                 class="size-4 mr-1.5"
               />
-              {{ spoilersRevealed ? '隐藏剧透' : '显示剧透' }}
+              {{ spoilersRevealed ? m.library.forms.hideSpoilers : m.library.forms.showSpoilers }}
             </Button>
             <Button
               variant="outline"
               @click="open = false"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -314,7 +317,7 @@ function handleRevealSpoilersConfirm() {
 
   <DeleteConfirmDialog
     v-model:open="deleteDialogOpen"
-    entity-label="标签"
+    :entity-label="m.library.entities.tag"
     @confirm="handleDeleteConfirm"
   />
 

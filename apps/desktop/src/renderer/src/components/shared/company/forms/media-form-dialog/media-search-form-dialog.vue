@@ -24,6 +24,9 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { ScraperProviderSelect } from '@renderer/components/shared/scraper'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 type CompanyMediaType = 'logo'
 
@@ -38,9 +41,9 @@ const open = defineModel<boolean>('open', { required: true })
 
 const company = ref<Company | null>(null)
 
-const MEDIA_TYPE_LABEL: Record<CompanyMediaType, string> = {
-  logo: 'Logo'
-}
+const MEDIA_TYPE_LABEL = computed<Record<CompanyMediaType, string>>(() => ({
+  logo: m.value.library.forms.mediaTypes.logo
+}))
 
 const selectedUrl = ref<string | null>(null)
 const selectedProviderId = ref('')
@@ -118,7 +121,7 @@ async function handleConfirm() {
       url: selectedUrl.value
     })
 
-    notify.success('媒体已更新')
+    notify.success(m.value.library.forms.mediaUpdated)
     open.value = false
   } finally {
     isImporting.value = false
@@ -139,7 +142,9 @@ watch(selectedProviderId, () => {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-3xl">
       <DialogHeader>
-        <DialogTitle>搜索{{ MEDIA_TYPE_LABEL[props.mediaType] }}</DialogTitle>
+        <DialogTitle>{{
+          m.library.forms.searchMediaTitle({ label: MEDIA_TYPE_LABEL[props.mediaType] })
+        }}</DialogTitle>
       </DialogHeader>
 
       <template v-if="isLoading || !company">
@@ -162,7 +167,7 @@ watch(selectedProviderId, () => {
 
             <Input
               v-model="searchQuery"
-              placeholder="输入搜索关键词..."
+              :placeholder="m.library.forms.searchKeywordPlaceholder"
               class="flex-1"
               :disabled="isLoadingImages"
               @keydown="handleKeyDown"
@@ -183,7 +188,7 @@ watch(selectedProviderId, () => {
                 icon="icon-[mdi--magnify]"
                 class="size-4"
               />
-              搜索
+              {{ m.common.search }}
             </Button>
           </div>
 
@@ -196,7 +201,7 @@ watch(selectedProviderId, () => {
                 icon="icon-[mdi--image-plus-outline]"
                 class="size-10"
               />
-              <p class="text-sm">点击搜索开始</p>
+              <p class="text-sm">{{ m.library.forms.searchStartHint }}</p>
             </div>
             <div
               v-else-if="isLoadingImages"
@@ -212,7 +217,7 @@ watch(selectedProviderId, () => {
                 icon="icon-[mdi--alert-circle-outline]"
                 class="size-10"
               />
-              <p class="text-sm">搜索失败</p>
+              <p class="text-sm">{{ m.library.forms.searchFailedHint }}</p>
               <p class="text-xs text-muted-foreground">{{ imagesError.message }}</p>
             </div>
             <div
@@ -223,7 +228,7 @@ watch(selectedProviderId, () => {
                 icon="icon-[mdi--image-off-outline]"
                 class="size-10"
               />
-              <p class="text-sm">未找到相关图片</p>
+              <p class="text-sm">{{ m.library.forms.searchNoImages }}</p>
             </div>
             <div
               v-else
@@ -269,7 +274,7 @@ watch(selectedProviderId, () => {
             variant="outline"
             @click="handleClose"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
           <Button
             :disabled="!selectedUrl || isImporting"
@@ -280,9 +285,9 @@ watch(selectedProviderId, () => {
                 icon="icon-[mdi--loading]"
                 class="size-4 animate-spin"
               />
-              导入中...
+              {{ m.library.forms.importing }}
             </template>
-            <template v-else> 确认选择 </template>
+            <template v-else>{{ m.library.forms.confirmSelection }}</template>
           </Button>
         </DialogFooter>
       </template>

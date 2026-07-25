@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { Alert, Badge, type BadgeVariants } from '@kisaki3/extension-ui-vue'
 import type { BangumiJobPreviewTone, BangumiPreviewGroupDto } from '../../../shared/settings'
+import { m } from '../i18n'
 import { host, toErrorMessage } from '../rpc'
 
 interface Props {
@@ -37,7 +38,7 @@ function openExternalLink(url: string): void {
 </script>
 
 <template>
-  <Alert v-if="props.groups.length === 0">没有将要更改的条目</Alert>
+  <Alert v-if="props.groups.length === 0">{{ m.ui.previewDialog.empty }}</Alert>
   <div
     v-else
     class="rounded-md border border-border"

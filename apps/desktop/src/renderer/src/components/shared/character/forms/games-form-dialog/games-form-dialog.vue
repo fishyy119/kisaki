@@ -29,6 +29,9 @@ import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { getEntityIcon, getSpoilerDisplay } from '@renderer/utils/format'
 import CharacterGamesItemFormDialog from './game-item-form-dialog.vue'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 const log = createLogger('Character')
 
@@ -52,12 +55,12 @@ interface GameLinkItem {
   isNew?: boolean
 }
 
-const CHARACTER_TYPE_LABELS: Record<string, string> = {
-  main: '主角',
-  supporting: '配角',
-  cameo: '客串',
-  other: '其他'
-}
+const CHARACTER_TYPE_LABELS = computed<Record<string, string>>(() => ({
+  main: m.value.library.roles.gameCharacter.main,
+  supporting: m.value.library.roles.gameCharacter.supporting,
+  cameo: m.value.library.roles.gameCharacter.cameo,
+  other: m.value.library.roles.gameCharacter.other
+}))
 
 const CHARACTER_TYPE_ORDER: GameCharacterType[] = ['main', 'supporting', 'cameo', 'other']
 
@@ -201,11 +204,11 @@ async function handleSave() {
       }
     }
 
-    notify.success('已保存')
+    notify.success(m.value.common.saved)
     open.value = false
   } catch (error) {
     log.error('Save failed:', error)
-    notify.error('保存失败，请重试')
+    notify.error(m.value.library.feedback.saveFailedRetry)
   } finally {
     isSaving.value = false
   }
@@ -333,7 +336,7 @@ function handleRevealSpoilersConfirm() {
       <!-- Form content -->
       <template v-else>
         <DialogHeader>
-          <DialogTitle>编辑登场游戏</DialogTitle>
+          <DialogTitle>{{ m.library.forms.editCharacterGames }}</DialogTitle>
         </DialogHeader>
         <DialogBody class="overflow-auto max-h-[60vh]">
           <div class="space-y-4">
@@ -341,7 +344,7 @@ function handleRevealSpoilersConfirm() {
               v-if="items.length === 0"
               class="text-sm text-muted-foreground text-center py-8"
             >
-              暂无登场游戏，点击下方按钮添加
+              {{ m.library.forms.emptyListHint({ label: m.library.entities.game }) }}
             </p>
             <template v-else>
               <template
@@ -402,7 +405,7 @@ function handleRevealSpoilersConfirm() {
               icon="icon-[mdi--plus]"
               class="size-4 mr-1.5"
             />
-            添加游戏
+            {{ m.library.detail.addEntity({ label: m.library.entities.game }) }}
           </Button>
           <div class="flex gap-2">
             <Button
@@ -413,19 +416,19 @@ function handleRevealSpoilersConfirm() {
                 :icon="spoilersRevealed ? 'icon-[mdi--eye-off-outline]' : 'icon-[mdi--eye-outline]'"
                 class="size-4 mr-1.5"
               />
-              {{ spoilersRevealed ? '隐藏剧透' : '显示剧透' }}
+              {{ spoilersRevealed ? m.library.forms.hideSpoilers : m.library.forms.showSpoilers }}
             </Button>
             <Button
               variant="outline"
               @click="handleCancel"
             >
-              取消
+              {{ m.common.cancel }}
             </Button>
             <Button
               :disabled="isSaving"
               @click="handleSave"
             >
-              保存
+              {{ m.common.save }}
             </Button>
           </div>
         </DialogFooter>
@@ -437,7 +440,7 @@ function handleRevealSpoilersConfirm() {
   <DeleteConfirmDialog
     v-if="deleteDialogOpen"
     v-model:open="deleteDialogOpen"
-    entity-label="游戏关联"
+    :entity-label="m.library.forms.linkLabels.game"
     mode="remove"
     @confirm="deleteId !== null && handleRemove(deleteId)"
   />

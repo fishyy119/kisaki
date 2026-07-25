@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { cn } from '@renderer/utils/cn'
 
 interface Props {
@@ -9,6 +10,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { m } = useI18n()
 </script>
 
 <template>
@@ -16,7 +19,7 @@ const props = defineProps<Props>()
     icon="icon-[mdi--loading]"
     :class="cn('animate-spin', props.class)"
     role="status"
-    aria-label="Loading"
+    :aria-label="m.common.loading"
     data-slot="spinner"
   />
 </template>

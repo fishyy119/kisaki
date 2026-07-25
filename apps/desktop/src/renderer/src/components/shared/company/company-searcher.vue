@@ -11,7 +11,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import { formatDate } from '@renderer/utils/datetime'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -49,6 +49,8 @@ const props = withDefaults(defineProps<Props>(), {
   defaultCompanyId: '',
   isSubmitting: false
 })
+
+const { m, f } = useI18n()
 
 const emit = defineEmits<{
   selectionChange: [selection: CompanySearcherSelection]
@@ -177,7 +179,10 @@ async function handleSearch() {
 
     searchResults.value = result.data ?? []
   } catch (error) {
-    notify.error('搜索失败', error instanceof Error ? error.message : '未知错误')
+    notify.error(
+      m.value.library.feedback.searchFailed,
+      error instanceof Error ? error.message : m.value.library.feedback.unknownError
+    )
   } finally {
     isSearching.value = false
   }
@@ -207,7 +212,7 @@ const companyIdModel = computed({
 <template>
   <FieldGroup :class="props.class">
     <Field>
-      <FieldLabel>刮削配置</FieldLabel>
+      <FieldLabel>{{ m.library.searcher.scraperProfile }}</FieldLabel>
       <FieldContent>
         <ScraperProfileSelect
           v-model="selectedProfileId"
@@ -217,12 +222,14 @@ const companyIdModel = computed({
     </Field>
 
     <Field>
-      <FieldLabel>搜索公司</FieldLabel>
+      <FieldLabel>{{
+        m.library.searcher.searchLabel({ label: m.library.entities.company })
+      }}</FieldLabel>
       <FieldContent>
         <div class="flex gap-2">
           <Input
             v-model="searchQuery"
-            placeholder="输入公司名称..."
+            :placeholder="m.library.searcher.namePlaceholder({ label: m.library.entities.company })"
             :disabled="!selectedProfileId || isSearching"
             class="flex-1"
             @keydown="handleSearchKeyDown"
@@ -243,7 +250,7 @@ const companyIdModel = computed({
               icon="icon-[mdi--magnify]"
               class="size-4"
             />
-            搜索
+            {{ m.common.search }}
           </Button>
         </div>
       </FieldContent>
@@ -258,9 +265,11 @@ const companyIdModel = computed({
         <template #header>
           <TableHeader>
             <TableRow>
-              <TableHead class="h-7 text-[11px]">名称</TableHead>
-              <TableHead class="h-7 text-[11px]">原名</TableHead>
-              <TableHead class="h-7 text-[11px]">成立</TableHead>
+              <TableHead class="h-7 text-[11px]">{{ m.library.searcher.columnName }}</TableHead>
+              <TableHead class="h-7 text-[11px]">{{
+                m.library.searcher.columnOriginalName
+              }}</TableHead>
+              <TableHead class="h-7 text-[11px]">{{ m.library.searcher.columnFounded }}</TableHead>
             </TableRow>
           </TableHeader>
         </template>
@@ -271,7 +280,7 @@ const companyIdModel = computed({
             state="empty"
             size="sm"
             icon="icon-[mdi--magnify]"
-            description="输入公司名称开始搜索"
+            :description="m.library.searcher.startHint({ label: m.library.entities.company })"
             class="h-full"
           />
 
@@ -287,8 +296,8 @@ const companyIdModel = computed({
             state="empty"
             size="sm"
             icon="icon-[mdi--magnify-close]"
-            title="无匹配结果"
-            description="请尝试其它关键词"
+            :title="m.library.searcher.noMatchTitle"
+            :description="m.library.searcher.noMatchDescription"
             class="h-full"
           />
         </template>
@@ -306,7 +315,7 @@ const companyIdModel = computed({
               {{ result.originalName || '-' }}
             </TableCell>
             <TableCell class="text-muted-foreground">
-              {{ formatDate(result.foundedDate ?? null) }}
+              {{ result.foundedDate ? f.date(result.foundedDate) : m.common.emptyValue }}
             </TableCell>
           </TableRow>
         </TableBody>
@@ -318,8 +327,8 @@ const companyIdModel = computed({
                 colspan="3"
                 class="h-6 py-0 text-[10px] text-muted-foreground"
               >
-                共 {{ searchResults.length }} 条结果
-                <template v-if="selectedResultId"> · 已选择 1 条</template>
+                {{ m.library.searcher.resultCount({ count: searchResults.length }) }}
+                <template v-if="selectedResultId"> · {{ m.library.searcher.selectedOne }}</template>
               </TableCell>
             </TableRow>
           </TableFooter>
@@ -329,13 +338,13 @@ const companyIdModel = computed({
 
     <Field>
       <FieldLabel>
-        <span>公司 ID</span>
-        <FieldDescription>从搜索结果选择或直接输入 ID</FieldDescription>
+        <span>{{ m.library.searcher.idLabel({ label: m.library.entities.company }) }}</span>
+        <FieldDescription>{{ m.library.searcher.idDescription }}</FieldDescription>
       </FieldLabel>
       <FieldContent>
         <Input
           v-model="companyIdModel"
-          placeholder="从上方选择或直接输入..."
+          :placeholder="m.library.searcher.idPlaceholder"
           :disabled="!selectedProfileId || props.isSubmitting"
           class="font-mono text-xs"
         />

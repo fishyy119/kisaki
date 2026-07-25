@@ -13,6 +13,9 @@ import { VirtualGrid } from '@renderer/components/ui/virtual'
 import { EntityCard } from '@renderer/components/shared'
 import type { ContentEntityType } from '@shared/common'
 import type { Game, Character, Person, Company } from '@shared/db'
+import { useI18n } from '@renderer/composables'
+
+const { m } = useI18n()
 
 interface Props {
   scrollParent?: HTMLElement | null
@@ -24,17 +27,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 type EntityData = Game | Character | Person | Company
 
-const ENTITY_LABELS: Record<ContentEntityType, string> = {
-  game: '游戏',
-  character: '角色',
-  person: '人物',
-  company: '公司'
-}
-
 const { tag, entities, entityType, isLoading, error } = useTag()
 const state = useRenderState(isLoading, error, tag)
 
-const entityLabel = computed(() => ENTITY_LABELS[entityType.value])
+const entityLabel = computed(() => m.value.library.entities[entityType.value])
 
 const emit = defineEmits<{
   (e: 'entity-click', payload: { type: ContentEntityType; id: string; entity: EntityData }): void
@@ -53,8 +49,8 @@ function handleItemClick(entity: EntityData) {
     :state="state"
     :error="error"
     icon="icon-[mdi--tag-off-outline]"
-    title="标签不存在"
-    description="该标签可能已被删除"
+    :title="m.library.detail.notFoundTitle({ label: m.library.entities.tag })"
+    :description="m.library.detail.notFoundDescription({ label: m.library.entities.tag })"
     class="h-full"
   />
 
@@ -63,8 +59,8 @@ function handleItemClick(entity: EntityData) {
     v-else-if="state === 'success' && entities.length === 0"
     state="empty"
     :icon="getEntityIcon('tag')"
-    :title="`此标签暂无${entityLabel}`"
-    :description="`尚无${entityLabel}使用此标签`"
+    :title="m.library.detail.tagEmptyTitle({ label: entityLabel })"
+    :description="m.library.detail.tagEmptyDescription({ label: entityLabel })"
     class="h-full"
   />
 

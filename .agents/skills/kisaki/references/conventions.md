@@ -7,7 +7,7 @@
 - `.prettierrc.yaml` - Prettier configuration
 - `apps/desktop/src/main/services/notify/service.ts` - Notification service
 - `apps/desktop/src/renderer/src/core/notify.ts` - Renderer notifications
-- `apps/desktop/src/shared/locale.ts` - i18n types
+- `apps/desktop/src/shared/i18n/` - Locale types, message catalogs, formatters
 
 ## Async Patterns
 
@@ -341,34 +341,40 @@ function syncSelection(value: string): void {
 
 ## i18n Patterns
 
+See [i18n.md](i18n.md) for the full system reference, copy style guide, and glossary.
+
 ### Locale Types
 
 ```typescript
-type AppLocale = 'en' | 'zh-Hans' | 'ja'
-const APP_LOCALES: AppLocale[] = ['en', 'zh-Hans', 'ja']
-const DEFAULT_LOCALE: AppLocale = 'en'
+// @shared/i18n - UI language (messages, formatters)
+type UiLocale = 'en' | 'ja' | 'zh-Hans' | 'zh-Hant'
+// @shared/i18n - media metadata language (scrapers, content)
+type ContentLocale = 'en' | 'zh-Hans' | 'zh-Hant' | 'ja' | 'ko' | /* ... */ 'uk'
 ```
+
+The extension protocol (`@kisaki3/extension-api`) declares structurally identical locale types
+independently; never re-export across that boundary.
 
 ### Settings
 
-- `settings.locale = null` → Follow system language
-- `settings.locale = 'en'` → Fixed locale
+- `settings.uiLocale = null` → Follow system language
+- `settings.uiLocale = 'ja'` → Fixed UI locale
 
 ### Language Change Flow
 
-1. Call `setLocale(locale | null)`
-2. i18next changes language
-3. Persist to `settings.locale`
-4. Emit `app.locale.changed` event
-5. Other process syncs language
+1. Renderer calls `setPreference(locale | null)` (`i18n:set-preference`)
+2. Main `I18nService` persists `settings.ui_locale` and recomputes the effective locale
+3. Main emits `app.ui-locale.changed` with `{ preference, effective }`
+4. Renderer core/i18n applies the state; `m` / `f` recompute reactively
 
-### Adding Translations
+### Message Rules
 
-1. Add keys to both main and renderer locale files:
-   - `src/main/services/i18n/locales/*.json`
-   - `src/renderer/src/core/i18n/locales/*.json`
-2. Keep keys stable (avoid renaming)
+1. `messages/en/` is the schema source; other locales use `satisfies Messages['<domain>']`
+2. Keep keys stable (avoid renaming); English camelCase named by role
 3. Don't use Chinese as keys
+4. No CJK literals outside the `zh-hans` / `zh-hant` / `ja` catalogs
+5. Locale-aware value display goes through `useI18n().f`; never hardcode a locale in `Intl`
+   constructors or `toLocale*` calls
 
 ## Notifications
 
@@ -414,7 +420,7 @@ notify.loading('Title', 'Optional message')
 - Notifications: `notify.success`, `notify.error`
 - DB: `.run(`, `.get(`, `.all(`, `.transaction(`
 - Comments: `TEMP:`, `@ts-expect-error`, `eslint-disable`
-- i18n: `i18n.changeLanguage(`, `app.locale.changed`
+- i18n: `useI18n(`, `getMessages(`, `app.ui-locale.changed`
 
 ## Constraints
 

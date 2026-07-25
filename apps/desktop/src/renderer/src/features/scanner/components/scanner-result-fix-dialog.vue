@@ -6,6 +6,7 @@ import { ipcManager, unwrapIpcData } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { buildIngestUpdateLookup } from '@renderer/utils/ingest-update'
 import { useAsyncData } from '@renderer/composables'
+import { useI18n } from '@renderer/composables/use-i18n'
 import { GameSearcher, type GameSearcherSelection } from '@renderer/components/shared/game'
 import { Button } from '@renderer/components/ui/button'
 import { Icon } from '@renderer/components/ui/icon'
@@ -31,6 +32,8 @@ interface Props {
 const props = defineProps<Props>()
 const open = defineModel<boolean>('open', { required: true })
 
+const { m } = useI18n()
+
 const isSubmitting = ref(false)
 const selection = ref<GameSearcherSelection>(createEmptySelection())
 
@@ -51,7 +54,9 @@ const { data: scanner } = useAsyncData(
 const defaultSearchQuery = computed(() => props.problem.extractedName)
 const defaultProfileId = computed(() => scanner.value?.scraperProfileId ?? '')
 const isUpdateMode = computed(() => !!props.problem.gameId)
-const actionText = computed(() => (isUpdateMode.value ? '更新现有游戏' : '重新添加游戏'))
+const actionText = computed(() =>
+  isUpdateMode.value ? m.value.scanner.fix.updateExisting : m.value.scanner.fix.readdGame
+)
 const canSubmit = computed(() => selection.value.canSubmit && !isSubmitting.value)
 
 function createEmptySelection(): GameSearcherSelection {
@@ -125,10 +130,13 @@ async function handleSubmit() {
       await startAddFromScraper()
     }
 
-    notify.success('已开始重新刮削')
+    notify.success(m.value.scanner.fix.started)
     open.value = false
   } catch (error) {
-    notify.error('启动修正失败', error instanceof Error ? error.message : '未知错误')
+    notify.error(
+      m.value.scanner.fix.startFailed,
+      error instanceof Error ? error.message : m.value.scanner.fix.unknownError
+    )
   } finally {
     isSubmitting.value = false
   }
@@ -154,7 +162,7 @@ watch(
             icon="icon-[mdi--database-search-outline]"
             class="size-4"
           />
-          修正扫描结果
+          {{ m.scanner.fix.title }}
         </DialogTitle>
         <DialogDescription class="truncate">
           {{ actionText }} · {{ props.problem.extractedName }}
@@ -194,7 +202,7 @@ watch(
             :disabled="isSubmitting"
             @click="open = false"
           >
-            取消
+            {{ m.common.cancel }}
           </Button>
           <Button
             type="submit"
@@ -210,7 +218,7 @@ watch(
               icon="icon-[mdi--refresh]"
               class="size-4"
             />
-            重新刮削
+            {{ m.scanner.fix.rescrape }}
           </Button>
         </DialogFooter>
       </Form>

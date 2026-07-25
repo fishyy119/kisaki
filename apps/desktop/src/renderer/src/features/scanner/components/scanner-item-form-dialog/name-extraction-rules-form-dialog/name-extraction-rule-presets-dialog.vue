@@ -8,7 +8,8 @@
 import { ref, computed, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import type { NameExtractionRule } from '@shared/db'
-import { NAME_EXTRACTION_PRESETS } from './name-extraction-rule-presets'
+import { getNameExtractionPresets } from './name-extraction-rule-presets'
+import { useI18n } from '@renderer/composables/use-i18n'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,8 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const { m } = useI18n()
+
 // =============================================================================
 // State
 // =============================================================================
@@ -49,7 +52,7 @@ const selectedIds = ref<Set<string>>(new Set())
 
 // Filter out presets that are already added (by matching ID)
 const availablePresets = computed(() =>
-  NAME_EXTRACTION_PRESETS.filter((preset) => !props.existingRuleIds.includes(preset.id))
+  getNameExtractionPresets().filter((preset) => !props.existingRuleIds.includes(preset.id))
 )
 
 // =============================================================================
@@ -89,14 +92,14 @@ function createSelectedModel(presetId: string) {
 }
 
 function handleAdd() {
-  const rulesToAdd: NameExtractionRule[] = NAME_EXTRACTION_PRESETS.filter((preset) =>
-    selectedIds.value.has(preset.id)
-  ).map((preset) => ({
-    id: nanoid(),
-    description: preset.name,
-    pattern: preset.pattern,
-    enabled: true
-  }))
+  const rulesToAdd: NameExtractionRule[] = getNameExtractionPresets()
+    .filter((preset) => selectedIds.value.has(preset.id))
+    .map((preset) => ({
+      id: nanoid(),
+      description: preset.name,
+      pattern: preset.pattern,
+      enabled: true
+    }))
 
   emit('add', rulesToAdd)
   selectedIds.value = new Set()
@@ -113,14 +116,14 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>选择预设规则</DialogTitle>
+        <DialogTitle>{{ m.scanner.rules.presetsTitle }}</DialogTitle>
       </DialogHeader>
       <DialogBody class="max-h-[60vh] overflow-auto">
         <p
           v-if="availablePresets.length === 0"
           class="text-sm text-muted-foreground text-center py-8"
         >
-          所有预设规则已添加
+          {{ m.scanner.rules.presetsAllAdded }}
         </p>
         <div
           v-else
@@ -150,13 +153,13 @@ function handleCancel() {
           variant="outline"
           @click="handleCancel"
         >
-          取消
+          {{ m.common.cancel }}
         </Button>
         <Button
           :disabled="selectedIds.size === 0"
           @click="handleAdd"
         >
-          添加 ({{ selectedIds.size }})
+          {{ m.scanner.rules.addWithCount({ count: selectedIds.size }) }}
         </Button>
       </DialogFooter>
     </DialogContent>

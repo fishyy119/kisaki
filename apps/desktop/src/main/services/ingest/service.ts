@@ -48,7 +48,13 @@ interface IngestBatchHandlers {
 
 export class IngestService implements IContentService {
   readonly id = 'ingest'
-  readonly deps = ['db', 'ipc', 'scraper', 'task-run'] as const satisfies readonly ServiceName[]
+  readonly deps = [
+    'db',
+    'i18n',
+    'ipc',
+    'scraper',
+    'task-run'
+  ] as const satisfies readonly ServiceName[]
 
   add!: IngestAddHandlers
   update!: IngestUpdateHandlers
@@ -59,39 +65,79 @@ export class IngestService implements IContentService {
     const ipcService = container.get('ipc')
     const scraperService = container.get('scraper')
     const taskRunService = container.get('task-run')
-    const persist = new IngestPersistHandlers(dbService)
+    const i18nService = container.get('i18n')
+    const persist = new IngestPersistHandlers(dbService, i18nService)
 
     this.add = {
-      game: new GameAddHandler(dbService, scraperService, persist.game, taskRunService),
-      person: new PersonAddHandler(dbService, scraperService, persist.person, taskRunService),
-      company: new CompanyAddHandler(dbService, scraperService, persist.company, taskRunService),
+      game: new GameAddHandler(
+        dbService,
+        scraperService,
+        persist.game,
+        taskRunService,
+        i18nService
+      ),
+      person: new PersonAddHandler(
+        dbService,
+        scraperService,
+        persist.person,
+        taskRunService,
+        i18nService
+      ),
+      company: new CompanyAddHandler(
+        dbService,
+        scraperService,
+        persist.company,
+        taskRunService,
+        i18nService
+      ),
       character: new CharacterAddHandler(
         dbService,
         scraperService,
         persist.character,
-        taskRunService
+        taskRunService,
+        i18nService
       )
     }
     this.update = {
-      game: new GameUpdateHandler(dbService, scraperService, persist, taskRunService),
-      person: new PersonUpdateHandler(dbService, scraperService, taskRunService),
-      company: new CompanyUpdateHandler(dbService, scraperService, taskRunService),
-      character: new CharacterUpdateHandler(dbService, scraperService, persist, taskRunService)
+      game: new GameUpdateHandler(dbService, scraperService, persist, taskRunService, i18nService),
+      person: new PersonUpdateHandler(dbService, scraperService, taskRunService, i18nService),
+      company: new CompanyUpdateHandler(dbService, scraperService, taskRunService, i18nService),
+      character: new CharacterUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService
+      )
     }
     this.batch = {
-      game: new GameBatchHandler(dbService, scraperService, this.update.game, taskRunService),
-      person: new PersonBatchHandler(dbService, scraperService, this.update.person, taskRunService),
+      game: new GameBatchHandler(
+        dbService,
+        scraperService,
+        this.update.game,
+        taskRunService,
+        i18nService
+      ),
+      person: new PersonBatchHandler(
+        dbService,
+        scraperService,
+        this.update.person,
+        taskRunService,
+        i18nService
+      ),
       company: new CompanyBatchHandler(
         dbService,
         scraperService,
         this.update.company,
-        taskRunService
+        taskRunService,
+        i18nService
       ),
       character: new CharacterBatchHandler(
         dbService,
         scraperService,
         this.update.character,
-        taskRunService
+        taskRunService,
+        i18nService
       )
     }
 

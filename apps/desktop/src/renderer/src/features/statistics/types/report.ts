@@ -19,7 +19,7 @@ export interface Period {
 
 /** Period display info */
 export interface PeriodDisplay {
-  /** Display label (e.g., "2026年第5周", "2026年1月", "2025年") */
+  /** Locale-aware display label (e.g., "January 2026", "2025") */
   label: string
   /** Short label for compact display */
   shortLabel: string

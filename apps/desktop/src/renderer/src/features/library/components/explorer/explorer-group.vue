@@ -18,6 +18,9 @@ import LibraryExplorerListItem from './explorer-list-item.vue'
 import type { CollectionGroup } from '../../composables'
 import type { ContentEntityType } from '@shared/common'
 import { toExplorerSelectionKey } from '../../utils/explorer-selection'
+import { useI18n } from '@renderer/composables/use-i18n'
+
+const { m } = useI18n()
 
 interface Props {
   group: CollectionGroup
@@ -99,7 +102,7 @@ function handleGroupRowClick(e: MouseEvent) {
             v-if="props.group.isDynamic"
             icon="icon-[mdi--flash-outline]"
             class="size-3 shrink-0"
-            title="动态合集"
+            :title="m.library.pages.dynamicCollection"
           />
         </div>
       </RouterLink>
@@ -130,7 +133,7 @@ function handleGroupRowClick(e: MouseEvent) {
           v-if="props.group.isDynamic"
           icon="icon-[mdi--flash-outline]"
           class="size-3 shrink-0"
-          title="动态合集"
+          :title="m.library.pages.dynamicCollection"
         />
       </div>
     </RouterLink>

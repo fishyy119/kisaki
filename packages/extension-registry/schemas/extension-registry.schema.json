@@ -43,6 +43,38 @@
     }
   },
   "$defs": {
+    "localizedText": {
+      "description": "A plain string is a language-neutral default. The object form requires en as the resolution baseline and may add any supported UI locale.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["en"],
+          "properties": {
+            "en": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ja": {
+              "type": "string",
+              "minLength": 1
+            },
+            "zh-Hans": {
+              "type": "string",
+              "minLength": 1
+            },
+            "zh-Hant": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
     "extensionIdentifier": {
       "type": "string",
       "minLength": 1,
@@ -109,15 +141,13 @@
           "$ref": "#/$defs/extensionIdentifier"
         },
         "name": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/localizedText"
         },
         "summary": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/localizedText"
         },
         "description": {
-          "type": "string"
+          "$ref": "#/$defs/localizedText"
         },
         "categories": {
           "type": "array",
