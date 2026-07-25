@@ -193,7 +193,7 @@ const canOpenGameDir = computed(() => {
     class="h-full flex flex-col"
   >
     <!-- Header -->
-    <PageHeader back-to="/library">
+    <PageHeader>
       <h1 class="text-base font-semibold truncate">{{ game.name }}</h1>
 
       <!-- Status dropdown -->

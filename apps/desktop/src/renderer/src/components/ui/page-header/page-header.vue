@@ -1,14 +1,9 @@
-<!-- Page header bar: fixed-height surface strip with optional back link, left content, and right actions -->
+<!-- Page header bar: fixed-height surface strip with left content and right actions -->
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { RouterLink } from 'vue-router'
-import { Icon } from '@renderer/components/ui/icon'
-import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils/cn'
 
 interface Props {
-  /** When set, renders a leading back button linking to this route */
-  backTo?: string
   class?: HTMLAttributes['class']
 }
 
@@ -25,20 +20,6 @@ const props = defineProps<Props>()
       )
     "
   >
-    <Button
-      v-if="props.backTo"
-      variant="ghost"
-      size="icon-sm"
-      as-child
-    >
-      <RouterLink :to="props.backTo">
-        <Icon
-          icon="icon-[mdi--arrow-left]"
-          class="size-4"
-        />
-      </RouterLink>
-    </Button>
-
     <div class="flex min-w-0 flex-1 items-center gap-3">
       <slot />
     </div>

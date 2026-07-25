@@ -28,7 +28,7 @@ const { m } = useI18n()
 </script>
 
 <template>
-  <PageHeader back-to="/library">
+  <PageHeader>
     <PageHeaderTitle
       :title="m.automation.title"
       icon="icon-[mdi--timer-outline]"

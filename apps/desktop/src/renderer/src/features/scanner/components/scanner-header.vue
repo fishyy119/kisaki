@@ -93,7 +93,7 @@ async function handleCancelAll() {
 </script>
 
 <template>
-  <PageHeader back-to="/library">
+  <PageHeader>
     <PageHeaderTitle
       :title="m.scanner.title"
       icon="icon-[mdi--folder-search-outline]"

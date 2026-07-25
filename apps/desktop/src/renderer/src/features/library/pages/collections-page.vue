@@ -59,7 +59,7 @@ function handleCollectionClick(collectionId: string) {
 <template>
   <div class="h-full flex flex-col">
     <!-- Header -->
-    <PageHeader back-to="/library">
+    <PageHeader>
       <PageHeaderTitle
         :title="m.library.pages.collectionsTitle"
         :icon="getEntityIcon('collection')"

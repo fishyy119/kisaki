@@ -112,7 +112,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     class="h-full flex flex-col w-full"
   >
     <!-- Header -->
-    <PageHeader back-to="/library">
+    <PageHeader>
       <h1 class="text-base font-semibold truncate">{{ tag.name }}</h1>
       <Badge
         v-if="tag.isNsfw"

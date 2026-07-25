@@ -55,7 +55,7 @@ const canNavigateNext = computed(() => {
 </script>
 
 <template>
-  <PageHeader back-to="/library">
+  <PageHeader>
     <!-- Left: Title + Report Type Navigation -->
     <PageHeaderTitle
       :title="m.statistics.title"

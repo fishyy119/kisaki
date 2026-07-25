@@ -144,7 +144,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
     class="h-full flex flex-col w-full"
   >
     <!-- Header -->
-    <PageHeader back-to="/library">
+    <PageHeader>
       <h1 class="text-base font-semibold truncate">{{ collection?.name }}</h1>
       <Icon
         v-if="isDynamic"

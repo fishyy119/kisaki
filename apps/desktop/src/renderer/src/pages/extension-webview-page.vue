@@ -36,7 +36,7 @@ onBeforeRouteLeave(() => {
 
 <template>
   <div class="flex flex-col h-full bg-background">
-    <PageHeader back-to="/library">
+    <PageHeader>
       <h1 class="text-base font-semibold truncate">{{ session?.title ?? '' }}</h1>
       <span
         v-if="session"

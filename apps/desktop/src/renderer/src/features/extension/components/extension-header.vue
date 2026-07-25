@@ -66,7 +66,7 @@ const navItems = computed<PageHeaderNavItem[]>(() => [
 </script>
 
 <template>
-  <PageHeader back-to="/library">
+  <PageHeader>
     <!-- Left: Title and sub-route navigation -->
     <PageHeaderTitle
       :title="m.extension.title"

@@ -63,7 +63,7 @@ function handleEntityClick(entity: EntityData) {
 <template>
   <div class="h-full flex flex-col w-full">
     <!-- Header -->
-    <PageHeader back-to="/library">
+    <PageHeader>
       <PageHeaderTitle
         :title="m.library.pages.favoritesTitle"
         icon="icon-[mdi--heart-outline]"
