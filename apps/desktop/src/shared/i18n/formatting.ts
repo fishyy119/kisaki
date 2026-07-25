@@ -96,6 +96,16 @@ export function createFormatters(locale: UiLocale): I18nFormatters {
   })
   const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
   const duration = new Intl.DurationFormat(locale, { style: 'short' })
+  // Default 'auto' display drops zero-valued units entirely, turning zero
+  // durations into empty strings; force the smallest unit to stay visible.
+  const durationZeroMinutes = new Intl.DurationFormat(locale, {
+    style: 'short',
+    minutesDisplay: 'always'
+  })
+  const durationZeroMs = new Intl.DurationFormat(locale, {
+    style: 'short',
+    millisecondsDisplay: 'always'
+  })
   const hoursCompact = new Intl.NumberFormat(locale, {
     style: 'unit',
     unit: 'hour',
@@ -156,12 +166,12 @@ export function createFormatters(locale: UiLocale): I18nFormatters {
       if (hours > 0) {
         return duration.format(minutes > 0 ? { hours, minutes } : { hours })
       }
-      return duration.format({ minutes })
+      return durationZeroMinutes.format({ minutes })
     },
     durationFine(ms) {
       const safeMs = Math.max(0, Math.floor(ms))
       if (safeMs < 1000) {
-        return duration.format({ milliseconds: safeMs })
+        return durationZeroMs.format({ milliseconds: safeMs })
       }
       const totalSeconds = Math.floor(safeMs / 1000)
       const seconds = totalSeconds % 60
