@@ -45,7 +45,7 @@ export function setupExtensionWebviewNavigation(): void {
  * Leaves the webview page surface: back when the router recorded a previous
  * entry, otherwise to the library as the neutral landing page.
  */
-export function leaveExtensionWebviewPage(): void {
+function leaveExtensionWebviewPage(): void {
   if (router.options.history.state.back != null) {
     router.back()
   } else {

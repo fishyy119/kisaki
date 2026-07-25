@@ -5,14 +5,9 @@ Boundary: route-bound session lifetime; leaving the route closes the session.
 <script setup lang="ts">
 import { computed } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { Button } from '@renderer/components/ui/button'
-import { Icon } from '@renderer/components/ui/icon'
+import { PageHeader } from '@renderer/components/ui/page-header'
 import { ExtensionWebviewFrame } from '@renderer/components/extension/webview-host'
-import {
-  closeWebview,
-  getExtensionWebviewSession,
-  leaveExtensionWebviewPage
-} from '@renderer/core/extensions'
+import { closeWebview, getExtensionWebviewSession } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -41,25 +36,15 @@ onBeforeRouteLeave(() => {
 
 <template>
   <div class="flex flex-col h-full bg-background">
-    <header class="flex items-center gap-2 h-12 px-3 border-b border-border shrink-0">
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        @click="leaveExtensionWebviewPage"
-      >
-        <Icon
-          icon="icon-[mdi--arrow-left]"
-          class="size-4"
-        />
-      </Button>
-      <h1 class="text-sm font-medium truncate">{{ session?.title ?? '' }}</h1>
+    <PageHeader back-to="/library">
+      <h1 class="text-base font-semibold truncate">{{ session?.title ?? '' }}</h1>
       <span
         v-if="session"
         class="text-xs text-muted-foreground truncate"
       >
         {{ session.extensionName }}
       </span>
-    </header>
+    </PageHeader>
     <div class="flex-1 min-h-0">
       <ExtensionWebviewFrame
         v-if="session"

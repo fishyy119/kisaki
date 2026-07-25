@@ -6,7 +6,7 @@ export {
 export { extensionDevelopmentStore, setupExtensionDevelopmentStore } from './development'
 export { resolveExtensionText } from './localized-text'
 export { refreshExtensionThemes, setupExtensionThemeSync, syncExtensionThemes } from './themes'
-export { leaveExtensionWebviewPage, setupExtensionWebviewNavigation } from './webview-navigation'
+export { setupExtensionWebviewNavigation } from './webview-navigation'
 export {
   closeWebview,
   extensionWebviewStore,
