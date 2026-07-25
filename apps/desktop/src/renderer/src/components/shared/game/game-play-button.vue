@@ -13,6 +13,7 @@ import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/utils/cn'
 import { cva } from 'class-variance-authority'
 import { createLogger } from '@renderer/core/log'
+import { useI18n } from '@renderer/composables/use-i18n'
 
 const log = createLogger('Game')
 
@@ -22,21 +23,15 @@ interface Props {
   display?: 'icon' | 'labeled'
   /** Size of the button */
   size?: 'sm' | 'md' | 'lg'
-  /** Whether to show text label (only for labeled display) */
-  showLabel?: boolean
-  /** Custom labels */
-  playLabel?: string
-  stopLabel?: string
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<Props>(), {
   display: 'labeled',
-  size: 'md',
-  showLabel: true,
-  playLabel: undefined,
-  stopLabel: undefined
+  size: 'md'
 })
+
+const { m } = useI18n()
 
 const gameMonitorStore = useGameMonitorStore()
 const isRunning = computed(() => gameMonitorStore.isGameRunning(props.gameId))
@@ -139,8 +134,6 @@ async function handleClick(e: Event) {
       :icon="isRunning ? 'icon-[mdi--stop]' : 'icon-[mdi--play]'"
       class="size-4"
     />
-    <template v-if="props.showLabel">
-      {{ isRunning ? props.stopLabel : props.playLabel }}
-    </template>
+    {{ isRunning ? m.game.stop : m.game.play }}
   </Button>
 </template>

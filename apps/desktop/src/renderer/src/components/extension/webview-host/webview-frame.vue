@@ -23,6 +23,7 @@ import {
 import { createLogger } from '@renderer/core/log'
 import { uiLocale } from '@renderer/core/i18n'
 import { useThemeStore } from '@renderer/stores'
+import { cn } from '@renderer/utils/cn'
 import { readCurrentWebviewAppearance } from './webview-theme'
 
 const log = createLogger('Extension')
@@ -37,6 +38,12 @@ const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 const themeStore = useThemeStore()
 const { resolvedTheme, activeThemeId } = storeToRefs(themeStore)
+
+// Frame chrome must match the surface the session is embedded in, mirroring
+// the base surface the webview client paints inside the document.
+const surfaceClass = computed(() =>
+  props.session.surface.kind === 'dialog' ? 'bg-dialog' : 'bg-background'
+)
 
 // The bootstrap snapshot is computed once per frame and then frozen: session
 // fields are immutable for the session lifetime and theme updates flow
@@ -85,6 +92,7 @@ function buildDocumentSrc(session: ExtensionWebviewSessionInfo): string {
     webviewId: session.webviewId,
     extensionId: session.extensionId,
     params: session.params,
+    surface: session.surface.kind,
     appearance: readCurrentWebviewAppearance(resolvedTheme.value),
     uiLocale: uiLocale.value
   }
@@ -163,7 +171,7 @@ function postCurrentUiLocale(): void {
 </script>
 
 <template>
-  <div class="relative size-full bg-background">
+  <div :class="cn('relative size-full', surfaceClass)">
     <iframe
       ref="frame"
       :src="src"
@@ -173,7 +181,7 @@ function postCurrentUiLocale(): void {
     />
     <div
       v-if="!ready"
-      class="absolute inset-0 flex items-center justify-center bg-background"
+      :class="cn('absolute inset-0 flex items-center justify-center', surfaceClass)"
     >
       <Icon
         icon="icon-[mdi--loading]"

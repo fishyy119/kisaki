@@ -41,11 +41,15 @@
     letter-spacing: var(--kisaki-text-letter-spacing, normal);
   }
 
+  /* The document base paints from the --kisaki-base-* variables, which the
+   * webview client aliases to the tokens of the surface the document is
+   * embedded in (dialog -> dialog tokens, page -> background tokens). The
+   * fallbacks cover standalone previews where no client runs. */
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: var(--kisaki-background);
-    color: var(--kisaki-foreground);
+    background-color: var(--kisaki-base-background, var(--kisaki-background));
+    color: var(--kisaki-base-foreground, var(--kisaki-foreground));
     font-family: var(
       --kisaki-font-sans,
       ui-sans-serif,

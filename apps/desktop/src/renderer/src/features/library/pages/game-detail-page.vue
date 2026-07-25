@@ -213,7 +213,7 @@ const canOpenGameDir = computed(() => {
 
           <DropdownMenuContent
             align="end"
-            class="w-36"
+            class="min-w-36"
           >
             <DropdownMenuRadioGroup v-model="selectedStatus">
               <DropdownMenuRadioItem

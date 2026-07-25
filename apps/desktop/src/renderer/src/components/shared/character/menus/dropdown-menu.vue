@@ -82,7 +82,7 @@ const mergeDialogOpen = ref(false)
 
     <DropdownMenuContent
       align="end"
-      class="w-56"
+      class="min-w-56"
     >
       <CharacterMenuItems
         :character-id="props.characterId"

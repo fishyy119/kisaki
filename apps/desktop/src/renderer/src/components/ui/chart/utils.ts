@@ -1,9 +1,13 @@
 import type { ChartConfig } from '.'
 import { isClient } from '@vueuse/core'
-import { useId } from 'reka-ui'
 import { h, render } from 'vue'
 
 const cache = new Map<string, string>()
+
+// Cache namespace counter. Must not depend on component injection (reka-ui
+// useId) because callers evaluate this inside computeds that can re-run
+// outside an active component instance (e.g. locale-driven invalidation).
+let templateSequence = 0
 
 function serializeKey(key: Record<string, any>): string {
   return JSON.stringify(key, Object.keys(key).sort())
@@ -21,7 +25,7 @@ interface Constructor<P = any> {
 export function componentToString<P>(config: ChartConfig, component: Constructor<P>, props?: P) {
   if (!isClient) return
 
-  const id = useId()
+  const id = `chart-template-${++templateSequence}`
 
   // https://unovis.dev/docs/auxiliary/Crosshair#component-props
   return (_data: any, x: number | Date) => {

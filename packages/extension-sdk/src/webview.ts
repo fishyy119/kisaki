@@ -8,10 +8,16 @@ import type {
   WebviewClient,
   WebviewClientEnvelope,
   WebviewEmbedderEnvelope,
+  WebviewSurfaceKind,
   WebviewTheme,
   WebviewTypography
 } from '@kisaki3/extension-api'
-import { UI_LOCALES, WEBVIEW_BOOTSTRAP_QUERY_PARAM, toJsonValue } from '@kisaki3/extension-api'
+import {
+  UI_LOCALES,
+  WEBVIEW_BOOTSTRAP_QUERY_PARAM,
+  WEBVIEW_SURFACE_KINDS,
+  toJsonValue
+} from '@kisaki3/extension-api'
 
 export { createWebviewRpc } from './shared/webview-rpc'
 export type {
@@ -27,6 +33,7 @@ export type {
   WebviewAppearance,
   WebviewBootstrapPayload,
   WebviewClient,
+  WebviewSurfaceKind,
   WebviewTheme,
   WebviewThemeTokenMap,
   WebviewThemeTokenName,
@@ -47,6 +54,13 @@ const uiLocaleListeners = new Set<(uiLocale: UiLocale) => void>()
 const bufferedMessages: JsonValue[] = []
 const injectedFontStylesheets = new Map<string, HTMLLinkElement>()
 
+const SURFACE_BASE_VARS: Record<WebviewSurfaceKind, { background: string; foreground: string }> = {
+  dialog: { background: 'var(--kisaki-dialog)', foreground: 'var(--kisaki-dialog-foreground)' },
+  page: { background: 'var(--kisaki-background)', foreground: 'var(--kisaki-foreground)' }
+}
+
+// connect() runs at module evaluation time, so everything it touches must be
+// declared above this line.
 const connection = connect()
 
 function readBootstrap(): WebviewBootstrapPayload | null {
@@ -74,9 +88,14 @@ function isBootstrapPayload(value: unknown): value is WebviewBootstrapPayload {
     typeof value.extensionId === 'string' &&
     value.extensionId.length > 0 &&
     isRecord(value.params) &&
+    isWebviewSurfaceKind(value.surface) &&
     isWebviewAppearance(value.appearance) &&
     isUiLocale(value.uiLocale)
   )
+}
+
+function isWebviewSurfaceKind(value: unknown): value is WebviewSurfaceKind {
+  return typeof value === 'string' && (WEBVIEW_SURFACE_KINDS as readonly string[]).includes(value)
 }
 
 function isUiLocale(value: unknown): value is UiLocale {
@@ -194,6 +213,21 @@ function reconcileFontStylesheets(stylesheets: readonly string[]): void {
   }
 }
 
+/**
+ * Aliases `--kisaki-base-*` to the tokens of the surface this document is
+ * embedded in; `base.css` paints the document base from these variables. The
+ * indirection keeps every semantic token at its exact app meaning while the
+ * document base always matches its host surface, and appearance pushes flow
+ * through automatically because the alias resolves live. Extension document
+ * roots should stay transparent and let this base show through.
+ */
+function applyBaseSurfaceToDocument(surface: WebviewSurfaceKind): void {
+  const base = SURFACE_BASE_VARS[surface]
+  const root = document.documentElement
+  root.style.setProperty('--kisaki-base-background', base.background)
+  root.style.setProperty('--kisaki-base-foreground', base.foreground)
+}
+
 function applyAppearanceToDocument(appearance: WebviewAppearance): void {
   applyThemeToDocument(appearance.theme)
   applyTypographyToDocument(appearance.typography)
@@ -253,6 +287,7 @@ function connect(): WebviewClientConnection | null {
   })
 
   applyAppearanceToDocument(bootstrap.appearance)
+  applyBaseSurfaceToDocument(bootstrap.surface)
   applyUiLocaleToDocument(bootstrap.uiLocale)
   postToEmbedder({ type: 'kisaki-webview:ready', webviewId: bootstrap.webviewId })
 
@@ -327,6 +362,9 @@ export const webview: WebviewClient = {
   },
   get params(): JsonObject {
     return requireConnection().bootstrap.params
+  },
+  get surface(): WebviewSurfaceKind {
+    return requireConnection().bootstrap.surface
   },
   get theme(): WebviewTheme {
     return requireConnection().theme

@@ -306,7 +306,7 @@ function withProviderDisplay(list: ScraperProfile[]) {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg">
+    <DialogContent class="max-w-xl">
       <DialogHeader>
         <DialogTitle>{{ m.scraper.profiles.manageTitle }}</DialogTitle>
       </DialogHeader>

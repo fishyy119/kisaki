@@ -181,6 +181,13 @@ export interface WebviewBootstrapPayload {
   webviewId: string
   extensionId: string
   params: JsonObject
+  /**
+   * Surface the document is embedded in, fixed for the session lifetime.
+   * The webview client paints the document base from the matching theme
+   * token (`dialog` -> dialog tokens, `page` -> background tokens) so
+   * every semantic token keeps its exact app meaning.
+   */
+  surface: WebviewSurfaceKind
   appearance: WebviewAppearance
   /** Host interface language at open time. Changes are pushed as `kisaki-webview:ui-locale`. */
   uiLocale: UiLocale
@@ -209,6 +216,8 @@ export interface WebviewClient {
   readonly id: string
   readonly extensionId: string
   readonly params: JsonObject
+  /** Surface this document is embedded in, fixed for the session lifetime. */
+  readonly surface: WebviewSurfaceKind
   readonly theme: WebviewTheme
   readonly typography: WebviewTypography
   readonly uiLocale: UiLocale

@@ -163,7 +163,7 @@ const showNsfwModel = computed({
             side="right"
             align="end"
             :side-offset="8"
-            class="w-48"
+            class="min-w-48"
           >
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
@@ -176,7 +176,7 @@ const showNsfwModel = computed({
               <DropdownMenuSubContent
                 side="right"
                 align="start"
-                class="w-40"
+                class="min-w-40"
               >
                 <DropdownMenuRadioGroup v-model="mode">
                   <DropdownMenuRadioItem value="light">

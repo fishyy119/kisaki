@@ -16,6 +16,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import type { ExtensionInstalledPackageInfo } from '@shared/extension'
+import { resolveExtensionText } from '@renderer/core/extensions'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { EXTENSION_CATEGORIES } from '../../types/constants'
 
@@ -30,6 +31,8 @@ const open = defineModel<boolean>('open', { required: true })
 const iconError = ref(false)
 
 const iconUrl = computed(() => props.extension.iconUrl)
+const displayName = computed(() => resolveExtensionText(props.extension.name))
+const displayDescription = computed(() => resolveExtensionText(props.extension.description))
 const repositorySource = computed(() =>
   props.extension.installationSource?.kind === 'repository'
     ? props.extension.installationSource
@@ -178,12 +181,12 @@ function diagnosticSeverityClass(severity: string): string {
             class="size-9 text-muted-foreground shrink-0"
           />
           <div class="min-w-0 flex-1">
-            <DialogTitle>{{ props.extension.name }}</DialogTitle>
+            <DialogTitle>{{ displayName }}</DialogTitle>
             <DialogDescription
-              v-if="props.extension.description"
+              v-if="displayDescription"
               class="mt-1"
             >
-              {{ props.extension.description }}
+              {{ displayDescription }}
             </DialogDescription>
           </div>
         </div>

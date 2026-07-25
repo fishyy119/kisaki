@@ -55,7 +55,7 @@ const mergeDialogOpen = ref(false)
     <ContextMenuTrigger as-child>
       <slot />
     </ContextMenuTrigger>
-    <ContextMenuContent class="w-56">
+    <ContextMenuContent class="min-w-56">
       <TagMenuItems
         :tag-id="props.tagId"
         :components="contextMenuComponents"

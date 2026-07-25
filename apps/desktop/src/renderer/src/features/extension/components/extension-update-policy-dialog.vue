@@ -25,6 +25,7 @@ import {
 import { Switch } from '@renderer/components/ui/switch'
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@renderer/components/ui/field'
 import { notify } from '@renderer/core/notify'
+import { resolveExtensionText } from '@renderer/core/extensions'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { ExtensionInstalledPackageInfo, ExtensionInstallUpdatePolicy } from '@shared/extension'
@@ -104,7 +105,7 @@ function currentIncludePreviewUpdates(): boolean {
     <DialogContent class="max-w-md">
       <DialogHeader>
         <DialogTitle>{{ m.extension.updatePolicyDialog.title }}</DialogTitle>
-        <DialogDescription>{{ props.extension.name }}</DialogDescription>
+        <DialogDescription>{{ resolveExtensionText(props.extension.name) }}</DialogDescription>
       </DialogHeader>
 
       <DialogBody>

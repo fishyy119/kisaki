@@ -88,7 +88,7 @@ function handleAddScanner() {
       <DropdownMenuContent
         side="right"
         align="end"
-        class="w-48"
+        class="min-w-48"
       >
         <DropdownMenuItem
           class="gap-2"

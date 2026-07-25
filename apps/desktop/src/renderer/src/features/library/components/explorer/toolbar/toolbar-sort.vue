@@ -96,7 +96,7 @@ function getUiSpec(entityType: ContentEntityType) {
 
     <DropdownMenuContent
       align="end"
-      class="w-36"
+      class="min-w-36"
     >
       <!-- Sort field selection -->
       <DropdownMenuRadioGroup v-model="sortFieldModel">

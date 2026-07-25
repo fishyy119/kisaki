@@ -81,7 +81,7 @@ const mergeDialogOpen = ref(false)
     </DropdownMenuTrigger>
     <DropdownMenuContent
       align="end"
-      class="w-56"
+      class="min-w-56"
     >
       <CollectionMenuItems
         :collection-id="props.collectionId"

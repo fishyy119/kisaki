@@ -84,7 +84,7 @@ const mergeDialogOpen = ref(false)
     </DropdownMenuTrigger>
     <DropdownMenuContent
       align="end"
-      class="w-56"
+      class="min-w-56"
     >
       <GameMenuItems
         :game-id="props.gameId"

@@ -32,7 +32,7 @@ const metadataUpdateDialogOpen = ref(false)
     <ContextMenuTrigger as-child>
       <slot />
     </ContextMenuTrigger>
-    <ContextMenuContent class="w-56">
+    <ContextMenuContent class="min-w-56">
       <CompanyBatchMenuItems
         :company-ids="props.companyIds"
         :enabled="menuOpen"

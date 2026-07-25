@@ -72,7 +72,7 @@ const mergeDialogOpen = ref(false)
     <ContextMenuTrigger as-child>
       <slot />
     </ContextMenuTrigger>
-    <ContextMenuContent class="w-56">
+    <ContextMenuContent class="min-w-56">
       <GameMenuItems
         :game-id="props.gameId"
         :components="contextMenuComponents"

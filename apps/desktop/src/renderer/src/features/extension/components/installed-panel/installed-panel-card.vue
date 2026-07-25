@@ -18,7 +18,8 @@ import { notify } from '@renderer/core/notify'
 import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
 import {
   extensionContributionStore,
-  refreshExtensionContributionSnapshot
+  refreshExtensionContributionSnapshot,
+  resolveExtensionText
 } from '@renderer/core/extensions'
 import type {
   ExtensionCardActionRegistrationInfo,
@@ -58,6 +59,8 @@ const cardActions = computed(() =>
 )
 
 const iconUrl = computed(() => props.extension.iconUrl)
+const displayName = computed(() => resolveExtensionText(props.extension.name))
+const displayDescription = computed(() => resolveExtensionText(props.extension.description))
 const versionLabel = computed(() =>
   props.extension.version
     ? `v${props.extension.version}`
@@ -198,7 +201,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
         icon="icon-[mdi--puzzle-outline]"
         class="size-5 text-primary shrink-0"
       />
-      <h3 class="text-sm font-medium truncate flex-1">{{ props.extension.name }}</h3>
+      <h3 class="text-sm font-medium truncate flex-1">{{ displayName }}</h3>
       <Badge
         variant="outline"
         class="text-[10px] px-1.5 py-0 h-4 text-muted-foreground font-mono"
@@ -255,7 +258,7 @@ async function runCardAction(action: ExtensionCardActionRegistrationInfo) {
 
     <!-- Description -->
     <p class="text-xs text-muted-foreground/70 line-clamp-2 flex-1 mb-3">
-      {{ props.extension.description || m.extension.installed.noDescription }}
+      {{ displayDescription || m.extension.installed.noDescription }}
     </p>
 
     <!-- Footer -->
