@@ -1,11 +1,12 @@
 <!--
 Extension Webview Page renders one page-surface webview session full-page.
+The page is a pure container: the document owns all chrome, and the app
+titlebar and sidebar stay as the host-owned escape hatch.
 Boundary: route-bound session lifetime; leaving the route closes the session.
 -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { PageHeader } from '@renderer/components/ui/page-header'
 import { ExtensionWebviewFrame } from '@renderer/components/extension/webview-host'
 import { closeWebview, getExtensionWebviewSession } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
@@ -35,28 +36,17 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-background">
-    <PageHeader>
-      <h1 class="text-base font-semibold truncate">{{ session?.title ?? '' }}</h1>
-      <span
-        v-if="session"
-        class="text-xs text-muted-foreground truncate"
-      >
-        {{ session.extensionName }}
-      </span>
-    </PageHeader>
-    <div class="flex-1 min-h-0">
-      <ExtensionWebviewFrame
-        v-if="session"
-        :key="session.webviewId"
-        :session="session"
-      />
-      <div
-        v-else
-        class="flex items-center justify-center h-full text-sm text-muted-foreground"
-      >
-        {{ m.extension.webviewPageClosed }}
-      </div>
+  <div class="h-full">
+    <ExtensionWebviewFrame
+      v-if="session"
+      :key="session.webviewId"
+      :session="session"
+    />
+    <div
+      v-else
+      class="flex items-center justify-center h-full bg-background text-sm text-muted-foreground"
+    >
+      {{ m.extension.webviewPageClosed }}
     </div>
   </div>
 </template>

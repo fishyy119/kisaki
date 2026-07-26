@@ -537,7 +537,7 @@ export interface ExtensionCardActionRunRequest {
 export interface ExtensionWebviewSessionInfo {
   webviewId: string
   extensionId: string
-  extensionName: string
+  /** Accessible session title; never rendered as visible chrome. */
   title: string
   surface: WebviewSurface
   entry: string

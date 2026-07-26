@@ -54,9 +54,17 @@ const uiLocaleListeners = new Set<(uiLocale: UiLocale) => void>()
 const bufferedMessages: JsonValue[] = []
 const injectedFontStylesheets = new Map<string, HTMLLinkElement>()
 
+// Document base per host surface, mirroring the app lightbox contract:
+// dialogs are opaque slabs; pages paint the translucent glass pane
+// (raw background token at pane alpha) so the host light layers transmit
+// through the transparent iframe canvas.
 const SURFACE_BASE_VARS: Record<WebviewSurfaceKind, { background: string; foreground: string }> = {
   dialog: { background: 'var(--kisaki-dialog)', foreground: 'var(--kisaki-dialog-foreground)' },
-  page: { background: 'var(--kisaki-background)', foreground: 'var(--kisaki-foreground)' }
+  page: {
+    background:
+      'color-mix(in oklch, var(--kisaki-background) var(--kisaki-pane-alpha, 100%), transparent)',
+    foreground: 'var(--kisaki-foreground)'
+  }
 }
 
 // connect() runs at module evaluation time, so everything it touches must be
@@ -113,6 +121,7 @@ function isWebviewTheme(value: unknown): value is WebviewTheme {
 
   return (
     typeof value.radius === 'string' &&
+    typeof value.paneAlpha === 'string' &&
     isRecord(value.tokens) &&
     Object.values(value.tokens).every((token) => typeof token === 'string')
   )
@@ -152,8 +161,15 @@ function toThemeCssVariableName(tokenName: string): string {
 
 /**
  * Mirrors the active app theme onto the document: semantic tokens become
- * `--kisaki-*` CSS variables, the radius lands on `--kisaki-radius`, and the
- * mode lands on `data-kisaki-theme` plus the standard `color-scheme`.
+ * `--kisaki-*` CSS variables, the radius lands on `--kisaki-radius`, the pane
+ * alpha lands on `--kisaki-pane-alpha`, and the mode lands on
+ * `data-kisaki-theme` plus the standard `color-scheme`.
+ *
+ * The `color-scheme` mirror is a hard invariant for page transparency: the
+ * app keeps its own document color-scheme in sync with the resolved theme,
+ * and Chromium paints an opaque canvas behind cross-origin iframes whose
+ * color-scheme differs from the embedder — which would block the light
+ * layers from transmitting through page-surface documents.
  */
 function applyThemeToDocument(theme: WebviewTheme): void {
   const root = document.documentElement
@@ -162,6 +178,7 @@ function applyThemeToDocument(theme: WebviewTheme): void {
   }
 
   root.style.setProperty('--kisaki-radius', theme.radius)
+  root.style.setProperty('--kisaki-pane-alpha', theme.paneAlpha)
   root.dataset.kisakiTheme = theme.mode
   root.style.colorScheme = theme.mode
 }
@@ -214,12 +231,14 @@ function reconcileFontStylesheets(stylesheets: readonly string[]): void {
 }
 
 /**
- * Aliases `--kisaki-base-*` to the tokens of the surface this document is
- * embedded in; `base.css` paints the document base from these variables. The
- * indirection keeps every semantic token at its exact app meaning while the
- * document base always matches its host surface, and appearance pushes flow
- * through automatically because the alias resolves live. Extension document
- * roots should stay transparent and let this base show through.
+ * Aliases `--kisaki-base-*` to the base recipe of the surface this document
+ * is embedded in; `base.css` paints the document base from these variables.
+ * The indirection keeps every semantic token at its exact app meaning while
+ * the document base always matches its host surface, and appearance pushes
+ * flow through automatically because the aliases resolve live. Document
+ * roots must stay transparent: for pages the iframe canvas itself is
+ * transparent, so the translucent base pane blends over the app light
+ * layers exactly like a native page.
  */
 function applyBaseSurfaceToDocument(surface: WebviewSurfaceKind): void {
   const base = SURFACE_BASE_VARS[surface]
@@ -285,6 +304,18 @@ function connect(): WebviewClientConnection | null {
       applyUiLocale(state, envelope.uiLocale)
     }
   })
+
+  // Dialog-surface keyboard escape hatch: the host cannot observe keystrokes
+  // while focus is inside the frame, so the client closes the session on Esc.
+  // Listens on the bubble phase, so the document can claim the key first with
+  // `event.preventDefault()` (e.g. to dismiss an in-document popover instead).
+  if (bootstrap.surface === 'dialog') {
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
+        postToEmbedder({ type: 'kisaki-webview:close', webviewId: bootstrap.webviewId })
+      }
+    })
+  }
 
   applyAppearanceToDocument(bootstrap.appearance)
   applyBaseSurfaceToDocument(bootstrap.surface)

@@ -42,8 +42,10 @@
   }
 
   /* The document base paints from the --kisaki-base-* variables, which the
-   * webview client aliases to the tokens of the surface the document is
-   * embedded in (dialog -> dialog tokens, page -> background tokens). The
+   * webview client aliases to the base recipe of the surface the document is
+   * embedded in: dialog -> the opaque dialog slab, page -> the translucent
+   * background glass pane (the page iframe canvas is transparent, so the app
+   * light layers transmit through the pane like on a native page). The
    * fallbacks cover standalone previews where no client runs. */
   body {
     margin: 0;

@@ -1,12 +1,15 @@
 <!--
 Extension Webview Dialog Host renders every dialog-surface webview session.
-Boundary: global data-driven projection of main-owned sessions; the app draws
-minimal chrome (title and close) so closing never depends on the webview.
+Boundary: global data-driven projection of main-owned sessions. The host owns
+only the modal window (overlay, positioning, sizing, slab); the document owns
+all chrome inside it. Dismissal matches app dialogs: Esc closes (host-side
+while the loading overlay holds focus, SDK-side once the document runs) and
+outside clicks never close, protecting form state from stray clicks.
 -->
 <script setup lang="ts">
 import type { WebviewDialogSize } from '@kisaki3/extension-api'
 import type { ExtensionWebviewSessionInfo } from '@shared/extension'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@renderer/components/ui/dialog'
 import { closeWebview, extensionWebviewStore } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { cn } from '@renderer/utils/cn'
@@ -48,21 +51,19 @@ function handleOpenChange(session: ExtensionWebviewSessionInfo, open: boolean): 
     @update:open="(open) => handleOpenChange(session, open)"
   >
     <DialogContent
-      :class="cn(DIALOG_SIZE_CLASSES[getDialogSize(session)].width, 'flex flex-col gap-0 p-0')"
+      :class="
+        cn(
+          DIALOG_SIZE_CLASSES[getDialogSize(session)].width,
+          DIALOG_SIZE_CLASSES[getDialogSize(session)].height,
+          'overflow-hidden'
+        )
+      "
+      :show-close-button="false"
     >
-      <DialogHeader class="pr-9">
-        <DialogTitle class="text-sm truncate">{{ session.title }}</DialogTitle>
-      </DialogHeader>
-      <div
-        :class="
-          cn(
-            'min-h-0 rounded-b-md overflow-hidden',
-            DIALOG_SIZE_CLASSES[getDialogSize(session)].height
-          )
-        "
-      >
-        <ExtensionWebviewFrame :session="session" />
-      </div>
+      <!-- The visible title lives inside the document; this one carries the
+           accessible dialog name across the iframe boundary. -->
+      <DialogTitle class="sr-only">{{ session.title }}</DialogTitle>
+      <ExtensionWebviewFrame :session="session" />
     </DialogContent>
   </Dialog>
 </template>

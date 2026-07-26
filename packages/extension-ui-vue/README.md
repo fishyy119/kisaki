@@ -63,6 +63,30 @@ Textarea, Tooltip, plus the `cn` class utility.
 `Icon` mirrors the app's API — `<Icon icon="icon-[mdi--home]" class="size-4" />`
 — and works with any iconify set installed in the consuming project.
 
+## Document shells
+
+The host renders webview surfaces as pure containers — the document owns all
+chrome. Two scaffolds provide the app anatomy for each surface:
+
+- `WebviewDialogShell` for `dialog` surfaces: app dialog chrome (header with
+  title and a close button wired to `webview.close()`, scrollable body,
+  optional `footer` slot).
+- `WebviewPageShell` for `page` surfaces: the app page-header strip (title,
+  `actions` slot) over a scrollable content region, painting one translucent
+  pane per region so light transmission matches native app pages.
+
+```vue
+<WebviewDialogShell title="Settings">
+  <SettingsForm />
+  <template #footer>
+    <Button>Save</Button>
+  </template>
+</WebviewDialogShell>
+```
+
+These are the only session-bound components in the kit; everything else is
+pure UI. Both accept `contentClass` (e.g. `p-0`) for full-bleed layouts.
+
 ## Standalone preview
 
 The kit reads the `--kisaki-*` tokens the host injects at runtime, so it has no

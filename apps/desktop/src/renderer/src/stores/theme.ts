@@ -57,6 +57,13 @@ export const useThemeStore = defineStore(
       // Apply dark mode class (themes provide both :root and .dark blocks)
       document.documentElement.classList.toggle('dark', resolved === 'dark')
 
+      // Keep the document color-scheme in sync with the resolved mode. This
+      // is a hard invariant for extension webview transparency: Chromium
+      // paints an opaque canvas behind cross-origin iframes whose
+      // color-scheme differs from the embedder, which would block the light
+      // layers from transmitting through page-surface webview documents.
+      document.documentElement.style.colorScheme = resolved
+
       try {
         themeManager.setActiveTheme(activeThemeId.value)
       } catch {

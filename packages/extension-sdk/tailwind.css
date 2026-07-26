@@ -19,10 +19,22 @@
  *   @import '@kisaki3/extension-sdk/tailwind.css';
  */
 @theme {
-  /* Background layers */
-  --color-background: var(--kisaki-background);
+  /* Background layers. Base pane colors compose --kisaki-pane-alpha exactly
+   * like the app: every bg-background/bg-surface usage is a translucent
+   * glass pane that transmits the app light layers (which show through the
+   * transparent page-surface iframe canvas). Floating layers (popover and
+   * dialog) are opaque slabs and map their raw values directly. */
+  --color-background: color-mix(
+    in oklch,
+    var(--kisaki-background) var(--kisaki-pane-alpha, 100%),
+    transparent
+  );
   --color-foreground: var(--kisaki-foreground);
-  --color-surface: var(--kisaki-surface);
+  --color-surface: color-mix(
+    in oklch,
+    var(--kisaki-surface) var(--kisaki-pane-alpha, 100%),
+    transparent
+  );
   --color-surface-foreground: var(--kisaki-surface-foreground);
   --color-popover: var(--kisaki-popover);
   --color-popover-foreground: var(--kisaki-popover-foreground);

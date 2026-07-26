@@ -16,13 +16,17 @@ export default defineConfig({
       fileName: () => 'index.mjs'
     },
     rolldownOptions: {
+      // The webview SDK must stay external: its client module is a
+      // per-document singleton (connection state, listeners), so bundling a
+      // copy into the kit would split that state from the extension's own.
       external: [
         'vue',
         'reka-ui',
         '@vueuse/core',
         'clsx',
         'tailwind-merge',
-        'class-variance-authority'
+        'class-variance-authority',
+        '@kisaki3/extension-sdk/webview'
       ]
     },
     target: 'esnext',

@@ -39,9 +39,12 @@ const ready = ref(false)
 const themeStore = useThemeStore()
 const { resolvedTheme, activeThemeId } = storeToRefs(themeStore)
 
-// Frame chrome must match the surface the session is embedded in, mirroring
-// the base surface the webview client paints inside the document.
-const surfaceClass = computed(() =>
+// The frame itself stays transparent: the document paints its own base
+// (opaque dialog slab / translucent page glass pane), and for pages the app
+// light layers must transmit through the iframe canvas. Only the loading
+// overlay paints — it mirrors the surface base so the pending state looks
+// like the surface it will become.
+const loadingClass = computed(() =>
   props.session.surface.kind === 'dialog' ? 'bg-dialog' : 'bg-background'
 )
 
@@ -171,7 +174,7 @@ function postCurrentUiLocale(): void {
 </script>
 
 <template>
-  <div :class="cn('relative size-full', surfaceClass)">
+  <div class="relative size-full">
     <iframe
       ref="frame"
       :src="src"
@@ -181,7 +184,7 @@ function postCurrentUiLocale(): void {
     />
     <div
       v-if="!ready"
-      :class="cn('absolute inset-0 flex items-center justify-center', surfaceClass)"
+      :class="cn('absolute inset-0 flex items-center justify-center', loadingClass)"
     >
       <Icon
         icon="icon-[mdi--loading]"

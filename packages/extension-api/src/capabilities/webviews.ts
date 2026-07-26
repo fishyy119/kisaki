@@ -20,8 +20,12 @@ export type WebviewSurfaceKind = (typeof WEBVIEW_SURFACE_KINDS)[number]
 
 /**
  * Container the app uses to present a webview session.
- * @remarks `dialog` renders inside an app dialog with minimal chrome (title and
- * close button); `page` renders as a top-level routed page.
+ * @remarks Surfaces describe placement and sizing only — the app draws no
+ * chrome inside them. The document owns its entire UI, including headers,
+ * footers, and close affordances. `dialog` renders inside an app-owned modal
+ * window (overlay, positioning, animation) that dismisses like app dialogs:
+ * Esc closes, outside clicks do not. `page` renders as a top-level routed
+ * page with the app navigation around it.
  */
 export type WebviewSurface = { kind: 'dialog'; size?: WebviewDialogSize } | { kind: 'page' }
 
@@ -30,6 +34,11 @@ export interface WebviewOpenOptions {
    * HTML entry path relative to the manifest `ui` root, e.g. `settings/index.html`.
    */
   entry: string
+  /**
+   * Accessible session title, used for the frame's accessibility name and
+   * session metadata. It is never rendered as visible chrome — the document
+   * draws its own header if it wants one.
+   */
   title: string
   surface: WebviewSurface
   /**
@@ -117,6 +126,13 @@ export interface WebviewTheme {
    * Resolved base corner radius, e.g. `6px`.
    */
   radius: string
+  /**
+   * Opacity of the app's translucent base panes ("glass"), e.g. `72%`.
+   * Page-surface documents compose it over the raw background/surface tokens
+   * so their base panes transmit the app light layers exactly like native
+   * pages; dialog-surface documents stay opaque slabs and ignore it.
+   */
+  paneAlpha: string
 }
 
 /**
@@ -183,9 +199,10 @@ export interface WebviewBootstrapPayload {
   params: JsonObject
   /**
    * Surface the document is embedded in, fixed for the session lifetime.
-   * The webview client paints the document base from the matching theme
-   * token (`dialog` -> dialog tokens, `page` -> background tokens) so
-   * every semantic token keeps its exact app meaning.
+   * The webview client paints the document base to match the host surface:
+   * `dialog` paints the opaque dialog slab, `page` paints the translucent
+   * background glass pane over a transparent document canvas so the app
+   * light layers transmit through the frame.
    */
   surface: WebviewSurfaceKind
   appearance: WebviewAppearance

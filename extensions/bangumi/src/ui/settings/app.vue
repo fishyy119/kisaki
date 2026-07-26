@@ -12,7 +12,8 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
+  TabsTrigger,
+  WebviewDialogShell
 } from '@kisaki3/extension-ui-vue'
 import type { BangumiSettingsFormState, BangumiSettingsOverview } from '../../shared/settings'
 import { applySettingsForm, settingsFormsEqual, settingsForm, snapshotSettingsForm } from './form'
@@ -132,14 +133,15 @@ function navigate(tab: SettingsTabId): void {
 </script>
 
 <template>
-  <Tabs
-    v-model="activeTab"
-    orientation="vertical"
-    class="h-screen gap-0 overflow-hidden"
+  <WebviewDialogShell
+    :title="m.settings.webviewTitle"
+    content-class="p-0 overflow-hidden"
   >
-    <div
+    <Tabs
       v-if="overview"
-      class="flex min-h-0 flex-1"
+      v-model="activeTab"
+      orientation="vertical"
+      class="h-full min-h-0 flex-row gap-0"
     >
       <aside class="flex w-40 shrink-0 flex-col border-r border-border bg-surface/60 p-2">
         <TabsList class="h-auto w-full flex-col items-stretch">
@@ -234,19 +236,19 @@ function navigate(tab: SettingsTabId): void {
           </TabsContent>
         </div>
       </main>
-    </div>
+    </Tabs>
 
     <main
       v-else
-      class="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground"
+      class="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground"
     >
       <Spinner v-if="loading" />
       {{ loading ? m.ui.loading : m.ui.unavailable }}
     </main>
 
-    <footer
+    <template
       v-if="overview && isDirty"
-      class="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-2.5"
+      #footer
     >
       <span class="mr-auto text-xs text-muted-foreground">{{ m.ui.unsavedChanges }}</span>
       <Button
@@ -265,6 +267,6 @@ function navigate(tab: SettingsTabId): void {
         <Spinner v-if="saving" />
         {{ m.ui.savePreferences }}
       </Button>
-    </footer>
-  </Tabs>
+    </template>
+  </WebviewDialogShell>
 </template>

@@ -18,6 +18,7 @@
  */
 :root {
   --kisaki-radius: 6px;
+  --kisaki-pane-alpha: 72%;
 
   --kisaki-background: #f8fafc;
   --kisaki-foreground: #0f172a;
@@ -50,6 +51,8 @@
 }
 
 [data-kisaki-theme='dark'] {
+  --kisaki-pane-alpha: 75%;
+
   --kisaki-background: #1e293b;
   --kisaki-foreground: #e2e8f0;
   --kisaki-surface: #1a2433;

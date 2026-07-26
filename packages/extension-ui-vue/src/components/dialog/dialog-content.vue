@@ -4,7 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { DialogClose, DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '../../utils/cn'
-import { Icon } from '../icon'
+import DialogCloseButton from './dialog-close-button.vue'
 import DialogOverlay from './dialog-overlay.vue'
 
 defineOptions({
@@ -61,14 +61,10 @@ function handleCloseAutoFocus(event: Event) {
       <slot />
       <DialogClose
         v-if="props.showCloseButton"
+        as-child
         data-slot="dialog-close"
-        class="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus:outline-none focus:ring-1 focus:ring-primary flex items-center justify-center"
       >
-        <Icon
-          icon="icon-[mdi--close]"
-          class="size-4"
-        />
-        <span class="sr-only">Close</span>
+        <DialogCloseButton />
       </DialogClose>
     </DialogContent>
   </DialogPortal>

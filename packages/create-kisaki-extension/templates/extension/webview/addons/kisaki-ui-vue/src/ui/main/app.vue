@@ -1,14 +1,17 @@
 <!--
 Main webview document root for this extension.
 Boundary: talks to the extension host only through webview RPC; state is
-loaded from and saved to host storage. UI comes from @kisaki3/extension-ui-vue,
-which renders with the app's design language on the mirrored theme.
+loaded from and saved to host storage. UI comes from @kisaki3/extension-ui-vue:
+the dialog shell provides the app dialog chrome (header, close, footer) and
+the components render with the app's design language on the mirrored theme.
 -->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { createWebviewRpc, webview } from '@kisaki3/extension-sdk/webview'
-import { Button, Field, FieldGroup, Switch } from '@kisaki3/extension-ui-vue'
+import { Button, Field, FieldGroup, Switch, WebviewDialogShell } from '@kisaki3/extension-ui-vue'
 import type { HostFunctions } from '../../shared/contract'
+
+const extensionName = `{{EXTENSION_NAME}}`
 
 const host = createWebviewRpc<HostFunctions>(webview)
 const enabled = ref(true)
@@ -29,20 +32,23 @@ async function saveAndClose(): Promise<void> {
 </script>
 
 <template>
-  <main class="flex min-h-screen flex-col gap-4 p-5">
-    <p class="text-sm text-muted-foreground">
-      This document runs inside a Kisaki webview with full Vite HMR in development.
-    </p>
-    <FieldGroup>
-      <Field
-        orientation="horizontal"
-        label="Enabled"
-        description="Stored in extension storage on save."
-      >
-        <Switch v-model="enabled" />
-      </Field>
-    </FieldGroup>
-    <div class="flex gap-2">
+  <WebviewDialogShell :title="extensionName">
+    <div class="space-y-4">
+      <p class="text-sm text-muted-foreground">
+        This document runs inside a Kisaki webview with full Vite HMR in development.
+      </p>
+      <FieldGroup>
+        <Field
+          orientation="horizontal"
+          label="Enabled"
+          description="Stored in extension storage on save."
+        >
+          <Switch v-model="enabled" />
+        </Field>
+      </FieldGroup>
+    </div>
+
+    <template #footer>
       <Button
         variant="outline"
         type="button"
@@ -56,6 +62,6 @@ async function saveAndClose(): Promise<void> {
       >
         Save and close
       </Button>
-    </div>
-  </main>
+    </template>
+  </WebviewDialogShell>
 </template>

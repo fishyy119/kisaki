@@ -75,7 +75,10 @@ function readWebviewTheme(styles: CSSStyleDeclaration, mode: 'light' | 'dark'): 
   return {
     mode,
     tokens,
-    radius: styles.getPropertyValue('--radius').trim() || DEFAULT_RADIUS
+    radius: styles.getPropertyValue('--radius').trim() || DEFAULT_RADIUS,
+    // The lightbox glass alpha; the opaque fallback keeps documents readable
+    // if a theme ever drops the token.
+    paneAlpha: styles.getPropertyValue('--pane-alpha').trim() || '100%'
   }
 }
 

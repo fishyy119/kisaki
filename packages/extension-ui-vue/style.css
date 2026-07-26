@@ -17,3 +17,11 @@
 @import 'tw-animate-css';
 
 @source "./dist";
+
+/* Page-shell documents paint one pane per region (header = surface pane,
+ * content = background pane) like native app pages; clear the default
+ * document base pane from base.css so panes never stack over the host
+ * light layers. Unlayered on purpose, so it wins over the layered base. */
+body:has([data-slot='webview-page-shell']) {
+  background-color: transparent;
+}

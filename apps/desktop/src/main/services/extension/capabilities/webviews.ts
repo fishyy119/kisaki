@@ -77,7 +77,6 @@ export class ExtensionWebviewsCapabilityProvider {
       info: {
         webviewId: randomUUID(),
         extensionId: metadata.id,
-        extensionName: metadata.name,
         title: options.title,
         surface: options.surface,
         entry,

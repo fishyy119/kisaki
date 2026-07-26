@@ -42,9 +42,11 @@
     "tw-animate-css": "catalog:"
   },
   "peerDependencies": {
+    "@kisaki3/extension-sdk": "workspace:^",
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "@kisaki3/extension-sdk": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
     "eslint-plugin-vue": "catalog:",
     "rimraf": "catalog:",
