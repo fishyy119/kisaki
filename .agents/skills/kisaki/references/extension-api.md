@@ -58,10 +58,22 @@ Contribution point names must describe the registered object, not a broad domain
 - `deeplinkRoutes` registers `DeeplinkRouteContribution`
 - `themes` registers `ThemeContribution`
 - `commands` registers `CommandContribution`
+- `webviews` registers `WebviewPageContribution` and `WebviewDialogContribution`
 
-All public registrars expose `register(...)`. Put domain/scope in the registrar path only when it changes the register parameter type, such as `entityMenus.game.single.register(...)` and `scraperProviders.game.register(...)`.
+All public registrars expose `register(...)`. Put domain/scope in the registrar path only when it changes the register parameter type, such as `entityMenus.game.single.register(...)`, `scraperProviders.game.register(...)`, and `webviews.pages.register(...)` / `webviews.dialogs.register(...)`.
 
-Contribution directories under `packages/extension-api/src/contributions/` must match the contribution point in kebab-case plural form: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`. Their `index.ts` files should only re-export contracts and validation.
+Contribution directories under `packages/extension-api/src/contributions/` must match the contribution point in kebab-case plural form: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`, `webviews`. Their `index.ts` files should only re-export contracts and validation.
+
+Webview contributions are declarative and serializable; session wiring stays on the returned
+`WebviewPageRegistration` / `WebviewDialogRegistration` through `onOpen(handle)`, which the SDK
+bridge dispatches from the `capabilities.webviews.opened` event. Opening happens through the
+same-named capability (`kisaki.webviews.openPage/openDialog`), which returns a `WebviewHandle`.
+
+Contribution `icon` fields use the shared `ContributionIcon` contract from `shared/icon.ts`:
+`mdi:<name>` (validated by `matchesMdiIconFormat`) or a `./` package-relative image file
+(`.svg/.png/.webp/.jpg/.jpeg`, no parent segments). A webview page `icon` is required when `nav`
+is declared. The renderer renders both forms as currentColor masks, so custom icon files should be
+monochrome silhouettes.
 
 ## Naming Suffixes
 

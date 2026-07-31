@@ -10,8 +10,10 @@ export { setupExtensionWebviewNavigation } from './webview-navigation'
 export {
   closeWebview,
   extensionWebviewStore,
+  findExtensionPageSession,
   getExtensionWebviewSession,
   notifyWebviewReady,
+  openExtensionWebviewPage,
   postWebviewMessage,
   registerWebviewFrame,
   setupExtensionWebviewStore

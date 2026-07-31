@@ -5,9 +5,11 @@ import { extensionWebviewStore } from './webviews'
 let initialized = false
 
 /**
- * Binds page-surface webview sessions to the router: the newest opened page
- * session navigates to `/extension-webview/:webviewId`, and the page is left
- * again when its session closes.
+ * Binds page-surface webview sessions to the router: a newly opened page
+ * session navigates to its stable `/extension-page/:extensionId/:pageId`
+ * route, and the route is left when its page no longer has a live session.
+ * Session replacement (openPage on an already-open page) keeps the route
+ * because the new session belongs to the same declared page.
  */
 export function setupExtensionWebviewNavigation(): void {
   if (initialized) {
@@ -15,37 +17,58 @@ export function setupExtensionWebviewNavigation(): void {
   }
   initialized = true
 
-  let knownPageIds = new Set<string>()
+  let knownWebviewIds = new Set<string>()
 
   watch(extensionWebviewStore.pageSessions, (pageSessions) => {
-    const openedPage = pageSessions.findLast((session) => !knownPageIds.has(session.webviewId))
-    knownPageIds = new Set(pageSessions.map((session) => session.webviewId))
+    const openedSession = pageSessions.findLast(
+      (session) => !knownWebviewIds.has(session.webviewId)
+    )
+    knownWebviewIds = new Set(pageSessions.map((session) => session.webviewId))
 
-    if (openedPage) {
-      void router.push({
-        name: 'extension-webview',
-        params: { webviewId: openedPage.webviewId }
-      })
+    if (openedSession && openedSession.surface.kind === 'page') {
+      if (!isCurrentPageRoute(openedSession.extensionId, openedSession.surface.pageId)) {
+        void router.push({
+          name: 'extension-page',
+          params: {
+            extensionId: openedSession.extensionId,
+            pageId: openedSession.surface.pageId
+          }
+        })
+      }
       return
     }
 
     const route = router.currentRoute.value
-    if (route.name !== 'extension-webview') {
+    if (route.name !== 'extension-page') {
       return
     }
 
-    const stillOpen = pageSessions.some((session) => session.webviewId === route.params.webviewId)
+    const stillOpen = pageSessions.some(
+      (session) =>
+        session.extensionId === route.params.extensionId &&
+        session.surface.kind === 'page' &&
+        session.surface.pageId === route.params.pageId
+    )
     if (!stillOpen) {
-      leaveExtensionWebviewPage()
+      leaveExtensionPage()
     }
   })
 }
 
+function isCurrentPageRoute(extensionId: string, pageId: string): boolean {
+  const route = router.currentRoute.value
+  return (
+    route.name === 'extension-page' &&
+    route.params.extensionId === extensionId &&
+    route.params.pageId === pageId
+  )
+}
+
 /**
- * Leaves the webview page surface: back when the router recorded a previous
+ * Leaves the extension page surface: back when the router recorded a previous
  * entry, otherwise to the library as the neutral landing page.
  */
-function leaveExtensionWebviewPage(): void {
+function leaveExtensionPage(): void {
   if (router.options.history.state.back != null) {
     router.back()
   } else {

@@ -22,7 +22,10 @@ import { ExtensionNotifyCapabilityProvider } from './notify'
 import { ExtensionRuntimeCapabilityProvider } from './runtime'
 import { ExtensionScrapersCapabilityProvider } from './scrapers'
 import { ExtensionTaskRunsCapabilityProvider } from './task-runs'
-import { ExtensionWebviewsCapabilityProvider } from './webviews'
+import {
+  ExtensionWebviewsCapabilityProvider,
+  type ExtensionWebviewsCapabilityProviderOptions
+} from './webviews'
 
 export interface ExtensionCapabilityGatewayOptions {
   automation: AutomationService
@@ -37,6 +40,9 @@ export interface ExtensionCapabilityGatewayOptions {
   taskRun: TaskRunService
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
   resolveWebviewDocumentUrl(extensionId: string, entry: string): string | null
+  resolveWebviewPage: ExtensionWebviewsCapabilityProviderOptions['resolvePage']
+  resolveWebviewDialog: ExtensionWebviewsCapabilityProviderOptions['resolveDialog']
+  resolveWebviewPageByExtension: ExtensionWebviewsCapabilityProviderOptions['resolvePageByExtension']
   onWebviewSessionsChanged(sessions: readonly ExtensionWebviewSessionInfo[]): void
   onWebviewMessage(event: ExtensionWebviewMessageEvent): void
 }
@@ -104,6 +110,9 @@ export class ExtensionCapabilityGateway {
     this.webviews = new ExtensionWebviewsCapabilityProvider({
       resolveRuntimeHandle: options.resolveRuntimeHandle,
       resolveDocumentUrl: options.resolveWebviewDocumentUrl,
+      resolvePage: options.resolveWebviewPage,
+      resolveDialog: options.resolveWebviewDialog,
+      resolvePageByExtension: options.resolveWebviewPageByExtension,
       onSessionsChanged: options.onWebviewSessionsChanged,
       onWebviewMessage: options.onWebviewMessage
     })
@@ -115,8 +124,15 @@ export class ExtensionCapabilityGateway {
     this.webviews.attachRpc(rpc)
     this.library.registerRpcHandlers(rpc)
 
-    rpc.handleHostRequest('capabilities.webviews.open', async ({ runtimeHandle, options }) =>
-      this.webviews.open(runtimeHandle, options)
+    rpc.handleHostRequest(
+      'capabilities.webviews.openPage',
+      async ({ runtimeHandle, pageId, options }) =>
+        this.webviews.openPage(runtimeHandle, pageId, options)
+    )
+    rpc.handleHostRequest(
+      'capabilities.webviews.openDialog',
+      async ({ runtimeHandle, dialogId, options }) =>
+        this.webviews.openDialog(runtimeHandle, dialogId, options)
     )
     rpc.handleHostRequest('capabilities.webviews.close', async ({ runtimeHandle, webviewId }) => {
       this.webviews.close(runtimeHandle, webviewId)

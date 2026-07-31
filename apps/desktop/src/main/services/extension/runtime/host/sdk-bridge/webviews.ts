@@ -1,7 +1,11 @@
 import type {
   ExtensionRuntimeHandle,
+  HostToMainRpcRequestMap,
   JsonValue,
+  RpcParams,
+  RpcResult,
   WebviewClosedEvent,
+  WebviewHandle,
   WebviewMessagePostedEvent
 } from '@kisaki3/extension-api'
 import { createDisposable } from './disposables'
@@ -15,56 +19,92 @@ interface WebviewSessionRecord {
   buffered: JsonValue[]
 }
 
+type WebviewSessionRpcMethod = 'capabilities.webviews.postMessage' | 'capabilities.webviews.close'
+
 export interface HostWebviewSessionManagerOptions {
   runInExtensionContext<T>(
     scope: ActiveExtensionScope,
     callback: () => Promise<T> | T
   ): Promise<T> | T
+  requestMain<K extends WebviewSessionRpcMethod>(
+    scope: ActiveExtensionScope,
+    method: K,
+    params: Omit<RpcParams<HostToMainRpcRequestMap, K>, 'runtimeHandle'>
+  ): Promise<RpcResult<HostToMainRpcRequestMap, K>>
 }
 
 /**
  * Tracks open webview sessions inside the extension host process and routes
  * main-relayed messages and close notifications to author callbacks.
  * @remarks Inbound messages are buffered per session until the first message
- * listener registers, so wiring listeners right after `open()` resolves never
+ * listener registers, so wiring listeners right after an open resolves never
  * drops messages. Sessions follow a one-way lifecycle and are finalized at
- * most once.
+ * most once. A webview id maps to a single record, so handles produced for
+ * the same session (open result and `onOpen` dispatch) share listeners.
  */
 export class HostWebviewSessionManager {
   private readonly sessions = new Map<string, WebviewSessionRecord>()
 
   constructor(private readonly options: HostWebviewSessionManagerOptions) {}
 
-  register(scope: ActiveExtensionScope, webviewId: string): WebviewSessionBinding {
-    const record: WebviewSessionRecord = {
-      scope,
-      controller: new AbortController(),
-      messageListeners: new Set(),
-      closeListeners: new Set(),
-      buffered: []
-    }
-    this.sessions.set(webviewId, record)
+  /**
+   * Creates the author-facing handle for a session, adopting the existing
+   * record when the session is already tracked.
+   */
+  createHandle(scope: ActiveExtensionScope, webviewId: string): WebviewHandle {
+    const binding = this.register(scope, webviewId)
 
     return {
-      signal: record.controller.signal,
-      onMessage: (listener) => {
-        record.messageListeners.add(listener)
+      id: webviewId,
+      signal: binding.signal,
+      postMessage: async (message) => {
+        await this.options.requestMain(scope, 'capabilities.webviews.postMessage', {
+          webviewId,
+          message
+        })
+      },
+      onMessage: (listener) => binding.onMessage(listener),
+      onClose: (listener) => binding.onClose(listener),
+      close: async () => {
+        await this.options.requestMain(scope, 'capabilities.webviews.close', { webviewId })
+      }
+    }
+  }
 
-        if (record.buffered.length > 0) {
-          const pending = record.buffered.splice(0, record.buffered.length)
+  register(scope: ActiveExtensionScope, webviewId: string): WebviewSessionBinding {
+    let record = this.sessions.get(webviewId)
+    if (!record || record.scope.runtimeHandle !== scope.runtimeHandle) {
+      record = {
+        scope,
+        controller: new AbortController(),
+        messageListeners: new Set(),
+        closeListeners: new Set(),
+        buffered: []
+      }
+      this.sessions.set(webviewId, record)
+    }
+
+    const boundRecord = record
+    return {
+      signal: boundRecord.controller.signal,
+      onMessage: (listener) => {
+        boundRecord.messageListeners.add(listener)
+
+        if (boundRecord.buffered.length > 0) {
+          const pending = boundRecord.buffered.splice(0, boundRecord.buffered.length)
           for (const message of pending) {
-            void this.dispatchMessage(record, message)
+            void this.dispatchMessage(boundRecord, message)
           }
         }
 
         return createDisposable(() => {
-          record.messageListeners.delete(listener)
+          boundRecord.messageListeners.delete(listener)
         })
       },
       onClose: (listener) => {
-        record.closeListeners.add(listener)
+        boundRecord.closeListeners.add(listener)
         return createDisposable(() => {
-          record.closeListeners.delete(listener)
+          boundRecord.closeListeners.delete(listener)
         })
       }
     }

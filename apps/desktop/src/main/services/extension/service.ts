@@ -161,6 +161,12 @@ export class ExtensionService implements IService {
         this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
       resolveWebviewDocumentUrl: (extensionId, entry) =>
         uiAssetServer.documentUrl(extensionId, entry),
+      resolveWebviewPage: (runtimeHandle, pageId) =>
+        this.contributions?.webviews.getPage(runtimeHandle, pageId) ?? null,
+      resolveWebviewDialog: (runtimeHandle, dialogId) =>
+        this.contributions?.webviews.getDialog(runtimeHandle, dialogId) ?? null,
+      resolveWebviewPageByExtension: (extensionId, pageId) =>
+        this.contributions?.webviews.getPageByExtension(extensionId, pageId) ?? null,
       onWebviewSessionsChanged: (sessions) =>
         this.ipc.send('extension:webview-sessions-changed', sessions),
       onWebviewMessage: (event) => this.ipc.send('extension:webview-message', event)

@@ -116,6 +116,10 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpc(() => service.capabilities.webviews.listSessions())
   )
 
+  ipc.handle('extension:open-webview-page', async (_, request) =>
+    wrapIpc(() => service.capabilities.webviews.openPageFromRenderer(request))
+  )
+
   ipc.handle('extension:post-webview-message', async (_, request) =>
     wrapIpcVoid(() =>
       service.capabilities.webviews.postMessageToHost(request.webviewId, request.message)

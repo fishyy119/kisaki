@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const rowsSurfaceClass = [
-  'overflow-hidden rounded-md border border-border bg-background/40',
+  'overflow-hidden rounded-md border border-border',
   '[&>[data-slot=field-group]]:gap-0',
   '[&>[data-slot=field-group]]:divide-y',
   '[&>[data-slot=field-group]]:divide-border',

@@ -30,7 +30,11 @@ import type {
   RpcParams,
   RpcResult,
   ThemeContribution,
-  ThemeRegistration
+  ThemeRegistration,
+  WebviewDialogContribution,
+  WebviewDialogRegistration,
+  WebviewPageContribution,
+  WebviewPageRegistration
 } from '@kisaki3/extension-api'
 import { isExtensionEventTopic, toJsonObject } from '@kisaki3/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
@@ -44,6 +48,7 @@ import {
   MAIN_TO_HOST_SCRAPER_RPC
 } from '../contributions/scraper-providers'
 import { HostThemeContributionPoint } from '../contributions/themes'
+import { HostWebviewContributionPoint } from '../contributions/webviews'
 import type { HostContributionDiagnosticInput, HostContributionScope } from '../contributions/types'
 import { createDisposable, createDisposableStore } from './disposables'
 import {
@@ -59,7 +64,8 @@ import {
   createCommandRegistrar,
   createEntityMenuRegistrar,
   createScraperProviderRegistrar,
-  createThemeRegistrar
+  createThemeRegistrar,
+  createWebviewRegistrar
 } from './registrars'
 import { HostWebviewSessionManager } from './webviews'
 import { createExtensionStorage } from './storage'
@@ -100,7 +106,8 @@ export class ExtensionHostSdkBridge {
   private readonly deeplinkRoutes: HostDeeplinkRouteContributionPoint
   private readonly themes: HostThemeContributionPoint
   private readonly commands: HostCommandContributionPoint
-  private readonly webviews: HostWebviewSessionManager
+  private readonly webviews: HostWebviewContributionPoint
+  private readonly webviewSessions: HostWebviewSessionManager
   private readonly hostEventSubscriptions = new Map<string, HostEventSubscriptionRecord>()
   private readonly extensionEventListeners = new Map<
     ExtensionEventTopic,
@@ -114,6 +121,7 @@ export class ExtensionHostSdkBridge {
   >()
   private readonly mainEventCleanup: () => void
   private readonly taskRunCancelCleanup: () => void
+  private readonly webviewOpenedCleanup: () => void
   private readonly webviewMessageCleanup: () => void
   private readonly webviewClosedCleanup: () => void
 
@@ -149,8 +157,13 @@ export class ExtensionHostSdkBridge {
     this.deeplinkRoutes = new HostDeeplinkRouteContributionPoint(contributionOptions)
     this.themes = new HostThemeContributionPoint(contributionOptions)
     this.commands = new HostCommandContributionPoint(contributionOptions)
-    this.webviews = new HostWebviewSessionManager({
-      runInExtensionContext: (scope, callback) => this.runInExtensionContext(scope, callback)
+    this.webviewSessions = new HostWebviewSessionManager({
+      runInExtensionContext: (scope, callback) => this.runInExtensionContext(scope, callback),
+      requestMain: (scope, method, params) => this.requestMain(scope, method, params)
+    })
+    this.webviews = new HostWebviewContributionPoint({
+      ...contributionOptions,
+      createWebviewHandle: (scope, webviewId) => this.webviewSessions.createHandle(scope, webviewId)
     })
     this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
       this.handleHostEventNotification(payload)
@@ -159,12 +172,15 @@ export class ExtensionHostSdkBridge {
       'capabilities.taskRuns.cancelRequested',
       (payload) => this.handleTaskRunCancelRequested(payload)
     )
+    this.webviewOpenedCleanup = this.rpc.onMainEvent('capabilities.webviews.opened', (payload) =>
+      this.webviews.handleOpened(payload)
+    )
     this.webviewMessageCleanup = this.rpc.onMainEvent(
       'capabilities.webviews.messagePosted',
-      (payload) => this.webviews.handleMessagePosted(payload)
+      (payload) => this.webviewSessions.handleMessagePosted(payload)
     )
     this.webviewClosedCleanup = this.rpc.onMainEvent('capabilities.webviews.closed', (payload) =>
-      this.webviews.handleClosed(payload)
+      this.webviewSessions.handleClosed(payload)
     )
   }
 
@@ -175,6 +191,7 @@ export class ExtensionHostSdkBridge {
   async dispose(): Promise<void> {
     this.mainEventCleanup()
     this.taskRunCancelCleanup()
+    this.webviewOpenedCleanup()
     this.webviewMessageCleanup()
     this.webviewClosedCleanup()
     this.entityMenus.releaseAll()
@@ -184,6 +201,7 @@ export class ExtensionHostSdkBridge {
     this.themes.releaseAll()
     this.commands.releaseAll()
     this.webviews.releaseAll()
+    this.webviewSessions.releaseAll()
     this.pendingMainRequests.clear()
     this.abortAllTaskRuns()
     this.taskRunAbortControllers.clear()
@@ -252,6 +270,7 @@ export class ExtensionHostSdkBridge {
     this.themes.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
     this.webviews.releaseRuntime(runtimeHandle)
+    this.webviewSessions.releaseRuntime(runtimeHandle)
     await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
     this.disposeExtensionEventListenersForRuntime(runtimeHandle)
     this.abortTaskRunsForRuntime(runtimeHandle)
@@ -284,7 +303,8 @@ export class ExtensionHostSdkBridge {
           cardActions: createCardActionRegistrar(this.bridge, subscriptions, scope),
           scraperProviders: createScraperProviderRegistrar(this.bridge, subscriptions, scope),
           deeplinkRoutes: createDeeplinkRouteRegistrar(this.bridge, subscriptions, scope),
-          themes: createThemeRegistrar(this.bridge, subscriptions, scope)
+          themes: createThemeRegistrar(this.bridge, subscriptions, scope),
+          webviews: createWebviewRegistrar(this.bridge, subscriptions, scope)
         },
         asAbsolutePath: (relativePath: string) =>
           this.bridge.asAbsolutePath(options.extension.extensionPath, relativePath)
@@ -336,6 +356,8 @@ export class ExtensionHostSdkBridge {
       registerDeeplinkRoute: (scope, contribution) =>
         this.registerDeeplinkRoute(scope, contribution),
       registerTheme: (scope, theme) => this.registerTheme(scope, theme),
+      registerWebviewPage: (scope, page) => this.registerWebviewPage(scope, page),
+      registerWebviewDialog: (scope, dialog) => this.registerWebviewDialog(scope, dialog),
       asAbsolutePath: (extensionPath, relativePath) =>
         resolveInsideExtension(extensionPath, relativePath)
     }
@@ -352,7 +374,8 @@ export class ExtensionHostSdkBridge {
       emitExtensionEvent: (scope, topic, payload) => this.emitExtensionEvent(scope, topic, payload),
       registerTaskRunAbortController: (scope, runId, controller) =>
         this.registerTaskRunAbortController(scope, runId, controller),
-      registerWebviewSession: (scope, webviewId) => this.webviews.register(scope, webviewId)
+      createWebviewSession: (scope, webviewId) =>
+        this.webviewSessions.createHandle(scope, webviewId)
     }
   }
 
@@ -425,6 +448,20 @@ export class ExtensionHostSdkBridge {
 
   private registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): ThemeRegistration {
     return this.themes.register(scope, theme)
+  }
+
+  private registerWebviewPage(
+    scope: ActiveExtensionScope,
+    page: WebviewPageContribution
+  ): WebviewPageRegistration {
+    return this.webviews.registerPage(scope, page)
+  }
+
+  private registerWebviewDialog(
+    scope: ActiveExtensionScope,
+    dialog: WebviewDialogContribution
+  ): WebviewDialogRegistration {
+    return this.webviews.registerDialog(scope, dialog)
   }
 
   private async subscribeHostEvent<K extends HostEventTopic>(

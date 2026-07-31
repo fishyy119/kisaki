@@ -371,7 +371,7 @@ function applyAppearance(state: WebviewClientConnection, appearance: WebviewAppe
 function requireConnection(): WebviewClientConnection {
   if (!connection) {
     throw new Error(
-      'This document is not embedded as a Kisaki webview. The webview client is only available inside webviews opened through kisaki.webviews.open().'
+      'This document is not embedded as a Kisaki webview. The webview client is only available inside sessions of declared webview pages and dialogs.'
     )
   }
 

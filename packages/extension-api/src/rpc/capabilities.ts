@@ -74,7 +74,7 @@ import type {
 } from '../capabilities/task-runs'
 import type { WebviewOpenOptions } from '../capabilities/webviews'
 import type { ScraperLookup } from '../contributions/scraper-providers'
-import type { JsonValue } from '../shared'
+import type { JsonObject, JsonValue } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload, RpcValue } from './core'
 import type { ExtensionScopedRpcParams } from './lifecycle'
 
@@ -220,8 +220,14 @@ export interface TaskRunCancelRequestedEvent {
   runId: string
 }
 
-export interface WebviewOpenRpcRequest extends ExtensionScopedRpcParams {
-  options: WebviewOpenOptions
+export interface WebviewOpenPageRpcRequest extends ExtensionScopedRpcParams {
+  pageId: string
+  options?: WebviewOpenOptions
+}
+
+export interface WebviewOpenDialogRpcRequest extends ExtensionScopedRpcParams {
+  dialogId: string
+  options?: WebviewOpenOptions
 }
 
 export interface WebviewScopedRpcRequest extends ExtensionScopedRpcParams {
@@ -230,6 +236,21 @@ export interface WebviewScopedRpcRequest extends ExtensionScopedRpcParams {
 
 export interface WebviewPostMessageRpcRequest extends WebviewScopedRpcRequest {
   message: JsonValue
+}
+
+/**
+ * Declared surface a webview session belongs to, as delivered with the
+ * {@link WebviewOpenedEvent} so the host can route the session to the owning
+ * page or dialog registration.
+ */
+export type WebviewOpenedSurface =
+  { kind: 'page'; pageId: string } | { kind: 'dialog'; dialogId: string }
+
+export interface WebviewOpenedEvent {
+  runtimeHandle: string
+  webviewId: string
+  surface: WebviewOpenedSurface
+  params: JsonObject
 }
 
 export interface WebviewMessagePostedEvent {
@@ -419,7 +440,14 @@ export type HostToMainCapabilityRpcRequestMap = {
     HostEventSubscriptionRequest,
     RpcNoPayload
   >
-  'capabilities.webviews.open': RpcMethodDefinition<WebviewOpenRpcRequest, { webviewId: string }>
+  'capabilities.webviews.openPage': RpcMethodDefinition<
+    WebviewOpenPageRpcRequest,
+    { webviewId: string }
+  >
+  'capabilities.webviews.openDialog': RpcMethodDefinition<
+    WebviewOpenDialogRpcRequest,
+    { webviewId: string }
+  >
   'capabilities.webviews.close': RpcMethodDefinition<WebviewScopedRpcRequest, RpcNoPayload>
   'capabilities.webviews.postMessage': RpcMethodDefinition<
     WebviewPostMessageRpcRequest,
@@ -471,6 +499,7 @@ export type HostToMainCapabilityRpcRequestMap = {
 export interface MainToHostCapabilityRpcEventMap {
   'capabilities.events.host': HostEventNotification
   'capabilities.taskRuns.cancelRequested': TaskRunCancelRequestedEvent
+  'capabilities.webviews.opened': WebviewOpenedEvent
   'capabilities.webviews.messagePosted': WebviewMessagePostedEvent
   'capabilities.webviews.closed': WebviewClosedEvent
 }

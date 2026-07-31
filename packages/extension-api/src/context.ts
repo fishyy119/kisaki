@@ -5,7 +5,8 @@ import type {
   DeeplinkRouteRegistrar,
   EntityMenuRegistrar,
   ScraperProviderRegistrar,
-  ThemeRegistrar
+  ThemeRegistrar,
+  WebviewRegistrar
 } from './contributions'
 
 export type ExtensionMode = 'development' | 'production'
@@ -72,6 +73,7 @@ export interface ExtensionContributionRegistrars {
   readonly deeplinkRoutes: DeeplinkRouteRegistrar
   readonly themes: ThemeRegistrar
   readonly commands: CommandRegistrar
+  readonly webviews: WebviewRegistrar
 }
 
 export interface ExtensionDefinition {

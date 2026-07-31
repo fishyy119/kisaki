@@ -66,7 +66,7 @@ const syncItemsLabel = computed(() => {
 <template>
   <div class="space-y-4">
     <SettingsSection :title="m.ui.overview.statusTitle">
-      <div class="overflow-hidden rounded-md border border-border bg-background/60">
+      <div class="overflow-hidden rounded-md border border-border">
         <div class="grid -m-px lg:grid-cols-3">
           <button
             type="button"
@@ -122,7 +122,7 @@ const syncItemsLabel = computed(() => {
     </SettingsSection>
 
     <SettingsSection :title="m.ui.overview.runtimeTitle">
-      <div class="overflow-hidden rounded-md border border-border bg-background/60">
+      <div class="overflow-hidden rounded-md border border-border">
         <div class="grid -m-px sm:grid-cols-2">
           <div class="border-r border-b border-border px-3 py-2">
             <div class="text-xs text-muted-foreground">{{ m.ui.overview.runningJobs }}</div>

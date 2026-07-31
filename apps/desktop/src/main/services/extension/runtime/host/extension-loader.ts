@@ -80,7 +80,9 @@ export class ExtensionLoader {
       scraperProviders: createScraperProviderMaps(),
       deeplinkRoutes: new Map(),
       themes: new Map(),
-      commands: new Map()
+      commands: new Map(),
+      webviewPages: new Map(),
+      webviewDialogs: new Map()
     }
 
     this.registry.add(runtime)

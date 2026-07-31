@@ -25,7 +25,7 @@ import type {
   WebviewHandle,
   WebviewOpenOptions
 } from '@kisaki3/extension-api'
-import type { ActiveExtensionScope, WebviewSessionBinding } from './types'
+import type { ActiveExtensionScope } from './types'
 import { toTaskRunFailureErrorPayload } from './utils/task-runs'
 
 const TASK_RUN_CANCELLED_ERROR_CODE = 'task_run_cancelled'
@@ -97,7 +97,7 @@ export interface KisakiApiBridgeHooks {
     runId: string,
     controller: AbortController
   ): Disposable
-  registerWebviewSession(scope: ActiveExtensionScope, webviewId: string): WebviewSessionBinding
+  createWebviewSession(scope: ActiveExtensionScope, webviewId: string): WebviewHandle
 }
 
 /**
@@ -160,23 +160,28 @@ export function createKisakiApi(
     } as unknown as TNamespace
   }
 
-  const openWebview = async (options: WebviewOpenOptions): Promise<WebviewHandle> => {
+  const openWebviewPage = async (
+    pageId: string,
+    options?: WebviewOpenOptions
+  ): Promise<WebviewHandle> => {
     const scope = requireScope()
-    const { webviewId } = await requestMain('capabilities.webviews.open', { options })
-    const binding = hooks.registerWebviewSession(scope, webviewId)
+    const { webviewId } = await requestMain('capabilities.webviews.openPage', {
+      pageId,
+      ...(options === undefined ? {} : { options })
+    })
+    return hooks.createWebviewSession(scope, webviewId)
+  }
 
-    return {
-      id: webviewId,
-      signal: binding.signal,
-      postMessage: async (message) => {
-        await requestMain('capabilities.webviews.postMessage', { webviewId, message })
-      },
-      onMessage: (listener) => binding.onMessage(listener),
-      onClose: (listener) => binding.onClose(listener),
-      close: async () => {
-        await requestMain('capabilities.webviews.close', { webviewId })
-      }
-    }
+  const openWebviewDialog = async (
+    dialogId: string,
+    options?: WebviewOpenOptions
+  ): Promise<WebviewHandle> => {
+    const scope = requireScope()
+    const { webviewId } = await requestMain('capabilities.webviews.openDialog', {
+      dialogId,
+      ...(options === undefined ? {} : { options })
+    })
+    return hooks.createWebviewSession(scope, webviewId)
   }
 
   const createTaskRunHandle = (run: TaskRunSnapshot): TaskRunHandle => {
@@ -556,7 +561,8 @@ export function createKisakiApi(
         ).run
     },
     webviews: {
-      open: openWebview
+      openPage: openWebviewPage,
+      openDialog: openWebviewDialog
     }
   }
 }

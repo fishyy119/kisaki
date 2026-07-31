@@ -17,7 +17,10 @@ import type {
   PersonScraperProvider,
   ScraperProviderRegistrar,
   ThemeRegistrar,
-  ThemeContribution
+  ThemeContribution,
+  WebviewDialogContribution,
+  WebviewPageContribution,
+  WebviewRegistrar
 } from '@kisaki3/extension-api'
 import type { ActiveExtensionScope, ExtensionSdkBridge } from './types'
 
@@ -170,6 +173,32 @@ export function createThemeRegistrar(
       const disposable = bridge.registerTheme(scope, theme)
       subscriptions.add(disposable)
       return disposable
+    }
+  }
+}
+
+/**
+ * Creates the webview contribution registrar bound to runtime subscriptions.
+ */
+export function createWebviewRegistrar(
+  bridge: ExtensionSdkBridge,
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
+): WebviewRegistrar {
+  return {
+    pages: {
+      register(page: WebviewPageContribution) {
+        const registration = bridge.registerWebviewPage(scope, page)
+        subscriptions.add(registration)
+        return registration
+      }
+    },
+    dialogs: {
+      register(dialog: WebviewDialogContribution) {
+        const registration = bridge.registerWebviewDialog(scope, dialog)
+        subscriptions.add(registration)
+        return registration
+      }
     }
   }
 }

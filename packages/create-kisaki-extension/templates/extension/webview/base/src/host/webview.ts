@@ -1,37 +1,34 @@
-import {
-  createWebviewRpc,
-  kisaki,
-  type ExtensionContext,
-  type WebviewHandle
-} from '@kisaki3/extension-sdk'
+import { createWebviewRpc, kisaki, type ExtensionContext } from '@kisaki3/extension-sdk'
 import type { HostFunctions, UiFunctions } from '../shared/contract'
 
 const extensionName = `{{EXTENSION_NAME}}`
 
-/** Registers the sample webview card action. */
+const MAIN_DIALOG_ID = 'main'
+
+/**
+ * Declares the sample webview dialog and registers the card action that
+ * opens it. The dialog is wired once through `onOpen`; the app keeps at most
+ * one live session per declared dialog, so repeated triggers adopt the open
+ * one.
+ */
 export function registerWebview(context: ExtensionContext): void {
-  let current: WebviewHandle | null = null
+  const dialog = context.contributions.webviews.dialogs.register({
+    id: MAIN_DIALOG_ID,
+    title: extensionName,
+    entry: 'main/index.html',
+    size: 'md'
+  })
+
+  dialog.onOpen((webview) => {
+    createWebviewRpc<UiFunctions, HostFunctions>(webview, createHostFunctions(context))
+  })
 
   context.contributions.cardActions.register({
     id: 'open-webview',
     label: 'Open',
     description: `Open the ${extensionName} webview.`,
     async run() {
-      if (current) {
-        return
-      }
-
-      const webview = await kisaki.webviews.open({
-        entry: 'main/index.html',
-        title: extensionName,
-        surface: { kind: 'dialog', size: 'md' }
-      })
-      current = webview
-      webview.onClose(() => {
-        current = null
-      })
-
-      createWebviewRpc<UiFunctions, HostFunctions>(webview, createHostFunctions(context))
+      await kisaki.webviews.openDialog(MAIN_DIALOG_ID)
     }
   })
 }

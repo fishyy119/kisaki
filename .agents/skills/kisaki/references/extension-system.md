@@ -107,7 +107,7 @@ apps/desktop/src/main/services/extension/runtime/host/contributions/<point>/
 apps/desktop/src/renderer/src/components/extension/<point>/        # when renderer-visible UI exists
 ```
 
-Use kebab-case plural directory names: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`. Capability names must mirror the public `kisaki.*` namespace across `packages/extension-api/src/capabilities/` and `apps/desktop/src/main/services/extension/capabilities/`; `library` and `task-runs` may be directories because they have subdomains or provider internals. Use `automations`, not `background-tasks`.
+Use kebab-case plural directory names: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`, `webviews`. Capability names must mirror the public `kisaki.*` namespace across `packages/extension-api/src/capabilities/` and `apps/desktop/src/main/services/extension/capabilities/`; `library` and `task-runs` may be directories because they have subdomains or provider internals. Use `automations`, not `background-tasks`.
 
 ### Naming Rules
 
@@ -145,12 +145,26 @@ Extensions use a single `manifest.json` with an `entry` field and implement `act
 - `deeplinkRoutes` - Namespaced extension deeplink handlers
 - `commands` - Extension-owned command handlers registered into the app command service
 - `themes` - Semantic token theme contributions
+- `webviews` - Declared webview pages (optional top-level nav placement) and reusable dialogs
 
 Contribution points are extension-owned content that the host consumes. Some are executable
 callbacks (`entityMenus`, `settingsPanels`, `scraperProviders`, `deeplinkRoutes`, `commands`) and some are
-declarative content (`themes`). Capabilities are host-owned services that extensions call through
+declarative content (`themes`, `webviews`). Capabilities are host-owned services that extensions call through
 `kisaki.*`. Runtime context services such as `logger`, `storage`, and `secrets` are part of
 `ExtensionContext` but are not capabilities.
+
+Webviews pair a declarative contribution with a same-named capability: pages and dialogs are
+declared through `context.contributions.webviews.pages/dialogs.register(...)` and opened by id
+through `kisaki.webviews.openPage` / `openDialog`. Main keeps at most one live session per declared
+id (reopening a page replaces its session, reopening a dialog adopts it), and session wiring
+happens once through `registration.onOpen(handle)` regardless of the open trigger. Nav-enabled
+pages project into the contribution snapshot and render in the app sidebar under the stable
+`/extension-page/:extensionId/:pageId` route.
+
+Contribution `icon` fields use the shared `ContributionIcon` contract: `mdi:<name>` for the MDI set
+bundled with the app, or a `./`-prefixed package-relative image file. Main resolves both forms to
+the renderer DTO `ExtensionIconInfo` (registration-time path confinement for files), and the
+renderer draws them as currentColor masks, so custom icon files should be monochrome silhouettes.
 
 All UI callbacks return `UiCallbackResult` with explicit `success`, `refresh`, and structured `error` semantics.
 
@@ -189,7 +203,7 @@ or TaskRun snapshots.
 - Keep renderer-facing extension IPC in `apps/desktop/src/shared/ipc.ts` under `extension:*`.
 - Implement those channels only in `apps/desktop/src/main/services/extension/ipc.ts`; handlers should stay thin: forward typed arguments to `ExtensionService` and map to `IpcResult` or `IpcVoidResult`.
 - Put serializable request/response/event DTOs in `apps/desktop/src/shared/extension/` with an `Extension*` prefix. Do not move callback functions, `AbortSignal`, Electron objects, class instances, or extension entry exports across IPC.
-- Use action-style IPC names for mutations (`extension:enable`, `extension:create-install-plan`, `extension:install-release`, `extension:install-from-file`, `extension:uninstall`, `extension:purge-data`, `extension:update`, `extension:set-update-policy`, `extension:remove-trusted-signer`, `extension:invoke-settings-panel-node`) and `get-*` names for snapshots (`extension:get-installed-packages`, `extension:get-automatic-update-run`, `extension:get-contribution-snapshot`).
+- Use action-style IPC names for mutations (`extension:enable`, `extension:create-install-plan`, `extension:install-release`, `extension:install-from-file`, `extension:uninstall`, `extension:purge-data`, `extension:update`, `extension:set-update-policy`, `extension:remove-trusted-signer`, `extension:invoke-settings-panel-node`, `extension:open-webview-page`) and `get-*` names for snapshots (`extension:get-installed-packages`, `extension:get-automatic-update-run`, `extension:get-contribution-snapshot`, `extension:get-webview-sessions`).
 - Repository, catalog, and trust IPC uses `extension:list-repositories`, `extension:add-repository`, `extension:update-repository`, `extension:remove-repository`, `extension:refresh-repository`, `extension:refresh-repositories`, `extension:search-catalog`, and `extension:list-trusted-signers`.
 - Repository refresh channels return `TaskRunStartResult` for long-running refresh work. Extension
   package install, update, import, and uninstall operations are app-owned TaskRuns; renderer does not

@@ -17,7 +17,10 @@ import type {
   CompanyScraperProvider,
   ScraperMediaType,
   ThemeContribution,
-  DisposableStore
+  DisposableStore,
+  WebviewDialogContribution,
+  WebviewHandle,
+  WebviewPageContribution
 } from '@kisaki3/extension-api'
 
 export interface RegisteredEntityMenuContributionFor<
@@ -56,6 +59,19 @@ export interface ScraperProviderMaps {
 export type ScraperProviderFor<TMediaType extends ScraperMediaType> =
   ScraperProviderMaps[TMediaType] extends Map<string, infer TProvider> ? TProvider : never
 
+/**
+ * Declared webview surface plus the host-side `onOpen` listeners that receive
+ * every session opened for it.
+ */
+export interface RegisteredWebviewSurface<TContribution> {
+  contribution: TContribution
+  openListeners: Set<(webview: WebviewHandle) => void>
+}
+
+export type RegisteredWebviewPage = RegisteredWebviewSurface<WebviewPageContribution>
+
+export type RegisteredWebviewDialog = RegisteredWebviewSurface<WebviewDialogContribution>
+
 export interface LoadedExtensionRuntime {
   metadata: ExtensionRuntimeMetadata
   runtimeHandle: ExtensionRuntimeHandle
@@ -70,6 +86,8 @@ export interface LoadedExtensionRuntime {
   deeplinkRoutes: Map<string, DeeplinkRouteContribution>
   themes: Map<string, ThemeContribution>
   commands: Map<string, CommandContribution>
+  webviewPages: Map<string, RegisteredWebviewPage>
+  webviewDialogs: Map<string, RegisteredWebviewDialog>
 }
 
 /**
@@ -195,6 +213,29 @@ export class ExtensionRegistry {
 
   unregisterCommand(extensionId: string, commandId: string): void {
     this.require(extensionId).commands.delete(commandId)
+  }
+
+  registerWebviewPage(extensionId: string, page: WebviewPageContribution): RegisteredWebviewPage {
+    const registered: RegisteredWebviewPage = { contribution: page, openListeners: new Set() }
+    this.require(extensionId).webviewPages.set(page.id, registered)
+    return registered
+  }
+
+  unregisterWebviewPage(extensionId: string, pageId: string): void {
+    this.require(extensionId).webviewPages.delete(pageId)
+  }
+
+  registerWebviewDialog(
+    extensionId: string,
+    dialog: WebviewDialogContribution
+  ): RegisteredWebviewDialog {
+    const registered: RegisteredWebviewDialog = { contribution: dialog, openListeners: new Set() }
+    this.require(extensionId).webviewDialogs.set(dialog.id, registered)
+    return registered
+  }
+
+  unregisterWebviewDialog(extensionId: string, dialogId: string): void {
+    this.require(extensionId).webviewDialogs.delete(dialogId)
   }
 
   private require(extensionId: string): LoadedExtensionRuntime {

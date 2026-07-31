@@ -29,7 +29,11 @@ import type {
   ScraperMediaType,
   ScraperProviderRegistration,
   ThemeRegistration,
-  ThemeContribution
+  ThemeContribution,
+  WebviewDialogContribution,
+  WebviewDialogRegistration,
+  WebviewPageContribution,
+  WebviewPageRegistration
 } from '@kisaki3/extension-api'
 
 export type ScraperProviderFor<TMediaType extends ScraperMediaType> = TMediaType extends 'game'
@@ -106,6 +110,14 @@ export interface ExtensionSdkBridge {
     contribution: DeeplinkRouteContribution<TPattern>
   ): DeeplinkRouteRegistration
   registerTheme(scope: ActiveExtensionScope, theme: ThemeContribution): ThemeRegistration
+  registerWebviewPage(
+    scope: ActiveExtensionScope,
+    page: WebviewPageContribution
+  ): WebviewPageRegistration
+  registerWebviewDialog(
+    scope: ActiveExtensionScope,
+    dialog: WebviewDialogContribution
+  ): WebviewDialogRegistration
   asAbsolutePath(extensionPath: string, relativePath: string): string
 }
 

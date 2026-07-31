@@ -21,7 +21,7 @@ import type {
   LocalizedText,
   ThemeContribution,
   UiCallbackResult,
-  WebviewSurface
+  WebviewDialogSize
 } from '@kisaki3/extension-api'
 import type {
   ExtensionRegistryArtifactTarget,
@@ -409,6 +409,14 @@ export interface ExtensionContributionOwnerInfo {
   extensionVersion: string
 }
 
+/**
+ * Contribution icon resolved by main into a renderer-consumable form. `mdi`
+ * names the bundled Material Design Icon; `url` is an app-local URL for an
+ * extension package icon file. The renderer renders both as a currentColor
+ * mask.
+ */
+export type ExtensionIconInfo = { kind: 'mdi'; name: string } | { kind: 'url'; url: string }
+
 export type ExtensionEntityMenuRegistrationScopeInfo = {
   [TDomain in EntityMenuDomain]: {
     [TScope in EntityMenuScope<TDomain>]: {
@@ -448,12 +456,25 @@ export interface ExtensionScraperProviderRegistrationInfo extends ExtensionContr
     | CharacterScraperProviderRegistrationInfo
 }
 
+/**
+ * One declared webview page as projected to the renderer. Pages with `nav`
+ * appear in the top-level sidebar; the renderer resolves `title` against the
+ * UI locale and renders `icon` through the contribution icon component.
+ */
+export interface ExtensionWebviewPageRegistrationInfo extends ExtensionContributionOwnerInfo {
+  pageId: string
+  title: LocalizedText
+  icon?: ExtensionIconInfo
+  nav?: { order: number }
+}
+
 export interface ExtensionContributionSnapshot {
   entityMenus: readonly ExtensionEntityMenuRegistrationInfo[]
   cardActions: readonly ExtensionCardActionRegistrationInfo[]
   scraperProviders: readonly ExtensionScraperProviderRegistrationInfo[]
   deeplinkRoutes: readonly ExtensionDeeplinkRouteRegistrationInfo[]
   themes: readonly ExtensionThemeRegistrationInfo[]
+  webviewPages: readonly ExtensionWebviewPageRegistrationInfo[]
 }
 
 export interface ExtensionContributionError {
@@ -463,13 +484,32 @@ export interface ExtensionContributionError {
   code?: string
 }
 
-export type ExtensionResolvedEntityMenuActionNode = Omit<EntityMenuActionNode, 'onClick'>
+export type ExtensionResolvedEntityMenuActionNode = Omit<
+  EntityMenuActionNode,
+  'onClick' | 'icon'
+> & {
+  icon?: ExtensionIconInfo
+}
 
-export type ExtensionResolvedEntityMenuCheckboxNode = Omit<EntityMenuCheckboxNode, 'onChange'>
+export type ExtensionResolvedEntityMenuCheckboxNode = Omit<
+  EntityMenuCheckboxNode,
+  'onChange' | 'icon'
+> & {
+  icon?: ExtensionIconInfo
+}
 
-export type ExtensionResolvedEntityMenuSelectNode = Omit<EntityMenuSelectNode, 'onChange'>
+export type ExtensionResolvedEntityMenuSelectNode = Omit<
+  EntityMenuSelectNode,
+  'onChange' | 'icon'
+> & {
+  icon?: ExtensionIconInfo
+}
 
-export type ExtensionResolvedEntityMenuSubmenuNode = Omit<EntityMenuSubmenuNode, 'children'> & {
+export type ExtensionResolvedEntityMenuSubmenuNode = Omit<
+  EntityMenuSubmenuNode,
+  'children' | 'icon'
+> & {
+  icon?: ExtensionIconInfo
   children: readonly ExtensionResolvedEntityMenuNode[]
 }
 
@@ -529,6 +569,13 @@ export interface ExtensionCardActionRunRequest {
 }
 
 /**
+ * Declared surface a webview session belongs to, resolved from the owning
+ * page or dialog contribution.
+ */
+export type ExtensionWebviewSurfaceInfo =
+  { kind: 'page'; pageId: string } | { kind: 'dialog'; dialogId: string; size: WebviewDialogSize }
+
+/**
  * One open webview session as projected to the renderer. `documentUrl` always
  * uses the app-owned extension UI protocol, regardless of whether main serves
  * package files or proxies a development server. The renderer appends the
@@ -537,13 +584,20 @@ export interface ExtensionCardActionRunRequest {
 export interface ExtensionWebviewSessionInfo {
   webviewId: string
   extensionId: string
-  /** Accessible session title; never rendered as visible chrome. */
-  title: string
-  surface: WebviewSurface
-  entry: string
+  /**
+   * Accessible session title from the owning declaration; never rendered as
+   * visible chrome. The renderer resolves it against the current UI locale.
+   */
+  title: LocalizedText
+  surface: ExtensionWebviewSurfaceInfo
   params: JsonObject
   documentUrl: string
   openedAt: number
+}
+
+export interface ExtensionWebviewOpenPageRequest {
+  extensionId: string
+  pageId: string
 }
 
 export interface ExtensionWebviewMessageEvent {
@@ -603,6 +657,7 @@ export type AssertExtensionDtosAreJsonSafe = AssertNever<
     ExtensionEntityMenuRefreshRequestedEvent: ExtensionEntityMenuRefreshRequestedEvent
     ExtensionCardActionRunRequest: ExtensionCardActionRunRequest
     ExtensionWebviewSessionInfo: ExtensionWebviewSessionInfo
+    ExtensionWebviewOpenPageRequest: ExtensionWebviewOpenPageRequest
     ExtensionWebviewMessageEvent: ExtensionWebviewMessageEvent
     ExtensionWebviewPostMessageRequest: ExtensionWebviewPostMessageRequest
     ExtensionWebviewReadyRequest: ExtensionWebviewReadyRequest

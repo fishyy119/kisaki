@@ -10,7 +10,11 @@ outside clicks never close, protecting form state from stray clicks.
 import type { WebviewDialogSize } from '@kisaki3/extension-api'
 import type { ExtensionWebviewSessionInfo } from '@shared/extension'
 import { Dialog, DialogContent, DialogTitle } from '@renderer/components/ui/dialog'
-import { closeWebview, extensionWebviewStore } from '@renderer/core/extensions'
+import {
+  closeWebview,
+  extensionWebviewStore,
+  resolveExtensionText
+} from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { cn } from '@renderer/utils/cn'
 import ExtensionWebviewFrame from './webview-frame.vue'
@@ -29,7 +33,7 @@ const DIALOG_SIZE_CLASSES: Record<WebviewDialogSize, { width: string; height: st
 }
 
 function getDialogSize(session: ExtensionWebviewSessionInfo): WebviewDialogSize {
-  return session.surface.kind === 'dialog' ? (session.surface.size ?? 'md') : 'md'
+  return session.surface.kind === 'dialog' ? session.surface.size : 'md'
 }
 
 function handleOpenChange(session: ExtensionWebviewSessionInfo, open: boolean): void {
@@ -62,7 +66,7 @@ function handleOpenChange(session: ExtensionWebviewSessionInfo, open: boolean): 
     >
       <!-- The visible title lives inside the document; this one carries the
            accessible dialog name across the iframe boundary. -->
-      <DialogTitle class="sr-only">{{ session.title }}</DialogTitle>
+      <DialogTitle class="sr-only">{{ resolveExtensionText(session.title) }}</DialogTitle>
       <ExtensionWebviewFrame :session="session" />
     </DialogContent>
   </Dialog>

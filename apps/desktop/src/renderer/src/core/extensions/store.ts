@@ -8,7 +8,8 @@ function createEmptySnapshot(): ExtensionContributionSnapshot {
     cardActions: [],
     scraperProviders: [],
     deeplinkRoutes: [],
-    themes: []
+    themes: [],
+    webviewPages: []
   }
 }
 
@@ -22,7 +23,8 @@ export const extensionContributionStore = {
   cardActions: computed(() => snapshot.value.cardActions),
   scraperProviders: computed(() => snapshot.value.scraperProviders),
   deeplinkRoutes: computed(() => snapshot.value.deeplinkRoutes),
-  themes: computed(() => snapshot.value.themes)
+  themes: computed(() => snapshot.value.themes),
+  webviewPages: computed(() => snapshot.value.webviewPages)
 }
 
 export function setupExtensionContributionStore(): void {

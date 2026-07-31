@@ -143,7 +143,7 @@ function navigate(tab: SettingsTabId): void {
       orientation="vertical"
       class="h-full min-h-0 flex-row gap-0"
     >
-      <aside class="flex w-40 shrink-0 flex-col border-r border-border bg-surface/60 p-2">
+      <aside class="flex w-40 shrink-0 flex-col border-r border-border p-2">
         <TabsList class="h-auto w-full flex-col items-stretch">
           <TabsTrigger
             v-for="tab in tabs"

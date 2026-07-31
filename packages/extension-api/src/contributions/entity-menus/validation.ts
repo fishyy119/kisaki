@@ -1,4 +1,5 @@
 import type { EntityMenuContribution, EntityMenuInput } from './contracts'
+import { validateOptionalContributionIcon } from '../../shared/icon'
 import type { ValidationIssue } from '../../shared/validation'
 import {
   isPlainObject,
@@ -98,9 +99,7 @@ function validateEntityMenuNodeBase(
 }
 
 function validateEntityMenuIcon(value: unknown, path: string): ValidationIssue[] {
-  return validateOptionalString(value, path, {
-    typeMessage: 'icon must be a string when provided.'
-  })
+  return validateOptionalContributionIcon(value, path)
 }
 
 function validateEntityMenuTone(

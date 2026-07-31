@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
+import ContributionIcon from '../../contribution-icon.vue'
 import ActionNode from './action-node.vue'
 import CheckboxNode from './checkbox-node.vue'
 import SelectNode from './select-node.vue'
@@ -35,7 +35,7 @@ const visibleChildren = computed(() =>
       :is="props.components.SubTrigger"
       :disabled="props.node.disabled"
     >
-      <Icon
+      <ContributionIcon
         v-if="props.node.icon"
         :icon="props.node.icon"
         class="size-4"

@@ -1,5 +1,6 @@
 export * from './locales'
 export * from './json'
+export * from './icon'
 export type { ValidationIssue } from './validation'
 export * from './disposable'
 export * from './errors'

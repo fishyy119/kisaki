@@ -52,22 +52,28 @@ import type { HostFunctions, UiFunctions } from '../shared/contract'
 
 export default defineExtension({
   activate(context) {
+    const dialog = context.contributions.webviews.dialogs.register({
+      id: 'settings',
+      title: 'Settings',
+      entry: 'main/index.html',
+      size: 'md'
+    })
+
+    // Session wiring happens once, regardless of who opens the dialog.
+    dialog.onOpen((webview) => {
+      createWebviewRpc<UiFunctions, HostFunctions>(webview, {
+        loadState: async () => ({
+          enabled: (await context.storage.get<boolean>('enabled')) ?? true
+        }),
+        saveState: (state) => context.storage.set('enabled', state.enabled)
+      })
+    })
+
     context.contributions.cardActions.register({
       id: 'open-settings',
       label: 'Settings',
       async run() {
-        const webview = await kisaki.webviews.open({
-          entry: 'main/index.html',
-          title: 'Settings',
-          surface: { kind: 'dialog', size: 'md' }
-        })
-
-        createWebviewRpc<UiFunctions, HostFunctions>(webview, {
-          loadState: async () => ({
-            enabled: (await context.storage.get<boolean>('enabled')) ?? true
-          }),
-          saveState: (state) => context.storage.set('enabled', state.enabled)
-        })
+        await kisaki.webviews.openDialog('settings')
       }
     })
   }

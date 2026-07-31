@@ -34,6 +34,7 @@ import type {
   ScraperSessionResult
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
+import type { WebviewDialogContribution, WebviewPageContribution } from '../contributions/webviews'
 import type { ContentLocale, JsonObject, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
@@ -360,4 +361,20 @@ export type HostToMainContributionRpcRequestMap = {
   >
   'contributions.commands.register': RpcMethodDefinition<CommandRegisterRequest, RpcNoPayload>
   'contributions.commands.unregister': RpcMethodDefinition<CommandUnregisterRequest, RpcNoPayload>
+  'contributions.webviews.registerPage': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { page: WebviewPageContribution },
+    RpcNoPayload
+  >
+  'contributions.webviews.unregisterPage': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { pageId: string },
+    RpcNoPayload
+  >
+  'contributions.webviews.registerDialog': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { dialog: WebviewDialogContribution },
+    RpcNoPayload
+  >
+  'contributions.webviews.unregisterDialog': RpcMethodDefinition<
+    ExtensionScopedRpcParams & { dialogId: string },
+    RpcNoPayload
+  >
 }

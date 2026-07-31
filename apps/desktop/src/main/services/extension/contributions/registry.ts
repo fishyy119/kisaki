@@ -17,6 +17,7 @@ import { ExtensionDeeplinkRouteContributionPoint } from './deeplink-routes'
 import { ExtensionEntityMenuContributionPoint } from './entity-menus'
 import { ExtensionScraperProviderContributionPoint } from './scraper-providers'
 import { ExtensionThemeContributionPoint } from './themes'
+import { ExtensionWebviewContributionPoint } from './webviews'
 import type {
   ExtensionContributionDomainOptions,
   ExtensionContributionReleaseDiagnostic
@@ -29,6 +30,7 @@ export class ExtensionContributionRegistry {
   readonly deeplinkRoutes: ExtensionDeeplinkRouteContributionPoint
   readonly scraperProviders: ExtensionScraperProviderContributionPoint
   readonly commands: ExtensionCommandContributionPoint
+  readonly webviews: ExtensionWebviewContributionPoint
 
   constructor(private readonly options: ExtensionContributionDomainOptions) {
     this.entityMenus = new ExtensionEntityMenuContributionPoint(options)
@@ -37,6 +39,7 @@ export class ExtensionContributionRegistry {
     this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint(options)
     this.scraperProviders = new ExtensionScraperProviderContributionPoint(options)
     this.commands = new ExtensionCommandContributionPoint(options)
+    this.webviews = new ExtensionWebviewContributionPoint(options)
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
@@ -135,6 +138,36 @@ export class ExtensionContributionRegistry {
         return {}
       }
     )
+    rpc.handleHostRequest(
+      'contributions.webviews.registerPage',
+      async ({ runtimeHandle, page }) => {
+        this.webviews.registerPage(runtimeHandle, page)
+        this.notifyChanged()
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'contributions.webviews.unregisterPage',
+      async ({ runtimeHandle, pageId }) => {
+        this.webviews.unregisterPage(runtimeHandle, pageId)
+        this.notifyChanged()
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'contributions.webviews.registerDialog',
+      async ({ runtimeHandle, dialog }) => {
+        this.webviews.registerDialog(runtimeHandle, dialog)
+        return {}
+      }
+    )
+    rpc.handleHostRequest(
+      'contributions.webviews.unregisterDialog',
+      async ({ runtimeHandle, dialogId }) => {
+        this.webviews.unregisterDialog(runtimeHandle, dialogId)
+        return {}
+      }
+    )
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
@@ -145,6 +178,7 @@ export class ExtensionContributionRegistry {
       this.deeplinkRoutes.releaseRuntime(runtimeHandle)
       await this.scraperProviders.releaseRuntime(runtimeHandle)
       this.commands.releaseRuntime(runtimeHandle)
+      this.webviews.releaseRuntime(runtimeHandle)
     } finally {
       this.notifyChanged()
     }
@@ -158,6 +192,7 @@ export class ExtensionContributionRegistry {
       this.deeplinkRoutes.releaseAll()
       await this.scraperProviders.releaseAll()
       this.commands.releaseAll()
+      this.webviews.releaseAll()
     } finally {
       this.notifyChanged()
     }
@@ -169,7 +204,8 @@ export class ExtensionContributionRegistry {
       cardActions: this.cardActions.getSnapshot(),
       scraperProviders: this.scraperProviders.getSnapshot(),
       deeplinkRoutes: this.deeplinkRoutes.getSnapshot(),
-      themes: this.themes.getSnapshot()
+      themes: this.themes.getSnapshot(),
+      webviewPages: this.webviews.getSnapshot()
     }
   }
 
@@ -210,7 +246,8 @@ export class ExtensionContributionRegistry {
       ...this.scraperProviders.getReleaseDiagnostics(extensionId),
       ...this.deeplinkRoutes.getReleaseDiagnostics(extensionId),
       ...this.themes.getReleaseDiagnostics(extensionId),
-      ...this.commands.getReleaseDiagnostics(extensionId)
+      ...this.commands.getReleaseDiagnostics(extensionId),
+      ...this.webviews.getReleaseDiagnostics(extensionId)
     ]
 
     if (diagnostics.length === 0) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Icon } from '@renderer/components/ui/icon'
 import { Spinner } from '@renderer/components/ui/spinner'
+import ContributionIcon from '../../contribution-icon.vue'
 import type { ExtensionEntityMenuSessionController } from '../entity-menu-session'
 import type {
   ExtensionResolvedEntityMenuActionNode,
@@ -31,7 +31,7 @@ const disabled = computed(() => props.node.disabled === true || invoking.value)
       v-if="invoking"
       class="size-3.5"
     />
-    <Icon
+    <ContributionIcon
       v-else-if="props.node.icon"
       :icon="props.node.icon"
       class="size-4"

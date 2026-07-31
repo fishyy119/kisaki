@@ -24,8 +24,8 @@ pnpm add -D @iconify/tailwind4 @iconify-json/mdi
 
 The kit relies on the semantic tokens (`--kisaki-*`) that the webview client
 mirrors onto the document root, and on `base.css` for the shared base layer
-(typography, colors, scrollbars). It works inside any webview opened through
-`kisaki.webviews.open()`. Without the iconify plugin the components render but
+(typography, colors, scrollbars). It works inside any session of a declared
+webview page or dialog. Without the iconify plugin the components render but
 their icons (dialog close, select chevron, checkbox tick, spinner) are blank.
 
 ## Usage

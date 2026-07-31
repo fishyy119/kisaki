@@ -1,46 +1,14 @@
 import type { Disposable, JsonObject, JsonValue } from '../shared'
 import type { UiLocale } from '../shared/locales'
 import type { ValidationIssue } from '../shared/validation'
-import { normalizeExtensionPackagePath } from '../manifest'
 import { validateJsonObject } from '../shared/json'
-import {
-  isPlainObject,
-  validateOptionalEnumString,
-  validateRequiredString,
-  validateUnknownKeys
-} from '../shared/validation'
-
-export const WEBVIEW_DIALOG_SIZES = ['sm', 'md', 'lg', 'xl', '2xl', 'full'] as const
-
-export type WebviewDialogSize = (typeof WEBVIEW_DIALOG_SIZES)[number]
+import { isPlainObject, validateUnknownKeys } from '../shared/validation'
 
 export const WEBVIEW_SURFACE_KINDS = ['dialog', 'page'] as const
 
 export type WebviewSurfaceKind = (typeof WEBVIEW_SURFACE_KINDS)[number]
 
-/**
- * Container the app uses to present a webview session.
- * @remarks Surfaces describe placement and sizing only — the app draws no
- * chrome inside them. The document owns its entire UI, including headers,
- * footers, and close affordances. `dialog` renders inside an app-owned modal
- * window (overlay, positioning, animation) that dismisses like app dialogs:
- * Esc closes, outside clicks do not. `page` renders as a top-level routed
- * page with the app navigation around it.
- */
-export type WebviewSurface = { kind: 'dialog'; size?: WebviewDialogSize } | { kind: 'page' }
-
 export interface WebviewOpenOptions {
-  /**
-   * HTML entry path relative to the manifest `ui` root, e.g. `settings/index.html`.
-   */
-  entry: string
-  /**
-   * Accessible session title, used for the frame's accessibility name and
-   * session metadata. It is never rendered as visible chrome — the document
-   * draws its own header if it wants one.
-   */
-  title: string
-  surface: WebviewSurface
   /**
    * Open parameters delivered to the webview document at bootstrap.
    */
@@ -65,8 +33,17 @@ export interface WebviewHandle {
   close(): Promise<void>
 }
 
+/**
+ * Opens declared webview surfaces by id. Surfaces are declared through
+ * `context.contributions.webviews`; each declared id has at most one live
+ * session. `openPage` replaces an existing session for the page (navigation
+ * semantics: the new params apply); `openDialog` returns the existing
+ * session's handle when the dialog is already open, making double-triggers
+ * idempotent.
+ */
 export interface WebviewsCapability {
-  open(options: WebviewOpenOptions): Promise<WebviewHandle>
+  openPage(pageId: string, options?: WebviewOpenOptions): Promise<WebviewHandle>
+  openDialog(dialogId: string, options?: WebviewOpenOptions): Promise<WebviewHandle>
 }
 
 export type WebviewThemeMode = 'light' | 'dark'
@@ -246,73 +223,18 @@ export interface WebviewClient {
   close(): void
 }
 
-const WEBVIEW_OPEN_OPTIONS_KEYS = new Set<string>(['entry', 'title', 'surface', 'params'])
-
-const WEBVIEW_DIALOG_SURFACE_KEYS = new Set<string>(['kind', 'size'])
-
-const WEBVIEW_PAGE_SURFACE_KEYS = new Set<string>(['kind'])
-
-export function validateWebviewSurfaceShape(value: unknown, path = '$'): ValidationIssue[] {
-  if (!isPlainObject(value)) {
-    return [{ path, message: 'surface must be an object.' }]
-  }
-
-  if (value.kind === 'dialog') {
-    return [
-      ...validateUnknownKeys(value, WEBVIEW_DIALOG_SURFACE_KEYS, path),
-      ...validateOptionalEnumString(
-        value.size,
-        `${path}.size`,
-        WEBVIEW_DIALOG_SIZES,
-        `size must be one of: ${WEBVIEW_DIALOG_SIZES.join(', ')}.`
-      )
-    ]
-  }
-
-  if (value.kind === 'page') {
-    return validateUnknownKeys(value, WEBVIEW_PAGE_SURFACE_KEYS, path)
-  }
-
-  return [
-    {
-      path: `${path}.kind`,
-      message: `kind must be one of: ${WEBVIEW_SURFACE_KINDS.join(', ')}.`
-    }
-  ]
-}
+const WEBVIEW_OPEN_OPTIONS_KEYS = new Set<string>(['params'])
 
 export function validateWebviewOpenOptionsShape(value: unknown): ValidationIssue[] {
+  if (value === undefined) {
+    return []
+  }
+
   if (!isPlainObject(value)) {
     return [{ path: '$', message: 'Webview open options must be an object.' }]
   }
 
-  const issues: ValidationIssue[] = [
-    ...validateUnknownKeys(value, WEBVIEW_OPEN_OPTIONS_KEYS),
-    ...validateRequiredString(value.entry, '$.entry', {
-      trim: true,
-      valueMessage: 'entry must be a non-empty string.'
-    }),
-    ...validateRequiredString(value.title, '$.title', {
-      trim: true,
-      valueMessage: 'title must be a non-empty string.'
-    }),
-    ...validateWebviewSurfaceShape(value.surface, '$.surface')
-  ]
-
-  if (typeof value.entry === 'string' && value.entry.length > 0) {
-    const normalizedEntry = normalizeExtensionPackagePath(value.entry)
-    if (!normalizedEntry) {
-      issues.push({
-        path: '$.entry',
-        message: 'entry must be relative and stay inside the manifest ui root.'
-      })
-    } else if (!normalizedEntry.endsWith('.html')) {
-      issues.push({
-        path: '$.entry',
-        message: 'entry must point to an .html document.'
-      })
-    }
-  }
+  const issues: ValidationIssue[] = [...validateUnknownKeys(value, WEBVIEW_OPEN_OPTIONS_KEYS)]
 
   if (value.params !== undefined) {
     issues.push(...validateJsonObject(value.params, '$.params'))
@@ -321,6 +243,6 @@ export function validateWebviewOpenOptionsShape(value: unknown): ValidationIssue
   return issues
 }
 
-export function isWebviewOpenOptions(value: unknown): value is WebviewOpenOptions {
+export function isWebviewOpenOptions(value: unknown): value is WebviewOpenOptions | undefined {
   return validateWebviewOpenOptionsShape(value).length === 0
 }

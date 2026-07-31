@@ -32,6 +32,8 @@ import {
   AlertDialogTitle
 } from '@renderer/components/ui/alert-dialog'
 import { usePreferencesStore, useThemeStore } from '@renderer/stores'
+import { extensionContributionStore, resolveExtensionText } from '@renderer/core/extensions'
+import type { ExtensionIconInfo } from '@shared/extension'
 import SidebarNavItem from './sidebar-nav-item.vue'
 import { AdderTrigger } from '@renderer/features/adder'
 import { ScraperProfilesFormDialog } from '@renderer/features/scraper'
@@ -43,7 +45,7 @@ import { useI18n } from '@renderer/composables/use-i18n'
 interface NavItem {
   id: string
   label: string
-  icon: string
+  icon: string | ExtensionIconInfo
   path: string
 }
 
@@ -76,6 +78,26 @@ const navItems = computed<NavItem[]>(() => [
     path: '/extension'
   }
 ])
+
+// Nav-enabled webview pages declared by extensions, rendered after the app
+// items. The snapshot arrives sorted by nav order; disabled or uninstalled
+// extensions disappear with their snapshot entries.
+const extensionNavItems = computed<NavItem[]>(() =>
+  extensionContributionStore.webviewPages.value.flatMap((page) => {
+    if (!page.nav || !page.icon) {
+      return []
+    }
+
+    return [
+      {
+        id: `extension-page:${page.extensionId}:${page.pageId}`,
+        label: resolveExtensionText(page.title),
+        icon: page.icon,
+        path: `/extension-page/${page.extensionId}/${page.pageId}`
+      }
+    ]
+  })
+)
 
 const isSettingsOpen = ref(false)
 const isProfileManagerOpen = ref(false)
@@ -121,6 +143,11 @@ const showNsfwModel = computed({
     <nav class="flex-1 flex flex-col items-center py-2 gap-1">
       <SidebarNavItem
         v-for="item in navItems"
+        :key="item.id"
+        :item="item"
+      />
+      <SidebarNavItem
+        v-for="item in extensionNavItems"
         :key="item.id"
         :item="item"
       />

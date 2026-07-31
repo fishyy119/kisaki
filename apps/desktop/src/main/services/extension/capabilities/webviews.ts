@@ -1,16 +1,26 @@
 import { randomUUID } from 'node:crypto'
 import {
+  createNotFoundError,
   createUnavailableError,
   createValidationError,
-  normalizeExtensionPackagePath,
   validateJsonValue,
   validateWebviewOpenOptionsShape,
   type ExtensionRuntimeMetadata,
+  type JsonObject,
   type JsonValue,
   type WebviewOpenOptions
 } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
-import type { ExtensionWebviewMessageEvent, ExtensionWebviewSessionInfo } from '@shared/extension'
+import type {
+  ExtensionWebviewMessageEvent,
+  ExtensionWebviewOpenPageRequest,
+  ExtensionWebviewSessionInfo,
+  ExtensionWebviewSurfaceInfo
+} from '@shared/extension'
+import type {
+  ExtensionWebviewDialogRegistration,
+  ExtensionWebviewPageRegistration
+} from '../contributions/webviews'
 import type { ExtensionHostRpcClient } from '../runtime'
 
 const log = createLogger('Extension')
@@ -18,6 +28,12 @@ const log = createLogger('Extension')
 export interface ExtensionWebviewsCapabilityProviderOptions {
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
   resolveDocumentUrl(extensionId: string, entry: string): string | null
+  resolvePage(runtimeHandle: string, pageId: string): ExtensionWebviewPageRegistration | null
+  resolveDialog(runtimeHandle: string, dialogId: string): ExtensionWebviewDialogRegistration | null
+  resolvePageByExtension(
+    extensionId: string,
+    pageId: string
+  ): ExtensionWebviewPageRegistration | null
   onSessionsChanged(sessions: readonly ExtensionWebviewSessionInfo[]): void
   onWebviewMessage(event: ExtensionWebviewMessageEvent): void
 }
@@ -30,11 +46,14 @@ interface WebviewSession {
 }
 
 /**
- * Main-process owner of webview sessions. Holds the single source of truth
- * for open sessions, relays messages between the extension host and the
- * renderer, and buffers host messages until the webview document signals
- * readiness. Sessions follow a one-way lifecycle; message delivery to closed
- * or unknown sessions is dropped so close races never surface as errors.
+ * Main-process owner of webview sessions. Sessions open only against declared
+ * page/dialog contributions with at most one live session per declared id:
+ * reopening a page replaces its session (navigation semantics), reopening a
+ * dialog adopts the existing one. Holds the single source of truth for open
+ * sessions, relays messages between the extension host and the renderer, and
+ * buffers host messages until the webview document signals readiness.
+ * Sessions follow a one-way lifecycle; message delivery to closed or unknown
+ * sessions is dropped so close races never surface as errors.
  */
 export class ExtensionWebviewsCapabilityProvider {
   private readonly sessions = new Map<string, WebviewSession>()
@@ -50,48 +69,99 @@ export class ExtensionWebviewsCapabilityProvider {
     this.rpc = null
   }
 
-  open(runtimeHandle: string, options: WebviewOpenOptions): { webviewId: string } {
+  openPage(
+    runtimeHandle: string,
+    pageId: string,
+    options?: WebviewOpenOptions
+  ): { webviewId: string } {
     const metadata = this.requireRuntime(runtimeHandle)
-    const issues = validateWebviewOpenOptionsShape(options)
-    if (issues.length > 0) {
-      throw createValidationError(
-        `Webview open options are invalid:\n${issues
-          .map((issue) => `${issue.path}: ${issue.message}`)
-          .join('\n')}`
+    const params = this.requireOpenParams(options)
+    const registration = this.options.resolvePage(runtimeHandle, pageId)
+    if (!registration) {
+      throw createNotFoundError(
+        `Webview page "${pageId}" is not declared by extension "${metadata.id}".`
       )
     }
 
-    const entry = normalizeExtensionPackagePath(options.entry)
-    if (!entry) {
-      throw createValidationError('Webview entry must stay inside the manifest ui root.')
+    // Navigation semantics: reopening a page replaces the live session so the
+    // new params apply.
+    const existing = this.findSurfaceSession(metadata.id, 'page', pageId)
+    if (existing) {
+      this.finalizeSession(existing)
     }
 
-    const documentUrl = this.options.resolveDocumentUrl(metadata.id, entry)
-    if (!documentUrl) {
-      throw createValidationError(
-        `Extension "${metadata.id}" cannot open webviews because its manifest does not declare a ui root.`
-      )
-    }
-
-    const session: WebviewSession = {
-      info: {
-        webviewId: randomUUID(),
-        extensionId: metadata.id,
-        title: options.title,
-        surface: options.surface,
-        entry,
-        params: options.params ?? {},
-        documentUrl,
-        openedAt: Date.now()
-      },
+    const session = this.createSession({
       runtimeHandle,
-      ready: false,
-      pendingMessages: []
+      extensionId: metadata.id,
+      title: registration.page.title,
+      entry: registration.page.entry,
+      surface: { kind: 'page', pageId },
+      params
+    })
+    this.emitOpened(session)
+    return { webviewId: session.info.webviewId }
+  }
+
+  openDialog(
+    runtimeHandle: string,
+    dialogId: string,
+    options?: WebviewOpenOptions
+  ): { webviewId: string } {
+    const metadata = this.requireRuntime(runtimeHandle)
+    const params = this.requireOpenParams(options)
+    const registration = this.options.resolveDialog(runtimeHandle, dialogId)
+    if (!registration) {
+      throw createNotFoundError(
+        `Webview dialog "${dialogId}" is not declared by extension "${metadata.id}".`
+      )
     }
 
-    this.sessions.set(session.info.webviewId, session)
-    this.notifySessionsChanged()
+    // Idempotent open: a live dialog session is adopted, so double-triggers
+    // never stack modal windows.
+    const existing = this.findSurfaceSession(metadata.id, 'dialog', dialogId)
+    if (existing) {
+      return { webviewId: existing.info.webviewId }
+    }
+
+    const session = this.createSession({
+      runtimeHandle,
+      extensionId: metadata.id,
+      title: registration.dialog.title,
+      entry: registration.dialog.entry,
+      surface: { kind: 'dialog', dialogId, size: registration.dialog.size ?? 'md' },
+      params
+    })
+    this.emitOpened(session)
     return { webviewId: session.info.webviewId }
+  }
+
+  /**
+   * Renderer-initiated page open (route entry). Adopts the live session when
+   * the page is already open; otherwise opens a fresh session without params.
+   */
+  openPageFromRenderer(request: ExtensionWebviewOpenPageRequest): ExtensionWebviewSessionInfo {
+    const registration = this.options.resolvePageByExtension(request.extensionId, request.pageId)
+    if (!registration) {
+      throw createNotFoundError(
+        `Webview page "${request.pageId}" is not declared by extension "${request.extensionId}".`
+      )
+    }
+
+    const existing = this.findSurfaceSession(request.extensionId, 'page', request.pageId)
+    if (existing) {
+      return existing.info
+    }
+
+    const session = this.createSession({
+      runtimeHandle: registration.owner.runtimeHandle,
+      extensionId: request.extensionId,
+      title: registration.page.title,
+      entry: registration.page.entry,
+      surface: { kind: 'page', pageId: request.pageId },
+      params: {}
+    })
+    this.emitOpened(session)
+    return session.info
   }
 
   close(runtimeHandle: string, webviewId: string): void {
@@ -192,6 +262,88 @@ export class ExtensionWebviewsCapabilityProvider {
 
     this.sessions.clear()
     this.notifySessionsChanged()
+  }
+
+  private createSession(input: {
+    runtimeHandle: string
+    extensionId: string
+    title: ExtensionWebviewSessionInfo['title']
+    entry: string
+    surface: ExtensionWebviewSurfaceInfo
+    params: JsonObject
+  }): WebviewSession {
+    const documentUrl = this.options.resolveDocumentUrl(input.extensionId, input.entry)
+    if (!documentUrl) {
+      throw createValidationError(
+        `Extension "${input.extensionId}" cannot open webviews because its manifest does not declare a ui root.`
+      )
+    }
+
+    const session: WebviewSession = {
+      info: {
+        webviewId: randomUUID(),
+        extensionId: input.extensionId,
+        title: input.title,
+        surface: input.surface,
+        params: input.params,
+        documentUrl,
+        openedAt: Date.now()
+      },
+      runtimeHandle: input.runtimeHandle,
+      ready: false,
+      pendingMessages: []
+    }
+
+    this.sessions.set(session.info.webviewId, session)
+    this.notifySessionsChanged()
+    return session
+  }
+
+  private emitOpened(session: WebviewSession): void {
+    this.rpc?.sendEventToHost('capabilities.webviews.opened', {
+      runtimeHandle: session.runtimeHandle,
+      webviewId: session.info.webviewId,
+      surface:
+        session.info.surface.kind === 'page'
+          ? { kind: 'page', pageId: session.info.surface.pageId }
+          : { kind: 'dialog', dialogId: session.info.surface.dialogId },
+      params: session.info.params
+    })
+  }
+
+  private findSurfaceSession(
+    extensionId: string,
+    kind: ExtensionWebviewSurfaceInfo['kind'],
+    surfaceId: string
+  ): WebviewSession | null {
+    for (const session of this.sessions.values()) {
+      if (session.info.extensionId !== extensionId || session.info.surface.kind !== kind) {
+        continue
+      }
+
+      const sessionSurfaceId =
+        session.info.surface.kind === 'page'
+          ? session.info.surface.pageId
+          : session.info.surface.dialogId
+      if (sessionSurfaceId === surfaceId) {
+        return session
+      }
+    }
+
+    return null
+  }
+
+  private requireOpenParams(options: WebviewOpenOptions | undefined): JsonObject {
+    const issues = validateWebviewOpenOptionsShape(options)
+    if (issues.length > 0) {
+      throw createValidationError(
+        `Webview open options are invalid:\n${issues
+          .map((issue) => `${issue.path}: ${issue.message}`)
+          .join('\n')}`
+      )
+    }
+
+    return options?.params ?? {}
   }
 
   private finalizeSession(session: WebviewSession): void {

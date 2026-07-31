@@ -82,6 +82,7 @@ import type {
   ExtensionThemeRegistrationInfo,
   ExtensionWebviewCloseRequest,
   ExtensionWebviewMessageEvent,
+  ExtensionWebviewOpenPageRequest,
   ExtensionWebviewPostMessageRequest,
   ExtensionWebviewReadyRequest,
   ExtensionWebviewSessionInfo,
@@ -504,6 +505,9 @@ export interface IpcMainHandlers {
   'extension:release-entity-menu': (request: ExtensionEntityMenuReleaseRequest) => IpcVoidResult
   'extension:run-card-action': (request: ExtensionCardActionRunRequest) => IpcVoidResult
   'extension:get-webview-sessions': () => IpcResult<readonly ExtensionWebviewSessionInfo[]>
+  'extension:open-webview-page': (
+    request: ExtensionWebviewOpenPageRequest
+  ) => IpcResult<ExtensionWebviewSessionInfo>
   'extension:post-webview-message': (request: ExtensionWebviewPostMessageRequest) => IpcVoidResult
   'extension:notify-webview-ready': (request: ExtensionWebviewReadyRequest) => IpcVoidResult
   'extension:close-webview': (request: ExtensionWebviewCloseRequest) => IpcVoidResult

@@ -66,8 +66,8 @@ import {
   statisticsData
 } from '@renderer/features/statistics'
 
-// Extension webview page
-import ExtensionWebviewPage from '@renderer/pages/extension-webview-page.vue'
+// Extension declared page surface
+import ExtensionPage from '@renderer/pages/extension-page.vue'
 
 // Placeholder component for routes during development
 const PlaceholderPage = {
@@ -240,11 +240,11 @@ const routes: RouteRecordRaw[] = [
       }
     ]
   },
-  // Extension webview page surface
+  // Extension declared page surface
   {
-    path: '/extension-webview/:webviewId',
-    name: 'extension-webview',
-    component: ExtensionWebviewPage,
+    path: '/extension-page/:extensionId/:pageId',
+    name: 'extension-page',
+    component: ExtensionPage,
     props: true
   },
   // Updater

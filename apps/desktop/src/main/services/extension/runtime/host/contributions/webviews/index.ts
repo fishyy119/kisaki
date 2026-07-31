@@ -1,0 +1,1 @@
+export { HostWebviewContributionPoint } from './point'

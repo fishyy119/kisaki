@@ -18,7 +18,8 @@ import {
   closeWebview,
   notifyWebviewReady,
   postWebviewMessage,
-  registerWebviewFrame
+  registerWebviewFrame,
+  resolveExtensionText
 } from '@renderer/core/extensions'
 import { createLogger } from '@renderer/core/log'
 import { uiLocale } from '@renderer/core/i18n'
@@ -178,7 +179,7 @@ function postCurrentUiLocale(): void {
     <iframe
       ref="frame"
       :src="src"
-      :title="props.session.title"
+      :title="resolveExtensionText(props.session.title)"
       class="size-full border-0"
       sandbox="allow-scripts allow-same-origin allow-forms"
     />

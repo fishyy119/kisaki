@@ -31,6 +31,8 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@iconify-json/mdi": "^1.2.3",
+    "@iconify/utils": "^3.1.4",
     "@kisaki3/extension-api": "workspace:*",
     "@kisaki3/extension-registry": "workspace:*",
     "@ximu3/process-list": "^0.0.2",

@@ -1,4 +1,10 @@
-import type { Disposable, MaybePromise, JsonObject, UiCallbackResult } from '../../shared'
+import type {
+  ContributionIcon,
+  Disposable,
+  MaybePromise,
+  JsonObject,
+  UiCallbackResult
+} from '../../shared'
 
 export interface EntityMenuRefreshReason {
   reason?: string
@@ -129,7 +135,7 @@ export interface EntityMenuActionNode<
 > extends EntityMenuNodeBase {
   kind: 'action'
   label: string
-  icon?: string
+  icon?: ContributionIcon
   tone?: 'default' | 'danger'
   shortcut?: string
   onClick(event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
@@ -140,7 +146,7 @@ export interface EntityMenuCheckboxNode<
 > extends EntityMenuNodeBase {
   kind: 'checkbox'
   label: string
-  icon?: string
+  icon?: ContributionIcon
   checked: boolean
   onChange(checked: boolean, event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
 }
@@ -150,7 +156,7 @@ export interface EntityMenuSelectNode<
 > extends EntityMenuNodeBase {
   kind: 'select'
   label: string
-  icon?: string
+  icon?: ContributionIcon
   value: string
   options: readonly EntityMenuSelectOption[]
   onChange(value: string, event: EntityMenuNodeEvent<TInput>): MaybePromise<UiCallbackResult>
@@ -161,7 +167,7 @@ export interface EntityMenuSubmenuNode<
 > extends EntityMenuNodeBase {
   kind: 'submenu'
   label: string
-  icon?: string
+  icon?: ContributionIcon
   children: readonly EntityMenuNode<TInput>[]
 }
 

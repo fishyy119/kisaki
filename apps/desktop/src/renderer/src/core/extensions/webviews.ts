@@ -12,8 +12,9 @@ let initialized = false
 
 /**
  * Renderer projection of main-owned webview sessions. Dialog sessions render
- * through the global webview dialog host; page sessions drive the
- * `/extension-webview/:webviewId` route through the webview navigation setup.
+ * through the global webview dialog host; page sessions drive the stable
+ * `/extension-page/:extensionId/:pageId` route through the webview
+ * navigation setup.
  */
 export const extensionWebviewStore = {
   sessions,
@@ -25,6 +26,34 @@ export const extensionWebviewStore = {
 
 export function getExtensionWebviewSession(webviewId: string): ExtensionWebviewSessionInfo | null {
   return sessions.value.find((session) => session.webviewId === webviewId) ?? null
+}
+
+/** Finds the live session of one declared page (at most one exists). */
+export function findExtensionPageSession(
+  extensionId: string,
+  pageId: string
+): ExtensionWebviewSessionInfo | null {
+  return (
+    sessions.value.find(
+      (session) =>
+        session.extensionId === extensionId &&
+        session.surface.kind === 'page' &&
+        session.surface.pageId === pageId
+    ) ?? null
+  )
+}
+
+/**
+ * Opens (or adopts) the session of one declared page from the renderer side,
+ * used by the page route on entry.
+ */
+export async function openExtensionWebviewPage(
+  extensionId: string,
+  pageId: string
+): Promise<ExtensionWebviewSessionInfo> {
+  return unwrapIpcData(
+    await ipcManager.invoke('extension:open-webview-page', { extensionId, pageId })
+  )
 }
 
 export function setupExtensionWebviewStore(): void {

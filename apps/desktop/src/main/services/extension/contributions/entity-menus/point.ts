@@ -4,7 +4,8 @@ import {
   createUiError,
   readErrorCode,
   type EntityMenuRegistrationInfo,
-  type ExtensionRuntimeHandle
+  type ExtensionRuntimeHandle,
+  type JsonObject
 } from '@kisaki3/extension-api'
 import type {
   ExtensionContributionError,
@@ -18,6 +19,7 @@ import type {
   ExtensionResolvedEntityMenuGroup,
   ExtensionResolvedEntityMenuNode
 } from '@shared/extension'
+import { resolveOptionalContributionIcon } from '../icon'
 import {
   requireContributionOwner,
   toContributionOwnerInfo,
@@ -342,9 +344,12 @@ export class ExtensionEntityMenuContributionPoint {
         groups.push({
           ...toMenuInfo(result.value.registration),
           // Invariant: the host validates and JSON-normalizes resolved nodes
-          // before they cross the RPC boundary, so the cast is not re-checked.
-          nodes: result.value.resolved
-            .nodes as unknown as readonly ExtensionResolvedEntityMenuNode[]
+          // before they cross the RPC boundary; main only translates the icon
+          // contract into the renderer DTO here.
+          nodes: resolveEntityMenuNodeIcons(
+            result.value.registration.owner.extension.extensionPath,
+            result.value.resolved.nodes
+          )
         })
         contributionKeys.add(
           getPublicContributionKey(
@@ -407,6 +412,31 @@ export class ExtensionEntityMenuContributionPoint {
       }
     }
   }
+}
+
+function resolveEntityMenuNodeIcons(
+  extensionPath: string,
+  nodes: readonly JsonObject[]
+): readonly ExtensionResolvedEntityMenuNode[] {
+  return nodes.map((node) => {
+    const mapped: Record<string, unknown> = { ...node }
+
+    const icon = resolveOptionalContributionIcon(extensionPath, node.icon)
+    if (icon) {
+      mapped.icon = icon
+    } else {
+      delete mapped.icon
+    }
+
+    if (Array.isArray(node.children)) {
+      mapped.children = resolveEntityMenuNodeIcons(
+        extensionPath,
+        node.children as readonly JsonObject[]
+      )
+    }
+
+    return mapped as unknown as ExtensionResolvedEntityMenuNode
+  })
 }
 
 function formatMenuContribution(registration: MenuRegistration): string {
