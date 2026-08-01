@@ -72,9 +72,13 @@ export async function watchExtensionBundles(
     const index = states.length
     states.push(false)
     watchers.push(watcher)
+    // Rolldown emits END after ERROR in the same cycle, so END alone must not
+    // count as a successful build.
+    let currentCycleFailed = false
 
     watcher.on('event', (event: Rolldown.RolldownWatcherEvent) => {
-      if (event.code === 'BUNDLE_START') {
+      if (event.code === 'START') {
+        currentCycleFailed = false
         states[index] = false
         return
       }
@@ -85,12 +89,15 @@ export async function watchExtensionBundles(
       }
 
       if (event.code === 'END') {
-        states[index] = true
-        notifyBuilt()
+        if (!currentCycleFailed) {
+          states[index] = true
+          notifyBuilt()
+        }
         return
       }
 
       if (event.code === 'ERROR') {
+        currentCycleFailed = true
         states[index] = false
         void event.result?.close()
         options.onBuildError?.({ label, error: event.error })

@@ -90,9 +90,9 @@ export function toChangeCause(reason: ExtensionUnloadReason): ExtensionRuntimeCh
     case 'update':
       return 'package-update'
     case 'reload':
-      return 'user'
+      return 'user-reload'
     case 'shutdown':
-      return 'user'
+      return 'user-reload'
   }
 }
 

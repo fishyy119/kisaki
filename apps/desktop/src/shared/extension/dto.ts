@@ -72,8 +72,9 @@ export interface ExtensionRuntimeStateChangedEvent extends ExtensionInstalledRun
 /**
  * Development extensions whose on-disk code is newer than what the extension
  * host is currently running. The renderer surfaces these as a pending reload.
+ * Pushed on every change and pullable as a snapshot on renderer startup.
  */
-export interface ExtensionDevelopmentStaleChangedEvent {
+export interface ExtensionDevelopmentStaleState {
   extensionIds: readonly string[]
 }
 
@@ -633,7 +634,7 @@ export type AssertExtensionDtosAreJsonSafe = AssertNever<
   UnsafeDtosOf<{
     ExtensionInstalledPackageInfo: ExtensionInstalledPackageInfo
     ExtensionRuntimeStateChangedEvent: ExtensionRuntimeStateChangedEvent
-    ExtensionDevelopmentStaleChangedEvent: ExtensionDevelopmentStaleChangedEvent
+    ExtensionDevelopmentStaleState: ExtensionDevelopmentStaleState
     ExtensionUpdateCheckResult: ExtensionUpdateCheckResult
     ExtensionRepositoryInfo: ExtensionRepositoryInfo
     ExtensionRepositoryCreateRequest: ExtensionRepositoryCreateRequest

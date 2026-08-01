@@ -18,56 +18,26 @@ import {
   tagDetailData
 } from '@renderer/composables'
 
-// Library pages
+// Route data loaders come from the feature boundaries, while page components
+// are lazy-loaded from their concrete .vue files. Routing must never import
+// page components statically: pages sit downstream of the shared
+// composable/store graph, so a static edge back from the router would place
+// every page inside a circular import and degrade HMR to full reloads.
 import {
-  LibraryLayout,
-  ShowcasePage,
-  GameDetailPage,
-  PersonDetailPage,
-  CharacterDetailPage,
-  CompanyDetailPage,
-  CollectionDetailPage,
-  TagDetailPage,
-  CollectionsPage,
-  UncategorizedPage,
-  FavoritesPage,
   showcaseSectionsData,
   favoritesData,
   uncategorizedData,
   collectionsListData
 } from '@renderer/features/library'
-
-// Scanner page
-import { ScannerPage, scannersData } from '@renderer/features/scanner'
-
-// Automation page
-import { AutomationPage, automationsData } from '@renderer/features/automation'
-
-// Extension page
+import { scannersData } from '@renderer/features/scanner'
+import { automationsData } from '@renderer/features/automation'
 import {
-  ExtensionDiscoverPage,
-  ExtensionInstalledPage,
-  ExtensionLayout,
-  ExtensionRepositoriesPage,
-  ExtensionSignersPage,
   discoverSearchData,
   installedExtensionsData,
   extensionRepositoriesData,
   extensionSignersData
 } from '@renderer/features/extension'
-
-// Statistics pages
-import {
-  StatisticsLayout,
-  StatisticsOverviewPage,
-  StatisticsWeeklyPage,
-  StatisticsMonthlyPage,
-  StatisticsYearlyPage,
-  statisticsData
-} from '@renderer/features/statistics'
-
-// Extension declared page surface
-import ExtensionPage from '@renderer/pages/extension-page.vue'
+import { statisticsData } from '@renderer/features/statistics'
 
 // Placeholder component for routes during development
 const PlaceholderPage = {
@@ -91,73 +61,73 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/library',
     name: 'library',
-    component: LibraryLayout,
+    component: () => import('@renderer/features/library/pages/library-layout.vue'),
     children: [
       {
         path: '',
         name: 'showcase',
-        component: ShowcasePage,
+        component: () => import('@renderer/features/library/pages/showcase-page.vue'),
         meta: { dataLoaders: [showcaseSectionsData] }
       },
       {
         path: 'game/:gameId',
         name: 'game-detail',
-        component: GameDetailPage,
+        component: () => import('@renderer/features/library/pages/game-detail-page.vue'),
         props: true,
         meta: { entityType: 'game', dataLoaders: [gameDetailData] }
       },
       {
         path: 'person/:personId',
         name: 'person-detail',
-        component: PersonDetailPage,
+        component: () => import('@renderer/features/library/pages/person-detail-page.vue'),
         props: true,
         meta: { entityType: 'person', dataLoaders: [personDetailData] }
       },
       {
         path: 'character/:characterId',
         name: 'character-detail',
-        component: CharacterDetailPage,
+        component: () => import('@renderer/features/library/pages/character-detail-page.vue'),
         props: true,
         meta: { entityType: 'character', dataLoaders: [characterDetailData] }
       },
       {
         path: 'company/:companyId',
         name: 'company-detail',
-        component: CompanyDetailPage,
+        component: () => import('@renderer/features/library/pages/company-detail-page.vue'),
         props: true,
         meta: { entityType: 'company', dataLoaders: [companyDetailData] }
       },
       {
         path: 'collection/:collectionId',
         name: 'collection-detail',
-        component: CollectionDetailPage,
+        component: () => import('@renderer/features/library/pages/collection-detail-page.vue'),
         props: true,
         meta: { entityType: 'collection', dataLoaders: [collectionDetailData] }
       },
       {
         path: 'tag/:tagId',
         name: 'tag-detail',
-        component: TagDetailPage,
+        component: () => import('@renderer/features/library/pages/tag-detail-page.vue'),
         props: true,
         meta: { entityType: 'tag', dataLoaders: [tagDetailData] }
       },
       {
         path: 'collections',
         name: 'collections',
-        component: CollectionsPage,
+        component: () => import('@renderer/features/library/pages/collections-page.vue'),
         meta: { dataLoaders: [collectionsListData] }
       },
       {
         path: 'uncategorized/:entityType',
         name: 'uncategorized',
-        component: UncategorizedPage,
+        component: () => import('@renderer/features/library/pages/uncategorized-page.vue'),
         props: true,
         meta: { dataLoaders: [uncategorizedData] }
       },
       {
         path: 'favorites',
         name: 'favorites',
-        component: FavoritesPage,
+        component: () => import('@renderer/features/library/pages/favorites-page.vue'),
         meta: { dataLoaders: [favoritesData] }
       }
     ]
@@ -165,31 +135,31 @@ const routes: RouteRecordRaw[] = [
   // Statistics routes
   {
     path: '/statistics',
-    component: StatisticsLayout,
+    component: () => import('@renderer/features/statistics/pages/statistics-layout.vue'),
     redirect: '/statistics/overview',
     children: [
       {
         path: 'overview',
         name: 'statistics-overview',
-        component: StatisticsOverviewPage,
+        component: () => import('@renderer/features/statistics/pages/statistics-overview-page.vue'),
         meta: { dataLoaders: [statisticsData] }
       },
       {
         path: 'weekly',
         name: 'statistics-weekly',
-        component: StatisticsWeeklyPage,
+        component: () => import('@renderer/features/statistics/pages/statistics-weekly-page.vue'),
         meta: { dataLoaders: [statisticsData] }
       },
       {
         path: 'monthly',
         name: 'statistics-monthly',
-        component: StatisticsMonthlyPage,
+        component: () => import('@renderer/features/statistics/pages/statistics-monthly-page.vue'),
         meta: { dataLoaders: [statisticsData] }
       },
       {
         path: 'yearly',
         name: 'statistics-yearly',
-        component: StatisticsYearlyPage,
+        component: () => import('@renderer/features/statistics/pages/statistics-yearly-page.vue'),
         meta: { dataLoaders: [statisticsData] }
       }
     ]
@@ -198,44 +168,45 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/scanner',
     name: 'scanner',
-    component: ScannerPage,
+    component: () => import('@renderer/features/scanner/pages/scanner-page.vue'),
     meta: { dataLoaders: [scannersData] }
   },
   // automations
   {
     path: '/automation',
     name: 'automation',
-    component: AutomationPage,
+    component: () => import('@renderer/features/automation/pages/automation-page.vue'),
     meta: { dataLoaders: [automationsData] }
   },
   // Extension
   {
     path: '/extension',
-    component: ExtensionLayout,
+    component: () => import('@renderer/features/extension/pages/extension-layout.vue'),
     redirect: '/extension/discover',
     children: [
       {
         path: 'discover',
         name: 'extension-discover',
-        component: ExtensionDiscoverPage,
+        component: () => import('@renderer/features/extension/pages/extension-discover-page.vue'),
         meta: { dataLoaders: [discoverSearchData, installedExtensionsData] }
       },
       {
         path: 'installed',
         name: 'extension-installed',
-        component: ExtensionInstalledPage,
+        component: () => import('@renderer/features/extension/pages/extension-installed-page.vue'),
         meta: { dataLoaders: [installedExtensionsData] }
       },
       {
         path: 'repositories',
         name: 'extension-repositories',
-        component: ExtensionRepositoriesPage,
+        component: () =>
+          import('@renderer/features/extension/pages/extension-repositories-page.vue'),
         meta: { dataLoaders: [extensionRepositoriesData] }
       },
       {
         path: 'signers',
         name: 'extension-signers',
-        component: ExtensionSignersPage,
+        component: () => import('@renderer/features/extension/pages/extension-signers-page.vue'),
         meta: { dataLoaders: [extensionSignersData] }
       }
     ]
@@ -244,7 +215,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/extension-page/:extensionId/:pageId',
     name: 'extension-page',
-    component: ExtensionPage,
+    component: () => import('@renderer/pages/extension-page.vue'),
     props: true
   },
   // Updater

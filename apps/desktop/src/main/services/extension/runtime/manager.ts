@@ -209,8 +209,8 @@ export class RuntimeManager {
       return
     }
 
-    if (this.shouldRecycleHostLocked(forceReloadIds)) {
-      await this.recycleHostLocked(cause)
+    if (this.shouldRestartHostLocked(forceReloadIds)) {
+      await this.restartHostLocked(cause, { unloadReason: toRestartUnloadReason(cause) })
       return
     }
 
@@ -234,7 +234,7 @@ export class RuntimeManager {
       }
 
       if (forceReloadIds.has(extensionId) || !isSameRuntimeMetadata(loaded.metadata, metadata)) {
-        await this.recycleHostLocked(cause)
+        await this.restartHostLocked(cause, { unloadReason: toRestartUnloadReason(cause) })
         return
       }
     }
@@ -306,7 +306,7 @@ export class RuntimeManager {
       })
 
       if (!(error instanceof RpcTimeoutError)) {
-        await this.restartHostLocked('host-timeout', new Set([extensionId]))
+        await this.restartHostLocked('host-timeout', { skipExtensionIds: new Set([extensionId]) })
       }
     } finally {
       await this.releaseLoadedState(loaded)
@@ -438,25 +438,32 @@ export class RuntimeManager {
     })
   }
 
+  /**
+   * Stops the shared host and reloads every desired extension. All full-host
+   * change paths (metadata change, forced reload, unload failure, lifecycle
+   * timeout) converge here so restart semantics stay identical.
+   */
   private async restartHostLocked(
     cause: ExtensionRuntimeChangeCause,
-    skipExtensionIds = new Set<string>()
+    options: {
+      skipExtensionIds?: ReadonlySet<string>
+      unloadBeforeStop?: boolean
+      unloadReason?: ExtensionUnloadReason
+    } = {}
   ): Promise<void> {
+    const skipExtensionIds = options.skipExtensionIds ?? new Set<string>()
+    log.info('Restarting extension host.', { cause: cause })
     this.recordDesiredRuntimeLoading(skipExtensionIds)
-    await this.stopHostLocked({ clearDesired: false })
-    await this.recoverDesiredExtensionsLocked(cause, skipExtensionIds)
-  }
-
-  private async recycleHostLocked(cause: ExtensionRuntimeChangeCause): Promise<void> {
-    log.info('Recycling extension host.', { cause: cause })
-    this.recordDesiredRuntimeLoading()
     await this.stopHostLocked({
       clearDesired: false,
-      unloadReason: toRecycleUnloadReason(cause)
+      ...(options.unloadBeforeStop === undefined
+        ? {}
+        : { unloadBeforeStop: options.unloadBeforeStop }),
+      ...(options.unloadReason === undefined ? {} : { unloadReason: options.unloadReason })
     })
 
     try {
-      await this.recoverDesiredExtensionsLocked(cause)
+      await this.recoverDesiredExtensionsLocked(cause, skipExtensionIds)
     } catch (error) {
       this.recordHostStartupFailure(error)
     }
@@ -464,7 +471,7 @@ export class RuntimeManager {
 
   private async recoverDesiredExtensionsLocked(
     cause: ExtensionRuntimeChangeCause,
-    skipExtensionIds = new Set<string>()
+    skipExtensionIds: ReadonlySet<string> = new Set()
   ): Promise<void> {
     if (this.desiredExtensions.size === 0) {
       return
@@ -566,11 +573,10 @@ export class RuntimeManager {
       extensionId: extensionId
     })
 
-    await this.stopHostLocked({ clearDesired: false, unloadBeforeStop: false })
-    await this.recoverDesiredExtensionsLocked(
-      cause === 'host-timeout' ? cause : 'host-timeout',
-      new Set([extensionId])
-    )
+    await this.restartHostLocked(cause === 'host-timeout' ? cause : 'host-timeout', {
+      skipExtensionIds: new Set([extensionId]),
+      unloadBeforeStop: false
+    })
   }
 
   private async releaseLoadedState(state: LoadedExtensionState): Promise<void> {
@@ -585,7 +591,7 @@ export class RuntimeManager {
     return this.generationCounter
   }
 
-  private shouldRecycleHostLocked(forceReloadIds: ReadonlySet<string>): boolean {
+  private shouldRestartHostLocked(forceReloadIds: ReadonlySet<string>): boolean {
     if (!this.controller?.isRunning()) {
       return false
     }
@@ -632,7 +638,7 @@ export class RuntimeManager {
     )
   }
 
-  private recordDesiredRuntimeLoading(skipExtensionIds = new Set<string>()): void {
+  private recordDesiredRuntimeLoading(skipExtensionIds: ReadonlySet<string> = new Set()): void {
     for (const extensionId of this.desiredExtensions.keys()) {
       if (!skipExtensionIds.has(extensionId)) {
         this.recordRuntimeLoading(extensionId)
@@ -710,12 +716,12 @@ function logUnloadResult(extensionId: string, result: ExtensionUnloadResult): vo
   }
 }
 
-function toRecycleUnloadReason(cause: ExtensionRuntimeChangeCause): ExtensionUnloadReason {
+function toRestartUnloadReason(cause: ExtensionRuntimeChangeCause): ExtensionUnloadReason {
   switch (cause) {
     case 'package-update':
       return 'update'
     case 'metadata-change':
-    case 'user':
+    case 'user-reload':
       return 'reload'
     default:
       return 'shutdown'

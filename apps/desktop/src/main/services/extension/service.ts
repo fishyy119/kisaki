@@ -297,6 +297,8 @@ export class ExtensionService implements IService {
   }
 
   private emitRuntimeStateChanged(extensionId: string, state: ExtensionRuntimeState): void {
+    this.installations.handleRuntimeStateChanged(extensionId, state)
+
     const runtimeInfo = this.installations.getRuntimeInfo(extensionId, state)
     if (!runtimeInfo) {
       return

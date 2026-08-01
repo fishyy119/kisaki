@@ -1,5 +1,5 @@
 import { watch } from 'vue'
-import { router } from '@renderer/core/router'
+import type { Router } from 'vue-router'
 import { extensionWebviewStore } from './webviews'
 
 let initialized = false
@@ -10,8 +10,11 @@ let initialized = false
  * route, and the route is left when its page no longer has a live session.
  * Session replacement (openPage on an already-open page) keeps the route
  * because the new session belongs to the same declared page.
+ *
+ * The router is injected by the app entry so this module stays free of a
+ * static dependency on the router singleton.
  */
-export function setupExtensionWebviewNavigation(): void {
+export function setupExtensionWebviewNavigation(router: Router): void {
   if (initialized) {
     return
   }
@@ -26,7 +29,7 @@ export function setupExtensionWebviewNavigation(): void {
     knownWebviewIds = new Set(pageSessions.map((session) => session.webviewId))
 
     if (openedSession && openedSession.surface.kind === 'page') {
-      if (!isCurrentPageRoute(openedSession.extensionId, openedSession.surface.pageId)) {
+      if (!isCurrentPageRoute(router, openedSession.extensionId, openedSession.surface.pageId)) {
         void router.push({
           name: 'extension-page',
           params: {
@@ -50,12 +53,12 @@ export function setupExtensionWebviewNavigation(): void {
         session.surface.pageId === route.params.pageId
     )
     if (!stillOpen) {
-      leaveExtensionPage()
+      leaveExtensionPage(router)
     }
   })
 }
 
-function isCurrentPageRoute(extensionId: string, pageId: string): boolean {
+function isCurrentPageRoute(router: Router, extensionId: string, pageId: string): boolean {
   const route = router.currentRoute.value
   return (
     route.name === 'extension-page' &&
@@ -68,7 +71,7 @@ function isCurrentPageRoute(extensionId: string, pageId: string): boolean {
  * Leaves the extension page surface: back when the router recorded a previous
  * entry, otherwise to the library as the neutral landing page.
  */
-function leaveExtensionPage(): void {
+function leaveExtensionPage(router: Router): void {
   if (router.options.history.state.back != null) {
     router.back()
   } else {

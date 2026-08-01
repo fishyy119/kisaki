@@ -1,5 +1,3 @@
-import './styles/globals.css'
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
@@ -57,7 +55,7 @@ async function initMainWindowRenderer() {
   // ===========================================================================
   requestIdleCallback(async () => {
     // Deeplink handlers (must be set up early to receive events)
-    setupDeeplinkHandlers()
+    setupDeeplinkHandlers(router)
 
     // Extension contribution snapshot sync.
     setupExtensionContributionStore()
@@ -70,7 +68,7 @@ async function initMainWindowRenderer() {
 
     // Extension webview session sync and page-surface navigation.
     setupExtensionWebviewStore()
-    setupExtensionWebviewNavigation()
+    setupExtensionWebviewNavigation(router)
 
     // Store initialization (registers listeners + fetches initial state)
     await useGameMonitorStore().init()

@@ -52,6 +52,10 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpcVoid(() => service.installations.restartHost())
   )
 
+  ipc.handle('extension:get-development-stale', () =>
+    wrapIpc(() => ({ extensionIds: service.installations.getDevelopmentStaleIds() }))
+  )
+
   ipc.handle('extension:get-installed-packages', async () =>
     wrapIpc(() => service.installations.listPackageInfo())
   )

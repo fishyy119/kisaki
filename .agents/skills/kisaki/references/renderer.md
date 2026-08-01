@@ -105,6 +105,23 @@ export type { ButtonProps } from './types'
   - `no-restricted-imports` for boundary access.
   - `no-restricted-syntax` to ban `ExportAllDeclaration`.
 
+### Router & Page Import Rules (Must Follow)
+
+Pages sit downstream of the shared composable/store graph. Any static edge from routing back
+into pages (or from shared modules into the router) creates renderer-wide circular imports:
+HMR degrades to full page reloads and route-level code splitting is defeated.
+
+1. Only the app entry (`main.ts`) imports the router singleton from `core/router`; lint
+   enforces this. Components use `useRouter()`. Setup/wiring modules accept a `Router`
+   parameter injected by the entry (see `core/deeplink.ts`,
+   `core/extensions/webview-navigation.ts`).
+2. Route records lazy-load page components from their concrete `.vue` files:
+   `component: () => import('@renderer/features/<feature>/pages/<page>.vue')`. This deep
+   dynamic import is the sanctioned exception to the feature boundary rule; never import page
+   components statically in `core/router.ts`.
+3. Feature root `index.ts` exports the feature's static contract only (route data loaders and
+   similar); it must not re-export page components.
+
 ## Vue 3 SFC Patterns
 
 ### Component Structure

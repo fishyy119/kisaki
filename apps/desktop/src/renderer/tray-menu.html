@@ -6,6 +6,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
+    <!-- Document-level stylesheet: kept out of the JS module graph so Tailwind
+         regenerations hot-swap the link without invalidating the app entry. -->
+    <link
+      rel="stylesheet"
+      href="/src/styles/globals.css"
+    />
     <style>
       html,
       body,

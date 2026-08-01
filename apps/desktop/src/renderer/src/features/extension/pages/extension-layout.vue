@@ -5,50 +5,15 @@ Boundary: coordinates the extension shell and global release dialog.
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ipcManager, unwrapIpcVoid } from '@renderer/core/ipc'
-import { createLogger } from '@renderer/core/log'
-import { notify } from '@renderer/core/notify'
-import { extensionDevelopmentStore } from '@renderer/core/extensions'
-import { useI18n } from '@renderer/composables/use-i18n'
+import { extensionDevelopmentStore, reloadExtensionHost } from '@renderer/core/extensions'
 import { ExtensionHeader, ExtensionReleaseDialog } from '../components'
 
-const log = createLogger('Extension')
 const router = useRouter()
-const { m } = useI18n()
 const releaseDialogOpen = ref(false)
-const reloadingExtensionHost = ref(false)
-const { hasStaleExtensions, staleCount } = extensionDevelopmentStore
+const { hasStaleExtensions, staleCount, reloadingHost } = extensionDevelopmentStore
 
 async function handleInstalled() {
   await router.push({ name: 'extension-installed' })
-}
-
-async function handleReloadExtensionHost() {
-  if (reloadingExtensionHost.value) {
-    return
-  }
-
-  reloadingExtensionHost.value = true
-  const toastId = notify.loading(m.value.extension.host.reloading)
-
-  try {
-    unwrapIpcVoid(await ipcManager.invoke('extension:restart-host'))
-    notify.update(toastId, {
-      title: m.value.extension.host.reloaded,
-      type: 'success',
-      duration: 3000
-    })
-  } catch (error) {
-    log.error('Failed to restart extension host:', error)
-    notify.update(toastId, {
-      title: m.value.extension.host.reloadFailed,
-      message: error instanceof Error ? error.message : String(error),
-      type: 'error',
-      duration: 5000
-    })
-  } finally {
-    reloadingExtensionHost.value = false
-  }
 }
 </script>
 
@@ -56,11 +21,11 @@ async function handleReloadExtensionHost() {
   <div class="flex flex-col h-full">
     <!-- Page header -->
     <ExtensionHeader
-      :reloading-extension-host="reloadingExtensionHost"
+      :reloading-extension-host="reloadingHost"
       :has-pending-reload="hasStaleExtensions"
       :pending-reload-count="staleCount"
       @open-release-dialog="releaseDialogOpen = true"
-      @reload-extension-host="handleReloadExtensionHost"
+      @reload-extension-host="reloadExtensionHost"
     />
 
     <!-- Main content - child routes render here -->

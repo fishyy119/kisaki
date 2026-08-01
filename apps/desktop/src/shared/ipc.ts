@@ -63,7 +63,7 @@ import type {
   ExtensionCatalogSearchResult,
   ExtensionContributionSnapshot,
   ExtensionCreateReleasePlanRequest,
-  ExtensionDevelopmentStaleChangedEvent,
+  ExtensionDevelopmentStaleState,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
   ExtensionEntityMenuRefreshRequestedEvent,
@@ -482,6 +482,7 @@ export interface IpcMainHandlers {
   'extension:set-update-policy': (request: ExtensionUpdatePolicyRequest) => IpcVoidResult
   'extension:reload': (extensionId: string) => IpcVoidResult
   'extension:restart-host': () => IpcVoidResult
+  'extension:get-development-stale': () => IpcResult<ExtensionDevelopmentStaleState>
   'extension:get-installed-packages': () => IpcResult<ExtensionInstalledPackageInfo[]>
   'extension:list-trusted-signers': () => IpcResult<readonly ExtensionTrustedSignerInfo[]>
   'extension:remove-trusted-signer': (trustedSignerId: string) => IpcVoidResult
@@ -577,7 +578,7 @@ export interface IpcRendererEvents {
   'extension:catalog-changed': []
   'extension:installations-changed': []
   'extension:runtime-state-changed': [event: ExtensionRuntimeStateChangedEvent]
-  'extension:development-stale-changed': [event: ExtensionDevelopmentStaleChangedEvent]
+  'extension:development-stale-changed': [state: ExtensionDevelopmentStaleState]
   'extension:automatic-update-run-changed': [state: ExtensionAutomaticUpdateRunState]
   'extension:trusted-signers-changed': []
   'extension:contributions-changed': [snapshot: ExtensionContributionSnapshot]

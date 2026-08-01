@@ -53,13 +53,8 @@ export class ExtensionDevelopmentWatcher {
       return
     }
 
-    const ignoredPaths = this.targets.flatMap((target) => target.ignoredPaths)
     this.watcher = watch([...new Set(this.targets.flatMap((target) => target.watchPaths))], {
-      ignored: (filePath) =>
-        isIgnoredExtensionWatchPath(filePath) ||
-        ignoredPaths.some((ignoredPath) =>
-          isInsideOrEqualPath(ignoredPath, path.resolve(filePath))
-        ),
+      ignored: (filePath) => this.shouldIgnorePath(filePath),
       ignoreInitial: true,
       persistent: true,
       depth: 8,
@@ -89,18 +84,30 @@ export class ExtensionDevelopmentWatcher {
     this.changeDebounceTimers.clear()
   }
 
+  /**
+   * Ignore rules are scoped to the owning target (deepest watch path wins) so
+   * overlapping development extensions never mask each other's changes.
+   */
+  private shouldIgnorePath(filePath: string): boolean {
+    if (isIgnoredExtensionWatchPath(filePath)) {
+      return true
+    }
+
+    const absolutePath = path.resolve(filePath)
+    const match = findTargetForPath(this.targets, absolutePath)
+    if (!match) {
+      return false
+    }
+
+    return match.target.ignoredPaths.some((ignoredPath) =>
+      isInsideOrEqualPath(ignoredPath, absolutePath)
+    )
+  }
+
   private handleFileEvent(filePath: string): void {
     const absolutePath = path.resolve(filePath)
     const match = findTargetForPath(this.targets, absolutePath)
     if (!match) {
-      return
-    }
-
-    if (
-      match.target.ignoredPaths.some((ignoredPath) =>
-        isInsideOrEqualPath(ignoredPath, absolutePath)
-      )
-    ) {
       return
     }
 

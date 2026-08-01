@@ -4,17 +4,18 @@
  * Handles deeplink events from the main process in the renderer.
  */
 
+import type { Router } from 'vue-router'
 import { ipcManager } from './ipc'
-import { router } from './router'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('Deeplink')
 
 /**
  * Setup deeplink event handlers.
- * Should be called during app initialization.
+ * Should be called during app initialization; the app entry injects the
+ * router so this module stays free of a static dependency on the singleton.
  */
-export function setupDeeplinkHandlers(): void {
+export function setupDeeplinkHandlers(router: Router): void {
   // Handle navigation events
   ipcManager.on('deeplink:navigate', (_, { route, query }) => {
     log.info('Navigating to route.', { route })

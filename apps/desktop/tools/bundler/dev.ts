@@ -8,6 +8,7 @@ import {
 } from 'vite'
 import { ElectronAppController } from './electron'
 import type { BundlerPaths } from './paths'
+import { DevReloadCoordinator } from './reload'
 import { createMainConfig, createPreloadConfig, createRendererConfig } from './targets'
 
 /** Dev contract consumed by src/main/env.ts to load renderer pages from the dev server. */
@@ -16,7 +17,9 @@ const RENDERER_DEV_SERVER_URL_ENV = 'KISAKI_RENDERER_DEV_SERVER_URL'
 interface WatchBuildHandle {
   watcher: Rolldown.RolldownWatcher
   firstBuild: Promise<void>
+  isBuilding(): boolean
   onRebuild(listener: () => void): void
+  onCycleSettled(listener: () => void): void
 }
 
 /**
@@ -32,6 +35,7 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
   console.log(`[bundler] Renderer dev server running at ${rendererUrl}`)
 
   let watchers: Rolldown.RolldownWatcher[] = []
+  let reloadCoordinator: DevReloadCoordinator | null = null
   let shuttingDown = false
   const shutdown = (code: number): void => {
     if (shuttingDown) {
@@ -39,6 +43,7 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
     }
     shuttingDown = true
 
+    reloadCoordinator?.dispose()
     app.dispose()
     void Promise.allSettled([
       ...watchers.map((watcher) => watcher.close()),
@@ -62,14 +67,27 @@ export async function runDevWorkflow(paths: BundlerPaths): Promise<void> {
     watchers = [mainBuild.watcher, preloadBuild.watcher]
     await Promise.all([mainBuild.firstBuild, preloadBuild.firstBuild])
 
-    mainBuild.onRebuild(() => {
-      console.log('[bundler] Main process rebuilt, restarting Electron')
-      app.restart()
+    const builds = [mainBuild, preloadBuild]
+    reloadCoordinator = new DevReloadCoordinator({
+      isBuildInProgress: () => builds.some((build) => build.isBuilding()),
+      apply: (action) => {
+        if (action === 'restart-app') {
+          console.log('[bundler] Main process rebuilt, restarting Electron')
+          app.restart()
+          return
+        }
+
+        console.log('[bundler] Preload rebuilt, reloading renderer')
+        rendererServer.environments.client.hot.send({ type: 'full-reload' })
+      }
     })
-    preloadBuild.onRebuild(() => {
-      console.log('[bundler] Preload rebuilt, reloading renderer')
-      rendererServer.environments.client.hot.send({ type: 'full-reload' })
-    })
+    const coordinator = reloadCoordinator
+
+    mainBuild.onRebuild(() => coordinator.schedule('restart-app'))
+    preloadBuild.onRebuild(() => coordinator.schedule('reload-renderer'))
+    for (const build of builds) {
+      build.onCycleSettled(() => coordinator.notifyBuildSettled())
+    }
   } catch (error) {
     shutdown(1)
     throw error
@@ -89,7 +107,9 @@ async function startWatchBuild(config: InlineConfig): Promise<WatchBuildHandle> 
     mergeConfig(config, { build: { watch: {} } })
   )) as Rolldown.RolldownWatcher
 
-  let rebuildListener: (() => void) | null = null
+  const rebuildListeners: (() => void)[] = []
+  const cycleSettledListeners: (() => void)[] = []
+  let building = false
   let sawSuccessfulBuild = false
   let currentCycleFailed = false
   let resolveFirstBuild!: () => void
@@ -97,35 +117,56 @@ async function startWatchBuild(config: InlineConfig): Promise<WatchBuildHandle> 
     resolveFirstBuild = resolve
   })
 
+  const settleCycle = (): void => {
+    if (!building) {
+      return
+    }
+    building = false
+    for (const listener of cycleSettledListeners) {
+      listener()
+    }
+  }
+
   watcher.on('event', (event) => {
     if (event.code === 'START') {
+      building = true
       currentCycleFailed = false
       return
     }
     if (event.code === 'ERROR') {
       currentCycleFailed = true
       console.error('[bundler] Build failed:', event.error.message)
+      settleCycle()
       return
     }
     if (event.code === 'BUNDLE_END') {
       void event.result.close()
       return
     }
-    if (event.code === 'END' && !currentCycleFailed) {
-      if (sawSuccessfulBuild) {
-        rebuildListener?.()
-        return
+    if (event.code === 'END') {
+      if (!currentCycleFailed) {
+        if (sawSuccessfulBuild) {
+          for (const listener of rebuildListeners) {
+            listener()
+          }
+        } else {
+          sawSuccessfulBuild = true
+          resolveFirstBuild()
+        }
       }
-      sawSuccessfulBuild = true
-      resolveFirstBuild()
+      settleCycle()
     }
   })
 
   return {
     watcher,
     firstBuild,
+    isBuilding: () => building,
     onRebuild(listener) {
-      rebuildListener = listener
+      rebuildListeners.push(listener)
+    },
+    onCycleSettled(listener) {
+      cycleSettledListeners.push(listener)
     }
   }
 }

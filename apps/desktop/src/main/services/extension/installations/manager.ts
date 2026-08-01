@@ -351,17 +351,17 @@ export class ExtensionInstallationManager {
   }
 
   /**
-   * Reloads a single extension's runtime by re-reading its package from disk and
-   * recycling the host so the latest code is loaded.
+   * Reloads one extension on demand. The shared host is restarted, so every
+   * desired extension picks up its latest on-disk code; readiness is asserted
+   * for the requested extension only.
    */
   async reload(extensionId: string): Promise<ExtensionInstalledEntry> {
     return this.options.runMutatingOperation(async () => {
       const safeExtensionId = requireSafeExtensionId(extensionId)
       this.devExtensionEntries = await this.resolveDevelopmentExtensions()
       await this.refresh()
-      await this.applyRuntimeState({ cause: 'user', forceReloadIds: [safeExtensionId] })
+      await this.applyRuntimeState({ cause: 'user-reload', forceReloadIds: [safeExtensionId] })
       this.assertRuntimeReady(safeExtensionId, 'reload')
-      this.clearDevelopmentStale(safeExtensionId)
       return this.require(safeExtensionId)
     })
   }
@@ -374,8 +374,7 @@ export class ExtensionInstallationManager {
     await this.options.runMutatingOperation(async () => {
       this.devExtensionEntries = await this.resolveDevelopmentExtensions()
       await this.refresh()
-      await this.applyRuntimeState({ cause: 'user', forceReloadAll: true })
-      this.clearDevelopmentStale()
+      await this.applyRuntimeState({ cause: 'user-reload', forceReloadAll: true })
       this.emitInstallationsChanged()
     })
   }
@@ -393,6 +392,21 @@ export class ExtensionInstallationManager {
 
     this.developmentStaleIds.add(safeExtensionId)
     this.emitDevelopmentStaleChanged()
+  }
+
+  getDevelopmentStaleIds(): readonly string[] {
+    return [...this.developmentStaleIds]
+  }
+
+  /**
+   * Tracks runtime load facts. A development extension reaching `running` was
+   * just loaded from disk, so any pending stale flag is settled regardless of
+   * which path (user reload, package update, crash recovery) restarted it.
+   */
+  handleRuntimeStateChanged(extensionId: string, state: ExtensionRuntimeState): void {
+    if (state.status === 'running' && this.devExtensionEntries.has(extensionId)) {
+      this.clearDevelopmentStale(extensionId)
+    }
   }
 
   async applyRuntimeState(options: {
@@ -533,16 +547,9 @@ export class ExtensionInstallationManager {
     this.options.onDevelopmentStaleChanged?.([...this.developmentStaleIds])
   }
 
-  private clearDevelopmentStale(extensionId?: string): void {
-    if (extensionId) {
-      if (!this.developmentStaleIds.delete(extensionId)) {
-        return
-      }
-    } else {
-      if (this.developmentStaleIds.size === 0) {
-        return
-      }
-      this.developmentStaleIds.clear()
+  private clearDevelopmentStale(extensionId: string): void {
+    if (!this.developmentStaleIds.delete(extensionId)) {
+      return
     }
 
     this.emitDevelopmentStaleChanged()

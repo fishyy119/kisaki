@@ -26,6 +26,18 @@ const rendererImportBoundaryPatterns = [
   }
 ]
 
+// The router singleton may only be imported by the app entry (composition
+// root). Anything reachable from the shared composable/store graph that
+// imports it creates renderer-wide circular imports and breaks HMR.
+// Components use useRouter(); setup modules accept an injected Router.
+const rendererRouterSingletonPatterns = [
+  {
+    group: ['@renderer/core/router', '**/core/router', './router'],
+    message:
+      'Only the app entry imports the router singleton. Use useRouter() in components or accept an injected Router in setup modules.'
+  }
+]
+
 /**
  * ESLint configuration for the desktop Electron app.
  * Extends base config with Vue-specific settings for this app.
@@ -98,6 +110,19 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
+          patterns: [...rendererImportBoundaryPatterns, ...rendererRouterSingletonPatterns]
+        }
+      ]
+    }
+  },
+  // The app entry is the composition root: it alone imports the router
+  // singleton and injects it into setup modules.
+  {
+    files: ['src/renderer/src/main.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
           patterns: rendererImportBoundaryPatterns
         }
       ]
@@ -128,7 +153,7 @@ export default defineConfig([
                 'Do not use vue-router composables in components/shared or components/ui. Emit events and handle routing in pages/features.'
             }
           ],
-          patterns: rendererImportBoundaryPatterns
+          patterns: [...rendererImportBoundaryPatterns, ...rendererRouterSingletonPatterns]
         }
       ]
     }
