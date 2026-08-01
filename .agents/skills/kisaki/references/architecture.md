@@ -96,6 +96,22 @@ Rules:
 - Name the public entry by the module's role. Do not force every coupled module through
   `manager.ts`.
 
+#### Single File Versus Folder
+
+Decide by whether the module is a standalone module or a member of a templated collection:
+
+- A standalone module chooses its form by actual size. One cohesive file stays a single file
+  (`development-watcher.ts`, `webviews.ts`); do not wrap it in a folder whose `index.ts` only
+  re-exports that file. Promote it to a coupled module folder only when a real second
+  implementation file appears. Promotion is cheap and import-stable: `from '../<name>'` resolves
+  the same for `<name>.ts` and `<name>/index.ts`, so callers do not change.
+- Members of a templated collection keep the collection's uniform shape even while some members
+  are currently single-file. When a category folder mandates a member template (for example
+  contribution points: a `<point>/` directory with a `point.ts` entry, mirrored across packages
+  and processes), a member folder containing only `point.ts` plus its `index.ts` export list is
+  correct, not a facade. Uniform member shape is what keeps lookup, naming rules, and mirrored
+  directories mechanical; do not flatten individual members into files.
+
 #### `utils` and `shared` Naming
 
 Use `utils` sparingly, but do not eliminate it on naming purity alone. A `utils.ts` file or

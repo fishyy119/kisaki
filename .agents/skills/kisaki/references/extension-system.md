@@ -53,7 +53,7 @@ Keep extension responsibilities split by process and transport boundary:
 - `runtime/host/**` is code that runs inside the extension host process. It loads extension entries, builds the SDK bridge, normalizes extension-owned contributions, and talks back to main through typed RPC only.
 - `capabilities/**` are main-side adapters for host-owned services that extensions call through `kisaki.*`. Capability providers are stateless extension-direction boundaries: runtime-handle auth, untrusted-DTO validation, and forwarding to the owning app service or module. Renderer-facing state, renderer callbacks, and renderer IPC never live in a capability provider.
 - `contributions/**` are main-side adapters for extension-owned registrations. They own renderer-facing snapshots, callback routing, and release of runtime-scoped registrations. The shared `ExtensionContributionPointOptions` base carries only dependencies every point needs (`resolveRuntimeHandle`, `requestHost`); each point declares its own options type extending the base for domain services and callbacks, and `ExtensionContributionRegistryOptions` is the aggregate the registry composes per-point options from.
-- `webviews/**` owns live webview session runtime: the `ExtensionWebviewSessionManager` holds open sessions, enforces the one-session-per-declared-id policy, buffers and relays messages between the extension host and the renderer, and emits session lifecycle events. It is a third first-level member beside `capabilities/**` and `contributions/**` because sessions are app-owned runtime state bridging both directions: the `kisaki.webviews` capability provider adapts extension-side calls into it, renderer webview IPC lands on it directly through `service.webviews`, and the runtime lifecycle attaches/detaches its RPC and releases its sessions alongside capabilities and contributions.
+- `webviews.ts` owns live webview session runtime: the `ExtensionWebviewSessionManager` holds open sessions, enforces the one-session-per-declared-id policy, buffers and relays messages between the extension host and the renderer, and emits session lifecycle events. It is a third first-level member beside `capabilities/**` and `contributions/**` because sessions are app-owned runtime state bridging both directions: the `kisaki.webviews` capability provider adapts extension-side calls into it, renderer webview IPC lands on it directly through `service.webviews`, and the runtime lifecycle attaches/detaches its RPC and releases its sessions alongside capabilities and contributions.
 - `packages/extension-api/**` defines extension runtime public contracts first. Main, host, renderer, SDK, CLI, and built-in extensions consume those contracts rather than inventing local public shapes. Distributed repository manifest and signing contracts live in `packages/extension-registry/**`.
 
 First-level extension service submodules are module boundaries. Cross-submodule calls go through the
@@ -110,12 +110,17 @@ apps/desktop/src/renderer/src/components/extension/<point>/        # when render
 
 Use kebab-case plural directory names: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`, `webviews`. Capability names must mirror the public `kisaki.*` namespace across `packages/extension-api/src/capabilities/` and `apps/desktop/src/main/services/extension/capabilities/`; `library` and `task-runs` may be directories because they have subdomains or provider internals. Use `automations`, not `background-tasks`.
 
+Contribution point members keep the templated folder shape even when a point currently holds only
+`point.ts` plus its `index.ts` export list; the directory itself is part of the mirrored contract,
+so do not flatten individual points into single files. Standalone extension service modules follow
+the general single-file-versus-folder rule instead (see `architecture.md`).
+
 ### Naming Rules
 
 - Main facade and helpers use `Extension*`: `ExtensionService`, `ExtensionInstallationManager`, `ExtensionInstallerManager`, `ExtensionUpdateManager`, `ExtensionRepositoryManager`, `ExtensionSignerTrustManager`, `ExtensionReloadWatcher`.
 - The capability aggregate is `ExtensionCapabilityGateway` in `capabilities/gateway.ts`. Capability adapters use `Extension<Capability>CapabilityProvider` when they expose app-owned services to the extension runtime; `capabilities/library/provider.ts` is the public entry for the split library capability. Do not use `*Provider` for internal capability subdomain stores such as library entities, relations, or attachments.
 - The contribution aggregate is `ExtensionContributionRegistry` in `contributions/registry.ts`. Main-process contribution point folders use `point.ts` and `Extension<ContributionPointSingular>ContributionPoint`, and expose stable verbs such as `register`, `unregister`, `getSnapshot`, `releaseRuntime`, and `releaseAll` as applicable.
-- The webview session owner is `ExtensionWebviewSessionManager` in `webviews/manager.ts`; the `kisaki.webviews` capability provider stays a stateless adapter in front of it.
+- The webview session owner is `ExtensionWebviewSessionManager` in `webviews.ts`; the `kisaki.webviews` capability provider stays a stateless adapter in front of it.
 - Options-bag notification callbacks use `on<Noun><PastParticiple>`, e.g. `onContributionsChanged`, `onSessionsChanged`, `onInstallationsChanged`; scope the noun to the owning module (the aggregate adds the domain prefix, such as `onEntityMenusRefreshRequested` on the registry options versus `onRefreshRequested` on the entity-menus point options).
 - Package state uses `commit.ts` and `ExtensionPackageCommitter` for active package plus installation row commits, `recovery.ts` and `ExtensionPackageRecovery` for startup reconciliation, and `integrity.ts` for pure package/archive/source checks. Signer trust belongs to `signers/**`; runtime activation belongs to `runtime/**`.
 - Host-process contribution point folders also use `point.ts` and `Host<ContributionPoint>ContributionPoint`. The `Host` prefix means "inside the extension host process"; do not use it for main-process adapters.
@@ -159,7 +164,7 @@ declarative content (`themes`, `webviews`). Capabilities are host-owned services
 Webviews pair a declarative contribution with a same-named capability: pages and dialogs are
 declared through `context.contributions.webviews.pages/dialogs.register(...)` and opened by id
 through `kisaki.webviews.openPage` / `openDialog`. The main-process `ExtensionWebviewSessionManager`
-(`services/extension/webviews/`) keeps at most one live session per declared id (reopening a page
+(`services/extension/webviews.ts`) keeps at most one live session per declared id (reopening a page
 replaces its session, reopening a dialog adopts it), and session wiring happens once through
 `registration.onOpen(handle)` regardless of the open trigger. Nav-enabled
 pages project into the contribution snapshot and render in the app sidebar under the stable

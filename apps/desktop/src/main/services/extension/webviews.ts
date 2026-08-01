@@ -16,8 +16,8 @@ import type {
 import type {
   ExtensionWebviewDialogRegistration,
   ExtensionWebviewPageRegistration
-} from '../contributions/webviews'
-import type { ExtensionHostRpcClient } from '../runtime'
+} from './contributions/webviews'
+import type { ExtensionHostRpcClient } from './runtime'
 
 const log = createLogger('Extension')
 
