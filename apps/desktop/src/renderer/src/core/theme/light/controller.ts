@@ -7,7 +7,7 @@ import type { AmbientPalette } from './extraction'
  * fallback so the lamp cross-fades directly between page palettes instead
  * of flashing through the default light.
  */
-const CLEAR_GRACE_MS = 300
+const CLEAR_GRACE_MS = 100
 
 /**
  * Page-scoped write handle on the ambient light. Only the newest claim owns
