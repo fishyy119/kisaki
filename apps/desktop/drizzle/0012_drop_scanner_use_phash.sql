@@ -1,0 +1,1 @@
+ALTER TABLE `settings` DROP COLUMN `scanner_use_phash`;

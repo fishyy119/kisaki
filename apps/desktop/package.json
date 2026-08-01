@@ -50,7 +50,6 @@
     "nanoid": "^5.1.16",
     "semver": "catalog:",
     "sharp": "^0.35.3",
-    "sharp-phash": "^2.2.0",
     "smartcrop-sharp": "^2.0.8"
   },
   "devDependencies": {

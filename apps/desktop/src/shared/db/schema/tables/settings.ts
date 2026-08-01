@@ -23,7 +23,6 @@ export const settings = sqliteTable(
       .notNull()
       .default('exit'),
     scannerIgnoredNames: scannerIgnoredNames('scanner_ignored_names').notNull().default([]),
-    scannerUsePhash: integer('scanner_use_phash', { mode: 'boolean' }).notNull().default(false),
     scannerStartAtOpen: integer('scanner_start_at_open', { mode: 'boolean' })
       .notNull()
       .default(false),

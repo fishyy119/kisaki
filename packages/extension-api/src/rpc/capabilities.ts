@@ -1,4 +1,4 @@
-import type { ExtensionFileGrant, PickFileInput } from '../capabilities/files'
+import type { ExtensionFileGrant, GetFileIconInput, PickFileInput } from '../capabilities/files'
 import type {
   Automation,
   AutomationCreateInput,
@@ -106,6 +106,11 @@ export interface PickFileRequest extends ExtensionScopedRpcParams {
 
 export interface ReleaseFileGrantRequest extends ExtensionScopedRpcParams {
   grantId: string
+}
+
+export interface GetFileIconRequest extends ExtensionScopedRpcParams {
+  path: string
+  input?: GetFileIconInput
 }
 
 export interface CommandGetRequest extends ExtensionScopedRpcParams {
@@ -285,6 +290,10 @@ export type HostToMainCapabilityRpcRequestMap = {
     { grant: ExtensionFileGrant | null }
   >
   'capabilities.files.releaseGrant': RpcMethodDefinition<ReleaseFileGrantRequest, RpcNoPayload>
+  'capabilities.files.getFileIcon': RpcMethodDefinition<
+    GetFileIconRequest,
+    { icon: Uint8Array | null }
+  >
   'capabilities.library.graph.preview': RpcMethodDefinition<
     LibraryGraphRpcRequest,
     { result: LibraryGraphResult }

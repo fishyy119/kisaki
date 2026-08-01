@@ -32,6 +32,25 @@ function getTrackedTables(): string[] {
   return tables
 }
 
+/**
+ * Drops every persisted trigger in the database.
+ *
+ * Must run before schema migrations. All triggers in this database are
+ * runtime-owned (change feed and FTS sync) and recreated during
+ * `DbService.init`, but their persisted bodies snapshot table columns and
+ * call `emit_db_change`. Dropping them first keeps ALTER TABLE migrations
+ * from failing on trigger column references and keeps migration writes from
+ * firing triggers before the emit function is registered.
+ */
+export function dropAllTriggers(sqlite: Database.Database): void {
+  const rows = sqlite
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'trigger'")
+    .all() as Array<{ name: string }>
+  for (const row of rows) {
+    sqlite.exec(`DROP TRIGGER IF EXISTS ${quoteIdentifier(row.name)}`)
+  }
+}
+
 export class TriggerStore {
   private trackedTables: string[]
 

@@ -105,8 +105,6 @@ export const scanner = {
       'Import only via the scraper; record a failure when scraping fails.',
     ingestDirectOnly: 'Direct import only',
     ingestDirectOnlyDescription: 'Skip the scraper and create games from the identified results.',
-    usePhash: 'pHash-assisted scraping',
-    usePhashDescription: 'Experimental feature',
     parallelCount: 'Parallel processing',
     parallelCountDescription:
       'Number of entries one scanner processes at a time; 1 means serial processing.',

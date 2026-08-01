@@ -1,10 +1,12 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { dialog, type FileFilter } from 'electron'
+import { app, dialog, type FileFilter } from 'electron'
 import { cp, mkdir, rm, stat } from 'node:fs/promises'
 import type {
   ExtensionFileGrant,
   ExtensionRuntimeMetadata,
+  FileIconSize,
+  GetFileIconInput,
   PickFileInput
 } from '@kisaki3/extension-api'
 import {
@@ -86,6 +88,26 @@ export class ExtensionFilesCapabilityProvider {
     }
   }
 
+  async getFileIcon(
+    runtimeHandle: string,
+    filePath: string,
+    input: GetFileIconInput | undefined
+  ): Promise<Uint8Array | null> {
+    this.requireRuntime(runtimeHandle)
+    const normalized = normalizeGetFileIconInput(filePath, input)
+
+    try {
+      const icon = await app.getFileIcon(normalized.path, { size: normalized.size })
+      if (icon.isEmpty()) {
+        return null
+      }
+
+      return new Uint8Array(icon.toPNG())
+    } catch (error) {
+      throw normalizeCapabilityError(error, 'Failed to read the file icon.')
+    }
+  }
+
   async releaseGrant(runtimeHandle: string, grantId: string): Promise<void> {
     this.requireRuntime(runtimeHandle)
     const record = this.requireGrant(runtimeHandle, grantId)
@@ -144,6 +166,35 @@ interface NormalizedPickFileInput {
   filters?: FileFilter[]
   copyTo: 'temp' | 'data'
   maxSizeBytes?: number
+}
+
+interface NormalizedGetFileIconInput {
+  path: string
+  size: FileIconSize
+}
+
+const FILE_ICON_SIZES: readonly FileIconSize[] = ['small', 'normal', 'large']
+
+function normalizeGetFileIconInput(
+  filePath: unknown,
+  input: GetFileIconInput | undefined
+): NormalizedGetFileIconInput {
+  if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+    throw createValidationError('files.getFileIcon path must be a non-empty string.')
+  }
+  if (!path.isAbsolute(filePath)) {
+    throw createValidationError('files.getFileIcon path must be an absolute path.')
+  }
+  if (input !== undefined && (!input || typeof input !== 'object' || Array.isArray(input))) {
+    throw createValidationError('files.getFileIcon input must be an object.')
+  }
+
+  const size = input?.size ?? 'large'
+  if (!FILE_ICON_SIZES.includes(size)) {
+    throw createValidationError('files.getFileIcon.size must be "small", "normal", or "large".')
+  }
+
+  return { path: filePath, size }
 }
 
 function normalizePickFileInput(input: PickFileInput | undefined): NormalizedPickFileInput {

@@ -30,7 +30,6 @@ import type {
 } from '@shared/scanner'
 import type { IngestAddGameResult } from '@shared/ingest/add'
 import type { IngestWarning } from '@shared/ingest/common'
-import type { ScannerPhash } from '../../phash'
 import type { ScannerDiscovery } from '../../discovery'
 import type { ScannerHooks } from '../../hooks'
 import {
@@ -43,7 +42,6 @@ import {
   type ScannerEntityWarningType,
   ScannerRunSession
 } from '../common'
-import { matchGameEntity } from './match'
 import type { GameEntity } from './types'
 
 const log = createLogger('Scanner')
@@ -150,7 +148,6 @@ export class GameScannerHandler {
 
   constructor(
     private readonly discovery: ScannerDiscovery,
-    private readonly phash: ScannerPhash,
     private readonly dbService: DbService,
     ipcService: IpcService,
     private readonly hooks: ScannerHooks,
@@ -328,7 +325,6 @@ export class GameScannerHandler {
     const settingsData = this.dbService.entityFinder.getAppSettings()
     const {
       scannerIgnoredNames: ignoredNames,
-      scannerUsePhash,
       scannerParallelCount,
       scannerIngestMode: ingestMode
     } = settingsData
@@ -382,7 +378,6 @@ export class GameScannerHandler {
         scanner,
         profile,
         ingestMode,
-        scannerUsePhash,
         signal: session.signal
       })
       session.recordEntityResult(entityResult)
@@ -532,7 +527,6 @@ export class GameScannerHandler {
       scanner: Scanner
       profile: ScraperProfile | null
       ingestMode: ScannerIngestMode
-      scannerUsePhash: boolean
       signal: AbortSignal
     }
   ): Promise<ScannerEntityProcessResult> {
@@ -582,21 +576,20 @@ export class GameScannerHandler {
         }
       }
 
-      const rawMatch = await matchGameEntity(entity, this.phash, {
-        enablePhash: options.scannerUsePhash
-      })
+      // The built-in baseline is the extracted folder name; hook subscribers
+      // (such as the built-in pHash match extension) may upgrade the match.
       const match = await this.hooks.entryMatched.transform({
         entry: entity,
-        name: rawMatch.gameName,
-        externalIds: rawMatch.externalIds,
-        matchSource: rawMatch.matchSource
+        name: entity.extractedName,
+        externalIds: [],
+        matchSource: 'folder-name'
       })
       const matchedEntity: GameEntity = {
         ...entity,
         matchedGame: {
           gameName: match.name,
           externalIds: match.externalIds,
-          matchSource: rawMatch.matchSource
+          matchSource: match.matchSource
         }
       }
       const outcome = await this.processGameEntity(

@@ -130,6 +130,12 @@ export class ExtensionCapabilityGateway {
       await this.files.releaseGrant(runtimeHandle, grantId)
       return {}
     })
+    rpc.handleHostRequest(
+      'capabilities.files.getFileIcon',
+      async ({ runtimeHandle, path, input }) => ({
+        icon: await this.files.getFileIcon(runtimeHandle, path, input)
+      })
+    )
 
     rpc.handleHostRequest(
       'capabilities.network.request',

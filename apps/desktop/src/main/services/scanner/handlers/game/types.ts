@@ -1,12 +1,14 @@
 import type { EntityEntry } from '@shared/scanner'
 import type { ExternalId } from '@shared/identity'
 
-export type GameMatchSource = 'phash' | 'folder-name'
-
 export interface MatchedGame {
   gameName: string
   externalIds: ExternalId[]
-  matchSource: GameMatchSource
+  /**
+   * Origin of the match. The built-in baseline is `folder-name`; hook
+   * subscribers may replace it with their own source id (e.g. `phash`).
+   */
+  matchSource: string
 }
 
 /** Game entity with additional game-specific data */

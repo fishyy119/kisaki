@@ -242,7 +242,14 @@ export function createKisakiApi(
         ).grant,
       releaseGrant: async (grantId) => {
         await requestMain('capabilities.files.releaseGrant', { grantId })
-      }
+      },
+      getFileIcon: async (path, input) =>
+        (
+          await requestMain('capabilities.files.getFileIcon', {
+            path,
+            ...(input === undefined ? {} : { input })
+          })
+        ).icon
     },
     library: {
       graph: {

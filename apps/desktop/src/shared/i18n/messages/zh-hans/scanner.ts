@@ -103,8 +103,6 @@ export const scanner = {
     ingestRequireScraperDescription: '必须通过刮削导入，刮削失败时直接记为失败。',
     ingestDirectOnly: '仅直接入库',
     ingestDirectOnlyDescription: '跳过刮削，直接按识别结果创建游戏。',
-    usePhash: 'pHash 辅助刮削',
-    usePhashDescription: '实验性功能',
     parallelCount: '并行处理数',
     parallelCountDescription: '控制单个扫描器同时处理的条目数，1 表示串行处理。',
     ignoredNames: '忽略名称列表',

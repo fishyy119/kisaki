@@ -122,10 +122,14 @@ export const baseConfig = defineConfig([
       '@typescript-eslint/no-restricted-imports': [
         'error',
         {
-          paths: builtinModules.map((name) => ({
-            name,
-            message: 'Import Node.js builtins with the node: protocol.'
-          }))
+          // Prefix-only builtins (e.g. node:sqlite) appear in builtinModules
+          // with their node: prefix and already comply.
+          paths: builtinModules
+            .filter((name) => !name.startsWith('node:'))
+            .map((name) => ({
+              name,
+              message: 'Import Node.js builtins with the node: protocol.'
+            }))
         }
       ]
     }

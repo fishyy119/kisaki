@@ -11,7 +11,6 @@ import { createLogger } from '@main/log'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
 import { GameScannerHandler } from './handlers/game'
-import { ScannerPhash } from './phash'
 import { ScannerDiscovery } from './discovery'
 import { createScannerHooks } from './hooks'
 import { registerScannerIpc } from './ipc'
@@ -34,7 +33,6 @@ export class ScannerService implements IMediaService {
   readonly hooks = createScannerHooks()
 
   game!: GameScannerHandler
-  phash!: ScannerPhash
   discovery!: ScannerDiscovery
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
@@ -43,12 +41,10 @@ export class ScannerService implements IMediaService {
     const ingestService = container.get('ingest')
     const taskRunService = container.get('task-run')
 
-    this.phash = new ScannerPhash()
     this.discovery = new ScannerDiscovery(dbService)
 
     this.game = new GameScannerHandler(
       this.discovery,
-      this.phash,
       dbService,
       ipcService,
       this.hooks,

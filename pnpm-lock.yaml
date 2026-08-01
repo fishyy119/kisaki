@@ -212,9 +212,6 @@ importers:
       sharp:
         specifier: ^0.35.3
         version: 0.35.3(@types/node@24.13.2)
-      sharp-phash:
-        specifier: ^2.2.0
-        version: 2.2.0(sharp@0.35.3(@types/node@24.13.2))
       smartcrop-sharp:
         specifier: ^2.0.8
         version: 2.0.8(sharp@0.35.3(@types/node@24.13.2))
@@ -423,6 +420,33 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.7(typescript@6.0.3)
+
+  extensions/phash-match:
+    devDependencies:
+      '@kisaki3/extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kisaki3/extension-cli':
+        specifier: workspace:*
+        version: link:../../packages/extension-cli
+      '@kisaki3/extension-sdk':
+        specifier: workspace:*
+        version: link:../../packages/extension-sdk
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@types/pngjs':
+        specifier: ^6.0.5
+        version: 6.0.5
+      pngjs:
+        specifier: ^7.0.0
+        version: 7.0.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/create-kisaki-extension:
     dependencies:
@@ -2284,6 +2308,9 @@ packages:
 
   '@types/pbf@3.0.5':
     resolution: {integrity: sha512-j3pOPiEcWZ34R6a6mN07mUkM4o4Lwf6hPNt8eilOeZhTFbxFXmKhvXl9Y28jotFPaI1bpPDJsbCprUoNke6OrA==}
+
+  '@types/pngjs@6.0.5':
+    resolution: {integrity: sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==}
 
   '@types/responselike@1.0.3':
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
@@ -4337,6 +4364,10 @@ packages:
     resolution: {integrity: sha512-uysumyrvkUX0rX/dEVqt8gC3sTBzd4zoWfLeS29nb53imdaXVvLINYXTI2GNqzaMuvacNx4uJQ8+b3zXR0pkgQ==}
     engines: {node: '>=10.4.0'}
 
+  pngjs@7.0.0:
+    resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+    engines: {node: '>=14.19.0'}
+
   postcss-selector-parser@6.0.10:
     resolution: {integrity: sha512-IQ7TZdoaqbT+LCpShg46jnZVlhWD2w6iQYAcYXfHARZ7X1t/UGhhceQDs5X0cGqKvYlHNOuv7Oa1xmb0oQuA3w==}
     engines: {node: '>=4'}
@@ -4585,12 +4616,6 @@ packages:
   serialize-error@7.0.1:
     resolution: {integrity: sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==}
     engines: {node: '>=10'}
-
-  sharp-phash@2.2.0:
-    resolution: {integrity: sha512-/gBoes9EycJkt/2aakKl9BeSGxFbPpZ5lCDtpRRlnU+vkqqcdXi8YLIlXnJsTtTBmaL82zh1bPkV7uZSSIsj8w==}
-    engines: {node: '>= 10'}
-    peerDependencies:
-      sharp: '>= 0.32.0'
 
   sharp@0.35.3:
     resolution: {integrity: sha512-ej0zVHuZGHCiABXcNxeYhpRnPNPAcvbG8RMdBAhDAxLKkCRVSpK3Iyu7qbqw3JMzoj0REeM6f3tJLtVwl0023Q==}
@@ -6599,6 +6624,10 @@ snapshots:
   '@types/parse-json@4.0.2': {}
 
   '@types/pbf@3.0.5': {}
+
+  '@types/pngjs@6.0.5':
+    dependencies:
+      '@types/node': 24.13.2
 
   '@types/responselike@1.0.3':
     dependencies:
@@ -8802,6 +8831,8 @@ snapshots:
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
 
+  pngjs@7.0.0: {}
+
   postcss-selector-parser@6.0.10:
     dependencies:
       cssesc: 3.0.0
@@ -9108,10 +9139,6 @@ snapshots:
     dependencies:
       type-fest: 0.13.1
     optional: true
-
-  sharp-phash@2.2.0(sharp@0.35.3(@types/node@24.13.2)):
-    dependencies:
-      sharp: 0.35.3(@types/node@24.13.2)
 
   sharp@0.35.3(@types/node@24.13.2):
     dependencies:

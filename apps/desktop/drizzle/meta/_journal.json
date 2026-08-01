@@ -85,6 +85,13 @@
       "when": 1784999400000,
       "tag": "0011_settings_ui_locale",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1785574339775,
+      "tag": "0012_drop_scanner_use_phash",
+      "breakpoints": true
     }
   ]
 }

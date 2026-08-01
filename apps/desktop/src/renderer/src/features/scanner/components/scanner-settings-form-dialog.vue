@@ -3,7 +3,7 @@
  * Scanner Settings Form Dialog
  *
  * Dialog for configuring scanner settings.
- * Allows editing auto-scan, ingest mode, pHash assist and ignored names.
+ * Allows editing auto-scan, ingest mode, parallelism and ignored names.
  */
 
 import { computed, ref, watch } from 'vue'
@@ -60,7 +60,6 @@ const isSaving = ref(false)
 interface FormData {
   ignoredNames: string[]
   ingestMode: ScannerIngestMode
-  usePhash: boolean
   startAtOpen: boolean
   parallelCount: number
   newIgnoredName: string
@@ -90,7 +89,6 @@ function createDefaultFormData(): FormData {
   return {
     ignoredNames: [],
     ingestMode: 'prefer-scraper',
-    usePhash: false,
     startAtOpen: false,
     parallelCount: SCANNER_PARALLEL_COUNT_DEFAULT,
     newIgnoredName: ''
@@ -100,14 +98,12 @@ function createDefaultFormData(): FormData {
 function createFormDataFromSettings(data: {
   ignoredNames: string[]
   ingestMode: ScannerIngestMode
-  usePhash: boolean
   startAtOpen: boolean
   parallelCount: number
 }): FormData {
   return {
     ignoredNames: [...data.ignoredNames],
     ingestMode: data.ingestMode,
-    usePhash: data.usePhash,
     startAtOpen: data.startAtOpen,
     parallelCount: data.parallelCount,
     newIgnoredName: ''
@@ -138,7 +134,6 @@ const { data, isLoading, error, refetch } = useAsyncData(
     return {
       ignoredNames: [...result.scannerIgnoredNames],
       ingestMode: result.scannerIngestMode,
-      usePhash: result.scannerUsePhash,
       startAtOpen: result.scannerStartAtOpen,
       parallelCount: result.scannerParallelCount
     }
@@ -194,7 +189,6 @@ async function handleSubmit() {
       .set({
         scannerIgnoredNames: formData.value.ignoredNames,
         scannerIngestMode: formData.value.ingestMode,
-        scannerUsePhash: formData.value.usePhash,
         scannerStartAtOpen: formData.value.startAtOpen,
         scannerParallelCount: formData.value.parallelCount
       })
@@ -283,14 +277,6 @@ async function handleSubmit() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                </FieldContent>
-              </Field>
-
-              <Field orientation="horizontal">
-                <FieldLabel>{{ m.scanner.settings.usePhash }}</FieldLabel>
-                <FieldDescription>{{ m.scanner.settings.usePhashDescription }}</FieldDescription>
-                <FieldContent>
-                  <Switch v-model="formData.usePhash" />
                 </FieldContent>
               </Field>
 

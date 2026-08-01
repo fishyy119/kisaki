@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/@kisaki3/extension-api/schemas/extension-manifest.schema.json",
+  "id": "builtin.phash-match",
+  "name": "pHash Match",
+  "version": "0.0.1",
+  "categories": ["tool"],
+  "entry": "./dist/index.mjs",
+  "description": {
+    "en": "Built-in executable-icon perceptual-hash matching that upgrades Kisaki scanner results.",
+    "ja": "Kisaki 内蔵の実行ファイルアイコン知覚ハッシュ照合。スキャナーの認識結果を強化します。",
+    "zh-Hans": "Kisaki 内置的可执行文件图标感知哈希匹配，用于增强扫描器识别结果。",
+    "zh-Hant": "Kisaki 內建的可執行檔圖示感知雜湊比對，用於增強掃描器識別結果。"
+  },
+  "author": "Kisaki",
+  "keywords": ["phash", "scanner", "match", "game"],
+  "engines": {
+    "kisakiExtensionApi": "=0.0.11"
+  }
+}

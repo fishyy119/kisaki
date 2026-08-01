@@ -32,7 +32,6 @@ const SETTINGS_COLUMN_KEYS: Record<string, string> = {
   ui_locale: 'uiLocale',
   main_window_close_action: 'mainWindowCloseAction',
   scanner_ignored_names: 'scannerIgnoredNames',
-  scanner_use_phash: 'scannerUsePhash',
   scanner_start_at_open: 'scannerStartAtOpen',
   scanner_parallel_count: 'scannerParallelCount',
   scanner_ingest_mode: 'scannerIngestMode',
@@ -40,7 +39,6 @@ const SETTINGS_COLUMN_KEYS: Record<string, string> = {
   updater_allow_prerelease: 'updaterAllowPrerelease'
 }
 const BOOLEAN_SETTINGS = new Set([
-  'scanner_use_phash',
   'scanner_start_at_open',
   'updater_auto_check',
   'updater_allow_prerelease'

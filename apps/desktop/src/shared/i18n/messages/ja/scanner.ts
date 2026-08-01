@@ -105,8 +105,6 @@ export const scanner = {
       'スクレイパー経由でのみ取り込み、スクレイプに失敗した場合は失敗として記録します。',
     ingestDirectOnly: '直接取り込みのみ',
     ingestDirectOnlyDescription: 'スクレイパーを使わず、認識結果からそのままゲームを作成します。',
-    usePhash: 'pHash 支援スクレイピング',
-    usePhashDescription: '実験的な機能',
     parallelCount: '並列処理数',
     parallelCountDescription:
       '1 つのスキャナーが同時に処理するエントリ数。1 は逐次処理を意味します。',

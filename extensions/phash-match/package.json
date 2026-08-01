@@ -1,0 +1,39 @@
+{
+  "name": "@kisaki3/builtin-phash-match",
+  "private": true,
+  "description": "Built-in executable-icon pHash match extension for Kisaki",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "kisx build",
+    "dev": "kisx dev",
+    "validate": "kisx validate",
+    "pack": "kisx pack",
+    "build-index": "tsx tools/build-index.ts",
+    "lint": "eslint --cache --cache-location node_modules/.cache/eslint .",
+    "lint:fix": "eslint --cache --cache-location node_modules/.cache/eslint --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run build && pnpm run validate"
+  },
+  "devDependencies": {
+    "@kisaki3/extension-api": "workspace:*",
+    "@kisaki3/extension-cli": "workspace:*",
+    "@kisaki3/extension-sdk": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pngjs": "^6.0.5",
+    "pngjs": "^7.0.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "keywords": [
+    "kisaki",
+    "extension",
+    "phash",
+    "scanner"
+  ],
+  "license": "MIT"
+}

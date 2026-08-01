@@ -24,7 +24,7 @@ import { AttachmentStore } from './attachment'
 import { ThumbnailStore } from './thumbnail'
 import { DbEntityDeleteHelper, DbEntityFinderHelper, DbEntityMergeCoordinator } from './helper'
 import { FtsStore } from './fts'
-import { TriggerStore } from './trigger'
+import { TriggerStore, dropAllTriggers } from './trigger'
 import { DbChangeFeed } from './feed'
 import { createDbHooks } from './hooks'
 import { registerDbIpc } from './ipc'
@@ -81,6 +81,11 @@ export class DbService implements IService {
     this.sqlite = new Database(this.dbPath)
     this.sqlite.pragma('journal_mode = WAL')
     this.client = drizzle(this.sqlite, { schema })
+
+    // All triggers are runtime-owned and recreated below; drop them before
+    // migrations so ALTER TABLE never fails on trigger column references and
+    // migration writes never fire emit_db_change before it is registered.
+    dropAllTriggers(this.sqlite)
 
     // Run migrations
     migrate(this.client, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') })
