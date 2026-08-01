@@ -12,8 +12,15 @@ interface PackageJson {
   version?: unknown
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
   [key: string]: unknown
 }
+
+const internalDependencyFields = [
+  { field: 'dependencies', requiredRange: 'workspace:*' },
+  { field: 'devDependencies', requiredRange: 'workspace:*' },
+  { field: 'peerDependencies', requiredRange: 'workspace:^' }
+] as const
 
 const extensionApiVersionPath = 'packages/extension-api/src/version.ts'
 const templateToolingVersionRange = '^{{KISAKI_TOOLING_VERSION}}'
@@ -116,18 +123,28 @@ function collectToolingProblems(workspace: ToolingWorkspace, expectedVersion: st
       )
     }
 
-    const declaredInternalDependencies = Object.keys(packageJson.dependencies ?? {}).filter(
-      (dependencyName) => toolingPackageNames.has(dependencyName)
-    )
+    const declaredInternalDependencies = new Set<string>()
+    for (const { field, requiredRange } of internalDependencyFields) {
+      for (const [dependencyName, dependencyRange] of Object.entries(packageJson[field] ?? {})) {
+        if (!toolingPackageNames.has(dependencyName)) {
+          continue
+        }
+
+        declaredInternalDependencies.add(dependencyName)
+        if (dependencyRange !== requiredRange) {
+          problems.push(
+            `${toolingPackage.name} must declare ${dependencyName} in ${field} with "${requiredRange}", found ${dependencyRange}.`
+          )
+        }
+      }
+    }
+
     const manifestInternalDependencies = internalDependencies[toolingPackage.name] ?? []
 
     for (const dependencyName of manifestInternalDependencies) {
-      const dependencyVersion = packageJson.dependencies?.[dependencyName]
-      if (dependencyVersion !== 'workspace:*') {
+      if (!declaredInternalDependencies.has(dependencyName)) {
         problems.push(
-          `${toolingPackage.name} must depend on ${dependencyName} with "workspace:*", found ${String(
-            dependencyVersion
-          )}.`
+          `${toolingPackage.name} must declare internal dependency ${dependencyName} in package.json.`
         )
       }
     }

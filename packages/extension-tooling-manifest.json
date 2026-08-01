@@ -10,13 +10,14 @@
   "internalDependencies": {
     "@kisaki3/extension-registry": ["@kisaki3/extension-api"],
     "@kisaki3/extension-sdk": ["@kisaki3/extension-api"],
+    "@kisaki3/extension-ui-vue": ["@kisaki3/extension-sdk"],
     "@kisaki3/extension-cli": ["@kisaki3/extension-api", "@kisaki3/extension-registry"],
     "create-kisaki-extension": ["@kisaki3/extension-api", "@kisaki3/extension-registry"]
   },
   "buildPackageGroups": [
-    ["@kisaki3/extension-api", "@kisaki3/extension-ui-vue"],
+    ["@kisaki3/extension-api"],
     ["@kisaki3/extension-registry", "@kisaki3/extension-sdk"],
-    ["@kisaki3/extension-cli", "create-kisaki-extension"]
+    ["@kisaki3/extension-ui-vue", "@kisaki3/extension-cli", "create-kisaki-extension"]
   ],
   "outputPaths": [
     "packages/extension-api/dist/index.mjs",
