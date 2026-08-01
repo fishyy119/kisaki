@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
@@ -192,13 +192,7 @@ export function useExplorerList() {
   })
 
   // Listen for DB events
-  useEvent('db.inserted', ({ table }) => {
-    if (isRelevantTable(table, activeEntityType.value)) refetch()
-  })
-  useEvent('db.updated', ({ table }) => {
-    if (isRelevantTable(table, activeEntityType.value)) refetch()
-  })
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (isRelevantTable(table, activeEntityType.value)) refetch()
   })
 

@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { nanoid } from 'nanoid'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { collections } from '@shared/db'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
@@ -80,13 +80,7 @@ const { data: allCollections, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'collections') refetch()
-})
-useEvent('db.updated', ({ table }) => {
-  if (table === 'collections') refetch()
-})
-useEvent('db.deleted', ({ table }) => {
+useDbChanges(({ table }) => {
   if (table === 'collections') refetch()
 })
 

@@ -108,7 +108,7 @@ apps/desktop/src/main/services/extension/runtime/host/contributions/<point>/
 apps/desktop/src/renderer/src/components/extension/<point>/        # when renderer-visible UI exists
 ```
 
-Use kebab-case plural directory names: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`, `webviews`. Capability names must mirror the public `kisaki.*` namespace across `packages/extension-api/src/capabilities/` and `apps/desktop/src/main/services/extension/capabilities/`; `library` and `task-runs` may be directories because they have subdomains or provider internals. Use `automations`, not `background-tasks`.
+Use kebab-case directory names: `entity-menus`, `settings-panels`, `scraper-providers`, `deeplink-routes`, `themes`, `commands`, `webviews`, `hooks`. Capability names must mirror the public `kisaki.*` namespace across `packages/extension-api/src/capabilities/` and `apps/desktop/src/main/services/extension/capabilities/`; `library` and `task-runs` may be directories because they have subdomains or provider internals. Use `automations`, not `background-tasks`.
 
 Contribution point members keep the templated folder shape even when a point currently holds only
 `point.ts` plus its `index.ts` export list; the directory itself is part of the mirrored contract,
@@ -154,9 +154,10 @@ Extensions use a single `manifest.json` with an `entry` field and implement `act
 - `commands` - Extension-owned command handlers registered into the app command service
 - `themes` - Semantic token theme contributions
 - `webviews` - Declared webview pages (optional top-level nav placement) and reusable dialogs
+- `hooks` - Handlers tapped into module-owned workflow hook points (see below)
 
 Contribution points are extension-owned content that the host consumes. Some are executable
-callbacks (`entityMenus`, `settingsPanels`, `scraperProviders`, `deeplinkRoutes`, `commands`) and some are
+callbacks (`entityMenus`, `settingsPanels`, `scraperProviders`, `deeplinkRoutes`, `commands`, `hooks`) and some are
 declarative content (`themes`, `webviews`). Capabilities are host-owned services that extensions call through
 `kisaki.*`. Runtime context services such as `logger`, `storage`, and `secrets` are part of
 `ExtensionContext` but are not capabilities.
@@ -176,6 +177,83 @@ the renderer DTO `ExtensionIconInfo` (registration-time path confinement for fil
 renderer draws them as currentColor masks, so custom icon files should be monochrome silhouettes.
 
 All UI callbacks return `UiCallbackResult` with explicit `success`, `refresh`, and structured `error` semantics.
+
+## Hooks Contribution Point
+
+Application modules own hook systems as native extensibility primitives (`@main/hooks`, exposed as
+`service.hooks`). The single `hooks` contribution point is one subscriber among others: it taps
+module hooks and forwards them to extension handlers over RPC. Application modules never depend on
+the extension system; the dependency direction is always module → hook → extension adapter.
+
+### Registration Surface
+
+Extensions tap hook points through the flat registrar on the context (no namespace accessors):
+
+```typescript
+context.hooks.on('library.changed', ({ changes }) => { ... }, { priority: 0 })
+```
+
+`on(pointId, handler, { priority })` returns a `Disposable`; handler payload and return types are
+derived from the `ExtensionHookPoints` map per point id.
+
+### Contracts
+
+- Public contracts live in `packages/extension-api/src/contributions/hooks/` split by domain:
+  `contracts/scraper.ts`, `ingest.ts`, `scanner.ts`, `play.ts`, `library.ts`, `app.ts`,
+  `extension.ts`, plus `contracts/point.ts` for kind primitives.
+- `catalog.ts` composes the single `ExtensionHookPoints` type map (point id → kind + payload) and
+  the runtime `EXTENSION_HOOK_POINTS` descriptor table used for validation and kind dispatch.
+- The scraper domain reuses the public DTOs from `contributions/scraper-providers` (such as
+  `ScrapedGameBundle`, `ScraperLookup`); hook contracts do not invent parallel DTOs.
+- RPC methods: `contributions.hooks.register/unregister` (host→main),
+  `contributions.hooks.invoke` (main→host request for waterfall/veto/awaited notify), and
+  `contributions.hooks.notify` (main→host one-way event for pure notify).
+
+### Kind Semantics
+
+- **waterfall** - ordered value transformation: `scraper.<type>.lookup|searched|collected`,
+  `scanner.entry.discovered|matched`, `play.game.launching`, `play.session.ending`.
+- **veto** - ordered gatekeeping before a write; the first `{ veto: true, reason? }` aborts the
+  workflow with a stable error: `ingest.<type>.committing|updating`, `library.entity-merging`.
+- **notify** - after-the-fact notification: `ingest.<type>.committed|updated`,
+  `scanner.run.started|finished`, `play.session.started|ended`, `library.changed`,
+  `library.entity-merged`, `app.ready`, `app.settings.changed`, `app.ui-locale.changed`,
+  `app.theme.changed`, `extension.enabled|disabled`.
+- **awaited notify** - declared in the catalog as notify with `await: true`; the workflow awaits
+  handlers within a total budget. Only `app.shutting-down` (flush window before service disposal).
+
+### Boundary Policies
+
+Extension failures must never destabilize the app. The main-side point applies per-kind policies:
+
+- Waterfall/veto/awaited-notify handlers run through `contributions.hooks.invoke` with a timeout
+  (10s default); a timed-out or failing waterfall handler falls back to the previous value, a
+  timed-out or failing veto handler counts as "no veto", never blocking the user's operation.
+- Pure notify is one-way (`contributions.hooks.notify`) and never blocks the workflow.
+- `app.shutting-down` is bounded by the anchor's total budget.
+- Runtime unload untaps all registrations for that runtime.
+
+### Anchor Rules
+
+- Waterfall/veto points dispatch before write transactions; notify points dispatch after commit.
+  Hook handlers never run inside a database transaction.
+- Hook points only expose workflow boundaries - input data, decisions, results. Internal
+  intermediate representations never become hook points (by design, not deferral): a derived
+  internal graph or plan is a deterministic function of inputs already transformable upstream and
+  decisions already vetoable downstream, so exposing it would only create a second equivalent
+  path, freeze internal structure into public contract, and force full revalidation of untrusted
+  data.
+- Payloads are bounded summaries; no full database rows, no unbounded arrays, no secrets.
+
+### Structure
+
+- Main side: `contributions/hooks/point.ts` (`ExtensionHookContributionPoint` with `transform`,
+  `veto`, `notify`, `settle`) plus `bindings/<domain>.ts` declarative binding tables mapping public
+  point ids to module hook taps. `ExtensionService` supplies the module hook surfaces through
+  `moduleHooks` in the registry options.
+- Host side: `runtime/host/contributions/hooks/point.ts` (`HostHooksContributionPoint`) validates
+  point ids, stores handlers by registration id, mirrors registrations to main, answers `invoke`,
+  and consumes `notify`.
 
 ## TaskRun Capability
 
@@ -291,6 +369,7 @@ kisx registry add-release artifacts/example-0.0.1.kisx --manifest registry/manif
 - Services: `ExtensionService`, `ExtensionRepositoryManager`, `ExtensionInstallerManager`, `ExtensionUpdateManager`, `RuntimeManager`, `ExtensionContributionRegistry`
 - IPC: `extension:search-catalog`, `extension:list-repositories`, `extension:install-release`, `extension:check-updates`, `extension:get-automatic-update-run`, `extension:get-installed-packages`, `extension:list-trusted-signers`, `extension:contributions-changed`, `extension:resolve-settings-panel`
 - Host bridge: `runtime.storage.*`, `runtime.secrets.*`, `contributions.*`, `capabilities.*`, `capabilities.taskRuns.*`, `capabilities.automations.*`, `runtimeHandle`
+- Hooks: `context.hooks.on`, `ExtensionHookPoints`, `EXTENSION_HOOK_POINTS`, `contributions.hooks.invoke`, `ExtensionHookContributionPoint`, `HostHooksContributionPoint`, `bindings/`
 - TaskRun: `kisaki.taskRuns`, `ExtensionTaskRunHandle`, `capabilities.taskRuns.cancelRequested`, `extension.task.<extensionId>.<operation>`
 - Automations: `kisaki.automations`, `AutomationService`, `automation_run_history`
 - Renderer: `@renderer/core/extensions`, `ExtensionSettingsPanelDialog`, `ExtensionEntityMenuItems`

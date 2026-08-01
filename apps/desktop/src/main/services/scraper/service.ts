@@ -22,6 +22,7 @@ import { IGDBProvider } from './handlers/game/providers/igdb'
 import { VNDBProvider } from './handlers/game/providers/vndb'
 import { YmgalProvider } from './handlers/game/providers/ymgal'
 import { registerScraperIpc } from './ipc'
+import { createScraperHooks } from './hooks'
 import { ScraperProfileCatalog } from './profiles'
 
 const log = createLogger('Scraper')
@@ -29,6 +30,7 @@ const log = createLogger('Scraper')
 export class ScraperService implements IContentService {
   readonly id = 'scraper'
   readonly deps = ['db', 'i18n', 'ipc', 'network'] as const satisfies readonly ServiceName[]
+  readonly hooks = createScraperHooks()
 
   profiles!: ScraperProfileCatalog
   game!: GameScraperHandler
@@ -47,10 +49,10 @@ export class ScraperService implements IContentService {
     })
 
     this.profiles = new ScraperProfileCatalog(db)
-    this.game = new GameScraperHandler(db, i18n)
-    this.person = new PersonScraperHandler(db, i18n)
-    this.company = new CompanyScraperHandler(db, i18n)
-    this.character = new CharacterScraperHandler(db, i18n)
+    this.game = new GameScraperHandler(db, i18n, this.hooks.game)
+    this.person = new PersonScraperHandler(db, i18n, this.hooks.person)
+    this.company = new CompanyScraperHandler(db, i18n, this.hooks.company)
+    this.character = new CharacterScraperHandler(db, i18n, this.hooks.character)
     this.registerBuiltinProviders(providerDeps)
     registerScraperIpc(this, ipcService)
 

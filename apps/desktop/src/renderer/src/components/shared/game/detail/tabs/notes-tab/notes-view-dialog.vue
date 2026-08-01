@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { eq } from 'drizzle-orm'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { gameNotes } from '@shared/db'
 import {
@@ -46,7 +46,8 @@ const coverUrl = computed(() => {
   return getAttachmentUrl('game_notes', note.value.id, note.value.coverFile)
 })
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'game_notes' && id === props.noteId) {
     open.value = false
   }

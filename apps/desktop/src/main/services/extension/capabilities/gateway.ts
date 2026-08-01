@@ -1,8 +1,7 @@
-import { createUnavailableError, type ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
+import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type { AutomationService } from '@main/services/automation'
 import type { CommandService } from '@main/services/command'
 import type { DbService } from '@main/services/db'
-import type { EventService } from '@main/services/event'
 import type { I18nService } from '@main/services/i18n'
 import type { IngestService } from '@main/services/ingest'
 import type { NetworkService } from '@main/services/network'
@@ -13,7 +12,6 @@ import type { ExtensionHostRpcClient } from '../runtime'
 import type { ExtensionWebviewSessionManager } from '../webviews'
 import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
-import { ExtensionEventsCapabilityProvider } from './events'
 import { ExtensionFilesCapabilityProvider } from './files'
 import { ExtensionIngestCapabilityProvider } from './ingest'
 import { ExtensionLibraryCapabilityProvider } from './library'
@@ -28,7 +26,6 @@ export interface ExtensionCapabilityGatewayOptions {
   automation: AutomationService
   command: CommandService
   db: DbService
-  event: EventService
   i18n: I18nService
   ingest: IngestService
   network: NetworkService
@@ -44,7 +41,6 @@ export class ExtensionCapabilityGateway {
   readonly library: ExtensionLibraryCapabilityProvider
   readonly network: ExtensionNetworkCapabilityProvider
   readonly notify: ExtensionNotifyCapabilityProvider
-  readonly events: ExtensionEventsCapabilityProvider
   readonly runtime: ExtensionRuntimeCapabilityProvider
   readonly scrapers: ExtensionScrapersCapabilityProvider
   readonly ingest: ExtensionIngestCapabilityProvider
@@ -68,10 +64,6 @@ export class ExtensionCapabilityGateway {
     this.notify = new ExtensionNotifyCapabilityProvider({
       notify: options.notify,
       resolveRuntimeHandle: options.resolveRuntimeHandle
-    })
-    this.events = new ExtensionEventsCapabilityProvider({
-      db: options.db,
-      event: options.event
     })
     this.runtime = new ExtensionRuntimeCapabilityProvider({
       resolveRuntimeHandle: options.resolveRuntimeHandle,
@@ -106,7 +98,6 @@ export class ExtensionCapabilityGateway {
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
-    this.events.attachRpc(rpc)
     this.taskRuns.attachRpc(rpc)
     this.library.registerRpcHandlers(rpc)
 
@@ -172,22 +163,6 @@ export class ExtensionCapabilityGateway {
       await this.notify.dismiss(runtimeHandle, id)
       return {}
     })
-
-    rpc.handleHostRequest(
-      'capabilities.events.subscribeHost',
-      async ({ runtimeHandle, subscriptionId, topic }) => {
-        this.requireRuntime(runtimeHandle)
-        this.events.subscribeHost(runtimeHandle, subscriptionId, topic)
-        return {}
-      }
-    )
-    rpc.handleHostRequest(
-      'capabilities.events.unsubscribeHost',
-      async ({ runtimeHandle, subscriptionId }) => {
-        this.events.unsubscribeHost(runtimeHandle, subscriptionId)
-        return {}
-      }
-    )
 
     rpc.handleHostRequest('capabilities.runtime.getInfo', async ({ runtimeHandle }) => ({
       info: this.runtime.getInfo(runtimeHandle)
@@ -350,13 +325,11 @@ export class ExtensionCapabilityGateway {
   }
 
   detachRpc(): void {
-    this.events.detachRpc()
     this.taskRuns.detachRpc()
   }
 
   releaseRuntime(runtimeHandle: string): void {
     this.files.releaseRuntime(runtimeHandle)
-    this.events.releaseRuntime(runtimeHandle)
     this.notify.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
     this.taskRuns.releaseRuntime(runtimeHandle)
@@ -364,18 +337,8 @@ export class ExtensionCapabilityGateway {
 
   releaseAll(): void {
     this.files.releaseAll()
-    this.events.releaseAll()
     this.notify.releaseAll()
     this.commands.releaseAll()
     this.taskRuns.releaseAll()
-  }
-
-  private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {
-    const metadata = this.runtime.getMetadata(runtimeHandle)
-    if (!metadata) {
-      throw createUnavailableError(`Runtime handle "${runtimeHandle}" is not active.`)
-    }
-
-    return metadata
   }
 }

@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid'
 import { eq, and } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -101,18 +101,18 @@ const extensionMenuInput = computed(
     }) as const
 )
 
-useEvent('db.updated', ({ table, id }) => {
-  if (table === 'characters' && id === props.characterId) refetch()
-  if (table === 'collection_character_links') refetch()
-  if (table === 'collections') refetch()
-})
-
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'collection_character_links' || table === 'collections') refetch()
-})
-
-useEvent('db.deleted', ({ table }) => {
-  if (table === 'collection_character_links' || table === 'collections') refetch()
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'updated') {
+    if (table === 'characters' && id === props.characterId) refetch()
+    if (table === 'collection_character_links') refetch()
+    if (table === 'collections') refetch()
+  }
+  if (operation === 'inserted') {
+    if (table === 'collection_character_links' || table === 'collections') refetch()
+  }
+  if (operation === 'deleted') {
+    if (table === 'collection_character_links' || table === 'collections') refetch()
+  }
 })
 
 // Action handlers

@@ -4,10 +4,12 @@ import { EXTENSION_API_VERSION } from '@kisaki3/extension-api'
 import { createLogger } from '@main/log'
 import { Mutex } from 'async-mutex'
 import { getBootstrapArgs } from '@main/bootstrap/args'
+import { bootstrapHooks } from '@main/bootstrap/hooks'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { IpcService } from '@main/services/ipc'
 import { ExtensionCapabilityGateway } from './capabilities'
 import { ExtensionContributionRegistry } from './contributions'
+import { bindExtensionLifecycleHookPoints } from './contributions/hooks'
 import {
   ExtensionInstallationManager,
   ExtensionInstallationStore,
@@ -51,10 +53,13 @@ export class ExtensionService implements IService {
     'ipc',
     'network',
     'db',
-    'event',
     'notify',
     'scraper',
     'ingest',
+    'scanner',
+    'launcher',
+    'monitor',
+    'window',
     'command',
     'automation',
     'task-run',
@@ -164,7 +169,6 @@ export class ExtensionService implements IService {
       automation: container.get('automation'),
       command: container.get('command'),
       db: container.get('db'),
-      event: container.get('event'),
       i18n: container.get('i18n'),
       ingest: container.get('ingest'),
       network: container.get('network'),
@@ -179,6 +183,18 @@ export class ExtensionService implements IService {
       command: container.get('command'),
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
+      moduleHooks: {
+        bootstrap: bootstrapHooks,
+        db: dbService.hooks,
+        i18n: container.get('i18n').hooks,
+        window: container.get('window').hooks,
+        scraper: container.get('scraper').hooks,
+        ingest: container.get('ingest').hooks,
+        scanner: container.get('scanner').hooks,
+        launcher: container.get('launcher').hooks,
+        monitor: container.get('monitor').hooks
+      },
+      sendHostEvent: (name, payload) => this.runtime.sendEventToHost(name, payload),
       onContributionsChanged: () => this.emitContributionSnapshotChanged(),
       onEntityMenusRefreshRequested: (event) =>
         this.ipc.send('extension:entity-menus-refresh-requested', event),
@@ -208,13 +224,13 @@ export class ExtensionService implements IService {
       developmentWatcher: this.developmentWatcher,
       packageCommitter: this.packageCommitter,
       iconManager,
-      event: container.get('event'),
       runMutatingOperation: (operation) => this.runMutatingOperation(operation),
       onInstallationsChanged: () => this.emitInstallationsChanged(),
       onContributionSnapshotChanged: () => this.emitContributionSnapshotChanged(),
       onDevelopmentStaleChanged: (extensionIds) =>
         this.ipc.send('extension:development-stale-changed', { extensionIds })
     })
+    bindExtensionLifecycleHookPoints(this.installations.hooks, this.contributions.hooks)
 
     this.installer = new ExtensionInstallerManager({
       layout,

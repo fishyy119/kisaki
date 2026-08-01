@@ -19,7 +19,7 @@ import { notify } from '@renderer/core/notify'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import { useEvent } from '@renderer/composables'
+import { useIpc } from '@renderer/composables'
 import type { Automation } from '@shared/automation'
 import type { CommandListItem } from '@shared/command'
 import { useAutomations } from '../composables'
@@ -130,21 +130,21 @@ const selectedDetailsCommand = computed(() =>
     : undefined
 )
 
-useEvent('automation.changed', () => {
+useIpc('automation:changed', () => {
   void refetch()
 })
 
-useEvent('automation.deleted', ({ automationId }) => {
+useIpc('automation:deleted', (_e, { automationId }) => {
   removeFromSet(runningAutomationIds, automationId)
   void refetch()
 })
 
-useEvent('automation.started', ({ automationId }) => {
+useIpc('automation:run-started', (_e, { automationId }) => {
   addToSet(runningAutomationIds, automationId)
   void refetch()
 })
 
-useEvent('automation.finished', (record) => {
+useIpc('automation:run-finished', (_e, record) => {
   removeFromSet(runningAutomationIds, record.automationId)
   void refetch()
 })

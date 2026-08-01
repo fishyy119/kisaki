@@ -9,7 +9,8 @@
 - `apps/desktop/src/renderer/src/composables/use-async-data.ts` - Async data fetching (non-route surfaces)
 - `apps/desktop/src/renderer/src/composables/use-render-state.ts` - Render state management
 - `apps/desktop/src/renderer/src/composables/use-delayed-loading.ts` - Loading delay
-- `apps/desktop/src/renderer/src/composables/use-event.ts` - Event subscription
+- `apps/desktop/src/renderer/src/composables/use-ipc.ts` - IPC push subscription
+- `apps/desktop/src/renderer/src/composables/use-db-changes.ts` - Db change feed subscription
 - `apps/desktop/src/renderer/src/stores/` - Pinia stores
 - `apps/desktop/src/renderer/src/stores/task-run.ts` - TaskRun active/history store
 - `apps/desktop/src/renderer/src/features/task-center/` - Task center dialog and display utilities
@@ -196,15 +197,21 @@ Template pattern:
 - `not-found`: Detail query returned `null`
 - `error`: Request failed
 
-### useEvent
+### useDbChanges / useIpc
 
-Subscribe to app events with auto-cleanup:
+Subscribe to main-process pushes with auto-cleanup:
 
 ```typescript
-useEvent('db.updated', (table, id) => {
-  if (table === 'games' && id === props.gameId) {
+// Db change feed (batched invalidation signal; branch on operation/table)
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'updated' && table === 'games' && id === props.gameId) {
     refetch()
   }
+})
+
+// Domain IPC pushes
+useIpc('library:entity-merged', (_e, event) => {
+  // Handle push
 })
 ```
 
@@ -356,7 +363,7 @@ Rules:
 - Props: `defineProps<`, `withDefaults(`, `props.`
 - v-model: `defineModel(`, `v-model:open`
 - Dialog mounting: `v-if="...open"`, `enabled: () => open.value`
-- Composables: `useAsyncData(`, `useRenderState(`, `useEvent(`
+- Composables: `useAsyncData(`, `useRenderState(`, `useDbChanges(`, `useIpc(`
 - Route data: `defineRouteData(`, `meta.dataLoaders`, `RouteProvider`, `DialogProvider`
 - TaskRun: `useTaskRunStore`, `task-run:changed`, `features/task-center`, `TaskRun`
 - Forbidden: `watchEffect`, `watchPostEffect`, `watchSyncEffect`

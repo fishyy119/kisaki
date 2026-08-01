@@ -11,7 +11,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { scanners as scannersTable, type Scanner } from '@shared/db'
-import { useEvent } from '@renderer/composables/use-event'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
 
 // =============================================================================
 // Types
@@ -47,15 +47,7 @@ export function useScannerProvider(): ScannerContext {
   const scanners = computed(() => data.value ?? [])
 
   // Listen for DB events
-  useEvent('db.inserted', ({ table }) => {
-    if (table === 'scanners') refetch()
-  })
-
-  useEvent('db.updated', ({ table }) => {
-    if (table === 'scanners') refetch()
-  })
-
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (table === 'scanners') refetch()
   })
 

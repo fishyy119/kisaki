@@ -7,7 +7,6 @@ import { createLogger, configureLogger, initializeLogger } from './log'
 import { container } from './container'
 import { DbService } from './services/db'
 import { IpcService, wrapIpc, wrapIpcVoid } from './services/ipc'
-import { EventService } from './services/event'
 import { WindowService } from './services/window'
 import { NativeService } from './services/native'
 import { I18nService } from './services/i18n'
@@ -30,6 +29,7 @@ import { TaskRunService } from './services/task-run'
 import { registerAppSchemes, DEEPLINK_SCHEME } from './bootstrap/protocol'
 import { detectPortableMode, setupPortableIpc } from './bootstrap/portable'
 import { getBootstrapArgs, setupBootstrapArgsIpc } from './bootstrap/args'
+import { bootstrapHooks, APP_SHUTDOWN_SETTLE_BUDGET_MS } from './bootstrap/hooks'
 
 const log = createLogger('App')
 
@@ -106,7 +106,6 @@ async function onAppReady(): Promise<void> {
 
   // Services (register first, then initialize via container.initAll())
   await container.register(new IpcService())
-  await container.register(new EventService())
   await container.register(new WindowService())
   await container.register(new NotifyService())
   await container.register(new DbService())
@@ -131,7 +130,6 @@ async function onAppReady(): Promise<void> {
 
   // Setup portable IPC handlers (after services are ready)
   const ipcService = container.get<IpcService>('ipc')
-  const eventService = container.get<EventService>('event')
   setupBootstrapArgsIpc(ipcService)
   setupPortableIpc(ipcService)
 
@@ -150,7 +148,12 @@ async function onAppReady(): Promise<void> {
   windowService.mainWindow.create()
   windowService.trayMenuWindow.create()
 
-  eventService.bus.emit('app.ready')
+  bootstrapHooks.appReady.dispatch()
+
+  const automationService = container.get<AutomationService>('automation')
+  automationService.runStartupAutomations().catch((error) => {
+    log.error('Startup automations failed.', error)
+  })
 
   // Mark deeplink service as ready and process any pending deeplinks
   const deeplinkService = container.get<DeeplinkService>('deeplink')
@@ -211,6 +214,11 @@ app.on('before-quit', (event) => {
 
   ;(async () => {
     try {
+      // Give hook subscribers (extension host is still alive here) a bounded
+      // window to flush state before services are torn down.
+      await bootstrapHooks.appShuttingDown.settle(undefined, {
+        budgetMs: APP_SHUTDOWN_SETTLE_BUDGET_MS
+      })
       log.info('Disposing all services.')
       await container.disposeAll()
       log.info('All services disposed.')

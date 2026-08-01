@@ -1,9 +1,9 @@
 /**
  * SQLite Trigger Store
  *
- * Automatically emits db.inserted/updated/deleted events via SQLite triggers.
- * Uses better-sqlite3's custom function registration to bridge SQL triggers
- * with the JavaScript event system.
+ * Captures row-level insert/update/delete changes via SQLite AFTER triggers
+ * and feeds them into the db change feed. Uses better-sqlite3's custom
+ * function registration to bridge SQL triggers with JavaScript.
  *
  * Table names are automatically inferred from the Drizzle schema.
  */
@@ -12,10 +12,9 @@ import type Database from 'better-sqlite3'
 import { getTableName, is } from 'drizzle-orm'
 import { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { createLogger } from '@main/log'
-import type { EventService } from '@main/services/event'
 import * as schema from '@shared/db/schema'
 import type { TableName } from '@shared/db/table-names'
-import type { RawDbChangeEvent, RawDbChangeOperation } from '@shared/events/library'
+import type { RawDbChange, RawDbChangeOperation } from '@shared/db/changes'
 
 const log = createLogger('Db')
 
@@ -38,7 +37,7 @@ export class TriggerStore {
 
   constructor(
     private sqlite: Database.Database,
-    private event: EventService
+    private sink: (change: RawDbChange) => void
   ) {
     this.trackedTables = getTrackedTables()
   }
@@ -51,32 +50,31 @@ export class TriggerStore {
 
   /**
    * Register the emit_db_change function that triggers can call.
-   * This bridges SQLite triggers with the JavaScript event system.
+   * This bridges SQLite triggers with the JavaScript change feed.
    */
   private registerEmitFunction(): void {
     this.sqlite.function(
       'emit_db_change',
       { deterministic: false },
       (operation, table, id, oldJson, nextJson) => {
-        const change = this.createRawChangeEvent(operation, table, id, oldJson, nextJson)
-        const eventName = `db.${change.operation}` as 'db.inserted' | 'db.updated' | 'db.deleted'
+        const change = this.createRawChange(operation, table, id, oldJson, nextJson)
 
-        // Defer event emission until the current SQL statement completes.
-        // This prevents "connection is busy" errors when listeners try to access the DB.
+        // Defer delivery until the current SQL statement completes.
+        // This prevents "connection is busy" errors when consumers access the DB.
         queueMicrotask(() => {
-          this.event.bus.emit(eventName, change)
+          this.sink(change)
         })
       }
     )
   }
 
-  private createRawChangeEvent(
+  private createRawChange(
     operation: unknown,
     table: unknown,
     id: unknown,
     oldJson: unknown,
     nextJson: unknown
-  ): RawDbChangeEvent {
+  ): RawDbChange {
     return {
       operation: normalizeOperation(operation),
       table: table as TableName,

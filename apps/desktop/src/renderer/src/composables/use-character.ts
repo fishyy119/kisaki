@@ -25,7 +25,6 @@ import { eq, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
-import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
 import type {
   Character,
@@ -37,6 +36,7 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
 // Types
@@ -190,32 +190,32 @@ function useCharacterDbSync(
   characterId: MaybeRefOrGetter<string>,
   refetch: () => Promise<void>
 ): void {
-  useEvent('db.updated', ({ table, id: entityId }) => {
-    if (table === 'characters' && entityId === toValue(characterId)) {
-      refetch()
+  useDbChanges(({ operation, table, id: entityId }) => {
+    if (operation === 'updated') {
+      if (table === 'characters' && entityId === toValue(characterId)) {
+        refetch()
+      }
+      if (
+        table === 'character_tag_links' ||
+        table === 'game_character_links' ||
+        table === 'character_person_links'
+      ) {
+        refetch()
+      }
     }
-    if (
-      table === 'character_tag_links' ||
-      table === 'game_character_links' ||
-      table === 'character_person_links'
-    ) {
-      refetch()
+    if (operation === 'inserted') {
+      if (
+        table === 'character_tag_links' ||
+        table === 'game_character_links' ||
+        table === 'character_person_links'
+      ) {
+        refetch()
+      }
     }
-  })
-
-  useEvent('db.inserted', ({ table }) => {
-    if (
-      table === 'character_tag_links' ||
-      table === 'game_character_links' ||
-      table === 'character_person_links'
-    ) {
-      refetch()
-    }
-  })
-
-  useEvent('db.deleted', ({ table, id: entityId }) => {
-    if (table === 'characters' && entityId === toValue(characterId)) {
-      refetch()
+    if (operation === 'deleted') {
+      if (table === 'characters' && entityId === toValue(characterId)) {
+        refetch()
+      }
     }
   })
 }

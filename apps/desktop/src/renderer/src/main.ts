@@ -6,7 +6,6 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import Main from './main.vue'
 import { router } from './core/router'
 import { initI18n } from './core/i18n'
-import { eventManager } from './core/event'
 import {
   refreshExtensionContributionSnapshot,
   setupExtensionContributionStore,
@@ -31,7 +30,6 @@ async function initMainWindowRenderer() {
   // Phase 1: Critical Path (blocking - UI must wait)
   // ===========================================================================
   await initI18n()
-  eventManager.init()
 
   const app = createApp(Main)
 

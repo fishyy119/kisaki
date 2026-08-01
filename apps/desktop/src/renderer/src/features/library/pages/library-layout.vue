@@ -16,7 +16,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { ResizableHandle, ResizableLayout, ResizablePanel } from '@renderer/components/ui/resizable'
-import { useEvent } from '@renderer/composables'
+import { useIpc } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { useLibraryExplorerStore } from '../stores'
 import { parseExplorerSelectionKey } from '../utils/explorer-selection'
@@ -29,7 +29,7 @@ const { explorerWidth } = storeToRefs(store)
 
 const isSearchOpen = ref(false)
 
-useEvent('entity.merged', (event) => {
+useIpc('library:entity-merged', (_e, event) => {
   const sourceKeys = store.selectedKeys.filter((key) => {
     const selection = parseExplorerSelectionKey(key)
     return selection.id === event.sourceId

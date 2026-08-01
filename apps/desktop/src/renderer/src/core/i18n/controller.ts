@@ -17,7 +17,6 @@ import {
   type UiLocaleState
 } from '@shared/i18n'
 import { ipcManager, unwrapIpcData, unwrapIpcVoid } from '@renderer/core/ipc'
-import { eventManager } from '@renderer/core/event'
 import { createLogger } from '@renderer/core/log'
 
 const log = createLogger('I18n')
@@ -47,7 +46,7 @@ export async function initI18n(): Promise<void> {
   const state = unwrapIpcData(await ipcManager.invoke('i18n:get-state'))
   applyState(state)
 
-  eventManager.on('app.ui-locale.changed', (state) => {
+  ipcManager.on('i18n:state-changed', (_e, state) => {
     applyState(state)
     log.info('UI locale changed.', { effective: state.effective })
   })

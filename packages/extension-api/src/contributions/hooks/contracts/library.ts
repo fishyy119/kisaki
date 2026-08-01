@@ -1,0 +1,284 @@
+import type { DynamicCollectionConfig, LibraryGameStatus } from '../../../capabilities/library'
+import type {
+  ExternalId,
+  LibraryBloodType,
+  LibraryCupSize,
+  LibraryGender,
+  PartialDate,
+  RelatedSite
+} from '../../../shared'
+import type { HookPointSpec } from './point'
+
+export type LibraryEntityTopic = 'game' | 'person' | 'company' | 'character' | 'collection' | 'tag'
+
+export type LibraryChangeKind = 'created' | 'updated' | 'deleted'
+
+export interface LibraryGameCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  description?: string | null
+  releaseDate?: PartialDate | null
+}
+
+export interface LibraryGameAssetSnapshot {
+  coverFile?: string | null
+  backdropFile?: string | null
+  logoFile?: string | null
+  iconFile?: string | null
+}
+
+export interface LibraryGameActivitySnapshot {
+  totalDuration?: number
+  lastActiveAt?: number | null
+}
+
+export interface LibraryGameRelationSnapshot {
+  personLinkIds: readonly string[]
+  companyLinkIds: readonly string[]
+  characterLinkIds: readonly string[]
+}
+
+export interface LibraryPersonCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  sortName?: string | null
+  description?: string | null
+  isFavorite?: boolean
+  isNsfw?: boolean
+  birthDate?: PartialDate | null
+  deathDate?: PartialDate | null
+  gender?: LibraryGender | null
+  relatedSites?: readonly RelatedSite[]
+}
+
+export interface LibraryCompanyCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  sortName?: string | null
+  description?: string | null
+  isFavorite?: boolean
+  isNsfw?: boolean
+  foundedDate?: PartialDate | null
+  relatedSites?: readonly RelatedSite[]
+}
+
+export interface LibraryCharacterCoreSnapshot {
+  name?: string
+  originalName?: string | null
+  sortName?: string | null
+  description?: string | null
+  isFavorite?: boolean
+  isNsfw?: boolean
+  birthDate?: PartialDate | null
+  gender?: LibraryGender | null
+  bloodType?: LibraryBloodType | null
+  height?: number | null
+  weight?: number | null
+  bust?: number | null
+  waist?: number | null
+  hips?: number | null
+  cup?: LibraryCupSize | null
+  age?: number | null
+  relatedSites?: readonly RelatedSite[]
+}
+
+export interface LibraryCollectionCoreSnapshot {
+  name?: string
+  description?: string | null
+  isNsfw?: boolean
+  order?: number
+}
+
+export interface LibraryCollectionDynamicConfigSnapshot {
+  isDynamic?: boolean
+  dynamicConfig?: DynamicCollectionConfig | null
+}
+
+export interface LibraryTagCoreSnapshot {
+  name?: string
+  description?: string | null
+  isNsfw?: boolean
+}
+
+export interface LibraryPersonAssetSnapshot {
+  photoFile?: string | null
+}
+
+export interface LibraryCompanyAssetSnapshot {
+  logoFile?: string | null
+}
+
+export interface LibraryCharacterAssetSnapshot {
+  photoFile?: string | null
+}
+
+export interface LibraryCollectionAssetSnapshot {
+  coverFile?: string | null
+}
+
+export interface LibraryCollectionMembershipSnapshot {
+  gameIds?: readonly string[]
+  personIds?: readonly string[]
+  companyIds?: readonly string[]
+  characterIds?: readonly string[]
+}
+
+export type LibraryCoreChange<TSnapshot extends object> = {
+  facet: 'core'
+  before: Partial<TSnapshot>
+  after: Partial<TSnapshot>
+  fields?: readonly string[]
+}
+
+export type LibraryScoreChange = {
+  facet: 'score'
+  before: { score: number | null }
+  after: { score: number | null }
+  fields?: readonly ['score']
+}
+
+export type LibraryIdentityChange = {
+  facet: 'identity'
+  before: { externalIds: readonly ExternalId[] }
+  after: { externalIds: readonly ExternalId[] }
+  fields?: readonly string[]
+}
+
+export type LibraryTagsChange = {
+  facet: 'tags'
+  before: { tagIds: readonly string[] }
+  after: { tagIds: readonly string[] }
+  fields?: readonly string[]
+}
+
+export type LibraryAssetChange<TSnapshot extends object> = {
+  facet: 'assets'
+  before: Partial<TSnapshot>
+  after: Partial<TSnapshot>
+  fields?: readonly string[]
+}
+
+export type LibraryRelationsChange<TSnapshot extends object> = {
+  facet: 'relations'
+  before: TSnapshot
+  after: TSnapshot
+  fields?: readonly string[]
+}
+
+export type LibraryMembershipChange<TSnapshot extends object> = {
+  facet: 'membership'
+  before: TSnapshot
+  after: TSnapshot
+  fields?: readonly string[]
+}
+
+export type LibraryDynamicConfigChange = {
+  facet: 'dynamicConfig'
+  before: Partial<LibraryCollectionDynamicConfigSnapshot>
+  after: Partial<LibraryCollectionDynamicConfigSnapshot>
+  fields?: readonly string[]
+}
+
+export type LibraryGameChange =
+  | LibraryCoreChange<LibraryGameCoreSnapshot>
+  | {
+      facet: 'status'
+      before: { status: LibraryGameStatus }
+      after: { status: LibraryGameStatus }
+      fields?: readonly ['status']
+    }
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | {
+      facet: 'activity'
+      before: LibraryGameActivitySnapshot
+      after: LibraryGameActivitySnapshot
+      fields?: readonly string[]
+    }
+  | LibraryTagsChange
+  | {
+      facet: 'collections'
+      before: { collectionIds: readonly string[] }
+      after: { collectionIds: readonly string[] }
+      fields?: readonly string[]
+    }
+  | LibraryAssetChange<LibraryGameAssetSnapshot>
+  | LibraryRelationsChange<LibraryGameRelationSnapshot>
+
+export type LibraryPersonChange =
+  | LibraryCoreChange<LibraryPersonCoreSnapshot>
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | LibraryTagsChange
+  | LibraryAssetChange<LibraryPersonAssetSnapshot>
+
+export type LibraryCompanyChange =
+  | LibraryCoreChange<LibraryCompanyCoreSnapshot>
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | LibraryTagsChange
+  | LibraryAssetChange<LibraryCompanyAssetSnapshot>
+
+export type LibraryCharacterChange =
+  | LibraryCoreChange<LibraryCharacterCoreSnapshot>
+  | LibraryScoreChange
+  | LibraryIdentityChange
+  | LibraryTagsChange
+  | LibraryAssetChange<LibraryCharacterAssetSnapshot>
+
+export type LibraryCollectionChange =
+  | LibraryCoreChange<LibraryCollectionCoreSnapshot>
+  | LibraryAssetChange<LibraryCollectionAssetSnapshot>
+  | LibraryDynamicConfigChange
+  | LibraryMembershipChange<LibraryCollectionMembershipSnapshot>
+
+export type LibraryTagChange = LibraryCoreChange<LibraryTagCoreSnapshot>
+
+export type LibraryChange =
+  | LibraryGameChange
+  | LibraryPersonChange
+  | LibraryCompanyChange
+  | LibraryCharacterChange
+  | LibraryCollectionChange
+  | LibraryTagChange
+
+/** One debounced, entity-grouped change carried by the `library.changed` point. */
+export interface LibraryEntityChangeSummary {
+  entity: LibraryEntityTopic
+  id: string
+  kind: LibraryChangeKind
+  /** Present for created entities when a name is known. */
+  name?: string
+  /** Facet-level changes; present for updated entities. */
+  changes?: readonly LibraryChange[]
+  occurredAt: number
+}
+
+export interface LibraryChangedPayload {
+  changes: readonly LibraryEntityChangeSummary[]
+}
+
+export interface LibraryEntityMergingPayload {
+  entityType: LibraryEntityTopic
+  targetId: string
+  sourceId: string
+}
+
+export interface LibraryEntityMergedPayload {
+  entityType: LibraryEntityTopic
+  targetId: string
+  sourceId: string
+  occurredAt: number
+}
+
+/**
+ * Library hook points.
+ *
+ * `library.changed` is a debounced, entity-grouped post-commit change feed;
+ * `library.entity-merging` is a veto point before the merge transaction.
+ */
+export interface LibraryHookPoints {
+  'library.changed': HookPointSpec<'notify', LibraryChangedPayload>
+  'library.entity-merging': HookPointSpec<'veto', LibraryEntityMergingPayload>
+  'library.entity-merged': HookPointSpec<'notify', LibraryEntityMergedPayload>
+}

@@ -13,7 +13,7 @@ import { notify } from '@renderer/core/notify'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
 import { games, type Game } from '@shared/db'
 import type { GameMediaType } from '@shared/attachment'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
@@ -109,7 +109,8 @@ watch(fetchedGame, (data) => {
 })
 
 // Listen for game updates
-useEvent('db.updated', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'updated') return
   if (table === 'games' && id === props.gameId) {
     refetch()
   }

@@ -20,8 +20,8 @@ import type { DbService } from '@main/services/db'
 import { eq, sql } from 'drizzle-orm'
 import { normalize, dirname, basename } from 'node:path'
 import type { IpcService } from '@main/services/ipc'
-import type { EventService } from '@main/services/event'
 import type { GameAttachmentHandler } from '@main/services/attachment'
+import type { MonitorHooks } from '../hooks'
 
 const log = createLogger('Monitor')
 
@@ -53,7 +53,7 @@ export class GameMonitorHandler {
   constructor(
     private dbService: DbService,
     private ipcService: IpcService,
-    private eventService: EventService,
+    private hooks: MonitorHooks,
     private gameAttachment: GameAttachmentHandler
   ) {
     log.info('GameMonitorHandler initialized')
@@ -446,7 +446,7 @@ export class GameMonitorHandler {
     // Send IPC event
     this.ipcService.send('monitor:game-started', gameId)
 
-    this.eventService.bus.emit('game.started', { gameId, pid: process.pid })
+    this.hooks.sessionStarted.dispatch({ gameId, pid: process.pid })
   }
 
   /**
@@ -499,7 +499,7 @@ export class GameMonitorHandler {
     // Send IPC event
     this.ipcService.send('monitor:game-stopped', gameId)
 
-    this.eventService.bus.emit('game.stopped', { gameId, playTime: sessionDuration })
+    this.hooks.sessionEnded.dispatch({ gameId, playTimeSeconds: sessionDuration })
   }
 
   /**
@@ -557,6 +557,8 @@ export class GameMonitorHandler {
    * Save foreground running time as a new session record
    */
   private async saveForegroundTime(gameId: string, duration: number): Promise<void> {
+    const record = await this.hooks.sessionEnding.transform({ gameId, durationMs: duration })
+    const durationMs = record.durationMs
     const now = Date.now()
 
     // Insert new session record (sync for better-sqlite3)
@@ -564,7 +566,7 @@ export class GameMonitorHandler {
       .insert(gameSessions)
       .values({
         gameId,
-        startedAt: new Date(now - duration),
+        startedAt: new Date(now - durationMs),
         endedAt: new Date(now)
       })
       .run()
@@ -574,12 +576,12 @@ export class GameMonitorHandler {
       .update(games)
       .set({
         lastActiveAt: new Date(now),
-        totalDuration: sql`${games.totalDuration} + ${duration}`
+        totalDuration: sql`${games.totalDuration} + ${durationMs}`
       })
       .where(eq(games.id, gameId))
       .run()
 
-    log.info('Session saved.', { MathRound: Math.round(duration / 1000) })
+    log.info('Session saved.', { MathRound: Math.round(durationMs / 1000) })
   }
 }
 

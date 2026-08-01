@@ -11,7 +11,7 @@ import { db } from '@renderer/core/db'
 import { persons } from '@shared/db'
 import { eq } from 'drizzle-orm'
 import { usePersonDialogProvider } from '@renderer/composables/use-person'
-import { useEvent, useRenderState } from '@renderer/composables'
+import { useDbChanges, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -51,7 +51,8 @@ const state = useRenderState(isLoading, error, person)
 
 const spoilerConfirmOpen = ref(false)
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'persons' && id === props.personId) {
     open.value = false
   }

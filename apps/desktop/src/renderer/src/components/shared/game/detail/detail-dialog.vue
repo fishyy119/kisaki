@@ -15,7 +15,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { games } from '@shared/db'
 import { eq } from 'drizzle-orm'
 import { useGameDialogProvider } from '@renderer/composables/use-game'
-import { useEvent, useRenderState } from '@renderer/composables'
+import { useDbChanges, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -56,7 +56,8 @@ const state = useRenderState(isLoading, error, game)
 
 const spoilerConfirmOpen = ref(false)
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'games' && id === props.gameId) {
     open.value = false
   }

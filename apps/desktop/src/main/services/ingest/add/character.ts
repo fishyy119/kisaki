@@ -10,6 +10,7 @@ import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
 import type { TaskRunStartResult } from '@shared/task-run'
 import type { CharacterIngestPersistHandler } from '../persist'
+import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { buildCharacterGraph } from '../graph'
 import {
   addCharacterToCollection,
@@ -34,7 +35,8 @@ export class CharacterAddHandler {
     private readonly scraperService: ScraperService,
     private readonly persistHandler: CharacterIngestPersistHandler,
     private readonly taskRunService: TaskRunService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly hooks: IngestEntityHooks
   ) {}
 
   startAddFromScraper(
@@ -125,11 +127,21 @@ export class CharacterAddHandler {
       label: this.i18nService.messages.ingest.add.buildingMetadata({ entity: 'character' })
     })
     const graph = buildCharacterGraph(bundle, normalized.lookup)
+    await requireIngestAllowed(this.hooks.committing, {
+      name: normalized.lookup.name,
+      externalIds: bundle.identity.externalIds
+    })
     reportIngestProgress(options, {
       phase: 'writing',
       label: this.i18nService.messages.ingest.add.writing({ entity: 'character' })
     })
-    return this.persistHandler.persistCharacterGraph(graph, options)
+    const result = await this.persistHandler.persistCharacterGraph(graph, options)
+    this.hooks.committed.dispatch({
+      entityId: result.characterId,
+      isNew: result.isNew,
+      warnings: result.warnings ?? []
+    })
+    return result
   }
 
   private async handleAddFromScraperWithTaskRun(

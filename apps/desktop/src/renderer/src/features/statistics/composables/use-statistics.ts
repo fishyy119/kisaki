@@ -23,7 +23,7 @@ import { desc, gte, lte, and, inArray, eq, type SQL } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { useEvent } from '@renderer/composables/use-event'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
 import type { Game, GameSession, Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
@@ -315,16 +315,16 @@ export function useStatisticsProvider(): StatisticsContext {
   const allTimeStats = computed(() => computeStats(allTimeSessions.value, games.value))
 
   // Event listeners for auto-refresh
-  useEvent('db.inserted', ({ table }) => {
-    if (table === 'game_sessions') void refetch()
-  })
-
-  useEvent('db.updated', ({ table }) => {
-    if (table === 'game_sessions' || table === 'games') void refetch()
-  })
-
-  useEvent('db.deleted', ({ table }) => {
-    if (table === 'game_sessions') void refetch()
+  useDbChanges(({ operation, table }) => {
+    if (operation === 'inserted') {
+      if (table === 'game_sessions') void refetch()
+    }
+    if (operation === 'updated') {
+      if (table === 'game_sessions' || table === 'games') void refetch()
+    }
+    if (operation === 'deleted') {
+      if (table === 'game_sessions') void refetch()
+    }
   })
 
   const context: StatisticsContext = {

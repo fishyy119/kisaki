@@ -10,7 +10,7 @@ import { GameDetailDialog } from '@renderer/components/shared/game'
 import { CharacterDetailDialog } from '@renderer/components/shared/character'
 import { PersonDetailDialog } from '@renderer/components/shared/person'
 import { CompanyDetailDialog } from '@renderer/components/shared/company'
-import { useTagDialogProvider, useEvent, useRenderState } from '@renderer/composables'
+import { useDbChanges, useRenderState, useTagDialogProvider } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,8 @@ const open = defineModel<boolean>('open', { required: true })
 const { tag, entityType, setEntityType, isLoading, error } = useTagDialogProvider(() => props.tagId)
 const state = useRenderState(isLoading, error, tag)
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'tags' && id === props.tagId) {
     open.value = false
   }

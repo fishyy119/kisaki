@@ -8,7 +8,7 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
 import type {
   ShowcaseSection,
@@ -74,13 +74,7 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
   })
 
   // Listen for entity changes
-  useEvent('db.inserted', ({ table }) => {
-    if (isRelevantTable(table, sectionEntityType.value)) refetch()
-  })
-  useEvent('db.updated', ({ table }) => {
-    if (isRelevantTable(table, sectionEntityType.value)) refetch()
-  })
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (isRelevantTable(table, sectionEntityType.value)) refetch()
   })
 

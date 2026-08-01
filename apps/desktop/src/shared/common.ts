@@ -125,3 +125,8 @@ export function isAllEntityType(value: string): value is AllEntityType {
  * Sort direction for list ordering
  */
 export type SortDirection = 'asc' | 'desc'
+
+/**
+ * User theme preference owned by the renderer theme store and reported to main.
+ */
+export type AppTheme = 'light' | 'dark' | 'system'

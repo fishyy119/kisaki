@@ -14,6 +14,8 @@ import {
   type ExtensionRuntimeMetadata,
   type ExtensionUnloadReason,
   type ExtensionUnloadResult,
+  type MainToHostRpcEvent,
+  type MainToHostRpcEventMap,
   type MainToHostRpcMethod,
   type MainToHostRpcRequestMap,
   type RpcParams,
@@ -185,6 +187,11 @@ export class RuntimeManager {
     options?: RpcRequestOptions
   ): Promise<RpcResult<MainToHostRpcRequestMap, K>> {
     return this.requireRpc().requestHost(method, params, options)
+  }
+
+  /** One-way event delivery to the host; silently dropped when it is not running. */
+  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void {
+    this.rpc?.sendEventToHost(name, payload)
   }
 
   private async reconcileLocked(options: RuntimeReconcileOptions): Promise<void> {

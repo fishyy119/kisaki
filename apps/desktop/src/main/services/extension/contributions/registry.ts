@@ -1,4 +1,8 @@
-import type { ExtensionRuntimeHandle } from '@kisaki3/extension-api'
+import type {
+  ExtensionRuntimeHandle,
+  MainToHostRpcEvent,
+  MainToHostRpcEventMap
+} from '@kisaki3/extension-api'
 import type {
   ExtensionCardActionRunRequest,
   ExtensionContributionSnapshot,
@@ -10,15 +14,33 @@ import type {
   ExtensionResolvedEntityMenu,
   ExtensionThemeRegistrationInfo
 } from '@shared/extension'
+import type { BootstrapHooks } from '@main/bootstrap/hooks'
 import type { CommandService } from '@main/services/command'
+import type { DbHooks } from '@main/services/db/hooks'
 import type { DeeplinkService } from '@main/services/deeplink'
+import type { I18nHooks } from '@main/services/i18n/hooks'
+import type { IngestHooks } from '@main/services/ingest/hooks'
+import type { LauncherHooks } from '@main/services/launcher/hooks'
+import type { MonitorHooks } from '@main/services/monitor/hooks'
+import type { ScannerHooks } from '@main/services/scanner/hooks'
 import type { ScraperService } from '@main/services/scraper'
+import type { ScraperHooks } from '@main/services/scraper/hooks'
+import type { WindowHooks } from '@main/services/window/hooks'
 import type { ExtensionHostRpcClient } from '../runtime'
 import { requireSafeExtensionId } from '../shared/path-confinement'
 import { ExtensionCardActionContributionPoint } from './card-actions'
 import { ExtensionCommandContributionPoint } from './commands'
 import { ExtensionDeeplinkRouteContributionPoint } from './deeplink-routes'
 import { ExtensionEntityMenuContributionPoint } from './entity-menus'
+import {
+  ExtensionHookContributionPoint,
+  bindAppHookPoints,
+  bindIngestHookPoints,
+  bindLibraryHookPoints,
+  bindPlayHookPoints,
+  bindScannerHookPoints,
+  bindScraperHookPoints
+} from './hooks'
 import { ExtensionScraperProviderContributionPoint } from './scraper-providers'
 import { ExtensionThemeContributionPoint } from './themes'
 import { ExtensionWebviewContributionPoint } from './webviews'
@@ -27,10 +49,25 @@ import type {
   ExtensionContributionReleaseDiagnostic
 } from './types'
 
+/** Module hook surfaces the hooks contribution point binds to at startup. */
+export interface ExtensionHookModuleSurfaces {
+  bootstrap: BootstrapHooks
+  db: DbHooks
+  i18n: I18nHooks
+  window: WindowHooks
+  scraper: ScraperHooks
+  ingest: IngestHooks
+  scanner: ScannerHooks
+  launcher: LauncherHooks
+  monitor: MonitorHooks
+}
+
 export interface ExtensionContributionRegistryOptions extends ExtensionContributionPointOptions {
   command: CommandService
   deeplink: DeeplinkService
   scraper: ScraperService
+  moduleHooks: ExtensionHookModuleSurfaces
+  sendHostEvent<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
   onContributionsChanged?: () => void
   onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
 }
@@ -43,6 +80,7 @@ export class ExtensionContributionRegistry {
   readonly scraperProviders: ExtensionScraperProviderContributionPoint
   readonly commands: ExtensionCommandContributionPoint
   readonly webviews: ExtensionWebviewContributionPoint
+  readonly hooks: ExtensionHookContributionPoint
 
   constructor(private readonly options: ExtensionContributionRegistryOptions) {
     const base: ExtensionContributionPointOptions = {
@@ -68,6 +106,18 @@ export class ExtensionContributionRegistry {
       command: options.command
     })
     this.webviews = new ExtensionWebviewContributionPoint(base)
+    this.hooks = new ExtensionHookContributionPoint({
+      ...base,
+      sendHostEvent: options.sendHostEvent
+    })
+
+    const surfaces = options.moduleHooks
+    bindScraperHookPoints(surfaces.scraper, this.hooks)
+    bindIngestHookPoints(surfaces.ingest, this.hooks)
+    bindScannerHookPoints(surfaces.scanner, this.hooks)
+    bindPlayHookPoints(surfaces.launcher, surfaces.monitor, this.hooks)
+    bindLibraryHookPoints(surfaces.db, this.hooks)
+    bindAppHookPoints(surfaces.bootstrap, surfaces.db, surfaces.i18n, surfaces.window, this.hooks)
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
@@ -196,6 +246,17 @@ export class ExtensionContributionRegistry {
         return {}
       }
     )
+    rpc.handleHostRequest('contributions.hooks.register', async ({ runtimeHandle, hook }) => {
+      this.hooks.register(runtimeHandle, hook)
+      return {}
+    })
+    rpc.handleHostRequest(
+      'contributions.hooks.unregister',
+      async ({ runtimeHandle, registrationId }) => {
+        this.hooks.unregister(runtimeHandle, registrationId)
+        return {}
+      }
+    )
   }
 
   async releaseRuntime(runtimeHandle: ExtensionRuntimeHandle): Promise<void> {
@@ -207,6 +268,7 @@ export class ExtensionContributionRegistry {
       await this.scraperProviders.releaseRuntime(runtimeHandle)
       this.commands.releaseRuntime(runtimeHandle)
       this.webviews.releaseRuntime(runtimeHandle)
+      this.hooks.releaseRuntime(runtimeHandle)
     } finally {
       this.notifyChanged()
     }
@@ -221,6 +283,7 @@ export class ExtensionContributionRegistry {
       await this.scraperProviders.releaseAll()
       this.commands.releaseAll()
       this.webviews.releaseAll()
+      this.hooks.releaseAll()
     } finally {
       this.notifyChanged()
     }
@@ -275,7 +338,8 @@ export class ExtensionContributionRegistry {
       ...this.deeplinkRoutes.getReleaseDiagnostics(extensionId),
       ...this.themes.getReleaseDiagnostics(extensionId),
       ...this.commands.getReleaseDiagnostics(extensionId),
-      ...this.webviews.getReleaseDiagnostics(extensionId)
+      ...this.webviews.getReleaseDiagnostics(extensionId),
+      ...this.hooks.getReleaseDiagnostics(extensionId)
     ]
 
     if (diagnostics.length === 0) {

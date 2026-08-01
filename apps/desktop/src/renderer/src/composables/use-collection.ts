@@ -26,7 +26,6 @@ import { eq, count, asc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
-import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
 import type { Collection, Game, Character, Person, Company } from '@shared/db/schema'
@@ -35,6 +34,7 @@ import type { DynamicCollectionConfig, DynamicEntityConfig } from '@shared/db/co
 import type { ContentEntityType, SortDirection } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import type { ContentEntityData, ContentEntityCounts } from './types'
+import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
 // Types
@@ -538,31 +538,31 @@ function useCollectionDbSync(
   const isDynamic = computed(() => context.collection.value?.isDynamic ?? false)
   const entityTables = ['games', 'characters', 'persons', 'companies']
 
-  useEvent('db.updated', ({ table, id: entityId }) => {
-    if (table === 'collections' && entityId === toValue(collectionId)) {
-      refetch()
+  useDbChanges(({ operation, table, id: entityId }) => {
+    if (operation === 'updated') {
+      if (table === 'collections' && entityId === toValue(collectionId)) {
+        refetch()
+      }
+      // For dynamic collections, refetch when source entities change
+      if (isDynamic.value && entityTables.includes(table)) {
+        refetch()
+      }
     }
-    // For dynamic collections, refetch when source entities change
-    if (isDynamic.value && entityTables.includes(table)) {
-      refetch()
+    if (operation === 'inserted') {
+      if (table === getLinkTableName(context.entityType.value) || table === 'collections') {
+        refetch()
+      }
+      if (isDynamic.value && entityTables.includes(table)) {
+        refetch()
+      }
     }
-  })
-
-  useEvent('db.inserted', ({ table }) => {
-    if (table === getLinkTableName(context.entityType.value) || table === 'collections') {
-      refetch()
-    }
-    if (isDynamic.value && entityTables.includes(table)) {
-      refetch()
-    }
-  })
-
-  useEvent('db.deleted', ({ table }) => {
-    if (table === getLinkTableName(context.entityType.value)) {
-      refetch()
-    }
-    if (isDynamic.value && entityTables.includes(table)) {
-      refetch()
+    if (operation === 'deleted') {
+      if (table === getLinkTableName(context.entityType.value)) {
+        refetch()
+      }
+      if (isDynamic.value && entityTables.includes(table)) {
+        refetch()
+      }
     }
   })
 }

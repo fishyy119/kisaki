@@ -10,7 +10,6 @@ import { notInArray, and, eq } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { useEvent } from '@renderer/composables'
 import { usePreferencesStore } from '@renderer/stores'
 import {
   games,
@@ -24,6 +23,7 @@ import {
 } from '@shared/db'
 import type { Game, Character, Person, Company } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
+import { useDbChanges } from '@renderer/composables'
 
 type EntityData = Game | Character | Person | Company
 
@@ -111,13 +111,7 @@ export function useUncategorized() {
   const { showNsfw } = storeToRefs(usePreferencesStore())
   watch(showNsfw, () => void refetch())
 
-  useEvent('db.inserted', ({ table }) => {
-    if (isRelevantTable(table)) refetch()
-  })
-  useEvent('db.updated', ({ table }) => {
-    if (isRelevantTable(table)) refetch()
-  })
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (isRelevantTable(table)) refetch()
   })
 

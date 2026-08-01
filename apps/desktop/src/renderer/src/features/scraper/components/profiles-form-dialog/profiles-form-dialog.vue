@@ -17,7 +17,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { notify } from '@renderer/core/notify'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { ipcManager } from '@renderer/core/ipc'
 import { scraperProfiles } from '@shared/db'
 import { createSlotConfigs } from '@shared/scraper'
@@ -83,11 +83,8 @@ const { data, isLoading, refetch } = useAsyncData(
 )
 
 // Listen for external changes
-useEvent('db.inserted', (payload) => {
-  if (payload.table === 'scraper_profiles') refetch()
-})
-useEvent('db.deleted', (payload) => {
-  if (payload.table === 'scraper_profiles') refetch()
+useDbChanges(({ operation, table }) => {
+  if (table === 'scraper_profiles' && operation !== 'updated') refetch()
 })
 
 // Local state for editing

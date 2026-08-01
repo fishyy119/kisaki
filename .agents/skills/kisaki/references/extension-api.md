@@ -134,15 +134,19 @@ inventing new generic names. For example, if `kisaki.commands.invoke(request)` a
 `CommandInvocationRequest`, the RPC transport request should carry `request`, while still naming the
 transport wrapper itself with a transport suffix such as `CommandInvocationRpcRequest`.
 
-## Event Topic Rules
+## Hook Point Id Rules
 
-- Public host events exposed by `kisaki.events.on(...)` and `kisaki.events.once(...)` use the same topic names as the corresponding public AppEvents. Do not create extension-only aliases for host events.
-- Event topics use pure dot notation: `<subject>[.<aspect>].<event>`.
-- Topic segments use lowerCamelCase. Do not use `:`, `-`, or suffix-compressed names such as `localeChanged` in event topics.
-- Use `created` / `updated` / `deleted` for persisted entity lifecycle events.
-- Use `started` / `finished` for runtime lifecycle events. Put final status in the payload when needed.
-- Extension-owned custom events used by `kisaki.events.onExtension(...)` and `kisaki.events.emit(...)` are a separate extension-scoped message namespace. Do not fold them into the AppEvents/HostEvents naming migration.
-- Do not support compatibility aliases for previous event spellings.
+- Public hook point ids are defined once in the `ExtensionHookPoints` map and the
+  `EXTENSION_HOOK_POINTS` catalog (`contributions/hooks/`). Extensions tap them through
+  `context.hooks.on(pointId, handler)`; there is no separate events surface.
+- Point ids use dot notation: `<domain>[.<subject>].<point>`, with lowercase kebab-case segments
+  such as `library.entity-merging`. Do not use `:` in point ids.
+- Use `committing` / `updating` / `merging`-style `-ing` forms for pre-write veto or waterfall
+  points, and `committed` / `updated` / `merged` for post-commit notify points.
+- Use `started` / `finished` / `ended` for runtime lifecycle notify points. Put final status in the
+  payload when needed.
+- Every point id maps to exactly one kind (`notify`, `waterfall`, `veto`) plus payload type; do not
+  support compatibility aliases for previous spellings.
 
 ## Validation Names
 

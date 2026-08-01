@@ -13,7 +13,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 import { db } from '@renderer/core/db'
 import { tags } from '@shared/db'
-import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -71,13 +71,7 @@ const { data: allTags, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'tags') refetch()
-})
-useEvent('db.updated', ({ table }) => {
-  if (table === 'tags') refetch()
-})
-useEvent('db.deleted', ({ table }) => {
+useDbChanges(({ table }) => {
   if (table === 'tags') refetch()
 })
 

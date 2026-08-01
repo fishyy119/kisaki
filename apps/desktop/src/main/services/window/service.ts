@@ -7,6 +7,7 @@
 import { app, BrowserWindow } from 'electron'
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
+import { createWindowHooks } from './hooks'
 import { registerWindowIpc } from './ipc'
 import { MainWindowController } from './controllers/main'
 import { TrayMenuWindowController } from './controllers/tray-menu'
@@ -21,6 +22,7 @@ export interface WindowsApi {
 export class WindowService implements IService {
   readonly id = 'window'
   readonly deps = ['ipc', 'db'] as const satisfies readonly ServiceName[]
+  readonly hooks = createWindowHooks()
 
   readonly mainWindow = new MainWindowController()
   readonly trayMenuWindow = new TrayMenuWindowController()

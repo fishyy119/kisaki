@@ -23,7 +23,7 @@ import { ref, readonly, watch, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
-import { eventManager } from '@renderer/core/event'
+import { ipcManager } from '@renderer/core/ipc'
 import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
 import type { ContentEntityType } from '@shared/common'
 import type { Collection } from '@shared/db/schema'
@@ -411,18 +411,15 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
       }
     }
 
-    // Static collection listeners
-    eventManager.on('db.inserted', ({ table }) => handleStaticChange(table))
-    eventManager.on('db.updated', ({ table }) => {
-      // Static: only collections table (order changes)
-      if (table === 'collections') handleStaticChange(table)
+    ipcManager.on('db:changed', (_e, changes) => {
+      for (const { operation, table } of changes) {
+        // Static: inserted/deleted links, plus collections updates (order changes)
+        if (operation !== 'updated' || table === 'collections') {
+          handleStaticChange(table)
+        }
+        handleDynamicChange(table)
+      }
     })
-    eventManager.on('db.deleted', ({ table }) => handleStaticChange(table))
-
-    // Dynamic collection listeners
-    eventManager.on('db.inserted', ({ table }) => handleDynamicChange(table))
-    eventManager.on('db.updated', ({ table }) => handleDynamicChange(table))
-    eventManager.on('db.deleted', ({ table }) => handleDynamicChange(table))
   }
 
   return {

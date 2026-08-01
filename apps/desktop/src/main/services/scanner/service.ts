@@ -13,6 +13,7 @@ import type { MediaType } from '@shared/common'
 import { GameScannerHandler } from './handlers/game'
 import { ScannerPhash } from './phash'
 import { ScannerDiscovery } from './discovery'
+import { createScannerHooks } from './hooks'
 import { registerScannerIpc } from './ipc'
 
 const log = createLogger('Scanner')
@@ -28,9 +29,9 @@ export class ScannerService implements IMediaService {
     'i18n',
     'ipc',
     'ingest',
-    'event',
     'task-run'
   ] as const satisfies readonly ServiceName[]
+  readonly hooks = createScannerHooks()
 
   game!: GameScannerHandler
   phash!: ScannerPhash
@@ -40,7 +41,6 @@ export class ScannerService implements IMediaService {
     const dbService = container.get('db')
     const ipcService = container.get('ipc')
     const ingestService = container.get('ingest')
-    const eventService = container.get('event')
     const taskRunService = container.get('task-run')
 
     this.phash = new ScannerPhash()
@@ -51,7 +51,7 @@ export class ScannerService implements IMediaService {
       this.phash,
       dbService,
       ipcService,
-      eventService,
+      this.hooks,
       ingestService,
       taskRunService,
       container.get('i18n')

@@ -13,7 +13,11 @@ import type {
   EntityMenuInputMap,
   EntityMenuRegistrar,
   EntityMenuScope,
+  ExtensionHookHandler,
+  ExtensionHookPointId,
   GameScraperProvider,
+  HooksRegistrar,
+  HookTapOptions,
   PersonScraperProvider,
   ScraperProviderRegistrar,
   ThemeRegistrar,
@@ -171,6 +175,27 @@ export function createThemeRegistrar(
   return {
     register(theme: ThemeContribution) {
       const disposable = bridge.registerTheme(scope, theme)
+      subscriptions.add(disposable)
+      return disposable
+    }
+  }
+}
+
+/**
+ * Creates the hooks registration surface bound to runtime subscriptions.
+ */
+export function createHooksRegistrar(
+  bridge: ExtensionSdkBridge,
+  subscriptions: DisposableStore,
+  scope: ActiveExtensionScope
+): HooksRegistrar {
+  return {
+    on<TPoint extends ExtensionHookPointId>(
+      pointId: TPoint,
+      handler: ExtensionHookHandler<TPoint>,
+      options?: HookTapOptions
+    ) {
+      const disposable = bridge.registerHook(scope, pointId, handler, options)
       subscriptions.add(disposable)
       return disposable
     }

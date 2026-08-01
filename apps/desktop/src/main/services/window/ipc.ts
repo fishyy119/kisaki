@@ -7,6 +7,10 @@ export function registerWindowIpc(service: WindowService, ipc: IpcService): void
     service.mainWindow.setCloseAction(action)
   })
 
+  ipc.on('app:theme-changed', (_e, theme) => {
+    service.hooks.themeChanged.dispatch(theme)
+  })
+
   ipc.handle('window:minimize-main-window', () => wrapIpcVoid(() => service.mainWindow.minimize()))
 
   ipc.handle('window:toggle-main-window-maximize', () =>

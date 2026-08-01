@@ -2,10 +2,11 @@ import { eq, inArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { EntityMergeRequest, EntityMergeResult } from '@shared/entity-merge'
 import { normalizeExternalIds, type ExternalId } from '@shared/identity'
-import type { EventService } from '@main/services/event'
+import type { IpcService } from '@main/services/ipc'
 import { createLogger } from '@main/log'
 import * as schema from '@shared/db/schema'
 import type { AttachmentStore } from '../../attachment'
+import type { DbHooks } from '../../hooks'
 import { ENTITY_MERGE_CONFIGS } from './configs'
 import { cleanupStagedMergeFiles, stageEntityAttachments } from './attachments'
 import { buildEntityFieldPatch } from './fields'
@@ -26,7 +27,8 @@ export class DbEntityMergeCoordinator {
   constructor(
     private readonly db: BetterSQLite3Database<typeof schema>,
     private readonly attachment: AttachmentStore,
-    private readonly event: EventService
+    private readonly hooks: DbHooks,
+    private readonly ipc: IpcService
   ) {}
 
   async merge(params: EntityMergeRequest): Promise<EntityMergeResult> {
@@ -49,6 +51,11 @@ export class DbEntityMergeCoordinator {
     const source = this.getEntityRow(config, sourceId)
     if (!target || !source) {
       throw new Error('Entity merge target or source was not found.')
+    }
+
+    const veto = await this.hooks.entityMerging.dispatch({ entityType, targetId, sourceId })
+    if (veto) {
+      throw new Error('Entity merge was cancelled by an extension hook.')
     }
 
     const externalIdPlan = config.externalIds
@@ -117,12 +124,9 @@ export class DbEntityMergeCoordinator {
 
     changedCounts.attachments = stagedFiles.length
 
-    this.event.bus.emit('entity.merged', {
-      entityType,
-      targetId,
-      sourceId,
-      occurredAt: Date.now()
-    })
+    const merged = { entityType, targetId, sourceId, occurredAt: Date.now() }
+    this.hooks.entityMerged.dispatch(merged)
+    this.ipc.send('library:entity-merged', merged)
 
     return {
       entityType,

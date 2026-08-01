@@ -9,8 +9,8 @@ import { eq, asc } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { useEvent } from '@renderer/composables'
 import { showcaseSections, type ShowcaseSection, type NewShowcaseSection } from '@shared/db'
+import { useDbChanges } from '@renderer/composables'
 
 // =============================================================================
 // Route Loader & Composable
@@ -26,13 +26,7 @@ export function useShowcaseSections() {
   const { data, error, isFetching, refetch } = showcaseSectionsData()
 
   // Listen for DB events
-  useEvent('db.inserted', ({ table }) => {
-    if (table === 'showcase_sections') refetch()
-  })
-  useEvent('db.updated', ({ table }) => {
-    if (table === 'showcase_sections') refetch()
-  })
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (table === 'showcase_sections') refetch()
   })
 

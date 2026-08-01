@@ -9,7 +9,7 @@ import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePreferencesStore } from '@renderer/stores'
-import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { db } from '@renderer/core/db'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
@@ -66,13 +66,7 @@ const { data: allGames, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'games') refetch()
-})
-useEvent('db.updated', ({ table }) => {
-  if (table === 'games') refetch()
-})
-useEvent('db.deleted', ({ table }) => {
+useDbChanges(({ table }) => {
   if (table === 'games') refetch()
 })
 

@@ -4,6 +4,7 @@ import type {
   CommandRegistrar,
   DeeplinkRouteRegistrar,
   EntityMenuRegistrar,
+  HooksRegistrar,
   ScraperProviderRegistrar,
   ThemeRegistrar,
   WebviewRegistrar
@@ -63,6 +64,7 @@ export interface ExtensionContext {
   readonly subscriptions: DisposableStore
   readonly abortSignal: AbortSignal
   readonly contributions: ExtensionContributionRegistrars
+  readonly hooks: HooksRegistrar
   asAbsolutePath(relativePath: string): string
 }
 

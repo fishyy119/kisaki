@@ -20,7 +20,6 @@ export type ServiceStatus =
 import type { DbService } from '@main/services/db/service'
 import type { IpcService } from '@main/services/ipc/service'
 import type { WindowService } from '@main/services/window/service'
-import type { EventService } from '@main/services/event/service'
 import type { NativeService } from '@main/services/native/service'
 import type { I18nService } from '@main/services/i18n/service'
 import type { ScraperService } from '@main/services/scraper/service'
@@ -47,7 +46,6 @@ export interface ServiceRegistry {
   ipc: IpcService
   network: NetworkService
   window: WindowService
-  event: EventService
   native: NativeService
   i18n: I18nService
   scraper: ScraperService

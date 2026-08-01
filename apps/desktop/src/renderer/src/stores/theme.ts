@@ -11,7 +11,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { themeManager } from '@renderer/core/theme'
 import { refreshExtensionThemes, setupExtensionThemeSync } from '@renderer/core/extensions'
-import { eventManager } from '@renderer/core/event'
+import { ipcManager } from '@renderer/core/ipc'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -96,7 +96,7 @@ export const useThemeStore = defineStore(
         return
       }
 
-      eventManager.emit('app.theme.changed', { theme })
+      ipcManager.send('app:theme-changed', theme)
     })
 
     // Listen for system theme changes

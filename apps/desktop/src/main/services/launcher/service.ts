@@ -9,6 +9,7 @@ import { createLogger } from '@main/log'
 import type { IMediaService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { MediaType } from '@shared/common'
 import { GameLauncherHandler } from './handlers/game'
+import { createLauncherHooks } from './hooks'
 import { registerLauncherIpc } from './ipc'
 
 const log = createLogger('Launcher')
@@ -23,6 +24,7 @@ export class LauncherService implements IMediaService {
     'native',
     'notify'
   ] as const satisfies readonly ServiceName[]
+  readonly hooks = createLauncherHooks()
 
   game!: GameLauncherHandler
 
@@ -39,7 +41,8 @@ export class LauncherService implements IMediaService {
       monitorService,
       nativeService,
       notifyService,
-      i18nService
+      i18nService,
+      this.hooks
     )
     registerLauncherIpc(this, ipcService)
     log.info('Initialized')

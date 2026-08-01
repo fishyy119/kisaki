@@ -28,11 +28,9 @@ import { SyncSuppressor } from './sync/suppressor'
 export default defineExtension({
   async activate(context) {
     setHostUiLocale((await kisaki.runtime.getInfo()).uiLocale)
-    context.subscriptions.add(
-      await kisaki.events.on('app.ui-locale.changed', ({ effective }) => {
-        setHostUiLocale(effective)
-      })
-    )
+    context.hooks.on('app.ui-locale.changed', ({ effective }) => {
+      setHostUiLocale(effective)
+    })
 
     const settingsStore = new SettingsStore(context.storage)
     const tokenStore = new TokenStore(context.secrets)
@@ -53,7 +51,7 @@ export default defineExtension({
       }
     )
     const accountService = new AccountService(context.storage, client, tokenService)
-    const gameAdapter = new GameLocalMediaAdapter()
+    const gameAdapter = new GameLocalMediaAdapter(context.hooks)
     const mediaRegistry = new MediaRegistry([
       createBookMediaDescriptor(),
       createGameMediaDescriptor(gameAdapter),

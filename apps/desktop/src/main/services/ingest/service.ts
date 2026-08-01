@@ -22,6 +22,7 @@ import {
   PersonBatchHandler
 } from './batch'
 import { registerIngestIpc } from './ipc'
+import { createIngestHooks } from './hooks'
 
 const log = createLogger('Ingest')
 
@@ -55,6 +56,7 @@ export class IngestService implements IContentService {
     'scraper',
     'task-run'
   ] as const satisfies readonly ServiceName[]
+  readonly hooks = createIngestHooks()
 
   add!: IngestAddHandlers
   update!: IngestUpdateHandlers
@@ -74,40 +76,64 @@ export class IngestService implements IContentService {
         scraperService,
         persist.game,
         taskRunService,
-        i18nService
+        i18nService,
+        this.hooks.game
       ),
       person: new PersonAddHandler(
         dbService,
         scraperService,
         persist.person,
         taskRunService,
-        i18nService
+        i18nService,
+        this.hooks.person
       ),
       company: new CompanyAddHandler(
         dbService,
         scraperService,
         persist.company,
         taskRunService,
-        i18nService
+        i18nService,
+        this.hooks.company
       ),
       character: new CharacterAddHandler(
         dbService,
         scraperService,
         persist.character,
         taskRunService,
-        i18nService
+        i18nService,
+        this.hooks.character
       )
     }
     this.update = {
-      game: new GameUpdateHandler(dbService, scraperService, persist, taskRunService, i18nService),
-      person: new PersonUpdateHandler(dbService, scraperService, taskRunService, i18nService),
-      company: new CompanyUpdateHandler(dbService, scraperService, taskRunService, i18nService),
+      game: new GameUpdateHandler(
+        dbService,
+        scraperService,
+        persist,
+        taskRunService,
+        i18nService,
+        this.hooks.game
+      ),
+      person: new PersonUpdateHandler(
+        dbService,
+        scraperService,
+        taskRunService,
+        i18nService,
+        this.hooks.person
+      ),
+      company: new CompanyUpdateHandler(
+        dbService,
+        scraperService,
+        taskRunService,
+        i18nService,
+        this.hooks.company
+      ),
       character: new CharacterUpdateHandler(
         dbService,
         scraperService,
         persist,
         taskRunService,
-        i18nService
+        i18nService,
+        this.hooks.character
       )
     }
     this.batch = {

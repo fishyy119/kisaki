@@ -19,7 +19,12 @@ import {
   CharacterDropdownMenu,
   CharacterDetailContent
 } from '@renderer/components/shared/character'
-import { useAmbientLight, useCharacterRouteProvider, useEvent } from '@renderer/composables'
+import {
+  useAmbientLight,
+  useCharacterRouteProvider,
+  useDbChanges,
+  useIpc
+} from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
@@ -56,13 +61,13 @@ useAmbientLight(() =>
     : null
 )
 
-useEvent('db.deleted', ({ table, id }) => {
-  if (table === 'characters' && id === characterId.value) {
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'deleted' && table === 'characters' && id === characterId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('entity.merged', (event) => {
+useIpc('library:entity-merged', (_e, event) => {
   if (event.entityType === 'character' && event.sourceId === characterId.value) {
     router.replace({ path: `/library/character/${event.targetId}`, query: route.query })
   }

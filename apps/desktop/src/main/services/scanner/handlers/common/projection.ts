@@ -1,6 +1,10 @@
-import type { ScannerFinishedStatus } from '@shared/events/library'
 import type { Messages } from '@shared/i18n'
-import type { ScanCompletedData, ScannerRunState, ScannerRunStatus } from '@shared/scanner'
+import type {
+  ScanCompletedData,
+  ScannerRunFinishedStatus,
+  ScannerRunState,
+  ScannerRunStatus
+} from '@shared/scanner'
 import type { TaskRunProgressUpdate } from '@shared/task-run'
 
 const TASK_RUN_PROGRESS_WARNING_LIMIT = 20
@@ -68,7 +72,7 @@ export function toTaskRunWarnings(state: ScannerRunState) {
 
 export function toTaskRunSummary(
   messages: Messages,
-  status: ScannerFinishedStatus,
+  status: ScannerRunFinishedStatus,
   state: ScannerRunState
 ): string {
   const prefix =
@@ -88,7 +92,7 @@ export function toTaskRunSummary(
   })
 }
 
-export function toTaskRunOutput(status: ScannerFinishedStatus, state: ScannerRunState) {
+export function toTaskRunOutput(status: ScannerRunFinishedStatus, state: ScannerRunState) {
   return {
     scannerId: state.scannerId,
     scannerName: state.scannerName,

@@ -13,7 +13,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { notify } from '@renderer/core/notify'
 import { getOpenImageDialogOptions } from '@renderer/utils/dialog'
 import { persons, type Person } from '@shared/db'
-import { useAsyncData, useEvent } from '@renderer/composables'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
 import {
   Dialog,
@@ -90,7 +90,8 @@ watch(fetchedPerson, (data) => {
 })
 
 // Listen for person updates
-useEvent('db.updated', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'updated') return
   if (table === 'persons' && id === props.personId) {
     refetch()
   }

@@ -21,7 +21,12 @@ import {
   CollectionDynamicConfigFormDialog,
   CollectionConvertToStaticFormDialog
 } from '@renderer/components/shared/collection'
-import { useAmbientLight, useCollectionRouteProvider, useEvent } from '@renderer/composables'
+import {
+  useAmbientLight,
+  useCollectionRouteProvider,
+  useDbChanges,
+  useIpc
+} from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
@@ -60,13 +65,13 @@ useAmbientLight(() =>
     : null
 )
 
-useEvent('db.deleted', ({ table, id }) => {
-  if (table === 'collections' && id === collectionId.value) {
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'deleted' && table === 'collections' && id === collectionId.value) {
     router.push('/library/collections')
   }
 })
 
-useEvent('entity.merged', (event) => {
+useIpc('library:entity-merged', (_e, event) => {
   if (event.entityType === 'collection' && event.sourceId === collectionId.value) {
     router.replace({ path: `/library/collection/${event.targetId}`, query: route.query })
   }

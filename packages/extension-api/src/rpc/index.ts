@@ -11,6 +11,7 @@ import type {
 } from './capabilities'
 import type {
   HostToMainContributionRpcRequestMap,
+  MainToHostContributionRpcEventMap,
   MainToHostContributionRpcRequestMap
 } from './contributions'
 import type { RpcEventName, RpcMethodName } from './core'
@@ -20,7 +21,9 @@ import type { HostToMainRuntimeRpcRequestMap, MainToHostRuntimeRpcEventMap } fro
 export type MainToHostRpcRequestMap = MainToHostLifecycleRpcRequestMap &
   MainToHostContributionRpcRequestMap
 
-export type MainToHostRpcEventMap = MainToHostRuntimeRpcEventMap & MainToHostCapabilityRpcEventMap
+export type MainToHostRpcEventMap = MainToHostRuntimeRpcEventMap &
+  MainToHostCapabilityRpcEventMap &
+  MainToHostContributionRpcEventMap
 
 export type HostToMainRpcRequestMap = HostToMainContributionRpcRequestMap &
   HostToMainRuntimeRpcRequestMap &

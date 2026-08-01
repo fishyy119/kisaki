@@ -26,12 +26,12 @@ import { eq, asc, count, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
-import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
 import type { Tag, Game, Character, Person, Company } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
 import type { ContentEntityType } from '@shared/common'
 import type { ContentEntityData, ContentEntityCounts } from './types'
+import { useDbChanges } from './use-db-changes'
 
 interface TagData {
   tag: Tag | null
@@ -306,24 +306,24 @@ function useTagDbSync(
   entityType: ComputedRef<ContentEntityType>,
   refetch: () => Promise<void>
 ): void {
-  useEvent('db.updated', ({ table, id: entityId }) => {
-    if (table === 'tags' && entityId === toValue(tagId)) {
-      refetch()
+  useDbChanges(({ operation, table, id: entityId }) => {
+    if (operation === 'updated') {
+      if (table === 'tags' && entityId === toValue(tagId)) {
+        refetch()
+      }
+      if (table === getLinkTableName(entityType.value)) {
+        refetch()
+      }
     }
-    if (table === getLinkTableName(entityType.value)) {
-      refetch()
+    if (operation === 'inserted') {
+      if (table === getLinkTableName(entityType.value)) {
+        refetch()
+      }
     }
-  })
-
-  useEvent('db.inserted', ({ table }) => {
-    if (table === getLinkTableName(entityType.value)) {
-      refetch()
-    }
-  })
-
-  useEvent('db.deleted', ({ table }) => {
-    if (table === getLinkTableName(entityType.value)) {
-      refetch()
+    if (operation === 'deleted') {
+      if (table === getLinkTableName(entityType.value)) {
+        refetch()
+      }
     }
   })
 }

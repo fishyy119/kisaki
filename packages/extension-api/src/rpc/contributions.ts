@@ -35,7 +35,8 @@ import type {
 } from '../contributions/scraper-providers'
 import type { ThemeContribution } from '../contributions/themes'
 import type { WebviewDialogContribution, WebviewPageContribution } from '../contributions/webviews'
-import type { ContentLocale, JsonObject, UiCallbackResult } from '../shared'
+import type { ExtensionHookPointId } from '../contributions/hooks'
+import type { ContentLocale, JsonObject, JsonValue, UiCallbackResult } from '../shared'
 import type { RpcMethodDefinition, RpcNoPayload } from './core'
 import type { ContributionScopedRpcParams, ExtensionScopedRpcParams } from './lifecycle'
 
@@ -276,6 +277,43 @@ export type ScraperProviderSessionCloseRequest =
   | (ScraperProviderScopedRpcParamsFor<'company'> & { sessionId: string })
   | (ScraperProviderScopedRpcParamsFor<'character'> & { sessionId: string })
 
+export interface HookRegistrationInfo {
+  registrationId: string
+  pointId: ExtensionHookPointId
+  priority?: number
+}
+
+export interface HookRegisterRequest extends ExtensionScopedRpcParams {
+  hook: HookRegistrationInfo
+}
+
+export interface HookUnregisterRequest extends ExtensionScopedRpcParams {
+  registrationId: string
+}
+
+/** Main -> host round trip for waterfall, veto, and awaited notify points. */
+export interface HookInvokeRequest extends ExtensionScopedRpcParams {
+  registrationId: string
+  pointId: ExtensionHookPointId
+  payload: JsonValue
+}
+
+export interface HookInvokeResponse {
+  /**
+   * Waterfall: the transformed value. Veto: the veto result or null.
+   * Awaited notify: null.
+   */
+  result: JsonValue | null
+}
+
+/** Main -> host one-way delivery for pure notify points. */
+export interface HookNotifyEvent {
+  runtimeHandle: string
+  registrationId: string
+  pointId: ExtensionHookPointId
+  payload: JsonValue
+}
+
 export interface MainToHostContributionRpcRequestMap {
   'contributions.entityMenus.resolve': RpcMethodDefinition<
     EntityMenuResolveRequest,
@@ -312,6 +350,11 @@ export interface MainToHostContributionRpcRequestMap {
     CommandExecuteRequest,
     CommandExecuteResponse
   >
+  'contributions.hooks.invoke': RpcMethodDefinition<HookInvokeRequest, HookInvokeResponse>
+}
+
+export interface MainToHostContributionRpcEventMap {
+  'contributions.hooks.notify': HookNotifyEvent
 }
 
 export type HostToMainContributionRpcRequestMap = {
@@ -377,4 +420,6 @@ export type HostToMainContributionRpcRequestMap = {
     ExtensionScopedRpcParams & { dialogId: string },
     RpcNoPayload
   >
+  'contributions.hooks.register': RpcMethodDefinition<HookRegisterRequest, RpcNoPayload>
+  'contributions.hooks.unregister': RpcMethodDefinition<HookUnregisterRequest, RpcNoPayload>
 }

@@ -4,6 +4,7 @@ import type { I18nService } from '@main/services/i18n'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
+import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { flushPendingAssets } from '../assets'
 import {
   PERSON_UPDATE_CORE_SURFACES,
@@ -35,7 +36,8 @@ export class PersonUpdateHandler {
     private readonly dbService: DbService,
     private readonly scraperService: ScraperService,
     private readonly taskRunService: TaskRunService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly hooks: IngestEntityHooks
   ) {}
 
   startUpdateFromScraper(
@@ -114,6 +116,12 @@ export class PersonUpdateHandler {
     })
 
     throwIfIngestAborted(options?.signal)
+    await requireIngestAllowed(this.hooks.updating, {
+      entityId: request.rootId,
+      name: lookup.name,
+      surfaces,
+      externalIds: lookup.knownIds ?? []
+    })
     reportIngestProgress(options, {
       phase: 'writing',
       label: this.i18nService.messages.ingest.update.writing({ entity: 'person' })
@@ -137,6 +145,7 @@ export class PersonUpdateHandler {
       })
     }
 
+    this.hooks.updated.dispatch({ entityId: request.rootId, surfaces, warnings })
     return warnings.length > 0 ? { warnings } : {}
   }
 

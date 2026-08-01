@@ -20,13 +20,13 @@ import { createLogger } from '@main/log'
 import * as schema from '@shared/db/schema'
 import { settings } from '@shared/db/schema'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
-import type { EventService } from '@main/services/event'
 import { AttachmentStore } from './attachment'
 import { ThumbnailStore } from './thumbnail'
 import { DbEntityDeleteHelper, DbEntityFinderHelper, DbEntityMergeCoordinator } from './helper'
 import { FtsStore } from './fts'
 import { TriggerStore } from './trigger'
-import { DbEventProjector } from './projector'
+import { DbChangeFeed } from './feed'
+import { createDbHooks } from './hooks'
 import { registerDbIpc } from './ipc'
 import { SqlExecutor } from './sql'
 
@@ -49,7 +49,8 @@ const THUMBNAIL_SUPPORTED_EXTENSIONS = new Set([
 
 export class DbService implements IService {
   readonly id = 'db'
-  readonly deps = ['event', 'ipc', 'network'] as const satisfies readonly ServiceName[]
+  readonly deps = ['ipc', 'network'] as const satisfies readonly ServiceName[]
+  readonly hooks = createDbHooks()
 
   // Database infrastructure
   private sqlite!: Database.Database
@@ -66,8 +67,7 @@ export class DbService implements IService {
   fts!: FtsStore
   sql!: SqlExecutor
   private trigger!: TriggerStore
-  private projector!: DbEventProjector
-  private event!: EventService
+  private feed!: DbChangeFeed
 
   // ==================== Lifecycle ====================
 
@@ -85,14 +85,22 @@ export class DbService implements IService {
     // Run migrations
     migrate(this.client, { migrationsFolder: path.join(import.meta.dirname, '../../drizzle') })
 
-    // Initialize SQLite triggers for automatic event emission
+    const ipc = container.get('ipc')
+
+    // Initialize the change feed and SQLite triggers.
     // IMPORTANT: Must register emit_db_change function BEFORE any DB writes
     // because triggers persist in SQLite and may already exist from previous runs
-    this.event = container.get('event')
-    this.trigger = new TriggerStore(this.sqlite, this.event)
+    this.feed = new DbChangeFeed(this.sqlite, {
+      hooks: this.hooks,
+      sendToRenderer: (changes) => ipc.send('db:changed', changes),
+      onRowDeleted: (table, id) => {
+        this.attachment.cleanupRow(table, id).catch((error) => {
+          log.warn('Failed to cleanup attachment storage.', error, { table: table, id: id })
+        })
+      }
+    })
+    this.trigger = new TriggerStore(this.sqlite, (change) => this.feed.enqueue(change))
     this.trigger.init()
-    this.projector = new DbEventProjector(this.sqlite, this.event)
-    this.projector.init()
 
     // Initialize settings singleton table (after triggers are set up)
     this.client.insert(settings).values({ id: 0 }).onConflictDoNothing().run()
@@ -104,29 +112,19 @@ export class DbService implements IService {
     this.attachment = new AttachmentStore(this.client, this.storageDir, this.thumbnail, network)
     this.entityFinder = new DbEntityFinderHelper(this.client)
     this.entityDelete = new DbEntityDeleteHelper(this.client)
-    this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, this.event)
+    this.entityMerge = new DbEntityMergeCoordinator(this.client, this.attachment, this.hooks, ipc)
     this.fts = new FtsStore(this.sqlite)
     this.sql = new SqlExecutor(this.sqlite)
 
     // Initialize FTS5 tables and triggers
     this.fts.init()
 
-    // Cleanup attachment storage on row deletion (applies to all tables)
-    this.event.bus.on('db.deleted', ({ table, id }) => {
-      this.attachment.cleanupRow(table, id).catch((error) => {
-        log.warn('Failed to cleanup attachment storage.', error, { table: table, id: id })
-      })
-    })
-
     // Setup attachment:// protocol handler
     this.setupAttachmentProtocol()
 
-    // Register IPC handlers
-    const ipc = container.get('ipc')
     registerDbIpc(this, ipc)
 
     log.info('Database initialized.', { dbPath: this.dbPath })
-    this.event.bus.emit('db.ready', true)
   }
 
   // Attachment responses are consumed cross-origin (ambient color extraction
@@ -195,11 +193,10 @@ export class DbService implements IService {
   }
 
   async dispose(): Promise<void> {
-    this.projector?.dispose()
+    this.feed?.dispose()
     this.attachment?.dispose()
     this.thumbnail?.dispose()
     if (this.sqlite) {
-      this.event?.bus.emit('db.ready', false)
       this.sqlite.close()
       log.info('Database connection closed')
     }

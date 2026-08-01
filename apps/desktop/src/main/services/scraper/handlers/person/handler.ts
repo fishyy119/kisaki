@@ -40,6 +40,7 @@ import type {
   PersonSessionResultMap
 } from './provider'
 import type { PersonScraperImageResult, PersonScraperImageSlot, PersonScraperResult } from './types'
+import type { ScraperMediaHooks } from '../../hooks'
 import type { SlotResult } from '../../types'
 
 const log = createLogger('Scraper')
@@ -72,7 +73,8 @@ export class PersonScraperHandler {
 
   constructor(
     private db: BetterSQLite3Database<typeof schema>,
-    private i18n: I18nService
+    private i18n: I18nService,
+    private hooks: ScraperMediaHooks<PersonSearchResult, ScrapedPersonBundle>
   ) {}
 
   registerProvider(provider: PersonScraperProvider): void {
@@ -108,12 +110,15 @@ export class PersonScraperHandler {
     const profile = this.loadProfile(profileId)
     const provider = this.getSearchProvider(profile.searchProviderId)
     const results = await provider.search(query, this.getProfileLocale(profile))
-    return results.map((result) =>
-      ensureProviderExternalId(result, provider.externalIdSource, result.id)
+    return this.hooks.searched.transform(
+      results.map((result) =>
+        ensureProviderExternalId(result, provider.externalIdSource, result.id)
+      )
     )
   }
 
-  async scrape(profileId: string, lookup: ScraperLookup): Promise<ScrapedPersonBundle | null> {
+  async scrape(profileId: string, rawLookup: ScraperLookup): Promise<ScrapedPersonBundle | null> {
+    const lookup = await this.hooks.lookup.transform(rawLookup)
     const profile = this.loadProfile(profileId)
 
     const runtimeProfile: RuntimePersonProfile = {
@@ -186,7 +191,12 @@ export class PersonScraperHandler {
         warn: (message, error) => log.warn('Scraper provider warning.', error, { message })
       })) as readonly PersonScraperResult[]
 
-      return mergePersonScraperBundle([...results], runtimeProfile, state.getCollectedIdentities())
+      const bundle = mergePersonScraperBundle(
+        [...results],
+        runtimeProfile,
+        state.getCollectedIdentities()
+      )
+      return bundle ? this.hooks.collected.transform(bundle) : null
     } finally {
       await state.dispose()
     }

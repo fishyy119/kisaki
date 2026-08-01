@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { randomUUID } from 'node:crypto'
 import type {
   CardActionContribution,
   CardActionRegistration,
@@ -15,13 +14,8 @@ import type {
   EntityMenuRegistration,
   EntityMenuScope,
   ExtensionContext,
-  ExtensionEventListener,
-  ExtensionEventPayload,
-  ExtensionEventTopic,
   ExtensionRuntimeDiagnostic,
   ExtensionRuntimeHandle,
-  HostEventListener,
-  HostEventTopic,
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
   KisakiApi,
@@ -36,13 +30,13 @@ import type {
   WebviewPageContribution,
   WebviewPageRegistration
 } from '@kisaki3/extension-api'
-import { isExtensionEventTopic, toJsonObject } from '@kisaki3/extension-api'
 import type { ExtensionRegistry, LoadedExtensionRuntime } from '../extension-registry'
 import type { ExtensionHostRpcServer } from '../rpc-server'
 import { HostCardActionContributionPoint } from '../contributions/card-actions'
 import { HostCommandContributionPoint } from '../contributions/commands'
 import { HostDeeplinkRouteContributionPoint } from '../contributions/deeplink-routes'
 import { HostEntityMenuContributionPoint } from '../contributions/entity-menus'
+import { HostHooksContributionPoint } from '../contributions/hooks'
 import {
   HostScraperProviderContributionPoint,
   MAIN_TO_HOST_SCRAPER_RPC
@@ -63,6 +57,7 @@ import {
   createDeeplinkRouteRegistrar,
   createCommandRegistrar,
   createEntityMenuRegistrar,
+  createHooksRegistrar,
   createScraperProviderRegistrar,
   createThemeRegistrar,
   createWebviewRegistrar
@@ -75,13 +70,7 @@ import {
   EXTENSION_CLEANUP_TIMEOUT_MS,
   EXTENSION_CONTRIBUTION_SYNC_TIMEOUT_MS
 } from '../../../shared/rpc-timeouts'
-import type {
-  ActiveExtensionScope,
-  ExtensionEventListenerRecord,
-  ExtensionSdkBridge,
-  ScraperProviderFor,
-  HostEventSubscriptionRecord
-} from './types'
+import type { ActiveExtensionScope, ExtensionSdkBridge, ScraperProviderFor } from './types'
 import type { ExtensionContextOptions } from './types'
 
 const CONTRIBUTION_CLEANUP_REQUEST_OPTIONS = Object.freeze({
@@ -108,18 +97,14 @@ export class ExtensionHostSdkBridge {
   private readonly commands: HostCommandContributionPoint
   private readonly webviews: HostWebviewContributionPoint
   private readonly webviewSessions: HostWebviewSessionManager
-  private readonly hostEventSubscriptions = new Map<string, HostEventSubscriptionRecord>()
-  private readonly extensionEventListeners = new Map<
-    ExtensionEventTopic,
-    Map<string, ExtensionEventListenerRecord>
-  >()
+  private readonly hooks: HostHooksContributionPoint
   private readonly scopedApis = new Map<ExtensionRuntimeHandle, KisakiApi>()
   private readonly pendingMainRequests = new Map<ExtensionRuntimeHandle, Set<Promise<void>>>()
   private readonly taskRunAbortControllers = new Map<
     ExtensionRuntimeHandle,
     Map<string, AbortController>
   >()
-  private readonly mainEventCleanup: () => void
+  private readonly hookNotifyCleanup: () => void
   private readonly taskRunCancelCleanup: () => void
   private readonly webviewOpenedCleanup: () => void
   private readonly webviewMessageCleanup: () => void
@@ -165,8 +150,9 @@ export class ExtensionHostSdkBridge {
       ...contributionOptions,
       createWebviewHandle: (scope, webviewId) => this.webviewSessions.createHandle(scope, webviewId)
     })
-    this.mainEventCleanup = this.rpc.onMainEvent('capabilities.events.host', (payload) =>
-      this.handleHostEventNotification(payload)
+    this.hooks = new HostHooksContributionPoint(contributionOptions)
+    this.hookNotifyCleanup = this.rpc.onMainEvent('contributions.hooks.notify', (payload) =>
+      this.hooks.handleNotify(payload)
     )
     this.taskRunCancelCleanup = this.rpc.onMainEvent(
       'capabilities.taskRuns.cancelRequested',
@@ -189,7 +175,7 @@ export class ExtensionHostSdkBridge {
   }
 
   async dispose(): Promise<void> {
-    this.mainEventCleanup()
+    this.hookNotifyCleanup()
     this.taskRunCancelCleanup()
     this.webviewOpenedCleanup()
     this.webviewMessageCleanup()
@@ -202,12 +188,11 @@ export class ExtensionHostSdkBridge {
     this.commands.releaseAll()
     this.webviews.releaseAll()
     this.webviewSessions.releaseAll()
+    this.hooks.releaseAll()
     this.pendingMainRequests.clear()
     this.abortAllTaskRuns()
     this.taskRunAbortControllers.clear()
     this.scopedApis.clear()
-    this.hostEventSubscriptions.clear()
-    this.extensionEventListeners.clear()
     resetExtensionSdkBridge()
   }
 
@@ -230,6 +215,9 @@ export class ExtensionHostSdkBridge {
     )
     this.rpc.handle('contributions.commands.execute', (params, context) =>
       this.commands.execute(params, context.signal)
+    )
+    this.rpc.handle('contributions.hooks.invoke', (params, context) =>
+      this.hooks.invoke(params, context.signal)
     )
     this.registerScraperRpcHandlers()
   }
@@ -271,8 +259,7 @@ export class ExtensionHostSdkBridge {
     this.commands.releaseRuntime(runtimeHandle)
     this.webviews.releaseRuntime(runtimeHandle)
     this.webviewSessions.releaseRuntime(runtimeHandle)
-    await this.disposeHostEventSubscriptionsForRuntime(runtimeHandle)
-    this.disposeExtensionEventListenersForRuntime(runtimeHandle)
+    this.hooks.releaseRuntime(runtimeHandle)
     this.abortTaskRunsForRuntime(runtimeHandle)
     this.scopedApis.delete(runtimeHandle)
     this.pendingMainRequests.delete(runtimeHandle)
@@ -306,6 +293,7 @@ export class ExtensionHostSdkBridge {
           themes: createThemeRegistrar(this.bridge, subscriptions, scope),
           webviews: createWebviewRegistrar(this.bridge, subscriptions, scope)
         },
+        hooks: createHooksRegistrar(this.bridge, subscriptions, scope),
         asAbsolutePath: (relativePath: string) =>
           this.bridge.asAbsolutePath(options.extension.extensionPath, relativePath)
       },
@@ -358,6 +346,8 @@ export class ExtensionHostSdkBridge {
       registerTheme: (scope, theme) => this.registerTheme(scope, theme),
       registerWebviewPage: (scope, page) => this.registerWebviewPage(scope, page),
       registerWebviewDialog: (scope, dialog) => this.registerWebviewDialog(scope, dialog),
+      registerHook: (scope, pointId, handler, options) =>
+        this.hooks.register(scope, pointId, handler, options),
       asAbsolutePath: (extensionPath, relativePath) =>
         resolveInsideExtension(extensionPath, relativePath)
     }
@@ -367,11 +357,6 @@ export class ExtensionHostSdkBridge {
     return {
       requireCurrentScope: () => this.requireCurrentScope(),
       requestMain: (scope, method, params) => this.requestMain(scope, method, params),
-      subscribeHostEvent: (scope, topic, listener, once) =>
-        this.subscribeHostEvent(scope, topic, listener, once),
-      subscribeExtensionEvent: (scope, topic, listener) =>
-        this.subscribeExtensionEvent(scope, topic, listener),
-      emitExtensionEvent: (scope, topic, payload) => this.emitExtensionEvent(scope, topic, payload),
       registerTaskRunAbortController: (scope, runId, controller) =>
         this.registerTaskRunAbortController(scope, runId, controller),
       createWebviewSession: (scope, webviewId) =>
@@ -462,215 +447,6 @@ export class ExtensionHostSdkBridge {
     dialog: WebviewDialogContribution
   ): WebviewDialogRegistration {
     return this.webviews.registerDialog(scope, dialog)
-  }
-
-  private async subscribeHostEvent<K extends HostEventTopic>(
-    scope: ActiveExtensionScope,
-    topic: K,
-    listener: HostEventListener<K>,
-    once: boolean
-  ): Promise<Disposable> {
-    const subscriptionId = randomUUID()
-
-    this.hostEventSubscriptions.set(subscriptionId, {
-      scope,
-      topic,
-      once,
-      listener: listener as HostEventListener<HostEventTopic>
-    })
-
-    try {
-      await this.rpc.requestMain(
-        'capabilities.events.subscribeHost',
-        {
-          runtimeHandle: scope.runtimeHandle,
-          subscriptionId,
-          topic
-        },
-        this.getRequestOptions(scope)
-      )
-    } catch (error) {
-      this.hostEventSubscriptions.delete(subscriptionId)
-      throw error
-    }
-
-    const disposable = createDisposable(async () => {
-      await this.disposeHostEventSubscription(subscriptionId, true)
-    })
-    this.registry.getByRuntimeHandle(scope.runtimeHandle)?.subscriptions.add(disposable)
-    return disposable
-  }
-
-  private async disposeHostEventSubscription(
-    subscriptionId: string,
-    notifyMain: boolean
-  ): Promise<void> {
-    const record = this.hostEventSubscriptions.get(subscriptionId)
-    if (!record) {
-      return
-    }
-
-    this.hostEventSubscriptions.delete(subscriptionId)
-
-    if (!notifyMain) {
-      return
-    }
-
-    await this.rpc.requestMain(
-      'capabilities.events.unsubscribeHost',
-      {
-        runtimeHandle: record.scope.runtimeHandle,
-        subscriptionId,
-        topic: record.topic
-      },
-      { timeoutMs: EXTENSION_CLEANUP_TIMEOUT_MS }
-    )
-  }
-
-  private async disposeHostEventSubscriptionsForRuntime(
-    runtimeHandle: ExtensionRuntimeHandle
-  ): Promise<void> {
-    const subscriptionIds = [...this.hostEventSubscriptions]
-      .filter(([, record]) => record.scope.runtimeHandle === runtimeHandle)
-      .map(([subscriptionId]) => subscriptionId)
-
-    await Promise.all(
-      subscriptionIds.map((subscriptionId) =>
-        this.disposeHostEventSubscription(subscriptionId, true).catch((error) => {
-          console.warn(
-            `[ExtensionHost] Failed to dispose host event subscription "${subscriptionId}" during runtime cleanup:`,
-            error
-          )
-        })
-      )
-    )
-  }
-
-  private async handleHostEventNotification(payload: unknown): Promise<void> {
-    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-      return
-    }
-
-    const notification = payload as {
-      subscriptionId?: string
-      topic?: HostEventTopic
-      payload?: unknown
-    }
-    if (typeof notification.subscriptionId !== 'string') {
-      return
-    }
-
-    const record = this.hostEventSubscriptions.get(notification.subscriptionId)
-    if (!record) {
-      return
-    }
-
-    try {
-      await this.runInExtensionContext(record.scope, () =>
-        Promise.resolve(record.listener(notification.payload as never))
-      )
-    } catch (error) {
-      console.warn(
-        `[ExtensionHost][${record.scope.extensionId}] Host event listener "${record.topic}" failed:`,
-        error
-      )
-    } finally {
-      if (record.once) {
-        await this.disposeHostEventSubscription(notification.subscriptionId, true).catch(
-          (error) => {
-            console.warn(
-              `[ExtensionHost][${record.scope.extensionId}] Failed to dispose host event subscription "${record.topic}":`,
-              error
-            )
-          }
-        )
-      }
-    }
-  }
-
-  private async subscribeExtensionEvent<TPayload extends ExtensionEventPayload>(
-    scope: ActiveExtensionScope,
-    topic: ExtensionEventTopic,
-    listener: ExtensionEventListener<TPayload>
-  ): Promise<Disposable> {
-    if (!isExtensionEventTopic(topic)) {
-      throw new Error(`Invalid extension event topic "${topic}"`)
-    }
-
-    const subscriptionId = randomUUID()
-    let listeners = this.extensionEventListeners.get(topic)
-    if (!listeners) {
-      listeners = new Map()
-      this.extensionEventListeners.set(topic, listeners)
-    }
-
-    listeners.set(subscriptionId, {
-      scope,
-      listener: listener as ExtensionEventListener<ExtensionEventPayload>
-    })
-
-    const disposable = createDisposable(() => {
-      const scopedListeners = this.extensionEventListeners.get(topic)
-      scopedListeners?.delete(subscriptionId)
-      if (scopedListeners && scopedListeners.size === 0) {
-        this.extensionEventListeners.delete(topic)
-      }
-    })
-    this.registry.getByRuntimeHandle(scope.runtimeHandle)?.subscriptions.add(disposable)
-    return disposable
-  }
-
-  private disposeExtensionEventListenersForRuntime(runtimeHandle: ExtensionRuntimeHandle): void {
-    for (const [topic, listeners] of [...this.extensionEventListeners]) {
-      for (const [subscriptionId, record] of [...listeners]) {
-        if (record.scope.runtimeHandle === runtimeHandle) {
-          listeners.delete(subscriptionId)
-        }
-      }
-
-      if (listeners.size === 0) {
-        this.extensionEventListeners.delete(topic)
-      }
-    }
-  }
-
-  private async emitExtensionEvent<TPayload extends ExtensionEventPayload>(
-    scope: ActiveExtensionScope,
-    topic: ExtensionEventTopic,
-    payload: TPayload
-  ): Promise<void> {
-    if (!isExtensionEventTopic(topic)) {
-      throw new Error(`Invalid extension event topic "${topic}"`)
-    }
-
-    const expectedPrefix = `ext.${scope.extensionId}.`
-    if (!topic.startsWith(expectedPrefix)) {
-      throw new Error(
-        `Extension "${scope.extensionId}" can only emit namespaced topics under "${expectedPrefix}".`
-      )
-    }
-
-    // Extension events are dispatched in-process to other extensions sharing
-    // this host, so they never cross the RPC channel; normalizing here is the
-    // isolation boundary that keeps payloads JSON and copies them per emit.
-    const normalizedPayload = toJsonObject(payload, 'extension event payload')
-    const listeners = this.extensionEventListeners.get(topic)
-    if (!listeners || listeners.size === 0) {
-      return
-    }
-
-    for (const record of listeners.values()) {
-      try {
-        await this.runInExtensionContext(record.scope, () =>
-          Promise.resolve(record.listener(normalizedPayload))
-        )
-      } catch (error) {
-        console.warn(
-          `[ExtensionHost][${record.scope.extensionId}] Extension event listener "${topic}" failed:`,
-          error
-        )
-      }
-    }
   }
 
   private registerTaskRunAbortController(

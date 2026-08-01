@@ -9,9 +9,9 @@ import { eq } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { useEvent } from '@renderer/composables'
 import { usePreferencesStore } from '@renderer/stores'
 import { collections } from '@shared/db'
+import { useDbChanges } from '@renderer/composables'
 
 export const collectionsListData = defineRouteData(async () => {
   const { showNsfw } = storeToRefs(usePreferencesStore())
@@ -27,13 +27,7 @@ export function useCollectionsList() {
   const { showNsfw } = storeToRefs(usePreferencesStore())
   watch(showNsfw, () => void refetch())
 
-  useEvent('db.inserted', ({ table }) => {
-    if (table === 'collections') refetch()
-  })
-  useEvent('db.updated', ({ table }) => {
-    if (table === 'collections') refetch()
-  })
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (table === 'collections') refetch()
   })
 

@@ -6,7 +6,6 @@ import { mkdir, rm } from 'node:fs/promises'
 import { createLogger } from '@main/log'
 import type { ExtensionRuntimeMetadata } from '@kisaki3/extension-api'
 import type { ExtensionRegistryPackageIcon } from '@kisaki3/extension-registry'
-import type { EventService } from '@main/services/event'
 import type {
   ExtensionInstalledPackageInfo,
   ExtensionInstalledRuntimeInfo,
@@ -35,6 +34,7 @@ import {
   resolveInsideRoot
 } from '../shared/path-confinement'
 import { createExtensionRuntimeMetadata, type ExtensionInstalledEntry } from '../types'
+import { createExtensionInstallationsHooks } from './hooks'
 import { ExtensionInstallationStore } from './store'
 import { ExtensionInstallationView } from './view'
 import { getBootstrapArgs } from '@main/bootstrap/args'
@@ -51,7 +51,6 @@ export interface ExtensionInstallationManagerOptions {
   developmentWatcher: ExtensionDevelopmentWatcher
   packageCommitter: ExtensionPackageCommitter
   iconManager: ExtensionIconManager
-  event: EventService
   runMutatingOperation<T>(operation: () => Promise<T>): Promise<T>
   onInstallationsChanged?: () => void
   onContributionSnapshotChanged?: () => void
@@ -60,6 +59,7 @@ export interface ExtensionInstallationManagerOptions {
 
 export class ExtensionInstallationManager {
   readonly store: ExtensionInstallationStore
+  readonly hooks = createExtensionInstallationsHooks()
 
   private readonly layout: ExtensionPackageLayout
   private readonly view: ExtensionInstallationView
@@ -68,7 +68,6 @@ export class ExtensionInstallationManager {
   private readonly developmentWatcher: ExtensionDevelopmentWatcher
   private readonly packageCommitter: ExtensionPackageCommitter
   private readonly iconManager: ExtensionIconManager
-  private readonly event: EventService
   private installedEntries: readonly ExtensionInstalledEntry[] = []
   private installedById = new Map<string, ExtensionInstalledEntry>()
   private devExtensionEntries = new Map<string, ExtensionInstalledEntry>()
@@ -84,7 +83,6 @@ export class ExtensionInstallationManager {
     this.developmentWatcher = options.developmentWatcher
     this.packageCommitter = options.packageCommitter
     this.iconManager = options.iconManager
-    this.event = options.event
   }
 
   async init(): Promise<void> {
@@ -225,7 +223,7 @@ export class ExtensionInstallationManager {
         throw error
       }
       this.emitInstallationsChanged()
-      this.event.bus.emit('extension.enabled', { extensionId: safeExtensionId })
+      this.hooks.enabled.dispatch({ extensionId: safeExtensionId })
       return this.require(safeExtensionId)
     })
   }
@@ -238,7 +236,7 @@ export class ExtensionInstallationManager {
       await this.refresh()
       await this.applyRuntimeState({ cause: 'disable' })
       this.emitInstallationsChanged()
-      this.event.bus.emit('extension.disabled', { extensionId: safeExtensionId })
+      this.hooks.disabled.dispatch({ extensionId: safeExtensionId })
       return this.require(safeExtensionId)
     })
   }

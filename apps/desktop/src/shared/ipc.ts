@@ -93,7 +93,7 @@ import type {
 } from './extension'
 import type { NotifyOptions } from './notify'
 import type { UiLocale, UiLocaleState } from './i18n'
-import type { AppEvents } from './events'
+import type { AppTheme } from './common'
 import type { AppUpdaterChangelogBundle, AppUpdaterState } from './updater'
 import type {
   TaskRun,
@@ -111,8 +111,11 @@ import type {
   Automation,
   AutomationCreateInput,
   AutomationRunHistoryRecord,
+  AutomationRunStartedEvent,
   AutomationUpdateInput
 } from './automation'
+import type { DbChangeSummary } from './db/changes'
+import type { LibraryEntityMergedEvent } from './library'
 import type { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 import type {
   DeeplinkResult,
@@ -180,7 +183,7 @@ export type ExtractIpcData<T> = T extends IpcSuccess<infer D> ? D : never
  */
 export interface IpcMainListeners {
   ping: [string]
-  'event:forward': [event: keyof AppEvents, args: unknown[]]
+  'app:theme-changed': [theme: AppTheme]
   'notify:native': [NotifyOptions]
   'notify:auto': [NotifyOptions]
   'notify:action': [event: { toastId: string; actionId: string }]
@@ -539,7 +542,6 @@ export interface IpcMainHandlers {
  */
 export interface IpcRendererEvents {
   ready: [boolean]
-  'event:forward': [event: keyof AppEvents, args: unknown[]]
   'native:main-window-maximized': []
   'native:main-window-unmaximized': []
   'monitor:game-started': [string]
@@ -547,6 +549,20 @@ export interface IpcRendererEvents {
   'monitor:game-foreground': [string]
   'monitor:game-background': [string]
   'scanner:run-state-changed': [state: ScannerRunState]
+
+  // Db change feed (main -> renderer, batched)
+  'db:changed': [changes: DbChangeSummary[]]
+  'library:entity-merged': [event: LibraryEntityMergedEvent]
+
+  // I18n state push
+  'i18n:state-changed': [state: UiLocaleState]
+
+  // Automation state pushes
+  'automation:changed': [payload: { automationId: string }]
+  'automation:deleted': [payload: { automationId: string }]
+  'automation:run-started': [event: AutomationRunStartedEvent]
+  'automation:run-finished': [record: AutomationRunHistoryRecord]
+
   'updater:state-changed': [state: AppUpdaterState]
   'task-run:changed': [run: TaskRun]
   'task-run:deleted': [payload: { runId: string }]

@@ -1,0 +1,1 @@
+export { HostHooksContributionPoint } from './point'

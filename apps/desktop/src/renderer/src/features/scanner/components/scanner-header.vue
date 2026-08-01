@@ -12,7 +12,7 @@ import { Icon } from '@renderer/components/ui/icon'
 import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { scanners } from '@shared/db'
 import { useAsyncData } from '@renderer/composables/use-async-data'
-import { useEvent } from '@renderer/composables/use-event'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
 import { useScannerStore } from '@renderer/stores'
 import { Button } from '@renderer/components/ui/button'
 import { ScannerItemFormDialog } from './scanner-item-form-dialog'
@@ -43,15 +43,7 @@ async function fetchScannerCount(): Promise<number> {
 const { data: totalScanners, refetch } = useAsyncData(fetchScannerCount)
 
 // Listen for scanner changes
-useEvent('db.inserted', (payload) => {
-  if (payload.table === 'scanners') refetch()
-})
-
-useEvent('db.updated', (payload) => {
-  if (payload.table === 'scanners') refetch()
-})
-
-useEvent('db.deleted', (payload) => {
+useDbChanges((payload) => {
   if (payload.table === 'scanners') refetch()
 })
 

@@ -27,7 +27,6 @@ import { eq, asc, desc, and } from 'drizzle-orm'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
-import { useEvent } from './use-event'
 import { usePreferencesStore } from '@renderer/stores'
 import type {
   Game,
@@ -43,6 +42,7 @@ import type {
   Tag
 } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import { useDbChanges } from './use-db-changes'
 
 // =============================================================================
 // Types
@@ -245,41 +245,41 @@ function provideGameContext(source: GameDataSource): GameContext {
 }
 
 function useGameDbSync(gameId: MaybeRefOrGetter<string>, refetch: () => Promise<void>): void {
-  useEvent('db.updated', ({ table, id: entityId }) => {
-    if (table === 'games' && entityId === toValue(gameId)) {
-      refetch()
+  useDbChanges(({ operation, table, id: entityId }) => {
+    if (operation === 'updated') {
+      if (table === 'games' && entityId === toValue(gameId)) {
+        refetch()
+      }
+      if (
+        table === 'game_notes' ||
+        table === 'game_tag_links' ||
+        table === 'game_character_links' ||
+        table === 'game_person_links' ||
+        table === 'game_company_links' ||
+        table === 'game_sessions'
+      ) {
+        refetch()
+      }
     }
-    if (
-      table === 'game_notes' ||
-      table === 'game_tag_links' ||
-      table === 'game_character_links' ||
-      table === 'game_person_links' ||
-      table === 'game_company_links' ||
-      table === 'game_sessions'
-    ) {
-      refetch()
+    if (operation === 'inserted') {
+      if (
+        table === 'game_notes' ||
+        table === 'game_tag_links' ||
+        table === 'game_character_links' ||
+        table === 'game_person_links' ||
+        table === 'game_company_links' ||
+        table === 'game_sessions'
+      ) {
+        refetch()
+      }
     }
-  })
-
-  useEvent('db.inserted', ({ table }) => {
-    if (
-      table === 'game_notes' ||
-      table === 'game_tag_links' ||
-      table === 'game_character_links' ||
-      table === 'game_person_links' ||
-      table === 'game_company_links' ||
-      table === 'game_sessions'
-    ) {
-      refetch()
-    }
-  })
-
-  useEvent('db.deleted', ({ table, id: entityId }) => {
-    if (table === 'games' && entityId === toValue(gameId)) {
-      refetch()
-    }
-    if (table === 'game_notes' || table === 'game_sessions') {
-      refetch()
+    if (operation === 'deleted') {
+      if (table === 'games' && entityId === toValue(gameId)) {
+        refetch()
+      }
+      if (table === 'game_notes' || table === 'game_sessions') {
+        refetch()
+      }
     }
   })
 }

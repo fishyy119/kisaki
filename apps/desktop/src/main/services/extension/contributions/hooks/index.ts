@@ -1,0 +1,8 @@
+export { ExtensionHookContributionPoint, type ExtensionHookContributionPointOptions } from './point'
+export { bindScraperHookPoints } from './bindings/scraper'
+export { bindIngestHookPoints } from './bindings/ingest'
+export { bindScannerHookPoints } from './bindings/scanner'
+export { bindPlayHookPoints } from './bindings/play'
+export { bindLibraryHookPoints } from './bindings/library'
+export { bindAppHookPoints } from './bindings/app'
+export { bindExtensionLifecycleHookPoints } from './bindings/extension'

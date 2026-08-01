@@ -65,6 +65,9 @@ export interface ScannerRunExisting {
 export type ScannerRunStatus =
   'queued' | 'running' | 'pausing' | 'paused' | 'cancelling' | 'completed' | 'failed' | 'cancelled'
 
+/** Terminal status of a finished scanner run. */
+export type ScannerRunFinishedStatus = 'completed' | 'failed' | 'cancelled'
+
 export const ACTIVE_SCANNER_RUN_STATUSES = [
   'queued',
   'running',

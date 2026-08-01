@@ -11,7 +11,7 @@ import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { characters } from '@shared/db'
 import { useCharacterDialogProvider } from '@renderer/composables/use-character'
-import { useEvent, useRenderState } from '@renderer/composables'
+import { useDbChanges, useRenderState } from '@renderer/composables'
 import {
   Dialog,
   DialogContent,
@@ -55,7 +55,8 @@ const state = useRenderState(isLoading, error, character)
 
 const spoilerConfirmOpen = ref(false)
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'characters' && id === props.characterId) {
     open.value = false
   }

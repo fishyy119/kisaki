@@ -11,7 +11,7 @@ import { usePreferencesStore } from '@renderer/stores'
 import { VirtualizedCombobox } from '@renderer/components/ui/virtualized-combobox'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 
 interface Props {
   /** Multiple selection mode */
@@ -66,13 +66,7 @@ const { data: allCharacters, refetch } = useAsyncData(
   { watch: [showNsfw] }
 )
 
-useEvent('db.inserted', ({ table }) => {
-  if (table === 'characters') refetch()
-})
-useEvent('db.updated', ({ table }) => {
-  if (table === 'characters') refetch()
-})
-useEvent('db.deleted', ({ table }) => {
+useDbChanges(({ table }) => {
   if (table === 'characters') refetch()
 })
 

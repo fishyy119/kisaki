@@ -9,11 +9,11 @@ import { eq, and } from 'drizzle-orm'
 import { storeToRefs } from 'pinia'
 import { db } from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
-import { useEvent } from '@renderer/composables'
 import { usePreferencesStore } from '@renderer/stores'
 import { games, characters, persons, companies } from '@shared/db'
 import type { Game, Character, Person, Company } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
+import { useDbChanges } from '@renderer/composables'
 
 type EntityData = Game | Character | Person | Company
 
@@ -89,13 +89,7 @@ export function useFavorites() {
   })
 
   const contentTables = ['games', 'characters', 'persons', 'companies']
-  useEvent('db.inserted', ({ table }) => {
-    if (contentTables.includes(table)) refetch()
-  })
-  useEvent('db.updated', ({ table }) => {
-    if (contentTables.includes(table)) refetch()
-  })
-  useEvent('db.deleted', ({ table }) => {
+  useDbChanges(({ table }) => {
     if (contentTables.includes(table)) refetch()
   })
 

@@ -9,7 +9,7 @@ import { computed, ref, watch } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { db } from '@renderer/core/db'
-import { useAsyncData, useEvent, useI18n, useRenderState } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n, useRenderState } from '@renderer/composables'
 import { scraperProfiles, type ScraperProfile } from '@shared/db'
 import type { ContentEntityType } from '@shared/common'
 import {
@@ -75,13 +75,7 @@ const {
 const state = useRenderState(isLoading, error, profiles)
 
 // Listen for profile changes
-useEvent('db.inserted', (payload) => {
-  if (payload.table === 'scraper_profiles') refetch()
-})
-useEvent('db.updated', (payload) => {
-  if (payload.table === 'scraper_profiles') refetch()
-})
-useEvent('db.deleted', (payload) => {
+useDbChanges((payload) => {
   if (payload.table === 'scraper_profiles') refetch()
 })
 

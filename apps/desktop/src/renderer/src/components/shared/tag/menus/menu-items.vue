@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
-import { useAsyncData, useEvent, useI18n } from '@renderer/composables'
+import { useAsyncData, useDbChanges, useI18n } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
 import { ExtensionEntityMenuItems } from '@renderer/components/extension/entity-menus'
@@ -45,7 +45,8 @@ const { data: tag, refetch } = useAsyncData(fetchTag, {
   enabled: () => props.enabled
 })
 
-useEvent('db.updated', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'updated') return
   if (table === 'tags' && id === props.tagId) refetch()
 })
 

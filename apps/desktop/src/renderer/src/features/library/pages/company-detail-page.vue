@@ -19,7 +19,12 @@ import {
   CompanyDropdownMenu,
   CompanyDetailContent
 } from '@renderer/components/shared/company'
-import { useAmbientLight, useCompanyRouteProvider, useEvent } from '@renderer/composables'
+import {
+  useAmbientLight,
+  useCompanyRouteProvider,
+  useDbChanges,
+  useIpc
+} from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { notify } from '@renderer/core/notify'
@@ -56,13 +61,13 @@ useAmbientLight(() =>
     : null
 )
 
-useEvent('db.deleted', ({ table, id }) => {
-  if (table === 'companies' && id === companyId.value) {
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'deleted' && table === 'companies' && id === companyId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('entity.merged', (event) => {
+useIpc('library:entity-merged', (_e, event) => {
   if (event.entityType === 'company' && event.sourceId === companyId.value) {
     router.replace({ path: `/library/company/${event.targetId}`, query: route.query })
   }

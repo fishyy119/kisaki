@@ -61,15 +61,16 @@ const baseColumns = {
 }
 ```
 
-## Triggers & Events
+## Triggers & Change Feed
 
-`TriggerStore` automatically creates SQLite triggers for all schema tables:
+`TriggerStore` automatically creates SQLite triggers for all schema tables. Each `INSERT` /
+`UPDATE` / `DELETE` produces a `RawDbChange` (`shared/db/changes.ts`) that is handed to the
+`DbChangeFeed` (`services/db/feed/`). The feed debounces and groups changes, then fans out to the
+batched `db:changed` IPC push, the `library.changed` module hook, and the settings projection; see
+[ipc-events.md](ipc-events.md).
 
-- `INSERT` → emits `db.inserted`
-- `UPDATE` → emits `db.updated`
-- `DELETE` → emits `db.deleted`
-
-Events are delayed via `queueMicrotask()` to avoid SQLite busy errors.
+Change delivery is deferred via `queueMicrotask()` to avoid SQLite busy errors. Row snapshots in
+`RawDbChange` never leave the main process.
 
 **Assumption**: All tracked tables have an `id` column (default primary key).
 

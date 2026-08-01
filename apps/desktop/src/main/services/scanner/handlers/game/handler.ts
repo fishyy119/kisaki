@@ -14,7 +14,6 @@ import { createLogger } from '@main/log'
 import { promises as fs } from 'node:fs'
 import { eq } from 'drizzle-orm'
 import type { DbService } from '@main/services/db'
-import type { EventService } from '@main/services/event'
 import type { I18nService } from '@main/services/i18n'
 import type { IngestService } from '@main/services/ingest'
 import type { IpcService } from '@main/services/ipc'
@@ -33,6 +32,7 @@ import type { IngestAddGameResult } from '@shared/ingest/add'
 import type { IngestWarning } from '@shared/ingest/common'
 import type { ScannerPhash } from '../../phash'
 import type { ScannerDiscovery } from '../../discovery'
+import type { ScannerHooks } from '../../hooks'
 import {
   ScannerRunCoordinator,
   type ScannedEntity,
@@ -153,7 +153,7 @@ export class GameScannerHandler {
     private readonly phash: ScannerPhash,
     private readonly dbService: DbService,
     ipcService: IpcService,
-    eventService: EventService,
+    private readonly hooks: ScannerHooks,
     private readonly ingestService: IngestService,
     taskRunService: TaskRunService,
     private readonly i18nService: I18nService
@@ -161,7 +161,7 @@ export class GameScannerHandler {
     this.runs = new ScannerRunCoordinator<Scanner>({
       ipc: ipcService,
       taskRun: taskRunService,
-      eventService,
+      hooks,
       i18n: i18nService,
       loadScanner: async (scannerId) => this.loadGameScanner(scannerId),
       runScan: async (scanner, session) => this.runScannerScan(scanner, session)
@@ -356,11 +356,18 @@ export class GameScannerHandler {
     session.reportPhase('discovering', this.i18nService.messages.scanner.run.discovering, true)
     await session.checkpoint()
 
-    const entities = await this.discovery.scanForEntities(scanner.path, {
+    const discoveredEntries = await this.discovery.scanForEntities(scanner.path, {
       entityDepth: scanner.entityDepth,
       ignoredNames,
       nameExtractionRules: scanner.nameExtractionRules
     })
+    const entities: EntityEntry[] = []
+    for (const entry of discoveredEntries) {
+      const discovered = await this.hooks.entryDiscovered.transform({ entry, skip: false })
+      if (!discovered.skip) {
+        entities.push(discovered.entry)
+      }
+    }
     await session.checkpoint()
 
     log.info('Found entities at depth.', {
@@ -575,10 +582,23 @@ export class GameScannerHandler {
         }
       }
 
-      const matchedGame = await matchGameEntity(entity, this.phash, {
+      const rawMatch = await matchGameEntity(entity, this.phash, {
         enablePhash: options.scannerUsePhash
       })
-      const matchedEntity: GameEntity = { ...entity, matchedGame }
+      const match = await this.hooks.entryMatched.transform({
+        entry: entity,
+        name: rawMatch.gameName,
+        externalIds: rawMatch.externalIds,
+        matchSource: rawMatch.matchSource
+      })
+      const matchedEntity: GameEntity = {
+        ...entity,
+        matchedGame: {
+          gameName: match.name,
+          externalIds: match.externalIds,
+          matchSource: rawMatch.matchSource
+        }
+      }
       const outcome = await this.processGameEntity(
         matchedEntity,
         options.profile,

@@ -13,16 +13,15 @@ import type {
   EntityMenuInputFor,
   EntityMenuRegistration,
   EntityMenuScope,
-  ExtensionEventListener,
-  ExtensionEventPayload,
+  ExtensionHookHandler,
+  ExtensionHookPointId,
   ExtensionLogger,
   ExtensionSecrets,
   ExtensionRuntimeHandle,
   ExtensionRuntimeMetadata,
   ExtensionStorage,
   GameScraperProvider,
-  HostEventListener,
-  HostEventTopic,
+  HookTapOptions,
   JsonValue,
   KisakiApi,
   PersonScraperProvider,
@@ -51,24 +50,6 @@ export interface ActiveExtensionScope {
   extensionId: string
   runtimeHandle: ExtensionRuntimeHandle
   signal?: AbortSignal
-}
-
-/**
- * Tracks host event callbacks registered through the extension SDK.
- */
-export interface HostEventSubscriptionRecord {
-  scope: ActiveExtensionScope
-  once: boolean
-  topic: HostEventTopic
-  listener: HostEventListener<HostEventTopic>
-}
-
-/**
- * Tracks extension-to-extension event callbacks registered in the host.
- */
-export interface ExtensionEventListenerRecord {
-  scope: ActiveExtensionScope
-  listener: ExtensionEventListener<ExtensionEventPayload>
 }
 
 /**
@@ -118,6 +99,12 @@ export interface ExtensionSdkBridge {
     scope: ActiveExtensionScope,
     dialog: WebviewDialogContribution
   ): WebviewDialogRegistration
+  registerHook<TPoint extends ExtensionHookPointId>(
+    scope: ActiveExtensionScope,
+    pointId: TPoint,
+    handler: ExtensionHookHandler<TPoint>,
+    options?: HookTapOptions
+  ): Disposable
   asAbsolutePath(extensionPath: string, relativePath: string): string
 }
 

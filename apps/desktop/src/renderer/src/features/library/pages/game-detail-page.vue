@@ -29,7 +29,7 @@ import {
   GameScoreFormDialog,
   GameDetailContent
 } from '@renderer/components/shared/game'
-import { useAmbientLight, useEvent, useGameRouteProvider } from '@renderer/composables'
+import { useAmbientLight, useDbChanges, useGameRouteProvider, useIpc } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { db } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
@@ -77,13 +77,13 @@ useAmbientLight(() =>
     : null
 )
 
-useEvent('db.deleted', ({ table, id }) => {
-  if (table === 'games' && id === gameId.value) {
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'deleted' && table === 'games' && id === gameId.value) {
     router.push(backTo.value)
   }
 })
 
-useEvent('entity.merged', (event) => {
+useIpc('library:entity-merged', (_e, event) => {
   if (event.entityType === 'game' && event.sourceId === gameId.value) {
     router.replace({ path: `/library/game/${event.targetId}`, query: route.query })
   }

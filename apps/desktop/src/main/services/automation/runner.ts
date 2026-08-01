@@ -4,6 +4,7 @@ import type {
   Automation,
   AutomationFailurePolicy,
   AutomationRunHistoryRecord,
+  AutomationRunStartedEvent,
   AutomationTrigger
 } from '@shared/automation'
 import type { AutomationStore } from './store'
@@ -15,12 +16,7 @@ export interface AutomationRunnerOptions {
   store: AutomationStore
   clearAutomationTimer(automationId: string): void
   refreshAutomationTimer(automationId: string): void
-  onRunStarted(event: {
-    automationId: string
-    commandId: string
-    trigger: AutomationTrigger
-    startedAt: number
-  }): void
+  onRunStarted(event: AutomationRunStartedEvent): void
   onRunFinished(record: AutomationRunHistoryRecord): void
 }
 

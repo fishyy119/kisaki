@@ -27,9 +27,6 @@ export const kisaki: KisakiApi = {
   get notify() {
     return getExtensionSdkBridge().api.notify
   },
-  get events() {
-    return getExtensionSdkBridge().api.events
-  },
   get runtime() {
     return getExtensionSdkBridge().api.runtime
   },

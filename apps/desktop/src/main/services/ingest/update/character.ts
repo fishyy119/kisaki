@@ -5,6 +5,7 @@ import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
 import type { IngestPersistHandlers } from '../persist'
+import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { flushPendingAssets } from '../assets'
 import { buildCharacterGraph } from '../graph'
 import {
@@ -39,7 +40,8 @@ export class CharacterUpdateHandler {
     private readonly scraperService: ScraperService,
     private readonly persistHandlers: IngestPersistHandlers,
     private readonly taskRunService: TaskRunService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly hooks: IngestEntityHooks
   ) {}
 
   startUpdateFromScraper(
@@ -124,6 +126,12 @@ export class CharacterUpdateHandler {
     })
 
     throwIfIngestAborted(options?.signal)
+    await requireIngestAllowed(this.hooks.updating, {
+      entityId: request.rootId,
+      name: lookup.name,
+      surfaces,
+      externalIds: lookup.knownIds ?? []
+    })
     reportIngestProgress(options, {
       phase: 'writing',
       label: this.i18nService.messages.ingest.update.writing({ entity: 'character' })
@@ -147,6 +155,7 @@ export class CharacterUpdateHandler {
       })
     }
 
+    this.hooks.updated.dispatch({ entityId: request.rootId, surfaces, warnings })
     return warnings.length > 0 ? { warnings } : {}
   }
 

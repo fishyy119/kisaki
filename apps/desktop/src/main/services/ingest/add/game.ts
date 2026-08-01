@@ -13,6 +13,7 @@ import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
 import type { TaskRunStartResult } from '@shared/task-run'
 import type { GameIngestPersistHandler } from '../persist'
+import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { buildDirectGameGraph, buildGameGraph } from '../graph'
 import {
   addGameToCollection,
@@ -39,7 +40,8 @@ export class GameAddHandler {
     private readonly scraperService: ScraperService,
     private readonly persistHandler: GameIngestPersistHandler,
     private readonly taskRunService: TaskRunService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly hooks: IngestEntityHooks
   ) {}
 
   startAddFromScraper(
@@ -145,11 +147,21 @@ export class GameAddHandler {
       label: this.i18nService.messages.ingest.add.buildingMetadata({ entity: 'game' })
     })
     const graph = buildGameGraph(bundle, normalized.lookup)
+    await requireIngestAllowed(this.hooks.committing, {
+      name: normalized.lookup.name,
+      externalIds: bundle.identity.externalIds
+    })
     reportIngestProgress(options, {
       phase: 'writing',
       label: this.i18nService.messages.ingest.add.writing({ entity: 'game' })
     })
-    return this.persistHandler.persistGameGraph(graph, options)
+    const result = await this.persistHandler.persistGameGraph(graph, options)
+    this.hooks.committed.dispatch({
+      entityId: result.gameId,
+      isNew: result.isNew,
+      warnings: result.warnings ?? []
+    })
+    return result
   }
 
   async addDirectWithTaskRun(
@@ -182,6 +194,10 @@ export class GameAddHandler {
     }
 
     throwIfIngestAborted(options?.signal)
+    await requireIngestAllowed(this.hooks.committing, {
+      name: normalizedLookup.name,
+      externalIds: normalizedLookup.knownIds ?? []
+    })
     reportIngestProgress(options, {
       phase: 'writing',
       label: this.i18nService.messages.ingest.add.writing({ entity: 'game' }),
@@ -189,7 +205,13 @@ export class GameAddHandler {
       phaseTotal: 2
     })
     const graph = buildDirectGameGraph(normalizedLookup)
-    return this.persistHandler.persistGameGraph(graph, options)
+    const result = await this.persistHandler.persistGameGraph(graph, options)
+    this.hooks.committed.dispatch({
+      entityId: result.gameId,
+      isNew: result.isNew,
+      warnings: result.warnings ?? []
+    })
+    return result
   }
 
   private async handleAddFromScraperWithTaskRun(

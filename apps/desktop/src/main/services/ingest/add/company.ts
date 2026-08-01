@@ -10,6 +10,7 @@ import type { TaskRunHandle, TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
 import type { TaskRunStartResult } from '@shared/task-run'
 import type { CompanyIngestPersistHandler } from '../persist'
+import { requireIngestAllowed, type IngestEntityHooks } from '../hooks'
 import { buildCompanyGraph } from '../graph'
 import { addCompanyToCollection, normalizeIngestLookupInput, requireScrapedBundle } from './common'
 import {
@@ -29,7 +30,8 @@ export class CompanyAddHandler {
     private readonly scraperService: ScraperService,
     private readonly persistHandler: CompanyIngestPersistHandler,
     private readonly taskRunService: TaskRunService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly hooks: IngestEntityHooks
   ) {}
 
   startAddFromScraper(
@@ -116,11 +118,21 @@ export class CompanyAddHandler {
       label: this.i18nService.messages.ingest.add.buildingMetadata({ entity: 'company' })
     })
     const graph = buildCompanyGraph(bundle, normalized.lookup)
+    await requireIngestAllowed(this.hooks.committing, {
+      name: normalized.lookup.name,
+      externalIds: bundle.identity.externalIds
+    })
     reportIngestProgress(options, {
       phase: 'writing',
       label: this.i18nService.messages.ingest.add.writing({ entity: 'company' })
     })
-    return this.persistHandler.persistCompanyGraph(graph, options)
+    const result = await this.persistHandler.persistCompanyGraph(graph, options)
+    this.hooks.committed.dispatch({
+      entityId: result.companyId,
+      isNew: result.isNew,
+      warnings: result.warnings ?? []
+    })
+    return result
   }
 
   private async handleAddFromScraperWithTaskRun(

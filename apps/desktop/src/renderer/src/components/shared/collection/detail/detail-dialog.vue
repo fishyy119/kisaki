@@ -23,7 +23,7 @@ import { StateView } from '@renderer/components/ui/state-view'
 import { Button } from '@renderer/components/ui/button'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useCollectionDialogProvider, useEvent, useRenderState } from '@renderer/composables'
+import { useCollectionDialogProvider, useDbChanges, useRenderState } from '@renderer/composables'
 import { type ContentEntityType, CONTENT_ENTITY_TYPES } from '@shared/common'
 import CollectionDetailContent from './detail-content.vue'
 import { CollectionDropdownMenu } from '../menus'
@@ -44,7 +44,8 @@ const { collection, entityType, entityCounts, setEntityType, isLoading, error } 
   useCollectionDialogProvider(() => props.collectionId)
 const state = useRenderState(isLoading, error, collection)
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'collections' && id === props.collectionId) {
     open.value = false
   }

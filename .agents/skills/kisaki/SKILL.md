@@ -1,6 +1,6 @@
 ---
 name: kisaki
-description: Kisaki project architecture and coding standards guide. Use when developing, refactoring, or debugging within this Electron + Vue 3 + SQLite monorepo. Covers main process services (ServiceContainer/DI), renderer patterns (Vue 3 SFC/composables), IPC/events contracts, data layer (Drizzle/SQLite), extension system and built-in extension development, runtime logging/error boundaries, UI design system (Tailwind semantic tokens), and build/release workflows.
+description: Kisaki project architecture and coding standards guide. Use when developing, refactoring, or debugging within this Electron + Vue 3 + SQLite monorepo. Covers main process services (ServiceContainer/DI), renderer patterns (Vue 3 SFC/composables), IPC contracts and module hooks, data layer (Drizzle/SQLite), extension system and built-in extension development, runtime logging/error boundaries, UI design system (Tailwind semantic tokens), and build/release workflows.
 ---
 
 # Kisaki Project Guide
@@ -47,7 +47,7 @@ Load the relevant reference based on your task:
 | ------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Renderer Patterns         | [renderer.md](references/renderer.md)                 | Vue patterns, composables, dialogs, and renderer naming/organization rules                             |
 | Main Process Architecture | [architecture.md](references/architecture.md)         | Adding services, understanding DI container, bootstrap sequence                                        |
-| IPC & Events              | [ipc-events.md](references/ipc-events.md)             | Adding IPC channels, cross-process events, event contracts                                             |
+| IPC & Hooks               | [ipc-events.md](references/ipc-events.md)             | Adding IPC channels, db change feed, renderer domain pushes, module hook points                        |
 | Data Layer                | [data-layer.md](references/data-layer.md)             | Schema changes, migrations, DB queries, triggers, FTS                                                  |
 | UI Design System          | [ui-system.md](references/ui-system.md)               | Styling, semantic tokens, component recipes, forms                                                     |
 | Extension System          | [extension-system.md](references/extension-system.md) | Extension runtime, service architecture, main/renderer/IPC naming, SDK, packaging, contribution points |
@@ -63,7 +63,7 @@ Search within `references/` for keywords:
 
 - Service patterns: `container.register`, `IService`, `IMediaService`
 - IPC: `IpcMainHandlers`, `IpcResult`, `ipc.handle`
-- Events: `AppEvents`, `useEvent`, `event:forward`
+- Hooks & pushes: `createNotifyHook`, `service.hooks`, `useDbChanges`, `useIpc`, `db:changed`
 - Extension API: `ExtensionContext`, `KisakiApi`, `Contribution`, `Capability`, `RpcMethodDefinition`
 - DB: `sqliteTable`, `drizzle`, `migrate`
 - Vue: `defineProps`, `defineModel`, `useAsyncData`
@@ -72,6 +72,7 @@ Search within `references/` for keywords:
 
 ## Project Preferences
 
+- Every extension API is a capability the application modules natively already have; the extension API is only an intermediary invocation and storage adaptation layer. Module-owned hook systems are the native extensibility primitive: modules dispatch hooks at their own workflow boundaries, the extension system merely taps them as one subscriber, and application modules never depend on the extension mechanism.
 - Do not create local type aliases or barrel-style re-exports that only import a type from its source of truth and immediately export it under another local name. Use sites should import shared contracts directly from the owning module, unless the local type adds real domain semantics or narrows/extends the source type.
 - Avoid repeated path segment names for ordinary TypeScript logic modules. Do not create files like `ipc/ipc.ts`, `repository/repository.ts`, or `store/store.ts`; use responsibility names such as `register.ts`, `manager.ts`, `store.ts`, `validation.ts`, `types.ts`, `controller.ts`, or `mappers.ts`. Repeated names are allowed for component-family root components, such as `dialog/dialog.vue` or `chart/chart.tsx`, when the file is the primary component for that folder. `index.ts` remains an entrypoint-only exception and should contain explicit exports only.
 - Treat folders as either category organization or coupled module split. Category folders group peers and do not need a single entry; MediaService `handlers/` folders are valid category folders. Coupled module folders split one module across files and should have a clear role entry such as `manager.ts`, `coordinator.ts`, `gateway.ts`, `provider.ts`, `point.ts`, `controller.ts`, `registry.ts`, `planner.ts`, or `view.ts`. Standalone cohesive single-file modules stay single-file instead of gaining a folder plus re-export `index.ts`; members of a templated collection (such as mirrored contribution points) keep the uniform folder shape even when currently single-file. See `references/architecture.md` for the full rule.
@@ -87,7 +88,7 @@ Search within `references/` for keywords:
 - Use the project log wrappers (`@main/log` and `@renderer/core/log`) in app runtime code; do not scatter direct `electron-log/*` imports through business modules. `shared/**` stays pure and does not write runtime logs.
 - Main app logs are thin `electron-log` wrappers: add one stable prefix, route to `userData/logs/main.log` or `userData/logs/renderer.log`, and pass through the remaining arguments. Do not add custom JSON formatting, Error serialization, semantic redaction, or log protocols in business code.
 - Extension author logs are a separate extension-scoped capability. `context.logger` writes to `userData/extensions/data/<extensionId>/logs/extension.log`; the host must not inject app prefixes, extension ids, or rewrite extension messages.
-- Logger prefixes are single-level stable domains such as `Extension`, `Db`, `Window`, `Updater`, `Scanner`, `Launcher`, `Library`, `Theme`, `Event`, `Ipc`, or `AsyncData`. Do not use dotted prefixes, `main`/`renderer`, file names, class names, function names, or dynamic ids as prefixes; pass dynamic values as log arguments.
+- Logger prefixes are single-level stable domains such as `Extension`, `Db`, `Window`, `Updater`, `Scanner`, `Launcher`, `Library`, `Theme`, `Hook`, `Ipc`, or `AsyncData`. Do not use dotted prefixes, `main`/`renderer`, file names, class names, function names, or dynamic ids as prefixes; pass dynamic values as log arguments.
 - Log lifecycle events, background task results, external boundary failures, recovery/degradation, extension host state, renderer global errors, and cross-process sync failures. Avoid logging ordinary renders, every watcher tick, form input, routine IPC calls, or tight-loop item details.
 - Never log secrets, auth headers, OAuth code/state, PKCE verifier, extension storage/secrets values, user body text, notes, comments, clipboard content, full DB rows, full HTTP bodies, unbounded arrays, private keys, or signing keys. Prefer basenames, ids, or app-derived paths over full user paths.
 - Catch only to add business semantics, recover, change the boundary message, or record full context once at the layer that owns it. Re-throw stable safe English errors such as `new Error('Failed to install extension package.')`; do not rethrow raw library messages or add dynamic values to error messages.

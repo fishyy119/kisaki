@@ -1,13 +1,8 @@
 import { TaskRunCancellation, readErrorCode } from '@kisaki3/extension-api'
 import type {
   Disposable,
-  ExtensionEventListener,
-  ExtensionEventPayload,
-  ExtensionEventTopic,
   TaskRunHandle,
   TaskRunSnapshot,
-  HostEventListener,
-  HostEventTopic,
   HostToMainRpcMethod,
   HostToMainRpcRequestMap,
   KisakiApi,
@@ -76,22 +71,6 @@ export interface KisakiApiBridgeHooks {
     method: K,
     params: ScopedHostToMainRpcParams<K>
   ): Promise<RpcResult<HostToMainRpcRequestMap, K>>
-  subscribeHostEvent<K extends HostEventTopic>(
-    scope: ActiveExtensionScope,
-    topic: K,
-    listener: HostEventListener<K>,
-    once: boolean
-  ): Promise<Disposable>
-  subscribeExtensionEvent<TPayload extends ExtensionEventPayload>(
-    scope: ActiveExtensionScope,
-    topic: ExtensionEventTopic,
-    listener: ExtensionEventListener<TPayload>
-  ): Promise<Disposable>
-  emitExtensionEvent<TPayload extends ExtensionEventPayload>(
-    scope: ActiveExtensionScope,
-    topic: ExtensionEventTopic,
-    payload: TPayload
-  ): Promise<void>
   registerTaskRunAbortController(
     scope: ActiveExtensionScope,
     runId: string,
@@ -429,15 +408,6 @@ export function createKisakiApi(
         await requestMain('capabilities.notify.dismiss', { id })
       }
     },
-    events: {
-      on: async (topic, listener) =>
-        hooks.subscribeHostEvent(requireScope(), topic, listener, false),
-      once: async (topic, listener) =>
-        hooks.subscribeHostEvent(requireScope(), topic, listener, true),
-      onExtension: async (topic, listener) =>
-        hooks.subscribeExtensionEvent(requireScope(), topic, listener),
-      emit: async (topic, payload) => hooks.emitExtensionEvent(requireScope(), topic, payload)
-    },
     runtime: {
       getInfo: async () => {
         return (await requestMain('capabilities.runtime.getInfo', {})).info
@@ -585,9 +555,6 @@ export function createScopeCapturingKisakiApi(
     },
     get notify() {
       return getApi().notify
-    },
-    get events() {
-      return getApi().events
     },
     get runtime() {
       return getApi().runtime

@@ -11,7 +11,7 @@ import { app } from 'electron'
 import { createLogger } from '@main/log'
 import type { IService, ServiceInitContainer, ServiceName } from '@main/container'
 import type { DbService } from '@main/services/db'
-import type { EventService } from '@main/services/event'
+import type { IpcService } from '@main/services/ipc'
 import { settings } from '@shared/db'
 import {
   createFormatters,
@@ -24,16 +24,18 @@ import {
   type UiLocale,
   type UiLocaleState
 } from '@shared/i18n'
+import { createI18nHooks } from './hooks'
 import { registerI18nIpc } from './ipc'
 
 const log = createLogger('I18n')
 
 export class I18nService implements IService {
   readonly id = 'i18n'
-  readonly deps = ['db', 'ipc', 'event'] as const satisfies readonly ServiceName[]
+  readonly deps = ['db', 'ipc'] as const satisfies readonly ServiceName[]
+  readonly hooks = createI18nHooks()
 
   private db!: DbService
-  private event!: EventService
+  private ipc!: IpcService
   private preference: UiLocale | null = null
   private effective: UiLocale = FALLBACK_UI_LOCALE
   private cachedFormatters: I18nFormatters | null = null
@@ -41,12 +43,12 @@ export class I18nService implements IService {
 
   async init(container: ServiceInitContainer<this>): Promise<void> {
     this.db = container.get('db')
-    this.event = container.get('event')
+    this.ipc = container.get('ipc')
 
     this.preference = this.readPreference()
     this.effective = this.resolveEffective(this.preference)
 
-    registerI18nIpc(this, container.get('ipc'))
+    registerI18nIpc(this, this.ipc)
     log.info('Initialized.', {
       preference: this.preference ?? 'system',
       effective: this.effective
@@ -88,10 +90,9 @@ export class I18nService implements IService {
     this.preference = preference
     this.effective = this.resolveEffective(preference)
     this.db.client.update(settings).set({ uiLocale: preference }).run()
-    this.event.bus.emit('app.ui-locale.changed', {
-      preference,
-      effective: this.effective
-    })
+    const state = this.getState()
+    this.hooks.uiLocaleChanged.dispatch(state)
+    this.ipc.send('i18n:state-changed', state)
 
     log.info('UI locale preference updated.', {
       preference: preference ?? 'system',

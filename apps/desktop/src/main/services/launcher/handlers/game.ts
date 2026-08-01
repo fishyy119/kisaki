@@ -21,6 +21,7 @@ import { games } from '@shared/db'
 import type { GameLaunchResult, GameStopResult } from '@shared/launcher'
 import { and, eq } from 'drizzle-orm'
 import { openExternalProtocol } from '@main/utils/external-url'
+import type { LauncherHooks } from '../hooks'
 
 const log = createLogger('Launcher')
 const LAUNCH_DETECTION_TIMEOUT_MS = 10000
@@ -32,7 +33,8 @@ export class GameLauncherHandler {
     private monitorService: MonitorService,
     private nativeService: NativeService,
     private notifyService: NotifyService,
-    private i18nService: I18nService
+    private i18nService: I18nService,
+    private hooks: LauncherHooks
   ) {}
 
   /**
@@ -128,6 +130,17 @@ export class GameLauncherHandler {
 
       game.launcherPath = selected
     }
+
+    // Let hook taps adjust the effective launch configuration (never persisted).
+    const launchConfig = await this.hooks.gameLaunching.transform({
+      gameId: game.id,
+      launcherMode: game.launcherMode,
+      launcherPath: game.launcherPath!,
+      gameDirPath: game.gameDirPath
+    })
+    game.launcherMode = launchConfig.launcherMode
+    game.launcherPath = launchConfig.launcherPath
+    game.gameDirPath = launchConfig.gameDirPath
 
     // Launch first
     switch (game.launcherMode) {

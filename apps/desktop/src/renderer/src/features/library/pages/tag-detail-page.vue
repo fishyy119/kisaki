@@ -19,7 +19,7 @@ import {
   TagDropdownMenu,
   TagInfoFormDialog
 } from '@renderer/components/shared/tag'
-import { useEvent, useTagRouteProvider } from '@renderer/composables'
+import { useDbChanges, useTagRouteProvider } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
@@ -42,8 +42,8 @@ const backTo = computed(() => (route.query.from as string) || '/library')
 
 const { tag, entityType, entityCounts, setEntityType, error } = useTagRouteProvider()
 
-useEvent('db.deleted', ({ table, id }) => {
-  if (table === 'tags' && id === tagId.value) {
+useDbChanges(({ operation, table, id }) => {
+  if (operation === 'deleted' && table === 'tags' && id === tagId.value) {
     router.push(backTo.value)
   }
 })

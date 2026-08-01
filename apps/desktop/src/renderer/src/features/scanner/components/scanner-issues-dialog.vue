@@ -7,7 +7,7 @@ import { ipcManager } from '@renderer/core/ipc'
 import { createLogger } from '@renderer/core/log'
 import { notify } from '@renderer/core/notify'
 import { useAsyncData } from '@renderer/composables/use-async-data'
-import { useEvent } from '@renderer/composables/use-event'
+import { useDbChanges } from '@renderer/composables/use-db-changes'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { usePreferencesStore, useScannerStore } from '@renderer/stores'
 import { Icon } from '@renderer/components/ui/icon'
@@ -218,8 +218,8 @@ async function handleAddToExclusion(row: ScannerIssueRow) {
   }
 }
 
-useEvent('db.updated', (payload) => {
-  if (payload.table === 'games') {
+useDbChanges(({ operation, table }) => {
+  if (operation === 'updated' && table === 'games') {
     refetchRelatedGameNames()
   }
 })

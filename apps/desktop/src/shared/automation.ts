@@ -34,6 +34,13 @@ export interface AutomationInvocationError {
   code?: string
 }
 
+export interface AutomationRunStartedEvent {
+  automationId: string
+  commandId: string
+  trigger: AutomationTrigger
+  startedAt: number
+}
+
 export interface AutomationRunHistoryRecord {
   id: string
   automationId: string

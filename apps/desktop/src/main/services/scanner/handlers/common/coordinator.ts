@@ -1,11 +1,11 @@
-import type { EventService } from '@main/services/event'
 import type { I18nService } from '@main/services/i18n'
 import type { IpcService } from '@main/services/ipc'
 import type { TaskRunService } from '@main/services/task-run'
 import { isTaskRunCancellation } from '@main/services/task-run'
-import type { ScannerFinishedStatus } from '@shared/events/library'
+import type { ScannerHooks } from '../../hooks'
 import type {
   ScanCompletedData,
+  ScannerRunFinishedStatus,
   ScannerRunStartResult,
   ScannerRunState,
   ScannerRunStatus
@@ -22,7 +22,7 @@ type Awaitable<T> = T | Promise<T>
 export interface ScannerRunCoordinatorOptions<TScanner extends ScannerRunMetadata> {
   ipc: IpcService
   taskRun: TaskRunService
-  eventService: EventService
+  hooks: ScannerHooks
   i18n: I18nService
   loadScanner: (scannerId: string) => Awaitable<TScanner>
   runScan: (scanner: TScanner, session: ScannerRunSession<TScanner>) => Awaitable<void>
@@ -173,11 +173,10 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
 
       const scanner = await this.options.loadScanner(item.scannerId)
       session.setScanner(scanner)
-      this.options.eventService.bus.emit(
-        'scanner.started',
-        { local: true },
-        { scannerId: scanner.id, scannerName: scanner.name }
-      )
+      this.options.hooks.runStarted.dispatch({
+        scannerId: scanner.id,
+        scannerName: scanner.name
+      })
       await this.options.runScan(scanner, session)
       session.reportPhase('finished', this.options.i18n.messages.scanner.run.finished)
 
@@ -195,17 +194,13 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
 
       const result = this.finishRecord(record, 'failed')
       this.taskRuns.fail(record, error)
-      this.options.eventService.bus.emit(
-        'scanner.finished',
-        { local: true },
-        {
-          scannerId: record.state.scannerId,
-          scannerName: record.state.scannerName,
-          status: 'failed',
-          stats: toScannerStats(result),
-          error: error instanceof Error ? error.message : String(error)
-        }
-      )
+      this.options.hooks.runFinished.dispatch({
+        scannerId: record.state.scannerId,
+        scannerName: record.state.scannerName,
+        status: 'failed',
+        stats: toScannerStats(result),
+        error: error instanceof Error ? error.message : String(error)
+      })
       throw error
     }
   }
@@ -244,19 +239,15 @@ export class ScannerRunCoordinator<TScanner extends ScannerRunMetadata> {
 
   private emitFinished(
     record: ActiveScannerRun<TScanner>,
-    status: ScannerFinishedStatus,
+    status: ScannerRunFinishedStatus,
     result: ScanCompletedData
   ): void {
-    this.options.eventService.bus.emit(
-      'scanner.finished',
-      { local: true },
-      {
-        scannerId: result.scannerId,
-        scannerName: result.scannerName || record.scanner.name,
-        status,
-        stats: toScannerStats(result)
-      }
-    )
+    this.options.hooks.runFinished.dispatch({
+      scannerId: result.scannerId,
+      scannerName: result.scannerName || record.scanner.name,
+      status,
+      stats: toScannerStats(result)
+    })
   }
 
   private requireActiveRun(scannerId: string): ActiveScannerRun<TScanner> {

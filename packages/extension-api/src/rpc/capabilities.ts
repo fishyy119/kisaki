@@ -1,4 +1,3 @@
-import type { HostEventTopic, HostEvents } from '../capabilities/events'
 import type { ExtensionFileGrant, PickFileInput } from '../capabilities/files'
 import type {
   Automation,
@@ -107,17 +106,6 @@ export interface PickFileRequest extends ExtensionScopedRpcParams {
 
 export interface ReleaseFileGrantRequest extends ExtensionScopedRpcParams {
   grantId: string
-}
-
-export interface HostEventSubscriptionRequest extends ExtensionScopedRpcParams {
-  subscriptionId: string
-  topic: HostEventTopic
-}
-
-export interface HostEventNotification {
-  subscriptionId: string
-  topic: HostEventTopic
-  payload: HostEvents[HostEventTopic]
 }
 
 export interface CommandGetRequest extends ExtensionScopedRpcParams {
@@ -432,14 +420,6 @@ export type HostToMainCapabilityRpcRequestMap = {
     TaskRunScopedRequest,
     { run: TaskRunSnapshot }
   >
-  'capabilities.events.subscribeHost': RpcMethodDefinition<
-    HostEventSubscriptionRequest,
-    RpcNoPayload
-  >
-  'capabilities.events.unsubscribeHost': RpcMethodDefinition<
-    HostEventSubscriptionRequest,
-    RpcNoPayload
-  >
   'capabilities.webviews.openPage': RpcMethodDefinition<
     WebviewOpenPageRpcRequest,
     { webviewId: string }
@@ -497,7 +477,6 @@ export type HostToMainCapabilityRpcRequestMap = {
   >
 
 export interface MainToHostCapabilityRpcEventMap {
-  'capabilities.events.host': HostEventNotification
   'capabilities.taskRuns.cancelRequested': TaskRunCancelRequestedEvent
   'capabilities.webviews.opened': WebviewOpenedEvent
   'capabilities.webviews.messagePosted': WebviewMessagePostedEvent

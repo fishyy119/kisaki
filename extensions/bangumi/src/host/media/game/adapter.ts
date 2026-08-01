@@ -1,11 +1,12 @@
 import {
   kisaki,
   type Disposable,
+  type HooksRegistrar,
+  type LibraryChange,
   type LibraryCollection,
   type LibraryGame,
   type LibraryGamePatch,
   type LibraryGameStatus,
-  type LibraryGameUpdatedEvent,
   type LibraryTag
 } from '@kisaki3/extension-sdk'
 import { BANGUMI_SUBJECT_TYPE_BY_SCOPE } from '../scopes'
@@ -42,43 +43,38 @@ export class GameLocalMediaAdapter implements LocalMediaAdapter {
   readonly supportsAutoSync = true
   readonly supportsImportWrite = true
 
+  constructor(private readonly hooks: HooksRegistrar) {}
+
   async listProfiles() {
     return kisaki.scrapers.profiles.list({ mediaType: 'game' })
   }
 
   async subscribeLocalChanges(listener: LocalMediaChangeListener): Promise<Disposable> {
-    const registrations = await Promise.all([
-      kisaki.events.on('game.created', (event) => {
-        void Promise.resolve(
-          listener({
-            scope: this.scope,
-            localId: event.gameId,
-            reason: 'created'
-          })
-        )
-      }),
-      kisaki.events.on('game.updated', (event) => {
-        if (!hasSyncRelevantGameChange(event)) {
-          return
+    return this.hooks.on('library.changed', ({ changes }) => {
+      for (const change of changes) {
+        if (change.entity !== 'game') {
+          continue
         }
 
-        void Promise.resolve(
-          listener({
-            scope: this.scope,
-            localId: event.gameId,
-            reason: 'updated'
-          })
-        )
-      })
-    ])
-
-    return {
-      dispose() {
-        for (const registration of registrations) {
-          registration.dispose()
+        if (change.kind === 'created') {
+          void Promise.resolve(
+            listener({
+              scope: this.scope,
+              localId: change.id,
+              reason: 'created'
+            })
+          )
+        } else if (change.kind === 'updated' && hasSyncRelevantGameChange(change.changes ?? [])) {
+          void Promise.resolve(
+            listener({
+              scope: this.scope,
+              localId: change.id,
+              reason: 'updated'
+            })
+          )
         }
       }
-    }
+    })
   }
 
   async listLocalItems(query: LocalMediaListQuery): Promise<readonly LocalMediaItem[]> {
@@ -271,8 +267,8 @@ function readBangumiSubjectId(item: LocalMediaItem): string | undefined {
   return id && /^\d+$/.test(id) ? id : undefined
 }
 
-function hasSyncRelevantGameChange(event: LibraryGameUpdatedEvent): boolean {
-  return event.changes.some(
+function hasSyncRelevantGameChange(changes: readonly LibraryChange[]): boolean {
+  return changes.some(
     (change) => change.facet === 'status' || change.facet === 'score' || change.facet === 'identity'
   )
 }

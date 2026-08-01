@@ -22,7 +22,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Separator } from '@renderer/components/ui/separator'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
 import { getEntityIcon } from '@renderer/utils/format'
-import { useCompanyDialogProvider, useEvent, useRenderState } from '@renderer/composables'
+import { useCompanyDialogProvider, useDbChanges, useRenderState } from '@renderer/composables'
 import CompanyDetailContent from './detail-content.vue'
 import { CompanyScoreFormDialog } from '../forms'
 import { CompanyDropdownMenu } from '../menus'
@@ -45,7 +45,8 @@ const state = useRenderState(isLoading, error, company)
 
 const spoilerConfirmOpen = ref(false)
 
-useEvent('db.deleted', ({ table, id }) => {
+useDbChanges(({ operation, table, id }) => {
+  if (operation !== 'deleted') return
   if (table === 'companies' && id === props.companyId) {
     open.value = false
   }
