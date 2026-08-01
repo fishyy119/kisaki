@@ -53,7 +53,6 @@ useDbChanges((payload) => {
 
 const scannerStore = useScannerStore()
 
-const activeScannerStates = computed(() => scannerStore.activeScannerStates.length)
 const isScanning = computed(() => scannerStore.hasActiveScans)
 const activeScannerIds = computed(() =>
   scannerStore.activeScannerStates.map((state) => state.scannerId)
@@ -89,12 +88,7 @@ async function handleCancelAll() {
     <PageHeaderTitle
       :title="m.scanner.title"
       icon="icon-[mdi--folder-search-outline]"
-    >
-      {{ m.scanner.countSummary({ count: totalScanners ?? 0 }) }}
-      <template v-if="activeScannerStates > 0">
-        · {{ m.scanner.runningSummary({ count: activeScannerStates }) }}
-      </template>
-    </PageHeaderTitle>
+    />
 
     <template #actions>
       <Button

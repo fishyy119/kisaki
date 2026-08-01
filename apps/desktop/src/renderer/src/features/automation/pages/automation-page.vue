@@ -322,8 +322,6 @@ function removeFromSet(target: typeof runningAutomationIds, value: string) {
 <template>
   <div class="flex h-full flex-col">
     <AutomationHeader
-      :total-automations="automationList.length"
-      :running-automations="runningAutomationIds.size"
       :refreshing="isFetching"
       @create="openCreateDialog"
       @refresh="refetch"

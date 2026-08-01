@@ -3,8 +3,6 @@ import type { Messages } from '../schema'
 /** Automation: page, toolbar, rows, form dialog, details dialog, and run history. */
 export const automation = {
   title: '自動化',
-  countSummary: ({ count }: { count: number }) => `${count} 件の自動化`,
-  runningSummary: ({ count }: { count: number }) => `${count} 件実行中`,
   addAutomation: '自動化を追加',
 
   display: {

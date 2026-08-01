@@ -3,8 +3,6 @@ import type { Messages } from '../schema'
 /** Scanner: page, items, issues, fix dialog, settings, form, test, and extraction rules. */
 export const scanner = {
   title: '扫描器',
-  countSummary: ({ count }: { count: number }) => `${count} 个扫描器`,
-  runningSummary: ({ count }: { count: number }) => `${count} 个运行中`,
   addScanner: '添加扫描器',
   scanAll: '扫描全部',
   cancelAll: '取消全部',

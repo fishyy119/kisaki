@@ -9,8 +9,6 @@ import { cn } from '@renderer/utils/cn'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 interface Props {
-  totalAutomations: number
-  runningAutomations: number
   refreshing?: boolean
 }
 
@@ -32,12 +30,7 @@ const { m } = useI18n()
     <PageHeaderTitle
       :title="m.automation.title"
       icon="icon-[mdi--timer-outline]"
-    >
-      {{ m.automation.countSummary({ count: props.totalAutomations }) }}
-      <template v-if="props.runningAutomations > 0">
-        · {{ m.automation.runningSummary({ count: props.runningAutomations }) }}</template
-      >
-    </PageHeaderTitle>
+    />
 
     <template #actions>
       <Button

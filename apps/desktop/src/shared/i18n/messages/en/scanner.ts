@@ -1,9 +1,6 @@
 /** Scanner: page, items, issues, fix dialog, settings, form, test, and extraction rules. */
 export const scanner = {
   title: 'Scanners',
-  countSummary: ({ count }: { count: number }) => (count === 1 ? '1 scanner' : `${count} scanners`),
-  runningSummary: ({ count }: { count: number }) =>
-    count === 1 ? '1 running' : `${count} running`,
   addScanner: 'Add scanner',
   scanAll: 'Scan all',
   cancelAll: 'Cancel all',

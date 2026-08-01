@@ -1,10 +1,6 @@
 /** Automation: page, toolbar, rows, form dialog, details dialog, and run history. */
 export const automation = {
   title: 'Automation',
-  countSummary: ({ count }: { count: number }) =>
-    count === 1 ? '1 automation' : `${count} automations`,
-  runningSummary: ({ count }: { count: number }) =>
-    count === 1 ? '1 running' : `${count} running`,
   addAutomation: 'Add automation',
 
   display: {

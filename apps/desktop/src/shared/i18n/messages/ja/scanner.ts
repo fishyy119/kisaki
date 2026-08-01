@@ -3,8 +3,6 @@ import type { Messages } from '../schema'
 /** Scanner: page, items, issues, fix dialog, settings, form, test, and extraction rules. */
 export const scanner = {
   title: 'スキャナー',
-  countSummary: ({ count }: { count: number }) => `${count} 件のスキャナー`,
-  runningSummary: ({ count }: { count: number }) => `${count} 件実行中`,
   addScanner: 'スキャナーを追加',
   scanAll: 'すべてスキャン',
   cancelAll: 'すべてキャンセル',
