@@ -48,7 +48,7 @@ import { createDisposable, createDisposableStore } from './disposables'
 import {
   createKisakiApi,
   createScopeCapturingKisakiApi,
-  type KisakiApiBridgeHooks
+  type KisakiApiBridgeDelegate
 } from './kisaki-api'
 import { createExtensionLogger } from './logger'
 import { resolveInsideExtension } from './utils/paths'
@@ -311,10 +311,10 @@ export class ExtensionHostSdkBridge {
   }
 
   private createBridge(): ExtensionSdkBridge {
-    const hooks = this.createKisakiApiHooks()
+    const delegate = this.createKisakiApiDelegate()
 
     return {
-      api: createScopeCapturingKisakiApi(hooks, (scope) => this.getScopedApi(scope, hooks)),
+      api: createScopeCapturingKisakiApi(delegate, (scope) => this.getScopedApi(scope, delegate)),
       createLogger: (scope, extension) =>
         createExtensionLogger({
           scope,
@@ -353,7 +353,7 @@ export class ExtensionHostSdkBridge {
     }
   }
 
-  private createKisakiApiHooks(): KisakiApiBridgeHooks {
+  private createKisakiApiDelegate(): KisakiApiBridgeDelegate {
     return {
       requireCurrentScope: () => this.requireCurrentScope(),
       requestMain: (scope, method, params) => this.requestMain(scope, method, params),
@@ -364,13 +364,13 @@ export class ExtensionHostSdkBridge {
     }
   }
 
-  private getScopedApi(scope: ActiveExtensionScope, hooks: KisakiApiBridgeHooks): KisakiApi {
+  private getScopedApi(scope: ActiveExtensionScope, delegate: KisakiApiBridgeDelegate): KisakiApi {
     const existing = this.scopedApis.get(scope.runtimeHandle)
     if (existing) {
       return existing
     }
 
-    const api = createKisakiApi(hooks, { ...scope })
+    const api = createKisakiApi(delegate, { ...scope })
     this.scopedApis.set(scope.runtimeHandle, api)
     return api
   }

@@ -50,7 +50,7 @@ import type {
 } from './types'
 
 /** Module hook surfaces the hooks contribution point binds to at startup. */
-export interface ExtensionHookModuleSurfaces {
+export interface ExtensionModuleHookSurfaces {
   bootstrap: BootstrapHooks
   db: DbHooks
   i18n: I18nHooks
@@ -66,8 +66,8 @@ export interface ExtensionContributionRegistryOptions extends ExtensionContribut
   command: CommandService
   deeplink: DeeplinkService
   scraper: ScraperService
-  moduleHooks: ExtensionHookModuleSurfaces
-  sendHostEvent<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
+  moduleHooks: ExtensionModuleHookSurfaces
+  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
   onContributionsChanged?: () => void
   onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
 }
@@ -108,7 +108,7 @@ export class ExtensionContributionRegistry {
     this.webviews = new ExtensionWebviewContributionPoint(base)
     this.hooks = new ExtensionHookContributionPoint({
       ...base,
-      sendHostEvent: options.sendHostEvent
+      sendEventToHost: options.sendEventToHost
     })
 
     const surfaces = options.moduleHooks

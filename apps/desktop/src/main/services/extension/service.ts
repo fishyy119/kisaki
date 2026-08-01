@@ -194,7 +194,7 @@ export class ExtensionService implements IService {
         launcher: container.get('launcher').hooks,
         monitor: container.get('monitor').hooks
       },
-      sendHostEvent: (name, payload) => this.runtime.sendEventToHost(name, payload),
+      sendEventToHost: (name, payload) => this.runtime.sendEventToHost(name, payload),
       onContributionsChanged: () => this.emitContributionSnapshotChanged(),
       onEntityMenusRefreshRequested: (event) =>
         this.ipc.send('extension:entity-menus-refresh-requested', event),

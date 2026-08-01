@@ -64,7 +64,7 @@ interface LibraryEntityMethods {
   remove: LibraryEntityRemoveMethod
 }
 
-export interface KisakiApiBridgeHooks {
+export interface KisakiApiBridgeDelegate {
   requireCurrentScope(): ActiveExtensionScope
   requestMain<K extends HostToMainRpcMethod>(
     scope: ActiveExtensionScope,
@@ -89,17 +89,17 @@ export interface KisakiApiBridgeHooks {
  * providers are the authoritative validators of payload shapes and limits.
  */
 export function createKisakiApi(
-  hooks: KisakiApiBridgeHooks,
+  delegate: KisakiApiBridgeDelegate,
   boundScope?: ActiveExtensionScope
 ): KisakiApi {
-  const requireScope = () => boundScope ?? hooks.requireCurrentScope()
+  const requireScope = () => boundScope ?? delegate.requireCurrentScope()
 
   const requestMain = <K extends HostToMainRpcMethod>(
     method: K,
     params: ScopedHostToMainRpcParams<K>
   ) => {
     const scope = requireScope()
-    return hooks.requestMain(scope, method, params)
+    return delegate.requestMain(scope, method, params)
   }
 
   const createEntityNamespace = <TNamespace extends LibraryEntityNamespaceFacade>(
@@ -148,7 +148,7 @@ export function createKisakiApi(
       pageId,
       ...(options === undefined ? {} : { options })
     })
-    return hooks.createWebviewSession(scope, webviewId)
+    return delegate.createWebviewSession(scope, webviewId)
   }
 
   const openWebviewDialog = async (
@@ -160,13 +160,13 @@ export function createKisakiApi(
       dialogId,
       ...(options === undefined ? {} : { options })
     })
-    return hooks.createWebviewSession(scope, webviewId)
+    return delegate.createWebviewSession(scope, webviewId)
   }
 
   const createTaskRunHandle = (run: TaskRunSnapshot): TaskRunHandle => {
     const scope = requireScope()
     const controller = new AbortController()
-    const registration = hooks.registerTaskRunAbortController(scope, run.id, controller)
+    const registration = delegate.registerTaskRunAbortController(scope, run.id, controller)
     let disposed = false
 
     const dispose = () => {
@@ -538,10 +538,10 @@ export function createKisakiApi(
 }
 
 export function createScopeCapturingKisakiApi(
-  hooks: KisakiApiBridgeHooks,
+  delegate: KisakiApiBridgeDelegate,
   getScopedApi: (scope: ActiveExtensionScope) => KisakiApi
 ): KisakiApi {
-  const getApi = () => getScopedApi(hooks.requireCurrentScope())
+  const getApi = () => getScopedApi(delegate.requireCurrentScope())
 
   return {
     get files() {

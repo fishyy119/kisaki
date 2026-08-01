@@ -23,7 +23,7 @@ const log = createLogger('Extension')
 const HOOK_INVOKE_TIMEOUT_MS = 10_000
 
 export interface ExtensionHookContributionPointOptions extends ExtensionContributionPointOptions {
-  sendHostEvent<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
+  sendEventToHost<K extends MainToHostRpcEvent>(name: K, payload: MainToHostRpcEventMap[K]): void
 }
 
 interface HookRegistrationRecord {
@@ -161,7 +161,7 @@ export class ExtensionHookContributionPoint {
         pointId,
         payload: payload as JsonValue
       }
-      this.options.sendHostEvent('contributions.hooks.notify', event)
+      this.options.sendEventToHost('contributions.hooks.notify', event)
     }
   }
 
