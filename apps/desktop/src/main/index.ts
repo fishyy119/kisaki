@@ -95,6 +95,10 @@ if (!gotTheLock) {
 // In production: detect portable mode or use default userData
 if (isDev) {
   app.setPath('userData', path.join(process.cwd(), 'dev/app'))
+  // Dev assets come from the local Vite server, so the Chromium disk cache
+  // adds no value; it only risks corrupted entries (ERR_CACHE_READ_FAILURE)
+  // when watch rebuilds force-kill Electron mid-write.
+  app.commandLine.appendSwitch('disable-http-cache')
 }
 
 // This method will be called when Electron has finished
