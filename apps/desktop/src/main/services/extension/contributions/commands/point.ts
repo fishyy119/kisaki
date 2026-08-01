@@ -7,12 +7,12 @@ import type { CommandRegistrationInput, CommandService } from '@main/services/co
 import {
   requireContributionOwner,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionDomainOptions,
+  type ExtensionContributionPointOptions,
   type RuntimeContributionOwner
 } from '../types'
 
-export interface ExtensionCommandContributionPointOptions extends ExtensionContributionDomainOptions {
-  command?: CommandService
+export interface ExtensionCommandContributionPointOptions extends ExtensionContributionPointOptions {
+  command: CommandService
 }
 
 interface ExtensionCommandRegistration {
@@ -33,7 +33,7 @@ export class ExtensionCommandContributionPoint {
     runtimeHandle: ExtensionRuntimeHandle,
     command: CommandContributionRegistrationInfo
   ): void {
-    const commandService = this.requireCommandService()
+    const commandService = this.options.command
     const owner = requireContributionOwner(this.options, runtimeHandle)
     let scopedRegistrations = this.registrations.get(runtimeHandle)
     if (!scopedRegistrations) {
@@ -119,13 +119,6 @@ export class ExtensionCommandContributionPoint {
     }
 
     return diagnostics
-  }
-
-  private requireCommandService(): CommandService {
-    if (!this.options.command) {
-      throw new Error('Command service is not available for extension command contributions.')
-    }
-    return this.options.command
   }
 }
 

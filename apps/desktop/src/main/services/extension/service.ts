@@ -36,6 +36,7 @@ import { ExtensionDevelopmentWatcher } from './development-watcher'
 import { RuntimeManager, type ExtensionRuntimeState } from './runtime'
 import { ExtensionSignerTrustManager, ExtensionSignerTrustStore } from './signers'
 import { ExtensionUpdateManager, ExtensionUpdatePlanner } from './updates'
+import { ExtensionWebviewSessionManager } from './webviews'
 import type { ExtensionServicePaths } from './types'
 import { resolveInsideRoot } from './shared/path-confinement'
 
@@ -69,6 +70,7 @@ export class ExtensionService implements IService {
   runtime!: RuntimeManager
   signers!: ExtensionSignerTrustManager
   updates!: ExtensionUpdateManager
+  webviews!: ExtensionWebviewSessionManager
 
   private paths!: ExtensionServicePaths
   private ipc!: IpcService
@@ -146,6 +148,18 @@ export class ExtensionService implements IService {
     })
     await this.repositories.init()
 
+    this.webviews = new ExtensionWebviewSessionManager({
+      resolveDocumentUrl: (extensionId, entry) => uiAssetServer.documentUrl(extensionId, entry),
+      resolvePage: (runtimeHandle, pageId) =>
+        this.contributions?.webviews.getPage(runtimeHandle, pageId) ?? null,
+      resolveDialog: (runtimeHandle, dialogId) =>
+        this.contributions?.webviews.getDialog(runtimeHandle, dialogId) ?? null,
+      resolvePageByExtension: (extensionId, pageId) =>
+        this.contributions?.webviews.getPageByExtension(extensionId, pageId) ?? null,
+      onSessionsChanged: (sessions) =>
+        this.ipc.send('extension:webview-sessions-changed', sessions),
+      onWebviewMessage: (event) => this.ipc.send('extension:webview-message', event)
+    })
     this.capabilities = new ExtensionCapabilityGateway({
       automation: container.get('automation'),
       command: container.get('command'),
@@ -157,25 +171,15 @@ export class ExtensionService implements IService {
       notify: container.get('notify'),
       scraper: container.get('scraper'),
       taskRun: container.get('task-run'),
+      webviewSessions: this.webviews,
       resolveRuntimeHandle: (runtimeHandle) =>
-        this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null,
-      resolveWebviewDocumentUrl: (extensionId, entry) =>
-        uiAssetServer.documentUrl(extensionId, entry),
-      resolveWebviewPage: (runtimeHandle, pageId) =>
-        this.contributions?.webviews.getPage(runtimeHandle, pageId) ?? null,
-      resolveWebviewDialog: (runtimeHandle, dialogId) =>
-        this.contributions?.webviews.getDialog(runtimeHandle, dialogId) ?? null,
-      resolveWebviewPageByExtension: (extensionId, pageId) =>
-        this.contributions?.webviews.getPageByExtension(extensionId, pageId) ?? null,
-      onWebviewSessionsChanged: (sessions) =>
-        this.ipc.send('extension:webview-sessions-changed', sessions),
-      onWebviewMessage: (event) => this.ipc.send('extension:webview-message', event)
+        this.runtime?.resolveRuntimeHandle(runtimeHandle) ?? null
     })
     this.contributions = new ExtensionContributionRegistry({
       command: container.get('command'),
       scraper: container.get('scraper'),
       deeplink: container.get('deeplink'),
-      onDidChange: () => this.emitContributionSnapshotChanged(),
+      onContributionsChanged: () => this.emitContributionSnapshotChanged(),
       onEntityMenusRefreshRequested: (event) =>
         this.ipc.send('extension:entity-menus-refresh-requested', event),
       resolveRuntimeHandle: (runtimeHandle) =>
@@ -187,6 +191,7 @@ export class ExtensionService implements IService {
       hostInspect: getBootstrapArgs().extensionHostInspect,
       capabilities: this.capabilities,
       contributions: this.contributions,
+      webviews: this.webviews,
       getUiLocale: () => container.get('i18n').locale,
       onRuntimeStateChanged: (extensionId, state) =>
         this.emitRuntimeStateChanged(extensionId, state)

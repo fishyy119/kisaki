@@ -6,14 +6,19 @@ import type {
   CharacterScraperProvider,
   CompanyScraperProvider,
   GameScraperProvider,
-  PersonScraperProvider
+  PersonScraperProvider,
+  ScraperService
 } from '@main/services/scraper'
 import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionDomainOptions
+  type ExtensionContributionPointOptions
 } from '../types'
+
+export interface ExtensionScraperProviderContributionPointOptions extends ExtensionContributionPointOptions {
+  scraper: ScraperService
+}
 import { getScraperKey } from './descriptors'
 import type {
   ScraperDomain,
@@ -61,7 +66,7 @@ export class ExtensionScraperProviderContributionPoint {
       scraper.character.unregisterProvider(registryProviderId)
   }
 
-  constructor(private readonly options: ExtensionContributionDomainOptions) {
+  constructor(private readonly options: ExtensionScraperProviderContributionPointOptions) {
     this.domainsByMediaType = new Map<ScraperMediaType, ScraperDomain>([
       [this.gameDomain.mediaType, this.gameDomain],
       [this.personDomain.mediaType, this.personDomain],
@@ -175,25 +180,18 @@ export class ExtensionScraperProviderContributionPoint {
     registration: ScraperRegistration,
     domain: ScraperDomain
   ): void {
-    const scraper = this.options.scraper
-    if (!scraper) {
-      return
-    }
-
-    domain.registerWithScraper(scraper, createProviderAdapter(this.options, registration, domain))
+    domain.registerWithScraper(
+      this.options.scraper,
+      createProviderAdapter(this.options, registration, domain)
+    )
   }
 
   private async unregisterProviderFromScraperService(
     registration: ScraperRegistration
   ): Promise<void> {
-    const scraper = this.options.scraper
-    if (!scraper) {
-      return
-    }
-
     try {
       await this.requireDomain(registration.mediaType).unregisterFromScraper(
-        scraper,
+        this.options.scraper,
         registration.registryProviderId
       )
     } catch (error) {

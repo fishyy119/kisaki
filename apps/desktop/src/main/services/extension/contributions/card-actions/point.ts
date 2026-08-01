@@ -8,7 +8,7 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionDomainOptions,
+  type ExtensionContributionPointOptions,
   type RuntimeContributionOwner
 } from '../types'
 
@@ -21,7 +21,7 @@ export class ExtensionCardActionContributionPoint {
   private readonly registrations = new Map<string, CardActionRegistration>()
   private readonly byPublicId = new Map<string, CardActionRegistration>()
 
-  constructor(private readonly options: ExtensionContributionDomainOptions) {}
+  constructor(private readonly options: ExtensionContributionPointOptions) {}
 
   register(runtimeHandle: ExtensionRuntimeHandle, action: CardActionRegistrationInfo): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)

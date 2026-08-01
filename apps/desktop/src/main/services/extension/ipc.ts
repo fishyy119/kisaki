@@ -112,26 +112,22 @@ export function registerExtensionIpc(service: ExtensionService, ipc: IpcService)
     wrapIpcVoid(() => service.contributions.runCardAction(request))
   )
 
-  ipc.handle('extension:get-webview-sessions', () =>
-    wrapIpc(() => service.capabilities.webviews.listSessions())
-  )
+  ipc.handle('extension:get-webview-sessions', () => wrapIpc(() => service.webviews.listSessions()))
 
   ipc.handle('extension:open-webview-page', async (_, request) =>
-    wrapIpc(() => service.capabilities.webviews.openPageFromRenderer(request))
+    wrapIpc(() => service.webviews.openPageFromRenderer(request))
   )
 
   ipc.handle('extension:post-webview-message', async (_, request) =>
-    wrapIpcVoid(() =>
-      service.capabilities.webviews.postMessageToHost(request.webviewId, request.message)
-    )
+    wrapIpcVoid(() => service.webviews.postMessageToHost(request.webviewId, request.message))
   )
 
   ipc.handle('extension:notify-webview-ready', async (_, request) =>
-    wrapIpcVoid(() => service.capabilities.webviews.notifyReady(request.webviewId))
+    wrapIpcVoid(() => service.webviews.notifyReady(request.webviewId))
   )
 
   ipc.handle('extension:close-webview', async (_, request) =>
-    wrapIpcVoid(() => service.capabilities.webviews.closeFromRenderer(request.webviewId))
+    wrapIpcVoid(() => service.webviews.closeFromRenderer(request.webviewId))
   )
 
   ipc.handle('extension:get-theme-contributions', () =>

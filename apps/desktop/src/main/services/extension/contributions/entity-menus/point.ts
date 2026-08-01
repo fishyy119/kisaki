@@ -24,10 +24,14 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionDomainOptions,
+  type ExtensionContributionPointOptions,
   type RuntimeContributionOwner
 } from '../types'
 import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
+
+export interface ExtensionEntityMenuContributionPointOptions extends ExtensionContributionPointOptions {
+  onRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
+}
 
 const log = createLogger('Extension')
 
@@ -49,7 +53,7 @@ export class ExtensionEntityMenuContributionPoint {
   private readonly byPublicId = new Map<string, MenuRegistration>()
   private readonly sessions = new Map<string, MainMenuSession>()
 
-  constructor(private readonly options: ExtensionContributionDomainOptions) {}
+  constructor(private readonly options: ExtensionEntityMenuContributionPointOptions) {}
 
   register(runtimeHandle: ExtensionRuntimeHandle, contribution: EntityMenuRegistrationInfo): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)
@@ -195,7 +199,7 @@ export class ExtensionEntityMenuContributionPoint {
       return
     }
 
-    this.options.onEntityMenusRefreshRequested?.({
+    this.options.onRefreshRequested?.({
       extensionId: registration.owner.extension.id,
       contributionId: registration.contribution.id,
       domain: registration.contribution.domain,

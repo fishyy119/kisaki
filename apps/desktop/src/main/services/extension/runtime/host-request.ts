@@ -8,6 +8,7 @@ import {
 } from '@kisaki3/extension-api'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions'
+import type { ExtensionWebviewSessionManager } from '../webviews'
 import type { ExtensionHostRpcClient } from './rpc-client'
 import type { ExtensionRuntimeLogs } from './logs'
 import type { ExtensionRuntimeSecrets } from './secrets'
@@ -22,6 +23,7 @@ export interface HostRequestOptions {
   secrets: ExtensionRuntimeSecrets
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
+  webviews?: ExtensionWebviewSessionManager
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   reportDiagnostic(
     runtimeHandle: ExtensionRuntimeHandle,
@@ -137,6 +139,7 @@ export function registerHostRequests(options: HostRequestOptions): void {
 
   options.contributions?.registerRpcHandlers(options.rpc)
   options.capabilities?.registerRpcHandlers(options.rpc)
+  options.webviews?.attachRpc(options.rpc)
 }
 
 function requireRuntimeHandle(

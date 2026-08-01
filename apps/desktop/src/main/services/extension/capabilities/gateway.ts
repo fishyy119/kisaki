@@ -9,8 +9,8 @@ import type { NetworkService } from '@main/services/network'
 import type { NotifyService } from '@main/services/notify'
 import type { ScraperService } from '@main/services/scraper'
 import type { TaskRunService } from '@main/services/task-run'
-import type { ExtensionWebviewMessageEvent, ExtensionWebviewSessionInfo } from '@shared/extension'
 import type { ExtensionHostRpcClient } from '../runtime'
+import type { ExtensionWebviewSessionManager } from '../webviews'
 import { ExtensionAutomationsCapabilityProvider } from './automations'
 import { ExtensionCommandsCapabilityProvider } from './commands'
 import { ExtensionEventsCapabilityProvider } from './events'
@@ -22,10 +22,7 @@ import { ExtensionNotifyCapabilityProvider } from './notify'
 import { ExtensionRuntimeCapabilityProvider } from './runtime'
 import { ExtensionScrapersCapabilityProvider } from './scrapers'
 import { ExtensionTaskRunsCapabilityProvider } from './task-runs'
-import {
-  ExtensionWebviewsCapabilityProvider,
-  type ExtensionWebviewsCapabilityProviderOptions
-} from './webviews'
+import { ExtensionWebviewsCapabilityProvider } from './webviews'
 
 export interface ExtensionCapabilityGatewayOptions {
   automation: AutomationService
@@ -38,13 +35,8 @@ export interface ExtensionCapabilityGatewayOptions {
   notify: NotifyService
   scraper: ScraperService
   taskRun: TaskRunService
+  webviewSessions: ExtensionWebviewSessionManager
   resolveRuntimeHandle(runtimeHandle: string): ExtensionRuntimeMetadata | null | undefined
-  resolveWebviewDocumentUrl(extensionId: string, entry: string): string | null
-  resolveWebviewPage: ExtensionWebviewsCapabilityProviderOptions['resolvePage']
-  resolveWebviewDialog: ExtensionWebviewsCapabilityProviderOptions['resolveDialog']
-  resolveWebviewPageByExtension: ExtensionWebviewsCapabilityProviderOptions['resolvePageByExtension']
-  onWebviewSessionsChanged(sessions: readonly ExtensionWebviewSessionInfo[]): void
-  onWebviewMessage(event: ExtensionWebviewMessageEvent): void
 }
 
 export class ExtensionCapabilityGateway {
@@ -108,20 +100,14 @@ export class ExtensionCapabilityGateway {
       resolveRuntimeHandle: options.resolveRuntimeHandle
     })
     this.webviews = new ExtensionWebviewsCapabilityProvider({
-      resolveRuntimeHandle: options.resolveRuntimeHandle,
-      resolveDocumentUrl: options.resolveWebviewDocumentUrl,
-      resolvePage: options.resolveWebviewPage,
-      resolveDialog: options.resolveWebviewDialog,
-      resolvePageByExtension: options.resolveWebviewPageByExtension,
-      onSessionsChanged: options.onWebviewSessionsChanged,
-      onWebviewMessage: options.onWebviewMessage
+      sessions: options.webviewSessions,
+      resolveRuntimeHandle: options.resolveRuntimeHandle
     })
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
     this.events.attachRpc(rpc)
     this.taskRuns.attachRpc(rpc)
-    this.webviews.attachRpc(rpc)
     this.library.registerRpcHandlers(rpc)
 
     rpc.handleHostRequest(
@@ -141,7 +127,7 @@ export class ExtensionCapabilityGateway {
     rpc.handleHostRequest(
       'capabilities.webviews.postMessage',
       async ({ runtimeHandle, webviewId, message }) => {
-        this.webviews.postMessageToWebview(runtimeHandle, webviewId, message)
+        this.webviews.postMessage(runtimeHandle, webviewId, message)
         return {}
       }
     )
@@ -366,7 +352,6 @@ export class ExtensionCapabilityGateway {
   detachRpc(): void {
     this.events.detachRpc()
     this.taskRuns.detachRpc()
-    this.webviews.detachRpc()
   }
 
   releaseRuntime(runtimeHandle: string): void {
@@ -375,7 +360,6 @@ export class ExtensionCapabilityGateway {
     this.notify.releaseRuntime(runtimeHandle)
     this.commands.releaseRuntime(runtimeHandle)
     this.taskRuns.releaseRuntime(runtimeHandle)
-    this.webviews.releaseRuntime(runtimeHandle)
   }
 
   releaseAll(): void {
@@ -384,7 +368,6 @@ export class ExtensionCapabilityGateway {
     this.notify.releaseAll()
     this.commands.releaseAll()
     this.taskRuns.releaseAll()
-    this.webviews.releaseAll()
   }
 
   private requireRuntime(runtimeHandle: string): ExtensionRuntimeMetadata {

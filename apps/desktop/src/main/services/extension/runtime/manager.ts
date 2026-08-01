@@ -43,6 +43,7 @@ import {
 import { ExtensionRuntimeStorage } from './storage'
 import type { ExtensionCapabilityGateway } from '../capabilities'
 import type { ExtensionContributionRegistry } from '../contributions'
+import type { ExtensionWebviewSessionManager } from '../webviews'
 import {
   EXTENSION_HOST_HANDSHAKE_TIMEOUT_MS,
   EXTENSION_HOST_LIFECYCLE_TIMEOUT_MS,
@@ -59,6 +60,7 @@ export interface RuntimeManagerOptions {
   hostInspect?: ExtensionHostInspectOptions
   capabilities?: ExtensionCapabilityGateway
   contributions?: ExtensionContributionRegistry
+  webviews?: ExtensionWebviewSessionManager
   getUiLocale(): RuntimeInfo['uiLocale']
   onRuntimeStateChanged?(extensionId: string, state: ExtensionRuntimeState): void
 }
@@ -250,6 +252,7 @@ export class RuntimeManager {
       )
     } catch (error) {
       this.runtimeHandles.delete(runtimeHandle)
+      this.options.webviews?.releaseRuntime(runtimeHandle)
       this.options.capabilities?.releaseRuntime(runtimeHandle)
       await this.options.contributions?.releaseRuntime(runtimeHandle)
       this.recordRuntimeFailure(extension.id, toRuntimeErrorMessage(error))
@@ -329,6 +332,7 @@ export class RuntimeManager {
       secrets: this.secrets,
       capabilities: this.options.capabilities,
       contributions: this.options.contributions,
+      webviews: this.options.webviews,
       resolveRuntimeHandle: (runtimeHandle) => this.runtimeHandles.get(runtimeHandle) ?? null,
       reportDiagnostic: (runtimeHandle, diagnostic) =>
         this.recordRuntimeDiagnostic(runtimeHandle, diagnostic)
@@ -388,6 +392,8 @@ export class RuntimeManager {
       }
 
       this.handshaken = false
+      this.options.webviews?.detachRpc()
+      this.options.webviews?.releaseAll()
       this.options.capabilities?.detachRpc()
       this.options.capabilities?.releaseAll()
       await this.options.contributions?.releaseAll()
@@ -499,6 +505,8 @@ export class RuntimeManager {
       }
     }
 
+    this.options.webviews?.detachRpc()
+    this.options.webviews?.releaseAll()
     this.options.capabilities?.detachRpc()
     this.options.capabilities?.releaseAll()
     await this.options.contributions?.releaseAll()
@@ -560,6 +568,7 @@ export class RuntimeManager {
 
   private async releaseLoadedState(state: LoadedExtensionState): Promise<void> {
     this.runtimeHandles.delete(state.runtimeHandle)
+    this.options.webviews?.releaseRuntime(state.runtimeHandle)
     this.options.capabilities?.releaseRuntime(state.runtimeHandle)
     await this.options.contributions?.releaseRuntime(state.runtimeHandle)
   }

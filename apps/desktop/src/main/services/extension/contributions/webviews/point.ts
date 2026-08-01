@@ -13,7 +13,7 @@ import {
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionDomainOptions,
+  type ExtensionContributionPointOptions,
   type RuntimeContributionOwner
 } from '../types'
 
@@ -30,8 +30,9 @@ export interface ExtensionWebviewDialogRegistration {
 
 /**
  * Main-process registry of declared webview surfaces. Declarations are the
- * single source the capability provider opens sessions from, and nav-enabled
- * pages project into the contribution snapshot for the renderer sidebar.
+ * single source the webview session manager opens sessions from, and
+ * nav-enabled pages project into the contribution snapshot for the renderer
+ * sidebar.
  */
 export class ExtensionWebviewContributionPoint {
   private readonly pages = new Map<string, ExtensionWebviewPageRegistration>()
@@ -39,7 +40,7 @@ export class ExtensionWebviewContributionPoint {
   private readonly dialogs = new Map<string, ExtensionWebviewDialogRegistration>()
   private readonly dialogsByPublicId = new Map<string, ExtensionWebviewDialogRegistration>()
 
-  constructor(private readonly options: ExtensionContributionDomainOptions) {}
+  constructor(private readonly options: ExtensionContributionPointOptions) {}
 
   registerPage(runtimeHandle: ExtensionRuntimeHandle, page: WebviewPageContribution): void {
     const owner = requireContributionOwner(this.options, runtimeHandle)

@@ -13,16 +13,21 @@ import {
   type CompiledDeeplinkRoutePattern,
   type DeeplinkResult,
   type DeeplinkRouteContext,
-  type DeeplinkRouteHandler
+  type DeeplinkRouteHandler,
+  type DeeplinkService
 } from '@main/services/deeplink'
 import {
   getRuntimeContributionKey,
   requireContributionOwner,
   toContributionOwnerInfo,
   type ExtensionContributionReleaseDiagnostic,
-  type ExtensionContributionDomainOptions,
+  type ExtensionContributionPointOptions,
   type RuntimeContributionOwner
 } from '../types'
+
+export interface ExtensionDeeplinkRouteContributionPointOptions extends ExtensionContributionPointOptions {
+  deeplink: DeeplinkService
+}
 
 const log = createLogger('Extension')
 
@@ -42,8 +47,8 @@ export class ExtensionDeeplinkRouteContributionPoint {
   private readonly byExtension = new Map<string, DeeplinkRouteRegistration[]>()
   private nextOrder = 0
 
-  constructor(private readonly options: ExtensionContributionDomainOptions) {
-    options.deeplink?.router.register(EXTENSION_DEEPLINK_ROUTE, new ExtensionDeeplinkHandler(this))
+  constructor(private readonly options: ExtensionDeeplinkRouteContributionPointOptions) {
+    options.deeplink.router.register(EXTENSION_DEEPLINK_ROUTE, new ExtensionDeeplinkHandler(this))
   }
 
   register(

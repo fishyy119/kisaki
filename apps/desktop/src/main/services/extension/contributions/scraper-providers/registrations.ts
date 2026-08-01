@@ -1,12 +1,12 @@
 import type { ContentLocale } from '@shared/i18n'
 import type { ScraperLookup } from '@shared/scraper'
-import type { ExtensionContributionDomainOptions } from '../types'
+import type { ExtensionContributionPointOptions } from '../types'
 import { EXTENSION_CLEANUP_TIMEOUT_MS } from '../../shared/rpc-timeouts'
 import { getScraperRpcMethod } from './descriptors'
 import type { ScraperDomain, ScraperRegistration } from './domain'
 
 export function createProviderAdapter(
-  options: ExtensionContributionDomainOptions,
+  options: ExtensionContributionPointOptions,
   registration: ScraperRegistration,
   domain: ScraperDomain
 ): unknown {
@@ -62,7 +62,7 @@ export function createProviderAdapter(
 }
 
 function createSessionAdapter(
-  options: ExtensionContributionDomainOptions,
+  options: ExtensionContributionPointOptions,
   registration: ScraperRegistration,
   domain: ScraperDomain,
   sessionId: string
@@ -102,7 +102,7 @@ function createSessionAdapter(
 }
 
 async function requestScraperHost<TResponse>(
-  options: ExtensionContributionDomainOptions,
+  options: ExtensionContributionPointOptions,
   domain: ScraperDomain,
   action: 'search' | 'resolve' | 'session.open' | 'session.get' | 'session.close',
   params: Record<string, unknown>,

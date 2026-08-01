@@ -4,11 +4,15 @@ import type {
   ExtensionContributionSnapshot,
   ExtensionEntityMenuInvokeRequest,
   ExtensionEntityMenuInvokeResponse,
+  ExtensionEntityMenuRefreshRequestedEvent,
   ExtensionEntityMenuReleaseRequest,
   ExtensionEntityMenuResolveRequest,
   ExtensionResolvedEntityMenu,
   ExtensionThemeRegistrationInfo
 } from '@shared/extension'
+import type { CommandService } from '@main/services/command'
+import type { DeeplinkService } from '@main/services/deeplink'
+import type { ScraperService } from '@main/services/scraper'
 import type { ExtensionHostRpcClient } from '../runtime'
 import { requireSafeExtensionId } from '../shared/path-confinement'
 import { ExtensionCardActionContributionPoint } from './card-actions'
@@ -19,9 +23,17 @@ import { ExtensionScraperProviderContributionPoint } from './scraper-providers'
 import { ExtensionThemeContributionPoint } from './themes'
 import { ExtensionWebviewContributionPoint } from './webviews'
 import type {
-  ExtensionContributionDomainOptions,
+  ExtensionContributionPointOptions,
   ExtensionContributionReleaseDiagnostic
 } from './types'
+
+export interface ExtensionContributionRegistryOptions extends ExtensionContributionPointOptions {
+  command: CommandService
+  deeplink: DeeplinkService
+  scraper: ScraperService
+  onContributionsChanged?: () => void
+  onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
+}
 
 export class ExtensionContributionRegistry {
   readonly entityMenus: ExtensionEntityMenuContributionPoint
@@ -32,14 +44,30 @@ export class ExtensionContributionRegistry {
   readonly commands: ExtensionCommandContributionPoint
   readonly webviews: ExtensionWebviewContributionPoint
 
-  constructor(private readonly options: ExtensionContributionDomainOptions) {
-    this.entityMenus = new ExtensionEntityMenuContributionPoint(options)
-    this.cardActions = new ExtensionCardActionContributionPoint(options)
-    this.themes = new ExtensionThemeContributionPoint(options)
-    this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint(options)
-    this.scraperProviders = new ExtensionScraperProviderContributionPoint(options)
-    this.commands = new ExtensionCommandContributionPoint(options)
-    this.webviews = new ExtensionWebviewContributionPoint(options)
+  constructor(private readonly options: ExtensionContributionRegistryOptions) {
+    const base: ExtensionContributionPointOptions = {
+      resolveRuntimeHandle: options.resolveRuntimeHandle,
+      requestHost: options.requestHost
+    }
+    this.entityMenus = new ExtensionEntityMenuContributionPoint({
+      ...base,
+      onRefreshRequested: options.onEntityMenusRefreshRequested
+    })
+    this.cardActions = new ExtensionCardActionContributionPoint(base)
+    this.themes = new ExtensionThemeContributionPoint(base)
+    this.deeplinkRoutes = new ExtensionDeeplinkRouteContributionPoint({
+      ...base,
+      deeplink: options.deeplink
+    })
+    this.scraperProviders = new ExtensionScraperProviderContributionPoint({
+      ...base,
+      scraper: options.scraper
+    })
+    this.commands = new ExtensionCommandContributionPoint({
+      ...base,
+      command: options.command
+    })
+    this.webviews = new ExtensionWebviewContributionPoint(base)
   }
 
   registerRpcHandlers(rpc: ExtensionHostRpcClient): void {
@@ -260,7 +288,7 @@ export class ExtensionContributionRegistry {
   }
 
   private notifyChanged(): void {
-    this.options.onDidChange?.()
+    this.options.onContributionsChanged?.()
   }
 }
 

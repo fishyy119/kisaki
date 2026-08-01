@@ -6,18 +6,13 @@ import type {
   RpcParams,
   RpcResult
 } from '@kisaki3/extension-api'
-import type { ExtensionEntityMenuRefreshRequestedEvent } from '@shared/extension'
-import type { DeeplinkService } from '@main/services/deeplink'
-import type { CommandService } from '@main/services/command'
-import type { ScraperService } from '@main/services/scraper'
 import type { RpcRequestOptions } from '../runtime'
 
-export interface ExtensionContributionDomainOptions {
-  command?: CommandService
-  deeplink?: DeeplinkService
-  scraper?: ScraperService
-  onDidChange?: () => void
-  onEntityMenusRefreshRequested?: (event: ExtensionEntityMenuRefreshRequestedEvent) => void
+/**
+ * Dependencies every contribution point needs. Domain-specific services and
+ * callbacks belong on the owning point's own options type.
+ */
+export interface ExtensionContributionPointOptions {
   resolveRuntimeHandle(runtimeHandle: ExtensionRuntimeHandle): ExtensionRuntimeMetadata | null
   requestHost<K extends MainToHostRpcMethod>(
     method: K,
@@ -37,7 +32,7 @@ export interface ExtensionContributionReleaseDiagnostic {
 }
 
 export function requireContributionOwner(
-  options: ExtensionContributionDomainOptions,
+  options: ExtensionContributionPointOptions,
   runtimeHandle: ExtensionRuntimeHandle
 ): RuntimeContributionOwner {
   const extension = options.resolveRuntimeHandle(runtimeHandle)

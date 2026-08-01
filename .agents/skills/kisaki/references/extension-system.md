@@ -41,7 +41,7 @@ Extensions run in one shared extension host process. The renderer never imports 
 
 Keep extension responsibilities split by process and transport boundary:
 
-- `ExtensionService` is the main-process composition root. It owns path setup, first-level manager wiring, lifecycle init/dispose, contribution snapshot emission, and IPC registration. Renderer-facing work is exposed through namespaces such as `service.repositories`, `service.installations`, `service.installer`, `service.updates`, `service.signers`, and `service.contributions`.
+- `ExtensionService` is the main-process composition root. It owns path setup, first-level manager wiring, lifecycle init/dispose, contribution snapshot emission, and IPC registration. Renderer-facing work is exposed through namespaces such as `service.repositories`, `service.installations`, `service.installer`, `service.updates`, `service.signers`, `service.contributions`, and `service.webviews`.
 - `repositories/**` owns repository configuration, manifest fetching, snapshot persistence, icon proxying, and in-memory catalog aggregation. Repository manifests are remote declarations, not installed-state facts.
 - `installations/**` owns SQLite-backed installation rows and the installed DTO assembled from DB rows, package manifests, built-ins, dev extensions, and runtime state.
 - `packages/**` owns path confinement, `.kisx` download, hash/signature/package verification, extraction, active-package commit/removal, startup recovery, operation cancellation, and extension icon serving. It does not own install/update business policy, signer trust decisions, or runtime lifecycle.
@@ -51,8 +51,9 @@ Keep extension responsibilities split by process and transport boundary:
 - `installations/view.ts`, `installations/store.ts`, `installer/planner.ts`, `packages/preparer.ts`, `packages/manifest.ts`, `packages/layout.ts`, `packages/commit.ts`, `packages/recovery.ts`, `packages/integrity.ts`, `repositories/manager.ts`, `updates/planner.ts`, `reload-watcher.ts`, and `shared/path-confinement.ts` are single-purpose helpers. Keep scan, installation records, package validation, repository download, and path safety logic out of anonymous IPC handlers.
 - `runtime/manager.ts` owns the desired-vs-loaded runtime state machine for the shared extension host. `runtime/host-controller.ts`, `runtime/rpc-client.ts`, `runtime/rpc-core.ts`, `runtime/storage.ts`, and `runtime/secrets.ts` are runtime infrastructure, not contribution or capability logic.
 - `runtime/host/**` is code that runs inside the extension host process. It loads extension entries, builds the SDK bridge, normalizes extension-owned contributions, and talks back to main through typed RPC only.
-- `capabilities/**` are main-side adapters for host-owned services that extensions call through `kisaki.*`.
-- `contributions/**` are main-side adapters for extension-owned registrations. They own renderer-facing snapshots, callback routing, and release of runtime-scoped registrations.
+- `capabilities/**` are main-side adapters for host-owned services that extensions call through `kisaki.*`. Capability providers are stateless extension-direction boundaries: runtime-handle auth, untrusted-DTO validation, and forwarding to the owning app service or module. Renderer-facing state, renderer callbacks, and renderer IPC never live in a capability provider.
+- `contributions/**` are main-side adapters for extension-owned registrations. They own renderer-facing snapshots, callback routing, and release of runtime-scoped registrations. The shared `ExtensionContributionPointOptions` base carries only dependencies every point needs (`resolveRuntimeHandle`, `requestHost`); each point declares its own options type extending the base for domain services and callbacks, and `ExtensionContributionRegistryOptions` is the aggregate the registry composes per-point options from.
+- `webviews/**` owns live webview session runtime: the `ExtensionWebviewSessionManager` holds open sessions, enforces the one-session-per-declared-id policy, buffers and relays messages between the extension host and the renderer, and emits session lifecycle events. It is a third first-level member beside `capabilities/**` and `contributions/**` because sessions are app-owned runtime state bridging both directions: the `kisaki.webviews` capability provider adapts extension-side calls into it, renderer webview IPC lands on it directly through `service.webviews`, and the runtime lifecycle attaches/detaches its RPC and releases its sessions alongside capabilities and contributions.
 - `packages/extension-api/**` defines extension runtime public contracts first. Main, host, renderer, SDK, CLI, and built-in extensions consume those contracts rather than inventing local public shapes. Distributed repository manifest and signing contracts live in `packages/extension-registry/**`.
 
 First-level extension service submodules are module boundaries. Cross-submodule calls go through the
@@ -114,6 +115,8 @@ Use kebab-case plural directory names: `entity-menus`, `settings-panels`, `scrap
 - Main facade and helpers use `Extension*`: `ExtensionService`, `ExtensionInstallationManager`, `ExtensionInstallerManager`, `ExtensionUpdateManager`, `ExtensionRepositoryManager`, `ExtensionSignerTrustManager`, `ExtensionReloadWatcher`.
 - The capability aggregate is `ExtensionCapabilityGateway` in `capabilities/gateway.ts`. Capability adapters use `Extension<Capability>CapabilityProvider` when they expose app-owned services to the extension runtime; `capabilities/library/provider.ts` is the public entry for the split library capability. Do not use `*Provider` for internal capability subdomain stores such as library entities, relations, or attachments.
 - The contribution aggregate is `ExtensionContributionRegistry` in `contributions/registry.ts`. Main-process contribution point folders use `point.ts` and `Extension<ContributionPointSingular>ContributionPoint`, and expose stable verbs such as `register`, `unregister`, `getSnapshot`, `releaseRuntime`, and `releaseAll` as applicable.
+- The webview session owner is `ExtensionWebviewSessionManager` in `webviews/manager.ts`; the `kisaki.webviews` capability provider stays a stateless adapter in front of it.
+- Options-bag notification callbacks use `on<Noun><PastParticiple>`, e.g. `onContributionsChanged`, `onSessionsChanged`, `onInstallationsChanged`; scope the noun to the owning module (the aggregate adds the domain prefix, such as `onEntityMenusRefreshRequested` on the registry options versus `onRefreshRequested` on the entity-menus point options).
 - Package state uses `commit.ts` and `ExtensionPackageCommitter` for active package plus installation row commits, `recovery.ts` and `ExtensionPackageRecovery` for startup reconciliation, and `integrity.ts` for pure package/archive/source checks. Signer trust belongs to `signers/**`; runtime activation belongs to `runtime/**`.
 - Host-process contribution point folders also use `point.ts` and `Host<ContributionPoint>ContributionPoint`. The `Host` prefix means "inside the extension host process"; do not use it for main-process adapters.
 - RPC wrappers are directional: main side uses `ExtensionHostRpcClient`, host side uses `ExtensionHostRpcServer`; public RPC maps use `MainToHost*` and `HostToMain*`.
@@ -155,9 +158,10 @@ declarative content (`themes`, `webviews`). Capabilities are host-owned services
 
 Webviews pair a declarative contribution with a same-named capability: pages and dialogs are
 declared through `context.contributions.webviews.pages/dialogs.register(...)` and opened by id
-through `kisaki.webviews.openPage` / `openDialog`. Main keeps at most one live session per declared
-id (reopening a page replaces its session, reopening a dialog adopts it), and session wiring
-happens once through `registration.onOpen(handle)` regardless of the open trigger. Nav-enabled
+through `kisaki.webviews.openPage` / `openDialog`. The main-process `ExtensionWebviewSessionManager`
+(`services/extension/webviews/`) keeps at most one live session per declared id (reopening a page
+replaces its session, reopening a dialog adopts it), and session wiring happens once through
+`registration.onOpen(handle)` regardless of the open trigger. Nav-enabled
 pages project into the contribution snapshot and render in the app sidebar under the stable
 `/extension-page/:extensionId/:pageId` route.
 
