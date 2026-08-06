@@ -7,35 +7,45 @@
  */
 
 export type {
-  FilterState,
-  FilterValue,
-  RelationValue,
   DateRangeValue,
-  NumberRangeValue,
-  SectionLayout,
-  SectionItemSize
-} from '@shared/db/contracts/json'
+  FilterCondition,
+  FilterFieldKind,
+  FilterMatchMode,
+  FilterOp,
+  FilterState,
+  NumberRangeValue
+} from './model'
+export { FILTER_OPS_BY_KIND, isFilterOpForKind, isRelationCondition } from './model'
 
-export { createEmptyFilter, hasActiveFilters, countActiveFilters } from './state'
-export { getFilterValue, setFilterValue, removeFilterValue } from './state'
+export {
+  addCondition,
+  countConditions,
+  createDefaultCondition,
+  createEmptyFilter,
+  hasConditions,
+  removeCondition,
+  setMatchMode,
+  updateCondition
+} from './state'
+
+export { matchesFilterStateShape, parseFilterCondition, parseFilterState } from './normalization'
 
 export type {
-  DateRangeMode,
-  FieldQueryDef,
+  DateColumnMode,
+  FilterQueryFieldDef,
+  FilterQuerySortDef,
   FilterQuerySpec,
   FilterQuerySpecInput,
-  SortQueryDef
+  FilterRelationLink
 } from './spec'
-export { defineQuerySpec } from './spec'
+export { defineFilterQuerySpec } from './spec'
 
 export { buildFilterConditions, buildOrderBy } from './builder'
 
-export {
-  getFilterQuerySpec,
-  gameFilterQuerySpec,
-  characterFilterQuerySpec,
-  personFilterQuerySpec,
-  companyFilterQuerySpec,
-  collectionFilterQuerySpec,
-  tagFilterQuerySpec
-} from './specs'
+export { getFilterQuerySpec, getFilterRelevantTables } from './specs/registry'
+export { gameFilterQuerySpec } from './specs/game'
+export { characterFilterQuerySpec } from './specs/character'
+export { personFilterQuerySpec } from './specs/person'
+export { companyFilterQuerySpec } from './specs/company'
+export { collectionFilterQuerySpec } from './specs/collection'
+export { tagFilterQuerySpec } from './specs/tag'

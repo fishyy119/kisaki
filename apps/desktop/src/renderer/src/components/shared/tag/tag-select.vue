@@ -28,6 +28,8 @@ interface Props {
   excludeIds?: string[]
   /** Allow creating new tags */
   allowCreate?: boolean
+  /** Reflect the current selection in the trigger (see VirtualizedCombobox) */
+  showSelectedLabel?: boolean
   /** Custom class name */
   class?: string
 }
@@ -140,6 +142,7 @@ async function handleCreate(name: string) {
     :class="props.class"
     :disabled="disabled"
     :allow-create="allowCreate"
+    :show-selected-label="props.showSelectedLabel"
     @create="handleCreate"
   />
 </template>

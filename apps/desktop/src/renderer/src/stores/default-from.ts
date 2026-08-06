@@ -13,7 +13,8 @@
  *
  * Dynamic collections (filter-based):
  * - Precomputed by evaluating filters
- * - Listen to: collections (dynamicConfig), entity tables (with debounce)
+ * - Listen to: collections (dynamicConfig) plus every filter-relevant table
+ *   (entity tables and relation link tables), with debounce
  *
  * Query: O(1) - compare both maps, return lower order
  */
@@ -21,13 +22,15 @@
 import { defineStore } from 'pinia'
 import { ref, readonly, watch, type Ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { and, eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { useDebounceFn } from '@vueuse/core'
+import { and, eq, type SQL } from 'drizzle-orm'
+import { db, queryEntityIds, COLLECTION_LINKS, ENTITY_TABLES } from '@renderer/core/db'
 import { ipcManager } from '@renderer/core/ipc'
-import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import type { ContentEntityType } from '@shared/common'
+import { getFilterRelevantTables } from '@shared/filter'
+import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
+import type { TableName } from '@shared/db/table-names'
 import { usePreferencesStore } from './preferences'
 
 // Entry with order for comparison
@@ -38,13 +41,8 @@ interface FromEntry {
 
 type FromMap = Map<string, FromEntry>
 
-// Simple debounce utility
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-  return ((...args: unknown[]) => {
-    if (timeoutId) clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => fn(...args), delay)
-  }) as T
+function createFromMapByType(): Map<ContentEntityType, Ref<FromMap>> {
+  return new Map(CONTENT_ENTITY_TYPES.map((type) => [type, ref<FromMap>(new Map())]))
 }
 
 export const useDefaultFromStore = defineStore('defaultFrom', () => {
@@ -55,17 +53,8 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // State: Separated maps for static and dynamic collections
   // =========================================================================
 
-  // Static: from link tables
-  const staticGameFroms = ref<FromMap>(new Map())
-  const staticCharacterFroms = ref<FromMap>(new Map())
-  const staticPersonFroms = ref<FromMap>(new Map())
-  const staticCompanyFroms = ref<FromMap>(new Map())
-
-  // Dynamic: from filter evaluation
-  const dynamicGameFroms = ref<FromMap>(new Map())
-  const dynamicCharacterFroms = ref<FromMap>(new Map())
-  const dynamicPersonFroms = ref<FromMap>(new Map())
-  const dynamicCompanyFroms = ref<FromMap>(new Map())
+  const staticFroms = createFromMapByType()
+  const dynamicFroms = createFromMapByType()
 
   const isInitialized = ref(false)
 
@@ -74,6 +63,14 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
     if (!isInitialized.value) return
     await Promise.all([refetchAllStatic(), refetchAllDynamic()])
   })
+
+  function getStaticMap(entityType: ContentEntityType): Ref<FromMap> {
+    return staticFroms.get(entityType) as Ref<FromMap>
+  }
+
+  function getDynamicMap(entityType: ContentEntityType): Ref<FromMap> {
+    return dynamicFroms.get(entityType) as Ref<FromMap>
+  }
 
   // =========================================================================
   // Public API
@@ -84,11 +81,8 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
    * Compares static and dynamic entries, returns the one with lower order.
    */
   function getFrom(entityType: ContentEntityType, entityId: string): string {
-    const staticMap = getStaticMapByType(entityType)
-    const dynamicMap = getDynamicMapByType(entityType)
-
-    const staticEntry = staticMap.value.get(entityId)
-    const dynamicEntry = dynamicMap.value.get(entityId)
+    const staticEntry = getStaticMap(entityType).value.get(entityId)
+    const dynamicEntry = getDynamicMap(entityType).value.get(entityId)
 
     // Both exist: compare orders
     if (staticEntry && dynamicEntry) {
@@ -120,16 +114,11 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // =========================================================================
 
   async function refetchAllStatic() {
-    await Promise.all([
-      refetchStaticType('game'),
-      refetchStaticType('character'),
-      refetchStaticType('person'),
-      refetchStaticType('company')
-    ])
+    await Promise.all(CONTENT_ENTITY_TYPES.map((type) => refetchStaticType(type)))
   }
 
   async function refetchStaticType(entityType: ContentEntityType) {
-    const target = getStaticMapByType(entityType)
+    const target = getStaticMap(entityType)
     const newMap = new Map<string, FromEntry>()
 
     // Get all static collections ordered by order
@@ -170,58 +159,24 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   async function fetchStaticLinks(
     entityType: ContentEntityType
   ): Promise<{ entityId: string; collectionId: string }[]> {
-    switch (entityType) {
-      case 'game': {
-        const rows = await db
-          .select({
-            entityId: schema.collectionGameLinks.gameId,
-            collectionId: schema.collectionGameLinks.collectionId
-          })
-          .from(schema.collectionGameLinks)
-          .innerJoin(schema.games, eq(schema.collectionGameLinks.gameId, schema.games.id))
-          .where(showNsfw.value ? undefined : eq(schema.games.isNsfw, false))
-        return rows
-      }
-      case 'character': {
-        const rows = await db
-          .select({
-            entityId: schema.collectionCharacterLinks.characterId,
-            collectionId: schema.collectionCharacterLinks.collectionId
-          })
-          .from(schema.collectionCharacterLinks)
-          .innerJoin(
-            schema.characters,
-            eq(schema.collectionCharacterLinks.characterId, schema.characters.id)
-          )
-          .where(showNsfw.value ? undefined : eq(schema.characters.isNsfw, false))
-        return rows
-      }
-      case 'person': {
-        const rows = await db
-          .select({
-            entityId: schema.collectionPersonLinks.personId,
-            collectionId: schema.collectionPersonLinks.collectionId
-          })
-          .from(schema.collectionPersonLinks)
-          .innerJoin(schema.persons, eq(schema.collectionPersonLinks.personId, schema.persons.id))
-          .where(showNsfw.value ? undefined : eq(schema.persons.isNsfw, false))
-        return rows
-      }
-      case 'company': {
-        const rows = await db
-          .select({
-            entityId: schema.collectionCompanyLinks.companyId,
-            collectionId: schema.collectionCompanyLinks.collectionId
-          })
-          .from(schema.collectionCompanyLinks)
-          .innerJoin(
-            schema.companies,
-            eq(schema.collectionCompanyLinks.companyId, schema.companies.id)
-          )
-          .where(showNsfw.value ? undefined : eq(schema.companies.isNsfw, false))
-        return rows
-      }
-    }
+    const link = COLLECTION_LINKS[entityType]
+    const entity = ENTITY_TABLES[entityType]
+
+    const parts: SQL[] = []
+    if (!showNsfw.value) parts.push(eq(entity.isNsfwColumn, false))
+
+    let query = db
+      .select({ entityId: link.entityIdColumn, collectionId: link.collectionIdColumn })
+      .from(link.table)
+      .innerJoin(entity.table, eq(link.entityIdColumn, entity.idColumn))
+      .$dynamic()
+    if (parts.length > 0) query = query.where(and(...parts))
+
+    const rows = await query
+    return rows.map((row) => ({
+      entityId: row.entityId as string,
+      collectionId: row.collectionId as string
+    }))
   }
 
   // =========================================================================
@@ -229,16 +184,11 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
   // =========================================================================
 
   async function refetchAllDynamic() {
-    await Promise.all([
-      refetchDynamicType('game'),
-      refetchDynamicType('character'),
-      refetchDynamicType('person'),
-      refetchDynamicType('company')
-    ])
+    await Promise.all(CONTENT_ENTITY_TYPES.map((type) => refetchDynamicType(type)))
   }
 
   async function refetchDynamicType(entityType: ContentEntityType) {
-    const target = getDynamicMapByType(entityType)
+    const target = getDynamicMap(entityType)
     const newMap = new Map<string, FromEntry>()
 
     // Get all dynamic collections ordered by order
@@ -271,143 +221,47 @@ export const useDefaultFromStore = defineStore('defaultFrom', () => {
     if (!dynamicConfig) return []
 
     const entityConfig = dynamicConfig[entityType]
-    if (!entityConfig?.enabled) return []
+    if (!entityConfig.enabled) return []
 
-    const querySpec = getQuerySpec(entityType)
-    const whereCondition = buildFilterConditions(querySpec, entityConfig.filter)
-    const orderBy = buildOrderBy(querySpec, entityConfig.sortField, entityConfig.sortDirection)
-
-    const entities = await fetchEntitiesByType(entityType, whereCondition, orderBy)
-    return entities.map((e) => e.id)
+    return await queryEntityIds(entityType, {
+      filter: entityConfig.filter,
+      sortField: entityConfig.sortField,
+      sortDirection: entityConfig.sortDirection,
+      includeNsfw: showNsfw.value
+    })
   }
-
-  async function fetchEntitiesByType(
-    entityType: ContentEntityType,
-    whereCondition: unknown,
-    orderBy: unknown
-  ): Promise<{ id: string }[]> {
-    switch (entityType) {
-      case 'game':
-        return (await db.query.games.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw.value ? undefined : eq(schema.games.isNsfw, false)
-          ) as never,
-          orderBy,
-          columns: { id: true }
-        } as never)) as { id: string }[]
-      case 'character':
-        return (await db.query.characters.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw.value ? undefined : eq(schema.characters.isNsfw, false)
-          ) as never,
-          orderBy,
-          columns: { id: true }
-        } as never)) as { id: string }[]
-      case 'person':
-        return (await db.query.persons.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw.value ? undefined : eq(schema.persons.isNsfw, false)
-          ) as never,
-          orderBy,
-          columns: { id: true }
-        } as never)) as { id: string }[]
-      case 'company':
-        return (await db.query.companies.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw.value ? undefined : eq(schema.companies.isNsfw, false)
-          ) as never,
-          orderBy,
-          columns: { id: true }
-        } as never)) as { id: string }[]
-    }
-  }
-
-  // =========================================================================
-  // Map helpers
-  // =========================================================================
-
-  function getStaticMapByType(entityType: ContentEntityType): Ref<FromMap> {
-    switch (entityType) {
-      case 'game':
-        return staticGameFroms
-      case 'character':
-        return staticCharacterFroms
-      case 'person':
-        return staticPersonFroms
-      case 'company':
-        return staticCompanyFroms
-    }
-  }
-
-  function getDynamicMapByType(entityType: ContentEntityType): Ref<FromMap> {
-    switch (entityType) {
-      case 'game':
-        return dynamicGameFroms
-      case 'character':
-        return dynamicCharacterFroms
-      case 'person':
-        return dynamicPersonFroms
-      case 'company':
-        return dynamicCompanyFroms
-    }
-  }
-
-  const getQuerySpec = getFilterQuerySpec
 
   // =========================================================================
   // Event listeners
   // =========================================================================
 
   function setupEventListeners() {
-    // Debounced handlers for entity table changes (dynamic collections)
-    const debouncedRefetchDynamicGame = debounce(() => refetchDynamicType('game'), 300)
-    const debouncedRefetchDynamicCharacter = debounce(() => refetchDynamicType('character'), 300)
-    const debouncedRefetchDynamicPerson = debounce(() => refetchDynamicType('person'), 300)
-    const debouncedRefetchDynamicCompany = debounce(() => refetchDynamicType('company'), 300)
+    // Debounced per-type dynamic refetches for entity/link table changes
+    const debouncedDynamicRefetch = new Map(
+      CONTENT_ENTITY_TYPES.map((type) => [type, useDebounceFn(() => refetchDynamicType(type), 300)])
+    )
 
-    const handleStaticChange = (table: string) => {
-      switch (table) {
-        case 'collection_game_links':
-          refetchStaticType('game')
-          break
-        case 'collection_character_links':
-          refetchStaticType('character')
-          break
-        case 'collection_person_links':
-          refetchStaticType('person')
-          break
-        case 'collection_company_links':
-          refetchStaticType('company')
-          break
-        case 'collections':
-          // Order might have changed - refetch all static
-          refetchAllStatic()
-          break
+    const handleStaticChange = (table: TableName) => {
+      if (table === 'collections') {
+        // Order might have changed - refetch all static
+        void refetchAllStatic()
+        return
+      }
+      for (const type of CONTENT_ENTITY_TYPES) {
+        if (COLLECTION_LINKS[type].tableName === table) void refetchStaticType(type)
       }
     }
 
-    const handleDynamicChange = (table: string) => {
-      switch (table) {
-        case 'collections':
-          // dynamicConfig might have changed - refetch all dynamic
-          refetchAllDynamic()
-          break
-        case 'games':
-          debouncedRefetchDynamicGame()
-          break
-        case 'characters':
-          debouncedRefetchDynamicCharacter()
-          break
-        case 'persons':
-          debouncedRefetchDynamicPerson()
-          break
-        case 'companies':
-          debouncedRefetchDynamicCompany()
-          break
+    const handleDynamicChange = (table: TableName) => {
+      if (table === 'collections') {
+        // dynamicConfig might have changed - refetch all dynamic
+        void refetchAllDynamic()
+        return
+      }
+      for (const type of CONTENT_ENTITY_TYPES) {
+        if (getFilterRelevantTables(type).includes(table)) {
+          void debouncedDynamicRefetch.get(type)?.()
+        }
       }
     }
 

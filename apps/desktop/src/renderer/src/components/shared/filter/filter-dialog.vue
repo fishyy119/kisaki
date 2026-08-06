@@ -1,14 +1,15 @@
 <!--
   FilterDialog
   Dialog-based filter panel.
-  Full-screen dialog version of FilterPanel.
-  Has header with title/count, scrollable body, and footer with clear/cancel/confirm.
+  Full-screen dialog version of FilterPanel. Header carries the title,
+  condition count, and match mode; the body is the pure condition list; the
+  footer groups list-level actions (add/clear) with cancel/confirm.
 -->
 <script setup lang="ts">
 import type { FilterState } from '@shared/filter'
 import { ref, watch } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { createEmptyFilter, countActiveFilters } from '@shared/filter'
+import { createEmptyFilter, countConditions } from '@shared/filter'
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,8 @@ import { Form } from '@renderer/components/ui/form'
 import { Button } from '@renderer/components/ui/button'
 import { useI18n } from '@renderer/composables'
 import FilterBuilder from './filter-builder.vue'
+import MatchModeSwitch from './match-mode-switch.vue'
+import AddConditionMenu from './add-condition-menu.vue'
 import type { FilterUiSpec } from './specs/types'
 
 interface Props {
@@ -72,20 +75,21 @@ function handleCancel() {
   <Dialog v-model:open="open">
     <DialogContent class="max-w-lg">
       <Form @submit="handleConfirm">
-        <DialogHeader>
+        <DialogHeader class="flex items-center gap-3">
           <DialogTitle class="flex items-center gap-2">
             <Icon
               icon="icon-[mdi--filter-outline]"
               class="size-4"
             />
             {{ m.filter.title }}
-            <span
-              v-if="countActiveFilters(localFilter) > 0"
-              class="text-sm font-normal text-muted-foreground"
-            >
-              {{ m.filter.conditionCount({ count: countActiveFilters(localFilter) }) }}
-            </span>
           </DialogTitle>
+          <MatchModeSwitch v-model="localFilter" />
+          <span
+            v-if="countConditions(localFilter) > 0"
+            class="text-xs font-normal text-muted-foreground"
+          >
+            {{ m.filter.conditionCount({ count: countConditions(localFilter) }) }}
+          </span>
         </DialogHeader>
 
         <DialogBody class="overflow-auto max-h-[60vh]">
@@ -96,19 +100,24 @@ function handleCancel() {
         </DialogBody>
 
         <DialogFooter class="flex-row justify-between items-center sm:justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="text-muted-foreground"
-            @click="handleClear"
-          >
-            <Icon
-              icon="icon-[mdi--filter-off-outline]"
-              class="size-4 mr-1.5"
+          <div class="flex items-center gap-2">
+            <AddConditionMenu
+              v-model="localFilter"
+              :ui-spec="props.uiSpec"
             />
-            {{ m.filter.clearFilters }}
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              @click="handleClear"
+            >
+              <Icon
+                icon="icon-[mdi--filter-off-outline]"
+                class="size-4 mr-1"
+              />
+              {{ m.filter.clearFilters }}
+            </Button>
+          </div>
           <div class="flex gap-2">
             <Button
               type="button"

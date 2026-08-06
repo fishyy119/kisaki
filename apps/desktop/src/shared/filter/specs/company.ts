@@ -1,55 +1,58 @@
-import { companies } from '@shared/db'
-import { defineQuerySpec } from '../spec'
+import { collectionCompanyLinks, companies, companyTagLinks, gameCompanyLinks } from '@shared/db'
+import { defineFilterQuerySpec } from '../spec'
 
-export const companyFilterQuerySpec = defineQuerySpec({
+export const companyFilterQuerySpec = defineFilterQuerySpec({
   entityType: 'company',
-  tableName: 'companies',
+  table: companies,
   fields: [
     { key: 'isFavorite', kind: 'boolean', column: companies.isFavorite },
     { key: 'isNsfw', kind: 'boolean', column: companies.isNsfw },
 
-    { key: 'score', kind: 'numberRange', column: companies.score },
+    { key: 'score', kind: 'number', column: companies.score },
 
-    { key: 'foundedDate', kind: 'dateRange', mode: 'partialDate', columnName: 'founded_date' },
-    { key: 'createdAt', kind: 'dateRange', mode: 'timestampMs', column: companies.createdAt },
+    { key: 'foundedDate', kind: 'date', mode: 'partialDate', column: companies.foundedDate },
+    { key: 'createdAt', kind: 'date', mode: 'timestampMs', column: companies.createdAt },
 
     {
       key: 'games',
       kind: 'relation',
+      targetEntity: 'game',
       link: {
-        linkTableName: 'game_company_links',
-        mainIdColumn: 'company_id',
-        relatedIdColumn: 'game_id'
+        table: gameCompanyLinks,
+        entityIdColumn: gameCompanyLinks.companyId,
+        relatedIdColumn: gameCompanyLinks.gameId
       }
     },
     {
       key: 'tags',
       kind: 'relation',
+      targetEntity: 'tag',
       link: {
-        linkTableName: 'company_tag_links',
-        mainIdColumn: 'company_id',
-        relatedIdColumn: 'tag_id'
+        table: companyTagLinks,
+        entityIdColumn: companyTagLinks.companyId,
+        relatedIdColumn: companyTagLinks.tagId
       }
     },
     {
       key: 'collections',
       kind: 'relation',
+      targetEntity: 'collection',
       link: {
-        linkTableName: 'collection_company_links',
-        mainIdColumn: 'company_id',
-        relatedIdColumn: 'collection_id'
+        table: collectionCompanyLinks,
+        entityIdColumn: collectionCompanyLinks.companyId,
+        relatedIdColumn: collectionCompanyLinks.collectionId
       }
     }
   ],
   sort: {
     defaultKey: 'name',
     fields: [
-      { key: 'name', column: companies.name },
-      { key: 'sortName', column: companies.sortName },
-      { key: 'originalName', column: companies.originalName },
-      { key: 'createdAt', column: companies.createdAt },
-      { key: 'score', column: companies.score },
-      { key: 'foundedDate', kind: 'partialDate', columnName: 'founded_date' }
+      { key: 'name', kind: 'column', column: companies.name },
+      { key: 'sortName', kind: 'column', column: companies.sortName },
+      { key: 'originalName', kind: 'column', column: companies.originalName },
+      { key: 'createdAt', kind: 'column', column: companies.createdAt },
+      { key: 'score', kind: 'column', column: companies.score },
+      { key: 'foundedDate', kind: 'partialDate', column: companies.foundedDate }
     ]
   }
 })

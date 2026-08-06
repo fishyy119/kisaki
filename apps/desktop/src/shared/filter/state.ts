@@ -1,99 +1,60 @@
-import type {
-  FilterState,
-  FilterValue,
-  RelationValue,
-  DateRangeValue,
-  NumberRangeValue
-} from '@shared/db/contracts/json'
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-function isNumberRangeValue(value: unknown): value is NumberRangeValue {
-  if (!isPlainObject(value)) return false
-  return 'min' in value || 'max' in value
-}
-
-function isDateRangeValue(value: unknown): value is DateRangeValue {
-  if (!isPlainObject(value)) return false
-  return 'from' in value || 'to' in value
-}
-
-function isRelationValue(value: unknown): value is RelationValue {
-  if (!isPlainObject(value)) return false
-  const match = value.match
-  const ids = value.ids
-  return (match === 'any' || match === 'all') && Array.isArray(ids)
-}
-
-function normalizeFilterValue(value: FilterValue | undefined): FilterValue | undefined {
-  if (value === undefined || value === null) return undefined
-
-  if (value === true) return true
-  if (value === (false as unknown as FilterValue)) return undefined
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed ? trimmed : undefined
-  }
-
-  if (Array.isArray(value)) {
-    return value.length > 0 ? value : undefined
-  }
-
-  if (isRelationValue(value)) {
-    return value.ids.length > 0 ? value : undefined
-  }
-
-  if (isNumberRangeValue(value)) {
-    return value.min === undefined && value.max === undefined ? undefined : value
-  }
-
-  if (isDateRangeValue(value)) {
-    const from = typeof value.from === 'string' && value.from.trim() ? value.from : undefined
-    const to = typeof value.to === 'string' && value.to.trim() ? value.to : undefined
-    return from || to ? ({ from, to } satisfies DateRangeValue) : undefined
-  }
-
-  return undefined
-}
+/**
+ * Immutable FilterState operations.
+ *
+ * All operations return a new state; inputs are never mutated.
+ */
+import type { FilterCondition, FilterFieldKind, FilterMatchMode, FilterState } from './model'
 
 export function createEmptyFilter(): FilterState {
-  return {}
+  return { match: 'all', conditions: [] }
 }
 
-export function hasActiveFilters(filter: FilterState): boolean {
-  return Object.keys(filter).length > 0
-}
-
-export function countActiveFilters(filter: FilterState): number {
-  return Object.keys(filter).length
-}
-
-export function getFilterValue(filter: FilterState, key: string): FilterValue | undefined {
-  return filter[key]
-}
-
-export function setFilterValue(
-  filter: FilterState,
-  key: string,
-  value: FilterValue | undefined
-): FilterState {
-  const normalized = normalizeFilterValue(value)
-
-  if (!normalized) {
-    if (!(key in filter)) return filter
-    const { [key]: _removed, ...rest } = filter
-    return rest
+/** Default condition when a field of the given kind is added or re-targeted. */
+export function createDefaultCondition(field: string, kind: FilterFieldKind): FilterCondition {
+  switch (kind) {
+    case 'boolean':
+      return { field, op: 'is', value: true }
+    case 'enum':
+      return { field, op: 'anyOf', value: [] }
+    case 'number':
+      return { field, op: 'inRange', value: {} }
+    case 'date':
+      return { field, op: 'inDateRange', value: {} }
+    case 'relation':
+      return { field, op: 'hasAnyOf', value: [] }
   }
-
-  if (filter[key] === normalized) return filter
-  return { ...filter, [key]: normalized }
 }
 
-export function removeFilterValue(filter: FilterState, key: string): FilterState {
-  if (!(key in filter)) return filter
-  const { [key]: _removed, ...rest } = filter
-  return rest
+export function hasConditions(filter: FilterState): boolean {
+  return filter.conditions.length > 0
+}
+
+export function countConditions(filter: FilterState): number {
+  return filter.conditions.length
+}
+
+export function setMatchMode(filter: FilterState, match: FilterMatchMode): FilterState {
+  if (filter.match === match) return filter
+  return { ...filter, match }
+}
+
+export function addCondition(filter: FilterState, condition: FilterCondition): FilterState {
+  return { ...filter, conditions: [...filter.conditions, condition] }
+}
+
+export function updateCondition(
+  filter: FilterState,
+  index: number,
+  condition: FilterCondition
+): FilterState {
+  if (index < 0 || index >= filter.conditions.length) return filter
+  const conditions = filter.conditions.slice()
+  conditions[index] = condition
+  return { ...filter, conditions }
+}
+
+export function removeCondition(filter: FilterState, index: number): FilterState {
+  if (index < 0 || index >= filter.conditions.length) return filter
+  const conditions = filter.conditions.filter((_, i) => i !== index)
+  return { ...filter, conditions }
 }

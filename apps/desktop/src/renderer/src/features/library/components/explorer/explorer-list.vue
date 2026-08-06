@@ -18,7 +18,7 @@ import { useLibraryExplorerStore } from '../../stores'
 import { useExplorerList } from '../../composables'
 import LibraryExplorerGroup from './explorer-group.vue'
 import LibraryExplorerListItem from './explorer-list-item.vue'
-import { hasActiveFilters } from '@shared/filter'
+import { hasConditions } from '@shared/filter'
 import { hasActiveSearch } from '@shared/search'
 import { toExplorerSelectionKey } from '../../utils/explorer-selection'
 import { useI18n } from '@renderer/composables/use-i18n'
@@ -34,7 +34,7 @@ const state = useRenderState(isLoading, null, rawData)
 // Inject scroll container from parent
 const scrollContainer = inject<Ref<HTMLElement | undefined>>('explorerScrollContainer')
 
-const isFiltering = computed(() => hasActiveSearch(search.value) || hasActiveFilters(filter.value))
+const isFiltering = computed(() => hasActiveSearch(search.value) || hasConditions(filter.value))
 
 const hasData = computed(
   () => data.value.collections.length > 0 || data.value.uncategorized.length > 0

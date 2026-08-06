@@ -24,7 +24,7 @@ import type {
   LibraryTagPatch,
   LibraryTagQuery
 } from '@kisaki3/extension-api'
-import { eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import {
   characterExternalIds,
   characters,
@@ -44,7 +44,7 @@ import {
   gameFilterQuerySpec,
   personFilterQuerySpec,
   tagFilterQuerySpec
-} from '@shared/filter/specs'
+} from '@shared/filter'
 import {
   characterSearchQuerySpec,
   collectionSearchQuerySpec,
@@ -53,11 +53,13 @@ import {
   personSearchQuerySpec,
   tagSearchQuerySpec
 } from '@shared/search/specs'
+import { createEmptyFilter } from '@shared/filter'
 import { buildRankedEntityDtoBase } from './dto'
 import {
-  compactFilter,
-  relationFilter,
-  stringArrayFilter,
+  anyOfCondition,
+  conditionsFilter,
+  hasAnyOfCondition,
+  isCondition,
   toApiDynamicCollectionConfig,
   toDbDynamicCollectionConfig
 } from './filters'
@@ -165,12 +167,12 @@ export const GAME_CONFIG = {
   searchSpec: gameSearchQuerySpec,
   externalIds: GAME_EXTERNAL_IDS_CONFIG,
   toFilter(query) {
-    return compactFilter({
-      isFavorite: query?.favoritesOnly ? true : undefined,
-      status: stringArrayFilter(query?.statuses),
-      tags: relationFilter(query?.tagIds),
-      collections: relationFilter(query?.collectionIds)
-    })
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      anyOfCondition('status', query?.statuses),
+      hasAnyOfCondition('tags', query?.tagIds),
+      hasAnyOfCondition('collections', query?.collectionIds)
+    ])
   },
   toDto(row, externalIds) {
     return {
@@ -283,11 +285,11 @@ export const PERSON_CONFIG = {
   searchSpec: personSearchQuerySpec,
   externalIds: PERSON_EXTERNAL_IDS_CONFIG,
   toFilter(query) {
-    return compactFilter({
-      isFavorite: query?.favoritesOnly ? true : undefined,
-      gender: query?.genders?.length === 1 ? query.genders[0] : undefined,
-      tags: relationFilter(query?.tagIds)
-    })
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      anyOfCondition('gender', query?.genders),
+      hasAnyOfCondition('tags', query?.tagIds)
+    ])
   },
   toDto(row, externalIds) {
     return {
@@ -334,11 +336,7 @@ export const PERSON_CONFIG = {
     })
   },
   buildExtraConditions(query) {
-    const conditions: SQL[] = query?.includeNsfw ? [] : [eq(persons.isNsfw, false)]
-    if (query?.genders && query.genders.length > 1) {
-      conditions.push(inArray(persons.gender, [...query.genders]))
-    }
-    return conditions
+    return query?.includeNsfw ? [] : [eq(persons.isNsfw, false)]
   }
 } satisfies EntityConfig<
   LibraryPerson,
@@ -355,10 +353,10 @@ export const COMPANY_CONFIG = {
   searchSpec: companySearchQuerySpec,
   externalIds: COMPANY_EXTERNAL_IDS_CONFIG,
   toFilter(query) {
-    return compactFilter({
-      isFavorite: query?.favoritesOnly ? true : undefined,
-      tags: relationFilter(query?.tagIds)
-    })
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      hasAnyOfCondition('tags', query?.tagIds)
+    ])
   },
   toDto(row, externalIds) {
     return {
@@ -416,11 +414,11 @@ export const CHARACTER_CONFIG = {
   searchSpec: characterSearchQuerySpec,
   externalIds: CHARACTER_EXTERNAL_IDS_CONFIG,
   toFilter(query) {
-    return compactFilter({
-      isFavorite: query?.favoritesOnly ? true : undefined,
-      gender: query?.genders?.length === 1 ? query.genders[0] : undefined,
-      tags: relationFilter(query?.tagIds)
-    })
+    return conditionsFilter([
+      isCondition('isFavorite', query?.favoritesOnly ? true : undefined),
+      anyOfCondition('gender', query?.genders),
+      hasAnyOfCondition('tags', query?.tagIds)
+    ])
   },
   toDto(row, externalIds) {
     return {
@@ -488,11 +486,7 @@ export const CHARACTER_CONFIG = {
     })
   },
   buildExtraConditions(query) {
-    const conditions: SQL[] = query?.includeNsfw ? [] : [eq(characters.isNsfw, false)]
-    if (query?.genders && query.genders.length > 1) {
-      conditions.push(inArray(characters.gender, [...query.genders]))
-    }
-    return conditions
+    return query?.includeNsfw ? [] : [eq(characters.isNsfw, false)]
   }
 } satisfies EntityConfig<
   LibraryCharacter,
@@ -508,7 +502,7 @@ export const COLLECTION_CONFIG = {
   filterSpec: collectionFilterQuerySpec,
   searchSpec: collectionSearchQuerySpec,
   toFilter() {
-    return {}
+    return createEmptyFilter()
   },
   toDto(row) {
     return {
@@ -577,7 +571,7 @@ export const TAG_CONFIG = {
   filterSpec: tagFilterQuerySpec,
   searchSpec: tagSearchQuerySpec,
   toFilter() {
-    return {}
+    return createEmptyFilter()
   },
   toDto(row) {
     return {

@@ -139,6 +139,9 @@ FTS is configured for entity tables (games, characters, persons, companies):
 
 ## Notes
 
+- Custom JSON columns follow "lenient read, strict write": `fromDriver` never throws and returns
+  the documented safe default, `toDriver` throws on invalid values. See
+  [Conventions](conventions.md#boundary-parsing-lenient-read-strict-write).
 - Migration files are versioned and committed
 - `drizzle/` directory must be accessible in packaged app
 - `attachment://` protocol provides access to DB attachment files

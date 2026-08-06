@@ -1,75 +1,91 @@
-import { games } from '@shared/db'
-import { defineQuerySpec } from '../spec'
+import {
+  collectionGameLinks,
+  gameCharacterLinks,
+  gameCompanyLinks,
+  gamePersonLinks,
+  games,
+  gameTagLinks
+} from '@shared/db'
+import { defineFilterQuerySpec } from '../spec'
 
-export const gameFilterQuerySpec = defineQuerySpec({
+export const gameFilterQuerySpec = defineFilterQuerySpec({
   entityType: 'game',
-  tableName: 'games',
+  table: games,
   fields: [
     { key: 'isFavorite', kind: 'boolean', column: games.isFavorite },
     { key: 'isNsfw', kind: 'boolean', column: games.isNsfw },
 
-    { key: 'status', kind: 'multiSelect', column: games.status },
+    { key: 'status', kind: 'enum', column: games.status },
 
-    { key: 'score', kind: 'numberRange', column: games.score },
-    { key: 'totalDuration', kind: 'numberRange', column: games.totalDuration },
+    { key: 'score', kind: 'number', column: games.score },
+    { key: 'totalDuration', kind: 'number', column: games.totalDuration },
 
-    { key: 'releaseDate', kind: 'dateRange', mode: 'partialDate', columnName: 'release_date' },
-    { key: 'lastActiveAt', kind: 'dateRange', mode: 'timestampMs', column: games.lastActiveAt },
-    { key: 'createdAt', kind: 'dateRange', mode: 'timestampMs', column: games.createdAt },
+    { key: 'releaseDate', kind: 'date', mode: 'partialDate', column: games.releaseDate },
+    { key: 'lastActiveAt', kind: 'date', mode: 'timestampMs', column: games.lastActiveAt },
+    { key: 'createdAt', kind: 'date', mode: 'timestampMs', column: games.createdAt },
 
     {
       key: 'tags',
       kind: 'relation',
-      link: { linkTableName: 'game_tag_links', mainIdColumn: 'game_id', relatedIdColumn: 'tag_id' }
+      targetEntity: 'tag',
+      link: {
+        table: gameTagLinks,
+        entityIdColumn: gameTagLinks.gameId,
+        relatedIdColumn: gameTagLinks.tagId
+      }
     },
     {
       key: 'collections',
       kind: 'relation',
+      targetEntity: 'collection',
       link: {
-        linkTableName: 'collection_game_links',
-        mainIdColumn: 'game_id',
-        relatedIdColumn: 'collection_id'
+        table: collectionGameLinks,
+        entityIdColumn: collectionGameLinks.gameId,
+        relatedIdColumn: collectionGameLinks.collectionId
       }
     },
     {
       key: 'persons',
       kind: 'relation',
+      targetEntity: 'person',
       link: {
-        linkTableName: 'game_person_links',
-        mainIdColumn: 'game_id',
-        relatedIdColumn: 'person_id'
+        table: gamePersonLinks,
+        entityIdColumn: gamePersonLinks.gameId,
+        relatedIdColumn: gamePersonLinks.personId
       }
     },
     {
       key: 'companies',
       kind: 'relation',
+      targetEntity: 'company',
       link: {
-        linkTableName: 'game_company_links',
-        mainIdColumn: 'game_id',
-        relatedIdColumn: 'company_id'
+        table: gameCompanyLinks,
+        entityIdColumn: gameCompanyLinks.gameId,
+        relatedIdColumn: gameCompanyLinks.companyId
       }
     },
     {
       key: 'characters',
       kind: 'relation',
+      targetEntity: 'character',
       link: {
-        linkTableName: 'game_character_links',
-        mainIdColumn: 'game_id',
-        relatedIdColumn: 'character_id'
+        table: gameCharacterLinks,
+        entityIdColumn: gameCharacterLinks.gameId,
+        relatedIdColumn: gameCharacterLinks.characterId
       }
     }
   ],
   sort: {
     defaultKey: 'name',
     fields: [
-      { key: 'name', column: games.name },
-      { key: 'sortName', column: games.sortName },
-      { key: 'originalName', column: games.originalName },
-      { key: 'lastActiveAt', column: games.lastActiveAt },
-      { key: 'totalDuration', column: games.totalDuration },
-      { key: 'createdAt', column: games.createdAt },
-      { key: 'releaseDate', kind: 'partialDate', columnName: 'release_date' },
-      { key: 'score', column: games.score }
+      { key: 'name', kind: 'column', column: games.name },
+      { key: 'sortName', kind: 'column', column: games.sortName },
+      { key: 'originalName', kind: 'column', column: games.originalName },
+      { key: 'lastActiveAt', kind: 'column', column: games.lastActiveAt },
+      { key: 'totalDuration', kind: 'column', column: games.totalDuration },
+      { key: 'createdAt', kind: 'column', column: games.createdAt },
+      { key: 'releaseDate', kind: 'partialDate', column: games.releaseDate },
+      { key: 'score', kind: 'column', column: games.score }
     ]
   }
 })

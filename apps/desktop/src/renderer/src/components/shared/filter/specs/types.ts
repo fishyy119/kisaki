@@ -1,57 +1,31 @@
-import type { AllEntityType, ContentEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/common'
 
-export type FilterUiCategory = 'toggle' | 'enum' | 'numeric' | 'date' | 'relation'
+export interface FilterUiOption {
+  value: string
+  label: string
+}
 
-export type FilterUiControl =
-  'boolean' | 'select' | 'multiSelect' | 'numberRange' | 'dateRange' | 'relation'
-
-export type RelationTargetEntity = AllEntityType
-
+/**
+ * UI metadata for one filterable field.
+ *
+ * `kind` mirrors the query spec kind vocabulary; the query spec owns SQL
+ * mapping and relation targets, the UI spec owns labels and editor hints.
+ */
 export type FilterUiFieldDef =
+  | { key: string; label: string; kind: 'boolean' }
+  | { key: string; label: string; kind: 'enum'; options: FilterUiOption[] }
   | {
       key: string
       label: string
-      category: 'toggle'
-      control: 'boolean'
-    }
-  | {
-      key: string
-      label: string
-      category: 'enum'
-      control: 'select'
-      options: { value: string; label: string }[]
-    }
-  | {
-      key: string
-      label: string
-      category: 'enum'
-      control: 'multiSelect'
-      options: { value: string; label: string }[]
-    }
-  | {
-      key: string
-      label: string
-      category: 'numeric'
-      control: 'numberRange'
+      kind: 'number'
       min?: number
       max?: number
       step?: number
-      placeholder?: string
+      /** Unit suffix rendered after the range inputs (e.g. seconds, cm). */
+      unit?: string
     }
-  | {
-      key: string
-      label: string
-      category: 'date'
-      control: 'dateRange'
-    }
-  | {
-      key: string
-      label: string
-      category: 'relation'
-      control: 'relation'
-      targetEntity: RelationTargetEntity
-      multiple: boolean
-    }
+  | { key: string; label: string; kind: 'date' }
+  | { key: string; label: string; kind: 'relation' }
 
 export interface FilterUiSortOption {
   key: string
@@ -62,8 +36,4 @@ export interface FilterUiSpec {
   entityType: AllEntityType
   fields: readonly FilterUiFieldDef[]
   sortOptions: readonly FilterUiSortOption[]
-}
-
-export type ContentFilterUiSpec = Omit<FilterUiSpec, 'entityType'> & {
-  entityType: ContentEntityType
 }

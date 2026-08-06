@@ -12,17 +12,10 @@ import { Icon } from '@renderer/components/ui/icon'
 import { cn } from '@renderer/utils/cn'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import {
-  FilterPanel,
-  gameFilterUiSpec,
-  characterFilterUiSpec,
-  personFilterUiSpec,
-  companyFilterUiSpec
-} from '@renderer/components/shared/filter'
+import { FilterPanel, getFilterUiSpec } from '@renderer/components/shared/filter'
 import { useLibraryExplorerStore } from '../../../stores'
-import { countActiveFilters } from '@shared/filter'
+import { countConditions } from '@shared/filter'
 import type { FilterState } from '@shared/filter'
-import type { ContentEntityType } from '@shared/common'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -30,28 +23,15 @@ const { m } = useI18n()
 const store = useLibraryExplorerStore()
 const { activeEntityType, filter } = storeToRefs(store)
 
-const activeCount = computed(() => countActiveFilters(filter.value))
+const activeCount = computed(() => countConditions(filter.value))
 
-const uiSpec = computed(() => getUiSpec(activeEntityType.value))
+const uiSpec = computed(() => getFilterUiSpec(activeEntityType.value).value)
 
 // Computed model for filter (store binding)
 const filterModel = computed({
   get: () => filter.value,
   set: (newFilter: FilterState) => store.setFilter(newFilter)
 })
-
-function getUiSpec(entityType: ContentEntityType) {
-  switch (entityType) {
-    case 'game':
-      return gameFilterUiSpec.value
-    case 'character':
-      return characterFilterUiSpec.value
-    case 'person':
-      return personFilterUiSpec.value
-    case 'company':
-      return companyFilterUiSpec.value
-  }
-}
 </script>
 
 <template>

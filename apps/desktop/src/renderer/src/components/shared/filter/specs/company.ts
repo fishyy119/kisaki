@@ -8,55 +8,17 @@ export const companyFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
   return {
     entityType: 'company',
     fields: [
-      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
-      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+      { key: 'isFavorite', label: m.filter.favorite, kind: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', kind: 'boolean' },
 
-      {
-        key: 'score',
-        label: m.library.fields.score,
-        category: 'numeric',
-        control: 'numberRange',
-        min: 0,
-        max: 100
-      },
+      { key: 'score', label: m.library.fields.score, kind: 'number', min: 0, max: 100 },
 
-      {
-        key: 'foundedDate',
-        label: m.library.fields.foundedDate,
-        category: 'date',
-        control: 'dateRange'
-      },
-      {
-        key: 'createdAt',
-        label: m.library.fields.addedDate,
-        category: 'date',
-        control: 'dateRange'
-      },
+      { key: 'foundedDate', label: m.library.fields.foundedDate, kind: 'date' },
+      { key: 'createdAt', label: m.library.fields.addedDate, kind: 'date' },
 
-      {
-        key: 'games',
-        label: m.library.fields.relatedGames,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'game',
-        multiple: true
-      },
-      {
-        key: 'tags',
-        label: m.library.fields.tags,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'tag',
-        multiple: true
-      },
-      {
-        key: 'collections',
-        label: m.library.fields.collections,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'collection',
-        multiple: true
-      }
+      { key: 'games', label: m.library.fields.relatedGames, kind: 'relation' },
+      { key: 'tags', label: m.library.fields.tags, kind: 'relation' },
+      { key: 'collections', label: m.library.fields.collections, kind: 'relation' }
     ],
     sortOptions: [
       { key: 'name', label: m.library.fields.name },

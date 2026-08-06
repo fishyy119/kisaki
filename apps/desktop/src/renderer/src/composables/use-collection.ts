@@ -22,16 +22,23 @@ import {
 } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { eq, count, asc, and } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import { eq, count, asc, and, type SQL } from 'drizzle-orm'
+import {
+  db,
+  countEntities,
+  queryEntities,
+  COLLECTION_LINKS,
+  ENTITY_TABLES
+} from '@renderer/core/db'
 import { defineRouteData } from '@renderer/core/route-data'
 import { useAsyncData } from './use-async-data'
 import { usePreferencesStore } from '@renderer/stores'
-import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import type { Collection, Game, Character, Person, Company } from '@shared/db/schema'
+import { getFilterRelevantTables } from '@shared/filter'
+import type { Collection } from '@shared/db/schema'
 import * as schema from '@shared/db/schema'
-import type { DynamicCollectionConfig, DynamicEntityConfig } from '@shared/db/contracts/json'
-import type { ContentEntityType, SortDirection } from '@shared/common'
+import type { TableName } from '@shared/db/table-names'
+import type { DynamicCollectionConfig } from '@shared/db/contracts/json'
+import type { ContentEntityType } from '@shared/common'
 import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import type { ContentEntityData, ContentEntityCounts } from './types'
 import { useDbChanges } from './use-db-changes'
@@ -87,47 +94,47 @@ export const CollectionKey: InjectionKey<CollectionContext> = Symbol('collection
 // Helper Functions
 // =============================================================================
 
-function getLinkTableName(type: ContentEntityType): string {
-  switch (type) {
-    case 'game':
-      return 'collectionGameLinks'
-    case 'character':
-      return 'collectionCharacterLinks'
-    case 'person':
-      return 'collectionPersonLinks'
-    case 'company':
-      return 'collectionCompanyLinks'
-  }
-}
-
 function getConfiguredEntityTypes(config: DynamicCollectionConfig | null): ContentEntityType[] {
   if (!config) return []
-  const types: ContentEntityType[] = []
-  if (config.game?.enabled) types.push('game')
-  if (config.character?.enabled) types.push('character')
-  if (config.person?.enabled) types.push('person')
-  if (config.company?.enabled) types.push('company')
-  return types
+  return CONTENT_ENTITY_TYPES.filter((type) => config[type].enabled)
 }
 
+/** First configured type with items, otherwise the first configured type. */
 function getDefaultEntityType(
   counts: ContentEntityCounts,
   configured: ContentEntityType[]
 ): ContentEntityType {
-  // For dynamic collections, pick first configured type with items
-  if (configured.length > 0 && configured.length < 4) {
-    const firstConfigured = configured[0]
-    return counts[firstConfigured] > 0 ? firstConfigured : configured[0]
-  }
-  // For static collections, pick type with most items
-  const entries = Object.entries(counts) as [ContentEntityType, number][]
-  const sorted = entries.sort((a, b) => b[1] - a[1])
-  return sorted[0][1] > 0 ? sorted[0][0] : 'game'
+  const candidates = configured.length > 0 ? configured : CONTENT_ENTITY_TYPES
+  return candidates.find((type) => counts[type] > 0) ?? candidates[0]
+}
+
+function createEmptyCounts(): ContentEntityCounts {
+  return { game: 0, character: 0, person: 0, company: 0 }
 }
 
 // =============================================================================
 // Data Fetching Functions
 // =============================================================================
+
+/** Counts entities linked to a static collection, honoring NSFW visibility. */
+async function countStaticEntities(
+  type: ContentEntityType,
+  collectionId: string,
+  showNsfw: boolean
+): Promise<number> {
+  const link = COLLECTION_LINKS[type]
+  const entity = ENTITY_TABLES[type]
+
+  const parts: SQL[] = [eq(link.collectionIdColumn, collectionId)]
+  if (!showNsfw) parts.push(eq(entity.isNsfwColumn, false))
+
+  const rows = await db
+    .select({ value: count() })
+    .from(link.table)
+    .innerJoin(entity.table, eq(link.entityIdColumn, entity.idColumn))
+    .where(and(...parts))
+  return rows[0]?.value ?? 0
+}
 
 async function fetchCollectionWithCounts(
   collectionId: string,
@@ -147,7 +154,7 @@ async function fetchCollectionWithCounts(
   if (!collectionData) {
     return {
       collection: null,
-      counts: { game: 0, character: 0, person: 0, company: 0 },
+      counts: createEmptyCounts(),
       configuredTypes: [...CONTENT_ENTITY_TYPES]
     }
   }
@@ -160,156 +167,23 @@ async function fetchCollectionWithCounts(
     ? getConfiguredEntityTypes(dynamicConfig)
     : [...CONTENT_ENTITY_TYPES]
 
-  // Fetch counts based on collection type
-  let counts: ContentEntityCounts
+  const counts = createEmptyCounts()
 
   if (isDynamic && dynamicConfig) {
-    counts = { game: 0, character: 0, person: 0, company: 0 }
-    const promises: Promise<void>[] = []
-
-    if (dynamicConfig.game?.enabled) {
-      promises.push(
-        (async () => {
-          const whereCondition = buildFilterConditions(
-            getQuerySpec('game'),
-            dynamicConfig.game.filter
-          )
-          const result = await db
-            .select({ count: count() })
-            .from(schema.games)
-            .where(
-              and(
-                whereCondition as never,
-                showNsfw ? undefined : eq(schema.games.isNsfw, false)
-              ) as never
-            )
-          counts.game = Number(result[0]?.count ?? 0)
-        })()
-      )
-    }
-
-    if (dynamicConfig.character?.enabled) {
-      promises.push(
-        (async () => {
-          const whereCondition = buildFilterConditions(
-            getQuerySpec('character'),
-            dynamicConfig.character.filter
-          )
-          const result = await db
-            .select({ count: count() })
-            .from(schema.characters)
-            .where(
-              and(
-                whereCondition as never,
-                showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-              ) as never
-            )
-          counts.character = Number(result[0]?.count ?? 0)
-        })()
-      )
-    }
-
-    if (dynamicConfig.person?.enabled) {
-      promises.push(
-        (async () => {
-          const whereCondition = buildFilterConditions(
-            getQuerySpec('person'),
-            dynamicConfig.person.filter
-          )
-          const result = await db
-            .select({ count: count() })
-            .from(schema.persons)
-            .where(
-              and(
-                whereCondition as never,
-                showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-              ) as never
-            )
-          counts.person = Number(result[0]?.count ?? 0)
-        })()
-      )
-    }
-
-    if (dynamicConfig.company?.enabled) {
-      promises.push(
-        (async () => {
-          const whereCondition = buildFilterConditions(
-            getQuerySpec('company'),
-            dynamicConfig.company.filter
-          )
-          const result = await db
-            .select({ count: count() })
-            .from(schema.companies)
-            .where(
-              and(
-                whereCondition as never,
-                showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-              ) as never
-            )
-          counts.company = Number(result[0]?.count ?? 0)
-        })()
-      )
-    }
-
-    await Promise.all(promises)
-  } else {
-    // Static collection - count via link tables
-    const [[gameCountRow], [characterCountRow], [personCountRow], [companyCountRow]] =
-      await Promise.all([
-        db
-          .select({ value: count() })
-          .from(schema.collectionGameLinks)
-          .innerJoin(schema.games, eq(schema.collectionGameLinks.gameId, schema.games.id))
-          .where(
-            and(
-              eq(schema.collectionGameLinks.collectionId, collectionId),
-              showNsfw ? undefined : eq(schema.games.isNsfw, false)
-            )
-          ),
-        db
-          .select({ value: count() })
-          .from(schema.collectionCharacterLinks)
-          .innerJoin(
-            schema.characters,
-            eq(schema.collectionCharacterLinks.characterId, schema.characters.id)
-          )
-          .where(
-            and(
-              eq(schema.collectionCharacterLinks.collectionId, collectionId),
-              showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-            )
-          ),
-        db
-          .select({ value: count() })
-          .from(schema.collectionPersonLinks)
-          .innerJoin(schema.persons, eq(schema.collectionPersonLinks.personId, schema.persons.id))
-          .where(
-            and(
-              eq(schema.collectionPersonLinks.collectionId, collectionId),
-              showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-            )
-          ),
-        db
-          .select({ value: count() })
-          .from(schema.collectionCompanyLinks)
-          .innerJoin(
-            schema.companies,
-            eq(schema.collectionCompanyLinks.companyId, schema.companies.id)
-          )
-          .where(
-            and(
-              eq(schema.collectionCompanyLinks.collectionId, collectionId),
-              showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-            )
-          )
-      ])
-
-    counts = {
-      game: Number(gameCountRow?.value ?? 0),
-      character: Number(characterCountRow?.value ?? 0),
-      person: Number(personCountRow?.value ?? 0),
-      company: Number(companyCountRow?.value ?? 0)
-    }
+    await Promise.all(
+      configuredTypes.map(async (type) => {
+        counts[type] = await countEntities(type, {
+          filter: dynamicConfig[type].filter,
+          includeNsfw: showNsfw
+        })
+      })
+    )
+  } else if (!isDynamic) {
+    await Promise.all(
+      CONTENT_ENTITY_TYPES.map(async (type) => {
+        counts[type] = await countStaticEntities(type, collectionId, showNsfw)
+      })
+    )
   }
 
   return { collection: collectionData, counts, configuredTypes }
@@ -323,125 +197,36 @@ async function fetchCollectionEntities(
 ): Promise<ContentEntityData[]> {
   if (!collection) return []
 
-  const isDynamic = collection.isDynamic
   const dynamicConfig = collection.dynamicConfig
 
-  if (isDynamic && dynamicConfig) {
-    const entityConfig = dynamicConfig[entityType] as DynamicEntityConfig | undefined
-    if (!entityConfig?.enabled) return []
+  if (collection.isDynamic && dynamicConfig) {
+    const entityConfig = dynamicConfig[entityType]
+    if (!entityConfig.enabled) return []
 
-    const querySpec = getQuerySpec(entityType)
-    const whereCondition = buildFilterConditions(querySpec, entityConfig.filter)
-    const orderBy = buildOrderBy(
-      querySpec,
-      entityConfig.sortField,
-      entityConfig.sortDirection as SortDirection
-    )
-
-    switch (entityType) {
-      case 'game':
-        return (await db.query.games.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw ? undefined : eq(schema.games.isNsfw, false)
-          ) as never,
-          orderBy
-        } as never)) as Game[]
-      case 'character':
-        return (await db.query.characters.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-          ) as never,
-          orderBy
-        } as never)) as Character[]
-      case 'person':
-        return (await db.query.persons.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-          ) as never,
-          orderBy
-        } as never)) as Person[]
-      case 'company':
-        return (await db.query.companies.findMany({
-          where: and(
-            whereCondition as never,
-            showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-          ) as never,
-          orderBy
-        } as never)) as Company[]
-    }
+    return await queryEntities(entityType, {
+      filter: entityConfig.filter,
+      sortField: entityConfig.sortField,
+      sortDirection: entityConfig.sortDirection,
+      includeNsfw: showNsfw
+    })
   }
 
-  // Static collection - fetch via link tables
-  switch (entityType) {
-    case 'game': {
-      const whereCondition = and(
-        eq(schema.collectionGameLinks.collectionId, collectionId),
-        showNsfw ? undefined : eq(schema.games.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.collectionGameLinks)
-        .innerJoin(schema.games, eq(schema.collectionGameLinks.gameId, schema.games.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.collectionGameLinks.orderInCollection))
+  // Static collection - fetch via link table in collection order
+  const link = COLLECTION_LINKS[entityType]
+  const entity = ENTITY_TABLES[entityType]
 
-      return rows.map((row) => row.games) as Game[]
-    }
-    case 'character': {
-      const whereCondition = and(
-        eq(schema.collectionCharacterLinks.collectionId, collectionId),
-        showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.collectionCharacterLinks)
-        .innerJoin(
-          schema.characters,
-          eq(schema.collectionCharacterLinks.characterId, schema.characters.id)
-        )
-        .where(whereCondition)
-        .orderBy(asc(schema.collectionCharacterLinks.orderInCollection))
+  const parts: SQL[] = [eq(link.collectionIdColumn, collectionId)]
+  if (!showNsfw) parts.push(eq(entity.isNsfwColumn, false))
 
-      return rows.map((row) => row.characters) as Character[]
-    }
-    case 'person': {
-      const whereCondition = and(
-        eq(schema.collectionPersonLinks.collectionId, collectionId),
-        showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.collectionPersonLinks)
-        .innerJoin(schema.persons, eq(schema.collectionPersonLinks.personId, schema.persons.id))
-        .where(whereCondition)
-        .orderBy(asc(schema.collectionPersonLinks.orderInCollection))
+  const rows = await db
+    .select({ entity: entity.table })
+    .from(link.table)
+    .innerJoin(entity.table, eq(link.entityIdColumn, entity.idColumn))
+    .where(and(...parts))
+    .orderBy(asc(link.orderColumn))
 
-      return rows.map((row) => row.persons) as Person[]
-    }
-    case 'company': {
-      const whereCondition = and(
-        eq(schema.collectionCompanyLinks.collectionId, collectionId),
-        showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-      )
-      const rows = await db
-        .select()
-        .from(schema.collectionCompanyLinks)
-        .innerJoin(
-          schema.companies,
-          eq(schema.collectionCompanyLinks.companyId, schema.companies.id)
-        )
-        .where(whereCondition)
-        .orderBy(asc(schema.collectionCompanyLinks.orderInCollection))
-
-      return rows.map((row) => row.companies) as Company[]
-    }
-  }
+  return rows.map((row) => row.entity) as ContentEntityData[]
 }
-
-const getQuerySpec = getFilterQuerySpec
 
 function resolveEntityType(
   selectedType: ContentEntityType | null,
@@ -536,34 +321,29 @@ function useCollectionDbSync(
   refetch: () => Promise<void>
 ): void {
   const isDynamic = computed(() => context.collection.value?.isDynamic ?? false)
-  const entityTables = ['games', 'characters', 'persons', 'companies']
 
-  useDbChanges(({ operation, table, id: entityId }) => {
-    if (operation === 'updated') {
-      if (table === 'collections' && entityId === toValue(collectionId)) {
-        refetch()
-      }
-      // For dynamic collections, refetch when source entities change
-      if (isDynamic.value && entityTables.includes(table)) {
-        refetch()
-      }
-    }
-    if (operation === 'inserted') {
-      if (table === getLinkTableName(context.entityType.value) || table === 'collections') {
-        refetch()
-      }
-      if (isDynamic.value && entityTables.includes(table)) {
-        refetch()
+  // Counts cover every content type, so membership links of all types are
+  // relevant. Dynamic collections additionally depend on every table their
+  // filters can reference (entity tables + relation link tables).
+  const relevantTables = computed(() => {
+    const tables = new Set<TableName>()
+    for (const type of CONTENT_ENTITY_TYPES) {
+      tables.add(COLLECTION_LINKS[type].tableName)
+      if (isDynamic.value) {
+        for (const table of getFilterRelevantTables(type)) tables.add(table)
+      } else {
+        tables.add(ENTITY_TABLES[type].tableName)
       }
     }
-    if (operation === 'deleted') {
-      if (table === getLinkTableName(context.entityType.value)) {
-        refetch()
-      }
-      if (isDynamic.value && entityTables.includes(table)) {
-        refetch()
-      }
+    return tables
+  })
+
+  useDbChanges(({ table, id: changedId }) => {
+    if (table === 'collections') {
+      if (changedId === toValue(collectionId)) refetch()
+      return
     }
+    if (relevantTables.value.has(table)) refetch()
   })
 }
 

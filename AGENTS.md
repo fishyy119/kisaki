@@ -81,6 +81,8 @@ old internal shapes.
 - Follow existing module boundaries and naming rules before adding abstractions.
 - Keep code style clean, clear, unified, modern, and aligned with project standards; implement
   changes thoroughly, without backward-compatibility shims, legacy fallbacks, or redundant code.
+  Total-parse safe defaults at storage and untrusted boundaries ("lenient read, strict write") are
+  boundary contracts, not legacy fallbacks; see `.agents/skills/kisaki` conventions.
 - Treat folders as either category organization or coupled module splits. Do not add facade entries
   or `index.ts` files just for symmetry.
 - Use concise responsibility names such as `manager.ts`, `coordinator.ts`, `gateway.ts`,

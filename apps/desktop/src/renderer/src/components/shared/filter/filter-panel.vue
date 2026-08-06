@@ -2,17 +2,21 @@
   FilterPanel
   Popover-based filter panel with real-time feedback.
   Filter changes apply immediately for instant visual feedback.
-  Matches UX patterns of entertainment software like Steam/Spotify.
+  Header carries the title and match mode, the body is the pure condition
+  list, and the footer groups the list-level actions (add/clear) with the
+  condition count.
 -->
 <script setup lang="ts">
 import type { FilterState } from '@shared/filter'
 import { ref } from 'vue'
 import { Icon } from '@renderer/components/ui/icon'
-import { createEmptyFilter, countActiveFilters } from '@shared/filter'
+import { createEmptyFilter, countConditions } from '@shared/filter'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Button } from '@renderer/components/ui/button'
 import { useI18n } from '@renderer/composables'
 import FilterBuilder from './filter-builder.vue'
+import MatchModeSwitch from './match-mode-switch.vue'
+import AddConditionMenu from './add-condition-menu.vue'
 import type { FilterUiSpec } from './specs/types'
 
 interface Props {
@@ -51,9 +55,12 @@ function handleClear() {
       class="w-[400px] p-0"
     >
       <div class="flex flex-col max-h-[70vh]">
-        <!-- Header -->
+        <!-- Header: what this is + query-scoped match mode -->
         <div class="flex items-center justify-between px-4 py-3 border-b">
-          <div class="text-sm font-medium">{{ m.filter.title }}</div>
+          <div class="flex items-center gap-3">
+            <div class="text-sm font-medium">{{ m.filter.title }}</div>
+            <MatchModeSwitch v-model="model" />
+          </div>
           <Button
             type="button"
             variant="ghost"
@@ -76,26 +83,32 @@ function handleClear() {
           />
         </div>
 
-        <!-- Footer -->
+        <!-- Footer: list-level actions + count -->
         <div class="flex items-center justify-between px-4 py-3 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="text-muted-foreground"
-            @click="handleClear"
-          >
-            <Icon
-              icon="icon-[mdi--filter-off-outline]"
-              class="size-4 mr-1.5"
+          <div class="flex items-center gap-2">
+            <AddConditionMenu
+              v-model="model"
+              :ui-spec="props.uiSpec"
             />
-            {{ m.filter.clearFilters }}
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="text-muted-foreground"
+              @click="handleClear"
+            >
+              <Icon
+                icon="icon-[mdi--filter-off-outline]"
+                class="size-4 mr-1"
+              />
+              {{ m.filter.clearFilters }}
+            </Button>
+          </div>
           <span
-            v-if="countActiveFilters(model) > 0"
+            v-if="countConditions(model) > 0"
             class="text-xs text-muted-foreground"
           >
-            {{ m.filter.conditionCount({ count: countActiveFilters(model) }) }}
+            {{ m.filter.conditionCount({ count: countConditions(model) }) }}
           </span>
         </div>
       </div>

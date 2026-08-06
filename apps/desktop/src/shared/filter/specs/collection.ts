@@ -1,19 +1,19 @@
 import { collections } from '@shared/db'
-import { defineQuerySpec } from '../spec'
+import { defineFilterQuerySpec } from '../spec'
 
-export const collectionFilterQuerySpec = defineQuerySpec({
+export const collectionFilterQuerySpec = defineFilterQuerySpec({
   entityType: 'collection',
-  tableName: 'collections',
+  table: collections,
   fields: [
     { key: 'isNsfw', kind: 'boolean', column: collections.isNsfw },
-    { key: 'createdAt', kind: 'dateRange', mode: 'timestampMs', column: collections.createdAt }
+    { key: 'createdAt', kind: 'date', mode: 'timestampMs', column: collections.createdAt }
   ],
   sort: {
     defaultKey: 'name',
     fields: [
-      { key: 'name', column: collections.name },
-      { key: 'order', column: collections.order },
-      { key: 'createdAt', column: collections.createdAt }
+      { key: 'name', kind: 'column', column: collections.name },
+      { key: 'order', kind: 'column', column: collections.order },
+      { key: 'createdAt', kind: 'column', column: collections.createdAt }
     ]
   }
 })

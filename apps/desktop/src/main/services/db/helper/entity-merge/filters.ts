@@ -1,36 +1,17 @@
 import { eq } from 'drizzle-orm'
-import type { AllEntityType, ContentEntityType } from '@shared/common'
+import type { AllEntityType } from '@shared/common'
 import { collections, showcaseSections } from '@shared/db'
-import type { DynamicCollectionConfig, FilterState, RelationValue } from '@shared/db/contracts/json'
+import type { DynamicCollectionConfig } from '@shared/db/contracts/json'
+import type { FilterCondition, FilterState } from '@shared/filter/model'
+import { isRelationCondition } from '@shared/filter/model'
+import { getFilterQuerySpec } from '@shared/filter/specs/registry'
 import type { DbContext } from '../../types'
 
-const RELATION_FILTER_TARGETS: Record<ContentEntityType, Partial<Record<string, AllEntityType>>> = {
-  game: {
-    tags: 'tag',
-    collections: 'collection',
-    persons: 'person',
-    companies: 'company',
-    characters: 'character'
-  },
-  character: {
-    games: 'game',
-    persons: 'person',
-    tags: 'tag',
-    collections: 'collection'
-  },
-  person: {
-    games: 'game',
-    characters: 'character',
-    tags: 'tag',
-    collections: 'collection'
-  },
-  company: {
-    games: 'game',
-    tags: 'tag',
-    collections: 'collection'
-  }
-}
-
+/**
+ * Rewrites merged-away entity ids inside persisted filters (showcase sections
+ * and dynamic collection configs). Relation targets are derived from the
+ * entity's filter query spec.
+ */
 export function rewriteMergeFilters(
   db: DbContext,
   entityType: AllEntityType,
@@ -40,11 +21,9 @@ export function rewriteMergeFilters(
 ): number {
   let changed = 0
 
-  const sectionRows = (db as any).select().from(showcaseSections).all() as {
-    id: string
-    entityType: AllEntityType
-    filter: FilterState
-  }[]
+  // DbContext is a db/transaction union whose field-projection select overloads
+  // do not unify; select full rows instead.
+  const sectionRows = db.select().from(showcaseSections).all()
 
   for (const row of sectionRows) {
     const nextFilter = rewriteFilterState(
@@ -55,26 +34,23 @@ export function rewriteMergeFilters(
       sourceId
     )
     if (nextFilter === row.filter) continue
-    ;(db as any)
-      .update(showcaseSections)
+
+    db.update(showcaseSections)
       .set({ filter: nextFilter, updatedAt: now })
       .where(eq(showcaseSections.id, row.id))
       .run()
     changed++
   }
 
-  const collectionRows = (db as any).select().from(collections).all() as {
-    id: string
-    dynamicConfig: DynamicCollectionConfig | null
-  }[]
+  const collectionRows = db.select().from(collections).all()
 
   for (const row of collectionRows) {
     if (!row.dynamicConfig) continue
 
     const nextConfig = rewriteDynamicConfig(row.dynamicConfig, entityType, targetId, sourceId)
     if (nextConfig === row.dynamicConfig) continue
-    ;(db as any)
-      .update(collections)
+
+    db.update(collections)
       .set({ dynamicConfig: nextConfig, updatedAt: now })
       .where(eq(collections.id, row.id))
       .run()
@@ -93,7 +69,7 @@ function rewriteDynamicConfig(
   let changed = false
   const next = { ...config }
 
-  for (const key of Object.keys(config) as ContentEntityType[]) {
+  for (const key of Object.keys(config) as (keyof DynamicCollectionConfig)[]) {
     const item = config[key]
     const nextFilter = rewriteFilterState(key, item.filter, entityType, targetId, sourceId)
     if (nextFilter === item.filter) continue
@@ -112,26 +88,33 @@ function rewriteFilterState(
   targetId: string,
   sourceId: string
 ): FilterState {
-  if (!isContentEntityType(filterEntityType)) return filter
-
-  const targets = RELATION_FILTER_TARGETS[filterEntityType]
+  const spec = getFilterQuerySpec(filterEntityType)
   let changed = false
-  const next: FilterState = { ...filter }
+  const conditions: FilterCondition[] = []
 
-  for (const [key, targetType] of Object.entries(targets)) {
-    if (targetType !== mergedEntityType) continue
+  for (const condition of filter.conditions) {
+    if (!isRelationCondition(condition)) {
+      conditions.push(condition)
+      continue
+    }
 
-    const value = filter[key]
-    if (!isRelationValue(value)) continue
+    const field = spec.fieldByKey.get(condition.field)
+    if (field?.kind !== 'relation' || field.targetEntity !== mergedEntityType) {
+      conditions.push(condition)
+      continue
+    }
 
-    const ids = rewriteIds(value.ids, targetId, sourceId)
-    if (ids === value.ids) continue
+    const ids = rewriteIds(condition.value, targetId, sourceId)
+    if (ids === condition.value) {
+      conditions.push(condition)
+      continue
+    }
 
-    next[key] = { ...value, ids }
+    conditions.push({ ...condition, value: ids })
     changed = true
   }
 
-  return changed ? next : filter
+  return changed ? { ...filter, conditions } : filter
 }
 
 function rewriteIds(ids: string[], targetId: string, sourceId: string): string[] {
@@ -151,18 +134,4 @@ function rewriteIds(ids: string[], targetId: string, sourceId: string): string[]
   }
 
   return changed ? next : ids
-}
-
-function isRelationValue(value: unknown): value is RelationValue {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-  const relation = value as Record<string, unknown>
-  return (
-    (relation.match === 'any' || relation.match === 'all') &&
-    Array.isArray(relation.ids) &&
-    relation.ids.every((id) => typeof id === 'string')
-  )
-}
-
-function isContentEntityType(value: AllEntityType): value is ContentEntityType {
-  return value === 'game' || value === 'character' || value === 'person' || value === 'company'
 }

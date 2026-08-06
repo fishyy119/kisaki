@@ -4,7 +4,9 @@
  * Type definitions for complex JSON structures stored in SQLite text columns.
  */
 
+import type { ContentEntityType, SortDirection } from '@shared/common'
 import type { ContentLocale } from '@shared/i18n'
+import type { FilterState } from '@shared/filter/model'
 
 /** Related site link */
 export interface RelatedSite {
@@ -64,36 +66,6 @@ export interface PartialDate {
   day?: number
 }
 
-// =============================================================================
-// Library Filter Types
-// =============================================================================
-
-/** Date range value for dateRange fields */
-export interface DateRangeValue {
-  /** YYYY-MM-DD */
-  from?: string
-  /** YYYY-MM-DD */
-  to?: string
-}
-
-/** Number range value for numberRange fields */
-export interface NumberRangeValue {
-  min?: number
-  max?: number
-}
-
-/** Relation filter value */
-export interface RelationValue {
-  match: 'any' | 'all'
-  ids: string[]
-}
-
-export type FilterValue =
-  true | string | string[] | NumberRangeValue | DateRangeValue | RelationValue
-
-/** Filter state stored as JSON (field key -> value). */
-export type FilterState = Record<string, FilterValue>
-
 /** Showcase section layout type */
 export type SectionLayout = 'horizontal' | 'grid'
 
@@ -107,9 +79,6 @@ export type SectionOpenMode = 'page' | 'dialog'
 // Dynamic Collection Types
 // =============================================================================
 
-/** Sort direction */
-export type SortDirection = 'asc' | 'desc'
-
 /** Filter + sort config for one entity type in dynamic collection */
 export interface DynamicEntityConfig {
   /** Whether this entity type is included in the dynamic collection */
@@ -122,11 +91,8 @@ export interface DynamicEntityConfig {
   sortDirection: SortDirection
 }
 
-/** Full dynamic collection configuration - always contains all 4 entity types */
-export type DynamicCollectionConfig = Record<
-  'game' | 'character' | 'person' | 'company',
-  DynamicEntityConfig
->
+/** Full dynamic collection configuration - always contains every content entity type */
+export type DynamicCollectionConfig = Record<ContentEntityType, DynamicEntityConfig>
 
 // =============================================================================
 // Scraper Profile Types (stored as JSON in scraperProfiles table)

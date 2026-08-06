@@ -1,34 +1,23 @@
 /**
  * Composable: useSectionData
  *
- * Fetches data for a single showcase section.
- * Uses FilterState directly to build query conditions.
+ * Fetches data for a single showcase section through the shared entity query
+ * executor, refetching when any filter-relevant table changes.
  */
 
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
-import { and, eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
-import { useAsyncData, useDbChanges } from '@renderer/composables'
-import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import type {
-  ShowcaseSection,
-  Game,
-  Character,
-  Person,
-  Company,
-  Collection,
-  Tag
-} from '@shared/db/schema'
-import * as schema from '@shared/db/schema'
-import type { AllEntityType } from '@shared/common'
 import { storeToRefs } from 'pinia'
+import { queryEntities, type EntityRowMap } from '@renderer/core/db'
+import { useAsyncData, useDbChanges } from '@renderer/composables'
+import { getFilterRelevantTables } from '@shared/filter'
+import type { ShowcaseSection } from '@shared/db/schema'
 import { usePreferencesStore } from '@renderer/stores'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type SectionEntityData = Game | Character | Person | Company | Collection | Tag
+export type SectionEntityData = EntityRowMap[keyof EntityRowMap]
 
 // =============================================================================
 // Composable
@@ -40,18 +29,13 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
 
   async function fetchData(): Promise<SectionEntityData[]> {
     const s = toValue(section)
-    const entityType = s.entityType as AllEntityType
-    const querySpec = getFilterQuerySpec(entityType)
-    const whereCondition = buildFilterConditions(querySpec, s.filter)
-    const orderBy = buildOrderBy(querySpec, s.sortField, s.sortDirection)
-
-    return await fetchEntitiesByType(
-      entityType,
-      whereCondition,
-      orderBy,
-      s.limit || undefined,
-      showNsfw.value
-    )
+    return await queryEntities(s.entityType, {
+      filter: s.filter,
+      sortField: s.sortField,
+      sortDirection: s.sortDirection,
+      limit: s.limit ?? undefined,
+      includeNsfw: showNsfw.value
+    })
   }
 
   // Create computed getters for watch dependencies
@@ -73,9 +57,9 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
     ]
   })
 
-  // Listen for entity changes
+  // Listen for entity and relation link changes
   useDbChanges(({ table }) => {
-    if (isRelevantTable(table, sectionEntityType.value)) refetch()
+    if (getFilterRelevantTables(sectionEntityType.value).includes(table)) refetch()
   })
 
   return {
@@ -84,81 +68,4 @@ export function useSectionData(section: MaybeRefOrGetter<ShowcaseSection>) {
     isFetching,
     refetch
   }
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-async function fetchEntitiesByType(
-  entityType: AllEntityType,
-  whereCondition: unknown,
-  orderBy: unknown,
-  limit: number | undefined,
-  showNsfw: boolean
-): Promise<SectionEntityData[]> {
-  // Use type assertion to bypass complex Drizzle types
-  // The filter system guarantees correct types for each entity
-  switch (entityType) {
-    case 'game':
-      return (await db.query.games.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.games.isNsfw, false)
-        ) as never,
-        orderBy,
-        limit
-      } as never)) as Game[]
-    case 'character':
-      return (await db.query.characters.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-        ) as never,
-        orderBy,
-        limit
-      } as never)) as Character[]
-    case 'person':
-      return (await db.query.persons.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-        ) as never,
-        orderBy,
-        limit
-      } as never)) as Person[]
-    case 'company':
-      return (await db.query.companies.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-        ) as never,
-        orderBy,
-        limit
-      } as never)) as Company[]
-    case 'collection':
-      return (await db.query.collections.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.collections.isNsfw, false)
-        ) as never,
-        orderBy,
-        limit
-      } as never)) as Collection[]
-    case 'tag':
-      return (await db.query.tags.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.tags.isNsfw, false)
-        ) as never,
-        orderBy,
-        limit
-      } as never)) as Tag[]
-    default:
-      return []
-  }
-}
-
-function isRelevantTable(table: string, entityType: string): boolean {
-  return table === getFilterQuerySpec(entityType as AllEntityType).tableName
 }

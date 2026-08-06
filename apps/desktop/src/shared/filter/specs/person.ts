@@ -1,67 +1,77 @@
-import { persons } from '@shared/db'
-import { defineQuerySpec } from '../spec'
+import {
+  characterPersonLinks,
+  collectionPersonLinks,
+  gamePersonLinks,
+  persons,
+  personTagLinks
+} from '@shared/db'
+import { defineFilterQuerySpec } from '../spec'
 
-export const personFilterQuerySpec = defineQuerySpec({
+export const personFilterQuerySpec = defineFilterQuerySpec({
   entityType: 'person',
-  tableName: 'persons',
+  table: persons,
   fields: [
     { key: 'isFavorite', kind: 'boolean', column: persons.isFavorite },
     { key: 'isNsfw', kind: 'boolean', column: persons.isNsfw },
 
-    { key: 'gender', kind: 'select', column: persons.gender },
+    { key: 'gender', kind: 'enum', column: persons.gender },
 
-    { key: 'score', kind: 'numberRange', column: persons.score },
+    { key: 'score', kind: 'number', column: persons.score },
 
-    { key: 'birthDate', kind: 'dateRange', mode: 'partialDate', columnName: 'birth_date' },
-    { key: 'deathDate', kind: 'dateRange', mode: 'partialDate', columnName: 'death_date' },
-    { key: 'createdAt', kind: 'dateRange', mode: 'timestampMs', column: persons.createdAt },
+    { key: 'birthDate', kind: 'date', mode: 'partialDate', column: persons.birthDate },
+    { key: 'deathDate', kind: 'date', mode: 'partialDate', column: persons.deathDate },
+    { key: 'createdAt', kind: 'date', mode: 'timestampMs', column: persons.createdAt },
 
     {
       key: 'games',
       kind: 'relation',
+      targetEntity: 'game',
       link: {
-        linkTableName: 'game_person_links',
-        mainIdColumn: 'person_id',
-        relatedIdColumn: 'game_id'
+        table: gamePersonLinks,
+        entityIdColumn: gamePersonLinks.personId,
+        relatedIdColumn: gamePersonLinks.gameId
       }
     },
     {
       key: 'characters',
       kind: 'relation',
+      targetEntity: 'character',
       link: {
-        linkTableName: 'character_person_links',
-        mainIdColumn: 'person_id',
-        relatedIdColumn: 'character_id'
+        table: characterPersonLinks,
+        entityIdColumn: characterPersonLinks.personId,
+        relatedIdColumn: characterPersonLinks.characterId
       }
     },
     {
       key: 'tags',
       kind: 'relation',
+      targetEntity: 'tag',
       link: {
-        linkTableName: 'person_tag_links',
-        mainIdColumn: 'person_id',
-        relatedIdColumn: 'tag_id'
+        table: personTagLinks,
+        entityIdColumn: personTagLinks.personId,
+        relatedIdColumn: personTagLinks.tagId
       }
     },
     {
       key: 'collections',
       kind: 'relation',
+      targetEntity: 'collection',
       link: {
-        linkTableName: 'collection_person_links',
-        mainIdColumn: 'person_id',
-        relatedIdColumn: 'collection_id'
+        table: collectionPersonLinks,
+        entityIdColumn: collectionPersonLinks.personId,
+        relatedIdColumn: collectionPersonLinks.collectionId
       }
     }
   ],
   sort: {
     defaultKey: 'name',
     fields: [
-      { key: 'name', column: persons.name },
-      { key: 'sortName', column: persons.sortName },
-      { key: 'originalName', column: persons.originalName },
-      { key: 'createdAt', column: persons.createdAt },
-      { key: 'score', column: persons.score },
-      { key: 'birthDate', kind: 'partialDate', columnName: 'birth_date' }
+      { key: 'name', kind: 'column', column: persons.name },
+      { key: 'sortName', kind: 'column', column: persons.sortName },
+      { key: 'originalName', kind: 'column', column: persons.originalName },
+      { key: 'createdAt', kind: 'column', column: persons.createdAt },
+      { key: 'score', kind: 'column', column: persons.score },
+      { key: 'birthDate', kind: 'partialDate', column: persons.birthDate }
     ]
   }
 })

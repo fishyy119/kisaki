@@ -9,77 +9,21 @@ export const personFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
   return {
     entityType: 'person',
     fields: [
-      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
-      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+      { key: 'isFavorite', label: m.filter.favorite, kind: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', kind: 'boolean' },
 
-      {
-        key: 'gender',
-        label: m.library.fields.gender,
-        category: 'enum',
-        control: 'select',
-        options: getGenderOptions()
-      },
+      { key: 'gender', label: m.library.fields.gender, kind: 'enum', options: getGenderOptions() },
 
-      {
-        key: 'score',
-        label: m.library.fields.score,
-        category: 'numeric',
-        control: 'numberRange',
-        min: 0,
-        max: 100
-      },
+      { key: 'score', label: m.library.fields.score, kind: 'number', min: 0, max: 100 },
 
-      {
-        key: 'birthDate',
-        label: m.library.fields.birthDate,
-        category: 'date',
-        control: 'dateRange'
-      },
-      {
-        key: 'deathDate',
-        label: m.library.fields.deathDate,
-        category: 'date',
-        control: 'dateRange'
-      },
-      {
-        key: 'createdAt',
-        label: m.library.fields.addedDate,
-        category: 'date',
-        control: 'dateRange'
-      },
+      { key: 'birthDate', label: m.library.fields.birthDate, kind: 'date' },
+      { key: 'deathDate', label: m.library.fields.deathDate, kind: 'date' },
+      { key: 'createdAt', label: m.library.fields.addedDate, kind: 'date' },
 
-      {
-        key: 'games',
-        label: m.library.fields.relatedGames,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'game',
-        multiple: true
-      },
-      {
-        key: 'characters',
-        label: m.library.fields.relatedCharacters,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'character',
-        multiple: true
-      },
-      {
-        key: 'tags',
-        label: m.library.fields.tags,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'tag',
-        multiple: true
-      },
-      {
-        key: 'collections',
-        label: m.library.fields.collections,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'collection',
-        multiple: true
-      }
+      { key: 'games', label: m.library.fields.relatedGames, kind: 'relation' },
+      { key: 'characters', label: m.library.fields.relatedCharacters, kind: 'relation' },
+      { key: 'tags', label: m.library.fields.tags, kind: 'relation' },
+      { key: 'collections', label: m.library.fields.collections, kind: 'relation' }
     ],
     sortOptions: [
       { key: 'name', label: m.library.fields.name },

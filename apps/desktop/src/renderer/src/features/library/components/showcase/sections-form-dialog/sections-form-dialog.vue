@@ -29,14 +29,10 @@ import { getEntityIcon } from '@renderer/utils/format'
 import LibraryShowcaseSectionItemFormDialog from './section-item-form-dialog.vue'
 import LibraryShowcaseSectionPresetsDialog from './section-presets-dialog.vue'
 import { notify } from '@renderer/core/notify'
-import type {
-  ShowcaseSectionFormItem,
-  SectionLayout,
-  SectionItemSize,
-  SectionOpenMode,
-  SortDirection
-} from '@shared/db'
-import type { AllEntityType, ContentEntityType } from '@shared/common'
+import type { SectionLayout, SectionItemSize, SectionOpenMode } from '@shared/db'
+import type { ShowcaseSectionFormItem } from './types'
+import type { AllEntityType, ContentEntityType, SortDirection } from '@shared/common'
+import { createEmptyFilter } from '@shared/filter'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { createLogger } from '@renderer/core/log'
 
@@ -212,7 +208,7 @@ function handleAddNew() {
     itemSize: 'md' as SectionItemSize,
     openMode: 'page' as SectionOpenMode,
     limit: null,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'name',
     sortDirection: 'asc' as SortDirection,
     isNew: true

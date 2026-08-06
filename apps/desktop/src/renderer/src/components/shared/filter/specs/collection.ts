@@ -8,13 +8,8 @@ export const collectionFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => 
   return {
     entityType: 'collection',
     fields: [
-      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
-      {
-        key: 'createdAt',
-        label: m.library.fields.addedDate,
-        category: 'date',
-        control: 'dateRange'
-      }
+      { key: 'isNsfw', label: 'NSFW', kind: 'boolean' },
+      { key: 'createdAt', label: m.library.fields.addedDate, kind: 'date' }
     ],
     sortOptions: [
       { key: 'name', label: m.library.fields.name },

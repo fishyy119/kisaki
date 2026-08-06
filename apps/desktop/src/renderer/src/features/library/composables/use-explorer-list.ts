@@ -8,22 +8,24 @@
 
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { and, eq } from 'drizzle-orm'
-import { db } from '@renderer/core/db'
+import {
+  db,
+  queryEntities,
+  queryEntityIds,
+  COLLECTION_LINKS,
+  type EntityRowMap
+} from '@renderer/core/db'
 import { useAsyncData, useDbChanges } from '@renderer/composables'
 import { useLibraryExplorerStore } from '../stores'
 import { usePreferencesStore } from '@renderer/stores'
-import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import { buildSearchCondition, getSearchQuerySpec } from '@shared/search'
-import type { Game, Character, Person, Company } from '@shared/db/schema'
-import * as schema from '@shared/db/schema'
+import { getFilterRelevantTables } from '@shared/filter'
 import type { ContentEntityType } from '@shared/common'
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type EntityData = Game | Character | Person | Company
+export type EntityData = EntityRowMap[ContentEntityType]
 
 export interface CollectionGroup {
   id: string
@@ -53,18 +55,15 @@ export function useExplorerList() {
 
   async function fetchExplorerData(): Promise<ExplorerListData> {
     const entityType = activeEntityType.value
-    const filterSpec = getFilterQuerySpec(entityType)
-    const searchSpec = getSearchQuerySpec(entityType)
-    const filterWhere = buildFilterConditions(filterSpec, filter.value)
-    const searchWhere = buildSearchCondition(searchSpec, search.value)
-    const whereCondition =
-      filterWhere && searchWhere
-        ? (and(filterWhere, searchWhere) ?? undefined)
-        : (filterWhere ?? searchWhere)
-    const orderBy = buildOrderBy(filterSpec, sortField.value, sortDirection.value)
 
-    // Fetch entities based on type
-    const entities = await fetchEntitiesByType(entityType, whereCondition, orderBy, showNsfw.value)
+    // Fetch entities matching the current search/filter/sort
+    const entities = await queryEntities(entityType, {
+      filter: filter.value,
+      search: search.value,
+      sortField: sortField.value,
+      sortDirection: sortDirection.value,
+      includeNsfw: showNsfw.value
+    })
 
     // Fetch all collections (both static and dynamic)
     const allCollections = await db.query.collections.findMany({
@@ -82,8 +81,9 @@ export function useExplorerList() {
       linkMap.set(link.collectionId, existing)
     }
 
-    // Build entity map for quick lookup
+    // Lookup maps: entity by id, and global sort rank by id
     const entityMap = new Map(entities.map((e) => [e.id, e]))
+    const rankById = new Map(entities.map((e, index) => [e.id, index]))
 
     // Group entities by collection
     const linkedEntityIds = new Set<string>()
@@ -91,30 +91,24 @@ export function useExplorerList() {
 
     for (const collection of allCollections) {
       if (collection.isDynamic) {
-        // Dynamic collection: query entities based on filter config
+        // Dynamic collection: query ids based on filter config, then
+        // intersect with the current search/filter result set
         const dynamicConfig = collection.dynamicConfig
         if (!dynamicConfig) continue
 
         const entityConfig = dynamicConfig[entityType]
-        if (!entityConfig?.enabled) continue
+        if (!entityConfig.enabled) continue
 
-        // Query entities matching the dynamic filter
-        const dynamicQuerySpec = getFilterQuerySpec(entityType)
-        const dynamicWhere = buildFilterConditions(dynamicQuerySpec, entityConfig.filter)
-        const dynamicOrder = buildOrderBy(
-          dynamicQuerySpec,
-          entityConfig.sortField,
-          entityConfig.sortDirection
-        )
-        const dynamicEntities = await fetchEntitiesByType(
-          entityType,
-          dynamicWhere,
-          dynamicOrder,
-          showNsfw.value
-        )
+        const dynamicIds = await queryEntityIds(entityType, {
+          filter: entityConfig.filter,
+          sortField: entityConfig.sortField,
+          sortDirection: entityConfig.sortDirection,
+          includeNsfw: showNsfw.value
+        })
 
-        // Filter to only entities that match the current search/filter
-        const filteredEntities = dynamicEntities.filter((e) => entityMap.has(e.id))
+        const filteredEntities = dynamicIds
+          .map((id) => entityMap.get(id))
+          .filter((entity): entity is EntityData => entity !== undefined)
 
         if (filteredEntities.length > 0) {
           collectionGroups.push({
@@ -140,19 +134,13 @@ export function useExplorerList() {
 
         // Sort based on override preference
         if (overrideCollectionOrder.value) {
-          // Use global sort order: maintain order from entities array (already sorted by DB)
-          collectionEntities.sort((a, b) => {
-            const indexA = entities.findIndex((e) => e.id === a.id)
-            const indexB = entities.findIndex((e) => e.id === b.id)
-            return indexA - indexB
-          })
+          // Use global sort order from the main list
+          collectionEntities.sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0))
         } else {
           // Use collection internal order (orderInCollection)
-          collectionEntities.sort((a, b) => {
-            const orderA = entityOrderMap.get(a.id) ?? 0
-            const orderB = entityOrderMap.get(b.id) ?? 0
-            return orderA - orderB
-          })
+          collectionEntities.sort(
+            (a, b) => (entityOrderMap.get(a.id) ?? 0) - (entityOrderMap.get(b.id) ?? 0)
+          )
         }
 
         if (collectionEntities.length > 0) {
@@ -191,9 +179,17 @@ export function useExplorerList() {
     ]
   })
 
-  // Listen for DB events
+  // Listen for DB events: entity table, relation link tables (filters and
+  // dynamic configs), collections, and the collection membership link table
+  const relevantTables = computed(() => {
+    const tables = new Set(getFilterRelevantTables(activeEntityType.value))
+    tables.add('collections')
+    tables.add(COLLECTION_LINKS[activeEntityType.value].tableName)
+    return tables
+  })
+
   useDbChanges(({ table }) => {
-    if (isRelevantTable(table, activeEntityType.value)) refetch()
+    if (relevantTables.value.has(table)) refetch()
   })
 
   // Computed data with default for UI rendering
@@ -214,95 +210,21 @@ export function useExplorerList() {
 // Helpers
 // =============================================================================
 
-async function fetchEntitiesByType(
-  entityType: ContentEntityType,
-  whereCondition: unknown,
-  orderBy: unknown,
-  showNsfw: boolean
-): Promise<EntityData[]> {
-  // Use type assertion to bypass complex Drizzle types
-  // The filter system guarantees correct types for each entity
-  switch (entityType) {
-    case 'game':
-      return (await db.query.games.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.games.isNsfw, false)
-        ) as never,
-        orderBy
-      } as never)) as Game[]
-    case 'character':
-      return (await db.query.characters.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.characters.isNsfw, false)
-        ) as never,
-        orderBy
-      } as never)) as Character[]
-    case 'person':
-      return (await db.query.persons.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.persons.isNsfw, false)
-        ) as never,
-        orderBy
-      } as never)) as Person[]
-    case 'company':
-      return (await db.query.companies.findMany({
-        where: and(
-          whereCondition as never,
-          showNsfw ? undefined : eq(schema.companies.isNsfw, false)
-        ) as never,
-        orderBy
-      } as never)) as Company[]
-    default:
-      return []
-  }
-}
-
 async function fetchEntityCollectionLinks(
-  entityType: string
+  entityType: ContentEntityType
 ): Promise<{ collectionId: string; entityId: string; orderInCollection: number }[]> {
-  switch (entityType) {
-    case 'game': {
-      const links = await db.query.collectionGameLinks.findMany()
-      return links.map((l) => ({
-        collectionId: l.collectionId,
-        entityId: l.gameId,
-        orderInCollection: l.orderInCollection
-      }))
-    }
-    case 'character': {
-      const links = await db.query.collectionCharacterLinks.findMany()
-      return links.map((l) => ({
-        collectionId: l.collectionId,
-        entityId: l.characterId,
-        orderInCollection: l.orderInCollection
-      }))
-    }
-    case 'person': {
-      const links = await db.query.collectionPersonLinks.findMany()
-      return links.map((l) => ({
-        collectionId: l.collectionId,
-        entityId: l.personId,
-        orderInCollection: l.orderInCollection
-      }))
-    }
-    case 'company': {
-      const links = await db.query.collectionCompanyLinks.findMany()
-      return links.map((l) => ({
-        collectionId: l.collectionId,
-        entityId: l.companyId,
-        orderInCollection: l.orderInCollection
-      }))
-    }
-    default:
-      return []
-  }
-}
+  const link = COLLECTION_LINKS[entityType]
+  const rows = await db
+    .select({
+      collectionId: link.collectionIdColumn,
+      entityId: link.entityIdColumn,
+      orderInCollection: link.orderColumn
+    })
+    .from(link.table)
 
-function isRelevantTable(table: string, entityType: string): boolean {
-  const entityTable = getFilterQuerySpec(entityType as ContentEntityType).tableName
-  const linkTable = `collection_${entityType}_links`
-  return table === entityTable || table === 'collections' || table === linkTable
+  return rows.map((row) => ({
+    collectionId: row.collectionId as string,
+    entityId: row.entityId as string,
+    orderInCollection: row.orderInCollection as number
+  }))
 }

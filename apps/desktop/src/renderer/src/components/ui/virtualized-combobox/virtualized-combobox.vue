@@ -37,13 +37,16 @@ interface Props {
   maxHeight?: number
   /** Allow creating new items */
   allowCreate?: boolean
+  /** Reflect the current selection in the trigger; disable when the host renders the selection itself (e.g. as badges) */
+  showSelectedLabel?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   multiple: false,
   disabled: false,
   maxHeight: 230,
-  allowCreate: false
+  allowCreate: false,
+  showSelectedLabel: true
 })
 
 const { m } = useI18n()
@@ -118,7 +121,7 @@ const displayText = computed(() => {
   const entities = props.entities
   const selectedIds = props.selectedIds
 
-  if (selectedIds.length === 0) return null
+  if (!props.showSelectedLabel || selectedIds.length === 0) return null
   if (props.multiple) {
     return m.value.common.selectedCount({ count: selectedIds.length })
   }
@@ -291,12 +294,12 @@ function handleMouseMove() {
         :disabled="props.disabled"
         :class="
           cn(
-            'justify-between px-2 py-1 hover:bg-input hover:text-input-foreground active:bg-transparent',
+            'w-full justify-between px-2 py-1 hover:bg-input hover:text-input-foreground active:bg-transparent',
             props.class
           )
         "
       >
-        <span :class="cn('truncate', !displayText && 'text-muted-foreground')">
+        <span :class="cn('truncate', !displayText && 'text-muted-foreground text-xs')">
           {{ displayText || emptyTextDisplay }}
         </span>
         <Icon

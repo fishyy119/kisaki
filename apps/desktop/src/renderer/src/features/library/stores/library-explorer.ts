@@ -7,11 +7,9 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ContentEntityType } from '@shared/common'
+import type { ContentEntityType, SortDirection } from '@shared/common'
 import type { FilterState } from '@shared/filter'
 import { createEmptyFilter } from '@shared/filter'
-
-type SortDirection = 'asc' | 'desc'
 
 const DEFAULT_EXPLORER_WIDTH = 220
 

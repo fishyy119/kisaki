@@ -20,13 +20,7 @@ import {
   DropdownMenuTrigger
 } from '@renderer/components/ui/dropdown-menu'
 import { useLibraryExplorerStore } from '../../../stores'
-import {
-  gameFilterUiSpec,
-  characterFilterUiSpec,
-  personFilterUiSpec,
-  companyFilterUiSpec
-} from '@renderer/components/shared/filter'
-import type { ContentEntityType } from '@shared/common'
+import { getFilterUiSpec } from '@renderer/components/shared/filter'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -34,8 +28,7 @@ const { m } = useI18n()
 const store = useLibraryExplorerStore()
 const { activeEntityType, sortField, sortDirection, overrideCollectionOrder } = storeToRefs(store)
 
-const uiSpec = computed(() => getUiSpec(activeEntityType.value))
-const sortFields = computed(() => uiSpec.value.sortOptions)
+const sortFields = computed(() => getFilterUiSpec(activeEntityType.value).value.sortOptions)
 
 // Computed wrappers for v-model binding
 const sortFieldModel = computed({
@@ -57,19 +50,6 @@ const overrideModel = computed({
     }
   }
 })
-
-function getUiSpec(entityType: ContentEntityType) {
-  switch (entityType) {
-    case 'game':
-      return gameFilterUiSpec.value
-    case 'character':
-      return characterFilterUiSpec.value
-    case 'person':
-      return personFilterUiSpec.value
-    case 'company':
-      return companyFilterUiSpec.value
-  }
-}
 </script>
 
 <template>

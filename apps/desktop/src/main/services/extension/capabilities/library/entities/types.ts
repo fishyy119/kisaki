@@ -6,7 +6,7 @@ import type {
   SQLiteTable,
   SQLiteUpdateSetSource
 } from 'drizzle-orm/sqlite-core'
-import type { FilterState } from '@shared/db'
+import type { FilterState } from '@shared/filter/model'
 import type { FilterQuerySpec } from '@shared/filter/spec'
 import type { SearchQuerySpec } from '@shared/search/spec'
 

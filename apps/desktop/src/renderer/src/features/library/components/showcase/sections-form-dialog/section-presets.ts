@@ -8,7 +8,9 @@
 import { messages } from '@renderer/core/i18n'
 import type { Messages } from '@shared/i18n'
 import type { AllEntityType } from '@shared/common'
-import type { FilterState, SectionLayout, SectionItemSize } from '@shared/filter'
+import type { FilterState } from '@shared/filter'
+import { createEmptyFilter } from '@shared/filter'
+import type { SectionLayout, SectionItemSize } from '@shared/db'
 
 // =============================================================================
 // Types
@@ -46,7 +48,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: 20,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'lastActiveAt',
     sortDirection: 'desc'
   },
@@ -57,7 +59,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: 20,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'score',
     sortDirection: 'desc'
   },
@@ -68,7 +70,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: 20,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'createdAt',
     sortDirection: 'desc'
   },
@@ -79,7 +81,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'grid',
     itemSize: 'md',
     limit: null,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'name',
     sortDirection: 'asc'
   },
@@ -90,7 +92,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: null,
-    filter: { isFavorite: true },
+    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
     sortField: 'name',
     sortDirection: 'asc'
   },
@@ -103,7 +105,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: null,
-    filter: { isFavorite: true },
+    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
     sortField: 'name',
     sortDirection: 'asc'
   },
@@ -116,7 +118,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: null,
-    filter: { isFavorite: true },
+    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
     sortField: 'name',
     sortDirection: 'asc'
   },
@@ -129,7 +131,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: null,
-    filter: { isFavorite: true },
+    filter: { match: 'all', conditions: [{ field: 'isFavorite', op: 'is', value: true }] },
     sortField: 'name',
     sortDirection: 'asc'
   },
@@ -142,7 +144,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: 20,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'order',
     sortDirection: 'asc'
   },
@@ -155,7 +157,7 @@ const PRESET_DEFINITIONS: PresetDefinition[] = [
     layout: 'horizontal',
     itemSize: 'md',
     limit: 20,
-    filter: {},
+    filter: createEmptyFilter(),
     sortField: 'name',
     sortDirection: 'asc'
   }

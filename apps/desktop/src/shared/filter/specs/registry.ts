@@ -1,21 +1,18 @@
+/**
+ * Filter query spec registry.
+ *
+ * Resolves the per-entity FilterQuerySpec and spec-derived lookups.
+ */
 import type { AllEntityType } from '@shared/common'
+import type { TableName } from '@shared/db/table-names'
 import type { FilterQuerySpec } from '../spec'
 
-import { gameFilterQuerySpec } from './game'
 import { characterFilterQuerySpec } from './character'
-import { personFilterQuerySpec } from './person'
-import { companyFilterQuerySpec } from './company'
 import { collectionFilterQuerySpec } from './collection'
+import { companyFilterQuerySpec } from './company'
+import { gameFilterQuerySpec } from './game'
+import { personFilterQuerySpec } from './person'
 import { tagFilterQuerySpec } from './tag'
-
-export {
-  gameFilterQuerySpec,
-  characterFilterQuerySpec,
-  personFilterQuerySpec,
-  companyFilterQuerySpec,
-  collectionFilterQuerySpec,
-  tagFilterQuerySpec
-}
 
 export function getFilterQuerySpec(entityType: AllEntityType): FilterQuerySpec {
   switch (entityType) {
@@ -32,4 +29,12 @@ export function getFilterQuerySpec(entityType: AllEntityType): FilterQuerySpec {
     case 'tag':
       return tagFilterQuerySpec
   }
+}
+
+/**
+ * Tables whose changes can affect filter results for the entity type:
+ * the entity table itself plus every relation link table in its spec.
+ */
+export function getFilterRelevantTables(entityType: AllEntityType): readonly TableName[] {
+  return getFilterQuerySpec(entityType).relevantTables
 }

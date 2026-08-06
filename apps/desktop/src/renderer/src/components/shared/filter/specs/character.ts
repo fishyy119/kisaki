@@ -9,138 +9,68 @@ export const characterFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
   return {
     entityType: 'character',
     fields: [
-      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
-      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+      { key: 'isFavorite', label: m.filter.favorite, kind: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', kind: 'boolean' },
 
-      {
-        key: 'gender',
-        label: m.library.fields.gender,
-        category: 'enum',
-        control: 'select',
-        options: getGenderOptions()
-      },
+      { key: 'gender', label: m.library.fields.gender, kind: 'enum', options: getGenderOptions() },
       {
         key: 'bloodType',
         label: m.library.fields.bloodType,
-        category: 'enum',
-        control: 'select',
+        kind: 'enum',
         options: [...BLOOD_TYPE_OPTIONS]
       },
-      {
-        key: 'cup',
-        label: m.library.fields.cup,
-        category: 'enum',
-        control: 'select',
-        options: [...CUP_SIZE_OPTIONS]
-      },
+      { key: 'cup', label: m.library.fields.cup, kind: 'enum', options: [...CUP_SIZE_OPTIONS] },
 
-      {
-        key: 'score',
-        label: m.library.fields.score,
-        category: 'numeric',
-        control: 'numberRange',
-        min: 0,
-        max: 100
-      },
-      {
-        key: 'age',
-        label: m.library.fields.age,
-        category: 'numeric',
-        control: 'numberRange',
-        min: 0,
-        max: 999
-      },
+      { key: 'score', label: m.library.fields.score, kind: 'number', min: 0, max: 100 },
+      { key: 'age', label: m.library.fields.age, kind: 'number', min: 0, max: 999 },
       {
         key: 'height',
         label: m.library.fields.height,
-        category: 'numeric',
-        control: 'numberRange',
+        kind: 'number',
         min: 0,
         max: 300,
-        placeholder: 'cm'
+        unit: 'cm'
       },
       {
         key: 'weight',
         label: m.library.fields.weight,
-        category: 'numeric',
-        control: 'numberRange',
+        kind: 'number',
         min: 0,
         max: 500,
-        placeholder: 'kg'
+        unit: 'kg'
       },
       {
         key: 'bust',
         label: m.library.fields.bust,
-        category: 'numeric',
-        control: 'numberRange',
+        kind: 'number',
         min: 0,
         max: 300,
-        placeholder: 'cm'
+        unit: 'cm'
       },
       {
         key: 'waist',
         label: m.library.fields.waist,
-        category: 'numeric',
-        control: 'numberRange',
+        kind: 'number',
         min: 0,
         max: 300,
-        placeholder: 'cm'
+        unit: 'cm'
       },
       {
         key: 'hips',
         label: m.library.fields.hips,
-        category: 'numeric',
-        control: 'numberRange',
+        kind: 'number',
         min: 0,
         max: 300,
-        placeholder: 'cm'
+        unit: 'cm'
       },
 
-      {
-        key: 'birthDate',
-        label: m.library.fields.birthDate,
-        category: 'date',
-        control: 'dateRange'
-      },
-      {
-        key: 'createdAt',
-        label: m.library.fields.addedDate,
-        category: 'date',
-        control: 'dateRange'
-      },
+      { key: 'birthDate', label: m.library.fields.birthDate, kind: 'date' },
+      { key: 'createdAt', label: m.library.fields.addedDate, kind: 'date' },
 
-      {
-        key: 'games',
-        label: m.library.fields.relatedGames,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'game',
-        multiple: true
-      },
-      {
-        key: 'persons',
-        label: m.library.fields.relatedPersons,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'person',
-        multiple: true
-      },
-      {
-        key: 'tags',
-        label: m.library.fields.tags,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'tag',
-        multiple: true
-      },
-      {
-        key: 'collections',
-        label: m.library.fields.collections,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'collection',
-        multiple: true
-      }
+      { key: 'games', label: m.library.fields.relatedGames, kind: 'relation' },
+      { key: 'persons', label: m.library.fields.relatedPersons, kind: 'relation' },
+      { key: 'tags', label: m.library.fields.tags, kind: 'relation' },
+      { key: 'collections', label: m.library.fields.collections, kind: 'relation' }
     ],
     sortOptions: [
       { key: 'name', label: m.library.fields.name },

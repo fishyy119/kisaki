@@ -9,94 +9,34 @@ export const gameFilterUiSpec: ComputedRef<FilterUiSpec> = computed(() => {
   return {
     entityType: 'game',
     fields: [
-      { key: 'isFavorite', label: m.filter.favorite, category: 'toggle', control: 'boolean' },
-      { key: 'isNsfw', label: 'NSFW', category: 'toggle', control: 'boolean' },
+      { key: 'isFavorite', label: m.filter.favorite, kind: 'boolean' },
+      { key: 'isNsfw', label: 'NSFW', kind: 'boolean' },
 
       {
         key: 'status',
         label: m.library.fields.status,
-        category: 'enum',
-        control: 'multiSelect',
+        kind: 'enum',
         options: getGameStatusOptions()
       },
 
-      {
-        key: 'score',
-        label: m.library.fields.score,
-        category: 'numeric',
-        control: 'numberRange',
-        min: 0,
-        max: 100,
-        step: 1
-      },
+      { key: 'score', label: m.library.fields.score, kind: 'number', min: 0, max: 100, step: 1 },
       {
         key: 'totalDuration',
         label: m.library.fields.playDuration,
-        category: 'numeric',
-        control: 'numberRange',
+        kind: 'number',
         min: 0,
-        placeholder: m.filter.secondsUnit
+        unit: m.filter.secondsUnit
       },
 
-      {
-        key: 'releaseDate',
-        label: m.library.fields.releaseDate,
-        category: 'date',
-        control: 'dateRange'
-      },
-      {
-        key: 'lastActiveAt',
-        label: m.library.fields.lastActiveAt,
-        category: 'date',
-        control: 'dateRange'
-      },
-      {
-        key: 'createdAt',
-        label: m.library.fields.addedDate,
-        category: 'date',
-        control: 'dateRange'
-      },
+      { key: 'releaseDate', label: m.library.fields.releaseDate, kind: 'date' },
+      { key: 'lastActiveAt', label: m.library.fields.lastActiveAt, kind: 'date' },
+      { key: 'createdAt', label: m.library.fields.addedDate, kind: 'date' },
 
-      {
-        key: 'tags',
-        label: m.library.fields.tags,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'tag',
-        multiple: true
-      },
-      {
-        key: 'collections',
-        label: m.library.fields.collections,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'collection',
-        multiple: true
-      },
-      {
-        key: 'persons',
-        label: m.library.fields.relatedPersons,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'person',
-        multiple: true
-      },
-      {
-        key: 'companies',
-        label: m.library.fields.relatedCompanies,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'company',
-        multiple: true
-      },
-      {
-        key: 'characters',
-        label: m.library.fields.relatedCharacters,
-        category: 'relation',
-        control: 'relation',
-        targetEntity: 'character',
-        multiple: true
-      }
+      { key: 'tags', label: m.library.fields.tags, kind: 'relation' },
+      { key: 'collections', label: m.library.fields.collections, kind: 'relation' },
+      { key: 'persons', label: m.library.fields.relatedPersons, kind: 'relation' },
+      { key: 'companies', label: m.library.fields.relatedCompanies, kind: 'relation' },
+      { key: 'characters', label: m.library.fields.relatedCharacters, kind: 'relation' }
     ],
     sortOptions: [
       { key: 'name', label: m.library.fields.name },

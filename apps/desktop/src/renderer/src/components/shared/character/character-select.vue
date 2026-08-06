@@ -24,6 +24,8 @@ interface Props {
   disabled?: boolean
   /** Character IDs to exclude from the list */
   excludeIds?: string[]
+  /** Reflect the current selection in the trigger (see VirtualizedCombobox) */
+  showSelectedLabel?: boolean
   /** Custom class name */
   class?: string
 }
@@ -113,5 +115,6 @@ const selectedIds = computed({
     :multiple="multiple"
     :class="props.class"
     :disabled="disabled"
+    :show-selected-label="props.showSelectedLabel"
   />
 </template>

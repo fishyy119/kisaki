@@ -27,6 +27,8 @@ interface Props {
   disabled?: boolean
   /** Game IDs to exclude from the list */
   excludeIds?: string[]
+  /** Reflect the current selection in the trigger (see VirtualizedCombobox) */
+  showSelectedLabel?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -113,5 +115,6 @@ const selectedIds = computed({
     :multiple="props.multiple"
     :class="props.class"
     :disabled="props.disabled"
+    :show-selected-label="props.showSelectedLabel"
   />
 </template>

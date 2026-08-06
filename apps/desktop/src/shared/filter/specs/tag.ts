@@ -1,18 +1,18 @@
 import { tags } from '@shared/db'
-import { defineQuerySpec } from '../spec'
+import { defineFilterQuerySpec } from '../spec'
 
-export const tagFilterQuerySpec = defineQuerySpec({
+export const tagFilterQuerySpec = defineFilterQuerySpec({
   entityType: 'tag',
-  tableName: 'tags',
+  table: tags,
   fields: [
     { key: 'isNsfw', kind: 'boolean', column: tags.isNsfw },
-    { key: 'createdAt', kind: 'dateRange', mode: 'timestampMs', column: tags.createdAt }
+    { key: 'createdAt', kind: 'date', mode: 'timestampMs', column: tags.createdAt }
   ],
   sort: {
     defaultKey: 'name',
     fields: [
-      { key: 'name', column: tags.name },
-      { key: 'createdAt', column: tags.createdAt }
+      { key: 'name', kind: 'column', column: tags.name },
+      { key: 'createdAt', kind: 'column', column: tags.createdAt }
     ]
   }
 })

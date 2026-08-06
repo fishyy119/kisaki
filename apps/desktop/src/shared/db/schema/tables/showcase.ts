@@ -23,7 +23,7 @@ export const showcaseSections = sqliteTable(
     itemSize: sectionItemSize('item_size').notNull().default('md'),
     openMode: sectionOpenMode('open_mode').notNull().default('page'),
     limit: integer('limit'),
-    filter: filterState('filter').notNull().default({}),
+    filter: filterState('filter').notNull().default({ match: 'all', conditions: [] }),
     sortField: text('sort_field').notNull().default('name'),
     sortDirection: sortDirection('sort_direction').notNull().default('asc')
   },
@@ -32,7 +32,3 @@ export const showcaseSections = sqliteTable(
 
 export type ShowcaseSection = InferSelectModel<typeof showcaseSections>
 export type NewShowcaseSection = InferInsertModel<typeof showcaseSections>
-
-export type ShowcaseSectionFormItem = Omit<ShowcaseSection, 'createdAt' | 'updatedAt'> & {
-  isNew?: boolean
-}

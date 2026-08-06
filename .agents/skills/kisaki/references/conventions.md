@@ -169,6 +169,56 @@ Use these names:
 
 If a predicate can be called safely on arbitrary JSON, it is probably validation. If it requires trusted domain objects or current application state, it is probably a business check.
 
+## Boundary Parsing: Lenient Read, Strict Write
+
+Applies to boundaries that re-enter previously persisted or foreign data: custom JSON columns
+(`fromDriver`), extension inputs, imported files.
+
+- Read paths must be total: `fromDriver` / `parse*` never throw on malformed content; they return
+  the documented safe default (for example an empty filter) so user data files always open.
+- Write paths stay strict: `toDriver` / `assertValid*` throw on invalid values so the app never
+  persists garbage it produced itself.
+- The read-side default is not a backward-compatibility shim; it exists for corrupt or foreign
+  bytes regardless of history. Do not add shape recognition for retired formats — retired shapes
+  fall into the same "unrecognized -> default" bucket.
+- Choose defaults that degrade safely for the domain and never let unparsed data reach query
+  building or business logic.
+
+Reference implementations: `shared/db/columns/json/filter.ts` (`filterState`) and
+`shared/db/columns/json/collection.ts` (`dynamicCollectionConfig`, which also deep-normalizes and
+fills missing entity keys with disabled defaults).
+
+## Precise Abstraction & Media-Type Extensibility
+
+Kisaki is designed to grow from games to more media types (book, movie, music, tv). Entity-generic
+code must scale by declaration, not by copy-paste.
+
+### Declare Per-Entity Behavior as Data
+
+- Per-entity differences (tables, key columns, filter/search/sort fields, link tables) belong in
+  specs and registries keyed by the entity-type union: `getFilterQuerySpec`, `getSearchQuerySpec`,
+  `getFilterUiSpec`, `ENTITY_TABLES`, `COLLECTION_LINKS`.
+- Consumers resolve behavior through the registry and stay entity-generic. Do not duplicate
+  per-entity `switch` statements across composables, stores, and dialogs; one registry plus one
+  shared executor (for example `queryEntities` / `countEntities`) replaces them.
+- Exhaustiveness comes from the type system: registries are `Record<AllEntityType, ...>` and
+  entity `switch` statements have no `default`. Adding a media type must produce compile errors at
+  every remaining decision point — never a silent `default: return []`.
+- Adding a media type should cost roughly: +1 table, +1 query spec, +1 UI spec, +1 entry per
+  registry. If a change fans out into many scattered call sites, the consumer layer is
+  under-abstracted; fix the registry or executor, not the call sites.
+
+### Abstract Precisely, Not Speculatively
+
+- Model exactly what the product needs today, with a deliberate seam only on the known growth
+  axis: the entity-type unions and the spec registries are that seam.
+- Do not add speculative machinery for hypothetical needs: nested boolean filter ASTs, per-field
+  operator frameworks beyond the closed op vocabulary, visitor/strategy layers, or plugin points
+  nothing consumes.
+- When a real need arrives, extend the closed vocabulary (a new field kind, a new op, a new
+  registry entry) instead of generalizing early. Closed unions plus total switches keep extension
+  cheap and compiler-checked.
+
 ## CLI Command Naming
 
 - Keep Commander declarations in `cli/commands/`, CLI workflows in `cli/actions/`, and reusable rules in their owning domain modules.

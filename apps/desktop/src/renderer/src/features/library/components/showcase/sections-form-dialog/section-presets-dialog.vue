@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid'
 import { getShowcaseSectionPresets, type ShowcaseSectionPreset } from './section-presets'
 import { useI18n } from '@renderer/composables/use-i18n'
 import type { AllEntityType } from '@shared/common'
-import type { ShowcaseSectionFormItem } from '@shared/db'
+import type { ShowcaseSectionFormItem } from './types'
 import {
   Dialog,
   DialogContent,

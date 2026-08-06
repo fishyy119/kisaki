@@ -24,25 +24,12 @@ import {
 } from '@renderer/components/ui/select'
 import { Field, FieldLabel, FieldContent, FieldGroup } from '@renderer/components/ui/field'
 import { Form } from '@renderer/components/ui/form'
-import {
-  FilterDialog,
-  gameFilterUiSpec,
-  characterFilterUiSpec,
-  personFilterUiSpec,
-  companyFilterUiSpec,
-  collectionFilterUiSpec,
-  tagFilterUiSpec
-} from '@renderer/components/shared/filter'
-import { createEmptyFilter, countActiveFilters, type FilterState } from '@shared/filter'
+import { FilterDialog, getFilterUiSpec } from '@renderer/components/shared/filter'
+import { createEmptyFilter, countConditions, type FilterState } from '@shared/filter'
 import { notify } from '@renderer/core/notify'
-import type {
-  ShowcaseSectionFormItem,
-  SectionLayout,
-  SectionItemSize,
-  SectionOpenMode,
-  SortDirection
-} from '@shared/db'
-import type { AllEntityType } from '@shared/common'
+import type { SectionLayout, SectionItemSize, SectionOpenMode } from '@shared/db'
+import type { ShowcaseSectionFormItem } from './types'
+import type { AllEntityType, SortDirection } from '@shared/common'
 import { useI18n } from '@renderer/composables/use-i18n'
 
 const { m } = useI18n()
@@ -151,16 +138,16 @@ watch(
 // Computed
 // =============================================================================
 
-const uiSpec = computed(() => getUiSpec(formData.value.entityType))
+const uiSpec = computed(() => getFilterUiSpec(formData.value.entityType).value)
 const sortFields = computed(() => uiSpec.value.sortOptions)
-const activeFilterCount = computed(() => countActiveFilters(formData.value.filter))
+const activeFilterCount = computed(() => countConditions(formData.value.filter))
 
 // Watch for entity type changes - update sort field and reset filter
 watch(
   () => formData.value.entityType,
   (newEntityType, oldEntityType) => {
     // Update sort field if current one is not available for new entity type
-    const fields = getUiSpec(newEntityType).sortOptions
+    const fields = getFilterUiSpec(newEntityType).value.sortOptions
     if (!fields.find((f) => f.key === formData.value.sortField)) {
       formData.value.sortField = 'name'
     }
@@ -171,23 +158,6 @@ watch(
     }
   }
 )
-
-function getUiSpec(entityType: AllEntityType) {
-  switch (entityType) {
-    case 'game':
-      return gameFilterUiSpec.value
-    case 'character':
-      return characterFilterUiSpec.value
-    case 'person':
-      return personFilterUiSpec.value
-    case 'company':
-      return companyFilterUiSpec.value
-    case 'collection':
-      return collectionFilterUiSpec.value
-    case 'tag':
-      return tagFilterUiSpec.value
-  }
-}
 
 // =============================================================================
 // Handlers

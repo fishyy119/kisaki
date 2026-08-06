@@ -1,6 +1,6 @@
 <!--
   FilterSummary
-  Display summary of active filter values as badges.
+  Displays filter conditions as badges (field label + op + value).
   Supports compact and full modes.
 -->
 <script setup lang="ts">
@@ -9,8 +9,8 @@ import { Icon } from '@renderer/components/ui/icon'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { useI18n } from '@renderer/composables'
-import { countActiveFilters } from '@shared/filter'
-import type { DateRangeValue, FilterState, NumberRangeValue, RelationValue } from '@shared/filter'
+import { countConditions } from '@shared/filter'
+import type { FilterCondition, FilterState } from '@shared/filter'
 import type { FilterUiFieldDef, FilterUiSpec } from './specs/types'
 
 interface Props {
@@ -29,75 +29,62 @@ const emit = defineEmits<{
 
 const { m } = useI18n()
 
-const activeCount = computed(() => countActiveFilters(props.filter))
+const activeCount = computed(() => countConditions(props.filter))
 const fieldByKey = computed(() => new Map(props.uiSpec.fields.map((f) => [f.key, f])))
 
-function formatValue(
-  field: FilterUiFieldDef,
-  value: unknown
-): { value: string; mode?: string } | null {
-  if (value === null || value === undefined) return null
-
-  if (field.control === 'boolean') {
-    return { value: value === true ? m.value.common.yes : m.value.common.no }
+function formatIdList(field: FilterUiFieldDef, values: string[]): string {
+  if (field.kind === 'enum') {
+    const labels = values.map(
+      (value) => field.options.find((option) => option.value === value)?.label ?? value
+    )
+    if (labels.length <= 2) return labels.join(', ')
+    return m.value.filter.summaryAndMore({ first: labels[0], count: labels.length })
   }
-
-  if (field.control === 'select') {
-    const v = String(value)
-    const opt = field.options.find((o) => o.value === v)
-    return { value: opt?.label ?? v }
-  }
-
-  if (field.control === 'multiSelect') {
-    const arr = Array.isArray(value) ? (value as string[]) : []
-    const labels = arr.map((v) => field.options.find((o) => o.value === v)?.label ?? v)
-    if (labels.length <= 2) return { value: labels.join(', ') }
-    return { value: m.value.filter.summaryAndMore({ first: labels[0], count: labels.length }) }
-  }
-
-  if (field.control === 'numberRange') {
-    const range = value as NumberRangeValue
-    if (range.min !== undefined && range.max !== undefined)
-      return { value: `${range.min}-${range.max}` }
-    if (range.min !== undefined) return { value: `≥ ${range.min}` }
-    if (range.max !== undefined) return { value: `≤ ${range.max}` }
-    return null
-  }
-
-  if (field.control === 'dateRange') {
-    const range = value as DateRangeValue
-    if (range.from && range.to) return { value: `${range.from} ~ ${range.to}` }
-    if (range.from) return { value: m.value.filter.summaryFrom({ value: range.from }) }
-    if (range.to) return { value: m.value.filter.summaryTo({ value: range.to }) }
-    return null
-  }
-
-  if (field.control === 'relation') {
-    const rel = value as RelationValue
-    const count = Array.isArray(rel.ids) ? rel.ids.length : 0
-    if (count === 0) return null
-    return {
-      value: m.value.common.itemCount({ count }),
-      mode: rel.match === 'all' ? m.value.filter.matchAll : undefined
-    }
-  }
-
-  return { value: String(value) }
+  return m.value.common.itemCount({ count: values.length })
 }
 
-const activeEntries = computed(() => {
-  return Object.entries(props.filter)
-    .map(([key, value]) => {
-      const field = fieldByKey.value.get(key)
-      if (!field) return null
+function formatCondition(condition: FilterCondition): string | null {
+  const field = fieldByKey.value.get(condition.field)
+  if (!field) return null
 
-      const formatted = formatValue(field, value)
-      if (!formatted) return null
+  const opLabel = m.value.filter.ops[condition.op]
 
-      return { label: field.label, value: formatted.value, mode: formatted.mode }
-    })
-    .filter(Boolean) as { label: string; value: string; mode?: string }[]
-})
+  switch (condition.op) {
+    case 'is':
+      return `${field.label}: ${condition.value ? m.value.common.yes : m.value.common.no}`
+    case 'anyOf':
+    case 'noneOf':
+    case 'hasAnyOf':
+    case 'hasAllOf':
+    case 'hasNoneOf': {
+      if (condition.value.length === 0) return null
+      return `${field.label} · ${opLabel}: ${formatIdList(field, condition.value)}`
+    }
+    case 'inRange': {
+      const { min, max } = condition.value
+      if (min !== undefined && max !== undefined) return `${field.label}: ${min}-${max}`
+      if (min !== undefined) return `${field.label}: ≥ ${min}`
+      if (max !== undefined) return `${field.label}: ≤ ${max}`
+      return null
+    }
+    case 'inDateRange': {
+      const { from, to } = condition.value
+      if (from && to) return `${field.label}: ${from} ~ ${to}`
+      if (from) return `${field.label}: ${m.value.filter.summaryFrom({ value: from })}`
+      if (to) return `${field.label}: ${m.value.filter.summaryTo({ value: to })}`
+      return null
+    }
+    case 'isEmpty':
+    case 'isSet':
+      return `${field.label} · ${opLabel}`
+  }
+}
+
+const entries = computed(() =>
+  props.filter.conditions
+    .map((condition) => formatCondition(condition))
+    .filter((entry): entry is string => entry !== null)
+)
 </script>
 
 <template>
@@ -138,12 +125,12 @@ const activeEntries = computed(() => {
     class="flex flex-wrap items-center gap-1.5"
   >
     <Badge
-      v-for="(cond, i) in activeEntries"
+      v-for="(entry, i) in entries"
       :key="i"
       variant="secondary"
       class="text-xs"
     >
-      {{ cond.label }}{{ cond.mode ? `(${cond.mode})` : '' }}: {{ cond.value }}
+      {{ entry }}
     </Badge>
     <Button
       variant="ghost"

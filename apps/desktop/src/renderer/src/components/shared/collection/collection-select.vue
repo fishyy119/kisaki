@@ -35,6 +35,8 @@ interface Props {
   excludeIds?: string[]
   /** Whether to show a "none" option (single mode only) */
   allowNone?: boolean
+  /** Reflect the current selection in the trigger (see VirtualizedCombobox) */
+  showSelectedLabel?: boolean
   /** Label for the "none" option */
   noneLabel?: string
 }
@@ -161,6 +163,7 @@ async function handleCreate(name: string) {
     :class="props.class"
     :disabled="props.disabled"
     :allow-create="props.allowCreate"
+    :show-selected-label="props.showSelectedLabel"
     @create="handleCreate"
   />
 </template>

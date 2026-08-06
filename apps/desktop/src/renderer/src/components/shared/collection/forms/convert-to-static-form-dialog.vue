@@ -21,17 +21,9 @@ import {
 import { Icon } from '@renderer/components/ui/icon'
 import { useAsyncData } from '@renderer/composables'
 import { notify } from '@renderer/core/notify'
-import { db } from '@renderer/core/db'
-import { buildFilterConditions, buildOrderBy, getFilterQuerySpec } from '@shared/filter'
-import {
-  collections,
-  collectionGameLinks,
-  collectionCharacterLinks,
-  collectionPersonLinks,
-  collectionCompanyLinks,
-  type DynamicCollectionConfig
-} from '@shared/db'
-import type { SortDirection } from '@shared/common'
+import { db, queryEntityIds, insertCollectionLinks, COLLECTION_LINKS } from '@renderer/core/db'
+import { collections, type DynamicCollectionConfig } from '@shared/db'
+import { CONTENT_ENTITY_TYPES } from '@shared/common'
 import { createLogger } from '@renderer/core/log'
 import { useI18n } from '@renderer/composables/use-i18n'
 
@@ -80,9 +72,7 @@ watch(
   { immediate: true }
 )
 
-const dynamicConfig = computed(
-  () => (collection.value?.dynamicConfig as DynamicCollectionConfig | null | undefined) ?? null
-)
+const dynamicConfig = computed(() => collection.value?.dynamicConfig ?? null)
 
 const canConvert = computed(() => {
   if (!collection.value) return false
@@ -93,116 +83,33 @@ const canConvert = computed(() => {
 async function materializeDynamicCollection(config: DynamicCollectionConfig) {
   const collectionId = props.collectionId
 
-  // Clear existing links to avoid unique constraint issues.
-  await db.delete(collectionGameLinks).where(eq(collectionGameLinks.collectionId, collectionId))
-  await db
-    .delete(collectionCharacterLinks)
-    .where(eq(collectionCharacterLinks.collectionId, collectionId))
-  await db.delete(collectionPersonLinks).where(eq(collectionPersonLinks.collectionId, collectionId))
-  await db
-    .delete(collectionCompanyLinks)
-    .where(eq(collectionCompanyLinks.collectionId, collectionId))
+  for (const entityType of CONTENT_ENTITY_TYPES) {
+    const link = COLLECTION_LINKS[entityType]
 
-  if (config.game?.enabled) {
-    const whereCondition = buildFilterConditions(getFilterQuerySpec('game'), config.game.filter)
-    const orderBy = buildOrderBy(
-      getFilterQuerySpec('game'),
-      config.game.sortField,
-      config.game.sortDirection as SortDirection
+    // Clear existing links to avoid unique constraint issues.
+    await db.delete(link.table).where(eq(link.collectionIdColumn, collectionId))
+
+    const entityConfig = config[entityType]
+    if (!entityConfig.enabled) continue
+
+    // Materialization snapshots the full result set regardless of the
+    // current NSFW visibility preference.
+    const entityIds = await queryEntityIds(entityType, {
+      filter: entityConfig.filter,
+      sortField: entityConfig.sortField,
+      sortDirection: entityConfig.sortDirection,
+      includeNsfw: true
+    })
+
+    await insertCollectionLinks(
+      entityType,
+      entityIds.map((entityId, index) => ({
+        id: nanoid(),
+        collectionId,
+        entityId,
+        orderInCollection: index
+      }))
     )
-    const gameList = await db.query.games.findMany({
-      where: whereCondition,
-      orderBy
-    } as never)
-
-    if (gameList.length > 0) {
-      await db.insert(collectionGameLinks).values(
-        gameList.map((g, i) => ({
-          id: nanoid(),
-          collectionId,
-          gameId: g.id,
-          orderInCollection: i
-        }))
-      )
-    }
-  }
-
-  if (config.character?.enabled) {
-    const whereCondition = buildFilterConditions(
-      getFilterQuerySpec('character'),
-      config.character.filter
-    )
-    const orderBy = buildOrderBy(
-      getFilterQuerySpec('character'),
-      config.character.sortField,
-      config.character.sortDirection as SortDirection
-    )
-    const characterList = await db.query.characters.findMany({
-      where: whereCondition,
-      orderBy
-    } as never)
-
-    if (characterList.length > 0) {
-      await db.insert(collectionCharacterLinks).values(
-        characterList.map((c, i) => ({
-          id: nanoid(),
-          collectionId,
-          characterId: c.id,
-          orderInCollection: i
-        }))
-      )
-    }
-  }
-
-  if (config.person?.enabled) {
-    const whereCondition = buildFilterConditions(getFilterQuerySpec('person'), config.person.filter)
-    const orderBy = buildOrderBy(
-      getFilterQuerySpec('person'),
-      config.person.sortField,
-      config.person.sortDirection as SortDirection
-    )
-    const personList = await db.query.persons.findMany({
-      where: whereCondition,
-      orderBy
-    } as never)
-
-    if (personList.length > 0) {
-      await db.insert(collectionPersonLinks).values(
-        personList.map((p, i) => ({
-          id: nanoid(),
-          collectionId,
-          personId: p.id,
-          orderInCollection: i
-        }))
-      )
-    }
-  }
-
-  if (config.company?.enabled) {
-    const whereCondition = buildFilterConditions(
-      getFilterQuerySpec('company'),
-      config.company.filter
-    )
-    const orderBy = buildOrderBy(
-      getFilterQuerySpec('company'),
-      config.company.sortField,
-      config.company.sortDirection as SortDirection
-    )
-    const companyList = await db.query.companies.findMany({
-      where: whereCondition,
-      orderBy
-    } as never)
-
-    if (companyList.length > 0) {
-      await db.insert(collectionCompanyLinks).values(
-        companyList.map((c, i) => ({
-          id: nanoid(),
-          collectionId,
-          companyId: c.id,
-          orderInCollection: i
-        }))
-      )
-    }
   }
 }
 

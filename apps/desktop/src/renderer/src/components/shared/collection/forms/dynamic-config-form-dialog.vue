@@ -26,19 +26,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import {
-  FilterDialog,
-  gameFilterUiSpec,
-  characterFilterUiSpec,
-  personFilterUiSpec,
-  companyFilterUiSpec
-} from '@renderer/components/shared/filter'
+import { FilterDialog, getFilterUiSpec } from '@renderer/components/shared/filter'
 import { useAsyncData } from '@renderer/composables'
 import { cn } from '@renderer/utils/cn'
 import { getEntityIcon } from '@renderer/utils/format'
 import { notify } from '@renderer/core/notify'
 import { db } from '@renderer/core/db'
-import { createEmptyFilter, countActiveFilters } from '@shared/filter'
+import { createEmptyFilter, countConditions } from '@shared/filter'
 import type { FilterState } from '@shared/filter'
 import { collections, type DynamicCollectionConfig, type DynamicEntityConfig } from '@shared/db'
 import type { ContentEntityType, SortDirection } from '@shared/common'
@@ -82,24 +76,9 @@ function createDefaultEntityConfig(): DynamicEntityConfig {
 }
 
 function createDefaultConfig(): DynamicCollectionConfig {
-  return {
-    game: createDefaultEntityConfig(),
-    character: createDefaultEntityConfig(),
-    person: createDefaultEntityConfig(),
-    company: createDefaultEntityConfig()
-  }
-}
-
-function normalizeConfig(
-  value: DynamicCollectionConfig | null | undefined
-): DynamicCollectionConfig {
-  const v = value ?? null
-  return {
-    game: v?.game ?? createDefaultEntityConfig(),
-    character: v?.character ?? createDefaultEntityConfig(),
-    person: v?.person ?? createDefaultEntityConfig(),
-    company: v?.company ?? createDefaultEntityConfig()
-  }
+  return Object.fromEntries(
+    CONTENT_ENTITY_TYPES.map((type) => [type, createDefaultEntityConfig()])
+  ) as DynamicCollectionConfig
 }
 
 // Local config state
@@ -130,7 +109,7 @@ const filterDialogOpen = computed({
 })
 
 const filterDialogUiSpec = computed(() =>
-  filterDialogEntityType.value ? getUiSpec(filterDialogEntityType.value) : null
+  filterDialogEntityType.value ? getFilterUiSpec(filterDialogEntityType.value).value : null
 )
 
 // Computed for current entity filter (for FilterDialog v-model)
@@ -146,21 +125,8 @@ const currentEntityFilter = computed({
   }
 })
 
-function getUiSpec(entityType: ContentEntityType) {
-  switch (entityType) {
-    case 'game':
-      return gameFilterUiSpec.value
-    case 'character':
-      return characterFilterUiSpec.value
-    case 'person':
-      return personFilterUiSpec.value
-    case 'company':
-      return companyFilterUiSpec.value
-  }
-}
-
 function getSortOptions(type: ContentEntityType) {
-  return getUiSpec(type).sortOptions
+  return getFilterUiSpec(type).value.sortOptions
 }
 
 // Initialize config when dialog opens
@@ -178,9 +144,7 @@ watch(
 watch(existingCollection, (data) => {
   if (!open.value) return
   if (initialized.value) return
-  localConfig.value = normalizeConfig(
-    (data?.dynamicConfig as DynamicCollectionConfig | null) ?? null
-  )
+  localConfig.value = data?.dynamicConfig ?? createDefaultConfig()
   initialized.value = true
 })
 
@@ -354,10 +318,10 @@ const sortDirectionModels = {
                 />
                 {{ m.library.forms.filterLabel }}
                 <span
-                  v-if="countActiveFilters(localConfig[type].filter) > 0"
+                  v-if="countConditions(localConfig[type].filter) > 0"
                   class="ml-1 text-muted-foreground leading-0"
                 >
-                  ({{ countActiveFilters(localConfig[type].filter) }})
+                  ({{ countConditions(localConfig[type].filter) }})
                 </span>
               </Button>
 

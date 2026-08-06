@@ -1,92 +1,48 @@
 <!--
   FilterBuilder
-  Core filter construction component.
-  Renders all available filter fields grouped by category.
+  Pure condition list: one outlined ConditionEditor block per condition.
+  Query-scoped controls live in the hosting panel/dialog chrome instead:
+  match mode (all/any) in the header, add condition in the footer.
 -->
 <script setup lang="ts">
-import type { FilterState } from '@shared/filter'
-import { FieldGroup } from '@renderer/components/ui/field'
-import {
-  FilterBooleanField,
-  FilterSelectField,
-  FilterMultiSelectField,
-  FilterNumberRangeField,
-  FilterDateRangeField,
-  FilterRelationField
-} from './fields'
-import type { FilterUiCategory, FilterUiFieldDef, FilterUiSpec } from './specs/types'
+import type { FilterCondition, FilterState } from '@shared/filter'
+import { removeCondition, updateCondition } from '@shared/filter'
+import { useI18n } from '@renderer/composables'
+import ConditionEditor from './condition-editor.vue'
+import type { FilterUiSpec } from './specs/types'
 
 interface Props {
   uiSpec: FilterUiSpec
 }
 
 const props = defineProps<Props>()
-
 const model = defineModel<FilterState>({ required: true })
+const { m } = useI18n()
 
-function getFields<TCategory extends FilterUiCategory>(
-  category: TCategory
-): Extract<FilterUiFieldDef, { category: TCategory }>[] {
-  return props.uiSpec.fields.filter(
-    (f): f is Extract<FilterUiFieldDef, { category: TCategory }> => f.category === category
-  )
+function handleUpdate(index: number, condition: FilterCondition) {
+  model.value = updateCondition(model.value, index, condition)
+}
+
+function handleRemove(index: number) {
+  model.value = removeCondition(model.value, index)
 }
 </script>
 
 <template>
-  <FieldGroup>
-    <!-- Toggle fields -->
-    <FilterBooleanField
-      v-for="field in getFields('toggle')"
-      :key="field.key"
-      v-model="model"
-      :field="field"
-    />
-
-    <!-- Enum fields -->
-    <template
-      v-for="field in getFields('enum')"
-      :key="field.key"
+  <div class="flex flex-col gap-2">
+    <p
+      v-if="model.conditions.length === 0"
+      class="py-3 text-center text-xs text-muted-foreground"
     >
-      <FilterSelectField
-        v-if="field.control === 'select'"
-        v-model="model"
-        :field="field"
-      />
-      <FilterMultiSelectField
-        v-else
-        v-model="model"
-        :field="field"
-      />
-    </template>
-
-    <!-- Numeric fields - use grid for compact layout -->
-    <div
-      v-if="getFields('numeric').length > 0"
-      class="grid grid-cols-2 gap-4"
-    >
-      <FilterNumberRangeField
-        v-for="field in getFields('numeric')"
-        :key="field.key"
-        v-model="model"
-        :field="field"
-      />
-    </div>
-
-    <!-- Date fields -->
-    <FilterDateRangeField
-      v-for="field in getFields('date')"
-      :key="field.key"
-      v-model="model"
-      :field="field"
+      {{ m.filter.noConditions }}
+    </p>
+    <ConditionEditor
+      v-for="(condition, index) in model.conditions"
+      :key="index"
+      :model-value="condition"
+      :ui-spec="props.uiSpec"
+      @update:model-value="(next) => handleUpdate(index, next)"
+      @remove="() => handleRemove(index)"
     />
-
-    <!-- Relation fields -->
-    <FilterRelationField
-      v-for="field in getFields('relation')"
-      :key="field.key"
-      v-model="model"
-      :field="field"
-    />
-  </FieldGroup>
+  </div>
 </template>
