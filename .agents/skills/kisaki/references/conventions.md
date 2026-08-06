@@ -219,6 +219,42 @@ code must scale by declaration, not by copy-paste.
   registry entry) instead of generalizing early. Closed unions plus total switches keep extension
   cheap and compiler-checked.
 
+### Technical Abstraction Only, Never Business Abstraction
+
+Entity-generic code may abstract mechanics; it must not abstract domain meaning. A business
+abstraction hard-codes domain propositions into a generic interface — "every entity has tags",
+"every update has core/media/relation surfaces", "every media type is searched by name". Those
+propositions hold for games today, but each future media type gets a vote, and one wrong vote baked
+into a generic engine collapses the design.
+
+Tests for a technical abstraction:
+
+- Parameterized only by schema facts (table refs, column names) and injected functions; no domain
+  vocabulary in the abstraction's own signature. Renaming every entity to A/B/C must not make the
+  abstraction nonsensical.
+- Opt-in: a media type that does not fit simply does not call the helper. If adding a media type
+  requires distorting it (fake fields, empty stub steps) to satisfy the generic interface, the
+  abstraction is business-level — dismantle it instead of patching it.
+- Flow ownership stays explicit: workflow ordering and step selection live in per-entity
+  coordinators; shared helpers implement individual steps. Do not move flow into template-method
+  base classes or a generic handler that enumerates everyone's steps.
+- Closed entity unions (`AllEntityType`) appear as data-registry keys only, never in generic engine
+  signatures or branches.
+
+Distinguish the two growth axes:
+
+- Satellite entities (person, company, character) are cross-media and shared; media types attach to
+  them through per-media link tables. Deduplicating genuinely uniform mechanics across satellites
+  is safe — they are structurally identical, not coincidentally similar.
+- Root media types (game today; anime, book, music later) have one exemplar. Never extract a
+  generic root-media flow, engine, or entity spec from a single sample — with one sample you cannot
+  tell invariants from game-specific accidents. Wait until the second media type exists, then
+  extract only what both proved invariant.
+
+Keep registries per consumer (merge config, feed projection, delete config, query spec). Each
+consumer declares only the schema facts it needs. Do not merge them into one grand all-consumer
+entity spec that every future media type must fully satisfy.
+
 ## CLI Command Naming
 
 - Keep Commander declarations in `cli/commands/`, CLI workflows in `cli/actions/`, and reusable rules in their owning domain modules.
