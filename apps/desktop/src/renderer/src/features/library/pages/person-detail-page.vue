@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { PageHeader } from '@renderer/components/ui/page-header'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { Separator } from '@renderer/components/ui/separator'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SpoilerConfirmDialog } from '@renderer/components/ui/spoiler-confirm-dialog'
@@ -141,7 +141,10 @@ function handleRevealSpoilersConfirm() {
   >
     <!-- Header -->
     <PageHeader>
-      <h1 class="text-base font-semibold truncate">{{ person!.name }}</h1>
+      <PageHeaderTitle
+        :title="person!.name"
+        :icon="getEntityIcon('person')"
+      />
 
       <template #actions>
         <Button

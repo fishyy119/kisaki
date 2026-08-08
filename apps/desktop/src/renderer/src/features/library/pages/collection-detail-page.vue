@@ -11,7 +11,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
-import { PageHeader } from '@renderer/components/ui/page-header'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import {
@@ -29,6 +29,7 @@ import {
 } from '@renderer/composables'
 import { useI18n } from '@renderer/composables/use-i18n'
 import { getAttachmentUrl } from '@renderer/utils/attachment'
+import { getEntityIcon } from '@renderer/utils/format'
 import { CONTENT_ENTITY_TYPES, type ContentEntityType } from '@shared/common'
 
 const { m } = useI18n()
@@ -138,7 +139,7 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   <StateView
     v-else-if="!collection"
     state="not-found"
-    icon="icon-[mdi--folder-open-outline]"
+    :icon="getEntityIcon('collection')"
     :title="m.library.detail.notFoundTitle({ label: m.library.entities.collection })"
     class="h-full bg-background"
   />
@@ -150,7 +151,10 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   >
     <!-- Header -->
     <PageHeader>
-      <h1 class="text-base font-semibold truncate">{{ collection?.name }}</h1>
+      <PageHeaderTitle
+        :title="collection.name"
+        :icon="getEntityIcon('collection')"
+      />
       <Icon
         v-if="isDynamic"
         icon="icon-[mdi--lightning-bolt]"

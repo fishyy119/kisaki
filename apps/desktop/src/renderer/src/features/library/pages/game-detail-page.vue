@@ -11,7 +11,7 @@ import { eq } from 'drizzle-orm'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
-import { PageHeader } from '@renderer/components/ui/page-header'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { Separator } from '@renderer/components/ui/separator'
 import { StateView } from '@renderer/components/ui/state-view'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -194,7 +194,10 @@ const canOpenGameDir = computed(() => {
   >
     <!-- Header -->
     <PageHeader>
-      <h1 class="text-base font-semibold truncate">{{ game.name }}</h1>
+      <PageHeaderTitle
+        :title="game.name"
+        :icon="getEntityIcon('game')"
+      />
 
       <!-- Status dropdown -->
       <Tooltip>

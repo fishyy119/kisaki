@@ -11,7 +11,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@renderer/components/ui/icon'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
-import { PageHeader } from '@renderer/components/ui/page-header'
+import { PageHeader, PageHeaderTitle } from '@renderer/components/ui/page-header'
 import { StateView } from '@renderer/components/ui/state-view'
 import { SegmentedControl, SegmentedControlItem } from '@renderer/components/ui/segmented-control'
 import {
@@ -113,7 +113,10 @@ function handleEntityClick(payload: { type: ContentEntityType; id: string }) {
   >
     <!-- Header -->
     <PageHeader>
-      <h1 class="text-base font-semibold truncate">{{ tag.name }}</h1>
+      <PageHeaderTitle
+        :title="tag.name"
+        :icon="getEntityIcon('tag')"
+      />
       <Badge
         v-if="tag.isNsfw"
         variant="destructive"
